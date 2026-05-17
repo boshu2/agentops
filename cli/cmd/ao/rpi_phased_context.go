@@ -56,6 +56,7 @@ type phasedEngineOptions struct {
 	DaemonURL            string                `json:"-"` // explicit daemon URL; empty = activation file
 	DaemonToken          string                `json:"-"` // mutation token for daemon-submit
 	DaemonFallback       bool                  `json:"-"` // when daemon is unavailable, continue foreground execution
+	Domain               string                // domain-slice name; empty = unscoped run. Resolves docs/domains/<name>/manifest.yaml.
 }
 
 // defaultPhasedEngineOptions returns options matching the default cobra flag values.
@@ -88,31 +89,33 @@ var phases = cliRPI.Phases
 
 // phasedState persists orchestrator state between phase spawns.
 type phasedState struct {
-	SchemaVersion   int                 `json:"schema_version"`
-	Goal            string              `json:"goal"`
-	EpicID          string              `json:"epic_id,omitempty"`
-	TrackerMode     string              `json:"tracker_mode,omitempty"`
-	TrackerReason   string              `json:"tracker_reason,omitempty"`
-	Phase           int                 `json:"phase"`
-	StartPhase      int                 `json:"start_phase"`
-	Cycle           int                 `json:"cycle"`
-	ParentEpic      string              `json:"parent_epic,omitempty"`
-	FastPath        bool                `json:"fast_path"`
-	TestFirst       bool                `json:"test_first"`
-	SwarmFirst      bool                `json:"swarm_first"`
-	Complexity      ComplexityLevel     `json:"complexity,omitempty"` // fast, standard, full
-	ProgramPath     string              `json:"program_path,omitempty"`
-	Verdicts        map[string]string   `json:"verdicts"`
-	Attempts        map[string]int      `json:"attempts"`
-	StartedAt       string              `json:"started_at"`
-	WorktreePath    string              `json:"worktree_path,omitempty"`
-	RunID           string              `json:"run_id,omitempty"`
-	OrchestratorPID int                 `json:"orchestrator_pid,omitempty"`
-	Backend         string              `json:"backend,omitempty"`
-	TerminalStatus  string              `json:"terminal_status,omitempty"` // interrupted, failed, stale, completed
-	TerminalReason  string              `json:"terminal_reason,omitempty"`
-	TerminatedAt    string              `json:"terminated_at,omitempty"`
-	Opts            phasedEngineOptions `json:"opts"`
+	SchemaVersion   int                  `json:"schema_version"`
+	Goal            string               `json:"goal"`
+	EpicID          string               `json:"epic_id,omitempty"`
+	Domain          string               `json:"domain,omitempty"`          // domain-slice name when --domain scoped run
+	DomainManifest  *domainSliceEvidence `json:"domain_manifest,omitempty"` // recorded domain-slice boundaries for evidence/audit
+	TrackerMode     string               `json:"tracker_mode,omitempty"`
+	TrackerReason   string               `json:"tracker_reason,omitempty"`
+	Phase           int                  `json:"phase"`
+	StartPhase      int                  `json:"start_phase"`
+	Cycle           int                  `json:"cycle"`
+	ParentEpic      string               `json:"parent_epic,omitempty"`
+	FastPath        bool                 `json:"fast_path"`
+	TestFirst       bool                 `json:"test_first"`
+	SwarmFirst      bool                 `json:"swarm_first"`
+	Complexity      ComplexityLevel      `json:"complexity,omitempty"` // fast, standard, full
+	ProgramPath     string               `json:"program_path,omitempty"`
+	Verdicts        map[string]string    `json:"verdicts"`
+	Attempts        map[string]int       `json:"attempts"`
+	StartedAt       string               `json:"started_at"`
+	WorktreePath    string               `json:"worktree_path,omitempty"`
+	RunID           string               `json:"run_id,omitempty"`
+	OrchestratorPID int                  `json:"orchestrator_pid,omitempty"`
+	Backend         string               `json:"backend,omitempty"`
+	TerminalStatus  string               `json:"terminal_status,omitempty"` // interrupted, failed, stale, completed
+	TerminalReason  string               `json:"terminal_reason,omitempty"`
+	TerminatedAt    string               `json:"terminated_at,omitempty"`
+	Opts            phasedEngineOptions  `json:"opts"`
 }
 
 // retryContext is a thin alias for the internal RetryContext type.
@@ -268,6 +271,13 @@ func buildPromptForPhase(cwd string, phaseNum int, state *phasedState, _ *retryC
 	var prompt strings.Builder
 	renderPreambleInstructions(&prompt, data)
 
+	// Domain-slice boundaries — prepended for every phase when the run is
+	// scoped via --domain. Unscoped runs render "" so the prompt is unchanged.
+	if block := renderDomainBoundariesBlock(state); block != "" {
+		prompt.WriteString(block)
+		prompt.WriteString("\n")
+	}
+
 	// Cross-phase context for phases 2+ — prefer structured handoffs, fall back to raw summaries
 	if phaseNum >= 2 {
 		handoffs, _ := readAllHandoffsForRun(cwd, phaseNum, state.RunID)
@@ -376,6 +386,12 @@ func buildRetryPrompt(cwd string, phaseNum int, state *phasedState, retryCtx *re
 		if err := summaryTmpl.Execute(&prompt, data); err != nil {
 			VerbosePrintf("Warning: could not render summary instruction: %v\n", err)
 		}
+	}
+
+	// 2b. Domain-slice boundaries — carry the read fence into retries too.
+	if block := renderDomainBoundariesBlock(state); block != "" {
+		prompt.WriteString("\n")
+		prompt.WriteString(block)
 	}
 
 	// 3. Retry-specific context discipline (avoid repeating prior work)

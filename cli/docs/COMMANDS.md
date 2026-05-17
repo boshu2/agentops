@@ -1959,6 +1959,7 @@ ao goals measure [flags]
       --exclude-tag string   Skip goals whose Tags include this value (e.g. long-cycle)
       --goal string          Measure a single goal by ID
   -h, --help                 help for measure
+      --scenarios-only       Evaluate only executable-spec scenario satisfaction; skip shell gate-command execution
       --total-timeout int    Overall measurement timeout in seconds (0 disables)
 ```
 
@@ -2026,6 +2027,21 @@ ao goals history [flags]
       --since string   Show entries since date (YYYY-MM-DD)
 ```
 
+#### `ao goals render`
+
+Render the executable-spec layer as BDD/Gherkin text.
+
+```
+ao goals render [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help         help for render
+      --out string   Write Gherkin to this file instead of stdout
+```
+
 #### `ao goals scenarios`
 
 List or create the executable-spec scenarios linked to GOALS.md directives.
@@ -2046,6 +2062,23 @@ ao goals scenarios [flags]
       --status string         Status for a created scenario (active, draft, retired) (default "draft")
       --strict                With --lint, exit non-zero on warnings as well as errors
       --threshold float       Satisfaction threshold for a created scenario (default 0.8)
+```
+
+#### `ao goals trace`
+
+Walk the executable-spec trace chain defined in docs/adr/ADR-0005.
+
+```
+ao goals trace [flags]
+```
+
+**Flags:**
+
+```
+      --from string   Render the trace lineage rooted at this directive, scenario, or bead ID
+  -h, --help          help for trace
+      --orphans       Audit the whole chain for broken references (errors) and missing yields (warnings)
+      --strict        Escalate warning-class defects to a non-zero exit (ADR-0005 §4.2)
 ```
 
 #### `ao goals add`
@@ -2154,12 +2187,44 @@ ao goals steer add <title> [flags]
       --steer string         Steer direction (increase, decrease, hold, explore) (default "increase")
 ```
 
+##### `ao goals steer apply`
+
+Apply the top re-steer recommendation to GOALS.md via the non-lossy directive-block patcher. Requires policy auto_apply:true AND explicit human confirmation (interactive prompt, or --auto --yes for scripts). A run without confirmation never changes GOALS.md.
+
+```
+ao goals steer apply [flags]
+```
+
+**Flags:**
+
+```
+      --auto            Equivalent to --yes: explicit non-interactive consent to apply
+  -h, --help            help for apply
+      --policy string   Re-steer policy path (default: docs/re-steer-policy.json)
+      --yes             Pre-confirm the apply for non-interactive/scripted use (explicit consent)
+```
+
 ##### `ao goals steer prioritize`
 
 Move a directive to a new position
 
 ```
 ao goals steer prioritize <number> <new-position> [flags]
+```
+
+##### `ao goals steer recommend`
+
+Run the re-steer policy engine over the verdict ledger and print recommended directive mutations and skip reasons. GOALS.md is never modified. Use `ao goals steer apply` to apply a recommendation.
+
+```
+ao goals steer recommend [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for recommend
+      --policy string   Re-steer policy path (default: docs/re-steer-policy.json)
 ```
 
 ##### `ao goals steer remove`
@@ -2753,7 +2818,9 @@ ao rpi phased <goal> [flags]
       --daemon-token string               agentopsd mutation token for --daemon-submit
       --daemon-url string                 agentopsd base URL for --daemon-submit (default: activation file)
       --discovery-artifact string         Path to a pre-validated discovery artifact (markdown) used to skip Phase 1 when combined with --from=implementation
+      --domain string                     Scope the run to a domain slice (loads docs/domains/<name>/manifest.yaml; phase prompts carry its boundaries)
       --fast-path                         Force fast path (--quick for gates)
+      --force                             With --scaffold-domain: overwrite an existing manifest
       --from string                       Start from phase (discovery, implementation, validation; aliases: research, plan, pre-mortem, crank, vibe, post-mortem) (default "discovery")
   -h, --help                              help for phased
       --interactive                       Enable human gates at research and plan phases
@@ -2767,6 +2834,7 @@ ao rpi phased <goal> [flags]
       --phase-timeout duration            Maximum wall-clock runtime per phase (0 disables timeout) (default 1h30m0s)
       --runtime string                    Phase runtime mode: auto|direct|stream|tmux|gc (default "auto")
       --runtime-cmd string                Runtime command used for phase prompts (Claude uses '-p'; Codex uses 'exec') (default "claude")
+      --scaffold-domain string            Write a domain-slice manifest template at docs/domains/<name>/manifest.yaml and exit (does NOT run RPI)
       --stall-timeout duration            Maximum time without progress before declaring stall (0 disables) (default 10m0s)
       --stream-startup-timeout duration   Maximum time to wait for first stream event before falling back to direct execution (0 disables) (default 45s)
       --swarm-first                       Default each phase to swarm/agent-team execution; fall back to direct execution if swarm runtime is unavailable (default true)

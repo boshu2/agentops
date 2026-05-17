@@ -69,7 +69,7 @@ func (l *productionHypothesisLedger) Append(ctx context.Context, record ports.Hy
 	if err != nil {
 		return ports.HypothesisRecord{}, fmt.Errorf("productionHypothesisLedger open %q: %w", l.path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	if _, err := f.Write(append(payload, '\n')); err != nil {
 		return ports.HypothesisRecord{}, fmt.Errorf("productionHypothesisLedger write: %w", err)
 	}
@@ -119,7 +119,7 @@ func (l *productionHypothesisLedger) readRecords(ctx context.Context) ([]ports.H
 		}
 		return nil, fmt.Errorf("productionHypothesisLedger open %q: %w", l.path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	out := make([]ports.HypothesisRecord, 0)
 	scanner := bufio.NewScanner(f)

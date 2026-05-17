@@ -15,26 +15,19 @@ import (
 	"github.com/boshu2/agentops/cli/internal/paths"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/wiki"
 )
 
 // agentsDirIn returns the AgentsDir resolved relative to the given base
-// directory, honoring AO_AGENTS_DIR / AO_HOME env overrides (the same
-// precedence implemented by lib/ao-paths.sh and cli/internal/paths from
-// soc-irg1.1). When neither env is set, the result is the legacy
-// filepath.Join(base, ".agents") — preserving prior call-site behavior.
+// directory, honoring AO_AGENTS_DIR / AO_HOME env overrides.
 //
-// Why a base-aware shim instead of paths.Resolve(): callers already know
-// the *root* (cwd or $HOME for --global), so they want
-// $base/.agents semantics rather than the paths package's repo-root
-// auto-detect. Honoring the env vars threads the same overrides through.
+// Deprecated: this is a thin strangler alias kept for one release. The
+// canonical resolver now lives in the wiki bounded context as
+// wiki.CorpusLocator (see cli/internal/wiki/locator.go). New code should
+// call wiki.AgentsDirIn directly. Path resolution here is byte-identical
+// to wiki.CorpusLocator.AgentsDir.
 func agentsDirIn(base string) string {
-	if v := strings.TrimSpace(os.Getenv("AO_AGENTS_DIR")); v != "" {
-		return v
-	}
-	if v := strings.TrimSpace(os.Getenv("AO_HOME")); v != "" {
-		return v
-	}
-	return filepath.Join(base, ".agents")
+	return wiki.AgentsDirIn(base)
 }
 
 // Compile-time guard: the cli/internal/paths package is the canonical Go

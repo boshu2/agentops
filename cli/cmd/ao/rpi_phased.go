@@ -48,6 +48,9 @@ var (
 	phasedDaemonURL            string
 	phasedDaemonToken          string
 	phasedDaemonFallback       bool
+	phasedDomain               string
+	phasedScaffoldDomain       string
+	phasedForce                bool
 )
 
 // phaseFailureReason is a thin alias for the internal PhaseFailureReason type.
@@ -116,6 +119,9 @@ Examples:
 	phasedCmd.Flags().StringVar(&phasedDaemonURL, "daemon-url", "", "agentopsd base URL for --daemon-submit (default: activation file)")
 	phasedCmd.Flags().StringVar(&phasedDaemonToken, "daemon-token", "", "agentopsd mutation token for --daemon-submit")
 	phasedCmd.Flags().BoolVar(&phasedDaemonFallback, "daemon-fallback", false, "When --daemon-submit cannot reach a ready daemon, continue foreground execution")
+	phasedCmd.Flags().StringVar(&phasedDomain, "domain", "", "Scope the run to a domain slice (loads docs/domains/<name>/manifest.yaml; phase prompts carry its boundaries)")
+	phasedCmd.Flags().StringVar(&phasedScaffoldDomain, "scaffold-domain", "", "Write a domain-slice manifest template at docs/domains/<name>/manifest.yaml and exit (does NOT run RPI)")
+	phasedCmd.Flags().BoolVar(&phasedForce, "force", false, "With --scaffold-domain: overwrite an existing manifest")
 	_ = phasedCmd.RegisterFlagCompletionFunc("from", staticCompletionFunc("discovery", "implementation", "validation", "research", "plan", "pre-mortem", "crank", "vibe", "post-mortem"))
 	_ = phasedCmd.RegisterFlagCompletionFunc("runtime", staticCompletionFunc("auto", "direct", "stream", "tmux", "gc"))
 
@@ -139,6 +145,17 @@ func runPhasedEngine(ctx context.Context, cwd, goal string, opts phasedEngineOpt
 // runRPIPhased is the cobra RunE handler for `ao rpi phased`.
 // It reads options from package-level cobra flag variables and delegates to runRPIPhasedWithOpts.
 func runRPIPhased(cmd *cobra.Command, args []string) error {
+	// --scaffold-domain is a write-and-exit flag: it generates a domain-slice
+	// manifest template and returns WITHOUT running RPI. Handle it before any
+	// option assembly so no run lifecycle is started.
+	if strings.TrimSpace(phasedScaffoldDomain) != "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("get working directory: %w", err)
+		}
+		return runScaffoldDomain(cwd, phasedScaffoldDomain, phasedForce)
+	}
+
 	opts := phasedEngineOptions{
 		From:                 phasedFrom,
 		FastPath:             phasedFastPath,
@@ -166,6 +183,7 @@ func runRPIPhased(cmd *cobra.Command, args []string) error {
 		DaemonURL:            phasedDaemonURL,
 		DaemonToken:          phasedDaemonToken,
 		DaemonFallback:       phasedDaemonFallback,
+		Domain:               phasedDomain,
 	}
 	if phasedNoTestFirst {
 		opts.TestFirst = false
@@ -303,6 +321,12 @@ func initPhasedState(cwd string, opts phasedEngineOptions, args []string) (*phas
 	}
 	state := newPhasedState(opts, startPhase, goal)
 	applyComplexityFastPath(state, opts)
+
+	// Resolve --domain against the original cwd, where docs/domains/ lives.
+	// Unscoped runs (no --domain) are a no-op so existing behavior is unchanged.
+	if err := applyDomainScopeToState(cwd, opts, state); err != nil {
+		return nil, 0, "", err
+	}
 
 	spawnCwd, err := resumePhasedStateIfNeeded(cwd, opts, startPhase, goal, state)
 	if err != nil {
@@ -483,6 +507,7 @@ func finalizeFailedPhasedRun(spawnCwd string, state *phasedState, runStart time.
 	if proofErr := updateExecutionPacketProof(spawnCwd, state); proofErr != nil {
 		VerbosePrintf("Warning: could not refresh failed-run proof artifact set: %v\n", proofErr)
 	}
+	recordDomainScopeAudit(spawnCwd, state)
 }
 
 func finalizeSuccessfulPhasedRun(spawnCwd string, state *phasedState, runStart time.Time, logPath string) {
@@ -491,6 +516,7 @@ func finalizeSuccessfulPhasedRun(spawnCwd string, state *phasedState, runStart t
 	if err := updateExecutionPacketProof(spawnCwd, state); err != nil {
 		VerbosePrintf("Warning: could not refresh completed-run proof artifact set: %v\n", err)
 	}
+	recordDomainScopeAudit(spawnCwd, state)
 
 	writeFinalPhasedReport(state, logPath)
 }

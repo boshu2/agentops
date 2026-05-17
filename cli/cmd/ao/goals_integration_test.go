@@ -162,6 +162,10 @@ func TestGoals_Integration_MeasureDirectivesJSON(t *testing.T) {
 
 	// measure --directives should output JSON with directive info
 	out, err := captureStdout(t, func() error {
+		// --directives binds the package-global goalsMeasureDirectives; cobra
+		// does not reset it after Execute, so restore it to avoid leaking
+		// directives-mode into later goals-measure tests in the same binary.
+		defer func() { goalsMeasureDirectives = false }()
 		rootCmd.SetArgs([]string{"goals", "measure", "--directives"})
 		return rootCmd.Execute()
 	})

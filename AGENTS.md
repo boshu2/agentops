@@ -73,7 +73,7 @@ scripts/validate-go-fast.sh     # Quick Go validation (build + vet + test)
 
 ## CI Validation — Passing the Pipeline
 
-All pushes to `main`, `v*` release tag pushes, and PRs run `.github/workflows/validate.yml`. Release tag pushes force every path-filtered lane on, and the summary fails if any job is skipped, so skipped is not treated as a release verdict. **Run checks locally before pushing.** The summary job gates on all checks except agentops-eval-advisory (non-blocking), security-toolchain-gate (non-blocking), doctor-check (non-blocking), factory-claim-ledger-strict (non-blocking), practice-citations (non-blocking), check-test-staleness (non-blocking), and swarm-evidence (non-blocking).
+All pushes to `main`, `v*` release tag pushes, and PRs run `.github/workflows/validate.yml`. Release tag pushes force every path-filtered lane on, and the summary fails if any job is skipped, so skipped is not treated as a release verdict. **Run checks locally before pushing.** The summary job gates on all checks except agentops-eval-advisory (non-blocking), doctor-check (non-blocking), factory-claim-ledger-strict (non-blocking), practice-citations (non-blocking), check-test-staleness (non-blocking), swarm-evidence (non-blocking), and executable-spec-link-integrity (non-blocking).
 Blocking policy list (must match the validate summary failset): every job in the CI table below except jobs marked `(non-blocking)`, including the seven `validate-codex-*` and `validate-headless-runtime-skills` jobs (split from the previous aggregated `codex-runtime-sections` job, soc-ltp2).
 
 #### Advisory Job Triage SLAs (post-merge advisory policy, soc-z7qq)
@@ -83,7 +83,6 @@ Advisory jobs run on every PR but their failure does NOT block merge. They surfa
 | Advisory job | Triage SLA | Escalation rule |
 |---|---|---|
 | **agentops-eval-advisory** | 7d | Release-blocking when stale: a failing eval-advisory older than 7d blocks the next `vX.Y.Z` tag until triaged. |
-| **security-toolchain-gate** | 14d | Open a `bd` issue with label `ci-advisory`. Network/install flake (item 40) is mitigated by 3-attempt exponential-backoff retry on the install step; only persistent toolchain or scanner regressions count toward the SLA. |
 | **doctor-check** | 30d | Open a `bd` issue tracking the stale CLI reference; prioritize when the next `cli/cmd/ao/**` PR lands. |
 | **factory-claim-ledger-strict** | 14d | soc-lmww1: validates `docs/contracts/factory-claim-ledger.json` against source-set anchors. Open a `bd` issue tagged `ci-advisory` when red for >14d; promotion to blocking is a Wave 1E concern. |
 | **practice-citations** | 14d | Non-blocking strict walk of Primitives (skills/hooks/evals/CLI/schemas and scripts with declarations) for `practices: [slug,...]` derivation from PRACTICE-REGISTRY.md. Backfill in slices; promote to required after one clean cycle. Open a `bd` issue tagged `ci-advisory` when red for >14d with no backfill progress. |
@@ -265,7 +264,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **registry-check** | `registry.json` matches live output of `scripts/generate-registry.sh` | Adding a job type, skill, or CLI command without regenerating registry.json |
 | **retrieval-quality** | Offline retrieval precision bench and retrieval comparison smoke test | Precision@K regression below threshold or retrieval-quality-smoke failure |
 | **security-scan** | No hardcoded secrets or dangerous patterns (`curl\|sh`, `rm -rf /`) | Hardcoded API keys or passwords in non-test files |
-| **security-toolchain-gate** | Semgrep, gosec, gitleaks, etc. | Non-blocking (`continue-on-error: true`) |
+| **security-toolchain-gate** | Unified security gate (`scripts/security-gate.sh --mode quick`): gosec, golangci-lint, gitleaks, trivy, semgrep, etc. Blocks on any CRITICAL or HIGH finding | A CRITICAL/HIGH security or quality finding from gosec or golangci-lint |
 | **shellcheck** | All `.sh` files pass ShellCheck at error severity | Unquoted variables, missing `set -euo pipefail` |
 | **skill-dependency-check** | Skill `metadata.dependencies` entries resolve to existing skills | Declaring a skill dependency that no longer exists |
 | **skill-integrity** | Every `references/*.md` file is linked from SKILL.md; no dead refs, dead xrefs, or missing scripts | Adding a reference file without linking it in SKILL.md |
@@ -274,6 +273,7 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **smoke-test** | Repo smoke surface: skill frontmatter, placeholder/TODO hygiene, plus standalone Claude/Codex/OpenCode runtime smoke scripts and mocked headless runtime validation | Runtime install/bundle drift or placeholder/TODO regressions |
 | **standards-injector-completeness** | Every `<lang>` mapped by `hooks/standards-injector.sh` has a matching `skills/standards/references/<lang>.md` | Adding a case branch without the reference file (the hook fails open silently) |
 | **swarm-evidence** | Swarm evidence files and file manifests are valid | Non-blocking (`continue-on-error: true`); informational artifact validation only |
+| **executable-spec-link-integrity** | Runs `ao goals scenarios --lint` (directive↔scenario link lint) and `ao goals trace --orphans` (whole-chain orphan/gap audit) warn-only (F1.6, soc-58nt.1.9). Non-blocking (`continue-on-error: true`). Promotion criterion: remove `continue-on-error: true` from the CI job and replace `warn` with `fail` in pre-push check 38 after two consecutive clean runs on main | Broken directive↔scenario link or orphaned directive/scenario/bead in the trace chain (surfaces as warning, not failure, until promoted) |
 | **validate-ci-policy-parity** | AGENTS CI table and blocking policy match workflow summary enforcement | Docs say non-blocking/required but workflow differs |
 | **validate-codex-backbone-prompts** | Codex backbone prompt files are present and well-formed | Backbone prompt file deleted, renamed, or shape regressed |
 | **validate-codex-generated-artifacts** | Codex artifact metadata parity (manifests, markers, hashes) for the head commit | Codex artifact regen drift; missing or stale `skills-codex/` outputs |

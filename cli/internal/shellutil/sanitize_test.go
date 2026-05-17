@@ -44,7 +44,7 @@ func TestSanitizedEnv_StripsBashEnvAndEnv(t *testing.T) {
 }
 
 func TestSanitizedBashCommand_HasExpectedArgs(t *testing.T) {
-	cmd := SanitizedBashCommand(nil, "echo hi")
+	cmd := SanitizedBashCommand(context.TODO(), "echo hi")
 	if cmd == nil {
 		t.Fatal("expected non-nil cmd")
 	}

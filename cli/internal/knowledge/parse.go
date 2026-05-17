@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	"github.com/boshu2/agentops/cli/internal/wiki"
 )
 
 // ParseBuilderMetadata extracts key=value pairs from a builder's stdout.
@@ -38,20 +38,15 @@ func ParseBuilderMetadata(output string) map[string]string {
 // ParseFrontmatter parses a leading YAML frontmatter block (--- ... ---) from
 // the given text. Returns nil when no frontmatter is present or when parsing
 // fails.
+//
+// Parsing is delegated to wiki.FrontmatterCodec; this wrapper preserves the
+// historical nil-on-miss contract for existing callers.
 func ParseFrontmatter(text string) map[string]any {
-	if !strings.HasPrefix(text, "---\n") {
+	doc := wiki.FrontmatterCodec{}.Decode(text)
+	if !doc.HasFrontmatter {
 		return nil
 	}
-	rest := strings.TrimPrefix(text, "---\n")
-	end := strings.Index(rest, "\n---")
-	if end < 0 {
-		return nil
-	}
-	var frontmatter map[string]any
-	if err := yaml.Unmarshal([]byte(rest[:end]), &frontmatter); err != nil {
-		return nil
-	}
-	return frontmatter
+	return doc.Fields
 }
 
 // FrontmatterString returns the trimmed string value for key, falling back to

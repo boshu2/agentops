@@ -1,0 +1,26 @@
+{
+  "schema_version": "scenario-results.v1",
+  "run_id": "run-2026-05-17-004",
+  "iteration": 2,
+  "generated_at": "2026-05-17T12:00:00Z",
+  "results": [
+    {
+      "scenario_id": "s-2026-05-17-005",
+      "directive_id": "d-scenario-gate",
+      "score": 0.30,
+      "threshold": 0.8,
+      "verdict": "fail",
+      "judged_at": "2026-05-17T11:00:00Z",
+      "evidence": ["stale-judgement"]
+    },
+    {
+      "scenario_id": "s-2026-05-17-005",
+      "directive_id": "d-scenario-gate",
+      "score": 0.91,
+      "threshold": 0.8,
+      "verdict": "pass",
+      "judged_at": "2026-05-17T11:58:00Z",
+      "evidence": ["latest-judgement"]
+    }
+  ]
+}

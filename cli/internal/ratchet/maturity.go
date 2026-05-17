@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/types"
-	"gopkg.in/yaml.v3"
+	"github.com/boshu2/agentops/cli/internal/wiki"
 )
 
 // MaturityTransitionResult contains the result of a maturity transition check.
@@ -94,6 +94,14 @@ func readLearningData(learningPath string) (map[string]any, error) {
 	return nil, fmt.Errorf("parse learning: unsupported format")
 }
 
+// parseYAMLFrontMatter extracts the YAML front matter block from lines.
+// Unlike the strict decoder, a missing closing --- is tolerated: all lines
+// after the opening delimiter are treated as the YAML body. An empty body is
+// an error.
+//
+// The YAML unmarshalling is delegated to wiki.FrontmatterCodec; this wrapper
+// keeps the tolerant no-closing-delimiter and empty-body semantics that the
+// ratchet maturity reader depends on.
 func parseYAMLFrontMatter(lines []string) (map[string]any, error) {
 	var yamlLines []string
 	for i := 1; i < len(lines); i++ {
@@ -105,11 +113,15 @@ func parseYAMLFrontMatter(lines []string) (map[string]any, error) {
 	if len(yamlLines) == 0 {
 		return nil, fmt.Errorf("parse YAML front matter: empty")
 	}
-	var data map[string]any
-	if err := yaml.Unmarshal([]byte(strings.Join(yamlLines, "\n")), &data); err != nil {
-		return nil, fmt.Errorf("parse YAML front matter: %w", err)
+	// Re-frame as a closed block so the codec parses the YAML body. The
+	// codec performs the same yaml.Unmarshal the legacy parser did.
+	framed := append([]string{"---"}, yamlLines...)
+	framed = append(framed, "---")
+	doc := wiki.FrontmatterCodec{}.DecodeLines(framed)
+	if !doc.HasFrontmatter {
+		return nil, fmt.Errorf("parse YAML front matter: invalid YAML body")
 	}
-	return data, nil
+	return doc.Fields, nil
 }
 
 func buildMaturityTransitionResult(learningPath string, data map[string]any) *MaturityTransitionResult {

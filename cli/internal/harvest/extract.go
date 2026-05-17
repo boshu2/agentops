@@ -104,7 +104,7 @@ func extractFromSubdir(rig RigInfo, subdir string, opts WalkOptions, result *Ext
 		warn(dir, "open_root", fmt.Errorf("opening root %s: %w", dir, openErr))
 		return
 	}
-	defer root.Close()
+	defer func() { _ = root.Close() }()
 
 	walkErr := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {

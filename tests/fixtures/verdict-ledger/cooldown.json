@@ -1,0 +1,64 @@
+{
+  "schema_version": "verdict-ledger.v1",
+  "generated_at": "2026-05-17T18:00:00Z",
+  "records": [
+    {
+      "record_type": "iteration",
+      "directive_id": "d-cut-build-time",
+      "run_timestamp": "2026-05-17T08:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.3,
+      "scenario_count": 3,
+      "evaluated_count": 3,
+      "run_id": "run-100"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-cut-build-time",
+      "run_timestamp": "2026-05-17T09:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.32,
+      "scenario_count": 3,
+      "evaluated_count": 3,
+      "run_id": "run-101"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-cut-build-time",
+      "run_timestamp": "2026-05-17T10:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.31,
+      "scenario_count": 3,
+      "evaluated_count": 3,
+      "run_id": "run-102"
+    },
+    {
+      "record_type": "cooldown",
+      "directive_id": "d-cut-build-time",
+      "run_timestamp": "2026-05-17T10:05:00Z",
+      "cooldown_kind": "proposed",
+      "mutation_type": "setpoint_loosen",
+      "note": "3-run failure streak; proposing setpoint_loosen for operator review"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-cut-build-time",
+      "run_timestamp": "2026-05-17T11:00:00Z",
+      "scenario_verdict": "unknown",
+      "scenario_satisfaction": 0.0,
+      "scenario_count": 0,
+      "evaluated_count": 0,
+      "run_id": "run-103"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-cut-build-time",
+      "run_timestamp": "2026-05-17T12:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.35,
+      "scenario_count": 3,
+      "evaluated_count": 3,
+      "run_id": "run-104"
+    }
+  ]
+}

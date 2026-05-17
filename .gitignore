@@ -39,6 +39,8 @@ coverage.xml
 reports/
 /release-notes.md
 wiki/
+# wiki/ above ignores generated vault output; the ao bounded-context package is source
+!cli/internal/wiki/
 
 # Agent runtime state
 # Repo-root .agents/ is local/private runtime state for Codex, Claude,

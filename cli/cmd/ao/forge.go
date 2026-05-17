@@ -23,6 +23,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/storage"
 	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/wiki"
 )
 
 var (
@@ -221,7 +222,7 @@ func resolveForgeReviewSessionsDir(cmd *cobra.Command, cwd string) (string, erro
 		return "", err
 	}
 	if strings.TrimSpace(sessionsDir) == "" {
-		sessionsDir = filepath.Join(agentsDirIn(cwd), "ao", "sessions")
+		sessionsDir = filepath.Join(wiki.AgentsDirIn(cwd), "ao", "sessions")
 	}
 	if filepath.IsAbs(sessionsDir) {
 		return filepath.Clean(sessionsDir), nil
@@ -1019,7 +1020,7 @@ func runForgeTier1(w io.Writer, files []string) error {
 		fmt.Fprintln(w, forgeLegacyLocalLLMDeprecationWarning)
 	}
 	cwd, _ := os.Getwd()
-	outDir := filepath.Join(agentsDirIn(cwd), "wiki", "sources")
+	outDir := filepath.Join(wiki.AgentsDirIn(cwd), "wiki", "sources")
 	_, err := llm.RunForgeTier1(llm.Tier1Options{
 		SourcePaths:    files,
 		OutputDir:      outDir,

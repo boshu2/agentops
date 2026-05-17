@@ -1,0 +1,66 @@
+{
+  "schema_version": "verdict-ledger.v1",
+  "generated_at": "2026-05-17T18:00:00Z",
+  "records": [
+    {
+      "record_type": "iteration",
+      "directive_id": "d-reduce-latency",
+      "run_timestamp": "2026-05-17T06:00:00Z",
+      "scenario_verdict": "pass",
+      "scenario_satisfaction": 0.88,
+      "scenario_count": 6,
+      "evaluated_count": 6,
+      "run_id": "run-200"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-harden-auth",
+      "run_timestamp": "2026-05-17T06:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.5,
+      "scenario_count": 2,
+      "evaluated_count": 2,
+      "run_id": "run-200"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-reduce-latency",
+      "run_timestamp": "2026-05-17T07:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.6,
+      "scenario_count": 6,
+      "evaluated_count": 5,
+      "run_id": "run-201"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-harden-auth",
+      "run_timestamp": "2026-05-17T07:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.55,
+      "scenario_count": 2,
+      "evaluated_count": 2,
+      "run_id": "run-201"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-reduce-latency",
+      "run_timestamp": "2026-05-17T08:00:00Z",
+      "scenario_verdict": "skip",
+      "scenario_satisfaction": 0.0,
+      "scenario_count": 6,
+      "evaluated_count": 0,
+      "run_id": "run-202"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-harden-auth",
+      "run_timestamp": "2026-05-17T08:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.58,
+      "scenario_count": 2,
+      "evaluated_count": 2,
+      "run_id": "run-202"
+    }
+  ]
+}

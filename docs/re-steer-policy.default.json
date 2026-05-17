@@ -1,0 +1,10 @@
+{
+  "$schema": "https://agentops.dev/schemas/re-steer-policy.v1.schema.json",
+  "minimum_evidence_count": 5,
+  "failure_streak_length": 3,
+  "cooldown_iterations": 5,
+  "allowed_mutation_types": ["priority_bump", "setpoint_tighten", "setpoint_loosen"],
+  "max_priority_bump": 3,
+  "auto_apply": false,
+  "allow_steer_flip": false
+}
