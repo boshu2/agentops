@@ -118,6 +118,16 @@ ao badge [flags]
 
 ---
 
+### `ao capabilities`
+
+Print the machine-readable contract for the whole ao CLI as JSON.
+
+```
+ao capabilities [flags]
+```
+
+---
+
 ### `ao ci`
 
 Operations on CI run history via the typed BC2 CIStatusPort. The 'latest' subcommand wraps 'gh run list --commit <sha>' through productionCIStatus; 'recent' wraps the unbound-by-sha variant.
@@ -1068,6 +1078,16 @@ ao pool stage <candidate-id> [flags]
 ```
   -h, --help              help for stage
       --min-tier string   Minimum tier threshold (default: bronze)
+```
+
+---
+
+### `ao robot-docs`
+
+Print a paste-ready, agent-targeted handbook for the whole ao CLI.
+
+```
+ao robot-docs [flags]
 ```
 
 ---
