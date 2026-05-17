@@ -48,6 +48,7 @@ var (
 	phasedDaemonURL            string
 	phasedDaemonToken          string
 	phasedDaemonFallback       bool
+	phasedDomain               string
 )
 
 // phaseFailureReason is a thin alias for the internal PhaseFailureReason type.
@@ -116,6 +117,7 @@ Examples:
 	phasedCmd.Flags().StringVar(&phasedDaemonURL, "daemon-url", "", "agentopsd base URL for --daemon-submit (default: activation file)")
 	phasedCmd.Flags().StringVar(&phasedDaemonToken, "daemon-token", "", "agentopsd mutation token for --daemon-submit")
 	phasedCmd.Flags().BoolVar(&phasedDaemonFallback, "daemon-fallback", false, "When --daemon-submit cannot reach a ready daemon, continue foreground execution")
+	phasedCmd.Flags().StringVar(&phasedDomain, "domain", "", "Scope the run to a domain slice (loads docs/domains/<name>/manifest.yaml; phase prompts carry its boundaries)")
 	_ = phasedCmd.RegisterFlagCompletionFunc("from", staticCompletionFunc("discovery", "implementation", "validation", "research", "plan", "pre-mortem", "crank", "vibe", "post-mortem"))
 	_ = phasedCmd.RegisterFlagCompletionFunc("runtime", staticCompletionFunc("auto", "direct", "stream", "tmux", "gc"))
 
@@ -166,6 +168,7 @@ func runRPIPhased(cmd *cobra.Command, args []string) error {
 		DaemonURL:            phasedDaemonURL,
 		DaemonToken:          phasedDaemonToken,
 		DaemonFallback:       phasedDaemonFallback,
+		Domain:               phasedDomain,
 	}
 	if phasedNoTestFirst {
 		opts.TestFirst = false
@@ -303,6 +306,12 @@ func initPhasedState(cwd string, opts phasedEngineOptions, args []string) (*phas
 	}
 	state := newPhasedState(opts, startPhase, goal)
 	applyComplexityFastPath(state, opts)
+
+	// Resolve --domain against the original cwd, where docs/domains/ lives.
+	// Unscoped runs (no --domain) are a no-op so existing behavior is unchanged.
+	if err := applyDomainScopeToState(cwd, opts, state); err != nil {
+		return nil, 0, "", err
+	}
 
 	spawnCwd, err := resumePhasedStateIfNeeded(cwd, opts, startPhase, goal, state)
 	if err != nil {
