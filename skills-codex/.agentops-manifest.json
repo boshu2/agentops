@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "fc16b7d1f79e358978274fbebcedbbff6ecd4af7215ff3afcae9645a0d0a2f69",
+  "codex_override_catalog_hash": "faa75b122c69c9fd7b6906fd2ce54298f4035d5a4159bb22e050f88ae8df1bd2",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -654,6 +654,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
+      },
+      {
+        "name": "expert-council",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Absorbed into council as --mode=debate; kept as a one-release thin alias with no Codex-only runtime divergence."
       }
     ]
   },
@@ -715,8 +721,8 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "b137f73dc59fe955f3f0d507659d4cd6de24d0d6eaa0b38c1c1039be0146b489",
-      "generated_hash": "34141a785cf434cad46b1bbb75e11bfb798d284f904695e4dd7b8816487331f0"
+      "source_hash": "a1d6fb7e62eb7fa4e4b483fd4617e03215f42cbc94f26840112edf0bb05b47cd",
+      "generated_hash": "6b5ce56f36cb10393e921e524539c3dd41d28a5bdce5eac645075050864222ef"
     },
     {
       "name": "crank",
@@ -771,6 +777,12 @@
       "source_skill": "skills/evolve",
       "source_hash": "e9436e9c0b027867b71208c06f1ff5e00b850a82115cb041887afd4279eccc71",
       "generated_hash": "4e9afe7d59f84ce1caa43e5a82e7af3b2a25423dbbe900333d62991bc37caafb"
+    },
+    {
+      "name": "expert-council",
+      "source_skill": "skills/expert-council",
+      "source_hash": "e0ccaca8d34e61cd47a08b8281d1473f14bd90db7e8ea2b2652a1db94b9ef4d8",
+      "generated_hash": "2db9315d89a07bee38b8975a58be99e1c8aca853f9a0987d5e5286acc57c84b5"
     },
     {
       "name": "flywheel",
@@ -1099,8 +1111,8 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "c140a1c50fa268860302a6887bc15066cffa0dcc383f37ce7f56a7d625ef390b",
-      "generated_hash": "bbf8a97a9de1889103b3368c1592be55690b28047768e5bd46aa2a4fb00ae995"
+      "source_hash": "8b3c3fcf6388fdfb48f502450b4eb2fb847ff06e8a1cb8d60b15c8dc926565e9",
+      "generated_hash": "ab3839b2128e74ae4cbbdd04153e0837917bed5f45f6c7e71a53c3dbd06dbefb"
     },
     {
       "name": "validate",

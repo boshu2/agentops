@@ -122,7 +122,7 @@ For schema details and an example, see `reviewer-config-example.md`.
 | All agents fail | Return error, suggest retry |
 | Codex CLI not installed while `--mixed` is set | Hard error before spawning any judges |
 | No multi-agent capability | Fall back to `--quick` (inline single-agent review) |
-| No agent messaging | `--debate` unavailable, single-round review only |
+| No agent messaging | `--adversarial` unavailable, single-round review only |
 | Output dir missing | Create `.agents/council/` automatically |
 
 Timeout: 120s per agent (configurable via `--timeout=N` in seconds).
@@ -142,7 +142,7 @@ Use the effort command to optimize token spend per judge role:
 ## Pre-Flight Checks
 
 1. **Multi-agent capability:** Detect whether runtime supports spawning parallel subagents. If not, degrade to `--quick`.
-2. **Agent messaging:** Detect whether runtime supports agent-to-agent messaging. If not, disable `--debate`.
+2. **Agent messaging:** Detect whether runtime supports agent-to-agent messaging. If not, disable `--adversarial`.
 3. **Codex CLI judges (--mixed only):** Check `which codex`, test model availability, test `--output-schema` support. Hard-error before spawning any judges when unavailable.
 4. **Agent count:** Verify `judges * (1 + explorers) <= MAX_AGENTS (12)`
 5. **Output dir:** `mkdir -p .agents/council`

@@ -27,7 +27,10 @@ SKILL_FAIL_LIMIT=10000
 SKILL_WARN_LIMIT=8000
 SESSION_FAIL_LIMIT=8000
 DESC_FAIL_CHARS=180
-CODEX_DESC_TOTAL_FAIL_CHARS=2600
+# Always-loaded codex skill catalog. Sized to fit the catalog with modest
+# headroom: ~78 skills x ~34 avg description chars. Raised from 2600 (which was
+# calibrated at exactly 77 skills with zero slack) when expert-council landed.
+CODEX_DESC_TOTAL_FAIL_CHARS=2700
 
 # Token estimation: bytes / 4
 estimate_tokens() {

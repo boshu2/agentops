@@ -1,22 +1,27 @@
-# Debate Phase (`--debate`)
+# Adversarial Round (`--adversarial`)
 
-When `--debate` is passed, council runs two rounds instead of one. Round 1 produces independent verdicts. Round 2 lets judges review each other's work and revise.
+`--adversarial` is a **verdict-mode intensifier**, not the `debate` mode (see `modes.md`).
+When `--adversarial` is passed, council runs the verdict pattern over two rounds instead of one. Round 1 produces independent verdicts. Round 2 lets judges review each other's work and revise.
 
+**Native teams unlock the key advantage:** Judges stay alive after R1. Instead of re-spawning fresh R2 judges with truncated R1 verdicts, the team lead sends other judges' full R1 verdicts via `SendMessage`. Judges wake from idle, process R2 with full context (their own R1 analysis + others' verdicts), and write R2 files. Result: no truncation loss, no spawn overhead, richer debate.
 
-## Execution Flow (with --debate)
+## Execution Flow (with --adversarial)
 
 ```
 Phase 1: Build Packet + Create Team + Spawn R1 judges as teammates
                               |
+                    Collect all R1 verdicts (via SendMessage)
                     Judges go idle after R1 (stay alive)
                               |
-Phase 1.5: Prepare R2 context (--debate only)
+Phase 1.5: Prepare R2 context (--adversarial only)
   - For each OTHER judge's R1 verdict, extract full JSON verdict
+  - Team lead sends R2 instructions to each judge via SendMessage
   - Each judge already has its own R1 in context (no truncation needed)
   - Each judge receives other judges' verdicts (full JSON, not truncated)
                               |
-Phase 2: Judges wake up for Round 2 (--debate only)
+Phase 2: Judges wake up for Round 2 (--adversarial only)
   - Same judge instances as R1 (not re-spawned)
+  - Each judge processes via SendMessage:
     - Other judges' full R1 JSON verdicts
     - Steel-manning rebuttal prompt
     - Branch: disagreed OR agreed
@@ -24,8 +29,9 @@ Phase 2: Judges wake up for Round 2 (--debate only)
                               |
                     Collect all R2 verdicts
                               |
-Phase 3: Consolidation (uses R2 verdicts when --debate)
+Phase 3: Consolidation (uses R2 verdicts when --adversarial)
                               |
+Phase 4: shutdown_request each judge, TeamDelete()
 ```
 
 ## Round 2 via Agent Messaging
@@ -56,6 +62,7 @@ For each judge:
 
 Since judges stay alive, truncation is no longer needed for a judge's **own** R1 verdict -- it's already in their context.
 
+For **other judges' verdicts** sent via SendMessage, include the full JSON verdict block:
 
 ```json
 {
@@ -95,9 +102,9 @@ Before reviewing other judges' verdicts in R2:
 
 ## Cost and Latency
 
-`--debate` adds R2 latency but **reduces spawn overhead** vs the old re-spawn approach:
+`--adversarial` adds R2 latency but **reduces spawn overhead** vs the old re-spawn approach:
 - **Agents spawned:** N judges total (same instances for both rounds, not 2N)
 - **Wall time:** R1 time + R2 time (sequential rounds, but R2 is faster -- no spawn delay)
 - **With --mixed:** Only Claude judges get R2. Codex agents run once (Bash-spawned, cannot join teams). For consolidation, use Claude R2 verdicts + Codex R1 verdicts for consensus computation.
 - **With --explorers:** Explorers run in R1 only. R2 cost = judge processing time (no explorer multiplication).
-- **Non-verdict modes:** `--debate` is only supported with validate mode. If combined with brainstorm or research, exit with error: "Error: --debate is only supported with validate mode. Debate requires PASS/WARN/FAIL verdicts."
+- **Non-verdict modes:** `--adversarial` is only supported with verdict mode. If combined with `--mode=brainstorm` or `--mode=debate`, exit with error: "Error: --adversarial is only supported with verdict mode. The adversarial round requires PASS/WARN/FAIL verdicts."

@@ -35,7 +35,7 @@
 
 ## Adversarial Debate Review
 
-**User says:** `/council --debate validate the auth system`
+**User says:** `/council --adversarial validate the auth system`
 
 **What happens:**
 1. Agent spawns 2 judges (runtime-native backend) with independent perspectives

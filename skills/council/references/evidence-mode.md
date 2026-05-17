@@ -12,7 +12,7 @@
 /council --tdd validate this bead description      # --tdd is an alias for --evidence
 ```
 
-Compatible with every mode (`validate`, `brainstorm`, `research`) and every backend (`--quick`, default, `--deep`, `--mixed`, `--debate`).
+Compatible with every mode (`validate`, `brainstorm`, `research`) and every backend (`--quick`, default, `--deep`, `--mixed`, `--adversarial`).
 
 ## What changes in the judge prompts
 

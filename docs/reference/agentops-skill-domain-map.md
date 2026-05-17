@@ -17,7 +17,7 @@ This is a structural heuristic, not a product verdict.
 
 | Signal | Result |
 |---|---:|
-| Skills audited | 77 |
+| Skills audited | 78 |
 | Average score | 13.1 / 30 |
 | S-rated skills | 0 |
 | A-rated skills | 0 |
@@ -62,6 +62,7 @@ Disposition meanings:
 | `complexity` | BC2 Validation | domain | update | Generator for refactor work; add self-test and threshold evidence. |
 | `converter` | BC4 Factory | generic | merge-review | Keep if it owns cross-runtime packaging distinct from skill-builder. |
 | `council` | BC2 Validation | domain | update | Core judgment gate; strengthen scenario and verdict self-test. |
+| `expert-council` | BC2 Validation | domain | merge-review | Absorbed into `council` as `--mode=debate`; thin alias kept one release. |
 | `crank` | BC3 Loop | domain | refactor | Wave executor; align with vertical-slice and conflict-free wave contract. |
 | `curate` | BC1 Corpus | supporting | cut-review | Overlaps compile/forge/harvest; retain only if unique curation lane remains. |
 | `deps` | BC2 Validation | driven-adapter | update | Dependency risk generator; add threshold and no-network fallback tests. |

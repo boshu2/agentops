@@ -1,17 +1,11 @@
 # expert-council
 
-Convene named expert personas to adversarially debate and decide a hard question, then tally a binding score matrix.
+Alias. `expert-council` has been absorbed into `council` as its `debate` mode.
 
 ## Codex Execution Profile
 
-1. Treat `skills/expert-council/SKILL.md` as the canonical contract.
-2. Confirm the 2-4 persona slate with the operator before spawning anything.
-3. Run the dueling route in order: independent verdict → 0-1000 cross-scoring → the reveal → score-matrix synthesis.
-4. Spawn persona agents via `spawn_agent` (or NTM panes); each persona reads `BRIEFING.md` from disk.
+1. Route immediately to `$council --mode=debate` with the same arguments — do not run a separate workflow.
+2. The canonical contract is `skills-codex/council/SKILL.md` (`## Modes`) and `skills-codex/council/references/dueling-route.md`.
+3. `dueling-idea-wizards` maps to `$council --mode=debate --focus=ideas`.
 
-## Guardrails
-
-1. The personas decide; you only count — keep your opinion to a meta-analysis section.
-2. Never skip the reveal — it is where the concessions happen.
-3. Resolve conflict by the score matrix; keep dissent verbatim, never averaged.
-4. Persist all round artifacts to `.agents/council/<topic>-<date>/`.
+This thin alias is kept for one release; invoke `$council --mode=debate` directly.

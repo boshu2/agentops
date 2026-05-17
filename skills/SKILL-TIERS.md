@@ -235,7 +235,7 @@ These are how skills chain in practice:
 | **review** | judgment | Review incoming PRs, agent-generated changes, or diffs — SCORED checklist |
 | **design** | judgment | Product validation gate — checks goal alignment, persona fit, competitive differentiation before discovery |
 | **red-team** | judgment | Persona-based adversarial validation — probe docs and skills from constrained user perspectives |
-| **expert-council** | judgment | Adversarial expert council — named personas duel and cross-score to decide a hard question |
+| **expert-council** | judgment | Alias (1 release) — routes to `/council --mode=debate`; adversarial named-persona duel |
 
 **Execution:**
 

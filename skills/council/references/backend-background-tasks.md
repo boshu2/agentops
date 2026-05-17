@@ -119,7 +119,7 @@ This is lossy — partial work may be lost.
 ## Key Rules
 
 1. **Filesystem is the only communication channel** — agents write files, lead reads files
-2. **No messaging = no debate** — `--debate` is unavailable with this backend
+2. **No messaging = no debate** — `--adversarial` is unavailable with this backend
 3. **No retry = must re-spawn** — failed agents get a fresh `Task` call, not a message
 4. **Always check result files** — `TaskOutput` completion doesn't guarantee the agent wrote its file
 5. **Prefer native teams** — this backend is strictly inferior; use it only as last resort

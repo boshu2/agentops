@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-17T15:10:14Z",
+  "generated_at": "2026-05-17T21:51:32Z",
   "summary": {
-    "skills": 77,
+    "skills": 78,
     "hooks": 43,
     "knowledge_stores": 4,
     "job_types": 14,
@@ -313,7 +313,7 @@
         "path": "skills/council/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 30
+        "reference_count": 32
       },
       {
         "name": "design",
@@ -322,6 +322,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 3
+      },
+      {
+        "name": "expert-council",
+        "tier": "judgment",
+        "path": "skills/expert-council/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "post-mortem",
