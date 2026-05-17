@@ -1,0 +1,17 @@
+{
+  "schema_version": "scenario-results.v1",
+  "run_id": "run-2026-05-17-005",
+  "iteration": 0,
+  "generated_at": "2026-05-17T13:00:00Z",
+  "results": [
+    {
+      "scenario_id": "s-2026-05-17-006",
+      "directive_id": "D_Scenario_Gate",
+      "score": 0.9,
+      "threshold": 0.8,
+      "verdict": "pass",
+      "judged_at": "2026-05-17T12:59:00Z",
+      "evidence": [".agents/rpi/phase-3-result.json"]
+    }
+  ]
+}
