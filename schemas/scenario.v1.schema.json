@@ -15,6 +15,11 @@
             "pattern": "^(s-\\d{4}-\\d{2}-\\d{2}-\\d{3}|auto-.+)$",
             "description": "Unique scenario identifier (e.g., s-2026-04-05-001 for human-authored, auto-na-n5i.1 for agent-built)"
         },
+        "directive_id": {
+            "type": "string",
+            "pattern": "^d-[a-z0-9][a-z0-9-]*$",
+            "description": "Optional stable ID of the GOALS.md directive this scenario satisfies (the executable-spec link). Absent for ad hoc holdout scenarios not linked to a directive; see docs/adr/ADR-0003."
+        },
         "version": {
             "type": "integer",
             "const": 1,
@@ -36,6 +41,21 @@
         "expected_outcome": {
             "type": "string",
             "description": "What a satisfied user would observe when this scenario passes"
+        },
+        "given": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Optional Gherkin Given steps (preconditions in domain terms), harmonized with docs/templates/intent-issue.md. Consumed by 'ao goals render' (F4.4) to emit real Gherkin."
+        },
+        "when": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Optional Gherkin When steps (the actions the actor takes)."
+        },
+        "then": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Optional Gherkin Then steps (observable outcomes that prove satisfaction)."
         },
         "acceptance_vectors": {
             "type": "array",
@@ -66,8 +86,8 @@
             "type": "number",
             "minimum": 0,
             "maximum": 1,
-            "default": 0.7,
-            "description": "Overall satisfaction score threshold for scenario to pass"
+            "default": 0.8,
+            "description": "Overall satisfaction score threshold for scenario to pass. Default 0.8 matches the 'ao scenario add' CLI default (scenario_add.go)."
         },
         "scope": {
             "type": "object",

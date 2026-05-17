@@ -333,3 +333,49 @@ func withScenarioClock(t *testing.T, now time.Time) {
 		scenarioAddNow = orig
 	})
 }
+
+// TestScenarioSchema_ExecutableSpecFields locks the scenario.v1 schema contract
+// after F1.1: directive_id + given/when/then are accepted, additionalProperties
+// stays false (so unknown keys are still rejected), and the satisfaction
+// threshold default is reconciled with the CLI default (0.8).
+func TestScenarioSchema_ExecutableSpecFields(t *testing.T) {
+	data, err := os.ReadFile(filepath.Join("..", "..", "..", "schemas", "scenario.v1.schema.json"))
+	if err != nil {
+		t.Fatalf("reading scenario schema: %v", err)
+	}
+	var schema struct {
+		AdditionalProperties bool `json:"additionalProperties"`
+		Properties           map[string]struct {
+			Type    string          `json:"type"`
+			Pattern string          `json:"pattern"`
+			Default json.RawMessage `json:"default"`
+		} `json:"properties"`
+	}
+	if err := json.Unmarshal(data, &schema); err != nil {
+		t.Fatalf("parsing scenario schema: %v", err)
+	}
+
+	if schema.AdditionalProperties {
+		t.Error("scenario schema must keep additionalProperties:false")
+	}
+
+	did, ok := schema.Properties["directive_id"]
+	if !ok {
+		t.Fatal("scenario schema missing directive_id property")
+	}
+	if did.Pattern != "^d-[a-z0-9][a-z0-9-]*$" {
+		t.Errorf("directive_id pattern = %q, want ^d-[a-z0-9][a-z0-9-]*$", did.Pattern)
+	}
+
+	for _, key := range []string{"given", "when", "then"} {
+		p, ok := schema.Properties[key]
+		if !ok || p.Type != "array" {
+			t.Errorf("scenario schema %q property missing or not an array (type=%q ok=%v)", key, p.Type, ok)
+		}
+	}
+
+	st, ok := schema.Properties["satisfaction_threshold"]
+	if !ok || string(st.Default) != "0.8" {
+		t.Errorf("satisfaction_threshold default = %q, want 0.8", string(st.Default))
+	}
+}

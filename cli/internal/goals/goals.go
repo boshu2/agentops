@@ -52,6 +52,12 @@ type Directive struct {
 	Title       string `json:"title" yaml:"-"`
 	Description string `json:"description" yaml:"-"`
 	Steer       string `json:"steer" yaml:"-"`
+	// StableID is the directive's stable "**Directive ID:**" attribute, parsed
+	// via the non-lossy patcher. Empty when the directive declares none.
+	StableID string `json:"directive_id,omitempty" yaml:"-"`
+	// Scenarios lists the executable-spec scenario IDs linked to this directive
+	// via its "**Scenarios:**" attribute line, parsed via the non-lossy patcher.
+	Scenarios []string `json:"scenarios,omitempty" yaml:"-"`
 }
 
 // GoalFile is the top-level structure of a goals file (YAML or Markdown).
