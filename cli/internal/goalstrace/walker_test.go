@@ -2,6 +2,7 @@ package goalstrace
 
 import (
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -289,6 +290,142 @@ func TestWalk_AllSixEdgeTypesDefined(t *testing.T) {
 			t.Errorf("EdgeTypes()[%d] = %q, want %q", i, got[i], w)
 		}
 	}
+}
+
+// TestWalk_AllSixEdgeTypesOccurInConnectedWalk verifies that a full walk over
+// the fixture tree (with beads and artifacts) emits at least one edge of each
+// of the six ADR-0005 edge types in a single connected run, not merely that the
+// constants are declared.
+func TestWalk_AllSixEdgeTypesOccurInConnectedWalk(t *testing.T) {
+	g, err := Walk(Options{
+		ProjectRoot: fixtureRoot(t),
+		Beads:       NewStaticBeadQuerier(true, fixtureBeads()),
+	})
+	if err != nil {
+		t.Fatalf("Walk error: %v", err)
+	}
+	seen := map[EdgeType]bool{}
+	for _, e := range g.Edges {
+		seen[e.Type] = true
+	}
+	for _, et := range EdgeTypes() {
+		if !seen[et] {
+			t.Errorf("edge type %q never appeared in the connected walk; edges=%+v", et, g.Edges)
+		}
+	}
+}
+
+// TestWalk_BrokenDirectiveBackrefIsError verifies that a scenario whose
+// directive_id back-reference names an unknown directive produces a
+// broken_directive_backref error on its reverse edge.
+func TestWalk_BrokenDirectiveBackrefIsError(t *testing.T) {
+	root := t.TempDir()
+
+	// Write a minimal GOALS.md with one directive.
+	goalsContent := `# Goals
+
+## Directives
+
+### 1. Known directive
+
+**Directive ID:** d-known
+**Steer:** known
+`
+	if err := os.WriteFile(filepath.Join(root, "GOALS.md"), []byte(goalsContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Write a scenario that back-references a directive that does NOT exist.
+	specDir := filepath.Join(root, "spec", "scenarios")
+	if err := os.MkdirAll(specDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sf := `{"id":"s-2026-05-17-007","directive_id":"d-does-not-exist","goal":"orphan","status":"active"}`
+	if err := os.WriteFile(filepath.Join(specDir, "s-2026-05-17-007.json"), []byte(sf), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	g, err := Walk(Options{
+		ProjectRoot: root,
+		Beads:       NewStaticBeadQuerier(false, nil),
+	})
+	if err != nil {
+		t.Fatalf("Walk error: %v", err)
+	}
+
+	// Find the reverse-link edge emitted for the broken back-reference.
+	var brokenEdge *Edge
+	for i := range g.Edges {
+		e := &g.Edges[i]
+		if e.Type == EdgeDirectiveHasScenario && e.ToID == "s-2026-05-17-007" {
+			brokenEdge = e
+			break
+		}
+	}
+	if brokenEdge == nil {
+		t.Fatalf("expected a directive_has_scenario edge for s-2026-05-17-007; edges=%+v", g.Edges)
+	}
+	if len(brokenEdge.Defects) == 0 {
+		t.Fatalf("expected at least 1 defect on the broken-backref edge, got none")
+	}
+	found := false
+	for _, d := range brokenEdge.Defects {
+		if d.Code == DefectBrokenDirectiveBackref && d.Severity == SeverityError {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("broken_directive_backref error defect not found; defects=%+v", brokenEdge.Defects)
+	}
+}
+
+// TestBuilderAddNode_DeduplicatesKeepingFirstLabelAndPath verifies the builder
+// deduplication contract: adding a node with the same ID a second time keeps
+// the first non-empty label and path but does not create a duplicate node.
+func TestBuilderAddNode_DeduplicatesKeepingFirstLabelAndPath(t *testing.T) {
+	b := newBuilder()
+	b.addNode(Node{ID: "d-foo", Type: NodeDirective, Label: "first label", Path: "GOALS.md"})
+	b.addNode(Node{ID: "d-foo", Type: NodeDirective, Label: "second label", Path: "other.md"})
+	b.addNode(Node{ID: "d-foo", Type: NodeDirective}) // empty label+path variant
+
+	g := b.graph()
+	var fooNodes []Node
+	for _, n := range g.Nodes {
+		if n.ID == "d-foo" {
+			fooNodes = append(fooNodes, n)
+		}
+	}
+	if len(fooNodes) != 1 {
+		t.Fatalf("builder emitted %d nodes for d-foo, want exactly 1", len(fooNodes))
+	}
+	if fooNodes[0].Label != "first label" {
+		t.Errorf("Label = %q, want first label (first write wins)", fooNodes[0].Label)
+	}
+	if fooNodes[0].Path != "GOALS.md" {
+		t.Errorf("Path = %q, want GOALS.md (first write wins)", fooNodes[0].Path)
+	}
+}
+
+// TestBuilderAddNode_FillsEmptyLabelFromSubsequentAdd verifies that the builder
+// fills an empty label from the second add when the first was empty.
+func TestBuilderAddNode_FillsEmptyLabelFromSubsequentAdd(t *testing.T) {
+	b := newBuilder()
+	b.addNode(Node{ID: "d-bar", Type: NodeDirective}) // no label
+	b.addNode(Node{ID: "d-bar", Type: NodeDirective, Label: "filled label", Path: "GOALS.md"})
+
+	g := b.graph()
+	for _, n := range g.Nodes {
+		if n.ID == "d-bar" {
+			if n.Label != "filled label" {
+				t.Errorf("Label = %q, want filled label (second add fills empty)", n.Label)
+			}
+			if n.Path != "GOALS.md" {
+				t.Errorf("Path = %q, want GOALS.md", n.Path)
+			}
+			return
+		}
+	}
+	t.Fatal("d-bar node not found")
 }
 
 // contains is a small substring helper to keep assertions readable.
