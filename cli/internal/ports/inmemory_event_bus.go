@@ -21,6 +21,12 @@ import (
 // Publish acquires the mutex briefly to snapshot the handler slice,
 // then releases it before calling handlers (so handlers can
 // Subscribe/cancel during dispatch without deadlock).
+//
+// Caveat: handlers run while holding their subscription's mu (so
+// cancel can wait an in-flight call out). A handler that calls
+// Publish synchronously on a topic it is itself subscribed to would
+// re-enter that same non-recursive mu and self-deadlock. Handlers
+// that need to emit follow-up events must do so asynchronously.
 type InMemoryEventBus struct {
 	mu          sync.Mutex
 	subscribers map[string][]*eventSubscription

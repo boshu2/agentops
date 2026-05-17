@@ -4,10 +4,71 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"sync"
 	"testing"
 
 	"github.com/boshu2/agentops/cli/internal/gascity"
 )
+
+// TestGasCitySessionStreamRaceWithSessionMethods exercises the background
+// Stream goroutine concurrently with caller-goroutine session methods. The
+// goroutine mutates s.ref on every event while Ref() and TerminalState()
+// read and write the same struct. Without the ref mutex this trips the
+// race detector. Run with -race.
+func TestGasCitySessionStreamRaceWithSessionMethods(t *testing.T) {
+	fake := &fakeGasCityWorkerClient{
+		session: gascity.Session{ID: "sess_race", State: "running"},
+		stream: &fakeGasCityWorkerStream{
+			infinite: true,
+			frames: []gascity.EventStreamFrame{{
+				ID: "evt-1",
+				CityEvent: &gascity.EventStreamEnvelope{
+					Seq:     1,
+					Type:    "session.output",
+					Subject: "sess_race",
+					Message: "tick",
+					TS:      "2026-04-28T10:00:00Z",
+				},
+			}},
+		},
+	}
+	session := &GasCitySession{
+		client:   fake,
+		cityName: "agentops",
+		ref:      SessionRef{Provider: ProviderGasCity, SessionID: "sess_race", Status: StatusRunning},
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	events, err := session.Stream(ctx, StreamOptions{})
+	if err != nil {
+		t.Fatalf("Stream: %v", err)
+	}
+
+	var drain sync.WaitGroup
+	drain.Add(1)
+	go func() {
+		defer drain.Done()
+		for range events {
+		}
+	}()
+
+	const iterations = 2000
+	for i := 0; i < iterations; i++ {
+		if got := session.Ref(); got.SessionID != "sess_race" {
+			t.Fatalf("session ref corrupted at iter %d: %#v", i, got)
+		}
+		if _, err := session.TerminalState(ctx); err != nil {
+			t.Fatalf("TerminalState: %v", err)
+		}
+	}
+
+	cancel()
+	drain.Wait()
+
+	if got := session.Ref().SessionID; got != "sess_race" {
+		t.Fatalf("final session id = %q, want sess_race", got)
+	}
+}
 
 func TestGasCityAgentWorkerStartsCodexSessionAndStreamsTerminal(t *testing.T) {
 	fake := &fakeGasCityWorkerClient{
@@ -281,14 +342,18 @@ func (f *fakeGasCityWorkerClient) SessionTranscript(context.Context, string, str
 }
 
 type fakeGasCityWorkerStream struct {
-	frames []gascity.EventStreamFrame
-	index  int
-	closed bool
+	frames   []gascity.EventStreamFrame
+	index    int
+	closed   bool
+	infinite bool
 }
 
 func (s *fakeGasCityWorkerStream) NextEvent() (gascity.EventStreamFrame, error) {
 	if s.index >= len(s.frames) {
-		return gascity.EventStreamFrame{}, io.EOF
+		if !s.infinite || len(s.frames) == 0 {
+			return gascity.EventStreamFrame{}, io.EOF
+		}
+		s.index = 0
 	}
 	frame := s.frames[s.index]
 	s.index++

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/gascity"
@@ -216,16 +217,52 @@ func (w *GasCityWorker) Attach(ctx context.Context, ref SessionRef) (AgentSessio
 }
 
 // GasCitySession is a durable AgentSession backed by one GasCity session.
+// GasCitySession tracks one provider session. The background goroutine
+// spawned by Stream mutates the ref's Status/EventCursor/ProviderRequestID
+// concurrently with caller-goroutine methods (Close, TerminalState, ...),
+// so mu guards every read and write of those mutable ref fields. The other
+// fields (client, cityName, transcriptFormat, alias, ref.SessionID) are
+// write-once at construction and read without the lock.
 type GasCitySession struct {
 	client           GasCityClient
 	cityName         string
 	transcriptFormat string
+	mu               sync.Mutex
 	ref              SessionRef
 	alias            string
 }
 
 func (s *GasCitySession) Ref() SessionRef {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return s.ref
+}
+
+// recordRequestID stores a non-empty provider request id under the ref lock.
+func (s *GasCitySession) recordRequestID(id string) {
+	if id == "" {
+		return
+	}
+	s.mu.Lock()
+	s.ref.ProviderRequestID = id
+	s.mu.Unlock()
+}
+
+// recordStatus stores the session status under the ref lock.
+func (s *GasCitySession) recordStatus(status SessionStatus) {
+	s.mu.Lock()
+	s.ref.Status = status
+	s.mu.Unlock()
+}
+
+// recordCursor stores a non-empty event cursor under the ref lock.
+func (s *GasCitySession) recordCursor(cursor string) {
+	if cursor == "" {
+		return
+	}
+	s.mu.Lock()
+	s.ref.EventCursor = cursor
+	s.mu.Unlock()
 }
 
 func (s *GasCitySession) Nudge(ctx context.Context, req NudgeRequest) error {
@@ -237,9 +274,7 @@ func (s *GasCitySession) Nudge(ctx context.Context, req NudgeRequest) error {
 		Message: message,
 		Intent:  "follow_up",
 	})
-	if meta.RequestID != "" {
-		s.ref.ProviderRequestID = meta.RequestID
-	}
+	s.recordRequestID(meta.RequestID)
 	return err
 }
 
@@ -252,11 +287,9 @@ func (s *GasCitySession) Cancel(ctx context.Context, req CancelRequest) error {
 		Message: message,
 		Intent:  "interrupt_now",
 	})
-	if meta.RequestID != "" {
-		s.ref.ProviderRequestID = meta.RequestID
-	}
+	s.recordRequestID(meta.RequestID)
 	if err == nil {
-		s.ref.Status = StatusCancelled
+		s.recordStatus(StatusCancelled)
 	}
 	return err
 }
@@ -265,11 +298,9 @@ func (s *GasCitySession) Cancel(ctx context.Context, req CancelRequest) error {
 // evidence is flushed for one-shot AgentWorker jobs.
 func (s *GasCitySession) Close(ctx context.Context) error {
 	meta, err := s.client.CloseSession(ctx, s.cityName, s.ref.SessionID)
-	if meta.RequestID != "" {
-		s.ref.ProviderRequestID = meta.RequestID
-	}
+	s.recordRequestID(meta.RequestID)
 	if err == nil {
-		s.ref.Status = StatusCompleted
+		s.recordStatus(StatusCompleted)
 	}
 	return err
 }
@@ -279,9 +310,7 @@ func (s *GasCitySession) Stream(ctx context.Context, opts StreamOptions) (<-chan
 	if err != nil {
 		return nil, err
 	}
-	if meta.RequestID != "" {
-		s.ref.ProviderRequestID = meta.RequestID
-	}
+	s.recordRequestID(meta.RequestID)
 	ch := make(chan Event)
 	go func() {
 		defer close(ch)
@@ -296,11 +325,9 @@ func (s *GasCitySession) Stream(ctx context.Context, opts StreamOptions) (<-chan
 				continue
 			}
 			workerEvent := gasCityFrameToAgentEvent(frame)
-			if workerEvent.Cursor != "" {
-				s.ref.EventCursor = workerEvent.Cursor
-			}
+			s.recordCursor(workerEvent.Cursor)
 			if workerEvent.State.Status != "" {
-				s.ref.Status = workerEvent.State.Status
+				s.recordStatus(workerEvent.State.Status)
 			}
 			select {
 			case <-ctx.Done():
@@ -319,9 +346,7 @@ func (s *GasCitySession) Transcript(ctx context.Context) (Transcript, error) {
 	transcript, meta, err := s.client.SessionTranscript(ctx, s.cityName, s.ref.SessionID, gascity.TranscriptOptions{
 		Format: s.transcriptFormat,
 	})
-	if meta.RequestID != "" {
-		s.ref.ProviderRequestID = meta.RequestID
-	}
+	s.recordRequestID(meta.RequestID)
 	if err != nil {
 		return Transcript{}, err
 	}
@@ -332,20 +357,19 @@ func (s *GasCitySession) Artifacts(ctx context.Context) ([]Artifact, error) {
 	transcript, meta, err := s.client.SessionTranscript(ctx, s.cityName, s.ref.SessionID, gascity.TranscriptOptions{
 		Format: s.transcriptFormat,
 	})
-	if meta.RequestID != "" {
-		s.ref.ProviderRequestID = meta.RequestID
-	}
+	s.recordRequestID(meta.RequestID)
 	if err != nil {
 		return nil, err
 	}
-	return convertGasCityArtifacts(s.ref, transcript.Artifacts), nil
+	s.mu.Lock()
+	ref := s.ref
+	s.mu.Unlock()
+	return convertGasCityArtifacts(ref, transcript.Artifacts), nil
 }
 
 func (s *GasCitySession) TerminalState(ctx context.Context) (TerminalState, error) {
 	session, meta, err := s.client.GetSession(ctx, s.cityName, s.ref.SessionID, gascity.SessionGetOptions{Peek: true})
-	if meta.RequestID != "" {
-		s.ref.ProviderRequestID = meta.RequestID
-	}
+	s.recordRequestID(meta.RequestID)
 	if err != nil {
 		return terminalStateForGasCityError(err), err
 	}
@@ -353,7 +377,7 @@ func (s *GasCitySession) TerminalState(ctx context.Context) (TerminalState, erro
 		SessionState:  session.State,
 		SessionStatus: session.Status,
 	}))
-	s.ref.Status = state.Status
+	s.recordStatus(state.Status)
 	return state, nil
 }
 
