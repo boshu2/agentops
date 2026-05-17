@@ -1072,9 +1072,8 @@ jobs:
           echo "✅ No dangerous patterns"
 
   security-toolchain-gate:
-    name: security-toolchain-gate (advisory)
+    name: security-toolchain-gate
     runs-on: ubuntu-latest
-    continue-on-error: true
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
