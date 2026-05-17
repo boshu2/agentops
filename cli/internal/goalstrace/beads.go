@@ -110,6 +110,34 @@ func NewStaticBeadQuerier(available bool, beads []beadRecord) BeadQuerier {
 func (s staticBeadQuerier) Available() bool              { return s.available }
 func (s staticBeadQuerier) Beads() ([]beadRecord, error) { return s.beads, nil }
 
+// BeadInput is an exported, package-external description of a bead, used by
+// callers outside this package (e.g. CLI tests) to build a deterministic
+// BeadQuerier without reaching the unexported beadRecord type.
+type BeadInput struct {
+	ID          string
+	Title       string
+	Description string
+	Notes       string
+	Status      string
+}
+
+// NewStaticBeadQuerierFromInputs returns a BeadQuerier serving the given bead
+// inputs. It is the exported seam CLI commands use to inject deterministic
+// bead data into the walker without depending on a real bd binary.
+func NewStaticBeadQuerierFromInputs(available bool, inputs []BeadInput) BeadQuerier {
+	beads := make([]beadRecord, 0, len(inputs))
+	for _, in := range inputs {
+		beads = append(beads, beadRecord{
+			ID:          in.ID,
+			Title:       in.Title,
+			Description: in.Description,
+			Notes:       in.Notes,
+			Status:      in.Status,
+		})
+	}
+	return staticBeadQuerier{available: available, beads: beads}
+}
+
 // claimedScenarios extracts scenario IDs a bead claims, partitioned into
 // explicit (high-confidence: from a "Scenarios:" line) and heuristic
 // (low-confidence: free-text token elsewhere) matches per ADR-0005 §2.3.
