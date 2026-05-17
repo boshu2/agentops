@@ -100,6 +100,12 @@ first failing test against the port interface, not an adapter internal.
   and generated artifacts first, skill contracts second, explanatory docs third.
 - Prefer the repo's existing patterns and validation scripts over new policy
   surfaces or ad hoc checks.
+- A slice that adds or changes an `ao` CLI surface follows the agent-ergonomic
+  CLI contract (GOALS.md Directive 13): read-side commands expose `--json` with
+  stdout-as-data / stderr-as-diagnostics separation, errors name the exact
+  corrective command, unknown flags return a typo hint, and machine-readable
+  introspection stays consistent with `ao capabilities` / `ao robot-docs`.
+  Mirror the doctor surface in `cli/cmd/ao/doctor_surface.go`.
 - Revert or narrow a slice that expands beyond its bead, crosses immutable scope,
   crosses a bounded-context boundary, or produces no measurable improvement after
   validation.

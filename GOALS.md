@@ -118,6 +118,14 @@ On 2026-05-07, routine maintenance wiped most of `.agents/` runtime subdirs (onl
 
 **Tags:** corpus-state
 
+### 13. Agent-ergonomic ao CLI surface
+
+The `ao` CLI's primary user is an AI agent: the first command an agent guesses must work or be redirected with a useful hint. Every new or changed `ao` command surface follows the agent-ergonomics contract — read-side commands expose `--json` with stdout-as-data / stderr-as-diagnostics separation; the CLI stays self-describing via `ao capabilities` (machine-readable contract) and `ao robot-docs` (agent handbook); parent commands emit a JSON subcommand listing under `--json` instead of human help; an unknown flag returns a Levenshtein typo hint naming the corrected flag; and every error names the exact command or flag the agent should have used instead of a bare "see --help". The reference surfaces are `cli/cmd/ao/capabilities.go`, `cli/cmd/ao/robot_docs.go`, `cli/cmd/ao/flag_suggest.go`, and `cli/cmd/ao/group_json.go`; the doctor surface (`cli/cmd/ao/doctor_surface.go`) is the precedent the top-level surfaces mirror.
+
+**Progress:** Top-level `ao capabilities` and `ao robot-docs` shipped (0 → 2 introspection surfaces); CLI-wide flag-typo correction, required-flag hints, parent-command JSON listing, and corrective-command error messages landed across `autodev` / `claim` / `citation` / `constraint`. Remaining gap: `--json` fidelity on read-side leaf commands is uneven (some still emit partial/human output), and the doctor extended exit-code dictionary is not shared by other diagnostic commands.
+
+**Steer:** increase (read-side `ao` commands honoring `--json` + error-teaches)
+
 ## Three-Gap Contract Proof Surface
 
 AgentOps defines a three-gap contract ([context lifecycle](docs/context-lifecycle.md)) covering the failure modes that persist after prompt construction and agent routing. Honesty rule: gates only appear in the **Currently enforcing** column when they (a) run in CI/pre-push/release automation AND (b) reliably go green in single-session work. Gates that are declared but not yet enforced — usually because they measure cross-session or corpus-level state — sit in the **Roadmap** column.
