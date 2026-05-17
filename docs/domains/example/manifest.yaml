@@ -1,0 +1,82 @@
+# Example domain-slice manifest — illustrates all fields.
+# Validates against schemas/domain-slice-manifest.v1.schema.json.
+# See docs/adr/ADR-0004-domain-slice-manifest-contract.md.
+#
+# This example uses the 'goals' domain as a worked illustration.
+# To create a real domain manifest: copy this file to docs/domains/<name>/manifest.yaml
+# and fill in the values appropriate for your bounded context.
+
+schema_version: 1
+
+# Short machine-readable name — matches the directory under docs/domains/
+domain: example
+
+# Semver for this manifest (not the implementation). Increment on structural changes.
+version: 0.1.0
+
+# One sentence: what this slice owns and explicitly does NOT own.
+bounded_context: >
+  Owns GOALS.md directive lifecycle, ao goals subcommands, and the
+  directive-to-scenario executable-spec link; does NOT own scenario holdout
+  isolation, RPI phase scheduling, or skill frontmatter.
+
+# Stable directive IDs from GOALS.md whose acceptance this slice owns.
+# Pattern: d-<slug>. See GOALS.md for the canonical list.
+directive_ids:
+  - d-goals-measure
+  - d-goals-scenarios
+
+# Promoted spec scenario IDs from spec/scenarios/ that constitute delivery
+# of the directives above. See ADR-0003 for the promoted_spec lifecycle.
+scenario_ids:
+  - s-2026-05-17-001
+  - s-2026-05-17-002
+
+# Repo-relative paths forming the primary implementation surface.
+# ao rpi phased --domain loads these as agent context.
+context_roots:
+  - cli/cmd/ao/goals.go
+  - cli/cmd/ao/goals_scenarios.go
+  - cli/internal/goals/
+  - spec/scenarios/
+  - schemas/scenario.v1.schema.json
+  - GOALS.md
+
+# Read-fence allow list. Agents working in this slice may read files
+# matching these globs (gitignore syntax).
+allowed_read_globs:
+  - cli/cmd/ao/goals*.go
+  - cli/internal/goals/**
+  - spec/scenarios/**
+  - schemas/scenario.v1.schema.json
+  - schemas/domain-slice-manifest.v1.schema.json
+  - docs/adr/ADR-0003-*.md
+  - docs/adr/ADR-0004-*.md
+  - docs/domains/**
+  - GOALS.md
+
+# Read-fence deny list. Denied globs take precedence over allowed_read_globs.
+# Use this to keep agents away from unrelated implementation details.
+denied_read_globs:
+  - .agents/holdout/**
+  - cli/cmd/ao/rpi_*.go
+  - cli/internal/search/**
+
+# Ordered validation steps run after each implementation phase.
+# All commands run from repo root unless working_dir is specified.
+validation_commands:
+  - label: build
+    command: "cd cli && go build ./cmd/ao/..."
+    working_dir: cli
+    timeout_seconds: 60
+  - label: unit-tests
+    command: "cd cli && go test ./cmd/ao/... ./internal/goals/..."
+    working_dir: cli
+    timeout_seconds: 120
+  - label: lint
+    command: "cd cli && go vet ./cmd/ao/... ./internal/goals/..."
+    working_dir: cli
+    timeout_seconds: 30
+
+# Team or person responsible for this domain slice.
+owner: maintainers
