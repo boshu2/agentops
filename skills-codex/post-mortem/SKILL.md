@@ -621,6 +621,14 @@ draft learning to `.agents/learnings/YYYY-MM-DD-<slice>-iter-delta.md`.
 The output learning carries `status: draft` and the run IDs of both iterations;
 human or Tier-3 synthesis promotes it to `status: reviewed`.
 
+**Closing the loop with re-steer.** When the delta shows a directive failing
+chronically, the verdict ledger also drives auto re-steer: `ao goals steer
+recommend` prints policy-driven directive mutations from the same ledger, and
+`ao goals steer apply` writes the chosen mutation to GOALS.md — human-gated, via
+the non-lossy patcher (policy `auto_apply` plus explicit confirmation; ADR-0006).
+The compound retro names *what* regressed; re-steer proposes *how* the directive
+should change. See `skills/goals/SKILL.md`.
+
 ---
 
 ## See Also

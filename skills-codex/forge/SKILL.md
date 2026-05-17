@@ -1,35 +1,8 @@
 ---
 name: forge
 description: Mine transcripts into learnings.
-practices:
-- wiki-knowledge-surface
-- lean-startup
-hexagonal_role: domain
-consumes: []
-produces:
-- .agents/research/*.md
-context_rel:
-- kind: shared-kernel
-  with: standards
-skill_api_version: 1
-user-invocable: false
-context:
-  window: fork
-  intent:
-    mode: task
-  sections:
-    exclude:
-    - TASK
-  intel_scope: full
-metadata:
-  tier: background
-  dependencies: []
-  internal: true
-output_contract: .agents/learnings/*.md, .agents/patterns/*.md
 ---
 # Forge Skill
-
-> **Cross-vendor analog:** the capture half of Anthropic Managed Agents' memory + dreaming pair (May 2026). Forge mines transcripts; `/dream` curates between sessions. Off the API, local, cross-vendor.
 
 **Typically runs automatically via SessionEnd hook.**
 
@@ -54,7 +27,7 @@ This queues the session for knowledge extraction.
 
 ## Promote Mode
 
-Given `/forge --promote`:
+Given `$forge --promote`:
 
 ### Promote Step 1: Find Pending Files
 
@@ -97,7 +70,7 @@ Queue cleared.
 
 ## Manual Execution
 
-Given `/forge [path]`:
+Given `$forge [path]`:
 
 ### Step 1: Identify Transcript
 
