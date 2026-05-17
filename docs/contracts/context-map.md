@@ -101,7 +101,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### unclassified
 
-- (no unclassified skills)
+- `expert-council` — Alias for /council --mode=debate — adversarial named-persona debate. Triggers: "expert council", "dueling council", "council of <names>". Kept one release.
 
 ## Context relationships
 
