@@ -1,4 +1,4 @@
-// practices: [dora-metrics, lean-startup, bdd]
+// practices: [dora-metrics, lean-startup, bdd-gherkin]
 package main
 
 import (

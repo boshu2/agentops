@@ -1,4 +1,4 @@
-// practices: [bdd, llm-eval-harness]
+// practices: [bdd-gherkin, llm-eval-harness]
 package main
 
 import (

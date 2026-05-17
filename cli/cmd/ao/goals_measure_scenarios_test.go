@@ -1,4 +1,4 @@
-// practices: [tdd, bdd]
+// practices: [tdd, bdd-gherkin]
 package main
 
 import (
