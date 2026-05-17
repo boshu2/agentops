@@ -3,6 +3,7 @@ package goals_test
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -542,6 +543,77 @@ func TestGoalsMeasure_SkippedGoals(t *testing.T) {
 	}
 	if snap.Summary.Score != 100.0 {
 		t.Errorf("Score = %f, want 100.0 (skipped excluded from denominator)", snap.Summary.Score)
+	}
+}
+
+func TestGoalsMeasure_MissingCompileRuntimeArtifactSkips(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	agentsDir := filepath.Join(dir, ".agents")
+	if err := os.MkdirAll(agentsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	repoRoot, err := filepath.Abs(filepath.Join("..", "..", ".."))
+	if err != nil {
+		t.Fatal(err)
+	}
+	healthScript := filepath.Join(repoRoot, "scripts", "check-compile-health.sh")
+	oscillationScript := filepath.Join(repoRoot, "scripts", "check-compile-oscillation.sh")
+	healthCmd := fmt.Sprintf("AGENTS_DIR=%q bash %q", agentsDir, healthScript)
+	oscillationCmd := fmt.Sprintf("AGENTS_DIR=%q bash %q", agentsDir, oscillationScript)
+
+	md := fmt.Sprintf(`# Goals
+
+Mission.
+
+## Gates
+
+| ID | Check | Weight | Description | Tags |
+|----|-------|--------|-------------|------|
+| code-green | %s | 5 | Code gate | |
+| compile-freshness | %s | 4 | Defrag fresh | runtime-artifact |
+| compile-no-oscillation | %s | 4 | No oscillation | runtime-artifact |
+`,
+		"`exit 0`",
+		"`"+healthCmd+"`",
+		"`"+oscillationCmd+"`",
+	)
+	goalsPath := filepath.Join(dir, "GOALS.md")
+	if err := os.WriteFile(goalsPath, []byte(md), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	err = goals.RunMeasure(goals.MeasureOptions{
+		GoalsFile: goalsPath,
+		JSON:      true,
+		Timeout:   10 * time.Second,
+		Stdout:    &buf,
+		SnapDir:   filepath.Join(dir, "baselines"),
+	})
+	if err != nil {
+		t.Fatalf("measure returned error: %v", err)
+	}
+
+	var snap goals.Snapshot
+	if err := json.Unmarshal(buf.Bytes(), &snap); err != nil {
+		t.Fatalf("failed to decode JSON: %v (raw: %s)", err, buf.String())
+	}
+
+	if snap.Summary.Passing != 1 || snap.Summary.Skipped != 2 || snap.Summary.Failing != 0 {
+		t.Fatalf("summary counts = %+v, want 1 pass, 2 skip, 0 fail", snap.Summary)
+	}
+	if snap.Summary.CodeDrivenScore != 100 {
+		t.Fatalf("CodeDrivenScore = %v, want 100", snap.Summary.CodeDrivenScore)
+	}
+	if snap.Summary.RuntimeArtifactTotal != 2 || snap.Summary.RuntimeArtifactFailing != 0 {
+		t.Fatalf("runtime artifact summary = %+v, want 2 total and 0 failing", snap.Summary)
+	}
+	for _, m := range snap.Goals {
+		if strings.HasPrefix(m.GoalID, "compile-") && m.Result != "skip" {
+			t.Fatalf("%s result = %q, want skip; output=%s", m.GoalID, m.Result, m.Output)
+		}
 	}
 }
 
