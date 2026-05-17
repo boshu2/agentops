@@ -277,6 +277,14 @@ func filterPlans(entries []types.PlanManifestEntry, project, status string) []ty
 	return plansPkg.FilterPlans(entries, project, status)
 }
 
+// encodePlansJSON writes v as indented JSON to stdout. It is the shared
+// output path for the read-side plans commands when --json / -o json is set.
+func encodePlansJSON(v any) error {
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(v)
+}
+
 // printPlanEntry prints a single plan entry with optional verbose detail.
 func printPlanEntry(e types.PlanManifestEntry, verbose bool) {
 	sym, ok := planStatusSymbols[e.Status]
@@ -305,6 +313,9 @@ func runPlansList(cmd *cobra.Command, args []string) error {
 	entries, err := loadManifest(manifestPath)
 	if err != nil {
 		if os.IsNotExist(err) {
+			if GetOutput() == "json" {
+				return encodePlansJSON([]types.PlanManifestEntry{})
+			}
 			fmt.Println("No plans registered. Use 'ao plans register <path>' to add plans.")
 			return nil
 		}
@@ -312,6 +323,12 @@ func runPlansList(cmd *cobra.Command, args []string) error {
 	}
 
 	filtered := filterPlans(entries, planProjectPath, planStatus)
+	if GetOutput() == "json" {
+		if filtered == nil {
+			filtered = []types.PlanManifestEntry{}
+		}
+		return encodePlansJSON(filtered)
+	}
 	if len(filtered) == 0 {
 		fmt.Println("No plans match the filter criteria.")
 		return nil
@@ -336,6 +353,9 @@ func runPlansSearch(cmd *cobra.Command, args []string) error {
 	entries, err := loadManifest(manifestPath)
 	if err != nil {
 		if os.IsNotExist(err) {
+			if GetOutput() == "json" {
+				return encodePlansJSON([]types.PlanManifestEntry{})
+			}
 			fmt.Println("No plans registered.")
 			return nil
 		}
@@ -343,6 +363,13 @@ func runPlansSearch(cmd *cobra.Command, args []string) error {
 	}
 
 	matches := plansPkg.SearchPlans(entries, query)
+
+	if GetOutput() == "json" {
+		if matches == nil {
+			matches = []types.PlanManifestEntry{}
+		}
+		return encodePlansJSON(matches)
+	}
 
 	if len(matches) == 0 {
 		fmt.Printf("No plans matching '%s'\n", query)
@@ -690,11 +717,11 @@ func queryBeadsEpics() ([]beadsEpic, error) {
 
 // driftEntry represents a single drift detection
 type driftEntry struct {
-	Type     string
-	PlanName string
-	BeadsID  string
-	Manifest string
-	Beads    string
+	Type     string `json:"type"`
+	PlanName string `json:"plan_name"`
+	BeadsID  string `json:"beads_id"`
+	Manifest string `json:"manifest"`
+	Beads    string `json:"beads"`
 }
 
 // buildBeadsStatusIndex creates a map of epic ID -> status from beads
@@ -751,6 +778,9 @@ func runPlansDiff(cmd *cobra.Command, args []string) error {
 	entries, err := loadManifest(manifestPath)
 	if err != nil {
 		if os.IsNotExist(err) {
+			if GetOutput() == "json" {
+				return encodePlansJSON([]driftEntry{})
+			}
 			fmt.Println("No manifest found. Run 'ao plans register' to create one.")
 			return nil
 		}
@@ -775,6 +805,13 @@ func runPlansDiff(cmd *cobra.Command, args []string) error {
 	// Collect all drifts
 	drifts := detectStatusDrifts(byBeadsID, beadsIndex)
 	drifts = append(drifts, detectOrphanedEntries(entries)...)
+
+	if GetOutput() == "json" {
+		if drifts == nil {
+			drifts = []driftEntry{}
+		}
+		return encodePlansJSON(drifts)
+	}
 
 	if len(drifts) == 0 {
 		fmt.Println("✓ No drift detected. Manifest and beads are in sync.")
