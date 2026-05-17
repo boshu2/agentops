@@ -104,9 +104,7 @@ func printStatus(w interface{ Write([]byte) (int, error) }, l *scope.Lock, asJSO
 		return errors.New("scope: nil lock")
 	}
 	if asJSON {
-		enc := json.NewEncoder(w.(interface {
-			Write(p []byte) (n int, err error)
-		}))
+		enc := json.NewEncoder(w)
 		enc.SetIndent("", "  ")
 		return enc.Encode(l)
 	}
@@ -115,7 +113,7 @@ func printStatus(w interface{ Write([]byte) (int, error) }, l *scope.Lock, asJSO
 		return err
 	}
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("scope: %d frozen director", len(l.FrozenDirs)))
+	fmt.Fprintf(&b, "scope: %d frozen director", len(l.FrozenDirs))
 	if len(l.FrozenDirs) == 1 {
 		b.WriteString("y")
 	} else {

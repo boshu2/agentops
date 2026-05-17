@@ -139,9 +139,9 @@ func renderDomainBoundariesBlock(state *phasedState) string {
 	d := state.DomainManifest
 	var b strings.Builder
 	b.WriteString("## Domain scope\n\n")
-	b.WriteString(fmt.Sprintf("This RPI run is scoped to the **%s** domain slice (%s).\n", d.Domain, d.ManifestPath))
+	fmt.Fprintf(&b, "This RPI run is scoped to the **%s** domain slice (%s).\n", d.Domain, d.ManifestPath)
 	if d.BoundedContext != "" {
-		b.WriteString(fmt.Sprintf("Bounded context: %s\n", d.BoundedContext))
+		fmt.Fprintf(&b, "Bounded context: %s\n", d.BoundedContext)
 	}
 	b.WriteString("\n")
 	writeDomainList(&b, "Owned directives", d.DirectiveIDs)

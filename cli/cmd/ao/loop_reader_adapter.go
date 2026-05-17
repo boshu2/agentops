@@ -69,7 +69,7 @@ func (r *productionLoopReader) readEntries(ctx context.Context) ([]ports.CycleEn
 		}
 		return nil, fmt.Errorf("productionLoopReader open %q: %w", r.path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	out := make([]ports.CycleEntry, 0)
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024) // tolerate large lines

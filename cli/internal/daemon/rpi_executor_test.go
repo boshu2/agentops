@@ -121,10 +121,8 @@ func TestRPIJobExecutorRunJobExecutesPhaseSpec(t *testing.T) {
 	if stub.lastReq.PhaseTimeout != 5*time.Minute {
 		t.Fatalf("phase timeout = %s, want 5m", stub.lastReq.PhaseTimeout)
 	}
-	if result.Artifacts["phase_2/phase_summary"] != "" {
-		// phaseArtifactKey adds prefixes for some keys; just check that
-		// a non-empty artifact map came back.
-	}
+	// phaseArtifactKey adds prefixes for some keys; just check that
+	// a non-empty artifact map came back.
 	if len(result.Artifacts) == 0 {
 		t.Fatalf("expected non-empty artifacts, got %#v", result.Artifacts)
 	}

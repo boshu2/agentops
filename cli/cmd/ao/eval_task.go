@@ -409,7 +409,7 @@ func loadGroundTruthFile() ([]evalsub.GroundTruthRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	var rows []evalsub.GroundTruthRow
 	dec := json.NewDecoder(f)
 	for dec.More() {

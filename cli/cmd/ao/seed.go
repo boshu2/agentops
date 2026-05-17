@@ -129,7 +129,7 @@ func executeSeedSteps(absPath, template string, result *seedResult) error {
 		return err
 	}
 
-	if !(GetDryRun() && GetOutput() == "json") {
+	if !GetDryRun() || GetOutput() != "json" {
 		isGitRepo := isGitRepository(absPath)
 		if err := setupGitProtection(absPath, isGitRepo); err != nil {
 			return err

@@ -133,13 +133,7 @@ type BeadInput struct {
 func NewStaticBeadQuerierFromInputs(available bool, inputs []BeadInput) BeadQuerier {
 	beads := make([]beadRecord, 0, len(inputs))
 	for _, in := range inputs {
-		beads = append(beads, beadRecord{
-			ID:          in.ID,
-			Title:       in.Title,
-			Description: in.Description,
-			Notes:       in.Notes,
-			Status:      in.Status,
-		})
+		beads = append(beads, beadRecord(in))
 	}
 	return staticBeadQuerier{available: available, beads: beads}
 }
