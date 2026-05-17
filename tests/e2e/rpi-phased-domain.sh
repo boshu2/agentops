@@ -37,6 +37,11 @@ log "temp root: $WORK"
 # creation; --dry-run skips actual worktree creation, but the CWD must look
 # like a git repo so the state-dir helpers resolve cleanly).
 git -C "$WORK" init -q
+# CI runners have no global git identity; set a repo-local one so the init
+# commit (and any commit ao/hooks make in $WORK) does not fail with
+# "empty ident name". Repo-local, so it never touches the runner's config.
+git -C "$WORK" config user.email "e2e@agentops.test"
+git -C "$WORK" config user.name "agentops-e2e"
 git -C "$WORK" commit --allow-empty -m "init" -q
 
 # ── fixture: GOALS.md with one domain-owned directive ────────────────────────
