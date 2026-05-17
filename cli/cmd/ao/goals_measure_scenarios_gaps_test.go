@@ -1,4 +1,4 @@
-// practices: [tdd, bdd]
+// practices: [tdd, bdd-gherkin]
 // F2.T1 gap-fill: goals_measure_scenarios boundary cases not covered by
 // goals_measure_scenarios_test.go.
 package main
