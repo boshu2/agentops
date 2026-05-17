@@ -104,6 +104,15 @@ ao scenario list --status draft
 ao scenario list --status retired
 ```
 
+### Linking scenarios to GOALS.md directives
+
+A scenario linked to a GOALS.md directive becomes part of the executable
+spec. `ao goals scenarios --create "<goal>" --directive N` scaffolds a
+promoted spec scenario and links it bidirectionally; `ao goals scenarios`
+lists each directive's linked scenarios; `ao goals scenarios --lint` checks
+the link graph. Ad hoc holdout scenarios authored with `ao scenario add`
+stay unlinked until promoted. See the `/goals` skill and `docs/adr/ADR-0003`.
+
 ### Step 5: Integration with Validation
 
 Scenarios are consumed by **STEP 1.8** in the `/validation` skill. During

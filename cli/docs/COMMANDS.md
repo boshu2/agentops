@@ -2026,6 +2026,28 @@ ao goals history [flags]
       --since string   Show entries since date (YYYY-MM-DD)
 ```
 
+#### `ao goals scenarios`
+
+List or create the executable-spec scenarios linked to GOALS.md directives.
+
+```
+ao goals scenarios [flags]
+```
+
+**Flags:**
+
+```
+      --create string         Create a scenario from this goal description and link it to --directive
+      --directive int         Directive display number (filter when listing, target when creating)
+      --directive-id string   Filter listing to one directive by stable Directive ID
+  -h, --help                  help for scenarios
+      --lint                  Lint the directive↔scenario link graph instead of listing
+      --source string         Source for a created scenario (human, agent, prod-telemetry) (default "human")
+      --status string         Status for a created scenario (active, draft, retired) (default "draft")
+      --strict                With --lint, exit non-zero on warnings as well as errors
+      --threshold float       Satisfaction threshold for a created scenario (default 0.8)
+```
+
 #### `ao goals add`
 
 Add a new goal

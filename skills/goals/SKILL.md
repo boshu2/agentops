@@ -74,6 +74,13 @@ Parse the user's input:
 | `/goals validate`, "validate goals" | **validate** | `ao goals validate` |
 | `/goals prune`, "prune goals", "clean goals" | **prune** | `ao goals prune` |
 | `/goals migrate`, "migrate goals" | **migrate** | `ao goals migrate` |
+| `/goals scenarios`, "directive scenarios", "link a scenario" | **scenarios** | `ao goals scenarios` |
+
+`ao goals scenarios` links each directive to behavioral scenarios (the
+`ao scenario` family) so GOALS.md is an executable BDD spec: bare lists every
+directive's linked scenarios with link health; `--create "<goal>" --directive N`
+scaffolds and bidirectionally links a scenario; `--lint` checks the link graph.
+See `docs/adr/ADR-0003`.
 
 ## Measure Mode (default) — Observe
 

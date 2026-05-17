@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-16T20:22:31Z",
+  "generated_at": "2026-05-17T11:16:29Z",
   "summary": {
     "skills": 77,
     "hooks": 43,
     "knowledge_stores": 4,
     "job_types": 14,
     "eval_files": 62,
-    "cli_commands": 161
+    "cli_commands": 166
   },
   "surfaces": {
     "skills": [
@@ -1209,6 +1209,10 @@
         "path": "cli/cmd/ao/beads_audit_cluster.go"
       },
       {
+        "name": "capabilities",
+        "path": "cli/cmd/ao/capabilities.go"
+      },
+      {
         "name": "ci",
         "path": "cli/cmd/ao/ci.go"
       },
@@ -1365,6 +1369,10 @@
         "path": "cli/cmd/ao/findings.go"
       },
       {
+        "name": "flag_suggest",
+        "path": "cli/cmd/ao/flag_suggest.go"
+      },
+      {
         "name": "flywheel_close_loop",
         "path": "cli/cmd/ao/flywheel_close_loop.go"
       },
@@ -1429,12 +1437,20 @@
         "path": "cli/cmd/ao/goals_prune.go"
       },
       {
+        "name": "goals_scenarios",
+        "path": "cli/cmd/ao/goals_scenarios.go"
+      },
+      {
         "name": "goals_steer",
         "path": "cli/cmd/ao/goals_steer.go"
       },
       {
         "name": "goals_validate",
         "path": "cli/cmd/ao/goals_validate.go"
+      },
+      {
+        "name": "group_json",
+        "path": "cli/cmd/ao/group_json.go"
       },
       {
         "name": "handoff",
@@ -1639,6 +1655,10 @@
       {
         "name": "retrieval_bench",
         "path": "cli/cmd/ao/retrieval_bench.go"
+      },
+      {
+        "name": "robot_docs",
+        "path": "cli/cmd/ao/robot_docs.go"
       },
       {
         "name": "root",
