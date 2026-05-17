@@ -1145,6 +1145,17 @@ else
     fail "missing file: scripts/check-wiring-closure.sh"
 fi
 
+# --- 22f2. AgentOps domain-evolution control artifacts ---
+# Runs when present so the BDD/DDD/Hexagonal/TDD/XP control surface stays wired.
+if [[ -f scripts/check-agentops-domain-evolution-plan.sh ]]; then
+    if domain_evolution_output="$(bash scripts/check-agentops-domain-evolution-plan.sh 2>&1)"; then
+        pass "agentops domain evolution plan"
+    else
+        fail "agentops domain evolution plan"
+        indent_output "$domain_evolution_output"
+    fi
+fi
+
 # --- 22g. Corpus-freshness (GOALS.md gate corpus-freshness, weight 4 — Directive D11) ---
 # Always runs: structural gate; skips cleanly when no snapshot dir exists so
 # greenfield boxes do not block. Real teeth: operator boxes that DO have a
@@ -1164,11 +1175,15 @@ fi
 # Warn-only by design: flags non-trivial beads missing a Gherkin block or slice
 # candidate. Never blocks a push (Directive 12 posture). Skips cleanly when bd
 # or jq is absent. Fast (<200ms).
-if [[ -f scripts/check-loop-shape.sh ]]; then
+if prepush_skip_flag LOOP_SHAPE; then
+    skip "loop-shape (AGENTOPS_PREPUSH_SKIP_LOOP_SHAPE=1)"
+elif [[ -f scripts/check-loop-shape.sh ]]; then
     loop_shape_output="$(bash scripts/check-loop-shape.sh 2>&1 || true)"
     if grep -q '^WARN: ' <<<"$loop_shape_output"; then
         warn "loop-shape (non-trivial beads missing BDD/slice shape — Directive 12 warn-only)"
         indent_output "$loop_shape_output"
+    elif grep -q '^check-loop-shape: SKIP' <<<"$loop_shape_output"; then
+        skip "loop-shape (${loop_shape_output#check-loop-shape: })"
     else
         pass "loop-shape"
     fi

@@ -24,7 +24,8 @@
 ```
 skill-name/
 ├── SKILL.md              # Required — exact case, no variations
-├── scripts/              # Optional — executable code
+├── SELF-TEST.md          # Optional — trigger and behavior self-test
+├── scripts/              # Optional — helper code
 ├── references/           # Optional — progressive disclosure docs
 └── assets/               # Optional — templates, fonts, icons
 ```
@@ -36,7 +37,8 @@ skill-name/
 | Entry point | `SKILL.md` (exact case) | `skill.md`, `SKILL.MD`, `Skill.md` |
 | Folder name | kebab-case (`bug-hunt`) | spaces, underscores, capitals |
 | Name match | Folder name = `name:` field | Mismatch between folder and frontmatter |
-| README | None inside skill folder | `README.md` in skill directories |
+| README | None inside repo-runtime skill folders unless an external package profile explicitly allows it | Accidental `README.md` drift in normal AgentOps skill directories |
+| Self-test | `SELF-TEST.md` for market-facing execution, judgment, and product skills | User-facing publishable skill with no trigger/behavior test |
 | Reserved | Any valid kebab-case name | `claude-*` or `anthropic-*` prefixes |
 
 ---
@@ -284,8 +286,9 @@ Skills use three levels:
 - [ ] SKILL.md under 5,000 words
 - [ ] User-facing skills have examples section
 - [ ] User-facing skills have troubleshooting section
+- [ ] Market-facing user skills have `SELF-TEST.md`
 - [ ] Detailed docs in references/, not inlined
-- [ ] No README.md in skill folder
+- [ ] No README.md in repo-runtime skill folder unless an external package profile explicitly permits it
 
 ### Trigger Testing
 
@@ -314,3 +317,16 @@ Full taxonomy at `skills/SKILL-TIERS.md`.
 ### Standards Loading
 
 Language standards loaded JIT by `/vibe`, `/implement` — see `references/standards-index.md`.
+
+### JSM-Style Export Profile
+
+Pattern-only inspection of the user-local JSM corpus on 2026-05-16 found a different package shape from AgentOps' repo-runtime shape:
+
+- Published package candidates should pass `jsm validate /path/to/skill --json`.
+- Package-clean skills should stay at or under the 50-file JSM validator limit.
+- Mega skills above that limit should be split or handled as an explicit product-bundle profile.
+- Exported `scripts/` files should be non-executable for JSM validation, even if repo-native AgentOps scripts remain executable.
+- Strong market-facing skills should include `SELF-TEST.md`.
+- Large skills should keep `SKILL.md` as a routing kernel and move expensive context into `references/`, `scripts/`, `assets/`, and, when justified, `subagents/`.
+
+See `docs/reference/jsm-skill-standards.md` for the current snapshot and adoption plan. Use `docs/reference/skill-quality-rubric.md` for scoring and `scripts/check-jsm-export.sh` for export validation against a temporary package copy.
