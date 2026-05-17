@@ -69,10 +69,10 @@ func runCitationVerify(cmd *cobra.Command, _ []string) error {
 
 func citationVerifyRun(ctx context.Context, opts citationVerifyOptions) error {
 	if opts.kind == "" {
-		return errors.New("citation verify: --kind required")
+		return errors.New("citation verify: --kind required (one of: file|function|symbol)\n  Example: ao citation verify --kind file --raw cli/cmd/ao/beads.go")
 	}
 	if opts.raw == "" {
-		return errors.New("citation verify: --raw required")
+		return errors.New("citation verify: --raw required (the citation text to verify)\n  Example: ao citation verify --kind function --raw verifyCitationInPlace")
 	}
 	if opts.writer == nil {
 		opts.writer = os.Stdout
