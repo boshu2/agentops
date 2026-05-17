@@ -13,6 +13,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/harvest"
 	"github.com/boshu2/agentops/cli/internal/overnight"
+	"github.com/boshu2/agentops/cli/internal/wiki"
 	"github.com/spf13/cobra"
 )
 
@@ -96,7 +97,7 @@ func resolveMaxPromotionsThreshold(cmd *cobra.Command) int {
 // This is the pm-011 fix from the Dream nightly compounder
 // pre-mortem.
 func failIfDreamHoldsLock(cwd string) error {
-	lockPath := filepath.Join(agentsDirIn(cwd), "overnight", "run.lock")
+	lockPath := filepath.Join(wiki.AgentsDirIn(cwd), "overnight", "run.lock")
 
 	// Cheap freshness check first: if the lock is stale (old mtime
 	// AND dead/zero PID), LockIsStale returns true and we can proceed
@@ -208,7 +209,7 @@ func applyHarvestRuntimeDefaults() {
 	}
 	if harvestPromoteTo == "" {
 		home, _ := os.UserHomeDir()
-		harvestPromoteTo = filepath.Join(agentsDirIn(home), "learnings")
+		harvestPromoteTo = filepath.Join(wiki.AgentsDirIn(home), "learnings")
 	}
 }
 

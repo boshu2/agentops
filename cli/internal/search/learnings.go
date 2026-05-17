@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/wiki"
 )
 
 // ValidPhases is the set of canonical RPI phase values for source_phase.
@@ -375,37 +376,10 @@ func WriteDecayFields(data map[string]any, newConfidence float64, now time.Time)
 	data["decay_count"] = decayCount + 1
 }
 
-// ParseFrontmatterFromContent extracts specific fields from YAML frontmatter in a string.
+// ParseFrontmatterFromContent extracts specific fields from YAML frontmatter
+// in a string. Field extraction is delegated to wiki.FrontmatterCodec.
 func ParseFrontmatterFromContent(content string, fields ...string) map[string]string {
-	result := make(map[string]string)
-	lines := strings.Split(content, "\n")
-	inFrontmatter := false
-	dashCount := 0
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "---" {
-			dashCount++
-			if dashCount == 1 {
-				inFrontmatter = true
-				continue
-			}
-			if dashCount == 2 {
-				break
-			}
-		}
-		if inFrontmatter {
-			for _, field := range fields {
-				prefix := field + ":"
-				if strings.HasPrefix(trimmed, prefix) {
-					val := strings.TrimSpace(strings.TrimPrefix(trimmed, prefix))
-					val = strings.Trim(val, "\"'")
-					result[field] = val
-				}
-			}
-		}
-	}
-	return result
+	return wiki.FrontmatterCodec{}.ExtractStringFields(strings.Split(content, "\n"), fields...)
 }
 
 // Section evidence types and helpers.

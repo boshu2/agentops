@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v3"
+	"github.com/boshu2/agentops/cli/internal/wiki"
 )
 
 // ValidArtifactTypes enumerates the allowed artifact type values.
@@ -56,32 +56,36 @@ type CurateStatusResult struct {
 // ParseFrontmatter extracts YAML frontmatter key-value pairs from a
 // markdown document delimited by --- lines. Returns the frontmatter map and
 // the body content below the closing delimiter.
+//
+// Parsing is delegated to wiki.FrontmatterCodec. On a miss (no frontmatter)
+// the verbatim input is returned as the body, preserving the historical
+// contract; on a parsed block the trimmed body is returned.
 func ParseFrontmatter(data string) (map[string]any, string) {
-	fm := make(map[string]any)
-
 	lines := strings.Split(data, "\n")
-	if len(lines) < 3 || strings.TrimSpace(lines[0]) != "---" {
-		return fm, data
+	if len(lines) < 3 {
+		return map[string]any{}, data
 	}
+	doc := wiki.FrontmatterCodec{}.DecodeLines(lines)
+	if !doc.HasFrontmatter && !documentHadDelimiters(lines) {
+		return doc.Fields, data
+	}
+	return doc.Fields, doc.Body
+}
 
-	closeIdx := -1
+// documentHadDelimiters reports whether lines open and close a well-formed
+// --- frontmatter block, regardless of whether the YAML inside parsed. It
+// distinguishes "no frontmatter" (return verbatim input) from "frontmatter
+// present but invalid YAML" (return trimmed body).
+func documentHadDelimiters(lines []string) bool {
+	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
+		return false
+	}
 	for i := 1; i < len(lines); i++ {
 		if strings.TrimSpace(lines[i]) == "---" {
-			closeIdx = i
-			break
+			return true
 		}
 	}
-	if closeIdx < 0 {
-		return fm, data
-	}
-
-	fmText := strings.Join(lines[1:closeIdx], "\n")
-	if err := yaml.Unmarshal([]byte(fmText), &fm); err != nil {
-		return make(map[string]any), strings.TrimSpace(strings.Join(lines[closeIdx+1:], "\n"))
-	}
-
-	body := strings.Join(lines[closeIdx+1:], "\n")
-	return fm, strings.TrimSpace(body)
+	return false
 }
 
 // FrontmatterString extracts a string value from a frontmatter map.
