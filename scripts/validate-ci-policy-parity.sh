@@ -6,6 +6,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 AGENTS_PATH="${CI_POLICY_PARITY_AGENTS_PATH:-$REPO_ROOT/AGENTS.md}"
 WORKFLOW_PATH="${CI_POLICY_PARITY_WORKFLOW_PATH:-$REPO_ROOT/.github/workflows/validate.yml}"
+LOCAL_GATE_PATH="${CI_POLICY_PARITY_LOCAL_GATE_PATH:-$REPO_ROOT/scripts/ci-local-release.sh}"
 
 if [[ ! -f "$AGENTS_PATH" ]]; then
   echo "CI_POLICY_PARITY: AGENTS file not found: $AGENTS_PATH"
@@ -14,6 +15,11 @@ fi
 
 if [[ ! -f "$WORKFLOW_PATH" ]]; then
   echo "CI_POLICY_PARITY: workflow file not found: $WORKFLOW_PATH"
+  exit 1
+fi
+
+if [[ ! -f "$LOCAL_GATE_PATH" ]]; then
+  echo "CI_POLICY_PARITY: local CI gate file not found: $LOCAL_GATE_PATH"
   exit 1
 fi
 
@@ -27,6 +33,7 @@ WF_FAIL_FILE="$TMP_DIR/workflow_failset.txt"
 WF_NONBLOCKING_FILE="$TMP_DIR/workflow_nonblocking.txt"
 AGENTS_BLOCKING_FILE="$TMP_DIR/agents_blocking.txt"
 WF_UNKNOWN_FAIL_FILE="$TMP_DIR/workflow_unknown_fail.txt"
+LOCAL_GATE_BLOCKING_FILE="$TMP_DIR/local_gate_blocking.txt"
 
 extract_agents_jobs() {
   local file="$1"
@@ -106,6 +113,19 @@ extract_summary_failset() {
     | sort -u
 }
 
+extract_local_gate_blocking_jobs() {
+  local file="$1"
+  if command -v rg >/dev/null 2>&1; then
+    rg -o --no-filename 'ci-job:[A-Za-z0-9_-]+' "$file" \
+      | sed 's/^ci-job://' \
+      | sort -u
+  else
+    grep -Eo 'ci-job:[A-Za-z0-9_-]+' "$file" \
+      | sed 's/^ci-job://' \
+      | sort -u
+  fi
+}
+
 print_set_diff() {
   local left_label="$1"
   local left_file="$2"
@@ -122,6 +142,7 @@ print_set_diff() {
 extract_agents_jobs "$AGENTS_PATH" > "$AGENTS_JOBS_FILE"
 extract_agents_nonblocking "$AGENTS_PATH" > "$AGENTS_NONBLOCKING_FILE" || true
 extract_summary_failset "$WORKFLOW_PATH" > "$WF_FAIL_FILE"
+extract_local_gate_blocking_jobs "$LOCAL_GATE_PATH" > "$LOCAL_GATE_BLOCKING_FILE"
 
 if ! extract_summary_needs "$WORKFLOW_PATH" > "$WF_NEEDS_FILE"; then
   echo "CI_POLICY_PARITY: unable to parse summary needs list from $WORKFLOW_PATH"
@@ -138,6 +159,12 @@ fi
 
 if [[ ! -s "$WF_NEEDS_FILE" ]]; then
   echo "CI_POLICY_PARITY: summary.needs list is empty in $WORKFLOW_PATH"
+  exit 1
+fi
+
+if [[ ! -s "$LOCAL_GATE_BLOCKING_FILE" ]]; then
+  echo "CI_POLICY_PARITY: no ci-job markers parsed from $LOCAL_GATE_PATH"
+  echo "Expected style: '# ci-job:<validate-job-name>' next to each --ci-blocking local gate lane."
   exit 1
 fi
 
@@ -173,6 +200,14 @@ if ! diff -u "$AGENTS_BLOCKING_FILE" "$WF_FAIL_FILE" >/dev/null; then
   echo "CI_POLICY_PARITY: Blocking job policy drift detected."
   print_set_diff "AGENTS blocking jobs" "$AGENTS_BLOCKING_FILE" "Workflow blocking jobs" "$WF_FAIL_FILE"
   echo "Action: AGENTS blocking set must match summary fail-condition job set."
+  echo ""
+  errors=$((errors + 1))
+fi
+
+if ! diff -u "$WF_FAIL_FILE" "$LOCAL_GATE_BLOCKING_FILE" >/dev/null; then
+  echo "CI_POLICY_PARITY: Local CI blocking gate coverage drift detected."
+  print_set_diff "Workflow blocking jobs" "$WF_FAIL_FILE" "ci-local-release.sh --ci-blocking jobs" "$LOCAL_GATE_BLOCKING_FILE"
+  echo "Action: update scripts/ci-local-release.sh --ci-blocking lanes and ci-job markers."
   echo ""
   errors=$((errors + 1))
 fi

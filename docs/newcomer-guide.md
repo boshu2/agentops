@@ -108,9 +108,10 @@ CI validates not just builds/tests but also docs parity, hook safety, skill inte
 - Activate the repo-managed git hooks once per clone/worktree: `bash scripts/install-dev-hooks.sh`
 - Trust runtime files over narrative docs when there is a mismatch.
 - Keep changes small and verify with local gates before pushing.
-- For release/go-no-go work, local green is not enough by itself. Run
-  `scripts/ci-local-release.sh --release-version X.Y.Z` before tagging, then
-  verify the exact pushed candidate or tag SHA with
+- For release/go-no-go work, use `scripts/ci-local-release.sh --ci-blocking`
+  as the single local pre-release truth check for Validate's blocking jobs.
+  Then run `scripts/ci-local-release.sh --release-version X.Y.Z` for release
+  artifacts before tagging, and verify the exact pushed candidate or tag SHA with
   `scripts/verify-release-ci.sh <tag-or-sha>`.
 - Treat `.agents/` and hooks as first-class parts of the system behavior.
 - Treat Codex as a first-class runtime: when a skill change affects Codex UX or execution style, inspect `skills-codex-overrides/`, update `skills-codex-overrides/catalog.json` if treatment changes, update the checked-in `skills-codex/` copy when needed, and run the Codex validation scripts.

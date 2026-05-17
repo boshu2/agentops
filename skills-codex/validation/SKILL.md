@@ -115,18 +115,18 @@ STEP 1.7.5 ── Release-Readiness Gates (MANDATORY when IS_RELEASE_CONTEXT=1)
               When IS_RELEASE_CONTEXT=1, this step is MANDATORY — failure
               to run any of the gates below MUST emit a FAIL verdict with
               "release gates not run" reason. Validation MUST NOT recommend
-              `$release` until all three (a/b/c) pass.
+              `$release` until all gates pass.
 
-              a) Full pre-push gate (NOT --fast):
-                   bash scripts/pre-push-gate.sh
-                   (--fast covers ~5-10 checks; full runs ~33 including
-                   doc-release, mkdocs strict, hooks/docs parity, shellcheck,
-                   CHANGELOG sync, headless runtime smokes)
+              a) CI-blocking local gate:
+                   bash scripts/ci-local-release.sh --ci-blocking
+                   This is the canonical local pre-release truth check for
+                   GitHub Validate's blocking jobs. --fast, pre-push-gate.sh,
+                   and validate-local.sh are weaker hygiene gates.
 
-              b) CI-local release gate:
-                   bash scripts/ci-local-release.sh
+              b) Release artifact gate:
+                   bash scripts/ci-local-release.sh --release-version X.Y.Z
                    (If script doesn't exist, log SKIP and continue;
-                   if it exists and fails, treat as FAIL)
+                   if it exists and either invocation fails, treat as FAIL)
 
               c) CLI reference docs regen (when CLI surface changed):
                    Detect: diff contains cli/cmd/**.go with additions of
@@ -138,8 +138,8 @@ STEP 1.7.5 ── Release-Readiness Gates (MANDATORY when IS_RELEASE_CONTEXT=1)
                    declaring release-ready")
 
               Phase summary records each as a checkbox row:
-                [✅] full pre-push gate
-                [✅] ci-local-release.sh
+                [✅] ci-local-release.sh --ci-blocking
+                [✅] ci-local-release.sh --release-version X.Y.Z
                 [✅] generate-cli-reference.sh (or [N/A] if no CLI surface change)
 
               When IS_RELEASE_CONTEXT=0, skip silently.

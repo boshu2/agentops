@@ -435,7 +435,7 @@ if [[ "$FAST_MODE" == "true" ]]; then
     else
         HAS_CONTRACT=0
     fi
-    if echo "$all_changed" | grep -qE '^\.github/workflows/validate\.yml$|^docs/CI-CD\.md$|^AGENTS\.md$|^scripts/validate-ci-policy-parity\.sh$'; then
+    if echo "$all_changed" | grep -qE '^\.github/workflows/validate\.yml$|^docs/CI-CD\.md$|^AGENTS\.md$|^scripts/(validate-ci-policy-parity|ci-local-release)\.sh$'; then
         HAS_CI_POLICY=1
     else
         HAS_CI_POLICY=0

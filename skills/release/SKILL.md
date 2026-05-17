@@ -70,7 +70,7 @@ Pre-flight validation, changelog from git history, version bumps across package 
 
 **Read [references/release-workflow-detail.md](references/release-workflow-detail.md) for the full per-step procedure** — bash commands, check tables, expected output, audit-record template, and worked examples. The index below is for orientation only; the agent must execute against `release-workflow-detail.md` for correctness.
 
-1. **Pre-flight** — run `scripts/ci-local-release.sh` (blocking) plus version/lint/test/branch/changelog/SBOM/security checks. `--check` mode stops after this step.
+1. **Pre-flight** — run `scripts/ci-local-release.sh --ci-blocking` first, then `scripts/ci-local-release.sh --release-version <version>` once the version is known for SBOM/security/readiness artifacts. `--check` mode stops after this step.
 2. **Determine range** — `<last-tag>..HEAD`. For non-HEAD cuts, see [references/release-cut-and-bump.md](references/release-cut-and-bump.md).
 3. **Read git history** — `git log --oneline --no-merges <range>` plus stats for ambiguity resolution.
 4. **Classify and group** — Added / Changed / Fixed / Removed for `CHANGELOG.md`. Notes prose uses the richer 8-label set per [references/release-notes.md](references/release-notes.md).
