@@ -151,7 +151,7 @@ Consolidated checklist of rules enforced by the pipeline:
 
 ### scripts/ci-local-release.sh
 
-The local CI gate mirrors the remote pipeline and runs in 7 phases:
+The local CI gate is the canonical pre-tag release gate and runs in 7 phases:
 
 | Phase | Description | Parallelism |
 |-------|-------------|-------------|
@@ -177,6 +177,11 @@ scripts/ci-local-release.sh --release-version 2.X.Y --hil-waiver 'target unavail
 
 In `--fast` mode, Phase 4 skips race tests, hook integration tests, SBOM generation, and the security gate. It still builds the binary and runs release validation.
 When `--release-version` is set, Phase 7 runs in official mode and fails unless the readiness score is at least 8/10 with SIL/VIL pass and HIL pass or waiver.
+
+Local release green is not the final release verdict. For release/go-no-go,
+follow the local gate with `scripts/verify-release-ci.sh <tag-or-sha>` and do
+not report GO until the GitHub `Validate` workflow is green for the exact
+candidate or tag SHA.
 
 ### Minimum Checks Before Any Push
 
