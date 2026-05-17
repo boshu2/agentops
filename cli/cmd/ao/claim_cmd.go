@@ -94,10 +94,10 @@ func runClaimList(cmd *cobra.Command, _ []string) error {
 
 func claimBindRun(ctx context.Context, opts claimOptions) error {
 	if opts.claim == "" {
-		return errors.New("claim bind: --claim required")
+		return errors.New("claim bind: --claim required\n  Example: ao claim bind --claim AOP-CLAIM-1 --path internal/foo.go")
 	}
 	if opts.path == "" {
-		return errors.New("claim bind: --path required")
+		return errors.New("claim bind: --path required (evidence file, relative to repo root)\n  Example: ao claim bind --claim AOP-CLAIM-1 --path internal/foo.go")
 	}
 	if err := validateEvidenceLevelString(opts.level); err != nil {
 		return fmt.Errorf("claim bind: %w", err)
