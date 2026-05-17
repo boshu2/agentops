@@ -1,6 +1,10 @@
 # JSM Skill Absorption Matrix
 
-This matrix records the Bushido standalone skills managed by JSM on 2026-05-05 and their AgentOps disposition. The absorption rule is pattern-only: no external source text is copied into AgentOps, and absorbed references carry source footers.
+This matrix records the Bushido standalone skills managed by JSM on 2026-05-05 and their AgentOps disposition. It is an older absorption snapshot covering 45 skills.
+
+A later local JSM inspection on 2026-05-16 found 118 installed and verified skills. Use [JSM Skill Standards Snapshot](jsm-skill-standards.md) for the current package-shape and publishing-standard findings. This matrix remains useful for the original AgentOps absorption dispositions.
+
+The absorption rule is pattern-only: no external source text is copied into AgentOps, and absorbed references carry source footers.
 
 ## Disposition Summary
 

@@ -67,17 +67,17 @@
     },
     {
       "id": "skill-schema-validation",
-      "title": "skill schema validation passes",
+      "title": "skill frontmatter validation passes",
       "kind": "command",
-      "objective": "Ensure all shared skill frontmatter remains schema-valid.",
+      "objective": "Ensure all shared skill frontmatter remains valid against the current v2 schema and hexagonal metadata contract.",
       "runtime": "shell",
       "inputs": {
         "cwd": "../..",
-        "shell": "scripts/validate-skill-schema.sh"
+        "shell": "scripts/validate-skill-frontmatter.sh"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains_auto_detect", "value": {"command": "bash scripts/validate-skill-schema.sh", "pattern": "All ([0-9]+) skill\\(s\\) passed schema validation", "expected_group": 1, "tolerance_pct": 0}}
+        {"type": "stdout_contains_auto_detect", "value": {"command": "bash scripts/validate-skill-frontmatter.sh", "pattern": "validate-skill-frontmatter: ([0-9]+)/([0-9]+) ok", "expected_group": 1, "tolerance_pct": 0}}
       ],
       "dimensions": ["correctness", "artifact_quality"],
       "critical": true

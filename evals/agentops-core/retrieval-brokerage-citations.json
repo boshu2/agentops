@@ -138,8 +138,8 @@
         {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "After presenting injected knowledge, record which files were injected for the feedback loop:"},
         {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "Citation tracking enables the feedback loop"},
         {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "this hook emits only a pointer to on-demand retrieval commands (`ao search`, `ao lookup`)."},
-        {"type": "artifact_contains", "target": "../../skills-codex/inject/SKILL.md", "value": "Treat `$inject` as passive context loading"},
-        {"type": "artifact_contains", "target": "../../skills-codex/inject/SKILL.md", "value": "Use `$inject` or `ao inject` for on-demand retrieval"},
+        {"type": "artifact_contains", "target": "../../skills-codex/inject/SKILL.md", "value": "Treat `$inject` as passive compatibility lookup"},
+        {"type": "artifact_contains", "target": "../../skills-codex/inject/SKILL.md", "value": "Use `$inject` or `ao inject` only for legacy compatibility"},
         {"type": "artifact_contains", "target": "../../skills-codex/inject/SKILL.md", "value": "After presenting injected knowledge, record which files were injected for the feedback loop:"},
         {"type": "artifact_contains", "target": "../../skills-codex/inject/SKILL.md", "value": "Citation tracking enables the feedback loop"}
       ],

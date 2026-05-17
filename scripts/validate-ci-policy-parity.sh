@@ -129,7 +129,8 @@ if ! extract_summary_needs "$WORKFLOW_PATH" > "$WF_NEEDS_FILE"; then
   exit 1
 fi
 # Exclude utility jobs (path-filter detection) from parity comparison
-sed -i '/^changes$/d' "$WF_NEEDS_FILE"
+sed '/^changes$/d' "$WF_NEEDS_FILE" > "$WF_NEEDS_FILE.tmp"
+mv "$WF_NEEDS_FILE.tmp" "$WF_NEEDS_FILE"
 
 if [[ ! -s "$AGENTS_JOBS_FILE" ]]; then
   echo "CI_POLICY_PARITY: no CI jobs parsed from AGENTS table under '### CI Jobs and What They Check'."

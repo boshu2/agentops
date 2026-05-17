@@ -100,9 +100,35 @@ Read [references/quick-mode.md](references/quick-mode.md) when you need the `--q
 
 Read [references/execution-steps.md](references/execution-steps.md) when you need the full Phase 1 procedure: pre-flight checks, reference loading (Step 0.4), checkpoint-policy preflight (0.5), plan/spec loading (Steps 1-2.3), closure integrity audit (2.4), metadata verification (2.5), deep audit sweep (2.6), council invocation (Step 3), and prediction accuracy (3.5).
 
+### Step 2.1: Load Compiled Prevention Context
+
+Before council and retro synthesis, load compiled prevention outputs when they exist:
+
+- `.agents/planning-rules/*.md`
+- `.agents/pre-mortem-checks/*.md`
+
+Use these compiled artifacts first, then fall back to `.agents/findings/registry.jsonl` only when compiled outputs are missing or incomplete. Carry matched finding IDs into the retro as `Applied findings` / `Known risks applied` context so post-mortem can judge whether the flywheel actually prevented rediscovery.
+
 ## Phase 2: Extract Learnings
 
 Read [references/phase-2-extract.md](references/phase-2-extract.md) when you need the inline learning extraction procedure: gather context (EX.1), classify (EX.2), write learnings (EX.3), test pyramid gap analysis (EX.3.5), scope classification (EX.4), findings registry (EX.5-6).
+
+Before backlog processing, normalize reusable council findings into `.agents/findings/registry.jsonl`.
+
+Use the tracked contract in `docs/contracts/finding-registry.md`:
+
+- persist only reusable findings that should change future planning or review behavior
+- require `dedup_key`, provenance, `pattern`, `detection_question`, `checklist_item`, `applicable_when`, and `confidence`
+- `applicable_when` must use the controlled vocabulary from the contract
+- append or merge by `dedup_key`
+- use the contract's temp-file-plus-rename atomic write rule
+
+After the registry mutation, refresh compiled outputs immediately so the same session can benefit from the updated prevention set.
+If `hooks/finding-compiler.sh` exists, run:
+
+```bash
+bash hooks/finding-compiler.sh --quiet 2>/dev/null || true
+```
 
 #### Step ACT.3: Feed Next-Work
 
