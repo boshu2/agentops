@@ -87,7 +87,7 @@ var constraintActivateCmd = &cobra.Command{
 			}
 			c := findConstraint(idx, id)
 			if c == nil {
-				return fmt.Errorf("constraint %q not found", id)
+				return fmt.Errorf("constraint %q not found\n  List available constraints with: ao constraint list", id)
 			}
 			if c.Status != "draft" {
 				return fmt.Errorf("constraint %q is %q, can only activate from draft", id, c.Status)
@@ -125,7 +125,7 @@ var constraintRetireCmd = &cobra.Command{
 			}
 			c := findConstraint(idx, id)
 			if c == nil {
-				return fmt.Errorf("constraint %q not found", id)
+				return fmt.Errorf("constraint %q not found\n  List available constraints with: ao constraint list", id)
 			}
 			if c.Status != "active" {
 				return fmt.Errorf("constraint %q is %q, can only retire from active", id, c.Status)
