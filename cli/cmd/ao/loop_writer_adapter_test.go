@@ -167,6 +167,10 @@ func TestProductionLoopWriter_RoundTripsTrace(t *testing.T) {
 			ValidationEvidence: "go test ./... green",
 			RatchetAction:      "ao ratchet record implement",
 			GoalReshape:        "gap closed",
+			BeadID:             "soc-z4tl",
+			AcceptanceExamples: []string{"Scenario: closeout maps evidence"},
+			ValidationCommands: []string{"go test ./cmd/ao -run TestProductionLoopWriter_RoundTripsTrace"},
+			CloseoutVerdict:    "passed",
 		},
 	}
 	if _, err := w.Append(context.Background(), traced); err != nil {
@@ -197,6 +201,15 @@ func TestProductionLoopWriter_RoundTripsTrace(t *testing.T) {
 	}
 	if entries[0].Trace.RatchetAction != "ao ratchet record implement" {
 		t.Errorf("round-trip RatchetAction = %q, want \"ao ratchet record implement\"", entries[0].Trace.RatchetAction)
+	}
+	if entries[0].Trace.BeadID != "soc-z4tl" || entries[0].Trace.CloseoutVerdict != "passed" {
+		t.Errorf("round-trip closeout fields = %+v", entries[0].Trace)
+	}
+	if len(entries[0].Trace.AcceptanceExamples) != 1 || entries[0].Trace.AcceptanceExamples[0] != "Scenario: closeout maps evidence" {
+		t.Errorf("round-trip AcceptanceExamples = %+v", entries[0].Trace.AcceptanceExamples)
+	}
+	if len(entries[0].Trace.ValidationCommands) != 1 || entries[0].Trace.ValidationCommands[0] != "go test ./cmd/ao -run TestProductionLoopWriter_RoundTripsTrace" {
+		t.Errorf("round-trip ValidationCommands = %+v", entries[0].Trace.ValidationCommands)
 	}
 	if entries[1].Trace != nil {
 		t.Errorf("trace-less entry read back a non-nil Trace: %+v", entries[1].Trace)

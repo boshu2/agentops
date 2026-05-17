@@ -101,19 +101,28 @@ func TestLoadCycleTrace_EmptyArgYieldsNil(t *testing.T) {
 }
 
 func TestLoadCycleTrace_InlineJSON(t *testing.T) {
-	tr, err := loadCycleTrace(`{"goal_hypothesis":"raise pass rate","ratchet_action":"record implement"}`)
+	tr, err := loadCycleTrace(`{"goal_hypothesis":"raise pass rate","ratchet_action":"record implement","bead_id":"soc-z4tl","acceptance_examples":["Scenario: closeout maps evidence"],"validation_commands":["go test ./cmd/ao -run TestLoadCycleTrace"],"closeout_verdict":"passed"}`)
 	if err != nil {
 		t.Fatalf("inline JSON: %v", err)
 	}
 	if tr == nil || tr.GoalHypothesis != "raise pass rate" || tr.RatchetAction != "record implement" {
 		t.Fatalf("inline JSON parsed to %+v", tr)
 	}
+	if tr.BeadID != "soc-z4tl" || tr.CloseoutVerdict != "passed" {
+		t.Fatalf("inline closeout fields parsed to %+v", tr)
+	}
+	if len(tr.AcceptanceExamples) != 1 || tr.AcceptanceExamples[0] != "Scenario: closeout maps evidence" {
+		t.Fatalf("inline acceptance examples parsed to %+v", tr.AcceptanceExamples)
+	}
+	if len(tr.ValidationCommands) != 1 || tr.ValidationCommands[0] != "go test ./cmd/ao -run TestLoadCycleTrace" {
+		t.Fatalf("inline validation commands parsed to %+v", tr.ValidationCommands)
+	}
 }
 
 func TestLoadCycleTrace_FromFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "trace.json")
-	if err := os.WriteFile(path, []byte(`{"exemption_reason":"trivial typo fix"}`), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(`{"exemption_reason":"trivial typo fix","bead_id":"soc-file","validation_commands":["bash scripts/check-loop-shape.sh --self-test"],"closeout_verdict":"exempt"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	tr, err := loadCycleTrace(path)
@@ -122,6 +131,12 @@ func TestLoadCycleTrace_FromFile(t *testing.T) {
 	}
 	if tr == nil || tr.ExemptionReason != "trivial typo fix" {
 		t.Fatalf("file arg parsed to %+v", tr)
+	}
+	if tr.BeadID != "soc-file" || tr.CloseoutVerdict != "exempt" {
+		t.Fatalf("file closeout fields parsed to %+v", tr)
+	}
+	if len(tr.ValidationCommands) != 1 || tr.ValidationCommands[0] != "bash scripts/check-loop-shape.sh --self-test" {
+		t.Fatalf("file validation commands parsed to %+v", tr.ValidationCommands)
 	}
 }
 

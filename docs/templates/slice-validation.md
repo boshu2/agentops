@@ -15,8 +15,9 @@
 ## Slice-level validation
 
 > One row per slice from the intent issue's slice candidates. Each slice must have a **first failing test** before any implementation begins (the TDD discipline of move 4 in the operating loop).
+> In beads and CycleTrace payloads this may be named **First failing proof** when the proof is a gate, smoke script, or eval rather than a Go/Python unit test.
 
-| Slice ID | Behavior under test | First failing test | Implementation scope | Validation lane | Evidence on green | Acceptance example covered |
+| Slice ID | Behavior under test | First failing proof/test | Implementation scope | Validation lane | Evidence on green | Acceptance example covered |
 |----------|--------------------|--------------------|----------------------|-----------------|--------------------|----------------------------|
 | S1 | <single Given/When/Then behavior> | `<file:test_name>` — must fail for the right reason (missing behavior, not syntax) | `<files / packages this slice modifies>` | L1 unit / L2 integration / L3 e2e / property / snapshot / council | <test verdict + snapshot id + ratchet entry> | <Scenario name from intent issue> |
 | S2 | … | … | … | … | … | … |
@@ -81,7 +82,7 @@
 
 ## Closing checklist
 
-- [ ] Every slice has a first failing test linked, and that test failed before implementation began
+- [ ] Every slice has a first failing proof/test linked, and that proof failed before implementation began
 - [ ] Every slice's evidence row is filled in with a concrete artifact, not a description
 - [ ] If any slices ran in parallel, every wave-validity row was checked at the time of wave start
 - [ ] Every acceptance example from the intent issue maps to at least one passing test

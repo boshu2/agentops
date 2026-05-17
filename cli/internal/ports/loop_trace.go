@@ -14,17 +14,21 @@ package ports
 // fields are omitempty so a partially-recorded or exempt trace stays
 // compact on disk. soc-y5vh.9 (epic soc-y5vh, BC3 Loop).
 type CycleTrace struct {
-	GoalHypothesis     string `json:"goal_hypothesis,omitempty"`
-	SelectedGap        string `json:"selected_gap,omitempty"`
-	Gherkin            string `json:"gherkin,omitempty"`
-	ExemptionReason    string `json:"exemption_reason,omitempty"`
-	FirstFailingProof  string `json:"first_failing_proof,omitempty"`
-	RedEvidence        string `json:"red_evidence,omitempty"`
-	GreenEvidence      string `json:"green_evidence,omitempty"`
-	RefactorNote       string `json:"refactor_note,omitempty"`
-	ValidationEvidence string `json:"validation_evidence,omitempty"`
-	RatchetAction      string `json:"ratchet_action,omitempty"`
-	GoalReshape        string `json:"goal_reshape,omitempty"`
+	GoalHypothesis     string   `json:"goal_hypothesis,omitempty"`
+	SelectedGap        string   `json:"selected_gap,omitempty"`
+	Gherkin            string   `json:"gherkin,omitempty"`
+	ExemptionReason    string   `json:"exemption_reason,omitempty"`
+	FirstFailingProof  string   `json:"first_failing_proof,omitempty"`
+	RedEvidence        string   `json:"red_evidence,omitempty"`
+	GreenEvidence      string   `json:"green_evidence,omitempty"`
+	RefactorNote       string   `json:"refactor_note,omitempty"`
+	ValidationEvidence string   `json:"validation_evidence,omitempty"`
+	RatchetAction      string   `json:"ratchet_action,omitempty"`
+	GoalReshape        string   `json:"goal_reshape,omitempty"`
+	BeadID             string   `json:"bead_id,omitempty"`
+	AcceptanceExamples []string `json:"acceptance_examples,omitempty"`
+	ValidationCommands []string `json:"validation_commands,omitempty"`
+	CloseoutVerdict    string   `json:"closeout_verdict,omitempty"`
 }
 
 // traceField pairs a kernel field's on-disk name with an accessor, so

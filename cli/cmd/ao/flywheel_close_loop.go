@@ -158,13 +158,13 @@ func performFlywheelCloseLoopWithCitationMutation(cwd, pendingDir string, thresh
 		return flywheelCloseLoopResult{}, err
 	}
 
-	// Quality-signal feedback: apply negative utility to skills loaded in
+	// Quality-signal feedback: record correction signals for skills loaded in
 	// sessions where the user had to correct the agent.
 	sessionID := canonicalSessionID("")
 	if qualityCorrections, qErr := processQualitySignalFeedback(cwd, sessionID, mutateCitationArtifacts); qErr != nil {
 		fmt.Fprintf(os.Stderr, "WARN: quality-signal feedback: %v\n", qErr)
 	} else if qualityCorrections > 0 {
-		VerbosePrintf("quality-signal feedback: %d corrections applied to skill-loaded citations\n", qualityCorrections)
+		VerbosePrintf("quality-signal feedback: %d corrections matched for skill-loaded citations\n", qualityCorrections)
 	}
 
 	return convertLifecycleCloseLoopResult(res), nil
