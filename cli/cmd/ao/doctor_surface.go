@@ -83,8 +83,9 @@ func registerDoctorSurface() {
 	// ARE genuine usage failures the caller must see. Restore them via an
 	// explicit flag-error func (inherited by subcommands).
 	doctorCmd.SetFlagErrorFunc(func(c *cobra.Command, err error) error {
-		fmt.Fprintln(c.ErrOrStderr(), "Error:", err.Error())
-		return err
+		enriched := flagErrorWithSuggestion(c, err)
+		fmt.Fprintln(c.ErrOrStderr(), "Error:", enriched.Error())
+		return enriched
 	})
 }
 
