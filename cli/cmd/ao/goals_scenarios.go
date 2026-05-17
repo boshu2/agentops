@@ -15,6 +15,8 @@ var (
 	scenariosThreshold   float64
 	scenariosStatus      string
 	scenariosSource      string
+	scenariosLint        bool
+	scenariosStrict      bool
 )
 
 var goalsScenariosCmd = &cobra.Command{
@@ -43,8 +45,16 @@ patcher (no other byte of GOALS.md changes).`,
 	RunE: runGoalsScenarios,
 }
 
-// runGoalsScenarios dispatches between the read-only listing and --create.
+// runGoalsScenarios dispatches between link lint, --create, and the listing.
 func runGoalsScenarios(cmd *cobra.Command, _ []string) error {
+	if scenariosLint {
+		return goals.RunLint(goals.LintOptions{
+			GoalsFile: resolveGoalsFile(),
+			Strict:    scenariosStrict,
+			JSON:      goalsJSONOutput(),
+			Stdout:    cmd.OutOrStdout(),
+		})
+	}
 	if scenariosCreate != "" {
 		if scenariosDirective == 0 {
 			return fmt.Errorf("--create requires --directive <n> to name the target directive")
@@ -77,6 +87,8 @@ func init() {
 	goalsScenariosCmd.Flags().Float64Var(&scenariosThreshold, "threshold", 0.8, "Satisfaction threshold for a created scenario")
 	goalsScenariosCmd.Flags().StringVar(&scenariosStatus, "status", "draft", "Status for a created scenario (active, draft, retired)")
 	goalsScenariosCmd.Flags().StringVar(&scenariosSource, "source", "human", "Source for a created scenario (human, agent, prod-telemetry)")
+	goalsScenariosCmd.Flags().BoolVar(&scenariosLint, "lint", false, "Lint the directive↔scenario link graph instead of listing")
+	goalsScenariosCmd.Flags().BoolVar(&scenariosStrict, "strict", false, "With --lint, exit non-zero on warnings as well as errors")
 	_ = goalsScenariosCmd.RegisterFlagCompletionFunc("status", staticCompletionFunc("active", "draft", "retired"))
 	_ = goalsScenariosCmd.RegisterFlagCompletionFunc("source", staticCompletionFunc("human", "agent", "prod-telemetry"))
 	goalsCmd.AddCommand(goalsScenariosCmd)
