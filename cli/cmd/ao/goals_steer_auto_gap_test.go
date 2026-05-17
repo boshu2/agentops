@@ -1,3 +1,4 @@
+// practices: [dora-metrics, lean-startup]
 // F5.T1 gap-fill — cmd/ao layer tests for auto re-steer.
 //
 // Fills genuine gaps not addressed by goals_steer_auto_test.go:
