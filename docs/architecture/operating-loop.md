@@ -81,6 +81,11 @@ Any failed row → slices run **sequential**. Skill: `/plan` declares the wave; 
 
 Every Given/When/Then maps to a passing test. Every non-goal is still untouched. Every rollback path is reachable. Evidence is recorded. Activity logs do not close beads. Skills: `/validation`, `/council`, `/vibe`.
 
+When a cycle is logged, the CycleTrace can carry the closeout join explicitly:
+`bead_id`, `acceptance_examples`, `validation_commands`, and
+`closeout_verdict`. That join is the reviewer path from a bead's Gherkin
+example to the test, gate, or eval that proved it.
+
 ### 7. Capture evidence and learning, then ratchet
 
 Two outputs per loop turn — evidence into `.agents/ratchet/` and the bead; learnings only if they cleared the promotion bar (next section). Skills: `/post-mortem`, `/forge`, `/retro`, `/ratchet`, `/flywheel`, `/harvest`.

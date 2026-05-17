@@ -539,10 +539,15 @@ type qualitySignalEntry struct {
 }
 
 // processQualitySignalFeedback reads correction signals from
-// .agents/signals/session-quality.jsonl and applies negative utility
-// adjustments to skills that were loaded during the given session.
+// .agents/signals/session-quality.jsonl and records quality feedback for
+// skills that were loaded during the given session.
 // Returns the number of correction signals found for the session.
-func processQualitySignalFeedback(cwd, sessionID string, mutateArtifacts bool) (int, error) {
+func processQualitySignalFeedback(cwd, sessionID string, _ bool) (int, error) {
+	targetAliases := qualityFeedbackSessionAliases(sessionID)
+	if len(targetAliases) == 0 {
+		return 0, nil
+	}
+
 	signalsPath := filepath.Join(cwd, ".agents", "signals", "session-quality.jsonl")
 	f, err := os.Open(signalsPath)
 	if err != nil {
@@ -566,7 +571,7 @@ func processQualitySignalFeedback(cwd, sessionID string, mutateArtifacts bool) (
 		if err := json.Unmarshal(line, &entry); err != nil {
 			continue
 		}
-		if entry.SessionID == sessionID && entry.SignalType == "correction" {
+		if entry.SignalType == "correction" && qualityFeedbackSessionMatches(entry.SessionID, targetAliases) {
 			correctionCount++
 		}
 	}
@@ -589,61 +594,15 @@ func processQualitySignalFeedback(cwd, sessionID string, mutateArtifacts bool) (
 		return correctionCount, fmt.Errorf("load citations for quality feedback: %w", err)
 	}
 
-	res := resolver.NewFileResolver(cwd)
-	appliedMutate := mutateArtifacts && !GetDryRun()
-
 	var feedbackEvents []FeedbackEvent
 	for _, c := range citations {
-		if c.CitationType != "skill_loaded" {
+		if canonicalCitationType(c.CitationType) != "skill_loaded" {
 			continue
 		}
-
-		learningID := extractLearningID(c.ArtifactPath)
-		path, resolveErr := res.Resolve(learningID)
-		if resolveErr != nil {
+		if !qualityFeedbackSessionMatches(c.SessionID, targetAliases) {
 			continue
 		}
-
-		if !appliedMutate {
-			currentUtility := parseUtilityFromFile(path)
-			event := FeedbackEvent{
-				SessionID:       sessionID,
-				ArtifactPath:    path,
-				CitationType:    "skill_loaded",
-				MetricNamespace: "quality-signal",
-				Decision:        "penalized",
-				Reason:          fmt.Sprintf("quality-correction-count-%d", correctionCount),
-				Reward:          penalty,
-				UtilityBefore:   currentUtility,
-				UtilityAfter:    currentUtility,
-				Alpha:           0,
-				RecordedAt:      time.Now(),
-			}
-			feedbackEvents = append(feedbackEvents, event)
-			continue
-		}
-
-		rewardCount := getLearningRewardCount(path)
-		alpha := annealedAlpha(types.DefaultAlpha, rewardCount)
-		oldUtility, newUtility, updateErr := updateLearningUtility(path, penalty, alpha)
-		if updateErr != nil {
-			continue
-		}
-
-		event := FeedbackEvent{
-			SessionID:       sessionID,
-			ArtifactPath:    path,
-			CitationType:    "skill_loaded",
-			MetricNamespace: "quality-signal",
-			Decision:        "penalized",
-			Reason:          fmt.Sprintf("quality-correction-count-%d", correctionCount),
-			Reward:          penalty,
-			UtilityBefore:   oldUtility,
-			UtilityAfter:    newUtility,
-			Alpha:           alpha,
-			RecordedAt:      time.Now(),
-		}
-		feedbackEvents = append(feedbackEvents, event)
+		feedbackEvents = append(feedbackEvents, qualityFeedbackSkillLoadedEvent(cwd, sessionID, c, correctionCount, penalty))
 	}
 
 	if !GetDryRun() && len(feedbackEvents) > 0 {
@@ -651,4 +610,107 @@ func processQualitySignalFeedback(cwd, sessionID string, mutateArtifacts bool) (
 	}
 
 	return correctionCount, nil
+}
+
+func qualityFeedbackSessionAliases(sessionID string) map[string]struct{} {
+	trimmed := strings.TrimSpace(sessionID)
+	if trimmed == "" {
+		return nil
+	}
+	aliases := make(map[string]struct{})
+	for _, alias := range sessionIDAliases(trimmed) {
+		if alias != "" {
+			aliases[alias] = struct{}{}
+		}
+	}
+	return aliases
+}
+
+func qualityFeedbackSessionMatches(sessionID string, targetAliases map[string]struct{}) bool {
+	trimmed := strings.TrimSpace(sessionID)
+	if trimmed == "" || len(targetAliases) == 0 {
+		return false
+	}
+	for _, alias := range sessionIDAliases(trimmed) {
+		if _, ok := targetAliases[alias]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func qualityFeedbackSkillLoadedEvent(cwd, sessionID string, citation types.CitationEvent, correctionCount int, penalty float64) FeedbackEvent {
+	path := canonicalArtifactPath(cwd, citation.ArtifactPath)
+	kind := qualityFeedbackArtifactKind(cwd, path)
+	currentUtility := qualityFeedbackCurrentUtility(path, kind)
+	return FeedbackEvent{
+		SessionID:       canonicalSessionID(sessionID),
+		ArtifactPath:    path,
+		ArtifactKind:    kind,
+		CitationType:    "skill_loaded",
+		MetricNamespace: "quality-signal",
+		Decision:        "audited",
+		Reason:          fmt.Sprintf("quality-correction-count-%d", correctionCount),
+		Reward:          penalty,
+		UtilityBefore:   currentUtility,
+		UtilityAfter:    currentUtility,
+		Alpha:           0,
+		RecordedAt:      time.Now(),
+	}
+}
+
+func qualityFeedbackCurrentUtility(path, kind string) float64 {
+	switch kind {
+	case "learning", "pattern":
+		return parseUtilityFromFile(path)
+	default:
+		return 0
+	}
+}
+
+func qualityFeedbackArtifactKind(cwd, artifactPath string) string {
+	switch {
+	case isSkillArtifactPath(cwd, artifactPath):
+		return "skill"
+	case isFindingArtifactPath(cwd, artifactPath):
+		return "finding"
+	case artifactPathUnder(cwd, artifactPath, ".agents", "patterns"):
+		return "pattern"
+	case artifactPathUnder(cwd, artifactPath, ".agents", "learnings"):
+		return "learning"
+	default:
+		return "unknown"
+	}
+}
+
+func isSkillArtifactPath(cwd, artifactPath string) bool {
+	rel := relativeArtifactPath(cwd, artifactPath)
+	if rel == "" || !strings.HasSuffix(rel, "/SKILL.md") {
+		return false
+	}
+	for _, prefix := range []string{"skills/", "skills-codex/", "skills-codex-overrides/"} {
+		if strings.HasPrefix(rel, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func artifactPathUnder(cwd, artifactPath string, parts ...string) bool {
+	path := filepath.ToSlash(canonicalArtifactPath(cwd, artifactPath))
+	root := filepath.ToSlash(canonicalArtifactPath(cwd, filepath.Join(parts...))) + "/"
+	return strings.HasPrefix(path, root)
+}
+
+func relativeArtifactPath(cwd, artifactPath string) string {
+	path := canonicalArtifactPath(cwd, artifactPath)
+	rel, err := filepath.Rel(cwd, path)
+	if err != nil {
+		return ""
+	}
+	rel = filepath.ToSlash(rel)
+	if rel == ".." || strings.HasPrefix(rel, "../") {
+		return ""
+	}
+	return rel
 }

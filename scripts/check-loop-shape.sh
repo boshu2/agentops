@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# practices: [process-gates-first, ai-assisted-dev, resilience-patterns]
+# practices: [bdd-gherkin, ddd-bounded-context, tdd]
 # check-loop-shape.sh — warn-only loop-shape gate for non-trivial beads.
 #
 # Implements the initial gate declared by GOALS.md Directive 12: beads tagged
-# `non-trivial` should expose loop shape before implementation — at least one
-# Gherkin block (Given/When/Then) and at least one slice candidate in the
-# issue body. This is the BDD/Gherkin/XP operating loop's mechanical warning.
+# `non-trivial` should expose loop shape before implementation — exactly one
+# bounded context label, at least one Gherkin block (Given/When/Then), at least
+# one slice candidate, and one first-failing proof. This is the
+# BDD/Gherkin/DDD/XP operating loop's mechanical warning.
 #
 # Posture: WARN-ONLY. The script exits 0 even when beads are missing loop
 # shape, so it never blocks a push. It flips to blocking only when invoked
@@ -66,25 +67,46 @@ analyze_beads() {
   local json="$1"
   local rows
   rows=$(printf '%s' "$json" | jq -r '
+    def evidence_text:
+      [(.description // ""), (.acceptance_criteria // ""), (.notes // "")]
+      | join("\n");
+    def context_labels:
+      [(.labels // [])[]
+       | select(test("^bc-(corpus|validation|loop|factory|runtime)$"))]
+      | unique;
     [ .[]
       | select((.labels // []) | index("non-trivial"))
       | { id: .id,
-          gherkin: (((.description // "")
-            | test("Given") and test("When") and test("Then"))),
-          slice: (((.description // "")
-            | test("(?i)slice") or test("\\bS[0-9]"))) }
-    ] | .[] | [.id, (.gherkin|tostring), (.slice|tostring)] | @tsv
+          gherkin: ((evidence_text | test("\\bGiven\\b") and test("\\bWhen\\b") and test("\\bThen\\b"))),
+          slice: ((evidence_text | test("(?i)\\bslice(s| candidates)?\\b") or test("\\bS[0-9]+\\b"))),
+          proof: ((evidence_text | test("(?i)first[ _-]*failing[ _-]*(proof|test)"))),
+          contexts: context_labels }
+    ] | .[] | [.id, (.gherkin|tostring), (.slice|tostring), (.proof|tostring), ((.contexts|length)|tostring), (.contexts|join(","))] | @tsv
   ' 2>/dev/null)
 
   local offenders=0
   if [ -n "$rows" ]; then
-    while IFS=$'\t' read -r id gherkin slice; do
+    while IFS=$'\t' read -r id gherkin slice proof context_count contexts; do
       [ -z "$id" ] && continue
       local missing=""
-      [ "$gherkin" != "true" ] && missing="Gherkin block (Given/When/Then)"
+      if [ "$context_count" != "1" ]; then
+        missing="bounded context label (exactly one of bc-corpus|bc-validation|bc-loop|bc-factory|bc-runtime"
+        if [ -n "$contexts" ]; then
+          missing="$missing; found $contexts"
+        fi
+        missing="$missing)"
+      fi
+      if [ "$gherkin" != "true" ]; then
+        [ -n "$missing" ] && missing="$missing and "
+        missing="${missing}Gherkin block (Given/When/Then)"
+      fi
       if [ "$slice" != "true" ]; then
         [ -n "$missing" ] && missing="$missing and "
         missing="${missing}slice candidate"
+      fi
+      if [ "$proof" != "true" ]; then
+        [ -n "$missing" ] && missing="$missing and "
+        missing="${missing}first failing proof"
       fi
       if [ -n "$missing" ]; then
         echo "WARN: $id — non-trivial bead is missing: $missing"
@@ -99,12 +121,22 @@ self_test() {
   local fixture
   fixture=$(cat <<'EOF'
 [
-  { "id": "fix-good",  "labels": ["non-trivial", "xp"],
-    "description": "Feature: x\n  Scenario: y\n    Given a\n    When b\n    Then c\nSlice candidates: S1 do the thing" },
-  { "id": "fix-nogherkin", "labels": ["non-trivial"],
-    "description": "Just do the work. Slice S1 covers it." },
-  { "id": "fix-noslice", "labels": ["non-trivial"],
-    "description": "Given a\n  When b\n  Then c" },
+  { "id": "fix-good",  "labels": ["non-trivial", "bc-loop", "xp"],
+    "description": "Feature: x\n  Scenario: y\n    Given a\n    When b\n    Then c\nSlice candidates: S1 do the thing\nFirst failing proof: go test ./..." },
+  { "id": "fix-split-fields", "labels": ["non-trivial", "bc-corpus"],
+    "description": "Problem statement only.",
+    "acceptance_criteria": "Slice candidates: S1 do the thing\nFirst failing proof: go test ./...",
+    "notes": "Feature: x\n  Scenario: y\n    Given a\n    When b\n    Then c" },
+  { "id": "fix-nogherkin", "labels": ["non-trivial", "bc-loop"],
+    "description": "Just do the work. Slice S1 covers it. First failing proof: go test ./..." },
+  { "id": "fix-noslice", "labels": ["non-trivial", "bc-loop"],
+    "description": "Given a\n  When b\n  Then c\nFirst failing proof: go test ./..." },
+  { "id": "fix-nocontext", "labels": ["non-trivial"],
+    "description": "Given a\nWhen b\nThen c\nSlice candidates: S1\nFirst failing proof: go test ./..." },
+  { "id": "fix-multicontext", "labels": ["non-trivial", "bc-loop", "bc-corpus"],
+    "description": "Given a\nWhen b\nThen c\nSlice candidates: S1\nFirst failing proof: go test ./..." },
+  { "id": "fix-noproof", "labels": ["non-trivial", "bc-loop"],
+    "description": "Given a\nWhen b\nThen c\nSlice candidates: S1" },
   { "id": "fix-trivial", "labels": ["chore"],
     "description": "rename a variable" }
 ]
@@ -116,8 +148,8 @@ EOF
   count=$(printf '%s\n' "$out" | sed -n 's/^OFFENDERS: //p')
   local fails=0
 
-  if [ "$count" != "2" ]; then
-    echo "SELF-TEST FAIL: expected 2 offenders, got '$count'" >&2
+  if [ "$count" != "5" ]; then
+    echo "SELF-TEST FAIL: expected 5 offenders, got '$count'" >&2
     fails=$((fails + 1))
   fi
   if ! printf '%s\n' "$out" | grep -q "^WARN: fix-nogherkin .*Gherkin block"; then
@@ -128,8 +160,24 @@ EOF
     echo "SELF-TEST FAIL: fix-noslice should warn about a missing slice candidate" >&2
     fails=$((fails + 1))
   fi
+  if ! printf '%s\n' "$out" | grep -q "^WARN: fix-nocontext .*bounded context label"; then
+    echo "SELF-TEST FAIL: fix-nocontext should warn about a missing bounded context label" >&2
+    fails=$((fails + 1))
+  fi
+  if ! printf '%s\n' "$out" | grep -q "^WARN: fix-multicontext .*bounded context label"; then
+    echo "SELF-TEST FAIL: fix-multicontext should warn about multiple bounded context labels" >&2
+    fails=$((fails + 1))
+  fi
+  if ! printf '%s\n' "$out" | grep -q "^WARN: fix-noproof .*first failing proof"; then
+    echo "SELF-TEST FAIL: fix-noproof should warn about a missing first failing proof" >&2
+    fails=$((fails + 1))
+  fi
   if printf '%s\n' "$out" | grep -q "^WARN: fix-good"; then
     echo "SELF-TEST FAIL: fix-good has full loop shape and must not warn" >&2
+    fails=$((fails + 1))
+  fi
+  if printf '%s\n' "$out" | grep -q "^WARN: fix-split-fields"; then
+    echo "SELF-TEST FAIL: fix-split-fields has evidence across bd fields and must not warn" >&2
     fails=$((fails + 1))
   fi
   if printf '%s\n' "$out" | grep -q "^WARN: fix-trivial"; then

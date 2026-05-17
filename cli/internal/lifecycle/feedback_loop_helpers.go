@@ -15,6 +15,7 @@ import (
 type FeedbackLoopEvent struct {
 	SessionID       string    `json:"session_id"`
 	ArtifactPath    string    `json:"artifact_path"`
+	ArtifactKind    string    `json:"artifact_kind,omitempty"`
 	WorkspacePath   string    `json:"workspace_path,omitempty"`
 	CitationType    string    `json:"citation_type,omitempty"`
 	MetricNamespace string    `json:"metric_namespace,omitempty"`

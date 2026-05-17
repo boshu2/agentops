@@ -3,6 +3,8 @@
 > Copy this file when shaping a new piece of work. The issue is **not ready** until every section below is filled in and the acceptance examples are testable. Skill that produces this artifact: [`/discovery`](../../skills/discovery/SKILL.md) (and `/brainstorm` for the earlier free-text → structured pass).
 >
 > See [`docs/architecture/operating-loop.md`](../architecture/operating-loop.md) for why this template exists and where it sits in the loop.
+>
+> Fast path: `scripts/render-intent-bead.sh --help` renders a Directive 12 compliant dry-run body and labels for `bd create`.
 
 ---
 
@@ -13,6 +15,7 @@
 ## Bounded context
 
 > Which bounded context from [`docs/contracts/context-map.md`](../contracts/context-map.md) does this work belong to? If it crosses contexts, this is two issues, not one.
+> The bead must carry exactly one matching label: `bc-corpus`, `bc-validation`, `bc-loop`, `bc-factory`, or `bc-runtime`.
 
 ## Domain terms
 
@@ -68,7 +71,7 @@ Feature: <feature name from above>
 
 > Initial slice list, one per acceptance example (minimum). `/plan` will refine this into the final slice + wave plan. Each slice must have a nameable first failing test, a write-scope sketch, and a bounded-context tag (defaults to the one above).
 
-| Slice ID | Scenario | First failing test (proposed) | Write scope (proposed) | Notes |
+| Slice ID | Scenario | First failing proof/test (proposed) | Write scope (proposed) | Notes |
 |----------|----------|-------------------------------|------------------------|-------|
 | S1 | <name from acceptance examples> | `<test path:name>` | `<files / packages>` | <e.g., "depends on S2 — sequential"> |
 | S2 | … | … | … | … |
@@ -87,11 +90,11 @@ Feature: <feature name from above>
 A `/pre-mortem` or `/council` must verify these before the issue leaves discovery:
 
 - [ ] Acceptance examples are written in Given/When/Then and each is testable as written
-- [ ] Bounded context is named and present in the context map
+- [ ] Bounded context is named, present in the context map, and represented by exactly one `bc-*` label
 - [ ] All domain terms used are registered in the ubiquitous-language register
 - [ ] Non-goals are explicit
 - [ ] Rollback or containment path is named (or its absence is named explicitly)
 - [ ] Evidence list points to concrete artifacts, not vague descriptions
-- [ ] Slice candidates exist (at least one per acceptance example)
+- [ ] Slice candidates exist (at least one per acceptance example) and each has a first failing proof/test
 
 If any box is unchecked, the issue is not ready — send it back to `/discovery` or `/brainstorm`.

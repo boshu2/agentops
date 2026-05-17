@@ -456,6 +456,28 @@ func readCitationFeedbackEvent(t *testing.T, feedbackPath string) FeedbackEvent 
 	return event
 }
 
+func readCitationFeedbackEvents(t *testing.T, feedbackPath string) []FeedbackEvent {
+	t.Helper()
+
+	feedbackData, err := os.ReadFile(feedbackPath)
+	if err != nil {
+		t.Fatalf("feedback.jsonl not created: %v", err)
+	}
+	trimmed := strings.TrimSpace(string(feedbackData))
+	if trimmed == "" {
+		t.Fatal("feedback.jsonl is empty")
+	}
+	var events []FeedbackEvent
+	for _, line := range strings.Split(trimmed, "\n") {
+		var event FeedbackEvent
+		if err := json.Unmarshal([]byte(line), &event); err != nil {
+			t.Fatalf("failed to parse FeedbackEvent: %v", err)
+		}
+		events = append(events, event)
+	}
+	return events
+}
+
 func assertCitationFeedbackEvent(t *testing.T, event FeedbackEvent) {
 	t.Helper()
 
@@ -982,5 +1004,168 @@ func TestProcessQualitySignalFeedback_MissingFile(t *testing.T) {
 	}
 	if correctionCount != 0 {
 		t.Errorf("expected 0 corrections for missing file, got %d", correctionCount)
+	}
+}
+
+func TestProcessQualitySignalFeedback_FiltersSkillLoadedBySessionAndAuditsSkillArtifact(t *testing.T) {
+	tmp := t.TempDir()
+	aoDir := filepath.Join(tmp, ".agents", "ao")
+	if err := os.MkdirAll(aoDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeQualitySignalEntries(t, tmp, []qualitySignalEntry{
+		{Timestamp: "2026-05-04T00:00:00Z", SignalType: "correction", Detail: "target", SessionID: "session-a"},
+		{Timestamp: "2026-05-04T00:00:01Z", SignalType: "correction", Detail: "other", SessionID: "session-b"},
+	})
+	writeCitationFeedbackCitations(t, aoDir, []types.CitationEvent{
+		{
+			ArtifactPath:  "skills/alpha/SKILL.md",
+			SessionID:     "session-a",
+			CitedAt:       time.Now(),
+			CitationType:  "skill_loaded",
+			WorkspacePath: tmp,
+		},
+		{
+			ArtifactPath:  "skills/beta/SKILL.md",
+			SessionID:     "session-b",
+			CitedAt:       time.Now(),
+			CitationType:  "skill_loaded",
+			WorkspacePath: tmp,
+		},
+	})
+
+	correctionCount, err := processQualitySignalFeedback(tmp, "session-a", true)
+	if err != nil {
+		t.Fatalf("processQualitySignalFeedback returned error: %v", err)
+	}
+	if correctionCount != 1 {
+		t.Fatalf("expected 1 correction, got %d", correctionCount)
+	}
+
+	events := readCitationFeedbackEvents(t, filepath.Join(aoDir, "feedback.jsonl"))
+	if len(events) != 1 {
+		t.Fatalf("expected 1 feedback event, got %d", len(events))
+	}
+	event := events[0]
+	if event.SessionID != "session-a" {
+		t.Errorf("SessionID = %q, want session-a", event.SessionID)
+	}
+	if event.ArtifactKind != "skill" {
+		t.Errorf("ArtifactKind = %q, want skill", event.ArtifactKind)
+	}
+	if !strings.HasSuffix(filepath.ToSlash(event.ArtifactPath), "/skills/alpha/SKILL.md") {
+		t.Errorf("ArtifactPath = %q, want alpha skill path", event.ArtifactPath)
+	}
+	if event.Decision != "audited" {
+		t.Errorf("Decision = %q, want audited", event.Decision)
+	}
+	if event.Reward != -0.1 {
+		t.Errorf("Reward = %f, want -0.1", event.Reward)
+	}
+	if event.UtilityBefore != 0 || event.UtilityAfter != 0 || event.Alpha != 0 {
+		t.Errorf("skill audit mutated utility fields: before=%f after=%f alpha=%f", event.UtilityBefore, event.UtilityAfter, event.Alpha)
+	}
+}
+
+func TestProcessQualitySignalFeedback_EmptySessionDoesNotAuditSkillLoadedCitations(t *testing.T) {
+	tmp := t.TempDir()
+	aoDir := filepath.Join(tmp, ".agents", "ao")
+	if err := os.MkdirAll(aoDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeQualitySignalEntries(t, tmp, []qualitySignalEntry{
+		{Timestamp: "2026-05-04T00:00:00Z", SignalType: "correction", Detail: "empty", SessionID: ""},
+	})
+	writeCitationFeedbackCitations(t, aoDir, []types.CitationEvent{
+		{
+			ArtifactPath: "skills/empty/SKILL.md",
+			SessionID:    "",
+			CitedAt:      time.Now(),
+			CitationType: "skill_loaded",
+		},
+	})
+
+	correctionCount, err := processQualitySignalFeedback(tmp, "", true)
+	if err != nil {
+		t.Fatalf("processQualitySignalFeedback returned error: %v", err)
+	}
+	if correctionCount != 0 {
+		t.Fatalf("expected 0 corrections for empty target session, got %d", correctionCount)
+	}
+	if _, err := os.Stat(filepath.Join(aoDir, "feedback.jsonl")); !os.IsNotExist(err) {
+		t.Fatalf("feedback.jsonl should not be created for empty target session, err=%v", err)
+	}
+}
+
+func TestProcessQualitySignalFeedback_SkillLoadedLearningPathAuditedWithoutMutation(t *testing.T) {
+	tmp := t.TempDir()
+	aoDir := filepath.Join(tmp, ".agents", "ao")
+	if err := os.MkdirAll(aoDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	learningPath := filepath.Join(tmp, ".agents", "learnings", "candidate.md")
+	if err := os.MkdirAll(filepath.Dir(learningPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	learningContent := "---\nutility: 0.8\nreward_count: 0\n---\n# Candidate\n"
+	if err := os.WriteFile(learningPath, []byte(learningContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	writeQualitySignalEntries(t, tmp, []qualitySignalEntry{
+		{Timestamp: "2026-05-04T00:00:00Z", SignalType: "correction", Detail: "target", SessionID: "session-learning"},
+	})
+	writeCitationFeedbackCitations(t, aoDir, []types.CitationEvent{
+		{
+			ArtifactPath: ".agents/learnings/candidate.md",
+			SessionID:    "session-learning",
+			CitedAt:      time.Now(),
+			CitationType: "skill_loaded",
+		},
+	})
+
+	correctionCount, err := processQualitySignalFeedback(tmp, "session-learning", true)
+	if err != nil {
+		t.Fatalf("processQualitySignalFeedback returned error: %v", err)
+	}
+	if correctionCount != 1 {
+		t.Fatalf("expected 1 correction, got %d", correctionCount)
+	}
+	if got := parseUtilityFromFile(learningPath); got != 0.8 {
+		t.Fatalf("learning utility mutated to %f, want 0.8", got)
+	}
+
+	events := readCitationFeedbackEvents(t, filepath.Join(aoDir, "feedback.jsonl"))
+	if len(events) != 1 {
+		t.Fatalf("expected 1 feedback event, got %d", len(events))
+	}
+	event := events[0]
+	if event.ArtifactKind != "learning" {
+		t.Errorf("ArtifactKind = %q, want learning", event.ArtifactKind)
+	}
+	if event.Decision != "audited" {
+		t.Errorf("Decision = %q, want audited", event.Decision)
+	}
+	if event.UtilityBefore != 0.8 || event.UtilityAfter != 0.8 || event.Alpha != 0 {
+		t.Errorf("learning audit should not mutate utility fields: before=%f after=%f alpha=%f", event.UtilityBefore, event.UtilityAfter, event.Alpha)
+	}
+}
+
+func writeQualitySignalEntries(t *testing.T, dir string, entries []qualitySignalEntry) {
+	t.Helper()
+
+	signalsDir := filepath.Join(dir, ".agents", "signals")
+	if err := os.MkdirAll(signalsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	var lines []string
+	for _, entry := range entries {
+		data, err := json.Marshal(entry)
+		if err != nil {
+			t.Fatal(err)
+		}
+		lines = append(lines, string(data))
+	}
+	if err := os.WriteFile(filepath.Join(signalsDir, "session-quality.jsonl"), []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }
