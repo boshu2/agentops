@@ -256,7 +256,7 @@ func writeSnapshot(tarPath, srcRoot string) (int, int64, string, error) {
 	if err != nil {
 		return 0, 0, "", err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	hash := sha256.New()
 	mw := io.MultiWriter(f, hash)
@@ -337,12 +337,12 @@ func extractSnapshot(tarPath, destParent string) (int, int64, error) {
 	if err != nil {
 		return 0, 0, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	gz, err := gzip.NewReader(f)
 	if err != nil {
 		return 0, 0, err
 	}
-	defer gz.Close()
+	defer func() { _ = gz.Close() }()
 	tr := tar.NewReader(gz)
 
 	if err := os.MkdirAll(filepath.Dir(destParent), 0o755); err != nil {
@@ -433,7 +433,7 @@ func writeCorpusManifestFile(path string, v any) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	enc := json.NewEncoder(f)
 	enc.SetIndent("", "  ")
 	return enc.Encode(v)

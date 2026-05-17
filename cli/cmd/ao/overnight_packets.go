@@ -491,7 +491,7 @@ func extractAddToSkillClaim(title string) (string, string, bool) {
 		return "", "", false
 	}
 	for _, r := range skill {
-		if !(r >= 'a' && r <= 'z') && !(r >= '0' && r <= '9') && r != '-' && r != '_' {
+		if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' && r != '_' {
 			return "", "", false
 		}
 	}
@@ -536,8 +536,8 @@ func extractRepoRef(s, prefix, suffix string) string {
 	rest := s[idx:]
 	end := len(rest)
 	for i, r := range rest {
-		switch {
-		case r == ' ', r == '"', r == '\'', r == ')', r == '`', r == '\n':
+		switch r {
+		case ' ', '"', '\'', ')', '`', '\n':
 			end = i
 		}
 		if end != len(rest) {

@@ -159,7 +159,7 @@ func (c *Client) doJSONWithQuery(
 	if err != nil {
 		return ResponseMeta{}, fmt.Errorf("gascity %s %s: %w", method, requestPath, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	meta := ResponseMeta{
 		StatusCode: resp.StatusCode,

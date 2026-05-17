@@ -34,6 +34,14 @@ func loadRPIArtifacts(projectRoot string) ([]rpiArtifact, bool) {
 	if info, err := os.Stat(base); err != nil || !info.IsDir() {
 		return nil, false
 	}
+	// os.Root scopes all reads under base, blocking symlink traversal out of
+	// the directory tree and closing the TOCTOU window between WalkDir and
+	// the per-file read (gosec G122 / CWE-367).
+	root, err := os.OpenRoot(base)
+	if err != nil {
+		return nil, false
+	}
+	defer func() { _ = root.Close() }()
 	var out []rpiArtifact
 	_ = filepath.WalkDir(base, func(path string, d os.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
@@ -43,7 +51,11 @@ func loadRPIArtifacts(projectRoot string) ([]rpiArtifact, bool) {
 		if !strings.HasSuffix(name, ".md") && !strings.HasSuffix(name, ".json") {
 			return nil
 		}
-		data, rerr := os.ReadFile(path)
+		rel, relErr := filepath.Rel(base, path)
+		if relErr != nil {
+			return nil
+		}
+		data, rerr := root.ReadFile(filepath.ToSlash(rel))
 		if rerr != nil {
 			return nil
 		}

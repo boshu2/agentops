@@ -19,7 +19,7 @@ func AppendToLog(agentsDir, actor, verb, subject, wikilink string) error {
 	if err != nil {
 		return fmt.Errorf("open LOG.md: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	_, err = f.WriteString(entry)
 	return err
 }
@@ -36,7 +36,7 @@ func AppendToIndex(agentsDir, section, wikilink, description string) error {
 	if err != nil {
 		return fmt.Errorf("open INDEX.md: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	_, err = f.WriteString(entry)
 	return err
 }

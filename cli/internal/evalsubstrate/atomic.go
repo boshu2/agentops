@@ -26,21 +26,22 @@ func WriteAtomic(path string, data []byte) error {
 		return fmt.Errorf("WriteAtomic: open temp: %w", err)
 	}
 	if _, err := f.Write(data); err != nil {
-		f.Close()
-		os.Remove(tmp)
+		// Best-effort cleanup; the write error below is the actionable one.
+		_ = f.Close()
+		_ = os.Remove(tmp)
 		return fmt.Errorf("WriteAtomic: write temp: %w", err)
 	}
 	if err := f.Sync(); err != nil {
-		f.Close()
-		os.Remove(tmp)
+		_ = f.Close()
+		_ = os.Remove(tmp)
 		return fmt.Errorf("WriteAtomic: fsync temp: %w", err)
 	}
 	if err := f.Close(); err != nil {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		return fmt.Errorf("WriteAtomic: close temp: %w", err)
 	}
 	if err := os.Rename(tmp, path); err != nil {
-		os.Remove(tmp)
+		_ = os.Remove(tmp)
 		return fmt.Errorf("WriteAtomic: rename: %w", err)
 	}
 	if err := fsyncDir(parent); err != nil {
