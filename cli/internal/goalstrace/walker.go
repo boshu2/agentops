@@ -339,7 +339,13 @@ func emitBeadClaimEdges(b *builder, root string, bead beadRecord) {
 }
 
 // beadClaimEdge builds one scenario_claimed_by_bead edge, attaching a
-// broken_bead_scenario_claim error when the claimed scenario does not resolve.
+// broken_bead_scenario_claim defect when the claimed scenario does not resolve.
+//
+// Per ADR-0005 §4.1, the defect is an error only when an explicit link is
+// broken — i.e. the claim came from an explicit "Scenarios:" line
+// (conf == ConfidenceHigh). A heuristic free-text match (conf == ConfidenceLow)
+// can never constitute an explicit declaration, so an unresolvable heuristic
+// token is downgraded to a warning rather than an error.
 func beadClaimEdge(root, beadID, scenarioID string, conf Confidence) Edge {
 	e := Edge{
 		Type:       EdgeScenarioClaimedByBead,
@@ -348,9 +354,15 @@ func beadClaimEdge(root, beadID, scenarioID string, conf Confidence) Edge {
 		Confidence: conf,
 	}
 	if !resolveScenario(root, scenarioID).Found {
+		sev := SeverityError
+		if conf == ConfidenceLow {
+			// Heuristic (non-explicit) claims are not broken explicit links;
+			// downgrade to warning so they don't gate a clean run.
+			sev = SeverityWarning
+		}
 		e.Defects = append(e.Defects, Defect{
 			Code:     DefectBrokenBeadScenarioClaim,
-			Severity: SeverityError,
+			Severity: sev,
 			Detail:   "bead claims scenario " + scenarioID + " which does not resolve",
 		})
 	}

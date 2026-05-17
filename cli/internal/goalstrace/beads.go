@@ -14,7 +14,13 @@ var scenariosLineRe = regexp.MustCompile(`(?im)^\s*Scenarios:\s*(.+)$`)
 
 // scenarioTokenRe matches a scenario ID token anywhere in free text (the
 // low-confidence heuristic discovery path).
-var scenarioTokenRe = regexp.MustCompile(`\b(s-\d{4}-\d{2}-\d{2}-\d{3}|auto-[a-z0-9.\-]+)\b`)
+//
+// auto- IDs require at least two hyphen-separated slug segments after the
+// "auto-" prefix (e.g. "auto-nightly-evolution-dry-run") so that plain English
+// compound words like "auto-merge" or "auto-update" are NOT matched. A
+// single-word suffix ("auto-merge") has exactly one segment and no further
+// hyphen, which the required inner "-[a-z0-9]+" group rejects.
+var scenarioTokenRe = regexp.MustCompile(`\b(s-\d{4}-\d{2}-\d{2}-\d{3}|auto-[a-z0-9]+-[a-z0-9][a-z0-9-]*)\b`)
 
 // directiveTokenRe matches a stable directive ID token (d-<slug>) anywhere in
 // free text — used for the body-scan discovery path of directive_has_learning.
