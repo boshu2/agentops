@@ -171,6 +171,39 @@ Read [references/user-reporting.md](references/user-reporting.md) for full examp
 
 ---
 
+## Compound-Engineering Retro (`--compound`)
+
+A comparative-delta mode for projects that run `ao goals measure` repeatedly
+across iterations of the same domain slice. Use when a slice has ≥2 iterations
+in the verdict ledger and you want to know: what improved, what regressed, and
+what the learning yield was since the last run.
+
+**Trigger:** run this mode after any `ao goals measure` where the slice has a
+prior iteration record in `.agents/goals/verdict-ledger.json`.
+
+```bash
+# Confirm ≥2 iterations exist for a directive in the slice:
+jq '[.records[] | select(.record_type=="iteration" and .directive_id=="d-<id>")] | length' \
+   .agents/goals/verdict-ledger.json
+
+# Run a new iteration (appends one record per directive):
+ao goals measure
+
+# Browse iteration history:
+ao goals history --goal <directive-id>
+```
+
+Then follow the step-by-step procedure in
+[references/compound-engineering-retro.md](references/compound-engineering-retro.md)
+(Steps CE.0–CE.5): extract N and N-1 records from the ledger, compute the
+verdict and satisfaction delta, count learning yield, and write the delta as a
+draft learning to `.agents/learnings/YYYY-MM-DD-<slice>-iter-delta.md`.
+
+The output learning carries `status: draft` and the run IDs of both iterations;
+human or Tier-3 synthesis promotes it to `status: reviewed`.
+
+---
+
 ## See Also
 
 - `skills/council/SKILL.md` — Multi-model validation council
@@ -200,3 +233,4 @@ Read [references/user-reporting.md](references/user-reporting.md) for full examp
 - [references/execution-steps.md](references/execution-steps.md)
 - [references/phase-2-extract.md](references/phase-2-extract.md)
 - [references/user-reporting.md](references/user-reporting.md)
+- [references/compound-engineering-retro.md](references/compound-engineering-retro.md)
