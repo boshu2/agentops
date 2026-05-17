@@ -1,6 +1,9 @@
-# Dueling Route — per-phase prompt templates and NTM commands
+# Dueling Route — debate-mode per-phase prompt templates and NTM commands
 
-Detailed mechanics for `/expert-council`. The SKILL.md Workflow section is the spine; this file is the operator handbook.
+Detailed mechanics for `/council --mode=debate` (the contend pattern). The SKILL.md
+`## Debate mode` section is the spine; this file is the operator handbook. The
+absorbed `/expert-council` skill and `dueling-idea-wizards` both route here —
+`dueling-idea-wizards` is `--mode=debate --focus=ideas`.
 
 ## Phase 1 — Pick the persona slate
 

@@ -103,7 +103,7 @@ These are the skills every user needs first. Everything else is available when y
 | Skill | Purpose |
 |-------|---------|
 | `$compile` | Active knowledge intelligence — Mine → Grow → Defrag cycle |
-| `$expert-council` | Adversarial expert council — named personas duel and cross-score to decide a hard question |
+| `$expert-council` | Alias for `$council --mode=debate` (kept 1 release) — adversarial named-persona duel |
 | `$knowledge-activation` | Operationalize a mature `.agents` corpus into beliefs, playbooks, briefings, and gap surfaces |
 | `$brainstorm` | Structured idea exploration before planning |
 | `$discovery` | Full discovery phase orchestrator (brainstorm → search → research → plan → pre-mortem) |
