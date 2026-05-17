@@ -2,6 +2,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/boshu2/agentops/cli/internal/goals"
 	"github.com/spf13/cobra"
 )
@@ -9,37 +11,73 @@ import (
 var (
 	scenariosDirective   int
 	scenariosDirectiveID string
+	scenariosCreate      string
+	scenariosThreshold   float64
+	scenariosStatus      string
+	scenariosSource      string
 )
 
 var goalsScenariosCmd = &cobra.Command{
 	Use:     "scenarios",
-	Short:   "List the holdout scenarios linked to each GOALS.md directive",
+	Short:   "List or create the holdout scenarios linked to GOALS.md directives",
 	GroupID: "analysis",
 	Args:    cobra.NoArgs,
-	Long: `List the executable-spec scenarios linked to each GOALS.md directive.
+	Long: `List or create the executable-spec scenarios linked to GOALS.md directives.
 
-Read-only: never mutates GOALS.md or any scenario file. Directive membership
-comes from each directive's "**Scenarios:**" attribute line; scenario content
-is resolved from spec/scenarios/ then .agents/holdout/ (see docs/adr/ADR-0003).
+Listing is read-only: directive membership comes from each directive's
+"**Scenarios:**" attribute line; scenario content is resolved from
+spec/scenarios/ then .agents/holdout/ (see docs/adr/ADR-0003).
 
   ao goals scenarios                       list every directive and its links
   ao goals scenarios --directive 2         filter to directive #2
   ao goals scenarios --directive-id d-foo  filter to a stable directive ID
-  ao goals scenarios -o json               machine-readable directive→scenarios map`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return goals.RunScenarios(goals.ScenariosOptions{
+  ao goals scenarios -o json               machine-readable directive→scenarios map
+
+Creating scaffolds a promoted spec scenario and links it bidirectionally:
+
+  ao goals scenarios --create "<goal>" --directive 2
+
+The new scenario JSON carries the directive's stable directive_id, and the
+directive's "**Scenarios:**" line gains the scenario ID via the non-lossy
+patcher (no other byte of GOALS.md changes).`,
+	RunE: runGoalsScenarios,
+}
+
+// runGoalsScenarios dispatches between the read-only listing and --create.
+func runGoalsScenarios(cmd *cobra.Command, _ []string) error {
+	if scenariosCreate != "" {
+		if scenariosDirective == 0 {
+			return fmt.Errorf("--create requires --directive <n> to name the target directive")
+		}
+		return goals.RunScenarioCreate(goals.ScenarioCreateOptions{
 			GoalsFile:    resolveGoalsFile(),
 			DirectiveNum: scenariosDirective,
-			DirectiveID:  scenariosDirectiveID,
+			Goal:         scenariosCreate,
+			Threshold:    scenariosThreshold,
+			Status:       scenariosStatus,
+			Source:       scenariosSource,
 			JSON:         goalsJSONOutput(),
 			Stdout:       cmd.OutOrStdout(),
-			Stderr:       cmd.ErrOrStderr(),
 		})
-	},
+	}
+	return goals.RunScenarios(goals.ScenariosOptions{
+		GoalsFile:    resolveGoalsFile(),
+		DirectiveNum: scenariosDirective,
+		DirectiveID:  scenariosDirectiveID,
+		JSON:         goalsJSONOutput(),
+		Stdout:       cmd.OutOrStdout(),
+		Stderr:       cmd.ErrOrStderr(),
+	})
 }
 
 func init() {
-	goalsScenariosCmd.Flags().IntVar(&scenariosDirective, "directive", 0, "Filter to one directive by display number")
-	goalsScenariosCmd.Flags().StringVar(&scenariosDirectiveID, "directive-id", "", "Filter to one directive by stable Directive ID")
+	goalsScenariosCmd.Flags().IntVar(&scenariosDirective, "directive", 0, "Directive display number (filter when listing, target when creating)")
+	goalsScenariosCmd.Flags().StringVar(&scenariosDirectiveID, "directive-id", "", "Filter listing to one directive by stable Directive ID")
+	goalsScenariosCmd.Flags().StringVar(&scenariosCreate, "create", "", "Create a scenario from this goal description and link it to --directive")
+	goalsScenariosCmd.Flags().Float64Var(&scenariosThreshold, "threshold", 0.8, "Satisfaction threshold for a created scenario")
+	goalsScenariosCmd.Flags().StringVar(&scenariosStatus, "status", "draft", "Status for a created scenario (active, draft, retired)")
+	goalsScenariosCmd.Flags().StringVar(&scenariosSource, "source", "human", "Source for a created scenario (human, agent, prod-telemetry)")
+	_ = goalsScenariosCmd.RegisterFlagCompletionFunc("status", staticCompletionFunc("active", "draft", "retired"))
+	_ = goalsScenariosCmd.RegisterFlagCompletionFunc("source", staticCompletionFunc("human", "agent", "prod-telemetry"))
 	goalsCmd.AddCommand(goalsScenariosCmd)
 }

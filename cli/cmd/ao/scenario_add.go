@@ -4,49 +4,37 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
-	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/scenario"
 	"github.com/spf13/cobra"
 )
 
-var (
-	scenarioIDPattern = regexp.MustCompile(`^(s-\d{4}-\d{2}-\d{2}-\d{3}|auto-.+)$`)
-	scenarioAddNow    = time.Now
-	scenarioAddFlags  = struct {
-		Narrative       string
-		ExpectedOutcome string
-		Threshold       float64
-		Status          string
-		Source          string
-	}{
-		Threshold: 0.8,
-		Status:    "draft",
-		Source:    "human",
-	}
-)
+// scenarioFile aliases the scenario package's Scenario type so other files in
+// this package (and tests) keep a stable local name.
+type scenarioFile = scenario.Scenario
 
-type scenarioFile struct {
-	ID                    string                     `json:"id"`
-	Version               int                        `json:"version"`
-	Date                  string                     `json:"date"`
-	Goal                  string                     `json:"goal"`
-	Narrative             string                     `json:"narrative"`
-	ExpectedOutcome       string                     `json:"expected_outcome"`
-	AcceptanceVectors     []scenarioAcceptanceVector `json:"acceptance_vectors,omitempty"`
-	SatisfactionThreshold float64                    `json:"satisfaction_threshold"`
-	Source                string                     `json:"source,omitempty"`
-	Status                string                     `json:"status"`
-}
+// scenarioAcceptanceVector aliases the scenario package's AcceptanceVector.
+type scenarioAcceptanceVector = scenario.AcceptanceVector
 
-type scenarioAcceptanceVector struct {
-	Dimension string  `json:"dimension"`
-	Threshold float64 `json:"threshold"`
-	Check     string  `json:"check,omitempty"`
+// scenarioIDPattern aliases the scenario package's ID pattern (used by
+// scenario validate).
+var scenarioIDPattern = scenario.IDPattern
+
+// scenarioAddNow is the injectable clock for deterministic IDs in tests.
+var scenarioAddNow = time.Now
+
+var scenarioAddFlags = struct {
+	Narrative       string
+	ExpectedOutcome string
+	Threshold       float64
+	Status          string
+	Source          string
+}{
+	Threshold: 0.8,
+	Status:    "draft",
+	Source:    "human",
 }
 
 var scenarioAddCmd = &cobra.Command{
@@ -61,149 +49,36 @@ or evaluator can review them before activation.`,
 	RunE: runScenarioAdd,
 }
 
+// runScenarioAdd authors an ad hoc holdout scenario by delegating to the shared
+// scenario.Create path — the same path `ao goals scenarios --create` uses.
 func runScenarioAdd(cmd *cobra.Command, args []string) error {
-	goal := strings.TrimSpace(args[0])
-	if goal == "" {
-		return fmt.Errorf("goal is required")
-	}
-	if err := validateScenarioAddFlags(); err != nil {
-		return err
-	}
-
-	holdoutDir := filepath.Join(".agents", "holdout")
-	if err := os.MkdirAll(holdoutDir, 0o755); err != nil {
-		return fmt.Errorf("creating holdout directory: %w", err)
-	}
-
-	date := scenarioAddNow().UTC().Format("2006-01-02")
-	id, err := nextScenarioID(holdoutDir, date)
+	res, err := scenario.Create(scenario.CreateOptions{
+		Goal:            args[0],
+		Narrative:       scenarioAddFlags.Narrative,
+		ExpectedOutcome: scenarioAddFlags.ExpectedOutcome,
+		Threshold:       scenarioAddFlags.Threshold,
+		Status:          scenarioAddFlags.Status,
+		Source:          scenarioAddFlags.Source,
+		Dir:             filepath.Join(".agents", "holdout"),
+		Now:             scenarioAddNow,
+	})
 	if err != nil {
 		return err
 	}
-	scenario := scenarioFile{
-		ID:                    id,
-		Version:               1,
-		Date:                  date,
-		Goal:                  goal,
-		Narrative:             scenarioNarrative(goal, scenarioAddFlags.Narrative),
-		ExpectedOutcome:       scenarioExpectedOutcome(goal, scenarioAddFlags.ExpectedOutcome),
-		SatisfactionThreshold: scenarioAddFlags.Threshold,
-		Source:                scenarioAddFlags.Source,
-		Status:                scenarioAddFlags.Status,
-	}
-
-	path := filepath.Join(holdoutDir, id+".json")
-	data, err := json.MarshalIndent(scenario, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshalling scenario: %w", err)
-	}
-	if err := os.WriteFile(path, append(data, '\n'), 0o644); err != nil {
-		return fmt.Errorf("writing scenario %s: %w", path, err)
-	}
-
 	if GetOutput() == "json" {
 		enc := json.NewEncoder(cmd.OutOrStdout())
 		enc.SetIndent("", "  ")
-		return enc.Encode(scenario)
+		return enc.Encode(res.Scenario)
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "Created scenario %s at %s\n", id, path)
+	fmt.Fprintf(cmd.OutOrStdout(), "Created scenario %s at %s\n", res.Scenario.ID, res.Path)
 	return nil
 }
 
-func validateScenarioAddFlags() error {
-	if scenarioAddFlags.Threshold < 0 || scenarioAddFlags.Threshold > 1 {
-		return fmt.Errorf("threshold %.2f out of range [0, 1]", scenarioAddFlags.Threshold)
-	}
-	if !validScenarioStatus(scenarioAddFlags.Status) {
-		return fmt.Errorf("invalid status %q (must be active, draft, or retired)", scenarioAddFlags.Status)
-	}
-	if !validScenarioSource(scenarioAddFlags.Source) {
-		return fmt.Errorf("invalid source %q (must be human, agent, or prod-telemetry)", scenarioAddFlags.Source)
-	}
-	return nil
-}
+// validScenarioStatus reports whether status is an allowed scenario status.
+func validScenarioStatus(status string) bool { return scenario.ValidStatus(status) }
 
-func nextScenarioID(holdoutDir, date string) (string, error) {
-	entries, err := os.ReadDir(holdoutDir)
-	if err != nil {
-		return "", fmt.Errorf("reading holdout directory: %w", err)
-	}
-	prefix := "s-" + date + "-"
-	maxSeq := 0
-	for _, entry := range entries {
-		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
-			continue
-		}
-		for _, candidate := range scenarioIDCandidates(holdoutDir, entry.Name()) {
-			if seq, ok := scenarioSequence(candidate, prefix); ok && seq > maxSeq {
-				maxSeq = seq
-			}
-		}
-	}
-	return fmt.Sprintf("%s%03d", prefix, maxSeq+1), nil
-}
-
-func scenarioIDCandidates(holdoutDir, fileName string) []string {
-	candidates := []string{strings.TrimSuffix(fileName, filepath.Ext(fileName))}
-	data, err := os.ReadFile(filepath.Join(holdoutDir, fileName))
-	if err != nil {
-		return candidates
-	}
-	var decoded struct {
-		ID string `json:"id"`
-	}
-	if err := json.Unmarshal(data, &decoded); err == nil && strings.TrimSpace(decoded.ID) != "" {
-		candidates = append(candidates, strings.TrimSpace(decoded.ID))
-	}
-	return candidates
-}
-
-func scenarioSequence(id, prefix string) (int, bool) {
-	if !strings.HasPrefix(id, prefix) {
-		return 0, false
-	}
-	seqText := strings.TrimPrefix(id, prefix)
-	if len(seqText) != 3 {
-		return 0, false
-	}
-	seq, err := strconv.Atoi(seqText)
-	if err != nil {
-		return 0, false
-	}
-	return seq, true
-}
-
-func scenarioNarrative(goal, override string) string {
-	if value := strings.TrimSpace(override); value != "" {
-		return value
-	}
-	return fmt.Sprintf("A user or evaluator exercises the system behavior for this goal: %s.", goal)
-}
-
-func scenarioExpectedOutcome(goal, override string) string {
-	if value := strings.TrimSpace(override); value != "" {
-		return value
-	}
-	return fmt.Sprintf("The implementation satisfies the goal in observable behavior: %s.", goal)
-}
-
-func validScenarioStatus(status string) bool {
-	switch status {
-	case "active", "draft", "retired":
-		return true
-	default:
-		return false
-	}
-}
-
-func validScenarioSource(source string) bool {
-	switch source {
-	case "human", "agent", "prod-telemetry":
-		return true
-	default:
-		return false
-	}
-}
+// validScenarioSource reports whether source is an allowed scenario source.
+func validScenarioSource(source string) bool { return scenario.ValidSource(source) }
 
 func init() {
 	scenarioAddCmd.Flags().StringVar(&scenarioAddFlags.Narrative, "narrative", "", "Narrative description (default: inferred from goal)")
