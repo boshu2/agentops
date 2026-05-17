@@ -100,16 +100,29 @@ extract_practices() {
   local file="$1"
   # Look for a 'practices: [...]' declaration in the first 200 lines.
   # Matches: practices: [a, b, c]  OR  practices: [a]  OR  "practices": ["a"]
-  head -n 200 "$file" \
-    | tr '\n' ' ' \
-    | grep -oE '"?practices"?[[:space:]]*:[[:space:]]*\[[^]]*\]' \
-    | head -1 \
-    | grep -oE '\[[^]]*\]' \
-    | tr -d '[](){}"' \
-    | tr ',' '\n' \
-    | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
-    | grep -E '^[a-z0-9-]+$' \
-    | sort -u || true
+  {
+    head -n 200 "$file" \
+      | tr '\n' ' ' \
+      | grep -oE '"?practices"?[[:space:]]*:[[:space:]]*\[[^]]*\]' \
+      | head -1 \
+      | grep -oE '\[[^]]*\]' \
+      | tr -d '[](){}"' \
+      | tr ',' '\n' \
+      | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' \
+      | grep -E '^[a-z0-9-]+$' || true
+    awk '
+      NR > 200 { exit }
+      /^[[:space:]]*practices:[[:space:]]*$/ { in_practices=1; next }
+      in_practices && /^[[:space:]]*-[[:space:]]+[a-z0-9-]+[[:space:]]*$/ {
+        sub(/^[[:space:]]*-[[:space:]]+/, "")
+        sub(/[[:space:]]*$/, "")
+        print
+        next
+      }
+      in_practices && /^[[:space:]]*[A-Za-z0-9_-]+:[[:space:]]*/ { exit }
+      in_practices && /^---[[:space:]]*$/ { exit }
+    ' "$file"
+  } | sort -u
 }
 
 scan_file() {

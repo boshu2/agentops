@@ -24,6 +24,8 @@ const (
 	corpusSourceDir       = ".agents"
 )
 
+var maxSnapshotExtractBytes int64 = 1 << 30
+
 var (
 	snapshotOutputDir string
 	snapshotJSON      bool
@@ -265,11 +267,20 @@ func writeSnapshot(tarPath, srcRoot string) (int, int64, string, error) {
 	var total int64
 	srcRoot = filepath.Clean(srcRoot)
 	parent := filepath.Dir(srcRoot)
+	root, err := os.OpenRoot(srcRoot)
+	if err != nil {
+		return 0, 0, "", err
+	}
+	defer func() { _ = root.Close() }()
 	walkErr := filepath.Walk(srcRoot, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		rel, rerr := filepath.Rel(parent, path)
+		if rerr != nil {
+			return rerr
+		}
+		rootRel, rerr := filepath.Rel(srcRoot, path)
 		if rerr != nil {
 			return rerr
 		}
@@ -284,11 +295,20 @@ func writeSnapshot(tarPath, srcRoot string) (int, int64, string, error) {
 		if !info.Mode().IsRegular() {
 			return nil
 		}
-		fh, oerr := os.Open(path)
+		fh, oerr := root.Open(rootRel)
 		if oerr != nil {
 			return oerr
 		}
-		n, cperr := io.Copy(tw, fh)
+		openedInfo, serr := fh.Stat()
+		if serr != nil {
+			_ = fh.Close()
+			return serr
+		}
+		if !openedInfo.Mode().IsRegular() {
+			_ = fh.Close()
+			return fmt.Errorf("snapshot source changed while reading: %s", rel)
+		}
+		n, cperr := io.CopyN(tw, fh, info.Size())
 		_ = fh.Close()
 		if cperr != nil {
 			return cperr
@@ -355,6 +375,9 @@ func extractSnapshot(tarPath, destParent string) (int, int64, error) {
 				return 0, 0, err
 			}
 		case tar.TypeReg:
+			if hdr.Size < 0 || total+hdr.Size > maxSnapshotExtractBytes {
+				return 0, 0, fmt.Errorf("snapshot extract exceeds byte limit: %d", maxSnapshotExtractBytes)
+			}
 			if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 				return 0, 0, err
 			}
@@ -362,10 +385,13 @@ func extractSnapshot(tarPath, destParent string) (int, int64, error) {
 			if oerr != nil {
 				return 0, 0, oerr
 			}
-			n, cperr := io.Copy(out, tr)
-			_ = out.Close()
+			n, cperr := io.CopyN(out, tr, hdr.Size)
+			cerr := out.Close()
 			if cperr != nil {
 				return 0, 0, cperr
+			}
+			if cerr != nil {
+				return 0, 0, cerr
 			}
 			count++
 			total += n

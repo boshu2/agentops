@@ -151,11 +151,13 @@ assert_contains "$generated_dirty_output" "Generated/gate-managed paths detected
 assert_contains "$generated_dirty_output" "cli/docs/COMMANDS.md"
 git -C "$canonical" checkout -- cli/docs/COMMANDS.md
 
-mkdir -p "$canonical/.agents/rpi" "$canonical/wiki/synthesis"
+mkdir -p "$canonical/.agents/rpi" "$canonical/.ntm/summaries" "$canonical/wiki/synthesis"
 printf '{"source_epic":"fixture","items":[],"consumed":false,"claim_status":"available"}\n' >"$canonical/.agents/rpi/next-work.jsonl"
 git -C "$canonical" add .agents/rpi/next-work.jsonl
 git -C "$canonical" commit -q -m "add agent runtime fixture"
 printf '{"source_epic":"runtime","items":[],"consumed":false,"claim_status":"available"}\n' >>"$canonical/.agents/rpi/next-work.jsonl"
+printf '{}\n' >"$canonical/.ntm/rate_limits.json"
+printf '{}\n' >"$canonical/.ntm/summaries/session.json"
 printf '# generated\n' >"$canonical/wiki/synthesis/report.md"
 ignored_runtime_output="$(run_gate "$feature")"
 assert_contains "$ignored_runtime_output" "PASS: canonical root"

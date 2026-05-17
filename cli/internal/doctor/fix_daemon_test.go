@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -652,6 +653,36 @@ func TestDaemonCorruptGzipArchive_NoFindingWhenAllSound(t *testing.T) {
 	}
 	if len(findings) != 0 {
 		t.Fatalf("all-sound archives produced %d findings", len(findings))
+	}
+}
+
+func TestGzipArchiveCheckClassifiesOversizedArchive(t *testing.T) {
+	env, _ := daemonTestEnv(t)
+	archive := filepath.Join(daemonStoreDir(env), "ledger.20260101T000000.000000000Z.jsonl.gz")
+	if err := os.WriteFile(archive, gzipBytes(t, strings.Repeat("x", 32)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	origLimit := daemonMaxGzipArchiveDecompressedBytes
+	daemonMaxGzipArchiveDecompressedBytes = 8
+	t.Cleanup(func() { daemonMaxGzipArchiveDecompressedBytes = origLimit })
+
+	if got := gzipArchiveCheck(archive); got != "oversized" {
+		t.Fatalf("gzipArchiveCheck = %q, want oversized", got)
+	}
+}
+
+func TestSalvageGzipArchiveDropsOversizedArchive(t *testing.T) {
+	env, _ := daemonTestEnv(t)
+	archive := filepath.Join(daemonStoreDir(env), "ledger.20260101T000000.000000000Z.jsonl.gz")
+	if err := os.WriteFile(archive, gzipBytes(t, validLedgerLine("evt-oversized")+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	origLimit := daemonMaxGzipArchiveDecompressedBytes
+	daemonMaxGzipArchiveDecompressedBytes = 8
+	t.Cleanup(func() { daemonMaxGzipArchiveDecompressedBytes = origLimit })
+
+	if got := salvageGzipArchive(archive); got != nil {
+		t.Fatalf("salvageGzipArchive kept %d lines from oversized archive", len(got))
 	}
 }
 

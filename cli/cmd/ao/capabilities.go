@@ -1,4 +1,4 @@
-// practices: [twelve-factor-app, agent-ergonomics]
+// practices: [twelve-factor-app, ai-assisted-dev, pragmatic-programmer]
 package main
 
 import (

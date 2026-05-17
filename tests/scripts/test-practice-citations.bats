@@ -58,6 +58,25 @@ EOF
     [[ "$output" == *"No findings."* ]]
 }
 
+@test "strict mode accepts yaml list practices in skill frontmatter" {
+    mkdir -p "$REPO/skills/example"
+    cat > "$REPO/skills/example/SKILL.md" <<'EOF'
+---
+name: example
+description: Example skill
+practices:
+  - tdd
+  - ddd-bounded-context
+---
+# Example
+EOF
+
+    run bash "$VALIDATOR" --strict
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"No findings."* ]]
+}
+
 @test "strict mode rejects unknown slugs in script practice headers" {
     cat > "$REPO/scripts/check-bad.sh" <<'EOF'
 #!/usr/bin/env bash

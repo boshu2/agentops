@@ -114,6 +114,69 @@ func TestExtractSnapshotRefusesPathTraversal(t *testing.T) {
 	}
 }
 
+func TestExtractSnapshotRefusesOversizedEntry(t *testing.T) {
+	tmp := t.TempDir()
+	tarPath := filepath.Join(tmp, "oversized.tar.gz")
+	f, err := os.Create(tarPath)
+	if err != nil {
+		t.Fatalf("create tar: %v", err)
+	}
+	gz := gzip.NewWriter(f)
+	tw := tar.NewWriter(gz)
+	body := []byte("payload too large")
+	hdr := &tar.Header{
+		Name:     ".agents/huge.bin",
+		Mode:     0o644,
+		Size:     int64(len(body)),
+		Typeflag: tar.TypeReg,
+	}
+	if err := tw.WriteHeader(hdr); err != nil {
+		t.Fatalf("write header: %v", err)
+	}
+	if _, err := tw.Write(body); err != nil {
+		t.Fatalf("write body: %v", err)
+	}
+	_ = tw.Close()
+	_ = gz.Close()
+	_ = f.Close()
+
+	origLimit := maxSnapshotExtractBytes
+	maxSnapshotExtractBytes = int64(len(body) - 1)
+	t.Cleanup(func() { maxSnapshotExtractBytes = origLimit })
+
+	_, _, err = extractSnapshot(tarPath, filepath.Join(tmp, "out", ".agents"))
+	if err == nil {
+		t.Fatal("expected oversized snapshot error, got nil")
+	}
+	if !strings.Contains(err.Error(), "byte limit") {
+		t.Fatalf("expected byte limit error, got %q", err.Error())
+	}
+}
+
+func TestWriteSnapshotDoesNotFollowSymlinkBody(t *testing.T) {
+	tmp := t.TempDir()
+	src := filepath.Join(tmp, ".agents")
+	if err := os.MkdirAll(src, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	outside := filepath.Join(tmp, "outside.txt")
+	if err := os.WriteFile(outside, []byte("secret"), 0o644); err != nil {
+		t.Fatalf("write outside: %v", err)
+	}
+	if err := os.Symlink(outside, filepath.Join(src, "external-link")); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+
+	tarPath := filepath.Join(tmp, "snap.tar.gz")
+	count, total, _, err := writeSnapshot(tarPath, src)
+	if err != nil {
+		t.Fatalf("writeSnapshot: %v", err)
+	}
+	if count != 0 || total != 0 {
+		t.Fatalf("symlink body was counted: count=%d total=%d", count, total)
+	}
+}
+
 // TestFindLatestSnapshotPicksNewest seeds a directory with three tarballs of
 // staggered mtimes and asserts findLatestSnapshot returns the newest.
 func TestFindLatestSnapshotPicksNewest(t *testing.T) {

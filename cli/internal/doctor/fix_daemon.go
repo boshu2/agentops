@@ -67,6 +67,8 @@ const daemonArchiveRetention = 30
 // daemonSnapshotRetention is the doctor's retain cap for projection snapshots.
 const daemonSnapshotRetention = 10
 
+var daemonMaxGzipArchiveDecompressedBytes int64 = 64 << 20
+
 // daemonTmpGraceWindow is the age below which a temp file may still belong to a
 // live in-flight write; orphan-tmp detection and repair both ignore temps
 // younger than this.
@@ -894,7 +896,11 @@ func gzipArchiveCheck(path string) string {
 		return "invalid_header"
 	}
 	defer func() { _ = gr.Close() }()
-	if _, err := io.Copy(io.Discard, gr); err != nil {
+	n, err := io.CopyN(io.Discard, gr, daemonMaxGzipArchiveDecompressedBytes+1)
+	if err == nil || n > daemonMaxGzipArchiveDecompressedBytes {
+		return "oversized"
+	}
+	if err != io.EOF {
 		if err == io.ErrUnexpectedEOF || err == io.EOF {
 			return "truncated"
 		}
@@ -961,7 +967,11 @@ func salvageGzipArchive(path string) []string {
 	}
 	defer func() { _ = gr.Close() }()
 	var buf bytes.Buffer
-	_, _ = io.Copy(&buf, gr) // partial copy on a truncated stream is expected
+	n, err := io.CopyN(&buf, gr, daemonMaxGzipArchiveDecompressedBytes+1)
+	if err == nil || n > daemonMaxGzipArchiveDecompressedBytes {
+		return nil
+	}
+	// A partial copy on a truncated stream is expected; keep the valid prefix.
 	decompressed := buf.Bytes()
 	// Only complete newline-terminated lines are trustworthy; drop any torn
 	// trailing fragment by ignoring bytes after the last newline.

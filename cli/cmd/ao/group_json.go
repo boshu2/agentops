@@ -1,4 +1,4 @@
-// practices: [agent-ergonomics]
+// practices: [ai-assisted-dev, pragmatic-programmer]
 package main
 
 import (

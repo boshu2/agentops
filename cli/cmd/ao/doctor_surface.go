@@ -255,11 +255,15 @@ func newDoctorUndoCmd() *cobra.Command {
 			res, uerr := doctor.Undo(cwd, args[0], doctorUndoStrict, doctorDryRun)
 			if uerr != nil {
 				if doctorWantsJSON() {
-					_ = printDoctorJSON(cmd, res)
+					_ = printDoctorJSON(cmd, map[string]any{
+						"run_id":    args[0],
+						"exit_code": doctor.ExitIOError,
+						"error":     uerr.Error(),
+					})
 				} else {
 					fmt.Fprintf(cmd.ErrOrStderr(), "undo failed: %v\n", uerr)
 				}
-				return &doctorExitError{code: res.ExitCode, msg: uerr.Error()}
+				return &doctorExitError{code: doctor.ExitIOError, msg: uerr.Error()}
 			}
 			if doctorWantsJSON() {
 				return printDoctorJSON(cmd, res)
