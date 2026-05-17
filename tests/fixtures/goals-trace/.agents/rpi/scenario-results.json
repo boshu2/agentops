@@ -1,0 +1,17 @@
+{
+  "schema_version": "scenario-results.v1",
+  "run_id": "fixture-run-001",
+  "iteration": 1,
+  "generated_at": "2026-05-17T12:00:00Z",
+  "results": [
+    {
+      "scenario_id": "s-2026-05-17-001",
+      "directive_id": "d-fitness-gate-bdd",
+      "score": 0.92,
+      "threshold": 0.8,
+      "verdict": "pass",
+      "judged_at": "2026-05-17T12:00:00Z",
+      "evidence": [".agents/rpi/runs/fixture-run-001/verdict.md"]
+    }
+  ]
+}
