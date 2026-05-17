@@ -52,7 +52,16 @@ func (r *productionCorpusReader) Lookup(ctx context.Context, opts ports.LookupOp
 	}
 	queryLower := strings.ToLower(opts.Query)
 
-	err := filepath.WalkDir(r.rootDir, func(path string, d os.DirEntry, walkErr error) error {
+	root, err := os.OpenRoot(r.rootDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return out, nil
+		}
+		return nil, fmt.Errorf("productionCorpusReader open root %q: %w", r.rootDir, err)
+	}
+	defer func() { _ = root.Close() }()
+
+	err = filepath.WalkDir(r.rootDir, func(path string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			if os.IsNotExist(walkErr) {
 				return filepath.SkipAll
@@ -65,7 +74,11 @@ func (r *productionCorpusReader) Lookup(ctx context.Context, opts ports.LookupOp
 		if d.IsDir() || !strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
 			return nil
 		}
-		body, err := os.ReadFile(path)
+		relPath, err := filepath.Rel(r.rootDir, path)
+		if err != nil {
+			return fmt.Errorf("productionCorpusReader resolve %q: %w", path, err)
+		}
+		body, err := root.ReadFile(relPath)
 		if err != nil {
 			return fmt.Errorf("productionCorpusReader read %q: %w", path, err)
 		}

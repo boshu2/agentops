@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-17T13:33:34Z",
+  "generated_at": "2026-05-17T11:39:34Z",
   "summary": {
     "skills": 77,
     "hooks": 43,
     "knowledge_stores": 4,
     "job_types": 14,
     "eval_files": 62,
-    "cli_commands": 170
+    "cli_commands": 166
   },
   "surfaces": {
     "skills": [
@@ -25,7 +25,7 @@
         "path": "skills/forge/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 3
+        "reference_count": 2
       },
       {
         "name": "inject",
@@ -185,7 +185,7 @@
         "path": "skills/evolve/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 19
+        "reference_count": 20
       },
       {
         "name": "grafana-platform-dashboard",
@@ -329,7 +329,7 @@
         "path": "skills/post-mortem/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 21
+        "reference_count": 20
       },
       {
         "name": "pre-mortem",
@@ -481,7 +481,7 @@
         "path": "skills/rpi/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 14
+        "reference_count": 15
       },
       {
         "name": "skill-auditor",
@@ -497,7 +497,7 @@
         "path": "skills/skill-builder/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 2
       },
       {
         "name": "update",
@@ -537,7 +537,7 @@
         "path": "skills/goals/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 3
+        "reference_count": 2
       },
       {
         "name": "product",
@@ -1437,28 +1437,12 @@
         "path": "cli/cmd/ao/goals_prune.go"
       },
       {
-        "name": "goals_render",
-        "path": "cli/cmd/ao/goals_render.go"
-      },
-      {
         "name": "goals_scenarios",
         "path": "cli/cmd/ao/goals_scenarios.go"
       },
       {
         "name": "goals_steer",
         "path": "cli/cmd/ao/goals_steer.go"
-      },
-      {
-        "name": "goals_steer_auto",
-        "path": "cli/cmd/ao/goals_steer_auto.go"
-      },
-      {
-        "name": "goals_trace",
-        "path": "cli/cmd/ao/goals_trace.go"
-      },
-      {
-        "name": "goals_trace_orphans",
-        "path": "cli/cmd/ao/goals_trace_orphans.go"
       },
       {
         "name": "goals_validate",

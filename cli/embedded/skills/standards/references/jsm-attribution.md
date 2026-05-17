@@ -43,9 +43,11 @@ Use when the skill's `references/*.md` files draw from **two or more external so
 - **Pattern-only, no verbatim text.** Do not copy >5 consecutive words from the external source.
 - **Attribute the canonical pattern title** when one exists (e.g., "Asuper-style sync" → cite Asupersync corpus).
 - **Do not use relative markdown links to root-level co-located files in `SKILL.md`** — `references/` subdir works (`[name](references/name.md)`), but root-level files (`LICENSE.md`, `notes.md`) do not. mkdocs `--strict` will fail the build.
+- **Apply the clean-room policy for JSM-derived work.** For JSM analysis, allowed observations are counts, paths, filenames, metadata, package shape, validation outcomes, CLI behavior, and derived categories. Do not copy JSM prose, prompts, examples, references, scripts, templates, or role text.
 
 ## Cross-references
 
-- Learning L10: `.agents/learnings/2026-05-03-jsm-tier1.5-push-journey.md` — mkdocs flattens skill dirs; sibling-file links don't resolve.
-- Tier 1.5 absorption plan: `.agents/plans/2026-05-03-jsm-absorption-tier1.5.md` — pattern-only constraint.
+- Clean-room policy: `docs/reference/jsm-clean-room-extraction-policy.md` — allowed and disallowed observations for JSM-derived work.
+- Current snapshot: `docs/reference/jsm-skill-standards.md` — package-shape observations from the 118-skill local corpus.
+- Historical absorption matrix: `docs/reference/jsm-skill-absorption.md` — older 45-skill disposition table.
 - Example skill using Pattern A: `skills/system-tuning/`.
