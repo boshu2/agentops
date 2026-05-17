@@ -241,3 +241,99 @@ func TestGoalsRender_NeverModifiesGoalsMD(t *testing.T) {
 		t.Errorf("GOALS.md mtime changed: %v -> %v", infoBefore.ModTime(), infoAfter.ModTime())
 	}
 }
+
+// TestGoalsRender_UnresolvedScenarioEmitsFallbackComment verifies that when a
+// directive references a scenario that does not exist in spec/scenarios/ or
+// .agents/holdout/, the renderer emits a graceful fallback comment rather than
+// crashing or producing invalid Gherkin.
+func TestGoalsRender_UnresolvedScenarioEmitsFallbackComment(t *testing.T) {
+	root := chdirTemp(t)
+	// GOALS.md references a scenario that will not be written to disk.
+	goals := `# Goals
+
+## Directives
+
+### 1. Directive with missing scenario
+
+**Directive ID:** d-missing-scenario
+**Steer:** test unresolved
+**Scenarios:** s-9999-99-99-001
+`
+	writeRenderFile(t, filepath.Join(root, "GOALS.md"), goals)
+
+	goalsFile = ""
+	goalsRenderOut = ""
+	buf := &bytes.Buffer{}
+	if err := runGoalsRender(newRenderTestCmd(buf), nil); err != nil {
+		t.Fatalf("runGoalsRender error: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "@s-9999-99-99-001") {
+		t.Errorf("missing scenario tag in output:\n%s", out)
+	}
+	if !strings.Contains(out, "does not resolve") {
+		t.Errorf("expected 'does not resolve' fallback comment in output:\n%s", out)
+	}
+	// Must not fabricate steps for an unresolved scenario.
+	for _, kw := range []string{"    Given ", "    When ", "    Then "} {
+		if strings.Contains(out, kw) {
+			t.Errorf("fabricated %q step for unresolved scenario:\n%s", strings.TrimSpace(kw), out)
+		}
+	}
+}
+
+// TestGoalsRender_HoldoutScenarioResolvedAsGherkin verifies that a scenario
+// present only in .agents/holdout/ (not promoted to spec/scenarios/) is still
+// rendered with its structured steps.
+func TestGoalsRender_HoldoutScenarioResolvedAsGherkin(t *testing.T) {
+	root := chdirTemp(t)
+	writeRenderFile(t, filepath.Join(root, "GOALS.md"), `# Goals
+
+## Directives
+
+### 1. Holdout scenario directive
+
+**Directive ID:** d-holdout-test
+**Steer:** test holdout
+**Scenarios:** s-2026-01-01-099
+`)
+	holdoutDir := filepath.Join(root, ".agents", "holdout")
+	if err := os.MkdirAll(holdoutDir, 0o755); err != nil {
+		t.Fatalf("mkdir .agents/holdout: %v", err)
+	}
+	writeRenderFile(t, filepath.Join(holdoutDir, "s-2026-01-01-099.json"), `{
+  "id": "s-2026-01-01-099",
+  "directive_id": "d-holdout-test",
+  "version": 1,
+  "date": "2026-01-01",
+  "goal": "Holdout scenario goal",
+  "narrative": "n",
+  "expected_outcome": "e",
+  "satisfaction_threshold": 0.8,
+  "status": "active",
+  "given": ["a holdout scenario exists"],
+  "when": ["render is run"],
+  "then": ["the Gherkin is emitted"]
+}
+`)
+
+	goalsFile = ""
+	goalsRenderOut = ""
+	buf := &bytes.Buffer{}
+	if err := runGoalsRender(newRenderTestCmd(buf), nil); err != nil {
+		t.Fatalf("runGoalsRender error: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "Scenario: Holdout scenario goal") {
+		t.Errorf("holdout scenario goal not rendered:\n%s", out)
+	}
+	if !strings.Contains(out, "    Given a holdout scenario exists") {
+		t.Errorf("holdout Given step missing:\n%s", out)
+	}
+	if !strings.Contains(out, "    When render is run") {
+		t.Errorf("holdout When step missing:\n%s", out)
+	}
+	if !strings.Contains(out, "    Then the Gherkin is emitted") {
+		t.Errorf("holdout Then step missing:\n%s", out)
+	}
+}
