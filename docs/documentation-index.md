@@ -52,6 +52,7 @@ Bridge / framing docs:
 - [Operating Loop](architecture/operating-loop.md) — Operational discipline every process skill executes: BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence (cleanroom companion to ports-and-adapters)
 - [ADR-0001: Adopt DDD + Hexagonal Architecture](adr/ADR-0001-ddd-hexagonal-adoption.md) — Decision record for encoding DDD + Hexagonal with `ExecutionPacket` as the tracer-bullet aggregate
 - [ADR-0002: AgentOps 3.0 Hookless-First CDLC Rearchitecture](adr/ADR-0002-agentops-3-hookless-cdlc-rearchitecture.md) — Proposed 3.0 direction: demote hooks to optional runtime adapters and center CDLC bounded contexts
+- [ADR-0003: Executable-Spec Artifact Durability](adr/ADR-0003-executable-spec-artifact-durability.md) — Where executable-spec scenarios and domain manifests live: promoted spec scenarios in tracked `spec/scenarios/`, ad hoc holdout scenarios stay in `.agents/holdout/`
 - [PDC Framework](architecture/pdc-framework.md) — Prevent, Detect, Correct quality control approach
 - [FAAFO Alignment](architecture/faafo-alignment.md) — FAAFO promise framework for vibe coding value
 - [Failure Patterns](architecture/failure-patterns.md) — The 12 failure patterns reference guide
