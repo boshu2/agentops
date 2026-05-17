@@ -28,8 +28,10 @@
 set -uo pipefail
 
 STRICT="${AGENTOPS_LOOP_SHAPE_STRICT:-0}"
+BD_TIMEOUT_SECONDS="${AGENTOPS_LOOP_SHAPE_BD_TIMEOUT_SECONDS:-5}"
 JSON_FILE=""
 SELF_TEST=0
+BD_TIMED_OUT=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -115,6 +117,38 @@ analyze_beads() {
     done <<< "$rows"
   fi
   echo "OFFENDERS: $offenders"
+}
+
+bd_list_with_timeout() {
+  local status="$1"
+  local tmp
+  tmp=$(mktemp "${TMPDIR:-/tmp}/agentops-loop-shape.XXXXXX") || {
+    echo '[]'
+    return 0
+  }
+
+  bd list --status="$status" --json >"$tmp" 2>/dev/null &
+  local pid=$!
+  local waited=0
+
+  while kill -0 "$pid" 2>/dev/null; do
+    if [ "$waited" -ge "$BD_TIMEOUT_SECONDS" ]; then
+      kill "$pid" 2>/dev/null || true
+      wait "$pid" 2>/dev/null || true
+      rm -f "$tmp"
+      echo '[]'
+      return 124
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  if wait "$pid"; then
+    cat "$tmp"
+  else
+    echo '[]'
+  fi
+  rm -f "$tmp"
 }
 
 self_test() {
@@ -210,8 +244,12 @@ else
     echo "check-loop-shape: SKIP (bd not available; pass --json FILE to inspect a fixture)"
     exit 0
   fi
-  OPEN_JSON=$(bd list --status=open --json 2>/dev/null || echo '[]')
-  PROG_JSON=$(bd list --status=in_progress --json 2>/dev/null || echo '[]')
+  OPEN_JSON=$(bd_list_with_timeout open) || BD_TIMED_OUT=1
+  PROG_JSON=$(bd_list_with_timeout in_progress) || BD_TIMED_OUT=1
+  if [ "$BD_TIMED_OUT" -eq 1 ]; then
+    echo "check-loop-shape: SKIP (bd list timed out after ${BD_TIMEOUT_SECONDS}s; pass --json FILE for deterministic validation)"
+    exit 0
+  fi
   BEAD_JSON=$(printf '%s\n%s' "$OPEN_JSON" "$PROG_JSON" | jq -s 'add // []' 2>/dev/null || echo '[]')
 fi
 

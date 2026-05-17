@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-17T11:16:29Z",
+  "generated_at": "2026-05-17T11:39:34Z",
   "summary": {
     "skills": 77,
     "hooks": 43,
@@ -185,7 +185,7 @@
         "path": "skills/evolve/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 19
+        "reference_count": 20
       },
       {
         "name": "grafana-platform-dashboard",
@@ -481,7 +481,7 @@
         "path": "skills/rpi/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 14
+        "reference_count": 15
       },
       {
         "name": "skill-auditor",
@@ -497,7 +497,7 @@
         "path": "skills/skill-builder/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 2
       },
       {
         "name": "update",
