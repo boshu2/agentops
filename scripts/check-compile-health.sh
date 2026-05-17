@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # check-compile-health.sh — Gate: Compile defrag report is fresh and stale count is acceptable.
 #
-# Exit 0 = PASS, Exit 1 = FAIL
+# Exit 0 = PASS, Exit 1 = FAIL, Exit 77 = SKIP
 #
 # Environment overrides:
 #   COMPILE_OUTPUT_DIR   Directory where ao defrag writes (default: $AGENTS_DIR)
 #   AGENTS_DIR          .agents base dir (default: .agents)
 #   COMPILE_MAX_AGE_HOURS  Max age of latest defrag report in hours (default: 26)
 #   COMPILE_MAX_STALE    Max allowed stale learning count (default: 5)
+#   COMPILE_REQUIRE_ARTIFACT  When 1, missing report is FAIL instead of SKIP
 set -euo pipefail
 
 AGENTS_DIR="${AGENTS_DIR:-.agents}"
@@ -37,8 +38,12 @@ if [[ ! -f "$DEFRAG_LATEST" && -z "${COMPILE_OUTPUT_DIR:-}" ]]; then
 fi
 
 if [[ ! -f "$DEFRAG_LATEST" ]]; then
-    echo "FAIL: $DEFRAG_LATEST not found — run 'ao defrag' first"
-    exit 1
+    if [[ "${COMPILE_REQUIRE_ARTIFACT:-0}" == "1" ]]; then
+        echo "FAIL: $DEFRAG_LATEST not found — run 'ao defrag' first"
+        exit 1
+    fi
+    echo "SKIP: $DEFRAG_LATEST not found — run 'ao defrag' to evaluate compile health"
+    exit 77
 fi
 
 # Gate 2: defrag report must be recent
