@@ -37,8 +37,10 @@ func Walk(opts Options) (Graph, error) {
 
 	walkDirectiveScenarios(b, opts.ProjectRoot, directives, scenarios)
 	walkScenarioResults(b, opts.ProjectRoot)
-	walkBeadEdges(b, opts)
+	beadIDs := walkBeadEdges(b, opts)
+	artifacts := walkBeadArtifacts(b, opts.ProjectRoot, beadIDs)
 	walkLearnings(b, opts.ProjectRoot, known)
+	walkArtifactCitations(b, opts.ProjectRoot, artifacts)
 	return b.graph(), nil
 }
 
@@ -209,24 +211,115 @@ func walkScenarioResults(b *builder, root string) {
 }
 
 // walkBeadEdges emits scenario_claimed_by_bead edges from bead Scenarios:
-// claims. A missing bd binary degrades gracefully with a diagnostic.
-func walkBeadEdges(b *builder, opts Options) {
+// claims and returns the set of bead IDs the querier could see (used by
+// walkBeadArtifacts to classify broken_artifact_bead_ref). A nil set means the
+// querier was unavailable; an empty non-nil set means bd had zero beads.
+// A missing bd binary degrades gracefully with a diagnostic.
+func walkBeadEdges(b *builder, opts Options) map[string]bool {
 	q := opts.Beads
 	if q == nil {
 		q = NewExecBeadQuerier()
 	}
 	if !q.Available() {
 		b.addDiag("bd not available; scenario_claimed_by_bead edges skipped (graceful degradation)")
-		return
+		return nil
 	}
 	beads, err := q.Beads()
 	if err != nil {
 		b.addDiag("bd query failed (" + err.Error() + "); scenario_claimed_by_bead edges skipped")
-		return
+		return nil
 	}
+	ids := map[string]bool{}
 	for _, bead := range beads {
+		ids[bead.ID] = true
 		emitBeadClaimEdges(b, opts.ProjectRoot, bead)
 	}
+	return ids
+}
+
+// walkBeadArtifacts emits bead_produced_artifact edges for every RPI run
+// artifact traceable to a bead (ADR-0005 §2.4). A missing .agents/rpi/runs/
+// directory degrades gracefully with a diagnostic. knownBeads is the bead-ID
+// set from walkBeadEdges; when nil (bd unavailable) the broken-ref check is
+// skipped. It returns every discovered artifact for the citation pass.
+func walkBeadArtifacts(b *builder, root string, knownBeads map[string]bool) []rpiArtifact {
+	artifacts, ok := loadRPIArtifacts(root)
+	if !ok {
+		b.addDiag(".agents/rpi/runs/ not present; bead_produced_artifact edges skipped (graceful degradation)")
+		return nil
+	}
+	for i := range artifacts {
+		emitBeadArtifactEdge(b, artifacts[i], knownBeads)
+	}
+	return artifacts
+}
+
+// emitBeadArtifactEdge emits one bead_produced_artifact edge for an artifact
+// whose producing bead is traceable, attaching a broken_artifact_bead_ref
+// error when an explicit bead_id frontmatter field names an unknown bead.
+func emitBeadArtifactEdge(b *builder, a rpiArtifact, knownBeads map[string]bool) {
+	beadID, conf, viaPath := artifactBeadLink(a)
+	if beadID == "" {
+		return
+	}
+	b.addNode(Node{ID: a.relPath, Type: NodeArtifact, Label: filepath.Base(a.relPath), Path: a.relPath})
+	b.addNode(Node{ID: beadID, Type: NodeBead})
+	edge := Edge{
+		Type:       EdgeBeadProducedArtifact,
+		FromID:     beadID,
+		ToID:       a.relPath,
+		Confidence: conf,
+		Evidence:   a.relPath,
+	}
+	// A frontmatter bead_id naming an unknown bead is a broken explicit link.
+	// A bead ID discovered only via the path is not an explicit declaration.
+	if !viaPath && conf == ConfidenceHigh && a.beadID != "" && knownBeads != nil && !knownBeads[beadID] {
+		edge.Defects = append(edge.Defects, Defect{
+			Code:     DefectBrokenArtifactBeadRef,
+			Severity: SeverityError,
+			Detail:   "artifact bead_id " + beadID + " matches no known bead",
+		})
+	}
+	b.addEdge(edge)
+}
+
+// walkArtifactCitations emits artifact_cited_by_learning edges for every
+// (artifact, learning) pair where the learning cites the artifact (ADR-0005
+// §2.5). Both inputs are already loaded; a missing learnings dir or empty
+// artifact set simply yields no edges.
+func walkArtifactCitations(b *builder, root string, artifacts []rpiArtifact) {
+	if len(artifacts) == 0 {
+		return
+	}
+	learnings, ok := loadLearnings(root)
+	if !ok {
+		return
+	}
+	for li := range learnings {
+		lf := learnings[li]
+		learningRel := relPath(root, lf.path)
+		for ai := range artifacts {
+			emitArtifactCitationEdge(b, artifacts[ai], lf, learningRel)
+		}
+	}
+}
+
+// emitArtifactCitationEdge emits one artifact_cited_by_learning edge when a
+// learning cites an artifact, classifying citation confidence per §2.5.
+func emitArtifactCitationEdge(b *builder, a rpiArtifact, lf learningFile, learningRel string) {
+	cited, conf := learningCitesArtifact(lf, a.relPath)
+	if !cited {
+		return
+	}
+	b.addNode(Node{ID: a.relPath, Type: NodeArtifact, Label: filepath.Base(a.relPath), Path: a.relPath})
+	b.addNode(Node{ID: learningRel, Type: NodeLearning, Label: filepath.Base(lf.path), Path: learningRel})
+	b.addEdge(Edge{
+		Type:       EdgeArtifactCitedByLearning,
+		FromID:     a.relPath,
+		ToID:       learningRel,
+		Confidence: conf,
+		Evidence:   learningRel,
+	})
 }
 
 // emitBeadClaimEdges emits one scenario_claimed_by_bead edge per scenario a
