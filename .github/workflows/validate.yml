@@ -373,6 +373,11 @@ jobs:
         run: |
           cli/bin/ao goals validate --json | jq -e '.valid == true'
 
+      - name: F1 executable-spec link e2e (epic soc-58nt)
+        run: |
+          chmod +x tests/e2e/goals-scenarios-link.sh
+          bash tests/e2e/goals-scenarios-link.sh
+
   validate-wiring-closure:
     needs: [changes]
     runs-on: ubuntu-latest
