@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "id": "s-2026-05-17-001",
+  "directive_id": "d-fitness-gate-bdd",
+  "version": 1,
+  "date": "2026-05-17",
+  "goal": "Fitness gate refuses to pass with an unjudged active scenario",
+  "narrative": "An operator runs ao goals measure with an unjudged scenario.",
+  "expected_outcome": "The gate exits non-zero.",
+  "satisfaction_threshold": 0.8,
+  "source": "human",
+  "status": "active"
+}
