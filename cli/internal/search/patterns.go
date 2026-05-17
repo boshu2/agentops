@@ -3,10 +3,12 @@ package search
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/wiki"
 )
 
 // EnrichPatternFreshness sets age, freshness, and default utility on a pattern.
@@ -61,13 +63,22 @@ func ParsePatternFile(path string) (Pattern, error) {
 	return p, nil
 }
 
-// ParseFrontmatterBlock scans YAML frontmatter and returns content start index and utility value.
+// ParseFrontmatterBlock scans YAML frontmatter and returns the content start
+// index and the utility value.
+//
+// Block-boundary detection is delegated to wiki.FrontmatterCodec; the utility
+// field is read via the codec's field extractor and parsed with the same
+// strconv semantics (positive float only) the legacy struct parser used.
 func ParseFrontmatterBlock(lines []string) (contentStart int, utility float64) {
-	fm, start := ParseFrontMatter(lines)
-	if fm.HasUtility {
-		utility = fm.Utility
+	codec := wiki.NewFrontmatterCodec()
+	doc := codec.DecodeLines(lines)
+	extracted := codec.ExtractStringFields(lines, "utility")
+	if raw := strings.TrimSpace(extracted["utility"]); raw != "" {
+		if u, err := strconv.ParseFloat(raw, 64); err == nil && u > 0 {
+			utility = u
+		}
 	}
-	return start, utility
+	return doc.ContentStart, utility
 }
 
 // AssembleDescriptionFrom builds a description by joining the line at index i

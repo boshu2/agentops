@@ -16,6 +16,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
+
+	"github.com/boshu2/agentops/cli/internal/wiki"
 )
 
 // defaultIndexSubdirs are the subdirectories under .agents/ that the index
@@ -48,7 +50,7 @@ var defaultIndexDirs = func() []string {
 // remain relative when no env override is in effect (".agents/learnings" etc.)
 // to preserve display strings on stdout/JSON output unchanged.
 func buildDefaultIndexDirs(cwd string) []string {
-	agentsDir := agentsDirIn(cwd)
+	agentsDir := wiki.AgentsDirIn(cwd)
 	rel, err := filepath.Rel(cwd, agentsDir)
 	// When the resolved AgentsDir is outside cwd (or rel resolution fails),
 	// fall back to absolute paths so the indexer still finds the directory.
