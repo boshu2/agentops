@@ -68,11 +68,10 @@ carrying: `directive_id`, `run_timestamp` (RFC 3339), `scenario_verdict`
 > in which the directive's `scenario_verdict` was `"fail"`.
 >
 > The streak resets to 0 the moment any iteration yields `"pass"` or `"unknown"`.
-> It does NOT reset on `"unknown"` — only on `"pass"`.
 
-Wait — correction: `"unknown"` (no scenarios linked) breaks the streak because it is
-not a failure. The streak counter increments only on `"fail"` and resets on any
-non-`"fail"` verdict (`"pass"` or `"unknown"`).
+The streak counter increments only on `"fail"` and resets on any non-`"fail"` verdict
+(`"pass"` or `"unknown"`). `"unknown"` (no scenarios linked) is not a failure and
+therefore breaks any in-progress streak.
 
 Policy parameter: `failure_streak_length` (integer, default 3). A directive is
 eligible for mutation proposal only when its current failure streak meets or exceeds
