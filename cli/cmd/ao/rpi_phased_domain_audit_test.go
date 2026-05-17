@@ -133,7 +133,8 @@ func TestRPIPhasedDomainAudit_ScanEvidence(t *testing.T) {
 }
 
 // TestRPIPhasedDomainAudit_BuildArtifact verifies the audit struct shape and
-// that enforcement is always "audited", never "enforced".
+// that buildDomainScopeAudit (no enforcement decision supplied) defaults to the
+// conservative "audited" mode.
 func TestRPIPhasedDomainAudit_BuildArtifact(t *testing.T) {
 	evidence := auditTestEvidence()
 	candidates := []outOfDomainRef{
@@ -142,10 +143,10 @@ func TestRPIPhasedDomainAudit_BuildArtifact(t *testing.T) {
 	audit := buildDomainScopeAudit("run123", evidence, candidates, []string{"phase-result.json artifacts"})
 
 	if audit.Enforcement != "audited" {
-		t.Errorf("Enforcement = %q, want %q (never 'enforced')", audit.Enforcement, "audited")
+		t.Errorf("Enforcement = %q, want %q (default mode)", audit.Enforcement, "audited")
 	}
-	if audit.Enforcement == "enforced" {
-		t.Fatal("audit must never claim hard enforcement")
+	if audit.GateFailed {
+		t.Error("default-audited build must not set GateFailed")
 	}
 	if audit.SchemaVersion != 1 {
 		t.Errorf("SchemaVersion = %d, want 1", audit.SchemaVersion)
@@ -227,6 +228,12 @@ func TestRPIPhasedDomainAudit_RecordEndToEnd(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(stateDir, "phase-2-result.json"), data, 0o600); err != nil {
 		t.Fatalf("write phase result: %v", err)
 	}
+
+	// Pin hook detection to an empty fixture set so this test is deterministic
+	// regardless of the host's installed hooks → stays `audited`.
+	restore := hooksManifestPathsFn
+	hooksManifestPathsFn = func(string) []string { return nil }
+	defer func() { hooksManifestPathsFn = restore }()
 
 	state := &phasedState{Goal: "wire webhooks", DomainManifest: auditTestEvidence()}
 	recordDomainScopeAudit(cwd, state)

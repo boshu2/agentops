@@ -15,12 +15,12 @@ import (
 // runs without a run ID), alongside phase results.
 const domainScopeAuditFile = "domain-scope-audit.json"
 
-// domainScopeAuditEnforcement is the ONLY enforcement value this audit ever
-// emits. The phased runtime cannot observe agent file reads at runtime, so it
-// records the declared read fence and reports references that are *visible* in
-// command outputs and generated artifacts — but it never claims hard
-// enforcement. Hard hook-level read interception is tracked separately
-// (bead soc-58nt.3.9).
+// domainScopeAuditEnforcement is the default enforcement value the audit emits
+// when no runtime enforcement decision is supplied (e.g. legacy callers). It
+// is the conservative `audited` mode: visible-evidence scanning only, no hard
+// enforcement claim. Runtime-resolved enforcement (`enforced` / `audited` /
+// `unavailable`) is computed by resolveDomainEnforcement (bead soc-58nt.3.9)
+// and threaded through buildDomainScopeAuditWithEnforcement.
 const domainScopeAuditEnforcement = "audited"
 
 // outOfDomainRef is a single out-of-domain reference detected in visible
@@ -52,8 +52,27 @@ type domainScopeAudit struct {
 	RunID         string `json:"run_id,omitempty"`
 	Domain        string `json:"domain"`
 	ManifestPath  string `json:"manifest_path"`
-	// Enforcement is always domainScopeAuditEnforcement ("audited").
+	// Enforcement is the runtime-resolved enforcement mode: one of
+	// "enforced" (a read-observing PreToolUse hook intercepts denied-glob
+	// reads), "audited" (visible-evidence scan only), or "unavailable" (the
+	// runtime cannot observe reads — e.g. opaque Gas City sessions). The
+	// three modes are honest by construction: `enforced` is only claimed when
+	// a real interception substrate exists. See bead soc-58nt.3.9.
 	Enforcement string `json:"enforcement"`
+	// EnforcementReason explains why Enforcement resolved to its value, so the
+	// artifact is self-documenting (e.g. why a run is `unavailable`).
+	EnforcementReason string `json:"enforcement_reason,omitempty"`
+	// EnforcementHookSource names the hooks manifest that supplied the
+	// read-observing PreToolUse hook, populated only when Enforcement is
+	// "enforced".
+	EnforcementHookSource string `json:"enforcement_hook_source,omitempty"`
+	// RuntimeMode is the normalized phased runtime mode the enforcement
+	// decision was made for (direct|stream|tmux|gc|auto).
+	RuntimeMode string `json:"runtime_mode,omitempty"`
+	// GateFailed is true when Enforcement is "enforced" and a denied-glob
+	// reference still surfaced in visible evidence — the read fence was
+	// crossed despite a live interception hook, so the slice gate hard-fails.
+	GateFailed bool `json:"gate_failed"`
 	// AllowedReadGlobs / DeniedReadGlobs are the declared read fence, copied
 	// from the domain-slice manifest so the audit is self-contained.
 	AllowedReadGlobs []string `json:"allowed_read_globs,omitempty"`
@@ -230,8 +249,24 @@ func normalizeAuditPath(p string) string {
 }
 
 // buildDomainScopeAudit assembles the audit artifact for a run from the domain
-// evidence and the candidate references gathered from visible evidence.
+// evidence and the candidate references gathered from visible evidence. It
+// records the conservative default `audited` enforcement mode; callers with a
+// resolved runtime enforcement decision should use
+// buildDomainScopeAuditWithEnforcement instead.
 func buildDomainScopeAudit(runID string, evidence *domainSliceEvidence, candidates []outOfDomainRef, evidenceSources []string) *domainScopeAudit {
+	return buildDomainScopeAuditWithEnforcement(runID, evidence, candidates, evidenceSources,
+		domainEnforcementDecision{
+			Mode:   domainEnforcementAudited,
+			Reason: "no runtime enforcement decision supplied; defaulting to visible-evidence audit",
+		})
+}
+
+// buildDomainScopeAuditWithEnforcement assembles the audit artifact and stamps
+// it with a runtime-resolved enforcement decision. The decision controls the
+// Enforcement / EnforcementReason / RuntimeMode fields, the GateFailed flag,
+// and the human-readable Note — so the persisted JSON honestly distinguishes
+// `enforced`, `audited`, and `unavailable` runs.
+func buildDomainScopeAuditWithEnforcement(runID string, evidence *domainSliceEvidence, candidates []outOfDomainRef, evidenceSources []string, decision domainEnforcementDecision) *domainScopeAudit {
 	refs := scanEvidenceForOutOfDomain(evidence, candidates)
 	if refs == nil {
 		refs = []outOfDomainRef{}
@@ -240,20 +275,41 @@ func buildDomainScopeAudit(runID string, evidence *domainSliceEvidence, candidat
 		evidenceSources = []string{}
 	}
 	return &domainScopeAudit{
-		SchemaVersion:    1,
-		RunID:            runID,
-		Domain:           evidence.Domain,
-		ManifestPath:     evidence.ManifestPath,
-		Enforcement:      domainScopeAuditEnforcement,
-		AllowedReadGlobs: evidence.AllowedReadGlobs,
-		DeniedReadGlobs:  evidence.DeniedReadGlobs,
-		ContextRoots:     evidence.ContextRoots,
-		EvidenceSources:  evidenceSources,
-		OutOfDomainRefs:  refs,
-		Note: "Audit only: the phased runtime cannot observe agent file reads, " +
-			"so this records the declared read fence and reports references " +
-			"visible in command outputs and generated artifacts. It does NOT " +
-			"hard-enforce the fence (see bead soc-58nt.3.9).",
+		SchemaVersion:         1,
+		RunID:                 runID,
+		Domain:                evidence.Domain,
+		ManifestPath:          evidence.ManifestPath,
+		Enforcement:           string(decision.Mode),
+		EnforcementReason:     decision.Reason,
+		EnforcementHookSource: decision.HookSource,
+		RuntimeMode:           decision.RuntimeMode,
+		GateFailed:            gateFailedFromEnforcement(decision.Mode, refs),
+		AllowedReadGlobs:      evidence.AllowedReadGlobs,
+		DeniedReadGlobs:       evidence.DeniedReadGlobs,
+		ContextRoots:          evidence.ContextRoots,
+		EvidenceSources:       evidenceSources,
+		OutOfDomainRefs:       refs,
+		Note:                  domainEnforcementNote(decision.Mode),
+	}
+}
+
+// domainEnforcementNote returns the human-readable disclaimer matching an
+// enforcement mode, so a reader of the artifact understands exactly how strong
+// the fence guarantee is for this run.
+func domainEnforcementNote(mode domainEnforcementMode) string {
+	switch mode {
+	case domainEnforcementEnforced:
+		return "Enforced: a read-observing PreToolUse hook intercepts denied-glob " +
+			"reads/writes at the substrate level. A denied-glob reference visible " +
+			"in this run's evidence hard-fails the slice gate (gate_failed=true)."
+	case domainEnforcementUnavailable:
+		return "Unavailable: the runtime cannot observe agent file reads (e.g. " +
+			"opaque Gas City sessions), so the read fence is recorded but NOT " +
+			"enforced. No enforcement claim is made for this run."
+	default:
+		return "Audit only: no read-observing hook is installed, so this records " +
+			"the declared read fence and reports references visible in command " +
+			"outputs and generated artifacts. It does NOT hard-enforce the fence."
 	}
 }
 
@@ -301,7 +357,9 @@ func recordDomainScopeAudit(cwd string, state *phasedState) {
 	stateDir := filepath.Join(cwd, ".agents", "rpi")
 	candidates := collectPhaseArtifactRefs(stateDir)
 	evidenceSources := []string{"phase-result.json artifacts"}
-	audit := buildDomainScopeAudit(state.RunID, state.DomainManifest, candidates, evidenceSources)
+	decision := resolveDomainEnforcement(cwd, state)
+	audit := buildDomainScopeAuditWithEnforcement(
+		state.RunID, state.DomainManifest, candidates, evidenceSources, decision)
 
 	path, err := writeDomainScopeAudit(cwd, audit)
 	if err != nil {
@@ -316,6 +374,12 @@ func recordDomainScopeAudit(cwd string, state *phasedState) {
 func reportDomainScopeAudit(audit *domainScopeAudit, path string) {
 	fmt.Printf("Domain-scope audit (%s, enforcement: %s): %s\n",
 		audit.Domain, audit.Enforcement, path)
+	if audit.EnforcementReason != "" {
+		fmt.Printf("  Enforcement: %s\n", audit.EnforcementReason)
+	}
+	if audit.Enforcement == string(domainEnforcementUnavailable) {
+		fmt.Println("  Warning: read fence is NOT enforced for this run — no enforcement claim is made.")
+	}
 	if len(audit.OutOfDomainRefs) == 0 {
 		fmt.Println("  No out-of-domain references in visible evidence.")
 		return
@@ -324,5 +388,8 @@ func reportDomainScopeAudit(audit *domainScopeAudit, path string) {
 	for _, ref := range audit.OutOfDomainRefs {
 		fmt.Printf("  - %s (phase %d, source: %s) — %s\n",
 			ref.Path, ref.Phase, ref.EvidenceSource, ref.Reason)
+	}
+	if audit.GateFailed {
+		fmt.Println("  Slice gate FAILED: a denied-glob access was observed under enforced mode.")
 	}
 }
