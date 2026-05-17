@@ -168,12 +168,18 @@ The local CI gate is the canonical pre-tag release gate and runs in 7 phases:
 
 ```bash
 scripts/ci-local-release.sh              # Full gate (~100s)
+scripts/ci-local-release.sh --ci-blocking # CI Validate blocking jobs only
 scripts/ci-local-release.sh --fast       # Skip race tests, security gate, SBOM, hook integration (~20s)
 scripts/ci-local-release.sh --jobs 8     # Override parallel job cap
 scripts/ci-local-release.sh --security-mode quick  # Quick security scan
 scripts/ci-local-release.sh --release-version 2.X.Y --hil-target 'local:bushido:ao version'
 scripts/ci-local-release.sh --release-version 2.X.Y --hil-waiver 'target unavailable'
 ```
+
+Use `--ci-blocking` when the question is "would the blocking Validate jobs pass?"
+It runs the blocking `validate.yml` job set without advisory jobs or release-only
+artifact evidence. It intentionally fails on non-Windows hosts for the
+`windows-smoke` job, because a false local green would break the parity contract.
 
 In `--fast` mode, Phase 4 skips race tests, hook integration tests, SBOM generation, and the security gate. It still builds the binary and runs release validation.
 When `--release-version` is set, Phase 7 runs in official mode and fails unless the readiness score is at least 8/10 with SIL/VIL pass and HIL pass or waiver.

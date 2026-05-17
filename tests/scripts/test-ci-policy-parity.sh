@@ -66,12 +66,25 @@ jobs:
 EOF
 }
 
+write_local_gate() {
+  local path="$1"
+  shift
+  {
+    echo '#!/usr/bin/env bash'
+    for job in "$@"; do
+      echo "# ci-job:$job"
+    done
+  } > "$path"
+}
+
 run_with_fixtures() {
   local agents_file="$1"
   local workflow_file="$2"
-  local out_file="$3"
+  local local_gate_file="$3"
+  local out_file="$4"
   CI_POLICY_PARITY_AGENTS_PATH="$agents_file" \
   CI_POLICY_PARITY_WORKFLOW_PATH="$workflow_file" \
+  CI_POLICY_PARITY_LOCAL_GATE_PATH="$local_gate_file" \
   bash "$SCRIPT" > "$out_file" 2>&1
 }
 
@@ -80,6 +93,7 @@ test_pass_aligned_policy() {
   mkdir -p "$fixture"
   local agents="$fixture/AGENTS.md"
   local workflow="$fixture/validate.yml"
+  local local_gate="$fixture/ci-local-release.sh"
   local out="$fixture/out.txt"
 
   write_agents "$agents" \
@@ -89,8 +103,9 @@ test_pass_aligned_policy() {
   write_workflow "$workflow" \
     "doc-release-gate, hook-preflight, security-toolchain-gate" \
     "[[ \"\${{ needs.doc-release-gate.result }}\" != \"success\" ]] || [[ \"\${{ needs.hook-preflight.result }}\" != \"success\" ]]"
+  write_local_gate "$local_gate" doc-release-gate hook-preflight
 
-  if run_with_fixtures "$agents" "$workflow" "$out"; then
+  if run_with_fixtures "$agents" "$workflow" "$local_gate" "$out"; then
     pass "passes when AGENTS CI policy matches workflow"
   else
     fail "should pass when policy is aligned"
@@ -103,6 +118,7 @@ test_fail_job_list_drift() {
   mkdir -p "$fixture"
   local agents="$fixture/AGENTS.md"
   local workflow="$fixture/validate.yml"
+  local local_gate="$fixture/ci-local-release.sh"
   local out="$fixture/out.txt"
 
   write_agents "$agents" \
@@ -112,8 +128,9 @@ test_fail_job_list_drift() {
   write_workflow "$workflow" \
     "doc-release-gate, hook-preflight" \
     "[[ \"\${{ needs.doc-release-gate.result }}\" != \"success\" ]] || [[ \"\${{ needs.hook-preflight.result }}\" != \"success\" ]]"
+  write_local_gate "$local_gate" doc-release-gate hook-preflight
 
-  if run_with_fixtures "$agents" "$workflow" "$out"; then
+  if run_with_fixtures "$agents" "$workflow" "$local_gate" "$out"; then
     fail "should fail when AGENTS job table drifts from workflow needs"
     return
   fi
@@ -130,6 +147,7 @@ test_fail_nonblocking_drift() {
   mkdir -p "$fixture"
   local agents="$fixture/AGENTS.md"
   local workflow="$fixture/validate.yml"
+  local local_gate="$fixture/ci-local-release.sh"
   local out="$fixture/out.txt"
 
   write_agents "$agents" \
@@ -139,8 +157,9 @@ test_fail_nonblocking_drift() {
   write_workflow "$workflow" \
     "doc-release-gate, security-toolchain-gate" \
     "[[ \"\${{ needs.doc-release-gate.result }}\" != \"success\" ]] || [[ \"\${{ needs.security-toolchain-gate.result }}\" != \"success\" ]]"
+  write_local_gate "$local_gate" doc-release-gate security-toolchain-gate
 
-  if run_with_fixtures "$agents" "$workflow" "$out"; then
+  if run_with_fixtures "$agents" "$workflow" "$local_gate" "$out"; then
     fail "should fail when non-blocking policy drifts"
     return
   fi

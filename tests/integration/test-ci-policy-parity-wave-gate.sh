@@ -56,8 +56,8 @@ CODEX_WAVE_PATTERNS="$REPO_ROOT/skills-codex/crank/references/wave-patterns.md"
 CODEX_WORKER_TEMPLATE="$REPO_ROOT/skills-codex/swarm/references/local-mode.md"
 
 # ---------- T1: gate documented in crank SKILL.md ----------
-if grep -q 'validate-ci-policy-parity' "$CRANK_SKILL" \
-   && grep -q 'CI-Policy Parity Gate' "$CRANK_SKILL"; then
+if grep -qi 'CI-policy parity gate' "$CRANK_SKILL" \
+   && grep -q 'validate-ci-policy-parity' "$CRANK_SKILL" "$WAVE_PATTERNS"; then
     ok "T1 crank SKILL.md Step 5.5 references CI-Policy Parity Gate + validator"
 else
     ko "T1 crank SKILL.md missing CI-Policy Parity Gate wiring"
@@ -195,6 +195,21 @@ make_workflow_yml() {
     } > "$out"
 }
 
+make_local_gate() {
+    local out="$1"
+    shift
+    {
+        echo "#!/usr/bin/env bash"
+        for entry in "$@"; do
+            local job="${entry%%:*}"
+            local kind="${entry##*:}"
+            if [[ "$kind" == "blocking" ]]; then
+                echo "# ci-job:${job}"
+            fi
+        done
+    } > "$out"
+}
+
 # T7: drifted state — workflow has new advisory job, AGENTS.md does NOT.
 DRIFT_DIR="$TMP_DIR/drift"
 mkdir -p "$DRIFT_DIR/.github/workflows"
@@ -205,9 +220,14 @@ make_workflow_yml "$DRIFT_DIR/.github/workflows/validate.yml" \
     "alpha-gate:blocking" \
     "beta-gate:blocking" \
     "factory-claim-ledger-strict:nonblocking"
+make_local_gate "$DRIFT_DIR/ci-local-release.sh" \
+    "alpha-gate:blocking" \
+    "beta-gate:blocking" \
+    "factory-claim-ledger-strict:nonblocking"
 
 if CI_POLICY_PARITY_AGENTS_PATH="$DRIFT_DIR/AGENTS.md" \
    CI_POLICY_PARITY_WORKFLOW_PATH="$DRIFT_DIR/.github/workflows/validate.yml" \
+   CI_POLICY_PARITY_LOCAL_GATE_PATH="$DRIFT_DIR/ci-local-release.sh" \
    bash "$VALIDATOR" >"$TMP_DIR/drift.out" 2>&1; then
     ko "T7 drifted fixture should exit non-zero but exited 0"
     sed 's/^/    /' "$TMP_DIR/drift.out" >&2
@@ -232,9 +252,14 @@ make_workflow_yml "$ALIGN_DIR/.github/workflows/validate.yml" \
     "alpha-gate:blocking" \
     "beta-gate:blocking" \
     "factory-claim-ledger-strict:nonblocking"
+make_local_gate "$ALIGN_DIR/ci-local-release.sh" \
+    "alpha-gate:blocking" \
+    "beta-gate:blocking" \
+    "factory-claim-ledger-strict:nonblocking"
 
 if CI_POLICY_PARITY_AGENTS_PATH="$ALIGN_DIR/AGENTS.md" \
    CI_POLICY_PARITY_WORKFLOW_PATH="$ALIGN_DIR/.github/workflows/validate.yml" \
+   CI_POLICY_PARITY_LOCAL_GATE_PATH="$ALIGN_DIR/ci-local-release.sh" \
    bash "$VALIDATOR" >"$TMP_DIR/align.out" 2>&1; then
     ok "T8 aligned fixture exits 0 (PASS)"
 else

@@ -30,10 +30,17 @@ teardown() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"Usage"* ]]
     [[ "$output" == *"--fast"* ]]
+    [[ "$output" == *"--ci-blocking"* ]]
     [[ "$output" == *"--security-mode"* ]]
     [[ "$output" == *"--readiness-mode"* ]]
     [[ "$output" == *"--hil-target"* ]]
     [[ "$output" == *"AGENTOPS_RELEASE_ALLOW_AGENT_MUTATIONS"* ]]
+}
+
+@test "--ci-blocking rejects --fast" {
+    run bash "$SCRIPT" --ci-blocking --fast
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"cannot be combined with --fast"* ]]
 }
 
 @test "-h prints usage and exits 0" {
@@ -154,6 +161,93 @@ teardown() {
 @test "script defines a FAST_MODE default of false" {
     run grep -q 'FAST_MODE=false' "$SCRIPT"
     [ "$status" -eq 0 ]
+}
+
+@test "script defines a CI_BLOCKING_MODE default of false" {
+    run grep -q 'CI_BLOCKING_MODE=false' "$SCRIPT"
+    [ "$status" -eq 0 ]
+}
+
+@test "ci-blocking mode names every Validate blocking job" {
+    local jobs=(
+        doc-release-gate
+        smoke-test
+        hook-preflight
+        pre-push-gate-wired
+        agentops-eval-baseline-audit
+        standards-injector-completeness
+        validate-hooks-doc-parity
+        hook-output-schema-lint
+        validate-ci-policy-parity
+        validate-codex-runtime-sections
+        validate-codex-generated-artifacts
+        validate-codex-backbone-prompts
+        validate-codex-override-coverage
+        validate-codex-rpi-contract
+        validate-codex-lifecycle-guards
+        validate-codex-parity-drift
+        validate-quarantine-empty
+        validate-flywheel-proof
+        validate-goals-validate
+        validate-wiring-closure
+        validate-corpus-freshness
+        validate-flywheel-compounding-snapshot
+        validate-factory-yield-ledger
+        validate-finding-registry
+        validate-factory-admission
+        validate-contracts-structural-floor
+        validate-docs-learning-references
+        validate-three-gap-supergate
+        validate-headless-runtime-skills
+        validate-skill-frontmatter
+        validate-context-map-drift
+        embedded-sync
+        cli-docs-parity
+        registry-check
+        agentops-contract-canaries
+        eval-workbench-verify
+        eval-skill-delta
+        shellcheck
+        markdownlint
+        security-scan
+        skill-integrity
+        skill-schema
+        skill-dependency-check
+        contract-compatibility-gate
+        memrl-health
+        plugin-load-test
+        retrieval-quality
+        go-build
+        windows-smoke
+        cli-integration
+        json-flag-consistency
+        file-manifest-overlap
+        skill-lint
+        learning-coherence
+        bats-tests
+    )
+
+    for job in "${jobs[@]}"; do
+        run grep -q "ci-job:${job}" "$SCRIPT"
+        [ "$status" -eq 0 ]
+    done
+}
+
+@test "ci-blocking mode excludes Validate advisory jobs" {
+    local advisory=(
+        agentops-eval-advisory
+        security-toolchain-gate
+        doctor-check
+        factory-claim-ledger-strict
+        practice-citations
+        check-test-staleness
+        swarm-evidence
+    )
+
+    for job in "${advisory[@]}"; do
+        run grep -q "ci-job:${job}" "$SCRIPT"
+        [ "$status" -ne 0 ]
+    done
 }
 
 @test "script increments error count from fail helper" {

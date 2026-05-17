@@ -12,23 +12,30 @@ Set `IS_RELEASE_CONTEXT=1` when ANY of these conditions holds:
 
 When `IS_RELEASE_CONTEXT=0`, skip this step silently and record `Release-readiness gates: skipped (not release context)` in the phase summary.
 
-## The three gates
+## The gates
 
-### a) Full pre-push gate (NOT `--fast`)
-
-```bash
-bash scripts/pre-push-gate.sh
-```
-
-`--fast` covers ~5-10 checks; the full gate runs ~33 checks including doc-release, mkdocs strict build, hooks/docs parity, shellcheck, CHANGELOG sync, headless runtime smokes, CLI docs parity, and more. **`--fast` alone is INSUFFICIENT for release readiness.**
-
-### b) CI-local release gate
+### a) CI-blocking local gate
 
 ```bash
-bash scripts/ci-local-release.sh
+bash scripts/ci-local-release.sh --ci-blocking
 ```
 
-The canonical pre-tag gate. If this script does not exist in the repo, log `SKIP` and continue. If it exists and fails, treat as `FAIL`.
+This is the canonical local pre-release truth check for the blocking GitHub
+Validate job set. It intentionally excludes advisory jobs and release-only
+artifact evidence. `--fast`, `scripts/pre-push-gate.sh`, and
+`scripts/validate-local.sh` are weaker local hygiene gates and are
+**INSUFFICIENT** for release readiness.
+
+### b) Release artifact gate
+
+```bash
+bash scripts/ci-local-release.sh --release-version X.Y.Z
+```
+
+Run this when the target version is known so the release audit has SBOM,
+security, HIL, and readiness artifacts for the final version. If
+`scripts/ci-local-release.sh` does not exist in the repo, log `SKIP` and
+continue. If it exists and either invocation fails, treat as `FAIL`.
 
 ### c) CLI reference docs regen (when CLI surface changed)
 
@@ -58,11 +65,11 @@ If git diff reports the file changed AFTER regen, the CLI reference was stale �
 
 ## Phase-summary recording
 
-All three gates must report success (or `N/A` for c when no CLI surface change). Record verdicts as a checkbox row in the phase summary:
+All gates must report success (or `N/A` for c when no CLI surface change). Record verdicts as a checkbox row in the phase summary:
 
 ```
-[✅] full pre-push gate
-[✅] ci-local-release.sh
+[✅] ci-local-release.sh --ci-blocking
+[✅] ci-local-release.sh --release-version X.Y.Z
 [✅] generate-cli-reference.sh (or [N/A] if no CLI surface change)
 ```
 

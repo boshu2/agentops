@@ -973,8 +973,8 @@
     {
       "name": "release",
       "source_skill": "skills/release",
-      "source_hash": "118c0e399aa6e0bf1695e9a5c71930c67ca94bb4194405a1e140eb9199ba1839",
-      "generated_hash": "41b4b08fccd2276087aa8ddfb56034c5fc437535036dbe534d6dbba0605a49a8"
+      "source_hash": "578465133ac8b25fca8cc455abd32f8c08ee49faa7943333d0148146a1af160c",
+      "generated_hash": "ce61f4753cad59e2eabc39a5795427a7f5923ad499d4cb5400030ca76826d86e"
     },
     {
       "name": "research",
@@ -1111,8 +1111,8 @@
     {
       "name": "validation",
       "source_skill": "skills/validation",
-      "source_hash": "91ab8fe0a5a31c12b3979cf34d765c8cc1b623985a8c7136375352bcfb4a721f",
-      "generated_hash": "f0d71e4e851b217768dd99fb1a124cb76849d5ed9bdb3d0cca6600a72244d420"
+      "source_hash": "527a2495fd8d7b6eeb2c79c127cba83613cdca9c066a8983ddb354341c83598a",
+      "generated_hash": "61ead7f7a41a5bea77d177402b0619dada932f5465da5ff2d470ad6857b7ed7c"
     },
     {
       "name": "vibe",

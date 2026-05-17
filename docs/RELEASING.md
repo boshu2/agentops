@@ -33,7 +33,8 @@ git tag vX.Y.Z
 
 ### 1. Pre-release Checklist
 
-- [ ] Local CI release gate passes (`./scripts/ci-local-release.sh`; once the target version is known, rerun as `./scripts/ci-local-release.sh --release-version X.Y.Z`)
+- [ ] CI-blocking local gate passes (`./scripts/ci-local-release.sh --ci-blocking`)
+- [ ] Local CI release artifact gate passes (once the target version is known, run `./scripts/ci-local-release.sh --release-version X.Y.Z`)
 - [ ] Official readiness score is at least 8/10 (`release-readiness.json` has `release_status: pass`)
 - [ ] SIL/VIL/HIL evidence is attached (`hil-evidence.json`; use `--hil-target` or an explicit `--hil-waiver "reason"`)
 - [ ] Local gate artifacts generated (`.agents/releases/local-ci/<timestamp>/` includes SBOM, security report, readiness, and HIL evidence)
@@ -182,10 +183,14 @@ The template lives in `.goreleaser.yml` under `release.header` and `release.foot
 Release validation is local-first and enforced by:
 
 ```bash
-./scripts/ci-local-release.sh
+./scripts/ci-local-release.sh --ci-blocking
+./scripts/ci-local-release.sh --release-version X.Y.Z
 ```
 
-This local gate runs doc checks, manifest/schema checks, smoke/integration checks, hook and `ao rpi` smoke paths, binary validation, SBOM generation, security scans, and the release readiness score. Official release audits require SIL/VIL evidence plus HIL evidence or an explicit HIL waiver.
+The `--ci-blocking` gate runs the blocking GitHub Validate job set locally and
+excludes advisory jobs. The `--release-version` gate then writes release
+artifacts, SBOMs, security reports, and readiness evidence. Official release
+audits require SIL/VIL evidence plus HIL evidence or an explicit HIL waiver.
 For command variants and expected release-E2E smoke markers, see [Release E2E Checklist](release-e2e-checklist.md).
 
 ## Failure Modes

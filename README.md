@@ -85,6 +85,19 @@ ao version
 
 You can also install from [release binaries](https://github.com/boshu2/agentops/releases) or [build from source](cli/README.md). Troubleshooting: [docs/troubleshooting.md](docs/troubleshooting.md). Configuration: [docs/ENV-VARS.md](docs/ENV-VARS.md).
 
+## Pre-Release Truth Check
+
+Before calling a release ready, run the local gate that mirrors the blocking
+GitHub Validate jobs:
+
+```bash
+scripts/ci-local-release.sh --ci-blocking
+```
+
+Use `scripts/ci-local-release.sh --release-version X.Y.Z` after that when you
+need release artifacts, then verify the exact pushed SHA with
+`scripts/verify-release-ci.sh <tag-or-sha>`.
+
 ---
 
 ## See It Work
