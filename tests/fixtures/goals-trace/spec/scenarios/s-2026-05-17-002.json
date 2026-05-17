@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "id": "s-2026-05-17-002",
+  "version": 1,
+  "date": "2026-05-17",
+  "goal": "Scenario without a directive backref yields a low-confidence edge",
+  "narrative": "A scenario file omits directive_id; GOALS.md still lists it.",
+  "expected_outcome": "The walker emits a directive_has_scenario edge at confidence low.",
+  "satisfaction_threshold": 0.8,
+  "source": "human",
+  "status": "active"
+}
