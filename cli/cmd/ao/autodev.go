@@ -157,7 +157,7 @@ func loadAutodevProgramForCommand() (*autodev.Program, string, error) {
 		}
 		rel := autodev.ResolveProgramPath(cwd)
 		if rel == "" {
-			return nil, "", fmt.Errorf("PROGRAM.md not found (looked for PROGRAM.md and AUTODEV.md)")
+			return nil, "", fmt.Errorf("PROGRAM.md not found (looked for PROGRAM.md and AUTODEV.md)\n  Create one with: ao autodev init\n  Or point at an existing file: ao autodev <cmd> --file <path>")
 		}
 		target = filepath.Join(cwd, rel)
 	}
