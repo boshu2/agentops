@@ -373,7 +373,7 @@ Include caching directives and artifact definitions.
 
 When invoked as `/scaffold domain <name>`, scaffold a **domain-slice manifest** — the bounded-context declaration that `ao rpi phased --domain` consumes to scope an RPI run.
 
-> There is **no `ao scaffold` CLI command**. Domain-slice scaffolding is the `--scaffold-domain` flag on the phased command; `/scaffold` is this skill, which drives that flag.
+> There is **no `scaffold` subcommand on the `ao` CLI**. Domain-slice scaffolding is the `--scaffold-domain` flag on `ao rpi phased`; `/scaffold` is this skill, which drives that flag.
 
 ### Workflow
 

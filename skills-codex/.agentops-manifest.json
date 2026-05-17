@@ -757,7 +757,7 @@
     {
       "name": "domain",
       "source_skill": "skills/domain",
-      "source_hash": "ea4a560f7677854bc8e667ef2742dc75c3d056e00fe61382ef7737d57e45e84b",
+      "source_hash": "c30d182d4035fd7fabda09f312e3ad31494f6eff0ab826a15af540232ef5336a",
       "generated_hash": "5de534737803c76fab3ad06e1a47dba85eb8f631a159cc6157ce4f932c2e99e4"
     },
     {
@@ -781,13 +781,13 @@
     {
       "name": "forge",
       "source_skill": "skills/forge",
-      "source_hash": "b272c8f90a7648332f882df59555268c04250918d6ebea32d2d140f392afcb1a",
-      "generated_hash": "c39f4993c079f0c4df600f15b4699d6699d3b05c6a867c7e62017338a8f63cc7"
+      "source_hash": "cd51cac0f83d703270581397f571c6ff3d4a685959c66223dce666aee0b7be3a",
+      "generated_hash": "904e242f85fd5256c578b5c559d23845d6fc934dfafeb9215f4971c0293d5cb6"
     },
     {
       "name": "goals",
       "source_skill": "skills/goals",
-      "source_hash": "45070be3934ed6393398517f0048a1e86849470522598352b3872c028581425f",
+      "source_hash": "8a386eff82a8f0eca27d1940277d00187e83582c2146652f67487521b848a4d6",
       "generated_hash": "dc9b388da75af17c85440fa0481c9c69b16b9641b1832269e302856dd48ded8d"
     },
     {
@@ -871,8 +871,8 @@
     {
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
-      "source_hash": "6fdb22b8f8644b8e0ee4a5a52269b5252c218bb2931fb463137c95e27d3732af",
-      "generated_hash": "29283694bad093e402500683ebc7e2008a43c1c7c87fb2fbaef9cab763434ebe"
+      "source_hash": "abec2ea83abcabc499810c98fc206dad4b71a2d73f071781da765a2f1d56d6a9",
+      "generated_hash": "4c781235bd56308a15d5da8f0fadb2e3c8e407821258b3a27c346ff9b4d2193a"
     },
     {
       "name": "pr-implement",
@@ -1009,13 +1009,13 @@
     {
       "name": "scaffold",
       "source_skill": "skills/scaffold",
-      "source_hash": "572932402455094cca68ffffc76733411b318b6215cd32eee2bacc0531b6f223",
+      "source_hash": "ec683e3962683e9ff69e026f4729eafa232ec36ad778febf3ca4dbf8ad101204",
       "generated_hash": "800870469aab63a0445703a1019cbc0d382c1bb0865d1ceb03ae3a9c1a86ac75"
     },
     {
       "name": "scenario",
       "source_skill": "skills/scenario",
-      "source_hash": "ed3aeec01e23a14176746c9ec9dc4b3958d601e24c0bea85833f23ffddb17db1",
+      "source_hash": "7c14ca7bf2632a1130611d391899ea45862d7aa9bbe6c582fd0f3087a9ee8193",
       "generated_hash": "1736927301013e0f0aa5492ac60c2b909caee1a7ec232752998d85f1c9767de5"
     },
     {
