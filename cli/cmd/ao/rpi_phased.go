@@ -492,6 +492,7 @@ func finalizeFailedPhasedRun(spawnCwd string, state *phasedState, runStart time.
 	if proofErr := updateExecutionPacketProof(spawnCwd, state); proofErr != nil {
 		VerbosePrintf("Warning: could not refresh failed-run proof artifact set: %v\n", proofErr)
 	}
+	recordDomainScopeAudit(spawnCwd, state)
 }
 
 func finalizeSuccessfulPhasedRun(spawnCwd string, state *phasedState, runStart time.Time, logPath string) {
@@ -500,6 +501,7 @@ func finalizeSuccessfulPhasedRun(spawnCwd string, state *phasedState, runStart t
 	if err := updateExecutionPacketProof(spawnCwd, state); err != nil {
 		VerbosePrintf("Warning: could not refresh completed-run proof artifact set: %v\n", err)
 	}
+	recordDomainScopeAudit(spawnCwd, state)
 
 	writeFinalPhasedReport(state, logPath)
 }
