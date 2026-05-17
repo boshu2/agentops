@@ -378,6 +378,26 @@ jobs:
           chmod +x tests/e2e/goals-scenarios-link.sh
           bash tests/e2e/goals-scenarios-link.sh
 
+      - name: F2 scenario-satisfaction gate e2e (epic soc-58nt)
+        run: |
+          chmod +x tests/e2e/goals-measure-scenarios.sh
+          bash tests/e2e/goals-measure-scenarios.sh
+
+      - name: F3 domain-scoped RPI e2e (epic soc-58nt)
+        run: |
+          chmod +x tests/e2e/rpi-phased-domain.sh
+          bash tests/e2e/rpi-phased-domain.sh
+
+      - name: F4 trace-chain e2e (epic soc-58nt)
+        run: |
+          chmod +x tests/e2e/goals-trace-chain.sh
+          bash tests/e2e/goals-trace-chain.sh
+
+      - name: F5 auto re-steer e2e (epic soc-58nt)
+        run: |
+          chmod +x tests/e2e/goals-steer-auto.sh
+          bash tests/e2e/goals-steer-auto.sh
+
   validate-wiring-closure:
     needs: [changes]
     runs-on: ubuntu-latest

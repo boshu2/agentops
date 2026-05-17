@@ -53,6 +53,9 @@ Bridge / framing docs:
 - [ADR-0001: Adopt DDD + Hexagonal Architecture](adr/ADR-0001-ddd-hexagonal-adoption.md) — Decision record for encoding DDD + Hexagonal with `ExecutionPacket` as the tracer-bullet aggregate
 - [ADR-0002: AgentOps 3.0 Hookless-First CDLC Rearchitecture](adr/ADR-0002-agentops-3-hookless-cdlc-rearchitecture.md) — Proposed 3.0 direction: demote hooks to optional runtime adapters and center CDLC bounded contexts
 - [ADR-0003: Executable-Spec Artifact Durability](adr/ADR-0003-executable-spec-artifact-durability.md) — Where executable-spec scenarios and domain manifests live: promoted spec scenarios in tracked `spec/scenarios/`, ad hoc holdout scenarios stay in `.agents/holdout/`
+- [ADR-0004: Domain-Slice Manifest Contract](adr/ADR-0004-domain-slice-manifest-contract.md) — Schema and resolution rules for `docs/domains/<name>/manifest.yaml`, the domain-scoped boundary contract consumed by `ao rpi phased --domain`
+- [ADR-0005: Trace-Link Convention](adr/ADR-0005-trace-link-convention.md) — The directive→scenario→bead→verdict→learning link grammar that `ao goals trace` renders and audits, including warning/error defect classes and `--strict` escalation
+- [ADR-0006: Re-Steer Policy and Mutation Safety](adr/ADR-0006-re-steer-policy-and-mutation-safety.md) — The `docs/re-steer-policy.json` engine, human-gate, and non-lossy GOALS.md patcher that govern `ao goals steer recommend`/`apply`
 - [PDC Framework](architecture/pdc-framework.md) — Prevent, Detect, Correct quality control approach
 - [FAAFO Alignment](architecture/faafo-alignment.md) — FAAFO promise framework for vibe coding value
 - [Failure Patterns](architecture/failure-patterns.md) — The 12 failure patterns reference guide
