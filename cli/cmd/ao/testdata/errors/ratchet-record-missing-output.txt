@@ -1,2 +1,6 @@
 Error: unknown flag: --step
+
+Run 'ao ratchet record --help' to see available flags
 unknown flag: --step
+
+Run 'ao ratchet record --help' to see available flags

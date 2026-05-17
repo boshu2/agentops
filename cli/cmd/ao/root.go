@@ -41,6 +41,11 @@ The Knowledge Flywheel underneath it:
   Sessions compound via .agents/ + Smart Connections.
   Others start fresh. You get smarter every session.
 
+For AI agents:
+  ao capabilities     Machine-readable CLI contract (JSON) — run this first.
+  ao robot-docs       Paste-ready agent handbook.
+  Append --json to any read-side command for structured output.
+
 Use "ao <command> --help" for more information about a command.`,
 	SilenceUsage: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -75,7 +80,8 @@ Use "ao <command> --help" for more information about a command.`,
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	executedCmd, err := rootCmd.ExecuteC()
+	if err != nil {
 		var lintErr *AgentsLintError
 		if errors.As(err, &lintErr) {
 			os.Exit(lintErr.ExitCode)
@@ -91,6 +97,7 @@ func Execute() {
 			}
 			os.Exit(docErr.ExitCode())
 		}
+		printRequiredFlagHint(executedCmd, err)
 		os.Exit(1)
 	}
 }
@@ -114,6 +121,21 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Config file (default: ~/.agentops/config.yaml)")
 
 	_ = rootCmd.RegisterFlagCompletionFunc("output", staticCompletionFunc("json", "table", "yaml"))
+
+	// Turn opaque "unknown flag" errors into actionable typo hints. Inherited
+	// by every subcommand that does not set its own FlagErrorFunc.
+	rootCmd.SetFlagErrorFunc(flagErrorWithSuggestion)
+
+	// When a parent command is invoked with --json, emit a machine-readable
+	// subcommand listing instead of human help text. Inherited by all
+	// subcommands; falls back to cobra's default help rendering otherwise.
+	defaultHelp := rootCmd.HelpFunc()
+	rootCmd.SetHelpFunc(func(c *cobra.Command, args []string) {
+		if maybeEmitGroupJSON(c) {
+			return
+		}
+		defaultHelp(c, args)
+	})
 }
 
 // GetDryRun returns the dry-run flag value for use by subcommands.
