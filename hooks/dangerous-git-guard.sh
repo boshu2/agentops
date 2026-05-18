@@ -72,6 +72,20 @@ git_push_uses_force() {
   return 1
 }
 
+staged_runtime_agents_path() {
+  local path
+
+  while IFS= read -r path; do
+    [ -n "$path" ] || continue
+    if git check-ignore --no-index -q -- "$path" 2>/dev/null; then
+      printf '%s\n' "$path"
+      return 0
+    fi
+  done < <(git diff --cached --name-only --diff-filter=ACMR -- .agents 2>/dev/null)
+
+  return 1
+}
+
 # Extract tool_input.command from JSON
 COMMAND="$(extract_command)"
 
@@ -83,9 +97,14 @@ echo "$COMMAND" | grep -q "git" || exit 0
 if echo "$COMMAND" | grep -qE 'git\s+add' && echo "$COMMAND" | grep -qE '\.agents/|\s\.\s*$|\s-A'; then
     echo "Warning: repo-root .agents/ is local runtime state and must stay gitignored. Review: git status .agents/" >&2
 fi
-if echo "$COMMAND" | grep -qE 'git\s+commit' && git diff --cached --name-only --diff-filter=ACMR -- .agents 2>/dev/null | grep -q '^\.agents/'; then
+AGENTS_RUNTIME_PATH=""
+if echo "$COMMAND" | grep -qE 'git\s+commit'; then
+    AGENTS_RUNTIME_PATH="$(staged_runtime_agents_path || true)"
+fi
+if [ -n "$AGENTS_RUNTIME_PATH" ]; then
     write_failure "dangerous_git" "git commit .agents" 2 "repo-root .agents commit blocked"
-    echo "Blocked: repo-root .agents/ is local runtime state. Use: git restore --staged .agents/" >&2
+    echo "Blocked: repo-root .agents/ runtime path is ignored by local policy: $AGENTS_RUNTIME_PATH" >&2
+    echo "Use: git restore --staged -- '$AGENTS_RUNTIME_PATH'" >&2
     exit 2
 fi
 

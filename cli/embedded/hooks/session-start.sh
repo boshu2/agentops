@@ -19,10 +19,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 ROOT="$(cd "$ROOT" 2>/dev/null && pwd -P 2>/dev/null || printf '%s' "$ROOT")"
 AO_DIR="$ROOT/.agents/ao"
-FRESH_REPO=0
-if [ ! -e "$ROOT/.agents" ]; then
-    FRESH_REPO=1
-fi
 
 HOOK_ERROR_LOG="$AO_DIR/hook-errors.log"
 if [ -f "$SCRIPT_DIR/../lib/hook-helpers.sh" ]; then
@@ -148,11 +144,14 @@ if [ "${AGENTOPS_STARTUP_CLOSE_LOOP:-0}" = "1" ] && command -v ao &>/dev/null; t
     ao flywheel close-loop --quiet >/dev/null 2>&1 || true
 fi
 
-# Always gitignore repo-root .agents/. It is local agent runtime state and must
-# not be committed. AGENTOPS_GITIGNORE_AUTO is retained only as a legacy no-op.
+# Gitignore repo-root .agents/ when no co-located .agents/.gitignore policy is
+# present. A root blanket shadows nested allowlists, so repos that own their
+# .agents policy locally must not receive the blanket.
 if [ -d "$ROOT/.git" ]; then
     GITIGNORE="$ROOT/.gitignore"
-    if [ -f "$GITIGNORE" ]; then
+    if [ -f "$ROOT/.agents/.gitignore" ]; then
+        :
+    elif [ -f "$GITIGNORE" ]; then
         # Match the modern anchored shapes (/.agents/, /.agents/*,
         # /.agents/**/*) AND any allowlist re-include (!/.agents/...).
         # The original `^/\.agents/$` was too narrow and double-appended
