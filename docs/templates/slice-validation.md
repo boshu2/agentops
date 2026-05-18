@@ -12,6 +12,27 @@
 - **Intent issue:** `<path to filled-in intent-issue.md or bd issue url>`
 - **Bounded context:** `<from intent issue>`
 
+## Hexagonal boundary
+
+> Fill this from [`docs/architecture/intent-to-loop-hexagon.md`](../architecture/intent-to-loop-hexagon.md). This is the port contract from planning into execution and validation.
+
+```yaml
+hexagon:
+  inbound_port: plan_slices
+  bounded_context: <bc-* label>
+  driving_adapter: /plan
+  driven_adapters:
+    - bd/br
+    - git
+    - test runner
+  guard_adapters:
+    - wave-validity matrix
+    - symbol verification
+    - completion-claim kernel
+  context_packet: <execution packet path or bead id>
+  done_state: "each slice has first failing proof, owner, write scope, and validation lane"
+```
+
 ## Slice-level validation
 
 > One row per slice from the intent issue's slice candidates. Each slice must have a **first failing test** before any implementation begins (the TDD discipline of move 4 in the operating loop).
@@ -83,6 +104,7 @@
 ## Closing checklist
 
 - [ ] Every slice has a first failing proof/test linked, and that proof failed before implementation began
+- [ ] Hexagonal boundary block is filled in and matches the intent issue bounded context
 - [ ] Every slice's evidence row is filled in with a concrete artifact, not a description
 - [ ] If any slices ran in parallel, every wave-validity row was checked at the time of wave start
 - [ ] Every acceptance example from the intent issue maps to at least one passing test

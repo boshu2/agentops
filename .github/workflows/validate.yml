@@ -217,14 +217,17 @@ jobs:
 
   validate-ci-policy-parity:
     needs: [changes]
-    if: needs.changes.outputs.ci == 'true' || needs.changes.outputs.shell == 'true'
+    if: needs.changes.outputs.ci == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Validate CI policy parity
+      - name: Install yaml dependency
+        run: python3 -m pip install --user pyyaml
+
+      - name: Validate CI policy parity (golden-file diff)
         run: |
-          chmod +x scripts/validate-ci-policy-parity.sh
+          chmod +x scripts/generate-ci-jobs-table.sh scripts/validate-ci-policy-parity.sh
           ./scripts/validate-ci-policy-parity.sh
 
   # Codex runtime checks split into 7 modular jobs (soc-ltp2) so each fails/passes
