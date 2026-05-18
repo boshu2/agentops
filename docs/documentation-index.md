@@ -73,7 +73,7 @@ Bridge / framing docs:
 - [JSM-Informed Pilot Upgrade Backlog](reference/jsm-pilot-upgrade-backlog.md) — First candidate AgentOps skill upgrades
 - [JSM Skill Absorption Matrix](reference/jsm-skill-absorption.md) — Disposition table for the older 2026-05-05 Bushido standalone JSM skill set
 - [AgentOps Domain Evolution BDD](reference/agentops-domain-evolution-bdd.md) — Gherkin acceptance contract for skill, CLI, and hook evolution
-- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 77 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains
+- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 78 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
 - [AgentOps Hexagonal Architecture Map](reference/agentops-hexagonal-architecture-map.md) — Bounded contexts, ports, adapters, and proof gates for the evolution program
 - [AgentOps Domain Evolution Plan](reference/agentops-domain-evolution-plan.md) — Sequenced bootstrap and evolution plan anchored to `soc-y5vh`
 - [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph
