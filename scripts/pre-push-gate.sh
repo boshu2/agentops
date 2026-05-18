@@ -1775,42 +1775,54 @@ else
 fi
 
 # --- 30. ShellCheck on changed scripts ---
-if needs_check shell; then
-    if command -v shellcheck >/dev/null 2>&1; then
-        shell_errors=0
-        if [[ "$FAST_MODE" == "true" ]]; then
-            # Only check changed .sh files
-            changed_sh="$(echo "$all_changed" | grep '\.sh$' || true)"
-            if [[ -n "$changed_sh" ]]; then
-                while IFS= read -r f; do
-                    [[ -f "$f" ]] || continue
-                    if ! shellcheck_out="$(shellcheck -S warning "$f" 2>&1)"; then
-                        shell_errors=1
-                        indent_output "$shellcheck_out"
-                    fi
-                done <<< "$changed_sh"
-            fi
-        else
-            # Full mode: check all scripts with shebangs
+# UNCONDITIONAL in fast mode: shellcheck every staged or working-tree *.sh
+# file regardless of `needs_check shell`. The diff-based HAS_SHELL detection
+# can miss staged .sh files when `all_changed` is computed against the wrong
+# base (e.g. branch behind main mid-rebase). The cost is < 1s per file, so
+# always running it on the actual set of .sh files in the local diff is the
+# safer default. Full mode keeps the broader scripts/hooks/lib/bin walk.
+# History: F1 in 2026-05-18 merge-arc post-mortem
+# (.agents/learnings/2026-05-18-script-rewrites-leave-dead-variables.md):
+# PR #322 left an unused REPO_ROOT in a rewritten script; the SC2034 warning
+# only surfaced on the NEXT cycle, requiring PR #325 as cleanup. Closes the
+# class by removing the diff-detection gating.
+if command -v shellcheck >/dev/null 2>&1; then
+    shell_errors=0
+    if [[ "$FAST_MODE" == "true" ]]; then
+        # Collect all .sh files in the local diff (staged + working tree),
+        # independent of upstream-diff detection.
+        staged_sh="$(git diff --name-only --cached 2>/dev/null | grep '\.sh$' || true)"
+        worktree_sh="$(git diff --name-only 2>/dev/null | grep '\.sh$' || true)"
+        # Also include anything `needs_check shell` saw — defense in depth.
+        all_sh_files="$(printf '%s\n%s\n%s\n' "$staged_sh" "$worktree_sh" "$(echo "$all_changed" | grep '\.sh$' || true)" \
+            | sed '/^[[:space:]]*$/d' | sort -u)"
+        if [[ -n "$all_sh_files" ]]; then
             while IFS= read -r f; do
                 [[ -f "$f" ]] || continue
-                head -1 "$f" | grep -q '^#!' || continue
                 if ! shellcheck_out="$(shellcheck -S warning "$f" 2>&1)"; then
                     shell_errors=1
                     indent_output "$shellcheck_out"
                 fi
-            done < <(find scripts hooks lib bin -name '*.sh' -type f 2>/dev/null)
-        fi
-        if [[ "$shell_errors" -eq 0 ]]; then
-            pass "shellcheck"
-        else
-            fail "shellcheck"
+            done <<< "$all_sh_files"
         fi
     else
-        skip "shellcheck (not installed)"
+        # Full mode: check all scripts with shebangs
+        while IFS= read -r f; do
+            [[ -f "$f" ]] || continue
+            head -1 "$f" | grep -q '^#!' || continue
+            if ! shellcheck_out="$(shellcheck -S warning "$f" 2>&1)"; then
+                shell_errors=1
+                indent_output "$shellcheck_out"
+            fi
+        done < <(find scripts hooks lib bin -name '*.sh' -type f 2>/dev/null)
+    fi
+    if [[ "$shell_errors" -eq 0 ]]; then
+        pass "shellcheck"
+    else
+        fail "shellcheck"
     fi
 else
-    skip "shellcheck"
+    skip "shellcheck (not installed)"
 fi
 
 # --- 31. Plugin load test (symlinks + manifest) ---
