@@ -125,15 +125,16 @@ Blocking policy list (must match the validate summary failset): every job in the
 
 #### Advisory Job Triage SLAs (post-merge advisory policy, soc-z7qq)
 
-Advisory jobs run on every PR but their failure does NOT block merge. They surface a `(advisory)` suffix on the GitHub check name. Each advisory job has a triage SLA — when the job has been red for longer than its SLA, follow the escalation rule.
+Advisory and warn-only jobs run on every PR but their failure does NOT block merge. Most surface a `(advisory)` suffix on the GitHub check name; `executable-spec-link-integrity` surfaces as `(warn-only, F1.6)`. Each listed job has a triage SLA or explicit info-only handling — when the job has been red for longer than its SLA, follow the escalation rule.
 
-| Advisory job | Triage SLA | Escalation rule |
+| Job | Triage SLA | Escalation rule |
 |---|---|---|
 | **doctor-check** | 30d | Open a `bd` issue tracking the stale CLI reference; prioritize when the next `cli/cmd/ao/**` PR lands. |
 | **factory-claim-ledger-strict** | 14d | soc-lmww1: validates `docs/contracts/factory-claim-ledger.json` against source-set anchors. Open a `bd` issue tagged `ci-advisory` when red for >14d; promotion to blocking is a Wave 1E concern. |
 | **practice-citations** | 14d | Non-blocking strict walk of Primitives (skills/hooks/evals/CLI/schemas and scripts with declarations) for `practices: [slug,...]` derivation from PRACTICE-REGISTRY.md. Backfill in slices; promote to required after one clean cycle. Open a `bd` issue tagged `ci-advisory` when red for >14d with no backfill progress. |
 | **check-test-staleness** | none (info-only) | Read the report; no merge or release impact. Item 33 — drift signal, not a gate. |
 | **swarm-evidence** | none (info-only) | Read the report; no merge or release impact. Item 34 — informational artifact validation. |
+| **executable-spec-link-integrity** | none (warn-only) | Read the directive/scenario lint and trace output; no merge or release impact until the F1.6 promotion criterion is met. |
 
 The `retrieval-bench` job (nightly, see `.github/workflows/nightly.yml`) is currently warn-only with a deferred promotion gate. Promotion criterion: `nightly_p_at_5 ≥ baseline_p_at_5` for **14 consecutive nightlies**, where `baseline_p_at_5 = 0.30` is pinned in `docs/CI-CD.md` §"Retrieval-bench ratchet" until a durable non-`.agents` baseline artifact is introduced. The 14-consecutive-nightly observation window is intentionally observational — not yet wired into a counter — so flips to blocking remain a manual decision after the window is documented green.
 
@@ -214,9 +215,6 @@ find skills -type l  # must be empty — zero symlinks allowed
 
  # 15. AgentOps contract canaries (official deterministic test gate)
  scripts/test-agentops-contract-canaries.sh
-
- # 16. AgentOps eval advisory corpus
- scripts/eval-agentops.sh --fast
 
 # Full gate (runs everything above and more):
 scripts/ci-local-release.sh

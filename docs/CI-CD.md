@@ -49,16 +49,17 @@ The validate workflow runs many focused jobs across 4 tiers of parallelism. Most
 
 ```text
                     ┌───────────────────────────────────────────────┐
-                    │         27 independent parallel jobs          │
+                    │   independent validate jobs, path-filtered    │
                     │                                               │
                     │  doc-release-gate    smoke-test               │
                     │  hook-preflight      validate-hooks-doc-parity│
                     │  validate-ci-policy-parity                    │
-                    │  codex-runtime-sections                       │
+                    │  validate-codex-* runtime/parity checks       │
+                    │  validate-goals/registry/flywheel gates       │
                     │  embedded-sync       cli-docs-parity          │
                     │  agentops-contract-canaries                  │
                     │  eval-workbench-verify                       │
-                    │  agentops-eval-advisory                      │
+                    │  factory/practice advisory observations       │
                     │  shellcheck          markdownlint             │
                     │  security-scan       security-toolchain-gate  │
                     │  skill-integrity     skill-schema             │
@@ -90,9 +91,9 @@ The validate workflow runs many focused jobs across 4 tiers of parallelism. Most
 
 ### The `summary` Aggregator Pattern
 
-The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It checks each job's result and fails if any **blocking** job did not succeed. This single aggregator is the branch protection target -- repository settings only need to require `summary` to pass, not every individual job.
+The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It fails when any `needs.*.result` is `failure`. Advisory and warn-only jobs avoid blocking through `continue-on-error: true` at the job or step level, so their findings remain visible without producing a failing `needs` result. This single aggregator is the branch protection target -- repository settings only need to require `summary` to pass, not every individual job.
 
-Notably, `summary` excludes `agentops-eval-advisory`, `security-toolchain-gate`, `doctor-check`, `check-test-staleness`, and `swarm-evidence` from its failure condition (these are soft gates), while still listing them in `needs` so they appear in the summary output. `agentops-contract-canaries` is the blocking deterministic test gate for the stable public canary subset.
+Current non-blocking validate jobs are `doctor-check`, `factory-claim-ledger-strict`, `practice-citations`, `check-test-staleness`, `swarm-evidence`, and `executable-spec-link-integrity`. `security-toolchain-gate` is blocking. The old `agentops-eval-advisory` job is no longer part of `validate.yml`; `agentops-contract-canaries` remains the blocking deterministic test gate for the stable public canary subset.
 
 For normal `main` pushes and PRs, the `changes` job path-filters expensive lanes.
 For `refs/tags/v*` pushes, `changes` forces every category output to `true` and
@@ -104,15 +105,16 @@ for the exact tagged SHA; skipped is not treated as passed for releases.
 
 ### Soft Gates (continue-on-error: true)
 
-These jobs run but their failure does **not** block merges. Each carries an `(advisory)` suffix in its GitHub check name. Triage SLAs and escalation rules are codified in root `AGENTS.md` §Advisory Job Triage SLAs — keep that table and this one in sync (`scripts/validate-ci-policy-parity.sh`).
+These jobs run but their failure does **not** block merges. Advisory jobs carry an `(advisory)` suffix in the GitHub check name; `executable-spec-link-integrity` is named `(warn-only, F1.6)`. Triage SLAs and escalation rules are codified in root `AGENTS.md` §Advisory Job Triage SLAs — keep that table and this one in sync (`scripts/validate-ci-policy-parity.sh`).
 
 | Job | Triage SLA | Reason |
 |-----|------------|--------|
-| `agentops-eval-advisory` | 7d (release-blocking when stale) | The broad eval/canary corpus still runs on every PR, but brittle exact-string checks and baseline ratchets stay advisory until promoted |
-| `security-toolchain-gate` | 14d | External scanner tools may be unavailable; pattern scan (`security-scan`) is the blocking check. Install steps use 3-attempt exponential-backoff retry to absorb transient trivy/hadolint network timeouts (item 40, soc-z7qq) |
 | `doctor-check` | 30d | Reports stale CLI references; CI environment lacks some expected tools |
+| `factory-claim-ledger-strict` | 14d | Advisory claim-ledger drift observation for Wave 1E promotion evidence |
+| `practice-citations` | 14d | Advisory strict walk for missing or invalid `practices: [slug,...]` citations |
 | `check-test-staleness` | none (info-only) | Advisory -- flags tests that may need updating (item 33) |
 | `swarm-evidence` | none (info-only) | Advisory -- validates swarm evidence artifact shape; missing/malformed swarm artifacts are informational, not blocking (item 34) |
+| `executable-spec-link-integrity` | none (warn-only) | Warn-only directive/scenario link lint and orphan/gap trace until the F1.6 promotion criterion is met |
 
 ### Retrieval-bench ratchet (nightly)
 
