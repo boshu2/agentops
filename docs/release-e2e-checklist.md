@@ -56,7 +56,7 @@ Expect:
   - `sil_evidence`
   - `hil_evidence`
   - `vil_evidence` and `digital_twin_evidence`
-- `.agents/releases/local-ci/<timestamp>/release-readiness.json` has `release_status: pass` and `release_readiness_score >= 8`
+- `.agents/releases/local-ci/<timestamp>/release-readiness.json` has `release_status: pass`, `release_readiness_score >= 8`, `evidence.policy.status_flags_trusted: false`, and first-class `sil`, `vil`, `digital_twin`, `hil`, `artifacts`, `security`, and `evals` lanes
 - `.agents/releases/local-ci/<timestamp>/sil-evidence.json` has `status: pass`, matching `release_version`, and the same run's local CI error count before readiness
 - `.agents/releases/local-ci/<timestamp>/hil-evidence.json` has `status: pass` or `status: waived`; passing targets record OS/architecture/runtime identity, workflow checks, command fingerprint, and release-version verification
 - `.agents/releases/local-ci/<timestamp>/digital-twin-evidence.json` has `status: pass`, `workflow_strength: full`, matching `release_version`, and passing install/upgrade, hook install, RPI, plugin runtime, and version-parity dimensions

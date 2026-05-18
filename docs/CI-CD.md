@@ -162,7 +162,7 @@ The local CI gate mirrors the remote pipeline and runs in 7 phases:
 | 4 | Heavy checks: Go build + race tests, hook integration tests, SBOM generation, security toolchain gate | Parallel |
 | 5 | CLI smoke tests: hook install smoke, `ao init --hooks` + RPI smoke, release smoke test | Parallel |
 | 6 | Post-hoc `$HOME/.agents` content-hash gate | Sequential |
-| 7 | Release readiness evidence: HIL capture plus 8/10 readiness score | Sequential |
+| 7 | Zero-trust release evidence: SIL, digital-twin/VIL, HIL, security, evals, artifacts, plus 8/10 readiness score | Sequential |
 
 ### Flags
 
@@ -176,7 +176,7 @@ scripts/ci-local-release.sh --release-version 2.X.Y --hil-waiver 'target unavail
 ```
 
 In `--fast` mode, Phase 4 skips race tests, hook integration tests, SBOM generation, and the security gate. It still builds the binary and runs release validation.
-When `--release-version` is set, Phase 7 runs in official mode and fails unless the readiness score is at least 8/10 with fresh evidence-backed SIL/VIL/security/eval pass and HIL pass or waiver.
+When `--release-version` is set, Phase 7 runs in official mode and fails unless the readiness score is at least 8/10 with fresh evidence-backed SIL, full digital-twin/VIL, security, eval, and artifact lanes plus HIL pass or waiver. Official mode does not trust caller-provided status strings; it derives lane status from JSON evidence.
 
 ### Minimum Checks Before Any Push
 
@@ -284,7 +284,7 @@ The release workflow (`release.yml`) triggers on version tags (`v*`) or manual d
 2. **Version resolution:** Extracts version from tag or manual input
 3. **Validation:** Verifies tag exists, Homebrew token is valid
 4. **Release notes:** Extracts from CHANGELOG.md via `scripts/extract-release-notes.sh`
-5. **Pre-publish evidence:** Generates CycloneDX SBOM, runs the full security gate, and writes release readiness before GoReleaser can start
+5. **Pre-publish evidence:** Generates CycloneDX SBOM, runs the full security gate, captures digital-twin/VIL and HIL evidence, and writes release readiness before GoReleaser can start
 6. **Publish:** GoReleaser builds cross-platform binaries (darwin/linux/windows, amd64/arm64)
 7. **Post-publish:** Applies curated release notes and uploads the already-passed SBOM, security report, and readiness evidence as release assets
 8. **Attestation:** SLSA provenance via `actions/attest-build-provenance@v4` covering all tarballs, checksums, SBOM, security report, and readiness

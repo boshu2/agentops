@@ -9,6 +9,40 @@ release has enough evidence to tag and publish. The authoritative artifact is:
 
 The JSON shape is versioned by `release-readiness.v1.schema.json`.
 
+## Zero-Trust Evidence Model
+
+`release-readiness.json` has two related surfaces:
+
+- `dimensions` preserves the 10 point score used by dashboards and release
+  gates.
+- `evidence` is the zero-trust contract. It declares the policy and the
+  first-class lanes that produced the score.
+
+The `evidence.policy` object records whether the artifact was produced in
+official mode, whether caller-provided status flags were trusted, whether the
+result is pre-publish blocking, and the threshold used for the decision. In
+official mode, `status_flags_trusted` is always `false`; statuses are derived
+from evidence artifacts, not from command-line `--sil pass` style inputs.
+
+The `evidence.lanes` object has exactly these lanes:
+
+| Lane | Required official artifact | Evidence identity |
+|------|----------------------------|-------------------|
+| `sil` | `sil-evidence.json` | `evidence_kind: software_in_loop` |
+| `vil` | `digital-twin-evidence.json` | VIL status sourced from the digital twin |
+| `digital_twin` | `digital-twin-evidence.json` | Disposable install/upgrade/operator workflow proof |
+| `hil` | `hil-evidence.json` | Real target proof or explicit waiver |
+| `artifacts` | `release-artifacts.json` bundle | Release artifact manifest |
+| `security` | `security-gate-full.json` or accepted fallback | Security gate report |
+| `evals` | `eval-agentops-fast.json` plus baseline audit | Eval and baseline-drift report |
+
+Each lane records `status`, `artifact`, `required`, `blocking`,
+`freshness_required`, and `release_version_required`. The digital-twin lane also
+records workflow strength, the exercised `ao` binary digest, runtime identity,
+check logs, and failure reasons. The HIL lane records waiver text when present,
+target identity, command fingerprints, workflow checks, runtime identity, and
+target logs.
+
 ## Score
 
 `scripts/check-release-readiness.sh` writes a 10 point score:
@@ -32,7 +66,10 @@ security, and eval dimensions must pass. HIL must pass or be explicitly waived.
 Official mode derives those dimensions from evidence JSON files under
 `--evidence-dir`; caller-provided status flags are only advisory/fast-mode
 shortcuts. Evidence files must be fresh, parseable, and version-aligned when
-`--release-version` is supplied.
+`--release-version` is supplied. The digital-twin evidence must be full-strength
+and must include an `ao` binary digest, runtime identity, and at least six
+workflow checks. Passing HIL evidence must include at least one strong target
+with runtime identity; otherwise HIL must be explicitly waived.
 
 ## Modes
 
@@ -86,8 +123,10 @@ Official mode requires a real `ao` binary and records install/upgrade smoke,
 version parity, core command smoke, `ao init --hooks`, `ao hooks show`,
 `ao rpi status`, and runtime/help surfaces in a temporary HOME and repository.
 Fast mode runs a lightweight subset when the binary is available and records
-`skipped` when it is not. A digital-twin waiver is explicit evidence, not an
-implicit pass.
+`skipped` when it is not. The artifact includes `ao_bin_sha256`, runtime
+identity, per-check output previews, and failure reasons so the release
+readiness contract can prove which binary and workflow were exercised. A
+digital-twin waiver is explicit evidence, not an implicit pass.
 
 ## Release Artifacts
 

@@ -23,12 +23,12 @@ write_official_evidence() {
     jq -n \
         --arg generated_at "$generated_at" \
         --arg version "$version" \
-        '{schema_version:1,evidence_kind:"digital_twin",generated_at:$generated_at,release_version:$version,status:"pass",dimensions:{vil:{status:"pass"},release_smoke:{status:"pass"},hook_install_smoke:{status:"pass"},rpi_smoke:{status:"pass"}}}' \
+        '{schema_version:1,evidence_kind:"digital_twin",generated_at:$generated_at,release_version:$version,status:"pass",workflow_strength:"full",ao_bin_sha256:"0123456789abcdef",runtime:{os:"Linux",arch:"x86_64"},dimensions:{vil:{status:"pass"},release_smoke:{status:"pass"},hook_install_smoke:{status:"pass"},rpi_smoke:{status:"pass"}},checks:[range(0;6) | {name:("check-" + tostring),dimension:"release_smoke",status:"pass",exit_code:0,duration_seconds:0,output_preview:"ok"}]}' \
         > "$TMP_DIR/digital-twin-evidence.json"
     jq -n \
         --arg generated_at "$generated_at" \
         --arg version "$version" \
-        '{schema_version:1,generated_at:$generated_at,status:"pass",expected_version:$version,waiver:null,targets:[{name:"loop",status:"pass",workflow_strength:"strong"}]}' \
+        '{schema_version:1,generated_at:$generated_at,status:"pass",expected_version:$version,waiver:null,targets:[{name:"loop",kind:"local",host:null,status:"pass",workflow_strength:"strong",workflow_checks:["ao-version","ao-init","ao-hooks","ao-rpi"],command_sha256:"abcdef",runtime:{os:"Linux",arch:"x86_64"},version_verified:true}]}' \
         > "$TMP_DIR/hil-evidence.json"
     jq -n \
         --arg generated_at "$generated_at" \
@@ -72,7 +72,14 @@ run_official_readiness() {
         .dimensions.vil.evidence_artifact == "digital-twin-evidence.json" and
         .dimensions.hil.evidence_artifact == "hil-evidence.json" and
         .dimensions.security.evidence_artifact == "security-gate-full.json" and
-        .dimensions.evals.evidence_artifact == "eval-agentops-fast.json"
+        .dimensions.evals.evidence_artifact == "eval-agentops-fast.json" and
+        .evidence.policy.status_flags_trusted == false and
+        .evidence.policy.pre_publish_blocking == true and
+        .evidence.lanes.digital_twin.artifact == "digital-twin-evidence.json" and
+        .evidence.lanes.digital_twin.workflow_strength == "full" and
+        .evidence.lanes.digital_twin.binary_digest == "0123456789abcdef" and
+        .evidence.lanes.hil.target_identity[0].name == "loop" and
+        .evidence.lanes.artifacts.artifact == "release-artifacts.json"
     ' "$out"
 }
 
