@@ -1,0 +1,409 @@
+# Skill dispositions — canonical per-skill DDD/disposition data
+#
+# Source of truth for the Full Skill Map in
+# docs/reference/agentops-skill-domain-map.md.  That .md file is
+# regenerated from this yaml + skills/*/SKILL.md frontmatter by
+# scripts/generate-skill-domain-map.sh.  Do not hand-edit the table in
+# the .md file — edit this yaml and regenerate.
+#
+# Phase 3 of soc-zxia (registries-drift remediation).
+#
+# Schema per row:
+#   skill           skill slug (matches skills/<slug>/SKILL.md name)
+#   domain          "BC<n> <Name>" — must match docs/contracts/bounded-contexts.yaml
+#   hexagonal_role  domain | driving-adapter | driven-adapter | supporting | generic
+#                   (must match the skill's SKILL.md frontmatter hexagonal_role)
+#   disposition     keep | update | refactor | merge-review | cut-review
+#   rationale       one-line justification for the disposition
+
+dispositions:
+  - skill:          autodev
+    domain:         "BC3 Loop"
+    hexagonal_role: supporting
+    disposition:    refactor
+    rationale:      "Must compose with PROGRAM.md and RPI as one vertical-slice executor"
+  - skill:          beads
+    domain:         "BC3 Loop"
+    hexagonal_role: driven-adapter
+    disposition:    update
+    rationale:      "Tracker adapter is core; add BDD/slice acceptance self-test"
+  - skill:          bootstrap
+    domain:         "BC4 Factory"
+    hexagonal_role: driving-adapter
+    disposition:    update
+    rationale:      "First-run factory entrypoint; needs current 3.0/domain packet shape"
+  - skill:          brainstorm
+    domain:         "BC3 Loop"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Intent-shaping skill; should emit BDD-ready language"
+  - skill:          bug-hunt
+    domain:         "BC2 Validation"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Validation generator; needs acceptance examples and result contract"
+  - skill:          codex-team
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Runtime coordination adapter; align with worktree/wave rules"
+  - skill:          compile
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    refactor
+    rationale:      "Corpus compiler is core; align read/write flows to Corpus ports"
+  - skill:          complexity
+    domain:         "BC2 Validation"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Generator for refactor work; add self-test and threshold evidence"
+  - skill:          converter
+    domain:         "BC4 Factory"
+    hexagonal_role: generic
+    disposition:    merge-review
+    rationale:      "Keep if it owns cross-runtime packaging distinct from skill-builder"
+  - skill:          council
+    domain:         "BC2 Validation"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Core judgment gate; strengthen scenario and verdict self-test"
+  - skill:          expert-council
+    domain:         "BC2 Validation"
+    hexagonal_role: domain
+    disposition:    merge-review
+    rationale:      "Absorbed into `council` as `--mode=debate`; thin alias kept one release"
+  - skill:          crank
+    domain:         "BC3 Loop"
+    hexagonal_role: domain
+    disposition:    refactor
+    rationale:      "Wave executor; align with vertical-slice and conflict-free wave contract"
+  - skill:          curate
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    cut-review
+    rationale:      "Overlaps compile/forge/harvest; retain only if unique curation lane remains"
+  - skill:          deps
+    domain:         "BC2 Validation"
+    hexagonal_role: driven-adapter
+    disposition:    update
+    rationale:      "Dependency risk generator; add threshold and no-network fallback tests"
+  - skill:          design
+    domain:         "BC3 Loop"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Product-fit pre-discovery gate; should produce BDD-ready intent"
+  - skill:          discovery
+    domain:         "BC3 Loop"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Creates execution packets; add explicit loop-shape SELF-TEST"
+  - skill:          doc
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Documentation factory adapter; keep tied to doc-release gates"
+  - skill:          domain
+    domain:         "BC4 Factory"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "Ubiquitous-language kernel; central to DDD"
+  - skill:          dream
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    refactor
+    rationale:      "Scheduled compounding lane; align with Corpus ports and convergence proof"
+  - skill:          evolve
+    domain:         "BC3 Loop"
+    hexagonal_role: supporting
+    disposition:    refactor
+    rationale:      "Main loop; must use `soc-y5vh` typed Loop ports and convergence STOP"
+  - skill:          flywheel
+    domain:         "BC1 Corpus"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Flywheel health kernel; needs productized self-test"
+  - skill:          forge
+    domain:         "BC1 Corpus"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Learning extraction; align to capture quality and promotion ratchet"
+  - skill:          goals
+    domain:         "BC3 Loop"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "Fitness source; use as evolution selection input"
+  - skill:          grafana-platform-dashboard
+    domain:         "BC2 Validation"
+    hexagonal_role: driven-adapter
+    disposition:    cut-review
+    rationale:      "Domain-specific validator; keep only if marketplace specialization is intentional"
+  - skill:          handoff
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Session continuity artifact; clarify promotion vs local-only notes"
+  - skill:          harvest
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Promotion adapter; tie to CorpusWriter/Citation behavior"
+  - skill:          heal-skill
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Skill hygiene gate; should consume the new domain map"
+  - skill:          hooks-authoring
+    domain:         "BC5 Runtime"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Hook adapter authoring; align with Runtime/EventBus domain"
+  - skill:          implement
+    domain:         "BC3 Loop"
+    hexagonal_role: driving-adapter
+    disposition:    update
+    rationale:      "Slice executor; enforce first-failing-test language"
+  - skill:          inject
+    domain:         "BC1 Corpus"
+    hexagonal_role: driving-adapter
+    disposition:    refactor
+    rationale:      "Context injection should be explicit CorpusReader adapter use"
+  - skill:          knowledge-activation
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    merge-review
+    rationale:      "Compare with inject/compile/flywheel before expanding"
+  - skill:          llm-wiki
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "External wiki builder; align with Corpus compiler contracts"
+  - skill:          openai-docs
+    domain:         "BC5 Runtime"
+    hexagonal_role: driven-adapter
+    disposition:    keep
+    rationale:      "External API documentation adapter with clear scope"
+  - skill:          oss-docs
+    domain:         "BC4 Factory"
+    hexagonal_role: generic
+    disposition:    merge-review
+    rationale:      "Compare with doc/readme before deeper investment"
+  - skill:          perf
+    domain:         "BC2 Validation"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Performance generator; add thresholds and proof examples"
+  - skill:          plan
+    domain:         "BC3 Loop"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Must output vertical slices and wave-validity checks"
+  - skill:          post-mortem
+    domain:         "BC3 Loop"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Loop closeout; connect to next-work and ratchet evidence"
+  - skill:          pr-implement
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    update
+    rationale:      "GitHub PR implementation adapter; map to loop slices"
+  - skill:          pr-plan
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    cut-review
+    rationale:      "Low scorer; keep only if PR planning is distinct from plan + pr-research"
+  - skill:          pr-prep
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    update
+    rationale:      "PR publication adapter; align to evidence and release discipline"
+  - skill:          pr-research
+    domain:         "BC5 Runtime"
+    hexagonal_role: driven-adapter
+    disposition:    update
+    rationale:      "Upstream repo research adapter; add clean source/citation self-test"
+  - skill:          pr-retro
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    merge-review
+    rationale:      "Compare with retro/post-mortem before expanding"
+  - skill:          pr-validate
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    update
+    rationale:      "PR validation adapter; should reuse BC2 validation contracts"
+  - skill:          pre-mortem
+    domain:         "BC2 Validation"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Plan risk gate; add scenario/verdict self-test"
+  - skill:          product
+    domain:         "BC3 Loop"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "Product intent source; important for loop work selection"
+  - skill:          provenance
+    domain:         "BC1 Corpus"
+    hexagonal_role: driven-adapter
+    disposition:    update
+    rationale:      "Evidence lineage adapter; align with CitationPort/ClaimEvidence"
+  - skill:          push
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    update
+    rationale:      "Git adapter; add branch/worktree disposition self-test"
+  - skill:          quickstart
+    domain:         "BC3 Loop"
+    hexagonal_role: driving-adapter
+    disposition:    update
+    rationale:      "Operator routing entrypoint; align to current 3.0 first-value path"
+  - skill:          ratchet
+    domain:         "BC3 Loop"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Loop evidence ratchet; connect to cycle trace contract"
+  - skill:          readme
+    domain:         "BC4 Factory"
+    hexagonal_role: generic
+    disposition:    merge-review
+    rationale:      "Compare with doc/oss-docs before productizing"
+  - skill:          recover
+    domain:         "BC1 Corpus"
+    hexagonal_role: driving-adapter
+    disposition:    refactor
+    rationale:      "Session recovery is valuable but currently structurally heavy"
+  - skill:          red-team
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Probe generator; add severity/evidence contract"
+  - skill:          refactor
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Refactor generator; align with complexity thresholds and TDD proof"
+  - skill:          release
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Release gate driver; keep tied to local CI and evidence export"
+  - skill:          research
+    domain:         "BC1 Corpus"
+    hexagonal_role: driving-adapter
+    disposition:    update
+    rationale:      "Knowledge acquisition entrypoint; add source/citation self-test"
+  - skill:          retro
+    domain:         "BC1 Corpus"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Learning capture kernel; align to promotion ratchet"
+  - skill:          reverse-engineer-rpi
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "External product-spec extraction; ensure clean-room rules stay explicit"
+  - skill:          review
+    domain:         "BC2 Validation"
+    hexagonal_role: driving-adapter
+    disposition:    update
+    rationale:      "Human-facing review gate; align to validator output contract"
+  - skill:          rpi
+    domain:         "BC3 Loop"
+    hexagonal_role: supporting
+    disposition:    refactor
+    rationale:      "Lifecycle orchestrator; should consume BDD intent and preserve objective spine"
+  - skill:          scaffold
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Code/artifact scaffolder; add non-goal and validation examples"
+  - skill:          scenario
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Holdout scenario manager; important for behavioral evals"
+  - skill:          scope
+    domain:         "BC5 Runtime"
+    hexagonal_role: driven-adapter
+    disposition:    keep
+    rationale:      "Runtime filesystem gate; hard boundary skill"
+  - skill:          security
+    domain:         "BC2 Validation"
+    hexagonal_role: driven-adapter
+    disposition:    merge-review
+    rationale:      "Low scorer; compare with security-suite before expansion"
+  - skill:          security-suite
+    domain:         "BC2 Validation"
+    hexagonal_role: driven-adapter
+    disposition:    update
+    rationale:      "Composable scanner; likely canonical security validation lane"
+  - skill:          shared
+    domain:         "BC4 Factory"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "Shared contracts; avoid broad edits"
+  - skill:          skill-auditor
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Audit role should consume new quality/domain rubrics"
+  - skill:          skill-builder
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Builder should scaffold SELF-TEST and domain metadata by default"
+  - skill:          standards
+    domain:         "BC4 Factory"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "Current pilot upgraded with SELF-TEST; continue incremental patches"
+  - skill:          status
+    domain:         "BC3 Loop"
+    hexagonal_role: driving-adapter
+    disposition:    update
+    rationale:      "Operator state surface; should show loop/domain/evidence status"
+  - skill:          swarm
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Multi-agent runtime adapter; align with conflict-free wave rules"
+  - skill:          system-tuning
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Machine-health adapter; keep separate from product loop"
+  - skill:          test
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Test generator; central to first-failing-test loop"
+  - skill:          trace
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    update
+    rationale:      "Decision trace builder; align to provenance and cycle trace"
+  - skill:          update
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    cut-review
+    rationale:      "Low scorer; keep only if it owns install/update workflows distinctly"
+  - skill:          using-agentops
+    domain:         "BC4 Factory"
+    hexagonal_role: generic
+    disposition:    update
+    rationale:      "Operator education; align to 3.0 first-value path"
+  - skill:          validate
+    domain:         "BC2 Validation"
+    hexagonal_role: driving-adapter
+    disposition:    merge-review
+    rationale:      "Low scorer; decide relationship to `validation` before rewriting"
+  - skill:          validation
+    domain:         "BC2 Validation"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Canonical post-implementation validation; strengthen self-test first"
+  - skill:          vibe
+    domain:         "BC2 Validation"
+    hexagonal_role: domain
+    disposition:    update
+    rationale:      "Code-readiness validator; add self-test and tighten result contract"

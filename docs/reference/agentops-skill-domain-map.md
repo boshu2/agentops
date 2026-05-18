@@ -12,18 +12,16 @@ around small provable changes.
 
 ## Audit Summary
 
-The local AgentOps skill-factory scorer was run across `skills/*/SKILL.md`.
-This is a structural heuristic, not a product verdict.
+> Generated from skills/ + docs/contracts/skill-dispositions.yaml.
+> Do not hand-edit the table below — run `bash scripts/generate-skill-domain-map.sh`.
 
+<!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
 | Skills audited | 78 |
-| Average score | 13.1 / 30 |
-| S-rated skills | 0 |
-| A-rated skills | 0 |
-| B-rated skills | 70 |
-| C-rated skills | 7 |
-| Skills with `SELF-TEST.md` | 1 |
+| Domains classified | 5 of 5 (BC1-BC5) |
+| Dispositions assigned | 78 / 78 |
+<!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
 skill packaging. The highest-leverage first pass is not rewriting prose; it is
@@ -32,8 +30,10 @@ and aligning loop-facing skills to the bounded-context architecture.
 
 ## Domain Taxonomy
 
-<!-- Generated from docs/contracts/bounded-contexts.yaml — DO NOT EDIT prose; edit yaml and run `bash scripts/check-bounded-contexts-drift.sh` -->
+> Generated from docs/contracts/bounded-contexts.yaml.
+> Do not hand-edit; edit yaml and run `bash scripts/generate-skill-domain-map.sh`.
 
+<!-- BEGIN:domain-taxonomy -->
 | Domain | Product layer | Responsibility |
 |---|---|---|
 | BC1 Corpus | Bookkeeping + Context Compiler + Knowledge Flywheel | Capture, retrieve, compile, cite, and promote knowledge. |
@@ -41,6 +41,7 @@ and aligning loop-facing skills to the bounded-context architecture.
 | BC3 Loop | Operating loop | Select work, execute RPI, log cycles, measure fitness, and stop at convergence. |
 | BC4 Factory | Skill and claim factory | Build, audit, package, and govern reusable skills and product claims. |
 | BC5 Runtime | Harness and operator adapters | Adapt the control plane to harnesses, hooks, PRs, shells, and local machines. |
+<!-- END:domain-taxonomy -->
 
 ## Full Skill Map
 
@@ -52,6 +53,10 @@ Disposition meanings:
 - `merge-review` means compare with neighboring skills before investing.
 - `cut-review` means keep only if a concrete operator workflow still justifies it.
 
+> Generated from docs/contracts/skill-dispositions.yaml.
+> Do not hand-edit the table — edit the yaml and run `bash scripts/generate-skill-domain-map.sh`.
+
+<!-- BEGIN:full-skill-map -->
 | Skill | Domain | Hex role | First disposition | Rationale |
 |---|---|---|---|---|
 | `autodev` | BC3 Loop | supporting | refactor | Must compose with PROGRAM.md and RPI as one vertical-slice executor. |
@@ -64,7 +69,6 @@ Disposition meanings:
 | `complexity` | BC2 Validation | domain | update | Generator for refactor work; add self-test and threshold evidence. |
 | `converter` | BC4 Factory | generic | merge-review | Keep if it owns cross-runtime packaging distinct from skill-builder. |
 | `council` | BC2 Validation | domain | update | Core judgment gate; strengthen scenario and verdict self-test. |
-| `expert-council` | BC2 Validation | domain | merge-review | Absorbed into `council` as `--mode=debate`; thin alias kept one release. |
 | `crank` | BC3 Loop | domain | refactor | Wave executor; align with vertical-slice and conflict-free wave contract. |
 | `curate` | BC1 Corpus | supporting | cut-review | Overlaps compile/forge/harvest; retain only if unique curation lane remains. |
 | `deps` | BC2 Validation | driven-adapter | update | Dependency risk generator; add threshold and no-network fallback tests. |
@@ -74,6 +78,7 @@ Disposition meanings:
 | `domain` | BC4 Factory | domain | keep | Ubiquitous-language kernel; central to DDD. |
 | `dream` | BC1 Corpus | supporting | refactor | Scheduled compounding lane; align with Corpus ports and convergence proof. |
 | `evolve` | BC3 Loop | supporting | refactor | Main loop; must use `soc-y5vh` typed Loop ports and convergence STOP. |
+| `expert-council` | BC2 Validation | domain | merge-review | Absorbed into `council` as `--mode=debate`; thin alias kept one release. |
 | `flywheel` | BC1 Corpus | domain | update | Flywheel health kernel; needs productized self-test. |
 | `forge` | BC1 Corpus | domain | update | Learning extraction; align to capture quality and promotion ratchet. |
 | `goals` | BC3 Loop | domain | keep | Fitness source; use as evolution selection input. |
@@ -132,6 +137,7 @@ Disposition meanings:
 | `validate` | BC2 Validation | driving-adapter | merge-review | Low scorer; decide relationship to `validation` before rewriting. |
 | `validation` | BC2 Validation | domain | update | Canonical post-implementation validation; strengthen self-test first. |
 | `vibe` | BC2 Validation | domain | update | Code-readiness validator; add self-test and tighten result contract. |
+<!-- END:full-skill-map -->
 
 ## Priority Queue
 
