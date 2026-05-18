@@ -13,6 +13,7 @@
     "release_status",
     "dimensions",
     "hil_evidence",
+    "evidence_errors",
     "recommendations"
   ],
   "additionalProperties": false,
@@ -91,6 +92,12 @@
       "items": {
         "type": "string"
       }
+    },
+    "evidence_errors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
   "$defs": {
@@ -110,6 +117,9 @@
         "points": {
           "type": "number",
           "minimum": 0
+        },
+        "evidence_artifact": {
+          "type": ["string", "null"]
         }
       }
     }

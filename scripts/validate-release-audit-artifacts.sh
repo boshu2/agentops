@@ -111,6 +111,7 @@ validate_manifest_artifacts() {
     local sbom_spdx
     local security_report
     local release_readiness
+    local sil_evidence
     local hil_evidence
     local vil_evidence
     local digital_twin_evidence
@@ -125,6 +126,7 @@ validate_manifest_artifacts() {
     sbom_spdx="$(jq -r '.sbom_spdx // empty' "$manifest")"
     security_report="$(jq -r '.security_report // empty' "$manifest")"
     release_readiness="$(jq -r '.release_readiness // empty' "$manifest")"
+    sil_evidence="$(jq -r '.sil_evidence // empty' "$manifest")"
     hil_evidence="$(jq -r '.hil_evidence // empty' "$manifest")"
     vil_evidence="$(jq -r '.vil_evidence // empty' "$manifest")"
     digital_twin_evidence="$(jq -r '.digital_twin_evidence // empty' "$manifest")"
@@ -161,9 +163,10 @@ validate_manifest_artifacts() {
         return 1
     fi
 
-    if [[ "$strict_readiness" == "true" || -n "$release_readiness" || -n "$hil_evidence" || \
+    if [[ "$strict_readiness" == "true" || -n "$release_readiness" || -n "$sil_evidence" || -n "$hil_evidence" || \
           -n "$vil_evidence" || -n "$digital_twin_evidence" || -n "$eval_fast_report" || -n "$eval_baseline_audit" ]]; then
         require_artifact_file "$audit" "$artifact_dir" "release readiness" "$release_readiness" || return 1
+        require_artifact_file "$audit" "$artifact_dir" "SIL evidence" "$sil_evidence" || return 1
         require_artifact_file "$audit" "$artifact_dir" "HIL evidence" "$hil_evidence" || return 1
         require_artifact_file "$audit" "$artifact_dir" "VIL evidence" "$vil_evidence" || return 1
         require_artifact_file "$audit" "$artifact_dir" "digital twin evidence" "$digital_twin_evidence" || return 1
@@ -180,6 +183,14 @@ validate_manifest_artifacts() {
             (.dimensions.hil.status == "pass" or .dimensions.hil.status == "waived")
         ' "$REPO_ROOT/$artifact_dir/$release_readiness" >/dev/null; then
             printf '%s: release readiness artifact did not pass >=8 SIL/VIL/HIL gate: %s/%s\n' "$audit" "$artifact_dir" "$release_readiness"
+            return 1
+        fi
+        if ! jq -e '
+            .schema_version == 1 and
+            .evidence_kind == "software_in_loop" and
+            .status == "pass"
+        ' "$REPO_ROOT/$artifact_dir/$sil_evidence" >/dev/null; then
+            printf '%s: SIL evidence did not pass: %s/%s\n' "$audit" "$artifact_dir" "$sil_evidence"
             return 1
         fi
         if ! jq -e '

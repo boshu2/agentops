@@ -54,6 +54,7 @@ write_manifest() {
   "sbom_spdx": "sbom-v$version.spdx.json",
   "security_report": "security-gate-full.json",
   "release_readiness": "release-readiness.json",
+  "sil_evidence": "sil-evidence.json",
   "hil_evidence": "hil-evidence.json",
   "vil_evidence": "digital-twin-evidence.json",
   "digital_twin_evidence": "digital-twin-evidence.json",
@@ -70,6 +71,7 @@ write_artifact_files() {
     printf '{"bomFormat":"CycloneDX"}\n' > "$dir/sbom-v$version.cyclonedx.json"
     printf '{"spdxVersion":"SPDX-2.3"}\n' > "$dir/sbom-v$version.spdx.json"
     printf '{"gate_status":"PASS"}\n' > "$dir/security-gate-full.json"
+    printf '{"schema_version":1,"evidence_kind":"software_in_loop","status":"pass"}\n' > "$dir/sil-evidence.json"
     cat > "$dir/release-readiness.json" <<'EOF'
 {
   "schema_version": 1,
@@ -207,6 +209,17 @@ EOF
     run "$FAKE_REPO/scripts/resolve-release-artifacts.sh" "2.29.0"
     [ "$status" -eq 1 ]
     [[ "$output" == *"no full local CI artifacts found for release version 2.29.0"* ]]
+}
+
+@test "validate-release-audit-artifacts rejects missing SIL evidence for release audits" {
+    write_manifest "20260322T212222Z" "2.29.0" false
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    rm "$FAKE_REPO/.agents/releases/local-ci/20260322T212222Z/sil-evidence.json"
+    write_audit "2.29.0" "20260322T212222Z" "2026-05-02"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"missing SIL evidence artifact sil-evidence.json"* ]]
 }
 
 @test "resolve-release-artifacts rejects manifests without eval evidence" {

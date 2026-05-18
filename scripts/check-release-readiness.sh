@@ -5,6 +5,15 @@ MODE="${AGENTOPS_RELEASE_READINESS_MODE:-official}"
 THRESHOLD="${AGENTOPS_RELEASE_READINESS_THRESHOLD:-8}"
 OUT=""
 ARTIFACT_DIR=""
+EVIDENCE_DIR="${AGENTOPS_RELEASE_EVIDENCE_DIR:-}"
+RELEASE_VERSION="${AGENTOPS_RELEASE_VERSION:-}"
+MAX_EVIDENCE_AGE_SECONDS="${AGENTOPS_RELEASE_MAX_EVIDENCE_AGE_SECONDS:-86400}"
+SIL_EVIDENCE_FILE="${AGENTOPS_RELEASE_SIL_EVIDENCE_FILE:-}"
+VIL_EVIDENCE_FILE="${AGENTOPS_RELEASE_VIL_EVIDENCE_FILE:-}"
+DIGITAL_TWIN_EVIDENCE_FILE="${AGENTOPS_RELEASE_DIGITAL_TWIN_EVIDENCE_FILE:-}"
+SECURITY_EVIDENCE_FILE="${AGENTOPS_RELEASE_SECURITY_EVIDENCE_FILE:-}"
+EVAL_EVIDENCE_FILE="${AGENTOPS_RELEASE_EVAL_EVIDENCE_FILE:-}"
+EVAL_BASELINE_FILE="${AGENTOPS_RELEASE_EVAL_BASELINE_FILE:-}"
 SIL_STATUS="${AGENTOPS_RELEASE_SIL_STATUS:-pass}"
 VIL_STATUS="${AGENTOPS_RELEASE_VIL_STATUS:-pass}"
 HIL_STATUS="${AGENTOPS_RELEASE_HIL_STATUS:-}"
@@ -23,6 +32,20 @@ Write a scored release-readiness artifact.
 Options:
   --out PATH              Write JSON readiness artifact to PATH
   --artifact-dir PATH     Artifact directory recorded in the JSON
+  --evidence-dir PATH     Directory containing official evidence JSON files
+  --release-version V     Expected release version for official evidence
+  --max-evidence-age-seconds N
+                          Maximum official evidence age (default: 86400)
+  --sil-evidence-file PATH
+                          SIL evidence JSON (default: evidence-dir/sil-evidence.json)
+  --vil-evidence-file PATH
+                          VIL evidence JSON (default: evidence-dir/digital-twin-evidence.json)
+  --digital-twin-file PATH
+                          Digital-twin evidence JSON (alias for --vil-evidence-file)
+  --security-file PATH    Security gate JSON (default: evidence-dir/security-gate-full.json)
+  --eval-file PATH        Eval fast JSON (default: evidence-dir/eval-agentops-fast.json)
+  --eval-baseline-file PATH
+                          Eval baseline audit JSON (default: evidence-dir/eval-baseline-audit.json)
   --mode MODE             official|advisory|fast (default: official)
   --threshold NUMBER      Minimum score for pass (default: 8)
   --sil STATUS            pass|fail|skipped (default: pass)
@@ -45,6 +68,42 @@ while [[ $# -gt 0 ]]; do
             ;;
         --artifact-dir)
             ARTIFACT_DIR="${2:-}"
+            shift 2
+            ;;
+        --evidence-dir)
+            EVIDENCE_DIR="${2:-}"
+            shift 2
+            ;;
+        --release-version)
+            RELEASE_VERSION="${2:-}"
+            shift 2
+            ;;
+        --max-evidence-age-seconds)
+            MAX_EVIDENCE_AGE_SECONDS="${2:-}"
+            shift 2
+            ;;
+        --sil-evidence-file)
+            SIL_EVIDENCE_FILE="${2:-}"
+            shift 2
+            ;;
+        --vil-evidence-file)
+            VIL_EVIDENCE_FILE="${2:-}"
+            shift 2
+            ;;
+        --digital-twin-file)
+            DIGITAL_TWIN_EVIDENCE_FILE="${2:-}"
+            shift 2
+            ;;
+        --security-file)
+            SECURITY_EVIDENCE_FILE="${2:-}"
+            shift 2
+            ;;
+        --eval-file)
+            EVAL_EVIDENCE_FILE="${2:-}"
+            shift 2
+            ;;
+        --eval-baseline-file)
+            EVAL_BASELINE_FILE="${2:-}"
             shift 2
             ;;
         --mode)
@@ -114,6 +173,11 @@ if ! awk -v threshold="$THRESHOLD" 'BEGIN { exit !(threshold + 0 == threshold &&
     exit 1
 fi
 
+if [[ ! "$MAX_EVIDENCE_AGE_SECONDS" =~ ^[0-9]+$ || "$MAX_EVIDENCE_AGE_SECONDS" -eq 0 ]]; then
+    echo "--max-evidence-age-seconds must be a positive integer" >&2
+    exit 1
+fi
+
 validate_status() {
     local label="$1"
     local status="$2"
@@ -136,7 +200,235 @@ validate_status() {
     exit 1
 }
 
-if [[ -n "$HIL_FILE" ]]; then
+timestamp() {
+    date -u +%Y-%m-%dT%H:%M:%SZ
+}
+
+EVIDENCE_ERRORS='[]'
+OFFICIAL_ARTIFACTS_OK=true
+SIL_ARTIFACT=""
+VIL_ARTIFACT=""
+HIL_ARTIFACT=""
+ARTIFACTS_ARTIFACT=""
+SECURITY_ARTIFACT=""
+EVAL_ARTIFACT=""
+
+add_evidence_error() {
+    local item="$1"
+    EVIDENCE_ERRORS="$(jq -c --arg item "$item" '. + [$item]' <<<"$EVIDENCE_ERRORS")"
+}
+
+artifact_name() {
+    local path="$1"
+
+    if [[ -z "$path" ]]; then
+        printf ''
+    else
+        basename "$path"
+    fi
+}
+
+resolve_evidence_path() {
+    local candidate="$1"
+    local default_name="$2"
+    local base_dir="$EVIDENCE_DIR"
+
+    [[ -z "$base_dir" ]] && base_dir="$ARTIFACT_DIR"
+
+    if [[ -n "$candidate" ]]; then
+        if [[ "$candidate" == /* || -z "$base_dir" ]]; then
+            printf '%s\n' "$candidate"
+        else
+            printf '%s/%s\n' "${base_dir%/}" "$candidate"
+        fi
+    elif [[ -n "$base_dir" ]]; then
+        printf '%s/%s\n' "${base_dir%/}" "$default_name"
+    else
+        printf '%s\n' "$default_name"
+    fi
+}
+
+first_existing_evidence_path() {
+    local candidate
+
+    for candidate in "$@"; do
+        [[ -n "$candidate" && -f "$candidate" ]] && {
+            printf '%s\n' "$candidate"
+            return 0
+        }
+    done
+
+    printf '%s\n' "${1:-}"
+}
+
+normalize_version() {
+    local version="$1"
+    printf '%s\n' "${version#v}"
+}
+
+json_timestamp_epoch() {
+    local value="$1"
+
+    date -u -d "$value" +%s 2>/dev/null || \
+        date -u -j -f "%Y-%m-%dT%H:%M:%SZ" "$value" +%s 2>/dev/null || \
+        return 1
+}
+
+validate_evidence_common() {
+    local label="$1"
+    local file="$2"
+    local require_version="${3:-false}"
+    local generated_at
+    local generated_epoch
+    local now_epoch
+    local age_seconds
+    local expected_version
+    local evidence_version
+
+    if [[ -z "$file" || ! -f "$file" ]]; then
+        add_evidence_error "missing ${label} evidence: $(artifact_name "$file")"
+        OFFICIAL_ARTIFACTS_OK=false
+        return 1
+    fi
+
+    if ! jq empty "$file" >/dev/null 2>&1; then
+        add_evidence_error "malformed ${label} evidence: $(artifact_name "$file")"
+        OFFICIAL_ARTIFACTS_OK=false
+        return 1
+    fi
+
+    generated_at="$(jq -r '.generated_at // empty' "$file")"
+    if [[ -z "$generated_at" ]]; then
+        add_evidence_error "missing ${label} generated_at: $(artifact_name "$file")"
+        OFFICIAL_ARTIFACTS_OK=false
+        return 1
+    fi
+    if ! generated_epoch="$(json_timestamp_epoch "$generated_at")"; then
+        add_evidence_error "invalid ${label} generated_at: $(artifact_name "$file")"
+        OFFICIAL_ARTIFACTS_OK=false
+        return 1
+    fi
+    now_epoch="$(date -u +%s)"
+    age_seconds=$((now_epoch - generated_epoch))
+    if (( age_seconds < -300 || age_seconds > MAX_EVIDENCE_AGE_SECONDS )); then
+        add_evidence_error "stale ${label} evidence: $(artifact_name "$file")"
+        OFFICIAL_ARTIFACTS_OK=false
+        return 1
+    fi
+
+    expected_version="$(normalize_version "$RELEASE_VERSION")"
+    if [[ "$require_version" == "true" && -n "$expected_version" ]]; then
+        evidence_version="$(jq -r '.release_version // .expected_version // empty' "$file")"
+        evidence_version="$(normalize_version "$evidence_version")"
+        if [[ -z "$evidence_version" ]]; then
+            add_evidence_error "missing ${label} release version: $(artifact_name "$file")"
+            OFFICIAL_ARTIFACTS_OK=false
+            return 1
+        fi
+        if [[ "$evidence_version" != "$expected_version" ]]; then
+            add_evidence_error "version mismatch in ${label} evidence: expected ${expected_version}, got ${evidence_version}"
+            OFFICIAL_ARTIFACTS_OK=false
+            return 1
+        fi
+    fi
+
+    return 0
+}
+
+derive_official_evidence() {
+    local sil_file
+    local vil_file
+    local security_file
+    local eval_file
+    local baseline_file
+    local security_full
+    local security_summary
+    local security_quick
+
+    [[ -z "$EVIDENCE_DIR" ]] && EVIDENCE_DIR="$ARTIFACT_DIR"
+    [[ -n "$DIGITAL_TWIN_EVIDENCE_FILE" && -z "$VIL_EVIDENCE_FILE" ]] && \
+        VIL_EVIDENCE_FILE="$DIGITAL_TWIN_EVIDENCE_FILE"
+
+    sil_file="$(resolve_evidence_path "$SIL_EVIDENCE_FILE" "sil-evidence.json")"
+    vil_file="$(resolve_evidence_path "$VIL_EVIDENCE_FILE" "digital-twin-evidence.json")"
+    HIL_FILE="$(resolve_evidence_path "$HIL_FILE" "hil-evidence.json")"
+    eval_file="$(resolve_evidence_path "$EVAL_EVIDENCE_FILE" "eval-agentops-fast.json")"
+    baseline_file="$(resolve_evidence_path "$EVAL_BASELINE_FILE" "eval-baseline-audit.json")"
+
+    security_full="$(resolve_evidence_path "$SECURITY_EVIDENCE_FILE" "security-gate-full.json")"
+    security_summary="$(resolve_evidence_path "$SECURITY_EVIDENCE_FILE" "security-gate-summary.json")"
+    security_quick="$(resolve_evidence_path "$SECURITY_EVIDENCE_FILE" "security-gate-quick.json")"
+    security_file="$(first_existing_evidence_path "$security_full" "$security_summary" "$security_quick")"
+
+    SIL_ARTIFACT="$(artifact_name "$sil_file")"
+    VIL_ARTIFACT="$(artifact_name "$vil_file")"
+    HIL_ARTIFACT="$(artifact_name "$HIL_FILE")"
+    SECURITY_ARTIFACT="$(artifact_name "$security_file")"
+    EVAL_ARTIFACT="$(artifact_name "$eval_file")"
+    ARTIFACTS_ARTIFACT="$(artifact_name "$EVIDENCE_DIR")"
+
+    SIL_STATUS="fail"
+    if validate_evidence_common "SIL" "$sil_file" true && \
+        jq -e '.schema_version == 1 and .evidence_kind == "software_in_loop" and .status == "pass"' "$sil_file" >/dev/null; then
+        SIL_STATUS="pass"
+    else
+        add_evidence_error "SIL evidence did not pass: $(artifact_name "$sil_file")"
+    fi
+
+    VIL_STATUS="fail"
+    if validate_evidence_common "digital twin" "$vil_file" true && \
+        jq -e '.schema_version == 1 and .evidence_kind == "digital_twin" and .status == "pass" and .dimensions.vil.status == "pass"' "$vil_file" >/dev/null; then
+        VIL_STATUS="pass"
+    else
+        add_evidence_error "digital twin/VIL evidence did not pass: $(artifact_name "$vil_file")"
+    fi
+
+    HIL_STATUS="fail"
+    HIL_WAIVER=""
+    if validate_evidence_common "HIL" "$HIL_FILE" true; then
+        HIL_STATUS="$(jq -r '.status // "fail"' "$HIL_FILE")"
+        HIL_WAIVER="$(jq -r '.waiver // empty' "$HIL_FILE")"
+        if [[ "$HIL_STATUS" == "pass" ]]; then
+            :
+        elif [[ "$HIL_STATUS" == "waived" && -n "$HIL_WAIVER" ]]; then
+            :
+        else
+            add_evidence_error "HIL evidence did not pass or carry a waiver: $(artifact_name "$HIL_FILE")"
+            HIL_STATUS="fail"
+        fi
+    else
+        add_evidence_error "HIL evidence did not pass: $(artifact_name "$HIL_FILE")"
+    fi
+
+    SECURITY_STATUS="fail"
+    if validate_evidence_common "security" "$security_file" true && \
+        jq -e '((.gate_status // "") | ascii_downcase) == "pass"' "$security_file" >/dev/null; then
+        SECURITY_STATUS="pass"
+    else
+        add_evidence_error "security evidence did not pass: $(artifact_name "$security_file")"
+    fi
+
+    EVAL_STATUS="fail"
+    if validate_evidence_common "eval" "$eval_file" true && \
+        validate_evidence_common "eval baseline" "$baseline_file" true && \
+        jq -e --arg baseline "$(artifact_name "$baseline_file")" \
+            '.schema_version == 1 and .evidence_kind == "agentops_eval_fast" and .status == "pass" and .baseline_audit == $baseline' \
+            "$eval_file" >/dev/null && \
+        jq -e '(.policy_mismatch_count | type == "number") and (((.stale_suite_hashes // []) | length) == 0)' "$baseline_file" >/dev/null; then
+        EVAL_STATUS="pass"
+    else
+        add_evidence_error "eval evidence did not pass: $(artifact_name "$eval_file")"
+    fi
+
+    ARTIFACT_STATUS="pass"
+    if [[ "$OFFICIAL_ARTIFACTS_OK" != "true" ]]; then
+        ARTIFACT_STATUS="fail"
+    fi
+}
+
+if [[ "$MODE" == "official" ]]; then
+    derive_official_evidence
+elif [[ -n "$HIL_FILE" ]]; then
     if [[ -f "$HIL_FILE" ]]; then
         HIL_STATUS="$(jq -r '.status // "fail"' "$HIL_FILE")"
         if [[ -z "$HIL_WAIVER" ]]; then
@@ -147,7 +439,7 @@ if [[ -n "$HIL_FILE" ]]; then
     fi
 fi
 
-if [[ -z "$HIL_STATUS" ]]; then
+if [[ "$MODE" != "official" && -z "$HIL_STATUS" ]]; then
     if [[ -n "$HIL_WAIVER" ]]; then
         HIL_STATUS="waived"
     else
@@ -234,14 +526,7 @@ fi
 [[ "$SECURITY_STATUS" == "pass" ]] || add_recommendation "Run the full security gate and include its JSON report."
 [[ "$EVAL_STATUS" == "pass" ]] || add_recommendation "Run release smoke/eval checks and attach the result."
 
-timestamp() {
-    date -u +%Y-%m-%dT%H:%M:%SZ
-}
-
-HIL_ARTIFACT=""
-if [[ -n "$HIL_FILE" ]]; then
-    HIL_ARTIFACT="$(basename "$HIL_FILE")"
-fi
+[[ -z "$HIL_ARTIFACT" && -n "$HIL_FILE" ]] && HIL_ARTIFACT="$(artifact_name "$HIL_FILE")"
 
 DOCUMENT="$(jq -n \
     --arg generated_at "$(timestamp)" \
@@ -254,7 +539,12 @@ DOCUMENT="$(jq -n \
     --arg artifact_status "$ARTIFACT_STATUS" \
     --arg security_status "$SECURITY_STATUS" \
     --arg eval_status "$EVAL_STATUS" \
+    --arg sil_artifact "$SIL_ARTIFACT" \
+    --arg vil_artifact "$VIL_ARTIFACT" \
     --arg hil_artifact "$HIL_ARTIFACT" \
+    --arg artifacts_artifact "$ARTIFACTS_ARTIFACT" \
+    --arg security_artifact "$SECURITY_ARTIFACT" \
+    --arg eval_artifact "$EVAL_ARTIFACT" \
     --arg hil_waiver "$HIL_WAIVER" \
     --argjson threshold "$THRESHOLD" \
     --argjson release_readiness_score "$SCORE" \
@@ -264,6 +554,7 @@ DOCUMENT="$(jq -n \
     --argjson artifact_points "$ARTIFACT_POINTS" \
     --argjson security_points "$SECURITY_POINTS" \
     --argjson eval_points "$EVAL_POINTS" \
+    --argjson evidence_errors "$EVIDENCE_ERRORS" \
     --argjson recommendations "$RECOMMENDATIONS" \
     '{
       schema_version: 1,
@@ -274,18 +565,19 @@ DOCUMENT="$(jq -n \
       release_status: $release_status,
       artifact_dir: (if $artifact_dir == "" then null else $artifact_dir end),
       dimensions: {
-        sil: {status: $sil_status, weight: 2, points: $sil_points},
-        vil: {status: $vil_status, weight: 2, points: $vil_points},
-        hil: {status: $hil_status, weight: 2, points: $hil_points},
-        artifacts: {status: $artifact_status, weight: 1.5, points: $artifact_points},
-        security: {status: $security_status, weight: 1.5, points: $security_points},
-        evals: {status: $eval_status, weight: 1, points: $eval_points}
+        sil: {status: $sil_status, weight: 2, points: $sil_points, evidence_artifact: (if $sil_artifact == "" then null else $sil_artifact end)},
+        vil: {status: $vil_status, weight: 2, points: $vil_points, evidence_artifact: (if $vil_artifact == "" then null else $vil_artifact end)},
+        hil: {status: $hil_status, weight: 2, points: $hil_points, evidence_artifact: (if $hil_artifact == "" then null else $hil_artifact end)},
+        artifacts: {status: $artifact_status, weight: 1.5, points: $artifact_points, evidence_artifact: (if $artifacts_artifact == "" then null else $artifacts_artifact end)},
+        security: {status: $security_status, weight: 1.5, points: $security_points, evidence_artifact: (if $security_artifact == "" then null else $security_artifact end)},
+        evals: {status: $eval_status, weight: 1, points: $eval_points, evidence_artifact: (if $eval_artifact == "" then null else $eval_artifact end)}
       },
       hil_evidence: {
         status: $hil_status,
         artifact: (if $hil_artifact == "" then null else $hil_artifact end),
         waiver: (if $hil_waiver == "" then null else $hil_waiver end)
       },
+      evidence_errors: $evidence_errors,
       recommendations: $recommendations
     }')"
 

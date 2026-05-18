@@ -168,7 +168,8 @@ Each release produces:
 | `checksums.txt` | SHA256 checksums for all archives |
 | `sbom-cyclonedx-go-mod.json` | Publishable CycloneDX SBOM for Go dependencies |
 | `security-gate-summary.json` | Security scan summary (gitleaks/semgrep/gosec/trivy/etc.) |
-| `release-readiness.json` | Release readiness score with SIL/VIL/HIL status |
+| `release-readiness.json` | Release readiness score linked to evidence artifacts |
+| `sil-evidence.json` | Local software-in-the-loop release gate proof |
 | `eval-agentops-fast.json` | AgentOps eval proof summary for release readiness |
 | `eval-baseline-audit.json` | Eval baseline drift audit; stale suite hashes block audit resolution |
 | `digital-twin-evidence.json` | Local release digital-twin/VIL proof |
@@ -191,7 +192,7 @@ Release validation is local-first and enforced by:
 ./scripts/ci-local-release.sh
 ```
 
-This local gate runs doc checks, manifest/schema checks, smoke/integration checks, hook and `ao rpi` smoke paths, binary validation, SBOM generation, security scans, AgentOps eval evidence, digital-twin/VIL evidence, and the release readiness score. Official release audits require SIL/VIL evidence plus workflow-rich HIL evidence or an explicit HIL waiver.
+This local gate runs doc checks, manifest/schema checks, smoke/integration checks, hook and `ao rpi` smoke paths, binary validation, SBOM generation, security scans, AgentOps eval evidence, executable digital-twin/VIL evidence, and the release readiness score. Official release audits require fresh SIL/VIL/security/eval evidence JSON plus workflow-rich HIL evidence or an explicit HIL waiver; status strings alone do not satisfy official readiness.
 For command variants and expected release-E2E smoke markers, see [Release E2E Checklist](release-e2e-checklist.md).
 
 ## Failure Modes

@@ -62,10 +62,24 @@ jobs:
       - name: Generate pre-publish release evidence
         run: |
           mkdir -p release-artifacts
+          VERSION="${GITHUB_REF_NAME#v}"
+          if [[ -n "${{ github.event.inputs.tag }}" ]]; then
+            VERSION="${{ github.event.inputs.tag }}"
+            VERSION="${VERSION#v}"
+          fi
+          GENERATED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
           # CycloneDX SBOM for Go module dependencies.
           GOBIN=/usr/local/bin go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0
           (cd cli && cyclonedx-gomod mod -licenses -json -output ../release-artifacts/sbom-cyclonedx-go-mod.json)
+
+          # Build a pre-publish binary for VIL/eval evidence before GoReleaser
+          # publishes the official archives.
+          (cd cli && make build VERSION="$VERSION")
+          cp cli/bin/ao release-artifacts/ao
+          release-artifacts/ao version > release-artifacts/ao-version.txt
+          release-artifacts/ao init --help > /dev/null
+          release-artifacts/ao rpi --help > /dev/null
 
           # Security is a pre-publish gate. Keep the JSON for release consumers,
           # but fail before GoReleaser when the gate returns findings.
@@ -75,6 +89,14 @@ jobs:
           SECURITY_RC=$?
           set -e
           jq empty release-artifacts/security-gate-summary.json
+          tmp_security="$(mktemp)"
+          jq \
+            --arg generated_at "$GENERATED_AT" \
+            --arg release_version "$VERSION" \
+            --arg artifact_dir "release-artifacts" \
+            '. + {generated_at: $generated_at, release_version: $release_version, artifact_dir: $artifact_dir}' \
+            release-artifacts/security-gate-summary.json > "$tmp_security"
+          mv "$tmp_security" release-artifacts/security-gate-summary.json
           jq -e '((.gate_status // "") | ascii_downcase) == "pass"' release-artifacts/security-gate-summary.json
           if [[ "$SECURITY_RC" -ne 0 ]]; then
             echo "ERROR: pre-publish security gate failed with exit code $SECURITY_RC"
@@ -84,18 +106,70 @@ jobs:
           # Public CI is a VIL lane. Physical HIL remains attached through the
           # authoritative local release audit because private targets are not
           # available to the public publisher runner.
+          jq -n \
+            --arg generated_at "$GENERATED_AT" \
+            --arg release_version "$VERSION" \
+            '{schema_version:1,evidence_kind:"software_in_loop",generated_at:$generated_at,release_version:$release_version,status:"pass",reason:"release publisher pre-publish checks completed",errors_before_readiness:0}' \
+            > release-artifacts/sil-evidence.json
+          chmod +x scripts/check-release-digital-twin.sh
+          scripts/check-release-digital-twin.sh \
+            --mode official \
+            --ao-bin "$PWD/release-artifacts/ao" \
+            --expected-version "$VERSION" \
+            --out release-artifacts/digital-twin-evidence.json
+          jq -n \
+            --arg generated_at "$GENERATED_AT" \
+            --arg release_version "$VERSION" \
+            --arg waiver "GitHub release publisher cannot access private HIL targets; local release audit remains authoritative for HIL" \
+            '{schema_version:1,generated_at:$generated_at,status:"waived",required:true,waiver:$waiver,expected_version:$release_version,timeout_seconds:0,targets:[]}' \
+            > release-artifacts/hil-evidence.json
+          mkdir -p release-artifacts/eval-agentops/runs
+          set +e
+          AO_BIN="$PWD/release-artifacts/ao" ./scripts/eval-agentops.sh \
+            --fast \
+            --run-root release-artifacts/eval-agentops/runs \
+            --baseline-dir release-artifacts/eval-agentops/baselines \
+            > release-artifacts/eval-agentops-fast.log 2>&1
+          EVAL_RC=$?
+          set -e
+          EVAL_RUN_DIR="$(find release-artifacts/eval-agentops/runs -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -1)"
+          if [[ -n "$EVAL_RUN_DIR" && -f "$EVAL_RUN_DIR/baseline-audit.json" ]]; then
+            jq \
+              --arg generated_at "$GENERATED_AT" \
+              --arg release_version "$VERSION" \
+              '. + {generated_at: $generated_at, release_version: $release_version}' \
+              "$EVAL_RUN_DIR/baseline-audit.json" > release-artifacts/eval-baseline-audit.json
+          else
+            EVAL_RC=1
+            jq -n \
+              --arg generated_at "$GENERATED_AT" \
+              --arg release_version "$VERSION" \
+              '{generated_at:$generated_at,release_version:$release_version,suite_count:0,baseline_count:0,policy_mismatch_count:0,stale_suite_hashes:[]}' \
+              > release-artifacts/eval-baseline-audit.json
+          fi
+          EVAL_STATUS="pass"
+          if [[ "$EVAL_RC" -ne 0 ]]; then
+            EVAL_STATUS="fail"
+          fi
+          jq -n \
+            --arg generated_at "$GENERATED_AT" \
+            --arg release_version "$VERSION" \
+            --arg status "$EVAL_STATUS" \
+            --arg run_dir "$EVAL_RUN_DIR" \
+            '{schema_version:1,evidence_kind:"agentops_eval_fast",generated_at:$generated_at,release_version:$release_version,status:$status,run_dir:(if $run_dir == "" then null else $run_dir end),log:"eval-agentops-fast.log",baseline_audit:"eval-baseline-audit.json"}' \
+            > release-artifacts/eval-agentops-fast.json
+          if [[ "$EVAL_RC" -ne 0 ]]; then
+            echo "ERROR: pre-publish eval evidence failed"
+            cat release-artifacts/eval-agentops-fast.log
+            exit "$EVAL_RC"
+          fi
           chmod +x scripts/check-release-readiness.sh
           scripts/check-release-readiness.sh \
             --mode official \
             --artifact-dir release-artifacts \
-            --out release-artifacts/release-readiness.json \
-            --sil pass \
-            --vil pass \
-            --hil-status waived \
-            --hil-waiver "GitHub release publisher cannot access private HIL targets; local release audit remains authoritative for HIL" \
-            --artifacts pass \
-            --security pass \
-            --eval pass
+            --evidence-dir release-artifacts \
+            --release-version "$VERSION" \
+            --out release-artifacts/release-readiness.json
           jq -e '.release_status == "pass"' release-artifacts/release-readiness.json
 
       - name: Upload pre-publish release evidence
@@ -229,7 +303,13 @@ jobs:
           gh release upload "$VERSION" release-artifacts/sbom-cyclonedx-go-mod.json --clobber
           gh release upload "$VERSION" release-artifacts/security-gate-summary.json --clobber
           gh release upload "$VERSION" release-artifacts/release-readiness.json --clobber
-          echo "Uploaded SBOM + security report + readiness assets"
+          gh release upload "$VERSION" release-artifacts/sil-evidence.json --clobber
+          gh release upload "$VERSION" release-artifacts/hil-evidence.json --clobber
+          gh release upload "$VERSION" release-artifacts/digital-twin-evidence.json --clobber
+          gh release upload "$VERSION" release-artifacts/eval-agentops-fast.json --clobber
+          gh release upload "$VERSION" release-artifacts/eval-agentops-fast.log --clobber
+          gh release upload "$VERSION" release-artifacts/eval-baseline-audit.json --clobber
+          echo "Uploaded SBOM + security report + readiness evidence assets"
 
       - name: Generate SLSA provenance attestation
         uses: actions/attest-build-provenance@v4
@@ -245,3 +325,9 @@ jobs:
             release-artifacts/sbom-cyclonedx-go-mod.json
             release-artifacts/security-gate-summary.json
             release-artifacts/release-readiness.json
+            release-artifacts/sil-evidence.json
+            release-artifacts/hil-evidence.json
+            release-artifacts/digital-twin-evidence.json
+            release-artifacts/eval-agentops-fast.json
+            release-artifacts/eval-agentops-fast.log
+            release-artifacts/eval-baseline-audit.json
