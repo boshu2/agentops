@@ -22,6 +22,7 @@ git tag vX.Y.Z
 ┌──────────────────────────────────────────────────────┐
 │           release.yml (publisher only)               │
 ├──────────────────────────────────────────────────────┤
+│  - pre-publish SBOM + security + readiness evidence  │
 │  - GoReleaser publish                                │
 │  - GitHub Release notes + assets                     │
 │  - Homebrew update                                   │
@@ -35,7 +36,7 @@ git tag vX.Y.Z
 
 - [ ] Local CI release gate passes (`./scripts/ci-local-release.sh`; once the target version is known, rerun as `./scripts/ci-local-release.sh --release-version X.Y.Z`)
 - [ ] Official readiness score is at least 8/10 (`release-readiness.json` has `release_status: pass`)
-- [ ] SIL/VIL/HIL evidence is attached (`hil-evidence.json`; use `--hil-target` or an explicit `--hil-waiver "reason"`)
+- [ ] SIL/VIL/HIL evidence is attached (`hil-evidence.json`; use a workflow-rich `--hil-target` or an explicit `--hil-waiver "reason"`)
 - [ ] Local gate artifacts generated (`.agents/releases/local-ci/<timestamp>/` includes SBOM, security report, readiness, and HIL evidence)
 - [ ] Release validation did not mutate tracked `.agents/findings/*` metadata; `scripts/ci-local-release.sh` guards this by default.
 - [ ] All tests pass locally (`cd cli && make test`)
@@ -122,8 +123,10 @@ scripts/verify-release-ci.sh vX.Y.Z
 
 Watch the release at: https://github.com/boshu2/agentops/actions
 
-The workflow runs one publish job:
-1. **publish** - Builds and publishes artifacts, updates Homebrew, uploads SBOM/security report, signs attestation
+The workflow runs three jobs:
+1. **doc-release-gate** - Confirms release docs and generated references are current
+2. **pre-publish-evidence** - Generates SBOM, runs the full security gate, and writes release-readiness evidence before publish
+3. **publish** - Runs only after both gates pass; publishes artifacts, updates Homebrew, uploads the pre-publish evidence bundle, and signs attestation
 
 ### 5. Verify the Release
 
@@ -188,7 +191,7 @@ Release validation is local-first and enforced by:
 ./scripts/ci-local-release.sh
 ```
 
-This local gate runs doc checks, manifest/schema checks, smoke/integration checks, hook and `ao rpi` smoke paths, binary validation, SBOM generation, security scans, AgentOps eval evidence, digital-twin/VIL evidence, and the release readiness score. Official release audits require SIL/VIL evidence plus HIL evidence or an explicit HIL waiver.
+This local gate runs doc checks, manifest/schema checks, smoke/integration checks, hook and `ao rpi` smoke paths, binary validation, SBOM generation, security scans, AgentOps eval evidence, digital-twin/VIL evidence, and the release readiness score. Official release audits require SIL/VIL evidence plus workflow-rich HIL evidence or an explicit HIL waiver.
 For command variants and expected release-E2E smoke markers, see [Release E2E Checklist](release-e2e-checklist.md).
 
 ## Failure Modes
