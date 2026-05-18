@@ -62,6 +62,8 @@ line_of() {
     [ "$status" -eq 0 ]
     run grep -Fq 'digital-twin-evidence.json' "$WORKFLOW"
     [ "$status" -eq 0 ]
+    run grep -Fq 'check-release-digital-twin.sh' "$WORKFLOW"
+    [ "$status" -eq 0 ]
     run grep -Fq 'eval-agentops-fast.json' "$WORKFLOW"
     [ "$status" -eq 0 ]
     run grep -Fq -- '--sil pass' "$WORKFLOW"

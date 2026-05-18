@@ -736,46 +736,25 @@ write_release_sil_evidence() {
 }
 
 write_release_digital_twin_evidence() {
-    local generated_at
-    local status="pass"
-    local reason="release smoke, hook install smoke, and ao init/rpi smoke completed before this artifact was written"
+    local mode
     local version
+    local args
 
-    generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    mode="$(release_readiness_mode)"
     version="$(release_version)"
-    if [[ "$FAST_MODE" == "true" ]]; then
-        status="skipped"
-        reason="fast mode skips the full release digital-twin/VIL proof"
-    elif [[ "$errors" -ne 0 ]]; then
-        status="fail"
-        reason="one or more preceding local release gates failed before digital-twin evidence was written"
+    args=(
+        "--out" "$ARTIFACT_DIR/digital-twin-evidence.json"
+        "--mode" "$mode"
+        "--ao-bin" "$REPO_ROOT/cli/bin/ao"
+    )
+    if [[ -n "$version" ]]; then
+        args+=("--expected-version" "$version")
+    fi
+    if [[ -n "${AGENTOPS_RELEASE_DIGITAL_TWIN_WAIVER:-}" ]]; then
+        args+=("--waiver" "$AGENTOPS_RELEASE_DIGITAL_TWIN_WAIVER")
     fi
 
-    jq -n \
-        --arg generated_at "$generated_at" \
-        --arg artifact_dir "$(artifact_dir_rel)" \
-        --arg release_version "$version" \
-        --arg status "$status" \
-        --arg reason "$reason" \
-        --argjson errors_before_artifact "$errors" \
-        '{
-          schema_version: 1,
-          evidence_kind: "digital_twin",
-          generated_at: $generated_at,
-          artifact_dir: $artifact_dir,
-          release_version: $release_version,
-          status: $status,
-          reason: $reason,
-          dimensions: {
-            vil: {status: $status, evidence: "local release digital twin"},
-            release_smoke: {status: $status},
-            hook_install_smoke: {status: $status},
-            rpi_smoke: {status: $status}
-          },
-          errors_before_artifact: $errors_before_artifact
-        }' > "$ARTIFACT_DIR/digital-twin-evidence.json"
-
-    [[ "$status" != "fail" ]]
+    ./scripts/check-release-digital-twin.sh "${args[@]}"
 }
 
 run_release_eval_evidence() {

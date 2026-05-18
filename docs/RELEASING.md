@@ -192,7 +192,7 @@ Release validation is local-first and enforced by:
 ./scripts/ci-local-release.sh
 ```
 
-This local gate runs doc checks, manifest/schema checks, smoke/integration checks, hook and `ao rpi` smoke paths, binary validation, SBOM generation, security scans, AgentOps eval evidence, digital-twin/VIL evidence, and the release readiness score. Official release audits require fresh SIL/VIL/security/eval evidence JSON plus workflow-rich HIL evidence or an explicit HIL waiver; status strings alone do not satisfy official readiness.
+This local gate runs doc checks, manifest/schema checks, smoke/integration checks, hook and `ao rpi` smoke paths, binary validation, SBOM generation, security scans, AgentOps eval evidence, executable digital-twin/VIL evidence, and the release readiness score. Official release audits require fresh SIL/VIL/security/eval evidence JSON plus workflow-rich HIL evidence or an explicit HIL waiver; status strings alone do not satisfy official readiness.
 For command variants and expected release-E2E smoke markers, see [Release E2E Checklist](release-e2e-checklist.md).
 
 ## Failure Modes
