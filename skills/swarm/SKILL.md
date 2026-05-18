@@ -248,6 +248,8 @@ Read [references/ol-wave-integration.md](references/ol-wave-integration.md) when
 
 ## Worktree Isolation (Multi-Epic Dispatch)
 
+Read [references/shared-checkout-discipline.md](references/shared-checkout-discipline.md) **first** when the target checkout (`~/dev/<repo>`) is shared with peer agents — it documents when worktrees are mandatory (vs. optional) and the three failure modes (branch-deletion data loss, swarm attribution confounded, destructive-recovery temptation) that motivate the discipline.
+
 Read [references/worktree-isolation.md](references/worktree-isolation.md) when you need to dispatch workers across multiple epics or run waves with overlapping files — covers isolation semantics per backend, effort levels, post-spawn verification, manual worktree creation/routing/merge-back, the Merge Arbiter Protocol, cleanup, and the `--worktrees` / `--no-worktrees` parameters.
 
 ---
@@ -268,6 +270,7 @@ Read [references/troubleshooting.md](references/troubleshooting.md) for full dia
 
 ## Reference Documents
 
+- [references/shared-checkout-discipline.md](references/shared-checkout-discipline.md)
 - [references/conflict-recovery.md](references/conflict-recovery.md)
 - [references/cold-start-contexts.md](references/cold-start-contexts.md)
 - [references/backend-background-tasks.md](references/backend-background-tasks.md)
