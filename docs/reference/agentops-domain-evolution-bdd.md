@@ -19,7 +19,7 @@ Feature: Domain-governed AgentOps 3.0 evolution
     And JSM-derived observations are used only through the clean-room policy
 
   Scenario: Audit every skill before changing shipped behavior
-    Given the checked-in skill catalog contains 77 skills
+    Given the checked-in skill catalog contains 78 skills
     When the evolution bootstrap audits the catalog
     Then every skill is assigned exactly one primary bounded context
     And each skill has a preliminary keep, update, refactor, merge-review, or cut-review disposition

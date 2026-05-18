@@ -1279,6 +1279,23 @@ else
     fail "missing file: scripts/check-docs-learning-references.sh"
 fi
 
+# --- 22n. Registry drift (registries-drift lesson, 2026-05-17) ---
+# Detects drift between skills/ (source of truth) and the hand-edited DDD/hex
+# registry docs: declared skill counts, listed skill set, hexagonal_role
+# column matching frontmatter.
+# Always runs (no needs_check guard): drift can be introduced by any skill
+# add/rename/remove regardless of which CI category was touched.
+if [[ -f scripts/check-registry-drift.sh ]]; then
+    if registry_drift_output="$(bash scripts/check-registry-drift.sh 2>&1)"; then
+        pass "registry drift"
+    else
+        fail "registry drift"
+        indent_output "$registry_drift_output"
+    fi
+else
+    fail "missing file: scripts/check-registry-drift.sh"
+fi
+
 # --- 22d. Flywheel-proof (GOALS.md gate flywheel-proof, weight 7) ---
 # Runs the 20-check end-to-end flywheel proof against an isolated repo.
 # ~1.7s with a pre-built cli/bin/ao; otherwise auto-builds (~30s cold) so
