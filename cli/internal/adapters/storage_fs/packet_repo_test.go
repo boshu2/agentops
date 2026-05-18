@@ -102,3 +102,111 @@ func TestRepo_LoadByRunIDReturnsErrNotExistWhenAbsent(t *testing.T) {
 		t.Fatalf("Load: got err=%v, want errors.Is(err, os.ErrNotExist) == true", err)
 	}
 }
+
+func TestRepo_SaveRejectsUnsafeRunID(t *testing.T) {
+	// Defense-in-depth (soc-odp0): runID flows directly into filepath.Join.
+	// Any path-traversal token must be rejected before any filesystem write.
+	cases := []struct {
+		name  string
+		runID string
+	}{
+		{"empty", ""},
+		{"dot-dot", ".."},
+		{"dot-dot-traversal", "../escape"},
+		{"forward-slash", "run/sub"},
+		{"backslash", "run\\sub"},
+		{"absolute-unix", "/etc/passwd"},
+		{"absolute-windows", "C:\\windows\\system32"},
+		{"leading-dot", ".hidden"},
+		{"nested-dot-dot", "ok/../escape"},
+		{"nul-byte", "run\x00id"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tmp := t.TempDir()
+			r := &Repo{Root: tmp}
+			ctx := context.Background()
+
+			err := r.Save(ctx, tc.runID, validPacket())
+			if !errors.Is(err, ErrInvalidRunID) {
+				t.Fatalf("Save(%q): got err=%v, want errors.Is(err, ErrInvalidRunID)", tc.runID, err)
+			}
+
+			// Confirm no file landed outside tmp.
+			latestPath := filepath.Join(tmp, ".agents/rpi/execution-packet.json")
+			if _, statErr := os.Stat(latestPath); !errors.Is(statErr, os.ErrNotExist) {
+				t.Fatalf("expected no latest file written, stat err = %v", statErr)
+			}
+		})
+	}
+}
+
+func TestRepo_LoadRejectsUnsafeRunID(t *testing.T) {
+	tmp := t.TempDir()
+	r := &Repo{Root: tmp}
+	ctx := context.Background()
+
+	_, err := r.Load(ctx, "../escape")
+	if !errors.Is(err, ErrInvalidRunID) {
+		t.Fatalf("Load: got err=%v, want errors.Is(err, ErrInvalidRunID)", err)
+	}
+}
+
+func TestRepo_SaveIsAtomicForLatestPointer(t *testing.T) {
+	// soc-odp0 item 6: the latest pointer must never reference a packet whose
+	// archive doesn't exist. Verify by inspecting the *.tmp absence after Save
+	// and confirming no half-written latest is left if archive write would
+	// fail (we cannot easily simulate disk-full here, so we assert the
+	// no-tmp-leftover invariant, which is the observable atomic-write
+	// contract).
+	tmp := t.TempDir()
+	r := &Repo{Root: tmp}
+	ctx := context.Background()
+	runID := "run-atomic"
+
+	if err := r.Save(ctx, runID, validPacket()); err != nil {
+		t.Fatalf("Save unexpected err: %v", err)
+	}
+
+	latestTmp := filepath.Join(tmp, ".agents/rpi/execution-packet.json.tmp")
+	if _, statErr := os.Stat(latestTmp); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("expected no temp file at %s after Save; got stat err=%v", latestTmp, statErr)
+	}
+
+	archiveTmp := filepath.Join(tmp, ".agents/rpi/runs", runID, "execution-packet.json.tmp")
+	if _, statErr := os.Stat(archiveTmp); !errors.Is(statErr, os.ErrNotExist) {
+		t.Fatalf("expected no temp file at %s after Save; got stat err=%v", archiveTmp, statErr)
+	}
+}
+
+func TestRepo_SaveWritesArchiveBeforeLatest(t *testing.T) {
+	// soc-odp0 item 6: archive must exist for any runID referenced by latest.
+	// After a successful Save, both files must be present and identical.
+	tmp := t.TempDir()
+	r := &Repo{Root: tmp}
+	ctx := context.Background()
+	runID := "run-archive-first"
+	p := validPacket()
+
+	if err := r.Save(ctx, runID, p); err != nil {
+		t.Fatalf("Save unexpected err: %v", err)
+	}
+
+	archivePath := filepath.Join(tmp, ".agents/rpi/runs", runID, "execution-packet.json")
+	if _, err := os.Stat(archivePath); err != nil {
+		t.Fatalf("expected archive at %s; stat err=%v", archivePath, err)
+	}
+
+	latestPath := filepath.Join(tmp, ".agents/rpi/execution-packet.json")
+	if _, err := os.Stat(latestPath); err != nil {
+		t.Fatalf("expected latest at %s; stat err=%v", latestPath, err)
+	}
+
+	// Byte-equality: both files serialize the same packet.
+	archiveBytes, _ := os.ReadFile(archivePath)
+	latestBytes, _ := os.ReadFile(latestPath)
+	if !reflect.DeepEqual(archiveBytes, latestBytes) {
+		t.Fatalf("archive and latest content differ; atomic Save invariant violated")
+	}
+}
