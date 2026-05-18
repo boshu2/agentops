@@ -39,7 +39,9 @@ Reference test: `tests/integration/test-release-e2e-validation.sh`.
 Run:
 
 ```bash
-bash scripts/ci-local-release.sh --release-version X.Y.Z --hil-target 'local:bushido:ao version'
+bash scripts/ci-local-release.sh \
+  --release-version X.Y.Z \
+  --hil-target 'local:bushido:ao version && ao init --help && ao hooks show && ao rpi status'
 ```
 
 Expect:
@@ -54,7 +56,7 @@ Expect:
   - `hil_evidence`
   - `vil_evidence` and `digital_twin_evidence`
 - `.agents/releases/local-ci/<timestamp>/release-readiness.json` has `release_status: pass` and `release_readiness_score >= 8`
-- `.agents/releases/local-ci/<timestamp>/hil-evidence.json` has `status: pass` or `status: waived`
+- `.agents/releases/local-ci/<timestamp>/hil-evidence.json` has `status: pass` or `status: waived`; passing targets record OS/architecture/runtime identity, workflow checks, command fingerprint, and release-version verification
 - `.agents/releases/local-ci/<timestamp>/digital-twin-evidence.json` has `status: pass` and `dimensions.vil.status: pass`
 - `.agents/releases/local-ci/<timestamp>/eval-agentops-fast.json` has `status: pass`, and `eval-baseline-audit.json` has no `stale_suite_hashes`
 
