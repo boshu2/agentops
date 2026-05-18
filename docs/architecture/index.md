@@ -7,6 +7,7 @@ Read in this order if you're new:
 1. **[How It Works](../how-it-works.md)** — start here for the mental model (Brownian Ratchet, context windowing, backends).
 2. **[System Overview](../ARCHITECTURE.md)** — then zoom out to see where every component sits.
 3. **[Primitive Chains](primitive-chains.md)** — then drill into the audited primitive set and lifecycle chains.
+4. **[Intent-to-Loop Hexagon](intent-to-loop-hexagon.md)** — then trace one idea through BDD intent, beads, slices, validation, and ratchet evidence.
 
 The rest are specialized references. Skim titles and jump in when a topic becomes relevant.
 
@@ -37,6 +38,12 @@ The rest are specialized references. Skim titles and jump in when a topic become
     ---
 
     Audited primitive set, lifecycle chains, and terminology drift ledger.
+
+-   :material-hexagon-multiple: **[Intent-to-Loop Hexagon](intent-to-loop-hexagon.md)**
+
+    ---
+
+    Process-level ports and adapters from BDD intent through evidence ratchet.
 
 -   :material-link-variant: **[Codex Hookless Lifecycle](codex-hookless-lifecycle.md)**
 

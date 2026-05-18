@@ -45,7 +45,8 @@ Moves **3 (vertical slice decomposition)** and **5 (wave validity check)** of th
 ## Discovery Boundary
 
 Use the [Skill Ports and Adapters](../../docs/contracts/skill-ports-and-adapters.md)
-vocabulary for the boundary from Discovery into Plan:
+vocabulary and the [Intent-to-Loop Hexagon](../../docs/architecture/intent-to-loop-hexagon.md)
+for the boundary from Discovery into Plan:
 
 | Boundary piece | Plan contract |
 |---|---|
@@ -179,6 +180,13 @@ Analyze the goal and break it into discrete, implementable issues. For each issu
 #### Acceptance Criteria Contract (mandatory)
 
 Every issue body MUST contain an `acceptance_criteria` fenced YAML block. The block lives BELOW the issue's textual description and ABOVE any "Reference" or "Notes" trailer. The parent epic body carries its own `acceptance_criteria` block (epic-level criteria); each child bead carries its own. `/discovery` STEP 6 lifts both into the execution packet under `epic_criteria` and `bead_criteria`. Canonical shape: [`schemas/execution-packet.schema.json`](../../schemas/execution-packet.schema.json) (`#/$defs/Criterion`).
+
+Every feature, bug, or product-facing behavior issue MUST also carry either a
+fenced `gherkin` block or a link to the upstream intent issue scenario it
+implements. Every non-trivial plan and bead body SHOULD include the `hexagon:`
+boundary block from `docs/architecture/intent-to-loop-hexagon.md` so the next
+agent knows the inbound port, bounded context, adapters, context packet, and
+done state.
 
 ```yaml
 acceptance_criteria:

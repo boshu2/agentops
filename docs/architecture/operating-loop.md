@@ -1,6 +1,6 @@
 # Operating Loop
 
-> One-page spine. The operational discipline every AgentOps process skill executes. Companion to [Ports and Adapters](ports-and-adapters.md) (the architectural seams) and [CDLC](../cdlc.md) (the context lifecycle inside the SDLC control plane).
+> One-page spine. The operational discipline every AgentOps process skill executes. Companion to [Ports and Adapters](ports-and-adapters.md) (the runtime seams), [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) (the process-level ports), and [CDLC](../cdlc.md) (the context lifecycle inside the SDLC control plane).
 
 AgentOps' execution discipline is one repeatable loop inside the SDLC control plane, not a phased waterfall of documents. Every process skill is one move within it. No artifact exists unless it advances the loop.
 
@@ -151,6 +151,7 @@ The loop is operational discipline. The architectural seams are structural. They
 
 - [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-15-cdlc-dojo-doctrine.md) — doctrine source (promote changes here first)
 - [Ports and Adapters](ports-and-adapters.md) — architectural seams the loop runs through
+- [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) — process-level ports/adapters from BDD intent through evidence ratchet
 - [ADR-0001](../adr/ADR-0001-ddd-hexagonal-adoption.md) — DDD + Hexagonal adoption
 - [CDLC](../cdlc.md) — conceptual seven phases this loop runs inside
 - [Context Map](../contracts/context-map.md) — bounded contexts and skill roles
