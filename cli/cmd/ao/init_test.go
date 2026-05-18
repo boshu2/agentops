@@ -22,9 +22,27 @@ func resetInitFlags() {
 	initFull = false
 	initMinimalHooks = false
 	initWithSchedule = false
+	dryRun = false
+}
+
+// setupInitTest is the canonical entry point for tests that mutate the
+// package-level init globals (initStealth/initHooks/initFull/initMinimalHooks/
+// initWithSchedule/dryRun). It resets all globals to their zero value AND
+// registers a Cleanup so the next test under `-shuffle on` starts clean.
+//
+// Encodes soc-hwgm fix: TestRunInit* used to flake under -shuffle because
+// individual tests reset only the 2-3 globals they touched, leaking the
+// other ~4 globals across test boundaries. Belt-and-suspenders: reset on
+// entry (defense against leak from prior test) + reset on exit (defense
+// for next test).
+func setupInitTest(t *testing.T) {
+	t.Helper()
+	resetInitFlags()
+	t.Cleanup(resetInitFlags)
 }
 
 func TestRunInitCreatesDirs(t *testing.T) {
+	setupInitTest(t)
 	tmp := t.TempDir()
 	// Create a fake .git so it's treated as a git repo
 	if err := os.MkdirAll(filepath.Join(tmp, ".git"), 0755); err != nil {
@@ -73,6 +91,7 @@ func TestRunInitCreatesDirs(t *testing.T) {
 }
 
 func TestRunInitGitignoreAppend(t *testing.T) {
+	setupInitTest(t)
 	tmp := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(tmp, ".git"), 0755); err != nil {
 		t.Fatal(err)
@@ -99,6 +118,7 @@ func TestRunInitGitignoreAppend(t *testing.T) {
 }
 
 func TestRunInitGitignoreCreate(t *testing.T) {
+	setupInitTest(t)
 	tmp := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(tmp, ".git"), 0755); err != nil {
 		t.Fatal(err)
@@ -122,6 +142,7 @@ func TestRunInitGitignoreCreate(t *testing.T) {
 }
 
 func TestRunInitIdempotent(t *testing.T) {
+	setupInitTest(t)
 	tmp := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(tmp, ".git"), 0755); err != nil {
 		t.Fatal(err)
@@ -149,6 +170,7 @@ func TestRunInitIdempotent(t *testing.T) {
 }
 
 func TestRunInitNonGitRepo(t *testing.T) {
+	setupInitTest(t)
 	tmp := t.TempDir()
 	// No .git directory
 
@@ -174,6 +196,7 @@ func TestRunInitNonGitRepo(t *testing.T) {
 }
 
 func TestRunInitStealth(t *testing.T) {
+	setupInitTest(t)
 	tmp := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(tmp, ".git", "info"), 0755); err != nil {
 		t.Fatal(err)
@@ -203,6 +226,7 @@ func TestRunInitStealth(t *testing.T) {
 }
 
 func TestRunInitDryRun(t *testing.T) {
+	setupInitTest(t)
 	tmp := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(tmp, ".git"), 0755); err != nil {
 		t.Fatal(err)
@@ -255,6 +279,7 @@ func TestNestedGitignoreContent(t *testing.T) {
 }
 
 func TestRunInitGitignoreNoTrailingNewline(t *testing.T) {
+	setupInitTest(t)
 	tmp := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(tmp, ".git"), 0755); err != nil {
 		t.Fatal(err)
