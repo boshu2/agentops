@@ -137,6 +137,17 @@ teardown() {
     [ "$status" -eq 0 ]
 }
 
+@test "script wires eval and digital twin evidence into release artifacts" {
+    run grep -q 'run_step "Digital twin/VIL evidence" write_release_digital_twin_evidence' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run grep -q 'run_step "AgentOps eval evidence" run_release_eval_evidence' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run grep -q 'eval_fast_report:' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run grep -q 'digital_twin_evidence:' "$SCRIPT"
+    [ "$status" -eq 0 ]
+}
+
 @test "script defines pass/fail/warn helpers consistent with pre-push-gate" {
     run grep -qE '^pass\(\) \{' "$SCRIPT"
     [ "$status" -eq 0 ]
