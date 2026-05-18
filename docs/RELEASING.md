@@ -166,6 +166,9 @@ Each release produces:
 | `sbom-cyclonedx-go-mod.json` | Publishable CycloneDX SBOM for Go dependencies |
 | `security-gate-summary.json` | Security scan summary (gitleaks/semgrep/gosec/trivy/etc.) |
 | `release-readiness.json` | Release readiness score with SIL/VIL/HIL status |
+| `eval-agentops-fast.json` | AgentOps eval proof summary for release readiness |
+| `eval-baseline-audit.json` | Eval baseline drift audit; stale suite hashes block audit resolution |
+| `digital-twin-evidence.json` | Local release digital-twin/VIL proof |
 | SLSA attestation | Build provenance (verifiable via `gh attestation verify`) |
 
 ## Release Notes
@@ -185,7 +188,7 @@ Release validation is local-first and enforced by:
 ./scripts/ci-local-release.sh
 ```
 
-This local gate runs doc checks, manifest/schema checks, smoke/integration checks, hook and `ao rpi` smoke paths, binary validation, SBOM generation, security scans, and the release readiness score. Official release audits require SIL/VIL evidence plus HIL evidence or an explicit HIL waiver.
+This local gate runs doc checks, manifest/schema checks, smoke/integration checks, hook and `ao rpi` smoke paths, binary validation, SBOM generation, security scans, AgentOps eval evidence, digital-twin/VIL evidence, and the release readiness score. Official release audits require SIL/VIL evidence plus HIL evidence or an explicit HIL waiver.
 For command variants and expected release-E2E smoke markers, see [Release E2E Checklist](release-e2e-checklist.md).
 
 ## Failure Modes
@@ -272,6 +275,11 @@ Before tagging, you can test the build locally:
 #   - sbom-vX.Y.Z.cyclonedx.json
 #   - sbom-vX.Y.Z.spdx.json
 #   - security-gate-full.json
+#   - eval-agentops-fast.json
+#   - eval-baseline-audit.json
+#   - digital-twin-evidence.json
+#   - hil-evidence.json
+#   - release-readiness.json
 #   - release-artifacts.json
 
 # Install goreleaser

@@ -69,12 +69,21 @@ half of the HIL dimension.
 
 ```json
 {
+  "sbom_cyclonedx": "sbom-vX.Y.Z.cyclonedx.json",
+  "sbom_spdx": "sbom-vX.Y.Z.spdx.json",
+  "security_report": "security-gate-full.json",
+  "eval_fast_report": "eval-agentops-fast.json",
+  "eval_baseline_audit": "eval-baseline-audit.json",
   "release_readiness": "release-readiness.json",
-  "hil_evidence": "hil-evidence.json"
+  "hil_evidence": "hil-evidence.json",
+  "vil_evidence": "digital-twin-evidence.json",
+  "digital_twin_evidence": "digital-twin-evidence.json"
 }
 ```
 
 `scripts/resolve-release-artifacts.sh` only resolves full release artifact sets
-that include SBOM, security, readiness, and HIL evidence. `scripts/validate-release-audit-artifacts.sh`
-validates readiness evidence for release audits generated on or after
-2026-05-02, while still accepting older historical audits.
+that include SBOMs, the security report, eval fast and baseline-audit outputs,
+readiness, HIL evidence, and digital-twin/VIL evidence.
+`scripts/validate-release-audit-artifacts.sh` validates that proof bundle for
+release audits generated on or after 2026-05-02, while still accepting older
+historical audits.
