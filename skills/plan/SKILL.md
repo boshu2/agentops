@@ -122,6 +122,17 @@ Active findings from `.agents/findings/registry.jsonl` are a fallback planning i
 
 If research files exist, read the most recent one and verify it contains substantive sections (Summary, Findings, Architecture, Executive Summary, Recommendations) before proceeding. See [references/pre-decomposition.md](references/pre-decomposition.md) for the validation grep and warning behavior.
 
+### Step 2.3: Optional Strategic Duel Gate
+
+When the plan is likely to span more than one execution session AND it contains
+at least one contested operator-default decision, recommend the
+dueling-idea-wizards route (`/council --mode=debate --focus=ideas`) on the
+strategic question before decomposition. Treat it as advisory, not a hard
+prerequisite: skip it for single-session plans or plans with no meaningful
+contested default. Evidence from the 2026-05-17 Mt Olympus run: a roughly
+22 minute duel flipped 3/5 operator defaults and surfaced one already-shipped
+adapter bug that ordinary review and passing tests had missed.
+
 ### Step 3: Explore the Codebase (if needed)
 
 Dispatch an Explore sub-agent (Task tool) with a prompt that demands symbol-level detail: file inventory, function/method signatures, struct/type definitions, reuse points with `file:line`, test file locations and naming conventions, import paths. Read [references/pre-decomposition.md](references/pre-decomposition.md) for the canonical explore prompt.
