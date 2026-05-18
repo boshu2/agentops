@@ -535,6 +535,51 @@ func TestSkillsStaleCodexSyncFixer(t *testing.T) {
 	}
 }
 
+func TestSkillsStaleCodexSyncFixerNoDriftNoMutate(t *testing.T) {
+	repo := t.TempDir()
+	home := t.TempDir()
+	manifestPath := filepath.Join(repo, "skills-codex", ".agentops-manifest.json")
+	writeSkillsFile(t, manifestPath, `{"skills":[{"name":"demo"}]}`)
+	manifestBytes, _ := os.ReadFile(manifestPath)
+	writeSkillsFile(t, codexHookPath(home), "#!/bin/sh\necho guard\n")
+	writeSkillsFile(t, codexInstallMetaPath(home),
+		`{"install_mode":"native-plugin","manifest_hash":"`+hashHex(manifestBytes)+`","version":"newsha1"}`)
+
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home, TargetSHA: "newsha1"}
+	mctx, ra, closer := skillsTestCtx(t, repo, home)
+	defer closer()
+	res, err := skillsStaleCodexSyncFixer{}.Fix(mctx.WithFixer("fm-skills-stale-codex-sync"), env, nil)
+	if err != nil {
+		t.Fatalf("Fix: %v", err)
+	}
+	if !res.Fixed || res.ActionsTaken != 0 {
+		t.Fatalf("no-drift fix: Fixed=%t ActionsTaken=%d, want true/0", res.Fixed, res.ActionsTaken)
+	}
+	recs, _ := readActions(ra.ActionsPath())
+	if len(recs) != 0 {
+		t.Fatalf("no-drift fix wrote %d action(s), want 0", len(recs))
+	}
+}
+
+func TestSkillsStaleCodexSyncSourcesRejectMissingInputs(t *testing.T) {
+	repo := t.TempDir()
+	home := t.TempDir()
+	mctx, _, closer := skillsTestCtx(t, repo, home)
+	defer closer()
+	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
+
+	_, err := skillsStaleCodexSyncFixer{}.codexSyncSources(mctx, env)
+	if err == nil || !strings.Contains(err.Error(), "no skills-codex/ source") {
+		t.Fatalf("missing skills-codex error = %v, want source refusal", err)
+	}
+
+	writeSkillsFile(t, filepath.Join(repo, "skills-codex", ".agentops-manifest.json"), `{}`)
+	_, err = skillsStaleCodexSyncFixer{}.codexSyncSources(mctx, env)
+	if err == nil || !strings.Contains(err.Error(), "no Codex install present") {
+		t.Fatalf("missing Codex install error = %v, want install refusal", err)
+	}
+}
+
 // TestSkillsStaleCodexSyncNoInstall verifies the detector is silent when there
 // is no Codex install (that is fm-skills-missing's domain, not this FM).
 func TestSkillsStaleCodexSyncNoInstall(t *testing.T) {
