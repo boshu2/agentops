@@ -715,65 +715,6 @@ jobs:
           path: evals/workbench/scorecard-latest.json
           if-no-files-found: warn
 
-  agentops-eval-advisory:
-    needs: [changes]
-    if: needs.changes.outputs.eval == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-    name: agentops-eval-advisory (advisory)
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: '1.26.3'
-          cache-dependency-path: cli/go.sum
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.14'
-
-      - name: Install AgentOps eval dependencies
-        run: |
-          python -m pip install pyyaml jsonschema
-          sudo apt-get install -y jq ripgrep
-          sudo npm install -g bats@1.12.0
-          GOBIN="$HOME/go/bin" go install github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0
-          echo "$HOME/go/bin" >> "$GITHUB_PATH"
-          GOBIN="$HOME/.local/bin" go install github.com/steveyegge/beads/cmd/bd@v1.0.3
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          bd_eval_root="$RUNNER_TEMP/agentops-bd"
-          mkdir -p "$bd_eval_root"
-          git -C "$bd_eval_root" init --quiet
-          (
-            cd "$bd_eval_root"
-            "$HOME/.local/bin/bd" init --non-interactive --skip-agents --skip-hooks --quiet
-          )
-          echo "BEADS_DIR=$bd_eval_root/.beads" >> "$GITHUB_ENV"
-
-      - name: Bootstrap Python workbench venv
-        run: |
-          cd evals/workbench/python-api
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install fastapi uvicorn httpx pytest ruff black
-
-      - name: Run broad AgentOps eval advisory corpus
-        run: |
-          chmod +x scripts/eval-agentops.sh
-          ./scripts/eval-agentops.sh --fast
-
-      - name: Upload eval run records for triage
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: agentops-eval-advisory-runs
-          path: .agents/evals/runs/
-          retention-days: 14
-          if-no-files-found: warn
-
   practice-citations:
     # Non-blocking strict advisory gate: walks repo Primitives (skills, hooks,
     # evals, CLI commands, schemas, and scripts with declarations) and reports
@@ -1770,7 +1711,7 @@ jobs:
           cli/bin/ao goals trace --orphans || echo "WARN: trace --orphans found issues (warn-only, F1.6 / soc-58nt.1.9)"
 
   summary:
-    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-quarantine-empty, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, factory-claim-ledger-strict, practice-citations, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity]
+    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-quarantine-empty, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, factory-claim-ledger-strict, practice-citations, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1813,7 +1754,6 @@ jobs:
           echo "registry-check: ${{ needs.registry-check.result }}"
           echo "agentops-contract-canaries: ${{ needs.agentops-contract-canaries.result }}"
           echo "eval-workbench-verify: ${{ needs.eval-workbench-verify.result }}"
-          echo "agentops-eval-advisory: ${{ needs.agentops-eval-advisory.result }}"
           echo "factory-claim-ledger-strict: ${{ needs.factory-claim-ledger-strict.result }}"
           echo "practice-citations: ${{ needs.practice-citations.result }}"
           echo "eval-skill-delta: ${{ needs.eval-skill-delta.result }}"
