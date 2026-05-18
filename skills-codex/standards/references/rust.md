@@ -49,3 +49,47 @@
 - `cargo test --doc` (doc tests)
 - Use `#[cfg(test)]` modules
 - `cargo bench` for benchmarks
+
+## Adapter Recursion-Guard
+
+When a kernel adapter spawns subprocesses that **could re-enter the kernel**
+(e.g. a `ShellEvalRunner` that runs eval scripts which might themselves call
+the same CLI that owns the runner), the adapter MUST set a guard env var on
+every subprocess AND the kernel's entry function MUST refuse to run when it
+observes that var set. Without this pattern the adapter recurses infinitely
+and burns the build lock. In-band comments in eval scripts ("do not shell
+out to me from here") do not scale across N authors — make the kernel
+enforce what the comment asks for.
+
+```rust
+// Convention: <TOOL>_IN_PROGRESS=1 on every subprocess this adapter spawns;
+// the kernel entry function refuses to run when it observes the var set.
+pub const GUARD_ENV: &str = "MY_KERNEL_IN_PROGRESS";
+
+fn build_command(repo_root: &Path, command: &str) -> Command {
+    let mut cmd = Command::new("sh");
+    cmd.arg("-c").arg(command)
+        .current_dir(repo_root)
+        .env(GUARD_ENV, "1");  // propagate to children
+    cmd
+}
+
+pub fn kernel_entry(...) -> Result<..., KernelError> {
+    if std::env::var(GUARD_ENV).is_ok() {
+        return Err(KernelError::Adapter(format!(
+            "refusing recursion: {GUARD_ENV} is set"
+        )));
+    }
+    // ... real work
+}
+```
+
+**Test both ends** with a hermetic pair:
+- `kernel_entry()` returns the recursion error when the env var is set.
+- The subprocess `Command` carries `GUARD_ENV=1` (assert via
+  `cmd.get_envs()` — no spawn needed, no test-parallelism hazard).
+
+**Evidence:** mt-olympus commit `97e16fe` shipped this pattern after a
+two-agent strategic duel surfaced the recursion bug in a
+shipped-this-session adapter. The eval scripts had warned each other
+manually; the kernel adapter had no enforcement.
