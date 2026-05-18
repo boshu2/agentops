@@ -9,6 +9,8 @@ beads, and ratcheted knowledge make trust repeatable.
 
 ## Bounded Contexts
 
+<!-- Generated from docs/contracts/bounded-contexts.yaml — DO NOT EDIT prose; edit yaml and run `bash scripts/check-bounded-contexts-drift.sh` -->
+
 | Context | Core responsibility | Current center of gravity | Ports to make explicit |
 |---|---|---|---|
 | BC1 Corpus | Capture, retrieve, compile, cite, and promote knowledge. | `.agents/`, `ao corpus`, `compile`, `inject`, `forge`, `harvest`, `dream` | `CorpusReaderPort`, `CorpusWriterPort`, `CitationPort`, `FindingCompilerPort` |

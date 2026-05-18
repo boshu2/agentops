@@ -1296,6 +1296,21 @@ else
     fail "missing file: scripts/check-registry-drift.sh"
 fi
 
+# --- 22o. Bounded-contexts drift (soc-zxia.2 Phase 2) ---
+# Verifies docs/contracts/bounded-contexts.yaml (canonical BC1-BC5 definitions)
+# matches the prose in the two registry docs that cite them.
+# Always runs (no needs_check guard): BC edits can come from any diff scope.
+if [[ -f scripts/check-bounded-contexts-drift.sh ]]; then
+    if bc_drift_output="$(bash scripts/check-bounded-contexts-drift.sh 2>&1)"; then
+        pass "bounded-contexts drift"
+    else
+        fail "bounded-contexts drift"
+        indent_output "$bc_drift_output"
+    fi
+else
+    fail "missing file: scripts/check-bounded-contexts-drift.sh"
+fi
+
 # --- 22d. Flywheel-proof (GOALS.md gate flywheel-proof, weight 7) ---
 # Runs the 20-check end-to-end flywheel proof against an isolated repo.
 # ~1.7s with a pre-built cli/bin/ao; otherwise auto-builds (~30s cold) so
