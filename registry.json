@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-20T11:32:09Z",
+  "generated_at": "2026-05-20T11:49:08Z",
   "summary": {
     "skills": 79,
     "hooks": 44,
@@ -497,7 +497,7 @@
         "path": "skills/rpi/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 16
+        "reference_count": 17
       },
       {
         "name": "skill-auditor",

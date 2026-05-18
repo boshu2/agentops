@@ -232,6 +232,7 @@ interactive, loop, and artifact-mode examples.
 
 ## Reference Documents
 
+- [references/orchestrator-compression-anti-pattern.md](references/orchestrator-compression-anti-pattern.md) — Phase-skipping failure mode; rationalizations to reject
 - [references/autonomous-execution.md](references/autonomous-execution.md)
 - [references/installed-plugin-version-not-repo-head.md](references/installed-plugin-version-not-repo-head.md) — `/rpi` loads from `~/.claude/plugins/cache/`, not the repo working tree; verify which version is active before measuring
 - [references/complexity-scaling.md](references/complexity-scaling.md)
