@@ -22,6 +22,7 @@ git tag vX.Y.Z
 ┌──────────────────────────────────────────────────────┐
 │           release.yml (publisher only)               │
 ├──────────────────────────────────────────────────────┤
+│  - pre-publish SBOM + security + readiness evidence  │
 │  - GoReleaser publish                                │
 │  - GitHub Release notes + assets                     │
 │  - Homebrew update                                   │
@@ -122,8 +123,10 @@ scripts/verify-release-ci.sh vX.Y.Z
 
 Watch the release at: https://github.com/boshu2/agentops/actions
 
-The workflow runs one publish job:
-1. **publish** - Builds and publishes artifacts, updates Homebrew, uploads SBOM/security report, signs attestation
+The workflow runs three jobs:
+1. **doc-release-gate** - Confirms release docs and generated references are current
+2. **pre-publish-evidence** - Generates SBOM, runs the full security gate, and writes release-readiness evidence before publish
+3. **publish** - Runs only after both gates pass; publishes artifacts, updates Homebrew, uploads the pre-publish evidence bundle, and signs attestation
 
 ### 5. Verify the Release
 
