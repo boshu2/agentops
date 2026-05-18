@@ -1311,6 +1311,22 @@ else
     fail "missing file: scripts/check-bounded-contexts-drift.sh"
 fi
 
+# --- 22p. Skill-domain-map golden gate (soc-zxia.3 Phase 3) ---
+# Verifies docs/reference/agentops-skill-domain-map.md matches what the
+# generator would produce from yaml canonical sources. Forbids hand
+# edits to the table sections; eliminates the entire class of drift.
+# Always runs: yaml or skills/ changes can come from any diff scope.
+if [[ -f scripts/generate-skill-domain-map.sh ]]; then
+    if domain_map_output="$(bash scripts/generate-skill-domain-map.sh --check 2>&1)"; then
+        pass "skill-domain-map golden gate"
+    else
+        fail "skill-domain-map golden gate"
+        indent_output "$domain_map_output"
+    fi
+else
+    fail "missing file: scripts/generate-skill-domain-map.sh"
+fi
+
 # --- 22d. Flywheel-proof (GOALS.md gate flywheel-proof, weight 7) ---
 # Runs the 20-check end-to-end flywheel proof against an isolated repo.
 # ~1.7s with a pre-built cli/bin/ao; otherwise auto-builds (~30s cold) so
