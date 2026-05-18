@@ -462,6 +462,7 @@ write_release_artifact_manifest() {
     local sbom_spdx=""
     local security_report=""
     local release_readiness=""
+    local sil_evidence=""
     local hil_evidence=""
     local vil_evidence=""
     local digital_twin_evidence=""
@@ -490,6 +491,9 @@ write_release_artifact_manifest() {
     if [[ -f "$ARTIFACT_DIR/release-readiness.json" ]]; then
         release_readiness="release-readiness.json"
     fi
+    if [[ -f "$ARTIFACT_DIR/sil-evidence.json" ]]; then
+        sil_evidence="sil-evidence.json"
+    fi
     if [[ -f "$ARTIFACT_DIR/hil-evidence.json" ]]; then
         hil_evidence="hil-evidence.json"
     fi
@@ -516,6 +520,7 @@ write_release_artifact_manifest() {
         --arg sbom_spdx "$sbom_spdx" \
         --arg security_report "$security_report" \
         --arg release_readiness "$release_readiness" \
+        --arg sil_evidence "$sil_evidence" \
         --arg hil_evidence "$hil_evidence" \
         --arg vil_evidence "$vil_evidence" \
         --arg digital_twin_evidence "$digital_twin_evidence" \
@@ -536,6 +541,7 @@ write_release_artifact_manifest() {
           sbom_spdx: (if $sbom_spdx == "" then null else $sbom_spdx end),
           security_report: (if $security_report == "" then null else $security_report end),
           release_readiness: (if $release_readiness == "" then null else $release_readiness end),
+          sil_evidence: (if $sil_evidence == "" then null else $sil_evidence end),
           hil_evidence: (if $hil_evidence == "" then null else $hil_evidence end),
           vil_evidence: (if $vil_evidence == "" then null else $vil_evidence end),
           digital_twin_evidence: (if $digital_twin_evidence == "" then null else $digital_twin_evidence end),
@@ -590,7 +596,11 @@ run_security_gate() {
     local output_file="$ARTIFACT_DIR/security-gate-${SECURITY_MODE}.json"
     local security_dir="$SECURITY_TMP_BASE/security"
     local tooling_dir="$SECURITY_TMP_BASE/tooling"
+    local tmp_file
+    local version
     mkdir -p "$security_dir" "$tooling_dir"
+    tmp_file="$(mktemp)"
+    version="$(release_version)"
 
     SECURITY_GATE_OUTPUT_DIR="$security_dir" \
     TOOLCHAIN_OUTPUT_DIR="$tooling_dir" \
@@ -598,6 +608,16 @@ run_security_gate() {
     TOOLCHAIN_GITLEAKS_RANGE="${TOOLCHAIN_GITLEAKS_RANGE:-origin/main..HEAD}" \
     TOOLCHAIN_GITLEAKS_GOMAXPROCS="${TOOLCHAIN_GITLEAKS_GOMAXPROCS:-2}" \
     ./scripts/security-gate.sh --mode "$SECURITY_MODE" --json > "$output_file"
+    jq \
+        --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --arg artifact_dir "$(artifact_dir_rel)" \
+        --arg release_version "$version" \
+        '. + {
+          generated_at: $generated_at,
+          artifact_dir: $artifact_dir,
+          release_version: $release_version
+        }' "$output_file" > "$tmp_file"
+    mv "$tmp_file" "$output_file"
     jq -e '.gate_status' "$output_file" >/dev/null
     echo "Security report:  $output_file"
     echo "Security artifacts: $security_dir"
@@ -681,60 +701,84 @@ run_release_hil_evidence() {
     ./scripts/check-release-hil.sh "${args[@]}"
 }
 
-write_release_digital_twin_evidence() {
+write_release_sil_evidence() {
     local generated_at
     local status="pass"
-    local reason="release smoke, hook install smoke, and ao init/rpi smoke completed before this artifact was written"
+    local reason="all local release CI checks before readiness passed"
+    local version
 
     generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    if [[ "$FAST_MODE" == "true" ]]; then
-        status="skipped"
-        reason="fast mode skips the full release digital-twin/VIL proof"
-    elif [[ "$errors" -ne 0 ]]; then
+    version="$(release_version)"
+    if [[ "$errors" -ne 0 ]]; then
         status="fail"
-        reason="one or more preceding local release gates failed before digital-twin evidence was written"
+        reason="one or more local release CI checks failed before readiness"
     fi
 
     jq -n \
         --arg generated_at "$generated_at" \
         --arg artifact_dir "$(artifact_dir_rel)" \
+        --arg release_version "$version" \
         --arg status "$status" \
         --arg reason "$reason" \
-        --argjson errors_before_artifact "$errors" \
+        --argjson errors_before_readiness "$errors" \
         '{
           schema_version: 1,
-          evidence_kind: "digital_twin",
+          evidence_kind: "software_in_loop",
           generated_at: $generated_at,
           artifact_dir: $artifact_dir,
+          release_version: $release_version,
           status: $status,
           reason: $reason,
-          dimensions: {
-            vil: {status: $status, evidence: "local release digital twin"},
-            release_smoke: {status: $status},
-            hook_install_smoke: {status: $status},
-            rpi_smoke: {status: $status}
-          },
-          errors_before_artifact: $errors_before_artifact
-        }' > "$ARTIFACT_DIR/digital-twin-evidence.json"
+          errors_before_readiness: $errors_before_readiness
+        }' > "$ARTIFACT_DIR/sil-evidence.json"
 
-    [[ "$status" != "fail" ]]
+    return 0
+}
+
+write_release_digital_twin_evidence() {
+    local mode
+    local version
+    local args
+
+    mode="$(release_readiness_mode)"
+    version="$(release_version)"
+    args=(
+        "--out" "$ARTIFACT_DIR/digital-twin-evidence.json"
+        "--mode" "$mode"
+        "--ao-bin" "$REPO_ROOT/cli/bin/ao"
+    )
+    if [[ -n "$version" ]]; then
+        args+=("--expected-version" "$version")
+    fi
+    if [[ -n "${AGENTOPS_RELEASE_DIGITAL_TWIN_WAIVER:-}" ]]; then
+        args+=("--waiver" "$AGENTOPS_RELEASE_DIGITAL_TWIN_WAIVER")
+    fi
+
+    ./scripts/check-release-digital-twin.sh "${args[@]}"
 }
 
 run_release_eval_evidence() {
+    local version
+    version="$(release_version)"
+
     if [[ "$FAST_MODE" == "true" ]]; then
         jq -n \
             --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --arg artifact_dir "$(artifact_dir_rel)" \
+            --arg release_version "$version" \
             '{
               schema_version: 1,
               evidence_kind: "agentops_eval_fast",
               generated_at: $generated_at,
               artifact_dir: $artifact_dir,
+              release_version: $release_version,
               status: "skipped",
               reason: "fast mode skips release eval evidence"
             }' > "$ARTIFACT_DIR/eval-agentops-fast.json"
         jq -n \
-            '{suite_count: 0, baseline_count: 0, policy_mismatch_count: 0, stale_suite_hashes: []}' \
+            --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg release_version "$version" \
+            '{generated_at: $generated_at, release_version: $release_version, suite_count: 0, baseline_count: 0, policy_mismatch_count: 0, stale_suite_hashes: []}' \
             > "$ARTIFACT_DIR/eval-baseline-audit.json"
         return 0
     fi
@@ -751,10 +795,16 @@ run_release_eval_evidence() {
 
     run_dir="$(find "$run_root" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -1)"
     if [[ -n "$run_dir" && -f "$run_dir/baseline-audit.json" ]]; then
-        cp "$run_dir/baseline-audit.json" "$ARTIFACT_DIR/eval-baseline-audit.json"
+        jq \
+            --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg release_version "$version" \
+            '. + {generated_at: $generated_at, release_version: $release_version}' \
+            "$run_dir/baseline-audit.json" > "$ARTIFACT_DIR/eval-baseline-audit.json"
     else
         jq -n \
-            '{suite_count: 0, baseline_count: 0, policy_mismatch_count: 0, stale_suite_hashes: []}' \
+            --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg release_version "$version" \
+            '{generated_at: $generated_at, release_version: $release_version, suite_count: 0, baseline_count: 0, policy_mismatch_count: 0, stale_suite_hashes: []}' \
             > "$ARTIFACT_DIR/eval-baseline-audit.json"
         rc=1
     fi
@@ -765,6 +815,7 @@ run_release_eval_evidence() {
     jq -n \
         --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         --arg artifact_dir "$(artifact_dir_rel)" \
+        --arg release_version "$version" \
         --arg status "$status" \
         --arg command "scripts/eval-agentops.sh --fast" \
         --arg run_dir "${run_dir#"$REPO_ROOT"/}" \
@@ -776,6 +827,7 @@ run_release_eval_evidence() {
           evidence_kind: "agentops_eval_fast",
           generated_at: $generated_at,
           artifact_dir: $artifact_dir,
+          release_version: $release_version,
           status: $status,
           command: $command,
           exit_code: $exit_code,
@@ -793,9 +845,11 @@ check_release_readiness() {
     local artifact_status="pass"
     local vil_status="pass"
     local eval_status="pass"
+    local version
     local args
 
     mode="$(release_readiness_mode)"
+    version="$(release_version)"
     if [[ "$FAST_MODE" == "true" ]]; then
         security_status="skipped"
         artifact_status="skipped"
@@ -816,19 +870,26 @@ check_release_readiness() {
         "--out" "$ARTIFACT_DIR/release-readiness.json"
         "--mode" "$mode"
         "--threshold" "8"
-        "--sil" "pass"
-        "--vil" "$vil_status"
-        "--artifacts" "$artifact_status"
-        "--security" "$security_status"
-        "--eval" "$eval_status"
     )
 
-    if [[ -f "$ARTIFACT_DIR/hil-evidence.json" ]]; then
-        args+=("--hil-file" "$ARTIFACT_DIR/hil-evidence.json")
-    elif [[ -n "$RELEASE_HIL_WAIVER" ]]; then
-        args+=("--hil-status" "waived" "--hil-waiver" "$RELEASE_HIL_WAIVER")
+    if [[ "$mode" == "official" ]]; then
+        args+=("--evidence-dir" "$ARTIFACT_DIR" "--release-version" "$version")
     else
-        args+=("--hil-status" "skipped")
+        args+=(
+            "--sil" "pass"
+            "--vil" "$vil_status"
+            "--artifacts" "$artifact_status"
+            "--security" "$security_status"
+            "--eval" "$eval_status"
+        )
+
+        if [[ -f "$ARTIFACT_DIR/hil-evidence.json" ]]; then
+            args+=("--hil-file" "$ARTIFACT_DIR/hil-evidence.json")
+        elif [[ -n "$RELEASE_HIL_WAIVER" ]]; then
+            args+=("--hil-status" "waived" "--hil-waiver" "$RELEASE_HIL_WAIVER")
+        else
+            args+=("--hil-status" "skipped")
+        fi
     fi
 
     ./scripts/check-release-readiness.sh "${args[@]}"
@@ -998,6 +1059,7 @@ run_step "Agents-hub content-hash gate" check_agents_hash_gate
 # ── Phase 7: Release readiness evidence ──
 # Official release audits (--release-version) require HIL evidence or an
 # explicit waiver. Normal local runs and --fast runs still write advisory JSON.
+run_step "SIL release evidence" write_release_sil_evidence
 run_step "HIL release evidence" run_release_hil_evidence
 run_step "Release readiness score gate" check_release_readiness
 

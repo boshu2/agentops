@@ -176,7 +176,7 @@ scripts/ci-local-release.sh --release-version 2.X.Y --hil-waiver 'target unavail
 ```
 
 In `--fast` mode, Phase 4 skips race tests, hook integration tests, SBOM generation, and the security gate. It still builds the binary and runs release validation.
-When `--release-version` is set, Phase 7 runs in official mode and fails unless the readiness score is at least 8/10 with SIL/VIL pass and HIL pass or waiver.
+When `--release-version` is set, Phase 7 runs in official mode and fails unless the readiness score is at least 8/10 with fresh evidence-backed SIL/VIL/security/eval pass and HIL pass or waiver.
 
 ### Minimum Checks Before Any Push
 
