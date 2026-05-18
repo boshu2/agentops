@@ -9,7 +9,7 @@ Use this before you tag. The release process in [RELEASING](RELEASING.md) is the
 | Question | Inspect |
 |---|---|
 | "Is the release process itself current?" | [RELEASING](RELEASING.md) and its pre-release checklist |
-| "Did the local gate produce the expected evidence?" | `.agents/releases/local-ci/<timestamp>/` for SBOM, security report, readiness, HIL evidence, and related artifacts |
+| "Did the local gate produce the expected evidence?" | `.agents/releases/local-ci/<timestamp>/` for SBOM, security report, eval reports, readiness, HIL evidence, digital-twin/VIL evidence, and the manifest |
 | "Did hooks and `ao rpi` smoke actually run?" | Fast gate markers: `Hook install smoke (minimal + full)` and `ao init --hooks + ao rpi smoke` |
 | "Did the release smoke path fail after a fast pass?" | Re-run `bash scripts/ci-local-release.sh` and inspect the failing section before tagging |
 | "Was the release already tagged or partially published?" | [RELEASING](RELEASING.md#failure-modes) and [Incident Runbook](INCIDENT-RUNBOOK.md) |
@@ -39,15 +39,26 @@ Reference test: `tests/integration/test-release-e2e-validation.sh`.
 Run:
 
 ```bash
-bash scripts/ci-local-release.sh --release-version X.Y.Z --hil-target 'local:bushido:ao version'
+bash scripts/ci-local-release.sh \
+  --release-version X.Y.Z \
+  --hil-target 'local:bushido:ao version && ao init --help && ao hooks show && ao rpi status'
 ```
 
 Expect:
 
 - Exit code `0`
 - Final summary contains `LOCAL CI PASSED`
+- `.agents/releases/local-ci/<timestamp>/release-artifacts.json` links the full proof bundle:
+  - `sbom_cyclonedx` and `sbom_spdx`
+  - `security_report`
+  - `eval_fast_report` and `eval_baseline_audit`
+  - `release_readiness`
+  - `hil_evidence`
+  - `vil_evidence` and `digital_twin_evidence`
 - `.agents/releases/local-ci/<timestamp>/release-readiness.json` has `release_status: pass` and `release_readiness_score >= 8`
-- `.agents/releases/local-ci/<timestamp>/hil-evidence.json` has `status: pass` or `status: waived`
+- `.agents/releases/local-ci/<timestamp>/hil-evidence.json` has `status: pass` or `status: waived`; passing targets record OS/architecture/runtime identity, workflow checks, command fingerprint, and release-version verification
+- `.agents/releases/local-ci/<timestamp>/digital-twin-evidence.json` has `status: pass` and `dimensions.vil.status: pass`
+- `.agents/releases/local-ci/<timestamp>/eval-agentops-fast.json` has `status: pass`, and `eval-baseline-audit.json` has no `stale_suite_hashes`
 
 If the fast gate passes but this full gate fails, stop. The release is not ready to tag. Use the failing section in the full-gate output, rerun the official local gate until it passes, and if a tag or publish already happened, follow the failure-mode steps in [RELEASING](RELEASING.md#failure-modes) before retrying anything else.
 

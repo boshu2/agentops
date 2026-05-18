@@ -120,7 +120,7 @@ Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `ag
 
 ## CI Validation — Passing the Pipeline
 
-All pushes to `main`, `v*` release tag pushes, and PRs run `.github/workflows/validate.yml`. Release tag pushes force every path-filtered lane on, and the summary fails if any job is skipped, so skipped is not treated as a release verdict. **Run checks locally before pushing.** The summary job gates on all checks except agentops-eval-advisory (non-blocking), doctor-check (non-blocking), factory-claim-ledger-strict (non-blocking), practice-citations (non-blocking), check-test-staleness (non-blocking), swarm-evidence (non-blocking), and executable-spec-link-integrity (non-blocking).
+All pushes to `main`, `v*` release tag pushes, and PRs run `.github/workflows/validate.yml`. Release tag pushes force every path-filtered lane on, and the summary fails if any job is skipped, so skipped is not treated as a release verdict. **Run checks locally before pushing.** The summary job gates on all checks except doctor-check (non-blocking), factory-claim-ledger-strict (non-blocking), practice-citations (non-blocking), check-test-staleness (non-blocking), swarm-evidence (non-blocking), and executable-spec-link-integrity (non-blocking).
 Blocking policy list (must match the validate summary failset): every job in the CI table below except jobs marked `(non-blocking)`, including the seven `validate-codex-*` and `validate-headless-runtime-skills` jobs (split from the previous aggregated `codex-runtime-sections` job, soc-ltp2).
 
 #### Advisory Job Triage SLAs (post-merge advisory policy, soc-z7qq)
@@ -129,7 +129,6 @@ Advisory jobs run on every PR but their failure does NOT block merge. They surfa
 
 | Advisory job | Triage SLA | Escalation rule |
 |---|---|---|
-| **agentops-eval-advisory** | 7d | Release-blocking when stale: a failing eval-advisory older than 7d blocks the next `vX.Y.Z` tag until triaged. |
 | **doctor-check** | 30d | Open a `bd` issue tracking the stale CLI reference; prioritize when the next `cli/cmd/ao/**` PR lands. |
 | **factory-claim-ledger-strict** | 14d | soc-lmww1: validates `docs/contracts/factory-claim-ledger.json` against source-set anchors. Open a `bd` issue tagged `ci-advisory` when red for >14d; promotion to blocking is a Wave 1E concern. |
 | **practice-citations** | 14d | Non-blocking strict walk of Primitives (skills/hooks/evals/CLI/schemas and scripts with declarations) for `practices: [slug,...]` derivation from PRACTICE-REGISTRY.md. Backfill in slices; promote to required after one clean cycle. Open a `bd` issue tagged `ci-advisory` when red for >14d with no backfill progress. |
@@ -288,7 +287,6 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | Job | What it validates | Common failure |
 |-----|-------------------|----------------|
 | **agentops-contract-canaries** | Runs the official deterministic AgentOps contract canary test list in `tests/canaries/agentops-core-official.txt` | Stable contract canary regression, selected suite failure, or missing canary dependency |
-| **agentops-eval-advisory** | Runs the broader public AgentOps eval/canary corpus and baseline comparisons when baselines exist | Non-blocking (`continue-on-error: true`); advisory corpus, scorecard, or local-baseline regression until brittle canaries and ratchets are promoted |
 | **agentops-eval-baseline-audit** | Runs `ao eval baseline-audit --root evals/agentops-core --json`; drift-only gate that fails on `stale_suite_hashes>0`. `policy_mismatch_count` is reported informationally (under the no-tracked-`.agents/` policy from `3f1566fd` baselines are operator-local, so fresh clones legitimately have missing_compare_baselines) | A promoted baseline's recorded suite SHA stops matching the current suite definition |
 | **cli-docs-parity** | `cli/docs/COMMANDS.md` matches `ao --help` output | Adding a CLI command without running `scripts/generate-cli-reference.sh` |
 | **cli-integration** | Built CLI runs integration command matrix and hook lifecycle smoke tests | CLI command behavior drift not covered by unit tests |

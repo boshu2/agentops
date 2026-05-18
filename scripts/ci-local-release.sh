@@ -9,7 +9,7 @@ set -euo pipefail
 #   ./scripts/ci-local-release.sh              # full gate (parallel where possible)
 #   ./scripts/ci-local-release.sh --fast       # skip heavy checks (~20s vs ~100s)
 #   ./scripts/ci-local-release.sh --security-mode quick
-#   ./scripts/ci-local-release.sh --release-version X.Y.Z --hil-target 'local:gpu:ao version'
+#   ./scripts/ci-local-release.sh --release-version X.Y.Z --hil-target 'local:gpu:ao version && ao init --help && ao hooks show && ao rpi status'
 #
 # Exit codes:
 #   0 = all checks passed
@@ -463,6 +463,10 @@ write_release_artifact_manifest() {
     local security_report=""
     local release_readiness=""
     local hil_evidence=""
+    local vil_evidence=""
+    local digital_twin_evidence=""
+    local eval_fast_report=""
+    local eval_baseline_audit=""
     local fast_mode_json=false
 
     version="$(release_version)"
@@ -489,6 +493,16 @@ write_release_artifact_manifest() {
     if [[ -f "$ARTIFACT_DIR/hil-evidence.json" ]]; then
         hil_evidence="hil-evidence.json"
     fi
+    if [[ -f "$ARTIFACT_DIR/digital-twin-evidence.json" ]]; then
+        vil_evidence="digital-twin-evidence.json"
+        digital_twin_evidence="digital-twin-evidence.json"
+    fi
+    if [[ -f "$ARTIFACT_DIR/eval-agentops-fast.json" ]]; then
+        eval_fast_report="eval-agentops-fast.json"
+    fi
+    if [[ -f "$ARTIFACT_DIR/eval-baseline-audit.json" ]]; then
+        eval_baseline_audit="eval-baseline-audit.json"
+    fi
 
     jq -n \
         --arg run_id "$RUN_ID" \
@@ -503,6 +517,10 @@ write_release_artifact_manifest() {
         --arg security_report "$security_report" \
         --arg release_readiness "$release_readiness" \
         --arg hil_evidence "$hil_evidence" \
+        --arg vil_evidence "$vil_evidence" \
+        --arg digital_twin_evidence "$digital_twin_evidence" \
+        --arg eval_fast_report "$eval_fast_report" \
+        --arg eval_baseline_audit "$eval_baseline_audit" \
         --argjson fast_mode "$fast_mode_json" \
         '{
           schema_version: 1,
@@ -518,7 +536,11 @@ write_release_artifact_manifest() {
           sbom_spdx: (if $sbom_spdx == "" then null else $sbom_spdx end),
           security_report: (if $security_report == "" then null else $security_report end),
           release_readiness: (if $release_readiness == "" then null else $release_readiness end),
-          hil_evidence: (if $hil_evidence == "" then null else $hil_evidence end)
+          hil_evidence: (if $hil_evidence == "" then null else $hil_evidence end),
+          vil_evidence: (if $vil_evidence == "" then null else $vil_evidence end),
+          digital_twin_evidence: (if $digital_twin_evidence == "" then null else $digital_twin_evidence end),
+          eval_fast_report: (if $eval_fast_report == "" then null else $eval_fast_report end),
+          eval_baseline_audit: (if $eval_baseline_audit == "" then null else $eval_baseline_audit end)
         }' > "$manifest_file"
 
     echo "Release artifact manifest: $manifest_file"
@@ -638,9 +660,14 @@ release_readiness_mode() {
 
 run_release_hil_evidence() {
     local mode
+    local version
     local args=("--out" "$ARTIFACT_DIR/hil-evidence.json")
 
     mode="$(release_readiness_mode)"
+    version="$(release_version)"
+    if [[ -n "$version" ]]; then
+        args+=("--expected-version" "$version")
+    fi
     if [[ "$mode" == "official" ]]; then
         args+=("--required")
     fi
@@ -654,11 +681,118 @@ run_release_hil_evidence() {
     ./scripts/check-release-hil.sh "${args[@]}"
 }
 
+write_release_digital_twin_evidence() {
+    local generated_at
+    local status="pass"
+    local reason="release smoke, hook install smoke, and ao init/rpi smoke completed before this artifact was written"
+
+    generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    if [[ "$FAST_MODE" == "true" ]]; then
+        status="skipped"
+        reason="fast mode skips the full release digital-twin/VIL proof"
+    elif [[ "$errors" -ne 0 ]]; then
+        status="fail"
+        reason="one or more preceding local release gates failed before digital-twin evidence was written"
+    fi
+
+    jq -n \
+        --arg generated_at "$generated_at" \
+        --arg artifact_dir "$(artifact_dir_rel)" \
+        --arg status "$status" \
+        --arg reason "$reason" \
+        --argjson errors_before_artifact "$errors" \
+        '{
+          schema_version: 1,
+          evidence_kind: "digital_twin",
+          generated_at: $generated_at,
+          artifact_dir: $artifact_dir,
+          status: $status,
+          reason: $reason,
+          dimensions: {
+            vil: {status: $status, evidence: "local release digital twin"},
+            release_smoke: {status: $status},
+            hook_install_smoke: {status: $status},
+            rpi_smoke: {status: $status}
+          },
+          errors_before_artifact: $errors_before_artifact
+        }' > "$ARTIFACT_DIR/digital-twin-evidence.json"
+
+    [[ "$status" != "fail" ]]
+}
+
+run_release_eval_evidence() {
+    if [[ "$FAST_MODE" == "true" ]]; then
+        jq -n \
+            --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg artifact_dir "$(artifact_dir_rel)" \
+            '{
+              schema_version: 1,
+              evidence_kind: "agentops_eval_fast",
+              generated_at: $generated_at,
+              artifact_dir: $artifact_dir,
+              status: "skipped",
+              reason: "fast mode skips release eval evidence"
+            }' > "$ARTIFACT_DIR/eval-agentops-fast.json"
+        jq -n \
+            '{suite_count: 0, baseline_count: 0, policy_mismatch_count: 0, stale_suite_hashes: []}' \
+            > "$ARTIFACT_DIR/eval-baseline-audit.json"
+        return 0
+    fi
+
+    local eval_root="$ARTIFACT_DIR/eval-agentops"
+    local run_root="$eval_root/runs"
+    local log_file="$ARTIFACT_DIR/eval-agentops-fast.log"
+    local run_dir=""
+    local rc=0
+    mkdir -p "$run_root"
+
+    AO_BIN="$REPO_ROOT/cli/bin/ao" \
+        ./scripts/eval-agentops.sh --fast --run-root "$run_root" --baseline-dir "$eval_root/baselines" > "$log_file" 2>&1 || rc=$?
+
+    run_dir="$(find "$run_root" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -1)"
+    if [[ -n "$run_dir" && -f "$run_dir/baseline-audit.json" ]]; then
+        cp "$run_dir/baseline-audit.json" "$ARTIFACT_DIR/eval-baseline-audit.json"
+    else
+        jq -n \
+            '{suite_count: 0, baseline_count: 0, policy_mismatch_count: 0, stale_suite_hashes: []}' \
+            > "$ARTIFACT_DIR/eval-baseline-audit.json"
+        rc=1
+    fi
+
+    local status="pass"
+    [[ "$rc" -eq 0 ]] || status="fail"
+
+    jq -n \
+        --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --arg artifact_dir "$(artifact_dir_rel)" \
+        --arg status "$status" \
+        --arg command "scripts/eval-agentops.sh --fast" \
+        --arg run_dir "${run_dir#"$REPO_ROOT"/}" \
+        --arg log "eval-agentops-fast.log" \
+        --arg baseline_audit "eval-baseline-audit.json" \
+        --argjson exit_code "$rc" \
+        '{
+          schema_version: 1,
+          evidence_kind: "agentops_eval_fast",
+          generated_at: $generated_at,
+          artifact_dir: $artifact_dir,
+          status: $status,
+          command: $command,
+          exit_code: $exit_code,
+          run_dir: (if $run_dir == "" then null else $run_dir end),
+          log: $log,
+          baseline_audit: $baseline_audit
+        }' > "$ARTIFACT_DIR/eval-agentops-fast.json"
+
+    return "$rc"
+}
+
 check_release_readiness() {
     local mode
     local security_status="pass"
     local artifact_status="pass"
     local vil_status="pass"
+    local eval_status="pass"
     local args
 
     mode="$(release_readiness_mode)"
@@ -666,6 +800,15 @@ check_release_readiness() {
         security_status="skipped"
         artifact_status="skipped"
         vil_status="skipped"
+        eval_status="skipped"
+    elif [[ ! -f "$ARTIFACT_DIR/eval-agentops-fast.json" ]] || \
+        ! jq -e '.status == "pass"' "$ARTIFACT_DIR/eval-agentops-fast.json" >/dev/null 2>&1; then
+        eval_status="fail"
+    fi
+    if [[ "$FAST_MODE" != "true" ]] && \
+        { [[ ! -f "$ARTIFACT_DIR/digital-twin-evidence.json" ]] || \
+          ! jq -e '.status == "pass" and .dimensions.vil.status == "pass"' "$ARTIFACT_DIR/digital-twin-evidence.json" >/dev/null 2>&1; }; then
+        vil_status="fail"
     fi
 
     args=(
@@ -677,7 +820,7 @@ check_release_readiness() {
         "--vil" "$vil_status"
         "--artifacts" "$artifact_status"
         "--security" "$security_status"
-        "--eval" "pass"
+        "--eval" "$eval_status"
     )
 
     if [[ -f "$ARTIFACT_DIR/hil-evidence.json" ]]; then
@@ -843,6 +986,9 @@ run_step_bg "ao init --hooks + ao rpi smoke" run_init_hooks_rpi_smoke
 run_step_bg "Release smoke test (all commands)" ./scripts/release-smoke-test.sh --skip-build
 
 collect_parallel
+
+run_step "Digital twin/VIL evidence" write_release_digital_twin_evidence
+run_step "AgentOps eval evidence" run_release_eval_evidence
 
 # ── Phase 6: Post-hoc ~/.agents content-hash gate ──
 # Fails if any protected subtree under $HOME/.agents was mutated since
