@@ -54,7 +54,11 @@ write_manifest() {
   "sbom_spdx": "sbom-v$version.spdx.json",
   "security_report": "security-gate-full.json",
   "release_readiness": "release-readiness.json",
-  "hil_evidence": "hil-evidence.json"
+  "hil_evidence": "hil-evidence.json",
+  "vil_evidence": "digital-twin-evidence.json",
+  "digital_twin_evidence": "digital-twin-evidence.json",
+  "eval_fast_report": "eval-agentops-fast.json",
+  "eval_baseline_audit": "eval-baseline-audit.json"
 }
 EOF
 }
@@ -65,7 +69,7 @@ write_artifact_files() {
     local dir="$FAKE_REPO/.agents/releases/local-ci/$run_id"
     printf '{"bomFormat":"CycloneDX"}\n' > "$dir/sbom-v$version.cyclonedx.json"
     printf '{"spdxVersion":"SPDX-2.3"}\n' > "$dir/sbom-v$version.spdx.json"
-    printf '{"gate_status":"pass"}\n' > "$dir/security-gate-full.json"
+    printf '{"gate_status":"PASS"}\n' > "$dir/security-gate-full.json"
     cat > "$dir/release-readiness.json" <<'EOF'
 {
   "schema_version": 1,
@@ -79,6 +83,28 @@ write_artifact_files() {
 }
 EOF
     printf '{"schema_version":1,"status":"pass","targets":[{"name":"loop","status":"pass"}]}\n' > "$dir/hil-evidence.json"
+    cat > "$dir/digital-twin-evidence.json" <<'EOF'
+{
+  "schema_version": 1,
+  "evidence_kind": "digital_twin",
+  "status": "pass",
+  "dimensions": {
+    "vil": {"status": "pass"},
+    "release_smoke": {"status": "pass"},
+    "hook_install_smoke": {"status": "pass"},
+    "rpi_smoke": {"status": "pass"}
+  }
+}
+EOF
+    cat > "$dir/eval-agentops-fast.json" <<'EOF'
+{
+  "schema_version": 1,
+  "evidence_kind": "agentops_eval_fast",
+  "status": "pass",
+  "baseline_audit": "eval-baseline-audit.json"
+}
+EOF
+    printf '{"suite_count":1,"baseline_count":0,"policy_mismatch_count":0,"stale_suite_hashes":[]}\n' > "$dir/eval-baseline-audit.json"
 }
 
 @test "resolve-release-artifacts picks the newest complete manifest for a version" {
@@ -181,6 +207,60 @@ EOF
     run "$FAKE_REPO/scripts/resolve-release-artifacts.sh" "2.29.0"
     [ "$status" -eq 1 ]
     [[ "$output" == *"no full local CI artifacts found for release version 2.29.0"* ]]
+}
+
+@test "resolve-release-artifacts rejects manifests without eval evidence" {
+    write_manifest "20260322T212222Z" "2.29.0" false
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    rm "$FAKE_REPO/.agents/releases/local-ci/20260322T212222Z/eval-agentops-fast.json"
+
+    run "$FAKE_REPO/scripts/resolve-release-artifacts.sh" "2.29.0"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"no full local CI artifacts found for release version 2.29.0"* ]]
+}
+
+@test "validate-release-audit-artifacts rejects missing eval evidence for release audits" {
+    write_manifest "20260322T212222Z" "2.29.0" false
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    rm "$FAKE_REPO/.agents/releases/local-ci/20260322T212222Z/eval-agentops-fast.json"
+    write_audit "2.29.0" "20260322T212222Z" "2026-05-02"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"missing eval fast report artifact eval-agentops-fast.json"* ]]
+}
+
+@test "validate-release-audit-artifacts rejects missing security evidence for release audits" {
+    write_manifest "20260322T212222Z" "2.29.0" false
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    rm "$FAKE_REPO/.agents/releases/local-ci/20260322T212222Z/security-gate-full.json"
+    write_audit "2.29.0" "20260322T212222Z" "2026-05-02"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"missing security report artifact security-gate-full.json"* ]]
+}
+
+@test "validate-release-audit-artifacts rejects missing digital twin evidence for release audits" {
+    write_manifest "20260322T212222Z" "2.29.0" false
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    rm "$FAKE_REPO/.agents/releases/local-ci/20260322T212222Z/digital-twin-evidence.json"
+    write_audit "2.29.0" "20260322T212222Z" "2026-05-02"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"missing VIL evidence artifact digital-twin-evidence.json"* ]]
+}
+
+@test "validate-release-audit-artifacts rejects stale eval baseline audit evidence" {
+    write_manifest "20260322T212222Z" "2.29.0" false
+    write_artifact_files "20260322T212222Z" "2.29.0"
+    printf '{"suite_count":1,"baseline_count":1,"policy_mismatch_count":0,"stale_suite_hashes":[{"suite_id":"core"}]}\n' > "$FAKE_REPO/.agents/releases/local-ci/20260322T212222Z/eval-baseline-audit.json"
+    write_audit "2.29.0" "20260322T212222Z" "2026-05-02"
+
+    run "$FAKE_REPO/scripts/validate-release-audit-artifacts.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"eval baseline audit has stale suite hashes or malformed output"* ]]
 }
 
 @test "validate-release-audit-artifacts accepts legacy versioned artifact dirs" {

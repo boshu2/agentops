@@ -71,9 +71,56 @@ scripts/ci-local-release.sh     # Full local release gate (runs everything)
 scripts/validate-go-fast.sh     # Quick Go validation (build + vet + test)
 ```
 
+## Workflow
+
+**Every change to `main` is a PR. Every PR cites a bead. A bead may produce N PRs sliced by Gherkin scenario.** Direct pushes to `main` are rejected by branch protection. Derivation: `.agents/council/sdlc-shape-2026-05-17/DUEL.md` (local, gitignored — duel between Claude Opus 4.7 and Codex gpt-5.5, 2026-05-17).
+
+### Phases
+
+1. **Claim.** `bd ready` → pick a bead → `bd update <id> --claim`. **No bead, no PR.** If the work is genuinely new, `bd create` first.
+2. **Scope.** Read the bead's acceptance: a `.feature` file (canonical when present) or an embedded `## Scenarios` block in the bead description. Free-text acceptance is invalid — promote it to scenarios before work begins. Default: **one scenario per PR** (carve-out: `type=chore` with `#trivial` label for tiny work).
+3. **Ship.** `bd worktree create --branch <type>/<bead-id>-<scenario-token>-<short-slug>` — worktree-mandatory; do not edit in the shared checkout. Implement. Run `scripts/pre-push-gate.sh --fast` before push.
+4. **Close.** Open PR. CI validates the merge state. Squash-merge when green. The bead closes only when every scenario is merged (or explicitly cancelled in bead metadata).
+
+### Branch + PR shape
+
+| Element | Format |
+|---|---|
+| Branch | `<type>/<bead-id>-<scenario-token>-<short-slug>` · ≤80 chars · `<scenario-token>` = full slug if it fits, else `<slug-prefix>-<hash8>` |
+| PR title | `<type>(<scope>): <subject> (<bead-id> #<scenario-slug>)` — full slug here |
+| Required PR body trailers | `Closes-scenario: <bead-id>#<slug>` · `Bounded-context: BC<N>-<name>` · `Evidence: <path>` |
+| Merge | Squash only · linear history · branch up-to-date · no force-push · no deletes |
+| Reviews | 0 humans + required `claude-code-review` check (automation gate) |
+
+### Multi-agent discipline (shared checkout)
+
+The host `~/dev/agentops` is contended. **Agents do not edit it directly.** Use `bd worktree create --branch <name>` for every change. Cross-bead merge serialization: `bd merge-slot`. Foreign uncommitted files = quarantined; identify owner, attach to a bead, move into a worktree.
+
+### Provenance
+
+Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `agentops-sdlc-provenance.v1`). `bd update --metadata` is a derived projection — ledger wins on disagreement. Concurrent writes use `--set-metadata` / `--append-to` (never full-blob replacement) + dolt advisory locks. `claude-code-review` verdicts are first-class ledger events.
+
+### Doctrine altitudes
+
+- **Spine:** [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md) — 7-move agent doctrine. **Primary navigation.**
+- **One turn's executor:** `/rpi` skill. NOT primary.
+- **Architecture:** 5 Bounded Contexts (BC1 Corpus → BC5 Runtime). Where code lives.
+- **Consumer metaphor:** "CDLC" — the compounding Knowledge Flywheel framing.
+
+### Source layer — three axis owners, generated or schema-gated; **NEVER hand-edited inventory maps**
+
+- **DDD (vocabulary):** `skills/domain/references/` — BC names + ubiquitous language.
+- **Hex (structure):** `skills/*/SKILL.md` frontmatter (`hexagonal_role`, `consumes`, `produces`, `context_rel`) → generated to `docs/contracts/context-map.md`. CI gate: `validate-context-map-drift`.
+- **Gherkin (acceptance):** `skills/*/references/*.feature` + bead-embedded `## Scenarios`. CI gate: `scenario-hash-stability`.
+
+### CI tiers (no "advisory")
+
+- **T0 (≤30s)** required gates · **T1 (≤5min)** verification · **T2 (≤15min)** quality — **all required**.
+- **I0** informational; runs and reports artifact but does NOT appear as a PR check.
+
 ## CI Validation — Passing the Pipeline
 
-All pushes to `main`, `v*` release tag pushes, and PRs run `.github/workflows/validate.yml`. Release tag pushes force every path-filtered lane on, and the summary fails if any job is skipped, so skipped is not treated as a release verdict. **Run checks locally before pushing.** The summary job gates on all checks except agentops-eval-advisory (non-blocking), doctor-check (non-blocking), factory-claim-ledger-strict (non-blocking), practice-citations (non-blocking), check-test-staleness (non-blocking), swarm-evidence (non-blocking), and executable-spec-link-integrity (non-blocking).
+All pushes to `main`, `v*` release tag pushes, and PRs run `.github/workflows/validate.yml`. Release tag pushes force every path-filtered lane on, and the summary fails if any job is skipped, so skipped is not treated as a release verdict. **Run checks locally before pushing.** The summary job gates on all checks except doctor-check (non-blocking), factory-claim-ledger-strict (non-blocking), practice-citations (non-blocking), check-test-staleness (non-blocking), swarm-evidence (non-blocking), and executable-spec-link-integrity (non-blocking).
 Blocking policy list (must match the validate summary failset): every job in the CI table below except jobs marked `(non-blocking)`, including the seven `validate-codex-*` and `validate-headless-runtime-skills` jobs (split from the previous aggregated `codex-runtime-sections` job, soc-ltp2).
 
 #### Advisory Job Triage SLAs (post-merge advisory policy, soc-z7qq)
@@ -82,7 +129,6 @@ Advisory jobs run on every PR but their failure does NOT block merge. They surfa
 
 | Advisory job | Triage SLA | Escalation rule |
 |---|---|---|
-| **agentops-eval-advisory** | 7d | Release-blocking when stale: a failing eval-advisory older than 7d blocks the next `vX.Y.Z` tag until triaged. |
 | **doctor-check** | 30d | Open a `bd` issue tracking the stale CLI reference; prioritize when the next `cli/cmd/ao/**` PR lands. |
 | **factory-claim-ledger-strict** | 14d | soc-lmww1: validates `docs/contracts/factory-claim-ledger.json` against source-set anchors. Open a `bd` issue tagged `ci-advisory` when red for >14d; promotion to blocking is a Wave 1E concern. |
 | **practice-citations** | 14d | Non-blocking strict walk of Primitives (skills/hooks/evals/CLI/schemas and scripts with declarations) for `practices: [slug,...]` derivation from PRACTICE-REGISTRY.md. Backfill in slices; promote to required after one clean cycle. Open a `bd` issue tagged `ci-advisory` when red for >14d with no backfill progress. |
@@ -241,7 +287,6 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | Job | What it validates | Common failure |
 |-----|-------------------|----------------|
 | **agentops-contract-canaries** | Runs the official deterministic AgentOps contract canary test list in `tests/canaries/agentops-core-official.txt` | Stable contract canary regression, selected suite failure, or missing canary dependency |
-| **agentops-eval-advisory** | Runs the broader public AgentOps eval/canary corpus and baseline comparisons when baselines exist | Non-blocking (`continue-on-error: true`); advisory corpus, scorecard, or local-baseline regression until brittle canaries and ratchets are promoted |
 | **agentops-eval-baseline-audit** | Runs `ao eval baseline-audit --root evals/agentops-core --json`; drift-only gate that fails on `stale_suite_hashes>0`. `policy_mismatch_count` is reported informationally (under the no-tracked-`.agents/` policy from `3f1566fd` baselines are operator-local, so fresh clones legitimately have missing_compare_baselines) | A promoted baseline's recorded suite SHA stops matching the current suite definition |
 | **cli-docs-parity** | `cli/docs/COMMANDS.md` matches `ao --help` output | Adding a CLI command without running `scripts/generate-cli-reference.sh` |
 | **cli-integration** | Built CLI runs integration command matrix and hook lifecycle smoke tests | CLI command behavior drift not covered by unit tests |
