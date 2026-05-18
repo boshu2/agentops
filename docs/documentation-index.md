@@ -73,7 +73,7 @@ Bridge / framing docs:
 - [JSM-Informed Pilot Upgrade Backlog](reference/jsm-pilot-upgrade-backlog.md) — First candidate AgentOps skill upgrades
 - [JSM Skill Absorption Matrix](reference/jsm-skill-absorption.md) — Disposition table for the older 2026-05-05 Bushido standalone JSM skill set
 - [AgentOps Domain Evolution BDD](reference/agentops-domain-evolution-bdd.md) — Gherkin acceptance contract for skill, CLI, and hook evolution
-- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 77 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains
+- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 78 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
 - [AgentOps Hexagonal Architecture Map](reference/agentops-hexagonal-architecture-map.md) — Bounded contexts, ports, adapters, and proof gates for the evolution program
 - [AgentOps Domain Evolution Plan](reference/agentops-domain-evolution-plan.md) — Sequenced bootstrap and evolution plan anchored to `soc-y5vh`
 - [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph
@@ -265,6 +265,7 @@ Bridge / framing docs:
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
 - [Lesson Format](contracts/lesson-format.md) — Schema for `.agents/learnings/` entries with frontmatter (id/severity/trigger/verifiable/rule/falsified_by/practice/related) and graduation path (unassigned → proposed → accepted → encoded)
+- [Bounded Contexts (yaml)](contracts/bounded-contexts.yaml) — Canonical BC1-BC5 definitions (id/name/responsibility/ports/center-of-gravity); registry doc prose must match this yaml (drift-checked by `scripts/check-bounded-contexts-drift.sh`, soc-zxia.2)
 - [add-validate-job scaffolder](https://github.com/boshu2/agentops/blob/main/scripts/add-validate-job.sh) — CI integration scaffolder; emits all 5 touch-points (workflow + summary needs + summary echo + pre-push + bats stub + AGENTS table) atomically when adding a new `validate-*` job (soc-3oij)
 - [Context Map](contracts/context-map.md) — Auto-generated bounded-context map of skills by hexagonal role with relationship and data-flow views (see ADR-0001)
 - [Skill Domain Map](contracts/skill-domain-map.md) — V0 DDD map assigning every shared skill to one explicit skill domain with ports, artifacts, and adapters

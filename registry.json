@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-17T21:51:32Z",
+  "generated_at": "2026-05-18T14:10:47Z",
   "summary": {
     "skills": 78,
     "hooks": 43,
     "knowledge_stores": 4,
     "job_types": 14,
     "eval_files": 62,
-    "cli_commands": 170
+    "cli_commands": 171
   },
   "surfaces": {
     "skills": [
@@ -1851,6 +1851,10 @@
       {
         "name": "watch",
         "path": "cli/cmd/ao/watch.go"
+      },
+      {
+        "name": "wiki",
+        "path": "cli/cmd/ao/wiki.go"
       },
       {
         "name": "worktree",

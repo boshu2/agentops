@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-77 checked-in AgentOps skills before any broad rewrite, using current
+78 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -32,13 +32,15 @@ and aligning loop-facing skills to the bounded-context architecture.
 
 ## Domain Taxonomy
 
+<!-- Generated from docs/contracts/bounded-contexts.yaml — DO NOT EDIT prose; edit yaml and run `bash scripts/check-bounded-contexts-drift.sh` -->
+
 | Domain | Product layer | Responsibility |
 |---|---|---|
-| BC1 Corpus | Bookkeeping + Context Compiler + Knowledge Flywheel | Capture, retrieve, compile, cite, and promote durable knowledge into compact agent context. |
-| BC2 Validation | Validation Gates | Judge plans, code, dependencies, security, tests, and release readiness. |
-| BC3 Loop | Operating loop | Shape BDD intent, select XP-sized work, execute RPI, measure fitness, log cycles, and stop on convergence. |
-| BC4 Factory | Skill and claim factory | Build, audit, package, document, and govern skills, standards, and product claims. |
-| BC5 Runtime | Harness and operator adapters | Connect the core loop to Codex, Claude, GitHub, hooks, PRs, shells, and local machine state. |
+| BC1 Corpus | Bookkeeping + Context Compiler + Knowledge Flywheel | Capture, retrieve, compile, cite, and promote knowledge. |
+| BC2 Validation | Validation Gates | Judge whether plans, code, docs, dependencies, and releases are fit. |
+| BC3 Loop | Operating loop | Select work, execute RPI, log cycles, measure fitness, and stop at convergence. |
+| BC4 Factory | Skill and claim factory | Build, audit, package, and govern reusable skills and product claims. |
+| BC5 Runtime | Harness and operator adapters | Adapt the control plane to harnesses, hooks, PRs, shells, and local machines. |
 
 ## Full Skill Map
 
