@@ -565,6 +565,7 @@ See `references/cycle-history.md` for advanced troubleshooting.
 
 ## References
 
+- [references/long-loop-discipline.md](references/long-loop-discipline.md) — Disk-is-truth axiom; the cross-cutting principle every other reference here implements
 - [references/artifacts.md](references/artifacts.md) — Generated files registry
 - [references/autonomous-execution.md](references/autonomous-execution.md) — Autonomous-loop rules, operator-shape carve-out, ScheduleWakeup self-perpetuation
 - [references/compounding.md](references/compounding.md) — Knowledge flywheel and work harvesting
