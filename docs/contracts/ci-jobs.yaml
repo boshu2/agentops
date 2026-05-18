@@ -1,0 +1,198 @@
+jobs:
+- name: agentops-contract-canaries
+  reason: Runs the official deterministic AgentOps contract canary test list in `tests/canaries/agentops-core-official.txt`
+  failure: Stable contract canary regression, selected suite failure, or missing canary dependency
+- name: agentops-eval-baseline-audit
+  reason: Runs `ao eval baseline-audit --root evals/agentops-core --json`; drift-only gate that fails on `stale_suite_hashes>0`. `policy_mismatch_count` is reported informationally (under the no-tracked-`.agents/` policy from `3f1566fd` baselines are operator-local, so fresh clones legitimately have missing_compare_baselines)
+  failure: A promoted baseline's recorded suite SHA stops matching the current suite definition
+- name: cli-docs-parity
+  reason: '`cli/docs/COMMANDS.md` matches `ao --help` output'
+  failure: Adding a CLI command without running `scripts/generate-cli-reference.sh`
+- name: cli-integration
+  reason: Built CLI runs integration command matrix and hook lifecycle smoke tests
+  failure: CLI command behavior drift not covered by unit tests
+- name: contract-compatibility-gate
+  reason: documentation-index.md contract links resolve; schemas are valid JSON; orphan contracts fail unless allowlisted
+  failure: Adding a contract file without cataloguing it in `docs/documentation-index.md` or allowlist governance
+- name: doc-release-gate
+  reason: Skill counts match across SKILL-TIERS.md, PRODUCT.md, README.md, documentation-index.md; link validation
+  failure: Adding/removing a skill without running `scripts/sync-skill-counts.sh`
+- name: doctor-check
+  reason: '`ao doctor` runs without error on built binary'
+  failure: 'Non-blocking (`continue-on-error: true`)'
+- name: embedded-sync
+  reason: '`cli/embedded/` matches source files in `hooks/`, `lib/`, `skills/`'
+  failure: Editing hooks without running `cd cli && make sync-hooks`
+- name: eval-skill-delta
+  reason: Eval skill-delta CI gate validates skill-on vs skill-off delta infrastructure
+  failure: Broken delta scorecard, missing harness, or malformed A/B config
+- name: eval-workbench-verify
+  reason: Behavioral eval workbench golden state, task scoring scripts, and suite structure
+  failure: Broken workbench fixture, failing golden-state tests, or malformed eval suite JSON
+- name: factory-claim-ledger-strict
+  reason: Runs `bash scripts/check-factory-claim-ledger.sh` and emits a structured observation artifact mapping verdict + surfaces_touched per PR (soc-lmww1, Wave 1C)
+  failure: 'Non-blocking (`continue-on-error: true`); claim-ledger drift surfaces in observation JSON. Promotion to blocking is the Wave 1E concern documented in-job'
+- name: go-build
+  reason: '`ao` binary builds; tests pass with `-race`; embedded hooks in sync; Go complexity budget'
+  failure: New function exceeds cyclomatic complexity 25
+- name: hook-preflight
+  reason: All hooks have kill switches, no unsafe eval, timeouts present
+  failure: Using `eval` or backtick substitution in hooks
+- name: hook-output-schema-lint
+  reason: Hooks emit only the safely-portable PreToolUse output subset both Claude and Codex CLI accept
+  failure: Using `hookSpecificOutput.updatedInput` (silently dropped by Codex CLI 0.128.0+)
+- name: learning-coherence
+  reason: Learning files have valid frontmatter and are not garbage/hallucinated
+  failure: Auto-extracted learnings with no recognized fields or boilerplate content
+- name: markdownlint
+  reason: Markdown style/lint rules pass for repository docs
+  failure: Docs formatting regressions not caught by link checks
+- name: memrl-health
+  reason: MemRL feedback loop wiring and health checks
+  failure: Broken ingestion/feedback loop wiring
+- name: plugin-load-test
+  reason: No symlinks anywhere in the repo; manifests valid; plugin structure correct
+  failure: Creating symlinks instead of real file copies
+- name: practice-citations
+  reason: 'Walks Primitives (skills/hooks/evals/CLI/schemas and scripts with declarations) for `practices: [slug,...]` derivation from PRACTICE-REGISTRY.md; reports missing or invalid slug citations'
+  failure: 'Non-blocking (`continue-on-error: true`); strict advisory initially. Promotes to required after one clean backfill cycle'
+- name: pre-push-gate-wired
+  reason: '`.githooks/pre-push` invokes `scripts/pre-push-gate.sh`; sandbox push smoke proves the hook fires as a single fast pass, replays refspec stdin, and updates the remote ref'
+  failure: Editing the hook chain without re-running `scripts/check-pre-push-gate-wired.sh --dry-run-smoke`
+- name: registry-check
+  reason: '`registry.json` matches live output of `scripts/generate-registry.sh`'
+  failure: Adding a job type, skill, or CLI command without regenerating registry.json
+- name: retrieval-quality
+  reason: Offline retrieval precision bench and retrieval comparison smoke test
+  failure: Precision@K regression below threshold or retrieval-quality-smoke failure
+- name: security-scan
+  reason: No hardcoded secrets or dangerous patterns (`curl|sh`, `rm -rf /`)
+  failure: Hardcoded API keys or passwords in non-test files
+- name: security-toolchain-gate
+  reason: 'Unified security gate (`scripts/security-gate.sh --mode quick`): gosec, golangci-lint, gitleaks, trivy, semgrep, etc. Blocks on any CRITICAL or HIGH finding'
+  failure: A CRITICAL/HIGH security or quality finding from gosec or golangci-lint
+- name: shellcheck
+  reason: All `.sh` files pass ShellCheck at error severity
+  failure: Unquoted variables, missing `set -euo pipefail`
+- name: skill-dependency-check
+  reason: Skill `metadata.dependencies` entries resolve to existing skills
+  failure: Declaring a skill dependency that no longer exists
+- name: skill-integrity
+  reason: Every `references/*.md` file is linked from SKILL.md; no dead refs, dead xrefs, or missing scripts
+  failure: Adding a reference file without linking it in SKILL.md
+- name: skill-lint
+  reason: Skill line limits, required sections, Claude feature coverage
+  failure: Judgment-tier skill exceeds 600 lines; missing `## Examples` in user-facing skill
+- name: skill-schema
+  reason: SKILL frontmatter conforms to schema
+  failure: Missing/invalid frontmatter fields in SKILL.md
+- name: smoke-test
+  reason: 'Repo smoke surface: skill frontmatter, placeholder/TODO hygiene, plus standalone Claude/Codex/OpenCode runtime smoke scripts and mocked headless runtime validation'
+  failure: Runtime install/bundle drift or placeholder/TODO regressions
+- name: standards-injector-completeness
+  reason: Every `<lang>` mapped by `hooks/standards-injector.sh` has a matching `skills/standards/references/<lang>.md`
+  failure: Adding a case branch without the reference file (the hook fails open silently)
+- name: swarm-evidence
+  reason: Swarm evidence files and file manifests are valid
+  failure: 'Non-blocking (`continue-on-error: true`); informational artifact validation only'
+- name: executable-spec-link-integrity
+  reason: 'Runs `ao goals scenarios --lint` (directive↔scenario link lint) and `ao goals trace --orphans` (whole-chain orphan/gap audit) warn-only (F1.6, soc-58nt.1.9). Non-blocking (`continue-on-error: true`). Promotion criterion: remove `continue-on-error: true` from the CI job and replace `warn` with `fail` in pre-push check 38 after two consecutive clean runs on main'
+  failure: Broken directive↔scenario link or orphaned directive/scenario/bead in the trace chain (surfaces as warning, not failure, until promoted)
+- name: validate-ci-policy-parity
+  reason: AGENTS CI table and blocking policy match workflow summary enforcement
+  failure: Docs say non-blocking/required but workflow differs
+- name: validate-codex-backbone-prompts
+  reason: Codex backbone prompt files are present and well-formed
+  failure: Backbone prompt file deleted, renamed, or shape regressed
+- name: validate-codex-generated-artifacts
+  reason: Codex artifact metadata parity (manifests, markers, hashes) for the head commit
+  failure: Codex artifact regen drift; missing or stale `skills-codex/` outputs
+- name: validate-codex-lifecycle-guards
+  reason: Codex lifecycle guards (session/run boundaries, kill switches) remain wired
+  failure: Lifecycle guard removed or runtime hook order changed without updating the guard
+- name: validate-codex-parity-drift
+  reason: 'GOALS.md directive D7: `scripts/check-codex-parity-drift.sh` returns 0 findings (no `--warn-only` escape)'
+  failure: Codex parity drift reintroduced between Claude skills and `skills-codex/` outputs
+- name: validate-quarantine-empty
+  reason: 'GOALS.md directive D3: `tests/_quarantine/` holds zero `.sh`/`.bats` suites. Override: `ALLOW_QUARANTINE=1` for single-cycle bypass'
+  failure: Test parked in `tests/_quarantine/` without being deleted or moved back
+- name: validate-registry-drift
+  reason: 'registries-drift lesson (soc-ry4a): `scripts/check-registry-drift.sh` confirms skill count + Full Skill Map membership + hexagonal_role column matches frontmatter'
+  failure: Skill added/removed without updating `docs/reference/agentops-skill-domain-map.md`; hex-role column drift
+- name: validate-bounded-contexts-drift
+  reason: 'soc-zxia.2: `scripts/check-bounded-contexts-drift.sh` confirms BC1-BC5 prose in registry docs matches `docs/contracts/bounded-contexts.yaml` canonical'
+  failure: BC responsibility/product-layer prose edited directly in registry doc instead of via yaml
+- name: validate-skill-domain-map-golden
+  reason: 'soc-zxia.3: `scripts/generate-skill-domain-map.sh --check` confirms `docs/reference/agentops-skill-domain-map.md` matches the generator output from `bounded-contexts.yaml` + `skill-dispositions.yaml` + skill frontmatter'
+  failure: Hand-edit to the .md table sections; yaml change without regenerating; skill added without dispositions row
+- name: validate-flywheel-proof
+  reason: 'GOALS.md gate `flywheel-proof` (weight 7): `scripts/proof-run.sh` end-to-end flywheel checks (20 assertions) pass against a fresh isolated repo'
+  failure: 'Knowledge flywheel regression: capture/inject/retrieval/nightly stages drift out of contract'
+- name: validate-goals-validate
+  reason: 'GOALS.md gate `goals-validate` (weight 5): `ao goals validate --json` reports `valid == true`; structural errors in GOALS.md block merge'
+  failure: GOALS.md gate row deleted/malformed, schema break, missing required field
+- name: validate-wiring-closure
+  reason: 'GOALS.md gate `wiring-closure` (weight 7): `scripts/check-wiring-closure.sh` confirms every script, skill, and hook referenced by registries exists on disk'
+  failure: Registry entry without an underlying file, or a file referenced by a registry was deleted
+- name: validate-corpus-freshness
+  reason: 'GOALS.md gate `corpus-freshness` (weight 4, Directive D11): `scripts/check-corpus-freshness.sh` ensures the newest `ao corpus snapshot` is within 7 days. CI runs with `AGENTOPS_CORPUS_FRESHNESS_SKIP=1` (greenfield runners); operator boxes enforce real freshness'
+  failure: Snapshot dir present but newest tarball is older than 7 days (corpus durability protects against routine cleanup wiping `.agents/`)
+- name: validate-flywheel-compounding-snapshot
+  reason: 'GOALS.md gate `flywheel-compounding-snapshot` (weight 5, G1): `scripts/check-flywheel-compounding-snapshot.sh` validates the tracked `docs/releases/flywheel-compounding-snapshot.json` exists, is < 14 days old, and `escape_velocity_compounding=true`. Operator refresh: `bash scripts/snapshot-flywheel-compounding.sh && git add docs/releases/flywheel-compounding-snapshot.json`'
+  failure: Snapshot missing, stale (>14d), or shows `escape_velocity_compounding=false` (corpus has stopped compounding)
+- name: validate-factory-yield-ledger
+  reason: 'GOALS.md gate `factory-yield-ledger` (weight 4, A2 audit follow-up): `scripts/check-factory-yield-ledger.sh` validates the yield-ledger contract: schema + example parse, 25 required correlation+yield fields present, event_type/schema_version pinned. Pair to the existing `validate-factory-claim-ledger` gate'
+  failure: Schema or example drifts, a required correlation/yield field is removed, or event_type/schema_version change
+- name: validate-finding-registry
+  reason: 'GOALS.md gate `finding-registry` (weight 4, A2 audit follow-up): `scripts/check-finding-registry.sh` validates the finding-registry contract: schema is valid JSON Schema, required-field list cross-checks with contract doc (accepts both `foo` and `foo.child` forms for nested objects), canonical path is documented, live `.agents/findings/registry.jsonl` lines parse and carry the required top-level fields'
+  failure: Schema/contract drift, required field dropped from either side, or any live registry line missing one of the eight top-level required fields
+- name: validate-factory-admission
+  reason: 'GOALS.md gate `factory-admission` (weight 4, A2 audit follow-up): `scripts/check-factory-admission.sh` wraps `tests/scripts/test-factory-admission-contracts.py` (Python+jsonschema) as a blocking gate. Validates both work-order and admission-decision fixtures against the schema'
+  failure: Schema or fixtures drift, work-order/admission-decision instances fail validation
+- name: validate-contracts-structural-floor
+  reason: 'GOALS.md gate `contracts-structural-floor` (weight 4): `scripts/check-contracts-structural-floor.sh` enforces every `docs/contracts/*.md` meets the floor: top-level # heading, cataloged in documentation-index.md, body >= 200 bytes, paired schema (if any) is valid JSON'
+  failure: Adding a contract without cataloging it, a contract becoming a stub, or a paired schema becoming invalid JSON
+- name: validate-context-map-drift
+  reason: '`scripts/validate-context-map-drift.sh` regenerates `docs/contracts/context-map.md` via `scripts/generate-context-map.sh` and fails on any diff against the committed copy. Restores the original file on exit so working trees stay clean. Per DDD+Hexagonal plan Issue #5 (Fix 3)'
+  failure: SKILL.md `hexagonal_role`/`consumes`/`produces`/`context_rel` frontmatter changed without regenerating `docs/contracts/context-map.md`
+- name: validate-docs-learning-references
+  reason: 'soc-w6vh.5.1 gate: `scripts/check-docs-learning-references.sh` enforces that `docs/plans/` and `docs/learnings/` references to `.agents/learnings/YYYY-MM-DD-*.md` paths have a `docs/learnings/<basename>.md` durable mirror OR an explicit `(local-only)` / `(documentary)` / `(template)` annotation'
+  failure: A docs/plans or docs/learnings document cites a specific dated `.agents/learnings/` file without exporting the rationale to `docs/learnings/` or marking the reference exempt
+- name: validate-three-gap-supergate
+  reason: 'GOALS.md gate `three-gap-supergate` (weight 5, E5): `scripts/check-three-gap-supergate.sh --gap=all` composes the three-gap contract surface (TG1 council-coverage, TG2 durable-learning [flywheel-compounding-snapshot + flywheel-proof + compile-health], TG3 loop-closure [goals-validate + wiring-closure + flywheel-proof]) into a unified PASS/FAIL surface'
+  failure: Any composed child gate fails
+- name: validate-skill-frontmatter
+  reason: '`scripts/validate-skill-frontmatter.sh` validates each `skills/*/SKILL.md` YAML frontmatter against `schemas/skill-frontmatter.v2.schema.json` (v2 adds optional `hexagonal_role`, `consumes`, `produces`, `context_rel` fields). Default mode fails on schema violations; missing optional hexagonal fields warn. `--strict` (pre-push) fails on warnings. Per DDD+Hexagonal plan Issue #2'
+  failure: SKILL.md frontmatter drifts from v2 schema, or `hexagonal_role` enum value invalid
+- name: validate-codex-override-coverage
+  reason: Every `skills-codex-overrides/<name>/` entry covers required override surfaces
+  failure: Adding an override skill without the prompt or body coverage the runtime expects
+- name: validate-codex-rpi-contract
+  reason: Codex RPI contract (phase prompts, transitions, output schema) matches runtime
+  failure: RPI contract drift between Claude and Codex runtimes
+- name: validate-codex-runtime-sections
+  reason: Required Codex runtime sections and ordering remain valid in shipped artifacts
+  failure: AGENTS/runtime guidance changes drift from required Codex runtime section rules
+- name: validate-headless-runtime-skills
+  reason: Headless runtime skill bundle smoke (mocked Claude/Codex/OpenCode runners)
+  failure: Runtime install/bundle drift breaks headless skill execution
+- name: validate-hooks-doc-parity
+  reason: Scoped docs avoid stale hook-count claims vs runtime `hooks/hooks.json`
+  failure: Runtime hook contract changed but docs were not updated
+- name: windows-smoke
+  reason: Native Windows PowerShell installer smoke, Codex plugin temp install, local `ao doctor` Windows hints, and focused Windows-sensitive Go tests
+  failure: Windows install/plugin/runtime surfaces regress while Ubuntu CI stays green
+- name: bats-tests
+  reason: BATS integration tests for shell scripts pass
+  failure: Hook or script behavioral regression
+- name: check-test-staleness
+  reason: Detects stale/abandoned test files
+  failure: 'Non-blocking (`continue-on-error: true`)'
+- name: file-manifest-overlap
+  reason: No file path conflicts between workers/skills
+  failure: Two skills claim the same output file
+- name: json-flag-consistency
+  reason: All `--json` flags produce valid JSON with consistent format
+  failure: Missing `--json` support on a new command
+# extracted 65 jobs
+

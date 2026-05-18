@@ -137,6 +137,6 @@ In this repo, `claude-review` is a required check. If the `@claude` workflow is 
 - Lesson `claude-app-default-readonly` (local-only: `.agents/learnings/2026-05-17-claude-app-default-readonly.md`) — the install-perm gotcha as a one-rule lesson
 - Lesson `dogfood-install-pr` (local-only: `.agents/learnings/2026-05-17-dogfood-install-pr.md`) — the install PR must itself follow the discipline it installs
 - [Lesson Format](lesson-format.md) — schema for `.agents/learnings/` entries
-- [AGENTS.md `## Workflow`](../../AGENTS.md) — PR-only discipline this bot operates inside
+- [AGENTS.md `## Workflow`](https://github.com/boshu2/agentops/blob/main/AGENTS.md) — PR-only discipline this bot operates inside
 
 > `.agents/learnings/` is repo-local (gitignored). Search local lessons with `bd memories <keyword>` or via the [Lesson Format](lesson-format.md) contract.
