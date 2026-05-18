@@ -73,6 +73,22 @@ must pass `--hil-waiver "reason"` so the waiver is visible in both the HIL and
 readiness artifacts. A waiver is acceptable release evidence, but it scores only
 half of the HIL dimension.
 
+## Digital-Twin / VIL Evidence
+
+`scripts/check-release-digital-twin.sh` captures the disposable local workflow
+artifact:
+
+```text
+.agents/releases/local-ci/<run-id>/digital-twin-evidence.json
+```
+
+Official mode requires a real `ao` binary and records install/upgrade smoke,
+version parity, core command smoke, `ao init --hooks`, `ao hooks show`,
+`ao rpi status`, and runtime/help surfaces in a temporary HOME and repository.
+Fast mode runs a lightweight subset when the binary is available and records
+`skipped` when it is not. A digital-twin waiver is explicit evidence, not an
+implicit pass.
+
 ## Release Artifacts
 
 `release-artifacts.json` records these fields when the local gate runs:

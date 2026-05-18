@@ -75,7 +75,8 @@ jobs:
 
           # Build a pre-publish binary for VIL/eval evidence before GoReleaser
           # publishes the official archives.
-          (cd cli && go build -o ../release-artifacts/ao ./cmd/ao)
+          (cd cli && make build VERSION="$VERSION")
+          cp cli/bin/ao release-artifacts/ao
           release-artifacts/ao version > release-artifacts/ao-version.txt
           release-artifacts/ao init --help > /dev/null
           release-artifacts/ao rpi --help > /dev/null
@@ -110,11 +111,12 @@ jobs:
             --arg release_version "$VERSION" \
             '{schema_version:1,evidence_kind:"software_in_loop",generated_at:$generated_at,release_version:$release_version,status:"pass",reason:"release publisher pre-publish checks completed",errors_before_readiness:0}' \
             > release-artifacts/sil-evidence.json
-          jq -n \
-            --arg generated_at "$GENERATED_AT" \
-            --arg release_version "$VERSION" \
-            '{schema_version:1,evidence_kind:"digital_twin",generated_at:$generated_at,release_version:$release_version,status:"pass",reason:"pre-publish ao build, version, init, and rpi smoke completed",dimensions:{vil:{status:"pass"},release_smoke:{status:"pass"},hook_install_smoke:{status:"pass"},rpi_smoke:{status:"pass"}}}' \
-            > release-artifacts/digital-twin-evidence.json
+          chmod +x scripts/check-release-digital-twin.sh
+          scripts/check-release-digital-twin.sh \
+            --mode official \
+            --ao-bin "$PWD/release-artifacts/ao" \
+            --expected-version "$VERSION" \
+            --out release-artifacts/digital-twin-evidence.json
           jq -n \
             --arg generated_at "$GENERATED_AT" \
             --arg release_version "$VERSION" \
