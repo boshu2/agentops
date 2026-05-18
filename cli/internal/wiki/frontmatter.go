@@ -9,6 +9,7 @@
 package wiki
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -70,10 +71,13 @@ func ParseConfidence(v any) Confidence {
 		return ParseConfidence(float64(typed))
 	case int64:
 		return ParseConfidence(float64(typed))
+	case uint64:
+		// yaml.v3 decodes integers exceeding int64's range as uint64.
+		return ParseConfidence(float64(typed))
 	case string:
 		return parseConfidenceString(typed)
 	default:
-		return Confidence{Value: ConfidenceDefault}
+		return Confidence{Value: ConfidenceDefault, Raw: fmt.Sprint(v)}
 	}
 }
 

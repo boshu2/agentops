@@ -444,7 +444,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"pool", "quick-start", "ratchet", "retrieval-bench", "robot-docs", "rpi",
 		"registry", "scenario", "schedule", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
 		"store", "task-feedback", "task-status", "task-sync", "temper",
-		"trace", "version", "vibe-check", "watch", "worktree",
+		"trace", "version", "vibe-check", "watch", "wiki", "worktree",
 	}
 	cmdSet := make(map[string]bool)
 	for _, name := range cmdNames {
@@ -505,7 +505,7 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 		"pool", "quick-start", "ratchet", "retrieval-bench", "robot-docs", "rpi",
 		"registry", "scenario", "schedule", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
 		"store", "task-feedback", "task-status", "task-sync", "temper",
-		"trace", "version", "vibe-check", "watch", "worktree",
+		"trace", "version", "vibe-check", "watch", "wiki", "worktree",
 	}
 
 	// Every expected command must be registered
