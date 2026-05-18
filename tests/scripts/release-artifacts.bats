@@ -77,6 +77,24 @@ write_artifact_files() {
   "schema_version": 1,
   "release_readiness_score": 10,
   "release_status": "pass",
+  "evidence": {
+    "policy": {
+      "name": "zero-trust-release-evidence",
+      "official_mode": true,
+      "status_flags_trusted": false,
+      "pre_publish_blocking": true,
+      "threshold": 8
+    },
+    "lanes": {
+      "sil": {"status": "pass", "artifact": "sil-evidence.json", "required": true, "blocking": true, "freshness_required": true, "release_version_required": true},
+      "vil": {"status": "pass", "artifact": "digital-twin-evidence.json", "source": "digital_twin", "required": true, "blocking": true, "freshness_required": true, "release_version_required": true},
+      "digital_twin": {"status": "pass", "artifact": "digital-twin-evidence.json", "workflow_strength": "full", "binary_digest": "0123456789abcdef", "target_identity": {"os": "Linux"}, "logs": {"checks": []}, "required": true, "blocking": true, "freshness_required": true, "release_version_required": true},
+      "hil": {"status": "pass", "artifact": "hil-evidence.json", "target_identity": [{"name": "loop"}], "logs": {"targets": []}, "required": true, "blocking": true, "freshness_required": true, "release_version_required": true},
+      "artifacts": {"status": "pass", "artifact": "release-artifacts.json", "required": true, "blocking": true, "freshness_required": false, "release_version_required": false},
+      "security": {"status": "pass", "artifact": "security-gate-full.json", "required": true, "blocking": true, "freshness_required": true, "release_version_required": true},
+      "evals": {"status": "pass", "artifact": "eval-agentops-fast.json", "required": true, "blocking": true, "freshness_required": true, "release_version_required": true}
+    }
+  },
   "dimensions": {
     "sil": {"status": "pass"},
     "vil": {"status": "pass"},
@@ -90,12 +108,23 @@ EOF
   "schema_version": 1,
   "evidence_kind": "digital_twin",
   "status": "pass",
+  "workflow_strength": "full",
+  "ao_bin_sha256": "0123456789abcdef",
+  "runtime": {"os": "Linux", "arch": "x86_64"},
   "dimensions": {
     "vil": {"status": "pass"},
     "release_smoke": {"status": "pass"},
     "hook_install_smoke": {"status": "pass"},
     "rpi_smoke": {"status": "pass"}
-  }
+  },
+  "checks": [
+    {"name": "install", "status": "pass"},
+    {"name": "version", "status": "pass"},
+    {"name": "core-help", "status": "pass"},
+    {"name": "rpi-help", "status": "pass"},
+    {"name": "init-hooks", "status": "pass"},
+    {"name": "rpi-status", "status": "pass"}
+  ]
 }
 EOF
     cat > "$dir/eval-agentops-fast.json" <<'EOF'

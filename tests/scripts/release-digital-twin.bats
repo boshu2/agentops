@@ -103,6 +103,7 @@ SH
       .status == "pass" and
       .release_version == "2.29.0" and
       .workflow_strength == "full" and
+      (.ao_bin_sha256 | type == "string" and length > 0) and
       .dimensions.vil.status == "pass" and
       .dimensions.install_upgrade.status == "pass" and
       .dimensions.hook_install_smoke.status == "pass" and

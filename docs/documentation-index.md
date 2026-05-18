@@ -310,7 +310,7 @@ Bridge / framing docs:
 - [Context Usefulness Eval Contract](contracts/context-usefulness-eval.md) — Wave 0 deterministic `context_off` versus `context_on` evaluation, scorecard fields, hook-preservation boundaries
 - [Eval Verdict Pipeline Contract](contracts/eval-verdict-pipeline.md) — Verdict compiler pipeline from eval run manifests to learning utility and retirement signals
 - [Retrieval Comparison Contract](contracts/retrieval-comparison.md) — Deterministic search-eval backend comparison, promotion thresholds, optional rerank behavior, and deferred vector/graph-store policy
-- [Release Readiness Contract](contracts/release-readiness.md) — 8/10 release readiness score, SIL/VIL/HIL evidence, artifact manifest requirements, and HIL waiver policy
+- [Release Readiness Contract](contracts/release-readiness.md) — 8/10 release readiness score, zero-trust SIL/VIL/digital-twin/HIL evidence lanes, artifact manifest requirements, and HIL waiver policy
 - [MemRL Policy Schema](contracts/memrl-policy.schema.json) — Machine-readable retry/escalation policy profile for memory-reinforcement feedback loops
 - [MemRL Policy Profile Example](contracts/memrl-policy.profile.example.json) — Example deterministic MemRL retry/escalation policy profile
 - [Eval Workbench](https://github.com/boshu2/agentops/tree/main/evals/workbench) — Known-good fixture project (Go CLI, Python FastAPI, DevOps scripts) with 12 behavioral eval tasks and scoring scripts

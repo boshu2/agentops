@@ -212,6 +212,12 @@ HIL_ARTIFACT=""
 ARTIFACTS_ARTIFACT=""
 SECURITY_ARTIFACT=""
 EVAL_ARTIFACT=""
+DIGITAL_TWIN_WORKFLOW_STRENGTH=""
+DIGITAL_TWIN_BINARY_DIGEST=""
+DIGITAL_TWIN_TARGET_IDENTITY="null"
+DIGITAL_TWIN_LOGS="null"
+HIL_TARGET_IDENTITY="[]"
+HIL_LOGS="null"
 
 add_evidence_error() {
     local item="$1"
@@ -365,7 +371,19 @@ derive_official_evidence() {
     HIL_ARTIFACT="$(artifact_name "$HIL_FILE")"
     SECURITY_ARTIFACT="$(artifact_name "$security_file")"
     EVAL_ARTIFACT="$(artifact_name "$eval_file")"
-    ARTIFACTS_ARTIFACT="$(artifact_name "$EVIDENCE_DIR")"
+    ARTIFACTS_ARTIFACT="release-artifacts.json"
+
+    if [[ -f "$vil_file" ]] && jq empty "$vil_file" >/dev/null 2>&1; then
+        DIGITAL_TWIN_WORKFLOW_STRENGTH="$(jq -r '.workflow_strength // empty' "$vil_file")"
+        DIGITAL_TWIN_BINARY_DIGEST="$(jq -r '.ao_bin_sha256 // empty' "$vil_file")"
+        DIGITAL_TWIN_TARGET_IDENTITY="$(jq -c '.runtime // null' "$vil_file")"
+        DIGITAL_TWIN_LOGS="$(jq -c '{checks: (.checks // [] | map({name, dimension, status, exit_code, duration_seconds, output_preview})), failure_reasons: (.failure_reasons // [])}' "$vil_file")"
+    fi
+
+    if [[ -f "$HIL_FILE" ]] && jq empty "$HIL_FILE" >/dev/null 2>&1; then
+        HIL_TARGET_IDENTITY="$(jq -c '[.targets[]? | {name, kind, host, status, command_sha256, workflow_strength, workflow_checks, runtime, version_verified}]' "$HIL_FILE")"
+        HIL_LOGS="$(jq -c '{targets: [.targets[]? | {name, status, exit_code, duration_seconds, output_preview, failure_reasons}]}' "$HIL_FILE")"
+    fi
 
     SIL_STATUS="fail"
     if validate_evidence_common "SIL" "$sil_file" true && \
@@ -377,7 +395,16 @@ derive_official_evidence() {
 
     VIL_STATUS="fail"
     if validate_evidence_common "digital twin" "$vil_file" true && \
-        jq -e '.schema_version == 1 and .evidence_kind == "digital_twin" and .status == "pass" and .dimensions.vil.status == "pass"' "$vil_file" >/dev/null; then
+        jq -e '
+          .schema_version == 1 and
+          .evidence_kind == "digital_twin" and
+          .status == "pass" and
+          .workflow_strength == "full" and
+          ((.ao_bin_sha256 // "") | length > 0) and
+          (.runtime | type == "object") and
+          (((.checks // []) | length) >= 6) and
+          .dimensions.vil.status == "pass"
+        ' "$vil_file" >/dev/null; then
         VIL_STATUS="pass"
     else
         add_evidence_error "digital twin/VIL evidence did not pass: $(artifact_name "$vil_file")"
@@ -389,7 +416,10 @@ derive_official_evidence() {
         HIL_STATUS="$(jq -r '.status // "fail"' "$HIL_FILE")"
         HIL_WAIVER="$(jq -r '.waiver // empty' "$HIL_FILE")"
         if [[ "$HIL_STATUS" == "pass" ]]; then
-            :
+            if ! jq -e '(.targets | type == "array") and ((.targets | length) > 0) and all(.targets[]; .status == "pass" and .workflow_strength == "strong" and (.runtime | type == "object"))' "$HIL_FILE" >/dev/null; then
+                add_evidence_error "HIL evidence lacks strong target identity: $(artifact_name "$HIL_FILE")"
+                HIL_STATUS="fail"
+            fi
         elif [[ "$HIL_STATUS" == "waived" && -n "$HIL_WAIVER" ]]; then
             :
         else
@@ -546,6 +576,8 @@ DOCUMENT="$(jq -n \
     --arg security_artifact "$SECURITY_ARTIFACT" \
     --arg eval_artifact "$EVAL_ARTIFACT" \
     --arg hil_waiver "$HIL_WAIVER" \
+    --arg digital_twin_workflow_strength "$DIGITAL_TWIN_WORKFLOW_STRENGTH" \
+    --arg digital_twin_binary_digest "$DIGITAL_TWIN_BINARY_DIGEST" \
     --argjson threshold "$THRESHOLD" \
     --argjson release_readiness_score "$SCORE" \
     --argjson sil_points "$SIL_POINTS" \
@@ -554,6 +586,10 @@ DOCUMENT="$(jq -n \
     --argjson artifact_points "$ARTIFACT_POINTS" \
     --argjson security_points "$SECURITY_POINTS" \
     --argjson eval_points "$EVAL_POINTS" \
+    --argjson digital_twin_target_identity "$DIGITAL_TWIN_TARGET_IDENTITY" \
+    --argjson digital_twin_logs "$DIGITAL_TWIN_LOGS" \
+    --argjson hil_target_identity "$HIL_TARGET_IDENTITY" \
+    --argjson hil_logs "$HIL_LOGS" \
     --argjson evidence_errors "$EVIDENCE_ERRORS" \
     --argjson recommendations "$RECOMMENDATIONS" \
     '{
@@ -576,6 +612,88 @@ DOCUMENT="$(jq -n \
         status: $hil_status,
         artifact: (if $hil_artifact == "" then null else $hil_artifact end),
         waiver: (if $hil_waiver == "" then null else $hil_waiver end)
+      },
+      evidence: {
+        policy: {
+          name: "zero-trust-release-evidence",
+          official_mode: ($mode == "official"),
+          status_flags_trusted: ($mode != "official"),
+          pre_publish_blocking: ($mode == "official"),
+          threshold: $threshold
+        },
+        lanes: {
+          sil: {
+            status: $sil_status,
+            artifact: (if $sil_artifact == "" then null else $sil_artifact end),
+            evidence_kind: "software_in_loop",
+            required: ($mode == "official"),
+            blocking: ($mode == "official"),
+            freshness_required: ($mode == "official"),
+            release_version_required: ($mode == "official")
+          },
+          vil: {
+            status: $vil_status,
+            artifact: (if $vil_artifact == "" then null else $vil_artifact end),
+            evidence_kind: "digital_twin",
+            source: "digital_twin",
+            required: ($mode == "official"),
+            blocking: ($mode == "official"),
+            freshness_required: ($mode == "official"),
+            release_version_required: ($mode == "official")
+          },
+          digital_twin: {
+            status: $vil_status,
+            artifact: (if $vil_artifact == "" then null else $vil_artifact end),
+            evidence_kind: "digital_twin",
+            workflow_strength: (if $digital_twin_workflow_strength == "" then null else $digital_twin_workflow_strength end),
+            binary_digest: (if $digital_twin_binary_digest == "" then null else $digital_twin_binary_digest end),
+            target_identity: $digital_twin_target_identity,
+            logs: $digital_twin_logs,
+            required: ($mode == "official"),
+            blocking: ($mode == "official"),
+            freshness_required: ($mode == "official"),
+            release_version_required: ($mode == "official")
+          },
+          hil: {
+            status: $hil_status,
+            artifact: (if $hil_artifact == "" then null else $hil_artifact end),
+            evidence_kind: "hardware_in_loop",
+            waiver: (if $hil_waiver == "" then null else $hil_waiver end),
+            target_identity: $hil_target_identity,
+            logs: $hil_logs,
+            required: ($mode == "official"),
+            blocking: ($mode == "official" and $hil_status != "waived"),
+            freshness_required: ($mode == "official"),
+            release_version_required: ($mode == "official")
+          },
+          artifacts: {
+            status: $artifact_status,
+            artifact: (if $artifacts_artifact == "" then null else $artifacts_artifact end),
+            evidence_kind: "release_artifact_manifest",
+            required: ($mode == "official"),
+            blocking: ($mode == "official"),
+            freshness_required: false,
+            release_version_required: false
+          },
+          security: {
+            status: $security_status,
+            artifact: (if $security_artifact == "" then null else $security_artifact end),
+            evidence_kind: "security_gate",
+            required: ($mode == "official"),
+            blocking: ($mode == "official"),
+            freshness_required: ($mode == "official"),
+            release_version_required: ($mode == "official")
+          },
+          evals: {
+            status: $eval_status,
+            artifact: (if $eval_artifact == "" then null else $eval_artifact end),
+            evidence_kind: "agentops_eval_fast",
+            required: ($mode == "official"),
+            blocking: ($mode == "official"),
+            freshness_required: ($mode == "official"),
+            release_version_required: ($mode == "official")
+          }
+        }
       },
       evidence_errors: $evidence_errors,
       recommendations: $recommendations

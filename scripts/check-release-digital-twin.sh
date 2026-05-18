@@ -87,6 +87,18 @@ normalize_version() {
     printf '%s\n' "${version#v}"
 }
 
+file_sha256() {
+    local path="$1"
+
+    if [[ -z "$path" || ! -f "$path" ]]; then
+        printf ''
+    elif command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$path" | awk '{print $1}'
+    else
+        shasum -a 256 "$path" | awk '{print $1}'
+    fi
+}
+
 json_array_add() {
     local current_json="$1"
     local value="$2"
@@ -170,12 +182,14 @@ append_check() {
 write_document() {
     local generated_at
     local artifact_dir
+    local ao_bin_sha256
 
     generated_at="$(timestamp)"
     artifact_dir=""
     if [[ -n "$OUT" ]]; then
         artifact_dir="$(dirname "$OUT")"
     fi
+    ao_bin_sha256="$(file_sha256 "$AO_BIN")"
 
     DOCUMENT="$(jq -n \
         --arg generated_at "$generated_at" \
@@ -185,6 +199,7 @@ write_document() {
         --arg workflow_strength "$WORKFLOW_STRENGTH" \
         --arg release_version "$(normalize_version "$EXPECTED_VERSION")" \
         --arg ao_bin "$AO_BIN" \
+        --arg ao_bin_sha256 "$ao_bin_sha256" \
         --arg waiver "$WAIVER" \
         --arg vil_status "$DIM_VIL" \
         --arg release_smoke_status "$DIM_RELEASE_SMOKE" \
@@ -207,6 +222,7 @@ write_document() {
           workflow_strength: $workflow_strength,
           release_version: (if $release_version == "" then null else $release_version end),
           ao_bin: (if $ao_bin == "" then null else $ao_bin end),
+          ao_bin_sha256: (if $ao_bin_sha256 == "" then null else $ao_bin_sha256 end),
           waiver: (if $waiver == "" then null else $waiver end),
           timeout_seconds: $timeout_seconds,
           runtime: $runtime,

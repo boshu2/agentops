@@ -180,9 +180,21 @@ validate_manifest_artifacts() {
             .release_status == "pass" and
             .dimensions.sil.status == "pass" and
             .dimensions.vil.status == "pass" and
-            (.dimensions.hil.status == "pass" or .dimensions.hil.status == "waived")
+            (.dimensions.hil.status == "pass" or .dimensions.hil.status == "waived") and
+            .evidence.policy.name == "zero-trust-release-evidence" and
+            .evidence.policy.status_flags_trusted == false and
+            .evidence.policy.pre_publish_blocking == true and
+            .evidence.lanes.sil.artifact == "sil-evidence.json" and
+            .evidence.lanes.vil.artifact == "digital-twin-evidence.json" and
+            .evidence.lanes.digital_twin.artifact == "digital-twin-evidence.json" and
+            .evidence.lanes.digital_twin.workflow_strength == "full" and
+            ((.evidence.lanes.digital_twin.binary_digest // "") | length > 0) and
+            .evidence.lanes.hil.artifact == "hil-evidence.json" and
+            .evidence.lanes.artifacts.artifact == "release-artifacts.json" and
+            .evidence.lanes.security.artifact == "security-gate-full.json" and
+            .evidence.lanes.evals.artifact == "eval-agentops-fast.json"
         ' "$REPO_ROOT/$artifact_dir/$release_readiness" >/dev/null; then
-            printf '%s: release readiness artifact did not pass >=8 SIL/VIL/HIL gate: %s/%s\n' "$audit" "$artifact_dir" "$release_readiness"
+            printf '%s: release readiness artifact did not pass >=8 zero-trust evidence gate: %s/%s\n' "$audit" "$artifact_dir" "$release_readiness"
             return 1
         fi
         if ! jq -e '
@@ -197,6 +209,10 @@ validate_manifest_artifacts() {
             .schema_version == 1 and
             .evidence_kind == "digital_twin" and
             .status == "pass" and
+            .workflow_strength == "full" and
+            ((.ao_bin_sha256 // "") | length > 0) and
+            (.runtime | type == "object") and
+            (((.checks // []) | length) >= 6) and
             .dimensions.vil.status == "pass"
         ' "$REPO_ROOT/$artifact_dir/$digital_twin_evidence" >/dev/null; then
             printf '%s: digital twin evidence did not pass VIL gate: %s/%s\n' "$audit" "$artifact_dir" "$digital_twin_evidence"

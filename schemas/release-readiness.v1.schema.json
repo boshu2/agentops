@@ -13,6 +13,7 @@
     "release_status",
     "dimensions",
     "hil_evidence",
+    "evidence",
     "evidence_errors",
     "recommendations"
   ],
@@ -87,6 +88,78 @@
         }
       }
     },
+    "evidence": {
+      "type": "object",
+      "required": ["policy", "lanes"],
+      "additionalProperties": false,
+      "properties": {
+        "policy": {
+          "type": "object",
+          "required": [
+            "name",
+            "official_mode",
+            "status_flags_trusted",
+            "pre_publish_blocking",
+            "threshold"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "const": "zero-trust-release-evidence"
+            },
+            "official_mode": {
+              "type": "boolean"
+            },
+            "status_flags_trusted": {
+              "type": "boolean"
+            },
+            "pre_publish_blocking": {
+              "type": "boolean"
+            },
+            "threshold": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "lanes": {
+          "type": "object",
+          "required": [
+            "sil",
+            "vil",
+            "digital_twin",
+            "hil",
+            "artifacts",
+            "security",
+            "evals"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "sil": {
+              "$ref": "#/$defs/evidenceLane"
+            },
+            "vil": {
+              "$ref": "#/$defs/evidenceLane"
+            },
+            "digital_twin": {
+              "$ref": "#/$defs/evidenceLane"
+            },
+            "hil": {
+              "$ref": "#/$defs/evidenceLane"
+            },
+            "artifacts": {
+              "$ref": "#/$defs/evidenceLane"
+            },
+            "security": {
+              "$ref": "#/$defs/evidenceLane"
+            },
+            "evals": {
+              "$ref": "#/$defs/evidenceLane"
+            }
+          }
+        }
+      }
+    },
     "recommendations": {
       "type": "array",
       "items": {
@@ -120,6 +193,60 @@
         },
         "evidence_artifact": {
           "type": ["string", "null"]
+        }
+      }
+    },
+    "evidenceLane": {
+      "type": "object",
+      "required": [
+        "status",
+        "artifact",
+        "required",
+        "blocking",
+        "freshness_required",
+        "release_version_required"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pass", "fail", "skipped", "waived"]
+        },
+        "artifact": {
+          "type": ["string", "null"]
+        },
+        "evidence_kind": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "workflow_strength": {
+          "type": ["string", "null"]
+        },
+        "binary_digest": {
+          "type": ["string", "null"]
+        },
+        "target_identity": {
+          "type": ["object", "array", "null"]
+        },
+        "logs": {
+          "type": ["object", "null"]
+        },
+        "waiver": {
+          "type": ["string", "null"]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "blocking": {
+          "type": "boolean"
+        },
+        "freshness_required": {
+          "type": "boolean"
+        },
+        "release_version_required": {
+          "type": "boolean"
         }
       }
     }
