@@ -403,77 +403,127 @@ func mirrorTree(ctx *MutateContext, fixerID, srcRoot, destRoot string, res *FixR
 
 func (f skillsStaleCodexSyncFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
 	res := FixResult{FixerID: f.ID(), FindingIDs: []string{f.ID()}}
-	// 1. Re-read current state.
-	hashDrift, versionDrift, hookMissing, ok := codexSyncDrift(env)
-	if !ok {
-		res.Err = fmt.Errorf("doctor: %s: no Codex install / repo manifest to sync (refused_unsafe)", f.ID())
-		return res, res.Err
-	}
-	if !hashDrift && !versionDrift && !hookMissing {
-		res.Fixed = true
-		return res, nil
-	}
-	// 2. Preconditions.
-	skillsCodexSrc := filepath.Join(env.RepoRoot, "skills-codex")
-	hooksSrc := filepath.Join(env.RepoRoot, "hooks")
-	helperSrc := filepath.Join(env.RepoRoot, "lib", "hook-helpers.sh")
-	if !dirExists(skillsCodexSrc) {
-		res.Err = fmt.Errorf("doctor: %s: no skills-codex/ source (refused_unsafe)", f.ID())
-		return res, res.Err
-	}
-	if !dirExists(filepath.Join(ctx.HomeDir, ".codex")) {
-		res.Err = fmt.Errorf("doctor: %s: no Codex install present (refused_unsafe)", f.ID())
-		return res, res.Err
-	}
-	// 3/4. Mirror the drift surfaces, files first.
-	codexRoot := codexNativeRoot(ctx.HomeDir)
-	if err := mirrorTree(ctx, f.ID(), skillsCodexSrc, filepath.Join(codexRoot, "skills-codex"), &res); err != nil {
-		res.Err = err
-		return res, err
-	}
-	if dirExists(hooksSrc) {
-		if err := mirrorTree(ctx, f.ID(), hooksSrc, filepath.Join(codexRoot, "hooks"), &res); err != nil {
-			res.Err = err
-			return res, err
-		}
-	}
-	if fileExists(helperSrc) {
-		helper, err := os.ReadFile(helperSrc)
-		if err != nil {
-			res.Err = fmt.Errorf("doctor: %s: read hook-helpers.sh: %w", f.ID(), err)
-			return res, res.Err
-		}
-		dest := filepath.Join(codexRoot, "lib", "hook-helpers.sh")
-		if r, merr := Mutate(ctx, dest, WriteFile{Content: helper, Mode: fileMode(helperSrc)}); merr != nil {
-			res.Err = fmt.Errorf("doctor: %s: mirror hook-helpers.sh: %w", f.ID(), merr)
-			return res, res.Err
-		} else if r.OK {
-			res.ActionsTaken++
-		}
-	}
-	// Metadata stamp LAST.
-	newMeta, err := f.stampInstallMeta(env)
+
+	needsFix, err := f.codexSyncNeedsFix(env)
 	if err != nil {
 		res.Err = err
 		return res, err
 	}
-	if r, merr := Mutate(ctx, codexInstallMetaPath(ctx.HomeDir),
-		WriteFile{Content: newMeta, Mode: 0o644}); merr != nil {
-		res.Err = fmt.Errorf("doctor: %s: stamp install metadata: %w", f.ID(), merr)
-		return res, res.Err
-	} else if r.OK {
-		res.ActionsTaken++
+	if !needsFix {
+		res.Fixed = true
+		return res, nil
 	}
-	// 5. Verify post-state.
-	if !ctx.DryRun {
-		hd, vd, hm, _ := codexSyncDrift(env)
-		if hd || vd || hm {
-			res.Err = fmt.Errorf("doctor: %s: fix did not eliminate the finding", f.ID())
-			return res, res.Err
-		}
+
+	sources, err := f.codexSyncSources(ctx, env)
+	if err != nil {
+		res.Err = err
+		return res, err
+	}
+
+	if err := f.mirrorCodexSyncSources(ctx, sources, &res); err != nil {
+		res.Err = err
+		return res, err
+	}
+
+	if err := f.stampCodexInstallMeta(ctx, env, &res); err != nil {
+		res.Err = err
+		return res, err
+	}
+
+	if err := f.verifyCodexSyncFixed(ctx, env); err != nil {
+		res.Err = err
+		return res, err
 	}
 	res.Fixed = true
 	return res, nil
+}
+
+type codexSyncSources struct {
+	SkillsCodex string
+	Hooks       string
+	Helper      string
+	CodexRoot   string
+}
+
+func (f skillsStaleCodexSyncFixer) codexSyncNeedsFix(env *DetectEnv) (bool, error) {
+	hashDrift, versionDrift, hookMissing, ok := codexSyncDrift(env)
+	if !ok {
+		return false, fmt.Errorf("doctor: %s: no Codex install / repo manifest to sync (refused_unsafe)", f.ID())
+	}
+	return hashDrift || versionDrift || hookMissing, nil
+}
+
+func (f skillsStaleCodexSyncFixer) codexSyncSources(ctx *MutateContext, env *DetectEnv) (codexSyncSources, error) {
+	sources := codexSyncSources{
+		SkillsCodex: filepath.Join(env.RepoRoot, "skills-codex"),
+		Hooks:       filepath.Join(env.RepoRoot, "hooks"),
+		Helper:      filepath.Join(env.RepoRoot, "lib", "hook-helpers.sh"),
+		CodexRoot:   codexNativeRoot(ctx.HomeDir),
+	}
+	if !dirExists(sources.SkillsCodex) {
+		return codexSyncSources{}, fmt.Errorf("doctor: %s: no skills-codex/ source (refused_unsafe)", f.ID())
+	}
+	if !dirExists(filepath.Join(ctx.HomeDir, ".codex")) {
+		return codexSyncSources{}, fmt.Errorf("doctor: %s: no Codex install present (refused_unsafe)", f.ID())
+	}
+	return sources, nil
+}
+
+func (f skillsStaleCodexSyncFixer) mirrorCodexSyncSources(ctx *MutateContext, sources codexSyncSources, res *FixResult) error {
+	if err := mirrorTree(ctx, f.ID(), sources.SkillsCodex, filepath.Join(sources.CodexRoot, "skills-codex"), res); err != nil {
+		return err
+	}
+	if dirExists(sources.Hooks) {
+		if err := mirrorTree(ctx, f.ID(), sources.Hooks, filepath.Join(sources.CodexRoot, "hooks"), res); err != nil {
+			return err
+		}
+	}
+	return f.mirrorCodexHookHelper(ctx, sources, res)
+}
+
+func (f skillsStaleCodexSyncFixer) mirrorCodexHookHelper(ctx *MutateContext, sources codexSyncSources, res *FixResult) error {
+	if !fileExists(sources.Helper) {
+		return nil
+	}
+	helper, err := os.ReadFile(sources.Helper)
+	if err != nil {
+		return fmt.Errorf("doctor: %s: read hook-helpers.sh: %w", f.ID(), err)
+	}
+	dest := filepath.Join(sources.CodexRoot, "lib", "hook-helpers.sh")
+	r, err := Mutate(ctx, dest, WriteFile{Content: helper, Mode: fileMode(sources.Helper)})
+	if err != nil {
+		return fmt.Errorf("doctor: %s: mirror hook-helpers.sh: %w", f.ID(), err)
+	}
+	if r.OK {
+		res.ActionsTaken++
+	}
+	return nil
+}
+
+func (f skillsStaleCodexSyncFixer) stampCodexInstallMeta(ctx *MutateContext, env *DetectEnv, res *FixResult) error {
+	newMeta, err := f.stampInstallMeta(env)
+	if err != nil {
+		return err
+	}
+	r, err := Mutate(ctx, codexInstallMetaPath(ctx.HomeDir), WriteFile{Content: newMeta, Mode: 0o644})
+	if err != nil {
+		return fmt.Errorf("doctor: %s: stamp install metadata: %w", f.ID(), err)
+	}
+	if r.OK {
+		res.ActionsTaken++
+	}
+	return nil
+}
+
+func (f skillsStaleCodexSyncFixer) verifyCodexSyncFixed(ctx *MutateContext, env *DetectEnv) error {
+	if ctx.DryRun {
+		return nil
+	}
+	hashDrift, versionDrift, hookMissing, _ := codexSyncDrift(env)
+	if hashDrift || versionDrift || hookMissing {
+		return fmt.Errorf("doctor: %s: fix did not eliminate the finding", f.ID())
+	}
+	return nil
 }
 
 // stampInstallMeta returns the install-metadata JSON with manifest_hash and
