@@ -247,6 +247,23 @@ func TestFrontmatterCodec_DecodeLines(t *testing.T) {
 	}
 }
 
+// TestFrontmatterCodec_BoundaryRule locks the codec's frontmatter-close rule:
+// only a line that is exactly "---" (after trimming) closes the block. A line
+// that merely starts with "---" (e.g. "---draft") does NOT close it. This is a
+// deliberate, stricter rule than the legacy knowledge.ParseFrontmatter, which
+// matched any "\n---" prefix and could truncate a document early.
+func TestFrontmatterCodec_BoundaryRule(t *testing.T) {
+	codec := NewFrontmatterCodec()
+	in := "---\nid: abc\n---draft\n---\nbody here\n"
+	doc := codec.Decode(in)
+	if doc.Body != "body here" {
+		t.Errorf("Body = %q, want %q — block must close on the exact --- line, not ---draft", doc.Body, "body here")
+	}
+	if doc.ContentStart != 4 {
+		t.Errorf("ContentStart = %d, want 4 (block closes at the exact --- on line 3, not ---draft on line 2)", doc.ContentStart)
+	}
+}
+
 func TestFrontmatterCodec_ExtractStringFields(t *testing.T) {
 	codec := NewFrontmatterCodec()
 	lines := strings.Split("---\nid: \"L1\"\nmaturity: candidate\nutility: 0.8\n---\nbody\nid: ignored", "\n")

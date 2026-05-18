@@ -4002,6 +4002,118 @@ ao trace <artifact-path> [flags]
 
 ---
 
+### `ao wiki`
+
+ao wiki is the experimental unified surface for the wiki bounded context.
+
+```
+ao wiki [command]
+```
+
+**Subcommands:**
+
+#### `ao wiki doctor`
+
+Report on the wiki corpus directory and the persistent index.
+
+```
+ao wiki doctor [flags]
+```
+
+**Flags:**
+
+```
+      --base string   Corpus base directory (default: current directory)
+  -h, --help          help for doctor
+```
+
+#### `ao wiki index`
+
+Scan the .agents/ corpus and update the persistent JSONL document index.
+
+```
+ao wiki index [flags]
+```
+
+**Flags:**
+
+```
+      --base string   Corpus base directory (default: current directory)
+  -h, --help          help for index
+```
+
+#### `ao wiki inject`
+
+Assemble just-in-time .agents/ context.
+
+```
+ao wiki inject [flags]
+```
+
+#### `ao wiki lint`
+
+Walk the wiki tree and write a dated lint report.
+
+```
+ao wiki lint [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for lint
+      --vault string   Vault root (default: current directory)
+```
+
+#### `ao wiki promote`
+
+Promote mature wiki pages into authored content.
+
+```
+ao wiki promote [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for promote
+      --vault string   Vault root (default: current directory)
+```
+
+#### `ao wiki query`
+
+Answer a pending wiki question into wiki/synthesis/.
+
+```
+ao wiki query [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for query
+      --vault string   Vault root (default: current directory)
+```
+
+#### `ao wiki search`
+
+Rank documents in the wiki index against a free-text query.
+
+```
+ao wiki search <query> [flags]
+```
+
+**Flags:**
+
+```
+      --base string   Corpus base directory (default: current directory)
+  -h, --help          help for search
+      --limit int     Maximum results to print (default 20)
+      --reindex       Rebuild the index before searching
+```
+
+---
+
 ### `ao agents`
 
 Tooling for the .agents/ knowledge surface that backs the
