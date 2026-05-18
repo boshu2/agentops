@@ -75,8 +75,8 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "1..38"},
-        {"type": "stdout_contains", "value": "ok 35 validate-release-audit-artifacts skips older missing local artifact dirs"}
+        {"type": "stdout_contains", "value": "1..44"},
+        {"type": "stdout_contains", "value": "ok 41 validate-release-audit-artifacts skips older missing local artifact dirs"}
       ],
       "dimensions": ["correctness", "process_adherence", "artifact_quality"],
       "critical": true
@@ -114,7 +114,8 @@
         {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "init --non-interactive --skip-agents --skip-hooks --quiet"},
         {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "BEADS_DIR=$bd_eval_root/.beads"},
         {"type": "artifact_contains", "target": "../../.github/workflows/validate.yml", "value": "Run release smoke test"},
-        {"type": "artifact_contains", "target": "../../.github/workflows/release.yml", "value": "Generate SBOM and security report assets"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/release.yml", "value": "Generate pre-publish release evidence"},
+        {"type": "artifact_contains", "target": "../../.github/workflows/release.yml", "value": "pre-publish-evidence"},
         {"type": "artifact_contains", "target": "../../.github/workflows/release.yml", "value": "security-gate-summary.json"},
         {"type": "artifact_contains", "target": "../../scripts/ci-local-release.sh", "value": "Generate SBOM artifacts"},
         {"type": "artifact_contains", "target": "../../scripts/ci-local-release.sh", "value": "Security toolchain gate"},

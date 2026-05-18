@@ -85,6 +85,18 @@ release_readiness_required_for_audit() {
     [[ -n "$audit_date" && "$audit_date" > "2026-05-01" ]]
 }
 
+require_artifact_file() {
+    local audit="$1"
+    local artifact_dir="$2"
+    local label="$3"
+    local artifact_file="$4"
+
+    if [[ -z "$artifact_file" || ! -f "$REPO_ROOT/$artifact_dir/$artifact_file" ]]; then
+        printf '%s: missing %s artifact %s under %s\n' "$audit" "$label" "${artifact_file:-<blank>}" "$artifact_dir"
+        return 1
+    fi
+}
+
 validate_manifest_artifacts() {
     local audit="$1"
     local version="$2"
@@ -100,6 +112,10 @@ validate_manifest_artifacts() {
     local security_report
     local release_readiness
     local hil_evidence
+    local vil_evidence
+    local digital_twin_evidence
+    local eval_fast_report
+    local eval_baseline_audit
 
     schema_version="$(jq -r '.schema_version // empty' "$manifest")"
     release_version="$(jq -r '.release_version // empty' "$manifest")"
@@ -110,6 +126,10 @@ validate_manifest_artifacts() {
     security_report="$(jq -r '.security_report // empty' "$manifest")"
     release_readiness="$(jq -r '.release_readiness // empty' "$manifest")"
     hil_evidence="$(jq -r '.hil_evidence // empty' "$manifest")"
+    vil_evidence="$(jq -r '.vil_evidence // empty' "$manifest")"
+    digital_twin_evidence="$(jq -r '.digital_twin_evidence // empty' "$manifest")"
+    eval_fast_report="$(jq -r '.eval_fast_report // empty' "$manifest")"
+    eval_baseline_audit="$(jq -r '.eval_baseline_audit // empty' "$manifest")"
     manifest_artifact_dir="${manifest_artifact_dir%/}"
 
     if [[ "$schema_version" != "1" ]]; then
@@ -132,22 +152,24 @@ validate_manifest_artifacts() {
         return 1
     fi
 
-    for artifact_file in "$sbom_cyclonedx" "$sbom_spdx" "$security_report"; do
-        if [[ -z "$artifact_file" || ! -f "$REPO_ROOT/$artifact_dir/$artifact_file" ]]; then
-            printf '%s: missing manifest artifact %s under %s\n' "$audit" "${artifact_file:-<blank>}" "$artifact_dir"
-            return 1
-        fi
-    done
+    require_artifact_file "$audit" "$artifact_dir" "CycloneDX SBOM" "$sbom_cyclonedx" || return 1
+    require_artifact_file "$audit" "$artifact_dir" "SPDX SBOM" "$sbom_spdx" || return 1
+    require_artifact_file "$audit" "$artifact_dir" "security report" "$security_report" || return 1
 
-    if [[ "$strict_readiness" == "true" || -n "$release_readiness" || -n "$hil_evidence" ]]; then
-        if [[ -z "$release_readiness" || ! -f "$REPO_ROOT/$artifact_dir/$release_readiness" ]]; then
-            printf '%s: missing release readiness artifact %s under %s\n' "$audit" "${release_readiness:-<blank>}" "$artifact_dir"
-            return 1
-        fi
-        if [[ -z "$hil_evidence" || ! -f "$REPO_ROOT/$artifact_dir/$hil_evidence" ]]; then
-            printf '%s: missing HIL evidence artifact %s under %s\n' "$audit" "${hil_evidence:-<blank>}" "$artifact_dir"
-            return 1
-        fi
+    if ! jq -e '((.gate_status // "") | ascii_downcase) == "pass"' "$REPO_ROOT/$artifact_dir/$security_report" >/dev/null; then
+        printf '%s: security report did not pass: %s/%s\n' "$audit" "$artifact_dir" "$security_report"
+        return 1
+    fi
+
+    if [[ "$strict_readiness" == "true" || -n "$release_readiness" || -n "$hil_evidence" || \
+          -n "$vil_evidence" || -n "$digital_twin_evidence" || -n "$eval_fast_report" || -n "$eval_baseline_audit" ]]; then
+        require_artifact_file "$audit" "$artifact_dir" "release readiness" "$release_readiness" || return 1
+        require_artifact_file "$audit" "$artifact_dir" "HIL evidence" "$hil_evidence" || return 1
+        require_artifact_file "$audit" "$artifact_dir" "VIL evidence" "$vil_evidence" || return 1
+        require_artifact_file "$audit" "$artifact_dir" "digital twin evidence" "$digital_twin_evidence" || return 1
+        require_artifact_file "$audit" "$artifact_dir" "eval fast report" "$eval_fast_report" || return 1
+        require_artifact_file "$audit" "$artifact_dir" "eval baseline audit" "$eval_baseline_audit" || return 1
+
         if ! jq -e '
             .schema_version == 1 and
             (.release_readiness_score | type == "number") and
@@ -158,6 +180,30 @@ validate_manifest_artifacts() {
             (.dimensions.hil.status == "pass" or .dimensions.hil.status == "waived")
         ' "$REPO_ROOT/$artifact_dir/$release_readiness" >/dev/null; then
             printf '%s: release readiness artifact did not pass >=8 SIL/VIL/HIL gate: %s/%s\n' "$audit" "$artifact_dir" "$release_readiness"
+            return 1
+        fi
+        if ! jq -e '
+            .schema_version == 1 and
+            .evidence_kind == "digital_twin" and
+            .status == "pass" and
+            .dimensions.vil.status == "pass"
+        ' "$REPO_ROOT/$artifact_dir/$digital_twin_evidence" >/dev/null; then
+            printf '%s: digital twin evidence did not pass VIL gate: %s/%s\n' "$audit" "$artifact_dir" "$digital_twin_evidence"
+            return 1
+        fi
+        if ! jq -e '
+            .schema_version == 1 and
+            .status == "pass" and
+            .baseline_audit == "eval-baseline-audit.json"
+        ' "$REPO_ROOT/$artifact_dir/$eval_fast_report" >/dev/null; then
+            printf '%s: eval fast report did not pass: %s/%s\n' "$audit" "$artifact_dir" "$eval_fast_report"
+            return 1
+        fi
+        if ! jq -e '
+            (.policy_mismatch_count | type == "number") and
+            (((.stale_suite_hashes // []) | length) == 0)
+        ' "$REPO_ROOT/$artifact_dir/$eval_baseline_audit" >/dev/null; then
+            printf '%s: eval baseline audit has stale suite hashes or malformed output: %s/%s\n' "$audit" "$artifact_dir" "$eval_baseline_audit"
             return 1
         fi
     fi

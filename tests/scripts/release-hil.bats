@@ -43,7 +43,7 @@ teardown() {
     run bash "$SCRIPT" --target "local:loop:true" --out "$out"
 
     [ "$status" -eq 0 ]
-    jq -e '.status == "pass" and .targets[0].name == "loop" and .targets[0].status == "pass"' "$out"
+    jq -e '.status == "pass" and .targets[0].name == "loop" and .targets[0].status == "pass" and .targets[0].runtime.os != null and .targets[0].command_sha256 != null' "$out"
 }
 
 @test "local HIL target failure fails the evidence lane" {
@@ -53,4 +53,43 @@ teardown() {
 
     [ "$status" -eq 1 ]
     jq -e '.status == "fail" and .targets[0].status == "fail"' "$out"
+}
+
+@test "required HIL target rejects ao version only as weak evidence" {
+    out="$TMP_DIR/hil-evidence.json"
+
+    run bash "$SCRIPT" \
+        --required \
+        --expected-version "2.42.0" \
+        --target "local:loop:printf 'ao version 2.42.0\n'" \
+        --out "$out"
+
+    [ "$status" -eq 1 ]
+    jq -e '.status == "fail" and .targets[0].workflow_strength == "weak" and (.targets[0].failure_reasons | index("weak_workflow")) != null' "$out"
+}
+
+@test "required HIL target records strong install hooks rpi workflow evidence" {
+    out="$TMP_DIR/hil-evidence.json"
+
+    run bash "$SCRIPT" \
+        --required \
+        --expected-version "2.42.0" \
+        --target "local:loop:printf 'ao version 2.42.0\nao init ok\nao hooks ok\nao rpi ok\n'" \
+        --out "$out"
+
+    [ "$status" -eq 0 ]
+    jq -e '.status == "pass" and .expected_version == "2.42.0" and .targets[0].workflow_strength == "strong" and .targets[0].version_verified == true and (.targets[0].workflow_checks | index("ao-rpi")) != null' "$out"
+}
+
+@test "required HIL target rejects mismatched release version" {
+    out="$TMP_DIR/hil-evidence.json"
+
+    run bash "$SCRIPT" \
+        --required \
+        --expected-version "2.42.0" \
+        --target "local:loop:printf 'ao version 2.41.0\nao init ok\nao hooks ok\nao rpi ok\n'" \
+        --out "$out"
+
+    [ "$status" -eq 1 ]
+    jq -e '.status == "fail" and .targets[0].version_verified == false and (.targets[0].failure_reasons | index("version_mismatch")) != null' "$out"
 }

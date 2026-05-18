@@ -51,11 +51,17 @@ unless `--readiness-mode` overrides it.
 
 Targets are supplied with repeated `--hil-target` flags on the local release
 gate, with `AGENTOPS_RELEASE_HIL_TARGETS`, or by calling the HIL script
-directly:
+directly. Official targets must exercise more than `ao version`; evidence
+records the command fingerprint, OS/architecture/runtime identity, workflow
+checks, and optional release-version match.
 
 ```bash
-scripts/check-release-hil.sh --target 'local:bushido:ao version'
-scripts/check-release-hil.sh --target 'ssh:bushido:bushido:ao version'
+scripts/check-release-hil.sh \
+  --expected-version X.Y.Z \
+  --target 'local:bushido:ao version && ao init --help && ao hooks show && ao rpi status'
+scripts/check-release-hil.sh \
+  --expected-version X.Y.Z \
+  --target 'ssh:bushido:bushido:ao version && ao init --help && ao hooks show && ao rpi status'
 ```
 
 When no physical target is available for an official release, the release owner
@@ -69,12 +75,21 @@ half of the HIL dimension.
 
 ```json
 {
+  "sbom_cyclonedx": "sbom-vX.Y.Z.cyclonedx.json",
+  "sbom_spdx": "sbom-vX.Y.Z.spdx.json",
+  "security_report": "security-gate-full.json",
+  "eval_fast_report": "eval-agentops-fast.json",
+  "eval_baseline_audit": "eval-baseline-audit.json",
   "release_readiness": "release-readiness.json",
-  "hil_evidence": "hil-evidence.json"
+  "hil_evidence": "hil-evidence.json",
+  "vil_evidence": "digital-twin-evidence.json",
+  "digital_twin_evidence": "digital-twin-evidence.json"
 }
 ```
 
 `scripts/resolve-release-artifacts.sh` only resolves full release artifact sets
-that include SBOM, security, readiness, and HIL evidence. `scripts/validate-release-audit-artifacts.sh`
-validates readiness evidence for release audits generated on or after
-2026-05-02, while still accepting older historical audits.
+that include SBOMs, the security report, eval fast and baseline-audit outputs,
+readiness, HIL evidence, and digital-twin/VIL evidence.
+`scripts/validate-release-audit-artifacts.sh` validates that proof bundle for
+release audits generated on or after 2026-05-02, while still accepting older
+historical audits.

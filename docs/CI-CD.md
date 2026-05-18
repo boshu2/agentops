@@ -280,14 +280,15 @@ scripts/toolchain-validate.sh --gate --json
 
 The release workflow (`release.yml`) triggers on version tags (`v*`) or manual dispatch:
 
-1. **Pre-flight gates:** `doc-release-gate` (blocking) + `security-gate` (soft -- release proceeds if security-gate fails)
+1. **Pre-flight gates:** `doc-release-gate` and `pre-publish-evidence` are both blocking
 2. **Version resolution:** Extracts version from tag or manual input
 3. **Validation:** Verifies tag exists, Homebrew token is valid
 4. **Release notes:** Extracts from CHANGELOG.md via `scripts/extract-release-notes.sh`
-5. **Publish:** GoReleaser builds cross-platform binaries (darwin/linux/windows, amd64/arm64)
-6. **Post-publish:** Applies curated release notes, generates CycloneDX SBOM, runs full security gate, writes advisory VIL readiness, uploads SBOM + security report + readiness as release assets
-7. **Attestation:** SLSA provenance via `actions/attest-build-provenance@v4` covering all tarballs, checksums, SBOM, security report, and readiness
-8. **Homebrew:** GoReleaser auto-updates `boshu2/homebrew-agentops` tap
+5. **Pre-publish evidence:** Generates CycloneDX SBOM, runs the full security gate, and writes release readiness before GoReleaser can start
+6. **Publish:** GoReleaser builds cross-platform binaries (darwin/linux/windows, amd64/arm64)
+7. **Post-publish:** Applies curated release notes and uploads the already-passed SBOM, security report, and readiness evidence as release assets
+8. **Attestation:** SLSA provenance via `actions/attest-build-provenance@v4` covering all tarballs, checksums, SBOM, security report, and readiness
+9. **Homebrew:** GoReleaser auto-updates `boshu2/homebrew-agentops` tap
 
 Manual dispatch is a rerun path, not the primary publish path for a new version. For a fresh release, push the tag. For post-tag fixes, use `scripts/retag-release.sh vX.Y.Z`. Do not start a manual dispatch in parallel with the tag-push workflow for the same tag.
 
