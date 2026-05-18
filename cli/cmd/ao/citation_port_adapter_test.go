@@ -107,6 +107,29 @@ func TestProductionCitationAdapter_UnknownKindReturnsUnknown(t *testing.T) {
 	}
 }
 
+func TestProductionCitationAdapter_EmptyRawReturnsUnknown(t *testing.T) {
+	a := newProductionCitationAdapter()
+	cases := []ports.CitationRequest{
+		{Kind: ports.CitationKindFile, Raw: "", Cwd: t.TempDir()},
+		{Kind: ports.CitationKindFunction, Raw: "  ", Cwd: t.TempDir()},
+		{Kind: ports.CitationKindSymbol, Raw: "\t\n", Cwd: t.TempDir()},
+	}
+	for _, req := range cases {
+		t.Run(string(req.Kind), func(t *testing.T) {
+			v, err := a.Verify(context.Background(), req)
+			if err != nil {
+				t.Fatalf("Verify: %v", err)
+			}
+			if v.Status != ports.CitationStatusUnknown {
+				t.Fatalf("Status = %q, want UNKNOWN for empty Raw (reason: %s)", v.Status, v.Reason)
+			}
+			if v.Reason == "" {
+				t.Fatal("Reason must be non-empty per port contract")
+			}
+		})
+	}
+}
+
 func TestProductionCitationAdapter_HonorsContextCancellation(t *testing.T) {
 	a := newProductionCitationAdapter()
 	ctx, cancel := context.WithCancel(context.Background())

@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
@@ -35,6 +36,12 @@ func newProductionCitationAdapter() *productionCitationAdapter {
 func (a *productionCitationAdapter) Verify(ctx context.Context, req ports.CitationRequest) (ports.CitationVerdict, error) {
 	if err := ctx.Err(); err != nil {
 		return ports.CitationVerdict{}, err
+	}
+	if strings.TrimSpace(req.Raw) == "" {
+		return ports.CitationVerdict{
+			Status: ports.CitationStatusUnknown,
+			Reason: "empty Raw",
+		}, nil
 	}
 	c := Citation{Kind: string(req.Kind), Raw: req.Raw}
 	switch req.Kind {
