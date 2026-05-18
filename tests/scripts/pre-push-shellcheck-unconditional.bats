@@ -61,8 +61,11 @@ setup() {
         | grep -qE 'skip "shellcheck \(not installed\)"'
 }
 
-@test "post-mortem learning is in place for the F1 fix" {
-    # The change is anchored to a durable lesson — if the lesson file goes
-    # away, that's a signal the rationale was lost.
-    [ -f "$ROOT/.agents/learnings/2026-05-18-script-rewrites-leave-dead-variables.md" ]
+@test "post-mortem learning anchor reference is in the script comment" {
+    # The change is anchored to a durable lesson; verify the rationale link
+    # remains in the script comment header. The actual learning file lives
+    # in .agents/ (gitignored, local-only), so a file-existence check would
+    # break in CI's fresh clone. Asserting the reference in the script body
+    # instead keeps the rationale traceable without depending on local state.
+    grep -q '2026-05-18-script-rewrites-leave-dead-variables' "$GATE"
 }
