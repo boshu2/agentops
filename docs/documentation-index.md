@@ -50,6 +50,7 @@ Bridge / framing docs:
 - [Primitive Chains](architecture/primitive-chains.md) — Audited primitive set, lifecycle chains, and terminology drift ledger
 - [Ports and Adapters](architecture/ports-and-adapters.md) — Hexagonal seam: inner-hexagon domain, driving/driven adapters, ports, and how to add a new adapter
 - [Operating Loop](architecture/operating-loop.md) — Operational discipline every process skill executes: BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence (cleanroom companion to ports-and-adapters)
+- [Intent-to-Loop Hexagon](architecture/intent-to-loop-hexagon.md) — Process-level ports/adapters from BDD intent through beads, slices, validation, ratchet evidence, and loop steering
 - [ADR-0001: Adopt DDD + Hexagonal Architecture](adr/ADR-0001-ddd-hexagonal-adoption.md) — Decision record for encoding DDD + Hexagonal with `ExecutionPacket` as the tracer-bullet aggregate
 - [ADR-0002: AgentOps 3.0 Hookless-First CDLC Rearchitecture](adr/ADR-0002-agentops-3-hookless-cdlc-rearchitecture.md) — Proposed 3.0 direction: demote hooks to optional runtime adapters and center CDLC bounded contexts
 - [ADR-0003: Executable-Spec Artifact Durability](adr/ADR-0003-executable-spec-artifact-durability.md) — Where executable-spec scenarios and domain manifests live: promoted spec scenarios in tracked `spec/scenarios/`, ad hoc holdout scenarios stay in `.agents/holdout/`

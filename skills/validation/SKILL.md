@@ -54,6 +54,13 @@ Validation delegates to `/vibe`, `/post-mortem`, `/retro`, and `/forge` (plus li
 See [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../docs/learnings/orchestrator-compression-anti-pattern.md) for the live compression signature.
 See [`references/isolation-contract.md`](references/isolation-contract.md) for the four-lever model and the compression patterns `scripts/check-skill-isolation.sh` flags in phase-skill SKILL.md bodies. See [`references/best-practices.md`](references/best-practices.md) for the lifecycle principle + anti-pattern citation table.
 
+Validation owns the `validate_acceptance` port in the
+[Intent-to-Loop Hexagon](../../docs/architecture/intent-to-loop-hexagon.md).
+The roll-up must preserve bounded context, context packet, guard adapters, done
+state, and fresh proof for each accepted scenario. Apply the
+[Completion-Claim Kernel](../shared/validation-contract.md#completion-claim-kernel)
+before accepting DONE/closed/green claims.
+
 ## Execution
 
 Run the DAG in [references/dag.md](references/dag.md) — STEP 1 (vibe) → 1.5 (four-surface closure) → 1.6 (test pyramid) → 1.6b (validation-lane budget guard) → 1.7 (lifecycle: test/deps/review/perf) → 1.8 (behavioral) → 2 (post-mortem) → 3 (retro) → 4 (forge) → 5 (phase summary), no stopping between steps. That file owns the executable workflow, gate detail, blocking conditions, phase summary format, phase budgets, and the expensive-command policy.

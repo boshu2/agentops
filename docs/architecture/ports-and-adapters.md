@@ -1,6 +1,6 @@
 # Ports and Adapters
 
-> One-page overview of AgentOps's hexagonal seam. Companion to [ADR-0001: Adopt DDD + Hexagonal Architecture](../adr/ADR-0001-ddd-hexagonal-adoption.md).
+> One-page overview of AgentOps's runtime hexagonal seam. Companion to [ADR-0001: Adopt DDD + Hexagonal Architecture](../adr/ADR-0001-ddd-hexagonal-adoption.md) and [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md).
 
 AgentOps adopts Alistair Cockburn's 2005 *Hexagonal Architecture* (a.k.a. Ports and Adapters) as the load-bearing structural style for the Go runtime. The inner hexagon — the domain — is the only thing the rest of the system is allowed to depend on. Everything that talks to a runtime, a filesystem, a tracker, an LLM, or a CI workflow is an adapter, plugging into a port the domain declares.
 
@@ -87,5 +87,6 @@ A new driven adapter is a four-step recipe.
 
 - Alistair Cockburn, 2005. *Hexagonal Architecture* — <https://alistair.cockburn.us/hexagonal-architecture/>.
 - [ADR-0001: Adopt DDD + Hexagonal Architecture](../adr/ADR-0001-ddd-hexagonal-adoption.md) — the decision record this page operationalizes.
+- [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) — process-level ports/adapters from BDD intent through validation and ratchet evidence.
 - [`PRACTICE-REGISTRY.md`](https://github.com/boshu2/agentops/blob/main/PRACTICE-REGISTRY.md) — canonical slugs for `ddd-bounded-context` and `hexagonal-architecture`.
 - [Context Map](../contracts/context-map.md) — auto-generated bounded-context view of all skills by hexagonal role.
