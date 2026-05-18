@@ -69,7 +69,7 @@ write_artifact_files() {
     local dir="$FAKE_REPO/.agents/releases/local-ci/$run_id"
     printf '{"bomFormat":"CycloneDX"}\n' > "$dir/sbom-v$version.cyclonedx.json"
     printf '{"spdxVersion":"SPDX-2.3"}\n' > "$dir/sbom-v$version.spdx.json"
-    printf '{"gate_status":"pass"}\n' > "$dir/security-gate-full.json"
+    printf '{"gate_status":"PASS"}\n' > "$dir/security-gate-full.json"
     cat > "$dir/release-readiness.json" <<'EOF'
 {
   "schema_version": 1,

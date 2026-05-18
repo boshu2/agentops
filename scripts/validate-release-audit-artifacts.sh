@@ -156,7 +156,7 @@ validate_manifest_artifacts() {
     require_artifact_file "$audit" "$artifact_dir" "SPDX SBOM" "$sbom_spdx" || return 1
     require_artifact_file "$audit" "$artifact_dir" "security report" "$security_report" || return 1
 
-    if ! jq -e '.gate_status == "pass"' "$REPO_ROOT/$artifact_dir/$security_report" >/dev/null; then
+    if ! jq -e '((.gate_status // "") | ascii_downcase) == "pass"' "$REPO_ROOT/$artifact_dir/$security_report" >/dev/null; then
         printf '%s: security report did not pass: %s/%s\n' "$audit" "$artifact_dir" "$security_report"
         return 1
     fi
