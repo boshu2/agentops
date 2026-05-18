@@ -17,6 +17,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `design` — Validate product fit before discovery.
 - `discovery` — Create dense execution packets.
 - `domain` — Canonical vocabulary for human-AI software work.
+- `expert-council` — Alias for /council --mode=debate — adversarial named-persona debate. Triggers: "expert council", "dueling council", "council of <names>". Kept one release.
 - `flywheel` — Check knowledge flywheel health.
 - `forge` — Mine transcripts into learnings.
 - `goals` — Maintain AgentOps goals.
@@ -101,7 +102,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### unclassified
 
-- `expert-council` — Alias for /council --mode=debate — adversarial named-persona debate. Triggers: "expert council", "dueling council", "council of <names>". Kept one release.
+- (no unclassified skills)
 
 ## Context relationships
 

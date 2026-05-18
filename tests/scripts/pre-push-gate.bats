@@ -57,6 +57,8 @@ setup() {
     make_stub "$FAKE_REPO/scripts/validate-codex-lifecycle-guards.sh"
     make_stub "$FAKE_REPO/scripts/check-codex-parity-drift.sh"
     make_stub "$FAKE_REPO/scripts/check-quarantine-empty.sh"
+    make_stub "$FAKE_REPO/scripts/check-registry-drift.sh"
+    make_stub "$FAKE_REPO/scripts/check-bounded-contexts-drift.sh"
     make_stub "$FAKE_REPO/scripts/proof-run.sh"
     make_stub "$FAKE_REPO/scripts/check-wiring-closure.sh"
     make_stub "$FAKE_REPO/scripts/check-agentops-domain-evolution-plan.sh"
