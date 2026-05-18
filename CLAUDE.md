@@ -84,6 +84,10 @@ cd cli && make build && make test         # If you changed Go code
 cd cli && make sync-hooks                 # If you changed hooks/ or lib/hook-helpers.sh
 scripts/regen-codex-hashes.sh            # If you changed skills-codex/ files
 scripts/pre-push-gate.sh                 # Full gate (all 33 checks, ~3min)
+
+# If you touched docs/ and need the mkdocs strict check locally:
+# (system mkdocs ≤1.1.2 cannot parse the modern mkdocs.yml — needs material plugins)
+python3 -m venv .venv-mkdocs && .venv-mkdocs/bin/pip install -r requirements-docs.txt && .venv-mkdocs/bin/mkdocs build --strict
 ```
 
 ### Rules That Break CI
