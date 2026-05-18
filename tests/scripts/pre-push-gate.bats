@@ -118,6 +118,32 @@ setup() {
     make_stub "$FAKE_REPO/scripts/test-agentops-contract-canaries.sh"
     mkdir -p "$FAKE_REPO/tests/canaries"
     make_eval_baseline_audit_stub
+
+    # soc-xban safety net: auto-discover any helper-script reference in
+    # scripts/pre-push-gate.sh that the explicit list above might have
+    # missed. Catches the registries-drift class at the bats layer — same
+    # principle as the soc-zxia DDD doc generators. If a future pre-push
+    # section adds a new `bash scripts/foo.sh` or `scripts/foo.sh` call,
+    # this loop stubs it without anyone having to remember a manual edit.
+    #
+    # Edge cases not handled by this loop (skipped because the existing
+    # block uses special stub functions for them):
+    #   - scripts/pre-push-gate.sh itself (would self-stub)
+    #   - scripts/check-agents-hash-snapshot.sh (uses make_hash_snapshot_stub)
+    #   - scripts/check-home-isolation.sh (uses make_hash_snapshot_stub semantics)
+    while IFS= read -r ref_script; do
+        case "$ref_script" in
+            scripts/pre-push-gate.sh) continue ;;
+            scripts/check-agents-hash-snapshot.sh) continue ;;
+            scripts/check-home-isolation.sh) continue ;;
+        esac
+        # Idempotent: make_stub overwrites; if explicit list already stubbed
+        # it, this is a no-op.
+        if [[ ! -f "$FAKE_REPO/$ref_script" ]]; then
+            mkdir -p "$FAKE_REPO/$(dirname "$ref_script")"
+            make_stub "$FAKE_REPO/$ref_script"
+        fi
+    done < <(grep -oE '(scripts|tests|skills|hooks)/[a-zA-Z0-9_./-]+\.sh\b' "$GATE" | sort -u)
 }
 
 teardown() {
