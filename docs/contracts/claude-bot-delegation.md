@@ -103,7 +103,9 @@ Once the bot posts a comment, every subsequent comment on that PR by the bot its
 
 Setting `auto_merge: true` on a PR doesn't merge it — it merges it once **all required status checks** pass on the *current* head. If `main` moves and your PR goes BEHIND, required checks may be stale or marked failed; the PR will sit unmerged until you trigger a branch update (`gh api repos/<owner>/<repo>/pulls/<n>/update-branch -X PUT`). The bot does not auto-trigger this.
 
-In this repo, `claude-review` is a required check. If the `@claude` workflow is silent (no mention fired), the check is never set — auto-merge will sit waiting.
+In this repo, `claude-review` is a required check. The `claude.yml` workflow fires **automatically on `pull_request: opened` and `synchronize`** (head-SHA changes) — no `@claude` mention is needed to set the check on a fresh PR or after `update-branch`. The check appears as `IN_PROGRESS` while the bot reviews; wait, don't poke. The "mention-only fires the check" pattern applies only to legacy on-mention-only workflow configurations; this repo's `claude.yml` uses the broader trigger set.
+
+Validated 2026-05-18 across PRs #321–#326: every PR received `claude-review: SUCCESS` without any human `@claude` mention.
 
 ## When to use @claude
 
