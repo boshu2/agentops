@@ -131,9 +131,13 @@ teardown() {
 }
 
 @test "script wires HIL and release readiness gates" {
+    run grep -q 'write_release_sil_evidence' "$SCRIPT"
+    [ "$status" -eq 0 ]
     run grep -q 'check-release-hil.sh' "$SCRIPT"
     [ "$status" -eq 0 ]
     run grep -q 'check-release-readiness.sh' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run grep -q -- '--evidence-dir' "$SCRIPT"
     [ "$status" -eq 0 ]
 }
 
@@ -145,6 +149,8 @@ teardown() {
     run grep -q 'eval_fast_report:' "$SCRIPT"
     [ "$status" -eq 0 ]
     run grep -q 'digital_twin_evidence:' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run grep -q 'release_version: $release_version' "$SCRIPT"
     [ "$status" -eq 0 ]
 }
 

@@ -53,9 +53,11 @@ Expect:
   - `security_report`
   - `eval_fast_report` and `eval_baseline_audit`
   - `release_readiness`
+  - `sil_evidence`
   - `hil_evidence`
   - `vil_evidence` and `digital_twin_evidence`
 - `.agents/releases/local-ci/<timestamp>/release-readiness.json` has `release_status: pass` and `release_readiness_score >= 8`
+- `.agents/releases/local-ci/<timestamp>/sil-evidence.json` has `status: pass`, matching `release_version`, and the same run's local CI error count before readiness
 - `.agents/releases/local-ci/<timestamp>/hil-evidence.json` has `status: pass` or `status: waived`; passing targets record OS/architecture/runtime identity, workflow checks, command fingerprint, and release-version verification
 - `.agents/releases/local-ci/<timestamp>/digital-twin-evidence.json` has `status: pass` and `dimensions.vil.status: pass`
 - `.agents/releases/local-ci/<timestamp>/eval-agentops-fast.json` has `status: pass`, and `eval-baseline-audit.json` has no `stale_suite_hashes`

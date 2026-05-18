@@ -29,6 +29,10 @@ Official release readiness requires both:
 
 In `official` mode, the score alone is not enough. SIL, VIL, artifact,
 security, and eval dimensions must pass. HIL must pass or be explicitly waived.
+Official mode derives those dimensions from evidence JSON files under
+`--evidence-dir`; caller-provided status flags are only advisory/fast-mode
+shortcuts. Evidence files must be fresh, parseable, and version-aligned when
+`--release-version` is supplied.
 
 ## Modes
 
@@ -81,6 +85,7 @@ half of the HIL dimension.
   "eval_fast_report": "eval-agentops-fast.json",
   "eval_baseline_audit": "eval-baseline-audit.json",
   "release_readiness": "release-readiness.json",
+  "sil_evidence": "sil-evidence.json",
   "hil_evidence": "hil-evidence.json",
   "vil_evidence": "digital-twin-evidence.json",
   "digital_twin_evidence": "digital-twin-evidence.json"
@@ -89,7 +94,7 @@ half of the HIL dimension.
 
 `scripts/resolve-release-artifacts.sh` only resolves full release artifact sets
 that include SBOMs, the security report, eval fast and baseline-audit outputs,
-readiness, HIL evidence, and digital-twin/VIL evidence.
+readiness, SIL evidence, HIL evidence, and digital-twin/VIL evidence.
 `scripts/validate-release-audit-artifacts.sh` validates that proof bundle for
 release audits generated on or after 2026-05-02, while still accepting older
 historical audits.

@@ -51,4 +51,21 @@ line_of() {
     [ "$status" -eq 0 ]
     run grep -Fq 'gh release upload "$VERSION" release-artifacts/security-gate-summary.json --clobber' "$WORKFLOW"
     [ "$status" -eq 0 ]
+    run grep -Fq 'gh release upload "$VERSION" release-artifacts/sil-evidence.json --clobber' "$WORKFLOW"
+    [ "$status" -eq 0 ]
+}
+
+@test "release readiness uses evidence files instead of caller status strings" {
+    run grep -Fq -- '--evidence-dir release-artifacts' "$WORKFLOW"
+    [ "$status" -eq 0 ]
+    run grep -Fq 'sil-evidence.json' "$WORKFLOW"
+    [ "$status" -eq 0 ]
+    run grep -Fq 'digital-twin-evidence.json' "$WORKFLOW"
+    [ "$status" -eq 0 ]
+    run grep -Fq 'eval-agentops-fast.json' "$WORKFLOW"
+    [ "$status" -eq 0 ]
+    run grep -Fq -- '--sil pass' "$WORKFLOW"
+    [ "$status" -eq 1 ]
+    run grep -Fq -- '--security pass' "$WORKFLOW"
+    [ "$status" -eq 1 ]
 }
