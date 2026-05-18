@@ -267,6 +267,7 @@ Bridge / framing docs:
 - [Lesson Format](contracts/lesson-format.md) — Schema for `.agents/learnings/` entries with frontmatter (id/severity/trigger/verifiable/rule/falsified_by/practice/related) and graduation path (unassigned → proposed → accepted → encoded)
 - [Bounded Contexts (yaml)](contracts/bounded-contexts.yaml) — Canonical BC1-BC5 definitions (id/name/responsibility/ports/center-of-gravity); registry doc prose must match this yaml (drift-checked by `scripts/check-bounded-contexts-drift.sh`, soc-zxia.2)
 - [add-validate-job scaffolder](https://github.com/boshu2/agentops/blob/main/scripts/add-validate-job.sh) — CI integration scaffolder; emits all 5 touch-points (workflow + summary needs + summary echo + pre-push + bats stub + AGENTS table) atomically when adding a new `validate-*` job (soc-3oij)
+- [@claude Bot Delegation](contracts/claude-bot-delegation.md) — Operational runbook for the `@claude` GitHub App: permissions, triggers, status decoding, gotchas, when to delegate
 - [Context Map](contracts/context-map.md) — Auto-generated bounded-context map of skills by hexagonal role with relationship and data-flow views (see ADR-0001)
 - [Skill Domain Map](contracts/skill-domain-map.md) — V0 DDD map assigning every shared skill to one explicit skill domain with ports, artifacts, and adapters
 - [Skill Ports and Adapters](contracts/skill-ports-and-adapters.md) — V0 skill-boundary vocabulary for inbound ports, outbound ports, adapters, context packets, and guard surfaces
