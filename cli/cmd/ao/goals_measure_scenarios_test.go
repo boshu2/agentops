@@ -70,13 +70,41 @@ func setupMeasureScenarioProject(t *testing.T, goalsMD string, withArtifact bool
 	if err := os.Chdir(dir); err != nil {
 		t.Fatalf("chdir: %v", err)
 	}
+	// soc-hwgm/soc-xyt1: save+restore EVERY goalsMeasure package-level
+	// global the command body reads. Previously only goalsFile and
+	// goalsMeasureScenariosOnly were saved, leaving the other 4 measure
+	// globals + the `output` global open to leak across tests under
+	// -shuffle on. Symptom: TestGoalsMeasure_MissingArtifactYieldsUnknown
+	// got empty stdout (unmarshal error) because prior test left
+	// goalsMeasureDirectives=true, which made goalsMeasureCmd.RunE skip
+	// the scenario-only branch and call into a different code path.
 	oldGoalsFile := goalsFile
 	oldScenariosOnly := goalsMeasureScenariosOnly
+	oldGoalID := goalsMeasureGoalID
+	oldDirectives := goalsMeasureDirectives
+	oldExcludeTag := goalsMeasureExcludeTag
+	oldTotalTimeout := goalsMeasureTotalTimeout
+	oldOutput := output
+	oldDryRun := dryRun
 	t.Cleanup(func() {
 		_ = os.Chdir(wd)
 		goalsFile = oldGoalsFile
 		goalsMeasureScenariosOnly = oldScenariosOnly
+		goalsMeasureGoalID = oldGoalID
+		goalsMeasureDirectives = oldDirectives
+		goalsMeasureExcludeTag = oldExcludeTag
+		goalsMeasureTotalTimeout = oldTotalTimeout
+		output = oldOutput
+		dryRun = oldDryRun
 	})
+	// Zero out all measure globals on entry so a leaked value from a
+	// prior test cannot taint this test's read.
+	goalsMeasureScenariosOnly = false
+	goalsMeasureGoalID = ""
+	goalsMeasureDirectives = false
+	goalsMeasureExcludeTag = ""
+	goalsMeasureTotalTimeout = 0
+	dryRun = false
 	goalsFile = "GOALS.md"
 	return dir
 }
