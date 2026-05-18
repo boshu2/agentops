@@ -127,6 +127,26 @@ GIT
     grep -qx '*' "$mock/.agents/.gitignore"
 }
 
+@test "session-start: existing child gitignore owns .agents policy without root blanket" {
+    # A co-located child policy can allowlist durable .agents artifacts. A root
+    # `/.agents/` blanket would shadow that nested policy by preventing Git from
+    # descending into the directory.
+    local mock="$TMP_TEST_DIR/mock-child-policy-session"
+    mkdir -p "$mock/.agents/findings"
+    git -C "$mock" init -q >/dev/null 2>&1
+    cat > "$mock/.agents/.gitignore" <<'GIT'
+*
+!.gitignore
+!findings/
+!findings/**
+GIT
+    (cd "$mock" && bash "$HOOKS_DIR/session-start.sh" >/dev/null 2>&1 || true)
+    if [ -f "$mock/.gitignore" ]; then
+        ! grep -qE '^/?\.agents(/|$)' "$mock/.gitignore"
+    fi
+    grep -qx '!findings/\*\*' "$mock/.agents/.gitignore"
+}
+
 @test "session-start: does not double-append /.agents/* when already present" {
     # The hook's pre-existing grep for `^/\.agents/$` was too narrow and
     # double-appended `/.agents/` whenever the repo's gitignore used the
@@ -498,14 +518,34 @@ EOF
 }
 
 @test "dangerous-git-guard: staged .agents add blocks commit" {
+    cat > "$MOCK_REPO/.agents/.gitignore" <<'GIT'
+*
+!.gitignore
+GIT
     mkdir -p "$MOCK_REPO/.agents/rpi"
     printf '{}\n' > "$MOCK_REPO/.agents/rpi/execution-packet.json"
-    git -C "$MOCK_REPO" add .agents/rpi/execution-packet.json
+    git -C "$MOCK_REPO" add -f .agents/rpi/execution-packet.json
 
     run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
         -- "$MOCK_REPO" '{"tool_input":{"command":"git commit -m leak"}}' "$HOOKS_DIR/dangerous-git-guard.sh"
     [ "$status" -eq 2 ]
-    [[ "$output" == *"repo-root .agents/ is local runtime state"* ]]
+    [[ "$output" == *".agents/rpi/execution-packet.json"* ]]
+}
+
+@test "dangerous-git-guard: staged .agents allowlist path is commit-eligible" {
+    mkdir -p "$MOCK_REPO/.agents/findings"
+    cat > "$MOCK_REPO/.agents/.gitignore" <<'GIT'
+*
+!.gitignore
+!findings/
+!findings/**
+GIT
+    printf '{"ok":true}\n' > "$MOCK_REPO/.agents/findings/registry.jsonl"
+    git -C "$MOCK_REPO" add .agents/.gitignore .agents/findings/registry.jsonl
+
+    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
+        -- "$MOCK_REPO" '{"tool_input":{"command":"git commit -m findings"}}' "$HOOKS_DIR/dangerous-git-guard.sh"
+    [ "$status" -eq 0 ]
 }
 
 @test "dangerous-git-guard: staged .agents deletion allows cleanup commit" {
