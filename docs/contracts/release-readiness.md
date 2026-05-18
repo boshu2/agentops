@@ -51,11 +51,17 @@ unless `--readiness-mode` overrides it.
 
 Targets are supplied with repeated `--hil-target` flags on the local release
 gate, with `AGENTOPS_RELEASE_HIL_TARGETS`, or by calling the HIL script
-directly:
+directly. Official targets must exercise more than `ao version`; evidence
+records the command fingerprint, OS/architecture/runtime identity, workflow
+checks, and optional release-version match.
 
 ```bash
-scripts/check-release-hil.sh --target 'local:bushido:ao version'
-scripts/check-release-hil.sh --target 'ssh:bushido:bushido:ao version'
+scripts/check-release-hil.sh \
+  --expected-version X.Y.Z \
+  --target 'local:bushido:ao version && ao init --help && ao hooks show && ao rpi status'
+scripts/check-release-hil.sh \
+  --expected-version X.Y.Z \
+  --target 'ssh:bushido:bushido:ao version && ao init --help && ao hooks show && ao rpi status'
 ```
 
 When no physical target is available for an official release, the release owner

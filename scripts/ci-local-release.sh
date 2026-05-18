@@ -9,7 +9,7 @@ set -euo pipefail
 #   ./scripts/ci-local-release.sh              # full gate (parallel where possible)
 #   ./scripts/ci-local-release.sh --fast       # skip heavy checks (~20s vs ~100s)
 #   ./scripts/ci-local-release.sh --security-mode quick
-#   ./scripts/ci-local-release.sh --release-version X.Y.Z --hil-target 'local:gpu:ao version'
+#   ./scripts/ci-local-release.sh --release-version X.Y.Z --hil-target 'local:gpu:ao version && ao init --help && ao hooks show && ao rpi status'
 #
 # Exit codes:
 #   0 = all checks passed
@@ -660,9 +660,14 @@ release_readiness_mode() {
 
 run_release_hil_evidence() {
     local mode
+    local version
     local args=("--out" "$ARTIFACT_DIR/hil-evidence.json")
 
     mode="$(release_readiness_mode)"
+    version="$(release_version)"
+    if [[ -n "$version" ]]; then
+        args+=("--expected-version" "$version")
+    fi
     if [[ "$mode" == "official" ]]; then
         args+=("--required")
     fi
