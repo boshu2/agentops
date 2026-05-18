@@ -17,6 +17,23 @@
 > Which bounded context from [`docs/contracts/context-map.md`](../contracts/context-map.md) does this work belong to? If it crosses contexts, this is two issues, not one.
 > The bead must carry exactly one matching label: `bc-corpus`, `bc-validation`, `bc-loop`, `bc-factory`, or `bc-runtime`.
 
+## Hexagonal boundary
+
+> Fill this from [`docs/architecture/intent-to-loop-hexagon.md`](../architecture/intent-to-loop-hexagon.md). This is the handoff contract for the next agent.
+
+```yaml
+hexagon:
+  inbound_port: shape_intent
+  bounded_context: <bc-* label>
+  driving_adapter: <operator prompt | /discovery | /brainstorm | /design>
+  driven_adapters:
+    - <bd/br/filesystem/search/etc.>
+  guard_adapters:
+    - <pre-mortem/schema/scope/etc.>
+  context_packet: <intent issue path or bead id>
+  done_state: "all scenarios testable; evidence list concrete; non-goals explicit"
+```
+
 ## Domain terms
 
 > Domain terms used below, each anchored to the ubiquitous-language register at [`skills/domain/references/`](../../skills/domain/references/) or [`skills/standards/references/architecture-terms.md`](../../skills/standards/references/architecture-terms.md). New terms must be added to the register before they are used here.
@@ -90,6 +107,7 @@ Feature: <feature name from above>
 A `/pre-mortem` or `/council` must verify these before the issue leaves discovery:
 
 - [ ] Acceptance examples are written in Given/When/Then and each is testable as written
+- [ ] Hexagonal boundary block names the inbound port, bounded context, adapters, context packet, and done state
 - [ ] Bounded context is named, present in the context map, and represented by exactly one `bc-*` label
 - [ ] All domain terms used are registered in the ubiquitous-language register
 - [ ] Non-goals are explicit
