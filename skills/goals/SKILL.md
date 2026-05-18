@@ -46,6 +46,8 @@ output_contract: GOALS.md
 /goals validate           # Validate structure
 /goals prune              # Remove stale gates
 /goals migrate            # Migrate YAML to Markdown
+/goals trace              # Render/audit the executable-spec chain
+/goals render             # Export directive scenarios as Gherkin
 ```
 
 ## Format Support
@@ -75,12 +77,18 @@ Parse the user's input:
 | `/goals prune`, "prune goals", "clean goals" | **prune** | `ao goals prune` |
 | `/goals migrate`, "migrate goals" | **migrate** | `ao goals migrate` |
 | `/goals scenarios`, "directive scenarios", "link a scenario" | **scenarios** | `ao goals scenarios` |
+| `/goals trace`, "trace lineage", "orphan audit" | **trace** | `ao goals trace` |
+| `/goals render`, "export gherkin", "feature file" | **render** | `ao goals render` |
 
 `ao goals scenarios` links each directive to behavioral scenarios (the
 `ao scenario` family) so GOALS.md is an executable BDD spec: bare lists every
 directive's linked scenarios with link health; `--create "<goal>" --directive N`
 scaffolds and bidirectionally links a scenario; `--lint` checks the link graph.
 See `docs/adr/ADR-0003`.
+
+`ao goals trace` and `ao goals render` render and audit the executable-spec
+chain; `ao goals steer recommend`/`apply` drive the auto re-steer loop. Their
+contracts are documented in `references/executable-spec-chain.md`.
 
 ## Measure Mode (default) — Observe
 
@@ -104,6 +112,35 @@ For each directive, assess whether recent work has addressed it:
 - Check git log for commits mentioning the directive title
 - Check beads/issues related to the directive topic
 - Rate each directive: addressed / partially-addressed / gap
+
+### Step 2b: Scenario Satisfaction (executable-spec fitness)
+
+`ao goals measure` also gates on **scenario satisfaction** — the fraction of a
+directive's linked behavioral scenarios that currently pass. Each directive in
+the `--json` / `--directives` output carries a `scenario_satisfaction` block:
+
+```jsonc
+"scenario_satisfaction": {
+  "linked": 4,            // scenarios linked to this directive
+  "satisfied": 3,         // scenarios whose latest result is PASS
+  "ratio": 0.75,          // satisfied / linked
+  "threshold": 0.8,       // directive's required ratio
+  "status": "RED"         // GREEN | YELLOW | RED — RED when ratio < threshold
+}
+```
+
+A directive below its threshold is `RED` and drags overall fitness down.
+
+Use `--scenarios-only` to evaluate just the executable-spec layer and skip the
+shell gate-command execution — fast feedback while iterating on scenarios:
+
+```bash
+ao goals measure --scenarios-only -o json
+```
+
+Scenario results are read from the scenario result artifacts (see
+`ao scenario` family); the exact aggregation path and exit-code semantics are
+in `references/executable-spec-chain.md`.
 
 ### Step 3: Report
 
@@ -213,6 +250,26 @@ ao goals steer remove 3
 ao goals steer prioritize 2 1
 ```
 
+### Step 4: Auto Re-Steer (F5) — chronic failure mutates the directive
+
+When a directive's scenarios fail chronically, the re-steer engine recommends a
+directive mutation from the verdict ledger:
+
+```bash
+ao goals steer recommend                 # show recommendations; GOALS.md untouched
+ao goals steer apply                     # apply the top recommendation (human-gated)
+ao goals steer apply --auto --yes        # non-interactive consent for scripts
+ao goals steer apply --policy docs/re-steer-policy.json
+```
+
+`recommend` is read-only — it runs the policy engine over the verdict ledger and
+prints recommended mutations plus skip reasons. `apply` mutates GOALS.md only
+when the policy's `auto_apply` is true **and** the operator confirms (interactive
+prompt, or `--auto`/`--yes` for scripts). Every mutation routes through the
+non-lossy directive-block patcher — never a full re-render. Policy, ledger, and
+human-gate semantics: `references/executable-spec-chain.md` and
+`docs/adr/ADR-0006`.
+
 ## Add Mode
 
 Add a single goal to the goals file. Format-aware — writes to GOALS.yaml or GOALS.md depending on which format is detected.
@@ -303,6 +360,36 @@ ao goals migrate               # Migrate GOALS.yaml to latest YAML version
 
 The `--to-md` flag creates a GOALS.md with mission, north/anti stars sections, and converts existing goals into the Gates table format. The original YAML file is backed up.
 
+## Trace Mode (F4) — render and audit the executable-spec chain
+
+`ao goals trace` renders the directive → scenario → bead → verdict → learning
+lineage and audits it for defects:
+
+```bash
+ao goals trace --from d-fitness-gate-bdd        # lineage tree from a directive
+ao goals trace --from s-2026-05-17-001 -o json  # line-delimited JSON graph
+ao goals trace --orphans                         # whole-chain gap audit
+ao goals trace --orphans --strict                # warnings also fail (exit 1)
+```
+
+- `--from <id>` roots the trace at any directive, scenario, or bead ID.
+- `--orphans` audits the whole chain: broken references are **errors** (always
+  non-zero exit), missing yields are **warnings**.
+- `--strict` escalates warning-class defects to a non-zero exit (ADR-0005 §4.2).
+
+Stable directive IDs (`d-...`) are the link anchors — never display numbers.
+The link grammar is `docs/adr/ADR-0005`.
+
+## Render Mode (F4) — export Gherkin feature files
+
+`ao goals render` exports the directive-linked scenarios as a Gherkin feature
+file so the executable spec can be consumed by external BDD tooling:
+
+```bash
+ao goals render                       # print Gherkin to stdout
+ao goals render --out spec.feature     # write Gherkin to a file
+```
+
 ## Examples
 
 ### Checking fitness and directive gaps
@@ -358,3 +445,4 @@ The `--to-md` flag creates a GOALS.md with mission, north/anti stars sections, a
 
 - [references/generation-heuristics.md](references/generation-heuristics.md)
 - [references/goals-schema.md](references/goals-schema.md)
+- [references/executable-spec-chain.md](references/executable-spec-chain.md)

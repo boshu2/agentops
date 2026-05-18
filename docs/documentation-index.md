@@ -53,6 +53,9 @@ Bridge / framing docs:
 - [ADR-0001: Adopt DDD + Hexagonal Architecture](adr/ADR-0001-ddd-hexagonal-adoption.md) — Decision record for encoding DDD + Hexagonal with `ExecutionPacket` as the tracer-bullet aggregate
 - [ADR-0002: AgentOps 3.0 Hookless-First CDLC Rearchitecture](adr/ADR-0002-agentops-3-hookless-cdlc-rearchitecture.md) — Proposed 3.0 direction: demote hooks to optional runtime adapters and center CDLC bounded contexts
 - [ADR-0003: Executable-Spec Artifact Durability](adr/ADR-0003-executable-spec-artifact-durability.md) — Where executable-spec scenarios and domain manifests live: promoted spec scenarios in tracked `spec/scenarios/`, ad hoc holdout scenarios stay in `.agents/holdout/`
+- [ADR-0004: Domain-Slice Manifest Contract](adr/ADR-0004-domain-slice-manifest-contract.md) — Schema and resolution rules for `docs/domains/<name>/manifest.yaml`, the domain-scoped boundary contract consumed by `ao rpi phased --domain`
+- [ADR-0005: Trace-Link Convention](adr/ADR-0005-trace-link-convention.md) — The directive→scenario→bead→verdict→learning link grammar that `ao goals trace` renders and audits, including warning/error defect classes and `--strict` escalation
+- [ADR-0006: Re-Steer Policy and Mutation Safety](adr/ADR-0006-re-steer-policy-and-mutation-safety.md) — The `docs/re-steer-policy.json` engine, human-gate, and non-lossy GOALS.md patcher that govern `ao goals steer recommend`/`apply`
 - [PDC Framework](architecture/pdc-framework.md) — Prevent, Detect, Correct quality control approach
 - [FAAFO Alignment](architecture/faafo-alignment.md) — FAAFO promise framework for vibe coding value
 - [Failure Patterns](architecture/failure-patterns.md) — The 12 failure patterns reference guide
@@ -62,7 +65,17 @@ Bridge / framing docs:
 - [Skills Reference](SKILLS.md) — Complete reference for all AgentOps skills
 - [Skills Decision Tree](skills-decision-tree.md) — "Which skill do I need next?" — single source of truth linked from harvest, compile, knowledge-activation, and quickstart SKILL.md
 - [Skill API](SKILL-API.md) — Frontmatter fields, context declarations, enforcement status
-- [JSM Skill Absorption Matrix](reference/jsm-skill-absorption.md) — Disposition table for the 2026-05-05 Bushido standalone JSM skill set
+- [JSM Skill Standards Snapshot](reference/jsm-skill-standards.md) — Pattern-only snapshot of the 118-skill local JSM corpus and publishing standards
+- [JSM CLI Capability Map](reference/jsm-cli-capability-map.md) — Read-only and mutating `jsm` command surfaces for clean-room skill analysis
+- [JSM Clean-Room Extraction Policy](reference/jsm-clean-room-extraction-policy.md) — Allowed and disallowed observations when learning from proprietary skill corpora
+- [Skill Quality Rubric](reference/skill-quality-rubric.md) — Scoring rubric for repo-runtime, JSM-export, and mega-skill readiness
+- [JSM-Informed AgentOps Gap Audit](reference/jsm-agentops-gap-audit.md) — Structural gap report comparing AgentOps skills with the JSM package pattern
+- [JSM-Informed Pilot Upgrade Backlog](reference/jsm-pilot-upgrade-backlog.md) — First candidate AgentOps skill upgrades
+- [JSM Skill Absorption Matrix](reference/jsm-skill-absorption.md) — Disposition table for the older 2026-05-05 Bushido standalone JSM skill set
+- [AgentOps Domain Evolution BDD](reference/agentops-domain-evolution-bdd.md) — Gherkin acceptance contract for skill, CLI, and hook evolution
+- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 77 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains
+- [AgentOps Hexagonal Architecture Map](reference/agentops-hexagonal-architecture-map.md) — Bounded contexts, ports, adapters, and proof gates for the evolution program
+- [AgentOps Domain Evolution Plan](reference/agentops-domain-evolution-plan.md) — Sequenced bootstrap and evolution plan anchored to `soc-y5vh`
 - [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph
 - [skill-builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md) — Scaffold or absorb new SKILL.md files against the unified template
 - [skill-auditor](https://github.com/boshu2/agentops/blob/main/skills/skill-auditor/SKILL.md) — Two-pass audit of an existing SKILL.md against the unified template (15 checks)

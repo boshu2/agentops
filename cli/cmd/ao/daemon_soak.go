@@ -422,7 +422,7 @@ func writeDaemonSoakEvents(path string, events []daemonpkg.LedgerEvent) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	enc := json.NewEncoder(file)
 	for _, event := range events {
 		if err := enc.Encode(event); err != nil {

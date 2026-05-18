@@ -89,7 +89,11 @@ You can also install from [release binaries](https://github.com/boshu2/agentops/
 
 ## See It Work
 
-**One command: per-phase model routing across Claude and Codex**
+**The problem:** Coding agents are useful, but most teams still run them like isolated chat sessions. Every session starts cold. Prior attempts, warnings, decisions, and fixes scatter across chats, commits, and memory — so agents repeat mistakes, miss edge cases, and leave no reviewable proof trail.
+
+**What AgentOps does:** It compiles the engineering practices teams already trust — XP, BDD/Gherkin, DDD, TDD — into the workflow your agents actually run. Intent is broken into bounded slices, each slice gets a first failing test and a write scope, and every phase boundary is a gate that records evidence.
+
+**One loop: intent in, verified change out — across Claude and Codex**
 
 ```text
 $ ao rpi "add rate limiting to /login"
@@ -101,7 +105,7 @@ $ ao rpi "add rate limiting to /login"
 [recorded]           .agents/runs/2026-05-07-rate-limit/
 ```
 
-Claude does discovery, Codex implements, a fresh Claude validates, all in one loop with state preserved across boundaries. Nobody else does this.
+Research, plan, pre-mortem, implement, validate — each boundary is a gate, not a suggestion, and each leaves a file-backed trace. Mix models per phase: Claude discovers, Codex implements, a fresh Claude validates, all in one loop with state preserved across boundaries.
 
 And when you want a second opinion before shipping: `/council --mixed`
 
@@ -142,6 +146,8 @@ Everything else plugs into that waist: CI/CD repeats the proof, SRE/DORA measure
 
 Atomic process is the rule: one behavior, one bounded context, one first failing test, one write scope, one acceptance proof, and one learning only when it changes future behavior.
 
+That waist is executable, not advisory. `GOALS.md` declares intent as directives; `/scenario` and `ao goals render` turn each directive into behavioral acceptance examples — exportable as Gherkin `.feature` files; `ao rpi phased --domain <name>` builds inside one bounded context with a declared read scope; and `ao goals measure` scores whether the result actually satisfies the spec. Intent, behavior, build, and validation stay linked end to end — the executable-spec chain.
+
 ---
 
 <!-- agentops:claim:AOP-CLAIM-README-FACTORY-CONTEXT -->
@@ -172,6 +178,8 @@ All state lives in local `.agents/` — plain text you can grep, diff, and revie
 | No validation gates, no automated capture | Sessions write to it automatically; councils validate it |
 | Doesn't compound; you maintain it manually | Daemon defrags, evolves, and compounds it overnight |
 | Read-only artifact | Writes itself: agents that use it also produce it |
+
+`.agents/` is a wiki both humans and agents read: agents traverse the markdown natively, and you can open the same directory as an Obsidian vault — `[[wikilinks]]` resolve and every entry diffs in git. Maintenance is mechanical, not voluntary: the agents that consume the wiki also produce it.
 
 More: [docs/wiki-for-agents.md](docs/wiki-for-agents.md) · [docs/trust-factory.md](docs/trust-factory.md).
 

@@ -72,6 +72,12 @@ Dream owns the knowledge compounding layer; `$evolve` owns the code compounding 
 
 **Each cycle is a COMPLETE $rpi run** — all 3 phases (discovery → implementation → validation). Never invoke a partial RPI. If a task is too large for one cycle, break it into smaller sub-tasks during discovery and let `$crank` handle the waves. Evolve's job is to keep the loop turning, not to micro-manage individual tasks.
 
+For broad AgentOps 3.0 domain evolution across skills, CLI, hooks, docs, tests,
+beads, and knowledge, first read
+[references/domain-evolution-bootstrap.md](references/domain-evolution-bootstrap.md).
+It supplies the BDD/DDD/Hexagonal/TDD/XP control surface and the clean-room
+skill-factory guardrails.
+
 **Break large work into sub-RPI cycles.** When work selection identifies a massive task (7+ issues, multi-subsystem scope), decompose it during `$rpi`'s discovery phase into an epic with waves. One evolve cycle = one `$rpi` run = one complete lifecycle. If the epic is too large for a single session, `$rpi`'s built-in retry and `--from=` resume handle continuation.
 
 ### Anti-Patterns (DO NOT)
@@ -731,6 +737,7 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - [references/artifacts.md](references/artifacts.md)
 - [references/compounding.md](references/compounding.md)
 - [references/convergence-mechanics.md](references/convergence-mechanics.md)
+- [references/domain-evolution-bootstrap.md](references/domain-evolution-bootstrap.md)
 - [references/cycle-history.md](references/cycle-history.md)
 - [references/examples.md](references/examples.md)
 - [references/goals-schema.md](references/goals-schema.md)

@@ -172,7 +172,7 @@ SendMessage(
 )
 ```
 
-**R2 timeout (default: 90s):** If a judge doesn't respond to R2 within `COUNCIL_R2_TIMEOUT`, use their R1 verdict for consolidation. See `skills/council/references/debate-protocol.md` for full timeout handling.
+**R2 timeout (default: 90s):** If a judge doesn't respond to R2 within `COUNCIL_R2_TIMEOUT`, use their R1 verdict for consolidation. See `skills/council/references/adversarial-protocol.md` for full timeout handling.
 
 ### Swarm Worker Retry
 

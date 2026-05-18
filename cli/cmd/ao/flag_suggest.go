@@ -26,7 +26,7 @@ func flagErrorWithSuggestion(cmd *cobra.Command, err error) error {
 		return err
 	}
 	if guess := closestKnownFlag(cmd, bad); guess != "" {
-		return fmt.Errorf("%w\n\nDid you mean --%s?\n  Run: %s --%s ...", err, guess, cmd.CommandPath(), guess)
+		return fmt.Errorf("%w\n\nDid you mean --%s?\n  Run: %s --%s <args>", err, guess, cmd.CommandPath(), guess)
 	}
 	return fmt.Errorf("%w\n\nRun '%s --help' to see available flags", err, cmd.CommandPath())
 }

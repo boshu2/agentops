@@ -113,6 +113,12 @@ lists each directive's linked scenarios; `ao goals scenarios --lint` checks
 the link graph. Ad hoc holdout scenarios authored with `ao scenario add`
 stay unlinked until promoted. See the `/goals` skill and `docs/adr/ADR-0003`.
 
+Once linked, a scenario's pass/fail feeds the directive's fitness:
+`ao goals measure` rolls linked scenario results into a per-directive
+`scenario_satisfaction` ratio (RED below threshold), and `ao goals trace`
+renders the directive → scenario → bead → verdict → learning lineage and
+audits it for orphans. See the `/goals` skill for both surfaces.
+
 ### Step 5: Integration with Validation
 
 Scenarios are consumed by **STEP 1.8** in the `/validation` skill. During

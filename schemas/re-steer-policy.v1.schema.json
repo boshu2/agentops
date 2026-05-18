@@ -1,0 +1,73 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://agentops.dev/schemas/re-steer-policy.v1.schema.json",
+    "title": "AgentOps Re-Steer Policy v1",
+    "description": "Policy controlling when and how ao goals re-steer proposes or applies GOALS.md directive mutations. Stored at docs/re-steer-policy.json (or a path passed via --policy). See docs/adr/ADR-0006-re-steer-policy-and-mutation-safety.md for the full contract.",
+    "practices": ["lean-startup", "dora-metrics", "design-by-contract"],
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "minimum_evidence_count",
+        "failure_streak_length",
+        "cooldown_iterations",
+        "allowed_mutation_types",
+        "max_priority_bump",
+        "auto_apply",
+        "allow_steer_flip"
+    ],
+    "properties": {
+        "$schema": {
+            "type": "string",
+            "description": "Optional self-reference to the schema URI for editor tooling."
+        },
+        "minimum_evidence_count": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 5,
+            "description": "Minimum number of completed ao-goals-measure iterations (ledger records) a directive must have before it is eligible for any mutation proposal. Prevents premature decisions on sparse data. An iteration is one completed ao goals measure run that records a scenario_verdict for the directive."
+        },
+        "failure_streak_length": {
+            "type": "integer",
+            "minimum": 2,
+            "default": 3,
+            "description": "Number of consecutive 'fail' scenario_verdict values required before a directive is eligible for a mutation proposal. MUST be >= 2 — a single fresh failure must never trigger an applied mutation (ADR-0006 I-1). The schema minimum: 2 enforces this invariant machine-checkably."
+        },
+        "cooldown_iterations": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 5,
+            "description": "Number of iterations a directive must cool down after a mutation proposal or application before it is eligible again. Iteration count is ledger-based (one completed ao goals measure run = one iteration), not time-based."
+        },
+        "allowed_mutation_types": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "priority_bump",
+                    "setpoint_tighten",
+                    "setpoint_loosen",
+                    "steer_flip"
+                ]
+            },
+            "uniqueItems": true,
+            "default": ["priority_bump", "setpoint_tighten", "setpoint_loosen"],
+            "description": "Which mutation types the policy permits. 'priority_bump' moves the directive up in priority (bounded by max_priority_bump). 'setpoint_tighten' tightens the **Setpoint:** target; 'setpoint_loosen' loosens it. 'steer_flip' inverts **Steer:** direction and requires BOTH this entry AND allow_steer_flip:true (ADR-0006 I-3). 'steer_flip' is intentionally absent from the default."
+        },
+        "max_priority_bump": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 3,
+            "description": "Maximum number of positions a directive may be moved up in priority during a single re-steer event. Prevents a single failing directive from monopolizing the top of GOALS.md."
+        },
+        "auto_apply": {
+            "type": "boolean",
+            "default": false,
+            "description": "When false (default), mutations are recommendations only: printed to stdout and written to a proposal file, but GOALS.md is never modified. When true, mutations are applied to GOALS.md via the non-lossy patcher after the operator confirms interactively (or unconditionally in --non-interactive mode). ADR-0006 I-2: default behavior is recommendation-only."
+        },
+        "allow_steer_flip": {
+            "type": "boolean",
+            "default": false,
+            "description": "Hard safety gate for Steer-direction flips (ADR-0006 I-3). When false (default), the steer_flip mutation type is never performed regardless of allowed_mutation_types. When true, steer_flip must ALSO appear in allowed_mutation_types for any flip to occur (dual opt-in). A failing directive does not prove the optimization direction is inverted; Steer flips require explicit human policy opt-in."
+        }
+    }
+}

@@ -100,9 +100,35 @@ Read [references/quick-mode.md](references/quick-mode.md) when you need the `--q
 
 Read [references/execution-steps.md](references/execution-steps.md) when you need the full Phase 1 procedure: pre-flight checks, reference loading (Step 0.4), checkpoint-policy preflight (0.5), plan/spec loading (Steps 1-2.3), closure integrity audit (2.4), metadata verification (2.5), deep audit sweep (2.6), council invocation (Step 3), and prediction accuracy (3.5).
 
+### Step 2.1: Load Compiled Prevention Context
+
+Before council and retro synthesis, load compiled prevention outputs when they exist:
+
+- `.agents/planning-rules/*.md`
+- `.agents/pre-mortem-checks/*.md`
+
+Use these compiled artifacts first, then fall back to `.agents/findings/registry.jsonl` only when compiled outputs are missing or incomplete. Carry matched finding IDs into the retro as `Applied findings` / `Known risks applied` context so post-mortem can judge whether the flywheel actually prevented rediscovery.
+
 ## Phase 2: Extract Learnings
 
 Read [references/phase-2-extract.md](references/phase-2-extract.md) when you need the inline learning extraction procedure: gather context (EX.1), classify (EX.2), write learnings (EX.3), test pyramid gap analysis (EX.3.5), scope classification (EX.4), findings registry (EX.5-6).
+
+Before backlog processing, normalize reusable council findings into `.agents/findings/registry.jsonl`.
+
+Use the tracked contract in `docs/contracts/finding-registry.md`:
+
+- persist only reusable findings that should change future planning or review behavior
+- require `dedup_key`, provenance, `pattern`, `detection_question`, `checklist_item`, `applicable_when`, and `confidence`
+- `applicable_when` must use the controlled vocabulary from the contract
+- append or merge by `dedup_key`
+- use the contract's temp-file-plus-rename atomic write rule
+
+After the registry mutation, refresh compiled outputs immediately so the same session can benefit from the updated prevention set.
+If `hooks/finding-compiler.sh` exists, run:
+
+```bash
+bash hooks/finding-compiler.sh --quiet 2>/dev/null || true
+```
 
 #### Step ACT.3: Feed Next-Work
 
@@ -171,6 +197,47 @@ Read [references/user-reporting.md](references/user-reporting.md) for full examp
 
 ---
 
+## Compound-Engineering Retro (`--compound`)
+
+A comparative-delta mode for projects that run `ao goals measure` repeatedly
+across iterations of the same domain slice. Use when a slice has ≥2 iterations
+in the verdict ledger and you want to know: what improved, what regressed, and
+what the learning yield was since the last run.
+
+**Trigger:** run this mode after any `ao goals measure` where the slice has a
+prior iteration record in `.agents/goals/verdict-ledger.json`.
+
+```bash
+# Confirm ≥2 iterations exist for a directive in the slice:
+jq '[.records[] | select(.record_type=="iteration" and .directive_id=="d-<id>")] | length' \
+   .agents/goals/verdict-ledger.json
+
+# Run a new iteration (appends one record per directive):
+ao goals measure
+
+# Browse iteration history:
+ao goals history --goal <directive-id>
+```
+
+Then follow the step-by-step procedure in
+[references/compound-engineering-retro.md](references/compound-engineering-retro.md)
+(Steps CE.0–CE.5): extract N and N-1 records from the ledger, compute the
+verdict and satisfaction delta, count learning yield, and write the delta as a
+draft learning to `.agents/learnings/YYYY-MM-DD-<slice>-iter-delta.md`.
+
+The output learning carries `status: draft` and the run IDs of both iterations;
+human or Tier-3 synthesis promotes it to `status: reviewed`.
+
+**Closing the loop with re-steer.** When the delta shows a directive failing
+chronically, the verdict ledger also drives auto re-steer: `ao goals steer
+recommend` prints policy-driven directive mutations from the same ledger, and
+`ao goals steer apply` writes the chosen mutation to GOALS.md — human-gated, via
+the non-lossy patcher (policy `auto_apply` plus explicit confirmation; ADR-0006).
+The compound retro names *what* regressed; re-steer proposes *how* the directive
+should change. See the `/goals` skill.
+
+---
+
 ## See Also
 
 - `skills/council/SKILL.md` — Multi-model validation council
@@ -200,3 +267,4 @@ Read [references/user-reporting.md](references/user-reporting.md) for full examp
 - [references/execution-steps.md](references/execution-steps.md)
 - [references/phase-2-extract.md](references/phase-2-extract.md)
 - [references/user-reporting.md](references/user-reporting.md)
+- [references/compound-engineering-retro.md](references/compound-engineering-retro.md)

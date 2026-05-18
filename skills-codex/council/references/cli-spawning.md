@@ -12,12 +12,12 @@ Council requires these runtime capabilities. Map them to whatever your agent har
 | Capability | Required for | What it does |
 |------------|-------------|-------------|
 | **Spawn parallel subagent** | All modes except `--quick` | Create N judges that run concurrently, each with a prompt |
-| **Agent-to-agent messaging** | `--debate` only | Send a message to a running judge (for R2 verdict exchange) |
+| **Agent-to-agent messaging** | `--adversarial` only | Send a message to a running judge (for R2 verdict exchange) |
 | **Graceful shutdown** | Cleanup | Terminate judges after consolidation |
 | **Shared filesystem** | All modes | Judges write output files to `.agents/council/` |
 
 If **spawn** is unavailable, degrade to `--quick` (inline single-agent).
-If **messaging** is unavailable, `--debate` degrades to single-round review.
+If **messaging** is unavailable, `--adversarial` degrades to single-round review.
 If **Codex CLI** is unavailable AND `--mixed` is set, emit a hard error and
 exit without spawning judges (strict — see "Strict Codex Requirement" below).
 `--mixed` never silently degrades to Claude-only.
@@ -61,7 +61,7 @@ Judges write output files, then send a MINIMAL completion signal:
 
 Wait for all judges to signal (up to `COUNCIL_TIMEOUT`, default 120s). If a judge times out, proceed with N-1 and note in report.
 
-### Phase 3: Debate R2 (if `--debate`)
+### Phase 3: Debate R2 (if `--adversarial`)
 
 After R1 completes, send each judge a message containing:
 - Verdict summaries of OTHER judges (verdict + confidence + file path only)
@@ -167,7 +167,7 @@ mkdir -p .agents/council
 .agents/council/YYYY-MM-DD-<target>-judge-1.md
 .agents/council/YYYY-MM-DD-<target>-judge-error-paths.md
 
-# Judge output (R2, when --debate)
+# Judge output (R2, when --adversarial)
 .agents/council/YYYY-MM-DD-<target>-judge-1-r2.md
 
 # Codex CLI output (--mixed)

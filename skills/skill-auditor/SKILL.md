@@ -85,6 +85,19 @@ The JSON report includes a separate `density` block with six report-only fields:
 Read [references/context-density-checks.md](references/context-density-checks.md)
 for detection rules, limits, and false-positive handling.
 
+### Productization score overlay
+
+For AgentOps skill-factory work, run the clean-room score overlay after the
+two-pass audit:
+
+```bash
+python3 skills/skill-auditor/scripts/score_agentops_skill.py skills/<name> --markdown
+```
+
+The score is advisory. Use it to pick the smallest productization patch
+(`SELF-TEST.md`, linked references, helper scripts, assets, subagents, safety
+boundaries, or validation), then re-run this auditor and `heal-skill`.
+
 ## Execution Steps
 
 ### Step 1: Pass 1 (heal-skill delegation)
@@ -177,3 +190,9 @@ bash skills/skill-auditor/scripts/audit.sh --strict skills/my-skill
 - [references/skill-template.md](references/skill-template.md) — canonical SKILL.md template (copy of skill-builder's; per CLAUDE.md no-symlinks rule)
 - [references/audit-checks.md](references/audit-checks.md) — per-check detection logic + accepted forms + PRODUCT.md mapping
 - [references/context-density-checks.md](references/context-density-checks.md) — advisory density coverage logic and false-positive handling
+
+## Scripts
+
+- `scripts/audit.sh`
+- `scripts/score_agentops_skill.py`
+- `scripts/validate.sh`

@@ -6,7 +6,7 @@ Council uses whatever multi-agent primitives your runtime provides. Each judge i
 
 ## Deliberation Protocol
 
-The `--debate` flag implements the **deliberation protocol** pattern:
+The `--adversarial` flag implements the **deliberation protocol** pattern:
 > Independent assessment → evidence exchange → position revision → convergence analysis
 
 - **R1:** Spawn judges as parallel subagents. Each assesses independently, writes verdict to file, signals completion.
@@ -24,17 +24,17 @@ The `--debate` flag implements the **deliberation protocol** pattern:
 
 Council maintains fresh-context isolation (Ralph Wiggum pattern) with one documented exception:
 
-**`--debate` reuses judge context across R1 and R2.** This is intentional. Judges persist within a single atomic council invocation — they do NOT persist across separate council calls. The rationale:
+**`--adversarial` reuses judge context across R1 and R2.** This is intentional. Judges persist within a single atomic council invocation — they do NOT persist across separate council calls. The rationale:
 
 - Judges benefit from their own R1 analytical context (reasoning chain, not just the verdict JSON) when evaluating other judges' positions in R2
 - Re-spawning with only the verdict summary (~200 tokens) would lose the judge's working memory of WHY they reached their verdict
 - The exception is bounded: max 2 rounds, within one invocation, with explicit cleanup
 
-Without `--debate`, council is fully Ralph-compliant: each judge is a fresh spawn, executes once, writes output, and terminates.
+Without `--adversarial`, council is fully Ralph-compliant: each judge is a fresh spawn, executes once, writes output, and terminates.
 
 ## Degradation
 
-If no multi-agent capability is detected, council falls back to `--quick` (inline single-agent review). If agent messaging is unavailable, `--debate` degrades to single-round review with a note in the report.
+If no multi-agent capability is detected, council falls back to `--quick` (inline single-agent review). If agent messaging is unavailable, `--adversarial` degrades to single-round review with a note in the report.
 
 ## Judge Naming
 

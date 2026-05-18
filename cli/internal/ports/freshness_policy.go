@@ -62,10 +62,7 @@ type FreshnessVerdict struct {
 // claimVolatility and claimAuthority are the wiki.Claim's class strings;
 // verifiedAt is when the claim's evidence was last confirmed (zero if unknown).
 //
-// wiki.FreshnessPolicy implements the same evaluation model against a
-// wiki.Claim, but does not yet satisfy this exact port signature; a thin
-// production adapter is a follow-up (see the test-local adapter in
-// wiki/conformance_test.go).
+// The production implementation is wiki.FreshnessPolicy.
 type FreshnessPolicyPort interface {
 	// Evaluate computes the freshness verdict for a claim given an observed
 	// change signal and the claim's last-verified time.

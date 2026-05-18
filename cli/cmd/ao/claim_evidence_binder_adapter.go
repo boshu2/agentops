@@ -85,7 +85,7 @@ func (b *productionClaimEvidenceBinder) Bind(ctx context.Context, binding ports.
 	if err != nil {
 		return fmt.Errorf("productionClaimEvidenceBinder open %q: %w", b.path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	if _, err := f.Write(append(payload, '\n')); err != nil {
 		return fmt.Errorf("productionClaimEvidenceBinder write: %w", err)
 	}
@@ -138,7 +138,7 @@ func (b *productionClaimEvidenceBinder) scanAllLocked() ([]ports.EvidenceBinding
 		}
 		return nil, fmt.Errorf("productionClaimEvidenceBinder open %q: %w", b.path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
 	for scanner.Scan() {

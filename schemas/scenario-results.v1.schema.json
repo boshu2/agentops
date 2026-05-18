@@ -1,0 +1,79 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "scenario-results.v1.schema.json",
+    "title": "AgentOps Scenario Results",
+    "description": "Structured per-scenario satisfaction artifact written by the RPI evaluator. Each result records how a holdout scenario scored against its threshold for one RPI iteration, enabling 'ao goals measure' (F2) to gate on scenario satisfaction.",
+    "practices": ["llm-eval-harness", "adr"],
+    "type": "object",
+    "properties": {
+        "schema_version": {
+            "type": "string",
+            "const": "scenario-results.v1",
+            "description": "Schema discriminator"
+        },
+        "run_id": {
+            "type": "string",
+            "description": "RPI run that produced these results"
+        },
+        "iteration": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "RPI iteration index within the run"
+        },
+        "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 timestamp when this results artifact was written"
+        },
+        "results": {
+            "type": "array",
+            "description": "Per-scenario satisfaction results",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "scenario_id": {
+                        "type": "string",
+                        "pattern": "^(s-\\d{4}-\\d{2}-\\d{2}-\\d{3}|auto-.+)$",
+                        "description": "Scenario identifier (human s-YYYY-MM-DD-NNN or agent auto-*)"
+                    },
+                    "directive_id": {
+                        "type": "string",
+                        "pattern": "^d-[a-z0-9][a-z0-9-]*$",
+                        "description": "Stable GOALS.md directive ID this scenario satisfies"
+                    },
+                    "score": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "Measured satisfaction score (0.0-1.0)"
+                    },
+                    "threshold": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "description": "Satisfaction threshold the scenario must meet to pass"
+                    },
+                    "verdict": {
+                        "type": "string",
+                        "enum": ["pass", "fail", "skip"],
+                        "description": "Pass/fail/skip outcome for this scenario"
+                    },
+                    "judged_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "RFC3339 timestamp when this scenario was judged; latest wins on duplicate scenario_id"
+                    },
+                    "evidence": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Evidence references (artifact paths, transcript IDs) supporting the verdict"
+                    }
+                },
+                "required": ["scenario_id", "directive_id", "score", "threshold", "verdict", "judged_at", "evidence"],
+                "additionalProperties": false
+            }
+        }
+    },
+    "required": ["schema_version", "run_id", "iteration", "generated_at", "results"],
+    "additionalProperties": false
+}

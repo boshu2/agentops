@@ -50,6 +50,11 @@
 #  33. BATS orphan hooks audit
 #  34. Skill citation parity (ao lookup → ao metrics cite)
 #  35. Flywheel health (warn only, non-blocking)
+#  36. CHANGELOG sync (docs/CHANGELOG.md must match root)
+#  37. ~/.agents content-hash gate (post-hoc mutation detector)
+#  38. Executable-spec link integrity (warn-only, F1.6 / soc-58nt.1.9)
+#      ao goals scenarios --lint + ao goals trace --orphans; never blocks.
+#      Promote to blocking after 2 consecutive clean CI runs on main.
 #
 # Usage:
 #   scripts/pre-push-gate.sh [--scope auto|upstream|staged|worktree|head]
@@ -1145,6 +1150,17 @@ else
     fail "missing file: scripts/check-wiring-closure.sh"
 fi
 
+# --- 22f2. AgentOps domain-evolution control artifacts ---
+# Runs when present so the BDD/DDD/Hexagonal/TDD/XP control surface stays wired.
+if [[ -f scripts/check-agentops-domain-evolution-plan.sh ]]; then
+    if domain_evolution_output="$(bash scripts/check-agentops-domain-evolution-plan.sh 2>&1)"; then
+        pass "agentops domain evolution plan"
+    else
+        fail "agentops domain evolution plan"
+        indent_output "$domain_evolution_output"
+    fi
+fi
+
 # --- 22g. Corpus-freshness (GOALS.md gate corpus-freshness, weight 4 — Directive D11) ---
 # Always runs: structural gate; skips cleanly when no snapshot dir exists so
 # greenfield boxes do not block. Real teeth: operator boxes that DO have a
@@ -1164,11 +1180,15 @@ fi
 # Warn-only by design: flags non-trivial beads missing a Gherkin block or slice
 # candidate. Never blocks a push (Directive 12 posture). Skips cleanly when bd
 # or jq is absent. Fast (<200ms).
-if [[ -f scripts/check-loop-shape.sh ]]; then
+if prepush_skip_flag LOOP_SHAPE; then
+    skip "loop-shape (AGENTOPS_PREPUSH_SKIP_LOOP_SHAPE=1)"
+elif [[ -f scripts/check-loop-shape.sh ]]; then
     loop_shape_output="$(bash scripts/check-loop-shape.sh 2>&1 || true)"
     if grep -q '^WARN: ' <<<"$loop_shape_output"; then
         warn "loop-shape (non-trivial beads missing BDD/slice shape — Directive 12 warn-only)"
         indent_output "$loop_shape_output"
+    elif grep -q '^check-loop-shape: SKIP' <<<"$loop_shape_output"; then
+        skip "loop-shape (${loop_shape_output#check-loop-shape: })"
     else
         pass "loop-shape"
     fi
@@ -1887,6 +1907,44 @@ elif [[ -n "$HASH_GATE_SNAPSHOT" && -x scripts/check-agents-hash-snapshot.sh ]];
         fi
     fi
     cleanup_hash_snapshot
+fi
+
+# --- 38. Executable-spec link integrity (warn-only, F1.6 / soc-58nt.1.9) ---
+# Runs `ao goals scenarios --lint` (directive↔scenario link lint) and
+# `ao goals trace --orphans` (whole-chain orphan/gap audit) in warn-only mode.
+# Never blocks a push. Promote to blocking by re-filing this gate under `fail`
+# once two consecutive CI runs show zero findings on main.
+# Skip-key: AGENTOPS_PREPUSH_SKIP_EXECUTABLE_SPEC_LINK_INTEGRITY
+if prepush_skip_flag "EXECUTABLE_SPEC_LINK_INTEGRITY"; then
+    skip "executable-spec link integrity (AGENTOPS_PREPUSH_SKIP_EXECUTABLE_SPEC_LINK_INTEGRITY=1)"
+elif command -v ao >/dev/null 2>&1; then
+    exec_spec_findings=0
+    exec_spec_output=""
+
+    # ao goals scenarios --lint: directive↔scenario link lint
+    if lint_out="$(ao goals scenarios --lint 2>&1)"; then
+        :  # clean exit means no findings
+    else
+        exec_spec_findings=$((exec_spec_findings + 1))
+        exec_spec_output+="[scenarios --lint]"$'\n'"$lint_out"$'\n'
+    fi
+
+    # ao goals trace --orphans: whole-chain orphan/gap audit (no --strict)
+    if orphan_out="$(ao goals trace --orphans 2>&1)"; then
+        :  # clean exit means no findings
+    else
+        exec_spec_findings=$((exec_spec_findings + 1))
+        exec_spec_output+="[trace --orphans]"$'\n'"$orphan_out"$'\n'
+    fi
+
+    if [[ "$exec_spec_findings" -gt 0 ]]; then
+        warn "executable-spec link integrity: $exec_spec_findings command(s) found issues (warn-only, F1.6)"
+        indent_output "$exec_spec_output"
+    else
+        pass "executable-spec link integrity"
+    fi
+else
+    skip "executable-spec link integrity (ao not in PATH)"
 fi
 
 # --- Summary ---

@@ -639,7 +639,7 @@ func resolveCompileRuntime(flagValue string) string {
 func preflightCompileRuntime(runtime string) error {
 	switch runtime {
 	case "":
-		return fmt.Errorf(`no LLM runtime configured for headless compile.
+		return fmt.Errorf(`no LLM runtime configured for headless compile
 
 Pick one:
   export AGENTOPS_COMPILE_RUNTIME=claude-cli   # uses local 'claude' binary, no API key needed
@@ -648,7 +648,7 @@ Pick one:
   export AGENTOPS_COMPILE_RUNTIME=openai       # needs OPENAI_API_KEY
 
 Or pass --runtime=<name> on this command.
-Or invoke /compile interactively inside a Claude Code session.`)
+Or invoke /compile interactively inside a Claude Code session`)
 	case "claude-cli":
 		if _, err := lookPathFn("claude"); err != nil {
 			return fmt.Errorf("runtime=claude-cli but 'claude' binary is not on PATH; install Claude Code or switch: --runtime=ollama")

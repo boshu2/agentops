@@ -95,6 +95,12 @@
       "reason": "Multi-judge review flow and evidence handling differ materially in Codex sessions."
     },
     {
+      "name": "expert-council",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Absorbed into council as --mode=debate; kept as a one-release thin alias with no Codex-only runtime divergence."
+    },
+    {
       "name": "crank",
       "treatment": "bespoke",
       "wave": "backbone",

@@ -70,7 +70,7 @@
       "objective": "Keep generated CLI docs aligned with the lower-frequency command surfaces operators and new users still rely on.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao demo`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run an interactive demonstration of AgentOps capabilities."},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run a demonstration of AgentOps as the engineering operating system"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao seed`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Plant the AgentOps seed in any repository."},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "--template string   Goal template: go-cli, python-lib, web-app, rust-cli, generic"},
@@ -99,7 +99,7 @@
       "kind": "artifact_check",
       "objective": "Lock implementation-level guarantees for utility command routing, dry-run behavior, template detection, shell completion generation, config model tiers, provenance tracing, extraction queues, and mind Python delegation.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/demo.go", "value": "Interactive demo showing AgentOps value in 5 minutes"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/demo.go", "value": "Run a demonstration of AgentOps as the engineering operating system"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/demo.go", "value": "demoStepDelay = 500 * time.Millisecond"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/seed.go", "value": "Auto-detection reads go.mod, package.json, pyproject.toml, and Cargo.toml"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/seed.go", "value": "validateTemplateMapEntries(validTemplates, embedded.TemplatesFS)"},
@@ -138,7 +138,7 @@
         {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao extract` |"},
         {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao completion` | User utility | Shell completion generation |"},
         {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao config` | User utility | Config management |"},
-        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao demo` | User utility | Interactive demonstration |"},
+        {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao demo` | User utility | Council-first AgentOps 3.0 demonstration |"},
         {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao vibe-check` | User utility |"},
         {"type": "artifact_contains", "target": "../../docs/cli-skills-map.md", "value": "| `ao trace` | User utility | Artifact tracing |"},
         {"type": "artifact_contains", "target": "../../README.md", "value": "ao demo"}

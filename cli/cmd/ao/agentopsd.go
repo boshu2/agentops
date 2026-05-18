@@ -262,7 +262,7 @@ func serveAgentOpsDaemon(ctx context.Context, cwd string, opts agentopsDaemonRun
 	if err != nil {
 		return err
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 	fmt.Fprintf(out, "agentopsd ready: %s\n", activation.URL)
 	errCh := make(chan error, 1)
 	go func() {
@@ -1103,7 +1103,7 @@ func fetchDaemonJSON(ctx context.Context, url string, out any) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("daemon returned HTTP %d", resp.StatusCode)
 	}

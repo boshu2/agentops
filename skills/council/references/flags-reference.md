@@ -19,10 +19,13 @@
 
 | Flag | Description |
 |------|-------------|
-| `--deep` | 3 Claude agents instead of 2 |
-| `--mixed` | Spawn matched Claude + Codex pairs per perspective (default 3 perspectives = 6 judges). Same prompt, same packet, same persona — only the vendor differs. Scales to 2N judges when a preset has N != 3 perspectives. |
-| `--debate` | Enable adversarial debate round (2 rounds via backend messaging, same agents). Incompatible with `--quick`. |
-| `--evidence` | **Falsifiable-assertion mode** (alias: `--tdd`). Requires every finding to include `test_assertions` — concrete, mechanical checks (grep, stat, go test, etc.) that would prove the finding is real. Consolidation clamps verdict to at least WARN if any finding lacks assertions. Works with all modes; strongest pairing is `validate`. See [evidence-mode.md](evidence-mode.md). |
+| `--mode=<m>` | Deliberation pattern: `brainstorm`, `debate`, or `verdict` (default). See [modes.md](modes.md). When omitted, the mode is inferred from natural language ([task-type-rigor-gate.md](task-type-rigor-gate.md)). |
+| `--focus=<subject>` | The subject under deliberation. Orthogonal to `--mode` — never changes the pattern. `--focus=research` makes brainstorm investigative; `--focus=ideas` is the `dueling-idea-wizards` route. |
+| `--depth=quick\|deep` | Rigor knob. `quick` (alias `--quick`) = single inline agent, no spawning. `deep` (alias `--deep`) = 3 Claude agents instead of 2. Changes judge/round count, not the pattern. |
+| `--runtime=mixed` | Cross-vendor knob (alias `--mixed`). Spawn matched Claude + Codex pairs per perspective (default 3 perspectives = 6 judges). Same prompt, same packet, same persona — only the vendor differs. Scales to 2N judges when a preset has N != 3 perspectives. Not a mode. |
+| `--roster=<preset>` | Persona roster knob (alias `--preset`). Built-in roster of personas; see `--preset` below. |
+| `--adversarial` | **Verdict-mode intensifier** — runs verdict over 2 adversarial rounds via backend messaging (same agents). Not the `debate` mode. Incompatible with `--depth=quick`; only applies to verdict mode. |
+| `--evidence` | **Falsifiable-assertion mode** (alias: `--tdd`). Requires every finding to include `test_assertions` — concrete, mechanical checks (grep, stat, go test, etc.) that would prove the finding is real. Consolidation clamps verdict to at least WARN if any finding lacks assertions. Works with all modes; strongest pairing is `--mode=verdict`. See [evidence-mode.md](evidence-mode.md). |
 | `--commit-ready` | **Also write the consolidated report to `docs/council-log/YYYY-MM-DD-<mode>-<target-slug>.md`** in addition to the usual `.agents/council/` transient path. Use when the verdict is load-bearing for a merged commit or a decision that should survive rebases. See `docs/council-log/README.md`. |
 | `--timeout=N` | Override timeout in seconds (default: 120) |
 | `--perspectives="a,b,c"` | Custom perspective names (each name sets the judge's system prompt to adopt that viewpoint) |
@@ -31,6 +34,6 @@
 | `--count=N` | Override agent count per vendor (e.g., `--count=4` = 4 Claude, or 4+4 with --mixed). Subject to MAX_AGENTS=12 cap. |
 | `--explorers=N` | Explorer sub-agents per judge (default: 0, max: 5). Max effective value depends on judge count. Total agents capped at 12. |
 | `--explorer-model=M` | Override explorer model (default: sonnet) |
-| `--technique=<name>` | Brainstorm technique (scamper, six-hats, reverse). Case-insensitive. Only applicable to brainstorm mode — error if combined with validate/research. If omitted, unstructured brainstorm (current behavior). See `brainstorm-techniques.md`. |
+| `--technique=<name>` | Brainstorm technique (scamper, six-hats, reverse). Case-insensitive. Only applicable to `--mode=brainstorm` — error if combined with `--mode=verdict` or `--mode=debate`. If omitted, unstructured brainstorm (current behavior). See `brainstorm-techniques.md`. |
 | `--profile=<name>` | Model quality profile (balanced, budget, fast, inherit, quality, thorough). Error if unrecognized name. Overridden by `COUNCIL_CLAUDE_MODEL` env var (highest priority), then by explicit `--count`/`--deep`/`--mixed`. See `model-profiles.md`. |
 | `--tier=<name>` | Cost tier alias for --profile (quality, balanced, budget). Maps to profile names. See `model-profiles.md`. |
