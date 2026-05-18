@@ -264,6 +264,7 @@ Bridge / framing docs:
 - [Cloud-Frontier Factory Pilot Runbook](runbooks/cloud-frontier-pilot.md) — Bounded one-versus-two worker pilot procedure using cloud/frontier coding lanes and manual merge
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
+- [Lesson Format](contracts/lesson-format.md) — Schema for `.agents/learnings/` entries with frontmatter (id/severity/trigger/verifiable/rule/falsified_by/practice/related) and graduation path (unassigned → proposed → accepted → encoded)
 - [Context Map](contracts/context-map.md) — Auto-generated bounded-context map of skills by hexagonal role with relationship and data-flow views (see ADR-0001)
 - [Skill Domain Map](contracts/skill-domain-map.md) — V0 DDD map assigning every shared skill to one explicit skill domain with ports, artifacts, and adapters
 - [Skill Ports and Adapters](contracts/skill-ports-and-adapters.md) — V0 skill-boundary vocabulary for inbound ports, outbound ports, adapters, context packets, and guard surfaces
