@@ -1,0 +1,107 @@
+# Bounded Contexts — canonical definitions
+#
+# Single source of truth for the 5 bounded contexts that govern AgentOps.
+# Read by:
+#   - scripts/check-bounded-contexts-drift.sh (verifies registry docs don't
+#     drift from these definitions)
+#   - generators (Phase 3 of registries-drift remediation, soc-zxia.3)
+#
+# Schema:
+#   id              "BC<n>" identifier used in skill frontmatter and docs
+#   name            short noun: Corpus | Validation | Loop | Factory | Runtime
+#   product_layer   how this BC shows up in the product (used by skill-domain-map.md)
+#   responsibility  one-sentence "what does it do" (used by both registry docs)
+#   center_of_gravity  example skills + paths where this BC lives today
+#   ports           canonical port names the BC exposes (driving + driven)
+#
+# Adding/renaming a BC: edit this file, then run
+#   bash scripts/check-bounded-contexts-drift.sh
+# to learn which doc tables need their prose updated.
+
+bounded_contexts:
+  - id: BC1
+    name: Corpus
+    product_layer: "Bookkeeping + Context Compiler + Knowledge Flywheel"
+    responsibility: "Capture, retrieve, compile, cite, and promote knowledge."
+    center_of_gravity:
+      - ".agents/"
+      - "ao corpus"
+      - compile
+      - inject
+      - forge
+      - harvest
+      - dream
+    ports:
+      - CorpusReaderPort
+      - CorpusWriterPort
+      - CitationPort
+      - FindingCompilerPort
+
+  - id: BC2
+    name: Validation
+    product_layer: "Validation Gates"
+    responsibility: "Judge whether plans, code, docs, dependencies, and releases are fit."
+    center_of_gravity:
+      - validation
+      - vibe
+      - council
+      - gates
+      - evals
+      - CI scripts
+    ports:
+      - GateRunnerPort
+      - CIStatusPort
+      - ScenarioRunnerPort
+      - EvidenceBinderPort
+
+  - id: BC3
+    name: Loop
+    product_layer: "Operating loop"
+    responsibility: "Select work, execute RPI, log cycles, measure fitness, and stop at convergence."
+    center_of_gravity:
+      - evolve
+      - rpi
+      - autodev
+      - goals
+      - beads
+      - loop CLI
+    ports:
+      - LoopReaderPort
+      - LoopWriterPort
+      - HypothesisLedgerPort
+      - ConvergenceCheckPort
+      - WorkSelectorPort
+
+  - id: BC4
+    name: Factory
+    product_layer: "Skill and claim factory"
+    responsibility: "Build, audit, package, and govern reusable skills and product claims."
+    center_of_gravity:
+      - skill-builder
+      - skill-auditor
+      - heal-skill
+      - standards
+      - docs
+    ports:
+      - SkillCatalogPort
+      - SkillScorerPort
+      - FactoryAdmissionPort
+      - ClaimEvidencePort
+
+  - id: BC5
+    name: Runtime
+    product_layer: "Harness and operator adapters"
+    responsibility: "Adapt the control plane to harnesses, hooks, PRs, shells, and local machines."
+    center_of_gravity:
+      - "Codex/Claude skills"
+      - hooks
+      - "GitHub PR skills"
+      - push
+      - scope
+      - swarm
+    ports:
+      - HarnessPort
+      - OperatorPort
+      - EventBusPort
+      - GitPort
+      - IssueTrackerPort
