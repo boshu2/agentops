@@ -24,7 +24,7 @@ Capture of the discipline that lands single-scenario internal PRs at ~15-30 min 
 2. **Branch off fresh main.** `git checkout main && git pull --rebase`. Then `git checkout -b <type>/<slug>-<bead-id>`. Never stack off siblings.
 3. **First failing test.** BDD scenario or unit test. Must fail for the right reason (asserting expected behavior). Per the project's L2-first/L1-always rule.
 4. **Minimal implementation.** Smallest code change that makes the test green. Resist scope creep.
-5. **`scripts/pre-push-gate.sh --fast`.** Diff-scoped CI. If a pre-existing blocker appears in unchanged-from-base content, file an atomic side-quest fix PR first (don't bundle).
+5. **`scripts/pre-push-gate.sh --fast`** (or full gate — see below). Diff-scoped CI. **Escalate to the full gate (`scripts/pre-push-gate.sh`, no `--fast`) when the PR adds a new skill, new contract, new schema, or any inventory surface** — `--fast` skips ~15 inventory validators (registry-check, codex-override-coverage, skill-integrity, manifest entries, context-map drift). Catching them once locally is one pass; chasing them one-at-a-time through CI is 5-10 passes. If a pre-existing blocker appears in unchanged-from-base content, file an atomic side-quest fix PR first (don't bundle).
 6. **Commit with conventional-commit scope.** `feat(<scope>):`, `fix(<scope>):`. Body reproduces the failure mode the test catches.
 7. **Push + `gh pr create`.** Body cites the bead, validation, and a learning-anchor reference in the script body (not a `.agents/learnings/` file — that breaks CI).
 8. **`gh pr merge <num> --squash --auto`.** Immediately. The bot fires the review check automatically on PR open.
@@ -53,11 +53,12 @@ Capture of the discipline that lands single-scenario internal PRs at ~15-30 min 
 
 ## Anti-patterns
 
-1. **Bundling pre-existing fixes** — file each as its own atomic PR
-2. **Keeping copied variables after a rewrite** — first self-check after rewrite is "are all variable declarations used?"
-3. **Asserting local-only state in CI tests** — grep the reference, don't check the file
-4. **Branches off out-of-date main** — `git pull --rebase` at branch creation
-5. **Skipping the failing-test-first step** — adding a test after the fix gives false confidence
+1. **Running `--fast` pre-push on an inventory-touching PR** — new skill, contract, or schema → use FULL gate; `--fast` skips ~15 inventory validators
+2. **Bundling pre-existing fixes** — file each as its own atomic PR
+3. **Keeping copied variables after a rewrite** — first self-check after rewrite is "are all variable declarations used?"
+4. **Asserting local-only state in CI tests** — grep the reference, don't check the file
+5. **Branches off out-of-date main** — `git pull --rebase` at branch creation
+6. **Skipping the failing-test-first step** — adding a test after the fix gives false confidence
 
 ## Pair mechanics
 

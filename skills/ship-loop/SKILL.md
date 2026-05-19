@@ -64,7 +64,7 @@ Run this skill at the START of each PR you intend to ship to your own `main` bra
 2. **Branch off fresh main.** `git checkout main && git pull --rebase`. Then `git checkout -b <type>/<slug>-<bead-id>`. NEVER stack off a sibling branch; auto-merge handles serialization via update-branch.
 3. **Write the FIRST FAILING TEST.** BDD scenario (Gherkin) for behavior; unit test for invariants. The test must fail for the *right reason* (asserting expected behavior, not just "doesn't crash"). See [references/test-shape.md](references/test-shape.md).
 4. **Minimal implementation.** Smallest code change that makes the test green. Resist scope creep. Refer to the project's standards (`.claude/rules/{go,python}.md`).
-5. **`scripts/pre-push-gate.sh --fast`.** Diff-scoped CI. Per PR #326 (`soc-xkk2`), shellcheck now runs unconditionally on every staged `.sh`. If a pre-existing blocker appears in unchanged-from-base content, **file an atomic side-quest fix PR first** — don't bundle. See [references/anti-patterns.md](references/anti-patterns.md).
+5. **`scripts/pre-push-gate.sh --fast`** (or full gate — see below). Diff-scoped CI. Per PR #326 (`soc-xkk2`), shellcheck now runs unconditionally on every staged `.sh`. **Escalate to the full gate (`scripts/pre-push-gate.sh`, no `--fast`) when the PR adds a new skill, new contract, new schema, or any inventory surface** — `--fast` skips ~15 inventory validators (registry-check, codex-override-coverage, skill-integrity, manifest entries, context-map drift, etc.) that CI will run anyway. Catching them once locally is one pass; chasing them one-at-a-time through CI re-runs is 5-10 passes. If a pre-existing blocker appears in unchanged-from-base content, **file an atomic side-quest fix PR first** — don't bundle. See [references/anti-patterns.md](references/anti-patterns.md).
 6. **Commit with conventional-commit scope.** `feat(<scope>):`, `fix(<scope>):`, `docs(<scope>):`. Body explains the failure mode the test reproduces and how the fix removes it.
 7. **Push + `gh pr create`.** Body cites the bead, the validation results, and links to the learning anchor in the script body (NOT a `.agents/learnings/` file existence — that breaks in CI's fresh clone).
 8. **`gh pr merge <num> --squash --auto`.** Immediately. The bot fires `claude-review` automatically on PR open. When all required checks pass, merge fires without operator action.
@@ -95,11 +95,12 @@ Run this skill at the START of each PR you intend to ship to your own `main` bra
 
 Read [references/anti-patterns.md](references/anti-patterns.md) for the full list with examples. Headline anti-patterns:
 
-1. **Bundling pre-existing fixes** — file each as its own atomic PR
-2. **Keeping copied variables after a rewrite** — after a script rewrite, the first self-check is "are all variable declarations used?"
-3. **Asserting local-only state in CI tests** — grep the reference, don't check the file
-4. **Branches off out-of-date main** — `git checkout main && git pull --rebase` at branch creation
-5. **Skipping the failing-test-first step** — adding a test after the fix gives false confidence
+1. **Running `--fast` pre-push on an inventory-touching PR** — new skill, contract, or schema → use FULL gate; `--fast` skips ~15 inventory validators
+2. **Bundling pre-existing fixes** — file each as its own atomic PR
+3. **Keeping copied variables after a rewrite** — after a script rewrite, the first self-check is "are all variable declarations used?"
+4. **Asserting local-only state in CI tests** — grep the reference, don't check the file
+5. **Branches off out-of-date main** — `git checkout main && git pull --rebase` at branch creation
+6. **Skipping the failing-test-first step** — adding a test after the fix gives false confidence
 
 ## Pair mechanics (claude-review)
 
