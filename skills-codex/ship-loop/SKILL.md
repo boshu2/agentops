@@ -62,6 +62,16 @@ Capture of the discipline that lands single-scenario internal PRs at ~15-30 min 
 7. **Claiming a gate fix lands without verifying at HEAD** — capture the target output line as PR `Evidence:`; the `validate-pr-evidence-claims` CI job verifies it against the workflow run's logs
 8. **Editing a gate/validator script without running its bats** — the bats suite (under `tests/scripts/`) is the fast oracle; run `bats` on it before commit
 
+## Session scope (sister rule to coherent-arc)
+
+Coherent-arc governs the *shape* of a single PR; session-scope governs the *count* of consecutive PRs.
+
+- **Default: 2-4 PRs per autonomous session.**
+- **≥5 PRs in flight or merged in one session triggers a mandatory post-mortem before continuing.** Reactive-PR spirals (PR-fixes-fallout-from-prior-PR) dominate the back-half of long sessions.
+- **Post-mortem shape:** which PRs were planned vs reactive, self-correction count, marginal PR = discovery or churn.
+
+Derivation: 2026-05-19 session shipped 6 PRs with 3 self-corrections; PRs #5–#6 fixed fallout from #1–3. (soc-waxr)
+
 ## Pair mechanics
 
 - The review-bot workflow fires automatically on `pull_request: opened/synchronize`. No mention required.

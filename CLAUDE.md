@@ -141,6 +141,8 @@ GOALS.md is the strategic intent layer consumed by `/evolve` and `/goals`:
 
 **Every change to `main` is a PR. Every PR cites a bead. The unit of a PR is one *coherent arc* — a closable bead (or small-epic slice) with a single rollback semantic. Small epics (≤5 child beads, same surface) ship as one PR with N commits. Large epics (15+ child beads) ship as N PRs sliced by scenario or wave.** Direct pushes to `main` are rejected by branch protection. Derivation: `.agents/council/sdlc-shape-2026-05-17/DUEL.md` (local, gitignored — duel between Claude Opus 4.7 and Codex gpt-5.5, 2026-05-17). 2026-05-19 evolution from "1 scenario per PR" after the 8-PR merge-arc burned out the `gh-merge-chain` dance — `soc-1lp1`.
 
+**Autonomous-session scope (sister rule to coherent-arc).** Coherent-arc governs the *shape* of a single PR; session-scope governs the *count* of consecutive PRs. **Default: 2-4 PRs per autonomous session.** At ≥5 PRs shipped or in-flight in one session, **stop and run a post-mortem before continuing** — diminishing returns and reactive-PR spirals (PR-fixes-fallout-from-prior-PR) are the dominant failure mode in the back-half of long sessions. Derivation: the 2026-05-19 cron-loop session shipped 6 PRs with 3 self-corrections; PRs #5–#6 each fixed fallout from #1–3. Visible reactivity by PR #5 but the loop kept nudging "keep going" without surfacing the post-mortem signal. Mechanical enforcement (Stop-hook reminder or `bd` policy gate) is a successor concern. (soc-waxr)
+
 ### Phases
 
 1. **Claim.** `bd ready` → pick a bead → `bd update <id> --claim`. **No bead, no PR.** If the work is genuinely new, `bd create` first.
