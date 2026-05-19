@@ -1063,8 +1063,8 @@
     {
       "name": "ship-loop",
       "source_skill": "skills/ship-loop",
-      "source_hash": "4f0179eee207e186462b765a34c97cd0c868c6e1524715e5706cbf2f64bc82fb",
-      "generated_hash": "53907ded08ccbccdb2fb96c82a6b512d245b050a20445e7267ef5001de467254"
+      "source_hash": "325bb095bdf71f8a15e9c6b61985f7ade4a1ed39f13ca950f900fab65257e396",
+      "generated_hash": "24ce68c01a03b19dde1040db34382a057fcdd4ed1b448f2de1236166b196acc5"
     },
     {
       "name": "skill-auditor",
