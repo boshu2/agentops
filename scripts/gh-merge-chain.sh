@@ -52,11 +52,18 @@ if [[ ${#PRS[@]} -eq 0 ]]; then
     exit 2
 fi
 
-# Resolve owner/repo from gh once.
-REPO="$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null)"
+# Resolve owner/repo from gh once. In --dry-run we tolerate failure: the dry
+# path doesn't call `gh api` for update-branch, so it can run in sandboxed
+# CI environments where `gh repo view` can't authenticate. Real (non-dry)
+# runs still require a resolvable repo.
+REPO="$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)"
 if [[ -z "$REPO" ]]; then
-    echo "ERROR: cannot resolve current repo (gh repo view failed). Run inside a git checkout." >&2
-    exit 2
+    if [[ "$DRY_RUN" == "true" ]]; then
+        REPO="(dry-run: repo unresolved)"
+    else
+        echo "ERROR: cannot resolve current repo (gh repo view failed). Run inside a git checkout." >&2
+        exit 2
+    fi
 fi
 
 echo "merge-chain: ${#PRS[@]} PR(s) in repo $REPO with method=$MERGE_METHOD"
