@@ -82,7 +82,9 @@ For routine fixes (single-file logic change, doc typo, dependency bump), `--fast
 
 **Falsifiable test:** if your PR claims "X is now skipped," then `grep "X.*skipped" <post-merge-gate-log>` must return a match.
 
-**Evidence:** PR #350 (`soc-nmhp`) claimed eval-canaries were skipped on non-eval diffs; merged. Cycle 4 of `/evolve` re-ran the full gate on canonical post-merge HEAD and saw the same FAIL the fix was supposed to remove. Root cause: relied on `HAS_EVAL=1`, which is default-1 outside the `FAST_MODE` block (see anti-pattern #8 / learning `2026-05-19-default-true-flags-are-path-filter-footguns.md`). Shipped #352 as the actual fix. Tracked as the self-verify discipline in `2026-05-19-self-verify-before-claiming-fix-lands.md`.
+**Mechanical enforcement (soc-o5kq):** `scripts/verify-gate-claim.sh <ref> "<claim>"` runs the gate at HEAD and exits non-zero if the claim is absent. `scripts/pre-push-gate.sh` check #39 calls it automatically against every `Evidence:` line in the open PR body, so a false claim now blocks the push instead of waiting for post-merge surprise. Skip-key: `AGENTOPS_PREPUSH_SKIP_EVIDENCE_CLAIM=1` for the rare cases where `gh` isn't available.
+
+**Evidence:** PR #350 (`soc-nmhp`) claimed eval-canaries were skipped on non-eval diffs; merged. Cycle 4 of `/evolve` re-ran the full gate on canonical post-merge HEAD and saw the same FAIL the fix was supposed to remove. Root cause: relied on `HAS_EVAL=1`, which is default-1 outside the `FAST_MODE` block (see anti-pattern #8 / learning `2026-05-19-default-true-flags-are-path-filter-footguns.md`). Shipped #352 as the actual fix. Tracked as the self-verify discipline in `2026-05-19-self-verify-before-claiming-fix-lands.md`. AP#7 became mechanical on 2026-05-19 — see `scripts/verify-gate-claim.sh` + `tests/scripts/verify-gate-claim.bats`.
 
 ## 8. Editing `pre-push-gate.sh` (or any gate script) without running bats locally
 

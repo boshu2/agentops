@@ -50,6 +50,7 @@ setup() {
     make_stub "$FAKE_REPO/scripts/validate-codex-override-coverage.sh"
     make_stub "$FAKE_REPO/scripts/validate-next-work-contract-parity.sh"
     make_stub "$FAKE_REPO/scripts/validate-bd-closeout-contract.sh"
+    make_stub "$FAKE_REPO/scripts/verify-gate-claim.sh"
     make_stub "$FAKE_REPO/scripts/check-retrieval-quality-ratchet.sh"
     make_stub "$FAKE_REPO/scripts/validate-skill-runtime-formats.sh"
     make_stub "$FAKE_REPO/scripts/validate-context-map-drift.sh"
