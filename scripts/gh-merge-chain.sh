@@ -76,6 +76,20 @@ done
 
 [[ "$DRY_RUN" == "true" ]] && { echo "[dry-run] would now poll. exiting."; exit 0; }
 
+# Phase 1.5: kick update-branch on every PR that starts BEHIND. Without this,
+# an all-BEHIND chain deadlocks: no PR can merge until its branch is updated,
+# and the Phase-2 trigger only fires AFTER a merge transition. This level-
+# triggered initial nudge breaks the deadlock. (Fix per deadlock-finder-and-fixer
+# Class 9 catalog: convert edge-triggered notifications to level-triggered.)
+echo "merge-chain: kicking initial update-branch on any BEHIND PRs"
+for pr in "${PRS[@]}"; do
+    ms="$(gh pr view "$pr" --json mergeStateStatus -q .mergeStateStatus 2>/dev/null)"
+    if [[ "$ms" == "BEHIND" ]]; then
+        echo "  -> #$pr BEHIND; update-branch"
+        gh api "repos/$REPO/pulls/$pr/update-branch" -X PUT >/dev/null 2>&1 || true
+    fi
+done
+
 # Phase 2: poll. When a PR transitions to MERGED, call update-branch on the
 # rest (best-effort — GitHub may transition them to BEHIND on its own
 # schedule, but proactively poking avoids long stalls).
