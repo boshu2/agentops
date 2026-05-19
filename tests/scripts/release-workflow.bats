@@ -43,9 +43,11 @@ line_of() {
 }
 
 @test "release evidence is uploaded after publish from pre-publish artifact" {
-    run grep -Fq 'actions/upload-artifact@v4' "$WORKFLOW"
+    # Version-agnostic — dependabot bumps these majors over time. Assert
+    # presence + the canonical artifact name + the publish step is wired.
+    run grep -Eq 'actions/upload-artifact@v[0-9]+' "$WORKFLOW"
     [ "$status" -eq 0 ]
-    run grep -Fq 'actions/download-artifact@v4' "$WORKFLOW"
+    run grep -Eq 'actions/download-artifact@v[0-9]+' "$WORKFLOW"
     [ "$status" -eq 0 ]
     run grep -Fq 'pre-publish-release-evidence' "$WORKFLOW"
     [ "$status" -eq 0 ]
