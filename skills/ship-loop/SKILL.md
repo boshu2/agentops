@@ -102,6 +102,16 @@ Read [references/anti-patterns.md](references/anti-patterns.md) for the full lis
 5. **Branches off out-of-date main** — `git checkout main && git pull --rebase` at branch creation
 6. **Skipping the failing-test-first step** — adding a test after the fix gives false confidence
 
+## Session scope (sister rule to coherent-arc)
+
+Coherent-arc governs the *shape* of a single PR; session-scope governs the *count* of consecutive PRs in an autonomous session.
+
+- **Default: 2-4 PRs per autonomous session.** Both arcs ship cleanly and merge.
+- **≥5 PRs in flight or merged in one session triggers a mandatory post-mortem before continuing.** Diminishing returns and reactive-PR spirals (PR-fixes-fallout-from-prior-PR) are the dominant failure mode in the back-half of long sessions.
+- **Post-mortem shape (1-2 sentences each):** Which PRs were planned vs reactive? How many self-corrections? Was the marginal PR discovery or churn?
+
+**Derivation:** the 2026-05-19 cron-loop session shipped 6 PRs with 3 self-corrections; PRs #5–#6 each fixed fallout from #1–3. Visible reactivity by PR #5; the cron-loop kept nudging "keep going" without surfacing the post-mortem signal. Mechanical enforcement (Stop-hook reminder or `bd` policy gate) is filed as a successor concern. (soc-waxr)
+
 ## Pair mechanics (claude-review)
 
 - `claude-review` fires automatically on `pull_request: opened` and `synchronize`. No `@claude` mention required.
