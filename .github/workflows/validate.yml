@@ -1721,8 +1721,96 @@ jobs:
           echo "=== ao goals trace --orphans ==="
           cli/bin/ao goals trace --orphans || echo "WARN: trace --orphans found issues (warn-only, F1.6 / soc-58nt.1.9)"
 
-  summary:
+  validate-pr-evidence-claims:
+    # AP#7 mechanical enforcement (soc-eqjd, replaces local pre-push check #39
+    # retired by soc-g2r9). For each `Evidence:` line in the PR body, assert
+    # the claim appears verbatim in this workflow run's logs. Runs in parallel
+    # with `summary` and depends on the same broad set so all sibling-job logs
+    # are present when we fetch. `summary` also depends on this job so its
+    # verdict surfaces in the CI summary.
     needs: [changes, doc-release-gate, smoke-test, hook-preflight, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, factory-claim-ledger-strict, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity]
+    if: always() && github.event_name == 'pull_request'
+    name: AP#7 — verify Evidence claims in PR body
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Extract Evidence claims from PR body
+        id: claims
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          body="$(gh pr view "${{ github.event.pull_request.number }}" --json body --jq .body)"
+          claims="$(printf '%s\n' "$body" | sed -n 's/^Evidence:[[:space:]]*//p' || true)"
+          if [[ -z "$claims" ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::No Evidence: line in PR body; AP#7 verification skipped"
+            exit 0
+          fi
+          printf '%s\n' "$claims" > /tmp/evidence-claims.txt
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "count=$(wc -l < /tmp/evidence-claims.txt | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          echo "Evidence claims to verify ($(wc -l < /tmp/evidence-claims.txt | tr -d ' ')):"
+          cat /tmp/evidence-claims.txt
+
+      - name: Fetch this workflow run's logs
+        if: steps.claims.outputs.skip != 'true'
+        id: fetch_log
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # MVP fetch: `gh run view --log` returns sibling jobs' completed logs
+          # when this job runs *after* the rest of the workflow finishes.
+          # Empirically (PR #358 dogfood, 2026-05-19), this can return ~81 bytes
+          # even when other jobs are reported "completed" — GH Actions API
+          # eventual-consistency on log availability. Switching to per-job log
+          # fetching is the durable fix (filed as a follow-up bead). Until then,
+          # treat a small-log result as "verification unavailable" and skip.
+          gh run view "${{ github.run_id }}" --log > /tmp/run.log 2>&1 || true
+          log_bytes="$(wc -c < /tmp/run.log)"
+          echo "fetched workflow log: ${log_bytes} bytes"
+          # 8 KB threshold: 65 jobs × ~150-byte minimum step output ≈ 10 KB.
+          # Below 8 KB means the API didn't propagate logs for most jobs.
+          if [[ "${log_bytes}" -lt 8192 ]]; then
+            echo "log_ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Workflow log API returned only ${log_bytes} bytes (GH Actions in-run log eventual-consistency); skipping AP#7 verification this run. Follow-up: per-job log fetching."
+          else
+            echo "log_ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify each Evidence claim
+        if: steps.claims.outputs.skip != 'true' && steps.fetch_log.outputs.log_ok == 'true'
+        run: |
+          set -euo pipefail
+          chmod +x scripts/verify-gate-claim.sh
+          failures=0
+          total=0
+          while IFS= read -r claim; do
+            [[ -z "$claim" ]] && continue
+            total=$((total + 1))
+            if scripts/verify-gate-claim.sh --log /tmp/run.log \
+                "pr-${{ github.event.pull_request.number }}" "$claim" >/dev/null; then
+              echo "::notice::Evidence claim verified: $claim"
+            else
+              failures=$((failures + 1))
+              echo "::error::Evidence claim absent from workflow logs: $claim"
+            fi
+          done < /tmp/evidence-claims.txt
+          if [[ "$failures" -gt 0 ]]; then
+            echo "::error::$failures of $total Evidence claim(s) failed verification (ship-loop anti-pattern #7)"
+            exit 1
+          fi
+          echo "::notice::All $total Evidence claim(s) verified against workflow run logs"
+
+      - name: AP#7 verification unavailable (small log)
+        if: steps.claims.outputs.skip != 'true' && steps.fetch_log.outputs.log_ok != 'true'
+        run: |
+          echo "::notice::AP#7 verification skipped — workflow log API returned <8KB. The PR's Evidence: line was extracted but cannot be cross-checked against run logs in this CI shape. Tracked for fix in successor bead (per-job log fetch)."
+
+  summary:
+    needs: [changes, doc-release-gate, smoke-test, hook-preflight, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-pr-evidence-claims, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, factory-claim-ledger-strict, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1744,6 +1832,7 @@ jobs:
           echo "validate-codex-rpi-contract: ${{ needs.validate-codex-rpi-contract.result }}"
           echo "validate-codex-lifecycle-guards: ${{ needs.validate-codex-lifecycle-guards.result }}"
           echo "validate-codex-parity-drift: ${{ needs.validate-codex-parity-drift.result }}"
+          echo "validate-pr-evidence-claims: ${{ needs.validate-pr-evidence-claims.result }}"
           echo "validate-quarantine-empty: ${{ needs.validate-quarantine-empty.result }}"
           echo "validate-registry-drift: ${{ needs.validate-registry-drift.result }}"
           echo "validate-bounded-contexts-drift: ${{ needs.validate-bounded-contexts-drift.result }}"
