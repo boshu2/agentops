@@ -2,21 +2,21 @@
 
 Eight observed patterns to avoid when shipping in the bot-paired fast lane.
 
-## 1. Running `--fast` pre-push on an inventory-touching PR
+## 1. Shipping an inventory-touching PR without the regen sweep
 
-**Pattern:** A PR adds a new skill, new contract file, new schema, or any inventory artifact. Operator runs `scripts/pre-push-gate.sh --fast`, sees green, pushes. CI then fires ~15 inventory validators that the fast gate's diff-scoping skipped, and 5+ of them fail.
+**Pattern:** A PR adds a new skill, new contract file, new schema, or any inventory artifact. Operator pushes without running the regen sweep (sync-skill-counts, codex-hashes, domain-map, context-map, registry, sync-hooks). CI then fires ~15 inventory validators and 5+ of them fail.
 
-**Why it costs:** Each CI failure becomes a cycle of (read failure → fix → push → wait 5-10 min for CI → next failure surfaces). 15 fixes through CI re-runs is ~60-90 minutes of operator attention. The same 15 fixes through ONE full local pre-push gate is ~3 minutes.
+**Why it costs:** Each CI failure becomes a cycle of (read failure → fix → push → wait 5-10 min for CI → next failure surfaces). 15 fixes through CI re-runs is ~60-90 minutes of operator attention. The same 15 fixes via the regen sweep at write-time is seconds.
 
-**Rule:** Use the FULL gate (`scripts/pre-push-gate.sh`, no `--fast`) when the PR adds:
+**Rule:** Use `scripts/ship.sh` (mechanical regen sweep) for any PR that adds:
 - A new skill (touches `skills/`, `skills-codex/`, `SKILL-TIERS.md`, `skill-dispositions.yaml`, `registry.json`, manifest, marker, catalog, etc.)
 - A new contract (`docs/contracts/*.md` or `*.yaml`)
 - A new schema (`schemas/*.json`)
 - Any docs that get auto-indexed (`docs/learnings/`, `docs/architecture/`)
 
-For routine fixes (single-file logic change, doc typo, dependency bump), `--fast` remains correct.
+`ship.sh` detects these surfaces and runs the regen sweep preemptively — it removes the operator's choice to skip the rule (mechanical enforcement). For non-inventory PRs (single-file logic change, doc typo, dependency bump), skip `ship.sh` and just push; CI is the sole authoritative gate per soc-g2r9 (PR #357).
 
-**Evidence:** PR #332 (`soc-b0nn`, this skill's own first PR) hit 15 distinct registries-drift failures only on CI after `--fast` passed locally. Each one was mechanical, but the sequential discovery turned a 30-min PR into a 90-min PR. **The skill that codifies the discipline burned the discipline learning the lesson.**
+**Evidence:** PR #332 (`soc-b0nn`, this skill's own first PR) hit 15 distinct registries-drift failures on CI. Each was mechanical, but the sequential discovery turned a 30-min PR into a 90-min PR. **The skill that codifies the discipline burned the discipline learning the lesson.** Mechanically fixed by `scripts/ship.sh` (soc-33uy, PR #346).
 
 ## 2. Bundling pre-existing fixes
 
@@ -82,25 +82,25 @@ For routine fixes (single-file logic change, doc typo, dependency bump), `--fast
 
 **Falsifiable test:** if your PR claims "X is now skipped," then `grep "X.*skipped" <post-merge-gate-log>` must return a match.
 
-**Mechanical enforcement (soc-o5kq):** `scripts/verify-gate-claim.sh <ref> "<claim>"` runs the gate at HEAD and exits non-zero if the claim is absent. `scripts/pre-push-gate.sh` check #39 calls it automatically against every `Evidence:` line in the open PR body, so a false claim now blocks the push instead of waiting for post-merge surprise. Skip-key: `AGENTOPS_PREPUSH_SKIP_EVIDENCE_CLAIM=1` for the rare cases where `gh` isn't available.
+**Mechanical enforcement (soc-o5kq + soc-eqjd):** `scripts/verify-gate-claim.sh <ref> "<claim>"` greps a gate log for the claim verbatim. The `validate-pr-evidence-claims` CI job in `.github/workflows/validate.yml` (soc-eqjd, PR #358) calls it automatically against every `Evidence:` line in the open PR body, against the workflow run's logs. A false claim now blocks the PR at CI time. (The original local pre-push wiring from soc-o5kq's check #39 was retired with the local gate itself; the CI job is the durable surface.)
 
 **Evidence:** PR #350 (`soc-nmhp`) claimed eval-canaries were skipped on non-eval diffs; merged. Cycle 4 of `/evolve` re-ran the full gate on canonical post-merge HEAD and saw the same FAIL the fix was supposed to remove. Root cause: relied on `HAS_EVAL=1`, which is default-1 outside the `FAST_MODE` block (see anti-pattern #8 / learning `2026-05-19-default-true-flags-are-path-filter-footguns.md`). Shipped #352 as the actual fix. Tracked as the self-verify discipline in `2026-05-19-self-verify-before-claiming-fix-lands.md`. AP#7 became mechanical on 2026-05-19 — see `scripts/verify-gate-claim.sh` + `tests/scripts/verify-gate-claim.bats`.
 
-## 8. Editing `pre-push-gate.sh` (or any gate script) without running bats locally
+## 8. Editing a gate/validator script without running its bats locally
 
-**Pattern:** Operator changes `pre-push-gate.sh` confident the diff is "obviously correct." Pushes. CI's `bats-tests` job fails because a regression test specifically guards the semantic the change broke.
+**Pattern:** Operator changes a script under `scripts/` confident the diff is "obviously correct." Pushes. CI's `bats-tests` job fails because a regression test specifically guards the semantic the change broke.
 
 **Why it costs:** A CI-roundtrip discovers what `bats tests/scripts/<file>.bats` would have caught in <60 seconds locally. The bats suite is the fast oracle for shell-config changes — running it costs nothing at write-time.
 
-**Rule:** When editing `scripts/pre-push-gate.sh` (or any script with a matching bats suite under `tests/scripts/`):
+**Rule:** When editing any `scripts/*.sh` that has a matching bats suite under `tests/scripts/`:
 
 ```bash
 bats tests/scripts/<name>.bats
 ```
 
-(For pre-push-gate.sh, the bats file under `tests/scripts/` is named after the script.) Run BEFORE `git commit`. Fix any failures in the same commit. Treat the bats suite as the regression-guard contract for the script's documented semantics.
+Run BEFORE `git commit`. Fix any failures in the same commit. Treat the bats suite as the regression-guard contract for the script's documented semantics.
 
-**Evidence:** PR #352 (`soc-98o8`) first push removed an explicit fast-mode skip branch in the eval-canary trigger logic. A bats test at line 823 of the suite ("skips eval canaries by default for eval changes in local fast mode") FAILed on CI. Local bats run would have caught it pre-push. Re-pushed with semantics preserved; all 55 tests then green.
+**Evidence (historical):** PR #352 (`soc-98o8`) first push removed an explicit fast-mode skip branch in the (now-retired) `scripts/pre-push-gate.sh` eval-canary trigger logic. A bats test in `tests/scripts/pre-push-gate.bats` ("skips eval canaries by default for eval changes in local fast mode") FAILed on CI. Local bats run would have caught it pre-push. Re-pushed with semantics preserved; all 55 tests then green. The lesson generalizes beyond pre-push-gate.sh: any gate/validator script with a sibling bats file gets the same treatment.
 
 ## When you've violated one of these
 

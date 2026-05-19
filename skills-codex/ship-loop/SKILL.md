@@ -24,7 +24,7 @@ Capture of the discipline that lands single-scenario internal PRs at ~15-30 min 
 2. **Branch off fresh main.** `git checkout main && git pull --rebase`. Then `git checkout -b <type>/<slug>-<bead-id>`. Never stack off siblings.
 3. **First failing test.** BDD scenario or unit test. Must fail for the right reason (asserting expected behavior). Per the project's L2-first/L1-always rule.
 4. **Minimal implementation.** Smallest code change that makes the test green. Resist scope creep.
-5. **`scripts/ship.sh`** (recommended) OR `scripts/pre-push-gate.sh --fast` / `scripts/pre-push-gate.sh` (manual). `ship.sh` auto-detects inventory-touching changes, runs the regen sweep, and routes through the FULL gate automatically — mechanical fix for anti-pattern #1. Manual fallback: `--fast` for routine PRs, full gate for inventory ones. If a pre-existing blocker appears in unchanged-from-base content, file an atomic side-quest fix PR first (don't bundle). **For PRs that change gate/validator/CI behavior**: capture the targeted output line in PR body as `Evidence:`; the gate's check #39 (`scripts/verify-gate-claim.sh`) re-verifies each Evidence line against this run's verdict log and blocks the push if any claim is absent (mechanical AP#7). **For PRs that change `scripts/pre-push-gate.sh`**: run the pre-push-gate bats suite (under `tests/scripts/`) locally before commit (anti-pattern #8).
+5. **`scripts/ship.sh`** (recommended) — auto-detects inventory-touching changes, runs the regen sweep, opens the PR. **Mechanical fix for anti-pattern #1.** CI (`.github/workflows/validate.yml`) is the sole authoritative push gate per `docs/contracts/local-pre-push-gate-retirement.md` (soc-g2r9, PR #357); the previous `scripts/pre-push-gate.sh` local mirror was retired. For per-tool sanity before push: `cd cli && make test`, `bats tests/scripts/<file>.bats`, `scripts/regen-codex-hashes.sh`. If a pre-existing blocker appears in unchanged-from-base content, file an atomic side-quest fix PR first (don't bundle). **For PRs that change gate/validator/CI behavior**: capture the targeted output line in PR body as `Evidence:`; the `validate-pr-evidence-claims` CI job (`scripts/verify-gate-claim.sh`, soc-o5kq + soc-eqjd) verifies each Evidence line against the workflow run's logs and blocks the PR if any claim is absent (mechanical AP#7).
 6. **Commit with conventional-commit scope.** `feat(<scope>):`, `fix(<scope>):`. Body reproduces the failure mode the test catches.
 7. **Push + `gh pr create`.** Body cites the bead, validation, and a learning-anchor reference in the script body (not a `.agents/learnings/` file — that breaks CI).
 8. **`gh pr merge <num> --squash --auto`.** Immediately. The bot fires the review check automatically on PR open.
@@ -34,9 +34,9 @@ Capture of the discipline that lands single-scenario internal PRs at ~15-30 min 
 
 | Gate | Enforces |
 |---|---|
-| `scripts/pre-push-gate.sh --fast` | Diff-scoped CI; unconditional shellcheck on staged `.sh`; mkdocs strict on docs/; registry-drift |
+| Per-tool local checks (optional) | `cd cli && make test` for Go; `bats tests/scripts/<file>.bats` for shell; only what your diff touches |
 | Review-bot workflow (auto on PR open) | Bot half of the pair — no mention required |
-| `.github/workflows/validate.yml` | Full 60+ job suite |
+| `.github/workflows/validate.yml` | **Sole authoritative push gate** (soc-g2r9, PR #357). Full 60+ job suite incl. `validate-pr-evidence-claims` (AP#7). |
 | `gh pr merge --squash --auto` | Auto-merge when all required checks pass |
 | `scripts/gh-merge-chain.sh` (optional) | Chain N PRs through auto-merge with `update-branch` on each successor |
 
@@ -53,14 +53,14 @@ Capture of the discipline that lands single-scenario internal PRs at ~15-30 min 
 
 ## Anti-patterns
 
-1. **Running `--fast` pre-push on an inventory-touching PR** — new skill, contract, or schema → use FULL gate; `--fast` skips ~15 inventory validators
+1. **Adding inventory artifacts without running the regen sweep** — new skill, contract, or schema → run `scripts/ship.sh` (auto-detects); CI catches what you missed
 2. **Bundling pre-existing fixes** — file each as its own atomic PR
 3. **Keeping copied variables after a rewrite** — first self-check after rewrite is "are all variable declarations used?"
 4. **Asserting local-only state in CI tests** — grep the reference, don't check the file
 5. **Branches off out-of-date main** — `git pull --rebase` at branch creation
 6. **Skipping the failing-test-first step** — adding a test after the fix gives false confidence
-7. **Claiming a gate fix lands without re-running the gate at post-merge HEAD** — capture the target output line as PR `Evidence:`; re-verify at post-merge canonical
-8. **Editing `pre-push-gate.sh` without running bats locally** — the bats suite (under `tests/scripts/`) is the fast oracle; run `bats` on it before commit
+7. **Claiming a gate fix lands without verifying at HEAD** — capture the target output line as PR `Evidence:`; the `validate-pr-evidence-claims` CI job verifies it against the workflow run's logs
+8. **Editing a gate/validator script without running its bats** — the bats suite (under `tests/scripts/`) is the fast oracle; run `bats` on it before commit
 
 ## Pair mechanics
 
