@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# bd-shim v1 + pre-push gate
+# bd-shim v1
 # bd-hooks-version: 0.49.3
 #
-# Pre-push hook: runs the shared push gate, then delegates to bd.
-# The gate itself owns the concrete check list so push-time validation can grow
-# without the hook script drifting.
+# Pre-push hook: delegates to bd for issue tracking.
+#
+# The previous shared push-gate invocation (scripts/pre-push-gate.sh) was
+# retired by soc-g2r9. CI (.github/workflows/validate.yml + claude-code-review)
+# is the sole authoritative push gate. See:
+#   docs/contracts/local-pre-push-gate-retirement.md
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 HOOK_STDIN_FILE="$(mktemp)"
 
 cleanup() {
@@ -27,17 +29,6 @@ run_without_git_env() {
     done < <(env)
     "${env_args[@]}" "$@"
 }
-
-# --- Pre-push validation gate ---
-if [[ -x "$REPO_ROOT/scripts/pre-push-gate.sh" ]]; then
-    if [[ "${PRE_PUSH_FORCE:-0}" != "1" && -x "$REPO_ROOT/scripts/pre-push-proof.sh" ]] && \
-        run_without_git_env "$REPO_ROOT/scripts/pre-push-proof.sh" check --scope upstream --mode fast >/dev/null 2>&1; then
-        echo "pre-push: validation proof current; skipping fast gate. Set PRE_PUSH_FORCE=1 to rerun."
-    elif ! run_without_git_env env PRE_PUSH_TWO_PASS=0 "$REPO_ROOT/scripts/pre-push-gate.sh" --fast --scope upstream </dev/null; then
-        echo "pre-push: blocked by validation gate. Fix issues before pushing."
-        exit 1
-    fi
-fi
 
 # --- bd issue tracking (existing behavior) ---
 if command -v bd >/dev/null 2>&1; then
