@@ -25,6 +25,14 @@ set -euo pipefail
 [[ "${AGENTOPS_LEAD_ONLY_GUARD_DISABLED:-}" == "1" ]] && exit 0
 
 # ---- worker detection ------------------------------------------------------
+# Require an EXPLICIT positive worker signal. The NTM swarm runner sets one
+# of these env vars (or drops .agents/swarm-role) when it spawns workers;
+# absent any of them, the running agent is the lead. Historical note (soc-is4c):
+# this used to also classify any PWD under .claude/worktrees/ as a worker,
+# but that fired on every solo Claude session opened in a worktree for
+# isolation — the human-in-the-loop case, where the user IS the lead — and
+# the documented kill-switch env vars are unreachable from inside a Bash
+# tool call, so the false-positive had no in-session escape hatch.
 is_worker=0
 if [[ "${AGENTOPS_SWARM_ROLE:-}" == "worker" ]]; then
     is_worker=1
@@ -33,8 +41,6 @@ elif [[ "${AGENTOPS_ROLE:-}" == "worker" ]]; then
 elif [[ "${CLAUDE_AGENT_NAME:-}" == worker-* ]]; then
     is_worker=1
 elif [[ -f ".agents/swarm-role" ]] && grep -q "^worker$" .agents/swarm-role 2>/dev/null; then
-    is_worker=1
-elif [[ "${PWD}" == *"/.claude/worktrees/"* ]]; then
     is_worker=1
 fi
 

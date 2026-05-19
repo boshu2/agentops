@@ -233,6 +233,7 @@ interactive, loop, and artifact-mode examples.
 ## Reference Documents
 
 - [references/autonomous-execution.md](references/autonomous-execution.md)
+- [references/installed-plugin-version-not-repo-head.md](references/installed-plugin-version-not-repo-head.md) — `/rpi` loads from `~/.claude/plugins/cache/`, not the repo working tree; verify which version is active before measuring
 - [references/complexity-scaling.md](references/complexity-scaling.md)
 - [references/context-windowing.md](references/context-windowing.md) — OPT-IN large-repo mode (`--large-repo`); NOT part of the default RPI path. Default discovery/research does not generate `.agents/rpi/context-shards/latest.json`.
 - [references/codex-executor.md](references/codex-executor.md)
