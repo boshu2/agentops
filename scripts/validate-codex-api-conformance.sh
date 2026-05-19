@@ -56,6 +56,7 @@ echo "=== Check 3: Claude-specific paths ==="
 while IFS= read -r skill_md; do
   skill_name="$(basename "$(dirname "$skill_md")")"
 
+  # shellcheck disable=SC2088  # intentional literal match of the documented path
   matches=$(grep -n '~/\.claude/' "$skill_md" 2>/dev/null || true)
   if [[ -n "$matches" ]]; then
     count=$(echo "$matches" | wc -l | tr -d ' ')

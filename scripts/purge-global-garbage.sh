@@ -21,7 +21,6 @@ while IFS= read -r -d '' file; do
     total=$((total + 1))
     # Extract body after YAML frontmatter (everything after second ---)
     body=$(awk '/^---$/{c++;next} c>=2{print}' "$file" 2>/dev/null || true)
-    bodylen=${#body}
 
     # Strip whitespace for length check
     stripped=$(echo "$body" | tr -d '[:space:]')

@@ -310,10 +310,9 @@ build_admission_context() {
     return
   fi
 
-  local ci_status blocker_count landing_policy
+  local ci_status blocker_count
   ci_status="$(jq -r '.admission_context.main_ci_baseline.status // "unknown"' "$DIGEST_JSON")"
   blocker_count="$(jq -r '.admission_context.blocker_matrix.prs | length' "$DIGEST_JSON" 2>/dev/null || echo 0)"
-  landing_policy="$(jq -r '.admission_context.main_ci_baseline // {} | .landing_policy // "unknown"' "$DIGEST_JSON" 2>/dev/null || echo "unknown")"
 
   printf '| Field | Value |\n|---|---|\n'
   printf '| GitHub evidence | %s |\n' "$gh_evidence"

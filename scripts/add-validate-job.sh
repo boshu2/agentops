@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2089,SC2090
+# This script builds bash/yaml template strings (PY_SETUP, PREPUSH_SECTION,
+# BATS_STUB) whose literal backslashes and quotes are intentional — a Python
+# block at the bottom of the file substitutes them verbatim into target
+# workflow/pre-push files. SC2089/SC2090 advise switching to arrays, which
+# would defeat the multi-line template approach.
 # scripts/add-validate-job.sh
 #
 # CI integration scaffolder: atomically add a new validate-* job across
