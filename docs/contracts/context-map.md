@@ -47,7 +47,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `recover` — Recover session context.
 - `research` — Explore and write findings.
 - `review` — Review diffs for risk, find mocks, scan for bugs, and audit codebases.
-- `ship-loop` — Bot-paired fast-lane cycle for single-scenario internal PRs: claim → test → impl → pre-push → push → squash auto-merge → close.
+- `ship-loop` — Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close.
 - `status` — Show AgentOps work status.
 - `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates.
 

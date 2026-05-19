@@ -1,6 +1,6 @@
 ---
 name: ship-loop
-description: 'Bot-paired fast-lane cycle for single-scenario internal PRs: claim → test → impl → pre-push → push → squash auto-merge → close.'
+description: 'Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close.'
 practices:
 - continuous-delivery
 - xp
@@ -48,7 +48,7 @@ output_contract: merged PR on origin/main + closed bead
 
 # /ship-loop — Bot-paired fast lane PR cycle
 
-> **Lane choice:** use this skill for **single-scenario internal PRs** with paired tests. For fork-based OSS contributions, use the `/pr-*` family (`pr-research`, `pr-plan`, `pr-implement`, etc.; tier `contribute`). For multi-wave epics, use `/crank`. **If the work can't fit one scenario, default to the slow lane.**
+> **Lane choice:** use this skill for **coherent-arc internal PRs** — one closable bead, or one small-epic slice (≤5 child beads of the same surface), with paired tests. The PR is the *atomic-revert unit*: bundle scenarios that ship-or-revert together; split scenarios with independent rollback. For fork-based OSS contributions, use the `/pr-*` family (`pr-research`, `pr-plan`, `pr-implement`, etc.; tier `contribute`). For large epics (15+ child beads) or multi-wave work, use `/crank`. See `CLAUDE.md ## Workflow` for the canonical unit-of-PR rule.
 
 Capture of the discipline that landed 8/9 internal PRs in the 2026-05-18 session at 19.5-min median time-to-merge. Five named failure modes (F1–F5); four closed mechanically. The full rationale lives in [`docs/learnings/2026-05-18-xp-bdd-tdd-workflow-synthesis.md`](https://github.com/boshu2/agentops/blob/main/docs/learnings/2026-05-18-xp-bdd-tdd-workflow-synthesis.md).
 
@@ -68,7 +68,7 @@ Run this skill at the START of each PR you intend to ship to your own `main` bra
 6. **Commit with conventional-commit scope.** `feat(<scope>):`, `fix(<scope>):`, `docs(<scope>):`. Body explains the failure mode the test reproduces and how the fix removes it.
 7. **Push + `gh pr create`.** Body cites the bead, the validation results, and links to the learning anchor in the script body (NOT a `.agents/learnings/` file existence — that breaks in CI's fresh clone).
 8. **`gh pr merge <num> --squash --auto`.** Immediately. The bot fires `claude-review` automatically on PR open. When all required checks pass, merge fires without operator action.
-9. **Close the bead.** `bd close <id> --reason "Merged via PR #<num>"`. If multiple PRs are in flight against the same main, invoke [`scripts/gh-merge-chain.sh`](references/gh-merge-chain.md) on the chain.
+9. **Close the bead.** `bd close <id> --reason "Merged via PR #<num>"`. The coherent-arc rule should keep concurrent PR count low (typically 1-2); when a large-epic split puts multiple PRs in flight against the same main, invoke [`scripts/gh-merge-chain.sh`](references/gh-merge-chain.md) on the chain.
 
 ## Gate sequence (what each enforces)
 
