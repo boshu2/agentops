@@ -104,6 +104,9 @@ jobs:
 - name: validate-codex-parity-drift
   reason: 'GOALS.md directive D7: `scripts/check-codex-parity-drift.sh` returns 0 findings (no `--warn-only` escape)'
   failure: Codex parity drift reintroduced between Claude skills and `skills-codex/` outputs
+- name: validate-pr-evidence-claims
+  reason: 'ship-loop anti-pattern #7 (soc-eqjd): each `Evidence:` line in the PR body must appear verbatim in this workflow run''s logs. Replaces local pre-push check #39 retired by soc-g2r9. Only runs on `pull_request` events.'
+  failure: 'PR body cites an `Evidence:` line that does not appear in any job''s log output for this run (false claim about gate behavior)'
 - name: validate-quarantine-empty
   reason: 'GOALS.md directive D3: `tests/_quarantine/` holds zero `.sh`/`.bats` suites. Override: `ALLOW_QUARANTINE=1` for single-cycle bypass'
   failure: Test parked in `tests/_quarantine/` without being deleted or moved back
