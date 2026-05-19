@@ -342,6 +342,11 @@ dispositions:
     hexagonal_role: domain
     disposition:    keep
     rationale:      "Shared contracts; avoid broad edits"
+  - skill:          ship-loop
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "Bot-paired internal-ship PR cycle; distinct from pr-* contribute family"
   - skill:          skill-auditor
     domain:         "BC4 Factory"
     hexagonal_role: supporting

@@ -47,6 +47,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `recover` — Recover session context.
 - `research` — Explore and write findings.
 - `review` — Review diffs for risk, find mocks, scan for bugs, and audit codebases.
+- `ship-loop` — Bot-paired fast-lane cycle for single-scenario internal PRs: claim → test → impl → pre-push → push → squash auto-merge → close.
 - `status` — Show AgentOps work status.
 - `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates.
 
@@ -140,6 +141,8 @@ graph LR
   scope -- "supplier-to" --> domain
   security -- "supplier-to" --> vibe
   security-suite -- "supplier-to" --> vibe
+  ship-loop -- "customer-of" --> post-mortem
+  ship-loop -- "customer-of" --> rpi
   swarm -- "customer-of" --> crank
   validate -- "customer-of" --> validation
   validation -- "shared-kernel" --> standards
@@ -260,6 +263,11 @@ graph LR
 | `security-suite` | consumes | repo-context |
 | `security-suite` | produces | security-report.json |
 | `shared` | produces | stdout |
+| `ship-loop` | consumes | beads |
+| `ship-loop` | consumes | post-mortem |
+| `ship-loop` | consumes | rpi |
+| `ship-loop` | produces | git-changes |
+| `ship-loop` | produces | merged-prs |
 | `skill-auditor` | produces | result.json |
 | `skill-builder` | produces | converted-skill |
 | `standards` | produces | stdout |

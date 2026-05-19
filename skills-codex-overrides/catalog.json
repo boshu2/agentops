@@ -497,6 +497,12 @@
       "reason": "This non-invocable shared-reference skill does not need bespoke Codex prompt wording."
     },
     {
+      "name": "ship-loop",
+      "treatment": "parity_only",
+      "wave": "core-execution",
+      "reason": "Vendor-neutral internal-PR cycle; Codex stays in parity with the Claude SKILL.md after slim-frontmatter conversion."
+    },
+    {
       "name": "standards",
       "treatment": "parity_only",
       "wave": "catalog-parity",

@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (69)
+### User-Facing Skills (70)
 
 **Judgment:**
 
@@ -256,6 +256,7 @@ These are how skills chain in practice:
 | **complexity** | execution | Cyclomatic complexity analysis |
 | **grafana-platform-dashboard** | execution | Build and validate platform operations dashboards with critical-first layout and PromQL gates |
 | **push** | execution | Atomic test-commit-push workflow — tests, commits, rebases, pushes |
+| **ship-loop** | execution | Bot-paired fast lane PR cycle — single-scenario internal PR through auto-merge |
 | **test** | execution | Test generation, coverage analysis, and TDD workflow |
 | **refactor** | execution | Safe, verified refactoring with regression testing at each step |
 | **deps** | execution | Dependency audit, update, vulnerability scanning, and license compliance |
