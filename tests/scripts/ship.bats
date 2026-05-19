@@ -46,8 +46,8 @@ setup() {
 @test "--dry-run on a non-inventory branch picks fast mode" {
     # On the feature branch (this is run from within the repo on the test branch)
     branch="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)"
-    if [[ "$branch" == "main" || "$branch" == "master" ]]; then
-        skip "test must run on a feature branch"
+    if [[ "$branch" == "main" || "$branch" == "master" || "$branch" == "HEAD" || -z "$branch" ]]; then
+        skip "test requires a named feature branch (detached HEAD or main not supported)"
     fi
 
     run "$SCRIPT" --dry-run
@@ -60,8 +60,8 @@ setup() {
 
 @test "--force-fast overrides inventory detection" {
     branch="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)"
-    if [[ "$branch" == "main" || "$branch" == "master" ]]; then
-        skip "test must run on a feature branch"
+    if [[ "$branch" == "main" || "$branch" == "master" || "$branch" == "HEAD" || -z "$branch" ]]; then
+        skip "test requires a named feature branch (detached HEAD or main not supported)"
     fi
 
     run "$SCRIPT" --dry-run --force-fast
@@ -72,8 +72,8 @@ setup() {
 
 @test "--gate full forces full mode" {
     branch="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)"
-    if [[ "$branch" == "main" || "$branch" == "master" ]]; then
-        skip "test must run on a feature branch"
+    if [[ "$branch" == "main" || "$branch" == "master" || "$branch" == "HEAD" || -z "$branch" ]]; then
+        skip "test requires a named feature branch (detached HEAD or main not supported)"
     fi
 
     run "$SCRIPT" --dry-run --gate full
