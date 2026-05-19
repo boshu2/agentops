@@ -772,40 +772,11 @@ jobs:
           path: evals/workbench/scorecard-latest.json
           if-no-files-found: warn
 
-  practice-citations:
-    # Non-blocking strict advisory gate: walks repo Primitives (skills, hooks,
-    # evals, CLI commands, schemas, and scripts with declarations) and reports
-    # missing or invalid `practices: [slug, ...]` citations derived from
-    # PRACTICE.md. Promotes to required after one clean backfill cycle.
-    needs: [changes]
-    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.markdown == 'true'
-    name: practice-citations (advisory)
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Run practice citation report
-        run: |
-          chmod +x scripts/validate-practice-citations.sh
-          set +e
-          ./scripts/validate-practice-citations.sh --strict --json > practice-citations.json
-          json_rc=$?
-          ./scripts/validate-practice-citations.sh --strict
-          text_rc=$?
-          if [ "$json_rc" -ne 0 ]; then
-            exit "$json_rc"
-          fi
-          exit "$text_rc"
-
-      - name: Upload practice citation report
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: practice-citations-report
-          path: practice-citations.json
-          retention-days: 14
-          if-no-files-found: warn
+  # practice-citations RETIRED 2026-05-19. Advisory job with 79% failure rate
+  # across 19 recent runs (15/19 fail); blocked zero merges; trained
+  # operators to ignore CI red. The underlying validator script remains
+  # available at scripts/validate-practice-citations.sh for ad-hoc local
+  # use. Audit rationale: see "CI Validator Audit" session 2026-05-18.
 
   factory-claim-ledger-strict:
     # Wave 1C of epic soc-e4ulx (Reconciliation Engine).
@@ -1663,17 +1634,13 @@ jobs:
           chmod +x tests/skills/run-all.sh
           bash tests/skills/run-all.sh
 
-  learning-coherence:
-    needs: [changes]
-    if: needs.changes.outputs.learning == 'true' || needs.changes.outputs.ci == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Validate learning file quality
-        run: |
-          chmod +x scripts/validate-learning-coherence.sh
-          bash scripts/validate-learning-coherence.sh .agents/learnings
+  # learning-coherence RETIRED 2026-05-19. Dead-by-design: triggered only by
+  # changes to .agents/learnings/** paths, which are gitignored — the path
+  # filter can never match in a PR diff. 19/19 runs in the audit window
+  # were "skipped"; zero positive signal across the validator's lifetime.
+  # The validator script remains at scripts/validate-learning-coherence.sh
+  # for ad-hoc local use against the operator's .agents/learnings/ corpus.
+  # Audit rationale: see "CI Validator Audit" session 2026-05-18.
 
   bats-tests:
     needs: [changes]
@@ -1768,7 +1735,7 @@ jobs:
           cli/bin/ao goals trace --orphans || echo "WARN: trace --orphans found issues (warn-only, F1.6 / soc-58nt.1.9)"
 
   summary:
-    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, factory-claim-ledger-strict, practice-citations, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity]
+    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, factory-claim-ledger-strict, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1815,7 +1782,6 @@ jobs:
           echo "agentops-contract-canaries: ${{ needs.agentops-contract-canaries.result }}"
           echo "eval-workbench-verify: ${{ needs.eval-workbench-verify.result }}"
           echo "factory-claim-ledger-strict: ${{ needs.factory-claim-ledger-strict.result }}"
-          echo "practice-citations: ${{ needs.practice-citations.result }}"
           echo "eval-skill-delta: ${{ needs.eval-skill-delta.result }}"
           echo "shellcheck: ${{ needs.shellcheck.result }}"
           echo "markdownlint: ${{ needs.markdownlint.result }}"
@@ -1835,7 +1801,6 @@ jobs:
           echo "file-manifest-overlap: ${{ needs.file-manifest-overlap.result }}"
           echo "doctor-check: ${{ needs.doctor-check.result }}"
           echo "skill-lint: ${{ needs.skill-lint.result }}"
-          echo "learning-coherence: ${{ needs.learning-coherence.result }}"
           echo "bats-tests: ${{ needs.bats-tests.result }}"
           echo "check-test-staleness: ${{ needs.check-test-staleness.result }}"
           echo "swarm-evidence: ${{ needs.swarm-evidence.result }}"
