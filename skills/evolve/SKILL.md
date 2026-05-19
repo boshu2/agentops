@@ -198,12 +198,39 @@ Run at the TOP of every cycle:
 
 ```bash
 CYCLE_START_SHA=$(git rev-parse HEAD)
-[ -f ~/.config/evolve/KILL ] && echo "KILL: $(cat ~/.config/evolve/KILL)" && exit 0
-[ -f .agents/evolve/STOP ] && echo "STOP: $(cat .agents/evolve/STOP 2>/dev/null)" && exit 0
+# Kill-switch with auto-expiration: a KILL file older than EVOLVE_KILL_TTL_DAYS
+# (default 7) days is treated as STALE — surface it loudly and continue, do not
+# silently block. Operator must re-touch the file to keep blocking. Closes F5
+# from the 2026-05-18 merge-arc post-mortem.
+EVOLVE_KILL_TTL_DAYS="${EVOLVE_KILL_TTL_DAYS:-7}"
+check_stale_kill() {
+    local path="$1"
+    local ttl_days="$2"
+    [ -f "$path" ] || return 1
+    local mtime_epoch now_epoch age_days
+    mtime_epoch=$(stat -c %Y "$path" 2>/dev/null || stat -f %m "$path" 2>/dev/null)
+    now_epoch=$(date +%s)
+    age_days=$(( (now_epoch - mtime_epoch) / 86400 ))
+    if [ "$age_days" -gt "$ttl_days" ]; then
+        echo "WARN: ${path} is ${age_days} days old (> ${ttl_days}); treating as STALE and proceeding. Re-touch the file or set EVOLVE_KILL_TTL_DAYS to keep blocking." >&2
+        return 1  # stale -> not a real block
+    fi
+    return 0  # fresh -> honor the block
+}
+if check_stale_kill ~/.config/evolve/KILL "$EVOLVE_KILL_TTL_DAYS"; then
+    echo "KILL: $(cat ~/.config/evolve/KILL)"
+    exit 0
+fi
+if check_stale_kill .agents/evolve/STOP "$EVOLVE_KILL_TTL_DAYS"; then
+    echo "STOP: $(cat .agents/evolve/STOP 2>/dev/null)"
+    exit 0
+fi
 [ -f .agents/evolve/DORMANT ] && echo "Dormant since $(head -1 .agents/evolve/DORMANT 2>/dev/null)." && exit 0
 ```
 
 **Sticky dormancy:** the `DORMANT` marker is written once when the Step 3 hard-gate fires (see "Nothing found?" section). Subsequent cycles short-circuit here with zero further tool calls — no fitness measurement, no work selection, no inference burn. Operator clears it by `rm .agents/evolve/DORMANT` when new scope arrives, or by editing it to indicate why. The marker is local-only (gitignored under `.agents/`).
+
+**Stale-kill auto-expiration:** the KILL and STOP markers honor an EVOLVE_KILL_TTL_DAYS (default 7) age window. A KILL older than the window is logged as STALE and the loop continues — caught the F5 failure mode on 2026-05-18 where a 5-day-old KILL silently blocked /evolve. DORMANT does NOT auto-expire (it represents a deliberate "queue exhausted" state and should persist until the operator clears it).
 
 ### Step 1.5: Healing-first classifier
 
