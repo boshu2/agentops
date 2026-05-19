@@ -11,21 +11,29 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-AO="$REPO_ROOT/cli/bin/ao"
+
+# Shared e2e harness (skill: testing-real-service-e2e-no-mocks):
+# shellcheck source=../lib/e2e-guards.sh
+source "$REPO_ROOT/tests/lib/e2e-guards.sh"
+# shellcheck source=../lib/e2e-factory.sh
+source "$REPO_ROOT/tests/lib/e2e-factory.sh"
 
 log() { printf '[%s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 
-if [[ ! -x "$AO" ]]; then
-  log "ao binary absent — building"
-  ( cd "$REPO_ROOT/cli" && go build -o bin/ao ./cmd/ao )
-fi
-log "ao binary: $AO"
-
-WORK="$(mktemp -d)"
+WORK="$(e2e_factory_sandbox goals-scenarios-link)"
 trap 'rm -rf "$WORK"' EXIT
 log "temp root: $WORK"
+e2e_guard_repo "$WORK"
+
+AO="$(e2e_factory_ao_bin "$WORK/bin" "$REPO_ROOT")"
+e2e_guard_ao_bin "$AO"
+log "ao binary: $AO"
+
 cd "$WORK"
+# This test runs `ao goals scenarios` with PWD-relative GOALS.md, so check
+# that the chdir landed us in the sandbox (not the agentops repo root).
+e2e_guard_not_repo_root
 
 cat > GOALS.md <<'EOF'
 # Goals
