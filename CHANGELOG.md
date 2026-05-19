@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`scripts/ship.sh`** (#346, `soc-33uy`) — single-command wrapper that auto-detects inventory-touching diffs and routes through the full pre-push gate (no `--fast` skip on skill/contract changes), preemptively running the regen sweep (sync-skill-counts, codex-hashes, domain-map, context-map, registry, sync-hooks). Mechanical fix for ship-loop anti-pattern #1.
+
+### Changed
+
+- **Coherent-arc PR rule** (#348, `soc-1lp1`) — replaces "one scenario per PR" default in `CLAUDE.md` + `AGENTS.md`. The unit of a PR is one closable bead (or small-epic slice) with a single rollback semantic. Small epics (≤5 child beads, same surface) ship as one PR with N commits; large epics ship as N PRs sliced by scenario or wave. Updates `ship-loop` skill (Claude + Codex twins). Derived from the 2026-05-19 8-PR merge-arc burn-through.
+
+### Fixed
+
+- **6 pre-existing shellcheck warnings** (#349, `soc-j026`) cleaned across `validate-codex-api-conformance.sh`, `goal-failure-taxonomy.sh`, `purge-global-garbage.sh`, `nightly-pr-digest.sh`, `add-validate-job.sh`, `check-skill-size.sh`. All in scripts unchanged from base — atomic side-quest per anti-pattern #2.
+- **Local pre-push gate eval-canary strictness mismatch** (#350, `soc-nmhp`) — full-mode eval-canaries now respect the same path filter as CI's `eval-workbench-verify` (`HAS_EVAL=1 || is_ci_env`). Previously `needs_check eval` short-circuited to true in full mode, producing 5 spurious FAILs on doc/script PRs against a baseline-less local env. Closes the "Local-vs-CI environment drift" learning (`docs/learnings/2026-05-07-ci-push-gate-toil-pattern.md`).
+
 ## [2.41.1] - 2026-05-15
 
 ### Fixed
