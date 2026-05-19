@@ -204,6 +204,7 @@ See [references/multi-agent-architecture.md](references/multi-agent-architecture
 - [references/modes.md](references/modes.md)
 - [references/council-modes.feature](references/council-modes.feature)
 - [references/dueling-route.md](references/dueling-route.md)
+- [references/cross-vendor-duel-when-to-use.md](references/cross-vendor-duel-when-to-use.md) — Strategic call (when Opus+Codex is worth the cost) + score-symmetry diagnostic
 - [references/architecture-flow.md](references/architecture-flow.md)
 - [references/packet-format.md](references/packet-format.md)
 - [references/flags-reference.md](references/flags-reference.md)
