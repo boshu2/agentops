@@ -1408,21 +1408,31 @@ fi
 
 # --- 24c. AgentOps eval canaries ---
 # Path-filter parity with CI (eval-workbench-verify runs only when eval/go/ci
-# surfaces changed). Previously the local full-mode trigger was
-# `needs_check eval` which returns true unconditionally in full mode → every
-# full-gate run on a doc/script PR triggered eval canaries against a local
-# env without promoted baselines, producing 5 FAILs CI never sees. Fix:
-# require HAS_EVAL=1 OR is_ci_env (or operator override PRE_PUSH_RUN_EVAL=1).
-# soc-nmhp; discovered during soc-l4n8 drift scout.
+# surfaces changed). The previous fix (soc-nmhp, PR #350) relied on HAS_EVAL,
+# which is initialized to 1 by default and only reset to 0 inside the
+# FAST_MODE block — so in full mode HAS_EVAL stayed 1 and the check was
+# effectively always-true. This iteration (soc-98o8) inlines the eval-diff
+# path check so it works in both modes. Triggers in priority order:
+#   1. PRE_PUSH_SKIP_EVAL=1 → never run (operator force-off)
+#   2. PRE_PUSH_RUN_EVAL=1  → always run (operator force-on)
+#   3. is_ci_env            → always run (CI; matches eval-workbench-verify)
+#   4. eval-surface diff    → run when evals/, schemas/eval-, scripts/eval-agentops.sh,
+#                             cli/internal/eval/, or cli/cmd/ao/eval changed
+#   5. otherwise            → skip (local-env-no-baselines false-positive guard)
 run_eval_canaries=false
 if [[ "${PRE_PUSH_SKIP_EVAL:-0}" == "1" ]]; then
     run_eval_canaries=false
 elif truthy "${PRE_PUSH_RUN_EVAL:-0}"; then
     run_eval_canaries=true
-elif [[ "$FAST_MODE" == "true" ]] && ! is_ci_env; then
-    run_eval_canaries=false
-elif [[ "$HAS_EVAL" -eq 1 ]] || is_ci_env; then
+elif is_ci_env; then
     run_eval_canaries=true
+else
+    # Compute eval-surface diff inline (cannot rely on HAS_EVAL: it's
+    # default=1 outside FAST_MODE per soc-98o8).
+    eval_diff="$(collect_all_changed 2>/dev/null || true)"
+    if echo "$eval_diff" | grep -qE '^evals/|^schemas/eval-|^scripts/eval-agentops\.sh$|^cli/internal/eval/|^cli/cmd/ao/eval'; then
+        run_eval_canaries=true
+    fi
 fi
 
 if [[ "$run_eval_canaries" == "true" ]]; then
