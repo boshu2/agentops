@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-20T12:03:15Z",
+  "generated_at": "2026-05-20T12:13:20Z",
   "summary": {
     "skills": 79,
     "hooks": 44,
@@ -457,7 +457,7 @@
         "path": "skills/beads/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 18
+        "reference_count": 19
       },
       {
         "name": "shared",
