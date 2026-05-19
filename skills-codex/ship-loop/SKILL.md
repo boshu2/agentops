@@ -24,7 +24,7 @@ Capture of the discipline that lands single-scenario internal PRs at ~15-30 min 
 2. **Branch off fresh main.** `git checkout main && git pull --rebase`. Then `git checkout -b <type>/<slug>-<bead-id>`. Never stack off siblings.
 3. **First failing test.** BDD scenario or unit test. Must fail for the right reason (asserting expected behavior). Per the project's L2-first/L1-always rule.
 4. **Minimal implementation.** Smallest code change that makes the test green. Resist scope creep.
-5. **`scripts/ship.sh`** (recommended) OR `scripts/pre-push-gate.sh --fast` / `scripts/pre-push-gate.sh` (manual). `ship.sh` auto-detects inventory-touching changes, runs the regen sweep, and routes through the FULL gate automatically — mechanical fix for anti-pattern #1. Manual fallback: `--fast` for routine PRs, full gate for inventory ones. If a pre-existing blocker appears in unchanged-from-base content, file an atomic side-quest fix PR first (don't bundle).
+5. **`scripts/ship.sh`** (recommended) OR `scripts/pre-push-gate.sh --fast` / `scripts/pre-push-gate.sh` (manual). `ship.sh` auto-detects inventory-touching changes, runs the regen sweep, and routes through the FULL gate automatically — mechanical fix for anti-pattern #1. Manual fallback: `--fast` for routine PRs, full gate for inventory ones. If a pre-existing blocker appears in unchanged-from-base content, file an atomic side-quest fix PR first (don't bundle). **For PRs that change gate/validator/CI behavior**: capture the targeted output line in PR body as `Evidence:`; re-verify at post-merge HEAD (anti-pattern #7). **For PRs that change `scripts/pre-push-gate.sh`**: run the pre-push-gate bats suite (under `tests/scripts/`) locally before commit (anti-pattern #8).
 6. **Commit with conventional-commit scope.** `feat(<scope>):`, `fix(<scope>):`. Body reproduces the failure mode the test catches.
 7. **Push + `gh pr create`.** Body cites the bead, validation, and a learning-anchor reference in the script body (not a `.agents/learnings/` file — that breaks CI).
 8. **`gh pr merge <num> --squash --auto`.** Immediately. The bot fires the review check automatically on PR open.
@@ -59,6 +59,8 @@ Capture of the discipline that lands single-scenario internal PRs at ~15-30 min 
 4. **Asserting local-only state in CI tests** — grep the reference, don't check the file
 5. **Branches off out-of-date main** — `git pull --rebase` at branch creation
 6. **Skipping the failing-test-first step** — adding a test after the fix gives false confidence
+7. **Claiming a gate fix lands without re-running the gate at post-merge HEAD** — capture the target output line as PR `Evidence:`; re-verify at post-merge canonical
+8. **Editing `pre-push-gate.sh` without running bats locally** — the bats suite (under `tests/scripts/`) is the fast oracle; run `bats` on it before commit
 
 ## Pair mechanics
 
