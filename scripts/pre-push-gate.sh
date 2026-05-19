@@ -55,6 +55,10 @@
 #  38. Executable-spec link integrity (warn-only, F1.6 / soc-58nt.1.9)
 #      ao goals scenarios --lint + ao goals trace --orphans; never blocks.
 #      Promote to blocking after 2 consecutive clean CI runs on main.
+#  39. PR Evidence claim verification (ship-loop anti-pattern #7)
+#      Each `Evidence:` line in the open PR body must appear verbatim in this
+#      run's verdict log. Skips when gh missing / no PR / no Evidence: line.
+#      Skip-key: AGENTOPS_PREPUSH_SKIP_EVIDENCE_CLAIM=1.
 #
 # Usage:
 #   scripts/pre-push-gate.sh [--scope auto|upstream|staged|worktree|head]
@@ -126,9 +130,25 @@ FAIL_FAST_SETTING="${PRE_PUSH_FAIL_FAST:-auto}"
 FAIL_FAST_EFFECTIVE=false
 FAIL_FAST_PENDING=false
 HASH_GATE_SNAPSHOT=""
-pass() { echo -e "${GREEN}  ok${NC}  $1"; }
-skip() { echo -e "  --  $1 (skipped)"; skipped=$((skipped + 1)); }
-warn() { echo -e "${YELLOW}WARN${NC}  $1"; }
+
+# PRE_PUSH_GATE_LOG — captures each check's verdict line synchronously so
+# check #39 (PR Evidence claim verification, ship-loop anti-pattern #7) can
+# grep this run's output without re-running the gate. The log holds only
+# verdict lines (pass/fail/skip/warn) — not indented sub-output — which is
+# exactly what an Evidence: claim should reference.
+: "${PRE_PUSH_GATE_LOG:=$(mktemp -t pre-push-gate.XXXXXX.log)}"
+export PRE_PUSH_GATE_LOG
+PRE_PUSH_GATE_LOG_OWNED=true
+cleanup_gate_log() {
+    if [[ "${PRE_PUSH_GATE_LOG_OWNED:-false}" == "true" && -n "${PRE_PUSH_GATE_LOG:-}" ]]; then
+        rm -f "$PRE_PUSH_GATE_LOG" 2>/dev/null || true
+    fi
+}
+trap cleanup_gate_log EXIT
+
+pass() { echo -e "${GREEN}  ok${NC}  $1"; printf '  ok  %s\n' "$1" >>"$PRE_PUSH_GATE_LOG"; }
+skip() { echo -e "  --  $1 (skipped)"; printf '  --  %s (skipped)\n' "$1" >>"$PRE_PUSH_GATE_LOG"; skipped=$((skipped + 1)); }
+warn() { echo -e "${YELLOW}WARN${NC}  $1"; printf 'WARN  %s\n' "$1" >>"$PRE_PUSH_GATE_LOG"; }
 indent_output() {
     while IFS= read -r line; do
         printf '    %s\n' "$line"
@@ -181,8 +201,10 @@ blocked_exit() {
 fail() {
     if truthy "${_PRE_PUSH_ADVISORY:-0}"; then
         echo -e "${YELLOW}WARN${NC}  $1 (advisory)"
+        printf 'WARN  %s (advisory)\n' "$1" >>"$PRE_PUSH_GATE_LOG"
     else
         echo -e "${RED}FAIL${NC}  $1"
+        printf 'FAIL  %s\n' "$1" >>"$PRE_PUSH_GATE_LOG"
     fi
     errors=$((errors + 1))
     if [[ "${FAIL_FAST_EFFECTIVE:-false}" == "true" ]]; then
@@ -2047,6 +2069,66 @@ elif command -v ao >/dev/null 2>&1; then
     fi
 else
     skip "executable-spec link integrity (ao not in PATH)"
+fi
+
+# --- 39. PR Evidence claim verification (ship-loop anti-pattern #7) ---
+# If the current branch has an open PR with `Evidence:` trailer line(s) in its
+# body, each such line must appear verbatim in this run's verdict log. Catches
+# AP#7 ("claiming a gate fix landed without re-running the gate") at write-time
+# rather than waiting for post-merge surprise.
+#
+# Skip-gracefully matrix:
+#   - gh not in PATH                 → skip
+#   - verify-gate-claim.sh missing   → skip
+#   - no PR for branch               → skip
+#   - PR body has no Evidence: line  → skip
+#   - $PRE_PUSH_GATE_LOG empty       → skip (defensive; should never happen)
+#
+# Skip-key: AGENTOPS_PREPUSH_SKIP_EVIDENCE_CLAIM=1 disables the check without
+# requiring --no-verify when running on a machine without gh.
+if prepush_skip_flag EVIDENCE_CLAIM; then
+    skip "PR Evidence claim verification (skipped via AGENTOPS_PREPUSH_SKIP_EVIDENCE_CLAIM)"
+elif [[ ! -x scripts/verify-gate-claim.sh ]]; then
+    skip "PR Evidence claim verification (scripts/verify-gate-claim.sh not executable)"
+elif ! command -v gh >/dev/null 2>&1; then
+    skip "PR Evidence claim verification (gh not in PATH)"
+elif [[ ! -s "$PRE_PUSH_GATE_LOG" ]]; then
+    skip "PR Evidence claim verification (verdict log empty)"
+else
+    evidence_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo HEAD)"
+    evidence_pr_num="$(gh pr view --json number --jq .number 2>/dev/null || true)"
+    if [[ -z "$evidence_pr_num" ]]; then
+        skip "PR Evidence claim verification (no open PR for $evidence_branch)"
+    else
+        evidence_pr_body="$(gh pr view "$evidence_pr_num" --json body --jq .body 2>/dev/null || true)"
+        # Pull Evidence: lines verbatim; strip the prefix per line.
+        evidence_lines="$(printf '%s\n' "$evidence_pr_body" | sed -n 's/^Evidence:[[:space:]]*//p' || true)"
+        if [[ -z "$evidence_lines" ]]; then
+            skip "PR Evidence claim verification (no Evidence: line in PR #$evidence_pr_num body)"
+        else
+            evidence_total=0
+            evidence_failures=0
+            evidence_failed_claims=""
+            while IFS= read -r claim_line; do
+                [[ -z "$claim_line" ]] && continue
+                evidence_total=$((evidence_total + 1))
+                if ! scripts/verify-gate-claim.sh --log "$PRE_PUSH_GATE_LOG" \
+                        "$evidence_branch" "$claim_line" >/dev/null 2>&1; then
+                    evidence_failures=$((evidence_failures + 1))
+                    evidence_failed_claims+="  - $claim_line"$'\n'
+                fi
+            done <<<"$evidence_lines"
+
+            if [[ "$evidence_failures" -eq 0 ]]; then
+                pass "PR Evidence claim verification (PR #$evidence_pr_num, $evidence_total claim(s) matched)"
+            else
+                fail "PR Evidence claim verification: $evidence_failures of $evidence_total claim(s) absent from gate output (AP#7)"
+                indent_output "PR #$evidence_pr_num claims not present in this gate's verdict log:"
+                indent_output "$evidence_failed_claims"
+                indent_output "Either re-run the affected gate locally and confirm the claim, or update the PR body."
+            fi
+        fi
+    fi
 fi
 
 # --- Summary ---
