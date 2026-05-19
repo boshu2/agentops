@@ -1,6 +1,6 @@
 # /ship-loop anti-patterns
 
-Six observed patterns to avoid when shipping in the bot-paired fast lane.
+Eight observed patterns to avoid when shipping in the bot-paired fast lane.
 
 ## 1. Running `--fast` pre-push on an inventory-touching PR
 
@@ -67,6 +67,38 @@ For routine fixes (single-file logic change, doc typo, dependency bump), `--fast
 **Rule:** Per `.claude/rules/{go,python}.md`: L2-first/L1-always. Write the test that demonstrates the failure (reproduces SC2034, or the path-traversal, or the empty-Raw bug). Confirm it fails for the right reason. Then write the minimal fix that makes it green.
 
 **Evidence:** PR #326's commit body explicitly reproduced SC2034 with a synthetic fixture before adding the fix. PR #324's tests covered 10 path-traversal subcases each rejected with `errors.Is(err, ErrInvalidRunID)`.
+
+## 7. Claiming a gate fix lands without re-running the gate at post-merge HEAD
+
+**Pattern:** A PR changes gate/validator/CI behavior. Operator ships it based on fast-gate green + diff-reading confidence, but never re-runs the targeted gate against the canonical post-merge state. Later discovery: the fix was ineffective and the gate still fails.
+
+**Why it costs:** One self-correction PR per ineffective fix. Three self-corrections in a single session is real; the worst case is the operator declares success and walks away, leaving silent gate-drift on main until the next full-gate run discovers it.
+
+**Rule:** For every PR that changes a gate, validator, or CI behavior:
+1. Before opening the PR, run the affected gate locally and capture the targeted output line.
+2. Include that line verbatim in the PR body as **Evidence**.
+3. After merge, run the affected gate on the canonical HEAD and verify the output still matches the claim.
+4. If it doesn't: file an atomic follow-up immediately; do NOT wait for someone else to notice.
+
+**Falsifiable test:** if your PR claims "X is now skipped," then `grep "X.*skipped" <post-merge-gate-log>` must return a match.
+
+**Evidence:** PR #350 (`soc-nmhp`) claimed eval-canaries were skipped on non-eval diffs; merged. Cycle 4 of `/evolve` re-ran the full gate on canonical post-merge HEAD and saw the same FAIL the fix was supposed to remove. Root cause: relied on `HAS_EVAL=1`, which is default-1 outside the `FAST_MODE` block (see anti-pattern #8 / learning `2026-05-19-default-true-flags-are-path-filter-footguns.md`). Shipped #352 as the actual fix. Tracked as the self-verify discipline in `2026-05-19-self-verify-before-claiming-fix-lands.md`.
+
+## 8. Editing `pre-push-gate.sh` (or any gate script) without running bats locally
+
+**Pattern:** Operator changes `pre-push-gate.sh` confident the diff is "obviously correct." Pushes. CI's `bats-tests` job fails because a regression test specifically guards the semantic the change broke.
+
+**Why it costs:** A CI-roundtrip discovers what `bats tests/scripts/<file>.bats` would have caught in <60 seconds locally. The bats suite is the fast oracle for shell-config changes — running it costs nothing at write-time.
+
+**Rule:** When editing `scripts/pre-push-gate.sh` (or any script with a matching bats suite under `tests/scripts/`):
+
+```bash
+bats tests/scripts/<name>.bats
+```
+
+(For pre-push-gate.sh, the bats file under `tests/scripts/` is named after the script.) Run BEFORE `git commit`. Fix any failures in the same commit. Treat the bats suite as the regression-guard contract for the script's documented semantics.
+
+**Evidence:** PR #352 (`soc-98o8`) first push removed an explicit fast-mode skip branch in the eval-canary trigger logic. A bats test at line 823 of the suite ("skips eval canaries by default for eval changes in local fast mode") FAILed on CI. Local bats run would have caught it pre-push. Re-pushed with semantics preserved; all 55 tests then green.
 
 ## When you've violated one of these
 

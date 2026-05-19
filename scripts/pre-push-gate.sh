@@ -385,6 +385,22 @@ select_fast_eval_suites() {
 }
 
 # --- Fast mode: detect changed file categories ---
+#
+# FOOTGUN WARNING (soc-7ovd, learning 2026-05-19): the HAS_<surface> variables
+# below default to 1 and are reset to 0 ONLY inside the `if [[ "$FAST_MODE" ==
+# "true" ]]` block. In FULL mode the reset never runs — HAS_<surface> stays at
+# the default 1. Therefore any later check `[[ "$HAS_<surface>" -eq 1 ]]`
+# outside the FAST_MODE block reads a STALE-TRUE default, not a path filter.
+#
+# If you need path-filtered behavior in FULL mode, EITHER:
+#   1. Wrap the check inside `if [[ "$FAST_MODE" == "true" ]]` (same scope), OR
+#   2. Inline a fresh diff computation in your block:
+#        diff="$(collect_all_changed 2>/dev/null || true)"
+#        if echo "$diff" | grep -qE '<your-pattern>'; then ... ; fi
+#
+# Refactor candidate (filed as next-work, evolve-2026-05-19): compute the diff
+# once at script start and populate HAS_<surface> regardless of FAST_MODE.
+#
 HAS_GO=1
 HAS_SKILL=1
 HAS_HOOK=1
