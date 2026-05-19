@@ -174,6 +174,7 @@ if [[ "$FOLLOW" -eq 1 ]]; then
     stream_file "$file" &
     pids+=("$!")
   done
+  # shellcheck disable=SC2154  # 'p' is the loop variable inside the trap body
   trap 'for p in "${pids[@]}"; do kill "$p" 2>/dev/null || true; done' EXIT INT TERM
   wait
 else

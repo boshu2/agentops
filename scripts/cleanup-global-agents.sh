@@ -18,12 +18,11 @@ ARCHIVE_DIR="${GLOBAL_DIR}/.archive"
 # Directories that SHOULD exist at global level
 ALLOWED_DIRS=("learnings" "patterns")
 
-# Known repo-specific dirs that should NOT be global
-LEAKED_DIRS=(
-    "brainstorm" "council" "crank" "doc" "handoff"
-    "knowledge" "plans" "products" "research" "retros"
-    "rpi" "vibecheck" "ao"
-)
+# Known repo-specific dirs that should NOT be global. Kept as documentation
+# only; the loop below uses ALLOWED_DIRS as a positive whitelist (anything
+# outside it is reported as leaked), so an explicit LEAKED_DIRS list is dead.
+#   leaked examples: brainstorm council crank doc handoff knowledge plans
+#                    products research retros rpi vibecheck ao
 
 MODE="dry-run"
 
