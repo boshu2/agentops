@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-78 checked-in AgentOps skills before any broad rewrite, using current
+79 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 78 |
+| Skills audited | 79 |
 | Domains classified | 5 of 5 (BC1-BC5) |
-| Dispositions assigned | 78 / 78 |
+| Dispositions assigned | 79 / 79 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -124,6 +124,7 @@ Disposition meanings:
 | `security` | BC2 Validation | driven-adapter | merge-review | Low scorer; compare with security-suite before expansion. |
 | `security-suite` | BC2 Validation | driven-adapter | update | Composable scanner; likely canonical security validation lane. |
 | `shared` | BC4 Factory | domain | keep | Shared contracts; avoid broad edits. |
+| `ship-loop` | BC5 Runtime | driving-adapter | keep | Bot-paired internal-ship PR cycle; distinct from pr-* contribute family. |
 | `skill-auditor` | BC4 Factory | supporting | update | Audit role should consume new quality/domain rubrics. |
 | `skill-builder` | BC4 Factory | supporting | update | Builder should scaffold SELF-TEST and domain metadata by default. |
 | `standards` | BC4 Factory | domain | keep | Current pilot upgraded with SELF-TEST; continue incremental patches. |
