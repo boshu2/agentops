@@ -122,6 +122,7 @@ static_check() {
   fi
 
   # Check 3: Claude paths
+  # shellcheck disable=SC2088  # intentional literal match of the documented path
   if grep -q '~/\.claude/' "$skill_md" 2>/dev/null; then
     issues+=("claude-paths")
   fi
@@ -138,6 +139,7 @@ static_check() {
       if grep -qE "\b($primitives)\b" "$ref_file" 2>/dev/null; then
         issues+=("ref-primitives:$(basename "$ref_file")")
       fi
+      # shellcheck disable=SC2088  # intentional literal match of the documented path
       if grep -q '~/\.claude/' "$ref_file" 2>/dev/null; then
         issues+=("ref-claude-paths:$(basename "$ref_file")")
       fi
