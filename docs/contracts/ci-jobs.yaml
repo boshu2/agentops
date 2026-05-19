@@ -50,9 +50,6 @@ jobs:
 - name: plugin-load-test
   reason: No symlinks anywhere in the repo; manifests valid; plugin structure correct
   failure: Creating symlinks instead of real file copies
-- name: pre-push-gate-wired
-  reason: '`.githooks/pre-push` invokes `scripts/pre-push-gate.sh`; sandbox push smoke proves the hook fires as a single fast pass, replays refspec stdin, and updates the remote ref'
-  failure: Editing the hook chain without re-running `scripts/check-pre-push-gate-wired.sh --dry-run-smoke`
 - name: registry-check
   reason: '`registry.json` matches live output of `scripts/generate-registry.sh`'
   failure: Adding a job type, skill, or CLI command without regenerating registry.json
