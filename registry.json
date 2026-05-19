@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-20T11:49:08Z",
+  "generated_at": "2026-05-20T12:03:15Z",
   "summary": {
     "skills": 79,
     "hooks": 44,
@@ -473,7 +473,7 @@
         "path": "skills/standards/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 22
+        "reference_count": 23
       },
       {
         "name": "discovery",

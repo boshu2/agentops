@@ -159,6 +159,7 @@ Skills that use standards:
 - [references/common-standards.md](references/common-standards.md)
 - [references/behavioral-discipline.md](references/behavioral-discipline.md)
 - [references/examples-troubleshooting-template.md](references/examples-troubleshooting-template.md)
+- [references/cli-wireup-template.md](references/cli-wireup-template.md) — Reproducible cobra subcommand template (noun + verb, injectable Options, ~10 min/cycle)
 - [references/go.md](references/go.md)
 - [references/json.md](references/json.md)
 - [references/markdown.md](references/markdown.md)
