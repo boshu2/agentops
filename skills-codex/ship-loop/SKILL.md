@@ -13,10 +13,10 @@ Capture of the discipline that lands single-scenario internal PRs at ~15-30 min 
 
 | Use ship-loop when... | Use something else when... |
 |---|---|
-| Single-scenario internal PR in your own repo | Fork-based OSS contribution → `$pr-implement` |
-| PR <100 lines with paired tests | Multi-wave epic → `$crank` |
+| Coherent-arc internal PR in your own repo (one closable bead or small-epic slice) | Fork-based OSS contribution → `$pr-implement` |
+| PR is the atomic-revert unit; scenarios ship-or-revert together | Large epic (15+ child beads) / multi-wave → `$crank` |
 | Closing a harvested next-work item | Architecture / contract change → slow lane / human review |
-| Mechanical drift fix or regression closure | Work that can't fit one scenario → split or escalate |
+| Mechanical drift fix or regression closure | Scenarios have independent rollback → split into separate arcs |
 
 ## The 9-step cycle
 
