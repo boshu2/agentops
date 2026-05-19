@@ -4,12 +4,29 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 FIXTURE_DIR="$REPO_ROOT/tests/fixtures/flywheel-proof"
-WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/flywheel-proof-XXXXXX")"
+
+# Shared e2e harness (skill: testing-real-service-e2e-no-mocks):
+#   guards  — refuse-to-run if HOME/repo/ao binary look real
+#   logger  — JSON-line sidecar for CI parseability
+#   factory — sandbox + repo + ao binary builders
+# shellcheck source=../lib/e2e-guards.sh
+source "$REPO_ROOT/tests/lib/e2e-guards.sh"
+# shellcheck source=../lib/e2e-logger.sh
+source "$REPO_ROOT/tests/lib/e2e-logger.sh"
+# shellcheck source=../lib/e2e-factory.sh
+source "$REPO_ROOT/tests/lib/e2e-factory.sh"
+
+# Note: proof-run.sh never executes ao relative to PWD — every run_ao call
+# chdirs into REPO_DIR. So e2e_guard_not_repo_root is intentionally NOT
+# called here; the per-invocation REPO/HOME/AO guards below are sufficient.
+
+WORK_DIR="$(e2e_factory_sandbox flywheel-proof)"
 BUILD_DIR="$WORK_DIR/bin"
 HOME_DIR="$WORK_DIR/home"
 REPO_DIR="$WORK_DIR/repo"
 AO_BIN="$BUILD_DIR/ao"
 LOG_FILE="$WORK_DIR/proof-run.log"
+SIDECAR_LOG="$WORK_DIR/proof-run.jsonl"
 PASS_COUNT=0
 LOOKUP_QUERY="task-scoped lookup queries"
 
@@ -26,10 +43,13 @@ log() {
 pass() {
   PASS_COUNT=$((PASS_COUNT + 1))
   log "PASS: $*"
+  e2e_log_pass "$*"
 }
 
 fail() {
   log "FAIL: $*"
+  e2e_log_fail "$*"
+  e2e_log_summary
   exit 1
 }
 
@@ -82,51 +102,33 @@ run_ao() {
 require_cmd git
 require_cmd jq
 
-mkdir -p "$BUILD_DIR" "$HOME_DIR" "$REPO_DIR"
+mkdir -p "$HOME_DIR"
 export HOME="$HOME_DIR"
-export PATH="$BUILD_DIR:$PATH"
+e2e_log_init "flywheel-proof" "$SIDECAR_LOG"
+e2e_log_phase setup
 
-# Allow callers to bypass the build step by pointing PROOF_AO_BIN at an
-# already-built binary. Auto-detects $REPO_ROOT/cli/bin/ao when present so
-# the gate stays green when the toolchain download path is broken
-# (e.g. sum.golang.org returning 503) but the local cli/bin/ao is fresh —
-# the proof-run still validates end-to-end behavior, just against the
-# pre-built binary instead of a freshly-built one. Set PROOF_FORCE_BUILD=1
-# to disable both the override and the auto-detect and always rebuild.
-PROOF_AO_BIN="${PROOF_AO_BIN:-}"
-if [[ -z "$PROOF_AO_BIN" && "${PROOF_FORCE_BUILD:-0}" != "1" && -x "$REPO_ROOT/cli/bin/ao" ]]; then
-  PROOF_AO_BIN="$REPO_ROOT/cli/bin/ao"
-fi
-if [[ -n "$PROOF_AO_BIN" && -x "$PROOF_AO_BIN" ]]; then
-  log "Using pre-built ao binary: $PROOF_AO_BIN"
-  cp "$PROOF_AO_BIN" "$AO_BIN"
-  pass "reused pre-built ao binary"
-else
-  require_cmd go
-  log "Building local ao binary"
-  (
-    cd "$REPO_ROOT/cli"
-    go build -o "$AO_BIN" ./cmd/ao
-  ) >/dev/null
-  pass "built local ao binary"
-fi
+# Build (or reuse) the ao binary inside the sandbox. Honors PROOF_AO_BIN and
+# PROOF_FORCE_BUILD — see tests/lib/e2e-factory.sh for the resolution rules.
+AO_BIN="$(e2e_factory_ao_bin "$BUILD_DIR" "$REPO_ROOT")"
+export PATH="$BUILD_DIR:$PATH"
+pass "ao binary resolved at $AO_BIN"
+
+# Production safety guards — every assertion must hold before we touch state.
+# The skill's "never hit prod from tests" rule, translated to the CLI domain:
+# $HOME must point inside the sandbox, the repo must be under a temp prefix,
+# and the binary must live in the sandbox build dir (or repo-local cli/bin).
+e2e_guard_home "$HOME_DIR"
+e2e_guard_ao_bin "$AO_BIN"
 
 log "Creating isolated proof repo"
-(
-  cd "$REPO_DIR"
-  git init -q
-  git config user.email "proof-run@agentops.test"
-  git config user.name "Proof Run"
-  printf '# Flywheel Proof Repo\n' > README.md
-  git add README.md
-  git commit -q -m "init"
-)
+REPO_DIR="$(e2e_factory_repo "$REPO_DIR")"
+e2e_guard_repo "$REPO_DIR"
 pass "initialized isolated repo"
 
-TRANSCRIPT="$REPO_DIR/seed-session.jsonl"
-cp "$FIXTURE_DIR/seed-session.jsonl" "$TRANSCRIPT"
+TRANSCRIPT="$(e2e_factory_fixture "$FIXTURE_DIR/seed-session.jsonl" "$REPO_DIR")"
 pass "copied raw transcript fixture"
 
+e2e_log_phase forge
 log "Phase 1: forge transcript into pending learnings"
 run_ao forge transcript "$TRANSCRIPT" --quiet >/dev/null
 PENDING_DIR="$REPO_DIR/.agents/knowledge/pending"
@@ -136,6 +138,7 @@ if [[ "$PENDING_COUNT" -lt 1 ]]; then
 fi
 pass "forge produced $PENDING_COUNT pending learning(s)"
 
+e2e_log_phase pool-ingest
 log "Phase 2: pool ingest lands pending learnings as pool candidates"
 # Use 'ao pool ingest' rather than 'ao flywheel close-loop' here: close-loop now
 # auto-promotes candidates in the same call (commit b69a00f4 removed the
@@ -153,6 +156,7 @@ if [[ -z "$CANDIDATE_PATH" ]]; then
 fi
 assert_file_exists "pool candidate exists after ingest" "$CANDIDATE_PATH"
 
+e2e_log_phase cite-promote
 log "Phase 3: cite the pool candidate and promote it into a retrievable artifact"
 run_ao metrics cite "$CANDIDATE_PATH" --type reference --session proof-promotion --query "$LOOKUP_QUERY" >/dev/null
 CLOSE2_JSON="$WORK_DIR/close-loop-2.json"
@@ -164,8 +168,10 @@ if [[ -z "$ARTIFACT_PATH" ]]; then
   fail "expected promoted artifact path in close-loop output"
 fi
 assert_file_exists "promoted artifact exists on disk" "$ARTIFACT_PATH"
+e2e_log_artifact "$ARTIFACT_PATH" "promoted-artifact"
 ARTIFACT_JSON="$(printf '%s' "$ARTIFACT_PATH" | jq -R '.')"
 
+e2e_log_phase lookup
 log "Phase 4: lookup retrieves the promoted artifact and records retrieved evidence"
 LOOKUP_JSON="$WORK_DIR/lookup.json"
 run_ao lookup --query "$LOOKUP_QUERY" --json > "$LOOKUP_JSON"
@@ -178,6 +184,7 @@ assert_json_match \
   "$CITATIONS_PATH" \
   "select(.artifact_path == $ARTIFACT_JSON and .citation_type == \"retrieved\")"
 
+e2e_log_phase feedback
 log "Phase 5: record applied evidence and close the feedback loop"
 run_ao metrics cite "$ARTIFACT_PATH" --type applied --session proof-apply --query "$LOOKUP_QUERY" >/dev/null
 mkdir -p "$REPO_DIR/.agents/ao"
@@ -199,6 +206,7 @@ assert_json_match \
   "$CITATIONS_PATH" \
   "select(.artifact_path == $ARTIFACT_JSON and .citation_type == \"applied\" and .feedback_given == true)"
 
+e2e_log_phase nightly
 log "Phase 6: run nightly dream cycle proof against the isolated corpus"
 NIGHTLY_DIR="$WORK_DIR/nightly"
 mkdir -p "$NIGHTLY_DIR"
@@ -211,4 +219,6 @@ assert_file_exists "nightly summary exists" "$NIGHTLY_DIR/summary.json"
 assert_json_match "nightly summary exposes retrieval_live" "$NIGHTLY_DIR/summary.json" '.retrieval_live != null'
 assert_json_match "nightly retrieval report has coverage" "$NIGHTLY_DIR/retrieval-bench.json" '.coverage >= 0'
 
-log "FLYWHEEL PROOF: PASS ($PASS_COUNT checks)"
+e2e_log_phase "complete"
+e2e_log_summary
+log "FLYWHEEL PROOF: PASS ($PASS_COUNT checks) — sidecar: $SIDECAR_LOG"
