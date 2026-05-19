@@ -27,7 +27,7 @@ fi
 classify() {
   local id="${1:-}"
   case "$id" in
-    *security*|*secret*|*hook-preflight*|*toolchain-security*|*release-security*|*ci-security*)
+    *security*|*secret*|*hook-preflight*)
       echo "security"
       ;;
     *build*|*test*|*vet*|*wiring*|*evolve*|*rpi*|*session-start*|*kill-switch*)
