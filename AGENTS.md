@@ -324,7 +324,6 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **agentops-contract-canaries** | Runs the official deterministic AgentOps contract canary test list in `tests/canaries/agentops-core-official.txt` | Stable contract canary regression, selected suite failure, or missing canary dependency |
 | **eval-workbench-verify** | Behavioral eval workbench golden state, task scoring scripts, and suite structure | Broken workbench fixture, failing golden-state tests, or malformed eval suite JSON |
 | **factory-claim-ledger-strict** | Runs `bash scripts/check-factory-claim-ledger.sh` and emits a structured observation artifact mapping verdict + surfaces_touched per PR (soc-lmww1, Wave 1C) | Non-blocking (`continue-on-error: true`); claim-ledger drift surfaces in observation JSON. Promotion to blocking is the Wave 1E concern documented in-job |
-| **practice-citations** (non-blocking) | Walks Primitives (skills/hooks/evals/CLI/schemas and scripts with declarations) for `practices: [slug,...]` derivation from PRACTICE-REGISTRY.md; reports missing or invalid slug citations | Non-blocking (`continue-on-error: true`); strict advisory initially. Promotes to required after one clean backfill cycle |
 | **eval-skill-delta** | Eval skill-delta CI gate validates skill-on vs skill-off delta infrastructure | Broken delta scorecard, missing harness, or malformed A/B config |
 | **shellcheck** | All `.sh` files pass ShellCheck at error severity | Unquoted variables, missing `set -euo pipefail` |
 | **markdownlint** | Markdown style/lint rules pass for repository docs | Docs formatting regressions not caught by link checks |
@@ -344,7 +343,6 @@ This repo has a canonical root worktree. It owns the common `.git` directory and
 | **file-manifest-overlap** | No file path conflicts between workers/skills | Two skills claim the same output file |
 | **doctor-check** (non-blocking) | `ao doctor` runs without error on built binary | Non-blocking (`continue-on-error: true`) |
 | **skill-lint** | Skill line limits, required sections, Claude feature coverage | Judgment-tier skill exceeds 600 lines; missing `## Examples` in user-facing skill |
-| **learning-coherence** | Learning files have valid frontmatter and are not garbage/hallucinated | Auto-extracted learnings with no recognized fields or boilerplate content |
 | **bats-tests** | BATS integration tests for shell scripts pass | Hook or script behavioral regression |
 | **check-test-staleness** (non-blocking) | Detects stale/abandoned test files | Non-blocking (`continue-on-error: true`) |
 | **swarm-evidence** (non-blocking) | Swarm evidence files and file manifests are valid | Non-blocking (`continue-on-error: true`); informational artifact validation only |

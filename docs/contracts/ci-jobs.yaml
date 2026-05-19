@@ -41,9 +41,6 @@ jobs:
 - name: hook-output-schema-lint
   reason: Hooks emit only the safely-portable PreToolUse output subset both Claude and Codex CLI accept
   failure: Using `hookSpecificOutput.updatedInput` (silently dropped by Codex CLI 0.128.0+)
-- name: learning-coherence
-  reason: Learning files have valid frontmatter and are not garbage/hallucinated
-  failure: Auto-extracted learnings with no recognized fields or boilerplate content
 - name: markdownlint
   reason: Markdown style/lint rules pass for repository docs
   failure: Docs formatting regressions not caught by link checks
@@ -53,9 +50,6 @@ jobs:
 - name: plugin-load-test
   reason: No symlinks anywhere in the repo; manifests valid; plugin structure correct
   failure: Creating symlinks instead of real file copies
-- name: practice-citations
-  reason: 'Walks Primitives (skills/hooks/evals/CLI/schemas and scripts with declarations) for `practices: [slug,...]` derivation from PRACTICE-REGISTRY.md; reports missing or invalid slug citations'
-  failure: 'Non-blocking (`continue-on-error: true`); strict advisory initially. Promotes to required after one clean backfill cycle'
 - name: pre-push-gate-wired
   reason: '`.githooks/pre-push` invokes `scripts/pre-push-gate.sh`; sandbox push smoke proves the hook fires as a single fast pass, replays refspec stdin, and updates the remote ref'
   failure: Editing the hook chain without re-running `scripts/check-pre-push-gate-wired.sh --dry-run-smoke`
@@ -194,5 +188,3 @@ jobs:
 - name: json-flag-consistency
   reason: All `--json` flags produce valid JSON with consistent format
   failure: Missing `--json` support on a new command
-# extracted 65 jobs
-
