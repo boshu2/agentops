@@ -124,19 +124,6 @@ jobs:
           chmod +x scripts/validate-hook-preflight.sh
           ./scripts/validate-hook-preflight.sh
 
-  pre-push-gate-wired:
-    needs: [changes]
-    if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
-    name: pre-push-gate-wired (required)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Verify pre-push gate chain is intact
-        run: |
-          chmod +x scripts/check-pre-push-gate-wired.sh
-          ./scripts/check-pre-push-gate-wired.sh --dry-run-smoke
-
   agentops-eval-baseline-audit:
     needs: [changes]
     if: needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
@@ -1735,7 +1722,7 @@ jobs:
           cli/bin/ao goals trace --orphans || echo "WARN: trace --orphans found issues (warn-only, F1.6 / soc-58nt.1.9)"
 
   summary:
-    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, factory-claim-ledger-strict, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity]
+    needs: [changes, doc-release-gate, smoke-test, hook-preflight, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, factory-claim-ledger-strict, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1745,7 +1732,6 @@ jobs:
           echo "doc-release-gate: ${{ needs.doc-release-gate.result }}"
           echo "smoke-test: ${{ needs.smoke-test.result }}"
           echo "hook-preflight: ${{ needs.hook-preflight.result }}"
-          echo "pre-push-gate-wired: ${{ needs.pre-push-gate-wired.result }}"
           echo "agentops-eval-baseline-audit: ${{ needs.agentops-eval-baseline-audit.result }}"
           echo "standards-injector-completeness: ${{ needs.standards-injector-completeness.result }}"
           echo "validate-hooks-doc-parity: ${{ needs.validate-hooks-doc-parity.result }}"

@@ -34,14 +34,15 @@ install_dev() {
     fi
 
     echo "Installing AgentOps development wiring..."
-    echo "Step 1/3: Configuring repo-managed git hooks..."
+    echo "Step 1/2: Configuring repo-managed git hooks..."
     bash "$repo_root/scripts/install-dev-hooks.sh"
 
-    echo "Step 2/3: Building cli/bin/ao..."
+    echo "Step 2/2: Building cli/bin/ao..."
     make -C "$repo_root/cli" build
 
-    echo "Step 3/3: Verifying pre-push gate wiring..."
-    bash "$repo_root/scripts/check-pre-push-gate-wired.sh" --dry-run-smoke --check-activation
+    # Pre-push gate-wiring verification retired (soc-bbvw / soc-g2r9):
+    # local pre-push gate retired; CI is sole authoritative push gate.
+    # See docs/contracts/local-pre-push-gate-retirement.md.
 
     echo ""
     echo "Done! Development checkout ready."
