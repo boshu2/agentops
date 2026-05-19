@@ -134,6 +134,23 @@ assert_blocked "legacy AGENTOPS_ROLE=worker" \
 assert_blocked "native team worker name" \
     '{"tool_input":{"command":"git push"}}' CLAUDE_AGENT_NAME=worker-1
 
+# Regression for soc-is4c: PWD-in-worktrees alone MUST NOT classify a session
+# as a worker. The historical heuristic at line 37 fired on every solo Claude
+# session opened in .claude/worktrees/ for isolation, and the documented
+# kill-switch env vars were unreachable from inside a Bash tool call.
+run_hook_with_pwd() {
+    local payload="$1" pwd_override="$2"; shift 2
+    env -i HOME="$HOME" PATH="$PATH" PWD="$pwd_override" "$@" \
+        bash "$HOOK" <<<"$payload"
+}
+out=$(run_hook_with_pwd '{"tool_input":{"command":"git commit -m x"}}' \
+    "$TMPDIR_TEST/.claude/worktrees/foo" 2>&1)
+if [[ $? -eq 0 ]]; then
+    pass "ALLOW: solo session under .claude/worktrees/ (no worker env)"
+else
+    fail "PWD-in-worktrees alone must not block commits (soc-is4c regression)"
+fi
+
 if [[ $errors -eq 0 ]]; then
     echo "ALL TESTS PASSED"
     exit 0
