@@ -271,7 +271,7 @@ Read [references/troubleshooting.md](references/troubleshooting.md) for full dia
 ## Reference Documents
 
 - [references/shared-checkout-discipline.md](references/shared-checkout-discipline.md)
-- [references/conflict-recovery.md](references/conflict-recovery.md)
+- [references/agent-genie-coordination-contract.md](references/agent-genie-coordination-contract.md) — Eight-field contract each parallel stream declares before claiming work- [references/conflict-recovery.md](references/conflict-recovery.md)
 - [references/cold-start-contexts.md](references/cold-start-contexts.md)
 - [references/backend-background-tasks.md](references/backend-background-tasks.md)
 - [references/backend-claude-teams.md](references/backend-claude-teams.md)
