@@ -98,13 +98,32 @@ echo "Installing AgentOps..."
 
 # Check prerequisites
 command -v curl >/dev/null 2>&1 || { echo "Error: curl required."; exit 1; }
-command -v claude >/dev/null 2>&1 || command -v codex >/dev/null 2>&1 || {
+
+# Per-runtime detection (soc-vuu6.31). The old `claude || codex` test bounced
+# only on zero runtimes — single-runtime users got the README mixed-model
+# example silently. Detect each runtime explicitly so we can: (a) report
+# yes/no per runtime, (b) name the mode AgentOps will operate in, and
+# (c) point single-runtime users at the install link for the other.
+HAS_CLAUDE=no
+HAS_CODEX=no
+command -v claude >/dev/null 2>&1 && HAS_CLAUDE=yes
+command -v codex >/dev/null 2>&1 && HAS_CODEX=yes
+echo "Detected Claude Code: $HAS_CLAUDE. Detected Codex CLI: $HAS_CODEX."
+if [ "$HAS_CLAUDE" = "yes" ] && [ "$HAS_CODEX" = "yes" ]; then
+    echo "AgentOps will use mixed-model mode (cross-vendor council, parallel /rpi)."
+elif [ "$HAS_CLAUDE" = "yes" ]; then
+    echo "AgentOps will use single-runtime mode (Claude Code only)."
+    echo "To unlock mixed-model judging, install Codex CLI: https://github.com/openai/codex"
+elif [ "$HAS_CODEX" = "yes" ]; then
+    echo "AgentOps will use single-runtime mode (Codex CLI only)."
+    echo "To unlock mixed-model judging, install Claude Code: https://docs.anthropic.com/en/docs/claude-code"
+else
     echo "Warning: No supported coding agent found (claude, codex)."
     echo "AgentOps requires Claude Code or Codex CLI. Install one first:"
     echo "  Claude Code: https://docs.anthropic.com/en/docs/claude-code"
     echo "  Codex CLI:   https://github.com/openai/codex"
     echo "Continuing anyway — you can install an agent later."
-}
+fi
 
 # Step 1: Install Codex plugin
 echo "Step 1/3: Installing Codex plugin..."
