@@ -84,26 +84,26 @@ surfaced naturally under adversarial cross-scoring.
 
 ## Failure Modes To Watch
 
-- **Models too aligned.** If Opus and Codex agree on everything for
++ **Models too aligned.** If Opus and Codex agree on everything for
   your domain, the duel produces no friction (love-fest scoring). The
   fix is to pick personas that have real disagreements, not to bigger
   the model gap.
-- **Briefing without tension.** A briefing that frames the choice
++ **Briefing without tension.** A briefing that frames the choice
   neutrally ("which option is better?") lets both models hedge. Frame
   the contestable claim: "I'm going to do X; tell me why I'm wrong."
-- **Skipping the reveal.** This is the one rule with no exception. The
++ **Skipping the reveal.** This is the one rule with no exception. The
   reveal is where each model confronts how the other scored *its* work;
   concessions only happen here.
-- **Orchestrator editorializing.** Report scores faithfully. The
++ **Orchestrator editorializing.** Report scores faithfully. The
   orchestrator's opinion goes only in the meta-analysis section.
 
 ## See Also
 
-- [dueling-route.md](dueling-route.md) — the mechanics this doc layers
++ [dueling-route.md](dueling-route.md) — the mechanics this doc layers
   on top of
-- [adversarial-protocol.md](adversarial-protocol.md) — the
++ [adversarial-protocol.md](adversarial-protocol.md) — the
   cross-scoring protocol used in Phase 5
-- [multi-agent-architecture.md](multi-agent-architecture.md) — pane
++ [multi-agent-architecture.md](multi-agent-architecture.md) — pane
   orchestration shape
-- Empirical reference: `.agents/council/sdlc-shape-2026-05-17/DUEL.md`
++ Empirical reference: `.agents/council/sdlc-shape-2026-05-17/DUEL.md`
   (local, gitignored) — the 632/620 SDLC-shape result this doc anchors
