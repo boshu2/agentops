@@ -274,6 +274,7 @@ Bridge / framing docs:
 - [Skill Dispositions (yaml)](contracts/skill-dispositions.yaml) — Canonical per-skill domain/disposition/rationale data; source-of-truth for `agentops-skill-domain-map.md`. Hand-edits to the .md forbidden — edit yaml and run `scripts/generate-skill-domain-map.sh` (golden-file gate, soc-zxia.3)
 - [Context Map](contracts/context-map.md) — Auto-generated bounded-context map of skills by hexagonal role with relationship and data-flow views (see ADR-0001)
 - [Skill Domain Map](contracts/skill-domain-map.md) — V0 DDD map assigning every shared skill to one explicit skill domain with ports, artifacts, and adapters
+- [Registry as derived artifact](contracts/registry-as-derived.md) — Design contract (soc-jbea, status:design): move `registry.json` out of version control to eliminate sibling-PR conflict cascade (40-50% of waste in the 2026-05-20 PR-cleanup session per Council 220-240). Same pattern for `skills-codex/.agentops-manifest.json` and `skills-codex/*/.agentops-generated.json`. Implementation deferred to soc-jbea.1 through soc-jbea.7.
 - [Skill Ports and Adapters](contracts/skill-ports-and-adapters.md) — V0 skill-boundary vocabulary for inbound ports, outbound ports, adapters, context packets, and guard surfaces
 - [Skill Lease Audit](contracts/skill-lease-audit.md) — V0 lease-on-life audit classifying all shared skills as keep, merge, split, retire, or unknown
 - [Repo Execution Profile](contracts/repo-execution-profile.md) — Repo-local bootstrap, validation, tracker, and done-criteria contract for autonomous orchestration
