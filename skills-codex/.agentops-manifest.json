@@ -727,7 +727,7 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "b1ea8ee2e039dba422beee52f621e67542bf1084f808680ec5c5ad6e386a8914",
+      "source_hash": "bab6198e85ed06e27ce5a09c6ef6e41f8928c1739dc993fc8c42e33fcec17754",
       "generated_hash": "6b5ce56f36cb10393e921e524539c3dd41d28a5bdce5eac645075050864222ef"
     },
     {
@@ -787,7 +787,7 @@
     {
       "name": "expert-council",
       "source_skill": "skills/expert-council",
-      "source_hash": "086b2e0ecf603e711ad0f1edf09197e6ee7e96af1a7a8f69feb171383d4678fd",
+      "source_hash": "d8659243e6987adc925926cd3dcb05c158fc1e24e0e944aea7f9cf5011ab2bb6",
       "generated_hash": "2db9315d89a07bee38b8975a58be99e1c8aca853f9a0987d5e5286acc57c84b5"
     },
     {

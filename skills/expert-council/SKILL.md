@@ -4,6 +4,12 @@ description: 'Alias for /council --mode=debate — adversarial named-persona deb
 practices:
 - llm-eval-harness
 hexagonal_role: domain
+consumes:
+- council
+produces: []
+context_rel:
+- kind: alias-of
+  with: council
 skill_api_version: 1
 user-invocable: true
 context:
