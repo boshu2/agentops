@@ -568,6 +568,7 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - [references/long-loop-discipline.md](references/long-loop-discipline.md) — Disk-is-truth axiom; the cross-cutting principle every other reference here implements
 - [references/artifacts.md](references/artifacts.md) — Generated files registry
 - [references/autonomous-execution.md](references/autonomous-execution.md) — Autonomous-loop rules, operator-shape carve-out, ScheduleWakeup self-perpetuation
+- [references/snapshot-pattern-for-long-cycle-gates.md](references/snapshot-pattern-for-long-cycle-gates.md) — 4-step pattern for converting multi-session corpus gates into single-commit-validatable artifacts
 - [references/compounding.md](references/compounding.md) — Knowledge flywheel and work harvesting
 - [references/context-budget.md](references/context-budget.md) — `CONTEXT_BUDGET_EXHAUSTED` as a third stop reason and handoff protocol
 - [references/convergence-mechanics.md](references/convergence-mechanics.md) — Read-path mechanisms (prior-failure injection, healing-first classifier, hypothesis tracking, STOP criteria) that turn write-only ledgers into compounding behavior
