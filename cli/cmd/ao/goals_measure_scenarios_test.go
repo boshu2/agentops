@@ -106,6 +106,18 @@ func setupMeasureScenarioProject(t *testing.T, goalsMD string, withArtifact bool
 	goalsMeasureTotalTimeout = 0
 	dryRun = false
 	goalsFile = "GOALS.md"
+	// soc-n6vb: defensively clear cobra command writers so RunE invocations
+	// resolve cmd.OutOrStdout()/ErrOrStderr() to the current os.Stdout/os.Stderr
+	// (which the test's captureJSONStdout has redirected). Without this, an
+	// earlier test that leaked a writer on rootCmd or any ancestor (e.g. a
+	// panicking executeCommand caller) would have RunE write into a stale
+	// buffer and our captured stdout would be empty.
+	rootCmd.SetOut(nil)
+	rootCmd.SetErr(nil)
+	goalsCmd.SetOut(nil)
+	goalsCmd.SetErr(nil)
+	goalsMeasureCmd.SetOut(nil)
+	goalsMeasureCmd.SetErr(nil)
 	return dir
 }
 

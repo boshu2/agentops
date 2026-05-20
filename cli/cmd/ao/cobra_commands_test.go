@@ -376,16 +376,30 @@ func executeCommand(args ...string) (string, error) {
 	rootCmd.SetErr(cmdBuf)
 	rootCmd.SetArgs(args)
 
+	// Always restore rootCmd output writers even if rootCmd.Execute() panics.
+	// Without this defer, a panicking Execute() leaves rootCmd.outWriter pointing
+	// at the now-out-of-scope cmdBuf; subsequent tests that invoke a subcommand's
+	// RunE directly (e.g. goalsMeasureCmd.RunE) will have cobra's OutOrStdout()
+	// resolve to the leaked buffer via parent-walking, silently swallowing their
+	// output and breaking tests that capture os.Stdout. (soc-n6vb)
+	defer func() {
+		rootCmd.SetOut(nil)
+		rootCmd.SetErr(nil)
+		rootCmd.SetArgs(nil)
+	}()
+
 	// Also capture os.Stdout for commands that use fmt.Printf directly
 	oldStdout := os.Stdout
 	r, w, pipeErr := os.Pipe()
 	if pipeErr != nil {
-		rootCmd.SetOut(nil)
-		rootCmd.SetErr(nil)
-		rootCmd.SetArgs(nil)
 		return "", pipeErr
 	}
 	os.Stdout = w
+	// Restore os.Stdout even if Execute panics; otherwise subsequent tests
+	// inherit a stale (possibly closed) pipe writer as os.Stdout. (soc-n6vb)
+	defer func() {
+		os.Stdout = oldStdout
+	}()
 
 	var stdoutBuf bytes.Buffer
 	copyDone := make(chan struct{})
@@ -400,10 +414,6 @@ func executeCommand(args ...string) (string, error) {
 	w.Close()
 	os.Stdout = oldStdout
 	<-copyDone
-
-	rootCmd.SetOut(nil)
-	rootCmd.SetErr(nil)
-	rootCmd.SetArgs(nil)
 
 	// Combine cmd buffer and stdout capture
 	combined := cmdBuf.String() + stdoutBuf.String()
