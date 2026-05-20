@@ -3290,6 +3290,23 @@ ao beads lint [flags]
       --status string   bd status filter (open, closed, all) (default "open")
 ```
 
+#### `ao beads resume`
+
+Transfers a stale claim via 'bd update <bead-id> --claim', then appends a
+
+```
+ao beads resume <bead-id> [flags]
+```
+
+**Flags:**
+
+```
+      --agent string    New claimant id (defaults to BEADS_ACTOR env var, else ao-beads-resume).
+  -h, --help            help for resume
+      --json            Emit the claim_transferred event to stdout (always written to ledger).
+      --ledger string   Path to the provenance ledger (relative to repo root). (default "docs/provenance/ledger.jsonl")
+```
+
 #### `ao beads stale-claims`
 
 Lists in_progress beads whose claim activity is older than --threshold.
