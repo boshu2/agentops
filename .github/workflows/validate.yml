@@ -1754,28 +1754,55 @@ jobs:
           echo "Evidence claims to verify ($(wc -l < /tmp/evidence-claims.txt | tr -d ' ')):"
           cat /tmp/evidence-claims.txt
 
-      - name: Fetch this workflow run's logs
+      - name: Fetch this workflow run's logs (per-job, durable)
         if: steps.claims.outputs.skip != 'true'
         id: fetch_log
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          # MVP fetch: `gh run view --log` returns sibling jobs' completed logs
-          # when this job runs *after* the rest of the workflow finishes.
-          # Empirically (PR #358 dogfood, 2026-05-19), this can return ~81 bytes
-          # even when other jobs are reported "completed" — GH Actions API
-          # eventual-consistency on log availability. Switching to per-job log
-          # fetching is the durable fix (filed as a follow-up bead). Until then,
-          # treat a small-log result as "verification unavailable" and skip.
-          gh run view "${{ github.run_id }}" --log > /tmp/run.log 2>&1 || true
+          # Per-job log fetch (soc-1nsx, supersedes the soc-eqjd MVP).
+          # `gh run view --log` returns the concatenated workflow log via an
+          # endpoint that lags behind individual job-log availability by tens of
+          # seconds to minutes — PR #358 dogfood saw ~81 bytes mid-run even
+          # when sibling jobs reported "completed". The per-job endpoint
+          # (`actions/jobs/{job_id}/logs`) serves each completed job's log as
+          # soon as that job finishes, with no whole-run eventual-consistency
+          # window. We page through the run's jobs, fetch each completed
+          # (non-skipped) sibling's log, and concatenate.
+          : > /tmp/run.log
+          page=1
+          jobs_seen=0
+          jobs_with_logs=0
+          while : ; do
+            page_json="$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100&page=${page}")"
+            page_count="$(jq '.jobs | length' <<<"$page_json")"
+            if [[ "${page_count}" -eq 0 ]]; then
+              break
+            fi
+            jobs_seen=$((jobs_seen + page_count))
+            while IFS=$'\t' read -r job_id job_conclusion; do
+              # Skip in-progress (empty conclusion) and skipped jobs — they
+              # have no log payload to verify against.
+              if [[ -z "${job_conclusion}" || "${job_conclusion}" = "skipped" ]]; then
+                continue
+              fi
+              if gh api "repos/${{ github.repository }}/actions/jobs/${job_id}/logs" >> /tmp/run.log 2>/dev/null; then
+                jobs_with_logs=$((jobs_with_logs + 1))
+              fi
+            done < <(jq -r '.jobs[] | "\(.id)\t\(.conclusion // "")"' <<<"$page_json")
+            if [[ "${page_count}" -lt 100 ]]; then
+              break
+            fi
+            page=$((page + 1))
+          done
           log_bytes="$(wc -c < /tmp/run.log)"
-          echo "fetched workflow log: ${log_bytes} bytes"
-          # 8 KB threshold: 65 jobs × ~150-byte minimum step output ≈ 10 KB.
-          # Below 8 KB means the API didn't propagate logs for most jobs.
-          if [[ "${log_bytes}" -lt 8192 ]]; then
+          echo "fetched per-job logs: ${jobs_with_logs}/${jobs_seen} jobs, ${log_bytes} bytes"
+          if [[ "${jobs_with_logs}" -eq 0 ]]; then
+            # No completed sibling jobs — either this job ran first or every
+            # sibling was skipped. Either way, no Evidence claim can resolve.
             echo "log_ok=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Workflow log API returned only ${log_bytes} bytes (GH Actions in-run log eventual-consistency); skipping AP#7 verification this run. Follow-up: per-job log fetching."
+            echo "::warning::No completed sibling jobs returned logs (${jobs_seen} jobs total); skipping AP#7 verification this run."
           else
             echo "log_ok=true" >> "$GITHUB_OUTPUT"
           fi
@@ -1804,10 +1831,10 @@ jobs:
           fi
           echo "::notice::All $total Evidence claim(s) verified against workflow run logs"
 
-      - name: AP#7 verification unavailable (small log)
+      - name: AP#7 verification unavailable (no sibling logs)
         if: steps.claims.outputs.skip != 'true' && steps.fetch_log.outputs.log_ok != 'true'
         run: |
-          echo "::notice::AP#7 verification skipped — workflow log API returned <8KB. The PR's Evidence: line was extracted but cannot be cross-checked against run logs in this CI shape. Tracked for fix in successor bead (per-job log fetch)."
+          echo "::notice::AP#7 verification skipped — no completed sibling jobs returned logs. The PR's Evidence: line was extracted but cannot be cross-checked against per-job logs in this CI shape (likely: only this job ran, or all siblings were skipped)."
 
   summary:
     needs: [changes, doc-release-gate, smoke-test, hook-preflight, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-pr-evidence-claims, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, factory-claim-ledger-strict, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity]
