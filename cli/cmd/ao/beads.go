@@ -135,6 +135,7 @@ func init() {
 	beadsCmd.AddCommand(beadsVerifyCmd)
 	beadsCmd.AddCommand(beadsLintCmd)
 	beadsCmd.AddCommand(beadsHarvestCmd)
+	beadsCmd.AddCommand(beadsStaleCmd) // soc-vuu6.27 slice 2
 
 	beadsVerifyCmd.Flags().BoolVar(&beadsVerifyJSON, "json", false,
 		"Emit verification report as JSON instead of human-readable text")
