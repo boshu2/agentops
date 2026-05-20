@@ -66,29 +66,31 @@ cd cli && make sync-hooks   # Sync embedded hooks/skills into cli/embedded/
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/pre-push-gate.sh` | Smart pre-push validation (`--fast` for diff-based) |
+| `scripts/ship.sh` | One-knob ship loop — detects inventory changes, runs regen sweep, opens PR |
 | `scripts/ci-local-release.sh` | Local release validation gate (run before tagging) |
 | `scripts/sync-skill-counts.sh` | Sync skill counts across docs after adding/removing skills |
 | `scripts/generate-cli-reference.sh` | Regenerate CLI docs after changing commands/flags |
 | `scripts/regen-codex-hashes.sh` | Regenerate hashes after changing skills-codex/ files |
+| `scripts/verify-gate-claim.sh` | AP#7 mechanical enforcement — verify `Evidence:` claims against gate logs |
 
 ## CI Validation
 
-All pushes to `main` run `.github/workflows/validate.yml` (24 jobs). **Run checks locally before pushing.**
+All pushes to `main` run `.github/workflows/validate.yml` (65 jobs). **CI is the sole authoritative push gate** per `docs/contracts/local-pre-push-gate-retirement.md` (soc-g2r9). The previous `scripts/pre-push-gate.sh` local mirror was retired in PR #357 because it drifted from CI and cost a self-correction PR per drift incident.
 
-### Quick Local Validation
+### Quick Local Sanity Checks (per-tool, not omnibus)
 
 ```bash
-scripts/pre-push-gate.sh --fast          # Recommended: diff-based conditional checks
 cd cli && make build && make test         # If you changed Go code
 cd cli && make sync-hooks                 # If you changed hooks/ or lib/hook-helpers.sh
-scripts/regen-codex-hashes.sh            # If you changed skills-codex/ files
-scripts/pre-push-gate.sh                 # Full gate (all 33 checks, ~3min)
+scripts/regen-codex-hashes.sh             # If you changed skills-codex/ files
+bats tests/scripts/<script-you-touched>.bats   # Per-script regression suite
 
 # If you touched docs/ and need the mkdocs strict check locally:
 # (system mkdocs ≤1.1.2 cannot parse the modern mkdocs.yml — needs material plugins)
 python3 -m venv .venv-mkdocs && .venv-mkdocs/bin/pip install -r requirements-docs.txt && .venv-mkdocs/bin/mkdocs build --strict
 ```
+
+Run only the per-tool checks for the surfaces you actually touched. Push, let CI run, fix any failures. The 30-90s CI feedback loop replaced the 10-20s local omnibus gate intentionally — the per-incident drift cost dominates the per-push wait.
 
 ### Rules That Break CI
 
@@ -139,11 +141,13 @@ GOALS.md is the strategic intent layer consumed by `/evolve` and `/goals`:
 
 **Every change to `main` is a PR. Every PR cites a bead. The unit of a PR is one *coherent arc* — a closable bead (or small-epic slice) with a single rollback semantic. Small epics (≤5 child beads, same surface) ship as one PR with N commits. Large epics (15+ child beads) ship as N PRs sliced by scenario or wave.** Direct pushes to `main` are rejected by branch protection. Derivation: `.agents/council/sdlc-shape-2026-05-17/DUEL.md` (local, gitignored — duel between Claude Opus 4.7 and Codex gpt-5.5, 2026-05-17). 2026-05-19 evolution from "1 scenario per PR" after the 8-PR merge-arc burned out the `gh-merge-chain` dance — `soc-1lp1`.
 
+**Autonomous-session scope (sister rule to coherent-arc).** Coherent-arc governs the *shape* of a single PR; session-scope governs the *count* of consecutive PRs. **Default: 2-4 PRs per autonomous session.** At ≥5 PRs shipped or in-flight in one session, **stop and run a post-mortem before continuing** — diminishing returns and reactive-PR spirals (PR-fixes-fallout-from-prior-PR) are the dominant failure mode in the back-half of long sessions. Derivation: the 2026-05-19 cron-loop session shipped 6 PRs with 3 self-corrections; PRs #5–#6 each fixed fallout from #1–3. Visible reactivity by PR #5 but the loop kept nudging "keep going" without surfacing the post-mortem signal. Mechanical enforcement (Stop-hook reminder or `bd` policy gate) is a successor concern. (soc-waxr)
+
 ### Phases
 
 1. **Claim.** `bd ready` → pick a bead → `bd update <id> --claim`. **No bead, no PR.** If the work is genuinely new, `bd create` first.
 2. **Scope.** Read the bead's acceptance: a `.feature` file (canonical when present) or an embedded `## Scenarios` block in the bead description. Free-text acceptance is invalid — promote it to scenarios before work begins. Default: **one PR per coherent arc** — bundle scenarios that ship-or-revert together; split scenarios with independent rollback. The PR is the *atomic-revert unit*. Carve-out: `type=chore` with `#trivial` label for tiny work.
-3. **Ship.** `bd worktree create --branch <type>/<bead-id>-<scenario-token>-<short-slug>` — worktree-mandatory; do not edit in the shared checkout. Implement. Run `scripts/pre-push-gate.sh --fast` before push.
+3. **Ship.** `bd worktree create --branch <type>/<bead-id>-<scenario-token>-<short-slug>` — worktree-mandatory; do not edit in the shared checkout. Implement. Run per-tool sanity checks for the surfaces you touched (`cd cli && make test`, `bats tests/scripts/<file>.bats`, etc.); CI runs the omnibus validation on push.
 4. **Close.** Open PR. CI validates the merge state. Squash-merge when green. The bead closes only when every scenario is merged (or explicitly cancelled in bead metadata).
 
 ### Branch + PR shape
