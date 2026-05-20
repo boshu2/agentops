@@ -179,6 +179,7 @@ Skills that chain to other skills (e.g., `/rpi` calls `/research`, `/vibe` calls
 
 ## Reference Documents
 
+- [references/substring-rename-overreach.md](references/substring-rename-overreach.md) — Pre-rename checklist for bulk sed across same-prefix concepts
 - [references/content-hash-cache.md](references/content-hash-cache.md)
 - [references/compaction-signals.md](references/compaction-signals.md)
 - [references/backend-background-tasks.md](references/backend-background-tasks.md)
