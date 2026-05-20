@@ -669,7 +669,14 @@ jobs:
 
   registry-check:
     needs: [changes]
-    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+    # Trigger on ANY input scripts/generate-registry.sh actually reads
+    # (skills/, hooks/, evals/, cli/cmd/ao/) — not just skills/. The MVP
+    # filter missed `hooks` and `eval` and `go`, which let PR #362 land
+    # session-pr-counter.sh without re-running this check; the drift sat on
+    # main until a workflow-touching PR (#364) re-triggered it. soc-xhp6
+    # closes the path-filter-SKIPPED-≠-drift-absent gap. See
+    # .agents/learnings/2026-05-20-path-filter-skipped-not-absent.md.
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
