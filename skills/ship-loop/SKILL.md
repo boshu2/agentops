@@ -110,7 +110,7 @@ Coherent-arc governs the *shape* of a single PR; session-scope governs the *coun
 - **≥5 PRs in flight or merged in one session triggers a mandatory post-mortem before continuing.** Diminishing returns and reactive-PR spirals (PR-fixes-fallout-from-prior-PR) are the dominant failure mode in the back-half of long sessions.
 - **Post-mortem shape (1-2 sentences each):** Which PRs were planned vs reactive? How many self-corrections? Was the marginal PR discovery or churn?
 
-**Derivation:** the 2026-05-19 cron-loop session shipped 6 PRs with 3 self-corrections; PRs #5–#6 each fixed fallout from #1–3. Visible reactivity by PR #5; the cron-loop kept nudging "keep going" without surfacing the post-mortem signal. Mechanical enforcement (Stop-hook reminder or `bd` policy gate) is filed as a successor concern. (soc-waxr)
+**Derivation:** the 2026-05-19 cron-loop session shipped 6 PRs with 3 self-corrections; PRs #5–#6 each fixed fallout from #1–3. Visible reactivity by PR #5; the cron-loop kept nudging "keep going" without surfacing the post-mortem signal. Mechanical enforcement ships as `hooks/session-pr-counter.sh` — a PreToolUse Bash hook on `gh pr create` that fires at `count >= threshold-1` (default 5) and emits the post-mortem prompts via `additionalContext`, with optional hard-block via `AGENTOPS_SESSION_PR_BLOCK=1` (soc-1aou, PR #362). (soc-waxr)
 
 ## Pair mechanics (claude-review)
 
