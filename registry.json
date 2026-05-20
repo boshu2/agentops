@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-20T13:06:12Z",
+  "generated_at": "2026-05-20T13:18:08Z",
   "summary": {
     "skills": 79,
     "hooks": 44,
@@ -465,7 +465,7 @@
         "path": "skills/shared/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 15
+        "reference_count": 16
       },
       {
         "name": "standards",
