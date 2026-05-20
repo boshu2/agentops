@@ -480,6 +480,8 @@ done
 4. **CONTEXT_BUDGET_EXHAUSTED** — `context_streak >= 2` (two consecutive cycles forced into scout-mode or harvested-as-defer because the current context is too heavy to safely execute available work). See `references/context-budget.md`.
 5. Regression breaker after a revert.
 
+**Mandatory checkpoint #6 — session-PR threshold (NOT terminal, gates next cycle):** at `session_pr_count >= 5` (soc-waxr default), invoke `/post-mortem --deep`, wait for verdict file. PASS → continue. WARN → continue with caveat in next cycle's `notes`. FAIL or non-convergence → write STOP. Agent MUST NOT self-grade or self-write STOP. Full procedure in `references/postmortem-checkpoint.md` (soc-n75z).
+
 **Self-perpetuation modes:** the terminal-native `ao evolve` loop and the Claude-Code-harness `ScheduleWakeup` end-of-turn pattern are duals — both drive Step 1..Step 7 repeatedly against the same persisted state. See `references/autonomous-execution.md` for the ScheduleWakeup cadence and the rule that hard stops must NOT re-arm.
 
 Push only when productive work has accumulated:
@@ -492,6 +494,8 @@ fi
 ### Teardown
 
 Read `references/knowledge-loop-integration.md` for the full teardown learning extraction procedure (commit staged artifacts, run `/post-mortem`, push, report summary).
+
+A teardown `/post-mortem` is a light-touch retrospective on session-end. It does NOT substitute for the mandatory threshold checkpoint (`references/postmortem-checkpoint.md`); that one is council-gated and edge-triggered at `session_pr_count >= 5`. Never write `.agents/evolve/STOP` as a substitute for the checkpoint's verdict file — STOP without a verdict is the 2026-05-20 anti-pattern (soc-n75z).
 
 **Release-context teardown (MANDATORY when the loop ran on a release-shaped branch):**
 
@@ -577,6 +581,7 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - [references/metronome-gate.md](references/metronome-gate.md) — Cross-cycle detector that blocks the same-mode-repeated failure mode (cycles 144-154)
 - [references/oscillation.md](references/oscillation.md) — Oscillation detection and quarantine
 - [references/pre-flight-schema-check.md](references/pre-flight-schema-check.md) — Cheap field-fit check before architectural migration cycles
+- [references/postmortem-checkpoint.md](references/postmortem-checkpoint.md) — Stop reason #6: session-PR threshold mandatory `/post-mortem --deep` checkpoint (soc-n75z)
 - [references/parallel-execution.md](references/parallel-execution.md) — Parallel /swarm architecture
 - [references/quality-mode.md](references/quality-mode.md) — Quality-first mode: scoring, priority cascade, artifacts
 - [references/scout-mode.md](references/scout-mode.md) — Scout-mode as a first-class cycle result; scope filter procedure
