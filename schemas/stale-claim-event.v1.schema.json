@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/stale-claim-event.v1.schema.json",
+  "title": "Stale Claim Event",
+  "description": "Event emitted when a stale bead claim is detected or transferred under the fungibility doctrine (soc-vuu6.27). Consumed by `ao beads stale-claims` (read-only listing) and `ao beads resume` (atomic transfer). Persisted to docs/provenance/ledger.jsonl by the transfer code so the bd audit trail records who picked up whose work and why. Schema lands FIRST (slice 1) so subsequent Go code (slices 2 + 3) and the daemon job (slice 4) all consume the same shape.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_type",
+    "bead_id",
+    "detected_at",
+    "original_claimant",
+    "evidence"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Bumped when shape changes; consumers gate on this."
+    },
+    "event_type": {
+      "type": "string",
+      "enum": ["stale_detected", "claim_transferred"],
+      "description": "stale_detected = `ao beads stale-claims` surfaced this in its listing. claim_transferred = `ao beads resume` performed an atomic transfer. Both forms ship as the same record so consumers don't branch on shape."
+    },
+    "bead_id": {
+      "type": "string",
+      "pattern": "^[a-z]{2,6}-[0-9a-z.]+$",
+      "description": "The bead whose claim is stale (or just transferred)."
+    },
+    "detected_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC ISO-8601 timestamp of detection or transfer."
+    },
+    "original_claimant": {
+      "$ref": "#/$defs/Agent",
+      "description": "The agent identity that originally claimed the bead and is now considered stale."
+    },
+    "new_claimant": {
+      "$ref": "#/$defs/Agent",
+      "description": "REQUIRED for event_type == claim_transferred. The agent that picked up the work. OMITTED for stale_detected."
+    },
+    "evidence": {
+      "type": "object",
+      "description": "Why this claim was deemed stale. At least one of last_touch_ts / worktree_quiet_since / heartbeat_expired_at must be present; multiple signals strengthen the determination.",
+      "additionalProperties": false,
+      "properties": {
+        "last_touch_ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last bd activity (update, comment, status change) attributed to the original claimant on this bead."
+        },
+        "claim_age_hours": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Hours between the claim being taken and detected_at."
+        },
+        "worktree_quiet_since": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Most recent commit or file-change timestamp under the worktree associated with this bead. Absent = no worktree association or no commits yet."
+        },
+        "heartbeat_expired_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the agent's session-bootstrap heartbeat (vuu6.25) was last seen, if heartbeats are wired."
+        },
+        "threshold_hours": {
+          "type": "number",
+          "minimum": 0,
+          "description": "The staleness threshold in hours that the detector applied. Defaults to 4 if absent."
+        },
+        "last_evidence_event": {
+          "type": "string",
+          "description": "Free-text descriptor of the most recent operationally-meaningful event (e.g. 'commit cce097cf', 'bd update notes', 'gh pr push'). Used in human-readable listings."
+        }
+      },
+      "anyOf": [
+        { "required": ["last_touch_ts"] },
+        { "required": ["worktree_quiet_since"] },
+        { "required": ["heartbeat_expired_at"] }
+      ]
+    },
+    "transfer": {
+      "type": "object",
+      "description": "REQUIRED for event_type == claim_transferred. Captures the atomic-update fingerprint so concurrent transfer attempts are auditable.",
+      "additionalProperties": false,
+      "required": ["prior_revision", "new_revision"],
+      "properties": {
+        "prior_revision": {
+          "type": "string",
+          "description": "The bead's revision/etag/version at the moment the transfer was attempted. Used for optimistic-concurrency control."
+        },
+        "new_revision": {
+          "type": "string",
+          "description": "Post-transfer revision/etag/version."
+        },
+        "notes_appended": {
+          "type": "boolean",
+          "description": "True when the transferring command also wrote a bd note crediting both agents."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "event_type": { "const": "claim_transferred" } } },
+      "then": {
+        "required": ["new_claimant", "transfer"]
+      }
+    }
+  ],
+  "$defs": {
+    "Agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable agent identity. Convention: `<runtime>:<model>:<short-token>` (e.g. `claude:opus-4-7:s2k4d`)."
+        },
+        "runtime": {
+          "type": "string",
+          "enum": ["claude-code", "codex", "openclaw", "agentopsd", "unknown"],
+          "description": "Optional. Which runtime the agent ran in."
+        },
+        "model": {
+          "type": "string",
+          "description": "Optional. Model id (e.g. claude-opus-4-7, gpt-5.5-codex)."
+        }
+      }
+    }
+  }
+}
