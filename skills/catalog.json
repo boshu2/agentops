@@ -1,0 +1,1681 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-05-20T22:21:21Z",
+  "skill_count": 79,
+  "skills": [
+    {
+      "name": "autodev",
+      "description": "Manage bounded autonomous dev loops.",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [
+        "evolve",
+        "rpi"
+      ],
+      "produces": [],
+      "practices": [
+        "cmm-process-maturity",
+        "ai-assisted-dev",
+        "dora-metrics"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "beads",
+      "description": "Track issues with bd/br, triage with bv, and convert plans to beads.",
+      "hexagonal_role": "driven-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "bd-issue"
+      ],
+      "produces": [
+        "bd-issue"
+      ],
+      "practices": [
+        "agile-manifesto",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "crank"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "ratchet"
+        }
+      ],
+      "references_count": 19,
+      "codex_override_present": true
+    },
+    {
+      "name": "bootstrap",
+      "description": "Initialize AgentOps project files.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": true,
+      "consumes": [
+        "goals",
+        "product",
+        "readme",
+        "shared"
+      ],
+      "produces": [],
+      "practices": [
+        "containers",
+        "hermetic-builds",
+        "code-complete"
+      ],
+      "context_rel": [],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "brainstorm",
+      "description": "Separate goals from implementation.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        "result.json",
+        "verdict.json"
+      ],
+      "practices": [
+        "lean-startup",
+        "mythical-man-month"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "bug-hunt",
+      "description": "Investigate bugs and root causes.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        "beads",
+        "standards"
+      ],
+      "produces": [],
+      "practices": [
+        "refactoring",
+        "property-based-testing",
+        "code-complete"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 8,
+      "codex_override_present": true
+    },
+    {
+      "name": "codex-team",
+      "description": "Coordinate multiple Codex agents.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        ".agents/swarm/results/*.json"
+      ],
+      "practices": [
+        "team-topologies",
+        "ai-assisted-dev"
+      ],
+      "context_rel": [],
+      "references_count": 2,
+      "codex_override_present": true
+    },
+    {
+      "name": "compile",
+      "description": "Compile .agents knowledge wiki.",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "wiki-knowledge-surface",
+        "ddd-bounded-context"
+      ],
+      "context_rel": [],
+      "references_count": 4,
+      "codex_override_present": true
+    },
+    {
+      "name": "complexity",
+      "description": "Find focused refactor hotspots.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        "doc",
+        "standards"
+      ],
+      "produces": [
+        "stdout"
+      ],
+      "practices": [
+        "code-complete",
+        "refactoring"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "converter",
+      "description": "Convert AgentOps skill formats.",
+      "hexagonal_role": "generic",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "converted-skill"
+      ],
+      "practices": [
+        "refactoring",
+        "design-patterns"
+      ],
+      "context_rel": [],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "council",
+      "description": "Run multi-judge consensus.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        "result.json",
+        "verdict.json"
+      ],
+      "practices": [
+        "llm-eval-harness",
+        "ai-assisted-dev",
+        "design-by-contract"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 33,
+      "codex_override_present": true
+    },
+    {
+      "name": "crank",
+      "description": "Execute epics through waves.",
+      "hexagonal_role": "domain",
+      "user_invocable": true,
+      "consumes": [
+        "beads",
+        "implement",
+        "post-mortem",
+        "swarm",
+        "vibe"
+      ],
+      "produces": [
+        ".agents/swarm/results/*.json",
+        "git-changes"
+      ],
+      "practices": [
+        "continuous-delivery",
+        "xp",
+        "agile-manifesto"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 30,
+      "codex_override_present": true
+    },
+    {
+      "name": "curate",
+      "description": "Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "practices": [
+        "wiki-knowledge-surface",
+        "lean-startup"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "deps",
+      "description": "Audit dependency risks and updates.",
+      "hexagonal_role": "driven-adapter",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "supply-chain-integrity",
+        "continuous-delivery",
+        "sre"
+      ],
+      "context_rel": [],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "design",
+      "description": "Validate product fit before discovery.",
+      "hexagonal_role": "domain",
+      "user_invocable": true,
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "lean-startup",
+        "ddd-bounded-context",
+        "mythical-man-month"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "discovery",
+      "description": "Create dense execution packets.",
+      "hexagonal_role": "domain",
+      "user_invocable": true,
+      "consumes": [
+        "brainstorm",
+        "design",
+        "plan",
+        "pre-mortem",
+        "research",
+        "shared"
+      ],
+      "produces": [
+        ".agents/plans/*.md",
+        "bd-issue",
+        "execution-packet.json"
+      ],
+      "practices": [
+        "adr",
+        "lean-startup",
+        "mythical-man-month"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 9,
+      "codex_override_present": true
+    },
+    {
+      "name": "doc",
+      "description": "Generate and validate repo docs.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "documentation"
+      ],
+      "practices": [
+        "wiki-knowledge-surface",
+        "code-complete",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 6,
+      "codex_override_present": true
+    },
+    {
+      "name": "domain",
+      "description": "Canonical vocabulary for human-AI software work.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "stdout"
+      ],
+      "practices": [
+        "ddd-bounded-context",
+        "wiki-knowledge-surface",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 9,
+      "codex_override_present": true
+    },
+    {
+      "name": "dream",
+      "description": "Run overnight compounding sessions.",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "practices": [
+        "lean-startup",
+        "wiki-knowledge-surface",
+        "sre"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "evolve",
+      "description": "Run autonomous improvement loops.",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "lean-startup",
+        "dora-metrics",
+        "agile-manifesto"
+      ],
+      "context_rel": [],
+      "references_count": 23,
+      "codex_override_present": true
+    },
+    {
+      "name": "expert-council",
+      "description": "Alias for /council --mode=debate — adversarial named-persona debate. Triggers: \"expert council\", \"dueling council\", \"council of <names>\". Kept one release.",
+      "hexagonal_role": "domain",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "llm-eval-harness"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "flywheel",
+      "description": "Check knowledge flywheel health.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        ".agents/learnings/*.md"
+      ],
+      "practices": [
+        "wiki-knowledge-surface",
+        "lean-startup",
+        "dora-metrics"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 4,
+      "codex_override_present": true
+    },
+    {
+      "name": "forge",
+      "description": "Mine transcripts into learnings.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "practices": [
+        "wiki-knowledge-surface",
+        "lean-startup"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "goals",
+      "description": "Maintain AgentOps goals.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "dora-metrics",
+        "lean-startup",
+        "agile-manifesto"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "grafana-platform-dashboard",
+      "description": "Validate OpenShift Grafana dashboards.",
+      "hexagonal_role": "driven-adapter",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "dashboard-validation-report"
+      ],
+      "practices": [
+        "sre",
+        "distributed-tracing",
+        "dora-metrics"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "handoff",
+      "description": "Write compact session handoffs.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "practices": [
+        "adr",
+        "wiki-knowledge-surface",
+        "code-complete"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "harvest",
+      "description": "Promote .agents knowledge.",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "practices": [
+        "wiki-knowledge-surface",
+        "lean-startup"
+      ],
+      "context_rel": [],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "heal-skill",
+      "description": "Repair skill hygiene.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "refactoring",
+        "code-complete"
+      ],
+      "context_rel": [],
+      "references_count": 2,
+      "codex_override_present": true
+    },
+    {
+      "name": "hooks-authoring",
+      "description": "Author AgentOps runtime hooks.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "design-by-contract",
+        "code-complete",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "implement",
+      "description": "Implement one tracked issue.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "domain"
+      ],
+      "produces": [
+        "git-changes"
+      ],
+      "practices": [
+        "tdd",
+        "refactoring",
+        "code-complete"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "domain"
+        }
+      ],
+      "references_count": 7,
+      "codex_override_present": true
+    },
+    {
+      "name": "inject",
+      "description": "Load relevant .agents context.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "wiki-knowledge-surface",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "knowledge-activation",
+      "description": "Activate mature .agents knowledge.",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "wiki-knowledge-surface",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "llm-wiki",
+      "description": "Build external-knowledge wikis.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "documentation"
+      ],
+      "practices": [
+        "wiki-knowledge-surface",
+        "ddd-bounded-context",
+        "prompt-as-spec"
+      ],
+      "context_rel": [],
+      "references_count": 2,
+      "codex_override_present": true
+    },
+    {
+      "name": "openai-docs",
+      "description": "Use official OpenAI docs.",
+      "hexagonal_role": "driven-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "external-api"
+      ],
+      "produces": [],
+      "practices": [
+        "prompt-as-spec",
+        "ai-assisted-dev"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "oss-docs",
+      "description": "Scaffold or audit OSS docs.",
+      "hexagonal_role": "generic",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "documentation"
+      ],
+      "practices": [
+        "code-complete",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "perf",
+      "description": "Profile and optimize hotspots.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "dora-metrics",
+        "sre",
+        "code-complete"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "plan",
+      "description": "Decompose goals into issue plans.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        ".agents/plans/*.md",
+        "execution-packet.json"
+      ],
+      "practices": [
+        "adr",
+        "agile-manifesto",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 14,
+      "codex_override_present": true
+    },
+    {
+      "name": "post-mortem",
+      "description": "Review completed work and learn.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "dora-metrics",
+        "sre",
+        "lean-startup"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 21,
+      "codex_override_present": true
+    },
+    {
+      "name": "pr-implement",
+      "description": "Implement a scoped OSS PR.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "crank"
+      ],
+      "produces": [
+        "git-changes"
+      ],
+      "practices": [
+        "continuous-delivery",
+        "xp",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "crank"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "pr-plan",
+      "description": "Plan an open source PR.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "agile-manifesto",
+        "adr",
+        "lean-startup"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "pr-prep",
+      "description": "Prepare PR commits and body.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "domain"
+      ],
+      "produces": [
+        "git-changes"
+      ],
+      "practices": [
+        "continuous-integration",
+        "continuous-delivery",
+        "gitops"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "domain"
+        }
+      ],
+      "references_count": 4,
+      "codex_override_present": true
+    },
+    {
+      "name": "pr-research",
+      "description": "Research an upstream repo.",
+      "hexagonal_role": "driven-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "external-api"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "wiki-knowledge-surface",
+        "legacy-code-seams",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "pr-retro",
+      "description": "Learn from PR outcomes.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "practices": [
+        "dora-metrics",
+        "sre",
+        "lean-startup"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "pr-validate",
+      "description": "Validate PR scope and quality.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "validation"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "continuous-integration",
+        "code-complete",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "validation"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "pre-mortem",
+      "description": "Stress-test plans before work.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        "result.json",
+        "verdict.json"
+      ],
+      "practices": [
+        "adr",
+        "mythical-man-month",
+        "design-by-contract"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 14,
+      "codex_override_present": true
+    },
+    {
+      "name": "product",
+      "description": "Create or refine PRODUCT.md.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "lean-startup",
+        "mythical-man-month",
+        "ddd-bounded-context"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "provenance",
+      "description": "Trace artifact provenance.",
+      "hexagonal_role": "driven-adapter",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "supply-chain-integrity",
+        "adr",
+        "hermetic-builds"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "push",
+      "description": "Validate, commit, and push.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": true,
+      "consumes": [
+        "git-changes"
+      ],
+      "produces": [
+        "git-changes"
+      ],
+      "practices": [
+        "continuous-delivery",
+        "gitops",
+        "dora-metrics"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "quickstart",
+      "description": "Show AgentOps next action.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "rpi"
+      ],
+      "produces": [
+        "stdout"
+      ],
+      "practices": [
+        "pragmatic-programmer",
+        "agile-manifesto"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "rpi"
+        }
+      ],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "ratchet",
+      "description": "Record Brownian Ratchet gates.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        ".agents/rpi/*.md"
+      ],
+      "practices": [
+        "dora-metrics",
+        "refactoring",
+        "continuous-integration"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "readme",
+      "description": "Draft or improve README docs.",
+      "hexagonal_role": "generic",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "documentation"
+      ],
+      "practices": [
+        "code-complete",
+        "wiki-knowledge-surface",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "recover",
+      "description": "Recover session context.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        ".agents/rpi/*.md"
+      ],
+      "practices": [
+        "sre",
+        "legacy-code-seams",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "red-team",
+      "description": "Probe docs and skills.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "ai-assisted-dev",
+        "design-by-contract",
+        "sre"
+      ],
+      "context_rel": [],
+      "references_count": 4,
+      "codex_override_present": true
+    },
+    {
+      "name": "refactor",
+      "description": "Execute safe refactors.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "git-changes"
+      ],
+      "practices": [
+        "refactoring",
+        "legacy-code-seams",
+        "design-patterns"
+      ],
+      "context_rel": [],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "release",
+      "description": "Run release validation.",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "continuous-delivery",
+        "gitops",
+        "supply-chain-integrity"
+      ],
+      "context_rel": [],
+      "references_count": 8,
+      "codex_override_present": true
+    },
+    {
+      "name": "research",
+      "description": "Explore and write findings.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "inject",
+        "repo-context"
+      ],
+      "produces": [
+        ".agents/research/*.md",
+        "result.json"
+      ],
+      "practices": [
+        "wiki-knowledge-surface",
+        "pragmatic-programmer",
+        "ddd-bounded-context"
+      ],
+      "context_rel": [],
+      "references_count": 17,
+      "codex_override_present": true
+    },
+    {
+      "name": "retro",
+      "description": "Capture a session learning.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "sre",
+        "lean-startup",
+        "dora-metrics"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "reverse-engineer-rpi",
+      "description": "Reverse-engineer product specs.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "practices": [
+        "legacy-code-seams",
+        "ddd-bounded-context",
+        "adr"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "review",
+      "description": "Review diffs for risk, find mocks, scan for bugs, and audit codebases.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "github-pr",
+        "validation"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "code-complete",
+        "refactoring",
+        "design-by-contract"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "validation"
+        }
+      ],
+      "references_count": 5,
+      "codex_override_present": true
+    },
+    {
+      "name": "rpi",
+      "description": "Run discovery, crank, validation.",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [
+        "crank",
+        "discovery",
+        "domain",
+        "ratchet",
+        "validation"
+      ],
+      "produces": [
+        ".agents/rpi/*.md"
+      ],
+      "practices": [
+        "bdd-gherkin",
+        "ddd-bounded-context",
+        "hexagonal-architecture",
+        "tdd",
+        "continuous-delivery",
+        "dora-metrics",
+        "agile-manifesto",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "crank"
+        },
+        {
+          "kind": "customer-of",
+          "with": "discovery"
+        },
+        {
+          "kind": "customer-of",
+          "with": "validation"
+        }
+      ],
+      "references_count": 17,
+      "codex_override_present": true
+    },
+    {
+      "name": "scaffold",
+      "description": "Create project, component, or boilerplate scaffolds.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "converted-skill"
+      ],
+      "practices": [
+        "pragmatic-programmer",
+        "design-patterns",
+        "hexagonal-architecture"
+      ],
+      "context_rel": [],
+      "references_count": 2,
+      "codex_override_present": true
+    },
+    {
+      "name": "scenario",
+      "description": "Manage holdout scenarios.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "property-based-testing",
+        "snapshot-testing",
+        "llm-eval-harness"
+      ],
+      "context_rel": [],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "scope",
+      "description": "Hard-block edits outside declared frozen directories via PreToolUse hook.",
+      "hexagonal_role": "driven-adapter",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "filesystem-gate"
+      ],
+      "practices": [
+        "ddd-bounded-context",
+        "design-by-contract",
+        "mythical-man-month"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "domain"
+        }
+      ],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "security-suite",
+      "description": "Run composable security analysis.",
+      "hexagonal_role": "driven-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "repo-context"
+      ],
+      "produces": [
+        "security-report.json"
+      ],
+      "practices": [
+        "supply-chain-integrity",
+        "design-by-contract",
+        "sre"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "vibe"
+        }
+      ],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "security",
+      "description": "Run repository security scans.",
+      "hexagonal_role": "driven-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "repo-context"
+      ],
+      "produces": [
+        "security-report.json"
+      ],
+      "practices": [
+        "supply-chain-integrity",
+        "sre"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "vibe"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "shared",
+      "description": "Shared AgentOps skill contracts.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "stdout"
+      ],
+      "practices": [
+        "design-by-contract",
+        "pragmatic-programmer",
+        "twelve-factor-app"
+      ],
+      "context_rel": [],
+      "references_count": 16,
+      "codex_override_present": true
+    },
+    {
+      "name": "ship-loop",
+      "description": "Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": true,
+      "consumes": [
+        "beads",
+        "rpi",
+        "post-mortem"
+      ],
+      "produces": [
+        "git-changes",
+        "merged-prs"
+      ],
+      "practices": [
+        "continuous-delivery",
+        "xp",
+        "tdd",
+        "bdd",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "rpi"
+        },
+        {
+          "kind": "customer-of",
+          "with": "post-mortem"
+        }
+      ],
+      "references_count": 4,
+      "codex_override_present": true
+    },
+    {
+      "name": "skill-auditor",
+      "description": "'Audit an existing SKILL.md against the unified AgentOps template (15",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "code-complete",
+        "cmm-process-maturity",
+        "design-by-contract"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "skill-builder",
+      "description": "'Scaffold or absorb new SKILL.md files against the unified AgentOps template.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "converted-skill"
+      ],
+      "practices": [
+        "code-complete",
+        "pragmatic-programmer",
+        "design-patterns"
+      ],
+      "context_rel": [],
+      "references_count": 2,
+      "codex_override_present": true
+    },
+    {
+      "name": "standards",
+      "description": "Provide repo coding standards.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "stdout"
+      ],
+      "practices": [
+        "code-complete",
+        "design-patterns",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 23,
+      "codex_override_present": true
+    },
+    {
+      "name": "status",
+      "description": "Show AgentOps work status.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "stdout"
+      ],
+      "practices": [
+        "dora-metrics",
+        "sre"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "swarm",
+      "description": "Dispatch parallel agents.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "implement",
+        "vibe"
+      ],
+      "produces": [
+        ".agents/swarm/results/*.json"
+      ],
+      "practices": [
+        "microservices",
+        "team-topologies",
+        "mythical-man-month"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "crank"
+        }
+      ],
+      "references_count": 21,
+      "codex_override_present": true
+    },
+    {
+      "name": "system-tuning",
+      "description": "Restore system responsiveness via safe, ordered process cleanup and agent-swarm",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "sre",
+        "resilience-patterns",
+        "ebpf-observability"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "test",
+      "description": "Generate tests and coverage plans.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "tdd",
+        "property-based-testing",
+        "bdd-gherkin"
+      ],
+      "context_rel": [],
+      "references_count": 6,
+      "codex_override_present": true
+    },
+    {
+      "name": "trace",
+      "description": "Trace decisions through artifacts.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "distributed-tracing",
+        "adr",
+        "ebpf-observability"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "update",
+      "description": "Sync AgentOps skills.",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "gitops",
+        "continuous-delivery",
+        "infrastructure-as-code"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "using-agentops",
+      "description": "Explain AgentOps workflows.",
+      "hexagonal_role": "generic",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "documentation"
+      ],
+      "practices": [
+        "wiki-knowledge-surface",
+        "pragmatic-programmer",
+        "agile-manifesto"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "validate",
+      "description": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": true,
+      "consumes": [
+        "validation"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "design-by-contract",
+        "llm-eval-harness"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "validation"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "validation",
+      "description": "Run post-implementation validation.",
+      "hexagonal_role": "domain",
+      "user_invocable": true,
+      "consumes": [
+        "forge",
+        "post-mortem",
+        "retro",
+        "shared",
+        "vibe"
+      ],
+      "produces": [
+        ".agents/research/*.md",
+        "result.json",
+        "verdict.json"
+      ],
+      "practices": [
+        "llm-eval-harness",
+        "dora-metrics",
+        "sre"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 13,
+      "codex_override_present": true
+    },
+    {
+      "name": "vibe",
+      "description": "Validate code readiness.",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        "result.json",
+        "verdict.json"
+      ],
+      "practices": [
+        "ai-assisted-dev",
+        "llm-eval-harness",
+        "code-complete",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 22,
+      "codex_override_present": true
+    }
+  ]
+}

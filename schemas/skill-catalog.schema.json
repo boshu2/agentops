@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/boshu2/agentops/blob/main/schemas/skill-catalog.schema.json",
+  "title": "AgentOps Skill Catalog",
+  "description": "Generated inventory of skills/*/SKILL.md with queryable metadata. Source of truth: scripts/generate-skill-catalog.sh. Regenerate on every SKILL.md edit; CI gate validate-skill-catalog-drift refuses drift.",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "skill_count", "skills"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1",
+      "description": "Bumped when schema changes; consumers gate on this."
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC ISO-8601 timestamp from the generator run that emitted this file."
+    },
+    "skill_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of entries in `skills`. Must match `skills | length`."
+    },
+    "skills": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/skill" }
+    }
+  },
+  "definitions": {
+    "skill": {
+      "type": "object",
+      "required": ["name", "description", "hexagonal_role", "consumes", "produces", "context_rel", "user_invocable", "references_count", "codex_override_present"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Skill slug = directory name under skills/."
+        },
+        "description": {
+          "type": "string",
+          "description": "One-line summary lifted from SKILL.md frontmatter."
+        },
+        "hexagonal_role": {
+          "type": "string",
+          "enum": ["domain", "driving-adapter", "driven-adapter", "supporting", "generic"],
+          "description": "Hex role per soc-e8pj/PR #376 enum."
+        },
+        "consumes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Port / sibling-skill names this skill reads from."
+        },
+        "produces": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Port / artifact names this skill writes."
+        },
+        "context_rel": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "kind": { "type": "string" },
+              "with": { "type": "string" }
+            }
+          },
+          "description": "Hex relationships (customer-of, shared-kernel, alias-of, ...)."
+        },
+        "practices": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Optional engineering practices the skill applies (tdd, bdd-gherkin, ...)."
+        },
+        "user_invocable": {
+          "type": "boolean",
+          "description": "True when the skill is meant to be invoked directly by an operator (`user-invocable: true` in frontmatter)."
+        },
+        "codex_override_present": {
+          "type": "boolean",
+          "description": "True when skills-codex/<name>/SKILL.md or skills-codex-overrides/<name>/ exists."
+        },
+        "references_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of files under skills/<name>/references/."
+        }
+      }
+    }
+  }
+}
