@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-20T13:30:06Z",
+  "generated_at": "2026-05-20T13:42:03Z",
   "summary": {
     "skills": 79,
     "hooks": 44,
@@ -321,7 +321,7 @@
         "path": "skills/council/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 32
+        "reference_count": 33
       },
       {
         "name": "design",
