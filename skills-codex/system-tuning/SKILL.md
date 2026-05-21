@@ -1,6 +1,6 @@
 ---
 name: system-tuning
-description: 'Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene.'
+description: 'Process cleanup + swarm hygiene'
 ---
 # System Tuning Skill
 

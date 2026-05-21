@@ -1,6 +1,6 @@
 ---
 name: session-bootstrap
-description: Universal init prompt — every agent spawned into an AgentOps repo runs `ao session bootstrap` first.
+description: Agent init prompt.
 skill_api_version: 1
 metadata:
   tier: session

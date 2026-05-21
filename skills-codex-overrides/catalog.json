@@ -503,6 +503,12 @@
       "reason": "Vendor-neutral internal-PR cycle; Codex stays in parity with the Claude SKILL.md after slim-frontmatter conversion."
     },
     {
+      "name": "session-bootstrap",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Universal init prompt is identical across runtimes by design (fungibility contract, soc-vuu6.25); no bespoke Codex variant."
+    },
+    {
       "name": "standards",
       "treatment": "parity_only",
       "wave": "catalog-parity",
