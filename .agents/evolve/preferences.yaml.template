@@ -1,0 +1,43 @@
+# /evolve per-repo preferences (template)
+#
+# Copy this file to `.agents/evolve/preferences.yaml` and edit. The actual
+# preferences file is gitignored — each repo and operator picks their own
+# physics for the autonomous /evolve loop.
+#
+# Resolution order:
+#   1. defaults (built-in Go constants)
+#   2. this file overrides defaults
+#   3. CLI flag overrides this file (caller-applied)
+#
+# Invalid keys, types, or out-of-range values produce a startup error with
+# file:line:column context. No silent fallback.
+#
+# Inspect the resolved state with: `ao evolve config --show`
+# Or as JSON:                       `ao evolve config --show --json`
+
+# Schema version. Must equal 1 for this template.
+schema_version: 1
+
+# Default mode when /evolve is invoked without a mode flag.
+#   burst — single supervised cycle, then exit (default).
+#   loop  — keep cycling until the queue stabilizes or a halt signal fires.
+mode_default: burst
+
+# When does /evolve narrow from explore (scout) to exploit (productive)?
+scope_filter:
+  # Number of productive cycles required before scope narrows. Range [1..100].
+  productive_threshold: 5
+  # Halt the loop on a streak of pure-scout (no productive change) cycles.
+  scout_streak_halt: true
+
+# If true, treat a missing or stale `recommended` pointer as an error rather
+# than a soft warning.
+recommended_pointer_strict: true
+
+# Filesystem flags that halt the loop. Relative paths from the repo root.
+halt_signals:
+  - .agents/evolve/STOP
+  - .agents/evolve/KILL
+
+# When true, the generator skill applies layered templates during cycles.
+generator_layers_enabled: true
