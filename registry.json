@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-21T15:57:24Z",
+  "generated_at": "2026-05-21T17:43:30Z",
   "summary": {
     "skills": 80,
     "hooks": 44,
     "knowledge_stores": 5,
     "job_types": 14,
     "eval_files": 62,
-    "cli_commands": 176
+    "cli_commands": 179
   },
   "surfaces": {
     "skills": [
@@ -1335,6 +1335,10 @@
         "path": "cli/cmd/ao/corpus_snapshot.go"
       },
       {
+        "name": "cron_self_adjust",
+        "path": "cli/cmd/ao/cron_self_adjust.go"
+      },
+      {
         "name": "curate",
         "path": "cli/cmd/ao/curate.go"
       },
@@ -1387,8 +1391,16 @@
         "path": "cli/cmd/ao/evolve.go"
       },
       {
+        "name": "evolve_blocked",
+        "path": "cli/cmd/ao/evolve_blocked.go"
+      },
+      {
         "name": "evolve_config",
         "path": "cli/cmd/ao/evolve_config.go"
+      },
+      {
+        "name": "evolve_next_work",
+        "path": "cli/cmd/ao/evolve_next_work.go"
       },
       {
         "name": "evolve_write_stop_marker",
