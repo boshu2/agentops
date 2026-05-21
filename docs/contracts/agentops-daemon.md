@@ -182,17 +182,26 @@ Initial job families:
   and the foundation §6 site 3 (alt) carve-out for read-side endpoints
   (`.agents/plans/2026-05-01-daemon-absorption-spec/00-foundation-contract.md`).
 
-Executor policies route these families differently. `fake` and `gascity`
-handle `rpi.run` through the daemon phase runner; `cli-fallback` handles
-`rpi.run` in-process via `RPIRunExecutor` (`cli/internal/daemon/rpi_run.go`),
-which calls `runPhasedEngine` through the function-pointer pattern, and does
-not claim standalone `rpi.phase` jobs. The previous shell-out wrapper under
-`scripts/` was retired in soc-bcrn.3.7.
+Executor policies route these families differently. The foreground worker
+default is `cli-fallback`, which handles `rpi.run` in-process via
+`RPIRunExecutor` (`cli/internal/daemon/rpi_run.go`) and calls
+`runPhasedEngine` through the function-pointer pattern. The `gascity` policy
+routes through the GasCity adapter. The `fake` policy is explicit test/demo
+mode; when selected for worker loops, the CLI prints a warning that it emits
+synthetic completion artifacts. `cli-fallback` does not claim standalone
+`rpi.phase` jobs. The previous shell-out wrapper under `scripts/` was retired
+in soc-bcrn.3.7.
+
+`plans.projection` is projection-backed in the read-side API. It appears in
+`GET /v1/plans/manifest` after a plans executor with a configured bd source
+writes the projection snapshot; before that, the endpoint returns the current
+empty projection envelope rather than a shape-only stub.
 
 ### Read-Side Endpoints — `plans.projection` curl example (F-PM-3)
 
 ```sh
-# Manifest snapshot (atom-1 stub: empty entries until atom-2 fills the projection)
+# Manifest snapshot from the daemon projection state. Entries are empty until
+# the plans.projection job writes a projection snapshot.
 curl -s http://localhost:7077/v1/plans/manifest | jq .
 # {"entries": [{"beads_id": "soc-aaa", "title": "...", "status": "open", ...}],
 #  "schema_version": 1}
@@ -218,8 +227,9 @@ jobs.
 which keeps local validation deterministic while exercising the same queue
 claim, heartbeat, and terminal event path as the long-running worker loop.
 
-The fake policy supports `openclaw.snapshot`, `wiki.forge`, and `dream.run`.
-`wiki.forge` uses the shared `AgentWorker` contract with an in-memory worker.
+The explicit `fake` policy supports `openclaw.snapshot`, `wiki.forge`, and
+`dream.run` for deterministic local tests and demos. `wiki.forge` uses the
+shared `AgentWorker` contract with an in-memory worker.
 `dream.run` executes the existing Dream loop, writes terminal artifacts
 (`summary_json`, `summary_markdown`, `overnight_log`, and `failure_report` on
 failure), and fails the daemon job if the job execution timeout is exhausted.

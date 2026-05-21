@@ -10,8 +10,9 @@
 #   - dream.run    overnight knowledge consolidation
 #   - wiki.forge   forge patterns from session corpus
 #
-# llmwiki.loop is intentionally excluded: its stage handlers are stubs in
-# v1.0 (see f-2026-05-01-011); enable once the real-bodies follow-up lands.
+# llmwiki.loop is intentionally excluded from the safe set: its placeholder
+# outputs are default-disabled and require allow_placeholder_outputs=true for
+# test/experimental fixtures until the real-bodies follow-up lands.
 #
 # Hermetic mirror lives at cli/internal/schedule/testdata/example-validation.yaml
 # for parser tests — keep them in sync (see scripts/check-schedule-example.sh).

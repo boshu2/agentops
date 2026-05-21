@@ -36,13 +36,13 @@ The skeptic seat agreed. The other three Claude voices then aligned. **Without t
 | `ao inject` is deprecated (v3.0.0 removal target) | [cli/cmd/ao/inject.go:155][inject-deprecation] |
 | `trustTierWeight` is additive (soft prior, not gate) | [cli/cmd/ao/context_relevance.go:217][trust-tier] |
 
-[plan-112]: ../../skills/plan/SKILL.md
-[plan-160]: ../../skills/plan/SKILL.md
-[plan-166]: ../../skills/plan/SKILL.md
-[plan-170]: ../../skills/plan/SKILL.md
-[crank-skill]: ../../skills/crank/SKILL.md
-[inject-deprecation]: ../../cli/cmd/ao/inject.go
-[trust-tier]: ../../cli/cmd/ao/context_relevance.go
+[plan-112]: https://github.com/boshu2/agentops/blob/main/skills/plan/SKILL.md#L112
+[plan-160]: https://github.com/boshu2/agentops/blob/main/skills/plan/SKILL.md#L160
+[plan-166]: https://github.com/boshu2/agentops/blob/main/skills/plan/SKILL.md#L166
+[plan-170]: https://github.com/boshu2/agentops/blob/main/skills/plan/SKILL.md#L170
+[crank-skill]: https://github.com/boshu2/agentops/blob/main/skills/crank/SKILL.md
+[inject-deprecation]: https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/inject.go#L155
+[trust-tier]: https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/context_relevance.go#L217
 
 **Full verdict (committed):** [evidence/2026-05-15-rpi-leanness-codex-reframe.md](evidence/2026-05-15-rpi-leanness-codex-reframe.md).
 
@@ -70,9 +70,9 @@ The Claude trio's emphasis was framing ("reconcile the docs to the code"). The C
 | `skill_loaded` citation type | [cli/cmd/ao/flywheel_citation_feedback.go:599][f6-skill-loaded] |
 | Real hard gate the prior model omitted | [cli/cmd/ao/inject_learnings.go:387][quality-gate] |
 
-[f6-feedback]: ../../cli/cmd/ao/flywheel_citation_feedback.go
-[f6-skill-loaded]: ../../cli/cmd/ao/flywheel_citation_feedback.go
-[quality-gate]: ../../cli/cmd/ao/inject_learnings.go
+[f6-feedback]: https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/flywheel_citation_feedback.go#L591
+[f6-skill-loaded]: https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/flywheel_citation_feedback.go#L599
+[quality-gate]: https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/inject_learnings.go#L387
 
 **F7 — hook manifest asymmetry between runtimes.** All three Codex judges noted that `hooks/citation-tracker.sh` exists but is *not* wired into `hooks/hooks.json` PostToolUse(Read), so the documented "passive read-citation tracking" is inactive. They also flagged that the Codex manifest omits SessionEnd / context-guard / context-monitor — so the unified lifecycle is asymmetric across runtimes.
 
@@ -82,9 +82,9 @@ The Claude trio's emphasis was framing ("reconcile the docs to the code"). The C
 | Not wired in `hooks/hooks.json` (grep yields zero matches) | [hooks/hooks.json][hooks-json] |
 | Codex manifest exists separately | [hooks/codex-hooks.json][codex-hooks] |
 
-[citation-tracker]: ../../hooks/citation-tracker.sh
-[hooks-json]: ../../hooks/hooks.json
-[codex-hooks]: ../../hooks/codex-hooks.json
+[citation-tracker]: https://github.com/boshu2/agentops/blob/main/hooks/citation-tracker.sh
+[hooks-json]: https://github.com/boshu2/agentops/blob/main/hooks/hooks.json
+[codex-hooks]: https://github.com/boshu2/agentops/blob/main/hooks/codex-hooks.json
 
 **Full verdict (committed):** [evidence/2026-05-16-cdlc-f6-f7-codex-findings.md](evidence/2026-05-16-cdlc-f6-f7-codex-findings.md).
 
@@ -112,6 +112,6 @@ The CI gate `validate-sovereignty-proof-citations` scans this page and the commi
 
 ## See also
 
-- [Council skill](../../skills/council/SKILL.md) — how to invoke `/council --mixed --deep`
-- [Expert council skill](../../skills/expert-council/SKILL.md) — persona-debate variant for fungibility decisions
+- [Council skill](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) — how to invoke `/council --mixed --deep`
+- [Expert council skill](https://github.com/boshu2/agentops/blob/main/skills/expert-council/SKILL.md) — persona-debate variant for fungibility decisions
 - [Operating loop](../architecture/operating-loop.md) — where council fits in the 7-move doctrine

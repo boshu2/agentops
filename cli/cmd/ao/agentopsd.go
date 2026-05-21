@@ -27,6 +27,12 @@ import (
 
 const daemonActivationRelPath = ".agents/daemon/activation.json"
 
+const (
+	daemonExecutorPolicyFake        = "fake"
+	daemonExecutorPolicyGasCity     = "gascity"
+	daemonExecutorPolicyCLIFallback = "cli-fallback"
+)
+
 var (
 	daemonAddr              string
 	daemonURL               string
@@ -148,7 +154,7 @@ func init() {
 	daemonRunCmd.Flags().StringVar(&daemonTokenFile, "token-file", "", "Path to mutation token file")
 	daemonRunCmd.Flags().IntVar(&daemonWorkers, "workers", 0, "Number of daemon worker loops to run in the foreground")
 	daemonRunCmd.Flags().BoolVar(&daemonWorkerOnce, "worker-once", false, "Exit after each worker makes one claim attempt")
-	daemonRunCmd.Flags().StringVar(&daemonExecutorPolicy, "executor-policy", "fake", "Daemon executor policy for workers (fake, gascity, cli-fallback)")
+	daemonRunCmd.Flags().StringVar(&daemonExecutorPolicy, "executor-policy", daemonExecutorPolicyCLIFallback, "Daemon executor policy for workers (cli-fallback, gascity, fake; fake is explicit test/demo mode)")
 	daemonRunCmd.Flags().DurationVar(&daemonWorkerTimeout, "worker-timeout", 0, "Per-job worker wall-clock cap (0 disables)")
 	daemonRunCmd.Flags().Int64Var(&daemonWorkerMemoryMax, "worker-memory-max-bytes", 0, "Linux cgroup v2 memory.max cap for CLI fallback workers in bytes (0 disables)")
 	daemonRunCmd.Flags().StringVar(&daemonWorkerCgroupRoot, "worker-cgroup-root", "", "Linux cgroup v2 root for worker caps (default /sys/fs/cgroup)")
@@ -264,6 +270,9 @@ func serveAgentOpsDaemon(ctx context.Context, cwd string, opts agentopsDaemonRun
 	}
 	defer func() { _ = listener.Close() }()
 	fmt.Fprintf(out, "agentopsd ready: %s\n", activation.URL)
+	if opts.Workers > 0 && effectiveAgentOpsDaemonExecutorPolicy(opts.ExecutorPolicy) == daemonExecutorPolicyFake {
+		fmt.Fprintln(out, "agentopsd warning: --executor-policy=fake is deterministic test/demo mode and emits synthetic completion artifacts.")
+	}
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- server.Serve(listener)
@@ -392,14 +401,11 @@ func firstAgentOpsDaemonError(errs ...error) error {
 }
 
 func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*daemonpkg.Supervisor, error) {
-	policy := opts.ExecutorPolicy
-	if policy == "" {
-		policy = "fake"
-	}
+	policy := effectiveAgentOpsDaemonExecutorPolicy(opts.ExecutorPolicy)
 	llmwikiExecutor := buildAgentOpsDaemonLLMWikiExecutor()
 	var executors []daemonpkg.JobExecutor
 	switch policy {
-	case "fake":
+	case daemonExecutorPolicyFake:
 		wikiExecutor, err := buildAgentOpsDaemonFakeWikiExecutor(cwd)
 		if err != nil {
 			return nil, err
@@ -413,7 +419,7 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 			return nil, err
 		}
 		executors = []daemonpkg.JobExecutor{daemonFakeOpenClawSnapshotExecutor{}, wikiExecutor, dreamExecutor, rpiExecutor, llmwikiExecutor}
-	case "gascity":
+	case daemonExecutorPolicyGasCity:
 		wikiExecutor, err := buildAgentOpsDaemonGasCityWikiExecutor(cwd, opts)
 		if err != nil {
 			return nil, err
@@ -427,7 +433,7 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 			return nil, err
 		}
 		executors = []daemonpkg.JobExecutor{wikiExecutor, dreamExecutor, rpiExecutor, llmwikiExecutor}
-	case "cli-fallback":
+	case daemonExecutorPolicyCLIFallback:
 		wikiExecutor, err := buildAgentOpsDaemonCLIFallbackWikiExecutor(cwd, opts)
 		if err != nil {
 			return nil, err
@@ -457,7 +463,7 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 	// dbBdSource lazy-init: nil here means tests don't open a Dolt connection;
 	// production callers can call NewDbBdSource and re-register. atom-2 ships
 	// with executors that need bd connectivity gated by opts.PlansBdSource.
-	if policy == "fake" || policy == "gascity" {
+	if policy == daemonExecutorPolicyFake || policy == daemonExecutorPolicyGasCity {
 		if opts.PlansBdSource != nil {
 			plansExec, err := daemonpkg.NewPlansProjectionExecutor(daemonpkg.PlansProjectionExecutorOptions{
 				Store:    daemonpkg.NewStore(cwd),
@@ -484,12 +490,20 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 	})
 }
 
+func effectiveAgentOpsDaemonExecutorPolicy(policy string) string {
+	policy = strings.TrimSpace(policy)
+	if policy == "" {
+		return daemonExecutorPolicyCLIFallback
+	}
+	return policy
+}
+
 // buildAgentOpsDaemonLLMWikiExecutor wires the Karpathy llmwiki loop executor
 // with its four stage handlers. The PROMOTE stage's HarvestPromoter is the
 // adapter in llmwiki_adapter.go that bridges to the harvest package's
-// catalog-based API. Registered under all three policies (fake/gascity/cli-fallback)
-// because the stages are deterministic and policy-agnostic — actual LLM
-// extraction is stubbed inside the stage handlers and lands in a follow-up.
+// catalog-based API. Registered under all three policies
+// (fake/gascity/cli-fallback) so schedules keep resolving, but placeholder
+// stage outputs are skipped unless the job payload explicitly opts in.
 func buildAgentOpsDaemonLLMWikiExecutor() daemonpkg.JobExecutor {
 	return &llmwiki.LLMWikiLoopExecutor{
 		Ingest:  &llmwiki.IngestStage{},
@@ -504,7 +518,7 @@ func buildAgentOpsDaemonFactoryExecutor(cwd, policy string, opts agentopsDaemonR
 		Store:            daemonpkg.NewStore(cwd),
 		Root:             cwd,
 		Clock:            opts.Now,
-		EnableRPIHandoff: policy == "fake" || policy == "gascity" || policy == "cli-fallback",
+		EnableRPIHandoff: policy == daemonExecutorPolicyFake || policy == daemonExecutorPolicyGasCity || policy == daemonExecutorPolicyCLIFallback,
 	})
 }
 

@@ -574,17 +574,42 @@ func TestDaemonRouter_PlansRoutes(t *testing.T) {
 	store := NewStore(t.TempDir())
 	router := NewDaemonRouter(store, ServerOptions{Now: func() time.Time { return now }})
 
-	var manifest map[string]any
+	var manifest DaemonPlansProjection
 	getJSON(t, router, "/v1/plans/manifest", &manifest)
-	entries, ok := manifest["entries"].([]any)
-	if !ok {
-		t.Fatalf("manifest entries field type = %T, want []any (atom-1 stub envelope)", manifest["entries"])
+	if manifest.SchemaVersion != DaemonPlansProjectionSchemaVersion {
+		t.Fatalf("schema_version = %d, want %d", manifest.SchemaVersion, DaemonPlansProjectionSchemaVersion)
 	}
-	if len(entries) != 0 {
-		t.Fatalf("manifest entries len = %d, want 0 (atom-1 stub returns empty until atom-2)", len(entries))
+	if len(manifest.Entries) != 0 {
+		t.Fatalf("manifest entries len = %d, want 0", len(manifest.Entries))
 	}
-	if _, ok := manifest["schema_version"]; !ok {
-		t.Fatalf("manifest missing schema_version key: %#v", manifest)
+
+	set := ProjectionSet{
+		SchemaVersion: ProjectionSchemaVersion,
+		RebuiltAt:     now.Format(time.RFC3339Nano),
+		LastEventID:   "evt-plans-snapshot",
+		Manifests:     defaultProjectionManifests(store.LedgerPath(), now.Format(time.RFC3339Nano)),
+		Plans: DaemonPlansProjection{
+			SchemaVersion: DaemonPlansProjectionSchemaVersion,
+			LastEventID:   "evt-plans-snapshot",
+			ProjectID:     "proj-1",
+			IssuePrefix:   "soc",
+			Entries: []PlansProjectionEntry{{
+				BeadsID:   "soc-plan-1",
+				Title:     "Populated plan",
+				Status:    "open",
+				IssueType: "epic",
+				UpdatedAt: now,
+			}},
+			RebuiltAt: now.Format(time.RFC3339Nano),
+		},
+	}
+	if _, err := store.WriteProjectionSnapshot(set); err != nil {
+		t.Fatalf("write projection snapshot: %v", err)
+	}
+	var populated DaemonPlansProjection
+	getJSON(t, router, "/v1/plans/manifest", &populated)
+	if len(populated.Entries) != 1 || populated.Entries[0].BeadsID != "soc-plan-1" {
+		t.Fatalf("populated entries = %#v, want soc-plan-1 from projection snapshot", populated.Entries)
 	}
 
 	var diff map[string]any

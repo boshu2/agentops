@@ -17,8 +17,9 @@
 # gitignored per the no-tracked-agents policy and only exists post-init on
 # operator hosts.
 #
-# llmwiki.loop is intentionally excluded — its stage handlers are stubs in v1.0;
-# wait for the real-bodies follow-up (f-2026-05-01-011) before scheduling.
+# llmwiki.loop is intentionally excluded from the starter safe-set: placeholder
+# outputs are default-disabled and require allow_placeholder_outputs=true for
+# test/experimental fixtures until the real-bodies follow-up lands.
 #
 # Exit codes:
 #   0 - PASS
@@ -105,7 +106,7 @@ fi
 # Robust against YAML formatting variations (quoted/unquoted values).
 if ! grep -qE 'job_type:[[:space:]]*"?(dream\.run|wiki\.forge)"?' "$EXAMPLE_PATH"; then
     echo "FAIL: $EXAMPLE_PATH must contain at least one schedule with job_type = dream.run or wiki.forge (real-bodied v1.0 safe-set)" >&2
-    echo "llmwiki.loop has stub stage handlers in v1.0 — exclude until f-2026-05-01-011 lands." >&2
+    echo "llmwiki.loop placeholder outputs are default-disabled; keep the starter safe-set to dream.run/wiki.forge." >&2
     exit 1
 fi
 

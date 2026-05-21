@@ -89,7 +89,8 @@ func (e *PlansProjectionExecutor) RunJob(ctx context.Context, claim QueueLease) 
 	if err := ctx.Err(); err != nil {
 		return JobExecutionResult{}, err
 	}
-	rebuiltAt := e.now().UTC().Format(time.RFC3339Nano)
+	now := e.now().UTC()
+	rebuiltAt := now.Format(time.RFC3339Nano)
 	projection := DaemonPlansProjection{
 		SchemaVersion: DaemonPlansProjectionSchemaVersion,
 		ProjectID:     spec.ProjectID,
@@ -104,11 +105,22 @@ func (e *PlansProjectionExecutor) RunJob(ctx context.Context, claim QueueLease) 
 	if err != nil {
 		return JobExecutionResult{}, err
 	}
+	set, err := e.store.RebuildProjections(ProjectionRebuildOptions{RebuiltAt: now})
+	if err != nil {
+		return JobExecutionResult{}, fmt.Errorf("plans.projection projection snapshot rebuild: %w", err)
+	}
+	projection.LastEventID = set.LastEventID
+	applyDaemonPlansProjectionToSet(&set, projection, snapshotPath)
+	projectionSnapshotPath, err := e.store.WriteProjectionSnapshot(set)
+	if err != nil {
+		return JobExecutionResult{}, fmt.Errorf("plans.projection projection snapshot write: %w", err)
+	}
 	artifacts := map[string]string{
-		"manifest_jsonl": snapshotPath,
-		"manifest_count": strconv.Itoa(len(projection.Entries)),
-		"rebuilt_at":     rebuiltAt,
-		"trigger":        string(spec.RefreshTrigger),
+		"manifest_jsonl":      snapshotPath,
+		"manifest_count":      strconv.Itoa(len(projection.Entries)),
+		"projection_snapshot": projectionSnapshotPath,
+		"rebuilt_at":          rebuiltAt,
+		"trigger":             string(spec.RefreshTrigger),
 	}
 	return JobExecutionResult{Artifacts: artifacts}, nil
 }

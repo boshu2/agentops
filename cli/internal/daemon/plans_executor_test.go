@@ -164,6 +164,21 @@ func assertPlansProjectionExecutorPopulatedState(t *testing.T, clock func() time
 	}
 	readBack := loadManifestEntries(t, result.Artifacts["manifest_jsonl"])
 	assertPlansProjectionEntriesSorted(t, readBack, []string{"soc-aaa", "soc-mmm", "soc-zzz"})
+	snapshotPath := result.Artifacts["projection_snapshot"]
+	if snapshotPath == "" {
+		t.Fatalf("projection_snapshot artifact missing: %#v", result.Artifacts)
+	}
+	if _, err := os.Stat(snapshotPath); err != nil {
+		t.Fatalf("projection snapshot stat: %v", err)
+	}
+	snapshot, latestPath, err := NewStore(dir).LoadLatestProjectionSnapshot()
+	if err != nil {
+		t.Fatalf("load latest projection snapshot: %v", err)
+	}
+	if latestPath != snapshotPath {
+		t.Fatalf("latest projection snapshot = %q, want artifact path %q", latestPath, snapshotPath)
+	}
+	assertPlansProjectionEntriesSorted(t, snapshot.Plans.Entries, []string{"soc-aaa", "soc-mmm", "soc-zzz"})
 }
 
 func assertPlansProjectionExecutorTransientFailure(t *testing.T, clock func() time.Time) {

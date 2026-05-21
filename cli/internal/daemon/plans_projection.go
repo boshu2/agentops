@@ -44,10 +44,7 @@ type DaemonPlansProjection struct {
 // events because plans.projection is a pull-from-bd projection, not an
 // event-sourced one — the source of truth is bd, not the daemon ledger.
 func RebuildDaemonPlansProjection(events []LedgerEvent) (DaemonPlansProjection, error) {
-	projection := DaemonPlansProjection{
-		SchemaVersion: DaemonPlansProjectionSchemaVersion,
-		Entries:       []PlansProjectionEntry{},
-	}
+	projection := emptyDaemonPlansProjection("")
 	for _, event := range events {
 		if err := ValidateLedgerEvent(event); err != nil {
 			return DaemonPlansProjection{}, err
@@ -55,6 +52,47 @@ func RebuildDaemonPlansProjection(events []LedgerEvent) (DaemonPlansProjection, 
 		projection.LastEventID = event.EventID
 	}
 	return projection, nil
+}
+
+func emptyDaemonPlansProjection(rebuiltAt string) DaemonPlansProjection {
+	return DaemonPlansProjection{
+		SchemaVersion: DaemonPlansProjectionSchemaVersion,
+		Entries:       []PlansProjectionEntry{},
+		RebuiltAt:     rebuiltAt,
+	}
+}
+
+func cloneDaemonPlansProjection(in DaemonPlansProjection) DaemonPlansProjection {
+	if in.SchemaVersion == 0 {
+		return emptyDaemonPlansProjection("")
+	}
+	out := in
+	out.Entries = append([]PlansProjectionEntry{}, in.Entries...)
+	if out.Entries == nil {
+		out.Entries = []PlansProjectionEntry{}
+	}
+	sort.Slice(out.Entries, func(i, j int) bool { return out.Entries[i].BeadsID < out.Entries[j].BeadsID })
+	return out
+}
+
+func applyDaemonPlansProjectionToSet(set *ProjectionSet, projection DaemonPlansProjection, manifestPath string) {
+	set.Plans = cloneDaemonPlansProjection(projection)
+	if set.Plans.LastEventID == "" {
+		set.Plans.LastEventID = set.LastEventID
+	}
+	manifest, ok := set.Manifests[ProjectionPlansManifest]
+	if !ok {
+		return
+	}
+	manifest.Status = ProjectionStatusCurrent
+	manifest.LastEventID = set.LastEventID
+	if projection.RebuiltAt != "" {
+		manifest.RebuiltAt = projection.RebuiltAt
+	}
+	if manifestPath != "" {
+		manifest.OutputPaths = []string{manifestPath}
+	}
+	set.Manifests[ProjectionPlansManifest] = manifest
 }
 
 // WriteDaemonPlansProjection writes the plans manifest snapshot atomically:

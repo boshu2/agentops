@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -124,7 +125,7 @@ func TestLLMWikiLoopExecutor_AttemptCounterPropagates(t *testing.T) {
 	h := &fakeHandler{stage: StageIngest}
 	exec := &LLMWikiLoopExecutor{Ingest: h}
 
-	payload := map[string]any{"vault": vault}
+	payload := map[string]any{"vault": vault, "allow_placeholder_outputs": true}
 	if _, err := exec.RunJob(context.Background(), mkClaim(daemon.JobTypeLLMWikiLoop, payload, 1)); err != nil {
 		t.Fatalf("RunJob attempt 1: %v", err)
 	}
@@ -169,6 +170,70 @@ func TestLLMWikiLoopExecutor_NilHandlerSkipsCleanly(t *testing.T) {
 	}
 }
 
+func TestLLMWikiLoopExecutor_DisablesPlaceholderStagesByDefault(t *testing.T) {
+	vault := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(vault, "raw"), 0o755); err != nil {
+		t.Fatalf("mkdir raw: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(vault, "wiki"), 0o755); err != nil {
+		t.Fatalf("mkdir wiki: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(vault, "raw", "source.md"), []byte("raw"), 0o644); err != nil {
+		t.Fatalf("seed raw: %v", err)
+	}
+	exec := &LLMWikiLoopExecutor{Ingest: &IngestStage{}}
+
+	res, err := exec.RunJob(context.Background(), mkClaim(daemon.JobTypeLLMWikiLoop, map[string]any{"vault": vault}, 1))
+	if err != nil {
+		t.Fatalf("RunJob: %v", err)
+	}
+	if res.Artifacts["skipped"] != "true" {
+		t.Fatalf("artifacts[skipped] = %q, want true", res.Artifacts["skipped"])
+	}
+	if res.Artifacts["skip_reason"] != SkipReasonPlaceholderOutputDisabled {
+		t.Fatalf("skip_reason = %q, want %q", res.Artifacts["skip_reason"], SkipReasonPlaceholderOutputDisabled)
+	}
+	if _, ok := res.Artifacts["artifact_0"]; ok {
+		t.Fatalf("placeholder-disabled run should not emit artifacts: %#v", res.Artifacts)
+	}
+	if _, err := os.Stat(filepath.Join(vault, "wiki", "sources", "source-md.md")); !os.IsNotExist(err) {
+		t.Fatalf("placeholder-disabled run created source artifact, stat err=%v", err)
+	}
+}
+
+func TestLLMWikiLoopExecutor_AllowsPlaceholderStagesWithExplicitOptIn(t *testing.T) {
+	vault := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(vault, "raw"), 0o755); err != nil {
+		t.Fatalf("mkdir raw: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(vault, "wiki"), 0o755); err != nil {
+		t.Fatalf("mkdir wiki: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(vault, "raw", "source.md"), []byte("raw"), 0o644); err != nil {
+		t.Fatalf("seed raw: %v", err)
+	}
+	exec := &LLMWikiLoopExecutor{Ingest: &IngestStage{}}
+
+	res, err := exec.RunJob(context.Background(), mkClaim(daemon.JobTypeLLMWikiLoop, map[string]any{
+		"vault":                     vault,
+		"allow_placeholder_outputs": true,
+	}, 1))
+	if err != nil {
+		t.Fatalf("RunJob: %v", err)
+	}
+	artifact := res.Artifacts["artifact_0"]
+	if artifact == "" {
+		t.Fatalf("artifact_0 missing from opt-in run: %#v", res.Artifacts)
+	}
+	data, err := os.ReadFile(artifact)
+	if err != nil {
+		t.Fatalf("read artifact: %v", err)
+	}
+	if !strings.Contains(string(data), "Distilled placeholder") {
+		t.Fatalf("artifact body did not contain expected placeholder marker:\n%s", data)
+	}
+}
+
 func TestLLMWikiLoopExecutor_StageWhitelistRespected(t *testing.T) {
 	// Vault state would prefer Ingest (raw/ has new content), but the spec
 	// pins Stages=[Lint] — executor must run Lint, not Ingest.
@@ -188,8 +253,9 @@ func TestLLMWikiLoopExecutor_StageWhitelistRespected(t *testing.T) {
 	exec := &LLMWikiLoopExecutor{Ingest: ingest, Lint: lint}
 
 	payload := map[string]any{
-		"vault":  vault,
-		"stages": []string{"lint"},
+		"vault":                     vault,
+		"stages":                    []string{"lint"},
+		"allow_placeholder_outputs": true,
 	}
 	if _, err := exec.RunJob(context.Background(), mkClaim(daemon.JobTypeLLMWikiLoop, payload, 1)); err != nil {
 		t.Fatalf("RunJob: %v", err)
@@ -247,7 +313,11 @@ func TestLLMWikiLoopExecutor_NowInjectable(t *testing.T) {
 	frozen := time.Date(2026, 1, 5, 0, 0, 0, 0, time.UTC) // 96h later
 	lint := &fakeHandler{stage: StageLint}
 	exec := &LLMWikiLoopExecutor{Lint: lint, Now: func() time.Time { return frozen }}
-	if _, err := exec.RunJob(context.Background(), mkClaim(daemon.JobTypeLLMWikiLoop, map[string]any{"vault": vault, "lint_interval_hours": 24}, 1)); err != nil {
+	if _, err := exec.RunJob(context.Background(), mkClaim(daemon.JobTypeLLMWikiLoop, map[string]any{
+		"vault":                     vault,
+		"lint_interval_hours":       24,
+		"allow_placeholder_outputs": true,
+	}, 1)); err != nil {
 		t.Fatalf("RunJob: %v", err)
 	}
 	if got := atomic.LoadInt32(&lint.calls); got != 1 {

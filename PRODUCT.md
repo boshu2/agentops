@@ -64,11 +64,11 @@ The April 2026 Claude Code source analysis confirmed that Anthropic's internal t
 
 | Anthropic Concept | AgentOps Equivalent | Status |
 |---|---|---|
-| **Learning Loop** — memory extraction, dream cycle consolidation, future session context | Knowledge Flywheel — `/retro` → `/forge` → `/harvest` → `ao lookup` / `ao context assemble`, tiered promotion (learning → pattern → rule), plus private local Dream via `/dream` and `ao overnight` | Shipped. On-demand capture/promotion is live, and Dream now provides the bounded private overnight compounding lane. GitHub nightly is the public proof harness for the contracts, not the user's private runtime. |
+| **Learning Loop** — memory extraction, dream cycle consolidation, future session context | Knowledge Flywheel — `/retro` → `/forge` → `/harvest` → `ao lookup` / `ao context assemble`, tiered promotion (learning → pattern → rule), plus private local Dream via `/dream` and `ao overnight` | Live with bounds. On-demand capture/promotion works, and Dream provides an operator-started overnight compounding lane. GitHub nightly is the public proof harness for the contracts, not the user's private runtime. |
 | **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 79 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Prototype built. `ao flywheel close-loop` now drafts review-only skills from repeated patterns; promotion polish is the remaining gap. |
-| **Verification Agent** — adversarial AI auditing AI, VERDICT system for human review | Council architecture — `/council`, `/pre-mortem`, `/vibe`, `/post-mortem` with multi-model consensus, prediction tracking. Stage 4 behavioral validation adds holdout scenarios + satisfaction scoring in STEP 1.8. | Shipped. On-demand + always-on (STEP 1.8 fires automatically during `/validation`). |
-| **Managed Agents Dreaming** (May 2026) — scheduled session review, pattern extraction, memory curation between sessions | `/dream` + `ao overnight` + `cli/cmd/ao/dream_executor.go` + `.github/workflows/nightly.yml` dream-cycle proof job | Shipped. Bounded private overnight compounding lane runs the harvest → forge → close-loop → defrag chain unattended, off the API and against any model. |
-| **Managed Agents Outcomes** (May 2026) — rubric-driven separate-context grader with iterate-until-pass | Shipped at three scopes: project — `GOALS.md` (rubric) + `ao goals measure` (each gate runs as separate subprocess; `cli/internal/goals/measure.go:132-164`) + `/evolve` (iterates worst-failing gate until pass; `skills/evolve/SKILL.md:379-388`); plan — `/pre-mortem` council judges as separate-context graders; code — `/vibe` council judges. Independent 3-judge audit confirmed parity on rubric authoring, separate-context grading, iterate-until-pass, and pinpoint-what-changed. | Shipped at the capability layer. Empirical workbench A/B (2026-05-06): Δ=+0.0000 across 12 cases at v1 difficulty (both legs 12/12) — task difficulty floor exhausted; v2 substrate (realistic agent tasks where the hook layer differentiates) is roadmap. Counter-stat artifact: `evals/workbench/results/2026-05-06-yjzp9-counterstat.json`. |
+| **Verification Agent** — adversarial AI auditing AI, VERDICT system for human review | Council architecture — `/council`, `/pre-mortem`, `/vibe`, `/post-mortem` with multi-model consensus, prediction tracking. Stage 4 behavioral validation adds holdout scenarios + satisfaction scoring in STEP 1.8. | Live on demand. STEP 1.8 fires automatically inside `/validation` when that skill is invoked. |
+| **Managed Agents Dreaming** (May 2026) — scheduled session review, pattern extraction, memory curation between sessions | `/dream` + `ao overnight` + `cli/cmd/ao/dream_executor.go` + `.github/workflows/nightly.yml` dream-cycle proof job | Live with operator setup. The bounded private overnight lane runs harvest → forge → close-loop → defrag on the cadence and model runtime the operator configures. |
+| **Managed Agents Outcomes** (May 2026) — rubric-driven separate-context grader with iterate-until-pass | Live at three scopes: project — `GOALS.md` (rubric) + `ao goals measure` (each gate runs as separate subprocess; `cli/internal/goals/measure.go:132-164`) + `/evolve` (can iterate a worst-failing gate under operator limits; `skills/evolve/SKILL.md:379-388`); plan — `/pre-mortem` council judges as separate-context graders; code — `/vibe` council judges. Independent 3-judge audit confirmed parity on rubric authoring, separate-context grading, iterate-until-pass, and pinpoint-what-changed. | Live at the capability layer. Empirical workbench A/B (2026-05-06): Δ=+0.0000 across 12 cases at v1 difficulty (both legs 12/12) — task difficulty floor exhausted; v2 substrate (realistic agent tasks where the hook layer differentiates) is roadmap. Counter-stat artifact: `evals/workbench/results/2026-05-06-yjzp9-counterstat.json`. |
 
 Read the convergence table the right way: AgentOps and every harness like it gets absorbed into the model layer over time — Anthropic's 2026-05-06 Managed Agents launch is the textbook example. Memory primitives, learning loops, even validation gates — frontier vendors will ship them natively. What stays yours is the corpus. AgentOps is the bridge tool that helps you build the moat *now*, with current models, before the harness layer commoditizes.
 
@@ -129,7 +129,7 @@ The same substrate, reached three ways:
 
 - **In-harness plugin** — skills for Claude Code, Codex, Cursor, OpenCode, with optional hook adapters for runtimes that want them. Context moves through explicit packets and skill workflows first. Install via `claude plugin install`, `install-codex.sh`, or the skills.sh package.
 - **`ao` CLI** — the terminal and CI control plane. `ao context assemble`, `ao lookup`, `ao compile`, `ao goals measure`, `ao flywheel close-loop` — the same compiler, scriptable. Repo-native, with no required AgentOps cloud control plane.
-- **Scheduling daemon** — off-API, off-vendor. `ao schedule` + `ao daemon` run dream, evolve, compile, defrag, forge, and feedback-drain on whatever cadence you set, against whichever local subscription you already pay for. The always-on lane.
+- **Scheduling daemon** — off-API, off-vendor. `ao schedule` + `ao daemon` can run dream, evolve, compile, defrag, forge, and feedback-drain jobs on the cadence you set, against whichever local subscription you already pay for. Worker execution defaults to `cli-fallback`; the synthetic `fake` policy is explicit test/demo mode.
 
 ### Domain and practice layer
 
@@ -199,7 +199,7 @@ The same model used in the README: bookkeeping records the work, the context com
 - `/forge` — extract structured learnings from completed sessions
 - `ao flywheel close-loop` — score, promote, curate automatically
 <!-- agentops:claim:AOP-CLAIM-PRODUCT-EVOLVE-RECONCILE -->
-- `/evolve` — autonomous reconciliation: reads goals, fixes the worst gap, validates, repeats
+- `/evolve` — bounded reconciliation: reads goals, targets the worst gap, validates, and can repeat under operator limits
 - `/dream` and `ao overnight` — bounded private compounding lane
 - `ao schedule` + `ao daemon` — operator-owned cadence for dream, evolve, compile, defrag, forge, and feedback-drain
 - `.github/workflows/nightly.yml` — public proof harness for the contracts (not your private runtime)
@@ -249,7 +249,7 @@ Full profile: [docs/assurance-profile.md](docs/assurance-profile.md).
 - **Context as a boundary.** Research, planning, implementation, and validation receive different context. Workers get fresh windows. Validators get evidence packets instead of the implementer's accumulated chat.
 - **Bookkeeping by default.** RPI packets, council verdicts, citations, ratchet records, post-mortems, handoffs, and schedule outputs leave file-backed traces that can be inspected, diffed, archived, or excluded from source control.
 - **Policy gates over advice.** Hooks, pre-push checks, security scans, goal fitness gates, and pre-mortems encode process as executable constraints instead of relying on the agent to remember a runbook.
-- **Variable autonomy.** The same factory can run interactive, supervised, scheduled, or unattended loops. High-risk environments can keep humans in the loop for planning, validation, release, and promotion while still using agents for bounded work.
+- **Variable autonomy.** The same factory can run interactive, supervised, or scheduled loops. High-risk environments can keep humans in the loop for planning, validation, release, and promotion while still using agents for bounded work.
 - **Constrained-network fit.** The design favors repo-local state, explicit artifacts, no required cloud control plane, and operator-owned scheduling. Formal deployment into classified, export-controlled, or safety-critical environments still requires the local authority's security controls, model approvals, supply-chain process, and accreditation work.
 
 ## Evidence
@@ -314,7 +314,7 @@ The internal lineage that produced this product, and the parallels we are *not* 
 - **Olympus** was the predecessor runtime. Power-user daemon, run ledger, context compilation, constraint injection. Archived as a live system; its patterns survived as skills inside AgentOps.
 - **AgentOps** (this repository) is the coding-agent implementation. Skills + execution packets + optional hooks + `ao` CLI + scheduling daemon. It applies the context-compounding model to software work.
 <!-- agentops:claim:AOP-CLAIM-PRODUCT-MT-OLYMPUS-PROOF -->
-- **Mt. Olympus** is the forkable Gas City runtime proof — the empirical demonstration that the substrate runs, autonomously, against a real codebase under operator control.
+- **Mt. Olympus** is the forkable Gas City runtime proof — the empirical demonstration that the substrate can run scheduled and supervised loops against a real codebase under operator control.
 
 ### Why Meadows, foregrounded
 

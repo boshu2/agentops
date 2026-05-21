@@ -260,13 +260,12 @@ func (s *ReadOnlyServer) handlePlansManifest(w http.ResponseWriter, r *http.Requ
 	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
-	// atom-1 stub: the Plans field on ProjectionSet is added in atom-2. Until
-	// then, return an empty manifest envelope so callers can wire against the
-	// shape without depending on the executor.
-	writeJSON(w, http.StatusOK, map[string]any{
-		"schema_version": ProjectionSchemaVersion,
-		"entries":        []any{},
-	})
+	state, err := s.readState()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, state.Projections.Plans)
 }
 
 func (s *ReadOnlyServer) handlePlansDiff(w http.ResponseWriter, r *http.Request) {

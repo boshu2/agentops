@@ -22,6 +22,8 @@ const (
 	StagePromote Stage = "promote"
 )
 
+const SkipReasonPlaceholderOutputDisabled = "placeholder-output-disabled"
+
 // DefaultLintIntervalHours is the default interval between LINT runs when the
 // LoopJobSpec does not specify one. Karpathy's pattern runs lint roughly daily.
 const DefaultLintIntervalHours = 24
@@ -35,6 +37,10 @@ type LoopJobSpec struct {
 	Stages []Stage `json:"stages,omitempty"`
 	// LintIntervalHours controls when LINT becomes eligible. 0 → use default.
 	LintIntervalHours int `json:"lint_interval_hours,omitempty"`
+	// AllowPlaceholderOutputs is an explicit test/experimental opt-in for the
+	// current stubbed stage bodies. Production schedules should leave this
+	// false until the real extraction/query/lint implementations replace them.
+	AllowPlaceholderOutputs bool `json:"allow_placeholder_outputs,omitempty"`
 }
 
 // StageHandler executes a single stage against a vault. Implementations MUST be
@@ -122,6 +128,15 @@ func (e *LLMWikiLoopExecutor) RunJob(ctx context.Context, claim daemon.QueueLeas
 		}
 		return execResult(result), nil
 	}
+	if placeholderStageRequiresOptIn(stage) && !spec.AllowPlaceholderOutputs {
+		result := StageResult{
+			Stage:      stage,
+			Attempt:    attempt,
+			Skipped:    true,
+			SkipReason: SkipReasonPlaceholderOutputDisabled,
+		}
+		return execResult(result), nil
+	}
 
 	result, err := handler.Run(ctx, spec.Vault, attempt)
 	if err != nil {
@@ -185,6 +200,15 @@ func (e *LLMWikiLoopExecutor) now() time.Time {
 func isKnownStage(s Stage) bool {
 	switch s {
 	case StageIngest, StageQuery, StageLint, StagePromote:
+		return true
+	default:
+		return false
+	}
+}
+
+func placeholderStageRequiresOptIn(stage Stage) bool {
+	switch stage {
+	case StageIngest, StageQuery, StageLint:
 		return true
 	default:
 		return false

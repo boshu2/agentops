@@ -12,11 +12,11 @@ path required before hook defaults can be removed.
 
 ## Summary
 
-- Manifest hook entries: 43
-- Unique hook files in manifest: 36
+- Manifest hook entries: 44
+- Unique hook files in manifest: 37
 - Additional hook surfaces outside main manifest: 2
 - `remove`: 0
-- `gate`: 25
+- `gate`: 26
 - `event-subscriber`: 9
 - `explicit-command`: 9
 - `optional-adapter`: 0
@@ -64,6 +64,7 @@ This inventory uses concrete migration dispositions. For the
 | PreToolUse | Bash | `check-test-pair-on-commit.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | yes | GateRunnerPort commit-review validation lane |
 | PreToolUse | Bash | `check-sibling-citation-on-commit.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | yes | GateRunnerPort commit-review validation lane |
 | PreToolUse | Bash | `git-worker-guard.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | no | SafetyPolicyPort worker-git lane |
+| PreToolUse | Bash | `session-pr-counter.sh` | 10 | Work Lifecycle | `gate` | `deterministic-safety` | yes | GateRunnerPort session-scope PR counter lane |
 | PreToolUse | Bash | `lead-only-worker-git-guard.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | no | SafetyPolicyPort lead-only git lane |
 | PreToolUse | Edit | `standards-injector.sh` | 3 | Context Compiler | `explicit-command` | `token-risk-needs-remeasure` | yes | Skill-scoped standards lookup via ContextCompilerPort |
 | PreToolUse | Write | `standards-injector.sh` | 3 | Context Compiler | `explicit-command` | `token-risk-needs-remeasure` | yes | Skill-scoped standards lookup via ContextCompilerPort |
@@ -206,6 +207,12 @@ surfaces that are not wired by the active manifests.
 - **Summary:** git-worker-guard.sh - PreToolUse hook: block git write operations for swarm workers
 - **Side effects:** blocks git writes from worker contexts
 - **Rationale:** Worker authority is a safety policy.
+
+### `session-pr-counter.sh`
+
+- **Summary:** shellcheck shell=bash
+- **Side effects:** warns or blocks when a session exceeds the PR-count threshold
+- **Rationale:** Session-scope limits are deterministic factory safety policy and should be enforced through an explicit gate port.
 
 ### `lead-only-worker-git-guard.sh`
 

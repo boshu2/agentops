@@ -3,7 +3,9 @@
 # What it does:
 #   Replaces three operator-local timers with daemon-owned schedules:
 #   Tier 1 mines recent session evidence, Tier 2 reviews draft session pages,
-#   and Tier 3 runs the llmwiki vault loop. Tier 4 remains manual by design.
+#   and Tier 3 registers the experimental llmwiki vault loop. Its placeholder
+#   output stages are skipped by default unless a test fixture opts in with
+#   allow_placeholder_outputs=true. Tier 4 remains manual by design.
 #   The portable Tier 2 recipe uses `ao forge review --reviewer-model`; replace
 #   that `skill.invoke` payload with an operator-specific Morai bridge command
 #   only after that bridge is installed and validated on the host.
@@ -55,6 +57,7 @@ schedules:
         - ingest
         - lint
         - promote
+      # allow_placeholder_outputs: true  # test/experimental stub opt-in only
     timeout: "30m"
     backpressure:
       skip_if_running: true

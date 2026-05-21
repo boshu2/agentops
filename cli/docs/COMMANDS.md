@@ -1455,7 +1455,7 @@ ao daemon run [flags]
 
 ```
       --addr string                   Loopback address for foreground daemon (default "127.0.0.1:8765")
-      --executor-policy string        Daemon executor policy for workers (fake, gascity, cli-fallback) (default "fake")
+      --executor-policy string        Daemon executor policy for workers (cli-fallback, gascity, fake; fake is explicit test/demo mode) (default "cli-fallback")
       --gascity-city string           GasCity city name for gascity executor policy
       --gascity-endpoint string       GasCity API endpoint for gascity executor policy
       --gascity-token string          GasCity mutation token for gascity executor policy

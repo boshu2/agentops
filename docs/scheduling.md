@@ -130,7 +130,9 @@ files designed to be picked up à la carte.
 
 - **What it does:** Registers the daemon-side vault maintenance pack:
   Tier 1 `wiki.forge` over session evidence, Tier 2 `skill.invoke` for
-  `ao forge review --reviewer-model gemma2:9b`, and Tier 3 `llmwiki.loop`.
+  `ao forge review --reviewer-model gemma2:9b`, and Tier 3 experimental
+  `llmwiki.loop`. Placeholder-producing `llmwiki.loop` stages are skipped by
+  default unless a test fixture opts in with `allow_placeholder_outputs=true`.
 - **Why schedule it:** It replaces scattered operator-local timers with
   daemon-owned recurrence, backpressure, and ledger evidence.
 - **Cadence:** Tier 1 at 22:00, Tier 2 at 01:30, Tier 3 at 02:00. Tier 4 stays
