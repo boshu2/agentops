@@ -110,6 +110,8 @@ These CI 1-40 items are intentionally not being hardened in this wave. Revisit o
 | **check-test-staleness** (non-blocking) | Detects stale/abandoned test files | Non-blocking (`continue-on-error: true`) |
 | **swarm-evidence** (non-blocking) | Swarm evidence files and file manifests are valid | Non-blocking (`continue-on-error: true`); informational artifact validation only |
 | **executable-spec-link-integrity** (non-blocking) | Runs `ao goals scenarios --lint` (directive↔scenario link lint) and `ao goals trace --orphans` (whole-chain orphan/gap audit) warn-only (F1.6, soc-58nt.1.9). Non-blocking (`continue-on-error: true`). Promotion criterion: remove `continue-on-error: true` from the CI job and replace `warn` with `fail` in pre-push check 38 after two consecutive clean runs on main | Broken directive↔scenario link or orphaned directive/scenario/bead in the trace chain (surfaces as warning, not failure, until promoted) |
+| **lint-evidence-lines-advisory** (non-blocking) | I0 advisory wiring for `scripts/lint-evidence-lines.sh` (soc-dspz). Pre-AP#7 check on PR-body `Evidence` lines so authors get an annotation before the strict `validate-pr-evidence-claims` gate runs. Promotion path I0 advisory then T2 required after one clean week. | Non-blocking (`continue-on-error: true`); emits `::warning::` annotation with claim summary |
+| **check-skill-catalog-drift-advisory** (non-blocking) | I0 advisory wiring for `scripts/check-skill-catalog-drift.sh` (soc-dspz). Annotates when `skills/catalog.json` drifts from `skills/*/SKILL.md` frontmatter. Promotion path I0 advisory then T2 required after one clean week. | Non-blocking (`continue-on-error: true`); emits `::warning::` annotation with drift summary |
 
 ### Nightly Workflow Jobs
 

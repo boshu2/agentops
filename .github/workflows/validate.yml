@@ -1635,6 +1635,56 @@ jobs:
           echo '[{"id":"1","subject":"A","files":["a.go"]},{"id":"2","subject":"B","files":["b.go"]}]' > "$CLEAN_TMP"
           scripts/check-file-manifest-overlap.sh "$CLEAN_TMP"
 
+  lint-evidence-lines-advisory:
+    # I0 advisory wiring for scripts/lint-evidence-lines.sh (soc-dspz). Runs
+    # pre-AP#7 check on PR-body `Evidence:` lines so authors get an annotation
+    # before the strict verify-pr-evidence-claims gate (line 1781) runs.
+    # Initial promotion path: I0 advisory → T2 required after one clean week.
+    needs: [changes]
+    if: github.event_name == 'pull_request'
+    name: lint-evidence-lines (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - name: Lint Evidence claims (pre-AP#7)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          chmod +x scripts/lint-evidence-lines.sh
+          scripts/lint-evidence-lines.sh "${{ github.event.pull_request.number }}"
+          rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::warning::lint-evidence-lines.sh found issues (advisory; rc=$rc)"
+          fi
+          # advisory: never propagate non-zero
+          exit 0
+
+  check-skill-catalog-drift-advisory:
+    # I0 advisory wiring for scripts/check-skill-catalog-drift.sh (soc-dspz).
+    # Annotates when skills/catalog.json is out of sync with skills/*/SKILL.md
+    # frontmatter, without blocking the merge. Promotion path: I0 advisory →
+    # T2 required after one clean week.
+    needs: [changes]
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+    name: check-skill-catalog-drift (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check catalog drift
+        run: |
+          set +e
+          chmod +x scripts/check-skill-catalog-drift.sh
+          scripts/check-skill-catalog-drift.sh
+          rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::warning::skills/catalog.json drift detected (advisory; rc=$rc). Regenerate via scripts/generate-skill-catalog.sh."
+          fi
+          # advisory: never propagate non-zero
+          exit 0
+
   doctor-check:
     name: doctor-check (advisory)
     runs-on: ubuntu-latest
@@ -1894,7 +1944,7 @@ jobs:
           echo "::notice::AP#7 verification skipped — no completed sibling jobs returned logs. The PR's Evidence: line was extracted but cannot be cross-checked against per-job logs in this CI shape (likely: only this job ran, or all siblings were skipped)."
 
   summary:
-    needs: [changes, doc-release-gate, smoke-test, hook-preflight, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-pr-evidence-claims, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-agents-split, validate-sovereignty-proof-citations, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, factory-claim-ledger-strict, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity]
+    needs: [changes, doc-release-gate, smoke-test, hook-preflight, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-pr-evidence-claims, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-agents-split, validate-sovereignty-proof-citations, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, factory-claim-ledger-strict, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity, lint-evidence-lines-advisory, check-skill-catalog-drift-advisory]
     runs-on: ubuntu-latest
     if: always()
     steps:

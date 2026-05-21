@@ -104,6 +104,9 @@ jobs:
 - name: validate-codex-parity-drift
   reason: 'GOALS.md directive D7: `scripts/check-codex-parity-drift.sh` returns 0 findings (no `--warn-only` escape)'
   failure: Codex parity drift reintroduced between Claude skills and `skills-codex/` outputs
+- name: lint-evidence-lines-advisory
+  reason: 'I0 advisory wiring for `scripts/lint-evidence-lines.sh` (soc-dspz). Pre-AP#7 check on PR-body `Evidence` lines so authors get an annotation before the strict `validate-pr-evidence-claims` gate runs. Promotion path I0 advisory then T2 required after one clean week.'
+  failure: 'Non-blocking (`continue-on-error: true`); emits `::warning::` annotation with claim summary'
 - name: validate-pr-evidence-claims
   reason: 'ship-loop anti-pattern #7 (soc-eqjd): each `Evidence:` line in the PR body must appear verbatim in this workflow run''s logs. Replaces local pre-push check #39 retired by soc-g2r9. Only runs on `pull_request` events.'
   failure: 'PR body cites an `Evidence:` line that does not appear in any job''s log output for this run (false claim about gate behavior)'
@@ -185,6 +188,9 @@ jobs:
 - name: bats-tests
   reason: BATS integration tests for shell scripts pass
   failure: Hook or script behavioral regression
+- name: check-skill-catalog-drift-advisory
+  reason: 'I0 advisory wiring for `scripts/check-skill-catalog-drift.sh` (soc-dspz). Annotates when `skills/catalog.json` drifts from `skills/*/SKILL.md` frontmatter. Promotion path I0 advisory then T2 required after one clean week.'
+  failure: 'Non-blocking (`continue-on-error: true`); emits `::warning::` annotation with drift summary'
 - name: check-test-staleness
   reason: Detects stale/abandoned test files
   failure: 'Non-blocking (`continue-on-error: true`)'
