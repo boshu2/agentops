@@ -435,19 +435,23 @@ When evolve picks a finding, claim it first in next-work.jsonl:
 
 See `references/quality-mode.md` for scoring and full details.
 
-**Nothing found?** HARD GATE — only consider dormancy after the generator layers also came up empty:
+**Nothing found?** HARD GATE — dormancy only when ALL sources empty (soc-5qit):
 
 ```bash
-# Count trailing idle/unchanged entries in cycle-history.jsonl (portable, no tac)
-IDLE_STREAK=$(awk '/"result"\s*:\s*"(idle|unchanged)"/{streak++; next} {streak=0} END{print streak+0}' \
-  .agents/evolve/cycle-history.jsonl 2>/dev/null)
+READY_BEADS=$(bd ready --json 2>/dev/null | jq -r 'length // 0' 2>/dev/null || echo 0)
+HARVESTED=$(jq -r 'select(.consumed==false) | .severity' .agents/rpi/next-work.jsonl 2>/dev/null | wc -l | tr -d ' ')
+FAILING_GOALS=$(jq -r '.goals[] | select(.result=="fail") | .id' .agents/evolve/fitness-latest.json 2>/dev/null | wc -l | tr -d ' ')
 
+if [ "$READY_BEADS" -gt 0 ] || [ "$HARVESTED" -gt 0 ] || [ "$FAILING_GOALS" -gt 0 ]; then
+  continue  # work exists — loop back to Step 3 (agile invariant)
+fi
+IDLE_STREAK=$(awk '/"result"\s*:\s*"(idle|unchanged)"/{streak++; next} {streak=0} END{print streak+0}' .agents/evolve/cycle-history.jsonl 2>/dev/null)
 if [ "$GENERATOR_EMPTY_STREAK" -ge 2 ] && [ "$IDLE_STREAK" -ge 2 ]; then
-  # Work layers are empty AND producer layers were empty for the 3rd consecutive pass — STOP
-  echo "Stagnation reached after repeated empty work + generator passes. Dormancy is the last-resort outcome."
-  # go to Teardown — do NOT log another idle entry
+  echo "Genuine stagnation: all sources empty x3."
 fi
 ```
+
+**Agile invariant (soc-5qit):** `bd ready ≥ 1` ⇒ loop NEVER stops. Only path to stagnation-STOP is fully empty backlog + dry generators. Context exhaustion → write non-sticky `.agents/evolve/HANDOFF`, exit turn; next fire (compacted/fresh) clears HANDOFF in Step 1 and continues.
 
 If the work layers were empty but a generator pass has not been exhausted 3 times yet, persist the new generator streak in `session-state.json` and loop back to Step 1. Empty pre-cycle work sources are not a stop reason by themselves.
 
