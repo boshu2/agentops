@@ -47,6 +47,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `recover` — Recover session context.
 - `research` — Explore and write findings.
 - `review` — Review diffs for risk, find mocks, scan for bugs, and audit codebases.
+- `session-bootstrap` — Universal init prompt — every agent spawned into an AgentOps repo runs `ao session bootstrap` first.
 - `ship-loop` — Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close.
 - `status` — Show AgentOps work status.
 - `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates.
@@ -141,6 +142,11 @@ graph LR
   scope -- "supplier-to" --> domain
   security -- "supplier-to" --> vibe
   security-suite -- "supplier-to" --> vibe
+  session-bootstrap -- "customer-of" --> AGENTS-CI.md
+  session-bootstrap -- "customer-of" --> AGENTS-CODEX.md
+  session-bootstrap -- "customer-of" --> AGENTS-RUNTIME.md
+  session-bootstrap -- "customer-of" --> AGENTS-WORKFLOW.md
+  session-bootstrap -- "customer-of" --> AGENTS.md
   ship-loop -- "customer-of" --> post-mortem
   ship-loop -- "customer-of" --> rpi
   swarm -- "customer-of" --> crank
@@ -262,6 +268,10 @@ graph LR
 | `security` | produces | security-report.json |
 | `security-suite` | consumes | repo-context |
 | `security-suite` | produces | security-report.json |
+| `session-bootstrap` | consumes | bd |
+| `session-bootstrap` | consumes | onboard |
+| `session-bootstrap` | produces | json |
+| `session-bootstrap` | produces | stdout |
 | `shared` | produces | stdout |
 | `ship-loop` | consumes | beads |
 | `ship-loop` | consumes | post-mortem |

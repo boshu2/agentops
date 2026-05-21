@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/boshu2/agentops/schemas/session-bootstrap.v1.schema.json",
+  "title": "Session Bootstrap Status v1",
+  "description": "Canonical machine-readable status report emitted by `ao session bootstrap` (soc-vuu6.25). Every agent spawned into an AgentOps repo runs `ao session bootstrap` first; this schema guarantees the report shape is identical across runtimes so swarm coordination layers can compare starting frames.",
+  "type": "object",
+  "required": [
+    "agents_md_read",
+    "agents_siblings_read",
+    "onboard_phase",
+    "ready_beads_count",
+    "mail_unread_count",
+    "runtime",
+    "started_at",
+    "bootstrap_version"
+  ],
+  "properties": {
+    "agents_md_read": {
+      "type": "boolean",
+      "description": "True when AGENTS.md is present and readable at the repo root."
+    },
+    "agents_siblings_read": {
+      "type": "array",
+      "description": "Post-soc-vuu6.3 tiered-split siblings that were detected at the repo root. Empty when no siblings exist (pre-split repo or non-AgentOps project).",
+      "items": {
+        "type": "string",
+        "enum": [
+          "AGENTS-WORKFLOW.md",
+          "AGENTS-CI.md",
+          "AGENTS-CODEX.md",
+          "AGENTS-RUNTIME.md"
+        ]
+      }
+    },
+    "onboard_phase": {
+      "type": "string",
+      "description": "Result of the `ao onboard --auto` substep. `skipped:not-implemented` until soc-vuu6.9 lands; `skipped:error` if the subprocess fails; a free-form phase string when onboard runs.",
+      "examples": [
+        "skipped:not-implemented",
+        "skipped:error",
+        "ran:no-phase",
+        "fresh",
+        "task-routed"
+      ]
+    },
+    "ready_beads_count": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Number of items returned by `bd ready --json`. Null when bd is missing or the command errors (fail-open contract — bootstrap does not abort)."
+    },
+    "mail_unread_count": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Number of unread messages from mcp-agent-mail. Null when the MCP server is absent, the probe is skipped (--no-mail), or the integration is not yet wired."
+    },
+    "runtime": {
+      "type": "string",
+      "description": "Detected agent runtime. Reads AGENTOPS_RPI_RUNTIME first, then CLAUDECODE / CODEX_CLI, then falls back to GOOS.",
+      "examples": ["claude-code", "codex", "linux", "darwin"]
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC RFC3339 timestamp captured at the start of the bootstrap run."
+    },
+    "bootstrap_version": {
+      "type": "string",
+      "const": "v1",
+      "description": "Schema version. Increment in a new schema file when fields change shape."
+    }
+  },
+  "additionalProperties": false
+}

@@ -12,7 +12,7 @@ Skills fall into three functional categories, plus infrastructure tiers for inte
 | **execution** | Primitives + flows | Research, plan, build, and ship — the work itself | research, plan, implement, crank, swarm, rpi |
 | **knowledge** | Bookkeeping | The flywheel — capture, store, query, inject, and promote learnings | retro (quick-capture), flywheel, forge |
 | **product** | Execution | Define mission, goals, release, docs | product, goals, release, readme, doc |
-| **session** | Execution | Session continuity and status | handoff, recover, status |
+| **session** | Execution | Session continuity and status | handoff, recover, status, session-bootstrap |
 | **utility** | Execution | Standalone tools | quickstart, brainstorm, bug-hunt, complexity |
 | **contribute** | Execution | Upstream PR workflow | pr-research, pr-plan, pr-implement, pr-validate, pr-prep, pr-retro, oss-docs |
 | **cross-vendor** | Execution | Multi-runtime orchestration | codex-team, openai-docs, converter |
@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (70)
+### User-Facing Skills (71)
 
 **Judgment:**
 
@@ -302,6 +302,7 @@ These are how skills chain in practice:
 | **quickstart** | session | Interactive onboarding |
 | **dream** | session | Private overnight operator surface — setup, bedtime run, and morning report |
 | **bootstrap** | session | One-command full AgentOps setup — fills gaps only |
+| **session-bootstrap** | session | Universal init prompt — every agent runs this first (soc-vuu6.25) |
 
 **Upstream Contributions:**
 
