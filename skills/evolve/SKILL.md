@@ -103,6 +103,7 @@ Dream owns the knowledge compounding layer; `/evolve` owns the code compounding 
 | `--test-first` | on | Pass strict-quality defaults through to `/rpi` |
 | `--no-test-first` | off | Explicitly disable test-first passthrough to `/rpi` |
 | `--no-lifecycle` | off | Skip lifecycle work generators in Steps 3.4-3.6 (/test, /deps, /perf, /refactor). Falls back to manual scanning. |
+| `--mode=burst\|loop` | burst | Operator-loop; STOP refused. [loop-mode.md](references/loop-mode.md). |
 
 ## Execution Steps
 
@@ -587,10 +588,10 @@ See `references/cycle-history.md` for advanced troubleshooting.
 
 ## References
 
-- [references/long-loop-discipline.md](references/long-loop-discipline.md) — Disk-is-truth axiom; the cross-cutting principle every other reference here implements
+- [references/long-loop-discipline.md](references/long-loop-discipline.md) — Disk-is-truth axiom
 - [references/artifacts.md](references/artifacts.md) — Generated files registry
 - [references/autonomous-execution.md](references/autonomous-execution.md) — Autonomous-loop rules, operator-shape carve-out, ScheduleWakeup self-perpetuation
-- [references/snapshot-pattern-for-long-cycle-gates.md](references/snapshot-pattern-for-long-cycle-gates.md) — 4-step pattern for converting multi-session corpus gates into single-commit-validatable artifacts
+- [references/snapshot-pattern-for-long-cycle-gates.md](references/snapshot-pattern-for-long-cycle-gates.md) — 4-step pattern for multi-session corpus gates
 - [references/compounding.md](references/compounding.md) — Knowledge flywheel and work harvesting
 - [references/context-budget.md](references/context-budget.md) — `CONTEXT_BUDGET_EXHAUSTED` as a third stop reason and handoff protocol
 - [references/convergence-mechanics.md](references/convergence-mechanics.md) — Read-path mechanisms (prior-failure injection, healing-first classifier, hypothesis tracking, STOP criteria) that turn write-only ledgers into compounding behavior

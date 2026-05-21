@@ -104,6 +104,63 @@ func newEvolveDefaultsTestCommand() *cobra.Command {
 	return cmd
 }
 
+func TestValidateEvolveMode(t *testing.T) {
+	cases := []struct {
+		in      string
+		wantErr bool
+	}{
+		{"burst", false},
+		{"loop", false},
+		{"", true},
+		{"BURST", true},
+		{"Loop", true},
+		{"continuous", true},
+	}
+	for _, tc := range cases {
+		err := validateEvolveMode(tc.in)
+		if tc.wantErr {
+			if err == nil {
+				t.Errorf("validateEvolveMode(%q) = nil, want error", tc.in)
+				continue
+			}
+			if !strings.Contains(err.Error(), "--mode must be 'burst' or 'loop'") {
+				t.Errorf("validateEvolveMode(%q) err = %v, want canonical message", tc.in, err)
+			}
+			continue
+		}
+		if err != nil {
+			t.Errorf("validateEvolveMode(%q) = %v, want nil", tc.in, err)
+		}
+	}
+}
+
+func TestEvolveModeFlagRegisteredWithBurstDefault(t *testing.T) {
+	flag := evolveCmd.Flags().Lookup("mode")
+	if flag == nil {
+		t.Fatal("evolve --mode flag should be registered")
+	}
+	if flag.DefValue != "burst" {
+		t.Errorf("evolve --mode default = %q, want burst", flag.DefValue)
+	}
+}
+
+func TestRunEvolveRejectsInvalidMode(t *testing.T) {
+	prev := evolveMode
+	evolveMode = "bogus"
+	t.Cleanup(func() { evolveMode = prev })
+
+	dir := chdirTemp(t)
+	_ = dir
+
+	err := runEvolve(&cobra.Command{Use: "evolve"}, nil)
+	if err == nil {
+		t.Fatal("runEvolve with --mode=bogus should return error")
+	}
+	if !strings.Contains(err.Error(), "--mode must be 'burst' or 'loop'") {
+		t.Fatalf("error = %v, want '--mode must be burst or loop'", err)
+	}
+}
+
 func TestEnsureEvolveEraBaselineWritesOncePerGoalsHash(t *testing.T) {
 	prevDryRun := dryRun
 	prevGoalsTimeout := goalsTimeout

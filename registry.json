@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-21T15:19:15Z",
+  "generated_at": "2026-05-21T15:57:24Z",
   "summary": {
     "skills": 80,
     "hooks": 44,
     "knowledge_stores": 5,
     "job_types": 14,
     "eval_files": 62,
-    "cli_commands": 175
+    "cli_commands": 176
   },
   "surfaces": {
     "skills": [
@@ -185,7 +185,7 @@
         "path": "skills/evolve/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 23
+        "reference_count": 24
       },
       {
         "name": "grafana-platform-dashboard",
@@ -1389,6 +1389,10 @@
       {
         "name": "evolve_config",
         "path": "cli/cmd/ao/evolve_config.go"
+      },
+      {
+        "name": "evolve_write_stop_marker",
+        "path": "cli/cmd/ao/evolve_write_stop_marker.go"
       },
       {
         "name": "extract",

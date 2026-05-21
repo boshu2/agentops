@@ -1819,6 +1819,7 @@ ao evolve [command]
       --lease-path string                 Lease lock file path (absolute or repo-relative) (default ".agents/rpi/supervisor.lock")
       --lease-ttl duration                Lease heartbeat TTL for supervisor lock metadata (default 2m0s)
       --max-cycles int                    Maximum cycles (0 = unlimited, stop when queue empty)
+      --mode string                       Execution contract: 'burst' (default, agent self-regulates) or 'loop' (operator-driven; STOP markers mechanically refused) (default "burst")
       --ralph                             Enable Ralph-mode preset for unattended external loop supervision (implies supervisor defaults with safe nonstop settings)
       --repo-filter string                Only process queue items targeting this repo (empty = all)
       --retry-backoff duration            Backoff between cycle retry attempts (default 30s)
@@ -1841,6 +1842,23 @@ ao evolve config [flags]
   -h, --help   help for config
       --json   Emit JSON instead of YAML
       --show   Print the resolved preferences (defaults + preferences.yaml)
+```
+
+#### `ao evolve write-stop-marker`
+
+Write a DORMANT, STOP, or KILL marker under .agents/evolve/.
+
+```
+ao evolve write-stop-marker [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for write-stop-marker
+      --marker string   Marker name: dormant, stop, or kill
+      --mode string     Execution contract: 'burst' or 'loop' (loop refuses unconditionally) (default "burst")
+      --reason string   Reason text written to the marker file
 ```
 
 ---
