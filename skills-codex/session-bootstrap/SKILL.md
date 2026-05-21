@@ -16,11 +16,16 @@ produces:
 - stdout
 - json
 context_rel:
-- AGENTS.md
-- AGENTS-WORKFLOW.md
-- AGENTS-CI.md
-- AGENTS-CODEX.md
-- AGENTS-RUNTIME.md
+- kind: customer-of
+  with: AGENTS.md
+- kind: customer-of
+  with: AGENTS-WORKFLOW.md
+- kind: customer-of
+  with: AGENTS-CI.md
+- kind: customer-of
+  with: AGENTS-CODEX.md
+- kind: customer-of
+  with: AGENTS-RUNTIME.md
 ---
 
 # `ao session bootstrap` — the universal init prompt
