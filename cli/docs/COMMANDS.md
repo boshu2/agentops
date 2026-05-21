@@ -1828,6 +1828,22 @@ ao evolve [command]
 
 **Subcommands:**
 
+#### `ao evolve config`
+
+Display the resolved per-repo /evolve preferences.
+
+```
+ao evolve config [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for config
+      --json   Emit JSON instead of YAML
+      --show   Print the resolved preferences (defaults + preferences.yaml)
+```
+
 #### `ao evolve write-stop-marker`
 
 Write a DORMANT, STOP, or KILL marker under .agents/evolve/.
