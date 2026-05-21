@@ -113,5 +113,5 @@ The CI gate `validate-sovereignty-proof-citations` scans this page and the commi
 ## See also
 
 - [Council skill](../../skills/council/SKILL.md) — how to invoke `/council --mixed --deep`
-- [Agent fungibility philosophy](../../skills/agent-fungibility-philosophy/SKILL.md) — the doctrinal frame
+- [Expert council skill](../../skills/expert-council/SKILL.md) — persona-debate variant for fungibility decisions
 - [Operating loop](../architecture/operating-loop.md) — where council fits in the 7-move doctrine
