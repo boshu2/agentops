@@ -226,33 +226,18 @@ if check_stale_kill .agents/evolve/STOP "$EVOLVE_KILL_TTL_DAYS"; then
     exit 0
 fi
 if [ -f .agents/evolve/DORMANT ]; then
-  # DORMANT is honored only if the work queues that triggered it are STILL empty.
-  # Stale DORMANT (from a previous session) auto-clears the moment real work exists,
-  # because evolution is agile: open beads => /evolve runs. No exceptions.
   READY=$(bd ready --json 2>/dev/null | jq -r 'length // 0' 2>/dev/null || echo 0)
   HARVESTED=$(jq -r 'select(.consumed==false) | .severity' .agents/rpi/next-work.jsonl 2>/dev/null | wc -l | tr -d ' ')
   if [ "$READY" -gt 0 ] || [ "$HARVESTED" -gt 0 ]; then
-    echo "DORMANT auto-clearing: ready=$READY harvested=$HARVESTED — work exists, loop resumes."
-    rm -f .agents/evolve/DORMANT
+    rm -f .agents/evolve/DORMANT  # stale: real work exists, loop resumes
   else
-    echo "Dormant since $(head -1 .agents/evolve/DORMANT 2>/dev/null) — bd ready and next-work.jsonl both empty."
-    exit 0
+    echo "Dormant since $(head -1 .agents/evolve/DORMANT 2>/dev/null)."; exit 0
   fi
 fi
-[ -f .agents/evolve/HANDOFF ] && {
-  # HANDOFF is a non-sticky signal: prior session's context was heavy and asked for
-  # a fresh-context handoff. If we're here, this turn IS the fresh context (harness
-  # compaction or new session). Clear the signal and continue normally.
-  echo "HANDOFF cleared: $(head -1 .agents/evolve/HANDOFF 2>/dev/null)"
-  rm -f .agents/evolve/HANDOFF
-}
+[ -f .agents/evolve/HANDOFF ] && rm -f .agents/evolve/HANDOFF  # non-sticky: cleared on fresh fire
 ```
 
-**Agile-first dormancy (soc-5qit):** `DORMANT` is NEVER sticky while open ready beads exist. Step 1 re-validates the dormancy predicate (`bd ready` empty AND harvested queue empty) every cron-fire — if either has work, DORMANT auto-clears and the loop resumes. The only way DORMANT actually short-circuits is if there is *genuinely nothing to do* AND the operator hasn't created new work. This replaces the prior "sticky-until-operator-clears" behavior that was waterfall, not evolutionary.
-
-**Stale-kill auto-expiration:** the KILL and STOP markers honor an EVOLVE_KILL_TTL_DAYS (default 7) age window. A KILL older than the window is logged as STALE and the loop continues — caught the F5 failure mode on 2026-05-18 where a 5-day-old KILL silently blocked /evolve.
-
-**Context exhaustion is not a stop (soc-5qit):** when a session's context is too heavy to safely execute available work, /evolve writes a non-sticky `.agents/evolve/HANDOFF` marker and exits the current turn cleanly. The next cron-fire — running on harness-compacted context or a fresh session — automatically clears HANDOFF in Step 1 and resumes normal work selection. HANDOFF NEVER writes DORMANT; the loop is continuous across compactions.
+**Agile-first dormancy (soc-5qit):** `DORMANT` is NEVER sticky while ready beads exist; Step 1 re-validates every fire and auto-clears stale markers. KILL/STOP honor `EVOLVE_KILL_TTL_DAYS` (default 7). Heavy-context sessions write non-sticky HANDOFF and exit the turn; the next fire (compacted/fresh) clears HANDOFF and resumes — the loop is continuous across compactions.
 
 ### Step 1.5: Healing-first classifier
 
@@ -275,17 +260,13 @@ When a repo-local program contract exists, apply a scope filter before Step 4:
 
 **Step 3.0: Scope filter — split-or-defer, never bail (soc-5qit)**
 
-Before claiming a candidate work item, gate scope vs session budget. If the work touches > 5 non-uniform files, introduces a new shape (schema field, struct field, validator rule, contract surface), is operator-level epic work, OR `PRODUCTIVE_THIS_SESSION > 5` and the work would extend an implementation arc rather than close one — route to **scout-mode**.
+Before claiming a candidate, gate scope vs session budget. If the work touches > 5 non-uniform files, introduces a new shape (schema field, validator, contract surface), is operator-level epic work, OR `PRODUCTIVE_THIS_SESSION > 5` and would extend an arc rather than close one — route to **scout-mode**, which MUST produce one of:
 
-Scout-mode is **work**, not a stop. The scout cycle MUST produce one of:
+1. **Split** — `bd create` 2-N child beads (each ≤5 files, single-shape) with `--deps discovered-from:<parent-id>`, annotate parent, then **re-enter Step 3** so the smallest child (or another ready bead) gets claimed THIS cycle.
+2. **Defer** — annotate the candidate with `defer:<reason>` and re-enter Step 3 so the next-priority ready bead gets claimed.
+3. **Park** (rare) — `bd update <id> --status blocked --notes "scope-too-big"` and re-enter Step 3.
 
-1. **Split** — run `bd create` to decompose the too-big candidate into 2-N smaller child beads (each ≤5 files, single-shape) with `--deps discovered-from:<parent-id>`, annotate the parent with the disposition, then **re-enter Step 3** so the smallest new child (or another ready bead) gets claimed THIS cycle.
-2. **Defer** — annotate the candidate with disposition `defer:<reason>`, then **re-enter Step 3** so the next-priority ready bead gets claimed THIS cycle. The big candidate stays available for a future cycle.
-3. **Park** (rare) — operator-level epic with no obvious split; `bd update <id> --status blocked --notes "scope-too-big: <why>"` and re-enter Step 3 for the next ready bead.
-
-Scout NEVER returns "no work done." If `bd ready` returns ≥1 unblocked bead, the loop MUST claim and work one of them this cycle — either the smaller child it just created, or a smaller-scope sibling already in the queue.
-
-See `references/scout-mode.md` for the split/defer procedure and `references/mechanical-batches.md` for when a >5-file batch is uniform enough to bypass scope-filter entirely.
+Scout NEVER returns "no work done." If `bd ready` ≥1, the loop MUST claim one this cycle. See `references/scout-mode.md` and `references/mechanical-batches.md`.
 
 **Metronome gate:** read `mode_repeat_streak` from `session-state.json` (kept current by `scripts/evolve-update-session-state.sh`). If `mode_repeat_streak >= 3` AND the candidate work would produce the same `mode` value as the trailing run, BLOCK selection at this rung and force a jump to the NEXT rung in the ladder. If `mode_repeat_streak >= 5`, file a `bd remember "metronome-N: <mode>"` and require operator override before continuing on that rung. See `references/metronome-gate.md` for the detection rule and the cycles 144-154 retrospective.
 
@@ -409,33 +390,25 @@ When evolve picks a finding, claim it first in next-work.jsonl:
 
 See `references/quality-mode.md` for scoring and full details.
 
-**Nothing found?** HARD GATE — dormancy is only legal when ALL work sources are genuinely empty (soc-5qit):
+**Nothing found?** HARD GATE — dormancy only when ALL sources empty (soc-5qit):
 
 ```bash
-# Hard predicate: every source must be empty. Any one source with work => loop continues.
 READY_BEADS=$(bd ready --json 2>/dev/null | jq -r 'length // 0' 2>/dev/null || echo 0)
 HARVESTED=$(jq -r 'select(.consumed==false) | .severity' .agents/rpi/next-work.jsonl 2>/dev/null | wc -l | tr -d ' ')
 FAILING_GOALS=$(jq -r '.goals[] | select(.result=="fail") | .id' .agents/evolve/fitness-latest.json 2>/dev/null | wc -l | tr -d ' ')
 IDLE_STREAK=$(jq -r '.idle_streak // 0' .agents/evolve/session-state.json 2>/dev/null)
 
 if [ "$READY_BEADS" -gt 0 ] || [ "$HARVESTED" -gt 0 ] || [ "$FAILING_GOALS" -gt 0 ]; then
-  echo "Hard-gate refused: ready=$READY_BEADS harvested=$HARVESTED failing-goals=$FAILING_GOALS. Loop back to Step 3."
-  # MUST loop back to Step 3 — work exists. This is the agile invariant: open beads => /evolve runs.
-  continue
+  continue  # work exists — loop back to Step 3 (agile invariant)
 fi
-
 if [ "${GENERATOR_EMPTY_STREAK:-0}" -ge 2 ] && [ "${IDLE_STREAK:-0}" -ge 2 ]; then
-  printf '%s\n%s\n%s\n' "cycle $CYCLE" "$(date -u +%FT%TZ)" \
-    "stagnation: bd ready=0, harvested=0, failing-goals=0, generators dry x3" \
-    > .agents/evolve/DORMANT
-  echo "Genuine stagnation: nothing actionable across every source. Operator can create work."
-  # DORMANT auto-clears in Step 1 next fire if `bd create` adds a new ready bead.
+  printf '%s\n%s\n%s\n' "cycle $CYCLE" "$(date -u +%FT%TZ)" "stagnation: all sources empty x3" > .agents/evolve/DORMANT
 fi
 ```
 
-**Agile invariant (soc-5qit):** if `bd ready` returns ≥1 unblocked bead, the loop NEVER writes DORMANT and NEVER exits — it loops back to Step 3 and claims one. The only path to DORMANT is a fully empty backlog AND fully empty generator output. Context exhaustion is not in this predicate (see Step 7 / `references/context-budget.md` for HANDOFF semantics).
+**Agile invariant (soc-5qit):** `bd ready ≥ 1` ⇒ loop NEVER writes DORMANT, NEVER exits. The only path to DORMANT is fully empty backlog + dry generators. Context exhaustion → HANDOFF, not DORMANT.
 
-If the work layers were empty but a generator pass has not been exhausted 3 times yet, persist the new generator streak in `session-state.json` and loop back to Step 1. Empty pre-cycle work sources are not a stop reason by themselves.
+If work layers were empty but generators haven't exhausted 3 passes yet, persist `GENERATOR_EMPTY_STREAK` and loop back to Step 1.
 
 A cycle is idle only if NO work source returned actionable work and every generator layer also came up empty. A cycle that targeted an oscillating goal and skipped it counts as idle only after the remaining ladder was exhausted.
 
@@ -523,17 +496,11 @@ done
 **Stop reasons (soc-5qit, ALL require genuine reason — never just context size):**
 
 1. **KILL/STOP file present** — operator override.
-2. **`--max-cycles=N` cap reached** — explicit operator-set limit.
+2. **`--max-cycles=N` cap reached**.
 3. **Genuine stagnation** — `bd ready=0 AND harvested-unconsumed=0 AND failing-goals=0 AND GENERATOR_EMPTY_STREAK>=2 AND IDLE_STREAK>=2`. Writes DORMANT, which auto-clears in Step 1 the moment `bd create` adds a new ready bead.
-4. **Regression breaker after a revert** — the cycle reverted real damage; next cycle waits for operator to acknowledge.
+4. **Regression breaker after a revert**.
 
-**Context exhaustion is NOT a stop reason (soc-5qit).** When a session's context grows too heavy for safe execution, /evolve:
-1. Writes `.agents/evolve/HANDOFF` (non-sticky, name only — not a marker file like DORMANT)
-2. Logs the parked work refs in `cycle-history.jsonl` with `result: "context-handoff"`
-3. Exits THIS cron-fire turn cleanly (no `ScheduleWakeup` re-arm needed — cron does it)
-4. The next cron-fire (running on harness-compacted context or a fresh session) clears HANDOFF in Step 1 and claims work normally
-
-The loop is continuous across compactions. If you're tempted to write DORMANT because "context is full," you're wrong — write HANDOFF and let the next cron-fire pick up where you left off. See `references/context-budget.md`.
+**Context exhaustion is NOT a stop (soc-5qit).** Heavy-context sessions write `.agents/evolve/HANDOFF` (non-sticky), log `result: "context-handoff"` to cycle-history, and exit the turn cleanly. The next cron-fire (compacted/fresh context) clears HANDOFF in Step 1 and resumes. The loop is continuous across compactions; never write DORMANT for context size. See `references/context-budget.md`.
 
 **Mandatory checkpoint #6 — session-PR threshold (NOT terminal, gates next cycle):** at `session_pr_count >= 5` (soc-waxr default), invoke `/post-mortem --deep`, wait for verdict file. PASS → continue. WARN → continue with caveat in next cycle's `notes`. FAIL or non-convergence → write STOP. Agent MUST NOT self-grade or self-write STOP. Full procedure in `references/postmortem-checkpoint.md` (soc-n75z).
 

@@ -435,31 +435,23 @@ When evolve picks a finding, claim it first in next-work.jsonl:
 
 See `references/quality-mode.md` for scoring and full details.
 
-**Nothing found?** HARD GATE — dormancy is only legal when ALL work sources are genuinely empty (soc-5qit):
+**Nothing found?** HARD GATE — dormancy only when ALL sources empty (soc-5qit):
 
 ```bash
-# Hard predicate: every source must be empty. Any one source with work => loop continues.
 READY_BEADS=$(bd ready --json 2>/dev/null | jq -r 'length // 0' 2>/dev/null || echo 0)
 HARVESTED=$(jq -r 'select(.consumed==false) | .severity' .agents/rpi/next-work.jsonl 2>/dev/null | wc -l | tr -d ' ')
 FAILING_GOALS=$(jq -r '.goals[] | select(.result=="fail") | .id' .agents/evolve/fitness-latest.json 2>/dev/null | wc -l | tr -d ' ')
 
 if [ "$READY_BEADS" -gt 0 ] || [ "$HARVESTED" -gt 0 ] || [ "$FAILING_GOALS" -gt 0 ]; then
-  echo "Hard-gate refused: ready=$READY_BEADS harvested=$HARVESTED failing-goals=$FAILING_GOALS. Loop back to Step 3."
-  # Agile invariant: open beads => $evolve runs.
-  continue
+  continue  # work exists — loop back to Step 3 (agile invariant)
 fi
-
-# Count trailing idle/unchanged entries in cycle-history.jsonl (portable, no tac)
-IDLE_STREAK=$(awk '/"result"\s*:\s*"(idle|unchanged)"/{streak++; next} {streak=0} END{print streak+0}' \
-  .agents/evolve/cycle-history.jsonl 2>/dev/null)
-
+IDLE_STREAK=$(awk '/"result"\s*:\s*"(idle|unchanged)"/{streak++; next} {streak=0} END{print streak+0}' .agents/evolve/cycle-history.jsonl 2>/dev/null)
 if [ "$GENERATOR_EMPTY_STREAK" -ge 2 ] && [ "$IDLE_STREAK" -ge 2 ]; then
-  # Work layers AND producer layers empty for 3 consecutive passes — STOP
-  echo "Genuine stagnation: nothing actionable across every source. Operator can create work."
+  echo "Genuine stagnation: all sources empty x3."
 fi
 ```
 
-**Agile invariant (soc-5qit):** if `bd ready` returns ≥1 unblocked bead, the loop NEVER stops — it loops back to Step 3 and claims one. The only path to stagnation-STOP is a fully empty backlog AND fully empty generator output. Context exhaustion is NOT in this predicate (see `references/context-budget.md` for HANDOFF semantics — a non-sticky session-handoff that the next cron-fire clears).
+**Agile invariant (soc-5qit):** `bd ready ≥ 1` ⇒ loop NEVER stops. Only path to stagnation-STOP is fully empty backlog + dry generators. Context exhaustion → write non-sticky `.agents/evolve/HANDOFF`, exit turn; next fire (compacted/fresh) clears HANDOFF in Step 1 and continues.
 
 If the work layers were empty but a generator pass has not been exhausted 3 times yet, persist the new generator streak in `session-state.json` and loop back to Step 1. Empty pre-cycle work sources are not a stop reason by themselves.
 
