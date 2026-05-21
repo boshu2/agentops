@@ -18,9 +18,9 @@ set -euo pipefail
 # require a coordinated update of .gitignore (which carries the matching
 # negation patterns) and CLAUDE.md / PROGRAM.md guidance.
 
-ALLOWED_PATHS_REGEX='^\.agents/(nightly/|evolve/cycle-history\.jsonl$|evolve/session-state\.json$|goals/[^/]+/attempts\.jsonl$|findings/registry\.jsonl$|rpi/next-work\.jsonl$|reconcile/wave-0-thesis-snapshot\.md$|reconcile/thesis-stability-decision\.md$|reconcile/promotion-decision\.md$)'
+ALLOWED_PATHS_REGEX='^\.agents/(nightly/|evolve/cycle-history\.jsonl$|evolve/session-state\.json$|evolve/preferences\.yaml\.template$|goals/[^/]+/attempts\.jsonl$|findings/registry\.jsonl$|rpi/next-work\.jsonl$|reconcile/wave-0-thesis-snapshot\.md$|reconcile/thesis-stability-decision\.md$|reconcile/promotion-decision\.md$)'
 
-ALLOWED_REINCLUDES_REGEX='^[[:space:]]*!/?\.agents/?[[:space:]]*$|^[[:space:]]*!/?\.agents/(rpi/?|rpi/next-work\.jsonl|nightly/?|nightly/\*\*|evolve/?|evolve/cycle-history\.jsonl|evolve/session-state\.json|goals/?|goals/\*\*/?|goals/\*\*/attempts\.jsonl|findings/?|findings/registry\.jsonl|reconcile/?|reconcile/wave-0-thesis-snapshot\.md|reconcile/thesis-stability-decision\.md|reconcile/promotion-decision\.md)[[:space:]]*$'
+ALLOWED_REINCLUDES_REGEX='^[[:space:]]*!/?\.agents/?[[:space:]]*$|^[[:space:]]*!/?\.agents/(rpi/?|rpi/next-work\.jsonl|nightly/?|nightly/\*\*|evolve/?|evolve/cycle-history\.jsonl|evolve/session-state\.json|evolve/preferences\.yaml\.template|goals/?|goals/\*\*/?|goals/\*\*/attempts\.jsonl|findings/?|findings/registry\.jsonl|reconcile/?|reconcile/wave-0-thesis-snapshot\.md|reconcile/thesis-stability-decision\.md|reconcile/promotion-decision\.md)[[:space:]]*$'
 
 if [[ -n "${NO_TRACKED_AGENTS_REPO_ROOT:-}" ]]; then
   REPO_ROOT="$(cd "$NO_TRACKED_AGENTS_REPO_ROOT" && pwd)"
