@@ -142,6 +142,11 @@ graph LR
   scope -- "supplier-to" --> domain
   security -- "supplier-to" --> vibe
   security-suite -- "supplier-to" --> vibe
+  session-bootstrap -- "customer-of" --> AGENTS-CI.md
+  session-bootstrap -- "customer-of" --> AGENTS-CODEX.md
+  session-bootstrap -- "customer-of" --> AGENTS-RUNTIME.md
+  session-bootstrap -- "customer-of" --> AGENTS-WORKFLOW.md
+  session-bootstrap -- "customer-of" --> AGENTS.md
   ship-loop -- "customer-of" --> post-mortem
   ship-loop -- "customer-of" --> rpi
   swarm -- "customer-of" --> crank
