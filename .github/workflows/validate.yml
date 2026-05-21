@@ -1609,20 +1609,6 @@ jobs:
       - name: Build ao CLI
         run: cd cli && make build
 
-    runs-on: ubuntu-latest
-    needs: go-build
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: '1.26.3'
-          cache-dependency-path: cli/go.sum
-
-      - name: Build ao CLI
-        run: cd cli && make build
-
       - name: Run JSON flag consistency tests
         run: |
           chmod +x tests/cli/test-json-flag-consistency.sh
@@ -1650,20 +1636,6 @@ jobs:
           scripts/check-file-manifest-overlap.sh "$CLEAN_TMP"
 
   doctor-check:
-    name: doctor-check (advisory)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: go-build
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: '1.26.3'
-          cache-dependency-path: cli/go.sum
-
     name: doctor-check (advisory)
     runs-on: ubuntu-latest
     timeout-minutes: 10
