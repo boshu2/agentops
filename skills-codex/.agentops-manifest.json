@@ -727,7 +727,7 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "b1ea8ee2e039dba422beee52f621e67542bf1084f808680ec5c5ad6e386a8914",
+      "source_hash": "bab6198e85ed06e27ce5a09c6ef6e41f8928c1739dc993fc8c42e33fcec17754",
       "generated_hash": "6b5ce56f36cb10393e921e524539c3dd41d28a5bdce5eac645075050864222ef"
     },
     {
@@ -1123,8 +1123,8 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "1e7086747727bced19ed8e1c6ecffcdd6bffd97d1e8568642795dc5f755c5a02",
-      "generated_hash": "87a288af2f4d15942f2f7f3999f7e7dbfd5242ad37b27e8db2cdc7c75ddda3d6"
+      "source_hash": "6402ca58a535ac7268c98c26ccb995193284251d8700268ce23fd8c6d7112da6",
+      "generated_hash": "be86270549144f59f2365ba76663339605d4c71efe4f0b0b8e3b72c234077452"
     },
     {
       "name": "validate",
