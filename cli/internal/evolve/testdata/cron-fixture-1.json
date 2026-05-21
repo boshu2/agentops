@@ -1,0 +1,10 @@
+{
+  "ShippedCommits": [
+    {"Sha": "abc1234", "Bead": "soc-ij7e", "Scenario": "cron-template"},
+    {"Sha": "def5678", "Bead": "soc-hwax", "Scenario": ""}
+  ],
+  "NextRecommendedBead": "soc-6svt",
+  "SubBeadsFiledThisCycle": ["soc-zzz1", "soc-zzz2"],
+  "TestsDelta": "+4 passing, 0 new failures",
+  "CronSelfAdjustCounter": 7
+}
