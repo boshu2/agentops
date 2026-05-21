@@ -314,6 +314,12 @@ before token validation.
 
 ### Nightly llmwiki.loop
 
+This remains an experimental registration example. With the default payload,
+placeholder-producing stages complete as skipped with
+`skip_reason=placeholder-output-disabled`; test fixtures may set
+`allow_placeholder_outputs: true` to exercise the stub writers until real
+stage bodies land.
+
 ```yaml
 schedules:
   - name: nightly-llmwiki-loop
@@ -322,6 +328,7 @@ schedules:
     timeout: 30m
     payload:
       vault: ~/wiki
+      # allow_placeholder_outputs: true  # test/experimental stub opt-in only
     backpressure:
       skip_if_running: true
       max_queue_depth: 3
@@ -554,7 +561,7 @@ boundary rather than a skip-and-log.
 
 ## Executor Idempotency Contract
 
-> ⚠️ **Status: experimental — stubs only.** The `llmwiki.loop` job type's stage handlers (Ingest, Query, Lint, Promote) ship as stubs in v1.0; they produce frontmatter-only output until the real-bodies follow-up lands (see `f-2026-05-01-011` in `.agents/findings/registry.jsonl`). For production schedules in v1.0, use `dream.run` (real-bodied via `overnight.RunLoop`) and `wiki.forge` (real-bodied via `wikiworker.Worker`).
+> ⚠️ **Status: experimental — placeholder outputs are default-disabled.** The `llmwiki.loop` job type's Ingest, Query, and Lint handlers still contain stub body logic in v1.0. The daemon executor skips those stages unless the job payload explicitly sets `allow_placeholder_outputs: true`, which is intended for tests and experimental vault fixtures only. For production schedules in v1.0, use `dream.run` (real-bodied via `overnight.RunLoop`) and `wiki.forge` (real-bodied via `wikiworker.Worker`).
 
 `JobTypeLLMWikiLoop` (`llmwiki.loop`) materializes the Karpathy LLM-Wiki
 pattern as a daemon job. The executor at
@@ -590,10 +597,10 @@ If the daemon crashes mid-stage:
 3. Because writes are atomic (tmp+rename), there is no torn-frontmatter
    case at steady state — only "absent" or "complete".
 
-The contract is locked in at the executor; the stage logic itself (NLP
-quality, extraction heuristics) is intentionally a stub in the initial
-landing and gets replaced by real forge / harvest / knowledge calls in
-follow-up issues.
+The contract is locked in at the executor. The NLP quality and extraction
+heuristics are still placeholder-stage logic in v1.0, so placeholder-producing
+stages are gated by `allow_placeholder_outputs` until real forge / harvest /
+knowledge calls replace them in follow-up issues.
 
 ## Migration Recipe
 
@@ -655,6 +662,7 @@ schedules:
     payload:
       vault: ".agents/wiki/vault"
       stages: [ingest, lint, promote]
+      # allow_placeholder_outputs: true  # test/experimental stub opt-in only
     timeout: 30m
     backpressure:
       skip_if_running: true

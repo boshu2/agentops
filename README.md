@@ -161,7 +161,7 @@ Four layers. Each solves a different problem. All four compound.
 | **Bookkeeping** | Agents forget what they tried, why they changed course, and what evidence mattered | `.agents/` captures run packets, handoffs, findings, citations, decisions, verdicts, retros, and post-mortems. *The work leaves a trace.* |
 | **Context Compiler** | Every session starts from zero | `ao context assemble` builds phase-scoped packets. `ao lookup` retrieves decay-ranked knowledge on demand. Skills and execution packets make context explicit; hooks are optional adapters. *Your agent starts loaded, not cold.* |
 | **Validation Gates** | Agents ship confident garbage | `/pre-mortem`, `/vibe`, `/council` — multi-model consensus validates plans before build and code before commit. Gates block, not advise. *Three fresh judges catch what one agent can't.* |
-| **Knowledge Flywheel** | Lessons disappear between sessions | `/forge` extracts learnings from the bookkeeping trail. `ao flywheel close-loop` scores and promotes. `/evolve` fixes the worst gap autonomously. `/dream` compounds overnight. *Session 15 starts with everything session 1 learned.* |
+| **Knowledge Flywheel** | Lessons disappear between sessions | `/forge` extracts learnings from the bookkeeping trail. `ao flywheel close-loop` scores and promotes. `/evolve` can run one bounded reconciliation loop. `/dream` prepares overnight compounding runs. *Session 15 starts with everything session 1 learned.* |
 
 All state lives in local `.agents/` — plain text you can grep, diff, and review. No AgentOps-managed telemetry or hosted control plane. Runtime-neutral across Claude Code, Codex CLI, Cursor, and OpenCode.
 
@@ -295,7 +295,7 @@ ao search "query"                         # Search session history and local kno
 ao lookup --query "topic"                 # Retrieve curated learnings and findings
 ao context assemble                       # Build a task briefing
 ao rpi phased "fix auth startup"          # Run the phased lifecycle from the terminal
-ao evolve --max-cycles 1                  # Run one autonomous improvement cycle
+ao evolve --max-cycles 1                  # Run one bounded improvement cycle
 ao overnight setup                        # Prepare private Dream runs
 ao metrics health                         # Show flywheel health
 ```
@@ -309,13 +309,13 @@ Full reference: [CLI Commands](cli/docs/COMMANDS.md).
 | Surface | When to use it | What it looks like | Operator role |
 |---------|---------------|-------------------|---------------|
 | **Hand agents** (skills surface) | Active work, exploration, high-stakes decisions, ambiguous scope | `/research`, `/plan`, `/pre-mortem`, `/council`, `/rpi` invoked from chat | Driving — agents respond, you steer |
-| **Software factory** (daemon) | Vetted, well-defined work; overnight compounding; bulk processing | `ao schedule` + `ao daemon` running dream / evolve / compile / defrag / forge unattended; mix-and-match councils per phase | Operator — you set cadence and quality bars; the factory runs |
+| **Software factory** (daemon) | Vetted, well-defined work; overnight compounding; bulk processing | `ao schedule` + `ao daemon` running operator-approved dream / evolve / compile / defrag / forge jobs; mix-and-match councils per phase | Operator — you set cadence and quality bars; the factory executes the queue |
 
 **Hand agents** — when you're driving. Skills (`/rpi`, `/council`, `/pre-mortem`, `/vibe`) work in chat. Different rigor levels available — light skills for exploratory work, full RPI loop for everything that should be tracked, council validation before shipping.
 
 <!-- agentops:claim:AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL -->
 
-**Software factory** — when work is vetted and ready. The `ao daemon` runs scheduled jobs against your local subscription on your hardware. Mix and match models per phase: Claude for discovery, Codex for implementation, a fresh Claude for validation, an open-weights local model for overnight defrag. Run Dream overnight, then Evolve in the morning against a fresher corpus.
+**Software factory** — when work is vetted and ready. The `ao daemon` runs scheduled jobs against your local subscription on your hardware. The default worker policy uses real CLI fallback execution; the synthetic fake executor is explicit test/demo mode. Mix and match models per phase: Claude for discovery, Codex for implementation, a fresh Claude for validation, an open-weights local model for overnight defrag. Queue Dream overnight, then run Evolve against a fresher corpus.
 
 → [scheduling reference](docs/scheduling.md) · [example schedules](examples/schedules/).
 

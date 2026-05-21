@@ -447,6 +447,7 @@ func RebuildProjections(events []LedgerEvent, opts ProjectionRebuildOptions) (Pr
 			RebuiltAt:     rebuiltAt,
 			SourceLedger:  opts.SourceLedger,
 			Manifests:     defaultProjectionManifests(opts.SourceLedger, rebuiltAt),
+			Plans:         emptyDaemonPlansProjection(rebuiltAt),
 		}
 		jobsByID = map[string]*JobProjection{}
 		_, err = applyEventsToState(events, &set, jobsByID, &jobOrder)
@@ -458,6 +459,7 @@ func RebuildProjections(events []LedgerEvent, opts ProjectionRebuildOptions) (Pr
 	collectJobsIntoSet(jobsByID, jobOrder, &set)
 	finalizeFactoryProjection(&set)
 	finalizeManifests(&set)
+	finalizePlansProjection(&set)
 	finalizeOpenClawSnapshot(&set, opts.SourceLedger, rebuiltAt)
 	set.Schedules = ScheduleStateFromEvents(events)
 	return set, nil
@@ -493,6 +495,7 @@ func initStateFromSnapshot(snapshot ProjectionSet, sourceLedger, rebuiltAt strin
 		SourceLedger:  sourceLedger,
 		LastEventID:   snapshot.LastEventID,
 		Manifests:     defaultProjectionManifests(sourceLedger, rebuiltAt),
+		Plans:         cloneDaemonPlansProjection(snapshot.Plans),
 		Factory:       cloneFactoryProjection(snapshot.Factory),
 	}
 	jobsByID := make(map[string]*JobProjection, len(snapshot.Jobs))
@@ -725,6 +728,19 @@ func finalizeManifests(set *ProjectionSet) {
 	for name, manifest := range set.Manifests {
 		manifest.LastEventID = set.LastEventID
 		set.Manifests[name] = manifest
+	}
+}
+
+func finalizePlansProjection(set *ProjectionSet) {
+	if set.Plans.SchemaVersion == 0 {
+		set.Plans.SchemaVersion = DaemonPlansProjectionSchemaVersion
+	}
+	if set.Plans.Entries == nil {
+		set.Plans.Entries = []PlansProjectionEntry{}
+	}
+	set.Plans.LastEventID = set.LastEventID
+	if set.Plans.RebuiltAt == "" {
+		set.Plans.RebuiltAt = set.RebuiltAt
 	}
 }
 
@@ -2030,6 +2046,7 @@ func allProjectionNames() []ProjectionName {
 		ProjectionOpenClaw,
 		ProjectionDaemonStatus,
 		ProjectionDaemonJobStatus,
+		ProjectionPlansManifest,
 	}
 }
 
@@ -2047,6 +2064,8 @@ func defaultProjectionOutputPaths(name ProjectionName) []string {
 		return []string{".agents/daemon/projections/status.json"}
 	case ProjectionDaemonJobStatus:
 		return []string{".agents/daemon/projections/jobs.json"}
+	case ProjectionPlansManifest:
+		return []string{".agents/plans/*/manifest.jsonl"}
 	default:
 		return nil
 	}

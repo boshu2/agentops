@@ -1,10 +1,8 @@
 # Release Process
 
-> **Status:** Ported from olympus 2026-04-29. Commands/paths adapted for agentops. Where olympus terms have no agentops equivalent, TODO callouts mark the gap.
-
 How to cut a release of `ao` (the AgentOps CLI).
 
-> See also: [`RELEASING.md`](../RELEASING.md) for the canonical agentops release doc and [`release-e2e-checklist.md`](../release-e2e-checklist.md) for the full local gate sequence. This runbook is the runbook-shaped port from the olympus equivalent and may overlap with both.
+> See also: [`RELEASING.md`](../RELEASING.md) for the canonical AgentOps release doc and [`release-e2e-checklist.md`](../release-e2e-checklist.md) for the full local gate sequence. This runbook is the operator checklist view of those release contracts.
 
 ## Prerequisites
 
@@ -31,9 +29,6 @@ ao goals measure
 ao goals validate
 ```
 
-> **TODO: olympus `bash scripts/run-commit-lane.sh` equivalent in agentops?**
-> The closest analog is `scripts/pre-push-gate.sh` (smart) or `scripts/ci-local-release.sh` (full). Confirm the agentops "commit lane" surface lives in `scripts/` and update if a dedicated commit-lane script ships later.
-
 ### Goal Gate Pack (Timeout-Prone Gates)
 
 Run this bundle explicitly before release to validate the stabilized gate path:
@@ -42,35 +37,29 @@ Run this bundle explicitly before release to validate the stabilized gate path:
 timeout 300 bash -c 'cd cli && go test ./... -count=1'
 ```
 
-> **TODO: olympus `scripts/check-coverage-floors.sh` / `scripts/check-checkpoint-fidelity.sh` / `scripts/smoke-test.sh` equivalents in agentops?**
-> agentops has `scripts/pre-push-gate.sh` (33 checks) and `scripts/ci-local-release.sh`, but no 1:1 named scripts for coverage-floor ratcheting, checkpoint fidelity, or a single smoke harness. Re-point this section once the analogs are identified (or confirm the pre-push gate covers them).
-
-Gate semantics (preserved from olympus shape; map to the agentops equivalents above):
+AgentOps release gate semantics:
 
 - `go-test`: hard gate on full test suite within a 300s budget.
-- `coverage-floors`: ratchet enforcement for package coverage floors.
-- `checkpoint-fidelity`: minimum RPI / quest-equivalent test-count authority floor.
-- `smoke-test`: CRUD + RPI step/run + CLI help in deterministic mode.
+- `ci-local-release`: full local release validation, including doc, shell, contract, CLI, and release-surface checks.
+- `pre-push-fast`: smart changed-file gate for PR iteration before the full release gate.
+- `release-e2e`: optional HIL/SIL/VIL release smoke path from `docs/release-e2e-checklist.md`.
 
 ### Dogfood Hardening Pack
 
-> **TODO: olympus `make dogfood` / `make dogfood-quick` equivalents in agentops?**
-> agentops does not currently ship a `dogfood` make target. The conceptual equivalent — running `ao` against this repo's own `.agents/` and validating end-to-end — is partially covered by `scripts/ci-local-release.sh` plus `ao rpi phased` smoke runs. Add a dedicated `make dogfood` / `make dogfood-quick` target and re-point this section if/when it lands.
+AgentOps dogfood means running `ao` against this repo's own `.agents/` state and release contracts:
 
-Smoke test determinism notes (carried over for shape):
-
-- The smoke harness should build a local `ao` binary from repo source (`cd cli && make build`).
-- The harness should install a temporary mock LLM/runner binary in script-local `PATH` to avoid host-environment model dependencies during gate execution.
-- Each smoke command should be bounded by a per-command timeout (mirror olympus's `SMOKE_CMD_TIMEOUT_SECONDS` default of `45`).
+- Build a local `ao` binary from repo source (`cd cli && make build`).
+- Run `scripts/ci-local-release.sh` before tagging.
+- For explicit release smoke coverage, use `bash scripts/ci-local-release.sh --fast --jobs 4` and the HIL/SIL/VIL targets in `docs/release-e2e-checklist.md`.
+- Bound any manual smoke command with `timeout` so model or daemon dependencies cannot hang a release shell.
 
 ## Version Bump
 
 1. The version constant lives in the `ao` root command file.
 
-   > **TODO: olympus `cmd/ol/root.go` exact equivalent in agentops?**
-   > agentops's CLI entrypoint is `cli/cmd/ao/`. Confirm the file (e.g., `cli/cmd/ao/root.go` or `cli/cmd/ao/version.go`) that holds the goreleaser-overridable `version` constant before tagging.
-
-   The actual binary version is injected by goreleaser from the git tag (see
+   The default `version` variable lives in `cli/cmd/ao/main.go`; root command
+   wiring lives in `cli/cmd/ao/root.go`, and `ao version` output lives in
+   `cli/cmd/ao/version.go`. The actual binary version is injected by goreleaser from the git tag (see
    `-X main.version={{.Version}}` in `.goreleaser.yml`), so no source change is
    needed unless you want `go install` builds to carry the version.
 
@@ -124,7 +113,7 @@ curl -sL https://github.com/boshu2/agentops/releases/download/vX.Y.Z/ao_X.Y.Z_da
 ./ao version
 ```
 
-2. Update install docs if paths or supported platforms changed.
+2. Update install docs if paths or platform support changed.
 3. Close the release bead/epic in beads (`bd close <id>`).
 
 ## Quick Reference
@@ -137,22 +126,21 @@ curl -sL https://github.com/boshu2/agentops/releases/download/vX.Y.Z/ao_X.Y.Z_da
 | Smart pre-push gate | `scripts/pre-push-gate.sh --fast` |
 | Full pre-push gate | `scripts/pre-push-gate.sh` |
 | Local release gate | `scripts/ci-local-release.sh` |
-| Dogfood quick | _TODO: agentops equivalent_ |
-| Dogfood full | _TODO: agentops equivalent_ |
-| Throughput gate | _TODO: agentops equivalent_ |
+| Dogfood quick | `bash scripts/ci-local-release.sh --fast --jobs 4` |
+| Dogfood full | `scripts/ci-local-release.sh` |
+| Throughput gate | `docs/release-e2e-checklist.md` HIL/SIL/VIL smoke path |
 | Release (full) | `goreleaser release --clean` |
 | Release (dry run) | `goreleaser release --clean --snapshot --skip=publish` |
 | Retag | `scripts/retag-release.sh vX.Y.Z` |
 
-## Adaptation map (olympus → agentops)
+## AgentOps Release Surface
 
-| Olympus | agentops |
+| Surface | Current AgentOps path |
 |---|---|
-| `ol` binary | `ao` binary |
-| `cmd/ol/` | `cli/cmd/ao/` |
-| `make ol-build` / `make ol-install` / `make ol-test` | `cd cli && make build` / `make install` / `make test` |
-| `scripts/run-commit-lane.sh` | `scripts/pre-push-gate.sh` (smart, diff-aware) — see TODO above |
-| `make dogfood` / `make dogfood-quick` | _TODO: not yet ported_ |
-| `scripts/smoke-test.sh` | _TODO: closest is parts of `scripts/ci-local-release.sh`_ |
-| Release artifact prefix `ol_X.Y.Z_*` | `ao_X.Y.Z_*` |
-| Release repo path `boshu2/olympus` | `boshu2/agentops` |
+| Binary | `ao` |
+| CLI source | `cli/cmd/ao/` |
+| Build/test targets | `cd cli && make build` / `make install` / `make test` |
+| Smart commit gate | `scripts/pre-push-gate.sh --fast` |
+| Full release gate | `scripts/ci-local-release.sh` |
+| Release artifact prefix | `ao_X.Y.Z_*` |
+| Release repo path | `boshu2/agentops` |

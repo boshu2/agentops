@@ -1,27 +1,22 @@
 ---
-id: code-map-agentopsd-2026-04-29
+id: code-map-agentopsd-2026-05-20
 type: code-map
-date: 2026-04-29
-status: initial — to be expanded as agentopsd CLI surface stabilizes (post-Wave 4-5)
+date: 2026-05-20
+status: current navigation aid
 ---
 
 # agentopsd Codebase Map
 
-> **Status:** Initial draft, modeled on `olympus/docs/code-map/olympus-codebase-map.md`.
-> Many sections are placeholders; populate as the agentopsd extraction stabilizes
-> (post-Wave 4 / Wave 5 of the `agentops-tqc` epic). The current binary name is
-> still `ao` — the rename to `agentopsd` lands later in the epic.
->
 > **Primary goal:** Help operators and contributors find the right subsystem quickly.
-> **Canonical architecture contract:** TODO — there is no `docs/specs/index.md` yet
-> for agentopsd. See `docs/ARCHITECTURE.md`, `docs/agentops-system-map.md`,
-> `docs/cli-surface.md`, and `docs/HOOKS.md` until the spec set lands.
+> **Canonical architecture contracts:** Start with `docs/ARCHITECTURE.md`,
+> `docs/agentops-system-map.md`, `docs/contracts/agentops-daemon.md`,
+> `docs/contracts/agentopsd-control-plane.md`, and `docs/contracts/context-map.md`.
 
 ## At A Glance
 
 agentopsd is a CLI-first knowledge-flywheel daemon extracted from the legacy
-AgentOps tree. The `ao` binary (planned rename: `agentopsd`) drives the RPI
-lifecycle (Research → Plan → Implement), runs overnight curation/Dream cycles,
+AgentOps tree. The `ao` binary drives the RPI lifecycle
+(Research → Plan → Implement), runs overnight curation/Dream cycles,
 serves a local daemon for hooks and job execution, and harvests learnings
 into the `.agents/` flywheel.
 
@@ -54,7 +49,7 @@ Module path: `github.com/boshu2/agentops/cli` (Go 1.26).
 
 ## Runtime Control Flow
 
-> TODO — flesh out once Wave 4-5 stabilizes the entrypoints. Today the typical paths are:
+Typical operator paths:
 
 1. `ao rpi <phase>` — execute one RPI phase (research/plan/implement/etc.); state under `.agents/rpi/`.
 2. `ao overnight run` — full overnight cycle (close-loop → defrag → metrics → retrieval-bench → knowledge brief → Dream Council → runner passes → synthesis → morning packet → bead sync). Driven by `cli/internal/overnight/`.
@@ -67,8 +62,8 @@ Module path: `github.com/boshu2/agentops/cli` (Go 1.26).
 | Entrypoint | Why you start here |
 |-----------|--------------------|
 | `cli/cmd/ao/main.go` | CLI process entry — calls `Execute()` |
-| `cli/cmd/ao/app.go` | Cobra root command and global flag wiring (TODO: confirm split with `agentopsd.go`) |
-| `cli/cmd/ao/agentopsd.go` | Future-binary command surface (precursor to the `agentopsd` rename) |
+| `cli/cmd/ao/root.go` | Cobra root command, command groups, and version wiring |
+| `cli/cmd/ao/agentopsd.go` | AgentOps daemon/control-plane command surface |
 | `cli/cmd/ao/daemon_jobs.go` | Daemon job dispatch from the CLI side |
 | `cli/internal/rpi/` (multiple) | RPI phase executors, cleanup, registry — wired into `cli/cmd/ao/rpi*.go` |
 | `cli/internal/overnight/` (multiple) | Overnight engine — wired into `cli/cmd/ao/overnight*.go` |
@@ -93,9 +88,9 @@ Top packages by file count (non-test source under `cli/internal/`):
 | `cli/internal/llm` | 10 | 2,079 | LLM client abstraction, chunker, forge tier-1 extraction. |
 | `cli/internal/eval` | 9 | 3,002 | Eval engine: baseline/compare, coverage, runtime, scorecard. |
 | `cli/internal/quality` | 8 | 2,358 | Repo-quality doctor: golden metrics, health/ops metrics, codex-skills lint, stale-refs. |
-| `cli/internal/gascity` | 6 | 1,581 | TODO — placeholder summary; gascity is the energy/budget accounting subsystem. |
+| `cli/internal/gascity` | 6 | 1,581 | GasCity remote-compute integration types, compatibility checks, and adapter budget/accounting support. |
 | `cli/internal/storage` | 6 | 1,224 | Filesystem helpers: locked file IO, search index. |
-| `cli/internal/agentworker`, `wikiworker`, `bridge`, `openclaw`, `knowledge`, `formatter`, `types`, … | 3-4 each | 0.4-1.5k each | Smaller leaf packages — TODO: per-package summaries. |
+| `cli/internal/agentworker`, `wikiworker`, `bridge`, `openclaw`, `knowledge`, `formatter`, `types`, … | 3-4 each | 0.4-1.5k each | Focused adapters and leaf libraries for worker sessions, wiki/OpenClaw integration, knowledge parsing, formatting, and shared structs. |
 
 ### Top 3 packages — detail
 
@@ -107,17 +102,17 @@ Top packages by file count (non-test source under `cli/internal/`):
   - `ProcessInfo` — parsed process metadata from `ps`-style introspection (used by cancel/cleanup).
   - `StaleRunEntry` — describes a stale RPI run discovered during cleanup scanning.
 - **Imports from internal:** `cli/internal/types` only — `rpi` is intentionally near the bottom of the dependency graph.
-- **Imported by:** `cli/internal/daemon` (rpi_runner, rpi_registry, reconcile), `cli/internal/eval` (runtime), `cli/internal/overnight` (runner passes). Heaviest re-user is `cli/cmd/ao/rpi*.go`.
+- **Used by:** `cli/internal/daemon` (rpi_runner, rpi_registry, reconcile), `cli/internal/eval` (runtime), `cli/internal/overnight` (runner passes). Heaviest re-user is `cli/cmd/ao/rpi*.go`.
 
 #### `cli/internal/overnight/` (24 files, 7,151 LOC)
 
 - **Purpose:** Drives the nightly curator/Dream pipeline: checkpoints (with Darwin `clonefile` fast path + cross-platform fallback), ingest, REDUCE/Dream Council stages, morning-packet rendering.
-- **Key public types/functions (sample, TODO confirm with API freeze):**
+- **Key public types/functions (sample):**
   - Checkpoint clone helpers split by platform (`checkpoint_clone_darwin.go` vs `checkpoint_clone_fallback.go`).
   - Boundary-test harness (`withExecShim`) for swapping `ExecCommand` in tests.
   - `seedAgents` test helper that builds a fake `.agents/` tree (used widely by overnight tests).
 - **Imports from internal:** `cli/internal/{corpus, daemon, forge, harvest, lifecycle, mine, pool, provenance, rpi, search}` — overnight is the highest-level orchestrator and the densest internal-import node.
-- **Imported by:** `cli/cmd/ao/overnight*.go` and (transitively) the daemon's Dream executor.
+- **Used by:** `cli/cmd/ao/overnight*.go` and (transitively) the daemon's Dream executor.
 
 #### `cli/internal/daemon/` (17 files, 5,816 LOC)
 
@@ -127,7 +122,7 @@ Top packages by file count (non-test source under `cli/internal/`):
   - `DreamRunLoopOptions` and `DreamMode` — typed run-loop config for the Dream executor.
   - RPI registry/runner pair that owns in-flight RPI runs and reconciles their state.
 - **Imports from internal:** `cli/internal/{agentworker, gascity, openclaw, rpi, wikiworker}`.
-- **Imported by:** `cli/cmd/ao/daemon*.go` and `cli/internal/overnight` (Dream stage hands work to the daemon executor).
+- **Used by:** `cli/cmd/ao/daemon*.go` and `cli/internal/overnight` (Dream stage hands work to the daemon executor).
 
 ## Cross-references (internal package import graph)
 
@@ -163,13 +158,11 @@ Observations:
 | Knowledge flywheel | `.agents/{learnings,patterns,findings,research,retros,…}/` | Read-many surfaces for `cli/internal/{search,lifecycle,context}` |
 | Constraint index | `.agents/constraints/index.json` | `cli/internal/search/constraint.go` schema owner |
 | Beads | `.beads/` (bd CLI) | External to this repo's Go code; consumed by `cli/internal/search/bead_context.go` and `cli/cmd/ao` bead helpers |
-| Daemon state | TODO — confirm path; appears under `.agents/daemon/` and possibly `~/.agentops/` |
-| Ratchet chain | TODO — confirm path under `.agents/ratchet/` |
+| Daemon state | `.agents/daemon/` plus per-user token material under `~/.agents/daemon/` when configured | Owned by `cli/internal/daemon` and `cli/cmd/ao/daemon*.go` |
+| Ratchet chain | `.agents/ao/chain.jsonl` | Loaded and updated by `cli/internal/ratchet` and `ao ratchet *` commands |
 | Goals | `GOALS.yaml`, `GOALS.md` (repo root) + history under `.agents/goals/` |
 
 ## Operator Navigation Notes
-
-> TODO — write real runbooks once the agentopsd binary lands. Until then:
 
 When debugging an RPI run:
 
@@ -185,13 +178,12 @@ When debugging an overnight cycle:
 
 When debugging the daemon:
 
-1. `ao daemon status`, then tail daemon logs (TODO: confirm path).
+1. `ao daemon status`, then inspect daemon state and event output with `ao daemon events tail`.
 2. Inspect `cli/internal/daemon/reconcile.go` and `rpi_registry.go` for state transitions.
 
 ## Scope Notes
 
-- This map describes the **current repository state** as of 2026-04-29 (Wave 4 of `agentops-tqc`).
-- The binary is still `ao`; the `agentopsd` rename and corresponding directory split are tracked under the parent extraction epic.
+- This map describes the **current repository state** as of 2026-05-20.
+- The user-facing binary is `ao`; agentopsd is the daemon/control-plane surface behind that CLI.
 - LOC counts are non-test source only (`*.go` minus `*_test.go`) measured at write time. Recount before any release.
-- Cross-reference graph was sampled with `grep`, not built from `go list -deps`. Treat it as a navigation aid, not a complete graph. TODO: replace with a `go list`-driven generator and check it in CI.
-- Several `cli/internal/` packages (e.g. `gascity`, `bridge`, `harvest`, `mine`, `pool`, `provenance`, `safety`, `state`, `taxonomy`) carry no per-package summary yet — flagged as TODO above.
+- Cross-reference graph was sampled with `grep`, not built from `go list -deps`. Treat it as a navigation aid, not a complete graph.

@@ -1,6 +1,6 @@
 # Council verdict — RPI-leanness reframe (2026-05-15)
 
-> **Provenance.** Excerpt from the original local council verdict at `.agents/council/2026-05-15-rpi-leanness-council.md` (gitignored — runtime corpus). Committed here so the [sovereignty proof page](../index.md#case-study-1--rpi-leanness-reframe-2026-05-15) has a falsifiable, in-repo source.
+> **Provenance.** Excerpt from the original local council verdict at `.agents/council/2026-05-15-rpi-leanness-council.md` (gitignored — runtime corpus). Committed here so the [sovereignty proof page](../index.md#case-study-1-rpi-leanness-reframe-2026-05-15) has a falsifiable, in-repo source.
 
 **Date:** 2026-05-15
 **Mode:** mixed · deep (5 voices: Codex gpt-5.5, Claude agile-coach, Claude DDD-architect, Claude token-economist, Claude skeptic)

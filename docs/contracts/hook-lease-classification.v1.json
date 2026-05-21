@@ -235,6 +235,15 @@
       "side_effects": ["runs session-end maintenance"],
       "rationale": "Session closeout should be explicit and reproducible."
     },
+    "session-pr-counter.sh": {
+      "owner_bubble": "Work Lifecycle",
+      "disposition": "gate",
+      "replacement": "GateRunnerPort session-scope PR counter lane",
+      "evidence_status": "deterministic-safety",
+      "context_injection": true,
+      "side_effects": ["warns or blocks when a session exceeds the PR-count threshold"],
+      "rationale": "Session-scope limits are deterministic factory safety policy and should be enforced through an explicit gate port."
+    },
     "session-start.sh": {
       "owner_bubble": "Context Compiler",
       "disposition": "explicit-command",

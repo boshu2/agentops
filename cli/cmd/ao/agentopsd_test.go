@@ -16,6 +16,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/agentworker"
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
+	"github.com/boshu2/agentops/cli/internal/llmwiki"
 	"github.com/boshu2/agentops/cli/internal/wikiworker"
 	"github.com/spf13/cobra"
 )
@@ -674,6 +675,56 @@ func TestAgentOpsDaemonCLIFallbackExecutorPolicyBuilds(t *testing.T) {
 	}
 }
 
+func TestAgentOpsDaemonDefaultExecutorPolicyCompletesRPIRunViaCLIFallback(t *testing.T) {
+	cwd := t.TempDir()
+	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
+	spec := daemonpkg.NewRPIRunJobSpec("run-daemon-default", "validate daemon default rpi run")
+	jobSpec, err := spec.ToJobSpec("job-rpi-default")
+	if err != nil {
+		t.Fatalf("rpi run job spec: %v", err)
+	}
+	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
+		RequestID: "req-rpi-default",
+		JobID:     jobSpec.ID,
+		JobType:   jobSpec.Type,
+		Payload:   jobSpec.Payload,
+	}, daemonpkg.QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit rpi run job: %v", err)
+	}
+
+	var runnerCalls int
+	fakeRun := func(_ context.Context, req daemonpkg.RPIRunRequest) (daemonpkg.RPIRunResult, error) {
+		runnerCalls++
+		if req.Spec.RunID != "run-daemon-default" {
+			t.Errorf("runner run_id = %q, want run-daemon-default", req.Spec.RunID)
+		}
+		return daemonpkg.RPIRunResult{Artifacts: map[string]string{"runner_marker": "default-cli-fallback"}}, nil
+	}
+
+	supervisor, err := buildAgentOpsDaemonSupervisor(cwd, agentopsDaemonRunOptions{
+		CLIFallbackRPIRunFunc: fakeRun,
+	})
+	if err != nil {
+		t.Fatalf("build supervisor: %v", err)
+	}
+	result, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("run once: %v", err)
+	}
+	if !result.Claimed || result.Job.Status != daemonpkg.JobStatusCompleted {
+		t.Fatalf("result = %#v, want completed rpi.run job", result)
+	}
+	if runnerCalls != 1 {
+		t.Fatalf("runner called %d times, want 1", runnerCalls)
+	}
+	if got := result.Job.Artifacts["executor_policy"]; got != "in-process" {
+		t.Fatalf("executor_policy artifact = %q, want in-process (default must not be fake)", got)
+	}
+	if got := result.Job.Artifacts["runner_marker"]; got != "default-cli-fallback" {
+		t.Fatalf("runner_marker = %q, want default-cli-fallback", got)
+	}
+}
+
 func TestAgentOpsDaemonCLIFallbackExecutorPolicyCompletesRPIRunJob(t *testing.T) {
 	cwd := t.TempDir()
 	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
@@ -935,6 +986,9 @@ func TestAgentOpsDaemonWorkerFlagsRegistered(t *testing.T) {
 			t.Fatalf("daemon run missing --%s flag", flag)
 		}
 	}
+	if got := daemonRunCmd.Flags().Lookup("executor-policy").DefValue; got != daemonExecutorPolicyCLIFallback {
+		t.Fatalf("--executor-policy default = %q, want %q", got, daemonExecutorPolicyCLIFallback)
+	}
 }
 
 type recordingWikiForgeWorker struct {
@@ -1059,6 +1113,12 @@ func TestAgentopsdRegistersLLMWikiLoopExecutor(t *testing.T) {
 			}
 			if got := result.Job.Artifacts["stage"]; got != "lint" {
 				t.Fatalf("stage artifact = %q, want lint", got)
+			}
+			if got := result.Job.Artifacts["skipped"]; got != "true" {
+				t.Fatalf("skipped artifact = %q, want true while placeholder stages are gated", got)
+			}
+			if got := result.Job.Artifacts["skip_reason"]; got != llmwiki.SkipReasonPlaceholderOutputDisabled {
+				t.Fatalf("skip_reason = %q, want %q", got, llmwiki.SkipReasonPlaceholderOutputDisabled)
 			}
 		})
 	}

@@ -1,6 +1,6 @@
 # Council verdict — CDLC F6 + F7 findings (2026-05-16)
 
-> **Provenance.** Excerpt from the original local council verdict at `.agents/council/2026-05-16-research-cdlc-claims.md` (gitignored — runtime corpus). Committed here so the [sovereignty proof page](../index.md#case-study-2--f6--f7-codex-trio-findings-the-claude-trio-missed-2026-05-16) has a falsifiable, in-repo source.
+> **Provenance.** Excerpt from the original local council verdict at `.agents/council/2026-05-16-research-cdlc-claims.md` (gitignored — runtime corpus). Committed here so the [sovereignty proof page](../index.md#case-study-2-f6-f7-codex-trio-findings-the-claude-trio-missed-2026-05-16) has a falsifiable, in-repo source.
 
 **Date:** 2026-05-16
 **Mode:** research · mixed · deep (6 judges: 3 Claude-runtime + 3 Codex-runtime, independent / no preset)
