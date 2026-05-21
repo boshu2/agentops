@@ -499,6 +499,12 @@
         "reason": "Vendor-neutral internal-PR cycle; Codex stays in parity with the Claude SKILL.md after slim-frontmatter conversion."
       },
       {
+        "name": "session-bootstrap",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Universal init prompt is identical across runtimes by design (fungibility contract, soc-vuu6.25); no bespoke Codex variant."
+      },
+      {
         "name": "standards",
         "treatment": "parity_only",
         "wave": "catalog-parity",
@@ -1077,6 +1083,12 @@
       "source_skill": "skills/skill-builder",
       "source_hash": "a445c06557c008cdfc7901c198b386d4c8c18a581d8c66592a6ccb5b96a7b70f",
       "generated_hash": "d43759463b9acf0b05e1fe386939e2df9c8d847537cce42f846f1d22177ea1c7"
+    },
+    {
+      "name": "session-bootstrap",
+      "source_skill": "skills/session-bootstrap",
+      "source_hash": "948290e6927e9b1e74204731e5984947b68541343197b064994d269039b2332f",
+      "generated_hash": "4620320eb1d8b6c724956e566ba5a3c5663a14e1010f9a693f3143326c55d8c4"
     },
     {
       "name": "standards",

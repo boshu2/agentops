@@ -1,31 +1,6 @@
 ---
 name: session-bootstrap
 description: Agent init prompt.
-skill_api_version: 1
-metadata:
-  tier: session
-practices:
-- agile-manifesto
-- dora-metrics
-- fungibility-charter
-hexagonal_role: driving-adapter
-consumes:
-- bd
-- onboard
-produces:
-- stdout
-- json
-context_rel:
-- kind: customer-of
-  with: AGENTS.md
-- kind: customer-of
-  with: AGENTS-WORKFLOW.md
-- kind: customer-of
-  with: AGENTS-CI.md
-- kind: customer-of
-  with: AGENTS-CODEX.md
-- kind: customer-of
-  with: AGENTS-RUNTIME.md
 ---
 
 # `ao session bootstrap` — the universal init prompt
