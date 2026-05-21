@@ -218,6 +218,17 @@ func TestHelper2_validateLoopNumericConstraints(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestHelper2_applyLoopTimingDefaults(t *testing.T) {
+	// applyLoopTimingDefaults short-circuits AutoCleanStaleAfter to 0 when the
+	// rpiSupervisor global is true (the supervisor lane disables auto-clean by
+	// default). The helper tests below pass cmd=nil and assume the bare-defaults
+	// branch, so the global must be restored to false. Without this snapshot,
+	// prior tests (e.g. TestResolveLoopSupervisorConfig_AppliesSupervisorDefaults)
+	// that set rpiSupervisor=true leak into this test. soc-dorz CI surfaced the
+	// dependency once go-build started running on every workflow-touching PR.
+	prev := snapshotLoopSupervisorGlobals()
+	t.Cleanup(func() { restoreLoopSupervisorGlobals(prev) })
+	rpiSupervisor = false
+
 	t.Run("zero values get defaults", func(t *testing.T) {
 		cfg := rpiLoopSupervisorConfig{}
 		applyLoopTimingDefaults(&cfg, nil)
