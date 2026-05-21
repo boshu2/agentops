@@ -13,21 +13,40 @@ Use scout-mode whenever a Step 3 selection meets any of these criteria:
 
 The scope-filter step (Step 3.0 in `SKILL.md`) consults these heuristics before any work is claimed.
 
-## What a scout cycle does
+## What a scout cycle does (soc-5qit: split-or-defer, never bail)
 
-A productive scout cycle MUST:
+A scout cycle is **work**, not a stop. It MUST produce exactly one of:
+
+### Path A: Split (preferred when the queue is light and the work is decomposable)
 
 1. Read the target file(s) named in the work item (no edits).
 2. Map the **current shape** at the relevant boundary (what fields exist, what callers read it, what validators enforce).
-3. Identify the **smallest landable slice** — usually a producer-side change OR a consumer-side change, not both.
-4. Append a `disposition:` block to the work item's `description` in `.agents/rpi/next-work.jsonl` summarizing the finding, with timestamp.
-5. If the scope is genuinely epic-level (operator decision needed), explicitly recommend `bd create` for each sub-slice and either `park` or annotate the bead for operator-driven `/rpi`.
+3. Run `bd create` to decompose the candidate into 2-N child beads, each ≤5 files and single-shape:
+   ```bash
+   bd create "Slice 1 of <parent-title>: <smaller-scope>" \
+     --description="Carved from <parent-id> by scout-mode. Scope: <files/contract>" \
+     --deps discovered-from:<parent-id> -t task -p <inherit> --json
+   ```
+4. Update the parent bead with `bd update <parent-id> --notes "scout-split into: <child-ids>"`.
+5. **Re-enter Step 3** so the smallest new child OR another ready bead gets claimed THIS cycle.
+
+### Path B: Defer (preferred when the queue has other ready beads)
+
+1. Read the target file(s) briefly to confirm the scope assessment.
+2. Append a `disposition: defer:<reason>` block to the work item.
+3. **Re-enter Step 3** so the next-priority ready bead gets claimed THIS cycle. The big candidate stays available for a future session with lighter context.
+
+### Path C: Park (operator-level epic, no obvious split)
+
+1. `bd update <id> --status blocked --notes "scope-too-big: <why>; needs operator triage"`.
+2. **Re-enter Step 3** for the next ready bead.
 
 A scout cycle does NOT:
 
-- Run `/rpi` against the target.
-- Edit any source file.
-- Commit (the appended `disposition` lives in `.agents/rpi/next-work.jsonl` which is the standard append-only ledger; commit it as part of the next productive cycle's harvest if appropriate).
+- Run `/rpi` against the original too-big candidate.
+- Edit any source file outside `.agents/rpi/next-work.jsonl` and bd metadata.
+- Commit code (bd updates land in Dolt automatically).
+- **Exit the loop** — if `bd ready` returns ≥1 unblocked bead, the cycle MUST claim and work one of them after the scout decision. (soc-5qit invariant.)
 
 ## Logging a scout cycle
 
