@@ -499,6 +499,12 @@
         "reason": "Vendor-neutral internal-PR cycle; Codex stays in parity with the Claude SKILL.md after slim-frontmatter conversion."
       },
       {
+        "name": "session-bootstrap",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Universal init prompt is identical across runtimes by design (fungibility contract, soc-vuu6.25); no bespoke Codex variant."
+      },
+      {
         "name": "standards",
         "treatment": "parity_only",
         "wave": "catalog-parity",
@@ -727,7 +733,7 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "b1ea8ee2e039dba422beee52f621e67542bf1084f808680ec5c5ad6e386a8914",
+      "source_hash": "bab6198e85ed06e27ce5a09c6ef6e41f8928c1739dc993fc8c42e33fcec17754",
       "generated_hash": "6b5ce56f36cb10393e921e524539c3dd41d28a5bdce5eac645075050864222ef"
     },
     {
@@ -1079,6 +1085,12 @@
       "generated_hash": "d43759463b9acf0b05e1fe386939e2df9c8d847537cce42f846f1d22177ea1c7"
     },
     {
+      "name": "session-bootstrap",
+      "source_skill": "skills/session-bootstrap",
+      "source_hash": "948290e6927e9b1e74204731e5984947b68541343197b064994d269039b2332f",
+      "generated_hash": "4620320eb1d8b6c724956e566ba5a3c5663a14e1010f9a693f3143326c55d8c4"
+    },
+    {
       "name": "standards",
       "source_skill": "skills/standards",
       "source_hash": "ed70fe495234607413ccb00a8b9d3d746c9eea131afcc0dd5dcf72ef97cf056a",
@@ -1100,7 +1112,7 @@
       "name": "system-tuning",
       "source_skill": "skills/system-tuning",
       "source_hash": "aaa2b3f3606f0a1cb3866a516485322401a34f41f82428d31bb49d3ab6497a47",
-      "generated_hash": "f5699f83ee7d5cb7845c0f5a46f69a74ea5f22b79fc4244c33d03f2a93698178"
+      "generated_hash": "f43aad025c7a7b89b7b5c2bc7376ef973b24a454d0f32fa6e40bd19195b845c7"
     },
     {
       "name": "test",
@@ -1123,8 +1135,8 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "1e7086747727bced19ed8e1c6ecffcdd6bffd97d1e8568642795dc5f755c5a02",
-      "generated_hash": "87a288af2f4d15942f2f7f3999f7e7dbfd5242ad37b27e8db2cdc7c75ddda3d6"
+      "source_hash": "6402ca58a535ac7268c98c26ccb995193284251d8700268ce23fd8c6d7112da6",
+      "generated_hash": "be86270549144f59f2365ba76663339605d4c71efe4f0b0b8e3b72c234077452"
     },
     {
       "name": "validate",

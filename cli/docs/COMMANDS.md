@@ -2924,6 +2924,26 @@ ao session [command]
 
 **Subcommands:**
 
+#### `ao session bootstrap`
+
+Universal init prompt for any agent spawned into an AgentOps repo.
+
+```
+ao session bootstrap [flags]
+```
+
+**Flags:**
+
+```
+  --json       Emit the full status object as JSON (default: 1-line summary).
+  --no-mail    Skip the mcp-agent-mail probe even if the MCP server is reachable.
+  --robot      Same as --json but tighter exit-code contract for hooks.
+  -h, --help      help for bootstrap
+      --json      Emit machine-readable status as JSON
+      --no-mail   Skip the mcp-agent-mail probe
+      --robot     Robot mode: JSON output with tight exit-code contract for SessionStart hooks
+```
+
 #### `ao session close`
 
 Close a session by forging its transcript, extracting learnings,

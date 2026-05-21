@@ -150,6 +150,7 @@ These are the skills every user needs first. Everything else is available when y
 | `$product` | Interactive PRODUCT.md generation |
 | `$handoff` | Session handoff for continuation |
 | `$recover` | Post-compaction context recovery |
+| `$session-bootstrap` | Universal init prompt — every agent runs this first (soc-vuu6.25) |
 | `$trace` | Trace design decisions through history |
 | `$provenance` | Trace artifact lineage to sources |
 | `$beads` | Issue tracking operations |

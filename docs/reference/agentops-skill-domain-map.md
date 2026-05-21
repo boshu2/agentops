@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-79 checked-in AgentOps skills before any broad rewrite, using current
+80 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 79 |
+| Skills audited | 80 |
 | Domains classified | 5 of 5 (BC1-BC5) |
-| Dispositions assigned | 79 / 79 |
+| Dispositions assigned | 80 / 80 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -123,6 +123,7 @@ Disposition meanings:
 | `scope` | BC5 Runtime | driven-adapter | keep | Runtime filesystem gate; hard boundary skill. |
 | `security` | BC2 Validation | driven-adapter | merge-review | Low scorer; compare with security-suite before expansion. |
 | `security-suite` | BC2 Validation | driven-adapter | update | Composable scanner; likely canonical security validation lane. |
+| `session-bootstrap` | BC5 Runtime | driving-adapter | keep | Universal init prompt; the fungibility contract for any-agent spawn (soc-vuu6.25). |
 | `shared` | BC4 Factory | domain | keep | Shared contracts; avoid broad edits. |
 | `ship-loop` | BC5 Runtime | driving-adapter | keep | Bot-paired internal-ship PR cycle; distinct from pr-* contribute family. |
 | `skill-auditor` | BC4 Factory | supporting | update | Audit role should consume new quality/domain rubrics. |

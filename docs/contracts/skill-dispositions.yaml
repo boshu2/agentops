@@ -327,6 +327,11 @@ dispositions:
     hexagonal_role: driven-adapter
     disposition:    keep
     rationale:      "Runtime filesystem gate; hard boundary skill"
+  - skill:          session-bootstrap
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "Universal init prompt; the fungibility contract for any-agent spawn (soc-vuu6.25)"
   - skill:          security
     domain:         "BC2 Validation"
     hexagonal_role: driven-adapter
