@@ -67,7 +67,7 @@ Default (no flags): one-line human summary on stdout, plus a stderr warning if `
   "onboard_phase": "skipped:not-implemented",
   "ready_beads_count": 12,
   "mail_unread_count": null,
-  "runtime": "claude-code",
+  "runtime": "codex",
   "started_at": "2026-05-21T01:50:00Z",
   "bootstrap_version": "v1"
 }
