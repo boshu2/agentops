@@ -140,6 +140,9 @@ jobs:
 - name: validate-finding-registry
   reason: 'GOALS.md gate `finding-registry` (weight 4, A2 audit follow-up): `scripts/check-finding-registry.sh` validates the finding-registry contract: schema is valid JSON Schema, required-field list cross-checks with contract doc (accepts both `foo` and `foo.child` forms for nested objects), canonical path is documented, live `.agents/findings/registry.jsonl` lines parse and carry the required top-level fields'
   failure: Schema/contract drift, required field dropped from either side, or any live registry line missing one of the eight top-level required fields
+- name: validate-sovereignty-proof-citations
+  reason: '`scripts/validate-sovereignty-proof-citations.sh` scans every .md under `docs/sovereignty-proof/` for `file:line` citations (path/to/file:NN or path/to/file:NN-MM) and verifies each resolves at HEAD: the cited file exists and the cited end-line is within the file''s line count. Keeps the sovereignty-proof case-study page (soc-vuu6.32, council non-negotiable #2) honest as a falsifiable artifact. Bats coverage at tests/scripts/validate-sovereignty-proof-citations.bats'
+  failure: A cited file was renamed/deleted, its line count shrank below a cited end-line, or a citation references a path that does not resolve from the repo root
 - name: validate-factory-admission
   reason: 'GOALS.md gate `factory-admission` (weight 4, A2 audit follow-up): `scripts/check-factory-admission.sh` wraps `tests/scripts/test-factory-admission-contracts.py` (Python+jsonschema) as a blocking gate. Validates both work-order and admission-decision fixtures against the schema'
   failure: Schema or fixtures drift, work-order/admission-decision instances fail validation
