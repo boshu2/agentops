@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-20T13:42:03Z",
+  "generated_at": "2026-05-20T23:51:51Z",
   "summary": {
     "skills": 79,
     "hooks": 44,
     "knowledge_stores": 4,
     "job_types": 14,
     "eval_files": 62,
-    "cli_commands": 171
+    "cli_commands": 172
   },
   "surfaces": {
     "skills": [
@@ -1231,6 +1231,10 @@
       {
         "name": "beads_audit_cluster",
         "path": "cli/cmd/ao/beads_audit_cluster.go"
+      },
+      {
+        "name": "beads_stale",
+        "path": "cli/cmd/ao/beads_stale.go"
       },
       {
         "name": "capabilities",

@@ -3290,6 +3290,22 @@ ao beads lint [flags]
       --status string   bd status filter (open, closed, all) (default "open")
 ```
 
+#### `ao beads stale-claims`
+
+Lists in_progress beads whose claim activity is older than --threshold.
+
+```
+ao beads stale-claims [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help              help for stale-claims
+      --json              Emit JSON array conforming to stale-claim-event.v1 (event_type: stale_detected).
+      --threshold float   Staleness threshold in hours (claim updated more than N hours ago). (default 4)
+```
+
 #### `ao beads verify`
 
 Reads a bead description via 'bd show <id>' and checks every file
