@@ -103,6 +103,7 @@ Dream owns the knowledge compounding layer; `/evolve` owns the code compounding 
 | `--test-first` | on | Pass strict-quality defaults through to `/rpi` |
 | `--no-test-first` | off | Explicitly disable test-first passthrough to `/rpi` |
 | `--no-lifecycle` | off | Skip lifecycle work generators in Steps 3.4-3.6 (/test, /deps, /perf, /refactor). Falls back to manual scanning. |
+| `--mode=burst\|loop` | burst | Burst (default): full self-regulation. Loop: deterministic no-self-stop; STOP markers mechanically refused. See [references/loop-mode.md](references/loop-mode.md). |
 
 ## Execution Steps
 
@@ -194,6 +195,8 @@ Skip if `--skip-baseline` or `--beads-only` or baseline already exists. Read `re
 
 ### Step 1: Kill Switch Check
 
+<!-- mode=loop: skip DORMANT short-circuit; agent must claim work whenever bd ready returns >=1. STOP/KILL/DORMANT markers under --mode=loop are operator-only — `ao evolve write-stop-marker` refuses with exit 1. See references/loop-mode.md. -->
+
 Run at the TOP of every cycle:
 
 ```bash
@@ -257,6 +260,8 @@ When a repo-local program contract exists, apply a scope filter before Step 4:
 - candidate work that clearly requires immutable-scope edits is not eligible for direct execution
 - prefer harvested, beads, goals, and generated work that can plausibly land within mutable scope
 - if the selected item is inherently out of scope, escalate it or convert it into durable follow-up work instead of invoking `/rpi` and hoping discovery widens scope
+
+<!-- mode=loop: scope-filter routes too-big work to split-and-claim; never halts. The agent MUST emit child beads via `bd create --deps discovered-from:<parent>` and re-enter Step 3 instead of self-stopping. See references/loop-mode.md. -->
 
 **Step 3.0: Scope filter — split-or-defer, never bail (soc-5qit)**
 
@@ -481,6 +486,8 @@ Two paths: productive cycles get committed, idle cycles are local-only.
 **Record the XP/BDD/TDD trace.** When a cycle worked a product or goal-backed gap, pass `--trace-json` to `evolve-log-cycle.sh` (or `ao loop append`) so the cycle records the continuous-evolution kernel — goal hypothesis → selected gap → Gherkin scenario → first failing proof → red/green evidence → refactor note → validation evidence → ratchet action → goal reshape — and a reviewer can reconstruct the cycle without the transcript. A trivial one-shot cycle records a `trace.exemption_reason` instead of carrying false BDD/TDD ceremony. Trace completeness is advisory, never a gate. See `references/cycle-history.md` ("XP/BDD/TDD Evidence Trace").
 
 ### Step 7: Loop or Stop
+
+<!-- mode=loop: refuse to write any STOP marker; use 'ao evolve blocked' (Wave 2) instead. `ao evolve write-stop-marker --mode=loop` exits 1 unconditionally. Stop reasons under loop are operator-only (KILL/STOP/DORMANT only via explicit `ao evolve operator-stop`). See references/loop-mode.md. -->
 
 ```bash
 while true; do

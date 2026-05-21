@@ -45,6 +45,15 @@ var (
 	evolveDreamFirst   bool
 	evolveDreamOnly    bool
 	evolveDreamTimeout string
+	evolveMode         string
+)
+
+// Evolve --mode values. Burst is the legacy default (agent self-regulates and
+// may write STOP/DORMANT markers). Loop is the operator-driven cron contract
+// (CLI mechanically refuses self-written STOPs; only the operator stops it).
+const (
+	evolveModeBurst = "burst"
+	evolveModeLoop  = "loop"
 )
 
 func init() {
@@ -56,10 +65,26 @@ func init() {
 	evolveCmd.Flags().BoolVar(&evolveDreamFirst, "dream-first", false, "Run Dream knowledge sub-cycle before code cycles")
 	evolveCmd.Flags().BoolVar(&evolveDreamOnly, "dream-only", false, "Knowledge compounding only, no code cycles")
 	evolveCmd.Flags().StringVar(&evolveDreamTimeout, "dream-timeout", "30m", "Timeout for the Dream sub-cycle")
+	evolveCmd.Flags().StringVar(&evolveMode, "mode", evolveModeBurst, "Execution contract: 'burst' (default, agent self-regulates) or 'loop' (operator-driven; STOP markers mechanically refused)")
 	rootCmd.AddCommand(evolveCmd)
 }
 
+// validateEvolveMode returns nil iff mode is one of the supported values. It
+// is the single source of truth for accepted --mode values across evolve.go
+// and the evolve write-stop-marker subcommand.
+func validateEvolveMode(mode string) error {
+	switch mode {
+	case evolveModeBurst, evolveModeLoop:
+		return nil
+	default:
+		return fmt.Errorf("--mode must be 'burst' or 'loop'")
+	}
+}
+
 func runEvolve(cmd *cobra.Command, args []string) error {
+	if err := validateEvolveMode(evolveMode); err != nil {
+		return err
+	}
 	applyEvolveDefaults(cmd)
 	cwd, err := os.Getwd()
 	if err != nil {
