@@ -1781,7 +1781,7 @@ ao eval task show <task-id> [flags]
 Run the v2 autonomous improvement loop.
 
 ```
-ao evolve [goal] [flags]
+ao evolve [command]
 ```
 
 **Flags:**
@@ -1823,6 +1823,24 @@ ao evolve [goal] [flags]
       --repo-filter string                Only process queue items targeting this repo (empty = all)
       --retry-backoff duration            Backoff between cycle retry attempts (default 30s)
       --supervisor                        Enable autonomous supervisor mode (lease lock, self-heal, retries, gates, cleanup) (default true)
+```
+
+**Subcommands:**
+
+#### `ao evolve config`
+
+Display the resolved per-repo /evolve preferences.
+
+```
+ao evolve config [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for config
+      --json   Emit JSON instead of YAML
+      --show   Print the resolved preferences (defaults + preferences.yaml)
 ```
 
 ---

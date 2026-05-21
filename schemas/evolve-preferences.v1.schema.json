@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://agentops.dev/schemas/evolve-preferences.v1.schema.json",
+  "title": "Evolve Per-Repo Preferences",
+  "description": "Per-repo operator preferences for the /evolve autonomous loop. Lives at .agents/evolve/preferences.yaml. Resolution order: defaults < preferences.yaml < CLI flag.",
+  "practices": ["design-by-contract", "lean-startup"],
+  "type": "object",
+  "required": ["schema_version"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version. Must equal 1 for this schema."
+    },
+    "mode_default": {
+      "type": "string",
+      "enum": ["burst", "loop"],
+      "description": "Default evolve mode. 'burst' = single supervised cycle. 'loop' = run until queue stable."
+    },
+    "scope_filter": {
+      "type": "object",
+      "description": "Controls when /evolve narrows its scope from explore to exploit.",
+      "properties": {
+        "productive_threshold": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Number of productive cycles before scope narrows."
+        },
+        "scout_streak_halt": {
+          "type": "boolean",
+          "description": "If true, halt loop on a streak of pure-scout (no productive change) cycles."
+        }
+      },
+      "additionalProperties": false
+    },
+    "recommended_pointer_strict": {
+      "type": "boolean",
+      "description": "If true, treat missing/stale recommended pointer as an error rather than a warning."
+    },
+    "halt_signals": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of relative paths whose presence halts the /evolve loop."
+    },
+    "generator_layers_enabled": {
+      "type": "boolean",
+      "description": "If true, the generator skill applies layered templates during cycles."
+    }
+  },
+  "additionalProperties": false
+}

@@ -158,5 +158,13 @@ packs/
 
 # AgentOps session artifacts
 .agents/
+# Re-include the per-repo evolve preferences template (soc-6svt). The template
+# ships in the repo as a starter; the actual preferences.yaml stays per-operator
+# and remains gitignored. We have to re-allowlist each ancestor directory after
+# the unanchored `.agents/` re-exclude above — git won't recurse into an
+# excluded directory to evaluate file-level negations.
+!/.agents/
+!/.agents/evolve/
+!/.agents/evolve/preferences.yaml.template
 evals/workbench/scorecard-latest.json
 .doctor/

@@ -70,7 +70,10 @@ run_export() {
 
 @test "compressed cycle ledger truncates notes to 140 chars" {
   long_note="$(printf 'x%.0s' {1..300})"
-  write_cycle 1 "2026-05-20T10:00:00Z" "m" "productive" "$long_note"
+  # Use a dynamic timestamp so the cycle falls inside the default 24h export
+  # window regardless of when the test runs (was hardcoded 2026-05-20, broke
+  # after 2026-05-21 — see soc-4ake).
+  write_cycle 1 "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "m" "productive" "$long_note"
   run_export --stdout --no-bd --no-prs
   [ "$status" -eq 0 ]
   # Find the line containing the cycle and check length.
