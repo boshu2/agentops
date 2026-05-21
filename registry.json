@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-21T02:27:12Z",
+  "generated_at": "2026-05-21T15:19:15Z",
   "summary": {
     "skills": 80,
     "hooks": 44,
-    "knowledge_stores": 4,
+    "knowledge_stores": 5,
     "job_types": 14,
     "eval_files": 62,
-    "cli_commands": 174
+    "cli_commands": 175
   },
   "surfaces": {
     "skills": [
@@ -1008,6 +1008,12 @@
     ],
     "knowledge_stores": [
       {
+        "name": "evolve",
+        "path": ".agents/evolve/",
+        "purpose": "Evolve skill session outputs",
+        "file_count": 1
+      },
+      {
         "name": "findings",
         "path": ".agents/findings/",
         "purpose": "Bug hunt and research findings",
@@ -1379,6 +1385,10 @@
       {
         "name": "evolve",
         "path": "cli/cmd/ao/evolve.go"
+      },
+      {
+        "name": "evolve_config",
+        "path": "cli/cmd/ao/evolve_config.go"
       },
       {
         "name": "extract",
