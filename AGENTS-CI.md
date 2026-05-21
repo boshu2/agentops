@@ -1,0 +1,127 @@
+# AGENTS-CI.md — CI gates, triage SLAs, deferred hardening, and what each job checks
+
+> Sibling of [`AGENTS.md`](AGENTS.md), [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md), [`AGENTS-CODEX.md`](AGENTS-CODEX.md), [`AGENTS-RUNTIME.md`](AGENTS-RUNTIME.md). Split out of the monolithic AGENTS.md per soc-vuu6.3.
+
+## CI Validation — Passing the Pipeline
+
+All pushes to `main`, `v*` release tag pushes, and PRs run `.github/workflows/validate.yml`. Release tag pushes force every path-filtered lane on, and the summary fails if any job is skipped, so skipped is not treated as a release verdict. **Run checks locally before pushing.** The summary job gates on all checks except doctor-check (non-blocking), factory-claim-ledger-strict (non-blocking), practice-citations (non-blocking), check-test-staleness (non-blocking), swarm-evidence (non-blocking), and executable-spec-link-integrity (non-blocking).
+Blocking policy list (must match the validate summary failset): every job in the CI table below except jobs marked `(non-blocking)`, including the seven `validate-codex-*` and `validate-headless-runtime-skills` jobs (split from the previous aggregated `codex-runtime-sections` job, soc-ltp2).
+
+#### Advisory Job Triage SLAs (post-merge advisory policy, soc-z7qq)
+
+Advisory and warn-only jobs run on every PR but their failure does NOT block merge. Most surface a `(advisory)` suffix on the GitHub check name; `executable-spec-link-integrity` surfaces as `(warn-only, F1.6)`. Each listed job has a triage SLA or explicit info-only handling — when the job has been red for longer than its SLA, follow the escalation rule.
+
+| Job | Triage SLA | Escalation rule |
+|---|---|---|
+| **doctor-check** | 30d | Open a `bd` issue tracking the stale CLI reference; prioritize when the next `cli/cmd/ao/**` PR lands. |
+| **factory-claim-ledger-strict** | 14d | soc-lmww1: validates `docs/contracts/factory-claim-ledger.json` against source-set anchors. Open a `bd` issue tagged `ci-advisory` when red for >14d; promotion to blocking is a Wave 1E concern. |
+| **practice-citations** | 14d | Non-blocking strict walk of Primitives (skills/hooks/evals/CLI/schemas and scripts with declarations) for `practices: [slug,...]` derivation from PRACTICE-REGISTRY.md. Backfill in slices; promote to required after one clean cycle. Open a `bd` issue tagged `ci-advisory` when red for >14d with no backfill progress. |
+| **check-test-staleness** | none (info-only) | Read the report; no merge or release impact. Item 33 — drift signal, not a gate. |
+| **swarm-evidence** | none (info-only) | Read the report; no merge or release impact. Item 34 — informational artifact validation. |
+| **executable-spec-link-integrity** | none (warn-only) | Read the directive/scenario lint and trace output; no merge or release impact until the F1.6 promotion criterion is met. |
+
+The `retrieval-bench` job (nightly, see `.github/workflows/nightly.yml`) is currently warn-only with a deferred promotion gate. Promotion criterion: `nightly_p_at_5 ≥ baseline_p_at_5` for **14 consecutive nightlies**, where `baseline_p_at_5 = 0.30` is pinned in `docs/CI-CD.md` §"Retrieval-bench ratchet" until a durable non-`.agents` baseline artifact is introduced. The 14-consecutive-nightly observation window is intentionally observational — not yet wired into a counter — so flips to blocking remain a manual decision after the window is documented green.
+
+#### DEFERRED CI Hardening (soc-mi17)
+
+These CI 1-40 items are intentionally not being hardened in this wave. Revisit only when the named promotion trigger fires.
+
+| Item | Current handling | Rationale | Promotion trigger |
+|---|---|---|---|
+| **1 — go-build error** | DEFER | Compilation breakage is developer hygiene; `cd cli && make build && make test` already exists in the local checklist. | Promote to FIX if a merged `main` commit reaches CI with the same build-class failure twice in 30 days despite local pre-push guidance. |
+| **7 — cli-integration cascade** | DEDUPE/DEFER | Failures cascade from build/test root causes, primarily items 1 and 4. | Promote to FIX if `cli-integration` fails independently after items 1 and 4 are green for two consecutive affected runs. |
+| **13 — contract-compatibility** | DEFER | The gate is doing its job; failures indicate real schema or catalog drift. | Promote to FIX if the same false-positive contract failure repeats twice in a quarter. |
+| **14 — smoke-test Python 3.14** | DEFER | Rare flake; workflow pinning already narrows the surface. | Promote to FIX if the Python 3.14 smoke failure appears in two separate PRs or nightlies within 30 days. |
+| **21 — GoReleaser publish failure** | DEFER | Release publish failures are covered by the `pre-tag-ci-validation` pattern and release discipline. | Promote to FIX if a publish failure recurs on two consecutive release attempts with the same root cause. |
+| **22 — doc-release blocks publish** | DEDUPE/DEFER | This is a cascade from item 12 doc-release drift, now covered by pre-push gating. | Promote to FIX if publish is blocked by doc-release after item 12's local gate has passed on the release branch. |
+| **23 — markdownlint** | DEFER | Rare and cheap to repair locally. | Promote to FIX if markdownlint failures occur more than twice in a quarter or block a release branch. |
+| **24 — shellcheck** | DEFER | Rare and cheap to repair locally. | Promote to FIX if shellcheck failures occur more than twice in a quarter or block a release branch. |
+| **27 — plugin-load-test manifest** | DEFER | Low failure rate and the gate catches real manifest/plugin-structure drift. | Promote to FIX if plugin-load-test reports a false positive twice in a quarter. |
+| **30 — memrl-health degraded** | DEFER | Rare health signal; investigate when it actually fires. | Promote to FIX if `memrl-health` fires more than once per quarter. |
+| **39 — nightly Static Validation** | DEFER | Nightly-only signal should be bundled with future nightly stabilization if the pattern persists. | Promote to FIX if static validation fails in 3 of 10 consecutive nightlies outside a known knowledge-cycle quarantine. |
+
+
+### CI Jobs and What They Check
+
+| Job | What it validates | Common failure |
+|-----|-------------------|----------------|
+| **doc-release-gate** | Skill counts match across SKILL-TIERS.md, PRODUCT.md, README.md, documentation-index.md; link validation | Adding/removing a skill without running `scripts/sync-skill-counts.sh` |
+| **smoke-test** | Repo smoke surface: skill frontmatter, placeholder/TODO hygiene, plus standalone Claude/Codex/OpenCode runtime smoke scripts and mocked headless runtime validation | Runtime install/bundle drift or placeholder/TODO regressions |
+| **hook-preflight** | All hooks have kill switches, no unsafe eval, timeouts present | Using `eval` or backtick substitution in hooks |
+| **agentops-eval-baseline-audit** | Runs `ao eval baseline-audit --root evals/agentops-core --json`; drift-only gate that fails on `stale_suite_hashes>0`. `policy_mismatch_count` is reported informationally (under the no-tracked-`.agents/` policy from `3f1566fd` baselines are operator-local, so fresh clones legitimately have missing_compare_baselines) | A promoted baseline's recorded suite SHA stops matching the current suite definition |
+| **standards-injector-completeness** | Every `<lang>` mapped by `hooks/standards-injector.sh` has a matching `skills/standards/references/<lang>.md` | Adding a case branch without the reference file (the hook fails open silently) |
+| **validate-hooks-doc-parity** | Scoped docs avoid stale hook-count claims vs runtime `hooks/hooks.json` | Runtime hook contract changed but docs were not updated |
+| **hook-output-schema-lint** | Hooks emit only the safely-portable PreToolUse output subset both Claude and Codex CLI accept | Using `hookSpecificOutput.updatedInput` (silently dropped by Codex CLI 0.128.0+) |
+| **validate-ci-policy-parity** | AGENTS CI table and blocking policy match workflow summary enforcement | Docs say non-blocking/required but workflow differs |
+| **validate-codex-runtime-sections** | Required Codex runtime sections and ordering remain valid in shipped artifacts | AGENTS/runtime guidance changes drift from required Codex runtime section rules |
+| **validate-codex-generated-artifacts** | Codex artifact metadata parity (manifests, markers, hashes) for the head commit | Codex artifact regen drift; missing or stale `skills-codex/` outputs |
+| **validate-codex-backbone-prompts** | Codex backbone prompt files are present and well-formed | Backbone prompt file deleted, renamed, or shape regressed |
+| **validate-codex-override-coverage** | Every `skills-codex-overrides/<name>/` entry covers required override surfaces | Adding an override skill without the prompt or body coverage the runtime expects |
+| **validate-codex-rpi-contract** | Codex RPI contract (phase prompts, transitions, output schema) matches runtime | RPI contract drift between Claude and Codex runtimes |
+| **validate-codex-lifecycle-guards** | Codex lifecycle guards (session/run boundaries, kill switches) remain wired | Lifecycle guard removed or runtime hook order changed without updating the guard |
+| **validate-codex-parity-drift** | GOALS.md directive D7: `scripts/check-codex-parity-drift.sh` returns 0 findings (no `--warn-only` escape) | Codex parity drift reintroduced between Claude skills and `skills-codex/` outputs |
+| **validate-pr-evidence-claims** | ship-loop anti-pattern #7 (soc-eqjd): each `Evidence:` line in the PR body must appear verbatim in this workflow run's logs. Replaces local pre-push check #39 retired by soc-g2r9. Only runs on `pull_request` events. | PR body cites an `Evidence:` line that does not appear in any job's log output for this run (false claim about gate behavior) |
+| **validate-quarantine-empty** | GOALS.md directive D3: `tests/_quarantine/` holds zero `.sh`/`.bats` suites. Override: `ALLOW_QUARANTINE=1` for single-cycle bypass | Test parked in `tests/_quarantine/` without being deleted or moved back |
+| **validate-registry-drift** | registries-drift lesson (soc-ry4a): `scripts/check-registry-drift.sh` confirms skill count + Full Skill Map membership + hexagonal_role column matches frontmatter | Skill added/removed without updating `docs/reference/agentops-skill-domain-map.md`; hex-role column drift |
+| **validate-bounded-contexts-drift** | soc-zxia.2: `scripts/check-bounded-contexts-drift.sh` confirms BC1-BC5 prose in registry docs matches `docs/contracts/bounded-contexts.yaml` canonical | BC responsibility/product-layer prose edited directly in registry doc instead of via yaml |
+| **validate-skill-domain-map-golden** | soc-zxia.3: `scripts/generate-skill-domain-map.sh --check` confirms `docs/reference/agentops-skill-domain-map.md` matches the generator output from `bounded-contexts.yaml` + `skill-dispositions.yaml` + skill frontmatter | Hand-edit to the .md table sections; yaml change without regenerating; skill added without dispositions row |
+| **validate-flywheel-proof** | GOALS.md gate `flywheel-proof` (weight 7): `scripts/proof-run.sh` end-to-end flywheel checks (20 assertions) pass against a fresh isolated repo | Knowledge flywheel regression: capture/inject/retrieval/nightly stages drift out of contract |
+| **validate-goals-validate** | GOALS.md gate `goals-validate` (weight 5): `ao goals validate --json` reports `valid == true`; structural errors in GOALS.md block merge | GOALS.md gate row deleted/malformed, schema break, missing required field |
+| **validate-wiring-closure** | GOALS.md gate `wiring-closure` (weight 7): `scripts/check-wiring-closure.sh` confirms every script, skill, and hook referenced by registries exists on disk | Registry entry without an underlying file, or a file referenced by a registry was deleted |
+| **validate-corpus-freshness** | GOALS.md gate `corpus-freshness` (weight 4, Directive D11): `scripts/check-corpus-freshness.sh` ensures the newest `ao corpus snapshot` is within 7 days. CI runs with `AGENTOPS_CORPUS_FRESHNESS_SKIP=1` (greenfield runners); operator boxes enforce real freshness | Snapshot dir present but newest tarball is older than 7 days (corpus durability protects against routine cleanup wiping `.agents/`) |
+| **validate-flywheel-compounding-snapshot** | GOALS.md gate `flywheel-compounding-snapshot` (weight 5, G1): `scripts/check-flywheel-compounding-snapshot.sh` validates the tracked `docs/releases/flywheel-compounding-snapshot.json` exists, is < 14 days old, and `escape_velocity_compounding=true`. Operator refresh: `bash scripts/snapshot-flywheel-compounding.sh && git add docs/releases/flywheel-compounding-snapshot.json` | Snapshot missing, stale (>14d), or shows `escape_velocity_compounding=false` (corpus has stopped compounding) |
+| **validate-factory-yield-ledger** | GOALS.md gate `factory-yield-ledger` (weight 4, A2 audit follow-up): `scripts/check-factory-yield-ledger.sh` validates the yield-ledger contract: schema + example parse, 25 required correlation+yield fields present, event_type/schema_version pinned. Pair to the existing `validate-factory-claim-ledger` gate | Schema or example drifts, a required correlation/yield field is removed, or event_type/schema_version change |
+| **validate-finding-registry** | GOALS.md gate `finding-registry` (weight 4, A2 audit follow-up): `scripts/check-finding-registry.sh` validates the finding-registry contract: schema is valid JSON Schema, required-field list cross-checks with contract doc (accepts both `foo` and `foo.child` forms for nested objects), canonical path is documented, live `.agents/findings/registry.jsonl` lines parse and carry the required top-level fields | Schema/contract drift, required field dropped from either side, or any live registry line missing one of the eight top-level required fields |
+| **validate-agents-split** | `scripts/validate-agents-split.sh` enforces the tiered AGENTS.md split contract (soc-vuu6.3): AGENTS.md stays <=250 lines (orientation budget), AGENTS-{WORKFLOW,CI,CODEX,RUNTIME}.md exist, and links are bidirectional. Without this gate the split silently drifts back to a monolith every time someone adds "just one more section" to AGENTS.md | AGENTS.md exceeds 250 lines, a sibling file is missing or renamed, or the bidirectional link contract is broken |
+| **validate-sovereignty-proof-citations** | `scripts/validate-sovereignty-proof-citations.sh` scans every .md under `docs/sovereignty-proof/` for `file:line` citations (path/to/file:NN or path/to/file:NN-MM) and verifies each resolves at HEAD: the cited file exists and the cited end-line is within the file's line count. Keeps the sovereignty-proof case-study page (soc-vuu6.32, council non-negotiable #2) honest as a falsifiable artifact. Bats coverage at tests/scripts/validate-sovereignty-proof-citations.bats | A cited file was renamed/deleted, its line count shrank below a cited end-line, or a citation references a path that does not resolve from the repo root |
+| **validate-factory-admission** | GOALS.md gate `factory-admission` (weight 4, A2 audit follow-up): `scripts/check-factory-admission.sh` wraps `tests/scripts/test-factory-admission-contracts.py` (Python+jsonschema) as a blocking gate. Validates both work-order and admission-decision fixtures against the schema | Schema or fixtures drift, work-order/admission-decision instances fail validation |
+| **validate-contracts-structural-floor** | GOALS.md gate `contracts-structural-floor` (weight 4): `scripts/check-contracts-structural-floor.sh` enforces every `docs/contracts/*.md` meets the floor: top-level # heading, cataloged in documentation-index.md, body >= 200 bytes, paired schema (if any) is valid JSON | Adding a contract without cataloging it, a contract becoming a stub, or a paired schema becoming invalid JSON |
+| **validate-docs-learning-references** | soc-w6vh.5.1 gate: `scripts/check-docs-learning-references.sh` enforces that `docs/plans/` and `docs/learnings/` references to `.agents/learnings/YYYY-MM-DD-*.md` paths have a `docs/learnings/<basename>.md` durable mirror OR an explicit `(local-only)` / `(documentary)` / `(template)` annotation | A docs/plans or docs/learnings document cites a specific dated `.agents/learnings/` file without exporting the rationale to `docs/learnings/` or marking the reference exempt |
+| **validate-three-gap-supergate** | GOALS.md gate `three-gap-supergate` (weight 5, E5): `scripts/check-three-gap-supergate.sh --gap=all` composes the three-gap contract surface (TG1 council-coverage, TG2 durable-learning [flywheel-compounding-snapshot + flywheel-proof + compile-health], TG3 loop-closure [goals-validate + wiring-closure + flywheel-proof]) into a unified PASS/FAIL surface | Any composed child gate fails |
+| **validate-headless-runtime-skills** | Headless runtime skill bundle smoke (mocked Claude/Codex/OpenCode runners) | Runtime install/bundle drift breaks headless skill execution |
+| **validate-skill-frontmatter** | `scripts/validate-skill-frontmatter.sh` validates each `skills/*/SKILL.md` YAML frontmatter against `schemas/skill-frontmatter.v2.schema.json` (v2 adds optional `hexagonal_role`, `consumes`, `produces`, `context_rel` fields). Default mode fails on schema violations; missing optional hexagonal fields warn. `--strict` (pre-push) fails on warnings. Per DDD+Hexagonal plan Issue #2 | SKILL.md frontmatter drifts from v2 schema, or `hexagonal_role` enum value invalid |
+| **validate-context-map-drift** | `scripts/validate-context-map-drift.sh` regenerates `docs/contracts/context-map.md` via `scripts/generate-context-map.sh` and fails on any diff against the committed copy. Restores the original file on exit so working trees stay clean. Per DDD+Hexagonal plan Issue #5 (Fix 3) | SKILL.md `hexagonal_role`/`consumes`/`produces`/`context_rel` frontmatter changed without regenerating `docs/contracts/context-map.md` |
+| **embedded-sync** | `cli/embedded/` matches source files in `hooks/`, `lib/`, `skills/` | Editing hooks without running `cd cli && make sync-hooks` |
+| **cli-docs-parity** | `cli/docs/COMMANDS.md` matches `ao --help` output | Adding a CLI command without running `scripts/generate-cli-reference.sh` |
+| **registry-check** | `registry.json` matches live output of `scripts/generate-registry.sh` | Adding a job type, skill, or CLI command without regenerating registry.json |
+| **agentops-contract-canaries** | Runs the official deterministic AgentOps contract canary test list in `tests/canaries/agentops-core-official.txt` | Stable contract canary regression, selected suite failure, or missing canary dependency |
+| **eval-workbench-verify** | Behavioral eval workbench golden state, task scoring scripts, and suite structure | Broken workbench fixture, failing golden-state tests, or malformed eval suite JSON |
+| **factory-claim-ledger-strict** | Runs `bash scripts/check-factory-claim-ledger.sh` and emits a structured observation artifact mapping verdict + surfaces_touched per PR (soc-lmww1, Wave 1C) | Non-blocking (`continue-on-error: true`); claim-ledger drift surfaces in observation JSON. Promotion to blocking is the Wave 1E concern documented in-job |
+| **eval-skill-delta** | Eval skill-delta CI gate validates skill-on vs skill-off delta infrastructure | Broken delta scorecard, missing harness, or malformed A/B config |
+| **shellcheck** | All `.sh` files pass ShellCheck at error severity | Unquoted variables, missing `set -euo pipefail` |
+| **markdownlint** | Markdown style/lint rules pass for repository docs | Docs formatting regressions not caught by link checks |
+| **security-scan** | No hardcoded secrets or dangerous patterns (`curl\|sh`, `rm -rf /`) | Hardcoded API keys or passwords in non-test files |
+| **security-toolchain-gate** | Unified security gate (`scripts/security-gate.sh --mode quick`): gosec, golangci-lint, gitleaks, trivy, semgrep, etc. Blocks on any CRITICAL or HIGH finding | A CRITICAL/HIGH security or quality finding from gosec or golangci-lint |
+| **skill-integrity** | Every `references/*.md` file is linked from SKILL.md; no dead refs, dead xrefs, or missing scripts | Adding a reference file without linking it in SKILL.md |
+| **skill-schema** | SKILL frontmatter conforms to schema | Missing/invalid frontmatter fields in SKILL.md |
+| **skill-dependency-check** | Skill `metadata.dependencies` entries resolve to existing skills | Declaring a skill dependency that no longer exists |
+| **contract-compatibility-gate** | documentation-index.md contract links resolve; schemas are valid JSON; orphan contracts fail unless allowlisted | Adding a contract file without cataloguing it in `docs/documentation-index.md` or allowlist governance |
+| **memrl-health** | MemRL feedback loop wiring and health checks | Broken ingestion/feedback loop wiring |
+| **plugin-load-test** | No symlinks anywhere in the repo; manifests valid; plugin structure correct | Creating symlinks instead of real file copies |
+| **retrieval-quality** | Offline retrieval precision bench and retrieval comparison smoke test | Precision@K regression below threshold or retrieval-quality-smoke failure |
+| **go-build** | `ao` binary builds; tests pass with `-race`; embedded hooks in sync; Go complexity budget | New function exceeds cyclomatic complexity 25 |
+| **windows-smoke** | Native Windows PowerShell installer smoke, Codex plugin temp install, local `ao doctor` Windows hints, and focused Windows-sensitive Go tests | Windows install/plugin/runtime surfaces regress while Ubuntu CI stays green |
+| **cli-integration** | Built CLI runs integration command matrix and hook lifecycle smoke tests | CLI command behavior drift not covered by unit tests |
+| **json-flag-consistency** | All `--json` flags produce valid JSON with consistent format | Missing `--json` support on a new command |
+| **file-manifest-overlap** | No file path conflicts between workers/skills | Two skills claim the same output file |
+| **doctor-check** (non-blocking) | `ao doctor` runs without error on built binary | Non-blocking (`continue-on-error: true`) |
+| **skill-lint** | Skill line limits, required sections, Claude feature coverage | Judgment-tier skill exceeds 600 lines; missing `## Examples` in user-facing skill |
+| **bats-tests** | BATS integration tests for shell scripts pass | Hook or script behavioral regression |
+| **check-test-staleness** (non-blocking) | Detects stale/abandoned test files | Non-blocking (`continue-on-error: true`) |
+| **swarm-evidence** (non-blocking) | Swarm evidence files and file manifests are valid | Non-blocking (`continue-on-error: true`); informational artifact validation only |
+| **executable-spec-link-integrity** (non-blocking) | Runs `ao goals scenarios --lint` (directive↔scenario link lint) and `ao goals trace --orphans` (whole-chain orphan/gap audit) warn-only (F1.6, soc-58nt.1.9). Non-blocking (`continue-on-error: true`). Promotion criterion: remove `continue-on-error: true` from the CI job and replace `warn` with `fail` in pre-push check 38 after two consecutive clean runs on main | Broken directive↔scenario link or orphaned directive/scenario/bead in the trace chain (surfaces as warning, not failure, until promoted) |
+
+### Nightly Workflow Jobs
+
+`.github/workflows/nightly.yml` runs at 06:00 UTC daily and on `workflow_dispatch`.
+
+| Job | What it validates | Common failure |
+|-----|-------------------|----------------|
+| **cli-tests** | Go CLI tests with `-race` and coverage | Test regression in `cli/internal/**` |
+| **static-validation** | Smoke, doc-release, and hooks/docs parity gates | Skill/doc drift slipping past pre-push |
+| **retrieval-bench** | Synthetic + live corpus retrieval precision/coverage gates | P@3 < 0.67 or live coverage < 0.80 |
+| **security-toolchain** | Full `security-gate.sh` (semgrep, gosec, gitleaks, trivy, hadolint) | Scanner findings or toolchain install flake |
+| **knowledge-cycle** | Deduped compile + dream-cycle + Athena follow-up sharing one substrate (`scripts/nightly-knowledge-cycle.sh`); corpus-empty precondition skip per `f-2026-04-30-002`; single `nightly-knowledge-cycle` triage artifact replaces three (compile-report, dream-cycle-report, Athena) — `soc-2xmg` | Compile health gate fails, dream-cycle proof regresses, or substrate inputs missing |
+
+**Knowledge-cycle precondition:** the `knowledge-cycle` job calls `scripts/nightly-knowledge-cycle.sh precondition` before any compile/dream/Athena stage. When `total_artifacts == 0`, the cycle SKIPs every downstream stage with reason `corpus-empty`; when `total_artifacts > 0 && total_citations_in_window == 0`, it SKIPs with reason `corpus-dormant` rather than failing three separate jobs on the same unavailable-corpus condition. Override with `NIGHTLY_KNOWLEDGE_CYCLE_FORCE=1` for diagnostic runs. Static Validation (`#39` in the CI failure ranking) remains in its own `static-validation` job by design — see plan `2026-05-03-ci-failures-1-40-handling.md` §nightly-knowledge-cycle-dedupe.
+

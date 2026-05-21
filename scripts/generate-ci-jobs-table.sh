@@ -22,7 +22,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-AGENTS_PATH="${AGENTS_PATH:-$REPO_ROOT/AGENTS.md}"
+AGENTS_PATH="${AGENTS_PATH:-$REPO_ROOT/AGENTS-CI.md}"
 WORKFLOW_PATH="${WORKFLOW_PATH:-$REPO_ROOT/.github/workflows/validate.yml}"
 MANIFEST_PATH="${MANIFEST_PATH:-$REPO_ROOT/docs/contracts/ci-jobs.yaml}"
 
