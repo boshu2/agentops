@@ -261,6 +261,7 @@ func TestNestedGitignoreContent(t *testing.T) {
 
 	initStealth = false
 	initHooks = false
+	initWithSchedule = false // reset: prior tests in this package may have left it true
 	if err := runInit(initCmd, nil); err != nil {
 		t.Fatalf("runInit: %v", err)
 	}

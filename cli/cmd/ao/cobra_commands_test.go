@@ -446,7 +446,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 	// Verify all top-level commands are registered (flat namespace)
 	expectedCmds := []string{
 		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
-		"constraint", "context", "codex", "compile", "contradict", "corpus", "curate", "dedup",
+		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
 		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest", "hooks",
 		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
@@ -481,6 +481,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"flywheel":   {"status", "nudge", "gate", "compare", "close-loop"},
 		"constraint": {"activate", "retire", "review", "list"},
 		"corpus":     {"fitness"},
+		"cron":       {"self-adjust"},
 		"patterns":   {"repair-filenames"},
 		"pool":       {"list", "ingest"},
 		"store":      {"rebuild", "search"},
@@ -507,7 +508,7 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 	// Same list as TestCobraCommandTreeRegistration
 	expectedCmds := []string{
 		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
-		"constraint", "context", "codex", "compile", "contradict", "corpus", "curate", "dedup",
+		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
 		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest", "hooks",
 		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",

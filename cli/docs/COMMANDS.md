@@ -1309,6 +1309,38 @@ ao codex stop [flags]
 
 ---
 
+### `ao cron`
+
+Helpers for the /evolve --mode=loop cron-fire continuity primitive.
+
+```
+ao cron [command]
+```
+
+**Subcommands:**
+
+#### `ao cron self-adjust`
+
+Render the next /evolve loop-mode cron prompt and emit JSON for the harness.
+
+```
+ao cron self-adjust [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                 help for self-adjust
+      --next string          Optional recommended next bead
+      --on string            Trigger marker: 'cycle-close' for default loop usage (default "cycle-close")
+      --shipped string       Comma-separated commit:bead entries shipped this cycle
+      --sub-beads string     Comma-separated bead ids filed this cycle
+      --template string      Path to the cron-loop-mode template (default ".agents/evolve/cron-template.md")
+      --tests-delta string   Human-readable tests delta summary
+```
+
+---
+
 ### `ao daemon`
 
 Run and inspect the AgentOps daemon
@@ -1828,6 +1860,29 @@ ao evolve [command]
 
 **Subcommands:**
 
+#### `ao evolve blocked`
+
+Record or inspect typed blocked-events emitted by the /evolve loop.
+
+```
+ao evolve blocked [flags]
+```
+
+**Flags:**
+
+```
+      --bead string              Bead id the agent was working on (write mode, optional)
+      --clear string             Clear mode: delete entries for the given cycle id (operator-only)
+      --cycle string             Override cycle-id (write mode; defaults to date-derived counter)
+  -h, --help                     help for blocked
+      --json                     Read mode: emit JSON instead of human-readable text
+      --ladder-step-failed int   Ladder step that failed (write mode, optional)
+      --list                     Read mode: list blocked events
+      --needed-context string    Missing context description (write mode, optional)
+      --reason string            Reason text (write mode)
+      --tail int                 Read mode: show last N entries (default 10)
+```
+
 #### `ao evolve config`
 
 Display the resolved per-repo /evolve preferences.
@@ -1842,6 +1897,24 @@ ao evolve config [flags]
   -h, --help   help for config
       --json   Emit JSON instead of YAML
       --show   Print the resolved preferences (defaults + preferences.yaml)
+```
+
+#### `ao evolve next-work`
+
+Run the 5-step next-work ladder and recommend a bead to claim.
+
+```
+ao evolve next-work [flags]
+```
+
+**Flags:**
+
+```
+      --bd-binary string         Override path to the 'bd' binary (default: resolves via PATH)
+  -h, --help                     help for next-work
+      --include-operator-shape   Do not filter operator-shape beads at step 1
+      --json                     Emit JSON instead of human-readable text
+      --mode string              Execution contract: 'burst' (default) or 'loop' (default "burst")
 ```
 
 #### `ao evolve write-stop-marker`
