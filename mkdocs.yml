@@ -196,6 +196,10 @@ nav:
       - Meta-Observer: workflows/meta-observer-pattern.md
   - Concepts:
       - Philosophy: philosophy.md
+      - Sovereignty Proof:
+          - sovereignty-proof/index.md
+          - 2026-05-15 RPI-leanness reframe: sovereignty-proof/evidence/2026-05-15-rpi-leanness-codex-reframe.md
+          - 2026-05-16 CDLC F6+F7 findings: sovereignty-proof/evidence/2026-05-16-cdlc-f6-f7-codex-findings.md
       - Assurance Profile: assurance-profile.md
       - Knowledge Flywheel: knowledge-flywheel.md
       - The Science: the-science.md

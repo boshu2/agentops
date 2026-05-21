@@ -108,6 +108,7 @@ Bridge / framing docs:
 ## Concepts
 
 - [Philosophy](philosophy.md) — Five validated principles for building with coding agents, with evidence from five months of production use
+- [Sovereignty Proof](sovereignty-proof/index.md) — Falsifiable case studies showing where independent-vendor review caught what same-vendor review missed (2026-05-15 RPI reframe, 2026-05-16 F6/F7 findings). CI gate `validate-sovereignty-proof-citations` keeps the cited file:line evidence honest.
 - [Assurance Profile](assurance-profile.md) — High-assurance operating posture for local, auditable, constrained-environment agent work
 - [Context Lifecycle Contract](context-lifecycle.md) — Internal proof contract behind the compounding product loop
 - [Knowledge Flywheel](knowledge-flywheel.md) — How every session makes the next one smarter
