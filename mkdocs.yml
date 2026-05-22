@@ -175,6 +175,7 @@ nav:
       - Architecture Overview: ARCHITECTURE.md
       - Software Factory: software-factory.md
       - Intent-to-Loop Hexagon: architecture/intent-to-loop-hexagon.md
+      - Behavior-Shaping Environment: architecture/behavior-shaping-environment.md
       - Codex Hookless Lifecycle: architecture/codex-hookless-lifecycle.md
       - Primitive Chains: architecture/primitive-chains.md
       - PDC Framework: architecture/pdc-framework.md
