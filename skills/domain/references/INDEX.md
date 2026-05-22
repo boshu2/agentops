@@ -13,6 +13,7 @@ Load entries on demand; do not preload the whole corpus.
 6. `anti-pattern.md` — documented mistakes with the cost when ignored
 7. `tracer-bullet.md` — test entry; uses only citations to entries 1-6
 8. `context-density-rule.md` — CDLC compression rule for agent context
+9. `behavior-shaping.md` — the ABC register: building agent capability is operant conditioning, not specification
 
 ## Naming note
 
@@ -49,6 +50,7 @@ case-insensitive filesystems (macOS APFS default) do not collapse the two.
 | Slug                      | Concept              | Status     | Kind    |
 |---------------------------|----------------------|------------|---------|
 | `context-density-rule.md` | Context Density Rule | canonical  | concept |
+| `behavior-shaping.md`     | Behavior Shaping     | draft      | concept |
 
 ## Status legend
 

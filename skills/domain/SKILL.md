@@ -85,6 +85,7 @@ Test entry:
 Operating discipline:
 
 - [`references/context-density-rule.md`](references/context-density-rule.md) — Context Density Rule: every context token carries intent, boundary, evidence, decision, constraint, or next action
+- [`references/behavior-shaping.md`](references/behavior-shaping.md) — Behavior Shaping: the ABC register (antecedent/behavior/consequence/reinforcement/extinction/shaping); building agent capability is operant conditioning, not specification
 
 Catalog:
 

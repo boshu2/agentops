@@ -119,6 +119,7 @@ graph LR
   crank -- "shared-kernel" --> standards
   design -- "shared-kernel" --> standards
   discovery -- "shared-kernel" --> standards
+  evolve -- "customer-of" --> rpi
   flywheel -- "shared-kernel" --> standards
   forge -- "shared-kernel" --> standards
   goals -- "shared-kernel" --> standards
@@ -203,6 +204,12 @@ graph LR
 | `doc` | produces | documentation |
 | `domain` | produces | stdout |
 | `dream` | produces | .agents/research/*.md |
+| `evolve` | consumes | compile |
+| `evolve` | consumes | goals |
+| `evolve` | consumes | post-mortem |
+| `evolve` | consumes | rpi |
+| `evolve` | produces | git-changes |
+| `evolve` | produces | goals-fitness-delta |
 | `flywheel` | produces | .agents/learnings/*.md |
 | `forge` | produces | .agents/research/*.md |
 | `goals` | produces | result.json |
@@ -219,6 +226,9 @@ graph LR
 | `plan` | consumes | standards |
 | `plan` | produces | .agents/plans/*.md |
 | `plan` | produces | execution-packet.json |
+| `post-mortem` | consumes | council |
+| `post-mortem` | consumes | implement |
+| `post-mortem` | consumes | vibe |
 | `post-mortem` | produces | result.json |
 | `pr-implement` | consumes | crank |
 | `pr-implement` | produces | git-changes |
@@ -239,6 +249,9 @@ graph LR
 | `push` | produces | git-changes |
 | `quickstart` | consumes | rpi |
 | `quickstart` | produces | stdout |
+| `ratchet` | consumes | post-mortem |
+| `ratchet` | consumes | validation |
+| `ratchet` | consumes | vibe |
 | `ratchet` | produces | .agents/rpi/*.md |
 | `readme` | produces | documentation |
 | `recover` | produces | .agents/rpi/*.md |
