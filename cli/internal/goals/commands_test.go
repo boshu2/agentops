@@ -554,6 +554,74 @@ func TestRunSteerPrioritize_Moves(t *testing.T) {
 	}
 }
 
+// soc-5335b regressions: remove/prioritize must preserve non-directive content
+// (Three-Gap section, claim comments) while renumbering — the old
+// LoadMDGoals→WriteMDGoals round-trip dropped them.
+func TestRunSteerRemove_PreservesNonDirectiveContent(t *testing.T) {
+	tmp := t.TempDir()
+	t.Chdir(tmp)
+	extra := "<!-- agentops:claim:AOP-CLAIM-KEEP -->\n\n## Three-Gap Contract Proof Surface\n\nPreserved doctrine section.\n"
+	writeGoalsMD(t, "GOALS.md", extra)
+	var buf bytes.Buffer
+	_ = RunSteerAdd(SteerAddOptions{Title: "Second", Description: "two", Steer: "increase", GoalsFile: "GOALS.md", Stdout: &buf})
+	_ = RunSteerAdd(SteerAddOptions{Title: "Third", Description: "three", Steer: "hold", GoalsFile: "GOALS.md", Stdout: &buf})
+
+	buf.Reset()
+	if err := RunSteerRemove(SteerRemoveOptions{Number: 2, GoalsFile: "GOALS.md", Stdout: &buf}); err != nil {
+		t.Fatalf("RunSteerRemove: %v", err)
+	}
+	data, _ := os.ReadFile("GOALS.md")
+	got := string(data)
+
+	if strings.Contains(got, "### 2. Second") || strings.Contains(got, "two") {
+		t.Errorf("removed directive 'Second' still present:\n%s", got)
+	}
+	if !strings.Contains(got, "### 2. Third") {
+		t.Errorf("Third not renumbered 3 -> 2:\n%s", got)
+	}
+	if !strings.Contains(got, "### 1. Establish baseline") {
+		t.Errorf("directive #1 lost:\n%s", got)
+	}
+	for _, must := range []string{"## Three-Gap Contract Proof Surface", "AOP-CLAIM-KEEP", "Preserved doctrine section."} {
+		if !strings.Contains(got, must) {
+			t.Errorf("non-directive content dropped (soc-5335b): %q missing:\n%s", must, got)
+		}
+	}
+}
+
+func TestRunSteerPrioritize_PreservesNonDirectiveContent(t *testing.T) {
+	tmp := t.TempDir()
+	t.Chdir(tmp)
+	extra := "<!-- agentops:claim:AOP-CLAIM-KEEP -->\n\n## Three-Gap Contract Proof Surface\n\nPreserved doctrine section.\n"
+	writeGoalsMD(t, "GOALS.md", extra)
+	var buf bytes.Buffer
+	_ = RunSteerAdd(SteerAddOptions{Title: "Second", Description: "two", Steer: "increase", GoalsFile: "GOALS.md", Stdout: &buf})
+	_ = RunSteerAdd(SteerAddOptions{Title: "Third", Description: "three", Steer: "hold", GoalsFile: "GOALS.md", Stdout: &buf})
+
+	buf.Reset()
+	// Move #3 (Third) to position 1 → order: Third(1), Establish baseline(2), Second(3)
+	if err := RunSteerPrioritize(SteerPrioritizeOptions{Number: 3, NewPosition: 1, GoalsFile: "GOALS.md", Stdout: &buf}); err != nil {
+		t.Fatalf("RunSteerPrioritize: %v", err)
+	}
+	data, _ := os.ReadFile("GOALS.md")
+	got := string(data)
+
+	if !strings.Contains(got, "### 1. Third") {
+		t.Errorf("Third not moved+renumbered to #1:\n%s", got)
+	}
+	if !strings.Contains(got, "### 2. Establish baseline") {
+		t.Errorf("Establish baseline not renumbered to #2:\n%s", got)
+	}
+	if !strings.Contains(got, "### 3. Second") {
+		t.Errorf("Second not renumbered to #3:\n%s", got)
+	}
+	for _, must := range []string{"## Three-Gap Contract Proof Surface", "AOP-CLAIM-KEEP", "Preserved doctrine section."} {
+		if !strings.Contains(got, must) {
+			t.Errorf("non-directive content dropped (soc-5335b): %q missing:\n%s", must, got)
+		}
+	}
+}
+
 func TestRunValidate_ValidFile(t *testing.T) {
 	tmp := t.TempDir()
 	t.Chdir(tmp)
