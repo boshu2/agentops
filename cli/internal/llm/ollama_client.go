@@ -227,7 +227,7 @@ func (c *OllamaClient) fetchTags() (*tagsResponse, error) {
 		return nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("status %d", resp.StatusCode)
 	}
 	var out tagsResponse
@@ -245,7 +245,7 @@ func (c *OllamaClient) fetchContextBudget() (int, bool) {
 		return 0, false
 	}
 	resp, err := c.httpClient.Post(c.endpoint+"/api/show", "application/json", bytes.NewReader(body))
-	if err != nil || resp.StatusCode != 200 {
+	if err != nil || resp.StatusCode != http.StatusOK {
 		if resp != nil {
 			_ = resp.Body.Close()
 		}

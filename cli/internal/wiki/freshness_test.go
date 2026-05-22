@@ -245,7 +245,7 @@ func TestFreshnessState_Valid(t *testing.T) {
 		}
 	}
 	for _, s := range []FreshnessState{"", "expired", "unknown", "FRESH"} {
-		if FreshnessState(s).Valid() {
+		if s.Valid() {
 			t.Errorf("FreshnessState %q should be invalid", s)
 		}
 	}

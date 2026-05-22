@@ -64,7 +64,7 @@ func TestRecurrence_BackpressureDecision_PureFunction(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
 			fire, reason := shouldFire(tc.template, tc.queueDepth, tc.hasInFlight)
 			if fire != tc.wantFire {

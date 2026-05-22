@@ -164,7 +164,7 @@ func TestParseFrontmatter(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
 			fm, err := parseFrontmatter([]byte(tc.input))
 			if tc.wantErr {
@@ -214,7 +214,7 @@ func TestComputeMarkerSHA(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
 			got := ComputeMarkerSHA(tc.in)
 			if got != tc.want {

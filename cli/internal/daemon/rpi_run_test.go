@@ -313,7 +313,7 @@ func TestRPIRunEmitsAgentUpdates(t *testing.T) {
 			// Verify boilerplate (JobID, Actor, RequestID) and payload (run_id, phase_name)
 			// on the phase_start event so we know the wrapper carries claim metadata.
 			start := events[0]
-			if start.JobID != "job-emit" || string(start.RequestID) != "req-emit" || start.Actor != "test-actor" {
+			if start.JobID != "job-emit" || start.RequestID != "req-emit" || start.Actor != "test-actor" {
 				t.Errorf("phase_start boilerplate = %+v", start)
 			}
 			if start.Payload["run_id"] != "run-emit" || start.Payload["phase_name"] != "rpi.run" {

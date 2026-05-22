@@ -12,7 +12,7 @@
 //   - ports.FrontmatterCodecPort   adapter: wiki.PortCodec
 //   - ports.WikiIndexPort          adapter: wiki.WikiIndex
 //   - ports.FreshnessPolicyPort    adapter: freshnessPortAdapter (test-local;
-//                                  see its doc comment)
+//     see its doc comment)
 //
 // Each port has exactly one production adapter today, so each conformance
 // table currently has one row. The contract functions (conformFrontmatterCodec,
@@ -110,7 +110,7 @@ var frontmatterCodecContract = []frontmatterCodecCase{
 func conformFrontmatterCodec(t *testing.T, adapter ports.FrontmatterCodecPort) {
 	t.Helper()
 	for _, tc := range frontmatterCodecContract {
-		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
 			// Contract: Decode returns a non-nil Fields map on every input.
 			doc := adapter.Decode(tc.text)
@@ -464,7 +464,7 @@ var freshnessPolicyContract = []freshnessCase{
 func conformFreshnessPolicy(t *testing.T, adapter ports.FreshnessPolicyPort) {
 	t.Helper()
 	for _, tc := range freshnessPolicyContract {
-		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
 			verdict := adapter.Evaluate(tc.volatility, tc.authority, tc.signal, tc.verifiedAt)
 
@@ -520,7 +520,7 @@ func TestConformance(t *testing.T) {
 			{name: "wiki.PortCodec", adapter: NewPortCodec()},
 		}
 		for _, a := range adapters {
-			a := a
+
 			t.Run(a.name, func(t *testing.T) {
 				conformFrontmatterCodec(t, a.adapter)
 			})
@@ -535,7 +535,7 @@ func TestConformance(t *testing.T) {
 			{name: "wiki.WikiIndex", make: newWikiIndexUnderTest},
 		}
 		for _, a := range adapters {
-			a := a
+
 			t.Run(a.name, func(t *testing.T) {
 				adapter, makeFile, touchFile := a.make(t)
 				conformWikiIndex(t, adapter, makeFile, touchFile)
@@ -551,7 +551,7 @@ func TestConformance(t *testing.T) {
 			{name: "wiki.freshnessPortAdapter", make: newFreshnessPortAdapter},
 		}
 		for _, a := range adapters {
-			a := a
+
 			t.Run(a.name, func(t *testing.T) {
 				conformFreshnessPolicy(t, a.make())
 			})

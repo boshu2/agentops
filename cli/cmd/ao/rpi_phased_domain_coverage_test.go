@@ -37,7 +37,7 @@ func TestNormalizeAuditPath(t *testing.T) {
 		{"whitespace + dot-slash", "  ./cli/x.go  ", "cli/x.go"},
 	}
 	for _, tc := range cases {
-		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			got := normalizeAuditPath(tc.in)
@@ -250,7 +250,7 @@ func TestDomainManifestPath(t *testing.T) {
 		{"a", filepath.Join("docs", "domains", "a", "manifest.yaml")},
 	}
 	for _, tc := range cases {
-		tc := tc
+
 		t.Run(tc.domain, func(t *testing.T) {
 			t.Parallel()
 			got := domainManifestPath(tc.domain)

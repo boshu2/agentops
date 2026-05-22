@@ -3,11 +3,19 @@ version: "2"
 linters:
   default: none
   enable:
+    - copyloopvar
     - errcheck
     - gocyclo
     - govet
     - misspell
     - staticcheck
+    - usestdlibvars
+    # Deferred to their fix beads (enabling whole-tree today surfaces a backlog
+    # and/or findings in deprecated files we don't touch):
+    #   - errorlint  -> agentops-bs8 (after %w/errors.Is backlog cleared)
+    #   - unconvert  -> agentops-0l9 (rpi_c2_events.go is deprecated; needs path exclusion)
+    #   - unused     -> agentops-0l9 (~37 backlog; risky auto-removal)
+    # errcheck already covers json.Marshal/Unmarshal (not excluded) -> satisfies agentops-tqc.3.
   settings:
     gocyclo:
       min-complexity: 25

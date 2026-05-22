@@ -304,7 +304,7 @@ func TestParse_BadDirectiveIDPattern(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			y := strings.ReplaceAll(validManifestYAML(), "d-myapp-core", tc.id)
@@ -432,7 +432,7 @@ func TestParse_ValidDirectiveIDs(t *testing.T) {
 		"d-abc123",
 	}
 	for _, id := range cases {
-		id := id
+
 		t.Run(id, func(t *testing.T) {
 			t.Parallel()
 			y := strings.ReplaceAll(validManifestYAML(), "d-myapp-core", id)

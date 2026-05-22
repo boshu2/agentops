@@ -64,7 +64,7 @@ func runEvolveWriteStopMarker(cmd *cobra.Command, _ []string) error {
 	if mode == evolveModeLoop {
 		// Stderr surface is load-bearing: tests and operators key off this
 		// string to confirm the loop contract is in force.
-		return fmt.Errorf("STOP markers refused under --mode=loop. Use 'ao evolve operator-stop' for explicit operator intent.")
+		return fmt.Errorf("STOP markers refused under --mode=loop. Use 'ao evolve operator-stop' for explicit operator intent")
 	}
 
 	marker, err := normalizeStopMarkerName(evolveWriteStopMarkerName)

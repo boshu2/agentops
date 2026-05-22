@@ -184,7 +184,7 @@ func TestSetCORSHeaders(t *testing.T) {
 
 	// With localhost origin, echoes it back
 	rr = httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Origin", "http://localhost:3000")
 	setCORSHeaders(rr, req)
 	if v := rr.Header().Get("Access-Control-Allow-Origin"); v != "http://localhost:3000" {
@@ -193,7 +193,7 @@ func TestSetCORSHeaders(t *testing.T) {
 
 	// With non-localhost origin, does not set origin header
 	rr = httptest.NewRecorder()
-	req = httptest.NewRequest("GET", "/", nil)
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Origin", "http://evil.example.com")
 	setCORSHeaders(rr, req)
 	if v := rr.Header().Get("Access-Control-Allow-Origin"); v != "" {

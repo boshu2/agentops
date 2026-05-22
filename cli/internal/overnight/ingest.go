@@ -496,7 +496,7 @@ func (r *ingestRunner) runFindingGenerators() error {
 	}
 	results := make(chan findingGeneratorRunResult, len(generators))
 	for _, generator := range generators {
-		generator := generator
+
 		go func() {
 			results <- runFindingGenerator(r.ctx, r.opts, generator)
 		}()

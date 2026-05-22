@@ -207,7 +207,7 @@ func TestOllamaClient_Generate_RetriesOn5xx(t *testing.T) {
 		"/api/generate": func(w http.ResponseWriter, r *http.Request) {
 			calls++
 			if calls < 2 {
-				w.WriteHeader(503)
+				w.WriteHeader(http.StatusServiceUnavailable)
 				return
 			}
 			_, _ = io.WriteString(w, `{"response":"ok"}`)

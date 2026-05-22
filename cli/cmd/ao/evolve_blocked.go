@@ -293,12 +293,12 @@ func rewriteBlockedEvents(path string, events []BlockedEvent) error {
 		data, err := json.Marshal(ev)
 		if err != nil {
 			f.Close()
-			os.Remove(tmp)
+			_ = os.Remove(tmp)
 			return fmt.Errorf("marshal blocked event: %w", err)
 		}
 		if _, err := f.Write(append(data, '\n')); err != nil {
 			f.Close()
-			os.Remove(tmp)
+			_ = os.Remove(tmp)
 			return fmt.Errorf("write tmp: %w", err)
 		}
 	}
