@@ -126,6 +126,14 @@ The `ao` CLI's primary user is an AI agent: the first command an agent guesses m
 
 **Steer:** increase (read-side `ao` commands honoring `--json` + error-teaches)
 
+### 14. Every behavior has a consequence (reinforcement contract)
+
+Behavior shaping needs a consequence system, not just intent shape (that is directive #12). Reinforce the behaviors you and the agent agree on — gates (`/vibe`, validation, CI green) are the reward; the [ratchet](docs/architecture/operating-loop.md#the-promotion-ratchet) locks a reinforced behavior permanently. Extinguish unwanted behaviors by removing their cue and reward (delete the scenario or gate), not by prose prohibitions. A behavior with no gate is unreinforced and drifts. Promotion to canonical/merged is a reinforcer the operator applies, not one the agent self-administers.
+
+This is the consequence half of [Behavior-Shaping Environment](docs/architecture/behavior-shaping-environment.md) (directive #12 is the intent-shape half); vocabulary at [`skills/domain/references/behavior-shaping.md`](skills/domain/references/behavior-shaping.md). Posture: **warn-only doctrine** — the measurable signal is that shipped behaviors carry a gate, reusing directive #12's scenario + loop-shape signals rather than adding a new gate. The anti-pattern is gateless prose-spec work.
+
+**Steer:** increase (behaviors that ship with a reinforcing gate, not prose prohibitions)
+
 ## Three-Gap Contract Proof Surface
 
 AgentOps defines a three-gap contract ([context lifecycle](docs/context-lifecycle.md)) covering the failure modes that persist after prompt construction and agent routing. Honesty rule: gates only appear in the **Currently enforcing** column when they (a) run in CI/pre-push/release automation AND (b) reliably go green in single-session work. Gates that are declared but not yet enforced — usually because they measure cross-session or corpus-level state — sit in the **Roadmap** column.
