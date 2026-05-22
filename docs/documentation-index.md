@@ -57,6 +57,8 @@ Bridge / framing docs:
 - [ADR-0004: Domain-Slice Manifest Contract](adr/ADR-0004-domain-slice-manifest-contract.md) — Schema and resolution rules for `docs/domains/<name>/manifest.yaml`, the domain-scoped boundary contract consumed by `ao rpi phased --domain`
 - [ADR-0005: Trace-Link Convention](adr/ADR-0005-trace-link-convention.md) — The directive→scenario→bead→verdict→learning link grammar that `ao goals trace` renders and audits, including warning/error defect classes and `--strict` escalation
 - [ADR-0006: Re-Steer Policy and Mutation Safety](adr/ADR-0006-re-steer-policy-and-mutation-safety.md) — The `docs/re-steer-policy.json` engine, human-gate, and non-lossy GOALS.md patcher that govern `ao goals steer recommend`/`apply`
+- [ADR-0007: Deterministic /evolve Loop — Only the Operator Stops It](adr/ADR-0007-deterministic-loop-only-operator-stops.md) — Mechanical pre-cycle gate (`scripts/evolve/halt-check.sh`): operator-only markers, goal-regression halt, revert-on-red; ported from the mt-olympus unbounded-evolve substrate
+- [ADR-0008: /evolve Operating Model — Intelligent-Agile, Not Waterfall](adr/ADR-0008-evolve-intelligent-agile-operating-model.md) — Three-layer loop contract (intent re-read each cycle / locked architecture / bounded shaping authority) + the scope-precondition audit that prevents building-the-wrong-thing drift
 - [PDC Framework](architecture/pdc-framework.md) — Prevent, Detect, Correct quality control approach
 - [FAAFO Alignment](architecture/faafo-alignment.md) — FAAFO promise framework for vibe coding value
 - [Failure Patterns](architecture/failure-patterns.md) — The 12 failure patterns reference guide
