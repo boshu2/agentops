@@ -30,6 +30,12 @@ Before implementing a candidate, apply the Primitive Test: does the bead name fi
 - "Looks done" (green per-unit gates) is not "is done" — the consumer-calls-the-primitive L2 test is the close-gate, not unit-green alone.
 - Decisions made mid-execution are captured as ADRs here, so the doctrine compounds.
 
+## Drive to completion (orchestrator-merge)
+
+The loop is the orchestrator: it drives every PR it opens to *merged*, not to "PR opened." A productive cycle ships its bead as a PR (worktree-per-bead, bead trailers), waits for CI, and **squash-merges to main once CI is green** (`gh pr merge --squash --admin`), then closes the bead and cleans the worktree. **Green CI is the only merge gate** — never merge on a quality/test red (fix-and-repush or revert). The loop may dispatch sub-agents to implement and drives their PRs to merge as well.
+
+This **supersedes** the earlier "operator is the merge gate / 0 humans + required claude-code-review" framing **for the autonomous loop**: the operator stays *on* the loop (intent edits + a STOP marker), not *in* it (per-PR merge approval). The "PR opened, await human merge" bottleneck defeats unattended evolution; the loop only compounds if it closes the full Research → Plan → Implement → **merge** arc itself. Guardrails that remain: the halt-check pre-cycle gate ([ADR-0007](ADR-0007-deterministic-loop-only-operator-stops.md)), the scope-precondition audit above, the idempotency lock (no overlapping cycles), and green-only merge. (soc-2drk; operator directive 2026-05-22.)
+
 ## Evidence
 
 mt-olympus's loop sustained a 10-cycle marathon (cycles 123–129) shipping 6 critical-path hops + 14 filed sub-beads with the operator confirming intent once — because this model let it shape within a locked contract while re-reading intent each cycle. agentops lacked the model on 2026-05-21 and drifted. See `.agents/research/2026-05-21-mt-olympus-evolve-loop.md`.
