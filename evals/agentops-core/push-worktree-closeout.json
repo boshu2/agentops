@@ -108,13 +108,13 @@
       "kind": "artifact_check",
       "objective": "Keep AGENTS closeout policy explicit that a session is not complete until changes are committed, pushed, remotely confirmed, and foreign worktrees have a recorded disposition.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "## Landing the Plane (Session Completion)"},
-        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "Work is NOT complete until `git push` succeeds."},
-        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "git status  # MUST show \"up to date with origin\""},
-        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "NEVER stop before pushing - that leaves work stranded locally"},
-        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "NEVER leave a foreign branch-attached worktree without a recorded disposition"},
-        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "Keep the canonical root clean and attached to `main`."},
-        {"type": "artifact_contains", "target": "../../AGENTS.md", "value": "Run `bash scripts/check-worktree-disposition.sh` before push and session close."}
+        {"type": "artifact_contains", "target": "../../AGENTS-WORKFLOW.md", "value": "## Landing the Plane (Session Completion)"},
+        {"type": "artifact_contains", "target": "../../AGENTS-WORKFLOW.md", "value": "Work is NOT complete until `git push` succeeds."},
+        {"type": "artifact_contains", "target": "../../AGENTS-WORKFLOW.md", "value": "git status  # MUST show \"up to date with origin\""},
+        {"type": "artifact_contains", "target": "../../AGENTS-WORKFLOW.md", "value": "NEVER stop before pushing - that leaves work stranded locally"},
+        {"type": "artifact_contains", "target": "../../AGENTS-WORKFLOW.md", "value": "NEVER leave a foreign branch-attached worktree without a recorded disposition"},
+        {"type": "artifact_contains", "target": "../../AGENTS-WORKFLOW.md", "value": "Keep the canonical root clean and attached to `main`."},
+        {"type": "artifact_contains", "target": "../../AGENTS-WORKFLOW.md", "value": "Run `bash scripts/check-worktree-disposition.sh` before push and session close."}
       ],
       "dimensions": ["process_adherence", "artifact_quality", "safety"],
       "critical": true

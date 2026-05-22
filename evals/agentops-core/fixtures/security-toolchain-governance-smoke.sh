@@ -275,7 +275,6 @@ job_start = workflow.index("  security-toolchain-gate:")
 job_end = workflow.index("\n  skill-integrity:", job_start)
 job = workflow[job_start:job_end]
 required_job_bits = [
-    "continue-on-error: true",
     "./scripts/security-gate.sh --mode quick",
     "uses: actions/upload-artifact@",
     "if: always()",

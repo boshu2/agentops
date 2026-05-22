@@ -164,6 +164,8 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 - NEVER leave a foreign branch-attached worktree without a recorded disposition
+- Keep the canonical root clean and attached to `main`.
+- Run `bash scripts/check-worktree-disposition.sh` before push and session close.
 - If `bd dolt push` says no remote is configured, do not treat that as a
   session failure. Record it as unavailable, then continue with the mandatory
   Git push. See [bd server-mode tracker closeout](docs/runbooks/bd-server-mode-closeout.md).
