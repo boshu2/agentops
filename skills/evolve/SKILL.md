@@ -226,9 +226,9 @@ fi
 
 ### Step 1.5: Healing-first classifier
 
-Before fitness or work selection, classify the cycle: `ao ci recent --limit 1 2>/dev/null | jq -r '.Conclusion // empty'`. The command routes through the typed BC2 `CIStatusPort` (`cli/cmd/ao/ci_status_adapter.go`, cycle 117 productionCIStatus) — no inline `gh` shell-outs in the evolve hot path (soc-y5vh.2). If the last push CI was `failure`, this cycle is **restorative-only** — Step 3 selection MUST take only work that reduces CI red (bug-type harvested items, gate-failure-fix beads, or generator output typed bug). No PG4 promotions, feature additions, or new shape work allowed until CI is green. The cycle-history.jsonl `gate` field of any FAIL cycle automatically triggers this mode for cycle N+1. See `references/convergence-mechanics.md`.
+Before fitness or work selection, classify the cycle: `ao ci recent --limit 1 2>/dev/null | jq -r '.Conclusion // empty'` (typed BC2 `CIStatusPort`, soc-y5vh.2). If the last push CI was `failure`, this cycle is **restorative-only** — Step 3 takes only CI-red-reducing work (bug-type harvested items, gate-failure-fix beads, generator bug output); no promotions, features, or new-shape work until green. A `gate=FAIL` in cycle-history.jsonl auto-triggers this for cycle N+1 (and `halt-check.sh` surfaces it as `prior_cycle_fail`). See `references/convergence-mechanics.md`.
 
-**Convergence check:** evaluate the STOP predicate through the typed BC3 `ConvergenceCheckPort` — `ao loop converged --green-streak <n> --unconsumed-high-medium <n> [--fitness-baseline]` (soc-y5vh.8). It emits `{converged, ci_green_streak, unconsumed_high_medium, fitness_baseline_captured, reasons}`; branch on `.converged` instead of hand-parsing `.agents/evolve/session-convergence.json`. If `converged` is true (default criteria: CI green streak ≥ 3, outstanding HIGH+MEDIUM next-work ≤ 1, fitness baseline captured), emit teardown and DO NOT re-arm wakeup.
+**Convergence check:** evaluate the STOP predicate via the typed BC3 `ConvergenceCheckPort` — `ao loop converged --green-streak <n> --unconsumed-high-medium <n> [--fitness-baseline]` (soc-y5vh.8). Branch on `.converged` (default: CI green streak ≥ 3, HIGH+MEDIUM next-work ≤ 1, fitness baseline captured); if true, emit teardown and do NOT re-arm wakeup.
 
 ### Step 2: Measure Fitness
 
@@ -237,6 +237,12 @@ Skip if `--beads-only`. Run `scripts/evolve-measure-fitness.sh` to produce a rol
 ### Step 3: Select Work
 
 Selection is a ladder, not a one-shot check. After every productive cycle, return to the TOP of this step and re-read the queue before considering dormancy.
+
+**Programmatic recommendation (soc-g2qd wire):** when present, consult the ladder primitive first and prefer its `.recommended_bead`; the rungs below are the cross-check + fallback.
+
+```bash
+ao evolve next-work --help >/dev/null 2>&1 && RECO_BEAD=$(ao evolve next-work --json 2>/dev/null | jq -r '.recommended_bead // empty')
+```
 
 When a repo-local program contract exists, apply a scope filter before Step 4:
 - candidate work that clearly requires immutable-scope edits is not eligible for direct execution
@@ -253,7 +259,7 @@ Before claiming a candidate, gate scope vs session budget. If the work touches >
 
 Scout NEVER returns "no work done." If `bd ready` ≥1, the loop MUST claim one this cycle. See `references/scout-mode.md` and `references/mechanical-batches.md`.
 
-**Metronome gate:** read `mode_repeat_streak` from `session-state.json` (kept current by `scripts/evolve-update-session-state.sh`). If `mode_repeat_streak >= 3` AND the candidate work would produce the same `mode` value as the trailing run, BLOCK selection at this rung and force a jump to the NEXT rung in the ladder. If `mode_repeat_streak >= 5`, file a `bd remember "metronome-N: <mode>"` and require operator override before continuing on that rung. See `references/metronome-gate.md` for the detection rule and the cycles 144-154 retrospective.
+**Metronome gate:** read `mode_repeat_streak` from `session-state.json`. If `>= 3` AND the candidate would repeat the trailing run's `mode`, BLOCK this rung and jump to the next. If `>= 5`, `bd remember "metronome-N: <mode>"` and require operator override. See `references/metronome-gate.md`.
 
 **Step 3.1: Harvested work first**
 
@@ -387,7 +393,14 @@ if [ "$READY_BEADS" -gt 0 ] || [ "$HARVESTED" -gt 0 ] || [ "$FAILING_GOALS" -gt 
   continue  # work exists — loop back to Step 3 (agile invariant)
 fi
 if [ "${GENERATOR_EMPTY_STREAK:-0}" -ge 2 ] && [ "${IDLE_STREAK:-0}" -ge 2 ]; then
-  printf '%s\n%s\n%s\n' "cycle $CYCLE" "$(date -u +%FT%TZ)" "stagnation: all sources empty x3" > .agents/evolve/DORMANT
+  REASON="stagnation: all sources empty x3"
+  # soc-g2qd wire: under loop, write-stop-marker refuses → log blocked + operator-wait, never self-halt (ADR-0007).
+  if ao evolve write-stop-marker --help >/dev/null 2>&1; then
+    ao evolve write-stop-marker --marker dormant --reason "$REASON" --mode loop 2>/dev/null \
+      || ao evolve blocked --reason "$REASON" --needed-context "queue empty; operator adds work or marker" 2>/dev/null || true
+  else
+    printf '%s\n%s\n%s\n' "cycle $CYCLE" "$(date -u +%FT%TZ)" "$REASON" > .agents/evolve/DORMANT  # fallback
+  fi
 fi
 ```
 
