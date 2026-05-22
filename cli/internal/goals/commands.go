@@ -769,7 +769,18 @@ func RunSteerRemove(opts SteerRemoveOptions) error {
 		fmt.Fprintf(opts.Stdout, "Would remove directive #%d and renumber %d remaining\n", opts.Number, len(remaining))
 		return nil
 	}
-	if err := WriteMDGoals(gf, resolvedPath); err != nil {
+	// Persist via GoalsPatcher, not WriteMDGoals: the latter re-renders from
+	// the model and drops non-directive sections (Three-Gap, Gates, claim
+	// comments). The patcher deletes the block + renumbers, preserving every
+	// other byte (soc-5335b).
+	p, _, err := LoadGoalsPatcher(opts.GoalsFile)
+	if err != nil {
+		return err
+	}
+	if err := p.RemoveDirective(opts.Number); err != nil {
+		return err
+	}
+	if err := p.WriteFile(resolvedPath); err != nil {
 		return err
 	}
 	fmt.Fprintf(opts.Stdout, "Removed directive #%d, renumbered %d remaining\n", opts.Number, len(remaining))
@@ -840,7 +851,16 @@ func RunSteerPrioritize(opts SteerPrioritizeOptions) error {
 		fmt.Fprintf(opts.Stdout, "Would move directive %q to position %d\n", moving.Title, opts.NewPosition)
 		return nil
 	}
-	if err := WriteMDGoals(gf, resolvedPath); err != nil {
+	// Persist via GoalsPatcher, not WriteMDGoals: preserves non-directive
+	// sections while reordering + renumbering the directive blocks (soc-5335b).
+	p, _, err := LoadGoalsPatcher(opts.GoalsFile)
+	if err != nil {
+		return err
+	}
+	if err := p.MoveDirective(opts.Number, opts.NewPosition); err != nil {
+		return err
+	}
+	if err := p.WriteFile(resolvedPath); err != nil {
 		return err
 	}
 	fmt.Fprintf(opts.Stdout, "Moved directive %q to position %d\n", moving.Title, opts.NewPosition)

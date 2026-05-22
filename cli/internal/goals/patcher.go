@@ -346,6 +346,104 @@ func (p *GoalsPatcher) AppendDirective(title, description, steer string) (int, e
 	return num, nil
 }
 
+// splitDirectiveBlocks decomposes the buffer into the lines before the first
+// directive (prefix), one line slice per directive block in source order, and
+// the lines after the last directive block (suffix). prefix+blocks+suffix
+// reconstructs the file, so the suffix — which holds non-directive sections
+// like "## Three-Gap Contract Proof Surface" and the Gates table — is carried
+// byte-for-byte across remove/reorder. ok is false when there are no directives.
+func (p *GoalsPatcher) splitDirectiveBlocks() (prefix []string, blocks [][]string, suffix []string, ok bool) {
+	dirs := p.Directives()
+	if len(dirs) == 0 {
+		return nil, nil, nil, false
+	}
+	prefix = p.lines[:dirs[0].headingIdx]
+	suffix = p.lines[dirs[len(dirs)-1].endIdx:]
+	for _, d := range dirs {
+		blocks = append(blocks, p.lines[d.headingIdx:d.endIdx])
+	}
+	return prefix, blocks, suffix, true
+}
+
+// assembleDirectives reassembles the buffer from prefix + directive blocks +
+// suffix, renumbering each block's "### N. Title" heading to its 1-based
+// position. Block bodies, attributes, and blank lines are copied verbatim;
+// only the heading number changes.
+func assembleDirectives(prefix []string, blocks [][]string, suffix []string) []string {
+	out := make([]string, 0, len(prefix)+len(suffix)+len(blocks)*8)
+	out = append(out, prefix...)
+	for i, b := range blocks {
+		nb := make([]string, len(b))
+		copy(nb, b)
+		if len(nb) > 0 {
+			if m := directiveHeadingRe.FindStringSubmatch(strings.TrimSpace(nb[0])); m != nil {
+				nb[0] = fmt.Sprintf("### %d. %s", i+1, m[2])
+			}
+		}
+		out = append(out, nb...)
+	}
+	return append(out, suffix...)
+}
+
+// directiveIndexByNumber returns the source-order index of the directive with
+// the given display number, or -1.
+func directiveIndexByNumber(dirs []ParsedDirective, number int) int {
+	for i, d := range dirs {
+		if d.Number == number {
+			return i
+		}
+	}
+	return -1
+}
+
+// RemoveDirective deletes the directive with the given display number and
+// renumbers the remaining directives sequentially, preserving every
+// non-directive byte of the file (soc-5335b). Replaces the lossy
+// LoadMDGoals→WriteMDGoals round-trip.
+func (p *GoalsPatcher) RemoveDirective(number int) error {
+	prefix, blocks, suffix, ok := p.splitDirectiveBlocks()
+	if !ok {
+		return fmt.Errorf("no directives to remove")
+	}
+	idx := directiveIndexByNumber(p.Directives(), number)
+	if idx < 0 {
+		return fmt.Errorf("directive #%d not found", number)
+	}
+	kept := make([][]string, 0, len(blocks)-1)
+	kept = append(kept, blocks[:idx]...)
+	kept = append(kept, blocks[idx+1:]...)
+	p.lines = assembleDirectives(prefix, kept, suffix)
+	return nil
+}
+
+// MoveDirective moves the directive with the given display number to newPos
+// (1-based) and renumbers all directives sequentially, preserving every
+// non-directive byte of the file (soc-5335b).
+func (p *GoalsPatcher) MoveDirective(number, newPos int) error {
+	prefix, blocks, suffix, ok := p.splitDirectiveBlocks()
+	if !ok {
+		return fmt.Errorf("no directives to prioritize")
+	}
+	if newPos < 1 || newPos > len(blocks) {
+		return fmt.Errorf("new position must be between 1 and %d", len(blocks))
+	}
+	idx := directiveIndexByNumber(p.Directives(), number)
+	if idx < 0 {
+		return fmt.Errorf("directive #%d not found", number)
+	}
+	moving := blocks[idx]
+	rest := make([][]string, 0, len(blocks)-1)
+	rest = append(rest, blocks[:idx]...)
+	rest = append(rest, blocks[idx+1:]...)
+	insertIdx := newPos - 1
+	reordered := make([][]string, 0, len(blocks))
+	reordered = append(reordered, rest[:insertIdx]...)
+	reordered = append(reordered, moving)
+	reordered = append(reordered, rest[insertIdx:]...)
+	p.lines = assembleDirectives(prefix, reordered, suffix)
+	return nil
+}
+
 // attrRank returns the canonical sort rank for an attribute key.
 func attrRank(key string) int {
 	if r, ok := attrOrder[key]; ok {
