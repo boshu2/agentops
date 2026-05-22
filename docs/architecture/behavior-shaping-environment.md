@@ -1,6 +1,6 @@
 # Behavior-Shaping Environment
 
-> The *why* beneath the loop. AgentOps is an environment that arranges antecedents and reinforcement so AI agents reliably perform the behaviors the operator and agent agree upon. Companion to [Operating Loop](operating-loop.md) (the moves), [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) (the ports), and [Ports and Adapters](ports-and-adapters.md) (the seams). Doctrine source: operator framing 2026-05-22 ("working with agents is like shaping a dog's behavior — arrange the environment, then reward/stop"); promote changes to that framing first.
+> A behavioral lens on the loop — **not** the product's spine. The spine is the [Operating Loop](operating-loop.md) inside the SDLC control plane; this is a complementary frame: many AgentOps mechanisms can be read as operant conditioning — arranging antecedents and reinforcement so agents reliably perform the behaviors the operator and agent agree upon. Companion to [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) (the ports) and [Ports and Adapters](ports-and-adapters.md) (the seams). Doctrine source: operator framing 2026-05-22 ("working with agents is like shaping a dog's behavior — arrange the environment, then reward/stop"); promote changes to that framing first.
 
 You cannot compile a behavior into a non-deterministic model the way you specify a deterministic system. A prose spec assumes you can *dictate* behavior. You can't — a stochastic learner only acquires behavior through **observable examples and reinforcement**. So AgentOps does not try to specify what an agent will do; it **shapes** what an agent does, using the mechanics of operant conditioning. This is why behavior-driven development works so well here: a `.feature` scenario is not a description, it is a behavior added to a repertoire and reinforced until it is reliably exhibited.
 
@@ -16,7 +16,7 @@ Operant conditioning runs on three terms — **Antecedent → Behavior → Conse
 | **Consequence: reinforcement** (reward) | what makes the behavior more likely next time | passing gates (`/vibe`, `validation`, CI green), merge to main, citation/confidence feedback; the **ratchet** locks a reinforced behavior permanently (`can't un-ratchet` = a fixed habit) |
 | **Consequence: stop / extinction** (punishment / non-reward) | what makes a behavior less likely or removes it | PreToolUse hook denials, halt-check STOP/kill markers, holdout-isolation gates, reverts (behavior not reinforced → not merged); **extinction** = deleting a scenario or gate so the behavior is no longer cued or rewarded |
 
-## Why this is the spine, not a metaphor
+## Why the lens is useful, not just a metaphor
 
 - **Behavior is the unit of work** ([Operating Loop](operating-loop.md) principle 2) because behavior is the unit of *learning*. A vertical slice demonstrates one behavior; a layer demonstrates nothing an agent can be reinforced on.
 - **The first failing test is the slice's contract** because red→green *is* shaping: the failing scenario is the target behavior, and the agent reinforces toward it through successive approximations until it is exhibited (green).
