@@ -226,7 +226,7 @@ func appendCronHistoryRow(path string, row cronSelfAdjustHistoryRow) error {
 	if err != nil {
 		return fmt.Errorf("open history %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	data, err := json.Marshal(row)
 	if err != nil {
 		return fmt.Errorf("marshal history row: %w", err)
@@ -257,7 +257,7 @@ func cronHistoryReadRows(path string) ([]cronSelfAdjustHistoryRow, error) {
 		}
 		return nil, fmt.Errorf("open %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	var rows []cronSelfAdjustHistoryRow

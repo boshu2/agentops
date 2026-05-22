@@ -1333,7 +1333,7 @@ func TestMarkItemClaimedConcurrentSingleWinner(t *testing.T) {
 	errs := make(chan error, len(claimers))
 
 	for _, claimer := range claimers {
-		claimer := claimer
+
 		go func() {
 			<-start
 			errs <- markItemClaimed(path, 0, 0, claimer)

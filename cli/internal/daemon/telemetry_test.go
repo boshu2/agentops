@@ -26,7 +26,7 @@ func TestPhaseLatencyHistogram(t *testing.T) {
 		t.Fatalf("discovery histogram = %#v, want count=2 p50=10s p99=21s", discovery)
 	}
 	implementation := histograms["implementation"]
-	if implementation.Count != 1 || implementation.P50Millis != int64((3*time.Second).Milliseconds()) || implementation.P99Millis != int64((3*time.Second).Milliseconds()) {
+	if implementation.Count != 1 || implementation.P50Millis != (3*time.Second).Milliseconds() || implementation.P99Millis != (3*time.Second).Milliseconds() {
 		t.Fatalf("implementation histogram = %#v, want count=1 p50/p99=3s", implementation)
 	}
 }

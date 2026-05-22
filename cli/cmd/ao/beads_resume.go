@@ -118,7 +118,7 @@ var beadsResumeAppendLedger = func(ledgerPath string, event any) error {
 	if err != nil {
 		return fmt.Errorf("open ledger: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	enc := json.NewEncoder(f)
 	if err := enc.Encode(event); err != nil {
 		return fmt.Errorf("encode event: %w", err)

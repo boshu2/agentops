@@ -116,7 +116,7 @@ func Run(ctx context.Context, br BeadRunner, gr GrepRunner, cfg Config) (Recomme
 			}
 			return rec, nil
 		}
-		rationale := fmt.Sprintf("shape-compatible ready bead at step 1")
+		rationale := "shape-compatible ready bead at step 1"
 		if len(grepHits) > 0 {
 			rationale += "; sibling refs: " + strings.Join(grepHits, ", ")
 		}

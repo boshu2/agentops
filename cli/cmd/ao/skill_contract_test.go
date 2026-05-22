@@ -58,7 +58,7 @@ func TestCouncilVerdictHeadingContract(t *testing.T) {
 	const requiredHeading = "## Council Verdict:"
 
 	for _, skill := range wrapperSkills {
-		skill := skill // capture loop variable
+		// capture loop variable
 		t.Run(skill, func(t *testing.T) {
 			// Billboard architecture: a skill's detail may live in references/.
 			// The verdict-heading contract holds if SKILL.md OR any

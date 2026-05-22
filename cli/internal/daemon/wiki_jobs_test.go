@@ -235,8 +235,7 @@ func TestWikiJobs_RejectsTraversalSourcePaths(t *testing.T) {
 	}
 
 	for i, tc := range cases {
-		tc := tc
-		i := i
+
 		t.Run(tc.name, func(t *testing.T) {
 			store := NewStore(root)
 			queue := NewQueue(store, QueueOptions{})

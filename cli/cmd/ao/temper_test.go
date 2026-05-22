@@ -450,7 +450,7 @@ func TestTemperCoverage_ValidateArtifact(t *testing.T) {
 	tmp := t.TempDir()
 
 	for _, tc := range temperValidateArtifactCases() {
-		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
 			tc.run(t, tmp)
 		})

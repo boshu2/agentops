@@ -381,7 +381,7 @@ func TestRotateWhileAppendingDoesNotLoseEvents(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(writers)
 	for w := 0; w < writers; w++ {
-		w := w
+
 		go func() {
 			defer wg.Done()
 			for i := 0; i < perWriter; i++ {

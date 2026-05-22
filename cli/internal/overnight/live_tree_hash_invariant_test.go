@@ -79,7 +79,7 @@ type liveTreeHashInvariantCase struct {
 // regression coverage of the single-case shape.
 func TestRunLoop_LiveTreeHashInvariant_AllStatuses(t *testing.T) {
 	for _, tc := range liveTreeHashInvariantCases() {
-		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
 			runLiveTreeHashInvariantCase(t, tc)
 		})
