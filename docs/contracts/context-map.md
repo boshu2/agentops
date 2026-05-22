@@ -249,6 +249,9 @@ graph LR
 | `push` | produces | git-changes |
 | `quickstart` | consumes | rpi |
 | `quickstart` | produces | stdout |
+| `ratchet` | consumes | post-mortem |
+| `ratchet` | consumes | validation |
+| `ratchet` | consumes | vibe |
 | `ratchet` | produces | .agents/rpi/*.md |
 | `readme` | produces | documentation |
 | `recover` | produces | .agents/rpi/*.md |
