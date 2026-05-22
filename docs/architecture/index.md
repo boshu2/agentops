@@ -45,6 +45,12 @@ The rest are specialized references. Skim titles and jump in when a topic become
 
     Process-level ports and adapters from BDD intent through evidence ratchet.
 
+-   :material-school: **[Behavior-Shaping Environment](behavior-shaping-environment.md)**
+
+    ---
+
+    The *why* beneath the loop: AgentOps as an operant-conditioning system — arrange antecedents, reinforce or stop the agreed behaviors.
+
 -   :material-link-variant: **[Codex Hookless Lifecycle](codex-hookless-lifecycle.md)**
 
     ---
