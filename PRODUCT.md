@@ -6,7 +6,7 @@ last_reviewed: 2026-05-15
 
 ## Mission
 
-**AgentOps is an SDLC control plane for agentic software development.** It automates the discipline of building a wiki for your agents: markdown in `.agents/` next to your code, produced and consumed by the agents that work there. The compounded corpus is the moat. The internal lifecycle is the CDLC: context is developed, tested, delivered, observed, and improved because context is what LLM agents consume.
+**AgentOps is an SDLC control plane for agentic software development.** It works by **behavior shaping**: arranging the environment and reinforcement so agents reliably perform the behaviors you and they agree on — the operant-conditioning model of Antecedent → Behavior → Consequence (see [Behavior-Shaping Environment](docs/architecture/behavior-shaping-environment.md)). Concretely, it automates the discipline of building a wiki for your agents: markdown in `.agents/` next to your code, produced and consumed by the agents that work there — the antecedent the next behavior is shaped against. The compounded corpus is the moat. The internal lifecycle is the CDLC: context is developed, tested, delivered, observed, and improved because context is what LLM agents consume.
 
 ## Product Identity
 

@@ -6,7 +6,7 @@
 
 ### The SDLC control plane for agentic software development.
 
-AgentOps sits on top of the coding harness you already use — Claude Code, Codex, Cursor, OpenCode — and adds the parts an engineering team would notice missing: a record of what was tried, gates between phases, and a corpus of learnings that survives the next session. State lives in `.agents/` next to your code, and you can mix Claude, Codex, or any model per phase.
+AgentOps shapes how coding agents behave: it arranges the environment they work in — context, standards, goals, a corpus of past decisions — so the behavior you and the agent agree on is the likely one, then reinforces it with gates between phases. That's behavior shaping, the operant-conditioning way you'd build any capable agent ([the full frame](docs/architecture/behavior-shaping-environment.md)). It sits on top of the coding harness you already use — Claude Code, Codex, Cursor, OpenCode — adds the parts an engineering team would notice missing (a record of what was tried, gates between phases, a corpus of learnings that survives the next session), keeps state in `.agents/` next to your code, and lets you mix Claude, Codex, or any model per phase.
 
 *This repo was built with AgentOps. As of 2026-05-04 its `.agents/` held ~1,842 learnings, ~186 patterns, ~80 planning rules, and ~3,867 cited decisions captured during development. Re-run anytime: `bash scripts/corpus-stats.sh`.*
 
