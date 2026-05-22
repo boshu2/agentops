@@ -119,6 +119,7 @@ graph LR
   crank -- "shared-kernel" --> standards
   design -- "shared-kernel" --> standards
   discovery -- "shared-kernel" --> standards
+  evolve -- "customer-of" --> rpi
   flywheel -- "shared-kernel" --> standards
   forge -- "shared-kernel" --> standards
   goals -- "shared-kernel" --> standards
@@ -203,6 +204,12 @@ graph LR
 | `doc` | produces | documentation |
 | `domain` | produces | stdout |
 | `dream` | produces | .agents/research/*.md |
+| `evolve` | consumes | compile |
+| `evolve` | consumes | goals |
+| `evolve` | consumes | post-mortem |
+| `evolve` | consumes | rpi |
+| `evolve` | produces | git-changes |
+| `evolve` | produces | goals-fitness-delta |
 | `flywheel` | produces | .agents/learnings/*.md |
 | `forge` | produces | .agents/research/*.md |
 | `goals` | produces | result.json |
