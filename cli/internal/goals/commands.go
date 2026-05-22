@@ -679,6 +679,8 @@ func RunSteerAdd(opts SteerAddOptions) error {
 		return fmt.Errorf("invalid steer value %q (valid: increase, decrease, hold, explore)", opts.Steer)
 	}
 
+	// LoadMDGoals enforces the GOALS.md-format guard (YAML is rejected) and
+	// gives the current directive numbering.
 	gf, resolvedPath, err := LoadMDGoals(opts.GoalsFile)
 	if err != nil {
 		return err
@@ -690,23 +692,35 @@ func RunSteerAdd(opts SteerAddOptions) error {
 			maxNum = d.Number
 		}
 	}
-
-	newDirective := Directive{Number: maxNum + 1, Title: opts.Title, Description: opts.Description, Steer: opts.Steer}
-	gf.Directives = append(gf.Directives, newDirective)
+	newNum := maxNum + 1
 
 	if opts.JSON {
 		enc := json.NewEncoder(opts.Stdout)
 		enc.SetIndent("", "  ")
-		return enc.Encode(newDirective)
+		return enc.Encode(Directive{Number: newNum, Title: opts.Title, Description: opts.Description, Steer: opts.Steer})
 	}
 	if opts.DryRun {
-		fmt.Fprintf(opts.Stdout, "Would add directive #%d: %s\n", newDirective.Number, newDirective.Title)
+		fmt.Fprintf(opts.Stdout, "Would add directive #%d: %s\n", newNum, opts.Title)
 		return nil
 	}
-	if err := WriteMDGoals(gf, resolvedPath); err != nil {
+
+	// Persist through GoalsPatcher, NOT WriteMDGoals: the latter re-renders
+	// GOALS.md from the GoalFile model and silently drops the "## Three-Gap
+	// Contract Proof Surface" section, the Gates table, prose, and
+	// agentops:claim comments. The patcher appends the new directive block and
+	// preserves every other byte (soc-byt52).
+	p, _, err := LoadGoalsPatcher(opts.GoalsFile)
+	if err != nil {
 		return err
 	}
-	fmt.Fprintf(opts.Stdout, "Added directive #%d: %s (steer: %s)\n", newDirective.Number, newDirective.Title, newDirective.Steer)
+	num, err := p.AppendDirective(opts.Title, opts.Description, opts.Steer)
+	if err != nil {
+		return err
+	}
+	if err := p.WriteFile(resolvedPath); err != nil {
+		return err
+	}
+	fmt.Fprintf(opts.Stdout, "Added directive #%d: %s (steer: %s)\n", num, opts.Title, opts.Steer)
 	return nil
 }
 
