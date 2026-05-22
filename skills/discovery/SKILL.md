@@ -94,14 +94,7 @@ for the boundary between Discovery and Plan:
 | Context packet | density block, artifact links, acceptance examples, non-goals, constraints |
 | Guard adapter | `/pre-mortem` verdict before packet handoff |
 
-```gherkin
-Feature: Discovery hands dense intent to planning
-  Scenario: Discovery delegates to Plan
-    Given Discovery has a goal, research path, and design or brainstorm evidence
-    When it crosses the `plan_slices` port
-    Then it sends density fields and artifact links
-    And it does not inline the Plan decomposition in Discovery prose
-```
+Executable acceptance: [references/discovery.feature](references/discovery.feature) — Discovery hands dense intent across the `plan_slices` port (promoted from inline; soc-qk4b.2).
 
 ## Execution
 
