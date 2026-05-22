@@ -787,7 +787,7 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "b6903edd93cd9dac1124b913153fe80b67e43062997726e8f766bff02cb26dc5",
+      "source_hash": "f48e77311d48ad956620d6e05d96e65616622ee1ccc1c1554d2b1f4875ce8f05",
       "generated_hash": "5c8274c6606089b1a2854015f0f0f5176ed49806e3a6e9fce10749eeabffd01f"
     },
     {
@@ -1027,7 +1027,7 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "09bae621310bcb4b8061c4ed14c8f3caf41507ce7478f05536065d7e023bf881",
+      "source_hash": "441cdc759c0cc75a656790077ade6d9aaaa144a74da721556359869d72ed6202",
       "generated_hash": "c8f439c27965aa992f1dd9c94d0f80ddc8c2aff5f8b864c8a2a6d0820c1c814d"
     },
     {

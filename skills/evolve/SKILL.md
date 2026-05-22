@@ -6,9 +6,17 @@ practices:
 - dora-metrics
 - agile-manifesto
 hexagonal_role: supporting
-consumes: []
-produces: []
-context_rel: []
+consumes:
+- rpi
+- goals
+- post-mortem
+- compile
+produces:
+- git-changes
+- goals-fitness-delta
+context_rel:
+- kind: customer-of
+  with: rpi
 skill_api_version: 1
 user-invocable: true
 context:
@@ -585,14 +593,15 @@ See `references/cycle-history.md` for advanced troubleshooting.
 
 ## References
 
+- [references/evolve.feature](references/evolve.feature) — Executable spec: gated cycles, ladder, bounded slice, never-self-halt
 - [references/long-loop-discipline.md](references/long-loop-discipline.md) — Disk-is-truth axiom
 - [references/artifacts.md](references/artifacts.md) — Generated files registry
-- [references/autonomous-execution.md](references/autonomous-execution.md) — Autonomous-loop rules, operator-shape carve-out, ScheduleWakeup self-perpetuation
-- [references/snapshot-pattern-for-long-cycle-gates.md](references/snapshot-pattern-for-long-cycle-gates.md) — 4-step pattern for multi-session corpus gates
+- [references/autonomous-execution.md](references/autonomous-execution.md) — Autonomous-loop rules + operator-shape carve-out
+- [references/snapshot-pattern-for-long-cycle-gates.md](references/snapshot-pattern-for-long-cycle-gates.md) — Snapshot pattern for long-cycle gates
 - [references/compounding.md](references/compounding.md) — Knowledge flywheel and work harvesting
 - [references/context-budget.md](references/context-budget.md) — `CONTEXT_BUDGET_EXHAUSTED` as a third stop reason and handoff protocol
-- [references/convergence-mechanics.md](references/convergence-mechanics.md) — Read-path mechanisms (prior-failure injection, healing-first classifier, hypothesis tracking, STOP criteria) that turn write-only ledgers into compounding behavior
-- [references/domain-evolution-bootstrap.md](references/domain-evolution-bootstrap.md) — BDD/DDD/Hexagonal/TDD/XP control surface for AgentOps 3.0 skill/domain evolution
+- [references/convergence-mechanics.md](references/convergence-mechanics.md) — Read-path mechanisms for compounding
+- [references/domain-evolution-bootstrap.md](references/domain-evolution-bootstrap.md) — BDD/DDD/Hexagonal/TDD/XP control surface for skill/domain evolution
 - [references/cycle-history.md](references/cycle-history.md) — JSONL format, recovery protocol, kill switch
 - [references/examples.md](references/examples.md) — Detailed usage examples
 - [references/fitness-scoring.md](references/fitness-scoring.md) — Baseline capture, regression detection, revert procedure
@@ -600,10 +609,10 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - [references/goals-schema.md](references/goals-schema.md) — GOALS.yaml format and continuous metrics
 - [references/knowledge-loop-integration.md](references/knowledge-loop-integration.md) — Claim/release semantics and harvest re-read
 - [references/mechanical-batches.md](references/mechanical-batches.md) — Script-first vs per-file Edit for > 20-file uniform batches
-- [references/metronome-gate.md](references/metronome-gate.md) — Cross-cycle detector that blocks the same-mode-repeated failure mode (cycles 144-154)
+- [references/metronome-gate.md](references/metronome-gate.md) — Cross-cycle same-mode-repeat blocker
 - [references/oscillation.md](references/oscillation.md) — Oscillation detection and quarantine
 - [references/pre-flight-schema-check.md](references/pre-flight-schema-check.md) — Cheap field-fit check before architectural migration cycles
-- [references/postmortem-checkpoint.md](references/postmortem-checkpoint.md) — Stop reason #6: session-PR threshold mandatory `/post-mortem --deep` checkpoint (soc-n75z)
+- [references/postmortem-checkpoint.md](references/postmortem-checkpoint.md) — Stop reason #6: session-PR post-mortem checkpoint (soc-n75z)
 - [references/parallel-execution.md](references/parallel-execution.md) — Parallel /swarm architecture
 - [references/quality-mode.md](references/quality-mode.md) — Quality-first mode: scoring, priority cascade, artifacts
 - [references/scout-mode.md](references/scout-mode.md) — Scout-mode as a first-class cycle result; scope filter procedure
