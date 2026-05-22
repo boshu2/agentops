@@ -226,6 +226,9 @@ graph LR
 | `plan` | consumes | standards |
 | `plan` | produces | .agents/plans/*.md |
 | `plan` | produces | execution-packet.json |
+| `post-mortem` | consumes | council |
+| `post-mortem` | consumes | implement |
+| `post-mortem` | consumes | vibe |
 | `post-mortem` | produces | result.json |
 | `pr-implement` | consumes | crank |
 | `pr-implement` | produces | git-changes |
