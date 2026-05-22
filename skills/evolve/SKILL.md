@@ -142,6 +142,7 @@ Before cycle recovery, load the repo execution profile contract when it exists. 
 - Read the ordered `startup_reads` and bootstrap from those repo paths before selecting work.
 - Cache repo `validation_commands`, `tracker_commands`, and `definition_of_done` into session state.
 - If the repo execution profile is present but missing required fields, stop or downgrade with an explicit warning before cycle 1. Do not silently invent repo policy.
+- Read operating-doctrine ADRs (`docs/adr/` or `docs/decisions/`) when present — intent the loop re-reads each cycle: only operator markers stop the loop; the bead queue is a hypothesis re-confirmed against the goal, not spec; file-a-bead when a candidate is architecture disguised as bounded work.
 
 Then load the repo-local autodev program contract when it exists. The execution profile remains the repo bootstrap and landing-policy layer; `PROGRAM.md` or `AUTODEV.md` is the repo-local execution layer for the current improvement loop.
 
@@ -199,46 +200,29 @@ Run at the TOP of every cycle:
 
 ```bash
 CYCLE_START_SHA=$(git rev-parse HEAD)
-# Kill-switch with auto-expiration: a KILL file older than EVOLVE_KILL_TTL_DAYS
-# (default 7) days is treated as STALE — surface it loudly and continue, do not
-# silently block. Operator must re-touch the file to keep blocking. Closes F5
-# from the 2026-05-18 merge-arc post-mortem.
-EVOLVE_KILL_TTL_DAYS="${EVOLVE_KILL_TTL_DAYS:-7}"
-check_stale_kill() {
-    local path="$1"
-    local ttl_days="$2"
-    [ -f "$path" ] || return 1
-    local mtime_epoch now_epoch age_days
-    mtime_epoch=$(stat -c %Y "$path" 2>/dev/null || stat -f %m "$path" 2>/dev/null)
-    now_epoch=$(date +%s)
-    age_days=$(( (now_epoch - mtime_epoch) / 86400 ))
-    if [ "$age_days" -gt "$ttl_days" ]; then
-        echo "WARN: ${path} is ${age_days} days old (> ${ttl_days}); treating as STALE and proceeding. Re-touch the file or set EVOLVE_KILL_TTL_DAYS to keep blocking." >&2
-        return 1  # stale -> not a real block
+# Mechanical pre-cycle gate (soc-sfjx): markers (KILL/STOP/DORMANT/HANDOFF with
+# TTL + soc-5qit non-sticky semantics), goal-regression, and prior-cycle-FAIL.
+# This is a SCRIPT the loop MUST run, not prose it can skip — externalized from
+# the old inline block so the kill-switch + revert-on-red are enforced, not
+# advisory. Adapted from the mt-olympus unbounded-evolve substrate.
+if [ -x scripts/evolve/halt-check.sh ]; then
+  if ! HALT_OUT=$(bash scripts/evolve/halt-check.sh --json); then
+    REASON=$(printf '%s' "$HALT_OUT" | jq -r '.halt_reason // "unknown"')
+    if [ "$REASON" = "prior_cycle_fail" ]; then
+      export EVOLVE_RESTORATIVE=1   # not terminal: Step 1.5 restricts scope to CI-red reduction
+    else
+      echo "halt: $REASON"; exit 0  # kill/user_halt/dormant/goal_regression -> stop this cycle
     fi
-    return 0  # fresh -> honor the block
-}
-if check_stale_kill ~/.config/evolve/KILL "$EVOLVE_KILL_TTL_DAYS"; then
-    echo "KILL: $(cat ~/.config/evolve/KILL)"
-    exit 0
-fi
-if check_stale_kill .agents/evolve/STOP "$EVOLVE_KILL_TTL_DAYS"; then
-    echo "STOP: $(cat .agents/evolve/STOP 2>/dev/null)"
-    exit 0
-fi
-if [ -f .agents/evolve/DORMANT ]; then
-  READY=$(bd ready --json 2>/dev/null | jq -r 'length // 0' 2>/dev/null || echo 0)
-  HARVESTED=$(jq -r 'select(.consumed==false) | .severity' .agents/rpi/next-work.jsonl 2>/dev/null | wc -l | tr -d ' ')
-  if [ "$READY" -gt 0 ] || [ "$HARVESTED" -gt 0 ]; then
-    rm -f .agents/evolve/DORMANT  # stale: real work exists, loop resumes
-  else
-    echo "Dormant since $(head -1 .agents/evolve/DORMANT 2>/dev/null)."; exit 0
   fi
+else
+  # Fallback for repos without the substrate: minimal inline marker check.
+  for m in "$HOME/.config/evolve/KILL" .agents/evolve/STOP; do [ -f "$m" ] && { echo "halt: $m"; exit 0; }; done
+  [ -f .agents/evolve/DORMANT ] && { [ "$(bd ready --json 2>/dev/null | jq -r 'length // 0')" -gt 0 ] && rm -f .agents/evolve/DORMANT || { echo dormant; exit 0; }; }
+  [ -f .agents/evolve/HANDOFF ] && rm -f .agents/evolve/HANDOFF
 fi
-[ -f .agents/evolve/HANDOFF ] && rm -f .agents/evolve/HANDOFF  # non-sticky: cleared on fresh fire
 ```
 
-**Agile-first dormancy (soc-5qit):** `DORMANT` is NEVER sticky while ready beads exist; Step 1 re-validates every fire and auto-clears stale markers. KILL/STOP honor `EVOLVE_KILL_TTL_DAYS` (default 7). Heavy-context sessions write non-sticky HANDOFF and exit the turn; the next fire (compacted/fresh) clears HANDOFF and resumes — the loop is continuous across compactions.
+**Agile-first dormancy (soc-5qit):** `DORMANT` is NEVER sticky while ready beads exist — `halt-check.sh` auto-clears it when `bd ready`/harvested work exists. KILL/STOP honor `EVOLVE_KILL_TTL_DAYS` (default 7); stale markers are surfaced and bypassed. `goal_regression` (latest cycle report `goals_passing_after < before`) halts the loop for operator attention. Heavy-context sessions write non-sticky HANDOFF; the next fire clears it and resumes. The gate is mechanical: see `scripts/evolve/halt-check.sh`.
 
 ### Step 1.5: Healing-first classifier
 
