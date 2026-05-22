@@ -138,8 +138,8 @@ WORKFLOW_JOB="  ${JOB_NAME}:
 ${PY_SETUP}
       - name: ${REASON}
         run: |
-          chmod +x ${HELPER_SCRIPT}
-          ./${HELPER_SCRIPT}
+          chmod +x \"${HELPER_SCRIPT}\"
+          \"./${HELPER_SCRIPT}\"
 "
 
 # 2. pre-push section (numbered 22z+, but use a marker not a fixed letter)
@@ -147,8 +147,8 @@ PREPUSH_SECTION="
 # --- ${JOB_NAME} (scaffolded by add-validate-job.sh) ---
 # ${REASON}
 # Always runs (no needs_check guard).
-if [[ -f ${HELPER_SCRIPT} ]]; then
-    if scaffold_${JOB_NAME//-/_}_output=\"\$(bash ${HELPER_SCRIPT} 2>&1)\"; then
+if [[ -f \"${HELPER_SCRIPT}\" ]]; then
+    if scaffold_${JOB_NAME//-/_}_output=\"\$(bash \"${HELPER_SCRIPT}\" 2>&1)\"; then
         pass \"${JOB_NAME}\"
     else
         fail \"${JOB_NAME}\"

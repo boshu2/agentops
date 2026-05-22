@@ -3,8 +3,8 @@
 #
 # Usage:
 #   scripts/inventory-jsm-skills.sh
-#   scripts/inventory-jsm-skills.sh --root /Users/bo/.claude/skills --json
-#   scripts/inventory-jsm-skills.sh --backup-root /Users/bo/backups/jsm-skills-YYYYMMDD-HHMMSS --markdown
+#   scripts/inventory-jsm-skills.sh --root "$HOME/.claude/skills" --json
+#   scripts/inventory-jsm-skills.sh --backup-root "$HOME/backups/jsm-skills-YYYYMMDD-HHMMSS" --markdown
 set -euo pipefail
 
 FORMAT="json"
@@ -197,8 +197,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ "${#ROOTS[@]}" -eq 0 ]]; then
-    [[ -d /Users/bo/.claude/skills ]] && ROOTS+=("/Users/bo/.claude/skills")
-    [[ -d /Users/bo/.codex/skills ]] && ROOTS+=("/Users/bo/.codex/skills")
+    [[ -d "${HOME}/.claude/skills" ]] && ROOTS+=("${HOME}/.claude/skills")
+    [[ -d "${HOME}/.codex/skills" ]] && ROOTS+=("${HOME}/.codex/skills")
 fi
 
 objects=$(mktemp)
