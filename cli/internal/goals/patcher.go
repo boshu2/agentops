@@ -299,6 +299,53 @@ func (p *GoalsPatcher) SetAttribute(number int, key, value string) error {
 	return nil
 }
 
+// AppendDirective inserts a new directive block at the end of the Directives
+// section, surgically: every other byte of the file — including non-directive
+// sections such as "## Three-Gap Contract Proof Surface", the Gates table, and
+// agentops:claim comments — is preserved. It returns the assigned display
+// number. This replaces the lossy RenderGoalsMD round-trip that `ao goals steer
+// add` used to perform (soc-byt52).
+func (p *GoalsPatcher) AppendDirective(title, description, steer string) (int, error) {
+	title = strings.TrimSpace(title)
+	if title == "" {
+		return 0, fmt.Errorf("directive title must not be empty")
+	}
+	if strings.ContainsAny(title, "\r\n") {
+		return 0, fmt.Errorf("directive title must be a single line")
+	}
+	if strings.TrimSpace(description) == "" {
+		return 0, fmt.Errorf("directive description must not be empty")
+	}
+	steer = strings.TrimSpace(steer)
+	if steer == "" {
+		steer = "increase"
+	}
+
+	dirs := p.Directives()
+	num := 1
+	at := -1
+	if len(dirs) > 0 {
+		for _, d := range dirs {
+			if d.Number >= num {
+				num = d.Number + 1
+			}
+		}
+		at = lastContentIdx(p.lines, dirs[len(dirs)-1]) + 1
+	} else {
+		start := directiveSectionStart(p.lines)
+		if start < 0 {
+			return 0, fmt.Errorf("no \"## Directives\" section found in GOALS.md")
+		}
+		at = start
+	}
+
+	block := []string{"", fmt.Sprintf("### %d. %s", num, title), ""}
+	block = append(block, strings.Split(strings.TrimRight(description, "\n"), "\n")...)
+	block = append(block, "", fmt.Sprintf("**Steer:** %s", steer))
+	p.lines = insertLines(p.lines, at, block...)
+	return num, nil
+}
+
 // attrRank returns the canonical sort rank for an attribute key.
 func attrRank(key string) int {
 	if r, ok := attrOrder[key]; ok {

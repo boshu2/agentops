@@ -427,6 +427,58 @@ func TestRunSteerAdd_DryRun(t *testing.T) {
 	}
 }
 
+// TestRunSteerAdd_PreservesNonDirectiveContent is the soc-byt52 regression:
+// `ao goals steer add` must append the directive WITHOUT dropping sections the
+// GoalFile model does not represent (Three-Gap section, Gates rows, claim
+// comments). The old LoadMDGoals→WriteMDGoals round-trip silently deleted them.
+func TestRunSteerAdd_PreservesNonDirectiveContent(t *testing.T) {
+	tmp := t.TempDir()
+	t.Chdir(tmp)
+	extra := `| flywheel-proof | bash scripts/proof-run.sh | 7 | proof |
+
+## Three-Gap Contract Proof Surface
+
+<!-- agentops:claim:AOP-CLAIM-GOALS-PRESERVE -->
+A doctrine section the GoalFile model does not represent.
+`
+	writeGoalsMD(t, "GOALS.md", extra)
+
+	var buf bytes.Buffer
+	opts := SteerAddOptions{
+		Title: "New reinforcement directive", Description: "First line.\n\nSecond paragraph.",
+		Steer: "increase", GoalsFile: "GOALS.md", Stdout: &buf,
+	}
+	if err := RunSteerAdd(opts); err != nil {
+		t.Fatalf("RunSteerAdd: %v", err)
+	}
+
+	data, err := os.ReadFile("GOALS.md")
+	if err != nil {
+		t.Fatalf("read: %v", err)
+	}
+	got := string(data)
+
+	if !strings.Contains(got, "### 2. New reinforcement directive") {
+		t.Errorf("new directive #2 missing from:\n%s", got)
+	}
+	if !strings.Contains(got, "Second paragraph.") {
+		t.Errorf("multi-paragraph description not preserved")
+	}
+	if !strings.Contains(got, "### 1. Establish baseline") {
+		t.Errorf("original directive #1 lost")
+	}
+	for _, must := range []string{
+		"## Three-Gap Contract Proof Surface",
+		"<!-- agentops:claim:AOP-CLAIM-GOALS-PRESERVE -->",
+		"A doctrine section the GoalFile model does not represent.",
+		"flywheel-proof",
+	} {
+		if !strings.Contains(got, must) {
+			t.Errorf("non-directive content dropped (soc-byt52 regression): %q missing from:\n%s", must, got)
+		}
+	}
+}
+
 func TestRunSteerRemove_NotFound(t *testing.T) {
 	tmp := t.TempDir()
 	t.Chdir(tmp)
