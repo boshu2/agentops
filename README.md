@@ -6,7 +6,7 @@
 
 ### The SDLC control plane for agentic software development.
 
-AgentOps sits on top of the coding harness you already use — Claude Code, Codex, Cursor, OpenCode — and adds the parts an engineering team would notice missing: a record of what was tried, gates between phases, and a corpus of learnings that survives the next session. State lives in `.agents/` next to your code, and you can mix Claude, Codex, or any model per phase.
+AgentOps sits on top of the coding harness you already use (Claude Code, Codex, Cursor, OpenCode) and adds the parts an engineering team would notice missing: a record of what was tried, gates between phases, and a corpus of learnings that survives the next session. State lives in `.agents/` next to your code, and you can mix Claude, Codex, or any model per phase.
 
 *This repo was built with AgentOps. As of 2026-05-04 its `.agents/` held ~1,842 learnings, ~186 patterns, ~80 planning rules, and ~3,867 cited decisions captured during development. Re-run anytime: `bash scripts/corpus-stats.sh`.*
 
@@ -38,7 +38,7 @@ AgentOps breaks intent into bounded slices, gives each slice a first failing tes
 [recorded] .agents/runs/2026-05-08-rate-limit/research.md
 ```
 
-Skills run in the harness you already use — Claude Code, Codex, Cursor, OpenCode. The corpus is the differentiator: the agent starts loaded with prior decisions, planning rules, and learnings instead of starting cold. From here, `/implement` or `/rpi` carries the same context into the build phase.
+Skills run in the harness you already use (Claude Code, Codex, Cursor, OpenCode). The corpus is the differentiator: the agent starts loaded with prior decisions, planning rules, and learnings instead of starting cold. From here, `/implement` or `/rpi` carries the same context into the build phase.
 
 For a second opinion before shipping, `/council --mixed`:
 
@@ -99,7 +99,7 @@ npx skills@latest add boshu2/agentops --cursor -g
 
 Restart your agent after install. Then type `/quickstart` in your agent chat.
 
-The `ao` CLI is optional but recommended — repo-native bookkeeping, retrieval, health checks, and terminal workflows.
+The `ao` CLI is optional but recommended: repo-native bookkeeping, retrieval, health checks, and terminal workflows.
 
 **macOS**
 
@@ -122,7 +122,7 @@ You can also install from [release binaries](https://github.com/boshu2/agentops/
 
 ## Why context is the lifecycle
 
-Coding agents are non-deterministic workers. Engineering already has a long history of getting reliable output from non-deterministic workers — disciplined process around them, with checks at the boundaries. The same primitives map across:
+Coding agents are non-deterministic workers. Engineering already has a long history of getting reliable output from non-deterministic workers: disciplined process around them, with checks at the boundaries. The same primitives map across:
 
 | Software Engineering | Coding-Agent World |
 |---|---|
@@ -138,7 +138,7 @@ Coding agents are non-deterministic workers. Engineering already has a long hist
 | Markdown / Git / Linux (open primitives) | LLM Wiki of Markdown |
 | Open-source corpus | Your private corpus (`.agents/` in your repo) |
 
-You can't tune the model — that's the vendor's job. You can engineer the context you feed it. AgentOps treats that engineering as a Context Development Life Cycle (CDLC), with the same discipline DevOps brought to delivery.
+You can't tune the model; that's the vendor's job. You can engineer the context you feed it. AgentOps treats that engineering as a Context Development Life Cycle (CDLC), with the same discipline DevOps brought to delivery.
 
 The narrow waist is small on purpose:
 
@@ -149,7 +149,7 @@ The narrow waist is small on purpose:
 | **Hexagonal architecture** | Ports and adapters that keep runtime, tool, and vendor details outside the core loop |
 | **TDD** | A local executable done condition for each slice |
 
-Everything else plugs into that waist: CI/CD repeats the proof, SRE/DORA measures fitness, ADRs and provenance preserve why-memory, wikis and ratchets preserve durable learning, and Agile/XP keeps work in vertical slices. The atomic unit is one behavior, one bounded context, one failing test, one write scope, one acceptance proof — and one new learning only when it would change a future run.
+Everything else plugs into that waist: CI/CD repeats the proof, SRE/DORA measures fitness, ADRs and provenance preserve why-memory, wikis and ratchets preserve durable learning, and Agile/XP keeps work in vertical slices. The atomic unit is one behavior, one bounded context, one failing test, one write scope, and one acceptance proof. A new learning is added only when it would change a future run.
 
 The waist is executable. `GOALS.md` declares intent as directives; `/scenario` and `ao goals render` turn each directive into Gherkin acceptance examples; `ao rpi phased --domain <name>` builds inside one bounded context with a declared read scope; `ao goals measure` scores whether the result satisfies the spec. Intent, behavior, build, and validation stay linked end-to-end.
 
@@ -167,10 +167,10 @@ Four layers that compound:
 |-------|---------|--------------|
 | **Bookkeeping** | Agents forget what they tried, why they changed course, and what evidence mattered | `.agents/` captures run packets, handoffs, findings, citations, decisions, verdicts, retros, and post-mortems |
 | **Context Compiler** | Every session starts cold | `ao context assemble` builds phase-scoped packets; `ao lookup` retrieves decay-ranked knowledge on demand; skills and execution packets make context explicit; hooks are optional adapters |
-| **Validation Gates** | Agents ship confident garbage | `/pre-mortem`, `/vibe`, `/council` — multi-model consensus validates plans before build and code before commit; gates block, not advise |
+| **Validation Gates** | Agents ship confident garbage | `/pre-mortem`, `/vibe`, `/council`: multi-model consensus validates plans before build and code before commit; gates block, not advise |
 | **Knowledge Flywheel** | Lessons disappear between sessions | `/forge` extracts learnings from the bookkeeping trail, `ao flywheel close-loop` scores and promotes them, `/evolve` runs a bounded reconciliation loop, `/dream` prepares overnight compounding runs |
 
-All state lives in local `.agents/` — plain text you can grep, diff, and review. No AgentOps-managed telemetry or hosted control plane. Runtime-neutral across Claude Code, Codex CLI, Cursor, and OpenCode.
+All state lives in local `.agents/`: plain text you can grep, diff, and review. No AgentOps-managed telemetry or hosted control plane. Runtime-neutral across Claude Code, Codex CLI, Cursor, and OpenCode.
 
 <!-- agentops:claim:AOP-CLAIM-README-COMPETITIVE-MEMORY -->
 
@@ -178,7 +178,7 @@ All state lives in local `.agents/` — plain text you can grep, diff, and revie
 
 | Notion / Confluence | AgentOps `.agents/` |
 |---|---|
-| Written for humans; agents can't traverse it efficiently | LLM Wiki of Markdown — agents read it natively |
+| Written for humans; agents can't traverse it efficiently | LLM Wiki of Markdown; agents read it natively |
 | Lives in SaaS, not your repo | Lives in `.agents/` next to the code |
 | Not version-controlled with your code | Diffable, branchable, mergeable |
 | No decay ranking, no retrieval scoring | `ao lookup` and `ao context assemble` return bounded, cited context |
@@ -186,7 +186,7 @@ All state lives in local `.agents/` — plain text you can grep, diff, and revie
 | Doesn't compound; you maintain it manually | Daemon defrags, evolves, and compounds it overnight |
 | Read-only artifact | Writes itself: agents that use it also produce it |
 
-`.agents/` is a wiki both humans and agents read. Open it as an Obsidian vault — `[[wikilinks]]` resolve and every entry diffs in git. Maintenance happens as a side effect of use: the agents that consume the wiki also write to it.
+`.agents/` is a wiki both humans and agents read. Open it as an Obsidian vault; `[[wikilinks]]` resolve and every entry diffs in git. Maintenance happens as a side effect of use: the agents that consume the wiki also write to it.
 
 More: [docs/wiki-for-agents.md](docs/wiki-for-agents.md) · [docs/trust-factory.md](docs/trust-factory.md).
 
@@ -239,7 +239,7 @@ Every skill works alone. Flows compose them when you want more structure.
 | Skill | Use it when |
 |-------|-------------|
 | `/quickstart` | You want the fastest setup check and next action |
-| `/council` | You want independent judges — optionally across Claude and Codex — to evaluate one evidence packet and return a consolidated verdict |
+| `/council` | You want independent judges (optionally across Claude and Codex) to evaluate one evidence packet and return a consolidated verdict |
 | `/research` | You need codebase context and prior learnings before changing code |
 | `/pre-mortem` | You want to pressure-test a plan before implementation |
 | `/implement` | You want one scoped task built and validated |
@@ -279,14 +279,14 @@ Full reference: [CLI Commands](cli/docs/COMMANDS.md).
 
 | Surface | When to use it | What it looks like | Operator role |
 |---------|---------------|-------------------|---------------|
-| **Hand agents** (skills surface) | Active work, exploration, high-stakes decisions, ambiguous scope | `/research`, `/plan`, `/pre-mortem`, `/council`, `/rpi` invoked from chat | Driving — agents respond, you steer |
-| **Software factory** (daemon) | Vetted, well-defined work; overnight compounding; bulk processing | `ao schedule` + `ao daemon` running operator-approved dream / evolve / compile / defrag / forge jobs; mix-and-match councils per phase | Operator — you set cadence and quality bars; the factory executes the queue |
+| **Hand agents** (skills surface) | Active work, exploration, high-stakes decisions, ambiguous scope | `/research`, `/plan`, `/pre-mortem`, `/council`, `/rpi` invoked from chat | Driving; agents respond, you steer |
+| **Software factory** (daemon) | Vetted, well-defined work; overnight compounding; bulk processing | `ao schedule` + `ao daemon` running operator-approved dream / evolve / compile / defrag / forge jobs; mix-and-match councils per phase | Operator: you set cadence and quality bars; the factory executes the queue |
 
-**Hand agents** — when you're driving. Skills like `/rpi`, `/council`, `/pre-mortem`, and `/vibe` run from chat with rigor levels to match the work: light skills for exploration, the full RPI loop for anything that should be tracked, council validation before you ship.
+**Hand agents** are for when you're driving. Skills like `/rpi`, `/council`, `/pre-mortem`, and `/vibe` run from chat with rigor levels to match the work: light skills for exploration, the full RPI loop for anything that should be tracked, council validation before you ship.
 
 <!-- agentops:claim:AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL -->
 
-**Software factory** — when work is vetted and queueable. `ao daemon` runs scheduled jobs against your local subscription on your hardware, with a different model per phase if you want it: Claude for discovery, Codex for implementation, a fresh Claude for validation, an open-weights local model for overnight defrag. The default worker policy uses real CLI fallback execution; the synthetic fake executor is explicit test/demo mode. Queue Dream overnight, then run Evolve against a fresher corpus.
+**Software factory** is for when work is vetted and queueable. `ao daemon` runs scheduled jobs against your local subscription on your hardware, with a different model per phase if you want it: Claude for discovery, Codex for implementation, a fresh Claude for validation, an open-weights local model for overnight defrag. The default worker policy uses real CLI fallback execution; the synthetic fake executor is explicit test/demo mode. Queue Dream overnight, then run Evolve against a fresher corpus.
 
 → [scheduling reference](docs/scheduling.md) · [example schedules](examples/schedules/).
 
@@ -305,14 +305,14 @@ Full reference: [CLI Commands](cli/docs/COMMANDS.md).
 | Architecture | [Architecture](docs/ARCHITECTURE.md) |
 | FAQ | [FAQ](docs/FAQ.md) |
 
-AgentOps is built on the 12-factor doctrine — see [12factoragentops.com](https://12factoragentops.com).
+AgentOps is built on the 12-factor doctrine; see [12factoragentops.com](https://12factoragentops.com).
 
 ---
 
 ## Limitations
 
 - **AgentOps doesn't generate code.** It sits on top of Claude Code, Codex, Cursor, or OpenCode and adds bookkeeping, gates, and a corpus; the harness still does the writing.
-- **No hosted control plane, no telemetry.** Every artifact lives in your repo. There's no shared dashboard across team members unless you commit `.agents/` — most operators do, but it's a choice.
+- **No hosted control plane, no telemetry.** Every artifact lives in your repo. There's no shared dashboard across team members unless you commit `.agents/`; most operators do, but it's a choice.
 - **Multi-model councils and overnight Dream runs cost tokens or local compute.** Running six judges across Claude and Codex on every PR isn't free; the daemon makes the cost predictable, not zero.
 - **The `.agents/` corpus needs hygiene.** It grows over time. `ao defrag`, `ao maturity`, and `/dream` keep it healthy, but a neglected corpus rots like any other markdown vault.
 - **There are a lot of skills.** Around eighty as of 2026-05-20. `/quickstart` and the [Skill Router](docs/SKILL-ROUTER.md) exist because nobody learns them all up front.
@@ -321,7 +321,7 @@ AgentOps is built on the 12-factor doctrine — see [12factoragentops.com](https
 
 ## What if the labs ship this natively?
 
-They will. Anthropic's Managed Agents is the first move and others will follow. The durable value isn't in the tool — it's in the `.agents/` corpus you build with it. That corpus is plain markdown in your repo: it carries forward to whatever ships next, survives if AgentOps changes direction, and is forkable if you outgrow it. Apache-2.0, no telemetry, no hosted control plane.
+They will. Anthropic's Managed Agents is the first move and others will follow. The durable value is the `.agents/` corpus you build, not the tool that builds it. That corpus is plain markdown in your repo: it carries forward to whatever ships next, survives if AgentOps changes direction, and is forkable if you outgrow it. Apache-2.0, no telemetry, no hosted control plane.
 
 ---
 
