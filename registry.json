@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-23T20:01:26Z",
+  "generated_at": "2026-05-23T20:18:40Z",
   "summary": {
     "skills": 80,
     "hooks": 44,
@@ -72,7 +72,7 @@
         "tier": "contribute",
         "path": "skills/pr-plan/",
         "has_skill_md": true,
-        "has_references": false,
+        "has_references": true,
         "reference_count": 0
       },
       {
@@ -96,7 +96,7 @@
         "tier": "contribute",
         "path": "skills/pr-retro/",
         "has_skill_md": true,
-        "has_references": false,
+        "has_references": true,
         "reference_count": 0
       },
       {

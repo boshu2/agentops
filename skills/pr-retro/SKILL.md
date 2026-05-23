@@ -256,3 +256,7 @@ Write to `.agents/learnings/YYYY-MM-DD-pr-{repo}-{outcome}.md`
 | No clear lesson extracted | Analysis stayed descriptive | Convert observations into behavior changes |
 | Maintainer signal is mixed | Contradictory review comments | Separate hard blockers from preference feedback |
 | Process changes not adopted | Lessons not operationalized | Add explicit updates to prep/plan/validate workflow |
+
+## Reference Documents
+
+- [references/pr-retro.feature](references/pr-retro.feature) — Executable spec: categorize PR feedback, extract success/failure patterns by outcome, write a dated PR learning (soc-qk4b)

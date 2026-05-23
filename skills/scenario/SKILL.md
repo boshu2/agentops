@@ -173,6 +173,7 @@ is the weighted average across all vectors.
 
 - [Scenario Schema Reference](references/scenario-schema.md) -- full field
   documentation and example JSON for the scenario schema
+- [references/scenario.feature](references/scenario.feature) — Executable spec: author holdout scenarios, schema-validate, list + link to GOALS directives, feed /validation (soc-qk4b)
 
 ## Troubleshooting
 

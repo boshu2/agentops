@@ -199,3 +199,4 @@ ao knowledge gaps
 - [references/dag.md](references/dag.md)
 - [references/script-contracts.md](references/script-contracts.md)
 - [references/output-surfaces.md](references/output-surfaces.md)
+- [references/knowledge-activation.feature](references/knowledge-activation.feature) — Executable spec: consolidate evidence, distill beliefs/playbooks, compile goal-time briefing, surface gaps (soc-qk4b)
