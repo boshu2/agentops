@@ -110,3 +110,7 @@ The [agent-fungibility-philosophy](https://github.com/boshu2/agentops/issues?q=l
 - [`AGENTS.md`](../../AGENTS.md) — orientation entry-point that points here.
 - [`AGENTS-WORKFLOW.md`](../../AGENTS-WORKFLOW.md) — what to do after bootstrap reports.
 - [`schemas/session-bootstrap.v1.schema.json`](../../schemas/session-bootstrap.v1.schema.json) — full output contract.
+
+## Reference Documents
+
+- [references/session-bootstrap.feature](references/session-bootstrap.feature) — Executable spec: every agent runs first, identical model-fungible frame, fail-open SessionStart hook, --json for pipeline (soc-qk4b)
