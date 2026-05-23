@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-23T06:10:29Z",
+  "generated_at": "2026-05-23T06:25:03Z",
   "summary": {
     "skills": 80,
     "hooks": 44,
@@ -376,7 +376,7 @@
         "tier": "judgment",
         "path": "skills/validate/",
         "has_skill_md": true,
-        "has_references": false,
+        "has_references": true,
         "reference_count": 0
       },
       {

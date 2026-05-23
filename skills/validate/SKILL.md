@@ -232,3 +232,7 @@ Each target has its own inline check rubric until Phase 2 extraction.
 - `skills/rpi/SKILL.md` — orchestrator that fires `/validate --mode=pre-impl` after `/plan`
 - `skills/curate/SKILL.md` — miner role (paired canonical skill)
 - `schemas/verdict.v1.schema.json` — output contract
+
+## Reference Documents
+
+- [references/validate.feature](references/validate.feature) — Executable spec: verdict.v1 PASS/WARN/FAIL for any artifact, --mode selects shape, 8-mode budget (soc-qk4b)
