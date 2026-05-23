@@ -265,3 +265,7 @@ Repo is now AgentOps-ready. Next: /rpi "your first goal"
 - [readme](../readme/SKILL.md) -- README generation
 - [quickstart](../quickstart/SKILL.md) -- New user onboarding (lighter than bootstrap)
 - [related operator runbooks](references/related-runbooks.md) -- host-hygiene runbooks (PATH rationalization, etc.)
+
+## Reference Documents
+
+- [references/bootstrap.feature](references/bootstrap.feature) — Executable spec: bare repo gets golden path, existing repo fills gaps only, idempotent never-overwrite (soc-qk4b)
