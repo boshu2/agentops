@@ -1738,7 +1738,11 @@ jobs:
 
   bats-tests:
     needs: [changes]
-    if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true'
+    # skills + docs included because several bats tests assert SKILL.md / reference
+    # content (e.g. evolve-primitive-wiring.bats); a skills/docs-only change that
+    # breaks such an assertion must trigger bats, not merge undetected (soc-xrdwp;
+    # #413's wiring move hid for 11 PRs because skills/ did not trigger this job).
+    if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
