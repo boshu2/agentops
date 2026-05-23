@@ -174,6 +174,7 @@ graph LR
 | `bug-hunt` | consumes | beads |
 | `bug-hunt` | consumes | standards |
 | `codex-team` | produces | .agents/swarm/results/*.json |
+| `compile` | produces | .agents/compiled/lint-report.md |
 | `complexity` | consumes | doc |
 | `complexity` | consumes | standards |
 | `complexity` | produces | stdout |
