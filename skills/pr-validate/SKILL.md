@@ -208,3 +208,7 @@ git rebase origin/main
 | Scope creep detected | Extra files or mixed objectives | Split unrelated changes into follow-up PR |
 | Alignment check fails | Branch diverged from target expectations | Reconcile base branch and acceptance criteria |
 | Output unclear | Findings not prioritized | Sort findings by blocker vs non-blocker severity |
+
+## Reference Documents
+
+- [references/pr-validate.feature](references/pr-validate.feature) — Executable spec: isolation + upstream-alignment + scope-containment + quality-gate checks → submission-readiness verdict (soc-qk4b)
