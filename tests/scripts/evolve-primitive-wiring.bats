@@ -13,6 +13,12 @@
 setup() {
   REPO_ROOT="$(git rev-parse --show-toplevel)"
   SKILL="$REPO_ROOT/skills/evolve/SKILL.md"
+  # Step 3's selection ladder — incl. the write-stop-marker / blocked / next-work
+  # wiring — was extracted to this reference in #413 to keep SKILL.md under the
+  # 10000-token ceiling. SKILL.md links it and the agent reads it as Step 3, so
+  # the wiring content is asserted against the ladder; SKILL.md's LINK to it is
+  # asserted separately (the reachability half of the consumer-wiring proof).
+  LADDER="$REPO_ROOT/skills/evolve/references/work-selection-ladder.md"
 }
 
 @test "SKILL.md Step 3 invokes 'ao evolve next-work' for work selection" {
@@ -20,26 +26,31 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "SKILL.md routes the stagnation marker write through 'ao evolve write-stop-marker'" {
-  run grep -F 'ao evolve write-stop-marker --marker dormant' "$SKILL"
+@test "SKILL.md links the work-selection-ladder reference (wiring reachable)" {
+  run grep -F 'references/work-selection-ladder.md' "$SKILL"
   [ "$status" -eq 0 ]
 }
 
-@test "SKILL.md logs a typed blocked event via 'ao evolve blocked' instead of halting" {
-  run grep -F 'ao evolve blocked --reason' "$SKILL"
+@test "the ladder routes the stagnation marker write through 'ao evolve write-stop-marker'" {
+  run grep -F 'ao evolve write-stop-marker --marker dormant' "$LADDER"
+  [ "$status" -eq 0 ]
+}
+
+@test "the ladder logs a typed blocked event via 'ao evolve blocked' instead of halting" {
+  run grep -F 'ao evolve blocked --reason' "$LADDER"
   [ "$status" -eq 0 ]
 }
 
 @test "the write-stop-marker wire passes --mode loop (deterministic no-self-stop)" {
-  run grep -F 'ao evolve write-stop-marker --marker dormant --reason "$REASON" --mode loop' "$SKILL"
+  run grep -F 'ao evolve write-stop-marker --marker dormant --reason "$REASON" --mode loop' "$LADDER"
   [ "$status" -eq 0 ]
 }
 
 @test "each wire keeps a fallback for ao without the subcommand (--help probe)" {
   # write-stop-marker + next-work both guard their call behind a --help probe so
   # an older ao falls back instead of erroring.
-  run grep -F 'ao evolve write-stop-marker --help >/dev/null 2>&1' "$SKILL"
+  run grep -F 'ao evolve write-stop-marker --help >/dev/null 2>&1' "$LADDER"
   [ "$status" -eq 0 ]
-  run grep -F 'ao evolve next-work --help >/dev/null 2>&1' "$SKILL"
+  run grep -F 'ao evolve next-work --help >/dev/null 2>&1' "$LADDER"
   [ "$status" -eq 0 ]
 }

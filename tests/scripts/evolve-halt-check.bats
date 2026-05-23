@@ -56,6 +56,28 @@ teardown() {
   [[ "$output" == *"STALE"* ]]
 }
 
+# --- operator-GLOBAL kill switch (~/.config/evolve/KILL), checked before STOP --
+# HOME is redirected to $TMP so the test never touches a real global KILL.
+
+@test "fresh global KILL marker halts as kill (operator emergency stop)" {
+  mkdir -p "$TMP/.config/evolve"
+  touch "$TMP/.config/evolve/KILL"
+  run env HOME="$TMP" EVOLVE_DIR="$TMP/.agents/evolve" bash "$GATE" --json
+  [ "$status" -eq 1 ]
+  [ "$output" = '{"halt":true,"halt_reason":"kill"}' ]
+}
+
+@test "stale global KILL marker is bypassed, loop continues" {
+  mkdir -p "$TMP/.config/evolve"
+  touch "$TMP/.config/evolve/KILL"
+  # Backdate 10 days; TTL set to 7.
+  touch -d "10 days ago" "$TMP/.config/evolve/KILL" 2>/dev/null || touch -A -240000 "$TMP/.config/evolve/KILL"
+  run env HOME="$TMP" EVOLVE_DIR="$TMP/.agents/evolve" EVOLVE_KILL_TTL_DAYS=7 bash "$GATE" --json
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'{"halt":false,"halt_reason":null}'* ]]
+  [[ "$output" == *"STALE"* ]]
+}
+
 @test "DORMANT with no ready work halts as dormant" {
   # Hermetic: cd to a dir with no .beads (bd ready -> 0) + point harvested ledger
   # at an empty file so neither real repo state leaks in.
