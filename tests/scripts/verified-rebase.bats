@@ -3,13 +3,11 @@
 # checks that catch the `git rebase --continue` silent-failure pathology.
 
 setup() {
-  REPO_ROOT="$(git rev-parse --show-toplevel)"
+  source "$(git rev-parse --show-toplevel)/lib/bats-common.bash"
+  REPO_ROOT="$(bats_repo_root)"
   SCRIPT="$REPO_ROOT/scripts/verified-rebase.sh"
   TMP="$(mktemp -d)"
-  cd "$TMP"
-  git init -q
-  git config user.email t@t.co
-  git config user.name tester
+  bats_init_repo "$TMP"   # cd + git init + deterministic identity
 }
 
 teardown() { rm -rf "$TMP"; }
