@@ -694,12 +694,15 @@ func RunSteerAdd(opts SteerAddOptions) error {
 	}
 	newNum := maxNum + 1
 
-	if opts.JSON {
-		enc := json.NewEncoder(opts.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(Directive{Number: newNum, Title: opts.Title, Description: opts.Description, Steer: opts.Steer})
-	}
+	// --dry-run previews without writing (either output format). --json is an
+	// output-format flag, NOT a no-write flag — a write command must persist
+	// under --json and emit the result as JSON (soc-3z69s).
 	if opts.DryRun {
+		if opts.JSON {
+			enc := json.NewEncoder(opts.Stdout)
+			enc.SetIndent("", "  ")
+			return enc.Encode(Directive{Number: newNum, Title: opts.Title, Description: opts.Description, Steer: opts.Steer})
+		}
 		fmt.Fprintf(opts.Stdout, "Would add directive #%d: %s\n", newNum, opts.Title)
 		return nil
 	}
@@ -719,6 +722,11 @@ func RunSteerAdd(opts SteerAddOptions) error {
 	}
 	if err := p.WriteFile(resolvedPath); err != nil {
 		return err
+	}
+	if opts.JSON {
+		enc := json.NewEncoder(opts.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(Directive{Number: num, Title: opts.Title, Description: opts.Description, Steer: opts.Steer})
 	}
 	fmt.Fprintf(opts.Stdout, "Added directive #%d: %s (steer: %s)\n", num, opts.Title, opts.Steer)
 	return nil
@@ -760,12 +768,14 @@ func RunSteerRemove(opts SteerRemoveOptions) error {
 	}
 	gf.Directives = remaining
 
-	if opts.JSON {
-		enc := json.NewEncoder(opts.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(gf.Directives)
-	}
+	// --dry-run previews without writing (either format); --json is output
+	// format, not a no-write flag (soc-3z69s).
 	if opts.DryRun {
+		if opts.JSON {
+			enc := json.NewEncoder(opts.Stdout)
+			enc.SetIndent("", "  ")
+			return enc.Encode(gf.Directives)
+		}
 		fmt.Fprintf(opts.Stdout, "Would remove directive #%d and renumber %d remaining\n", opts.Number, len(remaining))
 		return nil
 	}
@@ -782,6 +792,11 @@ func RunSteerRemove(opts SteerRemoveOptions) error {
 	}
 	if err := p.WriteFile(resolvedPath); err != nil {
 		return err
+	}
+	if opts.JSON {
+		enc := json.NewEncoder(opts.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(gf.Directives)
 	}
 	fmt.Fprintf(opts.Stdout, "Removed directive #%d, renumbered %d remaining\n", opts.Number, len(remaining))
 	return nil
@@ -842,12 +857,14 @@ func RunSteerPrioritize(opts SteerPrioritizeOptions) error {
 	}
 	gf.Directives = result
 
-	if opts.JSON {
-		enc := json.NewEncoder(opts.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(gf.Directives)
-	}
+	// --dry-run previews without writing (either format); --json is output
+	// format, not a no-write flag (soc-3z69s).
 	if opts.DryRun {
+		if opts.JSON {
+			enc := json.NewEncoder(opts.Stdout)
+			enc.SetIndent("", "  ")
+			return enc.Encode(gf.Directives)
+		}
 		fmt.Fprintf(opts.Stdout, "Would move directive %q to position %d\n", moving.Title, opts.NewPosition)
 		return nil
 	}
@@ -862,6 +879,11 @@ func RunSteerPrioritize(opts SteerPrioritizeOptions) error {
 	}
 	if err := p.WriteFile(resolvedPath); err != nil {
 		return err
+	}
+	if opts.JSON {
+		enc := json.NewEncoder(opts.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(gf.Directives)
 	}
 	fmt.Fprintf(opts.Stdout, "Moved directive %q to position %d\n", moving.Title, opts.NewPosition)
 	return nil

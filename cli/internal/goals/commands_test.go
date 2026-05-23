@@ -622,6 +622,72 @@ func TestRunSteerPrioritize_PreservesNonDirectiveContent(t *testing.T) {
 	}
 }
 
+// soc-3z69s regressions: steer mutations under --json must PERSIST (not just
+// emit). Previously --json returned before WriteFile, so the change was lost.
+func TestRunSteerAdd_JSONPersists(t *testing.T) {
+	tmp := t.TempDir()
+	t.Chdir(tmp)
+	writeGoalsMD(t, "GOALS.md", "")
+	var buf bytes.Buffer
+	if err := RunSteerAdd(SteerAddOptions{Title: "Persisted", Description: "d", Steer: "increase", GoalsFile: "GOALS.md", JSON: true, Stdout: &buf}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), "Persisted") {
+		t.Errorf("json output missing directive: %q", buf.String())
+	}
+	data, _ := os.ReadFile("GOALS.md")
+	if !strings.Contains(string(data), "Persisted") {
+		t.Errorf("--json did not persist to GOALS.md:\n%s", string(data))
+	}
+}
+
+func TestRunSteerRemove_JSONPersists(t *testing.T) {
+	tmp := t.TempDir()
+	t.Chdir(tmp)
+	writeGoalsMD(t, "GOALS.md", "")
+	var buf bytes.Buffer
+	_ = RunSteerAdd(SteerAddOptions{Title: "Doomed", Description: "d", Steer: "increase", GoalsFile: "GOALS.md", Stdout: &buf})
+	buf.Reset()
+	if err := RunSteerRemove(SteerRemoveOptions{Number: 2, GoalsFile: "GOALS.md", JSON: true, Stdout: &buf}); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile("GOALS.md")
+	if strings.Contains(string(data), "Doomed") {
+		t.Errorf("--json remove did not persist (directive still present):\n%s", string(data))
+	}
+}
+
+func TestRunSteerPrioritize_JSONPersists(t *testing.T) {
+	tmp := t.TempDir()
+	t.Chdir(tmp)
+	writeGoalsMD(t, "GOALS.md", "")
+	var buf bytes.Buffer
+	_ = RunSteerAdd(SteerAddOptions{Title: "Mover", Description: "d", Steer: "increase", GoalsFile: "GOALS.md", Stdout: &buf})
+	buf.Reset()
+	if err := RunSteerPrioritize(SteerPrioritizeOptions{Number: 2, NewPosition: 1, GoalsFile: "GOALS.md", JSON: true, Stdout: &buf}); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := os.ReadFile("GOALS.md")
+	if !strings.Contains(string(data), "### 1. Mover") {
+		t.Errorf("--json prioritize did not persist the move:\n%s", string(data))
+	}
+}
+
+func TestRunSteerAdd_DryRunJSONStillNoWrite(t *testing.T) {
+	tmp := t.TempDir()
+	t.Chdir(tmp)
+	writeGoalsMD(t, "GOALS.md", "")
+	before, _ := os.ReadFile("GOALS.md")
+	var buf bytes.Buffer
+	if err := RunSteerAdd(SteerAddOptions{Title: "Ghost", Description: "d", Steer: "hold", GoalsFile: "GOALS.md", JSON: true, DryRun: true, Stdout: &buf}); err != nil {
+		t.Fatal(err)
+	}
+	after, _ := os.ReadFile("GOALS.md")
+	if string(before) != string(after) {
+		t.Errorf("--dry-run --json wrote to the file; should preview only")
+	}
+}
+
 func TestRunValidate_ValidFile(t *testing.T) {
 	tmp := t.TempDir()
 	t.Chdir(tmp)
