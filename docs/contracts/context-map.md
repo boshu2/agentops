@@ -259,6 +259,8 @@ graph LR
 | `ratchet` | consumes | vibe |
 | `ratchet` | produces | .agents/rpi/*.md |
 | `readme` | produces | documentation |
+| `recover` | consumes | bd |
+| `recover` | consumes | rpi |
 | `recover` | produces | .agents/rpi/*.md |
 | `red-team` | consumes | repo-context |
 | `red-team` | produces | result.json |
