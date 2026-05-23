@@ -10,7 +10,9 @@ setup() {
   bats_init_repo "$TMP"   # cd + git init + deterministic identity
 }
 
-teardown() { rm -rf "$TMP"; }
+# cd out of $TMP before removing it, and treat cleanup as best-effort, so a
+# transient hold on a file in $TMP never fails the test (soc-72gkw).
+teardown() { cd / 2>/dev/null || true; rm -rf "$TMP" 2>/dev/null || true; }
 
 @test "verified-rebase: missing arg exits 2 with usage" {
   run bash "$SCRIPT"

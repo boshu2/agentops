@@ -21,12 +21,18 @@ bats_repo_root() {
 
 # bats_init_repo <dir> — turn <dir> into a fresh committable git repo and cd into
 # it, with a deterministic identity so commits/rebases never prompt for one.
+# Background maintenance (auto-gc, fsmonitor) is disabled so a git daemon can't
+# hold a file in <dir>/.git when the test's teardown runs `rm -rf "<dir>"` — that
+# race made the rebase fixture flaky in CI (soc-72gkw).
 bats_init_repo() {
   local dir="${1:?bats_init_repo: <dir> required}"
   cd "$dir" || return 1
   git init -q
   git config user.email "bats@test.local"
   git config user.name "bats-fixture"
+  git config gc.auto 0
+  git config maintenance.auto false
+  git config core.fsmonitor false
 }
 
 # bats_stub_bin <bindir> <name> <body> — create an executable stub command
