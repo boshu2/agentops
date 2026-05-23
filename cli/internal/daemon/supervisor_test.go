@@ -200,6 +200,82 @@ func TestSupervisor_OOMWorkerDoesNotKillDaemon(t *testing.T) {
 	}
 }
 
+func TestSupervisor_PanickingWorkerDoesNotKillDaemon(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-panic", JobID: "job-panic", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit panic job: %v", err)
+	}
+	executor := &oneShotPanicExecutor{panicValue: "boom in RunJob"}
+	supervisor := newTestSupervisor(t, queue, executor)
+
+	// A panic in RunJob must be recovered and recorded as a job failure rather
+	// than crashing the supervisor (which would take the daemon process down).
+	first, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("first run once: %v", err)
+	}
+	if first.Job.Status != JobStatusFailed {
+		t.Fatalf("first status = %q, want failed", first.Job.Status)
+	}
+	if first.Job.Failure == nil || first.Job.Failure.Message != "executor panicked: boom in RunJob" {
+		t.Fatalf("failure = %#v, want recovered panic message", first.Job.Failure)
+	}
+
+	// The supervisor loop survives: a follow-up job completes normally.
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-after-panic", JobID: "job-after-panic", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit second job: %v", err)
+	}
+	second, err := supervisor.RunOnce(context.Background())
+	if err != nil {
+		t.Fatalf("second run once: %v", err)
+	}
+	if second.Job.Status != JobStatusCompleted {
+		t.Fatalf("second status = %q, want completed after worker panic recovery", second.Job.Status)
+	}
+}
+
+func TestSafeRunJob_RecoversPanicAsError(t *testing.T) {
+	executor := &oneShotPanicExecutor{panicValue: "kaboom"}
+	now := projectionTestTime(t, 0)
+	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+	lease, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-direct", JobID: "job-direct", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{})
+	if err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+	claim := QueueLease{Job: lease}
+
+	result, runErr := safeRunJob(context.Background(), executor, claim)
+	if runErr == nil {
+		t.Fatal("safeRunJob returned nil error, want recovered panic error")
+	}
+	if runErr.Error() != "executor panicked: kaboom" {
+		t.Fatalf("error = %q, want %q", runErr.Error(), "executor panicked: kaboom")
+	}
+	if result.Artifacts != nil || result.ArtifactRefs != nil {
+		t.Fatalf("result = %#v, want zero-value JobExecutionResult on panic", result)
+	}
+}
+
+func TestSafeRunJob_PassesThroughOnNonPanic(t *testing.T) {
+	executor := testOpenClawSnapshotExecutor{}
+	now := projectionTestTime(t, 0)
+	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+	lease, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-ok", JobID: "job-ok", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{})
+	if err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+	claim := QueueLease{Job: lease}
+
+	result, runErr := safeRunJob(context.Background(), executor, claim)
+	if runErr != nil {
+		t.Fatalf("safeRunJob returned error on non-panic path: %v", runErr)
+	}
+	if result.Artifacts["executor_policy"] != "fake" || result.Artifacts["snapshot_status"] != "validated" {
+		t.Fatalf("artifacts = %#v, want fake snapshot proof passed through unchanged", result.Artifacts)
+	}
+}
+
 func newTestSupervisor(t *testing.T, queue *Queue, executor JobExecutor) *Supervisor {
 	t.Helper()
 	supervisor, err := NewSupervisor(SupervisorOptions{
@@ -250,6 +326,25 @@ func (e *oneShotOOMExecutor) RunJob(_ context.Context, _ QueueLease) (JobExecuti
 	e.calls++
 	if e.calls == 1 {
 		return JobExecutionResult{}, errors.New("worker killed by cgroup memory.max")
+	}
+	return JobExecutionResult{Artifacts: map[string]string{"executor_policy": "recovered"}}, nil
+}
+
+// oneShotPanicExecutor panics on its first RunJob call and succeeds afterward,
+// simulating a misbehaving executor that would crash an unguarded supervisor.
+type oneShotPanicExecutor struct {
+	panicValue string
+	calls      int
+}
+
+func (e *oneShotPanicExecutor) JobTypes() []JobType {
+	return []JobType{JobTypeOpenClawSnapshot}
+}
+
+func (e *oneShotPanicExecutor) RunJob(_ context.Context, _ QueueLease) (JobExecutionResult, error) {
+	e.calls++
+	if e.calls == 1 {
+		panic(e.panicValue)
 	}
 	return JobExecutionResult{Artifacts: map[string]string{"executor_policy": "recovered"}}, nil
 }
