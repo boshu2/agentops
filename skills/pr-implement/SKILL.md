@@ -198,3 +198,7 @@ Next step: $pr-prep
 | Commits mix concerns | Implementation drifted from plan | Re-split commits by concern and revalidate |
 | Scope keeps expanding | Weak boundaries in plan | Re-anchor to `Out of Scope` and stop additional changes |
 | Hard to hand off | Missing summary/test context | Add concise change summary and verification notes |
+
+## Reference Documents
+
+- [references/pr-implement.feature](references/pr-implement.feature) — Executable spec: execute plan on fork branch, mandatory isolation before+during, scoped/focused PR (soc-qk4b)

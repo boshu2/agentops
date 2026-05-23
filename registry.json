@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-23T08:24:57Z",
+  "generated_at": "2026-05-23T08:40:02Z",
   "summary": {
     "skills": 80,
     "hooks": 44,
@@ -64,7 +64,7 @@
         "tier": "contribute",
         "path": "skills/pr-implement/",
         "has_skill_md": true,
-        "has_references": false,
+        "has_references": true,
         "reference_count": 0
       },
       {
