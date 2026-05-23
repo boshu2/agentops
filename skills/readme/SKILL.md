@@ -372,6 +372,10 @@ When rewriting or validating, flag these:
 | Interview keeps asking questions the project manifest already answers | The manifest file format is not recognized by the context-gathering step | Ensure your project has a standard manifest (`package.json`, `go.mod`, `pyproject.toml`, `Cargo.toml`) in the repo root |
 | Anti-pattern detection flags false positives on rewrite | Some content patterns trigger heuristic detection even when intentional | Review each finding during the council step and select "Ship it" for intentional choices. The detection is heuristic, not absolute |
 
+## Reference Documents
+
+- [references/readme.feature](references/readme.feature) — Executable spec: mode detection, problem-first lead, trust block near install, collapse-don't-delete depth, the council gate, anti-pattern detection (soc-qk4b)
+
 ## See Also
 
 - `skills/product/SKILL.md` — PRODUCT.md generation (feeds into README context)
