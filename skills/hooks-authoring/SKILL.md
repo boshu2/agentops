@@ -92,3 +92,4 @@ Use this skill when work touches `hooks/hooks.json`, `hooks/*.sh`,
 - [references/event-taxonomy.md](references/event-taxonomy.md)
 - [references/matcher-patterns.md](references/matcher-patterns.md)
 - [references/test-harness.md](references/test-harness.md)
+- [references/hooks-authoring.feature](references/hooks-authoring.feature) — Executable spec: author event-bound hook script, register in manifest, ship tests + evidence, review-mode portability check (soc-qk4b)

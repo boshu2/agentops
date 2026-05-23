@@ -190,6 +190,7 @@ bash skills/skill-auditor/scripts/audit.sh --strict skills/my-skill
 - [references/skill-template.md](references/skill-template.md) — canonical SKILL.md template (copy of skill-builder's; per CLAUDE.md no-symlinks rule)
 - [references/audit-checks.md](references/audit-checks.md) — per-check detection logic + accepted forms + PRODUCT.md mapping
 - [references/context-density-checks.md](references/context-density-checks.md) — advisory density coverage logic and false-positive handling
+- [references/skill-auditor.feature](references/skill-auditor.feature) — Executable spec: Pass 1 heal-skill delegation, Pass 2 structural checks, density report + productization score (soc-qk4b)
 
 ## Scripts
 
