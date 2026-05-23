@@ -170,3 +170,7 @@ See [references/examples.md](references/examples.md) for full walkthroughs.
 - [references/gh-merge-chain.md](references/gh-merge-chain.md)
 - [references/test-shape.md](references/test-shape.md)
 - Durable rationale: [docs/learnings/2026-05-18-xp-bdd-tdd-workflow-synthesis.md](https://github.com/boshu2/agentops/blob/main/docs/learnings/2026-05-18-xp-bdd-tdd-workflow-synthesis.md)
+
+## Reference Documents
+
+- [references/ship-loop.feature](references/ship-loop.feature) — Executable spec: claim→test→impl→push→squash-merge→close, one coherent arc, gated merge + bead close (soc-qk4b)
