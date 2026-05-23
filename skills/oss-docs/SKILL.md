@@ -5,7 +5,8 @@ practices:
 - code-complete
 - pragmatic-programmer
 hexagonal_role: generic
-consumes: []
+consumes:
+- repo-context
 produces:
 - documentation
 context_rel: []
@@ -222,6 +223,8 @@ This project uses **<tool>** for <purpose>. Run `<onboard-cmd>` to get started.
 | Open-source handoff incomplete | Session-end workflow not reflected | Add landing-the-plane and release hygiene steps |
 
 ## Reference Documents
+
+- [references/oss-docs.feature](references/oss-docs.feature) — Executable spec: audit existing/missing OSS docs (reads repo), scaffold missing without overwrite, project-type-tailored (soc-qk4b)
 
 - [references/beads-patterns.md](references/beads-patterns.md)
 - [references/documentation-tiers.md](references/documentation-tiers.md)
