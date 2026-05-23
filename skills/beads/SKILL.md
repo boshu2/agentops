@@ -187,6 +187,8 @@ logging expectations, a named done state, and no dependency cycles.
 
 ## Reference Documents
 
+- [references/beads.feature](references/beads.feature) — Executable spec: bd-mandatory tracker, create-before-code, ready-detection, discovered-from links, live-reads-authoritative (soc-qk4b)
+
 - [references/ANTI_PATTERNS.md](references/ANTI_PATTERNS.md)
 - [references/BOUNDARIES.md](references/BOUNDARIES.md)
 - [references/composition-over-invention.md](references/composition-over-invention.md) — Run `bd <subcmd> --help` before specifying enforcement commands; compose primitives, don't invent
