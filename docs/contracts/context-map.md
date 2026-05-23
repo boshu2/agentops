@@ -306,6 +306,8 @@ graph LR
 | `swarm` | consumes | implement |
 | `swarm` | consumes | vibe |
 | `swarm` | produces | .agents/swarm/results/*.json |
+| `test` | consumes | repo-context |
+| `test` | consumes | standards |
 | `test` | produces | result.json |
 | `trace` | produces | result.json |
 | `using-agentops` | produces | documentation |

@@ -6,7 +6,9 @@ practices:
 - property-based-testing
 - bdd-gherkin
 hexagonal_role: supporting
-consumes: []
+consumes:
+- standards
+- repo-context
 produces:
 - result.json
 context_rel: []
@@ -397,3 +399,7 @@ All artifacts are written to `.agents/test/`:
 | `summary.md` | Before/after coverage delta and test inventory |
 | `tdd-log.md` | TDD cycle log (tdd mode only) |
 | `strategy.md` | Test architecture recommendations (strategy mode only) |
+
+## Reference Documents
+
+- [references/test.feature](references/test.feature) — Executable spec: load standards + detect language, generate real passing tests (not a plan), coverage gap-fill, artifacts in .agents/test/ (soc-qk4b)

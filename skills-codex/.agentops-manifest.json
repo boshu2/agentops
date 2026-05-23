@@ -991,7 +991,7 @@
     {
       "name": "refactor",
       "source_skill": "skills/refactor",
-      "source_hash": "8fbe28a9e7800948415df827620a867a7dca40580ed5c37d8031c24832e61136",
+      "source_hash": "b63658e56a390ccfb975aa323ba31010b2f90f4f37fca7fe0b16896e10013e4a",
       "generated_hash": "50b2fe5acbb2e6266f1bd15f3f2eb065e7d1ead4d3dc144cc167094062666663"
     },
     {
@@ -1117,7 +1117,7 @@
     {
       "name": "test",
       "source_skill": "skills/test",
-      "source_hash": "18e07d8d479701e7676f8fc1cd98a5f35c77e0a2de50c30a4097d2f7e2d52cb4",
+      "source_hash": "af67a4b2deb93603a63042248339912e700ab78466ba296967498d2b40abae5b",
       "generated_hash": "510f4eb94d65818d57b432f8a7396f98a7732aa66bae54310375d48386f9a892"
     },
     {
