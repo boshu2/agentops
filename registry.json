@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-23T07:55:08Z",
+  "generated_at": "2026-05-23T08:09:57Z",
   "summary": {
     "skills": 80,
     "hooks": 44,
@@ -232,7 +232,7 @@
         "tier": "execution",
         "path": "skills/push/",
         "has_skill_md": true,
-        "has_references": false,
+        "has_references": true,
         "reference_count": 0
       },
       {
