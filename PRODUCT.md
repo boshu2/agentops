@@ -8,6 +8,8 @@ last_reviewed: 2026-05-15
 
 **AgentOps is an SDLC control plane for agentic software development.** It automates the discipline of building a wiki for your agents: markdown in `.agents/` next to your code, produced and consumed by the agents that work there. The compounded corpus is the moat. The internal lifecycle is the CDLC: context is developed, tested, delivered, observed, and improved because context is what LLM agents consume.
 
+> The canonical definition of what 3.0 is — the hookless-first CDLC loop and the four-practice waist — lives in [docs/3.0.md](docs/3.0.md). This file is consistent with it.
+
 ## Product Identity
 
 AgentOps is the SDLC control plane for agent teams: software-engineering practice encoded for LLM agents under token scarcity.

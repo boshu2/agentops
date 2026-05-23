@@ -147,6 +147,7 @@ nav:
   - Home: index.md
   - Getting Started:
       - getting-started/index.md
+      - "AgentOps 3.0 (North Star)": 3.0.md
       - Newcomer Guide: newcomer-guide.md
       - Create Your First Skill: create-your-first-skill.md
       - Behavioral Discipline: behavioral-discipline.md

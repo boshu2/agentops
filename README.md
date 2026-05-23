@@ -10,6 +10,8 @@ AgentOps sits on top of the coding harness you already use (Claude Code, Codex, 
 
 *This repo was built with AgentOps. As of 2026-05-04 its `.agents/` held ~1,842 learnings, ~186 patterns, ~80 planning rules, and ~3,867 cited decisions captured during development. Re-run anytime: `bash scripts/corpus-stats.sh`.*
 
+**New here? Start with [what AgentOps 3.0 is](docs/3.0.md) — the hookless-first CDLC north star.**
+
 </div>
 
 ---
@@ -296,6 +298,7 @@ Full reference: [CLI Commands](cli/docs/COMMANDS.md).
 
 | Topic | Where |
 |-------|-------|
+| **What 3.0 is (north star)** | [docs/3.0.md](docs/3.0.md) |
 | Published site | [boshu2.github.io/agentops](https://boshu2.github.io/agentops/) |
 | Start navigating | [Docs index](docs/documentation-index.md) |
 | New contributor orientation | [Newcomer guide](docs/newcomer-guide.md) |
