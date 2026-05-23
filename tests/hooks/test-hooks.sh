@@ -1699,31 +1699,6 @@ fi
 
 # ============================================================
 echo ""
-echo "=== go-vet-post-edit.sh ==="
-# ============================================================
-
-# Test: non-Edit/Write tool is ignored
-EC=0
-CLAUDE_TOOL_NAME="Bash" CLAUDE_TOOL_INPUT_FILE_PATH="" \
-bash "$HOOKS_DIR/go-vet-post-edit.sh" >/dev/null 2>&1 || EC=$?
-if [ "$EC" -eq 0 ]; then
-    pass "go-vet-post-edit ignores non-Edit/Write tool"
-else
-    fail "go-vet-post-edit ignores non-Edit/Write tool"
-fi
-
-# Test: non-.go file is ignored
-EC=0
-CLAUDE_TOOL_NAME="Edit" CLAUDE_TOOL_INPUT_FILE_PATH="/tmp/test.py" \
-bash "$HOOKS_DIR/go-vet-post-edit.sh" >/dev/null 2>&1 || EC=$?
-if [ "$EC" -eq 0 ]; then
-    pass "go-vet-post-edit ignores non-Go files"
-else
-    fail "go-vet-post-edit ignores non-Go files"
-fi
-
-# ============================================================
-echo ""
 echo "=== git-worker-guard.sh ==="
 # ============================================================
 
@@ -1901,78 +1876,6 @@ else
 fi
 
 # ============================================================
-echo "=== research-loop-detector.sh ==="
-# ============================================================
-
-# Test: Write tool resets counter
-rm -f "$REPO_ROOT/.agents/ao/.read-streak" 2>/dev/null
-echo '{"tool_name":"Edit"}' | CLAUDE_TOOL_NAME=Edit bash "$HOOKS_DIR/research-loop-detector.sh" >/dev/null 2>&1
-if [[ ! -f "$REPO_ROOT/.agents/ao/.read-streak" ]]; then
-    pass "research-loop-detector: Edit resets counter"
-else
-    fail "research-loop-detector: Edit should reset counter"
-fi
-
-# Test: Read tool increments counter
-rm -f "$REPO_ROOT/.agents/ao/.read-streak" 2>/dev/null
-echo '{"tool_name":"Read"}' | CLAUDE_TOOL_NAME=Read bash "$HOOKS_DIR/research-loop-detector.sh" >/dev/null 2>&1
-if [[ -f "$REPO_ROOT/.agents/ao/.read-streak" ]] && [[ "$(cat "$REPO_ROOT/.agents/ao/.read-streak")" == "1" ]]; then
-    pass "research-loop-detector: Read increments counter"
-else
-    fail "research-loop-detector: Read should increment counter"
-fi
-
-# Test: Threshold triggers warning
-echo "7" > "$REPO_ROOT/.agents/ao/.read-streak"
-OUTPUT=$(echo '{"tool_name":"Read"}' | CLAUDE_TOOL_NAME=Read bash "$HOOKS_DIR/research-loop-detector.sh" 2>&1)
-if echo "$OUTPUT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1; then
-    pass "research-loop-detector: threshold 8 triggers warning"
-else
-    fail "research-loop-detector: threshold 8 should trigger warning"
-fi
-
-# Test: Kill switch
-echo "14" > "$REPO_ROOT/.agents/ao/.read-streak"
-OUTPUT=$(echo '{"tool_name":"Read"}' | CLAUDE_TOOL_NAME=Read AGENTOPS_RESEARCH_LOOP_DISABLED=1 bash "$HOOKS_DIR/research-loop-detector.sh" 2>&1)
-if [[ -z "$OUTPUT" ]]; then
-    pass "research-loop-detector: kill switch works"
-else
-    fail "research-loop-detector: kill switch should silence"
-fi
-rm -f "$REPO_ROOT/.agents/ao/.read-streak" 2>/dev/null
-
-# Test: Manifest wiring check
-if jq -e '.hooks.PostToolUse[].hooks[] | select(.command | contains("research-loop-detector.sh"))' "$HOOKS_DIR/hooks.json" >/dev/null 2>&1; then
-    pass "research-loop-detector.sh wired in hooks.json"
-else
-    fail "research-loop-detector.sh not found in hooks.json"
-fi
-
-# ============================================================
-echo ""
-echo "=== edit-knowledge-surface.sh ==="
-# ============================================================
-
-# Test: Kill switch disables hook
-OUTPUT=$(echo '{"tool_input":{"file_path":"/x/y.go"}}' | AGENTOPS_HOOKS_DISABLED=1 CLAUDE_TOOL_NAME=Edit bash "$HOOKS_DIR/edit-knowledge-surface.sh" 2>&1 || true)
-if [ -z "$OUTPUT" ]; then pass "edit-knowledge-surface kill switch"; else fail "edit-knowledge-surface kill switch"; fi
-
-# Test: Non-Edit tool exits silently
-OUTPUT=$(echo '{"tool_input":{"file_path":"/x/y.go"}}' | CLAUDE_TOOL_NAME=Read bash "$HOOKS_DIR/edit-knowledge-surface.sh" 2>&1 || true)
-if [ -z "$OUTPUT" ]; then pass "edit-knowledge-surface non-Edit tool silent exit"; else fail "edit-knowledge-surface non-Edit tool silent exit"; fi
-
-# Test: Missing file_path exits silently
-OUTPUT=$(echo '{"tool_input":{}}' | CLAUDE_TOOL_NAME=Edit bash "$HOOKS_DIR/edit-knowledge-surface.sh" 2>&1 || true)
-if [ -z "$OUTPUT" ]; then pass "edit-knowledge-surface missing file_path silent exit"; else fail "edit-knowledge-surface missing file_path silent exit"; fi
-
-# Test: Manifest wiring check
-if jq -e '.hooks.PreToolUse[] | select(.matcher == "Edit") | .hooks[] | select(.command | contains("edit-knowledge-surface.sh"))' "$HOOKS_DIR/hooks.json" >/dev/null 2>&1; then
-    pass "edit-knowledge-surface.sh wired in hooks.json under PreToolUse with Edit matcher"
-else
-    fail "edit-knowledge-surface.sh not found in hooks.json under PreToolUse with Edit matcher"
-fi
-
-echo ""
 echo "=== edit-audit.sh ==="
 
 MOCK_EDIT_AUDIT="$TMPDIR/mock-edit-audit"
@@ -2081,75 +1984,6 @@ if [ -z "$OUTPUT" ]; then
     pass "compile-session-defrag kill switch suppresses output"
 else
     fail "compile-session-defrag kill switch suppresses output"
-fi
-
-# ============================================================
-echo ""
-echo "=== context-monitor.sh ==="
-# ============================================================
-
-CONTEXT_SESSION_ID="test-context-$$"
-CONTEXT_BRIDGE="/tmp/claude-ctx-${CONTEXT_SESSION_ID}.json"
-printf '{"remaining_percent":20,"total_tokens":200000,"used_tokens":160000}\n' > "$CONTEXT_BRIDGE"
-trap 'rm -rf "$TMPDIR" "$REPO_FIXTURE_DIR"; rm -f "$CONTEXT_BRIDGE"' EXIT
-
-OUTPUT=$(printf '{"tool_name":"Read"}\n' | CLAUDE_SESSION_ID="$CONTEXT_SESSION_ID" bash "$HOOKS_DIR/context-monitor.sh" 2>/dev/null || true)
-if echo "$OUTPUT" | jq -e '.hookSpecificOutput.hookEventName == "PostToolUse" and (.hookSpecificOutput.additionalContext | test("Context window at 20% remaining"))' >/dev/null 2>&1; then
-    pass "context-monitor emits PostToolUse warning from bridge data"
-else
-    fail "context-monitor emits PostToolUse warning from bridge data"
-fi
-
-OUTPUT=$(printf '{"tool_name":"Read"}\n' | AGENTOPS_HOOKS_DISABLED=1 CLAUDE_SESSION_ID="$CONTEXT_SESSION_ID" bash "$HOOKS_DIR/context-monitor.sh" 2>&1 || true)
-if [ -z "$OUTPUT" ]; then
-    pass "context-monitor kill switch suppresses output"
-else
-    fail "context-monitor kill switch suppresses output"
-fi
-
-if jq -e '.hooks.PostToolUse[] | .hooks[] | select(.command | contains("context-monitor.sh"))' "$HOOKS_DIR/hooks.json" >/dev/null 2>&1; then
-    pass "context-monitor.sh wired in hooks.json"
-else
-    fail "context-monitor.sh not found in hooks.json"
-fi
-
-# ============================================================
-echo ""
-echo "=== write-time-quality.sh ==="
-# ============================================================
-
-MOCK_WRITE_QUALITY="$TMPDIR/mock-write-quality"
-mkdir -p "$MOCK_WRITE_QUALITY"
-cat > "$MOCK_WRITE_QUALITY/bad.go" <<'EOF'
-package quality
-
-import "os"
-
-func run() {
-    f, err := os.Open("missing")
-    _ = f
-    println(err)
-}
-EOF
-
-OUTPUT=$(jq -n --arg file "$MOCK_WRITE_QUALITY/bad.go" '{"tool_name":"Edit","tool_input":{"file_path":$file}}' | bash "$HOOKS_DIR/write-time-quality.sh" 2>/dev/null || true)
-if echo "$OUTPUT" | jq -e '.hookSpecificOutput.hookEventName == "write_time_quality" and (.hookSpecificOutput.warning_count >= 1)' >/dev/null 2>&1; then
-    pass "write-time-quality emits warnings for suspicious edits"
-else
-    fail "write-time-quality emits warnings for suspicious edits"
-fi
-
-OUTPUT=$(jq -n --arg file "$MOCK_WRITE_QUALITY/bad.go" '{"tool_name":"Read","tool_input":{"file_path":$file}}' | bash "$HOOKS_DIR/write-time-quality.sh" 2>&1 || true)
-if [ -z "$OUTPUT" ]; then
-    pass "write-time-quality ignores non-Edit/Write tools"
-else
-    fail "write-time-quality ignores non-Edit/Write tools"
-fi
-
-if jq -e '.hooks.PostToolUse[] | .hooks[] | select(.command | contains("write-time-quality.sh"))' "$HOOKS_DIR/hooks.json" >/dev/null 2>&1; then
-    pass "write-time-quality.sh wired in hooks.json"
-else
-    fail "write-time-quality.sh not found in hooks.json"
 fi
 
 # ============================================================

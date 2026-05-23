@@ -181,16 +181,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/edit-knowledge-surface.sh",
-            "timeout": 3
-          }
-        ]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/codex-parity-warn.sh",
             "timeout": 3
           }
@@ -253,11 +243,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/write-time-quality.sh",
-            "timeout": 5
-          },
-          {
-            "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/edit-audit.sh",
             "timeout": 3
           },
@@ -271,11 +256,6 @@
       {
         "matcher": "Edit",
         "hooks": [
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/write-time-quality.sh",
-            "timeout": 5
-          },
           {
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/edit-audit.sh",
@@ -294,21 +274,6 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/go-complexity-precommit.sh",
             "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/go-vet-post-edit.sh",
-            "timeout": 15
-          },
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/research-loop-detector.sh",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/context-monitor.sh",
-            "timeout": 2
           }
         ]
       }

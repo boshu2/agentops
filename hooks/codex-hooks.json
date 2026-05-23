@@ -86,11 +86,6 @@
           },
           {
             "type": "command",
-            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/edit-knowledge-surface.sh",
-            "timeout": 3
-          },
-          {
-            "type": "command",
             "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/codex-parity-warn.sh",
             "timeout": 3
           }
@@ -144,26 +139,6 @@
           {
             "type": "command",
             "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/ratchet-advance.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/write-time-quality.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/write-time-quality.sh",
             "timeout": 5
           }
         ]

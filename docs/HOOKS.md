@@ -24,7 +24,7 @@ AgentOps currently ships a full Claude runtime manifest across the supported hoo
 | `Stop` | Preserve handoff/team state and close the flywheel for the turn | `stop-team-guard.sh`, `stop-auto-handoff.sh`, `ao-flywheel-close.sh` |
 | `UserPromptSubmit` | Route explicit factory intake, watch context, and capture quality signals | `factory-router.sh`, `context-guard.sh`, `quality-signals.sh` |
 | `PreToolUse` | Gate risky tool calls and inject compact file-scoped guidance | `pre-mortem-gate.sh`, `dangerous-git-guard.sh`, `commit-review-gate.sh`, `standards-injector.sh`, `holdout-isolation-gate.sh` |
-| `PostToolUse` | Quality and loop-detection after edits | `write-time-quality.sh`, `go-complexity-precommit.sh`, `go-vet-post-edit.sh`, `research-loop-detector.sh`, `context-monitor.sh` |
+| `PostToolUse` | Quality gate after edits | `go-complexity-precommit.sh` |
 | `TaskCompleted` | Validate task closure metadata and structural checks | `task-validation-gate.sh` |
 | `PreCompact` | Snapshot branch, changed files, and ratchet state before compaction | `precompact-snapshot.sh` |
 | `SubagentStop` | Capture worker output for later recovery | `subagent-stop.sh` |

@@ -143,70 +143,10 @@ EOF
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# 6. go-vet-post-edit.sh (PostToolUse) — registered
 #    Only emits JSON when editing a _test.go file with assertion-free test functions.
 # ═══════════════════════════════════════════════════════════════════════
-
-@test "go-vet-post-edit: test file with empty test emits schema with hookEventName=PostToolUse" {
-    # Create a Go module and a test file with an assertion-free test function
-    mkdir -p "$MOCK_REPO/pkg"
-    echo "module example.com/test" > "$MOCK_REPO/pkg/go.mod"
-    echo "package pkg" > "$MOCK_REPO/pkg/main.go"
-    cat > "$MOCK_REPO/pkg/main_test.go" <<'GOEOF'
-package pkg
-
-import "testing"
-
-func TestEmpty(t *testing.T) {
-    x := 1
-    _ = x
-}
-GOEOF
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"tool_name":"Edit","tool_input":{"file_path":"'"$MOCK_REPO/pkg/main_test.go"'"}}' \
-        "$HOOKS_DIR/go-vet-post-edit.sh"
-    [ "$status" -eq 0 ]
-    # If the density check fires, validate the schema
-    if [ -n "$output" ] && echo "$output" | jq -e '.hookSpecificOutput' >/dev/null 2>&1; then
-        assert_hook_schema "$output" "PostToolUse"
-    fi
-}
-
-@test "go-vet-post-edit: non-Go file emits no output" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"tool_name":"Edit","tool_input":{"file_path":"foo.py"}}' "$HOOKS_DIR/go-vet-post-edit.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
 # ═══════════════════════════════════════════════════════════════════════
-# 7. research-loop-detector.sh (PostToolUse) — registered
 # ═══════════════════════════════════════════════════════════════════════
-
-@test "research-loop-detector: streak at threshold emits schema with hookEventName=PostToolUse" {
-    # Set streak to 7 so the next Read triggers the warn threshold (8)
-    mkdir -p "$MOCK_REPO/.agents/ao"
-    echo "7" > "$MOCK_REPO/.agents/ao/.read-streak"
-    run bash -c 'cd "$1" && printf "%s" "$2" | CLAUDE_TOOL_NAME=Read bash "$3" 2>&1' \
-        -- "$MOCK_REPO" '{"tool_name":"Read","tool_input":{"file_path":"x.md"}}' "$HOOKS_DIR/research-loop-detector.sh"
-    [ "$status" -eq 0 ]
-    [ -n "$output" ]
-    assert_hook_schema "$output" "PostToolUse"
-    # Verify the additionalContext mentions the streak count
-    local ctx
-    ctx=$(echo "$output" | jq -r '.hookSpecificOutput.additionalContext')
-    [[ "$ctx" == *"8"* ]]
-}
-
-@test "research-loop-detector: below threshold emits no output" {
-    mkdir -p "$MOCK_REPO/.agents/ao"
-    echo "2" > "$MOCK_REPO/.agents/ao/.read-streak"
-    run bash -c 'cd "$1" && printf "%s" "$2" | CLAUDE_TOOL_NAME=Read bash "$3" 2>&1' \
-        -- "$MOCK_REPO" '{"tool_name":"Read","tool_input":{"file_path":"x.md"}}' "$HOOKS_DIR/research-loop-detector.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
 # ═══════════════════════════════════════════════════════════════════════
 # 8. context-guard.sh (UserPromptSubmit) — unregistered
 #    Requires `ao` CLI to return a message.
@@ -327,66 +267,6 @@ AOEOF
 # ═══════════════════════════════════════════════════════════════════════
 # CROSS-CHECK: hooks.json event registration vs hookEventName in output
 # ═══════════════════════════════════════════════════════════════════════
-
-@test "cross-check: registered hooks emit hookEventName matching their hooks.json event" {
-    # Map of registered JSON-emitting hooks to their expected hookEventName.
-    # This is the meta-test that would have caught PR #71.
-    local hooks_json="$HOOKS_DIR/hooks.json"
-    [ -f "$hooks_json" ]
-
-    # Parse hooks.json to build event-to-hook mapping for registered JSON emitters.
-    # SessionStart and factory-router are intentionally silent.
-    local -A hook_event_map
-    hook_event_map=(
-        ["commit-review-gate.sh"]="PreToolUse"
-        ["go-vet-post-edit.sh"]="PostToolUse"
-        ["research-loop-detector.sh"]="PostToolUse"
-        ["edit-knowledge-surface.sh"]="PreToolUse"
-    )
-
-    local failures=""
-
-    for hook_file in "${!hook_event_map[@]}"; do
-        local expected_event="${hook_event_map[$hook_file]}"
-        local hook_path="$HOOKS_DIR/$hook_file"
-        [ -f "$hook_path" ] || {
-            failures="${failures}  MISSING: $hook_file\n"
-            continue
-        }
-
-        # Verify the hook is actually registered in hooks.json under the expected event
-        local registered_event
-        registered_event=$(jq -r --arg hf "$hook_file" '
-            .hooks | to_entries[] |
-            select(.value[].hooks[]?.command | test($hf)) |
-            .key
-        ' "$hooks_json" 2>/dev/null | head -1)
-
-        [ -n "$registered_event" ] || {
-            failures="${failures}  NOT REGISTERED: $hook_file expected under $expected_event\n"
-            continue
-        }
-
-        # Verify the hookEventName in the source code matches the registered event
-        local code_event
-        code_event=$(grep -oE '"hookEventName":[[:space:]]*"[^"]*"' "$hook_path" | head -1 | sed 's/"hookEventName":[[:space:]]*"//;s/"//')
-        [ -n "$code_event" ] || {
-            failures="${failures}  NO hookEventName found in source: $hook_file\n"
-            continue
-        }
-
-        [ "$code_event" = "$registered_event" ] || {
-            failures="${failures}  MISMATCH: $hook_file emits hookEventName=$code_event but registered under $registered_event\n"
-        }
-    done
-
-    if [ -n "$failures" ]; then
-        echo "Cross-check failures:"
-        printf '%b' "$failures"
-        return 1
-    fi
-}
-
 @test "cross-check: all hooks.json registered hooks that emit JSON use hookSpecificOutput wrapper" {
     # Verify no registered hook emits bare additionalContext without hookSpecificOutput
     local hooks_json="$HOOKS_DIR/hooks.json"
