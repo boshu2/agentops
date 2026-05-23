@@ -259,6 +259,7 @@ graph LR
 | `ratchet` | produces | .agents/rpi/*.md |
 | `readme` | produces | documentation |
 | `recover` | produces | .agents/rpi/*.md |
+| `red-team` | consumes | repo-context |
 | `red-team` | produces | result.json |
 | `refactor` | produces | git-changes |
 | `release` | produces | result.json |
