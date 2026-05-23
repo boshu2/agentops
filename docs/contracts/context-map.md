@@ -261,6 +261,8 @@ graph LR
 | `recover` | produces | .agents/rpi/*.md |
 | `red-team` | consumes | repo-context |
 | `red-team` | produces | result.json |
+| `refactor` | consumes | complexity |
+| `refactor` | consumes | repo-context |
 | `refactor` | produces | git-changes |
 | `release` | produces | result.json |
 | `research` | consumes | inject |
