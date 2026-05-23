@@ -623,20 +623,7 @@ EOF
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# research-loop-detector.sh
 # ═══════════════════════════════════════════════════════════════════════
-
-@test "research-loop-detector: threshold triggers warning (original)" {
-    # Seed the dedup state in the mock repo (per soc-y1bk hook lifecycle
-    # isolation). Helper now cds into $MOCK_REPO at setup time so
-    # `git rev-parse --show-toplevel` inside the hook resolves here, not
-    # to the real $REPO_ROOT.
-    mkdir -p "$MOCK_REPO/.agents/ao"
-    echo "7" > "$MOCK_REPO/.agents/ao/.read-streak"
-    OUTPUT=$(printf '%s' '{"tool_name":"Read"}' | CLAUDE_TOOL_NAME=Read bash "$HOOKS_DIR/research-loop-detector.sh" 2>&1)
-    echo "$OUTPUT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1
-}
-
 # ═══════════════════════════════════════════════════════════════════════
 # citation-tracker.sh
 # ═══════════════════════════════════════════════════════════════════════
@@ -709,11 +696,6 @@ AOEOF
 @test "hooks.json: factory-router wired in UserPromptSubmit" {
     jq -e '.hooks.UserPromptSubmit[].hooks[] | select(.command | contains("factory-router.sh"))' "$HOOKS_DIR/hooks.json" >/dev/null 2>&1
 }
-
-@test "hooks.json: research-loop-detector wired in PostToolUse" {
-    jq -e '.hooks.PostToolUse[].hooks[] | select(.command | contains("research-loop-detector.sh"))' "$HOOKS_DIR/hooks.json" >/dev/null 2>&1
-}
-
 @test "hooks.json: ao-agents-check removed" {
     ! grep -q "ao-agents-check" "$HOOKS_DIR/hooks.json"
 }
@@ -811,7 +793,6 @@ LEARN_EOF
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# go-complexity-precommit.sh / go-test-precommit.sh / go-vet-post-edit.sh
 # ═══════════════════════════════════════════════════════════════════════
 
 @test "go-complexity-precommit: ignores non-Edit/Write tools" {
@@ -840,13 +821,6 @@ LEARN_EOF
     [ "$status" -eq 0 ]
     [ -z "$output" ]
 }
-
-@test "go-vet-post-edit: ignores non-.go files" {
-    run bash -c 'CLAUDE_TOOL_NAME="Edit" CLAUDE_TOOL_INPUT_FILE_PATH="/tmp/test.py" bash "$1" 2>&1' \
-        -- "$HOOKS_DIR/go-vet-post-edit.sh"
-    [ "$status" -eq 0 ]
-}
-
 # ═══════════════════════════════════════════════════════════════════════
 # session-end-maintenance.sh / ao-flywheel-close.sh
 # ═══════════════════════════════════════════════════════════════════════

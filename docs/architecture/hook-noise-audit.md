@@ -1,6 +1,8 @@
 # Hook-Noise Audit (3.0 reconciliation)
 
 > **Bead:** `soc-6zihw` (W3 of the 3.0 reconciliation). **Criterion:** [docs/3.0.md](../3.0.md) — "hooks may help, but they must not inject random noise"; the 3.0-ready acceptance is *"every hook is a bounded adapter or a gate, none a noise-injector."* This audit classifies all 53 hook scripts against that criterion. Edits to hook behavior are tracked separately (see Follow-on).
+>
+> **Status (go-hookless epic `soc-e2ju0`):** operator chose to **delete** the noise-injectors outright, not quiet them (they are value-negative: A/B Δ=0). S1 (`soc-s1i3b`) deleted 5 — `research-loop-detector`, `context-monitor`, `write-time-quality`, `edit-knowledge-surface`, `go-vet-post-edit` — leaving 48 hooks. Remaining noise tier (`standards-injector`, `commit-review-gate`, + conditional injectors) deletes in S2–S3; default install goes to zero hooks in S4.
 
 ## Method
 

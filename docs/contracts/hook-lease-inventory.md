@@ -12,12 +12,12 @@ path required before hook defaults can be removed.
 
 ## Summary
 
-- Manifest hook entries: 44
-- Unique hook files in manifest: 37
+- Manifest hook entries: 38
+- Unique hook files in manifest: 32
 - Additional hook surfaces outside main manifest: 2
 - `remove`: 0
-- `gate`: 26
-- `event-subscriber`: 9
+- `gate`: 22
+- `event-subscriber`: 7
 - `explicit-command`: 9
 - `optional-adapter`: 0
 
@@ -68,23 +68,17 @@ This inventory uses concrete migration dispositions. For the
 | PreToolUse | Bash | `lead-only-worker-git-guard.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | no | SafetyPolicyPort lead-only git lane |
 | PreToolUse | Edit | `standards-injector.sh` | 3 | Context Compiler | `explicit-command` | `token-risk-needs-remeasure` | yes | Skill-scoped standards lookup via ContextCompilerPort |
 | PreToolUse | Write | `standards-injector.sh` | 3 | Context Compiler | `explicit-command` | `token-risk-needs-remeasure` | yes | Skill-scoped standards lookup via ContextCompilerPort |
-| PreToolUse | Edit | `edit-knowledge-surface.sh` | 3 | Knowledge Flywheel | `gate` | `deterministic-safety` | yes | GateRunnerPort knowledge-surface validation lane |
 | PreToolUse | Edit | `codex-parity-warn.sh` | 3 | Skill Catalog | `gate` | `deterministic-safety` | yes | HarnessPort parity compiler plus CI validation lane |
 | PreToolUse | Read | `holdout-isolation-gate.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | no | GateRunnerPort holdout-isolation lane |
 | PreToolUse | Glob | `holdout-isolation-gate.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | no | GateRunnerPort holdout-isolation lane |
 | PreToolUse | Grep | `holdout-isolation-gate.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | no | GateRunnerPort holdout-isolation lane |
 | PreToolUse | Bash | `holdout-isolation-gate.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | no | GateRunnerPort holdout-isolation lane |
 | PreToolUse | Edit\|Write\|Bash | `edit-scope-guard.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | no | SafetyPolicyPort scope mutation lane |
-| PostToolUse | Write | `write-time-quality.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | yes | GateRunnerPort write-time quality lane |
 | PostToolUse | Write | `edit-audit.sh` | 3 | Knowledge Flywheel | `event-subscriber` | `needs-eval` | no | EventBusPort subscriber for artifact.edited |
 | PostToolUse | Write | `postedit-codex-refresh.sh` | 10 | Skill Catalog | `gate` | `deterministic-safety` | no | HarnessPort projection compiler |
-| PostToolUse | Edit | `write-time-quality.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | yes | GateRunnerPort write-time quality lane |
 | PostToolUse | Edit | `edit-audit.sh` | 3 | Knowledge Flywheel | `event-subscriber` | `needs-eval` | no | EventBusPort subscriber for artifact.edited |
 | PostToolUse | Edit | `postedit-codex-refresh.sh` | 10 | Skill Catalog | `gate` | `deterministic-safety` | no | HarnessPort projection compiler |
 | PostToolUse | * | `go-complexity-precommit.sh` | 10 | Evidence and Trust | `gate` | `deterministic-safety` | yes | GateRunnerPort Go complexity lane |
-| PostToolUse | * | `go-vet-post-edit.sh` | 15 | Evidence and Trust | `gate` | `deterministic-safety` | yes | GateRunnerPort Go vet lane |
-| PostToolUse | * | `research-loop-detector.sh` | 5 | Work Lifecycle | `event-subscriber` | `needs-eval` | yes | EventBusPort subscriber for phase.research_activity |
-| PostToolUse | * | `context-monitor.sh` | 2 | Context Compiler | `event-subscriber` | `token-risk-needs-remeasure` | yes | ContextCompilerPort telemetry event |
 | TaskCompleted | * | `task-validation-gate.sh` | 60 | Evidence and Trust | `gate` | `deterministic-safety` | no | GateRunnerPort task-validation lane |
 | PreCompact | * | `precompact-snapshot.sh` | 5 | Knowledge Flywheel | `event-subscriber` | `needs-eval` | no | EventBusPort subscriber for context.compacting |
 | SubagentStop | * | `subagent-stop.sh` | 5 | Runtime Shell | `event-subscriber` | `needs-eval` | no | EventBusPort subscriber for agent_session.stopped |
@@ -226,12 +220,6 @@ surfaces that are not wired by the active manifests.
 - **Side effects:** injects standards text on edit/write
 - **Rationale:** Standards should be pulled by phase/surface need, not injected on every edit.
 
-### `edit-knowledge-surface.sh`
-
-- **Summary:** edit-knowledge-surface.sh - PreToolUse hook (matcher: Edit)
-- **Side effects:** guards edits to knowledge surfaces
-- **Rationale:** Knowledge-surface mutation policy is a validation gate.
-
 ### `codex-parity-warn.sh`
 
 - **Summary:** codex-parity-warn.sh - PreToolUse hook (matcher: Edit)
@@ -250,12 +238,6 @@ surfaces that are not wired by the active manifests.
 - **Side effects:** blocks edits outside declared scope
 - **Rationale:** Edit scope is a deterministic safety policy.
 
-### `write-time-quality.sh`
-
-- **Summary:** PostToolUse hook: lightweight code quality checks after Write/Edit.
-- **Side effects:** emits write-time quality warnings
-- **Rationale:** Write-time checks are validation lanes.
-
 ### `edit-audit.sh`
 
 - **Summary:** PostToolUse hook: append one JSON line per Edit/Write to .agents/ao/edit-audit.log
@@ -273,24 +255,6 @@ surfaces that are not wired by the active manifests.
 - **Summary:** PostToolUse hook: check cyclomatic complexity of modified Go files.
 - **Side effects:** runs Go complexity checks after edits
 - **Rationale:** Complexity is a validation lane.
-
-### `go-vet-post-edit.sh`
-
-- **Summary:** PostToolUse hook: run go vet on modified Go files after edits.
-- **Side effects:** runs go vet after edits
-- **Rationale:** Static analysis is a validation lane.
-
-### `research-loop-detector.sh`
-
-- **Summary:** research-loop-detector.sh - PostToolUse hook: detect research spirals
-- **Side effects:** warns on research-loop patterns
-- **Rationale:** Research-loop detection should observe phase events.
-
-### `context-monitor.sh`
-
-- **Summary:** context-monitor.sh - PostToolUse hook: context window usage monitoring via bridge pattern
-- **Side effects:** emits context-window telemetry
-- **Rationale:** Telemetry should be non-resident and event-shaped.
 
 ### `task-validation-gate.sh`
 

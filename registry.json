@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-23T20:48:59Z",
+  "generated_at": "2026-05-23T23:01:11Z",
   "summary": {
     "skills": 80,
-    "hooks": 44,
+    "hooks": 38,
     "knowledge_stores": 5,
     "job_types": 14,
     "eval_files": 62,
@@ -662,14 +662,6 @@
         "type": "command"
       },
       {
-        "name": "context-monitor",
-        "lifecycle": "PostToolUse",
-        "matcher": "all",
-        "timeout": 2,
-        "path": "hooks/context-monitor.sh",
-        "type": "command"
-      },
-      {
         "name": "edit-audit",
         "lifecycle": "PostToolUse",
         "matcher": "Write",
@@ -694,14 +686,6 @@
         "type": "command"
       },
       {
-        "name": "go-vet-post-edit",
-        "lifecycle": "PostToolUse",
-        "matcher": "all",
-        "timeout": 15,
-        "path": "hooks/go-vet-post-edit.sh",
-        "type": "command"
-      },
-      {
         "name": "postedit-codex-refresh",
         "lifecycle": "PostToolUse",
         "matcher": "Write",
@@ -715,30 +699,6 @@
         "matcher": "Edit",
         "timeout": 10,
         "path": "hooks/postedit-codex-refresh.sh",
-        "type": "command"
-      },
-      {
-        "name": "research-loop-detector",
-        "lifecycle": "PostToolUse",
-        "matcher": "all",
-        "timeout": 5,
-        "path": "hooks/research-loop-detector.sh",
-        "type": "command"
-      },
-      {
-        "name": "write-time-quality",
-        "lifecycle": "PostToolUse",
-        "matcher": "Write",
-        "timeout": 5,
-        "path": "hooks/write-time-quality.sh",
-        "type": "command"
-      },
-      {
-        "name": "write-time-quality",
-        "lifecycle": "PostToolUse",
-        "matcher": "Edit",
-        "timeout": 5,
-        "path": "hooks/write-time-quality.sh",
         "type": "command"
       },
       {
@@ -787,14 +747,6 @@
         "matcher": "Bash",
         "timeout": 5,
         "path": "hooks/dangerous-git-guard.sh",
-        "type": "command"
-      },
-      {
-        "name": "edit-knowledge-surface",
-        "lifecycle": "PreToolUse",
-        "matcher": "Edit",
-        "timeout": 3,
-        "path": "hooks/edit-knowledge-surface.sh",
         "type": "command"
       },
       {
