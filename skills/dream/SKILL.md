@@ -222,6 +222,7 @@ Read the latest Dream report and tell me the first move.
 
 ## Reference Documents
 
+- [references/dream.feature](references/dream.feature) — Executable spec: resolve operator lane, run bounded bedtime loop (harvest→forge→close-loop→defrag), write report (soc-qk4b)
 - [Dream Run Contract](../../docs/contracts/dream-run-contract.md)
 - [Dream Report Contract](../../docs/contracts/dream-report.md)
 - [How It Works](../../docs/how-it-works.md)

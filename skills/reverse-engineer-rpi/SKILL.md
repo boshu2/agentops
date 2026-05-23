@@ -302,3 +302,7 @@ This must show:
 | Fixture test diff fails unexpectedly | Upstream repo changed or golden fixtures are stale | Re-run with the pinned ref, copy fresh contracts into `fixtures/`, and commit the updated golden files (see Updating Fixtures). |
 | `spec-cli-surface.md` not generated | No recognized CLI framework (Node/Python/Go) detected in the repo | Check that the target repo has a discoverable CLI entry point; otherwise the CLI surface is documented in `spec-code-map.md` instead. |
 | Network error during repo clone | Firewall, VPN, or GitHub rate limit blocking the shallow clone | Verify network connectivity, authenticate with `gh auth login` if the repo is private, or use `--local-clone-dir` to point at a pre-cloned directory. |
+
+## Reference Documents
+
+- [references/reverse-engineer-rpi.feature](references/reverse-engineer-rpi.feature) — Executable spec: repo-mode feature catalog + code map, binary-mode security audit, durable spec artifacts (soc-qk4b)

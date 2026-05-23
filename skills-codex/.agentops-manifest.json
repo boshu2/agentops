@@ -709,7 +709,7 @@
     {
       "name": "codex-team",
       "source_skill": "skills/codex-team",
-      "source_hash": "941671372c3bcb3f39a68424796be019c5f6348cae2225ae52038efad9742493",
+      "source_hash": "62ed5ec5b5c41a27c49c46d440ec7e1ecf4cbfcf385b29e582207d1b181ac49d",
       "generated_hash": "a2753808fbbff5ab6ef9e365c3d02e6fb909707e415b485a571a91017c692309"
     },
     {
@@ -745,7 +745,7 @@
     {
       "name": "curate",
       "source_skill": "skills/curate",
-      "source_hash": "fc206e9d4e3b8ef303b705f01b4296ee4b4b5a9e4c2f8463200108c291c8bd39",
+      "source_hash": "8dc6adda58141217c1b58a77c15f65927b2275f0d2e6d9a7b709ed1489fdc717",
       "generated_hash": "e591a74578afc525c4eb284f36ee3e6f9efa103070505cf32e5c3b494fb7c490"
     },
     {
@@ -781,7 +781,7 @@
     {
       "name": "dream",
       "source_skill": "skills/dream",
-      "source_hash": "98592ce13c45f55ea144992dd215a6a05bc3c76dfcf5926e53414f94e7af7c04",
+      "source_hash": "52fc323b1c8e5d44962f1aa1d2634cccbac4a58e701eefcd9f37efc6413b4977",
       "generated_hash": "f191a607e3864bfa7d36bbc7d7f5c4aa793ec5587d33bbee5cca8697474a85bc"
     },
     {
@@ -817,7 +817,7 @@
     {
       "name": "grafana-platform-dashboard",
       "source_skill": "skills/grafana-platform-dashboard",
-      "source_hash": "1503e433ed937e7d9f6dec758820586b61aadb1e76c38405ccd5cbc553b959dd",
+      "source_hash": "d2338cda8b41b92bfbb492707aab498fdbbce231e2d0cc5a6fb8ec63cc45f271",
       "generated_hash": "d0322934b111556c3bdaa86755f9d615ed2145f9be880d2219f82d5ba9da4193"
     },
     {
@@ -1015,7 +1015,7 @@
     {
       "name": "reverse-engineer-rpi",
       "source_skill": "skills/reverse-engineer-rpi",
-      "source_hash": "1cf60a4034f97df7e647569c6cc04367ac41c4a165df202e90bc2565d6305932",
+      "source_hash": "a3ba1517c06f9a5eeb788375f09cabb393af85288b640e926a3a3f162cb20a6d",
       "generated_hash": "2166a1d4b1d7361134aa8a64c97298d47877e557c7c46082439635cdf3f8c2c5"
     },
     {
