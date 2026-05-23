@@ -409,6 +409,8 @@ Common bug patterns to check:
 
 ## Reference Documents
 
+- [references/bug-hunt.feature](references/bug-hunt.feature) — Executable spec: 4-phase root-cause investigation, fix-the-cause-not-symptom, --audit sweep, cited artifact (soc-qk4b)
+
 - [references/audit-report-template.md](references/audit-report-template.md)
 - [references/bug-report-template.md](references/bug-report-template.md)
 - [references/failure-categories.md](references/failure-categories.md)
