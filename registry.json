@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-22T19:29:37Z",
+  "generated_at": "2026-05-23T04:08:26Z",
   "summary": {
     "skills": 80,
     "hooks": 44,
@@ -440,7 +440,7 @@
         "tier": "knowledge",
         "path": "skills/retro/",
         "has_skill_md": true,
-        "has_references": false,
+        "has_references": true,
         "reference_count": 0
       },
       {
