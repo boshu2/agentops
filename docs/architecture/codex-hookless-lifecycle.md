@@ -2,7 +2,7 @@
 
 > **Note:** Codex supports native hooks, but AgentOps installs hookless by default. Native hooks are an optional `scripts/install-codex-plugin.sh --with-hooks` / `scripts/install-codex.sh --with-hooks` profile. The hookless lifecycle remains the first-value path because packets, explicit gates, and closeout artifacts are portable across runtimes.
 
-AgentOps originally assumed a hook-capable runtime lifecycle such as Claude/OpenCode `session-start`, `session-end`, and `stop`. Codex Desktop does not expose that lifecycle surface under `~/.codex`, so the Codex runtime needs an explicit fallback that keeps the flywheel working without pretending hooks exist.
+AgentOps originally assumed a hook-capable runtime lifecycle such as Claude/OpenCode `session-start`, `session-end`, and `stop`. Codex CLI (0.115.0+) *does* expose native hooks — AgentOps wires the same hook scripts via `hooks/codex-hooks.json` under the optional `--with-hooks` profile — but installs **hookless by default** for portability, and the Codex **Desktop** app exposes no `~/.codex` hook surface at all. So the Codex runtime needs an explicit lifecycle path that keeps the flywheel working whether or not native hooks are present, rather than assuming them.
 
 ## Why This Exists
 
@@ -14,8 +14,8 @@ AgentOps originally assumed a hook-capable runtime lifecycle such as Claude/Open
 
 | Mode | Detection | Start path | Closeout path | Guarantees |
 |------|-----------|------------|---------------|------------|
-| `hook-capable` | Claude/OpenCode runtime plus installed hook surfaces | SessionStart hook or explicit `ao inject` | SessionEnd/Stop hooks or explicit `ao forge transcript` + `ao flywheel close-loop` | Startup injection and close-loop maintenance can be automatic when hooks are installed |
-| `codex-hookless-fallback` | Codex env/session metadata and no hook surface under `~/.codex` | `ao codex start` or skill-driven `ao codex ensure-start` | `ao codex stop` or skill-driven `ao codex ensure-stop` | Explicit startup context, transcript discovery fallback, citation capture, session-end-equivalent maintenance, and persisted lifecycle state |
+| `hook-capable` | Claude/OpenCode, or Codex CLI 0.115.0+ installed with `--with-hooks`, plus installed hook surfaces | SessionStart hook or explicit `ao inject` | SessionEnd/Stop hooks or explicit `ao forge transcript` + `ao flywheel close-loop` | Startup injection and close-loop maintenance can be automatic when hooks are installed |
+| `codex-hookless-fallback` | Codex env/session metadata with no native-hook profile installed (Desktop app, or CLI installed hookless) | `ao codex start` or skill-driven `ao codex ensure-start` | `ao codex stop` or skill-driven `ao codex ensure-stop` | Explicit startup context, transcript discovery fallback, citation capture, session-end-equivalent maintenance, and persisted lifecycle state |
 | `manual` | No hooks and no Codex-specific runtime detection | `ao inject` / `ao lookup` | `ao forge transcript` + `ao flywheel close-loop` | Portable low-level workflow with no hidden lifecycle assumptions |
 
 ## Command Responsibilities
