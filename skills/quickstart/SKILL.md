@@ -118,6 +118,8 @@ Starting a new project? Run `/scaffold <language> <name>` to generate project st
 
 ## Reference Documents
 
+- [references/quickstart.feature](references/quickstart.feature) — Executable spec: detect setup (git/ao/bd/.agents), recommend a state-appropriate next action (soc-qk4b)
+
 - [references/getting-started.md](references/getting-started.md)
 - [references/troubleshooting.md](references/troubleshooting.md)
 - [references/full-catalog.md](references/full-catalog.md)
