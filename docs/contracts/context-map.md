@@ -203,6 +203,7 @@ graph LR
 | `discovery` | produces | .agents/plans/*.md |
 | `discovery` | produces | bd-issue |
 | `discovery` | produces | execution-packet.json |
+| `doc` | consumes | repo-context |
 | `doc` | produces | documentation |
 | `domain` | produces | stdout |
 | `dream` | produces | .agents/research/*.md |

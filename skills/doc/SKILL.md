@@ -6,7 +6,8 @@ practices:
 - code-complete
 - pragmatic-programmer
 hexagonal_role: supporting
-consumes: []
+consumes:
+- repo-context
 produces:
 - documentation
 context_rel: []
@@ -265,6 +266,8 @@ Tell the user:
 | Validation shows docs out of sync | Code changed after docs written | Re-run `gen` command for affected features. Consider adding git hook to flag doc updates needed when code changes. |
 
 ## Reference Documents
+
+- [references/doc.feature](references/doc.feature) — Executable spec: detect project type, generate type-appropriate docs from the repo, validate existing docs against source (soc-qk4b)
 
 - [references/generation-templates.md](references/generation-templates.md)
 - [references/prose-and-report-workmanship.md](references/prose-and-report-workmanship.md)
