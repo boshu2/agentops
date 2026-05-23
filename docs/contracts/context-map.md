@@ -225,6 +225,7 @@ graph LR
 | `openai-docs` | consumes | external-api |
 | `oss-docs` | consumes | repo-context |
 | `oss-docs` | produces | documentation |
+| `perf` | consumes | repo-context |
 | `perf` | produces | result.json |
 | `plan` | consumes | standards |
 | `plan` | produces | .agents/plans/*.md |

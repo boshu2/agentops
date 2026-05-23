@@ -6,7 +6,8 @@ practices:
 - sre
 - code-complete
 hexagonal_role: domain
-consumes: []
+consumes:
+- repo-context
 produces:
 - result.json
 context_rel:
@@ -339,6 +340,8 @@ COMPARISON: baseline vs candidate
 - [vibe](../vibe/SKILL.md) — Validate optimized code quality
 
 ## Reference Documents
+
+- [references/perf.feature](references/perf.feature) — Executable spec: profile hotspots with metrics, bench, compare-regression, optimize (soc-qk4b)
 
 - [references/profiling-playbook.md](references/profiling-playbook.md)
 - [references/system-pressure-triage.md](references/system-pressure-triage.md)
