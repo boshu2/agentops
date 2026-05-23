@@ -265,6 +265,8 @@ gh pr create --title "type(scope): brief description" \
 
 ## Reference Documents
 
+- [references/pr-prep.feature](references/pr-prep.feature) — Executable spec: analyze repo conventions/history, validate tests first, generate PR body + branch (soc-qk4b)
+
 - [references/case-study-historical-context.md](references/case-study-historical-context.md)
 - [references/lessons-learned.md](references/lessons-learned.md)
 - [references/package-extraction.md](references/package-extraction.md)
