@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-23T06:25:03Z",
+  "generated_at": "2026-05-23T06:40:08Z",
   "summary": {
     "skills": 80,
     "hooks": 44,
@@ -584,7 +584,7 @@
         "tier": "product",
         "path": "skills/security/",
         "has_skill_md": true,
-        "has_references": false,
+        "has_references": true,
         "reference_count": 0
       },
       {
