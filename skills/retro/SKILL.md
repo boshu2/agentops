@@ -108,3 +108,7 @@ utility: 0.5
 | Learning too generic | Surface-level capture | Be specific: "auth tokens expire after 1h" not "learned about auth" |
 | Duplicate learnings | Same insight captured twice | Check existing learnings with grep before writing |
 | Need full retrospective | Quick capture isn't enough | Use `/post-mortem` for comprehensive extraction + processing |
+
+## Reference Documents
+
+- [references/retro.feature](references/retro.feature) — Executable spec: single-observation capture to .agents/learnings/, candidate-under-ratchet, lightest move-7 surface (soc-qk4b)
