@@ -296,6 +296,7 @@ graph LR
 | `skill-auditor` | produces | result.json |
 | `skill-builder` | produces | converted-skill |
 | `standards` | produces | stdout |
+| `status` | consumes | bd |
 | `status` | produces | stdout |
 | `swarm` | consumes | implement |
 | `swarm` | consumes | vibe |

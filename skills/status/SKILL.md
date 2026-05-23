@@ -5,7 +5,8 @@ practices:
 - dora-metrics
 - sre
 hexagonal_role: driving-adapter
-consumes: []
+consumes:
+- bd
 produces:
 - stdout
 context_rel: []
@@ -314,3 +315,7 @@ Render this with a single code block. No visual dashboard when `--json` is activ
 | Ratchet phase shows stale data | Old chain.jsonl not cleaned up | Check timestamp of `.agents/ao/chain.jsonl`. If stale, delete it or run `/validation` to complete cycle and reset state. |
 | Suggested action doesn't match intent | State-aware rules didn't capture edge case | Review priority table in Step 3. May need to refine conditions. Use `--json` to inspect raw state and debug rule matching. |
 | JSON output malformed | Parallel bash calls returned unexpected format | Check each bash call individually. Ensure jq parsing works on actual data. Validate JSON structure with `jq .` before returning to user. |
+
+## Reference Documents
+
+- [references/status.feature](references/status.feature) — Executable spec: work dashboard from bd (ready/in-progress/epics) + ratchet/flywheel/git, --json, fail-soft on missing tools (soc-qk4b)
