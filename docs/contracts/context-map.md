@@ -190,6 +190,7 @@ graph LR
 | `crank` | produces | .agents/swarm/results/*.json |
 | `crank` | produces | git-changes |
 | `curate` | produces | .agents/research/*.md |
+| `deps` | consumes | repo-context |
 | `deps` | produces | result.json |
 | `design` | consumes | standards |
 | `design` | produces | result.json |
