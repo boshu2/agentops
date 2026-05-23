@@ -222,6 +222,7 @@ graph LR
 | `implement` | produces | git-changes |
 | `llm-wiki` | produces | documentation |
 | `openai-docs` | consumes | external-api |
+| `oss-docs` | consumes | repo-context |
 | `oss-docs` | produces | documentation |
 | `perf` | produces | result.json |
 | `plan` | consumes | standards |
