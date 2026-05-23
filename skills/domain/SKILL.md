@@ -68,6 +68,7 @@ structural primitives without operator consent.
 
 Structural primitives (the architecture):
 
+- [references/domain.feature](references/domain.feature) — Executable spec: load-on-demand corpus, draft→canonical ratchet, vocabulary root (soc-qk4b)
 - [`references/entry.md`](references/entry.md) — Entry: the atomic concept doc
 - [`references/index-primitive.md`](references/index-primitive.md) — Index: the discovery surface (concept)
 - [`references/citation.md`](references/citation.md) — Citation: how Entries reference each other and how agents claim use
