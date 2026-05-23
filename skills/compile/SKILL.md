@@ -6,7 +6,8 @@ practices:
 - ddd-bounded-context
 hexagonal_role: supporting
 consumes: []
-produces: []
+produces:
+- .agents/compiled/lint-report.md
 context_rel: []
 skill_api_version: 1
 user-invocable: true
@@ -198,6 +199,8 @@ For unattended runs, `bash skills/compile/scripts/compile.sh` supports:
 | Hash file missing | First compilation | Normal — full compile runs, hashes saved after |
 
 ## Reference Documents
+
+- [references/compile.feature](references/compile.feature) — Executable spec: Mine→Grow→Lint→Defrag rebuild, lint-not-autofix, incremental batching, evolve warmup (soc-qk4b)
 
 - [references/phases.md](references/phases.md) — full per-phase procedure (mine → grow → compile → lint → defrag → report)
 - [references/confidence-scoring.md](references/confidence-scoring.md)
