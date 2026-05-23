@@ -233,4 +233,6 @@ $pr-research <repo> -> $pr-plan <research> -> implement -> $pr-prep
 
 ## Reference Documents
 
+- [references/pr-research.feature](references/pr-research.feature) — Executable spec: explore upstream conventions/structure, write cited upstream artifact, first-step-before-plan (soc-qk4b)
+
 - [references/upstream-research-checklist.md](references/upstream-research-checklist.md)
