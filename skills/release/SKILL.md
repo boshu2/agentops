@@ -179,3 +179,4 @@ When wiring or auditing the CI workflow that backs `--check` mode (or the tag-tr
 - [references/changelog-as-research-artifact.md](references/changelog-as-research-artifact.md)
 - [references/gh-actions-ci-patterns.md](references/gh-actions-ci-patterns.md)
 - [references/gh-actions-release-automation.md](references/gh-actions-release-automation.md)
+- [references/release.feature](references/release.feature) — Executable spec: --check readiness, curated notes + CHANGELOG reconcile, operator-performed tag/push, exact-SHA green verification (soc-qk4b)

@@ -829,7 +829,7 @@
     {
       "name": "harvest",
       "source_skill": "skills/harvest",
-      "source_hash": "0bd1d6201aa8d6f1752150abd1f4db6fe17fcfd0ab5c0752704bcda42415893f",
+      "source_hash": "e480b7d5995b3281f40fc6426af40b54c7047024c2c15541774444f0aa6e9bea",
       "generated_hash": "5b7493af237b1aa26c1628c34ba0cb70928b0dfd34964fcd1d42971d6e322fd1"
     },
     {
@@ -997,7 +997,7 @@
     {
       "name": "release",
       "source_skill": "skills/release",
-      "source_hash": "118c0e399aa6e0bf1695e9a5c71930c67ca94bb4194405a1e140eb9199ba1839",
+      "source_hash": "4c8d65dfa0e7ed41f103f34c6f598ce0bc1741622404b36f33ef87b048b875c4",
       "generated_hash": "41b4b08fccd2276087aa8ddfb56034c5fc437535036dbe534d6dbba0605a49a8"
     },
     {
@@ -1033,7 +1033,7 @@
     {
       "name": "scaffold",
       "source_skill": "skills/scaffold",
-      "source_hash": "ec683e3962683e9ff69e026f4729eafa232ec36ad778febf3ca4dbf8ad101204",
+      "source_hash": "15be80480554fdf0315daebaa7e265a04046b9705806ca959e54e9dc5b276ae7",
       "generated_hash": "800870469aab63a0445703a1019cbc0d382c1bb0865d1ceb03ae3a9c1a86ac75"
     },
     {
@@ -1045,7 +1045,7 @@
     {
       "name": "scope",
       "source_skill": "skills/scope",
-      "source_hash": "dca294faca51dee6c53e3ffff3e1d03a91417201ec9dd35ce458567637a7fc5c",
+      "source_hash": "9dc20d8bfa1060ba905fd5aa2d785eb7996fce42a1060ab29a3cbebd55075a9e",
       "generated_hash": "e75dcbe47b86525f87218941f0644fac7a5fac6559de09c9ed53f21292fbac78"
     },
     {
@@ -1129,7 +1129,7 @@
     {
       "name": "update",
       "source_skill": "skills/update",
-      "source_hash": "80b5793ca23e67d1f6ad80378dca034e182acd354f8f014f472075d58f19a81e",
+      "source_hash": "9592f3f9f7d06a9df037b5c62e395328a641220cbea2150dda10f9df12175f23",
       "generated_hash": "da2116a3e09a09731f3d9b8a11d8b425787861598a75132a2107e94154a16a42"
     },
     {

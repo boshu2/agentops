@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-23T15:02:58Z",
+  "generated_at": "2026-05-23T20:01:26Z",
   "summary": {
     "skills": 80,
     "hooks": 44,
@@ -520,7 +520,7 @@
         "tier": "meta",
         "path": "skills/update/",
         "has_skill_md": true,
-        "has_references": false,
+        "has_references": true,
         "reference_count": 0
       },
       {
