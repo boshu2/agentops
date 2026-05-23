@@ -351,6 +351,10 @@ If ao CLI not available:
 
 ---
 
+## Reference Documents
+
+- [references/handoff.feature](references/handoff.feature) — Executable spec: topic derivation, evidence-based accomplishments, pause-point + in-progress capture, next-files list, structured doc + continuation prompt (soc-qk4b)
+
 ## See Also
 
 - `skills/post-mortem/SKILL.md` — Full validation + knowledge lifecycle (council + extraction + activation + retirement)
