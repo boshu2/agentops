@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-23T20:33:37Z",
+  "generated_at": "2026-05-23T20:48:59Z",
   "summary": {
     "skills": 80,
     "hooks": 44,
@@ -400,7 +400,7 @@
         "tier": "knowledge",
         "path": "skills/curate/",
         "has_skill_md": true,
-        "has_references": false,
+        "has_references": true,
         "reference_count": 0
       },
       {
@@ -600,7 +600,7 @@
         "tier": "session",
         "path": "skills/dream/",
         "has_skill_md": true,
-        "has_references": false,
+        "has_references": true,
         "reference_count": 0
       },
       {

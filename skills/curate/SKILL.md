@@ -221,3 +221,7 @@ Detailed body remains inline until Phase 2 extraction.
 - `skills/rpi/SKILL.md` — orchestrator
 - `skills/validate/SKILL.md` — validator role (paired canonical skill)
 - `.agents/research/2026-05-08-fix-F-mode-flag-budget.md` — mode-cull rationale
+
+## Reference Documents
+
+- [references/curate.feature](references/curate.feature) — Executable spec: resolve mode + scope, acquire lock when writing shared state, mine into synthesis + bd notes (soc-qk4b)
