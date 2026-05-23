@@ -140,3 +140,7 @@ ao evolve --max-cycles 1
 | validation reports missing sections | Patch the missing required sections, then rerun `ao autodev validate --json`. |
 | requested work is outside immutable scope | Stop direct edits and create a bead or ask for an explicit contract change. |
 | user asks "is this evolve?" | Answer: `autodev` defines the loop contract; `evolve` runs the loop. |
+
+## Reference Documents
+
+- [references/autodev.feature](references/autodev.feature) — Executable spec: contract-bounded unattended loop, manages-not-replaces evolve/rpi, loop-discipline-under-autonomy (soc-qk4b)
