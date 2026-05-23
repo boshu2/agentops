@@ -224,6 +224,8 @@ See [references/examples.md](references/examples.md) for the troubleshooting tab
 
 ## Reference Documents
 
+- [references/pre-mortem.feature](references/pre-mortem.feature) — Executable spec: plan PASS/WARN/FAIL verdict before work, wave-validity gates parallelism, --quick inline default (soc-qk4b)
+
 - [references/compiled-prevention.md](references/compiled-prevention.md)
 - [references/scope-mode.md](references/scope-mode.md)
 - [references/mandatory-checks.md](references/mandatory-checks.md)
