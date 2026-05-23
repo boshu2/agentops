@@ -443,3 +443,4 @@ Next steps:
 
 - [references/agent-facing-tool-scaffolds.md](references/agent-facing-tool-scaffolds.md)
 - [references/recommended-reading.md](references/recommended-reading.md) — forward-looking index of external skills (e.g., `mcp-server-design`) worth absorbing into scaffold when their trigger conditions arrive. Consult before designing a new scaffold mode that targets agent-facing tool surfaces.
+- [references/scaffold.feature](references/scaffold.feature) — Executable spec: project/component/CI scaffolding entry points + domain-slice routing through `ao rpi phased --scaffold-domain` (soc-qk4b)

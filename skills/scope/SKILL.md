@@ -131,3 +131,4 @@ Reserved for a follow-up skill that combines `freeze` + status + spawn-orchestra
 - [references/lock-file-format.md](references/lock-file-format.md)
 - [references/destructive-command-guard-patterns.md](references/destructive-command-guard-patterns.md)
 - [references/command-approval-and-hook-guardrails.md](references/command-approval-and-hook-guardrails.md)
+- [references/scope.feature](references/scope.feature) — Executable spec: declare in-scope dirs, allow in-scope edits, hard-block out-of-scope edits via PreToolUse hook, report/release scope state (soc-qk4b)

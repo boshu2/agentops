@@ -93,3 +93,7 @@ Tell the user:
 | Individual skills fail | Permissions issue in the agent's install or plugin directory | Fix permissions on the target agent's install home, then re-run `/update` |
 | Skills not available after install | Agent session not restarted | Restart your agent session |
 | `EACCES: permission denied` | Restrictive permissions on the install target | Fix permissions on the install target, then re-run `/update` |
+
+## Reference Documents
+
+- [references/update.feature](references/update.feature) — Executable spec: pull latest skills from the repo, install across agent runtimes, idempotent re-run (soc-qk4b)

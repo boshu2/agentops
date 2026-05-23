@@ -133,3 +133,4 @@ size budgets, sweep frequency, staleness thresholds, and cross-rig synthesis tri
 ## Reference Documents
 
 - [references/governance.md](references/governance.md) — Governance model for ongoing knowledge consolidation
+- [references/harvest.feature](references/harvest.feature) — Executable spec: sweep .agents surfaces, consolidate + de-duplicate, write learnings, manual or via the dream loop (soc-qk4b)
