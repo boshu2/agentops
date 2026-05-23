@@ -10,7 +10,7 @@ Without curation, the flywheel stores everything and retrieves whatever fits the
 
 The curation pipeline fixes this by applying six stages -- CATALOG, VERIFY, INDEX, SCORE, REJECT, CONSTRAIN -- that progressively filter and strengthen knowledge before it re-enters agent context windows.
 
-> **Current Implementation (v1):** Only CATALOG and VERIFY stages are implemented as CLI commands (`ao curate catalog`, `ao curate verify`, `ao curate status`). Stages 3-6 are planned for future releases.
+> **Current Implementation (v1):** Only CATALOG and VERIFY stages are implemented as CLI commands (`ao curate catalog`, `ao curate verify`, `ao curate status`). The later stages (INDEX, SCORE, REJECT, CONSTRAIN) are on the [roadmap](ROADMAP.md), not yet built.
 
 **This is NOT the knowledge flywheel.** The flywheel is the loop: extract, store, retrieve, apply, compound. The curation pipeline is what happens between "store" and "retrieve" -- the quality control that determines whether the flywheel compounds signal or noise.
 

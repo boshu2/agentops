@@ -276,7 +276,7 @@ This is expected behavior in the **lead-only commit** pattern used by `/crank` a
 
 ## Phantom command error
 
-If you see errors for commands like `bd mol`, `gt convoy`, or `bd cook`, these are **planned future features** that do not exist yet.
+If you see an error for a command that is documented as planned, it does not exist yet. Designed-but-unbuilt commands are tracked in [ROADMAP.md](ROADMAP.md).
 
 **How to identify:** Look for `FUTURE` markers in skill documentation. These indicate commands or features that are designed but not yet implemented.
 

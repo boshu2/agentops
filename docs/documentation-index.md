@@ -10,6 +10,7 @@
 - [Getting Started](getting-started/index.md) — Install + first command landing page
 - [PRACTICE-REGISTRY.md](https://github.com/boshu2/agentops/blob/main/PRACTICE-REGISTRY.md) — Practice lineage and canonical `practices: [slug]` registry
 - [AgentOps 3.0 — the north star](3.0.md) — The single source of truth for what 3.0 is: the hookless-first CDLC loop, the four-practice waist (BDD/DDD/Hexagonal/TDD), and what "3.0-ready" means
+- [Roadmap](ROADMAP.md) — Designed-but-not-built features (planned, not committed): CLI roadmap, curation pipeline later stages, hookless default-install
 - [AgentOps 3.0 Explainer Kit](agentops-3-explainer-kit.md) — Public gist/launch copy for the council-first 3.0 story
 - [AgentOps 3.0 First-Value Path](first-value-path.md) — First-session path from install to domain packet, council verdict, tracked work, and optional daemon lane
 - [AgentOps 3.0 YouTube Starter Series](agentops-3-youtube-starter-series.md) — Launch video plan, scripts, clip hooks, CTAs, and PMF measurement fields
