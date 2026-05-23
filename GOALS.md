@@ -2,6 +2,8 @@
 
 An SDLC control plane for agentic software development, backed by a repo-native wiki for your agents that turns context into the durable moat under any model or harness.
 
+> Canonical 3.0 definition: [docs/3.0.md](docs/3.0.md). The directives below are measured against it.
+
 ## North Stars
 
 <!-- agentops:claim:AOP-CLAIM-GOALS-DREAM-VALIDATED -->

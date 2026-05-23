@@ -170,6 +170,7 @@ Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `ag
 
 ### Doctrine altitudes
 
+- **North star:** [`docs/3.0.md`](docs/3.0.md) — what AgentOps 3.0 is (hookless-first CDLC, the SDLC↔CDLC loop, the four-practice waist). The single source of truth; everything below is consistent with it.
 - **Spine:** [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md) — 7-move agent doctrine. **Primary navigation.**
 - **One turn's executor:** `/rpi` skill. NOT primary.
 - **Architecture:** 5 Bounded Contexts (BC1 Corpus → BC5 Runtime). Where code lives.
