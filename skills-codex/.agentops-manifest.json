@@ -835,13 +835,13 @@
     {
       "name": "heal-skill",
       "source_skill": "skills/heal-skill",
-      "source_hash": "ee1fe30876171d1e314c48d6b60b1870e32f9f5a683096fed7fa7c7ddd7e66a3",
+      "source_hash": "9f3ce2fe334237343ad6cf87cf5ec063e4bf01ef74814821e3671cb70f02c9ae",
       "generated_hash": "0a4b01de799212b1c33f718aba85c1ea0e03a033542a8e81929ddbd52425ab4b"
     },
     {
       "name": "hooks-authoring",
       "source_skill": "skills/hooks-authoring",
-      "source_hash": "96993f1b4ace90e05661e4c02f4ee9f95da28bd08e435bdb6537675e627012eb",
+      "source_hash": "7f74f159c6fb955ebfc707abc1063cfc08658f3ab2ce90a6e4b1211d910fdb2a",
       "generated_hash": "d0af71012da70768cd4ebc38297f3dcf6bc72b3fb6e5af0b202224bc999ca177"
     },
     {
@@ -1075,13 +1075,13 @@
     {
       "name": "skill-auditor",
       "source_skill": "skills/skill-auditor",
-      "source_hash": "b20273349c32d351807358d2b17e5df6fd2fad810109f125b2fcd49695f3b9ab",
+      "source_hash": "1cded02f750fa58595d8c109c17553067223c0c488fc56a19436df582abdec84",
       "generated_hash": "d4b6b96a99ee41c85d3997df8572d081cd3d42d10664ef66a8700bb2090660db"
     },
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
-      "source_hash": "a445c06557c008cdfc7901c198b386d4c8c18a581d8c66592a6ccb5b96a7b70f",
+      "source_hash": "9e5893b6be6648f018750d964d6f897852284917ad8056be3c84ab25234afe34",
       "generated_hash": "d43759463b9acf0b05e1fe386939e2df9c8d847537cce42f846f1d22177ea1c7"
     },
     {
@@ -1111,7 +1111,7 @@
     {
       "name": "system-tuning",
       "source_skill": "skills/system-tuning",
-      "source_hash": "aaa2b3f3606f0a1cb3866a516485322401a34f41f82428d31bb49d3ab6497a47",
+      "source_hash": "70a4f25145c6a7cb67b1d615016dc7ee30e9e7c47c1fb201892e159c457c96d7",
       "generated_hash": "f43aad025c7a7b89b7b5c2bc7376ef973b24a454d0f32fa6e40bd19195b845c7"
     },
     {

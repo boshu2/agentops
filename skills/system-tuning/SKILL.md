@@ -148,6 +148,7 @@ Run reports go to `.agents/system-tuning/YYYY-MM-DD-triage.md`. Each report incl
 - [references/kill-hierarchy.md](references/kill-hierarchy.md)
 - [references/whack-a-mole-anti-pattern.md](references/whack-a-mole-anti-pattern.md)
 - [references/agent-swarm-cleanup.md](references/agent-swarm-cleanup.md)
+- [references/system-tuning.feature](references/system-tuning.feature) — Executable spec: diagnose-first, ordered safe cleanup hierarchy, protect in-flight processes, verify + report (soc-qk4b)
 
 ## Attribution
 

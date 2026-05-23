@@ -169,3 +169,4 @@ skills-codex/<name>/
 
 - [references/skill-template.md](references/skill-template.md) — canonical SKILL.md template + auditor checklist + PRODUCT.md alignment
 - [references/agentops-skill-factory.md](references/agentops-skill-factory.md) — clean-room factory workflow and productization rules
+- [references/skill-builder.feature](references/skill-builder.feature) — Executable spec: mode dispatch, materialize from template, Codex parity bundle, self-audit + factory score (soc-qk4b)
