@@ -192,4 +192,6 @@ Phase 4: Writes .agents/brainstorm/2026-02-17-search-performance.md
 
 ## Reference Documents
 
+- [references/brainstorm.feature](references/brainstorm.feature) — Executable spec: WHAT-not-HOW 4-phase clarification, options+tradeoffs, capture Gherkin (happy + edge) for /plan (soc-qk4b)
+
 - [references/red-team-checklist.md](references/red-team-checklist.md) — Adversarial critique template for Phase 3b
