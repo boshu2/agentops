@@ -192,7 +192,7 @@ Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `ag
 - **Multi-phase work:** Route through `ao rpi` (enforces timeouts and stall detection).
 - **Before spawning workers:** Verify no file overlap across the wave. File collisions are the #1 swarm failure mode.
 - **Before proposing new capability:** Check `ao rpi serve --help`, `hooks/hooks.json`, and `GOALS.md` first.
-- **Gas City (gc) bridge:** `cli/cmd/ao/gc_bridge.go`, `gc_events.go`, `rpi_phased_gc.go`. Do not write new tests or features for deprecated files (`rpi_loop_supervisor.go`, `rpi_c2_events.go`, `rpi_phased_tmux.go`, `rpi_workers.go`, `rpi_parallel.go`, `fire.go`).
+- **Gas City (gc) bridge:** `cli/cmd/ao/gc_bridge.go`, `gc_events.go`, `rpi_phased_gc.go`. Do not write new tests or features for the legacy RPI lane (`rpi_loop_supervisor.go`, `rpi_c2_events.go`, `rpi_phased_tmux.go`, `rpi_parallel.go`) — but these are **load-bearing, not dead code**: live code references their symbols (`RPIC2Event`/`appendRPIC2Event` across 13+ `rpi_phased*` files + `mine`; `rpiLoopSupervisorConfig`/`runRPISupervisedCycle` in `rpi_loop`/`agentopsd`/`rpi_cancel`; `shellQuote` in `handoff`/`overnight_setup`; tmux helpers in `rpi_nudge`/`rpi_phased_stream`). Deleting any breaks the build; removal needs a caller-migration refactor (soc-1gbpz), not a delete. `rpi_workers.go` and `fire.go` were already removed.
 
 ### Execution Discipline
 
