@@ -241,13 +241,6 @@ func resetCommandState(t *testing.T) {
 	origCodexStartLimit := codexStartLimit
 	origCodexStartQuery := codexStartQuery
 	origCodexStartNoMaintenance := codexStartNoMaintenance
-	origFactoryStartGoal := factoryStartGoal
-	origFactoryStartLimit := factoryStartLimit
-	origFactoryStartNoMaintenance := factoryStartNoMaintenance
-	origFactoryPilotGoal := factoryPilotGoal
-	origFactoryPilotRunID := factoryPilotRunID
-	origFactoryPilotWorktreeRoot := factoryPilotWorktreeRoot
-	origFactoryPilotValidationCommands := factoryPilotValidationCommands
 	origCodexStopSessionID := codexStopSessionID
 	origCodexStopTranscriptPath := codexStopTranscriptPath
 	origCodexStopAutoExtract := codexStopAutoExtract
@@ -319,13 +312,6 @@ func resetCommandState(t *testing.T) {
 		codexStartLimit = origCodexStartLimit
 		codexStartQuery = origCodexStartQuery
 		codexStartNoMaintenance = origCodexStartNoMaintenance
-		factoryStartGoal = origFactoryStartGoal
-		factoryStartLimit = origFactoryStartLimit
-		factoryStartNoMaintenance = origFactoryStartNoMaintenance
-		factoryPilotGoal = origFactoryPilotGoal
-		factoryPilotRunID = origFactoryPilotRunID
-		factoryPilotWorktreeRoot = origFactoryPilotWorktreeRoot
-		factoryPilotValidationCommands = origFactoryPilotValidationCommands
 		codexStopSessionID = origCodexStopSessionID
 		codexStopTranscriptPath = origCodexStopTranscriptPath
 		codexStopAutoExtract = origCodexStopAutoExtract

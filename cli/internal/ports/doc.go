@@ -22,7 +22,7 @@
 //   - soc-y5vh (BC3 Loop): LoopReaderPort, LoopWriterPort,
 //     CloseoutPort, HypothesisLedgerPort, ConvergenceCheckPort
 //   - soc-2klg (BC4 Factory): OperatorPort, EventBusPort,
-//     FactoryAdmissionPort, ClaimEvidencePort
+//     ClaimEvidencePort
 //   - soc-zd7c (BC5 Runtime): HarnessPort, WorkspacePort
 //
 // New ports are added in bounded slices, with at least one in-memory

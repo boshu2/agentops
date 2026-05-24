@@ -29,9 +29,6 @@ jobs:
 - name: eval-workbench-verify
   reason: Behavioral eval workbench golden state, task scoring scripts, and suite structure
   failure: Broken workbench fixture, failing golden-state tests, or malformed eval suite JSON
-- name: factory-claim-ledger-strict
-  reason: Runs `bash scripts/check-factory-claim-ledger.sh` and emits a structured observation artifact mapping verdict + surfaces_touched per PR (soc-lmww1, Wave 1C)
-  failure: 'Non-blocking (`continue-on-error: true`); claim-ledger drift surfaces in observation JSON. Promotion to blocking is the Wave 1E concern documented in-job'
 - name: go-build
   reason: '`ao` binary builds; tests pass with `-race`; embedded lib/skills in sync; Go complexity budget'
   failure: New function exceeds cyclomatic complexity 25
@@ -131,9 +128,6 @@ jobs:
 - name: validate-flywheel-compounding-snapshot
   reason: 'GOALS.md gate `flywheel-compounding-snapshot` (weight 5, G1): `scripts/check-flywheel-compounding-snapshot.sh` validates the tracked `docs/releases/flywheel-compounding-snapshot.json` exists, is < 14 days old, and `escape_velocity_compounding=true`. Operator refresh: `bash scripts/snapshot-flywheel-compounding.sh && git add docs/releases/flywheel-compounding-snapshot.json`'
   failure: Snapshot missing, stale (>14d), or shows `escape_velocity_compounding=false` (corpus has stopped compounding)
-- name: validate-factory-yield-ledger
-  reason: 'GOALS.md gate `factory-yield-ledger` (weight 4, A2 audit follow-up): `scripts/check-factory-yield-ledger.sh` validates the yield-ledger contract: schema + example parse, 25 required correlation+yield fields present, event_type/schema_version pinned. Pair to the existing `validate-factory-claim-ledger` gate'
-  failure: Schema or example drifts, a required correlation/yield field is removed, or event_type/schema_version change
 - name: validate-finding-registry
   reason: 'GOALS.md gate `finding-registry` (weight 4, A2 audit follow-up): `scripts/check-finding-registry.sh` validates the finding-registry contract: schema is valid JSON Schema, required-field list cross-checks with contract doc (accepts both `foo` and `foo.child` forms for nested objects), canonical path is documented, live `.agents/findings/registry.jsonl` lines parse and carry the required top-level fields'
   failure: Schema/contract drift, required field dropped from either side, or any live registry line missing one of the eight top-level required fields
@@ -143,9 +137,6 @@ jobs:
 - name: validate-agents-split
   reason: '`scripts/validate-agents-split.sh` enforces the tiered AGENTS.md split contract (soc-vuu6.3): AGENTS.md stays <=250 lines (orientation budget), AGENTS-{WORKFLOW,CI,CODEX,RUNTIME}.md exist, and links are bidirectional. Without this gate the split silently drifts back to a monolith every time someone adds "just one more section" to AGENTS.md'
   failure: AGENTS.md exceeds 250 lines, a sibling file is missing or renamed, or the bidirectional link contract is broken
-- name: validate-factory-admission
-  reason: 'GOALS.md gate `factory-admission` (weight 4, A2 audit follow-up): `scripts/check-factory-admission.sh` wraps `tests/scripts/test-factory-admission-contracts.py` (Python+jsonschema) as a blocking gate. Validates both work-order and admission-decision fixtures against the schema'
-  failure: Schema or fixtures drift, work-order/admission-decision instances fail validation
 - name: validate-contracts-structural-floor
   reason: 'GOALS.md gate `contracts-structural-floor` (weight 4): `scripts/check-contracts-structural-floor.sh` enforces every `docs/contracts/*.md` meets the floor: top-level # heading, cataloged in documentation-index.md, body >= 200 bytes, paired schema (if any) is valid JSON'
   failure: Adding a contract without cataloging it, a contract becoming a stub, or a paired schema becoming invalid JSON
