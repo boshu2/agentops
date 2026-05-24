@@ -1075,8 +1075,8 @@
     {
       "name": "skill-auditor",
       "source_skill": "skills/skill-auditor",
-      "source_hash": "1cded02f750fa58595d8c109c17553067223c0c488fc56a19436df582abdec84",
-      "generated_hash": "d4b6b96a99ee41c85d3997df8572d081cd3d42d10664ef66a8700bb2090660db"
+      "source_hash": "4544b80346783cfc41fa9c070aa5712ece619cdd8f341088ffe3ee8807440b26",
+      "generated_hash": "b7edf1d077b4b7f13d04901facc416f18a1d07e08b830080be4212d7dbc19573"
     },
     {
       "name": "skill-builder",

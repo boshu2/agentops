@@ -47,6 +47,21 @@ if grep -q "check_description_multiline" "$SKILL_DIR/scripts/audit.sh"; then
   exit 1
 fi
 
+# Pass 3: audit.sh must fold the rubric block in, and the scorer must support
+# --audit-block. The rubric must be advisory (not in the Pass-2 verdict loop).
+grep -q 'score_agentops_skill.py' "$SKILL_DIR/scripts/audit.sh" || {
+  echo "validate.sh: scripts/audit.sh missing Pass-3 rubric invocation (score_agentops_skill.py)" >&2
+  exit 1
+}
+grep -q '"rubric": %s' "$SKILL_DIR/scripts/audit.sh" || {
+  echo "validate.sh: scripts/audit.sh does not emit a rubric block in audit-report.json" >&2
+  exit 1
+}
+grep -q -- '--audit-block' "$SKILL_DIR/scripts/score_agentops_skill.py" || {
+  echo "validate.sh: scripts/score_agentops_skill.py missing --audit-block mode for Pass 3" >&2
+  exit 1
+}
+
 # Make scripts executable
 for s in scripts/audit.sh scripts/validate.sh; do
   [[ -x "$SKILL_DIR/$s" ]] || chmod +x "$SKILL_DIR/$s"

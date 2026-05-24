@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
   "title": "Skill Audit Report",
-  "description": "Output contract for skill-auditor. Two passes: Pass 1 wraps heal-skill structural checks; Pass 2 adds 8 NEW content-discipline checks beyond heal-skill.",
+  "description": "Output contract for skill-auditor. Three passes: Pass 1 wraps heal-skill structural checks; Pass 2 adds 8 NEW content-discipline checks beyond heal-skill; Pass 3 folds the 10-category Skill Quality Rubric (docs/reference/skill-quality-rubric.md) in as an advisory 0-30 productization score.",
   "type": "object",
   "required": ["target", "verdict", "pass1", "pass2"],
   "properties": {
@@ -124,6 +124,77 @@
         "summary": {"type": "string"}
       },
       "additionalProperties": false
+    },
+    "rubric": {
+      "description": "Advisory-only Pass-3 Skill Quality Rubric score (docs/reference/skill-quality-rubric.md). Folded in from score_agentops_skill.py --audit-block. Never affects the aggregate verdict. Emitted as null when python3 or the scorer is unavailable (fail-open).",
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "required": ["total_score", "max_score", "rating", "advisory", "categories"],
+          "properties": {
+            "total_score": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 30,
+              "description": "Sum of the 10 category scores (0-30)."
+            },
+            "max_score": {
+              "type": "integer",
+              "const": 30
+            },
+            "rating": {
+              "type": "string",
+              "enum": ["C", "B", "A", "S"],
+              "description": "Rating band: C (0-10), B (11-20), A (21-26), S (27-30)."
+            },
+            "advisory": {
+              "type": "boolean",
+              "const": true,
+              "description": "Always true. The rubric score is report-only and never gates the verdict."
+            },
+            "categories": {
+              "type": "array",
+              "minItems": 10,
+              "maxItems": 10,
+              "description": "The 10 rubric categories, each scored 0-3 with an explainable reason. Category ids come verbatim from the rubric doc.",
+              "items": {
+                "type": "object",
+                "required": ["category", "score", "reason"],
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "trigger_quality",
+                      "kernel_clarity",
+                      "progressive_disclosure",
+                      "helper_scripts",
+                      "validation",
+                      "self_test",
+                      "assets_templates",
+                      "subagents_roles",
+                      "safety_boundaries",
+                      "packaging"
+                    ]
+                  },
+                  "score": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 3,
+                    "description": "0 missing/unsafe, 1 present-but-weak, 2 solid, 3 product-grade and mechanically validated."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Deterministic explanation derived from the skill directory contents."
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     },
     "summary": {
       "type": "string",
