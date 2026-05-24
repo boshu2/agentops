@@ -284,3 +284,4 @@ Phase 4 (soc-ytpq) governance for `~/.agents/learnings/` — all advisory, none 
 - [references/promotion-tiers.md](references/promotion-tiers.md)
 - [references/hub-budget.md](references/hub-budget.md)
 - [references/cache-eviction.md](references/cache-eviction.md)
+- [references/flywheel-cli.feature](references/flywheel-cli.feature) — Executable spec: `ao flywheel` CLI command behavior, linked to cmd tests (soc-jnfgi)
