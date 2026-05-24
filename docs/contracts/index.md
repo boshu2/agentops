@@ -161,19 +161,6 @@ skills, the runtime, and external integrations.
 
     V2 promotion ladder, executable constraint index, and lifecycle rules.
 
--   :material-hook: **[Hook Runtime Contract](hook-runtime-contract.md)**
-
-    ---
-
-    Canonical event mapping across Claude, Codex, and manual runtimes.
-
--   :material-tag-check: **[Hook Lease Inventory](hook-lease-inventory.md)**
-
-    ---
-
-    AgentOps 3.0 hook disposition inventory generated from the live hook
-    manifest.
-
 -   :material-console: **[Headless Invocation Standards](headless-invocation-standards.md)**
 
     ---

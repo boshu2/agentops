@@ -128,23 +128,6 @@ else
 fi
 
 # =============================================================================
-# Test 5: Validate hook preflight checklist
-# =============================================================================
-log "Validating hook preflight checklist..."
-
-if [[ -x "scripts/validate-hook-preflight.sh" ]]; then
-    preflight_output=""
-    if preflight_output=$(./scripts/validate-hook-preflight.sh 2>&1); then
-        pass "Hook preflight validation passed"
-    else
-        fail "Hook preflight validation failed"
-        [[ "$VERBOSE" == "--verbose" ]] && echo "$preflight_output" | sed 's/^/    /'
-    fi
-else
-    fail "scripts/validate-hook-preflight.sh missing or not executable"
-fi
-
-# =============================================================================
 # Test 5b: Runtime smoke surfaces
 # =============================================================================
 log "Validating runtime smoke surfaces..."

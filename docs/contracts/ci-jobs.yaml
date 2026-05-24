@@ -9,7 +9,7 @@ jobs:
   reason: '`cli/docs/COMMANDS.md` matches `ao --help` output'
   failure: Adding a CLI command without running `scripts/generate-cli-reference.sh`
 - name: cli-integration
-  reason: Built CLI runs integration command matrix and hook lifecycle smoke tests
+  reason: Built CLI runs integration command matrix and release smoke tests
   failure: CLI command behavior drift not covered by unit tests
 - name: contract-compatibility-gate
   reason: documentation-index.md contract links resolve; schemas are valid JSON; orphan contracts fail unless allowlisted
@@ -21,8 +21,8 @@ jobs:
   reason: '`ao doctor` runs without error on built binary'
   failure: 'Non-blocking (`continue-on-error: true`)'
 - name: embedded-sync
-  reason: '`cli/embedded/` matches source files in `hooks/`, `lib/`, `skills/`'
-  failure: Editing hooks without running `cd cli && make sync-hooks`
+  reason: '`cli/embedded/` matches source files in `lib/`, `skills/`'
+  failure: Editing lib/ or skills/ without running `cd cli && make sync-hooks`
 - name: eval-skill-delta
   reason: Eval skill-delta CI gate validates skill-on vs skill-off delta infrastructure
   failure: Broken delta scorecard, missing harness, or malformed A/B config
@@ -33,14 +33,8 @@ jobs:
   reason: Runs `bash scripts/check-factory-claim-ledger.sh` and emits a structured observation artifact mapping verdict + surfaces_touched per PR (soc-lmww1, Wave 1C)
   failure: 'Non-blocking (`continue-on-error: true`); claim-ledger drift surfaces in observation JSON. Promotion to blocking is the Wave 1E concern documented in-job'
 - name: go-build
-  reason: '`ao` binary builds; tests pass with `-race`; embedded hooks in sync; Go complexity budget'
+  reason: '`ao` binary builds; tests pass with `-race`; embedded lib/skills in sync; Go complexity budget'
   failure: New function exceeds cyclomatic complexity 25
-- name: hook-preflight
-  reason: All hooks have kill switches, no unsafe eval, timeouts present
-  failure: Using `eval` or backtick substitution in hooks
-- name: hook-output-schema-lint
-  reason: Hooks emit only the safely-portable PreToolUse output subset both Claude and Codex CLI accept
-  failure: Using `hookSpecificOutput.updatedInput` (silently dropped by Codex CLI 0.128.0+)
 - name: markdownlint
   reason: Markdown style/lint rules pass for repository docs
   failure: Docs formatting regressions not caught by link checks
@@ -179,9 +173,6 @@ jobs:
 - name: validate-headless-runtime-skills
   reason: Headless runtime skill bundle smoke (mocked Claude/Codex/OpenCode runners)
   failure: Runtime install/bundle drift breaks headless skill execution
-- name: validate-hooks-doc-parity
-  reason: Scoped docs avoid stale hook-count claims vs runtime `hooks/hooks.json`
-  failure: Runtime hook contract changed but docs were not updated
 - name: windows-smoke
   reason: Native Windows PowerShell installer smoke, Codex plugin temp install, local `ao doctor` Windows hints, and focused Windows-sensitive Go tests
   failure: Windows install/plugin/runtime surfaces regress while Ubuntu CI stays green

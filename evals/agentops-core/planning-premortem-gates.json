@@ -2,13 +2,13 @@
   "schema_version": 1,
   "id": "agentops-core.planning-premortem-gates",
   "name": "AgentOps Planning Pre-Mortem Gates Canary",
-  "description": "Offline public canary for planning and pre-mortem failure-prevention gates: plan/pre-mortem validators, compiled finding carry-forward, tuning defaults, pre-mortem hook behavior, next-work parity, mandatory review checks, and Codex runtime command parity.",
+  "description": "Offline public canary for planning and pre-mortem failure-prevention gates: plan/pre-mortem validators, compiled finding carry-forward, tuning defaults, next-work parity, mandatory review checks, and Codex runtime command parity.",
   "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",
   "owners": ["agentops"],
-  "tags": ["canary", "offline", "plan", "pre-mortem", "council", "finding-registry", "next-work", "codex", "hooks"],
+  "tags": ["canary", "offline", "plan", "pre-mortem", "council", "finding-registry", "next-work", "codex"],
   "allowed_runtimes": ["shell", "static"],
   "environment": {
     "offline_required": true,
@@ -30,22 +30,21 @@
   "baseline_policy": {"mode": "compare", "baseline_path": ".agents/evals/baselines/agentops-core.planning-premortem-gates.baseline.json", "blocking_gate": "none"},
   "cases": [
     {
-      "id": "plan-premortem-validators-and-hook",
-      "title": "Plan/pre-mortem validators and pre-mortem hook tests pass",
+      "id": "plan-premortem-validators",
+      "title": "Plan/pre-mortem validators pass",
       "kind": "command",
-      "objective": "Keep shared and Codex plan/pre-mortem skill validators healthy and keep the strict pre-mortem gate blocking large crank work without evidence.",
+      "objective": "Keep shared and Codex plan/pre-mortem skill validators healthy.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "bash skills/plan/scripts/validate.sh && bash skills-codex/plan/scripts/validate.sh && bash skills/pre-mortem/scripts/validate.sh && bash skills-codex/pre-mortem/scripts/validate.sh && bash tests/hooks/test-pre-mortem-gate.sh"
+        "shell": "bash skills/plan/scripts/validate.sh && bash skills-codex/plan/scripts/validate.sh && bash skills/pre-mortem/scripts/validate.sh && bash skills-codex/pre-mortem/scripts/validate.sh"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
         {"type": "stdout_contains", "value": "Results: 19 passed, 0 failed"},
         {"type": "stdout_contains", "value": "Results: 18 passed, 0 failed"},
-        {"type": "stdout_contains", "value": "SKILL.md mentions council delegation"},
-        {"type": "stdout_contains", "value": "All pre-mortem-gate tests passed"}
+        {"type": "stdout_contains", "value": "SKILL.md mentions council delegation"}
       ],
       "dimensions": ["correctness", "process_adherence", "runtime_compatibility"],
       "critical": true

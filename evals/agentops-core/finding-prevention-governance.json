@@ -65,25 +65,6 @@
       "critical": true
     },
     {
-      "id": "constraint-hook-compiler-tests",
-      "title": "task-validation constraints and compiler wrappers pass",
-      "kind": "command",
-      "objective": "Protect hook-time enforcement for active constraints and the compiler wrapper that promotes registry findings into advisory and mechanical outputs.",
-      "runtime": "shell",
-      "timeout_seconds": 120,
-      "inputs": {
-        "cwd": "../..",
-        "shell": "bash tests/hooks/test-task-validation-constraints.sh && bash tests/hooks/test-constraint-compiler.sh"
-      },
-      "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Results: 6 passed, 0 failed"},
-        {"type": "stdout_contains", "value": "ok 3 constraint compiler wrapper promotes tagged legacy learnings through finding compiler"}
-      ],
-      "dimensions": ["correctness", "safety", "runtime_compatibility"],
-      "critical": true
-    },
-    {
       "id": "finding-constraint-go-tests",
       "title": "finding, constraint, ratchet, and router tests pass",
       "kind": "command",

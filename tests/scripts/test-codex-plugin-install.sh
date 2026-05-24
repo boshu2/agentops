@@ -23,7 +23,6 @@ setup_fixture() {
 
   mkdir -p \
     "$fixture/.codex-plugin" \
-    "$fixture/hooks" \
     "$fixture/lib" \
     "$fixture/plugins" \
     "$fixture/skills-codex/research" \
@@ -51,30 +50,8 @@ EOF
 }
 EOF
 
-  /bin/cp "$ROOT/hooks/dangerous-git-guard.sh" "$fixture/hooks/dangerous-git-guard.sh"
-  /bin/cp "$ROOT/lib/hook-helpers.sh" "$fixture/lib/hook-helpers.sh"
   /bin/cp "$ROOT/lib/ao-paths.sh" "$fixture/lib/ao-paths.sh"
   /bin/cp "$ROOT/lib/chain-parser.sh" "$fixture/lib/chain-parser.sh"
-
-  cat > "$fixture/hooks/codex-hooks.json" <<'EOF'
-{
-  "$schema": "../schemas/hooks-manifest.v1.schema.json",
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/dangerous-git-guard.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  }
-}
-EOF
 
   cat > "$fixture/skills-codex/research/SKILL.md" <<'EOF'
 ---
@@ -220,56 +197,6 @@ EOF
   fi
 }
 
-test_installs_codex_native_hooks_with_lib_layout() {
-  local fixture="$TMP_DIR/hooks-layout"
-  local codex_home="$TMP_DIR/hooks-home"
-  local plugin_root="$codex_home/plugins/cache/agentops-marketplace/agentops/local"
-  local mock_repo="$TMP_DIR/hooks-mock-repo"
-
-  setup_fixture "$fixture"
-
-  if ! run_install "$fixture" "$codex_home" --with-hooks; then
-    fail "install with Codex hooks should succeed"
-    return
-  fi
-
-  [[ -x "$plugin_root/hooks/dangerous-git-guard.sh" ]] || {
-    fail "dangerous-git-guard copied into plugin hooks cache"
-    return
-  }
-  [[ -f "$plugin_root/lib/hook-helpers.sh" ]] || {
-    fail "hook helpers copied into plugin lib cache"
-    return
-  }
-  [[ -f "$plugin_root/lib/ao-paths.sh" ]] || {
-    fail "ao-paths copied into plugin lib cache"
-    return
-  }
-
-  mkdir -p "$mock_repo"
-  git -C "$mock_repo" init -q >/dev/null 2>&1
-
-  if ! (
-    cd "$mock_repo" &&
-      printf '%s' '{"tool_input":{"command":"git push origin feature-fix"}}' |
-        bash "$plugin_root/hooks/dangerous-git-guard.sh" >/dev/null
-  ); then
-    fail "installed dangerous-git-guard allows safe branch names containing -f"
-    return
-  fi
-
-  if (
-    cd "$mock_repo" &&
-      printf '%s' '{"tool_input":{"command":"git push -f origin main"}}' |
-        bash "$plugin_root/hooks/dangerous-git-guard.sh" >/dev/null 2>&1
-  ); then
-    fail "installed dangerous-git-guard should block real force push"
-    return
-  fi
-
-  pass "installs Codex hooks with usable ../lib helper layout"
-}
-
 test_archives_agentops_codex_home_skills_without_touching_custom_skills() {
   local fixture="$TMP_DIR/archive"
   local codex_home="$TMP_DIR/archive-home"
@@ -344,7 +271,6 @@ EOF
 
 echo "== test-codex-plugin-install =="
 test_installs_plugin_cache_and_config
-test_installs_codex_native_hooks_with_lib_layout
 test_archives_agentops_codex_home_skills_without_touching_custom_skills
 test_archives_home_agents_agentops_skills_without_touching_custom_skills
 

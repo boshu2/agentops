@@ -16,19 +16,7 @@ for script in scripts/check-*.sh; do
   fi
 done
 
-# 2. Every hook script referenced in hooks.json must exist on disk
-if [ -f hooks/hooks.json ]; then
-  # Extract script paths from hooks.json command fields
-  scripts_referenced=$(grep -oE 'hooks/[a-zA-Z0-9_-]+\.sh' hooks/hooks.json 2>/dev/null | sort -u)
-  for script in $scripts_referenced; do
-    if ! [ -f "$script" ]; then
-      echo "MISSING HOOK SCRIPT: $script referenced in hooks.json but does not exist"
-      ERRORS=$((ERRORS + 1))
-    fi
-  done
-fi
-
-# 3. Every skill directory should appear in SKILL-TIERS.md
+# 2. Every skill directory should appear in SKILL-TIERS.md
 if [ -f skills/SKILL-TIERS.md ]; then
   for skill_dir in skills/*/; do
     [ -d "$skill_dir" ] || continue
@@ -40,22 +28,22 @@ if [ -f skills/SKILL-TIERS.md ]; then
   done
 fi
 
-# 4. Every lib/scripts/*.sh should be referenced by at least one SKILL.md, hook, or test
+# 3. Every lib/scripts/*.sh should be referenced by at least one SKILL.md, script, or test
 for lib_script in lib/scripts/*.sh; do
   [ -f "$lib_script" ] || continue
   base=$(basename "$lib_script")
-  if ! grep -rq "$base" skills/*/SKILL.md hooks/ tests/ 2>/dev/null; then
-    echo "ORPHANED LIB SCRIPT: $base not referenced by any skill, hook, or test"
+  if ! grep -rq "$base" skills/*/SKILL.md scripts/ tests/ 2>/dev/null; then
+    echo "ORPHANED LIB SCRIPT: $base not referenced by any skill, script, or test"
     ERRORS=$((ERRORS + 1))
   fi
 done
 
-# 5. Every lib/*.sh helper should be referenced by at least one hook
+# 4. Every lib/*.sh helper should be referenced by the CLI, a script, a skill, or a test
 for helper_script in lib/*.sh; do
   [ -f "$helper_script" ] || continue
   base=$(basename "$helper_script")
-  if ! grep -rq "$base" hooks/ cli/embedded/hooks/ 2>/dev/null; then
-    echo "ORPHANED LIB HELPER: $base not referenced by any hook"
+  if ! grep -rq "$base" cli/ scripts/ skills/ tests/ 2>/dev/null; then
+    echo "ORPHANED LIB HELPER: $base not referenced by the CLI, scripts, skills, or tests"
     ERRORS=$((ERRORS + 1))
   fi
 done

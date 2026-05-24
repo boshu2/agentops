@@ -3,13 +3,13 @@ set -euo pipefail
 
 # ci-local-release.sh
 # Release-grade local CI gate. Mirrors validate/release pipeline checks locally
-# and adds CLI smoke coverage for hooks install and RPI paths.
+# and adds CLI smoke coverage for init and RPI paths.
 #
 # Usage:
 #   ./scripts/ci-local-release.sh              # full gate (parallel where possible)
 #   ./scripts/ci-local-release.sh --fast       # skip heavy checks (~20s vs ~100s)
 #   ./scripts/ci-local-release.sh --security-mode quick
-#   ./scripts/ci-local-release.sh --release-version X.Y.Z --hil-target 'local:gpu:ao version && ao init --help && ao hooks show && ao rpi status'
+#   ./scripts/ci-local-release.sh --release-version X.Y.Z --hil-target 'local:gpu:ao version && ao init --help && ao rpi status'
 #
 # Exit codes:
 #   0 = all checks passed
@@ -603,30 +603,7 @@ run_security_gate() {
     echo "Security artifacts: $security_dir"
 }
 
-run_hooks_install_smoke() {
-    local tmp_home
-    tmp_home="$(mktemp -d)"
-    local rc=0
-
-    HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" hooks install || rc=$?
-    if [[ "$rc" -eq 0 ]]; then
-        HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" hooks show || rc=$?
-    fi
-    if [[ "$rc" -eq 0 ]]; then
-        HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" hooks install --full --source-dir "$REPO_ROOT" --force || rc=$?
-    fi
-    if [[ "$rc" -eq 0 ]] && [[ ! -f "$tmp_home/.claude/settings.json" ]]; then
-        rc=1
-    fi
-    if [[ "$rc" -eq 0 ]] && [[ ! -f "$tmp_home/.agentops/hooks/session-start.sh" ]]; then
-        rc=1
-    fi
-
-    rm -rf "$tmp_home"
-    return "$rc"
-}
-
-run_init_hooks_rpi_smoke() {
+run_init_rpi_smoke() {
     local tmp_home
     local tmp_repo
     tmp_home="$(mktemp -d)"
@@ -636,7 +613,7 @@ run_init_hooks_rpi_smoke() {
     git -C "$tmp_repo" init -q
     (
         cd "$tmp_repo"
-        HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" init --hooks
+        HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" init
         HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" rpi status
         HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" rpi --help >/dev/null
         HOME="$tmp_home" "$REPO_ROOT/cli/bin/ao" rpi phased --help >/dev/null
@@ -891,8 +868,6 @@ check_agents_hash_gate() {
 run_step_bg "Doc-release gate" ./tests/docs/validate-doc-release.sh
 run_step_bg "Manifest schema validation" ./scripts/validate-manifests.sh --repo-root "$REPO_ROOT"
 run_step_bg "Manifest version consistency" check_manifest_version_consistency
-run_step_bg "Hook preflight" ./scripts/validate-hook-preflight.sh
-run_step_bg "Hooks/docs parity" ./scripts/validate-hooks-doc-parity.sh
 run_step_bg "CI policy/docs parity" ./scripts/validate-ci-policy-parity.sh
 run_step_bg "Worktree disposition gate" ./scripts/check-worktree-disposition.sh
 run_step_bg "Skill integrity" bash ./skills/heal-skill/scripts/heal.sh --strict
@@ -936,11 +911,8 @@ run_step_bg "Codex native install tests" bash ./tests/scripts/test-codex-native-
 run_step_bg "Codex artifact manifest tests" bash ./tests/scripts/test-codex-generated-manifest.sh
 run_step_bg "Codex artifact metadata tests" bash ./tests/scripts/test-codex-generated-artifacts.sh
 run_step_bg "Codex backbone prompt tests" bash ./tests/scripts/test-codex-backbone-prompts.sh
-run_step_bg "Dev hook install tests" bash ./tests/scripts/test-install-dev-hooks.sh
-run_step_bg "Git hook shim tests" bash ./tests/scripts/test-githook-shims.sh
 run_step_bg "Validate-local tests" bash ./tests/scripts/test-validate-local.sh
 run_step_bg "Headless runtime skill smoke tests" bash ./tests/scripts/test-headless-runtime-skills.sh
-run_step_bg "Constraint compiler BATS wrapper" ./tests/hooks/test-constraint-compiler.sh
 
 collect_parallel
 
@@ -958,7 +930,6 @@ collect_parallel
 
 if [[ "$FAST_MODE" == "true" ]]; then
     warn "Skipped Go race tests (--fast)"
-    warn "Skipped Hook integration tests (--fast)"
     warn "Skipped SBOM generation (--fast)"
     warn "Skipped Security gate (--fast)"
     warn "Skipped AgentOps contract canaries (--fast)"
@@ -969,7 +940,6 @@ if [[ "$FAST_MODE" == "true" ]]; then
 else
     # These are the heavy hitters — run them in parallel
     run_step_bg "Go build + race tests" run_go_build_and_tests
-    run_step_bg "Hook integration tests" ./tests/hooks/test-hooks.sh
     run_step_bg "Generate SBOM artifacts (CycloneDX + SPDX)" generate_sbom_artifacts
     run_step_bg "Security toolchain gate (${SECURITY_MODE}, require tools)" run_security_gate
     run_step_bg "AgentOps contract canaries" ./scripts/test-agentops-contract-canaries.sh
@@ -981,8 +951,7 @@ fi
 
 # ── Phase 5: CLI smoke tests (need built binary) ──
 
-run_step_bg "Hook install smoke (minimal + full)" run_hooks_install_smoke
-run_step_bg "ao init --hooks + ao rpi smoke" run_init_hooks_rpi_smoke
+run_step_bg "ao init + ao rpi smoke" run_init_rpi_smoke
 run_step_bg "Release smoke test (all commands)" ./scripts/release-smoke-test.sh --skip-build
 
 collect_parallel

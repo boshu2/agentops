@@ -229,12 +229,8 @@ func TestRPIPhasedDomainAudit_RecordEndToEnd(t *testing.T) {
 		t.Fatalf("write phase result: %v", err)
 	}
 
-	// Pin hook detection to an empty fixture set so this test is deterministic
-	// regardless of the host's installed hooks → stays `audited`.
-	restore := hooksManifestPathsFn
-	hooksManifestPathsFn = func(string) []string { return nil }
-	defer func() { hooksManifestPathsFn = restore }()
-
+	// Under the hookless model, an observable (non-gc) runtime always resolves
+	// to `audited` — no read-interception substrate exists.
 	state := &phasedState{Goal: "wire webhooks", DomainManifest: auditTestEvidence()}
 	recordDomainScopeAudit(cwd, state)
 

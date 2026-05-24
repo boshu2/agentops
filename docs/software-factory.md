@@ -33,58 +33,28 @@ surface; packets, chunks, topics, and builders are substrate.
 
 ## Runtime Variants
 
-The factory runs on two classes of runtime. The capability gap between them is
-the hooks surface: Claude Code has it natively; Codex does not.
-
-### Claude Code (hook-native)
-
-Claude Code provides `hooks.json` — a declarative surface that fires shell
-scripts at lifecycle events (`SessionStart`, `PreToolUse`, `PostToolUse`,
-`UserPromptSubmit`, `Stop`, etc.). This gives the factory automatic enforcement
-with zero operator action:
-
-```
-SessionStart  →  session-start.sh stages runtime state
-UserPromptSubmit  →  factory-router.sh, context-guard.sh, quality-signals.sh
-PreToolUse    →  pre-mortem-gate.sh blocks unvalidated /crank
-PostToolUse   →  go-vet, complexity, research-loop-detector
-Stop          →  ao-flywheel-close.sh persists learnings
-```
-
-In Claude Code the operator lane is simply:
+AgentOps 3.0 is **hookless**: the factory runs identically on every runtime
+(Claude Code, Codex, Cursor, OpenCode) because it does not depend on any
+harness-specific hook surface. Workflow is guided by skills + the `ao` CLI, and
+CI is the authoritative gate. The operator lane is the same everywhere:
 
 ```bash
-/rpi "fix auth startup"
+/rpi "fix auth startup"            # interactive, any harness
+ao daemon submit --kind rpi --goal "fix auth startup"   # pipeline-resident
 ```
 
-Hooks handle runtime state, validation gates, execution discipline, and
-flywheel closure automatically around whatever the agent does.
+What used to be hook responsibilities are now explicit, pulled surfaces:
 
-### Codex (hookless — agentopsd canonical; legacy lifecycle shims deprecated)
+| Concern | Hookless surface |
+|---------|------------------|
+| Startup context | `ao knowledge brief` / `ao context assemble` (pulled, not injected on every event) |
+| Validation gates | CI (`.github/workflows/validate.yml`) + skill-level checks run in-band |
+| Code quality | `cd cli && make test`, `go vet`, complexity budget — enforced by CI |
+| Flywheel closure | `ao flywheel close-loop` / `/retro` / `/forge` at session close |
+| Execution discipline | Execution-packet `next_action` + skill instructions |
 
-Codex has no hooks surface. The canonical factory route for hookless runtimes
-is `agentopsd` — daemon-resident jobs that assemble their own briefing, run
-the bounded delivery line, and emit learnings without manual lifecycle calls:
-
-```bash
-ao daemon submit --kind rpi --goal "fix auth startup"
-```
-
-The deprecated legacy `ao codex *` lifecycle shims (`ao codex start`, `ao codex stop`, `ao codex ensure-start`, `ao codex ensure-stop`) remain only as a hookless fallback for environments where the daemon is unavailable. Routine
-validation, RPI closeout, and merge work should not call them; full Codex
-skill/runtime parity cleanup is tracked in `soc-kizn.8`.
-
-Key differences from the hook-native path (using the canonical daemon route):
-
-| Concern | Claude Code | Codex (agentopsd) |
-|---------|-------------|-------------------|
-| Startup context | `session-start.sh` fires automatically | Daemon job assembles its own briefing |
-| Validation gates | `pre-mortem-gate.sh` blocks tool calls | Daemon worker enforces gates inside the job |
-| Code quality | `go-vet-post-edit.sh`, `go-complexity-precommit.sh` fire after edits | Worker runs `cd cli && make test` inside the job |
-| Flywheel closure | `ao-flywheel-close.sh` fires on Stop | Daemon emits learnings on job completion |
-| Execution nudges | Execution-packet `next_action`, `research-loop-detector.sh` | Worker discipline + daemon-side stall detection |
-
-Both paths exist because people use Codex or they use Claude Code.
+Both interactive and daemon paths exist because people use Codex or they use
+Claude Code — but neither relies on hooks.
 
 ## Surface Map
 
@@ -94,56 +64,27 @@ Both paths exist because people use Codex or they use Claude Code.
 | Briefing + runtime | Bounded startup context and thread-time state | `ao knowledge brief`, `ao context assemble`, `ao daemon submit` |
 | Delivery line | Research, planning, execution, validation | `/discovery`, `/plan`, `/crank`, `/validation`, `/rpi` |
 | Learning loop | Convert completed work into future advantage | `ao knowledge activate`, `ao flywheel close-loop`, `/retro`, `/forge` |
-| Hooks | Automatic enforcement, quality gates, and execution discipline | `hooks/hooks.json`, `hooks/*.sh`, kill switch |
+| Enforcement | Automatic quality gates and execution discipline | CI (`.github/workflows/validate.yml`), skill-level checks, `cd cli && make test` |
 | Substrate | Retrieval, provenance, packetization, and promotion machinery | `.agents/packets/`, `.agents/topics/`, `.agents/briefings/`, `.agents/findings/`, builder logic |
 
-## Hooks — The Automation Layer
+## Enforcement — No Hooks Required
 
-Hooks (`hooks/hooks.json`) are shell scripts that fire automatically at lifecycle
-events. They are the factory's invisible enforcement and hygiene layer — they
-run without operator action and keep the conveyor belt honest.
+AgentOps 3.0 ships **zero hooks**. The factory's design rules are enforced by
+explicit, pulled surfaces rather than automatic lifecycle scripts:
 
-| Event | Hook | Purpose |
-|-------|------|---------|
-| **SessionStart** | `session-start.sh` | Cleans stale runs and stages goal-scoped briefing state |
-| **SessionEnd** | `session-end-maintenance.sh` | Post-session cleanup and state persistence |
-| | `compile-session-defrag.sh` | Knowledge defragmentation pass |
-| **Stop** | `stop-team-guard.sh`, `stop-auto-handoff.sh`, `ao-flywheel-close.sh` | Preserves active work and closes the flywheel loop |
-| **UserPromptSubmit** | `factory-router.sh` | Routes operator intent to the correct lane |
-| | `context-guard.sh` | Reports context pressure without resident prompt nudges |
-| | `quality-signals.sh` | Captures quality signals before work begins |
-| **PreToolUse** | `pre-mortem-gate.sh` | Blocks `/crank` or `/implement` without pre-mortem |
-| | `dangerous-git-guard.sh` | Blocks destructive git operations |
-| | `go-test-precommit.sh` | Requires Go tests pass before commits |
-| | `git-worker-guard.sh` | Prevents destructive git operations |
-| | `edit-knowledge-surface.sh` | Warns on edits to knowledge-surface files |
-| | `codex-parity-warn.sh` | Warns when skill edits may drift from Codex copies |
-| **PostToolUse** | `write-time-quality.sh` | Checks quality of written/edited files |
-| | `go-complexity-precommit.sh` | Enforces cyclomatic complexity budget |
-| | `go-vet-post-edit.sh` | Runs `go vet` after Go file edits |
-| | `research-loop-detector.sh` | Detects stalling in research without output |
-| | `context-monitor.sh` | Tracks context window consumption |
-| **TaskCompleted** | `task-validation-gate.sh` | Validates task output before marking complete |
-| **PreCompact** | `precompact-snapshot.sh` | Captures recovery state before context compaction |
-| **SubagentStop** | `subagent-stop.sh` | Captures worker output packets |
-| **WorktreeCreate** | `worktree-setup.sh` | Initializes isolated worktree state |
-| **WorktreeRemove** | `worktree-cleanup.sh` | Archives worktree-local state |
-| **ConfigChange** | `config-change-monitor.sh` | Audits high-risk runtime configuration changes |
+- **Validation gates** — CI (`.github/workflows/validate.yml`) is the
+  authoritative gate; skills run their own checks in-band before claiming work
+  complete.
+- **Ratchet checkpoints** — `ao flywheel close-loop` / `/retro` / `/forge`
+  persist learnings at session close.
+- **Execution discipline** — execution-packet `next_action` and skill
+  instructions keep the agent producing artifacts instead of stalling.
+- **Code quality** — `cd cli && make test`, `go vet`, and the complexity budget
+  are enforced by CI on every push.
 
-Every hook checks the kill switch (`AGENTOPS_HOOKS_DISABLED=1`) and produces
-structured JSON on stdout. Exit code `2` blocks the operation (PreToolUse only);
-`0` passes.
-
-Hooks enforce the factory's design rules automatically:
-
-- **Validation gates** — `pre-mortem-gate.sh`, `go-test-precommit.sh`,
-  and `task-validation-gate.sh` prevent unvalidated work from advancing.
-- **Ratchet checkpoints** — `ao-flywheel-close.sh` ensures learnings persist
-  after each session.
-- **Execution discipline** — execution-packet `next_action` and `research-loop-detector.sh`
-  keep the agent producing artifacts instead of stalling.
-- **Code quality** — `go-complexity-precommit.sh`, `go-vet-post-edit.sh`, and
-  `write-time-quality.sh` catch regressions at edit time, not CI time.
+Operators who *want* runtime hooks can author their own with the
+`hooks-authoring` skill — they are opt-in and not part of the default product
+surface.
 
 ## Why This Surface Exists
 

@@ -54,16 +54,7 @@ else
     pass "Citation feedback does not hardcode reward=1.0"
 fi
 
-# ── Check D: SessionEnd hook triggers maturity transitions ──
-# Session boundaries must still run the close-loop path that applies maturity.
-if grep -q 'flywheel close-loop' "$ROOT/hooks/session-end-maintenance.sh" || \
-   grep -q '\-\-scan.*\-\-apply' "$ROOT/hooks/session-end-maintenance.sh"; then
-    pass "SessionEnd hook triggers maturity transitions"
-else
-    fail "SessionEnd hook missing close-loop or maturity apply path (hooks/session-end-maintenance.sh)"
-fi
-
-# ── Check E: Close-loop calls applyAllMaturityTransitions ──
+# ── Check D: Close-loop calls applyAllMaturityTransitions ──
 # The close-loop command must call the transition function or maturity is dead code.
 if grep -q 'applyAllMaturityTransitions' "$ROOT/cli/cmd/ao/flywheel_close_loop.go"; then
     pass "Close-loop calls applyAllMaturityTransitions"

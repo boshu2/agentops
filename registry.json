@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-24T02:37:14Z",
+  "generated_at": "2026-05-24T14:27:27Z",
   "summary": {
     "skills": 80,
-    "hooks": 35,
+    "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 14,
-    "eval_files": 62,
-    "cli_commands": 179
+    "eval_files": 57,
+    "cli_commands": 177
   },
   "surfaces": {
     "skills": [
@@ -652,288 +652,7 @@
         "reference_count": 3
       }
     ],
-    "hooks": [
-      {
-        "name": "config-change-monitor",
-        "lifecycle": "ConfigChange",
-        "matcher": "all",
-        "timeout": 5,
-        "path": "hooks/config-change-monitor.sh",
-        "type": "command"
-      },
-      {
-        "name": "edit-audit",
-        "lifecycle": "PostToolUse",
-        "matcher": "Write",
-        "timeout": 3,
-        "path": "hooks/edit-audit.sh",
-        "type": "command"
-      },
-      {
-        "name": "edit-audit",
-        "lifecycle": "PostToolUse",
-        "matcher": "Edit",
-        "timeout": 3,
-        "path": "hooks/edit-audit.sh",
-        "type": "command"
-      },
-      {
-        "name": "go-complexity-precommit",
-        "lifecycle": "PostToolUse",
-        "matcher": "all",
-        "timeout": 10,
-        "path": "hooks/go-complexity-precommit.sh",
-        "type": "command"
-      },
-      {
-        "name": "postedit-codex-refresh",
-        "lifecycle": "PostToolUse",
-        "matcher": "Write",
-        "timeout": 10,
-        "path": "hooks/postedit-codex-refresh.sh",
-        "type": "command"
-      },
-      {
-        "name": "postedit-codex-refresh",
-        "lifecycle": "PostToolUse",
-        "matcher": "Edit",
-        "timeout": 10,
-        "path": "hooks/postedit-codex-refresh.sh",
-        "type": "command"
-      },
-      {
-        "name": "precompact-snapshot",
-        "lifecycle": "PreCompact",
-        "matcher": "all",
-        "timeout": 5,
-        "path": "hooks/precompact-snapshot.sh",
-        "type": "command"
-      },
-      {
-        "name": "check-sibling-citation-on-commit",
-        "lifecycle": "PreToolUse",
-        "matcher": "Bash",
-        "timeout": 5,
-        "path": "hooks/check-sibling-citation-on-commit.sh",
-        "type": "command"
-      },
-      {
-        "name": "check-test-pair-on-commit",
-        "lifecycle": "PreToolUse",
-        "matcher": "Bash",
-        "timeout": 5,
-        "path": "hooks/check-test-pair-on-commit.sh",
-        "type": "command"
-      },
-      {
-        "name": "codex-parity-warn",
-        "lifecycle": "PreToolUse",
-        "matcher": "Edit",
-        "timeout": 3,
-        "path": "hooks/codex-parity-warn.sh",
-        "type": "command"
-      },
-      {
-        "name": "dangerous-git-guard",
-        "lifecycle": "PreToolUse",
-        "matcher": "Bash",
-        "timeout": 5,
-        "path": "hooks/dangerous-git-guard.sh",
-        "type": "command"
-      },
-      {
-        "name": "edit-scope-guard",
-        "lifecycle": "PreToolUse",
-        "matcher": "Edit|Write|Bash",
-        "timeout": 5,
-        "path": "hooks/edit-scope-guard.sh",
-        "type": "command"
-      },
-      {
-        "name": "git-worker-guard",
-        "lifecycle": "PreToolUse",
-        "matcher": "Bash",
-        "timeout": 5,
-        "path": "hooks/git-worker-guard.sh",
-        "type": "command"
-      },
-      {
-        "name": "go-test-precommit",
-        "lifecycle": "PreToolUse",
-        "matcher": "Bash",
-        "timeout": 60,
-        "path": "hooks/go-test-precommit.sh",
-        "type": "command"
-      },
-      {
-        "name": "holdout-isolation-gate",
-        "lifecycle": "PreToolUse",
-        "matcher": "Read",
-        "timeout": 5,
-        "path": "hooks/holdout-isolation-gate.sh",
-        "type": "command"
-      },
-      {
-        "name": "holdout-isolation-gate",
-        "lifecycle": "PreToolUse",
-        "matcher": "Glob",
-        "timeout": 5,
-        "path": "hooks/holdout-isolation-gate.sh",
-        "type": "command"
-      },
-      {
-        "name": "holdout-isolation-gate",
-        "lifecycle": "PreToolUse",
-        "matcher": "Grep",
-        "timeout": 5,
-        "path": "hooks/holdout-isolation-gate.sh",
-        "type": "command"
-      },
-      {
-        "name": "holdout-isolation-gate",
-        "lifecycle": "PreToolUse",
-        "matcher": "Bash",
-        "timeout": 5,
-        "path": "hooks/holdout-isolation-gate.sh",
-        "type": "command"
-      },
-      {
-        "name": "lead-only-worker-git-guard",
-        "lifecycle": "PreToolUse",
-        "matcher": "Bash",
-        "timeout": 5,
-        "path": "hooks/lead-only-worker-git-guard.sh",
-        "type": "command"
-      },
-      {
-        "name": "pre-mortem-gate",
-        "lifecycle": "PreToolUse",
-        "matcher": "Skill",
-        "timeout": 30,
-        "path": "hooks/pre-mortem-gate.sh",
-        "type": "command"
-      },
-      {
-        "name": "session-pr-counter",
-        "lifecycle": "PreToolUse",
-        "matcher": "Bash",
-        "timeout": 10,
-        "path": "hooks/session-pr-counter.sh",
-        "type": "command"
-      },
-      {
-        "name": "update-principles-check",
-        "lifecycle": "PreToolUse",
-        "matcher": "Bash",
-        "timeout": 5,
-        "path": "hooks/update-principles-check.sh",
-        "type": "command"
-      },
-      {
-        "name": "compile-session-defrag",
-        "lifecycle": "SessionEnd",
-        "matcher": "all",
-        "timeout": 20,
-        "path": "hooks/compile-session-defrag.sh",
-        "type": "command"
-      },
-      {
-        "name": "session-end-maintenance",
-        "lifecycle": "SessionEnd",
-        "matcher": "all",
-        "timeout": 35,
-        "path": "hooks/session-end-maintenance.sh",
-        "type": "command"
-      },
-      {
-        "name": "session-start",
-        "lifecycle": "SessionStart",
-        "matcher": "all",
-        "timeout": 10,
-        "path": "hooks/session-start.sh",
-        "type": "command"
-      },
-      {
-        "name": "ao-flywheel-close",
-        "lifecycle": "Stop",
-        "matcher": "all",
-        "timeout": 15,
-        "path": "hooks/ao-flywheel-close.sh",
-        "type": "command"
-      },
-      {
-        "name": "stop-auto-handoff",
-        "lifecycle": "Stop",
-        "matcher": "all",
-        "timeout": 5,
-        "path": "hooks/stop-auto-handoff.sh",
-        "type": "command"
-      },
-      {
-        "name": "stop-team-guard",
-        "lifecycle": "Stop",
-        "matcher": "all",
-        "timeout": 5,
-        "path": "hooks/stop-team-guard.sh",
-        "type": "command"
-      },
-      {
-        "name": "subagent-stop",
-        "lifecycle": "SubagentStop",
-        "matcher": "all",
-        "timeout": 5,
-        "path": "hooks/subagent-stop.sh",
-        "type": "command"
-      },
-      {
-        "name": "task-validation-gate",
-        "lifecycle": "TaskCompleted",
-        "matcher": "all",
-        "timeout": 60,
-        "path": "hooks/task-validation-gate.sh",
-        "type": "command"
-      },
-      {
-        "name": "context-guard",
-        "lifecycle": "UserPromptSubmit",
-        "matcher": "all",
-        "timeout": 3,
-        "path": "hooks/context-guard.sh",
-        "type": "command"
-      },
-      {
-        "name": "factory-router",
-        "lifecycle": "UserPromptSubmit",
-        "matcher": "all",
-        "timeout": 8,
-        "path": "hooks/factory-router.sh",
-        "type": "command"
-      },
-      {
-        "name": "quality-signals",
-        "lifecycle": "UserPromptSubmit",
-        "matcher": "all",
-        "timeout": 3,
-        "path": "hooks/quality-signals.sh",
-        "type": "command"
-      },
-      {
-        "name": "worktree-setup",
-        "lifecycle": "WorktreeCreate",
-        "matcher": "all",
-        "timeout": 10,
-        "path": "hooks/worktree-setup.sh",
-        "type": "command"
-      },
-      {
-        "name": "worktree-cleanup",
-        "lifecycle": "WorktreeRemove",
-        "matcher": "all",
-        "timeout": 10,
-        "path": "hooks/worktree-cleanup.sh",
-        "type": "command"
-      }
-    ],
+    "hooks": [],
     "knowledge_stores": [
       {
         "name": "evolve",
@@ -1059,7 +778,7 @@
       {
         "suite": "agentops-core",
         "path": "evals/agentops-core/",
-        "eval_count": 61,
+        "eval_count": 56,
         "evals": [
           "beads-issue-tracking",
           "cli-command-surface-matrix",
@@ -1082,11 +801,6 @@
           "goals-management-lifecycle",
           "headless-runtime-skills",
           "hidden-cli-internals",
-          "holdout-isolation-behavior",
-          "hook-context-value",
-          "hook-gates",
-          "hook-lifecycle-behavior",
-          "hook-manifest-runtime-contracts",
           "knowledge-flywheel-ingestion",
           "lid-primitives-demo",
           "mock-runtime-contracts",
@@ -1473,14 +1187,6 @@
       {
         "name": "harvest",
         "path": "cli/cmd/ao/harvest.go"
-      },
-      {
-        "name": "hooks",
-        "path": "cli/cmd/ao/hooks.go"
-      },
-      {
-        "name": "hooks_run",
-        "path": "cli/cmd/ao/hooks_run.go"
       },
       {
         "name": "index",

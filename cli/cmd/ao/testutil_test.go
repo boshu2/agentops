@@ -231,9 +231,6 @@ func resetCommandState(t *testing.T) {
 	origMemorySyncQuiet := memorySyncQuiet
 	origMemorySyncMaxEntries := memorySyncMaxEntries
 	origMemorySyncOutput := memorySyncOutput
-	origHooksFull := hooksFull
-	origHooksDryRun := hooksDryRun
-	origHooksForce := hooksForce
 	origSearchLimit := searchLimit
 	origSearchType := searchType
 	origSearchCiteType := searchCiteType
@@ -312,9 +309,6 @@ func resetCommandState(t *testing.T) {
 		memorySyncQuiet = origMemorySyncQuiet
 		memorySyncMaxEntries = origMemorySyncMaxEntries
 		memorySyncOutput = origMemorySyncOutput
-		hooksFull = origHooksFull
-		hooksDryRun = origHooksDryRun
-		hooksForce = origHooksForce
 		searchLimit = origSearchLimit
 		searchType = origSearchType
 		searchCiteType = origSearchCiteType
@@ -394,9 +388,6 @@ func resetCommandState(t *testing.T) {
 	memorySyncQuiet = false
 	memorySyncMaxEntries = 10
 	memorySyncOutput = ""
-	hooksFull = false
-	hooksDryRun = false
-	hooksForce = false
 	searchLimit = 10
 	searchType = ""
 	searchCiteType = ""

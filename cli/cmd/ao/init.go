@@ -22,16 +22,13 @@ var agentsDirs = lifecycle.CoreAgentDirPaths()
 
 var (
 	initStealth      bool
-	initHooks        bool
-	initFull         bool
-	initMinimalHooks bool
 	initWithSchedule bool
 )
 
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize AgentOps in the current repository",
-	Long: `Set up a repository for AgentOps: directories, gitignore, and optional hooks.
+	Long: `Set up a repository for AgentOps: directories and gitignore.
 
 This creates:
   .agents/research/       - Research findings
@@ -58,9 +55,6 @@ Run in your project root. Safe to run multiple times (idempotent).`,
 
 func init() {
 	initCmd.Flags().BoolVar(&initStealth, "stealth", false, "Use .git/info/exclude instead of .gitignore")
-	initCmd.Flags().BoolVar(&initHooks, "hooks", false, "Also register hooks (full 12-event coverage by default; equivalent to ao hooks install --full)")
-	initCmd.Flags().BoolVar(&initFull, "full", false, "With --hooks, explicitly request full coverage (legacy explicit flag)")
-	initCmd.Flags().BoolVar(&initMinimalHooks, "minimal-hooks", false, "With --hooks, install SessionStart + SessionEnd + Stop hooks (lightweight)")
 	initCmd.Flags().BoolVar(&initWithSchedule, "with-schedule", false,
 		"Copy .agents/schedule.yaml.example to .agents/schedule.yaml (opt-in continuous-worker scheduling). "+
 			"In a TTY, ao init prompts [Y/n] when this flag is unset. "+
@@ -91,12 +85,6 @@ func runInit(cmd *cobra.Command, args []string) error {
 
 	if err := ensureNestedAgentsGitignore(cwd); err != nil {
 		return err
-	}
-
-	if initHooks {
-		if err := installInitHooks(cmd); err != nil {
-			return err
-		}
 	}
 
 	if err := maybeCopyScheduleExample(cmd, cwd); err != nil {
@@ -257,37 +245,6 @@ func ensureNestedAgentsGitignore(cwd string) error {
 	return nil
 }
 
-func installInitHooks(cmd *cobra.Command) error {
-	if initFull && initMinimalHooks {
-		return fmt.Errorf("--full and --minimal-hooks are mutually exclusive")
-	}
-
-	if dryRun {
-		mode := "full"
-		if initMinimalHooks {
-			mode = "minimal"
-		}
-		fmt.Printf("[dry-run] Would install %s hooks\n", mode)
-		return nil
-	}
-
-	// Delegate to existing hooks install logic.
-	// Default to full coverage for `ao init --hooks`.
-	hooksFull = true
-	if initMinimalHooks {
-		hooksFull = false
-	}
-	if initFull {
-		hooksFull = true
-	}
-	hooksDryRun = false
-	hooksForce = false
-	if err := runHooksInstall(cmd, nil); err != nil {
-		return fmt.Errorf("install hooks: %w", err)
-	}
-	return nil
-}
-
 func printInitSummary(cwd string, isGitRepo bool) {
 	fmt.Printf("✓ Initialized AgentOps in %s\n", cwd)
 	fmt.Println()
@@ -304,14 +261,8 @@ func printInitSummary(cwd string, isGitRepo bool) {
 		}
 		fmt.Println("  .agents/.gitignore")
 	}
-	if initHooks {
-		fmt.Println("  hooks registered")
-	}
 	fmt.Println()
 	fmt.Println("Next steps:")
-	if !initHooks {
-		fmt.Println("  ao init --hooks        - Register session hooks")
-	}
 	if report, err := lifecycle.InspectRepoReadiness(cwd, lifecycle.ReadinessOptions{}); err == nil && !report.Ready {
 		fmt.Println("  ao quick-start         - Finish core goals/instructions seed")
 	}

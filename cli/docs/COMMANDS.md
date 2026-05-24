@@ -37,7 +37,7 @@ ao demo [flags]
 
 ### `ao init`
 
-Set up a repository for AgentOps: directories, gitignore, and optional hooks.
+Set up a repository for AgentOps: directories and gitignore.
 
 ```
 ao init [flags]
@@ -46,10 +46,7 @@ ao init [flags]
 **Flags:**
 
 ```
-      --full            With --hooks, explicitly request full coverage (legacy explicit flag)
   -h, --help            help for init
-      --hooks           Also register hooks (full 12-event coverage by default; equivalent to ao hooks install --full)
-      --minimal-hooks   With --hooks, install SessionStart + SessionEnd + Stop hooks (lightweight)
       --stealth         Use .git/info/exclude instead of .gitignore
       --with-schedule   Copy .agents/schedule.yaml.example to .agents/schedule.yaml (opt-in continuous-worker scheduling). In a TTY, ao init prompts [Y/n] when this flag is unset. In non-TTY runs, scheduling is silently skipped unless AGENTOPS_INIT_WITH_SCHEDULE=1 is set to opt-in.
 ```
@@ -3112,82 +3109,6 @@ ao config models [flags]
   -h, --help               help for models
       --set-skill string   Set a skill-specific tier override (e.g. council=quality)
       --set-tier string    Set the default model cost tier (quality, balanced, budget)
-```
-
----
-
-### `ao hooks`
-
-The hooks command manages runtime hooks that automate the CASS knowledge flywheel.
-
-```
-ao hooks [command]
-```
-
-**Subcommands:**
-
-#### `ao hooks init`
-
-Generate hooks configuration for the CASS knowledge flywheel (Claude Code format).
-
-```
-ao hooks init [flags]
-```
-
-**Flags:**
-
-```
-      --format string   Output format: json, shell (default "json")
-  -h, --help            help for init
-```
-
-#### `ao hooks install`
-
-Install ao hooks to ~/.claude/settings.json.
-
-```
-ao hooks install [flags]
-```
-
-**Flags:**
-
-```
-      --dry-run             Show what would be installed without making changes
-      --force               Overwrite existing ao hooks
-      --full                Install all hook events from hooks.json with scripts copied to ~/.agentops/
-  -h, --help                help for install
-      --source-dir string   Path to agentops repo checkout (for --full script installation)
-```
-
-#### `ao hooks run`
-
-Run a managed AgentOps hook backend.
-
-```
-ao hooks run <hook-name> [flags]
-```
-
-#### `ao hooks show`
-
-Display the current hooks configuration from ~/.claude/settings.json (Claude Code runtime).
-
-```
-ao hooks show [flags]
-```
-
-#### `ao hooks test`
-
-Test that all hook dependencies are available and working.
-
-```
-ao hooks test [flags]
-```
-
-**Flags:**
-
-```
-      --dry-run   Show test steps without running hooks
-  -h, --help      help for test
 ```
 
 ---

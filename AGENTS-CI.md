@@ -47,10 +47,7 @@ These CI 1-40 items are intentionally not being hardened in this wave. Revisit o
 |-----|-------------------|----------------|
 | **doc-release-gate** | Skill counts match across SKILL-TIERS.md, PRODUCT.md, README.md, documentation-index.md; link validation | Adding/removing a skill without running `scripts/sync-skill-counts.sh` |
 | **smoke-test** | Repo smoke surface: skill frontmatter, placeholder/TODO hygiene, plus standalone Claude/Codex/OpenCode runtime smoke scripts and mocked headless runtime validation | Runtime install/bundle drift or placeholder/TODO regressions |
-| **hook-preflight** | All hooks have kill switches, no unsafe eval, timeouts present | Using `eval` or backtick substitution in hooks |
 | **agentops-eval-baseline-audit** | Runs `ao eval baseline-audit --root evals/agentops-core --json`; drift-only gate that fails on `stale_suite_hashes>0`. `policy_mismatch_count` is reported informationally (under the no-tracked-`.agents/` policy from `3f1566fd` baselines are operator-local, so fresh clones legitimately have missing_compare_baselines) | A promoted baseline's recorded suite SHA stops matching the current suite definition |
-| **validate-hooks-doc-parity** | Scoped docs avoid stale hook-count claims vs runtime `hooks/hooks.json` | Runtime hook contract changed but docs were not updated |
-| **hook-output-schema-lint** | Hooks emit only the safely-portable PreToolUse output subset both Claude and Codex CLI accept | Using `hookSpecificOutput.updatedInput` (silently dropped by Codex CLI 0.128.0+) |
 | **validate-ci-policy-parity** | AGENTS CI table and blocking policy match workflow summary enforcement | Docs say non-blocking/required but workflow differs |
 | **validate-codex-runtime-sections** | Required Codex runtime sections and ordering remain valid in shipped artifacts | AGENTS/runtime guidance changes drift from required Codex runtime section rules |
 | **validate-codex-generated-artifacts** | Codex artifact metadata parity (manifests, markers, hashes) for the head commit | Codex artifact regen drift; missing or stale `skills-codex/` outputs |
@@ -80,7 +77,7 @@ These CI 1-40 items are intentionally not being hardened in this wave. Revisit o
 | **validate-headless-runtime-skills** | Headless runtime skill bundle smoke (mocked Claude/Codex/OpenCode runners) | Runtime install/bundle drift breaks headless skill execution |
 | **validate-skill-frontmatter** | `scripts/validate-skill-frontmatter.sh` validates each `skills/*/SKILL.md` YAML frontmatter against `schemas/skill-frontmatter.v2.schema.json` (v2 adds optional `hexagonal_role`, `consumes`, `produces`, `context_rel` fields). Default mode fails on schema violations; missing optional hexagonal fields warn. `--strict` (pre-push) fails on warnings. Per DDD+Hexagonal plan Issue #2 | SKILL.md frontmatter drifts from v2 schema, or `hexagonal_role` enum value invalid |
 | **validate-context-map-drift** | `scripts/validate-context-map-drift.sh` regenerates `docs/contracts/context-map.md` via `scripts/generate-context-map.sh` and fails on any diff against the committed copy. Restores the original file on exit so working trees stay clean. Per DDD+Hexagonal plan Issue #5 (Fix 3) | SKILL.md `hexagonal_role`/`consumes`/`produces`/`context_rel` frontmatter changed without regenerating `docs/contracts/context-map.md` |
-| **embedded-sync** | `cli/embedded/` matches source files in `hooks/`, `lib/`, `skills/` | Editing hooks without running `cd cli && make sync-hooks` |
+| **embedded-sync** | `cli/embedded/` matches source files in `lib/`, `skills/` | Editing lib/ or skills/ without running `cd cli && make sync-hooks` |
 | **cli-docs-parity** | `cli/docs/COMMANDS.md` matches `ao --help` output | Adding a CLI command without running `scripts/generate-cli-reference.sh` |
 | **registry-check** | `registry.json` matches live output of `scripts/generate-registry.sh` | Adding a job type, skill, or CLI command without regenerating registry.json |
 | **agentops-contract-canaries** | Runs the official deterministic AgentOps contract canary test list in `tests/canaries/agentops-core-official.txt` | Stable contract canary regression, selected suite failure, or missing canary dependency |
@@ -98,9 +95,9 @@ These CI 1-40 items are intentionally not being hardened in this wave. Revisit o
 | **memrl-health** | MemRL feedback loop wiring and health checks | Broken ingestion/feedback loop wiring |
 | **plugin-load-test** | No symlinks anywhere in the repo; manifests valid; plugin structure correct | Creating symlinks instead of real file copies |
 | **retrieval-quality** | Offline retrieval precision bench and retrieval comparison smoke test | Precision@K regression below threshold or retrieval-quality-smoke failure |
-| **go-build** | `ao` binary builds; tests pass with `-race`; embedded hooks in sync; Go complexity budget | New function exceeds cyclomatic complexity 25 |
+| **go-build** | `ao` binary builds; tests pass with `-race`; embedded lib/skills in sync; Go complexity budget | New function exceeds cyclomatic complexity 25 |
 | **windows-smoke** | Native Windows PowerShell installer smoke, Codex plugin temp install, local `ao doctor` Windows hints, and focused Windows-sensitive Go tests | Windows install/plugin/runtime surfaces regress while Ubuntu CI stays green |
-| **cli-integration** | Built CLI runs integration command matrix and hook lifecycle smoke tests | CLI command behavior drift not covered by unit tests |
+| **cli-integration** | Built CLI runs integration command matrix and release smoke tests | CLI command behavior drift not covered by unit tests |
 | **json-flag-consistency** | All `--json` flags produce valid JSON with consistent format | Missing `--json` support on a new command |
 | **file-manifest-overlap** | No file path conflicts between workers/skills | Two skills claim the same output file |
 | **doctor-check** (non-blocking) | `ao doctor` runs without error on built binary | Non-blocking (`continue-on-error: true`) |

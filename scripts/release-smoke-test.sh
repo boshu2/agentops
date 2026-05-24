@@ -480,7 +480,6 @@ test_help "ao quick-start --help" "$AO" quick-start --help
 test_help "ao quickstart --help" "$AO" quickstart --help
 test_help "ao forge --help" "$AO" forge --help
 test_help "ao session --help" "$AO" session --help
-test_help "ao hooks --help" "$AO" hooks --help
 test_help "ao config --help" "$AO" config --help
 test_help "ao completion --help" "$AO" completion --help
 test_help "ao plans --help" "$AO" plans --help

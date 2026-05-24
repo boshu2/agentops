@@ -1,6 +1,6 @@
 # Agent Instructions
 
-**AgentOps compiles and compounds the context that feeds your software factory.** It automates the bookkeeping agents do not reliably do for themselves — attempts, decisions, citations, verdicts, handoffs, learnings — then encodes the DevSecOps CDLC and multi-agent operating practices into a portable corpus that compounds across sessions and runtimes. Plugin + CLI + hooks + scheduling daemon, runs on your hardware against your subscription. Humans choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled compounding.
+**AgentOps compiles and compounds the context that feeds your software factory.** It automates the bookkeeping agents do not reliably do for themselves — attempts, decisions, citations, verdicts, handoffs, learnings — then encodes the DevSecOps CDLC and multi-agent operating practices into a portable corpus that compounds across sessions and runtimes. Plugin + CLI + scheduling daemon (hookless — skills + the `ao` CLI, with CI as the authoritative gate), runs on your hardware against your subscription. Humans choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled compounding.
 
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
@@ -15,11 +15,11 @@ If you spawn into this repo without context, do this first:
 3. Identify your task domain:
    - CLI behavior: `cli/cmd/ao/`, `cli/internal/`, `cli/docs/COMMANDS.md`
    - Skill behavior: `skills/<name>/SKILL.md`
-   - Hook/gate behavior: `hooks/hooks.json` + `hooks/*.sh`
+   - Validation/gate behavior: `.github/workflows/validate.yml` + `scripts/*.sh` (AgentOps 3.0 is hookless — CI is the authoritative gate)
    - Validation/release/security flows: `scripts/*.sh` + `tests/`
 4. Use source-of-truth precedence when docs disagree:
-   1. Executable code and generated artifacts (`cli/**`, `hooks/**`, `scripts/**`, `cli/docs/COMMANDS.md`)
-   2. Skill contracts and manifests (`skills/**/SKILL.md`, `hooks/hooks.json`, `schemas/**`)
+   1. Executable code and generated artifacts (`cli/**`, `scripts/**`, `cli/docs/COMMANDS.md`)
+   2. Skill contracts and manifests (`skills/**/SKILL.md`, `schemas/**`)
    3. Explanatory docs (`docs/**`, `README.md`)
 5. If you find conflicts, follow the higher-precedence source and call out the mismatch explicitly in your report/PR.
 

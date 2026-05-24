@@ -2,7 +2,6 @@
 #
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File .\scripts\install-codex.ps1
-#   powershell -ExecutionPolicy Bypass -File .\scripts\install-codex.ps1 -WithHooks
 #   irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex
 
 [CmdletBinding()]
@@ -10,8 +9,7 @@ param(
   [string]$RepoRoot = $env:AGENTOPS_BUNDLE_ROOT,
   [string]$CodexHome = $env:CODEX_HOME,
   [string]$Version = $env:AGENTOPS_INSTALL_REF,
-  [string]$UpdateCommand = "irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex",
-  [switch]$WithHooks
+  [string]$UpdateCommand = "irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex"
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,7 +18,6 @@ $PluginName = "agentops"
 $MarketplaceName = "agentops-marketplace"
 $PluginKey = "$PluginName@$MarketplaceName"
 $InstallRef = if ([string]::IsNullOrWhiteSpace($Version)) { "main" } else { $Version }
-$InstallHooks = $WithHooks.IsPresent -or ($env:AGENTOPS_INSTALL_HOOKS -match '^(1|true|yes|on)$')
 $ArchiveUrl = if ($InstallRef -eq "main") {
   "https://codeload.github.com/boshu2/agentops/tar.gz/refs/heads/main"
 } else {
@@ -225,198 +222,6 @@ function Archive-SkillRoot {
   return $null
 }
 
-function Get-AgentOpsCodexHookScripts {
-  return @(
-    "session-start.sh",
-    "stop-team-guard.sh",
-    "stop-auto-handoff.sh",
-    "ao-flywheel-close.sh",
-    "quality-signals.sh",
-    "dangerous-git-guard.sh",
-    "go-test-precommit.sh",
-    "lead-only-worker-git-guard.sh",
-    "holdout-isolation-gate.sh",
-    "edit-knowledge-surface.sh",
-    "codex-parity-warn.sh",
-    "write-time-quality.sh",
-    "ratchet-advance.sh"
-  )
-}
-
-function Test-AgentOpsCodexHookCommand {
-  param([string]$Command)
-
-  if ([string]::IsNullOrWhiteSpace($Command)) {
-    return $false
-  }
-
-  foreach ($script in Get-AgentOpsCodexHookScripts) {
-    if ($Command -like "*/hooks/$script") {
-      return $true
-    }
-  }
-
-  return $false
-}
-
-function Get-CodexHookEventCount {
-  param($Manifest)
-
-  if ($null -eq $Manifest -or $null -eq $Manifest.hooks) {
-    return 0
-  }
-
-  return @($Manifest.hooks.PSObject.Properties).Count
-}
-
-function Get-CodexHookHandlerCount {
-  param($Manifest)
-
-  $count = 0
-  if ($null -eq $Manifest -or $null -eq $Manifest.hooks) {
-    return $count
-  }
-
-  foreach ($eventProp in $Manifest.hooks.PSObject.Properties) {
-    foreach ($group in @($eventProp.Value)) {
-      $count += @($group.hooks).Count
-    }
-  }
-
-  return $count
-}
-
-function Remove-AgentOpsCodexHooks {
-  param($Manifest)
-
-  $schema = $null
-  if ($null -ne $Manifest -and $Manifest.PSObject.Properties.Match('$schema').Count -gt 0) {
-    $schema = $Manifest.'$schema'
-  }
-
-  $cleanedHooks = [ordered]@{}
-  if ($null -ne $Manifest -and $Manifest.PSObject.Properties.Match('hooks').Count -gt 0 -and $Manifest.hooks -isnot [System.Array]) {
-    foreach ($eventProp in $Manifest.hooks.PSObject.Properties) {
-      $keptGroups = New-Object System.Collections.ArrayList
-      foreach ($group in @($eventProp.Value)) {
-        $keptHandlers = @()
-        foreach ($handler in @($group.hooks)) {
-          if (-not (Test-AgentOpsCodexHookCommand ([string]$handler.command))) {
-            $keptHandlers += $handler
-          }
-        }
-        if ($keptHandlers.Count -gt 0) {
-          $newGroup = [ordered]@{}
-          if ($group.PSObject.Properties.Match('matcher').Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$group.matcher)) {
-            $newGroup['matcher'] = [string]$group.matcher
-          }
-          $newGroup['hooks'] = @($keptHandlers)
-          [void]$keptGroups.Add([pscustomobject]$newGroup)
-        }
-      }
-      if ($keptGroups.Count -gt 0) {
-        $cleanedHooks[$eventProp.Name] = @($keptGroups)
-      }
-    }
-  }
-
-  $result = [ordered]@{}
-  if (-not [string]::IsNullOrWhiteSpace([string]$schema)) {
-    $result['$schema'] = $schema
-  }
-  $result['hooks'] = [pscustomobject]$cleanedHooks
-  return [pscustomobject]$result
-}
-
-function Merge-CodexHooksManifest {
-  param($ExistingManifest, $NewManifest)
-
-  $cleaned = Remove-AgentOpsCodexHooks $ExistingManifest
-  $mergedHooks = [ordered]@{}
-
-  if ($null -ne $cleaned.hooks) {
-    foreach ($eventProp in $cleaned.hooks.PSObject.Properties) {
-      $mergedHooks[$eventProp.Name] = @($eventProp.Value)
-    }
-  }
-  if ($null -ne $NewManifest.hooks) {
-    foreach ($eventProp in $NewManifest.hooks.PSObject.Properties) {
-      $mergedHooks[$eventProp.Name] = @($eventProp.Value)
-    }
-  }
-
-  $schema = $null
-  if ($NewManifest.PSObject.Properties.Match('$schema').Count -gt 0) {
-    $schema = $NewManifest.'$schema'
-  } elseif ($cleaned.PSObject.Properties.Match('$schema').Count -gt 0) {
-    $schema = $cleaned.'$schema'
-  }
-
-  $result = [ordered]@{}
-  if (-not [string]::IsNullOrWhiteSpace([string]$schema)) {
-    $result['$schema'] = $schema
-  }
-  $result['hooks'] = [pscustomobject]$mergedHooks
-  return [pscustomobject]$result
-}
-
-function Install-CodexHooks {
-  param([string]$RepoRoot, [string]$PluginCacheRoot, [string]$CodexHome)
-
-  $hooksSrc = Join-Path $RepoRoot "hooks"
-  $hooksManifest = Join-Path $hooksSrc "codex-hooks.json"
-  if (-not (Test-Path -LiteralPath $hooksManifest)) {
-    Write-Warn "No codex-hooks.json found; hooks not installed"
-    return
-  }
-
-  $bashFlavor = Get-BashFlavor
-  if ([string]::IsNullOrWhiteSpace($bashFlavor)) {
-    Write-Warn "bash was not found in PATH; plugin installed, but Codex hooks were not installed"
-    return
-  }
-
-  $hooksDst = Join-Path $PluginCacheRoot "hooks"
-  New-Item -ItemType Directory -Path $hooksDst -Force | Out-Null
-  Get-ChildItem -LiteralPath $hooksSrc -Filter "*.sh" -File | Copy-Item -Destination $hooksDst -Force
-  $libDir = Join-Path $RepoRoot "lib"
-  if (Test-Path -LiteralPath $libDir) {
-    Get-ChildItem -LiteralPath $libDir -Filter "*.sh" -File | Copy-Item -Destination $hooksDst -Force
-  }
-
-  $bashPluginRoot = Convert-ToBashPath -Path $PluginCacheRoot -BashFlavor $bashFlavor
-  $rendered = Get-Content -LiteralPath $hooksManifest -Raw | ConvertFrom-Json
-  foreach ($eventProp in $rendered.hooks.PSObject.Properties) {
-    foreach ($group in @($eventProp.Value)) {
-      foreach ($hook in @($group.hooks)) {
-        if ($hook.command -match "/hooks/(.+\.sh)$") {
-          $hook.command = "bash `"$bashPluginRoot/hooks/$($matches[1])`""
-        } else {
-          $hook.command = $hook.command.Replace('${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}', $bashPluginRoot)
-        }
-      }
-    }
-  }
-
-  $hooksFile = Join-Path $CodexHome "hooks.json"
-  if (Test-Path -LiteralPath $hooksFile) {
-    Copy-Item -LiteralPath $hooksFile -Destination "$hooksFile.bak.$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())" -Force
-    $existing = Get-Content -LiteralPath $hooksFile -Raw | ConvertFrom-Json
-    if ($existing.hooks -is [System.Array]) {
-      Write-Warn "Existing ~/.codex/hooks.json uses the legacy flat-array shape; replacing it with the current Codex event-map schema."
-    }
-    $rendered = Merge-CodexHooksManifest $existing $rendered
-  }
-
-  New-Item -ItemType Directory -Path (Split-Path -Parent $hooksFile) -Force | Out-Null
-  $rendered | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $hooksFile -Encoding utf8
-  $handlerCount = Get-CodexHookHandlerCount $rendered
-  $eventCount = Get-CodexHookEventCount $rendered
-  Write-Info "Codex hooks installed ($handlerCount handlers across $eventCount events)"
-  Write-Host "  Hooks config: $hooksFile"
-  Write-Host "  Hook scripts: $hooksDst"
-}
-
 $tempDir = $null
 try {
   Write-Host "Installing AgentOps for Codex on Windows..."
@@ -494,12 +299,12 @@ try {
   $userBackup = Archive-SkillRoot -Root $userSkillsRoot -SkillsSource $skillsSrc -ManagedRoot $managedUserRoot
 
   $installedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-  $hookRuntime = if ($InstallHooks) { "codex-native-hooks" } else { "hookless-default" }
+  $hookRuntime = "hookless-default"
   $state = [ordered]@{
     installed_at = $installedAt
     install_mode = "native-plugin"
     hook_runtime = $hookRuntime
-    hooks_installed = $InstallHooks
+    hooks_installed = $false
     version = $InstallRef
     manifest_hash = $manifestHash
     skill_count = $skillCount
@@ -512,8 +317,7 @@ try {
     source = "install-codex.ps1"
     install_mode = "native-plugin"
     hook_runtime = $hookRuntime
-    hooks_installed = $InstallHooks
-    hook_contract = "docs/contracts/hook-runtime-contract.md"
+    hooks_installed = $false
     lifecycle_commands = @("ao rpi phased", "ao codex status")
     plugin_key = $PluginKey
     version = $InstallRef
@@ -526,13 +330,8 @@ try {
   }
   $meta | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $installMeta -Encoding utf8
 
-  if ($InstallHooks) {
-    Upsert-TomlKey $configFile "[features]" "hooks" "true"
-    Install-CodexHooks -RepoRoot $RepoRoot -PluginCacheRoot $pluginCacheRoot -CodexHome $CodexHome
-  } else {
-    Write-Info "Codex hooks not installed (hookless default)"
-    Write-Host "  Optional: rerun with -WithHooks to install native Codex hooks."
-  }
+  Remove-TomlKey $configFile "[features]" "hooks"
+  Write-Info "Codex hooks not installed (hookless - skills + ao CLI only)"
 
   Write-Info "Native Codex plugin installed"
   Write-Host "  Plugin key: $PluginKey"

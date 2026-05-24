@@ -75,11 +75,7 @@ claude plugin install agentops@agentops-marketplace
 curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
 ```
 
-Codex installs hookless by default. To opt into native Codex hooks, run:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash -s -- --with-hooks
-```
+AgentOps installs hookless — workflow is guided by skills + the `ao` CLI, and CI is the authoritative gate. If you want runtime hooks, author your own with the `hooks-authoring` skill.
 
 **Codex CLI on Windows PowerShell**
 

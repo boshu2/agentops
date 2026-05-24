@@ -223,7 +223,6 @@ This contract builds on:
 
 - [Headless Invocation Standards](headless-invocation-standards.md) for live
   Claude/Codex process execution
-- [Hook Runtime Contract](hook-runtime-contract.md) for hook I/O expectations
 - [Codex Skill API](codex-skill-api.md) for Codex runtime skill behavior
 - [Session Intelligence Trust Model](session-intelligence-trust-model.md) for
   trusted runtime context inputs

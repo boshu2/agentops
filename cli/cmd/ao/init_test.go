@@ -18,17 +18,14 @@ const scheduleExampleBody = "schedules:\n  - name: nightly-dream\n    cron: \"0 
 // from prior cases does not leak into the next.
 func resetInitFlags() {
 	initStealth = false
-	initHooks = false
-	initFull = false
-	initMinimalHooks = false
 	initWithSchedule = false
 	dryRun = false
 }
 
 // setupInitTest is the canonical entry point for tests that mutate the
-// package-level init globals (initStealth/initHooks/initFull/initMinimalHooks/
-// initWithSchedule/dryRun). It resets all globals to their zero value AND
-// registers a Cleanup so the next test under `-shuffle on` starts clean.
+// package-level init globals (initStealth/initWithSchedule/dryRun). It resets
+// all globals to their zero value AND registers a Cleanup so the next test
+// under `-shuffle on` starts clean.
 //
 // Encodes soc-hwgm fix: TestRunInit* used to flake under -shuffle because
 // individual tests reset only the 2-3 globals they touched, leaking the
@@ -53,7 +50,6 @@ func TestRunInitCreatesDirs(t *testing.T) {
 
 	dryRun = false
 	initStealth = false
-	initHooks = false
 
 	if err := runInit(initCmd, nil); err != nil {
 		t.Fatalf("runInit: %v", err)
@@ -103,7 +99,6 @@ func TestRunInitGitignoreAppend(t *testing.T) {
 	t.Chdir(tmp)
 
 	initStealth = false
-	initHooks = false
 	if err := runInit(initCmd, nil); err != nil {
 		t.Fatalf("runInit: %v", err)
 	}
@@ -127,7 +122,6 @@ func TestRunInitGitignoreCreate(t *testing.T) {
 	t.Chdir(tmp)
 
 	initStealth = false
-	initHooks = false
 	if err := runInit(initCmd, nil); err != nil {
 		t.Fatalf("runInit: %v", err)
 	}
@@ -151,7 +145,6 @@ func TestRunInitIdempotent(t *testing.T) {
 	t.Chdir(tmp)
 
 	initStealth = false
-	initHooks = false
 
 	// Run twice
 	if err := runInit(initCmd, nil); err != nil {
@@ -177,7 +170,6 @@ func TestRunInitNonGitRepo(t *testing.T) {
 	t.Chdir(tmp)
 
 	initStealth = false
-	initHooks = false
 	if err := runInit(initCmd, nil); err != nil {
 		t.Fatalf("runInit: %v", err)
 	}
@@ -205,7 +197,6 @@ func TestRunInitStealth(t *testing.T) {
 	t.Chdir(tmp)
 
 	initStealth = true
-	initHooks = false
 	if err := runInit(initCmd, nil); err != nil {
 		t.Fatalf("runInit: %v", err)
 	}
@@ -235,7 +226,6 @@ func TestRunInitDryRun(t *testing.T) {
 	t.Chdir(tmp)
 
 	initStealth = false
-	initHooks = false
 	dryRun = true
 	defer func() { dryRun = false }()
 
@@ -260,7 +250,6 @@ func TestNestedGitignoreContent(t *testing.T) {
 	t.Chdir(tmp)
 
 	initStealth = false
-	initHooks = false
 	initWithSchedule = false // reset: prior tests in this package may have left it true
 	if err := runInit(initCmd, nil); err != nil {
 		t.Fatalf("runInit: %v", err)
@@ -293,7 +282,6 @@ func TestRunInitGitignoreNoTrailingNewline(t *testing.T) {
 	t.Chdir(tmp)
 
 	initStealth = false
-	initHooks = false
 	if err := runInit(initCmd, nil); err != nil {
 		t.Fatalf("runInit: %v", err)
 	}

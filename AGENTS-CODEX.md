@@ -8,13 +8,10 @@ After changing `ao` command usage in any of these locations, refresh [`docs/cli-
 
 - `skills/*/SKILL.md`
 - `skills-codex/*/SKILL.md`
-- `hooks/*.sh`
-- `hooks/hooks.json`
 
 Process:
 1. Update this map from current sources.
-2. Run `bash scripts/validate-hooks-doc-parity.sh`.
-3. Run `bash tests/docs/validate-doc-release.sh` and `bash tests/docs/validate-skill-count.sh` before pushing.
+2. Run `bash tests/docs/validate-doc-release.sh` and `bash tests/docs/validate-skill-count.sh` before pushing.
 
 ### Codex Skill Maintenance
 

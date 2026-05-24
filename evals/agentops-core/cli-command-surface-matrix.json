@@ -41,7 +41,7 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "cli-command-headings: top=74 sub=202 all=276"},
+        {"type": "stdout_contains", "value": "cli-command-headings: top=73 sub=197 all=270"},
         {"type": "stdout_contains", "value": "cli-help-matrix-ok"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
@@ -98,8 +98,6 @@
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Automatically approve (and optionally promote) high-quality candidates"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao goals measure`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run goal checks and produce a snapshot"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao hooks install`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Install ao hooks to ~/.claude/settings.json."},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao memory sync`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Write recent session history to a repo-root MEMORY.md with managed block markers."},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "#### `ao beads audit`"},
@@ -121,7 +119,6 @@
       "objective": "Ensure the Go command tree still wires the less frequently touched command families that the generated docs and matrix smoke depend on.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/init.go", "value": "rootCmd.AddCommand(initCmd)"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/hooks.go", "value": "var hooksCmd = &cobra.Command"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/beads.go", "value": "var beadsCmd = &cobra.Command"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/findings.go", "value": "var findingsCmd = &cobra.Command"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/knowledge.go", "value": "var knowledgeCmd = &cobra.Command"},
