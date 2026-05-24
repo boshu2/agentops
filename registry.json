@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-24T20:36:42Z",
+  "generated_at": "2026-05-24T21:02:16Z",
   "summary": {
     "skills": 80,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
-    "eval_files": 58,
+    "eval_files": 56,
     "cli_commands": 163
   },
   "surfaces": {
@@ -694,11 +694,9 @@
       {
         "suite": "agentops-core",
         "path": "evals/agentops-core/",
-        "eval_count": 57,
+        "eval_count": 55,
         "evals": [
           "beads-issue-tracking",
-          "cli-command-surface-matrix",
-          "cli-command-surface-matrix",
           "cli-command-surface-matrix",
           "cli-contracts",
           "cli-onboarding-health",

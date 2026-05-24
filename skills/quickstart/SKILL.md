@@ -62,7 +62,7 @@ Full reference: /quickstart --catalog
 
 ### Step 3: One next action
 
-Match the first row that applies. Output that message, then append the Step 4 always-on lane.
+Match the first row that applies. Output that message.
 
 | Condition | Message |
 |-----------|---------|
@@ -76,18 +76,6 @@ Match the first row that applies. Output that message, then append the Step 4 al
 | BD=false | "✅ Flywheel active. Start now:\n  `/rpi \"your goal\"` — full /discovery → /crank → /validation pipeline\n  `/validation` — close out recent work and capture learnings\n  `/research <topic>` — explore the codebase\n  Want issue tracking? `brew install boshu2/agentops/beads && bd init --prefix <prefix>`" |
 | BD=true + CODEX=true | "✅ Codex full stack ready.\n  `bd ready` — see open work\n  `/rpi \"your goal\"` — start a new goal from scratch\n  Default installs are hookless; native hooks are optional with `install-codex.sh --with-hooks`.\n  Legacy explicit fallback commands remain `ao codex ensure-start` / `ao codex ensure-stop` when needed.\n  Manual escape hatch: `ao codex status`" |
 | BD=true | "✅ Full stack ready.\n  `bd ready` — see open work\n  `/rpi \"your goal\"` — start a new goal from scratch\n  `/status` — see current session state" |
-
-### Step 4: Schedule a nightly dream (always-on lane)
-
-After the next-action message, append this one-liner so the user sees scheduling co-equal with compiler+gates:
-
-```
-🌙 Always-on lane:
-  ao daemon run --schedule-file .agents/schedule.yaml &              # start the daemon
-  ao schedule add --file ./examples/schedules/dream-nightly.yaml     # register a nightly recipe
-```
-
-`ao daemon run` is the always-on lane that fires registered schedules on cron — start it once (or wire to systemd) and your nightly dream, harvest, and compile work happen without you babysitting. See `docs/scheduling.md` for the full recipe catalog.
 
 Starting a new project? Run `/scaffold <language> <name>` to generate project structure with best practices.
 
@@ -123,7 +111,6 @@ Starting a new project? Run `/scaffold <language> <name>` to generate project st
 - [references/getting-started.md](references/getting-started.md)
 - [references/troubleshooting.md](references/troubleshooting.md)
 - [references/full-catalog.md](references/full-catalog.md)
-- [references/daemon-lifecycle.feature](references/daemon-lifecycle.feature) — Executable spec: agentopsd lifecycle (start→submit→validate→panic-recovery→heartbeat→reap), linked to daemon tests (soc-6kf1t)
 
 ## See Also
 
