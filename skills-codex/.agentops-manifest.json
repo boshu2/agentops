@@ -781,8 +781,8 @@
     {
       "name": "dream",
       "source_skill": "skills/dream",
-      "source_hash": "c75caa749c86d509bf6d5e937c00ad53ff17912796998633045c7fa26e17caf6",
-      "generated_hash": "c1a278facd82ebbf8a577974116b5393ac8a4e0ebaa469501b237930e7eea2e9"
+      "source_hash": "a07fc83adbc15d2f9edae78e5ab28ca3787fcabfaae64875b78563c0ab0f5f14",
+      "generated_hash": "44cc26d593e51aca1e13c8e7bdbbda014154fe4dd7b42d2ad349db71e94564bd"
     },
     {
       "name": "evolve",

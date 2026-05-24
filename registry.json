@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-24T18:01:28Z",
+  "generated_at": "2026-05-24T19:17:10Z",
   "summary": {
     "skills": 80,
     "hooks": 0,
     "knowledge_stores": 5,
-    "job_types": 14,
+    "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 165
+    "cli_commands": 162
   },
   "surfaces": {
     "skills": [
@@ -685,78 +685,7 @@
         "file_count": 1
       }
     ],
-    "job_types": [
-      {
-        "job_type": "dream.run",
-        "domain": "dream",
-        "action": "run"
-      },
-      {
-        "job_type": "dream.stage",
-        "domain": "dream",
-        "action": "stage"
-      },
-      {
-        "job_type": "eval.skill-delta",
-        "domain": "eval",
-        "action": "skill-delta"
-      },
-      {
-        "job_type": "eval.suite",
-        "domain": "eval",
-        "action": "suite"
-      },
-      {
-        "job_type": "factory.admission",
-        "domain": "factory",
-        "action": "admission"
-      },
-      {
-        "job_type": "factory.local-pilot",
-        "domain": "factory",
-        "action": "local-pilot"
-      },
-      {
-        "job_type": "llmwiki.loop",
-        "domain": "llmwiki",
-        "action": "loop"
-      },
-      {
-        "job_type": "openclaw.snapshot",
-        "domain": "openclaw",
-        "action": "snapshot"
-      },
-      {
-        "job_type": "plans.projection",
-        "domain": "plans",
-        "action": "projection"
-      },
-      {
-        "job_type": "rpi.phase",
-        "domain": "rpi",
-        "action": "phase"
-      },
-      {
-        "job_type": "rpi.run",
-        "domain": "rpi",
-        "action": "run"
-      },
-      {
-        "job_type": "skill.invoke",
-        "domain": "skill",
-        "action": "invoke"
-      },
-      {
-        "job_type": "wiki.build",
-        "domain": "wiki",
-        "action": "build"
-      },
-      {
-        "job_type": "wiki.forge",
-        "domain": "wiki",
-        "action": "forge"
-      }
-    ],
+    "job_types": [],
     "schedules": {
       "example": [],
       "live": []
@@ -834,10 +763,6 @@
       }
     ],
     "cli_commands": [
-      {
-        "name": "agentopsd",
-        "path": "cli/cmd/ao/agentopsd.go"
-      },
       {
         "name": "agents",
         "path": "cli/cmd/ao/agents.go"
@@ -969,14 +894,6 @@
       {
         "name": "curate",
         "path": "cli/cmd/ao/curate.go"
-      },
-      {
-        "name": "daemon_jobs",
-        "path": "cli/cmd/ao/daemon_jobs.go"
-      },
-      {
-        "name": "daemon_soak",
-        "path": "cli/cmd/ao/daemon_soak.go"
       },
       {
         "name": "dedup",

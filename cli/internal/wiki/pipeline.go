@@ -1,22 +1,22 @@
 // This file implements WikiPipeline — the wiki bounded context's own
-// implementation of the Karpathy LLM-wiki loop. It subsumes
-// cli/internal/llmwiki/executor.go: where the legacy LLMWikiLoopExecutor
-// leaves a stage handler nil and reports SkipReason "handler-not-wired",
-// WikiPipeline owns the Ingest, Lint and Query stage logic directly, so those
-// three stages are always wired to a real handler.
+// implementation of the Karpathy LLM-wiki loop. It owns the Ingest, Lint and
+// Query stage logic directly, so those three stages are always wired to a real
+// handler (they can never report SkipReason "handler-not-wired").
 //
-// The migration is strictly accretive (strangler): llmwiki.LLMWikiLoopExecutor
-// keeps working unchanged for its existing callers (cmd/ao/agentopsd.go).
-// WikiPipeline does NOT import llmwiki — doing so would form an import cycle
-// (llmwiki → knowledge → wiki). Instead the pipeline reimplements the stage
-// logic inside the wiki package, reusing wiki's own FrontmatterCodec, which is
-// what "subsume" means here: the wiki bounded context becomes the home of the
-// loop, not a borrower of llmwiki internals.
+// WikiPipeline is the builder core for the `ao wiki` subcommands (lint/query/
+// promote). It reimplements the stage logic inside the wiki package, reusing
+// wiki's own FrontmatterCodec, so the wiki bounded context is the home of the
+// loop rather than a borrower of llmwiki internals. It does NOT import llmwiki —
+// doing so would form an import cycle (llmwiki → knowledge → wiki).
+//
+// The daemon-job-executor wrapper that previously drove this pipeline as a
+// JobTypeLLMWikiLoop job was removed with the daemon carve (soc-2rtm0 wave 5):
+// the builder core is now invoked in-process by the CLI, not via the daemon
+// queue.
 package wiki
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -24,8 +24,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/boshu2/agentops/cli/internal/daemon"
 )
 
 // PipelineStage names one operation the WikiPipeline can run on a tick.
@@ -53,17 +51,6 @@ const SkipReasonHandlerNotWired = "handler-not-wired"
 // job spec does not specify one. It mirrors llmwiki.DefaultLintIntervalHours.
 const defaultLintIntervalHours = 24
 
-// PipelineJobSpec is the JSON payload of a daemon.JobTypeLLMWikiLoop job. It is
-// structurally compatible with llmwiki.LoopJobSpec.
-type PipelineJobSpec struct {
-	// Vault is the root path containing raw/ and wiki/.
-	Vault string `json:"vault"`
-	// Stages is an optional whitelist; when empty the pipeline auto-selects.
-	Stages []PipelineStage `json:"stages,omitempty"`
-	// LintIntervalHours controls when LINT becomes eligible. 0 → use default.
-	LintIntervalHours int `json:"lint_interval_hours,omitempty"`
-}
-
 // StageOutcome reports what a single pipeline stage did this tick.
 type StageOutcome struct {
 	// Stage is the stage that ran.
@@ -88,12 +75,10 @@ type stageRunner interface {
 
 // WikiPipeline runs the Karpathy LLM-wiki loop for the wiki bounded context.
 //
-// Unlike llmwiki.LLMWikiLoopExecutor — whose stage handlers are injected and
-// may be nil — WikiPipeline wires the Ingest, Lint and Query stages to
-// concrete runners at construction time. Stages are selectable: RunStage runs a
-// named stage, and RunJob honors the PipelineJobSpec.Stages whitelist.
-//
-// WikiPipeline satisfies daemon.JobExecutor for daemon.JobTypeLLMWikiLoop.
+// WikiPipeline wires the Ingest, Lint and Query stages to concrete runners at
+// construction time (they are never nil). Stages are selectable: RunStage runs
+// a named stage; SelectStage chooses the next stage for a vault. The CLI invokes
+// these in-process.
 type WikiPipeline struct {
 	// runners maps each stage to its runner. Ingest, Lint and Query are always
 	// populated; Promote is nil unless WithPromoteRunner is supplied.
@@ -240,120 +225,6 @@ func (p *WikiPipeline) clock() time.Time {
 		return p.now()
 	}
 	return time.Now()
-}
-
-// JobTypes declares this pipeline handles daemon.JobTypeLLMWikiLoop, satisfying
-// daemon.JobExecutor.
-func (p *WikiPipeline) JobTypes() []daemon.JobType {
-	return []daemon.JobType{daemon.JobTypeLLMWikiLoop}
-}
-
-// RunJob executes one tick of the LLM-wiki loop for a claimed daemon job,
-// satisfying daemon.JobExecutor. It parses the PipelineJobSpec from the claim
-// payload, selects a stage (honoring the spec's Stages whitelist), runs it, and
-// returns the stage artifacts in a daemon.JobExecutionResult.
-//
-// This is the strangler replacement for llmwiki.LLMWikiLoopExecutor.RunJob:
-// behavior is identical except that a wired stage can never fall through to
-// SkipReasonHandlerNotWired.
-func (p *WikiPipeline) RunJob(ctx context.Context, claim daemon.QueueLease) (daemon.JobExecutionResult, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if claim.Job.JobType != daemon.JobTypeLLMWikiLoop {
-		return daemon.JobExecutionResult{}, fmt.Errorf("wiki pipeline does not support job type %s", claim.Job.JobType)
-	}
-
-	spec, err := parsePipelineJobSpec(claim.Job.Payload)
-	if err != nil {
-		return daemon.JobExecutionResult{}, err
-	}
-	if spec.Vault == "" {
-		return daemon.JobExecutionResult{}, errors.New("wiki pipeline: spec.vault is required")
-	}
-
-	stage, err := p.pickStage(spec)
-	if err != nil {
-		return daemon.JobExecutionResult{}, err
-	}
-
-	attempt := claim.Job.Attempt
-	if attempt < 1 {
-		attempt = 1
-	}
-
-	outcome, err := p.RunStage(ctx, spec.Vault, stage, attempt)
-	if err != nil {
-		return daemon.JobExecutionResult{}, err
-	}
-	return jobResultFromOutcome(outcome), nil
-}
-
-// pickStage applies the spec's Stages whitelist to the auto-selection
-// heuristic. An empty whitelist uses the auto-selected stage; a non-empty
-// whitelist is a hard filter — if it excludes the preferred stage, the first
-// whitelisted known stage is used.
-func (p *WikiPipeline) pickStage(spec PipelineJobSpec) (PipelineStage, error) {
-	preferred := p.SelectStage(spec.Vault, spec.LintIntervalHours)
-	if len(spec.Stages) == 0 {
-		return preferred, nil
-	}
-	for _, s := range spec.Stages {
-		if s == preferred {
-			return preferred, nil
-		}
-	}
-	for _, s := range spec.Stages {
-		if isPipelineStage(s) {
-			return s, nil
-		}
-	}
-	return "", fmt.Errorf("wiki pipeline: spec.stages %v contains no known stages", spec.Stages)
-}
-
-// isPipelineStage reports whether s is one of the four known pipeline stages.
-func isPipelineStage(s PipelineStage) bool {
-	switch s {
-	case StageIngest, StageQuery, StageLint, StagePromote:
-		return true
-	default:
-		return false
-	}
-}
-
-// parsePipelineJobSpec decodes a daemon job payload into a PipelineJobSpec.
-func parsePipelineJobSpec(payload map[string]any) (PipelineJobSpec, error) {
-	var spec PipelineJobSpec
-	if len(payload) == 0 {
-		return spec, errors.New("wiki pipeline: payload is required")
-	}
-	raw, err := json.Marshal(payload)
-	if err != nil {
-		return spec, fmt.Errorf("wiki pipeline: marshal payload: %w", err)
-	}
-	if err := json.Unmarshal(raw, &spec); err != nil {
-		return spec, fmt.Errorf("wiki pipeline: parse payload: %w", err)
-	}
-	return spec, nil
-}
-
-// jobResultFromOutcome renders a StageOutcome into the daemon artifact map the
-// supervisor records in the job ledger.
-func jobResultFromOutcome(o StageOutcome) daemon.JobExecutionResult {
-	artifacts := map[string]string{
-		"stage":   string(o.Stage),
-		"attempt": fmt.Sprintf("%d", o.Attempt),
-	}
-	if o.Skipped {
-		artifacts["skipped"] = "true"
-		if o.SkipReason != "" {
-			artifacts["skip_reason"] = o.SkipReason
-		}
-	}
-	for i, path := range o.Artifacts {
-		artifacts[fmt.Sprintf("artifact_%d", i)] = path
-	}
-	return daemon.JobExecutionResult{Artifacts: artifacts}
 }
 
 // promoteAdapter adapts an externally-supplied PromoteRunner to the internal
