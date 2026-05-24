@@ -29,11 +29,11 @@ output_contract: Retired. The in-tree overnight/dream CLI engine was removed in 
 
 > **Status: RETIRED (soc-2rtm0).** The in-tree overnight/dream engine and its
 > CLI surface (the former ao overnight, ao schedule, ao watch, ao plans
-> commands, and the dream/schedule wiring inside `ao daemon`) were removed.
-> AgentOps no longer ships the
-> out-of-session orchestration substrate — scheduled, between-session knowledge
-> compounding now runs via **GC** (Gas City). This skill remains only as a
-> pointer; it no longer drives an in-repo command.
+> commands, and the dream/schedule wiring inside the agentopsd daemon) were
+> removed. The daemon itself was carved out in wave 5. AgentOps no longer ships
+> the out-of-session orchestration substrate — scheduled, between-session
+> knowledge compounding now runs via **GC** (Gas City). This skill remains only
+> as a pointer; it no longer drives an in-repo command.
 
 > **Cross-vendor analog:** Anthropic Managed Agents Dreaming (research preview,
 > May 2026) — scheduled session review, pattern extraction, memory curation

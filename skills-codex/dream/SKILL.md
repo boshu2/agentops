@@ -6,10 +6,10 @@ description: 'Run overnight compounding sessions.'
 
 **Status: RETIRED (soc-2rtm0).** The in-tree overnight/dream engine and its CLI
 surface (the former ao overnight, ao schedule, ao watch, ao plans commands, and
-the dream/schedule wiring inside `ao daemon`) were removed. AgentOps no longer ships the
-out-of-session orchestration substrate — scheduled, between-session knowledge
-compounding now runs via **GC** (Gas City). Do not invent a replacement `$ao`
-workflow.
+the dream/schedule wiring inside the agentopsd daemon) were removed. The daemon
+itself was carved out in wave 5. AgentOps no longer ships the out-of-session
+orchestration substrate — scheduled, between-session knowledge compounding now
+runs via **GC** (Gas City). Do not invent a replacement `$ao` workflow.
 
 ## What stays in AgentOps
 
