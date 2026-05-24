@@ -11,12 +11,13 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/adapters/corpus_fs"
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
 // corpusInjectCmd is slice 3 of soc-y5vh.5 (cycle 146). Reads from the
 // .agents/learnings/ tree (and optionally additional roots) via the
-// typed BC1 CorpusReaderPort (cycle 112 productionCorpusReader),
+// typed BC1 CorpusReaderPort (corpus_fs.Reader real adapter),
 // emitting line-delimited JSON CorpusItem records ranked by query
 // match. Completes the soc-y5vh.5 prerequisite — 3rd production
 // adapter now reachable from the operator-facing CLI.
@@ -28,7 +29,7 @@ var corpusInjectCmd = &cobra.Command{
 	Use:   "inject [--query <text>] [--root <path>] [--limit N]",
 	Short: "Inject corpus matches via BC1 CorpusReaderPort (typed lookup)",
 	Long: `Read knowledge from a corpus root via the typed BC1
-CorpusReaderPort (productionCorpusReader, cycle 112). Default root is
+CorpusReaderPort (corpus_fs.Reader real adapter). Default root is
 .agents/learnings/ under the project root. Emits one JSON CorpusItem
 per line, ranked by query match (title hit weighs 2, body hit weighs 1).
 
@@ -93,7 +94,7 @@ func corpusInjectRun(ctx context.Context, opts corpusInjectOptions) error {
 	return nil
 }
 
-// corpusInjectViaPort wires productionCorpusReader (cycle 112) to the
+// corpusInjectViaPort wires the corpus_fs.Reader real adapter to the
 // caller's root. Default root resolves to <project>/.agents/learnings.
 func corpusInjectViaPort(ctx context.Context, opts corpusInjectOptions) ([]ports.CorpusItem, error) {
 	root := opts.root
@@ -104,7 +105,7 @@ func corpusInjectViaPort(ctx context.Context, opts corpusInjectOptions) ([]ports
 		}
 		root = filepath.Join(cwd, ".agents", "learnings")
 	}
-	reader := newProductionCorpusReader(root)
+	reader := corpus_fs.NewReader(root)
 	return reader.Lookup(ctx, ports.LookupOptions{
 		Query: opts.query,
 		Limit: opts.limit,
