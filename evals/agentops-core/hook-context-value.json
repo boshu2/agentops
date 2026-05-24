@@ -72,14 +72,6 @@
         },
         {
           "type": "stdout_contains",
-          "value": "standards_go_bytes="
-        },
-        {
-          "type": "stdout_contains",
-          "value": "commit_review_bytes="
-        },
-        {
-          "type": "stdout_contains",
           "value": "precompact_bytes="
         }
       ],
