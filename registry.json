@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-24T16:42:59Z",
+  "generated_at": "2026-05-24T18:01:28Z",
   "summary": {
     "skills": 80,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 14,
-    "eval_files": 57,
-    "cli_commands": 171
+    "eval_files": 56,
+    "cli_commands": 165
   },
   "surfaces": {
     "skills": [
@@ -758,27 +758,14 @@
       }
     ],
     "schedules": {
-      "example": [
-        {
-          "name": "nightly-dream",
-          "cron": "0 3 * * *",
-          "job_type": "dream.run",
-          "timeout": "4h30m"
-        },
-        {
-          "name": "hourly-forge",
-          "cron": "5 * * * *",
-          "job_type": "wiki.forge",
-          "timeout": ""
-        }
-      ],
+      "example": [],
       "live": []
     },
     "evals": [
       {
         "suite": "agentops-core",
         "path": "evals/agentops-core/",
-        "eval_count": 56,
+        "eval_count": 55,
         "evals": [
           "beads-issue-tracking",
           "cli-command-surface-matrix",
@@ -792,7 +779,6 @@
           "curation-feedback-governance",
           "distribution-install-update",
           "docs-release-governance",
-          "dream-software-factory-operator",
           "efficiency-budgets",
           "eval-runner-engine-control-plane",
           "explicit-skill-prompts",
@@ -1257,24 +1243,8 @@
         "path": "cli/cmd/ao/operator_cmd.go"
       },
       {
-        "name": "overnight",
-        "path": "cli/cmd/ao/overnight.go"
-      },
-      {
-        "name": "overnight_curator",
-        "path": "cli/cmd/ao/overnight_curator.go"
-      },
-      {
-        "name": "overnight_setup",
-        "path": "cli/cmd/ao/overnight_setup.go"
-      },
-      {
         "name": "patterns_repair",
         "path": "cli/cmd/ao/patterns_repair.go"
-      },
-      {
-        "name": "plans",
-        "path": "cli/cmd/ao/plans.go"
       },
       {
         "name": "pool",
@@ -1453,10 +1423,6 @@
         "path": "cli/cmd/ao/scenario_validate.go"
       },
       {
-        "name": "schedule",
-        "path": "cli/cmd/ao/schedule.go"
-      },
-      {
         "name": "scope",
         "path": "cli/cmd/ao/scope.go"
       },
@@ -1519,10 +1485,6 @@
       {
         "name": "vibe_check",
         "path": "cli/cmd/ao/vibe_check.go"
-      },
-      {
-        "name": "watch",
-        "path": "cli/cmd/ao/watch.go"
       },
       {
         "name": "wiki",

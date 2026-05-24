@@ -75,7 +75,7 @@ type daemonSoakReport struct {
 
 func init() {
 	daemonCmd.AddCommand(daemonSoakCmd)
-	daemonSoakCmd.Flags().StringVar(&daemonSoakScenario, "scenario", "queue-only", "Soak scenario (queue-only, fake-executor, dream, plans-projection)")
+	daemonSoakCmd.Flags().StringVar(&daemonSoakScenario, "scenario", "queue-only", "Soak scenario (queue-only, fake-executor, plans-projection)")
 	daemonSoakCmd.Flags().DurationVar(&daemonSoakDuration, "duration", 2*time.Minute, "Maximum scenario duration")
 	daemonSoakCmd.Flags().DurationVar(&daemonSoakInterval, "interval", 15*time.Second, "Polling interval for scenario checks")
 	daemonSoakCmd.Flags().BoolVar(&daemonSoakRequireTerminal, "require-terminal", false, "Fail unless scenario jobs reach terminal daemon state")
@@ -234,31 +234,6 @@ func runDaemonSoakScenario(ctx context.Context, cwd string, queue *daemonpkg.Que
 			"soak_run_id": opts.RunID,
 			"soak_report": filepath.Join(proofDir, "soak-report.json"),
 		}}
-		return []string{jobID}, runDaemonSoakClaimedJob(ctx, queue, jobID, executor)
-	case "dream":
-		jobID := "job-" + opts.RunID + "-dream"
-		spec := daemonpkg.NewDreamRunJobSpec(opts.RunID+"-dream", filepath.Join(cwd, ".agents", "overnight", opts.RunID+"-dream"))
-		spec.Goal = "daemon soak dream proof"
-		spec.MaxIterations = 1
-		spec.ExecutionTimeout = opts.Duration.String()
-		job, err := spec.ToJobSpec(jobID)
-		if err != nil {
-			return []string{jobID}, err
-		}
-		if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
-			RequestID:      daemonpkg.RequestID("req-" + opts.RunID + "-dream"),
-			JobID:          job.ID,
-			JobType:        job.Type,
-			IdempotencyKey: "daemon-soak:" + opts.RunID + ":dream",
-			Actor:          "ao daemon soak",
-			Payload:        job.Payload,
-		}, daemonpkg.QueueMutationOptions{}); err != nil {
-			return []string{jobID}, err
-		}
-		executor, err := buildAgentOpsDaemonDreamExecutor(cwd)
-		if err != nil {
-			return []string{jobID}, err
-		}
 		return []string{jobID}, runDaemonSoakClaimedJob(ctx, queue, jobID, executor)
 	case "plans-projection":
 		jobID := "job-" + opts.RunID + "-plans"

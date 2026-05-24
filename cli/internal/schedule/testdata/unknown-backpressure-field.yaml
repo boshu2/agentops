@@ -1,6 +1,0 @@
-schedules:
-  - name: ok
-    cron: "0 3 * * *"
-    job_type: llmwiki.loop
-    backpressure:
-      bogus: true
