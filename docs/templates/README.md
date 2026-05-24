@@ -15,8 +15,4 @@ These templates carry one turn of the [operating loop](../architecture/operating
 - [Command Template](./command.template.md)
 - [Kernel Template](./kernel.template.md)
 
-## Configuration examples
-
-- [Dark Factory Schedule Example](./dark-factory-schedule.yaml.example)
-
 Back: [Docs Index](../documentation-index.md)

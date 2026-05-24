@@ -62,7 +62,7 @@ AgentOps inverts this. Sessions write to the wiki by default — runs land citat
 
 **Automated capture.** Sessions write run packets, citations, and verdicts without anyone being asked. The discipline lives in the tooling.
 
-**Overnight compounding.** The `ao daemon` runs defrag, evolve, compile, and dream against the corpus while you sleep. A SaaS wiki cannot get smarter on its own.
+**Always-on compounding.** Run defrag, evolve, compile, and dream against the corpus out of session by handing the loop to an orchestration substrate — point the AgentOps reference Gas City at the repo and the corpus compounds while you sleep. A SaaS wiki cannot get smarter on its own.
 
 **Self-writing.** Every consumer of the wiki is also a producer of it. That is the inversion that makes the whole thing tractable.
 

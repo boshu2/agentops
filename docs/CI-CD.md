@@ -18,7 +18,7 @@ CI ensures code quality, security, and release integrity for the AgentOps reposi
 AgentOps has two different overnight surfaces:
 
 - **GitHub nightly** validates AgentOps the product. It runs in GitHub Actions against the checked-out repository and proves the CI, flywheel, and Dream report contracts still work.
-- **`ao overnight`** is the private local compounding engine. It runs on the operator's machine against the real repo-local `.agents` corpus and writes the morning report defined in [Dream Report Contract](contracts/dream-report.md).
+- **The Dream loop** is the private local compounding engine. AgentOps runs it **in session** via the `/dream` skill against the real repo-local `.agents` corpus, writing the morning report defined in [Dream Report Contract](contracts/dream-report.md). To run it *unattended*, hand it to an orchestration substrate (Gas City is the reference) as a scheduled `exec` Order — AgentOps ships no daemon or scheduler of its own.
 
 They share primitive steps and report shapes, but they are not the same pipeline.
 
@@ -34,11 +34,12 @@ issue with a ready `$agentops:rpi --auto` command. This keeps autonomous RPI
 selection grounded in observed Nightly drift and current CI blockers while
 avoiding hidden source-code mutation from GitHub Actions.
 
-If you want scheduled private Dream runs, use `ao overnight setup` to inspect the
-host, persist `dream.*` config, and generate host-specific `launchd`, `cron`, or
-`systemd` assistance artifacts. The host scheduler still owns the actual wake
-and scheduling semantics. For the cross-vendor private local chain that combines
-Dream, Claude/Codex runners, RPI/evolve, and PR digest output, see
+If you want scheduled private Dream runs, delegate them to an orchestration
+substrate. Point the AgentOps reference Gas City (`city.toml` + `packs/agentops`)
+at the repo and wire a cron `exec` Order that runs the Dream loop on a schedule;
+the substrate owns the wake, scheduling, and supervision semantics. For the
+cross-vendor private local chain that combines Dream, Claude/Codex runners,
+RPI/evolve, and PR digest output, see
 [`docs/runbooks/nightly-evolution.md`](runbooks/nightly-evolution.md).
 
 ## validate.yml Architecture
@@ -218,27 +219,18 @@ One CI check is intentionally **not** wired into the local gate:
 |--------|--------|
 | `validate-learning-coherence.sh` | Fails on pre-existing frontmatter-only learning files; needs repo cleanup before local enforcement |
 
-## Git Hooks
+## Hookless by default — CI is the authoritative gate
 
-Hooks are installed via `ao init --hooks` or `ao hooks install`. They live in `hooks/` (source of truth) and are embedded into the CLI binary via `cli/embedded/hooks/`.
+AgentOps 3.0 ships **zero hooks**. The hooks were deleted, not demoted. What a
+pre-commit, pre-push, or session hook used to enforce locally is now enforced by
+a CI job on push (`.github/workflows/validate.yml`) — complexity budgets, ratchet
+non-regression, pre-mortem and task-metadata checks all run as required CI gates.
+The workflow is guided by skills plus the `ao` CLI; context flows through explicit
+channels (`ao inject` / context packets through ports), not hook side effects.
 
-### Pre-commit Hooks
-
-| Hook | Purpose |
-|------|---------|
-| `go-complexity-precommit.sh` | Enforces cyclomatic complexity budget on staged Go files (warn 15, fail 25) |
-| `pre-mortem-gate.sh` | Validates pre-mortem checklist completion before commit |
-| `task-validation-gate.sh` | Validates task metadata and constraints |
-
-### Pre-push Hooks
-
-| Hook | Purpose |
-|------|---------|
-| `ratchet-advance.sh` | Checks that quality ratchet metrics have not regressed |
-
-### Session Hooks
-
-The `ao` CLI also installs Claude Code session hooks (`SessionStart`, `PreToolUse`, `PostToolUse`, `UserPromptSubmit`) that drive AgentOps workflow nudges, validation gates, and JIT context. These are managed separately from git hooks.
+If you want a bounded gate of your own (block a dangerous operation, bootstrap a
+session, run a parity check), author it with the `hooks-authoring` skill.
+AgentOps does not ship one.
 
 ## Security Gate
 
