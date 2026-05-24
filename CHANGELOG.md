@@ -7,18 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-05-24
+
+AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what runs **in-session** — skills + the `ao` CLI + the RPI/evolve/crank/swarm loops + the context-compiler. Out-of-session orchestration (scheduling, daemons, autonomous dispatch) is delegated to Gas City (a reference City ships in this release) or Olympus. The default install registers **zero hooks**; the lifecycle is driven by skills and CI gates. See `docs/3.0.md` for the north star.
+
+### ⚠️ Breaking Changes
+
+- **Hookless by default** (`soc-57b7f`) — the default install registers no hooks. All 53 runtime hooks were audited and removed; capabilities that lived in hooks (standards injection, commit-review gating, noise injectors) are now CLI ports + CI gates. Opt back in with `--with-hooks` (`AGENTOPS_INSTALL_HOOKS=1`) or `ao hooks install --force`. **Migration:** if you relied on hook-driven behavior, switch to the CI gate or the equivalent `ao` subcommand.
+- **Daemon carved out** (`soc-2rtm0`, daemon-carve wave 5) — `internal/daemon` + the `agentopsd` binary were deleted. AgentOps no longer ships an out-of-session daemon; Gas City is the orchestration substrate. Builder cores that previously ran as daemon jobs (wiki build, llmwiki loop) keep their in-process / GC-callable core but lose the daemon-job-executor wrapper.
+- **Scheduling/plans/watch/overnight commands removed** (`soc-2rtm0`, kill-schedule-overnight) — `ao schedule`, `ao plans`, `ao watch`, and the overnight engines were deleted. Gas City owns scheduling. The phased RPI engine keeps its non-gc backends (`auto`/`direct`/`stream`/`tmux`); `runtime=gc` is no longer a valid mode.
+- **`factory` command + contract corpus retired** (`soc-2rtm0`, cascade-rip) — the `ao factory` command and its contract corpus were removed.
+- **Gas City (gc) bridge severed** (`soc-2rtm0`, wave 2) — the CLI gc-bridge glue (`gc_bridge.go`, `gc_events.go`, `rpi_phased_gc.go`) was deleted; the daemon-side GasCity client is a separate, retained surface.
+
 ### Added
 
+- **AgentOps reference Gas City** — a turnkey City (`city.toml` + `agentops` pack + overlay) that demonstrates out-of-session orchestration on top of AgentOps skills.
+- **`ao validate --gate`** — exit-code verdict for Gas City retry loops and CI; PASS/WARN/FAIL collapses to a process exit code.
+- **Real hexagonal port adapters** — `corpus_fs` CorpusReader/Writer, a bd-backed TrackerPort, and a git-backed WorkspacePort, each wired to its core consumer. Port-realness audit in `docs/architecture/`.
+- **BDD acceptance layer** — scenario→test linkage runner + CI gate (`soc-63xfx`); canonical `.feature` acceptance added across skills (research/plan/validation/trace/handoff/readme/autodev/flywheel/inject and more) and daemon-lifecycle Gherkin linked to tests.
 - **`scripts/ship.sh`** (#346, `soc-33uy`) — single-command wrapper that auto-detects inventory-touching diffs and routes through the full pre-push gate (no `--fast` skip on skill/contract changes), preemptively running the regen sweep (sync-skill-counts, codex-hashes, domain-map, context-map, registry, sync-hooks). Mechanical fix for ship-loop anti-pattern #1.
 
 ### Changed
 
+- **Honest 3.0 doctrine** — `docs/3.0.md` is the canonical north star: AgentOps is in-session; Gas City and Olympus own out-of-session. Doctrine, PRODUCT, and README were reconciled to the in-session core (skills + rpi + evolve + crank + swarm + context-compiler), with the out-of-session autonomous-dispatch gap explicitly labeled (`soc-5jwah`).
+- **Version sync to 3.0.0** — `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` (metadata + plugins[0]), and the City pack's pinned `AO_VERSION` (`packs/agentops/assets/scripts/install-ao.sh`) all bump to 3.0.0.
 - **Coherent-arc PR rule** (#348, `soc-1lp1`) — replaces "one scenario per PR" default in `CLAUDE.md` + `AGENTS.md`. The unit of a PR is one closable bead (or small-epic slice) with a single rollback semantic. Small epics (≤5 child beads, same surface) ship as one PR with N commits; large epics ship as N PRs sliced by scenario or wave. Updates `ship-loop` skill (Claude + Codex twins). Derived from the 2026-05-19 8-PR merge-arc burn-through.
+- **`skill-auditor` rubric scoring** (`soc-ads5v`) — adds a Pass 3 rubric-scoring stage.
+- **Executable-spec-link-integrity promoted warn→blocking** (`soc-x7y9f`) — the scenario→test link gate is now a required CI check.
 
 ### Fixed
 
+- **Daemon robustness hardening** — bounded idempotency key + request decode guards (`soc-scg3h`), heartbeat ledger-write timeout (`soc-15g9f`), heartbeat goroutine-lifecycle bound (`soc-yyrrq`), payload-shape validation before ledger append (`soc-qra05`), and executor-panic recovery in supervisor dispatch (`soc-as401`). (Hardening landed before the daemon carve-out for the GasCity-side client surface.)
+- **`goals trace --orphans`** parser now rejects bead prose and matches real orphans.
 - **6 pre-existing shellcheck warnings** (#349, `soc-j026`) cleaned across `validate-codex-api-conformance.sh`, `goal-failure-taxonomy.sh`, `purge-global-garbage.sh`, `nightly-pr-digest.sh`, `add-validate-job.sh`, `check-skill-size.sh`. All in scripts unchanged from base — atomic side-quest per anti-pattern #2.
 - **Local pre-push gate eval-canary strictness mismatch** (#350, `soc-nmhp`) — full-mode eval-canaries now respect the same path filter as CI's `eval-workbench-verify` (`HAS_EVAL=1 || is_ci_env`). Previously `needs_check eval` short-circuited to true in full mode, producing 5 spurious FAILs on doc/script PRs against a baseline-less local env. Closes the "Local-vs-CI environment drift" learning (`docs/learnings/2026-05-07-ci-push-gate-toil-pattern.md`).
+- **Eval fixtures referencing deleted hooks** (`soc-t40ai`) cleaned; stale deleted-hook copies removed from `cli/embedded/`.
 
 ## [2.41.1] - 2026-05-15
 
