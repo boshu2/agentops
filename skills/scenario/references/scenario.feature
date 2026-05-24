@@ -12,18 +12,22 @@ Feature: Scenario manages holdout scenarios for behavioral validation
   Background:
     Given a holdout directory under .agents/holdout/
 
+  @covered-by:tests/e2e/goals-scenarios-link.sh
   Scenario: Scenarios are authored into the holdout directory
     When /scenario authors a scenario
     Then it writes a scenario artifact under .agents/holdout/
 
+  @covered-by:tests/e2e/goals-scenarios-link.sh
   Scenario: Scenarios are validated against the schema
     When /scenario validates
     Then each scenario is checked against the scenario schema and failures are reported
 
+  @covered-by:tests/e2e/goals-scenarios-link.sh
   Scenario: Scenarios are listable and linkable to GOALS directives
     When /scenario lists
     Then it shows the holdout scenarios and their links to GOALS.md directives
 
+  @covered-by:tests/e2e/goals-scenarios-link.sh
   Scenario: Holdout scenarios feed validation
     When /validation runs
     Then it consumes the holdout scenarios for behavioral scoring
