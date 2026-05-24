@@ -51,7 +51,6 @@ Bridge / framing docs:
 - [Architecture Folder Index](architecture/index.md) — Architecture subdocs overview
 - [Codex Hookless Lifecycle](architecture/codex-hookless-lifecycle.md) — Runtime-aware lifecycle fallback for Codex when hooks are unavailable
 - [Primitive Chains](architecture/primitive-chains.md) — Audited primitive set, lifecycle chains, and terminology drift ledger
-- [Hook-Noise Audit](architecture/hook-noise-audit.md) — 3.0 classification of the hooks against the docs/3.0.md no-noise criterion; the 7 noise-injectors were deleted (`soc-e2ju0` S1–S3), leaving 46 hooks, all gates or bounded adapters
 - [Ports and Adapters](architecture/ports-and-adapters.md) — Hexagonal seam: inner-hexagon domain, driving/driven adapters, ports, and how to add a new adapter
 - [Hexagon Port-Realness Audit](architecture/hexagon-port-realness-audit.md) — Empirical 2026-05-23 inventory of all 26 declared ports (real vs in-memory vs bypassed), direct-coupling hotspots (git/bd/loop/corpus) with file:line, and the recommended adapter build order for epic soc-zvhsl
 - [Operating Loop](architecture/operating-loop.md) — Operational discipline every process skill executes: BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence (cleanroom companion to ports-and-adapters)
@@ -251,8 +250,7 @@ Bridge / framing docs:
 - [Glossary](GLOSSARY.md) — Definitions of domain-specific terms (Beads, Brownian Ratchet, RPI, etc.)
 - [CLI Reference](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md) — Complete `ao` command reference (generated from source)
 - [CLI Command Surface](cli-surface.md) — Generated classification of leaf commands by coverage and runtime safety
-- [Hooks Reference](HOOKS.md) — Lifecycle events, what each hook does, how to customize
-- [CLI ↔ Skills/Hooks Map](cli-skills-map.md) — Which commands are called by which skills and hooks
+- [CLI ↔ Skills Map](cli-skills-map.md) — Which commands are called by which skills
 - [Reference](reference.md) — Pipeline stages, execution-model table, and skill-selection matrix (deep-dive companion to SKILLS.md)
 - [Releasing](RELEASING.md) — Release process for ao CLI and plugin
 - [Environment Variables](ENV-VARS.md) — All configuration variables with defaults and precedence
@@ -299,9 +297,6 @@ Bridge / framing docs:
 - [Factory Claim Ledger Contract](contracts/factory-claim-ledger.md) — Public claim posture ledger mapping software-factory claims to evidence level, owner issue, closure gate, and safe wording
 - [Factory Claim Ledger Schema](contracts/factory-claim-ledger.schema.json) — Contract-local JSON Schema for claim-ledger rows and posture enums
 - [Factory Claim Ledger Example](contracts/factory-claim-ledger.example.json) — Current claim ledger fixture covering README, PRODUCT, GOALS, docs index, assurance, contracts, and comparison claims
-- [Hook Lease Inventory](contracts/hook-lease-inventory.md) — AgentOps 3.0 hook disposition inventory generated from `hooks/hooks.json`, classifying each hook as remove, gate, event subscriber, explicit command, or optional adapter
-- [Hook Lease Classification Data](contracts/hook-lease-classification.v1.json) — Machine-readable hook disposition seed used to generate the hook lease inventory
-- [Hook Lease Schema](https://github.com/boshu2/agentops/blob/main/schemas/hook-lease.v1.schema.json) — JSON Schema for generated hook lease inventory entries
 - [Update Principles Contract](contracts/update-principles.md) — Five operator-exemplar properties every commit must demonstrate (single concern, drift-blocking test, sibling citation, fitness delta, clean branch point); sourced from commit 1b9d139c
 - [Ubiquitous Language Contract](contracts/ubiquitous-language.md) — Canonical names per bounded context (BC1 Corpus, BC2 Validation, BC3 Loop, BC4 Factory, BC5 Runtime) for the 5 ranked drifts (Gate/Check, Cycle/Loop, Claim/Evidence, Skill/Pattern/Practice, Session); rename schedule bound to soc-5yuy children
 - [BC1 Corpus Ports Contract](contracts/bc1-corpus-ports.md) — Core BC1 corpus ports scaffolded under `cli/internal/ports/`; semantics cheat-sheet, adapter triplet pattern, soc-pm5t wire-up order
@@ -339,7 +334,6 @@ Bridge / framing docs:
 - [Swarm Worker Result Schema](contracts/swarm-worker-result.schema.json) — Machine-readable schema for `.agents/swarm/results/<task-id>.json` worker artifacts (strict completion contract)
 - [Swarm Evidence Contract](contracts/swarm-evidence.md) — Permissive shape covering all historical swarm result files; enforced by `scripts/validate-swarm-evidence.sh`
 - [Swarm Evidence Schema](https://github.com/boshu2/agentops/blob/main/schemas/swarm-evidence.schema.json) — JSON Schema for the permissive swarm evidence shape
-- [Hook Runtime Contract](contracts/hook-runtime-contract.md) — Canonical event mapping across Claude, Codex, and manual runtimes
 - [Multi-Runtime Tier Charter](contracts/multi-runtime-tier-charter.md) — Explicit Tier S/I/E declaration: Tier S structural blocks CI; Tier E live execution is opt-in (Directive D1)
 - [v2.39.0 README claim evidence manifest](releases/v2.39.0-claims/README.md) — Maps each `AOP-CLAIM-README-*` marker to its evidence file and verification gate (PG4)
 - [AgentOps 3.0 PMF Scenario — evidence bundle](releases/v3.0/pmf-scenario.md) — Single-day autonomous /evolve drain record: 11 P1 closures, 11 commits, friction modes, durable artifacts (PG2)

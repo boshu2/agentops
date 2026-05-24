@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -66,7 +65,6 @@ func gatherDoctorChecks() []doctorCheck {
 		checkDaemonTelemetry(),
 		checkGasCityBridge(),
 		checkOpenClawConsumer(),
-		checkHookCoverage(),
 		checkKnowledgeBase(),
 		checkKnowledgeFreshness(),
 		checkSearchIndex(),
@@ -384,143 +382,6 @@ func doctorValueOrDash(value string) string {
 	return value
 }
 
-// checkHookCoverage checks if Claude hooks are installed with event coverage.
-// Stays in cmd/ao because it depends on local AllEventNames / hookCoverageContract / hookGroupContainsAo.
-func checkHookCoverage() doctorCheck {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return doctorCheck{Name: "Hook Coverage", Status: "fail", Detail: "cannot determine home directory", Required: true}
-	}
-	contract := resolveHookCoverageContract()
-
-	// Prefer settings.json (active Claude configuration).
-	settingsPath := filepath.Join(homeDir, ".claude", "settings.json")
-	if data, err := os.ReadFile(settingsPath); err == nil {
-		if hooksMap, ok := extractHooksMap(data); ok {
-			return evaluateHookCoverageWithContract(hooksMap, contract)
-		}
-	}
-
-	// Fallback: standalone hooks.json format.
-	hooksPath := filepath.Join(homeDir, ".claude", "hooks.json")
-	if data, err := os.ReadFile(hooksPath); err == nil {
-		if hooksMap, ok := extractHooksMap(data); ok {
-			return evaluateHookCoverageWithContract(hooksMap, contract)
-		}
-	}
-
-	return doctorCheck{
-		Name:     "Hook Coverage",
-		Status:   "warn",
-		Detail:   "No hooks found \u2014 run 'ao hooks install --force'" + hookCoverageFallbackDetail(contract.FallbackReason),
-		Required: false,
-	}
-}
-
-func evaluateHookCoverage(hooksMap map[string]any) doctorCheck {
-	return evaluateHookCoverageWithContract(hooksMap, resolveHookCoverageContract())
-}
-
-func hookCoverageFallbackDetail(reason string) string {
-	if reason == "" {
-		return ""
-	}
-	return fmt.Sprintf(" (coverage contract fallback: %s)", reason)
-}
-
-func evaluateHookCoverageWithContract(hooksMap map[string]any, contract hookCoverageContract) doctorCheck {
-	activeEvents := contract.ActiveEvents
-	if len(activeEvents) == 0 {
-		activeEvents = AllEventNames()
-	}
-	installedEvents := countInstalledEventsForList(hooksMap, activeEvents)
-	fallbackSuffix := hookCoverageFallbackDetail(contract.FallbackReason)
-
-	if installedEvents == 0 {
-		return doctorCheck{
-			Name:     "Hook Coverage",
-			Status:   "warn",
-			Detail:   "No hooks found \u2014 run 'ao hooks install --force'" + fallbackSuffix,
-			Required: false,
-		}
-	}
-
-	if !hookGroupContainsAo(hooksMap, "SessionStart") {
-		return doctorCheck{
-			Name:     "Hook Coverage",
-			Status:   "warn",
-			Detail:   "Non-ao hooks detected \u2014 run 'ao hooks install --force'" + fallbackSuffix,
-			Required: false,
-		}
-	}
-
-	if installedEvents < len(activeEvents) {
-		return doctorCheck{
-			Name:     "Hook Coverage",
-			Status:   "warn",
-			Detail:   fmt.Sprintf("Partial coverage: %d/%d events \u2014 run 'ao hooks install --force'%s", installedEvents, len(activeEvents), fallbackSuffix),
-			Required: false,
-		}
-	}
-
-	return doctorCheck{
-		Name:     "Hook Coverage",
-		Status:   "pass",
-		Detail:   fmt.Sprintf("Full coverage: %d/%d events%s", installedEvents, len(activeEvents), fallbackSuffix),
-		Required: false,
-	}
-}
-
-func extractHooksMap(data []byte) (map[string]any, bool) {
-	var parsed map[string]any
-	if err := json.Unmarshal(data, &parsed); err != nil {
-		return nil, false
-	}
-
-	// settings.json shape
-	if hooksRaw, ok := parsed["hooks"]; ok {
-		if hooksMap, ok := hooksRaw.(map[string]any); ok {
-			return hooksMap, true
-		}
-	}
-
-	// hooks.json shape with top-level events
-	for _, event := range AllEventNames() {
-		if _, ok := parsed[event]; ok {
-			return parsed, true
-		}
-	}
-
-	return nil, false
-}
-
-func countHooksInMap(raw any) int {
-	count := 0
-	switch v := raw.(type) {
-	case map[string]any:
-		for _, val := range v {
-			if arr, ok := val.([]any); ok {
-				count += len(arr)
-			} else {
-				count += countHooksInMap(val)
-			}
-		}
-	case []any:
-		count += len(v)
-	}
-	return count
-}
-
-func countInstalledEvents(hooksMap map[string]any) int {
-	installed := 0
-	for _, event := range AllEventNames() {
-		if groups, ok := hooksMap[event].([]any); ok && len(groups) > 0 {
-			installed++
-		}
-	}
-	return installed
-}
-
 func checkKnowledgeBase() doctorCheck {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -594,15 +455,12 @@ type staleReference = quality.StaleReference
 
 func checkStaleReferences() doctorCheck {
 	return quality.CheckStaleReferences([]string{
-		"hooks/*.sh",
 		"skills/*/SKILL.md",
 		"skills/*/references/*.md",
 		"skills-codex/*/SKILL.md",
 		"skills-codex-overrides/*/SKILL.md",
 		"docs/*.md",
 		"scripts/*.sh",
-		"hooks/examples/*.sh",
-		"cli/embedded/hooks/*.sh",
 		"docs/contracts/*.md",
 		"docs/plans/*.md",
 	})

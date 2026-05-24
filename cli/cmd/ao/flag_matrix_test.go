@@ -176,7 +176,6 @@ func TestFlagMatrix_HelpConsistency(t *testing.T) {
 		"status",
 		"doctor",
 		"seed",
-		"hooks",
 		"completion",
 		// Deprecated aliases (still show help)
 		"search",

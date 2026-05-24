@@ -169,8 +169,6 @@ nav:
       - cli/index.md
       - Command Reference: cli/commands.md
       - CLI ↔ Skills Map: cli-skills-map.md
-      - Hooks Overview: HOOKS.md
-      - Hooks Reference: cli/hooks.md
   - Architecture:
       - architecture/index.md
       - How It Works: how-it-works.md
@@ -253,7 +251,6 @@ nav:
       - Next-Work Queue: contracts/next-work.schema.md
       - Finding Registry: contracts/finding-registry.md
       - Finding Compiler: contracts/finding-compiler.md
-      - Hook Runtime Contract: contracts/hook-runtime-contract.md
       - Headless Invocation: contracts/headless-invocation-standards.md
       - Codex Skill API: contracts/codex-skill-api.md
       - Context Assembly Interface: contracts/context-assembly-interface.md

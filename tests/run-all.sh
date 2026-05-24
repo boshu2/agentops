@@ -93,8 +93,7 @@ run_lane "Manifest schema validation" "$RUN_ALL_STATIC_LANE_TIMEOUT_SECONDS" "$(
 for jf in \
     "$REPO_ROOT/.claude-plugin/plugin.json" \
     "$REPO_ROOT/.codex-plugin/plugin.json" \
-    "$REPO_ROOT/plugins/marketplace.json" \
-    "$REPO_ROOT/hooks/hooks.json"
+    "$REPO_ROOT/plugins/marketplace.json"
 do
     if [[ ! -f "$jf" ]]; then
         fail "$(basename "$jf") - not found"

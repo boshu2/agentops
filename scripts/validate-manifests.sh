@@ -1,20 +1,18 @@
 #!/usr/bin/env bash
 # Validate manifest files against versioned schemas.
-# Usage: ./scripts/validate-manifests.sh [--repo-root <path>] [--skip-hooks]
+# Usage: ./scripts/validate-manifests.sh [--repo-root <path>]
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SKIP_HOOKS=0
 
 usage() {
     cat <<'EOF'
-Usage: ./scripts/validate-manifests.sh [--repo-root <path>] [--skip-hooks]
+Usage: ./scripts/validate-manifests.sh [--repo-root <path>]
 
 Options:
   --repo-root <path>  Validate manifests under a specific repo root.
-  --skip-hooks        Skip hooks/hooks.json validation.
   -h, --help          Show this help message.
 EOF
 }
@@ -29,10 +27,6 @@ while [[ $# -gt 0 ]]; do
             fi
             REPO_ROOT="$2"
             shift 2
-            ;;
-        --skip-hooks)
-            SKIP_HOOKS=1
-            shift
             ;;
         -h|--help)
             usage
@@ -377,13 +371,6 @@ validate_manifest \
     "$REPO_ROOT/plugins/marketplace.json" \
     "$REPO_ROOT/schemas/codex-marketplace.v1.schema.json" \
     "Codex marketplace manifest"
-
-if [[ "$SKIP_HOOKS" -eq 0 ]]; then
-    validate_manifest \
-        "$REPO_ROOT/hooks/hooks.json" \
-        "$REPO_ROOT/schemas/hooks-manifest.v1.schema.json" \
-        "hooks manifest"
-fi
 
 # --- Skill Frontmatter Validation ---
 log "Validating skill frontmatter"

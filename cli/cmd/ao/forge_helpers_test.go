@@ -472,51 +472,6 @@ func TestCollectFilesFromPatterns(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// cloneHooksMap (lives in hooks.go, tested here for legacy coverage)
-// ---------------------------------------------------------------------------
-
-func TestCloneHooksMap(t *testing.T) {
-	t.Run("clones hooks sub-map from rawSettings", func(t *testing.T) {
-		rawSettings := map[string]any{
-			"hooks": map[string]any{
-				"SessionStart": []any{"cmd1"},
-				"PreToolUse":   []any{"cmd2"},
-			},
-		}
-		got := cloneHooksMap(rawSettings)
-		if len(got) != 2 {
-			t.Errorf("expected 2 entries, got %d: %v", len(got), got)
-		}
-		if _, ok := got["SessionStart"]; !ok {
-			t.Error("expected SessionStart key in clone")
-		}
-	})
-
-	t.Run("no hooks key returns empty map", func(t *testing.T) {
-		rawSettings := map[string]any{"other": "value"}
-		got := cloneHooksMap(rawSettings)
-		if len(got) != 0 {
-			t.Errorf("expected empty map, got %d entries", len(got))
-		}
-	})
-
-	t.Run("empty rawSettings returns empty map", func(t *testing.T) {
-		got := cloneHooksMap(map[string]any{})
-		if len(got) != 0 {
-			t.Errorf("expected empty map, got %v", got)
-		}
-	})
-
-	t.Run("hooks key with wrong type returns empty map", func(t *testing.T) {
-		rawSettings := map[string]any{"hooks": "not-a-map"}
-		got := cloneHooksMap(rawSettings)
-		if len(got) != 0 {
-			t.Errorf("expected empty map for wrong type, got %d entries", len(got))
-		}
-	})
-}
-
-// ---------------------------------------------------------------------------
 // extractFilePathsFromTool
 // ---------------------------------------------------------------------------
 

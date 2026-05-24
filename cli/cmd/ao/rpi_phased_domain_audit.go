@@ -299,17 +299,17 @@ func buildDomainScopeAuditWithEnforcement(runID string, evidence *domainSliceEvi
 func domainEnforcementNote(mode domainEnforcementMode) string {
 	switch mode {
 	case domainEnforcementEnforced:
-		return "Enforced: a read-observing PreToolUse hook intercepts denied-glob " +
-			"reads/writes at the substrate level. A denied-glob reference visible " +
+		return "Enforced: a read-interception substrate blocks denied-glob " +
+			"reads/writes at the runtime level. A denied-glob reference visible " +
 			"in this run's evidence hard-fails the slice gate (gate_failed=true)."
 	case domainEnforcementUnavailable:
 		return "Unavailable: the runtime cannot observe agent file reads (e.g. " +
 			"opaque Gas City sessions), so the read fence is recorded but NOT " +
 			"enforced. No enforcement claim is made for this run."
 	default:
-		return "Audit only: no read-observing hook is installed, so this records " +
-			"the declared read fence and reports references visible in command " +
-			"outputs and generated artifacts. It does NOT hard-enforce the fence."
+		return "Audit only: no read-interception substrate is installed, so this " +
+			"records the declared read fence and reports references visible in " +
+			"command outputs and generated artifacts. It does NOT hard-enforce the fence."
 	}
 }
 

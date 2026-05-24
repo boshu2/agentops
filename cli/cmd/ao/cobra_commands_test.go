@@ -50,9 +50,6 @@ func executeCommand(args ...string) (string, error) {
 	origMemorySyncQuiet := memorySyncQuiet
 	origMemorySyncMaxEntries := memorySyncMaxEntries
 	origMemorySyncOutput := memorySyncOutput
-	origHooksFull := hooksFull
-	origHooksDryRun := hooksDryRun
-	origHooksForce := hooksForce
 	origSearchLimit := searchLimit
 	origSearchType := searchType
 	origSearchCiteType := searchCiteType
@@ -152,9 +149,6 @@ func executeCommand(args ...string) (string, error) {
 		memorySyncQuiet = origMemorySyncQuiet
 		memorySyncMaxEntries = origMemorySyncMaxEntries
 		memorySyncOutput = origMemorySyncOutput
-		hooksFull = origHooksFull
-		hooksDryRun = origHooksDryRun
-		hooksForce = origHooksForce
 		searchLimit = origSearchLimit
 		searchType = origSearchType
 		searchCiteType = origSearchCiteType
@@ -252,9 +246,6 @@ func executeCommand(args ...string) (string, error) {
 	memorySyncQuiet = false
 	memorySyncMaxEntries = 10
 	memorySyncOutput = ""
-	hooksFull = false
-	hooksDryRun = false
-	hooksForce = false
 	searchLimit = 10
 	searchType = ""
 	searchCiteType = ""
@@ -448,7 +439,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
 		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
-		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest", "hooks",
+		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
 		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
 		"memory", "metrics", "migrate", "mind", "mine", "notebook", "operator", "overnight", "patterns", "plans",
 		"pool", "quick-start", "ratchet", "retrieval-bench", "robot-docs", "rpi",
@@ -510,7 +501,7 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
 		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
-		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest", "hooks",
+		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
 		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
 		"memory", "metrics", "migrate", "mind", "mine", "notebook", "operator", "overnight", "patterns", "plans",
 		"pool", "quick-start", "ratchet", "retrieval-bench", "robot-docs", "rpi",
@@ -2549,61 +2540,6 @@ func TestCobraResolveGoalsFile(t *testing.T) {
 		got := resolveGoalsFile()
 		if got != "GOALS.md" {
 			t.Errorf("resolveGoalsFile = %q, want default 'GOALS.md'", got)
-		}
-	})
-}
-
-// TestCobraHookGroupContainsAo exercises hookGroupContainsAo indirectly
-// through extractHooksMap and evaluateHookCoverage.
-func TestCobraExtractHooksMap(t *testing.T) {
-	t.Run("settings_json_format", func(t *testing.T) {
-		data := []byte(`{"hooks": {"SessionStart": [{"hooks": [{"type": "command", "command": "ao hooks run SessionStart"}]}]}}`)
-		hooksMap, ok := extractHooksMap(data)
-		if !ok {
-			t.Error("expected extractHooksMap to return true for settings.json format")
-		}
-		if hooksMap == nil {
-			t.Error("expected non-nil hooks map")
-		}
-	})
-
-	t.Run("hooks_json_format", func(t *testing.T) {
-		data := []byte(`{"SessionStart": [{"hooks": [{"type": "command", "command": "echo hi"}]}]}`)
-		hooksMap, ok := extractHooksMap(data)
-		if !ok {
-			t.Error("expected extractHooksMap to return true for hooks.json format")
-		}
-		if hooksMap == nil {
-			t.Error("expected non-nil hooks map")
-		}
-	})
-
-	t.Run("invalid_json", func(t *testing.T) {
-		data := []byte(`not json`)
-		_, ok := extractHooksMap(data)
-		if ok {
-			t.Error("expected false for invalid JSON")
-		}
-	})
-}
-
-// TestCobraCountHooksInMap exercises countHooksInMap.
-func TestCobraCountHooksInMap(t *testing.T) {
-	t.Run("array", func(t *testing.T) {
-		got := countHooksInMap([]any{"a", "b"})
-		if got != 2 {
-			t.Errorf("countHooksInMap(array) = %d, want 2", got)
-		}
-	})
-
-	t.Run("nested_map", func(t *testing.T) {
-		data := map[string]any{
-			"SessionStart": []any{"a", "b"},
-			"SessionEnd":   []any{"c"},
-		}
-		got := countHooksInMap(data)
-		if got != 3 {
-			t.Errorf("countHooksInMap(map) = %d, want 3", got)
 		}
 	})
 }

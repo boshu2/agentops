@@ -34,21 +34,17 @@ var canonicalWriteScopes = []string{
 	".agents/learnings",
 	"~/.claude/settings.json",
 	"~/.claude/skills",
-	"~/.claude/hooks.json",
-	"~/.agentops/hooks.json",
-	"~/.agentops/hooks",
 	"~/.codex/plugins/cache/agentops-marketplace",
 	"~/.codex/.agentops-codex-install.json",
 	"skills-codex",
 	"skills",
-	"hooks",
 	"docs",
 	"scripts",
 }
 
 // canonicalSubsystems is the fixed list of doctor subsystems.
 var canonicalSubsystems = []string{
-	"daemon", "bridges", "hooks", "knowledge", "skills", "cli_config",
+	"daemon", "bridges", "knowledge", "skills", "cli_config",
 }
 
 // canonicalExitCodes documents every exit code the doctor surface can return.

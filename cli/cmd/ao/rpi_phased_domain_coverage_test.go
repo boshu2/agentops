@@ -271,7 +271,7 @@ func TestReportDomainScopeAudit_EnforcedWithRefs(t *testing.T) {
 	audit := &domainScopeAudit{
 		Domain:            "payments",
 		Enforcement:       "enforced",
-		EnforcementReason: "read-observing hook installed",
+		EnforcementReason: "read-interception substrate active",
 		GateFailed:        true,
 		OutOfDomainRefs: []outOfDomainRef{
 			{
@@ -293,7 +293,7 @@ func TestReportDomainScopeAudit_EnforcedWithRefs(t *testing.T) {
 	for _, want := range []string{
 		"payments",
 		"enforced",
-		"read-observing hook installed",
+		"read-interception substrate active",
 		"out-of-domain reference",
 		"cli/internal/search/learnings.go",
 		"phase 2",
@@ -358,91 +358,6 @@ func TestReportDomainScopeAudit_AuditedNoRefs(t *testing.T) {
 	}
 	if strings.Contains(out, "Slice gate FAILED") {
 		t.Errorf("audited run must not emit gate-fail message, got:\n%s", out)
-	}
-}
-
-// ── manifestHasReadObservingHook edge cases ────────────────────────────────────
-
-// TestManifestHasReadObservingHook_EmptyCommandSkipped verifies that a
-// PreToolUse Read group whose hook has an empty command string is not treated as
-// a read-observing hook (an empty command cannot block).
-func TestManifestHasReadObservingHook_EmptyCommandSkipped(t *testing.T) {
-	t.Parallel()
-	m := &hooksManifestForEnforce{}
-	m.Hooks.PreToolUse = []struct {
-		Matcher string `json:"matcher"`
-		Hooks   []struct {
-			Type    string `json:"type"`
-			Command string `json:"command"`
-		} `json:"hooks"`
-	}{
-		{
-			Matcher: "Read",
-			Hooks: []struct {
-				Type    string `json:"type"`
-				Command string `json:"command"`
-			}{
-				{Type: "command", Command: "   "}, // whitespace-only: must not count
-			},
-		},
-	}
-	if manifestHasReadObservingHook(m) {
-		t.Error("whitespace-only command must not be treated as a valid read-observing hook")
-	}
-}
-
-// TestManifestHasReadObservingHook_NonCommandTypeSkipped verifies that a hook
-// entry with type != "command" is not counted as a read-observing hook.
-func TestManifestHasReadObservingHook_NonCommandTypeSkipped(t *testing.T) {
-	t.Parallel()
-	m := &hooksManifestForEnforce{}
-	m.Hooks.PreToolUse = []struct {
-		Matcher string `json:"matcher"`
-		Hooks   []struct {
-			Type    string `json:"type"`
-			Command string `json:"command"`
-		} `json:"hooks"`
-	}{
-		{
-			Matcher: "Read",
-			Hooks: []struct {
-				Type    string `json:"type"`
-				Command string `json:"command"`
-			}{
-				{Type: "webhook", Command: "https://example.com/hook"},
-			},
-		},
-	}
-	if manifestHasReadObservingHook(m) {
-		t.Error("non-'command' type hook must not be treated as a read-observing hook")
-	}
-}
-
-// TestManifestHasReadObservingHook_ValidCommandCounted verifies the positive
-// case: a "command" type hook with a non-empty command on a Read-matching group
-// is correctly recognised as read-observing.
-func TestManifestHasReadObservingHook_ValidCommandCounted(t *testing.T) {
-	t.Parallel()
-	m := &hooksManifestForEnforce{}
-	m.Hooks.PreToolUse = []struct {
-		Matcher string `json:"matcher"`
-		Hooks   []struct {
-			Type    string `json:"type"`
-			Command string `json:"command"`
-		} `json:"hooks"`
-	}{
-		{
-			Matcher: "Read",
-			Hooks: []struct {
-				Type    string `json:"type"`
-				Command string `json:"command"`
-			}{
-				{Type: "command", Command: "holdout-isolation-gate.sh"},
-			},
-		},
-	}
-	if !manifestHasReadObservingHook(m) {
-		t.Error("valid command-type Read hook must be recognised as read-observing")
 	}
 }
 

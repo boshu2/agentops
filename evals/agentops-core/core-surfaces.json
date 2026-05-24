@@ -2,13 +2,13 @@
   "schema_version": 1,
   "id": "agentops-core.core-surfaces",
   "name": "AgentOps Core Surfaces Canary",
-  "description": "Offline public canary for CLI scenario authoring, hook isolation, skill contracts, and runtime inventory surfaces.",
+  "description": "Offline public canary for CLI scenario authoring, skill contracts, and runtime inventory surfaces.",
   "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",
   "owners": ["agentops"],
-  "tags": ["canary", "offline", "cli", "hooks", "skills", "runtime"],
+  "tags": ["canary", "offline", "cli", "skills", "runtime"],
   "allowed_runtimes": ["static", "shell"],
   "environment": {
     "offline_required": true,
@@ -36,7 +36,7 @@
       "runtime": "shell",
       "inputs": {
         "cwd": "../..",
-        "shell": "test -f cli/cmd/ao/scenario_add.go && test -f hooks/hooks.json && test -f skills/scenario/SKILL.md && test -f skills-codex-overrides/catalog.json"
+        "shell": "test -f cli/cmd/ao/scenario_add.go && test -f skills/scenario/SKILL.md && test -f skills-codex-overrides/catalog.json"
       },
       "expectations": [
         {"type": "exit_code", "value": 0}
@@ -66,18 +66,6 @@
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "ao scenario add <goal> [flags]"}
       ],
       "dimensions": ["process_adherence", "artifact_quality"]
-    },
-    {
-      "id": "holdout-isolation-hook",
-      "title": "holdout isolation hook remains registered",
-      "kind": "artifact_check",
-      "objective": "Protect private holdout scenarios while public canaries stay checked in.",
-      "expectations": [
-        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "holdout-isolation-gate.sh"},
-        {"type": "artifact_contains", "target": "../../hooks/holdout-isolation-gate.sh", "value": "AGENTOPS_HOLDOUT_EVALUATOR"}
-      ],
-      "dimensions": ["safety", "process_adherence"],
-      "critical": true
     },
     {
       "id": "scenario-skill-contract",

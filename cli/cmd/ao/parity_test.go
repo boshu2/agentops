@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -18,54 +17,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// Test 1: Hooks event count parity
-// ---------------------------------------------------------------------------
-
-func TestHooksEventCountMatchesCode(t *testing.T) {
-	// AllEventNames() claims 12 events in the doc comment.
-	// HooksConfig has one field per event accessible via Get/SetEventGroups.
-	// All must agree.
-
-	events := AllEventNames()
-
-	// 1. Comment says 12
-	const commentedCount = 12
-	if len(events) != commentedCount {
-		t.Errorf("AllEventNames() returns %d events, but comment claims %d", len(events), commentedCount)
-	}
-
-	// 2. Every event from AllEventNames must be addressable via SetEventGroups/GetEventGroups.
-	config := &HooksConfig{}
-	addressable := 0
-	for _, name := range events {
-		config.SetEventGroups(name, []HookGroup{{Hooks: []HookEntry{{Type: "command", Command: "test"}}}})
-		groups := config.GetEventGroups(name)
-		if len(groups) == 1 {
-			addressable++
-		} else {
-			t.Errorf("event %q not addressable via Get/SetEventGroups", name)
-		}
-	}
-	if addressable != len(events) {
-		t.Errorf("addressable events %d != AllEventNames %d", addressable, len(events))
-	}
-
-	// 3. HooksConfig struct field count (exported, non-empty json tag) must match.
-	rt := reflect.TypeOf(HooksConfig{})
-	hookFieldCount := 0
-	for i := range rt.NumField() {
-		f := rt.Field(i)
-		if f.IsExported() && f.Tag.Get("json") != "" && f.Tag.Get("json") != "-" {
-			hookFieldCount++
-		}
-	}
-	if hookFieldCount != len(events) {
-		t.Errorf("HooksConfig has %d exported JSON fields, AllEventNames has %d events", hookFieldCount, len(events))
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Test 2: Pool FindByPrefix round-trip
+// Test 1: Pool FindByPrefix round-trip
 // ---------------------------------------------------------------------------
 
 func TestPoolFindByPrefixRoundTrip(t *testing.T) {

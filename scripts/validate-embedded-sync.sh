@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# validate-embedded-sync.sh — Verify embedded copies match source hooks/scripts.
+# validate-embedded-sync.sh — Verify embedded copies match source lib/skills.
 # Exits non-zero if any embedded file is stale (doesn't match source).
 set -euo pipefail
 
@@ -20,15 +20,6 @@ check_file() {
     fi
 }
 
-# Check hooks/*.sh and hooks.json
-for f in "$REPO_ROOT"/hooks/*.sh "$REPO_ROOT"/hooks/hooks.json; do
-    basename=$(basename "$f")
-    check_file "$f" "$EMBEDDED/hooks/$basename"
-done
-
-# Check lib/hook-helpers.sh
-check_file "$REPO_ROOT/lib/hook-helpers.sh" "$EMBEDDED/lib/hook-helpers.sh"
-
 # Check skills/standards/references/*
 for f in "$REPO_ROOT"/skills/standards/references/*; do
     basename=$(basename "$f")
@@ -44,7 +35,7 @@ check_file "$REPO_ROOT/skills/compile/scripts/compile.sh" "$EMBEDDED/skills/comp
 if [[ $ERRORS -gt 0 ]]; then
     echo ""
     echo "ERROR: $ERRORS embedded file(s) are out of sync."
-    echo "Run 'cd cli && make sync-hooks' to fix."
+    echo "Run 'cd cli && make sync-embedded' to fix."
     exit 1
 fi
 

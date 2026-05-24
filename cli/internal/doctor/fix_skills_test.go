@@ -476,10 +476,8 @@ func TestSkillsStaleCodexSyncFixer(t *testing.T) {
 	writeSkillsFile(t, filepath.Join(repo, "skills-codex", "demo", "SKILL.md"), "codex skill\n")
 	manifestPath := filepath.Join(repo, "skills-codex", ".agentops-manifest.json")
 	writeSkillsFile(t, manifestPath, `{"skills":[{"name":"demo"}]}`)
-	writeSkillsFile(t, filepath.Join(repo, "hooks", "dangerous-git-guard.sh"), "#!/bin/sh\necho guard\n")
-	writeSkillsFile(t, filepath.Join(repo, "lib", "hook-helpers.sh"), "helper\n")
 
-	// Stale Codex install: wrong manifest_hash, missing hook in cache.
+	// Stale Codex install: wrong manifest_hash + version.
 	metaPath := filepath.Join(home, ".codex", ".agentops-codex-install.json")
 	writeSkillsFile(t, metaPath, `{"install_mode":"native-plugin","manifest_hash":"stale","version":"old"}`)
 
@@ -504,13 +502,6 @@ func TestSkillsStaleCodexSyncFixer(t *testing.T) {
 	}
 
 	codexRoot := codexNativeRoot(home)
-	hookGot, err := os.ReadFile(filepath.Join(codexRoot, "hooks", "dangerous-git-guard.sh"))
-	if err != nil {
-		t.Fatalf("cached hook missing: %v", err)
-	}
-	if string(hookGot) != "#!/bin/sh\necho guard\n" {
-		t.Fatalf("cached hook content = %q", hookGot)
-	}
 	skillGot, _ := os.ReadFile(filepath.Join(codexRoot, "skills-codex", "demo", "SKILL.md"))
 	if string(skillGot) != "codex skill\n" {
 		t.Fatalf("cached skill content = %q", skillGot)
@@ -541,7 +532,6 @@ func TestSkillsStaleCodexSyncFixerNoDriftNoMutate(t *testing.T) {
 	manifestPath := filepath.Join(repo, "skills-codex", ".agentops-manifest.json")
 	writeSkillsFile(t, manifestPath, `{"skills":[{"name":"demo"}]}`)
 	manifestBytes, _ := os.ReadFile(manifestPath)
-	writeSkillsFile(t, codexHookPath(home), "#!/bin/sh\necho guard\n")
 	writeSkillsFile(t, codexInstallMetaPath(home),
 		`{"install_mode":"native-plugin","manifest_hash":"`+hashHex(manifestBytes)+`","version":"newsha1"}`)
 

@@ -280,51 +280,6 @@ func TestCheckFlywheelHealth(t *testing.T) {
 	})
 }
 
-func TestCountHooksInMap(t *testing.T) {
-	tests := []struct {
-		name string
-		raw  any
-		want int
-	}{
-		{
-			name: "flat hook arrays",
-			raw: map[string]any{
-				"PreToolUse":  []any{"hook1", "hook2"},
-				"PostToolUse": []any{"hook3"},
-			},
-			want: 3,
-		},
-		{
-			name: "empty map",
-			raw:  map[string]any{},
-			want: 0,
-		},
-		{
-			name: "nested hooks map",
-			raw: map[string]any{
-				"hooks": map[string]any{
-					"PreToolUse": []any{"h1"},
-				},
-			},
-			want: 1,
-		},
-		{
-			name: "nil input",
-			raw:  nil,
-			want: 0,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := countHooksInMap(tt.raw)
-			if got != tt.want {
-				t.Errorf("countHooksInMap() = %d, want %d", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestCountFileLines(t *testing.T) {
 	tmp := t.TempDir()
 
@@ -731,191 +686,6 @@ func TestCheckCLIDependencies(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// checkHookCoverage (0%) — needs a fake HOME with settings.json
-// ---------------------------------------------------------------------------
-
-func TestCheckHookCoverage_NoHooksFile(t *testing.T) {
-	fakeHome := t.TempDir()
-	t.Setenv("HOME", fakeHome)
-
-	result := checkHookCoverage()
-	if result.Status != "warn" {
-		t.Errorf("status=%q, want warn when no hooks files exist (detail: %s)", result.Status, result.Detail)
-	}
-}
-
-func TestCheckHookCoverage_SettingsWithHooks(t *testing.T) {
-	fakeHome := t.TempDir()
-	t.Setenv("HOME", fakeHome)
-
-	claudeDir := filepath.Join(fakeHome, ".claude")
-	if err := os.MkdirAll(claudeDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	// Build a settings.json with hooks containing all events
-	hooks := make(map[string]any)
-	for _, event := range AllEventNames() {
-		hooks[event] = []any{
-			map[string]any{
-				"matcher": "",
-				"hooks": []any{
-					map[string]any{"type": "command", "command": "ao hook-dispatch " + event},
-				},
-			},
-		}
-	}
-	settings := map[string]any{"hooks": hooks}
-	data, err := json.Marshal(settings)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(claudeDir, "settings.json"), data, 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	result := checkHookCoverage()
-	// Should find hooks and report coverage
-	if result.Status == "fail" {
-		t.Errorf("status=fail unexpected (detail: %s)", result.Detail)
-	}
-}
-
-func TestCheckHookCoverage_FallbackHooksJSON(t *testing.T) {
-	fakeHome := t.TempDir()
-	t.Setenv("HOME", fakeHome)
-
-	claudeDir := filepath.Join(fakeHome, ".claude")
-	if err := os.MkdirAll(claudeDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	// hooks.json with a single event (partial coverage)
-	hooks := map[string]any{
-		"SessionStart": []any{
-			map[string]any{
-				"matcher": "",
-				"hooks": []any{
-					map[string]any{"type": "command", "command": "ao hook-dispatch SessionStart"},
-				},
-			},
-		},
-	}
-	data, err := json.Marshal(hooks)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(claudeDir, "hooks.json"), data, 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	result := checkHookCoverage()
-	// Should detect partial coverage
-	if result.Status == "fail" {
-		t.Errorf("status=fail unexpected for partial hooks.json (detail: %s)", result.Detail)
-	}
-}
-
-func TestUsesRuntimeManifestContract(t *testing.T) {
-	fakeHome := t.TempDir()
-	t.Setenv("HOME", fakeHome)
-
-	claudeDir := filepath.Join(fakeHome, ".claude")
-	if err := os.MkdirAll(claudeDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	settings := map[string]any{
-		"hooks": map[string]any{
-			"SessionStart": []any{
-				map[string]any{
-					"hooks": []any{
-						map[string]any{"type": "command", "command": "ao inject --apply-decay"},
-					},
-				},
-			},
-		},
-	}
-	data, err := json.Marshal(settings)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(claudeDir, "settings.json"), data, 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	tmp := t.TempDir()
-	hooksDir := filepath.Join(tmp, "hooks")
-	if err := os.MkdirAll(hooksDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	manifest := `{
-		"hooks": {
-			"SessionStart": [{"hooks": [{"type":"command","command":"ao inject --apply-decay"}]}]
-		}
-	}`
-	if err := os.WriteFile(filepath.Join(hooksDir, "hooks.json"), []byte(manifest), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	t.Chdir(tmp)
-
-	result := checkHookCoverage()
-	if result.Status != "pass" {
-		t.Fatalf("expected pass with 1/1 active manifest event, got %q (%s)", result.Status, result.Detail)
-	}
-	if !strings.Contains(result.Detail, "1/1") {
-		t.Fatalf("expected active contract denominator in detail, got %q", result.Detail)
-	}
-}
-
-func TestFallbackReasonSurfaced(t *testing.T) {
-	fakeHome := t.TempDir()
-	t.Setenv("HOME", fakeHome)
-
-	claudeDir := filepath.Join(fakeHome, ".claude")
-	if err := os.MkdirAll(claudeDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	settings := map[string]any{
-		"hooks": map[string]any{
-			"SessionStart": []any{
-				map[string]any{
-					"hooks": []any{
-						map[string]any{"type": "command", "command": "ao inject --apply-decay"},
-					},
-				},
-			},
-		},
-	}
-	data, err := json.Marshal(settings)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(claudeDir, "settings.json"), data, 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	tmp := t.TempDir()
-	hooksDir := filepath.Join(tmp, "hooks")
-	if err := os.MkdirAll(hooksDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(hooksDir, "hooks.json"), []byte("{invalid"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	t.Chdir(tmp)
-
-	result := checkHookCoverage()
-	if !strings.Contains(result.Detail, "coverage contract fallback:") {
-		t.Fatalf("expected fallback reason in detail, got %q", result.Detail)
-	}
-	if !strings.Contains(result.Detail, "parse hooks manifest") {
-		t.Fatalf("expected parse failure reason in detail, got %q", result.Detail)
-	}
-}
-
-// ---------------------------------------------------------------------------
 // checkSkills (0%) — needs a fake HOME
 // ---------------------------------------------------------------------------
 
@@ -1159,7 +929,7 @@ func TestCheckSkills_RawCodexOverlapWarns(t *testing.T) {
 
 func TestCheckCodexSync_PassWhenRepoMatchesInstall(t *testing.T) {
 	fixture := setupCodexSyncFixture(t)
-	pluginRoot := writeCodexHookCache(t, fixture.home, codexHookHealthy, true)
+	pluginRoot := filepath.Join(fixture.home, ".codex", "plugins", "cache", "agentops-marketplace", "agentops", "local")
 	writeCodexInstallMeta(t, fixture.home, fixture.version, fixture.manifestHash, pluginRoot)
 
 	result := checkCodexSync()
@@ -1168,48 +938,6 @@ func TestCheckCodexSync_PassWhenRepoMatchesInstall(t *testing.T) {
 	}
 	if !strings.Contains(result.Detail, "matches repo") {
 		t.Fatalf("expected match detail, got %q", result.Detail)
-	}
-}
-
-func TestCheckCodexSync_WarnsWhenNativeHookCacheMissingHelpers(t *testing.T) {
-	fixture := setupCodexSyncFixture(t)
-	pluginRoot := writeCodexHookCache(t, fixture.home, codexHookHealthy, false)
-	writeCodexInstallMeta(t, fixture.home, fixture.version, fixture.manifestHash, pluginRoot)
-
-	result := checkCodexSync()
-	if result.Status != "warn" {
-		t.Fatalf("status=%q, want warn (detail: %s)", result.Status, result.Detail)
-	}
-	if !strings.Contains(result.Detail, "hook-helpers.sh") {
-		t.Fatalf("expected missing helper warning, got %q", result.Detail)
-	}
-}
-
-func TestCheckCodexSync_WarnsWhenNativeHookCacheRejectsSafeBranch(t *testing.T) {
-	fixture := setupCodexSyncFixture(t)
-	pluginRoot := writeCodexHookCache(t, fixture.home, codexHookOldForceRegex, true)
-	writeCodexInstallMeta(t, fixture.home, fixture.version, fixture.manifestHash, pluginRoot)
-
-	result := checkCodexSync()
-	if result.Status != "warn" {
-		t.Fatalf("status=%q, want warn (detail: %s)", result.Status, result.Detail)
-	}
-	if !strings.Contains(result.Detail, "safe branch names containing -f") {
-		t.Fatalf("expected safe branch smoke warning, got %q", result.Detail)
-	}
-}
-
-func TestCheckCodexSync_WarnsWhenNativeHookCacheAllowsForcePush(t *testing.T) {
-	fixture := setupCodexSyncFixture(t)
-	pluginRoot := writeCodexHookCache(t, fixture.home, codexHookAllowsEverything, true)
-	writeCodexInstallMeta(t, fixture.home, fixture.version, fixture.manifestHash, pluginRoot)
-
-	result := checkCodexSync()
-	if result.Status != "warn" {
-		t.Fatalf("status=%q, want warn (detail: %s)", result.Status, result.Detail)
-	}
-	if !strings.Contains(result.Detail, "does not block git push -f") {
-		t.Fatalf("expected force push smoke warning, got %q", result.Detail)
 	}
 }
 
@@ -1377,50 +1105,6 @@ func writeCodexInstallMeta(t *testing.T, home, version, manifestHash, pluginRoot
 	if err := os.WriteFile(filepath.Join(metaDir, ".agentops-codex-install.json"), []byte(meta), 0644); err != nil {
 		t.Fatal(err)
 	}
-}
-
-const codexHookHealthy = `#!/usr/bin/env bash
-input="$(cat)"
-if [[ "$input" == *'"command":"git push -f origin main"'* ]]; then
-  exit 2
-fi
-exit 0
-`
-
-const codexHookOldForceRegex = `#!/usr/bin/env bash
-input="$(cat)"
-if echo "$input" | grep -qE 'push\s+.*(-f|--force)'; then
-  exit 2
-fi
-exit 0
-`
-
-const codexHookAllowsEverything = `#!/usr/bin/env bash
-cat >/dev/null
-exit 0
-`
-
-func writeCodexHookCache(t *testing.T, home, hookBody string, withHelper bool) string {
-	t.Helper()
-
-	pluginRoot := filepath.Join(home, ".codex", "plugins", "cache", "agentops-marketplace", "agentops", "local")
-	hooksDir := filepath.Join(pluginRoot, "hooks")
-	if err := os.MkdirAll(hooksDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(hooksDir, "dangerous-git-guard.sh"), []byte(hookBody), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if withHelper {
-		libDir := filepath.Join(pluginRoot, "lib")
-		if err := os.MkdirAll(libDir, 0755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(filepath.Join(libDir, "hook-helpers.sh"), []byte("# fixture helper\n"), 0644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	return pluginRoot
 }
 
 // ---------------------------------------------------------------------------
@@ -1650,36 +1334,6 @@ func TestGatherDoctorChecks(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// extractHooksMap — test with invalid JSON
-// ---------------------------------------------------------------------------
-
-func TestExtractHooksMap_InvalidJSON(t *testing.T) {
-	_, ok := extractHooksMap([]byte("not valid json"))
-	if ok {
-		t.Error("expected false for invalid JSON")
-	}
-}
-
-func TestExtractHooksMap_NoHooksField(t *testing.T) {
-	data := []byte(`{"foo": "bar"}`)
-	_, ok := extractHooksMap(data)
-	if ok {
-		t.Error("expected false when no hooks field and no events found")
-	}
-}
-
-// ---------------------------------------------------------------------------
-// countHooksInMap — test with []any (array branch)
-// ---------------------------------------------------------------------------
-
-func TestCountHooksInMap_Array(t *testing.T) {
-	got := countHooksInMap([]any{"a", "b", "c"})
-	if got != 3 {
-		t.Errorf("countHooksInMap([]any) = %d, want 3", got)
-	}
-}
-
-// ---------------------------------------------------------------------------
 // checkStaleReferences — stale command reference detector
 // ---------------------------------------------------------------------------
 
@@ -1718,27 +1372,6 @@ func TestCheckStaleReferences_CleanFiles(t *testing.T) {
 	result := checkStaleReferences()
 	if result.Status != "pass" {
 		t.Errorf("status=%q, want pass for clean files (detail: %s)", result.Status, result.Detail)
-	}
-}
-
-func TestCheckStaleReferences_StaleInHooks(t *testing.T) {
-	tmp := chdirTemp(t)
-
-	hooksDir := filepath.Join(tmp, "hooks")
-	if err := os.MkdirAll(hooksDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	// Use old namespace-style "ao know forge" instead of flat "ao forge"
-	if err := os.WriteFile(filepath.Join(hooksDir, "dispatch.sh"), []byte("#!/bin/bash\nao know forge transcript\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	result := checkStaleReferences()
-	if result.Status != "warn" {
-		t.Errorf("status=%q, want warn for stale hooks reference (detail: %s)", result.Status, result.Detail)
-	}
-	if !strings.Contains(result.Detail, "stale reference") {
-		t.Errorf("expected 'stale reference' in detail, got %q", result.Detail)
 	}
 }
 

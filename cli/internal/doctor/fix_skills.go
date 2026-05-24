@@ -279,8 +279,7 @@ type codexInstallMeta struct {
 }
 
 // skillsStaleCodexSyncDetector flags an installed Codex plugin that has drifted
-// from the local repo checkout: manifest-hash mismatch, version mismatch, or a
-// missing native safety hook.
+// from the local repo checkout: manifest-hash mismatch or version mismatch.
 type skillsStaleCodexSyncDetector struct{}
 
 func (skillsStaleCodexSyncDetector) ID() string           { return "fm-skills-stale-codex-sync" }
@@ -303,32 +302,26 @@ func repoCodexManifestPath(repo string) string {
 	return filepath.Join(repo, "skills-codex", ".agentops-manifest.json")
 }
 
-// codexHookPath returns the cached dangerous-git-guard.sh under the Codex root.
-func codexHookPath(home string) string {
-	return filepath.Join(codexNativeRoot(home), "hooks", "dangerous-git-guard.sh")
-}
-
-// codexSyncDrift reports the three drift signals (hash, version, hook-missing).
+// codexSyncDrift reports the two drift signals (hash, version).
 // It is pure: stat + read only. ok reports whether a comparison was possible.
-func codexSyncDrift(env *DetectEnv) (hashDrift, versionDrift, hookMissing, ok bool) {
+func codexSyncDrift(env *DetectEnv) (hashDrift, versionDrift, ok bool) {
 	metaPath := codexInstallMetaPath(env.HomeDir)
 	manifestPath := repoCodexManifestPath(env.RepoRoot)
 	metaRaw, err := os.ReadFile(metaPath)
 	if err != nil {
-		return false, false, false, false
+		return false, false, false
 	}
 	manifestRaw, err := os.ReadFile(manifestPath)
 	if err != nil {
-		return false, false, false, false
+		return false, false, false
 	}
 	var meta codexInstallMeta
 	if json.Unmarshal(metaRaw, &meta) != nil {
-		return false, false, false, false
+		return false, false, false
 	}
 	hashDrift = meta.ManifestHash != hashHex(manifestRaw)
 	versionDrift = env.TargetSHA != "" && meta.Version != env.TargetSHA
-	hookMissing = !fileExists(codexHookPath(env.HomeDir))
-	return hashDrift, versionDrift, hookMissing, true
+	return hashDrift, versionDrift, true
 }
 
 // fileExists reports whether path exists as a regular file.
@@ -338,8 +331,8 @@ func fileExists(path string) bool {
 }
 
 func (d skillsStaleCodexSyncDetector) Detect(env *DetectEnv) ([]Finding, error) {
-	hashDrift, versionDrift, hookMissing, ok := codexSyncDrift(env)
-	if !ok || (!hashDrift && !versionDrift && !hookMissing) {
+	hashDrift, versionDrift, ok := codexSyncDrift(env)
+	if !ok || (!hashDrift && !versionDrift) {
 		return nil, nil
 	}
 	return []Finding{{
@@ -350,23 +343,23 @@ func (d skillsStaleCodexSyncDetector) Detect(env *DetectEnv) ([]Finding, error) 
 		Confidence: 1.0,
 		Evidence: Evidence{
 			File: ".codex/.agentops-codex-install.json",
-			Query: fmt.Sprintf("hash_drift=%t version_drift=%t hook_missing=%t",
-				hashDrift, versionDrift, hookMissing),
+			Query: fmt.Sprintf("hash_drift=%t version_drift=%t",
+				hashDrift, versionDrift),
 		},
 		Remediation: remediation(d.ID(), true, 1),
 	}}, nil
 }
 
-// skillsStaleCodexSyncFixer mirrors the three drift surfaces (skills-codex/**,
-// hooks/** + lib/hook-helpers.sh, install-metadata JSON) from the repo into the
-// Codex native cache through Mutate. The metadata stamp is written last so a
-// crash leaves the install marked stale (safe) rather than falsely fresh.
+// skillsStaleCodexSyncFixer mirrors the drift surfaces (skills-codex/** and the
+// install-metadata JSON) from the repo into the Codex native cache through
+// Mutate. The metadata stamp is written last so a crash leaves the install
+// marked stale (safe) rather than falsely fresh.
 type skillsStaleCodexSyncFixer struct{}
 
 func (skillsStaleCodexSyncFixer) ID() string { return "fm-skills-stale-codex-sync" }
 func (skillsStaleCodexSyncFixer) Preconditions() []string {
 	return []string{
-		"repo.root/skills-codex/ and hooks/ and lib/hook-helpers.sh exist",
+		"repo.root/skills-codex/ exists",
 		"~/.codex/ exists with a valid .agentops-codex-install.json",
 	}
 }
@@ -440,24 +433,20 @@ func (f skillsStaleCodexSyncFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []F
 
 type codexSyncSources struct {
 	SkillsCodex string
-	Hooks       string
-	Helper      string
 	CodexRoot   string
 }
 
 func (f skillsStaleCodexSyncFixer) codexSyncNeedsFix(env *DetectEnv) (bool, error) {
-	hashDrift, versionDrift, hookMissing, ok := codexSyncDrift(env)
+	hashDrift, versionDrift, ok := codexSyncDrift(env)
 	if !ok {
 		return false, fmt.Errorf("doctor: %s: no Codex install / repo manifest to sync (refused_unsafe)", f.ID())
 	}
-	return hashDrift || versionDrift || hookMissing, nil
+	return hashDrift || versionDrift, nil
 }
 
 func (f skillsStaleCodexSyncFixer) codexSyncSources(ctx *MutateContext, env *DetectEnv) (codexSyncSources, error) {
 	sources := codexSyncSources{
 		SkillsCodex: filepath.Join(env.RepoRoot, "skills-codex"),
-		Hooks:       filepath.Join(env.RepoRoot, "hooks"),
-		Helper:      filepath.Join(env.RepoRoot, "lib", "hook-helpers.sh"),
 		CodexRoot:   codexNativeRoot(ctx.HomeDir),
 	}
 	if !dirExists(sources.SkillsCodex) {
@@ -470,34 +459,7 @@ func (f skillsStaleCodexSyncFixer) codexSyncSources(ctx *MutateContext, env *Det
 }
 
 func (f skillsStaleCodexSyncFixer) mirrorCodexSyncSources(ctx *MutateContext, sources codexSyncSources, res *FixResult) error {
-	if err := mirrorTree(ctx, f.ID(), sources.SkillsCodex, filepath.Join(sources.CodexRoot, "skills-codex"), res); err != nil {
-		return err
-	}
-	if dirExists(sources.Hooks) {
-		if err := mirrorTree(ctx, f.ID(), sources.Hooks, filepath.Join(sources.CodexRoot, "hooks"), res); err != nil {
-			return err
-		}
-	}
-	return f.mirrorCodexHookHelper(ctx, sources, res)
-}
-
-func (f skillsStaleCodexSyncFixer) mirrorCodexHookHelper(ctx *MutateContext, sources codexSyncSources, res *FixResult) error {
-	if !fileExists(sources.Helper) {
-		return nil
-	}
-	helper, err := os.ReadFile(sources.Helper)
-	if err != nil {
-		return fmt.Errorf("doctor: %s: read hook-helpers.sh: %w", f.ID(), err)
-	}
-	dest := filepath.Join(sources.CodexRoot, "lib", "hook-helpers.sh")
-	r, err := Mutate(ctx, dest, WriteFile{Content: helper, Mode: fileMode(sources.Helper)})
-	if err != nil {
-		return fmt.Errorf("doctor: %s: mirror hook-helpers.sh: %w", f.ID(), err)
-	}
-	if r.OK {
-		res.ActionsTaken++
-	}
-	return nil
+	return mirrorTree(ctx, f.ID(), sources.SkillsCodex, filepath.Join(sources.CodexRoot, "skills-codex"), res)
 }
 
 func (f skillsStaleCodexSyncFixer) stampCodexInstallMeta(ctx *MutateContext, env *DetectEnv, res *FixResult) error {
@@ -519,8 +481,8 @@ func (f skillsStaleCodexSyncFixer) verifyCodexSyncFixed(ctx *MutateContext, env 
 	if ctx.DryRun {
 		return nil
 	}
-	hashDrift, versionDrift, hookMissing, _ := codexSyncDrift(env)
-	if hashDrift || versionDrift || hookMissing {
+	hashDrift, versionDrift, _ := codexSyncDrift(env)
+	if hashDrift || versionDrift {
 		return fmt.Errorf("doctor: %s: fix did not eliminate the finding", f.ID())
 	}
 	return nil
@@ -814,7 +776,7 @@ func (f skillsHashDriftFixer) fixCatalogHash(ctx *MutateContext, env *DetectEnv,
 // FM: fm-skills-stale-command-refs (auto-fixable)
 // ---------------------------------------------------------------------------
 
-// skillsStaleCommandRefsDetector flags skill/doc/hook/script files that
+// skillsStaleCommandRefsDetector flags skill/doc/script files that
 // reference deprecated `ao` namespace-qualified commands.
 type skillsStaleCommandRefsDetector struct{}
 
@@ -832,7 +794,6 @@ func (skillsStaleCommandRefsDetector) Describe() string {
 // rooted at repo.
 func staleRefScanGlobs(repo string) []string {
 	return []string{
-		filepath.Join(repo, "hooks", "*.sh"),
 		filepath.Join(repo, "skills", "*", "SKILL.md"),
 		filepath.Join(repo, "skills", "*", "references", "*.md"),
 		filepath.Join(repo, "skills-codex", "*", "SKILL.md"),
@@ -975,7 +936,7 @@ func (skillsStaleCommandRefsFixer) Preconditions() []string {
 	}
 }
 func (skillsStaleCommandRefsFixer) WritesTo() []string {
-	return []string{"hooks", "skills", "skills-codex", "docs", "scripts"}
+	return []string{"skills", "skills-codex", "docs", "scripts"}
 }
 func (skillsStaleCommandRefsFixer) Ops() []string     { return []string{"WriteFile"} }
 func (skillsStaleCommandRefsFixer) Reversible() bool  { return true }

@@ -39,7 +39,7 @@ bash scripts/audit-codex-parity.sh --skill <name>
 ```
 Then update the canonical source and, when the Codex runtime copy itself must change, patch `skills-codex/<name>/` and/or add a durable override under `skills-codex-overrides/<name>/`. Finish by running `bash scripts/refresh-codex-artifacts.sh --scope worktree` and re-running the audit.
 
-**Embedded hooks must stay in sync.** After editing anything in `hooks/`, `lib/hook-helpers.sh`, or `skills/standards/references/`, run:
+**Embedded lib/skills must stay in sync.** After editing anything in `lib/` or `skills/standards/references/`, run:
 ```bash
 cd cli && make sync-hooks
 ```
@@ -55,5 +55,5 @@ scripts/generate-cli-reference.sh
 
 **No TODOs in SKILL.md files.** The smoke test greps for `TODO` and `FIXME` in `skills/*/SKILL.md`. Use issue tracking (`bd`) for follow-up work instead.
 
-**Validate before proposing.** Before suggesting a new capability or safeguard, verify it doesn't already exist: check `ao rpi serve --help`, `hooks/hooks.json`, `GOALS.md`, and existing SKILL.md files. Three suggested features in our March 2026 validation review were already implemented.
+**Validate before proposing.** Before suggesting a new capability or safeguard, verify it doesn't already exist: check `ao rpi serve --help`, `.github/workflows/validate.yml`, `GOALS.md`, and existing SKILL.md files. Three suggested features in our March 2026 validation review were already implemented.
 

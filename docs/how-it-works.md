@@ -138,28 +138,23 @@ Skills auto-select the best available backend:
 }
 ```
 
-## Hooks — The Operational Layer Enforces Itself
+## Hookless — The Operational Layer Enforces Itself
 
-The active runtime manifest currently declares **7 hook event sections** in `hooks/hooks.json`. All have a kill switch: `AGENTOPS_HOOKS_DISABLED=1`.
+AgentOps 3.0 ships **zero hooks**. Everything a hook used to do is now an
+explicit, pulled surface — which means the operating loop works identically on
+every harness (Claude Code, Codex, Cursor, OpenCode) and CI is the single
+authoritative gate.
 
-### Lifecycle anchors
+| Former hook responsibility | Hookless surface | Gap closed |
+|----------------------------|------------------|------------|
+| Startup maintenance / handoff recovery / factory-state staging | `ao knowledge brief`, `ao context assemble`, `ao handoff` | Runtime continuity |
+| Transcript mining / maturity management / defrag | `/forge`, `ao maturity`, `ao compile` at session close | Durable learning, Loop closure |
+| Flywheel close | `ao flywheel close-loop` / `/retro` | Loop closure |
+| Prompt guidance / context pressure | `ao lookup`, factory briefings, `/inject` (pulled, not injected) | Judgment validation |
+| Validation gates / quality / completion | CI (`.github/workflows/validate.yml`) + skill-level checks + `cd cli && make test` | Judgment validation, Loop closure |
 
-| Hook surface | Trigger | What it does | Gap closed |
-|--------------|---------|--------------|------------|
-| Session start | `SessionStart` | Runs `session-start.sh` — startup maintenance, handoff recovery, and silent factory-state staging | Runtime continuity |
-| Session end maintenance | `SessionEnd` | Runs `session-end-maintenance.sh` (transcript mining, maturity management) and `compile-session-defrag.sh` (knowledge deduplication and defrag) | Durable learning (extraction), Loop closure |
-| Flywheel close | `Stop` | Runs `ao-flywheel-close.sh` — closes the feedback loop via `ao flywheel close-loop` | Loop closure |
-
-### Guardrails and continuity surfaces
-
-| Hook surface | Trigger | What it does | Gap closed |
-|--------------|---------|--------------|------------|
-| Prompt guidance | `UserPromptSubmit` | Runs `factory-router.sh` for explicit factory intake, `context-guard.sh` for context pressure, and `quality-signals.sh` for feedback capture without adding resident prompt nudges | Judgment validation |
-| Pre-tool gates | `PreToolUse` | `pre-mortem-gate.sh` (blocks `/crank` without plan review), `go-test-precommit.sh`, `git-worker-guard.sh` (worker isolation), `edit-knowledge-surface.sh`, `codex-parity-warn.sh` | Judgment validation |
-| Post-tool checks | `PostToolUse` | `write-time-quality.sh` (edit quality), `go-complexity-precommit.sh`, `go-vet-post-edit.sh`, `research-loop-detector.sh` (detects stalled loops), `context-monitor.sh` | Judgment validation, Loop closure |
-| Task completion gate | `TaskCompleted` | Runs `task-validation-gate.sh` — executes compiled constraints from `.agents/constraints/index.json` before accepting task completion | Judgment validation, Loop closure |
-
-All hooks use `lib/hook-helpers.sh` for structured error recovery — failures include suggested next actions and auto-handoff context.
+Operators who *want* runtime hooks can author their own with the
+`hooks-authoring` skill; they are opt-in and not part of the default product.
 
 ## Compaction Resilience — Long Runs That Don't Lose State
 

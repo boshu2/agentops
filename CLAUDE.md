@@ -14,7 +14,7 @@ If this is your first message in a fresh session, orient in this order:
 4. Task-specific canonical surfaces:
    - CLI behavior: `cli/cmd/ao/`, `cli/internal/`, generated `cli/docs/COMMANDS.md`
    - Skills behavior: `skills/**/SKILL.md`
-   - Hooks/gates: `hooks/hooks.json` and `hooks/*.sh`
+   - Gates: `.github/workflows/validate.yml` + `scripts/*.sh` (AgentOps 3.0 is hookless — CI is the authoritative gate)
    - Contracts/schemas: `schemas/**`, `lib/schemas/**`
 5. `.agents/AGENTS.md` for knowledge store navigation (search on demand, don't pre-load).
 
@@ -22,8 +22,8 @@ If this is your first message in a fresh session, orient in this order:
 
 When files disagree, trust in this order:
 
-1. Executable implementation and generated outputs (`cli/**`, `hooks/**`, `scripts/**`, `cli/docs/COMMANDS.md`)
-2. Declared contracts/manifests (`skills/**/SKILL.md`, `hooks/hooks.json`, `schemas/**`)
+1. Executable implementation and generated outputs (`cli/**`, `scripts/**`, `cli/docs/COMMANDS.md`)
+2. Declared contracts/manifests (`skills/**/SKILL.md`, `schemas/**`)
 3. Narrative docs (`docs/**`, `README.md`)
 
 Always report mismatches; do not silently pick a lower-precedence doc over executable behavior.
@@ -33,7 +33,6 @@ Always report mismatches; do not silently pick a lower-precedence doc over execu
 ```
 cli/          Go CLI (ao binary) — cmd/ao, internal packages
 skills/       Skill definitions (source of truth)
-hooks/        Git/session hooks
 lib/          Shared shell helpers
 scripts/      Release, validation, and maintenance scripts
 schemas/      JSON schemas for config/manifest
@@ -59,7 +58,7 @@ WRONG:    ~/.claude/skills/evolve/SKILL.md (installed copy — do not edit)
 cd cli && make build        # Build ao binary to cli/bin/ao
 cd cli && make test         # Run tests
 cd cli && make lint         # Run linter
-cd cli && make sync-hooks   # Sync embedded hooks/skills into cli/embedded/
+cd cli && make sync-hooks   # Sync embedded lib/skills into cli/embedded/
 ```
 
 ## Key Scripts
@@ -81,7 +80,7 @@ All pushes to `main` run `.github/workflows/validate.yml` (65 jobs). **CI is the
 
 ```bash
 cd cli && make build && make test         # If you changed Go code
-cd cli && make sync-hooks                 # If you changed hooks/ or lib/hook-helpers.sh
+cd cli && make sync-hooks                 # If you changed lib/ or skills/standards/references/
 scripts/regen-codex-hashes.sh             # If you changed skills-codex/ files
 bats tests/scripts/<script-you-touched>.bats   # Per-script regression suite
 
@@ -108,7 +107,7 @@ This updates SKILL-TIERS.md, PRODUCT.md, README.md, docs/SKILLS.md, docs/ARCHITE
 
 **Codex skills are manually maintained.** Edit `skills-codex/<name>/SKILL.md` directly or add overrides in `skills-codex-overrides/<name>/`. Audit drift with `bash scripts/audit-codex-parity.sh --skill <name>`.
 
-**Embedded hooks must stay in sync.** After editing `hooks/`, `lib/hook-helpers.sh`, or `skills/standards/references/`: run `cd cli && make sync-hooks`.
+**Embedded lib/skills must stay in sync.** After editing `lib/` or `skills/standards/references/`: run `cd cli && make sync-hooks`.
 
 **CLI docs must stay in sync.** After changing commands/flags: run `scripts/generate-cli-reference.sh`.
 
@@ -191,7 +190,7 @@ Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `ag
 
 - **Multi-phase work:** Route through `ao rpi` (enforces timeouts and stall detection).
 - **Before spawning workers:** Verify no file overlap across the wave. File collisions are the #1 swarm failure mode.
-- **Before proposing new capability:** Check `ao rpi serve --help`, `hooks/hooks.json`, and `GOALS.md` first.
+- **Before proposing new capability:** Check `ao rpi serve --help`, `.github/workflows/validate.yml`, and `GOALS.md` first.
 - **Gas City (gc) bridge:** `cli/cmd/ao/gc_bridge.go`, `gc_events.go`, `rpi_phased_gc.go`. Do not write new tests or features for the legacy RPI lane (`rpi_loop_supervisor.go`, `rpi_c2_events.go`, `rpi_phased_tmux.go`, `rpi_parallel.go`) — but these are **load-bearing, not dead code**: live code references their symbols (`RPIC2Event`/`appendRPIC2Event` across 13+ `rpi_phased*` files + `mine`; `rpiLoopSupervisorConfig`/`runRPISupervisedCycle` in `rpi_loop`/`agentopsd`/`rpi_cancel`; `shellQuote` in `handoff`/`overnight_setup`; tmux helpers in `rpi_nudge`/`rpi_phased_stream`). Deleting any breaks the build; removal needs a caller-migration refactor (soc-1gbpz), not a delete. `rpi_workers.go` and `fire.go` were already removed.
 
 ### Execution Discipline

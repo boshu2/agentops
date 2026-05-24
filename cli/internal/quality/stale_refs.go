@@ -45,7 +45,6 @@ var DeprecatedCommands = map[string]string{
 	"ao quality curate":        "ao curate",
 	"ao settings config":       "ao config",
 	"ao settings plans":        "ao plans",
-	"ao settings hooks":        "ao hooks",
 	"ao settings memory":       "ao memory",
 	"ao settings notebook":     "ao notebook",
 	"ao settings worktree":     "ao worktree",

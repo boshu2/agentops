@@ -74,38 +74,6 @@ require_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "Required command not found: $1"
 }
 
-EXPECTED_CODEX_HOOK_SCRIPTS=(
-  "session-start.sh"
-  "stop-team-guard.sh"
-  "stop-auto-handoff.sh"
-  "ao-flywheel-close.sh"
-  "quality-signals.sh"
-  "dangerous-git-guard.sh"
-  "go-test-precommit.sh"
-  "lead-only-worker-git-guard.sh"
-  "holdout-isolation-gate.sh"
-  "codex-parity-warn.sh"
-  "ratchet-advance.sh"
-)
-
-require_codex_hook_handlers() {
-  local hooks_file="$1"
-  local hook_script
-
-  for hook_script in "${EXPECTED_CODEX_HOOK_SCRIPTS[@]}"; do
-    jq -e --arg script "$hook_script" \
-      '[.hooks | to_entries[] | .value[] | .hooks[] | select(.command | contains("/hooks/" + $script))] | length >= 1' \
-      "$hooks_file" >/dev/null \
-      || fail "Expected at least one $hook_script handler in $hooks_file"
-  done
-
-  if jq -e '[.hooks | to_entries[] | .value[] | .hooks[] | select(.command | contains("/hooks/ao-inject.sh"))] | length == 0' \
-    "$hooks_file" >/dev/null; then
-    return 0
-  fi
-  fail "Codex hooks must not install noisy ao-inject.sh in $hooks_file"
-}
-
 require_file() {
   [[ -f "$1" ]] || fail "Required file missing: $1"
 }
@@ -212,58 +180,23 @@ rg -q '"hook_runtime": "hookless-default"' "$CODEX_HOME/.agentops-codex-install.
   || fail "install metadata missing hookless-default hook_runtime field"
 rg -q '"hooks_installed": false' "$CODEX_HOME/.agentops-codex-install.json" \
   || fail "install metadata should record hooks_installed=false"
-rg -q '"hook_contract": "docs/contracts/hook-runtime-contract.md"' "$CODEX_HOME/.agentops-codex-install.json" \
-  || fail "install metadata missing hook_contract reference"
 rg -q '"user_skills_root": null' "$CODEX_HOME/.agentops-codex-install.json" \
   || fail "install metadata should not record a raw skills mirror"
 
-info "Verifying --codex-home installs hooks into the target Codex home"
+info "Verifying --codex-home installs into the target Codex home (hookless)"
 EXPLICIT_HOME_ROOT="/tmp/codex-native-plugin-explicit-${timestamp}"
 EXPLICIT_CODEX_HOME="${EXPLICIT_HOME_ROOT}/explicit/.codex"
 REAL_HOME_ROOT="${EXPLICIT_HOME_ROOT}/real-home"
 mkdir -p "$EXPLICIT_CODEX_HOME"
-cat > "$EXPLICIT_CODEX_HOME/hooks.json" <<'EOF'
-{
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash /old/agentops/hooks/session-start.sh",
-            "timeout": 10
-          },
-          {
-            "type": "command",
-            "command": "bash /old/agentops/hooks/ao-inject.sh",
-            "timeout": 10
-          }
-        ]
-      }
-    ]
-  }
-}
-EOF
 HOME="$REAL_HOME_ROOT" bash "$INSTALL_SCRIPT" \
   --repo-root "$REPO_ROOT" \
   --codex-home "$EXPLICIT_CODEX_HOME" \
   --version "test-local" \
-  --update-command "test-local" \
-  --with-hooks >/dev/null
-[[ -f "$EXPLICIT_CODEX_HOME/hooks.json" ]] || fail "install-codex-plugin.sh did not create hooks.json under --codex-home"
-[[ ! -f "$REAL_HOME_ROOT/.codex/hooks.json" ]] || fail "install-codex-plugin.sh leaked hooks.json into \$HOME instead of --codex-home"
-jq -e '.hooks | type == "object" and length == 5' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null \
-  || fail "Expected 5 native Codex hook events in explicit hooks install"
-jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 14' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null \
-  || fail "Expected 14 native Codex hook handlers in explicit hooks install"
-jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null \
-  || fail "Missing session-start.sh handler in explicit hooks install"
-if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("ao-inject\\.sh$"))' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null; then
-  fail "install-codex-plugin.sh left stale ao-inject.sh in existing Codex hooks"
-fi
-rg -q '^hooks = true$' "$EXPLICIT_CODEX_HOME/config.toml" || fail "explicit hooks install should enable hooks = true"
-rg -q '"hooks_installed": true' "$EXPLICIT_CODEX_HOME/.agentops-codex-install.json" \
-  || fail "explicit hooks install metadata should record hooks_installed=true"
+  --update-command "test-local" >/dev/null
+[[ ! -f "$EXPLICIT_CODEX_HOME/hooks.json" ]] || fail "hookless install must not create hooks.json under --codex-home"
+[[ -f "$EXPLICIT_CODEX_HOME/.agentops-codex-install.json" ]] || fail "install metadata missing under --codex-home"
+rg -q '"hooks_installed": false' "$EXPLICIT_CODEX_HOME/.agentops-codex-install.json" \
+  || fail "explicit install metadata should record hooks_installed=false"
 
 info "Checking Codex entrypoint files for runtime-agnostic instructions"
 entrypoint_files=()

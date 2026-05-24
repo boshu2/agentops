@@ -35,7 +35,7 @@ The core execution model: spawn parallel agents (chaos), validate their output w
 A skill (`/codex-team`) that spawns parallel Codex (OpenAI) execution agents orchestrated by Claude, enabling cross-vendor parallel task execution. [Full documentation](skills/codex-team.md)
 
 ### Compact / PreCompact
-Runtime event fired when an agent prunes its conversation history. AgentOps uses `precompact-snapshot.sh` to capture signal before compaction so nothing is lost. See [`HOOKS.md`](HOOKS.md).
+Runtime event fired when an agent prunes its conversation history. AgentOps 3.0 is hookless — capture context before compaction with `ao handoff` / `ao inject` rather than a runtime hook.
 
 ### Compile
 A lifecycle step that rolls session-level signal into durable knowledge. Runs via `compile-session-defrag.sh` at `SessionEnd` and via `ao compile` on demand. Produces the inputs that `ao inject` pulls from.
@@ -99,7 +99,7 @@ A skill (`/handoff`) that creates structured session handoff documents so anothe
 An isolated scenario file under `.agents/holdout/` used for behavioral validation. Read/glob/grep access to holdout directories is gated by `holdout-isolation-gate.sh` so validator and evaluee paths do not cross-contaminate. Schema: [`scenario.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/scenario.v1.schema.json).
 
 ### Hook
-A shell script that fires automatically on agent lifecycle events. AgentOps currently registers 7 hook event sections in `hooks/hooks.json`, spanning session lifecycle, prompt routing, tool-time gates, and task completion. All hooks can be disabled with `AGENTOPS_HOOKS_DISABLED=1`. [Full documentation](HOOKS.md)
+A shell script that fires automatically on agent lifecycle events. **AgentOps 3.0 ships zero hooks** — workflow is guided by skills + the `ao` CLI, and CI is the authoritative gate. If you want runtime hooks, author your own with the `hooks-authoring` skill; they are not part of the default product surface.
 
 ## I
 
@@ -164,7 +164,7 @@ One of the three named stages inside an RPI run: **Discovery**, **Implementation
 ## S
 
 ### Session Lifecycle
-The full arc of a coding-agent session: `SessionStart` → many `UserPromptSubmit` / `PreToolUse` / `PostToolUse` cycles → `Stop` → `SessionEnd`. AgentOps attaches hooks to each of these events. See [`HOOKS.md`](HOOKS.md) and [`workflows/session-lifecycle.md`](workflows/session-lifecycle.md).
+The full arc of a coding-agent session: `SessionStart` → many `UserPromptSubmit` / `PreToolUse` / `PostToolUse` cycles → `Stop` → `SessionEnd`. AgentOps 3.0 is hookless — it works the lifecycle through skills + the `ao` CLI rather than attaching runtime hooks. See [`workflows/session-lifecycle.md`](workflows/session-lifecycle.md).
 
 ### Skill
 A self-contained capability defined by a `SKILL.md` file with YAML frontmatter. Skills are the primary unit of functionality in AgentOps — each one has triggers, instructions, and optional reference docs loaded just-in-time. AgentOps currently ships 66 shared skills, with runtime-specific artifacts maintained alongside them. [Full documentation](SKILLS.md)
