@@ -93,7 +93,6 @@
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "factory-router.sh"},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "quality-signals.sh"},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "pre-mortem-gate.sh"},
-        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "commit-review-gate.sh"},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "git-worker-guard.sh"},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "lead-only-worker-git-guard.sh"},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "holdout-isolation-gate.sh"},
@@ -135,7 +134,6 @@
         {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "ao-flywheel-close.sh"},
         {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "quality-signals.sh"},
         {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "go-test-precommit.sh"},
-        {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "commit-review-gate.sh"},
         {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "ratchet-advance.sh"},
         {"type": "artifact_contains", "target": "../../hooks/codex-hooks.json", "value": "${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}"}
       ],

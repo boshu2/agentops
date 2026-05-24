@@ -155,7 +155,7 @@ The active runtime manifest currently declares **7 hook event sections** in `hoo
 | Hook surface | Trigger | What it does | Gap closed |
 |--------------|---------|--------------|------------|
 | Prompt guidance | `UserPromptSubmit` | Runs `factory-router.sh` for explicit factory intake, `context-guard.sh` for context pressure, and `quality-signals.sh` for feedback capture without adding resident prompt nudges | Judgment validation |
-| Pre-tool gates | `PreToolUse` | `pre-mortem-gate.sh` (blocks `/crank` without plan review), `commit-review-gate.sh` (pre-commit checks), `go-test-precommit.sh`, `git-worker-guard.sh` (worker isolation), `edit-knowledge-surface.sh`, `codex-parity-warn.sh` | Judgment validation |
+| Pre-tool gates | `PreToolUse` | `pre-mortem-gate.sh` (blocks `/crank` without plan review), `go-test-precommit.sh`, `git-worker-guard.sh` (worker isolation), `edit-knowledge-surface.sh`, `codex-parity-warn.sh` | Judgment validation |
 | Post-tool checks | `PostToolUse` | `write-time-quality.sh` (edit quality), `go-complexity-precommit.sh`, `go-vet-post-edit.sh`, `research-loop-detector.sh` (detects stalled loops), `context-monitor.sh` | Judgment validation, Loop closure |
 | Task completion gate | `TaskCompleted` | Runs `task-validation-gate.sh` — executes compiled constraints from `.agents/constraints/index.json` before accepting task completion | Judgment validation, Loop closure |
 

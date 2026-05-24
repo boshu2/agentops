@@ -558,15 +558,6 @@ GIT
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# commit-review-gate.sh
-# ═══════════════════════════════════════════════════════════════════════
-
-@test "commit-review-gate: non-git command ignored" {
-    OUTPUT=$(printf '%s' '{"tool_name":"Bash","tool_input":{"command":"go test ./..."}}' | bash "$HOOKS_DIR/commit-review-gate.sh" 2>&1)
-    [ -z "$OUTPUT" ]
-}
-
-# ═══════════════════════════════════════════════════════════════════════
 # factory-router.sh
 # ═══════════════════════════════════════════════════════════════════════
 
@@ -673,10 +664,6 @@ AOEOF
 
 @test "hooks.json: git-worker-guard wired in PreToolUse/Bash" {
     jq -e '.hooks.PreToolUse[] | select(.matcher == "Bash") | .hooks[] | select(.command | contains("git-worker-guard.sh"))' "$HOOKS_DIR/hooks.json" >/dev/null 2>&1
-}
-
-@test "hooks.json: commit-review-gate wired in PreToolUse/Bash" {
-    jq -e '.hooks.PreToolUse[] | select(.matcher == "Bash") | .hooks[] | select(.command | contains("commit-review-gate.sh"))' "$HOOKS_DIR/hooks.json" >/dev/null 2>&1
 }
 
 @test "hooks.json: factory-router wired in UserPromptSubmit" {

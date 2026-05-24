@@ -57,8 +57,8 @@ if [[ -f "$CODEX_HOOKS_JSON" ]]; then
         && pass "hooks/codex-hooks.json is valid JSON" || fail "hooks/codex-hooks.json is invalid JSON"
     jq -e '.hooks | type == "object" and length == 5' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
         && pass "codex hook bundle defines 5 native hook events" || fail "codex hook bundle event map is unexpectedly small"
-    jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 15' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
-        && pass "codex hook bundle defines 15 native hook handlers" || fail "codex hook bundle handler count drifted"
+    jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 14' "$CODEX_HOOKS_JSON" >/dev/null 2>&1 \
+        && pass "codex hook bundle defines 14 native hook handlers" || fail "codex hook bundle handler count drifted"
     if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$CODEX_HOOKS_JSON" >/dev/null 2>&1; then
         pass "codex hook bundle includes session-start.sh"
     else

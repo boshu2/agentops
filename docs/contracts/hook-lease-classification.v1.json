@@ -45,17 +45,6 @@
       ],
       "rationale": "Codex parity belongs in the runtime projection compiler and CI gate."
     },
-    "commit-review-gate.sh": {
-      "owner_bubble": "Evidence and Trust",
-      "disposition": "gate",
-      "replacement": "GateRunnerPort commit-review validation lane",
-      "evidence_status": "deterministic-safety",
-      "context_injection": true,
-      "side_effects": [
-        "blocks or warns on weak commit review evidence"
-      ],
-      "rationale": "Commit review is an evidence gate and should be explicit."
-    },
     "compile-session-defrag.sh": {
       "owner_bubble": "Knowledge Flywheel",
       "disposition": "event-subscriber",

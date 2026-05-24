@@ -1741,35 +1741,6 @@ fi
 rm -rf "$PARITY_MOCK_DIR"
 
 # ============================================================
-echo "=== commit-review-gate.sh ==="
-# ============================================================
-
-# Test: Non-git command => silent pass
-OUTPUT=$(echo '{"tool_name":"Bash","tool_input":{"command":"go test ./..."}}' | bash "$HOOKS_DIR/commit-review-gate.sh" 2>&1)
-RC=$?
-if [[ $RC -eq 0 ]] && [[ -z "$OUTPUT" ]]; then
-    pass "commit-review-gate: non-git command ignored"
-else
-    fail "commit-review-gate: non-git command should be silent (got exit $RC)"
-fi
-
-# Test: Kill switch
-OUTPUT=$(echo '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}' | AGENTOPS_COMMIT_REVIEW_DISABLED=1 bash "$HOOKS_DIR/commit-review-gate.sh" 2>&1)
-RC=$?
-if [[ $RC -eq 0 ]]; then
-    pass "commit-review-gate: kill switch works"
-else
-    fail "commit-review-gate: kill switch should exit 0 (got $RC)"
-fi
-
-# Test: Manifest wiring check
-if jq -e '.hooks.PreToolUse[] | select(.matcher == "Bash") | .hooks[] | select(.command | contains("commit-review-gate.sh"))' "$HOOKS_DIR/hooks.json" >/dev/null 2>&1; then
-    pass "commit-review-gate.sh wired in hooks.json"
-else
-    fail "commit-review-gate.sh not found in hooks.json"
-fi
-
-# ============================================================
 echo "=== factory-router.sh ==="
 # ============================================================
 

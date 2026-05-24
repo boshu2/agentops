@@ -2,7 +2,7 @@
 
 > **Bead:** `soc-6zihw` (W3 of the 3.0 reconciliation). **Criterion:** [docs/3.0.md](../3.0.md) — "hooks may help, but they must not inject random noise"; the 3.0-ready acceptance is *"every hook is a bounded adapter or a gate, none a noise-injector."* This audit classifies all 53 hook scripts against that criterion. Edits to hook behavior are tracked separately (see Follow-on).
 >
-> **Status (go-hookless epic `soc-e2ju0`):** operator chose to **delete** the noise-injectors outright, not quiet them (they are value-negative: A/B Δ=0). S1 (`soc-s1i3b`) deleted 5 — `research-loop-detector`, `context-monitor`, `write-time-quality`, `edit-knowledge-surface`, `go-vet-post-edit` — leaving 48 hooks. S2 (`soc-khev6`) deleted `standards-injector` and retired its dedicated `standards-injector-completeness` CI gate, leaving 47 hooks. Remaining noise tier (`commit-review-gate`, + conditional injectors) deletes in S3; default install goes to zero hooks in S4.
+> **Status (go-hookless epic `soc-e2ju0`):** operator chose to **delete** the noise-injectors outright, not quiet them (they are value-negative: A/B Δ=0). S1 (`soc-s1i3b`) deleted 5 — `research-loop-detector`, `context-monitor`, `write-time-quality`, `edit-knowledge-surface`, `go-vet-post-edit` — leaving 48 hooks. S2 (`soc-khev6`) deleted `standards-injector` and retired its dedicated `standards-injector-completeness` CI gate, leaving 47 hooks. S3 (`soc-vpmzg`) deleted `commit-review-gate` — the value-negative noise-injector that injected the staged diff + a "SELF-REVIEW" prompt on every `git commit` (never blocked, always exited 0) — leaving 46 hooks. The "+7 conditional injectors" the audit originally grouped with it were reclassified as kept-gates (they speak only on a real violation), so S3 deletes only `commit-review-gate`. Default install goes to zero hooks in S4.
 
 ## Method
 
@@ -31,7 +31,7 @@ Ranked by injection frequency × unconditionality. Each cites the emission site 
 | Hook | Event | Emits additionalContext | Disable flag (exists) | Verdict |
 |---|---|---|---|---|
 | `standards-injector.sh` | PreToolUse:Edit/Write (6 file types) | always — JIT language standards on every edit | (removed) | **DELETED in S2 (`soc-khev6`)** — replaced by the standards skill, read on demand |
-| `commit-review-gate.sh` | PreToolUse:Bash (`git commit`) | always — staged diff + "SELF-REVIEW" every commit (misnamed: never blocks, line 4 "Non-blocking, always exit 0") | `AGENTOPS_COMMIT_REVIEW_DISABLED` | quiet: opt-in default + rename (not a gate) |
+| `commit-review-gate.sh` | PreToolUse:Bash (`git commit`) | always — staged diff + "SELF-REVIEW" every commit (misnamed: never blocks, line 4 "Non-blocking, always exit 0") | (removed) | **DELETED in S3 (`soc-vpmzg`)** — value-negative noise-injector, no replacement |
 | `edit-knowledge-surface.sh` | PreToolUse:Edit | always — greps `.agents/learnings/` + "Relevant learnings" on every edit | `AGENTOPS_EDIT_KNOWLEDGE_DISABLED` | quiet: opt-in default or filename-filter |
 | `research-loop-detector.sh` | PostToolUse:Read/Grep/Glob/Web* | escalating "you have made N read-only calls" from 8 reads | `AGENTOPS_RESEARCH_LOOP_DISABLED` | quiet: raise thresholds (8→16) or opt-in |
 | `context-monitor.sh` | PostToolUse | context warnings at 35%/25% remaining (fires 3-5×/session) | (threshold env) | quiet: raise to ~15% remaining |

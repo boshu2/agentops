@@ -51,8 +51,6 @@ func runManagedHook(cmd *cobra.Command, args []string) error {
 	}
 
 	switch strings.TrimSpace(args[0]) {
-	case "commit-review-gate", "commit-review":
-		return runCommitReviewHook(payload)
 	case "ratchet-advance":
 		return runRatchetAdvanceHook(payload)
 	case "quality-signals":
@@ -96,119 +94,6 @@ func envInt(name string, fallback int) int {
 		return fallback
 	}
 	return value
-}
-
-func runCommitReviewHook(payload []byte) error {
-	if os.Getenv("AGENTOPS_HOOKS_DISABLED") == "1" || os.Getenv("AGENTOPS_COMMIT_REVIEW_DISABLED") == "1" {
-		return nil
-	}
-
-	input := decodeRuntimeHookInput(payload)
-	toolName := hookFirstNonEmpty(os.Getenv("CLAUDE_TOOL_NAME"), input.ToolName)
-	commandText := hookFirstNonEmpty(os.Getenv("CLAUDE_TOOL_INPUT_COMMAND"), input.ToolInput.Command)
-
-	if toolName != "Bash" || !strings.Contains(commandText, "git commit") {
-		return nil
-	}
-	if strings.Contains(commandText, "--amend") && strings.Contains(commandText, "--no-edit") {
-		return nil
-	}
-
-	diffStat, err := gitOutput("diff", "--cached", "--stat")
-	if err != nil || strings.TrimSpace(diffStat) == "" {
-		return nil
-	}
-	fullDiff, err := gitOutput("diff", "--cached")
-	if err != nil || strings.TrimSpace(fullDiff) == "" {
-		return nil
-	}
-
-	fileCount := countDiffFiles(fullDiff)
-	if fileCount == 0 {
-		return nil
-	}
-
-	lineLimit := envInt("AGENTOPS_COMMIT_REVIEW_DIFF_LINES", 80)
-	if os.Getenv("AGENTOPS_COMMIT_REVIEW_FULL_DIFF") == "1" && lineLimit < 200 {
-		lineLimit = 200
-	}
-	diffLines := hookCountLines(fullDiff)
-	diffPreview := redactSensitiveDiff(firstLines(fullDiff, lineLimit))
-
-	truncated := ""
-	if diffLines > lineLimit {
-		truncated = fmt.Sprintf(" (showing first %d of %d lines; run 'git diff --cached' for full diff)", lineLimit, diffLines)
-	}
-
-	reviewMsg := fmt.Sprintf(`SELF-REVIEW before committing (%d files changed):
-Check for: wrong variable references, changed defaults, removed error handling, silent data loss, YAML syntax errors.
-
-Staged changes:
-%s
-%s
-
-%s`, fileCount, diffStat, truncated, diffPreview)
-
-	return emitHookAdditionalContext("PreToolUse", reviewMsg)
-}
-
-func gitOutput(args ...string) (string, error) {
-	cmd := exec.Command("git", args...)
-	out, err := cmd.Output()
-	return string(out), err
-}
-
-func countDiffFiles(diff string) int {
-	count := 0
-	scanner := bufio.NewScanner(strings.NewReader(diff))
-	for scanner.Scan() {
-		if strings.HasPrefix(scanner.Text(), "diff --git ") {
-			count++
-		}
-	}
-	return count
-}
-
-func hookCountLines(s string) int {
-	if s == "" {
-		return 0
-	}
-	lines := strings.Count(s, "\n")
-	if !strings.HasSuffix(s, "\n") {
-		lines++
-	}
-	return lines
-}
-
-func firstLines(s string, limit int) string {
-	if limit <= 0 {
-		return ""
-	}
-	scanner := bufio.NewScanner(strings.NewReader(s))
-	var b strings.Builder
-	lines := 0
-	for scanner.Scan() {
-		if lines >= limit {
-			break
-		}
-		if lines > 0 {
-			b.WriteByte('\n')
-		}
-		b.WriteString(scanner.Text())
-		lines++
-	}
-	return b.String()
-}
-
-var (
-	diffCredentialKeyPattern   = "api[_-]?key|token|password|passwd|" + "secret"
-	diffCredentialAssignmentRE = regexp.MustCompile("(?i)((?:[A-Za-z0-9_-]*(?:" + diffCredentialKeyPattern + ")[A-Za-z0-9_-]*)[[:space:]]*[:=][[:space:]]*)(?:\"[^\"\\r\\n]*\"|'[^'\\r\\n]*'|`[^`\\r\\n]*`|[^[:space:]\"'`]+)")
-	diffAuthorizationRE        = regexp.MustCompile("(?i)((?:Authorization)[[:space:]]*:[[:space:]]*(?:Bearer|Basic)[[:space:]]+)(?:\"[^\"\\r\\n]*\"|'[^'\\r\\n]*'|`[^`\\r\\n]*`|[^[:space:]\"'`]+)")
-)
-
-func redactSensitiveDiff(diff string) string {
-	diff = diffCredentialAssignmentRE.ReplaceAllString(diff, "${1}[REDACTED]")
-	return diffAuthorizationRE.ReplaceAllString(diff, "${1}[REDACTED]")
 }
 
 func runRatchetAdvanceHook(payload []byte) error {

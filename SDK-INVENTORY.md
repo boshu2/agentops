@@ -199,7 +199,7 @@ Cleanest split.
 | Compile pipeline | `compile-session-defrag.sh` | OPINIONATED |
 | UX hooks | Removed from 3.0 runtime manifest; replaced by README/quickstart and execution-packet fields | RETIRED |
 | Safety | `dangerous-git-guard.sh`, `edit-scope-guard.sh`, `edit-audit.sh`, `edit-knowledge-surface.sh`, `git-worker-guard.sh`, `lead-only-worker-git-guard.sh` | OPINIONATED |
-| Workflow gates | `pre-mortem-gate.sh` (10K), `commit-review-gate.sh`, `holdout-isolation-gate.sh`, `task-validation-gate.sh` (30K!), `eval-verdict-compiler.sh` (10K), `factory-router.sh`, `finding-compiler.sh` (30K!) | OPINIONATED |
+| Workflow gates | `pre-mortem-gate.sh` (10K), `holdout-isolation-gate.sh`, `task-validation-gate.sh` (30K!), `eval-verdict-compiler.sh` (10K), `factory-router.sh`, `finding-compiler.sh` (30K!) | OPINIONATED |
 | Worktree | `worktree-cleanup.sh`, `worktree-setup.sh`, `subagent-stop.sh`, `stop-auto-handoff.sh`, `stop-team-guard.sh` | mixed (split: utility vs. gate logic) |
 | Quality | `quality-signals.sh`, `write-time-quality.sh`, `context-guard.sh`, `context-monitor.sh` | OPINIONATED |
 | CLI wrappers | `ao-extract.sh`, `ao-feedback-loop.sh`, `ao-flywheel-close.sh`, `ao-forge.sh`, `ao-inject.sh`, `ao-maturity-scan.sh`, `ao-ratchet-status.sh`, `ao-session-outcome.sh`, `ao-task-sync.sh`, `ao-agents-check.sh` | OPINIONATED |

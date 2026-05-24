@@ -94,55 +94,6 @@ EOF
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# 5. commit-review-gate.sh (PreToolUse) — registered
-# ═══════════════════════════════════════════════════════════════════════
-
-@test "commit-review-gate: git commit with staged changes emits schema with hookEventName=PreToolUse" {
-    # Create staged changes in mock repo so diff is non-empty
-    echo "initial" > "$MOCK_REPO/file.txt"
-    git -C "$MOCK_REPO" add file.txt
-    git -C "$MOCK_REPO" -c user.name=test -c user.email=t@t commit -q -m "init" 2>/dev/null
-    echo "changed" > "$MOCK_REPO/file.txt"
-    git -C "$MOCK_REPO" add file.txt
-    run bash -c 'cd "$1" && printf "%s" "$2" | bash "$3" 2>&1' \
-        -- "$MOCK_REPO" '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}' "$HOOKS_DIR/commit-review-gate.sh"
-    [ "$status" -eq 0 ]
-    [ -n "$output" ]
-    assert_hook_schema "$output" "PreToolUse"
-}
-
-@test "commit-review-gate: redacts secret-like staged diff values" {
-    echo "initial" > "$MOCK_REPO/file.txt"
-    git -C "$MOCK_REPO" add file.txt
-    git -C "$MOCK_REPO" -c user.name=test -c user.email=t@t commit -q -m "init" 2>/dev/null
-    cat > "$MOCK_REPO/config.env" <<'EOF'
-TOKEN_FOR_REDACTION=not-a-secret-fixture
-QUOTED_TOKEN_FOR_REDACTION="quoted-secret-fixture"
-Authorization: Bearer "quoted-token-fixture"
-EOF
-    git -C "$MOCK_REPO" add config.env
-    run bash -c 'cd "$1" && printf "%s" "$2" | AGENTOPS_MANAGED_HOOK_BACKEND_DISABLED=1 bash "$3" 2>&1' \
-        -- "$MOCK_REPO" '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}' "$HOOKS_DIR/commit-review-gate.sh"
-    [ "$status" -eq 0 ]
-    [ -n "$output" ]
-    local ctx
-    ctx=$(echo "$output" | jq -r '.hookSpecificOutput.additionalContext')
-    [[ "$ctx" == *"TOKEN_FOR_REDACTION=[REDACTED]"* ]]
-    [[ "$ctx" == *"QUOTED_TOKEN_FOR_REDACTION=[REDACTED]"* ]]
-    [[ "$ctx" == *"Authorization: Bearer [REDACTED]"* ]]
-    [[ "$ctx" != *"not-a-secret-fixture"* ]]
-    [[ "$ctx" != *"quoted-secret-fixture"* ]]
-    [[ "$ctx" != *"quoted-token-fixture"* ]]
-}
-
-@test "commit-review-gate: non-git command emits no output" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"tool_name":"Bash","tool_input":{"command":"go test ./..."}}' "$HOOKS_DIR/commit-review-gate.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
-# ═══════════════════════════════════════════════════════════════════════
 #    Only emits JSON when editing a _test.go file with assertion-free test functions.
 # ═══════════════════════════════════════════════════════════════════════
 # ═══════════════════════════════════════════════════════════════════════

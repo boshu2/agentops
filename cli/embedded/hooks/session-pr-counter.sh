@@ -5,8 +5,8 @@ set -uo pipefail
 #
 # Strict-mode choice: -uo pipefail (catches typos and mid-pipe failures); we
 # intentionally omit `-e` because advisory hooks must fail open on command
-# failures (e.g., `gh` unreachable, parse errors) per the existing pattern
-# in commit-review-gate.sh and the shell-standards "advisory = fail open" rule.
+# failures (e.g., `gh` unreachable, parse errors) per the shell-standards
+# "advisory = fail open" rule.
 #
 # Sister rule to coherent-arc (soc-waxr, PR #361). Counts PRs the current user
 # opened in the last 24 hours; if that count is >=4 (so the about-to-be-created
