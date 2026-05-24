@@ -505,6 +505,7 @@ test_help "ao memory --help" "$AO" memory --help
 test_help "ao notebook --help" "$AO" notebook --help
 test_help "ao trace --help" "$AO" trace --help
 test_help "ao findings --help" "$AO" findings --help
+test_help "ao validate --help" "$AO" validate --help
 
 # ═══════════════════════════════════════════════════════
 #  Flag Testing (verify key flags produce valid output)
@@ -582,7 +583,7 @@ EXPECTED_COMMANDS=(
     config hooks memory notebook
     demo init seed quick-start
     badge constraint contradict dedup curate
-    anti-patterns vibe-check extract
+    anti-patterns vibe-check extract validate
 )
 
 for cmd in "${EXPECTED_COMMANDS[@]}"; do

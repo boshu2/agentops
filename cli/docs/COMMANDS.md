@@ -2769,6 +2769,30 @@ ao session close [flags]
 
 ---
 
+### `ao validate`
+
+Run a deterministic validation gate over RPI artifacts and emit a single
+
+```
+ao validate [flags]
+```
+
+**Flags:**
+
+```
+      --bead string          Validate artifacts bound to a bead id
+      --changes strings      Explicit files to validate
+      --gate                 Exit-code mode: 0=PASS/WARN, 1=FAIL, 2=error
+  -h, --help                 help for validate
+      --json                 Structured verdict (honored in both modes)
+      --lenient              Allow legacy artifacts without schema_version
+      --lenient-expiry int   Days until lenient bypass expires (default 90)
+      --strict               Promote WARN to FAIL (exit 1)
+      --warn-as-fail         Alias for --strict
+```
+
+---
+
 ### `ao completion`
 
 Generate shell completion scripts for ao.
