@@ -7,8 +7,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/boshu2/agentops/cli/internal/daemon"
 )
 
 // pipelineFixedClock returns a clock function pinned to t.
@@ -16,41 +14,35 @@ func pipelineFixedClock(t time.Time) func() time.Time {
 	return func() time.Time { return t }
 }
 
-// TestWikiPipeline_Stages is the acceptance test for soc-wiki.6: a
-// JobTypeLLMWikiLoop with stage=lint run through WikiPipeline must NOT return
-// SkipReason "handler-not-wired", and the Ingest/Lint/Query stages must be
-// individually selectable with their real behavior.
+// TestWikiPipeline_Stages is the acceptance test for soc-wiki.6: the lint stage
+// run through WikiPipeline must NOT return SkipReason "handler-not-wired", and
+// the Ingest/Lint/Query stages must be individually selectable with their real
+// behavior.
 func TestWikiPipeline_Stages(t *testing.T) {
 	clock := time.Date(2026, 5, 17, 12, 0, 0, 0, time.UTC)
 
-	t.Run("lint stage via RunJob is not handler-not-wired", func(t *testing.T) {
+	t.Run("lint stage via RunStage is not handler-not-wired", func(t *testing.T) {
 		vault := t.TempDir()
 		pipeline := NewWikiPipeline(WithClock(pipelineFixedClock(clock)))
 
-		claim := daemon.QueueLease{Job: daemon.QueueJobState{
-			JobType: daemon.JobTypeLLMWikiLoop,
-			Attempt: 1,
-			Payload: map[string]any{
-				"vault":  vault,
-				"stages": []any{string(StageLint)},
-			},
-		}}
-
-		res, err := pipeline.RunJob(context.Background(), claim)
+		outcome, err := pipeline.RunStage(context.Background(), vault, StageLint, 1)
 		if err != nil {
-			t.Fatalf("RunJob returned error: %v", err)
+			t.Fatalf("RunStage(lint) returned error: %v", err)
 		}
-		if got := res.Artifacts["skip_reason"]; got == SkipReasonHandlerNotWired {
+		if outcome.SkipReason == SkipReasonHandlerNotWired {
 			t.Fatalf("lint stage returned SkipReason %q; want it wired", SkipReasonHandlerNotWired)
 		}
-		if got := res.Artifacts["stage"]; got != string(StageLint) {
-			t.Fatalf("ran stage %q; want %q", got, StageLint)
+		if outcome.Stage != StageLint {
+			t.Fatalf("ran stage %q; want %q", outcome.Stage, StageLint)
 		}
-		if got := res.Artifacts["skipped"]; got == "true" {
+		if outcome.Skipped {
 			t.Fatalf("lint stage was skipped; want it to run and write a report")
 		}
 		// Lint always writes a report (overwrite-is-the-contract).
-		reportPath := res.Artifacts["artifact_0"]
+		if len(outcome.Artifacts) != 1 {
+			t.Fatalf("lint wrote %d artifacts; want 1", len(outcome.Artifacts))
+		}
+		reportPath := outcome.Artifacts[0]
 		wantSuffix := filepath.Join("wiki", "synthesis", "lint-2026-05-17.md")
 		if !strings.HasSuffix(reportPath, wantSuffix) {
 			t.Fatalf("lint artifact %q; want suffix %q", reportPath, wantSuffix)
@@ -174,12 +166,12 @@ func TestWikiPipeline_Stages(t *testing.T) {
 		}
 	})
 
-	t.Run("stages are selectable: whitelist overrides auto-selection", func(t *testing.T) {
+	t.Run("stages are selectable: a chosen stage overrides auto-selection", func(t *testing.T) {
 		vault := t.TempDir()
 		// Make a vault where auto-selection picks INGEST: a fresh .last-lint
 		// sentinel keeps lint non-stale, so SelectStage falls through to the
-		// ingest default. The whitelist then pins QUERY, proving the whitelist
-		// is a hard filter rather than a hint.
+		// ingest default. RunStage(query) then runs QUERY regardless, proving the
+		// caller can drive any wired stage directly.
 		wikiDir := filepath.Join(vault, "wiki")
 		if err := os.MkdirAll(wikiDir, 0o755); err != nil {
 			t.Fatalf("mkdir wiki: %v", err)
@@ -195,20 +187,12 @@ func TestWikiPipeline_Stages(t *testing.T) {
 			t.Fatalf("auto-selected stage %q; expected the ingest fallback", auto)
 		}
 
-		claim := daemon.QueueLease{Job: daemon.QueueJobState{
-			JobType: daemon.JobTypeLLMWikiLoop,
-			Attempt: 1,
-			Payload: map[string]any{
-				"vault":  vault,
-				"stages": []any{string(StageQuery)},
-			},
-		}}
-		res, err := pipeline.RunJob(context.Background(), claim)
+		outcome, err := pipeline.RunStage(context.Background(), vault, StageQuery, 1)
 		if err != nil {
-			t.Fatalf("RunJob error: %v", err)
+			t.Fatalf("RunStage(query) error: %v", err)
 		}
-		if got := res.Artifacts["stage"]; got != string(StageQuery) {
-			t.Fatalf("whitelist not honored: ran %q; want %q", got, StageQuery)
+		if outcome.Stage != StageQuery {
+			t.Fatalf("chosen stage not honored: ran %q; want %q", outcome.Stage, StageQuery)
 		}
 	})
 
@@ -280,27 +264,4 @@ type staticPromoteRunner struct{ ran bool }
 func (s *staticPromoteRunner) Run(_ context.Context, _ string, attempt int) (StageOutcome, error) {
 	s.ran = true
 	return StageOutcome{Stage: StagePromote, Attempt: attempt, Artifacts: []string{"promoted"}}, nil
-}
-
-// TestWikiPipeline_JobTypeMismatch asserts RunJob rejects a non-llmwiki job.
-func TestWikiPipeline_JobTypeMismatch(t *testing.T) {
-	pipeline := NewWikiPipeline()
-	claim := daemon.QueueLease{Job: daemon.QueueJobState{JobType: daemon.JobType("other.job")}}
-
-	_, err := pipeline.RunJob(context.Background(), claim)
-	if err == nil {
-		t.Fatalf("RunJob accepted a non-llmwiki job type; want error")
-	}
-	if !strings.Contains(err.Error(), "does not support job type") {
-		t.Fatalf("error = %v; want a job-type-mismatch message", err)
-	}
-}
-
-// TestWikiPipeline_JobTypes asserts the pipeline declares JobTypeLLMWikiLoop.
-func TestWikiPipeline_JobTypes(t *testing.T) {
-	pipeline := NewWikiPipeline()
-	types := pipeline.JobTypes()
-	if len(types) != 1 || types[0] != daemon.JobTypeLLMWikiLoop {
-		t.Fatalf("JobTypes() = %v; want [%s]", types, daemon.JobTypeLLMWikiLoop)
-	}
 }

@@ -367,7 +367,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 	expectedCmds := []string{
 		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
-		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
+		"defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
 		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
 		"memory", "metrics", "migrate", "mind", "mine", "notebook", "operator", "patterns",
@@ -390,7 +390,6 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 	parentExpectations := map[string][]string{
 		"autodev":    {"init", "validate", "show"},
 		"beads":      {"verify", "lint", "harvest"},
-		"daemon":     {"run", "ready", "status", "service"},
 		"eval":       {"run", "compare", "baseline", "baseline-audit", "scorecard", "coverage"},
 		"goals":      {"validate", "measure", "drift"},
 		"knowledge":  {"activate", "beliefs", "playbooks", "brief", "gaps"},
@@ -427,7 +426,7 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 	expectedCmds := []string{
 		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
-		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
+		"defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
 		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
 		"memory", "metrics", "migrate", "mind", "mine", "notebook", "operator", "patterns",

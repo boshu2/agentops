@@ -59,10 +59,6 @@ type phasedEngineOptions struct {
 	DiscoveryArtifact    string                // path to pre-validated discovery artifact; skips Phase 1 when set with --from=implementation
 	StdoutWriter         io.Writer             `json:"-"` // runtime-only; suppresses raw Claude output when dashboard active
 	OnSpawnCwdReady      func(spawnCwd string) `json:"-"` // called after worktree resolved; serve mode uses this to update mux root
-	DaemonSubmit         bool                  `json:"-"` // submit to agentopsd instead of running foreground phases
-	DaemonURL            string                `json:"-"` // explicit daemon URL; empty = activation file
-	DaemonToken          string                `json:"-"` // mutation token for daemon-submit
-	DaemonFallback       bool                  `json:"-"` // when daemon is unavailable, continue foreground execution
 	Domain               string                // domain-slice name; empty = unscoped run. Resolves docs/domains/<name>/manifest.yaml.
 }
 
