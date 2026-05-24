@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-24T21:02:16Z",
+  "generated_at": "2026-05-24T21:21:05Z",
   "summary": {
     "skills": 80,
     "hooks": 0,
@@ -409,7 +409,7 @@
         "path": "skills/domain/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 10
+        "reference_count": 16
       },
       {
         "name": "harvest",

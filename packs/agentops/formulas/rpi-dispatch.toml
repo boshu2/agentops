@@ -20,6 +20,15 @@ formula is that minimal wrapper — the single step just runs `ao rpi`.
 formula = "rpi-dispatch"
 version = 1
 
+# UPSTREAM-GC GAP (soc-5jwah): `issue` is required with no default because a
+# dispatch cycle needs a per-fire value (which bead). GC Orders have no per-fire
+# var-binding mechanism, so an autonomous cooldown Order (orders/bead-dispatch.toml)
+# CANNOT bind this var on its own — it self-fails with `variable "issue" is
+# required`. The honest dispatch path today is MAYOR-DRIVEN: the mayor runs
+# `bd ready` and `gc sling`s the bead to a worker, where the bead ID flows as
+# routing metadata, not as this formula var. Closing the autonomous gap needs the
+# upstream GC var-binding / next-ready-resolution capability (an upstream
+# contribution, not an AgentOps feature). See the e2e proof Tier 3.
 [vars]
 [vars.issue]
 description = "The work bead this cycle implements (the coherent arc)."

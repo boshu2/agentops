@@ -88,6 +88,15 @@ Operating discipline:
 - [`references/context-density-rule.md`](references/context-density-rule.md) — Context Density Rule: every context token carries intent, boundary, evidence, decision, constraint, or next action
 - [`references/behavior-shaping.md`](references/behavior-shaping.md) — Behavior Shaping: the ABC register (antecedent/behavior/consequence/reinforcement/extinction/shaping); building agent capability is operant conditioning, not specification
 
+Loop family (the operating loop — "one loop body, two drivers, one inner tick, one config"; doctrine in [`docs/architecture/canonical-loop-model.md`](../../docs/architecture/canonical-loop-model.md)):
+
+- [`references/loop.md`](references/loop.md) — Loop: the umbrella; the same five-beat tick at every scale
+- [`references/evolve.md`](references/evolve.md) — Evolve: the in-session driver (AgentOps-shipped, zero-dependency)
+- [`references/factory.md`](references/factory.md) — Factory: the out-of-session driver (substrate-owned; AgentOps deleted its daemon)
+- [`references/rpi.md`](references/rpi.md) — RPI: the inner tick, one research-plan-implement-validate cycle over one bead
+- [`references/autodev.md`](references/autodev.md) — Autodev: the config/intent layer the loop reads each tick (NOT a loop)
+- [`references/context-compiler.md`](references/context-compiler.md) — Context-Compiler: turns the corpus into the working set and absorbs the tick's exhaust
+
 Catalog:
 
 - [`references/INDEX.md`](references/INDEX.md) — full corpus index

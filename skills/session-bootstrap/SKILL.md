@@ -40,7 +40,7 @@ Triggers:
 
 - **Manual spawn** — operator just spawned a fresh agent into the repo: `ao session bootstrap`.
 - **SessionStart hook** — fail-open auto-fire when supported: `hooks/session-start-bootstrap.sh` runs `ao session bootstrap --robot` and discards exit code.
-- **Pipeline submit** — `agentopsd` and headless CI agents call `ao session bootstrap --json` before claiming work.
+- **Pipeline submit** — the orchestration substrate (the reference Gas City City) and headless CI agents call `ao session bootstrap --json` before claiming work.
 
 If you spawned without running it: stop, run it, then resume.
 
