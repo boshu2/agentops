@@ -266,7 +266,7 @@ for skill_dir in "${TARGETS[@]}"; do
     fi
   fi
 
-  # Check 4: Unlinked references
+  # Check 4: Unlinked references (.md files — strict markdown-link / Read form)
   if [[ -d "$skill_dir/references" ]]; then
     for ref_file in "$skill_dir"/references/*.md; do
       [[ -f "$ref_file" ]] || continue
@@ -277,6 +277,35 @@ for skill_dir in "${TARGETS[@]}"; do
         if [[ "$MODE" == "fix" ]]; then
           fix_unlinked_ref "$skill_md" "$ref_rel"
         fi
+      fi
+    done
+  fi
+
+  # Check 4b: Unreferenced non-.md references (.feature, .json, .txt, etc.)
+  #
+  # Mirrors the Go contract test TestSkillContract_ReferencesLinkedInSKILLMD
+  # (cli/cmd/ao/skill_contract_test.go): EVERY top-level file in references/
+  # (any extension, excluding dotfiles and subdirectories) must have its
+  # basename appear somewhere in SKILL.md. The Go test gates go-build, which is
+  # path-filtered to cli/** — so a skills-only PR that adds an unreferenced
+  # .feature file (e.g. PRs #504/#505) skipped go-build and merged the breakage
+  # onto main, only surfacing on the next cli/ PR (soc-oemfm).
+  #
+  # heal.sh (skill-integrity job) runs on skills/** changes, so checking the
+  # same invariant here closes the gap on the right trigger. The rule mirrors
+  # the Go test's permissive basename containment (NOT the stricter markdown-link
+  # form used for .md above) so this gate and the Go test agree exactly.
+  if [[ -d "$skill_dir/references" ]]; then
+    for ref_file in "$skill_dir"/references/*; do
+      [[ -f "$ref_file" ]] || continue
+      ref_basename="$(basename "$ref_file")"
+      # Skip dotfiles and .md files (.md handled by Check 4 above).
+      [[ "$ref_basename" == .* ]] && continue
+      [[ "$ref_basename" == *.md ]] && continue
+      ref_rel="references/$ref_basename"
+      # Mirror the Go test: basename must appear anywhere in SKILL.md.
+      if ! grep -qF "$ref_basename" "$skill_md" 2>/dev/null; then
+        report "UNREFERENCED_REF" "$skill_dir" "$ref_rel not referenced in SKILL.md"
       fi
     done
   fi
