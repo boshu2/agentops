@@ -26,7 +26,7 @@
 set -eu
 
 # Pinned AgentOps release. Override per-deploy with AO_VERSION in the env.
-AO_VERSION="${AO_VERSION:-v2.41.1}"
+AO_VERSION="${AO_VERSION:-v3.0.0}"
 AO_REPO="${AO_REPO:-boshu2/agentops}"
 
 WORK_DIR="${1:?usage: install-ao.sh <work-dir>}"
