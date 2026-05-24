@@ -109,20 +109,6 @@ setup_git_repo() {
     git -C "$dir" config user.name "Eval Runner"
 }
 
-test_standards_injector() {
-    local output ctx unsupported
-    output="$(jq -n '{"tool_input":{"file_path":"cmd/example/main.go"}}' | bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)"
-    json_event "$output" "PreToolUse" "standards-injector go"
-    ctx="$(context_of "$output")"
-    assert_contains "$ctx" "# Go Standards" "standards-injector go"
-    assert_contains "$ctx" "gofmt" "standards-injector go"
-    assert_contains "$ctx" "Full reference: skills/standards/references/go.md" "standards-injector go"
-    assert_bytes_le "$ctx" 1200 "standards_go_bytes"
-
-    unsupported="$(jq -n '{"tool_input":{"file_path":"notes.txt"}}' | bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)"
-    assert_empty "$unsupported" "standards-injector unsupported extension"
-}
-
 test_precompact_snapshot() {
     local repo output ctx
     repo="$TMP_ROOT/precompact"
@@ -236,7 +222,6 @@ main() {
     export TMP_ROOT
     trap 'rm -rf "$TMP_ROOT"' EXIT
 
-    test_standards_injector
     test_precompact_snapshot
     test_context_monitor
     test_commit_review_gate

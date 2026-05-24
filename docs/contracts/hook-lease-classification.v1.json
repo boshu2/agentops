@@ -265,17 +265,6 @@
       ],
       "rationale": "Startup context is the main token-risk candidate and must become explicit assembly."
     },
-    "standards-injector.sh": {
-      "owner_bubble": "Context Compiler",
-      "disposition": "explicit-command",
-      "replacement": "Skill-scoped standards lookup via ContextCompilerPort",
-      "evidence_status": "token-risk-needs-remeasure",
-      "context_injection": true,
-      "side_effects": [
-        "injects standards text on edit/write"
-      ],
-      "rationale": "Standards should be pulled by phase/surface need, not injected on every edit."
-    },
     "stop-auto-handoff.sh": {
       "owner_bubble": "Knowledge Flywheel",
       "disposition": "explicit-command",

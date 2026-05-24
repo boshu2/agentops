@@ -234,37 +234,6 @@ AOEOF
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# 10. standards-injector.sh (PreToolUse) — unregistered
-# ═══════════════════════════════════════════════════════════════════════
-
-@test "standards-injector: python file emits schema with hookEventName=PreToolUse" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"tool_input":{"file_path":"/some/path/main.py"}}' "$HOOKS_DIR/standards-injector.sh"
-    [ "$status" -eq 0 ]
-    [ -n "$output" ]
-    assert_hook_schema "$output" "PreToolUse"
-    # Verify additionalContext contains actual standards content (not empty)
-    local ctx
-    ctx=$(echo "$output" | jq -r '.hookSpecificOutput.additionalContext')
-    [ ${#ctx} -gt 10 ]
-}
-
-@test "standards-injector: go file emits schema with hookEventName=PreToolUse" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"tool_input":{"file_path":"/some/path/main.go"}}' "$HOOKS_DIR/standards-injector.sh"
-    [ "$status" -eq 0 ]
-    [ -n "$output" ]
-    assert_hook_schema "$output" "PreToolUse"
-}
-
-@test "standards-injector: unknown extension emits no output" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"tool_input":{"file_path":"/some/path/data.csv"}}' "$HOOKS_DIR/standards-injector.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
-# ═══════════════════════════════════════════════════════════════════════
 # CROSS-CHECK: hooks.json event registration vs hookEventName in output
 # ═══════════════════════════════════════════════════════════════════════
 @test "cross-check: all hooks.json registered hooks that emit JSON use hookSpecificOutput wrapper" {

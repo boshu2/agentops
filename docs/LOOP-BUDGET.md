@@ -111,7 +111,6 @@ scripts/pre-push-gate.sh --single-pass         # Full single-pass (old behavior)
 | validate-ci-policy-parity | ci | Outer |
 | pre-push-gate-wired | always | Outer |
 | registry-check | skills | Outer |
-| standards-injector-completeness | skills | Outer |
 | plugin-load-test | always | Outer |
 | learning-coherence | learning | Outer |
 | memrl-health | always | Outer |

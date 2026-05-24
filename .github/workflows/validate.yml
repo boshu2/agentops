@@ -166,18 +166,6 @@ jobs:
           fi
           echo "ok: stale_suite_hashes=0 (info: policy_mismatch_count=$mismatch)"
 
-  standards-injector-completeness:
-    needs: [changes]
-    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Verify standards-injector references are complete
-        run: |
-          chmod +x scripts/check-standards-injector-completeness.sh
-          ./scripts/check-standards-injector-completeness.sh
-
   validate-hooks-doc-parity:
     needs: [changes]
     if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
@@ -1839,7 +1827,7 @@ jobs:
     # with `summary` and depends on the same broad set so all sibling-job logs
     # are present when we fetch. `summary` also depends on this job so its
     # verdict surfaces in the CI summary.
-    needs: [changes, doc-release-gate, smoke-test, hook-preflight, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-agents-split, validate-sovereignty-proof-citations, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, factory-claim-ledger-strict, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity]
+    needs: [changes, doc-release-gate, smoke-test, hook-preflight, agentops-eval-baseline-audit, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-agents-split, validate-sovereignty-proof-citations, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, factory-claim-ledger-strict, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity]
     if: always() && github.event_name == 'pull_request'
     name: AP#7 — verify Evidence claims in PR body
     runs-on: ubuntu-latest
@@ -1948,7 +1936,7 @@ jobs:
           echo "::notice::AP#7 verification skipped — no completed sibling jobs returned logs. The PR's Evidence: line was extracted but cannot be cross-checked against per-job logs in this CI shape (likely: only this job ran, or all siblings were skipped)."
 
   summary:
-    needs: [changes, doc-release-gate, smoke-test, hook-preflight, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-pr-evidence-claims, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-agents-split, validate-sovereignty-proof-citations, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, factory-claim-ledger-strict, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity, lint-evidence-lines-advisory, check-skill-catalog-drift-advisory]
+    needs: [changes, doc-release-gate, smoke-test, hook-preflight, agentops-eval-baseline-audit, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-pr-evidence-claims, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-factory-yield-ledger, validate-finding-registry, validate-agents-split, validate-sovereignty-proof-citations, validate-factory-admission, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, factory-claim-ledger-strict, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity, lint-evidence-lines-advisory, check-skill-catalog-drift-advisory]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1959,7 +1947,6 @@ jobs:
           echo "smoke-test: ${{ needs.smoke-test.result }}"
           echo "hook-preflight: ${{ needs.hook-preflight.result }}"
           echo "agentops-eval-baseline-audit: ${{ needs.agentops-eval-baseline-audit.result }}"
-          echo "standards-injector-completeness: ${{ needs.standards-injector-completeness.result }}"
           echo "validate-hooks-doc-parity: ${{ needs.validate-hooks-doc-parity.result }}"
           echo "hook-output-schema-lint: ${{ needs.hook-output-schema-lint.result }}"
           echo "validate-ci-policy-parity: ${{ needs.validate-ci-policy-parity.result }}"

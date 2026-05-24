@@ -85,7 +85,6 @@ EXPECTED_CODEX_HOOK_SCRIPTS=(
   "commit-review-gate.sh"
   "lead-only-worker-git-guard.sh"
   "holdout-isolation-gate.sh"
-  "standards-injector.sh"
   "codex-parity-warn.sh"
   "ratchet-advance.sh"
 )
@@ -256,8 +255,8 @@ HOME="$REAL_HOME_ROOT" bash "$INSTALL_SCRIPT" \
 [[ ! -f "$REAL_HOME_ROOT/.codex/hooks.json" ]] || fail "install-codex-plugin.sh leaked hooks.json into \$HOME instead of --codex-home"
 jq -e '.hooks | type == "object" and length == 5' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null \
   || fail "Expected 5 native Codex hook events in explicit hooks install"
-jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 17' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null \
-  || fail "Expected 17 native Codex hook handlers in explicit hooks install"
+jq -e '[.hooks | to_entries[] | .value[] | .hooks[]] | length == 15' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null \
+  || fail "Expected 15 native Codex hook handlers in explicit hooks install"
 jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("session-start\\.sh$"))' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null \
   || fail "Missing session-start.sh handler in explicit hooks install"
 if jq -e '.hooks.SessionStart[]?.hooks[] | select(.command | test("ao-inject\\.sh$"))' "$EXPLICIT_CODEX_HOME/hooks.json" >/dev/null; then

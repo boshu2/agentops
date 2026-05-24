@@ -130,7 +130,7 @@ Which `ao` commands each hook invokes.
 | **stop-auto-handoff.sh** | Stop | `ratchet status` |
 | **worktree-setup.sh** | setup script (outside `hooks/hooks.json`) | `inject` |
 
-Hooks with **no ao commands**: citation-tracker.sh, config-change-monitor.sh, constraint-compiler.sh, dangerous-git-guard.sh, git-worker-guard.sh, holdout-isolation-gate.sh, lead-only-worker-git-guard.sh, pending-cleaner.sh, pre-mortem-gate.sh, skill-lint-gate.sh, standards-injector.sh, stop-team-guard.sh, subagent-stop.sh, task-validation-gate.sh, worktree-cleanup.sh.
+Hooks with **no ao commands**: citation-tracker.sh, config-change-monitor.sh, constraint-compiler.sh, dangerous-git-guard.sh, git-worker-guard.sh, holdout-isolation-gate.sh, lead-only-worker-git-guard.sh, pending-cleaner.sh, pre-mortem-gate.sh, skill-lint-gate.sh, stop-team-guard.sh, subagent-stop.sh, task-validation-gate.sh, worktree-cleanup.sh.
 
 ---
 

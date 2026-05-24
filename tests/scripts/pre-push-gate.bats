@@ -92,7 +92,6 @@ setup() {
     make_stub "$FAKE_REPO/scripts/check-contract-compatibility.sh"
     make_stub "$FAKE_REPO/scripts/validate-swarm-evidence.sh"
     make_stub "$FAKE_REPO/scripts/validate-hook-preflight.sh"
-    make_stub "$FAKE_REPO/scripts/check-standards-injector-completeness.sh"
     make_stub "$FAKE_REPO/scripts/validate-hooks-doc-parity.sh"
     make_stub "$FAKE_REPO/scripts/check-hook-lease-inventory.sh"
     make_stub "$FAKE_REPO/scripts/check-hook-port-replacements.sh"

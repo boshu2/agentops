@@ -117,7 +117,6 @@ run without operator action and keep the conveyor belt honest.
 | | `go-test-precommit.sh` | Requires Go tests pass before commits |
 | | `commit-review-gate.sh` | Reviews commit content before `git commit` |
 | | `git-worker-guard.sh` | Prevents destructive git operations |
-| | `standards-injector.sh` | Injects compact file-scoped standards guidance |
 | | `edit-knowledge-surface.sh` | Warns on edits to knowledge-surface files |
 | | `codex-parity-warn.sh` | Warns when skill edits may drift from Codex copies |
 | **PostToolUse** | `write-time-quality.sh` | Checks quality of written/edited files |

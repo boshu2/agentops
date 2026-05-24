@@ -12,13 +12,13 @@ path required before hook defaults can be removed.
 
 ## Summary
 
-- Manifest hook entries: 38
-- Unique hook files in manifest: 32
+- Manifest hook entries: 36
+- Unique hook files in manifest: 31
 - Additional hook surfaces outside main manifest: 2
 - `remove`: 0
 - `gate`: 22
 - `event-subscriber`: 7
-- `explicit-command`: 9
+- `explicit-command`: 7
 - `optional-adapter`: 0
 
 ## Dispositions
@@ -66,8 +66,6 @@ This inventory uses concrete migration dispositions. For the
 | PreToolUse | Bash | `git-worker-guard.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | no | SafetyPolicyPort worker-git lane |
 | PreToolUse | Bash | `session-pr-counter.sh` | 10 | Work Lifecycle | `gate` | `deterministic-safety` | yes | GateRunnerPort session-scope PR counter lane |
 | PreToolUse | Bash | `lead-only-worker-git-guard.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | no | SafetyPolicyPort lead-only git lane |
-| PreToolUse | Edit | `standards-injector.sh` | 3 | Context Compiler | `explicit-command` | `token-risk-needs-remeasure` | yes | Skill-scoped standards lookup via ContextCompilerPort |
-| PreToolUse | Write | `standards-injector.sh` | 3 | Context Compiler | `explicit-command` | `token-risk-needs-remeasure` | yes | Skill-scoped standards lookup via ContextCompilerPort |
 | PreToolUse | Edit | `codex-parity-warn.sh` | 3 | Skill Catalog | `gate` | `deterministic-safety` | yes | HarnessPort parity compiler plus CI validation lane |
 | PreToolUse | Read | `holdout-isolation-gate.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | no | GateRunnerPort holdout-isolation lane |
 | PreToolUse | Glob | `holdout-isolation-gate.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | no | GateRunnerPort holdout-isolation lane |
@@ -213,12 +211,6 @@ surfaces that are not wired by the active manifests.
 - **Summary:** lead-only-worker-git-guard.sh - PreToolUse hook
 - **Side effects:** blocks git writes from non-lead workers
 - **Rationale:** Worker authority is a safety policy.
-
-### `standards-injector.sh`
-
-- **Summary:** standards-injector.sh - PreToolUse hook: inject compact language standards.
-- **Side effects:** injects standards text on edit/write
-- **Rationale:** Standards should be pulled by phase/surface need, not injected on every edit.
 
 ### `codex-parity-warn.sh`
 

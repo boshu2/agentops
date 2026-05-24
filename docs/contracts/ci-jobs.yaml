@@ -80,9 +80,6 @@ jobs:
 - name: smoke-test
   reason: 'Repo smoke surface: skill frontmatter, placeholder/TODO hygiene, plus standalone Claude/Codex/OpenCode runtime smoke scripts and mocked headless runtime validation'
   failure: Runtime install/bundle drift or placeholder/TODO regressions
-- name: standards-injector-completeness
-  reason: Every `<lang>` mapped by `hooks/standards-injector.sh` has a matching `skills/standards/references/<lang>.md`
-  failure: Adding a case branch without the reference file (the hook fails open silently)
 - name: swarm-evidence
   reason: Swarm evidence files and file manifests are valid
   failure: 'Non-blocking (`continue-on-error: true`); informational artifact validation only'
