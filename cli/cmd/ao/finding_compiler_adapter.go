@@ -33,7 +33,7 @@ import (
 //
 // This is a pure-Go transform — no subprocess, no filesystem. Callers
 // that need to persist the outputs feed them into a CorpusWriterPort
-// (cycle 113 productionCorpusWriter handles the on-disk side).
+// (the corpus_fs.Writer real adapter handles the on-disk side).
 type productionFindingCompiler struct{}
 
 func newProductionFindingCompiler() *productionFindingCompiler {

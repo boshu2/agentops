@@ -12,10 +12,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/adapters/corpus_fs"
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
-// corpusCaptureCmd exposes productionCorpusWriter (cycle 113) via the
+// corpusCaptureCmd exposes the corpus_fs.Writer real adapter via the
 // CLI. Companion to cycle 146's `ao corpus inject` (which exposes
 // CorpusReader). Together they close the BC1 reader+writer pair on
 // the CLI side.
@@ -25,7 +26,7 @@ var corpusCaptureCmd = &cobra.Command{
 	Use:   "capture --path <relpath> [--body <text>] [--body-file <file>] [--body-stdin] [--root <dir>] [--meta k=v ...]",
 	Short: "Write a corpus artifact via BC1 CorpusWriterPort",
 	Long: `Write an artifact to a corpus root via the typed BC1
-CorpusWriterPort (productionCorpusWriter, cycle 113). Default root
+CorpusWriterPort (corpus_fs.Writer real adapter). Default root
 is .agents/learnings/ under the project root.
 
 The --path argument is the relative path WITHIN the root; absolute
@@ -186,7 +187,7 @@ func corpusCaptureViaPort(ctx context.Context, opts corpusCaptureOptions, body [
 		}
 		root = filepath.Join(cwd, ".agents", "learnings")
 	}
-	w := newProductionCorpusWriter(root)
+	w := corpus_fs.NewWriter(root)
 	return w.Capture(ctx, ports.CorpusWriteRequest{
 		Path:     opts.path,
 		Body:     body,
