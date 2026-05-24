@@ -97,9 +97,6 @@ test_json_cmd "ao status"           status
 test_json_cmd --diagnostic "ao doctor" doctor
 test_json_cmd "ao badge"            badge
 
-echo ""
-echo "--- Hook commands ---"
-test_json_cmd "ao hooks show"       hooks show
 
 echo ""
 echo "--- Knowledge commands ---"

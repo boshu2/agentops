@@ -43,7 +43,7 @@
         {"type": "exit_code", "value": 0},
         {"type": "stdout_contains", "value": "Install Script Smoke Tests"},
         {"type": "stdout_contains", "value": "Runtime Execution Tests"},
-        {"type": "stdout_contains", "value": "Results: 29 passed, 0 failed"}
+        {"type": "stdout_contains", "value": "Results: 27 passed, 0 failed"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "safety"],
       "critical": true

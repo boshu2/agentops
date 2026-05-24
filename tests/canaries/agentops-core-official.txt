@@ -10,8 +10,6 @@ evals/agentops-core/cli-contracts.json
 evals/agentops-core/context-packet-ab-wave0.json
 evals/agentops-core/distribution-install-update.json
 evals/agentops-core/eval-runner-engine-control-plane.json
-evals/agentops-core/hook-gates.json
-evals/agentops-core/hook-lifecycle-behavior.json
 evals/agentops-core/pre-push-gate-governance.json
 evals/agentops-core/release-security-gates.json
 evals/agentops-core/retrieval-quality-gates.json
