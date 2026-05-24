@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/adapters/workspace_git"
+	"github.com/boshu2/agentops/cli/internal/ports"
 	"github.com/boshu2/agentops/cli/internal/rpi"
 	"github.com/spf13/cobra"
 )
@@ -460,14 +463,19 @@ func removeOrphanedWorktree(repoRoot, worktreePath, runID string) error {
 		fmt.Printf("Preserved worktree commit %s on branch codex/preserve-%s\n", preserved[:shortLen], runID)
 	}
 
-	// Force remove the worktree.
-	cmd := exec.Command("git", "worktree", "remove", "--force", worktreePath)
-	cmd.Dir = repoRoot
-	if out, err := cmd.CombinedOutput(); err != nil {
-		// If worktree remove fails (already pruned), just remove the directory.
-		if rmErr := os.RemoveAll(worktreePath); rmErr != nil {
-			return fmt.Errorf("git worktree remove: %s; manual rm: %w", string(out), rmErr)
-		}
+	// Force remove the worktree via the WorkspacePort adapter. The adapter
+	// runs `git worktree remove --force` and, on failure (e.g. already pruned),
+	// falls back to a direct directory removal — preserving the prior behavior.
+	// WorkspaceID must be non-empty; fall back to the path when runID is blank.
+	workspaceID := strings.TrimSpace(runID)
+	if workspaceID == "" {
+		workspaceID = worktreePath
+	}
+	if _, err := workspace_git.New(repoRoot).Cleanup(context.Background(), ports.WorkspaceRequest{
+		WorkspaceID: workspaceID,
+		Path:        worktreePath,
+	}); err != nil {
+		return err
 	}
 
 	// Delete legacy branch marker if present.
