@@ -42,7 +42,7 @@
       "expectations": [
         {"type": "exit_code", "value": 0},
         {"type": "stdout_contains", "value": "Hook preflight PASSED"},
-        {"type": "stdout_contains", "value": "Registered: 32 of 47"},
+        {"type": "stdout_contains", "value": "Registered: 31 of 46"},
         {"type": "stdout_contains", "value": "Unregistered: 15"},
         {"type": "stdout_contains", "value": "JSON-emitting (WARNING): 0"},
         {"type": "stdout_contains", "value": "context-guard.sh"},
@@ -65,11 +65,11 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "1..104"},
-        {"type": "stdout_contains", "value": "ok 19 cross-check: all hooks.json registered hooks that emit JSON use hookSpecificOutput wrapper"},
-        {"type": "stdout_contains", "value": "ok 34 dangerous-git-guard: force push blocked with exit 2"},
-        {"type": "stdout_contains", "value": "ok 48 codex-parity-warn: shared skill edit emits parity warning"},
-        {"type": "stdout_contains", "value": "ok 104 task-validation-gate: empty stdin exits gracefully"}
+        {"type": "stdout_contains", "value": "1..75"},
+        {"type": "stdout_contains", "value": "ok 8 cross-check: all hooks.json registered hooks that emit JSON use hookSpecificOutput wrapper"},
+        {"type": "stdout_contains", "value": "ok 19 dangerous-git-guard: force push blocked with exit 2"},
+        {"type": "stdout_contains", "value": "ok 33 codex-parity-warn: shared skill edit emits parity warning"},
+        {"type": "stdout_contains", "value": "ok 75 task-validation-gate: empty stdin exits gracefully"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "safety"],
       "critical": true
@@ -96,10 +96,7 @@
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "git-worker-guard.sh"},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "lead-only-worker-git-guard.sh"},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "holdout-isolation-gate.sh"},
-        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "write-time-quality.sh"},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "go-complexity-precommit.sh"},
-        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "go-vet-post-edit.sh"},
-        {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "research-loop-detector.sh"},
         {"type": "artifact_contains", "target": "../../hooks/hooks.json", "value": "task-validation-gate.sh"}
       ],
       "dimensions": ["process_adherence", "artifact_quality", "safety"],
@@ -114,7 +111,7 @@
       "timeout_seconds": 60,
       "inputs": {
         "cwd": "../..",
-        "shell": "jq -e '[.. | .command? // empty] as $cmds | ($cmds | length == 44) and ($cmds | map(capture(\"(?<script>[^/ ]+\\\\.sh)$\").script) | unique | length == 37) and (($cmds | map(select(test(\"ao-inject\\\\.sh\"))) | length) == 0)' hooks/hooks.json >/dev/null && echo hook-manifest-counts-ok"
+        "shell": "jq -e '[.. | .command? // empty] as $cmds | ($cmds | length == 35) and ($cmds | map(capture(\"(?<script>[^/ ]+\\\\.sh)$\").script) | unique | length == 30) and (($cmds | map(select(test(\"ao-inject\\\\.sh\"))) | length) == 0)' hooks/hooks.json >/dev/null && echo hook-manifest-counts-ok"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},

@@ -55,16 +55,6 @@ byte_len() {
     printf '%s' "$1" | wc -c | tr -d ' '
 }
 
-assert_empty() {
-    local output="$1"
-    local label="$2"
-    if [[ -z "$output" ]]; then
-        pass "$label stays silent"
-    else
-        fail "$label stays silent"
-    fi
-}
-
 assert_contains() {
     local haystack="$1"
     local needle="$2"
@@ -129,62 +119,6 @@ test_precompact_snapshot() {
     assert_bytes_le "$ctx" 500 "precompact_bytes"
 }
 
-test_context_monitor() {
-    local session bridge output ctx quiet stale
-    session="hook-context-value-$$"
-    bridge="/tmp/claude-ctx-${session}.json"
-    printf '{"remaining_percent":20,"total_tokens":200000,"used_tokens":160000}\n' > "$bridge"
-    output="$(printf '{"tool_name":"Read"}\n' | CLAUDE_SESSION_ID="$session" bash "$HOOKS_DIR/context-monitor.sh" 2>&1 || true)"
-    json_event "$output" "PostToolUse" "context-monitor critical"
-    ctx="$(context_of "$output")"
-    assert_contains "$ctx" "20% remaining" "context-monitor critical"
-    assert_bytes_le "$ctx" 240 "context_monitor_bytes"
-
-    printf '{"remaining_percent":40}\n' > "$bridge"
-    quiet="$(printf '{"tool_name":"Read"}\n' | CLAUDE_SESSION_ID="$session" bash "$HOOKS_DIR/context-monitor.sh" 2>&1 || true)"
-    assert_empty "$quiet" "context-monitor above threshold"
-
-    printf '{"remaining_percent":20}\n' > "$bridge"
-    touch -t 202001010101 "$bridge"
-    stale="$(printf '{"tool_name":"Read"}\n' | CLAUDE_SESSION_ID="$session" bash "$HOOKS_DIR/context-monitor.sh" 2>&1 || true)"
-    assert_empty "$stale" "context-monitor stale bridge"
-    rm -f "$bridge"
-}
-
-test_edit_knowledge_surface() {
-    local repo file output ctx quiet
-    repo="$TMP_ROOT/edit-knowledge"
-    setup_git_repo "$repo"
-    mkdir -p "$repo/.agents/learnings" "$repo/pkg"
-    file="$repo/pkg/service.go"
-    printf 'package pkg\n' > "$file"
-    for i in 1 2 3 4; do
-        cat > "$repo/.agents/learnings/${i}-service.md" <<EOF
-# Service Learning $i
-
-pkg/service.go requires careful validation.
-EOF
-    done
-
-    output="$(cd "$repo" && jq -n --arg file "$file" '{"tool_name":"Edit","tool_input":{"file_path":$file}}' | bash "$HOOKS_DIR/edit-knowledge-surface.sh" 2>&1 || true)"
-    json_event "$output" "PreToolUse" "edit-knowledge-surface"
-    ctx="$(context_of "$output")"
-    assert_contains "$ctx" "Relevant learnings for service.go" "edit-knowledge-surface"
-    assert_contains "$ctx" "Review these before making changes" "edit-knowledge-surface"
-    local learning_count
-    learning_count="$(printf '%s\n' "$ctx" | grep -c '^- [0-9]-service.md:' || true)"
-    record_metric "edit_knowledge_learning_count" "$learning_count"
-    if [[ "$learning_count" -le 3 ]]; then
-        pass "edit-knowledge-surface emits at most three learning titles ($learning_count)"
-    else
-        fail "edit-knowledge-surface emits at most three learning titles ($learning_count)"
-    fi
-    assert_bytes_le "$ctx" 700 "edit_knowledge_bytes"
-
-    quiet="$(cd "$repo" && jq -n '{"tool_name":"Edit","tool_input":{"file_path":"pkg/other.go"}}' | bash "$HOOKS_DIR/edit-knowledge-surface.sh" 2>&1 || true)"
-    assert_empty "$quiet" "edit-knowledge-surface unrelated file"
-}
-
 main() {
     require_tool jq
     require_tool git
@@ -194,8 +128,6 @@ main() {
     trap 'rm -rf "$TMP_ROOT"' EXIT
 
     test_precompact_snapshot
-    test_context_monitor
-    test_edit_knowledge_surface
 
     printf 'hook-context-value metrics:'
     for metric in "${METRICS[@]}"; do
