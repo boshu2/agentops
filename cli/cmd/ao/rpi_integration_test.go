@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -179,4 +180,20 @@ func newFakeGasCityRPIServer(t *testing.T) *httptest.Server {
 			t.Fatalf("unexpected request %s %s", r.Method, r.URL.String())
 		}
 	}))
+}
+
+// writeSSEFrame writes a single Server-Sent-Events frame for the fake GasCity
+// event stream used by the daemon RPI L3 smoke test.
+func writeSSEFrame(t *testing.T, w http.ResponseWriter, id string, event gascity.EventStreamEnvelope) {
+	t.Helper()
+	data, err := json.Marshal(event)
+	if err != nil {
+		t.Fatalf("marshal SSE event: %v", err)
+	}
+	fmt.Fprintf(w, "id: %s\n", id)
+	fmt.Fprintln(w, "event: event")
+	fmt.Fprintf(w, "data: %s\n\n", data)
+	if flusher, ok := w.(http.Flusher); ok {
+		flusher.Flush()
+	}
 }

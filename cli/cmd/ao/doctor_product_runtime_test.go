@@ -177,64 +177,13 @@ func TestDoctorRuntimeChecksWarnWhenUnavailable(t *testing.T) {
 	}
 }
 
-func TestDoctorGasCityBridgeCheckUsesDiagnostics(t *testing.T) {
-	mock := newGCMock()
-	mock.on("version", gcMockHandler{Stdout: "0.14.0"})
-	mock.on("status --json", gcMockHandler{Stdout: `{"city":"test","controller":{"running":true,"pid":99},"agents":[],"summary":{"running":0,"stopped":0,"total":0}}`})
-
-	check := checkGasCityBridgeWith("", mock.execCommand, mock.lookPathFn)
-	if check.Name != "GasCity Bridge" || check.Status != "pass" {
-		t.Fatalf("GasCity check = %#v, want pass", check)
-	}
-	for _, want := range []string{"binary=true", "version=0.14.0", "api=true", "ready=true"} {
-		if !strings.Contains(check.Detail, want) {
-			t.Fatalf("GasCity detail = %q, want %q", check.Detail, want)
-		}
-	}
-
-	missing := newGCMock()
-	missing.binaryAvailable = false
-	check = checkGasCityBridgeWith("", missing.execCommand, missing.lookPathFn)
-	if check.Status != "warn" || check.Required {
-		t.Fatalf("missing GasCity check = %#v, want non-required warning", check)
-	}
-	if !strings.Contains(check.Detail, "binary=false") || !strings.Contains(check.Detail, "gc binary not found") {
-		t.Fatalf("missing GasCity detail = %q, want binary diagnostic", check.Detail)
-	}
-}
-
-func TestDoctorProductRuntimeFailsClosedWithoutGasCityAPI(t *testing.T) {
-	missing := newGCMock()
-	missing.binaryAvailable = false
-	check := checkGasCityProductRuntimeWith("", missing.execCommand, missing.lookPathFn)
-	if check.Name != "GasCity Product Runtime" || check.Status != "fail" || !check.Required {
-		t.Fatalf("missing product runtime check = %#v, want required fail", check)
-	}
-
-	unready := newGCMock()
-	unready.on("version", gcMockHandler{Stdout: "0.14.0"})
-	unready.on("status --json", gcMockHandler{Stdout: `{"city":"test","controller":{"running":false,"pid":0},"agents":[],"summary":{"running":0,"stopped":0,"total":0}}`})
-	check = checkGasCityProductRuntimeWith("", unready.execCommand, unready.lookPathFn)
-	if check.Status != "fail" || !strings.Contains(check.Detail, "api=true") || !strings.Contains(check.Detail, "ready=false") {
-		t.Fatalf("unready product runtime check = %#v, want API reached but readiness fail", check)
-	}
-
-	ready := newGCMock()
-	ready.on("version", gcMockHandler{Stdout: "0.14.0"})
-	ready.on("status --json", gcMockHandler{Stdout: `{"city":"test","controller":{"running":true,"pid":99},"agents":[],"summary":{"running":0,"stopped":0,"total":0}}`})
-	check = checkGasCityProductRuntimeWith("", ready.execCommand, ready.lookPathFn)
-	if check.Status != "pass" || !check.Required {
-		t.Fatalf("ready product runtime check = %#v, want required pass", check)
-	}
-}
-
 func TestGatherDoctorChecksIncludesProductRuntimeSurfaces(t *testing.T) {
 	checks := gatherDoctorChecks()
 	names := map[string]bool{}
 	for _, check := range checks {
 		names[check.Name] = true
 	}
-	for _, name := range []string{"Daemon Runtime", "GasCity Bridge", "OpenClaw Consumer"} {
+	for _, name := range []string{"Daemon Runtime", "OpenClaw Consumer"} {
 		if !names[name] {
 			t.Fatalf("gatherDoctorChecks missing %q in %#v", name, names)
 		}

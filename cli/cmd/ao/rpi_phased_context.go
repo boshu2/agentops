@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"strings"
 	"text/template"
 	"time"
@@ -13,6 +14,15 @@ import (
 	cliConfig "github.com/boshu2/agentops/cli/internal/config"
 	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
+
+// execFn is the type for exec.Command-compatible functions. It is an injectable
+// dependency point that lets the phased engine and runtime preflight checks be
+// tested without spawning real processes.
+type execFn func(name string, arg ...string) *exec.Cmd
+
+// lookFn is the type for exec.LookPath-compatible functions. It is an injectable
+// dependency point for runtime/binary availability checks (tmux, tracker CLI).
+type lookFn func(file string) (string, error)
 
 // phasedEngineOptions captures all configurable parameters for runPhasedEngine.
 // This allows the loop and other callers to invoke the phased engine programmatically
@@ -38,12 +48,9 @@ type phasedEngineOptions struct {
 	BDCommand            string
 	TmuxCommand          string
 	TmuxWorkers          int
-	GCCityPath           string           // explicit city.toml directory for gc backend; empty = auto-discover
-	GCCityName           string           `json:"-"` // API city name override; empty = derive from city path
-	GasCityClient        rpiGasCityClient `json:"-"` // injectable GasCity API client
-	ExecCommand          gcExecFn         `json:"-"` // nil = exec.Command; injectable for testing
-	LookPath             gcLookFn         `json:"-"` // nil = exec.LookPath; injectable for testing
-	Mixed                bool             // opt-in cross-vendor mixed-model execution
+	ExecCommand          execFn `json:"-"` // nil = exec.Command; injectable for testing
+	LookPath             lookFn `json:"-"` // nil = exec.LookPath; injectable for testing
+	Mixed                bool   // opt-in cross-vendor mixed-model execution
 	NoBudget             bool
 	BudgetSpec           string
 	WorkingDir           string `json:"-"` // runtime-only; base directory for repo/worktree resolution
@@ -181,10 +188,10 @@ func effectiveTmuxCommand(command string) string {
 
 func validateRuntimeMode(mode string) error {
 	switch normalizeRuntimeMode(mode) {
-	case "auto", "direct", "stream", "tmux", "gc":
+	case "auto", "direct", "stream", "tmux":
 		return nil
 	default:
-		return fmt.Errorf("invalid runtime %q (valid: auto|direct|stream|tmux|gc)", mode)
+		return fmt.Errorf("invalid runtime %q (valid: auto|direct|stream|tmux)", mode)
 	}
 }
 

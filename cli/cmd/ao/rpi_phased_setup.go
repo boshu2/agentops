@@ -23,7 +23,7 @@ func isIssueIDLike(goal string) bool {
 	return rpiIssueIDPattern.MatchString(strings.TrimSpace(goal))
 }
 
-func preflightRuntimeAvailability(runtimeCommand string, lookPathFn gcLookFn) error {
+func preflightRuntimeAvailability(runtimeCommand string, lookPathFn lookFn) error {
 	if GetDryRun() {
 		return nil
 	}

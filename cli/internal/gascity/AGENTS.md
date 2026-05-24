@@ -51,10 +51,10 @@ is the only place that speaks GasCity-over-HTTP from inside `ao`.
 
 ## Cross-references
 
-- `cli/cmd/ao/gc_bridge.go`, `gc_events.go`, `rpi_phased_gc.go` — CLI bridge
-  that holds `Client` instances. CLAUDE.md flags these as the live wiring;
-  deprecated tmux-mode files (`rpi_phased_tmux.go`, `rpi_loop_supervisor.go`,
-  etc.) must NOT be revived.
 - `cli/internal/daemon/` — agentopsd daemon owns lifecycle and may invoke
-  this client.
+  this client (`daemonpkg.GasCityClientAdapter`, `internal/agentworker`). This
+  is the remaining live consumer of the GasCity client.
+- The former `cli/cmd/ao/gc_bridge.go`, `gc_events.go`, `rpi_phased_gc.go` CLI
+  bridge was removed in soc-2rtm0 (wave 2); `ao rpi phased` no longer offers a
+  `gc` runtime backend.
 - External: GasCity supervisor (Go service, not in this repo).
