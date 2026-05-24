@@ -21,8 +21,7 @@ import (
 var agentsDirs = lifecycle.CoreAgentDirPaths()
 
 var (
-	initStealth      bool
-	initWithSchedule bool
+	initStealth bool
 )
 
 var initCmd = &cobra.Command{
@@ -55,10 +54,6 @@ Run in your project root. Safe to run multiple times (idempotent).`,
 
 func init() {
 	initCmd.Flags().BoolVar(&initStealth, "stealth", false, "Use .git/info/exclude instead of .gitignore")
-	initCmd.Flags().BoolVar(&initWithSchedule, "with-schedule", false,
-		"Copy .agents/schedule.yaml.example to .agents/schedule.yaml (opt-in continuous-worker scheduling). "+
-			"In a TTY, ao init prompts [Y/n] when this flag is unset. "+
-			"In non-TTY runs, scheduling is silently skipped unless AGENTOPS_INIT_WITH_SCHEDULE=1 is set to opt-in.")
 	initCmd.GroupID = "start"
 	rootCmd.AddCommand(initCmd)
 }
@@ -87,100 +82,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := maybeCopyScheduleExample(cmd, cwd); err != nil {
-		return err
-	}
-
 	if !dryRun {
 		printInitSummary(cwd, isGitRepo)
 	}
 
 	return nil
-}
-
-// shouldCopySchedule decides whether the schedule example should be copied
-// based on the explicit flag, the AGENTOPS_INIT_WITH_SCHEDULE env var, and
-// optional interactive prompting in a TTY.
-//
-// Returns (copy, prompted). prompted is true when the user was asked
-// interactively (so callers can suppress duplicate logging).
-func shouldCopySchedule(cmd *cobra.Command, flagSet bool) (bool, bool) {
-	if flagSet {
-		return true, false
-	}
-	if os.Getenv("AGENTOPS_INIT_WITH_SCHEDULE") == "1" {
-		return true, false
-	}
-	// Detect `go test` binary by name suffix — skip prompt to avoid blocking
-	// on stdin in test processes (where stdin may still be a TTY but tests
-	// don't expect interactive prompts).
-	if len(os.Args) > 0 && strings.HasSuffix(os.Args[0], ".test") {
-		return false, false
-	}
-	if !isStdinTerminal() {
-		// Silent skip in non-TTY runs unless the env var opts in.
-		return false, false
-	}
-	in := cmd.InOrStdin()
-	out := cmd.OutOrStdout()
-	fmt.Fprint(out, "Enable continuous knowledge worker scheduling? [Y/n] ")
-	reader := bufio.NewReader(in)
-	response, _ := reader.ReadString('\n')
-	response = strings.TrimSpace(strings.ToLower(response))
-	if response == "" || response == "y" || response == "yes" {
-		return true, true
-	}
-	return false, true
-}
-
-// maybeCopyScheduleExample copies .agents/schedule.yaml.example to
-// .agents/schedule.yaml when the user has opted in. It honors --with-schedule,
-// AGENTOPS_INIT_WITH_SCHEDULE=1, and the interactive TTY prompt. Pre-existing
-// .agents/schedule.yaml is preserved (warn + skip).
-func maybeCopyScheduleExample(cmd *cobra.Command, cwd string) error {
-	copyIt, _ := shouldCopySchedule(cmd, initWithSchedule)
-	if !copyIt {
-		return nil
-	}
-
-	src := filepath.Join(cwd, ".agents", "schedule.yaml.example")
-	dst := filepath.Join(cwd, ".agents", "schedule.yaml")
-
-	if dryRun {
-		fmt.Fprintf(cmd.OutOrStdout(), "[dry-run] Would copy %s to %s\n", src, dst)
-		return nil
-	}
-
-	// Amendment B1: ensure .agents/ exists (fresh-repo case).
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-		return fmt.Errorf("create .agents/ for schedule copy: %w", err)
-	}
-
-	if _, err := os.Stat(dst); err == nil {
-		fmt.Fprintf(os.Stderr, "warning: %s already exists; skipping --with-schedule copy\n", dst)
-		return nil
-	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("stat %s: %w", dst, err)
-	}
-
-	srcContent, err := os.ReadFile(src)
-	if err != nil {
-		return fmt.Errorf("read %s: %w", src, err)
-	}
-	if err := os.WriteFile(dst, srcContent, 0o644); err != nil {
-		return fmt.Errorf("write %s: %w", dst, err)
-	}
-	fmt.Fprintf(cmd.OutOrStdout(), "Created %s\n", dst)
-	return nil
-}
-
-// isStdinTerminal reports whether stdin is a TTY using stdlib only.
-func isStdinTerminal() bool {
-	fi, err := os.Stdin.Stat()
-	if err != nil {
-		return false
-	}
-	return fi.Mode()&os.ModeCharDevice != 0
 }
 
 // createAgentsDirs creates (or dry-run reports) all .agents/ subdirectories.

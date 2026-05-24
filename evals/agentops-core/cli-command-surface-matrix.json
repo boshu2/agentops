@@ -41,7 +41,7 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "cli-command-headings: top=72 sub=194 all=266"},
+        {"type": "stdout_contains", "value": "cli-command-headings: top=68 sub=179 all=247"},
         {"type": "stdout_contains", "value": "cli-help-matrix-ok"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "artifact_quality"],
@@ -123,7 +123,6 @@
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/findings.go", "value": "var findingsCmd = &cobra.Command"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/knowledge.go", "value": "var knowledgeCmd = &cobra.Command"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/scenario.go", "value": "var scenarioCmd = &cobra.Command"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/plans.go", "value": "var plansCmd = &cobra.Command"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/metrics.go", "value": "var metricsCmd = &cobra.Command"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/pool.go", "value": "var poolCmd = &cobra.Command"}
       ],

@@ -777,3 +777,15 @@ func TestValidTemplatesMatchEmbeddedTemplates(t *testing.T) {
 		}
 	}
 }
+
+// containsString reports whether items contains an entry exactly equal to
+// needle. Extracted from the retired overnight curator (soc-2rtm0) for the KEEP
+// seed test.
+func containsString(items []string, needle string) bool {
+	for _, item := range items {
+		if item == needle {
+			return true
+		}
+	}
+	return false
+}

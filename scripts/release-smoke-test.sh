@@ -482,7 +482,6 @@ test_help "ao forge --help" "$AO" forge --help
 test_help "ao session --help" "$AO" session --help
 test_help "ao config --help" "$AO" config --help
 test_help "ao completion --help" "$AO" completion --help
-test_help "ao plans --help" "$AO" plans --help
 test_help "ao gate --help" "$AO" gate --help
 test_help "ao curate verify --help" "$AO" curate verify --help
 
@@ -580,7 +579,7 @@ EXPECTED_COMMANDS=(
     search inject lookup forge trace findings
     rpi ratchet goals session
     flywheel pool metrics gate maturity
-    config plans hooks memory notebook
+    config hooks memory notebook
     demo init seed quick-start
     badge constraint contradict dedup curate
     anti-patterns vibe-check extract

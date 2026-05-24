@@ -1,4 +1,0 @@
-schedules:
-  - name: bad-jobtype
-    cron: "0 3 * * *"
-    job_type: FooBar

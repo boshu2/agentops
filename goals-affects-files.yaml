@@ -31,11 +31,6 @@ affects_files:
     - cli/**
     - scripts/check-go-absolute-complexity.sh
 
-  dream-end-user-coverage:
-    - scripts/check-schedule-example.sh
-    - docs/templates/schedule.yaml.example
-    - cli/internal/schedule/testdata/example-validation.yaml
-
   compile-freshness:
     - scripts/check-compile-health.sh
 

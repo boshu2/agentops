@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/harvest"
-	"github.com/boshu2/agentops/cli/internal/overnight"
+	"github.com/boshu2/agentops/cli/internal/lockfile"
 	"github.com/boshu2/agentops/cli/internal/wiki"
 	"github.com/spf13/cobra"
 )
@@ -76,33 +76,32 @@ func resolveMaxPromotionsThreshold(cmd *cobra.Command) int {
 	return harvestMaxPromotions
 }
 
-// failIfDreamHoldsLock refuses to proceed when a live Dream run holds
-// the overnight lock. Dream and ao harvest both write to
-// ~/.agents/learnings/ via harvest.Promote; concurrent writes there
-// are outside Dream's checkpoint boundary and would silently corrupt
-// the global hub.
+// failIfDreamHoldsLock refuses to proceed when a live external writer
+// holds the legacy overnight/dream lock. The overnight/dream commands
+// were retired (soc-2rtm0), but an out-of-band Dream/GC run may still
+// stamp .agents/overnight/run.lock while writing to ~/.agents/learnings/
+// via harvest.Promote; concurrent writes there are outside any
+// checkpoint boundary and would silently corrupt the global hub. This
+// stays as a defensive guard against a live lock owner.
 //
 // Strategy:
 //   - Look for .agents/overnight/run.lock at the repo root.
-//   - If missing or if overnight.LockIsStale returns true, proceed.
+//   - If missing or if lockfile.IsStale returns true, proceed.
 //   - Otherwise, read the PID from the lock file; if that PID is
-//     still alive (via overnight.ProcessAlive), refuse with a clear
-//     error pointing the operator at `ao overnight status`.
+//     still alive (via lockfile.ProcessAlive), refuse.
 //
 // Errors reading the lock file (other than ENOENT) are logged as a
-// warning but do not block harvest — the worst case of racing Dream
-// is strictly better than hard-failing harvest on a corrupt lock
-// file.
+// warning but do not block harvest — the worst case of racing a writer
+// is strictly better than hard-failing harvest on a corrupt lock file.
 //
-// This is the pm-011 fix from the Dream nightly compounder
-// pre-mortem.
+// This is the pm-011 fix from the Dream nightly compounder pre-mortem.
 func failIfDreamHoldsLock(cwd string) error {
 	lockPath := filepath.Join(wiki.AgentsDirIn(cwd), "overnight", "run.lock")
 
 	// Cheap freshness check first: if the lock is stale (old mtime
-	// AND dead/zero PID), LockIsStale returns true and we can proceed
+	// AND dead/zero PID), IsStale returns true and we can proceed
 	// without any further work.
-	stale, err := overnight.LockIsStale(lockPath, 12*time.Hour)
+	stale, err := lockfile.IsStale(lockPath, 12*time.Hour)
 	if err != nil {
 		// Stat failed for a reason other than ENOENT (ENOENT is
 		// reported as stale=false, err=nil). Log and proceed —
@@ -118,7 +117,7 @@ func failIfDreamHoldsLock(cwd string) error {
 	//   1. lock file does not exist         -> proceed
 	//   2. lock mtime is within maxAge      -> check PID
 	//   3. lock references a live PID       -> refuse
-	// LockIsStale collapses (1) and (2) into the same "not stale"
+	// IsStale collapses (1) and (2) into the same "not stale"
 	// return, so distinguish them with an explicit stat.
 	if _, statErr := os.Stat(lockPath); statErr != nil {
 		if errors.Is(statErr, os.ErrNotExist) {
@@ -128,19 +127,19 @@ func failIfDreamHoldsLock(cwd string) error {
 		return nil
 	}
 
-	pid := overnight.ReadLockPID(lockPath)
+	pid := lockfile.ReadPID(lockPath)
 	if pid <= 0 {
 		// Malformed or empty lock file — treat as no lock, don't
-		// block harvest. Dream's own startup path will clean this up
-		// via LockIsStale at cleanup time.
+		// block harvest. A future stale-lock cleanup collapses this
+		// via IsStale.
 		return nil
 	}
-	if !overnight.ProcessAlive(pid) {
+	if !lockfile.ProcessAlive(pid) {
 		// Lock owner is dead; safe to proceed.
 		return nil
 	}
 
-	return fmt.Errorf("ao harvest: refusing to run while Dream holds the overnight lock (pid %d). Wait for the Dream run to finish, or check `ao overnight status`", pid)
+	return fmt.Errorf("ao harvest: refusing to run while a live writer holds the overnight lock (pid %d). Wait for that run to finish before harvesting", pid)
 }
 
 func runHarvest(cmd *cobra.Command, args []string) error {

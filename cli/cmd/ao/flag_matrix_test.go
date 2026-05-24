@@ -203,7 +203,6 @@ func TestFlagMatrix_HelpConsistency(t *testing.T) {
 		"trace",
 		"maturity",
 		"anti-patterns",
-		"plans",
 		"gate",
 		"init",
 		"demo",

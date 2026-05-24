@@ -80,25 +80,6 @@ func executeCommand(args ...string) (string, error) {
 	origFindingsRetireBy := findingsRetireBy
 	origForgeTier1LegacyLocalLLM := forgeTier1LegacyLocalLLM
 	origScenarioListStatus := scenarioListStatus
-	origOvernightGoal := overnightGoal
-	origOvernightOutputDir := overnightOutputDir
-	origOvernightRunTimeout := overnightRunTimeout
-	origOvernightKeepAwake := overnightKeepAwake
-	origOvernightNoKeepAwake := overnightNoKeepAwake
-	origOvernightRunners := append([]string{}, overnightRunners...)
-	origOvernightModels := overnightModels
-	origOvernightCreative := overnightCreative
-	origOvernightDaemonSubmit := overnightDaemonSubmit
-	origOvernightDaemonURL := overnightDaemonURL
-	origOvernightDaemonToken := overnightDaemonToken
-	origOvernightDaemonFallback := overnightDaemonFallback
-	origOvernightReportFrom := overnightReportFrom
-	origOvernightSetupApply := overnightSetupApply
-	origOvernightSetupScheduler := overnightSetupScheduler
-	origOvernightSetupAt := overnightSetupAt
-	origOvernightSetupRunners := append([]string{}, overnightSetupRunners...)
-	origOvernightSetupKeepAwake := overnightSetupKeepAwake
-	origOvernightSetupNoKeepAwake := overnightSetupNoKeepAwake
 	// Struct-type flag vars (fields persist across Execute calls):
 	origContextPacketFlags := contextPacketFlags
 	origContextExplainFlags := contextExplainFlags
@@ -172,25 +153,6 @@ func executeCommand(args ...string) (string, error) {
 		findingsRetireBy = origFindingsRetireBy
 		forgeTier1LegacyLocalLLM = origForgeTier1LegacyLocalLLM
 		scenarioListStatus = origScenarioListStatus
-		overnightGoal = origOvernightGoal
-		overnightOutputDir = origOvernightOutputDir
-		overnightRunTimeout = origOvernightRunTimeout
-		overnightKeepAwake = origOvernightKeepAwake
-		overnightNoKeepAwake = origOvernightNoKeepAwake
-		overnightRunners = append([]string{}, origOvernightRunners...)
-		overnightModels = origOvernightModels
-		overnightCreative = origOvernightCreative
-		overnightDaemonSubmit = origOvernightDaemonSubmit
-		overnightDaemonURL = origOvernightDaemonURL
-		overnightDaemonToken = origOvernightDaemonToken
-		overnightDaemonFallback = origOvernightDaemonFallback
-		overnightReportFrom = origOvernightReportFrom
-		overnightSetupApply = origOvernightSetupApply
-		overnightSetupScheduler = origOvernightSetupScheduler
-		overnightSetupAt = origOvernightSetupAt
-		overnightSetupRunners = append([]string{}, origOvernightSetupRunners...)
-		overnightSetupKeepAwake = origOvernightSetupKeepAwake
-		overnightSetupNoKeepAwake = origOvernightSetupNoKeepAwake
 		contextPacketFlags = origContextPacketFlags
 		contextExplainFlags = origContextExplainFlags
 		contextPacketStatusFlags = origContextPacketStatusFlags
@@ -279,25 +241,6 @@ func executeCommand(args ...string) (string, error) {
 	evalCoverageDomains = []string{"cli", "hook", "skill", "rpi", "runtime", "retrieval", "scenario", "mixed", "security"}
 	evalCoverageDims = []string{"correctness", "process_adherence", "artifact_quality", "runtime_compatibility", "efficiency", "safety", "learning_closure"}
 	evalCoverageRuntimes = []string{"static", "shell", "mock"}
-	overnightGoal = ""
-	overnightOutputDir = ""
-	overnightRunTimeout = ""
-	overnightKeepAwake = false
-	overnightNoKeepAwake = false
-	overnightRunners = nil
-	overnightModels = ""
-	overnightCreative = false
-	overnightDaemonSubmit = false
-	overnightDaemonURL = ""
-	overnightDaemonToken = ""
-	overnightDaemonFallback = false
-	overnightReportFrom = ""
-	overnightSetupApply = false
-	overnightSetupScheduler = "auto"
-	overnightSetupAt = ""
-	overnightSetupRunners = nil
-	overnightSetupKeepAwake = false
-	overnightSetupNoKeepAwake = false
 	doctorJSON = false
 	maturityApply = false
 	maturityScan = false
@@ -427,11 +370,11 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
 		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
-		"memory", "metrics", "migrate", "mind", "mine", "notebook", "operator", "overnight", "patterns", "plans",
+		"memory", "metrics", "migrate", "mind", "mine", "notebook", "operator", "patterns",
 		"pool", "quick-start", "ratchet", "retrieval-bench", "robot-docs", "rpi",
-		"registry", "scenario", "schedule", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
+		"registry", "scenario", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
 		"store", "task-feedback", "task-status", "task-sync", "temper",
-		"trace", "version", "vibe-check", "watch", "wiki", "worktree",
+		"trace", "version", "vibe-check", "wiki", "worktree",
 	}
 	cmdSet := make(map[string]bool)
 	for _, name := range cmdNames {
@@ -453,7 +396,6 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"knowledge":  {"activate", "beliefs", "playbooks", "brief", "gaps"},
 		"ratchet":    {"status", "check", "next"},
 		"metrics":    {"baseline", "report"},
-		"overnight":  {"start", "report", "setup"},
 		"flywheel":   {"status", "nudge", "gate", "compare", "close-loop"},
 		"constraint": {"activate", "retire", "review", "list"},
 		"corpus":     {"fitness"},
@@ -488,11 +430,11 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
 		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
-		"memory", "metrics", "migrate", "mind", "mine", "notebook", "operator", "overnight", "patterns", "plans",
+		"memory", "metrics", "migrate", "mind", "mine", "notebook", "operator", "patterns",
 		"pool", "quick-start", "ratchet", "retrieval-bench", "robot-docs", "rpi",
-		"registry", "scenario", "schedule", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
+		"registry", "scenario", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
 		"store", "task-feedback", "task-status", "task-sync", "temper",
-		"trace", "version", "vibe-check", "watch", "wiki", "worktree",
+		"trace", "version", "vibe-check", "wiki", "worktree",
 	}
 
 	// Every expected command must be registered
