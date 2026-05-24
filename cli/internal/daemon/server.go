@@ -29,6 +29,15 @@ type ServerOptions struct {
 // larger lines than submission so daemon-emitted events have headroom).
 const MaxJobSubmissionBytes = 1 * 1024 * 1024
 
+// MaxIdempotencyKeyBytes bounds the caller-supplied idempotency key. The key is
+// stored verbatim in the JobAccepted ledger event payload (jobs.go writes
+// payload["idempotency_key"]) and echoed into every job projection, so an
+// unbounded key bloats the append-only ledger and every downstream projection
+// for the lifetime of the job. 256 bytes is far above any legitimate UUID /
+// request-hash key while keeping the per-event overhead negligible. Submissions
+// with a longer key are rejected with 400 before any ledger write.
+const MaxIdempotencyKeyBytes = 256
+
 const maxReadOnlyEventsLimit = 1000
 
 type ReadOnlyServer struct {
@@ -446,6 +455,9 @@ func (s *ReadOnlyServer) handleOpenClawTriggerJob(w http.ResponseWriter, r *http
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_type is not allowlisted for OpenClaw trigger"})
 		return
 	}
+	if !validateIdempotencyKey(w, req.IdempotencyKey) {
+		return
+	}
 	queue := NewQueue(s.store, s.queueOptions())
 	job, err := queue.SubmitJob(SubmitJobInput{
 		RequestID:      RequestID(req.RequestID),
@@ -493,6 +505,9 @@ func (s *ReadOnlyServer) handleSubmitJob(w http.ResponseWriter, r *http.Request)
 			return
 		}
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json"})
+		return
+	}
+	if !validateIdempotencyKey(w, req.IdempotencyKey) {
 		return
 	}
 	queue := NewQueue(s.store, s.queueOptions())
@@ -633,6 +648,21 @@ func (s *ReadOnlyServer) cancelJob(w http.ResponseWriter, r *http.Request, req C
 	})
 }
 
+// validateIdempotencyKey rejects an over-long caller-supplied idempotency key
+// before it reaches the queue. On rejection it writes a 400 with the offending
+// length and returns false, so callers short-circuit before any ledger append.
+func validateIdempotencyKey(w http.ResponseWriter, key string) bool {
+	if len(key) > MaxIdempotencyKeyBytes {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"error":     "idempotency_key exceeds MaxIdempotencyKeyBytes",
+			"max_bytes": MaxIdempotencyKeyBytes,
+			"got_bytes": len(key),
+		})
+		return false
+	}
+	return true
+}
+
 func queueSubmitErrorStatus(err error) int {
 	if errors.Is(err, ErrFailpoint) {
 		return http.StatusServiceUnavailable
@@ -698,10 +728,22 @@ func (s *ReadOnlyServer) handlePostSchedule(w http.ResponseWriter, r *http.Reque
 	if !requireMethod(w, r, http.MethodPost) {
 		return
 	}
+	// Apply the same body-size cap as the other mutation routes so an oversized
+	// schedule template is short-circuited to 413 instead of being fully
+	// buffered into memory and decoded (soc-scg3h).
+	r.Body = http.MaxBytesReader(w, r.Body, MaxJobSubmissionBytes)
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
 	var template RecurringJobTemplate
 	if err := dec.Decode(&template); err != nil {
+		var maxErr *http.MaxBytesError
+		if errors.As(err, &maxErr) {
+			writeJSON(w, http.StatusRequestEntityTooLarge, map[string]any{
+				"error":     "request body exceeds MaxJobSubmissionBytes",
+				"max_bytes": MaxJobSubmissionBytes,
+			})
+			return
+		}
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid json: " + err.Error()})
 		return
 	}

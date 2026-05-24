@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -411,5 +412,125 @@ func TestCancelJobRejectsBodyOverMaxBytes(t *testing.T) {
 	resp := postCancel(t, router, body, "secret-token", "")
 	if resp.Code != http.StatusRequestEntityTooLarge {
 		t.Fatalf("oversized cancel status = %d, want 413; body=%s", resp.Code, resp.Body.String())
+	}
+}
+
+// TestSubmitJobRejectsOverlongIdempotencyKey asserts that an idempotency key
+// longer than MaxIdempotencyKeyBytes is rejected with 400 before any ledger
+// write. Without the bound an unbounded key is stored verbatim in the
+// JobAccepted ledger event payload and echoed into every job projection,
+// bloating the append-only ledger for the job's lifetime (soc-scg3h).
+func TestSubmitJobRejectsOverlongIdempotencyKey(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := mutationRouter(t, store, &now)
+
+	// Key one byte over the cap; the body itself stays well under
+	// MaxJobSubmissionBytes so this exercises the key bound, not the body cap.
+	overlong := strings.Repeat("k", MaxIdempotencyKeyBytes+1)
+	payload := `{"request_id":"req-idem","job_id":"job-idem","job_type":"rpi.run","idempotency_key":"` + overlong + `"}`
+
+	resp := postJob(t, router, payload, "secret-token", "")
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("overlong idempotency key status = %d, want 400; body=%s", resp.Code, resp.Body.String())
+	}
+	var responseBody map[string]any
+	if err := json.Unmarshal(resp.Body.Bytes(), &responseBody); err != nil {
+		t.Fatalf("decode 400 body: %v", err)
+	}
+	if got, ok := responseBody["max_bytes"].(float64); !ok || int(got) != MaxIdempotencyKeyBytes {
+		t.Fatalf("400 body max_bytes = %v, want %d", responseBody["max_bytes"], MaxIdempotencyKeyBytes)
+	}
+
+	events, err := store.ReadLedger()
+	if err != nil {
+		t.Fatalf("read ledger: %v", err)
+	}
+	if len(events) != 0 {
+		t.Fatalf("overlong idempotency key wrote %d events, want 0 (bound must reject before ledger append)", len(events))
+	}
+}
+
+// TestSubmitJobAcceptsMaxLengthIdempotencyKey is the boundary companion: a key
+// exactly at MaxIdempotencyKeyBytes must still be accepted (202) and append one
+// ledger event, so the bound is behavior-preserving for valid requests.
+func TestSubmitJobAcceptsMaxLengthIdempotencyKey(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := mutationRouter(t, store, &now)
+
+	maxKey := strings.Repeat("k", MaxIdempotencyKeyBytes)
+	payload := `{"request_id":"req-idem-ok","job_id":"job-idem-ok","job_type":"rpi.run","idempotency_key":"` + maxKey + `"}`
+
+	resp := postJob(t, router, payload, "secret-token", "")
+	if resp.Code != http.StatusAccepted {
+		t.Fatalf("max-length idempotency key status = %d, want 202; body=%s", resp.Code, resp.Body.String())
+	}
+	var body SubmitJobResponse
+	if err := json.Unmarshal(resp.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode 202 body: %v", err)
+	}
+	if !body.Accepted || body.IdempotencyKey != maxKey {
+		t.Fatalf("response = %#v, want accepted with the max-length key echoed back", body)
+	}
+
+	events, err := store.ReadLedger()
+	if err != nil {
+		t.Fatalf("read ledger: %v", err)
+	}
+	if len(events) != 1 || events[0].EventType != EventJobAccepted {
+		t.Fatalf("ledger events = %#v, want one accepted event", events)
+	}
+}
+
+// TestOpenClawTriggerRejectsOverlongIdempotencyKey mirrors the submit-side key
+// bound on the OpenClaw trigger route — both accept caller-supplied keys that
+// flow into the ledger, so the bound lives on both entry-points (soc-scg3h).
+func TestOpenClawTriggerRejectsOverlongIdempotencyKey(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := openClawTriggerRouter(t, store, &now)
+
+	overlong := strings.Repeat("k", MaxIdempotencyKeyBytes+1)
+	payload := `{"request_id":"req-oc","job_id":"job-oc","job_type":"openclaw.snapshot","idempotency_key":"` + overlong + `"}`
+
+	resp := postOpenClawTrigger(t, router, payload, "secret-token", "")
+	if resp.Code != http.StatusBadRequest {
+		t.Fatalf("overlong trigger idempotency key status = %d, want 400; body=%s", resp.Code, resp.Body.String())
+	}
+	events, err := store.ReadLedger()
+	if err != nil {
+		t.Fatalf("read ledger: %v", err)
+	}
+	if len(events) != 0 {
+		t.Fatalf("overlong trigger idempotency key wrote %d events, want 0", len(events))
+	}
+}
+
+// TestPostScheduleRejectsBodyOverMaxBytes asserts the schedule create route
+// shares the body-size cap with the other mutation routes: an oversized body
+// must return 413, not be fully buffered and decoded into a 500/OOM. Regression
+// for the one decode path that previously lacked MaxBytesReader (soc-scg3h).
+func TestPostScheduleRejectsBodyOverMaxBytes(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	store := NewStore(t.TempDir())
+	router := schedulesRouter(t, store, &now)
+
+	// Valid-shaped template with the cron string padded past the cap.
+	prefix := `{"name":"big","job_type":"rpi.run","cron":"`
+	suffix := `"}`
+	pad := strings.Repeat("x", MaxJobSubmissionBytes+1024)
+	body := prefix + pad + suffix
+
+	resp := postSchedule(t, router, body, "secret-token")
+	if resp.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("oversized schedule status = %d, want 413 (not 500); body=%s", resp.Code, resp.Body.String())
+	}
+	var responseBody map[string]any
+	if err := json.Unmarshal(resp.Body.Bytes(), &responseBody); err != nil {
+		t.Fatalf("decode 413 body: %v", err)
+	}
+	if got := responseBody["max_bytes"]; got == nil {
+		t.Fatalf("413 body missing max_bytes hint: %s", resp.Body.String())
 	}
 }
