@@ -8,11 +8,10 @@
 # Modeled on: examples/gastown/packs/maintenance/orders/gate-sweep.toml's
 #   exec-script pattern (a mechanical sweep run directly by the controller).
 #
-# FUNCTIONAL STUB — exit codes kept clean so the order doesn't mark itself failed
-# while the CLI surface is finalized post-rip.
-# TODO(gvkj6-finalize): confirm `ao compile` / `ao maturity --scan` flags against
-# the post-rip CLI; they exist today but the exact gate/exit-code contract is part
-# of the gvkj6 finalize (design doc Part 4).
+# Exit codes kept clean so the order doesn't flap the controller on a transient
+# corpus error — an exec order should not mark itself failed for a non-fatal
+# compile hiccup. `ao compile` and `ao maturity --scan` are confirmed against the
+# post-rip CLI (gvkj6 finalize, design doc Part 4).
 
 set -eu
 

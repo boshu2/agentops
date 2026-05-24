@@ -31,6 +31,19 @@ formula_v2 = true
 # Beads: consume GC's bd/dolt substrate — do NOT reimplement.
 # "bd" is the default Dolt-backed provider; swap to "exec:.../gc-beads-br" to
 # ride beads_rust (docs/reference/exec-beads-provider.md). Shape: config.md:22.
+#
+# GUARD (Decision 1 — consume-only, do NOT import the dolt pack — 1,478-flap guard):
+#   `provider` is pure CLIENT config (which CLI to shell out to), NOT a managed
+#   server. Do NOT add an [imports] of the `dolt` pack or any dolt-managing order:
+#   that would make GC's reconciler claim exclusive ownership of a Dolt server an
+#   operator already runs (the shared `soc` DB) and flap it — the Olympus
+#   1,478-restart failure mode. Cross-host dolt? Point `provider` at the
+#   already-running server's CLI; never let GC own it.
+#
+# GUARD (Decision 4 — single-prefix posture): the rig's `.beads/` owns the issue
+#   prefix (e.g. `soc`). The City does NOT use GC's two-level `hq-*` / routes.jsonl
+#   split — that would need a second served DB and fork the tracker. One prefix
+#   per served DB; `gc bd` and standalone `bd` share the same store.
 [beads]
 provider = "bd"
 
