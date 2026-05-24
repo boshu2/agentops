@@ -1,0 +1,89 @@
+# .scenario-linkage-allow — feature files intentionally documentation-only.
+#
+# Each line is a repo-relative path to a .feature file whose scenarios are NOT
+# yet linked to executing tests via @covered-by: tags. The scenario→test
+# linkage gate (scripts/check-scenario-test-linkage.sh) skips scenarios in
+# these files. The gate is real: any scenario NOT here and NOT @covered-by-
+# tagged fails CI.
+#
+# Tracking: soc-63xfx seeded this allowlist with the corpus that existed when
+# the gate landed (3 of 71 feature files have executing tests: rpi, goals,
+# scenario). The standing goal is to DRAIN this list — as a skill gains an
+# executing test, tag its scenarios with @covered-by: and remove the file here.
+# Do NOT add new feature files to this allowlist without a tracking bead; new
+# specs should ship with their covering test.
+#
+# A file may NOT be both allowlisted AND carry @covered-by: tags (ambiguous
+# intent) — the gate rejects that. To link a file, delete its line below.
+#
+# Lines starting with '#' and blank lines are ignored. Trailing '# comment' on
+# an entry is stripped.
+
+skills/autodev/references/autodev.feature
+skills/beads/references/beads.feature
+skills/bootstrap/references/bootstrap.feature
+skills/brainstorm/references/brainstorm.feature
+skills/bug-hunt/references/bug-hunt.feature
+skills/codex-team/references/codex-team.feature
+skills/compile/references/compile.feature
+skills/complexity/references/complexity.feature
+skills/council/references/council-modes.feature
+skills/crank/references/crank.feature
+skills/curate/references/curate.feature
+skills/deps/references/deps.feature
+skills/design/references/design.feature
+skills/discovery/references/discovery.feature
+skills/doc/references/doc.feature
+skills/domain/references/domain.feature
+skills/dream/references/dream.feature
+skills/evolve/references/evolve.feature
+skills/forge/references/forge.feature
+skills/grafana-platform-dashboard/references/grafana-platform-dashboard.feature
+skills/handoff/references/handoff.feature
+skills/harvest/references/harvest.feature
+skills/heal-skill/references/heal-skill.feature
+skills/hooks-authoring/references/hooks-authoring.feature
+skills/implement/references/implement.feature
+skills/knowledge-activation/references/knowledge-activation.feature
+skills/openai-docs/references/openai-docs.feature
+skills/oss-docs/references/oss-docs.feature
+skills/perf/references/perf.feature
+skills/plan/references/plan.feature
+skills/post-mortem/references/post-mortem.feature
+skills/pr-implement/references/pr-implement.feature
+skills/pr-plan/references/pr-plan.feature
+skills/pr-prep/references/pr-prep.feature
+skills/pr-research/references/pr-research.feature
+skills/pr-retro/references/pr-retro.feature
+skills/pr-validate/references/pr-validate.feature
+skills/pre-mortem/references/pre-mortem.feature
+skills/product/references/product.feature
+skills/push/references/push.feature
+skills/quickstart/references/quickstart.feature
+skills/ratchet/references/ratchet.feature
+skills/readme/references/readme.feature
+skills/recover/references/recover.feature
+skills/red-team/references/red-team.feature
+skills/refactor/references/refactor.feature
+skills/release/references/release.feature
+skills/research/references/research.feature
+skills/retro/references/retro.feature
+skills/reverse-engineer-rpi/references/reverse-engineer-rpi.feature
+skills/review/references/review.feature
+skills/scaffold/references/scaffold.feature
+skills/scope/references/scope.feature
+skills/security-suite/references/security-suite.feature
+skills/security/references/security.feature
+skills/session-bootstrap/references/session-bootstrap.feature
+skills/ship-loop/references/ship-loop.feature
+skills/skill-auditor/references/skill-auditor.feature
+skills/skill-builder/references/skill-builder.feature
+skills/status/references/status.feature
+skills/swarm/references/swarm.feature
+skills/system-tuning/references/system-tuning.feature
+skills/test/references/test.feature
+skills/trace/references/trace.feature
+skills/update/references/update.feature
+skills/validate/references/validate.feature
+skills/validation/references/validation.feature
+skills/vibe/references/vibe.feature

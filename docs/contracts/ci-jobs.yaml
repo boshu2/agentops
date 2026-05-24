@@ -86,6 +86,9 @@ jobs:
 - name: executable-spec-link-integrity
   reason: 'Runs `ao goals scenarios --lint` (directive↔scenario link lint) and `ao goals trace --orphans` (whole-chain orphan/gap audit) warn-only (F1.6, soc-58nt.1.9). Non-blocking (`continue-on-error: true`). Promotion criterion: remove `continue-on-error: true` from the CI job and replace `warn` with `fail` in pre-push check 38 after two consecutive clean runs on main'
   failure: Broken directive↔scenario link or orphaned directive/scenario/bead in the trace chain (surfaces as warning, not failure, until promoted)
+- name: validate-scenario-test-linkage
+  reason: 'Every Gherkin scenario in skills/*/references/*.feature must declare its covering test via a `@covered-by:<test-path>` tag, or have its feature file allowlisted as documentation-only in scripts/.scenario-linkage-allow (soc-63xfx). Sibling to executable-spec-link-integrity: that gate links GOALS directives→scenarios; this one links scenarios→tests. Blocking (T1).'
+  failure: A scenario has no @covered-by tag and is not allowlisted, a @covered-by link is dangling (test path or named test missing), or the allowlist references a deleted feature file
 - name: validate-ci-policy-parity
   reason: AGENTS CI table and blocking policy match workflow summary enforcement
   failure: Docs say non-blocking/required but workflow differs
