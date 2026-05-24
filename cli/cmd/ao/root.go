@@ -97,6 +97,16 @@ func Execute() {
 			}
 			os.Exit(docErr.ExitCode())
 		}
+		var gateErr *gateExitError
+		if errors.As(err, &gateErr) {
+			// The exit code IS the verdict in `ao validate --gate`. A FAIL (1)
+			// carries no stderr noise (detail already went to stderr); an
+			// internal error (2) surfaces its reason.
+			if gateErr.ExitCode() == gateExitInternal && gateErr.Error() != "" {
+				fmt.Fprintln(os.Stderr, "ao validate: "+gateErr.Error())
+			}
+			os.Exit(gateErr.ExitCode())
+		}
 		printRequiredFlagHint(executedCmd, err)
 		os.Exit(1)
 	}
