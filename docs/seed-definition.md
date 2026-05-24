@@ -71,19 +71,25 @@ An append-only ledger with cache-like semantics. Nothing gets overwritten. Every
 
 **Meadows mapping:** #10 (material stocks), #7 (reinforcing feedback loop -- more knowledge enables better retrieval enables more knowledge).
 
-### 3. Hook Readiness -- Optional Rule Configuration
+### 3. Lifecycle Stages -- Explicit, Hookless Rules
 
-Hooks that fire on session lifecycle events when activated. The minimum viable set:
+AgentOps 3.0 ships **zero hooks**. The same lifecycle stages run through explicit
+`ao` commands instead of hook side effects, and **CI is the authoritative gate**
+for structural enforcement. The minimum viable set:
 
-| Event | Hook | What it does |
-|-------|------|--------------|
-| SessionStart | session-start | Load context signpost (`.agents/AGENTS.md`), clean stale state |
-| SessionEnd | session-end | Extract learnings (`ao forge`), expire stale artifacts |
-| Stop | stop | Close the feedback loop (`ao flywheel close-loop`) |
+| Stage | Command | What it does |
+|-------|---------|--------------|
+| Session start | `ao inject` | Load context signpost (`.agents/AGENTS.md`), assemble JIT context |
+| Session end | `ao forge transcript` | Extract learnings, expire stale artifacts |
+| Close-loop | `ao flywheel close-loop` | Close the feedback loop and capture citations |
 
-**Why it exists:** Hooks are Meadows #5 -- structural rules. Without hooks, knowledge extraction depends on the agent remembering to run `ao forge`. Agents forget. Hooks do not. The core seed keeps hook activation optional so setup is safe in any repo; `ao init --hooks` or `install-codex.sh --with-hooks` turns on structural enforcement when the operator is ready.
+**Why it exists:** the structural rule (Meadows #5) is now the CI gate, not a
+local hook. Knowledge extraction is wired into the skills (`/rpi`, `/evolve`,
+`/post-mortem`) that call these commands directly, and validate.yml enforces the
+ratchet on push. If you want a bounded local gate of your own, author it with the
+`hooks-authoring` skill — AgentOps ships none.
 
-**Meadows mapping:** #5 (rules), #6 (information flows -- hooks ensure knowledge moves from session output to persistent storage to next session input).
+**Meadows mapping:** #5 (rules), #6 (information flows -- the explicit commands and the CI gate ensure knowledge moves from session output to persistent storage to next session input).
 
 ### 4. CLAUDE.md Seed Section -- Flywheel Bootstrap Instructions
 

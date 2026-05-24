@@ -32,33 +32,12 @@ skills, the runtime, and external integrations.
     Architecture boundary for `agentopsd`, the daemon ledger, job queue, local
     trust, projections, and migration from foreground command flows.
 
--   :material-factory: **[AgentOpsd Control Plane](agentopsd-control-plane.md)**
-
-    ---
-
-    Production control-plane contract for worker slots, worktree ownership,
-    lifecycle telemetry, validation gates, yield, and operator status.
-
--   :material-routes: **[Routing Policy](routing-policy.md)**
-
-    ---
-
-    Schema-backed model/provider/runtime lane policy, authority levels, and
-    milestone-1 GasCity / Mt. Olympus production-routing guardrails.
-
 -   :material-lock-check: **[Daemon Idempotency](daemon-idempotency.md)**
 
     ---
 
     Submit retry contract for `request_id`, `idempotency_key`, and
     daemon-submitting CLI helpers.
-
--   :material-file-code: **[JobSpec OpenAPI v0](jobspec-openapi-v0.yaml)**
-
-    ---
-
-    Machine-readable OpenAPI contract for the current `agentopsd` job,
-    readiness, ledger replay, projection, and OpenClaw consumer HTTP surface.
 
 -   :material-api: **[GasCity Integration](gascity-integration.md)**
 

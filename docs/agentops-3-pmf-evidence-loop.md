@@ -57,8 +57,9 @@ Minimum scenario:
 Second-stage scenario:
 
 1. Reuse the same packet or verdict in a later engineering decision.
-2. Try `ao init --with-schedule`, `ao daemon run`, and `ao schedule list`.
-3. Report whether scheduled compounding felt useful or premature.
+2. Run the loop out of session: point the reference Gas City at the repo and let
+   the mayor sling ready beads to refinery workers running `ao rpi`.
+3. Report whether always-on compounding felt useful or premature.
 
 ## Interview Script
 
@@ -121,14 +122,14 @@ Participant intentionally configured a schedule after first verdict trust existe
 
 Record:
 
-- No daemon interest.
+- No always-on interest.
 - Interested but blocked.
-- Ran `ao init --with-schedule`.
-- Ran `ao daemon run`.
-- `ao schedule list` showed a schedule.
-- Scheduled run completed and produced an inspected artifact.
+- Ran the loop in session (`ao rpi` / `ao evolve`).
+- Pointed the reference Gas City at the repo.
+- Mayor-driven dispatch slung a ready bead to a refinery worker.
+- An out-of-session run completed and produced an inspected artifact.
 
-Do not count daemon setup as first-value activation.
+Do not count always-on substrate setup as first-value activation.
 
 ## Evidence Record Template
 
