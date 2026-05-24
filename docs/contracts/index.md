@@ -39,33 +39,12 @@ skills, the runtime, and external integrations.
     Production control-plane contract for worker slots, worktree ownership,
     lifecycle telemetry, validation gates, yield, and operator status.
 
--   :material-shield-check: **[Factory Admission](factory-admission.md)**
-
-    ---
-
-    Daemon-owned work-order admission contract for fail-closed local factory
-    pilots and RPI handoff.
-
 -   :material-routes: **[Routing Policy](routing-policy.md)**
 
     ---
 
     Schema-backed model/provider/runtime lane policy, authority levels, and
     milestone-1 GasCity / Mt. Olympus production-routing guardrails.
-
--   :material-chart-timeline-variant: **[Factory Yield Ledger](factory-yield-ledger.md)**
-
-    ---
-
-    Baseline/treatment yield observations correlated to routing, validation,
-    manual merge decisions, cost, latency, defects, and artifacts.
-
--   :material-shield-search: **[Factory Claim Ledger](factory-claim-ledger.md)**
-
-    ---
-
-    Machine-readable posture ledger tying public software-factory claims to
-    evidence level, owner issue, closure gate, and anti-overclaim wording.
 
 -   :material-lock-check: **[Daemon Idempotency](daemon-idempotency.md)**
 

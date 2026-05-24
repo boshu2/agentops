@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-24T14:27:27Z",
+  "generated_at": "2026-05-24T16:19:51Z",
   "summary": {
     "skills": 80,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 14,
     "eval_files": 57,
-    "cli_commands": 177
+    "cli_commands": 174
   },
   "surfaces": {
     "skills": [
@@ -1051,18 +1051,6 @@
       {
         "name": "extract",
         "path": "cli/cmd/ao/extract.go"
-      },
-      {
-        "name": "factory",
-        "path": "cli/cmd/ao/factory.go"
-      },
-      {
-        "name": "factory_admit",
-        "path": "cli/cmd/ao/factory_admit.go"
-      },
-      {
-        "name": "factory_pilot",
-        "path": "cli/cmd/ao/factory_pilot.go"
       },
       {
         "name": "feedback",
