@@ -224,9 +224,8 @@ Yield observations are ledger events, not retrospective prose. They are emitted
 per run and aggregated by lane, provider, runtime, model, task class, and
 authority.
 
-The machine-readable event contract is
-[`factory-yield-ledger.md`](factory-yield-ledger.md) and
-`schemas/factory-yield.v1.schema.json`.
+The machine-readable event contract is the `factory.yield_observation`
+event shape.
 
 Required event:
 

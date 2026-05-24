@@ -60,13 +60,6 @@ func executeCommand(args ...string) (string, error) {
 	origCodexStartLimit := codexStartLimit
 	origCodexStartQuery := codexStartQuery
 	origCodexStartNoMaintenance := codexStartNoMaintenance
-	origFactoryStartGoal := factoryStartGoal
-	origFactoryStartLimit := factoryStartLimit
-	origFactoryStartNoMaintenance := factoryStartNoMaintenance
-	origFactoryPilotGoal := factoryPilotGoal
-	origFactoryPilotRunID := factoryPilotRunID
-	origFactoryPilotWorktreeRoot := factoryPilotWorktreeRoot
-	origFactoryPilotValidationCommands := factoryPilotValidationCommands
 	origCodexStopSessionID := codexStopSessionID
 	origCodexStopTranscriptPath := codexStopTranscriptPath
 	origCodexStopAutoExtract := codexStopAutoExtract
@@ -159,13 +152,6 @@ func executeCommand(args ...string) (string, error) {
 		codexStartLimit = origCodexStartLimit
 		codexStartQuery = origCodexStartQuery
 		codexStartNoMaintenance = origCodexStartNoMaintenance
-		factoryStartGoal = origFactoryStartGoal
-		factoryStartLimit = origFactoryStartLimit
-		factoryStartNoMaintenance = origFactoryStartNoMaintenance
-		factoryPilotGoal = origFactoryPilotGoal
-		factoryPilotRunID = origFactoryPilotRunID
-		factoryPilotWorktreeRoot = origFactoryPilotWorktreeRoot
-		factoryPilotValidationCommands = origFactoryPilotValidationCommands
 		codexStopSessionID = origCodexStopSessionID
 		codexStopTranscriptPath = origCodexStopTranscriptPath
 		codexStopAutoExtract = origCodexStopAutoExtract
@@ -438,7 +424,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 	expectedCmds := []string{
 		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
-		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
+		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
 		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
 		"memory", "metrics", "migrate", "mind", "mine", "notebook", "operator", "overnight", "patterns", "plans",
@@ -463,7 +449,6 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"beads":      {"verify", "lint", "harvest"},
 		"daemon":     {"run", "ready", "status", "service"},
 		"eval":       {"run", "compare", "baseline", "baseline-audit", "scorecard", "coverage"},
-		"factory":    {"start", "pilot", "admit"},
 		"goals":      {"validate", "measure", "drift"},
 		"knowledge":  {"activate", "beliefs", "playbooks", "brief", "gaps"},
 		"ratchet":    {"status", "check", "next"},
@@ -500,7 +485,7 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 	expectedCmds := []string{
 		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
-		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
+		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
 		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
 		"memory", "metrics", "migrate", "mind", "mine", "notebook", "operator", "overnight", "patterns", "plans",
