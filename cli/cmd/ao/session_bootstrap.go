@@ -36,6 +36,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/adapters/tracker_bd"
+
 	"github.com/spf13/cobra"
 )
 
@@ -204,20 +206,15 @@ func runOnboardSubprocess(ctx context.Context, cwd string) string {
 	return payload.Phase
 }
 
-// sessionBootstrapReadyBeads shells out to `bd ready --json` and returns the
-// count of returned items. Returns (0, false) when bd is missing or errors.
+// sessionBootstrapReadyBeads queries ready beads via the IssueTracker port
+// (tracker_bd, `bd ready --json`) and returns the count of returned items.
+// Returns (0, false) when bd is missing or errors.
 func sessionBootstrapReadyBeads(ctx context.Context, cwd string) (int, bool) {
-	cmd := exec.CommandContext(ctx, "bd", "ready", "--json")
-	cmd.Dir = cwd
-	out, err := cmd.Output()
+	issues, err := tracker_bd.New(cwd).Ready(ctx)
 	if err != nil {
 		return 0, false
 	}
-	var items []map[string]any
-	if err := json.Unmarshal(out, &items); err != nil {
-		return 0, false
-	}
-	return len(items), true
+	return len(issues), true
 }
 
 // sessionBootstrapMailUnread is a soft probe for mcp-agent-mail. The current
