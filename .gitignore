@@ -120,6 +120,22 @@ orders/
 hooks/claude.json
 packs/
 
+# gvkj6 reference-City pack — committed source, NOT gc-init runtime.
+# The rules above ignore the `gc init` runtime variants of these names; the lines
+# below un-ignore ONLY the repo-root AgentOps reference city + its pack tree
+# (anchored with a leading `/`, so nested `gc init` output elsewhere stays
+# ignored). git cannot re-include a file whose parent dir is excluded by a
+# trailing-slash pattern (`packs/` line 121, `.claude/` line 92) unless every
+# intermediate directory level is itself re-included first — hence the explicit
+# per-level `!` chain below, not a single `!/packs/agentops/**`.
+!/city.toml
+!/packs/
+!/packs/agentops/
+!/packs/agentops/**
+!/packs/agentops/overlay/
+!/packs/agentops/overlay/.claude/
+!/packs/agentops/overlay/.claude/**
+
 # AgentOps session artifacts
 # Default: everything under the repo-root .agents/ is local/private runtime
 # state (anchored — leading `/` keeps the rule from also matching nested

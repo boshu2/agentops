@@ -1,0 +1,25 @@
+# AgentOps Mayor — team lead: orchestrate / merge / notify, human on the loop.
+#
+# Modeled on: examples/gastown/packs/gastown/agents/mayor/agent.toml
+#   (scope="city", wake_mode="fresh", work_dir=".gc/agents/mayor",
+#    idle_timeout, max_active_sessions=1). Provisioning fields (overlay_dir,
+#   install_agent_hooks, append_fragments) per docs/reference/config.md:59-116.
+#
+# THIN-SEAM (design doc "DDD seam correction"): the mayor coordinates and merges;
+# it does NOT own the loop's insides. It dispatches whole `ao rpi` loops to the
+# refinery pool and drives green PRs to merge (CI-green is the merge gate).
+
+scope = "city"
+wake_mode = "fresh"
+work_dir = ".gc/agents/mayor"
+nudge = "Check mail and 'bd ready', then dispatch a ready bead or merge a green PR."
+idle_timeout = "1h"
+max_active_sessions = 1
+
+# The mayor gets the AgentOps skill corpus too — it runs /plan, /council,
+# /pr-validate, /post-mortem. overlay_dir is the canonical "ship files into the
+# agent workdir" mechanism (config.md:106); the skills primitive is a tombstone
+# (config.md:209-212), so AgentOps brings its own runtime in the overlay.
+overlay_dir = "../../overlay"
+install_agent_hooks = ["claude"]
+append_fragments = ["agentops-doctrine", "operating-loop"]
