@@ -116,6 +116,23 @@ ao version
 
 You can also install from [release binaries](https://github.com/boshu2/agentops/releases) or [build from source](cli/README.md). Troubleshooting: [docs/troubleshooting.md](docs/troubleshooting.md). Configuration: [docs/ENV-VARS.md](docs/ENV-VARS.md).
 
+### Requirements
+
+AgentOps degrades gracefully — skills check for a tool before using it. The only hard requirement is **a coding-agent runtime plus `git`**; everything else is optional and adds capability.
+
+| Tool | Class | Purpose | Required? |
+|------|-------|---------|-----------|
+| `claude` / `codex` / `opencode` | Agent runtime | The harness AgentOps sits on top of | **Required** (one of) |
+| `git` | Required | Version control — `.agents/` state lives next to your code | **Required** |
+| `ao` | Required (recommended) | The AgentOps CLI: bookkeeping, retrieval, health, the loops | Recommended |
+| `bd` (beads) + Dolt backend | Tracking | Git-native issue tracking (the mandatory task surface) | Optional |
+| `gc` (Gas City) | Orchestration | Out-of-session substrate that runs whole `ao rpi`/`ao evolve` loops — see [`using-gc`](skills/using-gc/SKILL.md) | Optional (out-of-session) |
+| `gh` | PR / CI | Open PRs, query CI status | Optional |
+| `go` | Build-from-source | Build `cli/bin/ao` from source (`go 1.26`) | Optional |
+| `jq`, `rg`/ripgrep, `curl`, `openssl`, `sha256sum`, `tmux`, `cass` | Utilities | JSON parsing, search, downloads, hashing, sessions, history | Optional |
+
+Full purpose / required-vs-optional / fallback-if-absent for every tool: **[docs/dependencies.md](docs/dependencies.md)**.
+
 ---
 
 ## Why context is the lifecycle

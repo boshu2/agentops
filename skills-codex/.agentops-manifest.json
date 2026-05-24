@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "faa75b122c69c9fd7b6906fd2ce54298f4035d5a4159bb22e050f88ae8df1bd2",
+  "codex_override_catalog_hash": "4b7376af85273d2df0dfec3b3a027b43d34789e6af2eecfe424158c978c18507",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -672,6 +672,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Absorbed into council as --mode=debate; kept as a one-release thin alias with no Codex-only runtime divergence."
+      },
+      {
+        "name": "using-gc",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Guide to running AgentOps on the Gas City (gc) substrate; gc-specific shell idioms and out-of-session orchestration vocabulary."
       }
     ]
   },
@@ -1061,9 +1067,15 @@
       "generated_hash": "76446e09f23255255d13e446628d37128984a345a5ecb4dd286ceab8b00d6f9c"
     },
     {
+      "name": "session-bootstrap",
+      "source_skill": "skills/session-bootstrap",
+      "source_hash": "6888a26aadff0e14118cbbaaa36761caaaf43af9b1dcf8690bf219dc0dc3f966",
+      "generated_hash": "4620320eb1d8b6c724956e566ba5a3c5663a14e1010f9a693f3143326c55d8c4"
+    },
+    {
       "name": "shared",
       "source_skill": "skills/shared",
-      "source_hash": "5c5a85efa25a0f3645c894bc530d788a6e64badfca08ff6d40b451975c4b3362",
+      "source_hash": "4968fc9a47b44e9b23b1bad917fd9131b766cb8568b231fc3c85e8917e43a746",
       "generated_hash": "0758c94cf77d7fd1bde265f3bff580a57f15fe601c59f893502d14175d57b763"
     },
     {
@@ -1083,12 +1095,6 @@
       "source_skill": "skills/skill-builder",
       "source_hash": "b73e21977df95a9e8e0ec4a704b3f9262c50cf0c4b6581ab04d72ce5f8ca7ddc",
       "generated_hash": "4d8b01766df9b10099f4f669e60c74dede37bd604e70d7b6a9a732cb5b2a5c05"
-    },
-    {
-      "name": "session-bootstrap",
-      "source_skill": "skills/session-bootstrap",
-      "source_hash": "6888a26aadff0e14118cbbaaa36761caaaf43af9b1dcf8690bf219dc0dc3f966",
-      "generated_hash": "4620320eb1d8b6c724956e566ba5a3c5663a14e1010f9a693f3143326c55d8c4"
     },
     {
       "name": "standards",
@@ -1135,8 +1141,14 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "6402ca58a535ac7268c98c26ccb995193284251d8700268ce23fd8c6d7112da6",
+      "source_hash": "25e3e9f593d69b7b3d42accf51ece72e7345ef7ebf0b9bf6e0b9b85db140879f",
       "generated_hash": "be86270549144f59f2365ba76663339605d4c71efe4f0b0b8e3b72c234077452"
+    },
+    {
+      "name": "using-gc",
+      "source_skill": "skills/using-gc",
+      "source_hash": "aea447416eeb6381247032ec9bb22fc5990b52ec467029fd1df316eaddd20401",
+      "generated_hash": "77aebcbb19c3767bdfffb2d275f9e7050a7d198718460050926bef2b51b50d28"
     },
     {
       "name": "validate",
