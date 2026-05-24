@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-24T18:01:28Z",
+  "generated_at": "2026-05-24T19:34:35Z",
   "summary": {
     "skills": 80,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 14,
     "eval_files": 56,
-    "cli_commands": 165
+    "cli_commands": 166
   },
   "surfaces": {
     "skills": [
@@ -1477,6 +1477,10 @@
       {
         "name": "trace",
         "path": "cli/cmd/ao/trace.go"
+      },
+      {
+        "name": "validate",
+        "path": "cli/cmd/ao/validate.go"
       },
       {
         "name": "version",
