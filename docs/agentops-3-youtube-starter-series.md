@@ -140,37 +140,41 @@ with clearer context.
 - Number of viewers who paste a verdict path into a follow-up issue.
 - Questions about beads versus existing issue trackers.
 
-### 4. The Daemon Is The Second Stage: Scheduled Compounding After Trust
+### 4. Out Of Session Is The Substrate: Always-On Compounding After Trust
 
 **Thumbnail text:** Schedule After Trust
 
 **Title options**
 
-- AgentOps Daemon: The Always-On Lane After Your First Verdict
+- Always-On AgentOps: The Out-Of-Session Lane After Your First Verdict
 - Do Not Start With Automation. Start With A Verdict.
 
 **Cold open**
 
-> The daemon is powerful, but it is not the first thing to sell. First prove the
-> packet and verdict. Then automate the loops you trust.
+> Always-on compounding is powerful, but it is not the first thing to sell.
+> First prove the packet and verdict in a plain session. Then hand the loops you
+> trust to an orchestration substrate to run unattended.
 
 **Demo beats**
 
 1. Recap the packet and verdict artifact.
-2. Run `ao init --with-schedule`.
-3. Run `ao daemon run --schedule-file .agents/schedule.yaml`.
-4. Run `ao schedule list`.
+2. Run the loop in session: `ao rpi <bead>` (one cycle), `ao evolve` (many).
+3. To run it out of session, point the AgentOps reference Gas City at the repo
+   (`city.toml` + `packs/agentops`); a long-lived mayor agent slings ready beads
+   to refinery workers that run `ao rpi`.
+4. Schedule corpus maintenance as Gas City cron `exec` Orders (`ao compile`,
+   `ao maturity --scan`).
 5. Explain Dream/wiki/forge as compounding jobs, not unattended source mutation.
 
 **CTA**
 
-Only set up a schedule after you can inspect the artifact the schedule will
-produce.
+Only run a loop out of session after you can inspect the artifact it produces in
+session.
 
 **Measurement fields**
 
-- Daemon setup attempts.
-- Schedule list screenshots or reports.
+- In-session loop runs (`ao rpi` / `ao evolve`) before opting into always-on.
+- Gas City dispatch screenshots or reports.
 - Questions about safety boundaries and source mutation.
 
 ### 5. AgentOps 3.0 Full Path: First Verdict To PMF Evidence

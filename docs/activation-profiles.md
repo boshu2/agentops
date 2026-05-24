@@ -13,9 +13,11 @@ does not support a feature.
 Reasons:
 
 - The launch path must prove the language before freezing a CLI surface.
-- Existing commands already cover the runtime path: `ao quick-start`,
+- Existing commands already cover the in-session runtime path: `ao quick-start`,
   `ao context packet`, `ao context assemble`, `/council`, `/rpi`,
-  `/validation`, `ao schedule`, and `ao daemon`.
+  `/validation`, and `ao evolve`. Out-of-session (always-on, scheduled) work is
+  delegated to an orchestration substrate (Gas City is the reference), not an
+  AgentOps daemon.
 - The current `docs/profiles/` directory contains role-based documentation
   groupings. It should not silently become executable configuration.
 
@@ -190,34 +192,40 @@ scripts/ci-local-release.sh
 If the full local release gate is too expensive during shaping, run the fast
 gate and mark the release gate blocked until final go/no-go.
 
-### `nightly-factory`
+### `always-on-substrate`
 
-Use after first trust exists and the operator wants scheduled compounding.
+Use after first trust exists and the operator wants out-of-session compounding.
+AgentOps runs the loop **in session**; always-on, scheduled work is delegated to
+an orchestration substrate. Gas City is the reference (Olympus is the
+full-custom alternative). AgentOps ships no daemon or scheduler of its own.
 
 **Inputs**
 
 - Existing `.agents/` corpus
-- `.agents/schedule.yaml`
-- Dream/forge schedule template
+- The AgentOps reference Gas City (`city.toml` + `packs/agentops`)
+- Cron `exec` Orders for corpus maintenance (`ao compile`, `ao maturity --scan`)
 - Runtime credentials or local subscriptions selected by the operator
 
 **Commands**
 
 ```bash
-ao init --with-schedule
-ao daemon run --schedule-file .agents/schedule.yaml
-ao schedule list
+# Drive the loop yourself in session (zero out-of-session dependency):
+ao rpi <bead>          # one cycle
+ao evolve              # many cycles toward a goal
+
+# To run it unattended, point the reference Gas City at the repo; a long-lived
+# mayor agent slings ready beads to refinery workers that run `ao rpi`.
 ```
 
 **Artifacts**
 
-- `.agents/overnight/<run-id>/summary.md`
+- `.agents/overnight/<run-id>/summary.md` (when a substrate runs the dream loop)
 - `.agents/wiki/forge/`
-- `.agents/daemon/ledger.jsonl`
+- Substrate-side dispatch and supervision ledgers (owned by Gas City, not AgentOps)
 
 **Fallback**
 
-Run `/dream` or `ao overnight start` manually and inspect the morning report.
+Run `/dream` in session manually and inspect the morning report.
 
 ## First-Value Path
 

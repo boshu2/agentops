@@ -157,6 +157,7 @@ nav:
       - Security: SECURITY.md
       - Changelog: CHANGELOG.md
       - Upgrading: UPGRADING.md
+      - Migrating to 3.0: MIGRATION-3.0.md
       - Daemon Migration: daemon-migration.md
   - Skills:
       - skills/index.md

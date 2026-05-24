@@ -22,6 +22,7 @@
 - [CONTRIBUTING](CONTRIBUTING.md) — How to contribute
 - [Create Your First Skill](create-your-first-skill.md) — Fast path for authoring a first skill without tripping CI
 - [Upgrading](UPGRADING.md) — Version-to-version migration notes and breaking changes
+- [Migrating to AgentOps 3.0](MIGRATION-3.0.md) — What was removed in 3.0 (hooks, daemon, scheduler, factory) and what to use instead (in-session loop + Gas City substrate)
 - [AGENTS.md](https://github.com/boshu2/agentops/blob/main/AGENTS.md) — Local agent instructions for this repo
 - [Changelog](CHANGELOG.md) — Release history
 - [Security](SECURITY.md) — Vulnerability reporting
@@ -240,7 +241,6 @@ Bridge / framing docs:
 - [AgentOps 3.0 Domain/Practice Packet](examples/agentops-3-domain-practice-packet.md) — Tracked launch-demo packet example
 - [AgentOps 3.0 Council Demo Storyboard](examples/agentops-3-council-demo-storyboard.md) — Canonical council-first launch demo script
 - [AgentOps 3.0 Council Verdict Example](examples/agentops-3-council-verdict-example.md) — Public sample verdict artifact for the explainer kit
-- [Dark Factory Schedule Example](templates/dark-factory-schedule.yaml.example) — Disabled agentopsd schedule template for reviewed Dream and local factory pilots
 - [Product Template](PRODUCT-TEMPLATE.md) — Template for writing a PRODUCT.md
 
 ## Reference
@@ -284,16 +284,11 @@ Bridge / framing docs:
 - [Autodev Program Contract](contracts/autodev-program.md) — Repo-local operational contract for bounded autonomous development
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
 - [AgentOps Daemon Contract](contracts/agentops-daemon.md) — Always-on daemon ledger, job lifecycle, activation, readiness, projection, and threat model contract
-- [AgentOpsd Control Plane Contract](contracts/agentopsd-control-plane.md) — Production control-plane contract for worker slots, worktree ownership, lifecycle telemetry, validation gates, yield, and operator status
-- [Routing Policy Contract](contracts/routing-policy.md) — Schema-backed model/provider/runtime lane policy, authority levels, and milestone-1 production-routing guardrails
-- [Routing Policy Schema](https://github.com/boshu2/agentops/blob/main/schemas/routing-policy.v1.schema.json) — JSON Schema for `agentopsd` routing policy lane contracts
 - [Update Principles Contract](contracts/update-principles.md) — Five operator-exemplar properties every commit must demonstrate (single concern, drift-blocking test, sibling citation, fitness delta, clean branch point); sourced from commit 1b9d139c
 - [Ubiquitous Language Contract](contracts/ubiquitous-language.md) — Canonical names per bounded context (BC1 Corpus, BC2 Validation, BC3 Loop, BC4 Factory, BC5 Runtime) for the 5 ranked drifts (Gate/Check, Cycle/Loop, Claim/Evidence, Skill/Pattern/Practice, Session); rename schedule bound to soc-5yuy children
 - [BC1 Corpus Ports Contract](contracts/bc1-corpus-ports.md) — Core BC1 corpus ports scaffolded under `cli/internal/ports/`; semantics cheat-sheet, adapter triplet pattern, soc-pm5t wire-up order
 - [BC Ports Inventory](contracts/bc-ports-inventory.md) — Roster of all 20 BC ports with per-port adapter contracts, the universal triplet construction pattern, and per-BC wire-up order.
 - [Daemon Idempotency Contract](contracts/daemon-idempotency.md) — Submit retry contract defining `idempotency_key` as the dedup key and `request_id` as trace-only
-- [AgentOps Daemon Scheduling Contract](contracts/agentopsd-schedule.md) — `.agents/schedule.yaml` schema, cron syntax, backpressure, mutation auth, ledger event vocabulary, executor idempotency, and migration recipe for native daemon scheduling
-- [JobSpec OpenAPI v0](contracts/jobspec-openapi-v0.yaml) — Machine-readable current-behavior OpenAPI contract for `agentopsd` job submission, queue state, ledger replay, projections, and OpenClaw consumer routes
 - [GasCity Integration Contract](contracts/gascity-integration.md) — Narrow handwritten GasCity adapter, fake/live split, compatibility matrix, and API/SSE expectations
 - [Remote Compute Contract](contracts/remote-compute.md) — Product-neutral RemoteTarget, RemoteSession, command ledger, recovery, and GasCity-first remote execution contract
 - [AgentWorker Runtime Contract](contracts/agent-worker.md) — Generic headless Codex/Claude worker and AgentSession lifecycle contract for daemon jobs
@@ -344,16 +339,3 @@ Bridge / framing docs:
 ## Migration Trackers
 
 - [resolve-project-dir.md](migration-trackers/resolve-project-dir.md) — os.Getwd() → resolveProjectDir() migration status
-
-## Reference: Olympus v4 Specs
-
-> Verbatim port of `olympus/docs/specs/v4/` for cross-reference during the Olympus → agentopsd extraction. **NOT canonical for agentopsd.** Where these disagree with `.agents/design/2026-04-28-design-agentops-daemon-gascity-vertical-slices.md`, agentopsd canonical wins.
-
-- [Architecture](design/olympus-v4-specs/architecture.md) — Olympus v4 architecture (reference)
-- [CLI](design/olympus-v4-specs/cli.md) — `ol` CLI specification (reference)
-- [Consensus](design/olympus-v4-specs/consensus.md) — Multi-model consensus before ratchet locks (reference)
-- [Context](design/olympus-v4-specs/context.md) — Context as control plane (reference)
-- [Daemon](design/olympus-v4-specs/daemon.md) — Daemon Phase 0 mechanical spec (reference)
-- [Execution](design/olympus-v4-specs/execution.md) — Execution model (reference)
-- [Knowledge](design/olympus-v4-specs/knowledge.md) — Knowledge compounding via constraint tests (reference)
-- [Validation](design/olympus-v4-specs/validation.md) — Validation contract (reference)

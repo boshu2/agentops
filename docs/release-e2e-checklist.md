@@ -72,22 +72,20 @@ bash scripts/validate-codex-runtime-sections.sh
 
 Use this when editing Codex runtime guidance or AGENTS runtime sections.
 
-## 4) Hook install + init/RPI smoke expectations
+## 4) init + RPI smoke expectations
 
-The local gate includes these release E2E smoke checks:
+AgentOps 3.0 is **hookless** — it ships zero hooks, so there is no hook-install
+smoke check. The local gate includes this release E2E smoke check:
 
-- `Hook install smoke (minimal + full)` validates:
-  - `ao hooks install`
-  - `ao hooks show`
-  - `ao hooks install --full --source-dir <repo-root> --force`
-  - Hook artifacts are written (`~/.claude/settings.json` and `~/.agentops/hooks/session-start.sh`)
-- `ao init --hooks + ao rpi smoke` validates (in a fresh git repo):
-  - `ao init --hooks`
+- `ao init + ao rpi smoke` validates (in a fresh git repo):
+  - `ao init` (creates `.agents/`; no hooks installed)
   - `ao rpi status`
   - `ao rpi --help`
   - `ao rpi phased --help`
 
-If the fast gate passes but one of these smoke paths fails, treat the release as blocked. Inspect the corresponding gate output, then rerun the full local gate so the fix is validated end to end before tagging.
+If the fast gate passes but this smoke path fails, treat the release as blocked.
+Inspect the corresponding gate output, then rerun the full local gate so the fix
+is validated end to end before tagging.
 
 ## 5) Parity checks when workflow/docs contracts change
 

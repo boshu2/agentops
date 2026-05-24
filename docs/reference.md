@@ -222,10 +222,9 @@ irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-ao.ps
 # Any OS with Go
 go install github.com/boshu2/agentops/cli/cmd/ao@latest
 
-# From your repo root: create `.agents/` + enable auto-hooks (Claude Code)
+# From your repo root: create `.agents/` (hookless — AgentOps 3.0 ships zero hooks)
 cd /path/to/your/repo
-ao init --hooks
-ao hooks test
+ao init
 ```
 
 > **Note:** There's a [known bug](https://github.com/anthropics/claude-code/issues/15178) where plugin skills don't appear when pressing `/`. Skills still work — just type them directly.
@@ -264,9 +263,7 @@ The `ao` CLI handles knowledge persistence with MemRL two-phase retrieval, confi
 
 ```bash
 ao quick-start --minimal  # Create .agents/ structure (or use /quickstart skill)
-ao init --hooks           # Recommended: create `.agents/` + install minimal hooks
-ao hooks install          # Hooks only (does not create `.agents/`)
-ao hooks test             # Verify hooks are working
+ao init                   # Create `.agents/` (hookless — AgentOps 3.0 ships zero hooks)
 ao inject [topic]         # Load prior knowledge explicitly/JIT
 ao search "query"         # Search workspace session history plus repo-local knowledge
 ao flywheel status        # Knowledge growth rate, escape velocity
