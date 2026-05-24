@@ -1792,11 +1792,19 @@ jobs:
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
   executable-spec-link-integrity:
+    # T1 (≤5min). Blocking (soc-x7y9f): now that PR #490/soc-m8tdn linked all 14
+    # GOALS.md directives to scenarios, the directive↔scenario link lint
+    # (`ao goals scenarios --lint`) is promoted from warn-only to a required
+    # check — it fails the job (and the summary) on any broken directive↔scenario
+    # edge. The broader whole-chain orphan/gap audit (`ao goals trace --orphans`)
+    # stays warn-only here: it audits directive→scenario→bead→artifact→learning
+    # lineage and still surfaces pre-existing bead-claim-parse defects that are
+    # out of this gate's scope (tracked separately under soc-gqhrz). Sibling
+    # blocking gate: validate-scenario-test-linkage (scenarios→tests).
     needs: [changes]
     if: needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
-    name: executable-spec-link-integrity (warn-only, F1.6)
+    name: executable-spec-link-integrity (T1, soc-x7y9f)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v6
 
@@ -1810,15 +1818,15 @@ jobs:
         run: |
           cd cli && go build -o bin/ao ./cmd/ao
 
-      - name: Directive-to-scenario link lint (ao goals scenarios --lint)
+      - name: Directive-to-scenario link lint (ao goals scenarios --lint, blocking)
         run: |
           echo "=== ao goals scenarios --lint ==="
-          cli/bin/ao goals scenarios --lint || echo "WARN: scenarios --lint found issues (warn-only, F1.6 / soc-58nt.1.9)"
+          cli/bin/ao goals scenarios --lint
 
-      - name: Whole-chain orphan/gap audit (ao goals trace --orphans)
+      - name: Whole-chain orphan/gap audit (ao goals trace --orphans, warn-only)
         run: |
           echo "=== ao goals trace --orphans ==="
-          cli/bin/ao goals trace --orphans || echo "WARN: trace --orphans found issues (warn-only, F1.6 / soc-58nt.1.9)"
+          cli/bin/ao goals trace --orphans || echo "WARN: trace --orphans found issues (warn-only, F1.6 / soc-58nt.1.9; out of soc-x7y9f scope, tracked under soc-gqhrz)"
 
   validate-scenario-test-linkage:
     # T1 (≤5min). Sibling to executable-spec-link-integrity: that gate links
