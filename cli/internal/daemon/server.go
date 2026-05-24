@@ -660,6 +660,9 @@ func isQueueValidationError(err error) bool {
 	if err == nil {
 		return false
 	}
+	if errors.Is(err, ErrInvalidJobPayload) {
+		return true
+	}
 	msg := err.Error()
 	return strings.HasPrefix(msg, "invalid job type ") ||
 		strings.HasPrefix(msg, "request_id ") ||

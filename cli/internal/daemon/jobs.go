@@ -172,6 +172,11 @@ func (q *Queue) SubmitJob(input SubmitJobInput, opts QueueMutationOptions) (Queu
 	if err := ValidateJobType(input.JobType); err != nil {
 		return QueueJobState{}, err
 	}
+	// Shape-validate the payload BEFORE any ledger append so a malformed payload
+	// for a known JobType never contaminates the ledger (soc-qra05).
+	if err := validateJobPayload(input.JobType, input.Payload); err != nil {
+		return QueueJobState{}, err
+	}
 	if strings.TrimSpace(input.JobID) == "" {
 		input.JobID = q.nextID("job", string(input.JobType))
 	}
