@@ -80,6 +80,7 @@ Use this skill when work touches `hooks/hooks.json`, `hooks/*.sh`,
 
 ## Guardrails
 
+- **Hookless-first: a hook must be a gate or a bounded adapter, never a noise-injector.** Under AgentOps 3.0 ([docs/3.0.md](../../docs/3.0.md)), hooks are a demoted adapter, not the architecture. A hook may *block on a real violation* (gate) or *do a bounded side-effect and stay silent unless it has a real result* (bounded adapter). It must **not** push `additionalContext`/advisory prose into the prompt window on every matching event regardless of relevance — that is the 2.x failure mode the [hook-noise audit](../../docs/architecture/hook-noise-audit.md) deleted 7 hooks for (A/B Δ=0). Context flows through explicit pulled channels (`ao lookup`, factory briefings, `/inject`), not unconditional injection.
 - Do not broaden a matcher to hide a missing case; add a second hook entry.
 - Do not rely on hook output fields that Codex ignores.
 - Do not store session secrets, transcripts, or local runtime state in tracked
