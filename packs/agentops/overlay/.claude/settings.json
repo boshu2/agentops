@@ -1,0 +1,57 @@
+{
+  "_comment": "AgentOps overlay — copied into every spawned agent's working dir by overlay_dir (config.md:106). Modeled on examples/gastown/packs/gastown/overlay/.claude/settings.json: same SessionStart/PreCompact/UserPromptSubmit/Stop hook points, with `gc` lifecycle hooks (the GC substrate) layered with `ao inject` (the AgentOps context compiler). TODO(gvkj6-finalize): reconcile against the post-rip `ao` hook surface — AgentOps 3.0 is hookless-first, so the `ao inject` SessionStart hook is the one load-bearing AgentOps hook; the rest are GC substrate hooks.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gc prime"
+          },
+          {
+            "type": "command",
+            "command": "ao inject --apply-decay --max-tokens 400"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gc prime"
+          },
+          {
+            "type": "command",
+            "command": "gc handoff --auto \"context cycle\""
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gc mail check --inject"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gc hook --inject"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,65 @@
+# AgentOps — the reference Gas City. AgentOps IS the city.toml of Gas City.
+#
+# Thesis (design doc .agents/discovery/2026-05-24-agentops-reference-city-design.md §2.1):
+# GC supplies the SUBSTRATE (controller/supervisor, Orders, bead/dolt queue,
+# Event Bus, runtime providers, mayor/worker agents). AgentOps supplies the
+# OPINIONS (the rpi/evolve loops, the ratchet rules, the skill corpus, the
+# `.agents/` context compiler). The single `[imports.agentops]` line below is
+# where ALL the opinion lives; every other block is pure substrate consumption.
+#
+# Shape modeled on: examples/gastown/city.toml (workspace/daemon/global_fragments/
+#   formula_v2) and examples/swarm/city.toml (minimal [workspace]+[daemon]).
+# [beads]/[session]/[mail] consumption modeled on docs/reference/config.md:22-24.
+#
+# To use: gc start <this-dir>   (rigs registered via: gc rig add <path>)
+
+[workspace]
+name = "agentops"
+provider = "claude"
+# Doctrine every agent reads at startup, appended as prompt fragments.
+# Fragments ship in packs/agentops/template-fragments/.
+global_fragments = ["agentops-doctrine", "operating-loop", "standards-brief"]
+
+[daemon]
+patrol_interval = "30s"
+max_restarts = 5
+restart_window = "1h"
+shutdown_timeout = "5s"
+# Enable graph.v2 formulas from the imported pack (modeled on gastown city.toml:36).
+formula_v2 = true
+
+# Beads: consume GC's bd/dolt substrate — do NOT reimplement.
+# "bd" is the default Dolt-backed provider; swap to "exec:.../gc-beads-br" to
+# ride beads_rust (docs/reference/exec-beads-provider.md). Shape: config.md:22.
+[beads]
+provider = "bd"
+
+# Session runtime: tmux locally; swap to exec/k8s without touching agents.
+# Shape: docs/reference/config.md ProviderSpec / contrib/k8s/example-city.toml.
+[session]
+provider = "tmux"
+
+# Mail = a bead (messaging is GC-derived). Shape: config.md:24.
+[mail]
+provider = "bd"
+
+# City-wide agent defaults. THIN-SEAM: the default sling is a thin dispatch that
+# runs `ao rpi` (one whole loop) on a slung bead — NOT a 4-step formula. The
+# dispatch sling lives in the refinery agent (default_sling); the doctrine is
+# appended to every agent's prompt. (Design doc "DDD seam correction".)
+[agent_defaults]
+append_fragments = ["agentops-doctrine"]
+
+# The AgentOps pack supplies the mayor + worker agents, the orders, the skills
+# overlay, and the doctrine fragments. ALL the opinion is behind this one line.
+# Shape: gastown pack.toml [imports.maintenance] + config.md:342 (PackV2 compose).
+[imports.agentops]
+source = "./packs/agentops"
+
+# Register a rig to activate the per-rig worker (refinery). Modeled on the
+# commented rig block in examples/gastown/city.toml:38-41.
+# [[rigs]]
+# name = "myproject"
+# path = "/path/to/your/project"
+# [rigs.imports.agentops]
+# source = "./packs/agentops"
