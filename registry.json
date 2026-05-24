@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-24T16:19:51Z",
+  "generated_at": "2026-05-24T16:42:59Z",
   "summary": {
     "skills": 80,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 14,
     "eval_files": 57,
-    "cli_commands": 174
+    "cli_commands": 171
   },
   "surfaces": {
     "skills": [
@@ -1089,14 +1089,6 @@
         "path": "cli/cmd/ao/gate_cmd.go"
       },
       {
-        "name": "gc_bridge",
-        "path": "cli/cmd/ao/gc_bridge.go"
-      },
-      {
-        "name": "gc_events",
-        "path": "cli/cmd/ao/gc_events.go"
-      },
-      {
         "name": "goals_add",
         "path": "cli/cmd/ao/goals_add.go"
       },
@@ -1415,10 +1407,6 @@
       {
         "name": "rpi_phased_discovery",
         "path": "cli/cmd/ao/rpi_phased_discovery.go"
-      },
-      {
-        "name": "rpi_phased_gc",
-        "path": "cli/cmd/ao/rpi_phased_gc.go"
       },
       {
         "name": "rpi_phased_processing",

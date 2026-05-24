@@ -7,15 +7,15 @@ import (
 )
 
 // TestRPIPhasedDomainEnforce_ResolveEnforcement is the core table test: under
-// the hookless model each runtime resolves to exactly one of the two honest
-// modes — `audited` for observable runtimes, `unavailable` for opaque ones.
+// the hookless model every current runtime resolves to `audited` (observable,
+// visible-evidence-only). The `unavailable` mode remains in the schema for any
+// future opaque (out-of-process) substrate but no current runtime produces it.
 func TestRPIPhasedDomainEnforce_ResolveEnforcement(t *testing.T) {
 	cases := []struct {
 		name        string
 		runtimeMode string
 		wantMode    domainEnforcementMode
 	}{
-		{"gc runtime is always unavailable", "gc", domainEnforcementUnavailable},
 		{"direct runtime is audited", "direct", domainEnforcementAudited},
 		{"stream runtime is audited", "stream", domainEnforcementAudited},
 		{"tmux runtime is audited", "tmux", domainEnforcementAudited},
@@ -81,8 +81,8 @@ func TestRPIPhasedDomainEnforce_GateFailed(t *testing.T) {
 
 // TestRPIPhasedDomainEnforce_AuditDistinguishesModes verifies the persisted JSON
 // evidence carries each resolvable enforcement mode verbatim. Under the hookless
-// model the resolver yields `audited` for observable runtimes and `unavailable`
-// for opaque (Gas City) runtimes; neither hard-fails the gate.
+// model the resolver yields `audited` for observable runtimes; the `unavailable`
+// mode remains in the schema for any future opaque substrate. Neither hard-fails.
 func TestRPIPhasedDomainEnforce_AuditDistinguishesModes(t *testing.T) {
 	evidence := auditTestEvidence()
 	deniedRef := []outOfDomainRef{
@@ -107,16 +107,16 @@ func TestRPIPhasedDomainEnforce_AuditDistinguishesModes(t *testing.T) {
 		t.Errorf("hookless audited run must not record an EnforcementHookSource, got %q", audited.EnforcementHookSource)
 	}
 
-	// --- unavailable: opaque gc path warns, no enforcement claim ---
-	gcState := &phasedState{
-		DomainManifest: evidence,
-		Opts:           phasedEngineOptions{RuntimeMode: "gc"},
+	// --- unavailable: schema-level opaque-substrate decision, no enforcement claim ---
+	unavailableDecision := domainEnforcementDecision{
+		Mode:        domainEnforcementUnavailable,
+		Reason:      "runtime runs agent sessions out-of-process; reads are unobservable",
+		RuntimeMode: "opaque",
 	}
-	gcDecision := resolveDomainEnforcement(t.TempDir(), gcState)
 	unavailable := buildDomainScopeAuditWithEnforcement(
-		"run-gc", evidence, deniedRef, []string{"phase-result.json artifacts"}, gcDecision)
+		"run-opaque", evidence, deniedRef, []string{"phase-result.json artifacts"}, unavailableDecision)
 	if unavailable.Enforcement != "unavailable" {
-		t.Fatalf("gc run Enforcement = %q, want unavailable", unavailable.Enforcement)
+		t.Fatalf("opaque run Enforcement = %q, want unavailable", unavailable.Enforcement)
 	}
 	if unavailable.GateFailed {
 		t.Error("unavailable run must NOT hard-fail the gate — no enforcement claim is made")

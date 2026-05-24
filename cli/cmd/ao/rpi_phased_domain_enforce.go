@@ -35,12 +35,10 @@ const (
 )
 
 // opaqueRuntimeModes are runtime modes whose executor sessions the phased
-// orchestrator cannot instrument at all. Gas City sessions run out-of-process
-// on a remote substrate that does not surface per-tool-call telemetry back to
-// `ao`, so reads inside them are unobservable.
-var opaqueRuntimeModes = map[string]bool{
-	"gc": true,
-}
+// orchestrator cannot instrument at all — reads inside them are unobservable,
+// so the read fence resolves to `unavailable`. No current runtime is opaque;
+// this map is the extension point for any future out-of-process substrate.
+var opaqueRuntimeModes = map[string]bool{}
 
 // domainEnforcementDecision is the resolved enforcement posture for a run,
 // including the reason so JSON evidence and stdout are self-explanatory.

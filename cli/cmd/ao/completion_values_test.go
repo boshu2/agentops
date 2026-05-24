@@ -130,7 +130,7 @@ func TestFlagCompletions_Registered(t *testing.T) {
 		{"rpi phased --from", mustFindCompletionCommand(t, "rpi", "phased"), "from",
 			sortedCompletionValues("discovery", "implementation", "validation", "research", "plan", "pre-mortem", "crank", "vibe", "post-mortem")},
 		{"rpi phased --runtime", mustFindCompletionCommand(t, "rpi", "phased"), "runtime",
-			sortedCompletionValues("auto", "direct", "stream", "tmux", "gc")},
+			sortedCompletionValues("auto", "direct", "stream", "tmux")},
 		{"overnight curator enqueue --kind", overnightCuratorEnqueueCmd, "kind",
 			sortedCompletionValues("ingest-claude-session", "lint-wiki", "dream-seed")},
 		{"overnight curator event --severity", overnightCuratorEventCmd, "severity",

@@ -20,7 +20,7 @@ type trackerHealth struct {
 	Error   string `json:"error,omitempty"`
 }
 
-func detectTrackerHealth(command string, lookPathFn gcLookFn) trackerHealth {
+func detectTrackerHealth(command string, lookPathFn lookFn) trackerHealth {
 	command = effectiveBDCommand(command)
 	executable, _ := splitRuntimeCommand(command)
 	if executable == "" {
