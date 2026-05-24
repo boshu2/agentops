@@ -321,7 +321,6 @@ merge_codex_hook_manifest() {
         "commit-review-gate.sh",
         "lead-only-worker-git-guard.sh",
         "holdout-isolation-gate.sh",
-        "standards-injector.sh",
         "edit-knowledge-surface.sh",
         "codex-parity-warn.sh",
         "write-time-quality.sh",

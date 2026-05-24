@@ -41,7 +41,6 @@ HOOK_FILES=(
   "hooks/pre-mortem-gate.sh"
   "hooks/context-guard.sh"
   "hooks/ratchet-advance.sh"
-  "hooks/standards-injector.sh"
   "hooks/stop-team-guard.sh"
 )
 

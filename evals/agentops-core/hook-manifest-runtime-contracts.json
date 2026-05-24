@@ -42,13 +42,12 @@
       "expectations": [
         {"type": "exit_code", "value": 0},
         {"type": "stdout_contains", "value": "Hook preflight PASSED"},
-        {"type": "stdout_contains", "value": "Registered: 37 of 52"},
+        {"type": "stdout_contains", "value": "Registered: 32 of 47"},
         {"type": "stdout_contains", "value": "Unregistered: 15"},
         {"type": "stdout_contains", "value": "JSON-emitting (WARNING): 0"},
         {"type": "stdout_contains", "value": "context-guard.sh"},
         {"type": "stdout_contains", "value": "precompact-snapshot.sh"},
-        {"type": "stdout_contains", "value": "ratchet-advance.sh"},
-        {"type": "stdout_contains", "value": "standards-injector.sh"}
+        {"type": "stdout_contains", "value": "ratchet-advance.sh"}
       ],
       "dimensions": ["correctness", "process_adherence", "safety"],
       "critical": true

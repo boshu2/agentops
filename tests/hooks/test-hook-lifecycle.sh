@@ -111,13 +111,6 @@ EOF
     # Minimal CLAUDE.md
     echo "# Test Project" > "$dir/CLAUDE.md"
 
-    # Python standards fixture (for standards-injector)
-    cat > "$dir/skills/standards/references/python.md" <<'EOF'
-# Python Standards
-- Use type hints
-- Follow PEP 8
-EOF
-
     # Initialize git repo
     cd "$dir"
     git init -q
@@ -536,7 +529,6 @@ HOOKS_WITH_KILL_SWITCH=(
     "stop-auto-handoff.sh"
     "session-end-maintenance.sh"
     "pending-cleaner.sh"
-    "standards-injector.sh"
     "precompact-snapshot.sh"
 )
 

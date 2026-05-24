@@ -459,65 +459,6 @@ AOEOF
 
 # ═══════════════════════════════════════════════════════════════════════
 # ═══════════════════════════════════════════════════════════════════════
-# ═══════════════════════════════════════════════════════════════════════
-# 12. standards-injector.sh — .tool_input.file_path (Read tool)
-# ═══════════════════════════════════════════════════════════════════════
-
-@test "standards-injector: python file injects standards context" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"tool_input":{"file_path":"/some/path/main.py"}}' "$HOOKS_DIR/standards-injector.sh"
-    [ "$status" -eq 0 ]
-    echo "$output" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1
-}
-
-@test "standards-injector: go file injects standards context" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"tool_input":{"file_path":"/some/path/main.go"}}' "$HOOKS_DIR/standards-injector.sh"
-    [ "$status" -eq 0 ]
-    echo "$output" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1
-}
-
-@test "standards-injector: shell file injects standards context" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"tool_input":{"file_path":"/x/script.sh"}}' "$HOOKS_DIR/standards-injector.sh"
-    [ "$status" -eq 0 ]
-    echo "$output" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1
-}
-
-@test "standards-injector: unknown extension exits silently" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"tool_input":{"file_path":"/some/path/data.csv"}}' "$HOOKS_DIR/standards-injector.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
-@test "standards-injector: missing file_path exits silently" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"tool_input":{}}' "$HOOKS_DIR/standards-injector.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
-@test "standards-injector: kill switch silences output" {
-    run bash -c 'printf "%s" "$1" | AGENTOPS_HOOKS_DISABLED=1 bash "$2" 2>&1' \
-        -- '{"tool_input":{"file_path":"/x/y.py"}}' "$HOOKS_DIR/standards-injector.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
-@test "standards-injector: malformed JSON exits gracefully" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{broken' "$HOOKS_DIR/standards-injector.sh"
-    [ "$status" -eq 0 ]
-}
-
-@test "standards-injector: empty stdin exits gracefully" {
-    run bash -c 'printf "" | bash "$1" 2>&1' \
-        -- "$HOOKS_DIR/standards-injector.sh"
-    [ "$status" -eq 0 ]
-}
-
-# ═══════════════════════════════════════════════════════════════════════
 # 13. task-validation-gate.sh — .metadata.validation (complex nested)
 # ═══════════════════════════════════════════════════════════════════════
 

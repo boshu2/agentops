@@ -49,8 +49,8 @@ type ContextPacket struct {
 //   - Context cancellation MUST be honored on a best-effort basis.
 //
 // See docs/contracts/hook-lease-inventory.md for the hooks this port
-// replaces (`session-start.sh`, `context-guard.sh`,
-// `standards-injector.sh`, and context telemetry hooks).
+// replaces (`session-start.sh`, `context-guard.sh`, the now-deleted
+// standards-injection hook, and context telemetry hooks).
 type ContextCompilerPort interface {
 	Assemble(ctx context.Context, req ContextAssemblyRequest) (ContextPacket, error)
 }

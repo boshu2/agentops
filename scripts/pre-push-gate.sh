@@ -1742,22 +1742,6 @@ else
     skip "hook preflight"
 fi
 
-# --- 27b. Standards-injector reference completeness ---
-if needs_check hook; then
-    if [[ -x scripts/check-standards-injector-completeness.sh ]]; then
-        if standards_inj_output="$(./scripts/check-standards-injector-completeness.sh 2>&1)"; then
-            pass "standards-injector references complete"
-        else
-            fail "standards-injector references complete"
-            indent_output "$standards_inj_output"
-        fi
-    else
-        fail "missing executable: scripts/check-standards-injector-completeness.sh"
-    fi
-else
-    skip "standards-injector references complete"
-fi
-
 # --- 28. Hooks/docs parity ---
 if needs_check hook; then
     if [[ -x scripts/validate-hooks-doc-parity.sh ]]; then

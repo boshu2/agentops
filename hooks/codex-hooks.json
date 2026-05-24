@@ -81,22 +81,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/standards-injector.sh",
-            "timeout": 3
-          },
-          {
-            "type": "command",
             "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/codex-parity-warn.sh",
-            "timeout": 3
-          }
-        ]
-      },
-      {
-        "matcher": "Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/standards-injector.sh",
             "timeout": 3
           }
         ]

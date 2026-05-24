@@ -624,47 +624,6 @@ fi
 
 # ============================================================
 echo ""
-echo "=== standards-injector.sh ==="
-# ============================================================
-
-# Test: Python file triggers python standards injection
-OUTPUT=$(echo '{"tool_input":{"file_path":"/some/path/main.py"}}' | bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)
-if echo "$OUTPUT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1; then
-    pass "python file injects standards context"
-else
-    fail "python file injects standards context"
-fi
-
-# Test: Go file triggers go standards injection
-OUTPUT=$(echo '{"tool_input":{"file_path":"/some/path/main.go"}}' | bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)
-if echo "$OUTPUT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1; then
-    pass "go file injects standards context"
-else
-    fail "go file injects standards context"
-fi
-
-# Test: Unknown extension => silent exit
-OUTPUT=$(echo '{"tool_input":{"file_path":"/some/path/data.csv"}}' | bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)
-if [ -z "$OUTPUT" ]; then pass "unknown extension produces no output"; else fail "unknown extension produces no output"; fi
-
-# Test: No file_path => silent exit
-OUTPUT=$(echo '{"tool_input":{}}' | bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)
-if [ -z "$OUTPUT" ]; then pass "missing file_path produces no output"; else fail "missing file_path produces no output"; fi
-
-# Test: Kill switch disables injection
-OUTPUT=$(echo '{"tool_input":{"file_path":"/x/y.py"}}' | AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)
-if [ -z "$OUTPUT" ]; then pass "standards-injector kill switch"; else fail "standards-injector kill switch"; fi
-
-# Test: Shell file triggers shell standards
-OUTPUT=$(echo '{"tool_input":{"file_path":"/x/script.sh"}}' | bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)
-if echo "$OUTPUT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1; then
-    pass "shell file injects standards context"
-else
-    fail "shell file injects standards context"
-fi
-
-# ============================================================
-echo ""
 echo "=== git-worker-guard.sh ==="
 # ============================================================
 

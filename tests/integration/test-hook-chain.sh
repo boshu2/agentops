@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test-hook-chain.sh - Integration test for hook chain execution
-# Tests session-start.sh and standards-injector.sh with real filesystem state
+# Tests session-start.sh with real filesystem state
 # Usage: ./tests/integration/test-hook-chain.sh
 
 set -euo pipefail
@@ -90,27 +90,12 @@ cat > "$TMPDIR/CLAUDE.md" <<'EOF'
 Test project for hook chain integration testing.
 EOF
 
-# Create minimal Python standards fixture
-cat > "$TMPDIR/skills/standards/references/python.md" <<'EOF'
-# Python Coding Standards
-
-## Test Fixture
-
-This is a minimal Python standards file for testing standards-injector.sh.
-
-## Guidelines
-
-- Use type hints
-- Follow PEP 8
-- Write docstrings
-EOF
-
 # Copy hook-helpers.sh (session-start.sh might need it)
 if [ -f "$REPO_ROOT/lib/hook-helpers.sh" ]; then
     cp "$REPO_ROOT/lib/hook-helpers.sh" "$TMPDIR/lib/"
 fi
 
-# Copy hooks directory to temp location so standards-injector can find fixture
+# Copy hooks directory to temp location so hooks can find fixtures
 mkdir -p "$TMPDIR/hooks"
 cp -r "$HOOKS_DIR"/* "$TMPDIR/hooks/"
 # Update HOOKS_DIR to point to temp location
@@ -257,102 +242,10 @@ fi
 
 # ============================================================
 echo ""
-echo "=== Test 6: standards-injector.sh basic execution ==="
+echo "=== Test 6: Hook chain sequence ==="
 # ============================================================
 
-# Create test input JSON for a Python file
-TEST_INPUT='{"tool_input":{"file_path":"test.py"}}'
-
-cd "$TMPDIR"
-STANDARDS_OUTPUT=$(echo "$TEST_INPUT" | bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)
-STANDARDS_EXIT=$?
-
-if [ $STANDARDS_EXIT -eq 0 ]; then
-    pass "standards-injector.sh exits with code 0"
-else
-    fail "standards-injector.sh exits with code 0 (got $STANDARDS_EXIT)"
-fi
-
-# ============================================================
-echo ""
-echo "=== Test 7: standards-injector.sh output validation ==="
-# ============================================================
-
-# Check if standards fixture exists for Python
-PYTHON_STANDARDS="$TMPDIR/skills/standards/references/python.md"
-if [ -f "$PYTHON_STANDARDS" ]; then
-    # Should produce output for .py file
-    if [ -n "$STANDARDS_OUTPUT" ]; then
-        pass "standards-injector.sh produces output for .py file"
-    else
-        fail "standards-injector.sh produces output for .py file"
-    fi
-
-    # Validate JSON
-    if echo "$STANDARDS_OUTPUT" | jq . >/dev/null 2>&1; then
-        pass "standards-injector.sh produces valid JSON"
-    else
-        fail "standards-injector.sh produces valid JSON"
-    fi
-
-    # Check for hookSpecificOutput
-    if echo "$STANDARDS_OUTPUT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1; then
-        pass "standards-injector.sh includes additionalContext"
-    else
-        fail "standards-injector.sh includes additionalContext"
-    fi
-else
-    yellow "SKIP: Python standards file not found, skipping output validation"
-fi
-
-# ============================================================
-echo ""
-echo "=== Test 8: standards-injector.sh unsupported extension ==="
-# ============================================================
-
-# Test with unsupported file extension
-UNSUPPORTED_INPUT='{"tool_input":{"file_path":"test.xyz"}}'
-UNSUPPORTED_OUTPUT=$(echo "$UNSUPPORTED_INPUT" | bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)
-UNSUPPORTED_EXIT=$?
-
-if [ $UNSUPPORTED_EXIT -eq 0 ]; then
-    pass "standards-injector.sh exits 0 for unsupported extension"
-else
-    fail "standards-injector.sh exits 0 for unsupported extension"
-fi
-
-if [ -z "$UNSUPPORTED_OUTPUT" ]; then
-    pass "standards-injector.sh produces no output for unsupported extension"
-else
-    fail "standards-injector.sh produces no output for unsupported extension"
-fi
-
-# ============================================================
-echo ""
-echo "=== Test 9: standards-injector.sh kill switch ==="
-# ============================================================
-
-KILL_STANDARDS_OUTPUT=$(echo "$TEST_INPUT" | AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)
-KILL_STANDARDS_EXIT=$?
-
-if [ $KILL_STANDARDS_EXIT -eq 0 ]; then
-    pass "standards-injector.sh respects AGENTOPS_HOOKS_DISABLED"
-else
-    fail "standards-injector.sh respects AGENTOPS_HOOKS_DISABLED"
-fi
-
-if [ -z "$KILL_STANDARDS_OUTPUT" ]; then
-    pass "standards-injector.sh produces no output with kill switch"
-else
-    fail "standards-injector.sh produces no output with kill switch"
-fi
-
-# ============================================================
-echo ""
-echo "=== Test 10: Hook chain sequence ==="
-# ============================================================
-
-# Simulate a full session start + standards injection sequence
+# Simulate a full session start sequence
 # 1. Session start creates environment
 cd "$TMPDIR"
 rm -f .agents/ao/environment.json 2>/dev/null || true
@@ -366,32 +259,16 @@ else
     fail "Hook chain: session-start creates environment"
 fi
 
-# 2. Standards injector can run after session start
-CHAIN_STANDARDS_OUTPUT=$(echo "$TEST_INPUT" | bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)
-CHAIN_STANDARDS_EXIT=$?
-
-if [ $CHAIN_STANDARDS_EXIT -eq 0 ]; then
-    pass "Hook chain: standards-injector runs after session-start"
-else
-    fail "Hook chain: standards-injector runs after session-start"
-fi
-
-# Both hooks should produce valid output
+# session-start should produce valid output
 CHAIN_SUCCESS=true
 if ! echo "$SESSION_OUTPUT" | jq . >/dev/null 2>&1; then
     CHAIN_SUCCESS=false
 fi
 
-if [ -f "$PYTHON_STANDARDS" ]; then
-    if ! echo "$CHAIN_STANDARDS_OUTPUT" | jq . >/dev/null 2>&1; then
-        CHAIN_SUCCESS=false
-    fi
-fi
-
 if $CHAIN_SUCCESS; then
-    pass "Hook chain: both hooks produce valid JSON"
+    pass "Hook chain: session-start produces valid JSON"
 else
-    fail "Hook chain: both hooks produce valid JSON"
+    fail "Hook chain: session-start produces valid JSON"
 fi
 
 # ============================================================

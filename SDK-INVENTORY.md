@@ -205,7 +205,7 @@ Cleanest split.
 | CLI wrappers | `ao-extract.sh`, `ao-feedback-loop.sh`, `ao-flywheel-close.sh`, `ao-forge.sh`, `ao-inject.sh`, `ao-maturity-scan.sh`, `ao-ratchet-status.sh`, `ao-session-outcome.sh`, `ao-task-sync.sh`, `ao-agents-check.sh` | OPINIONATED |
 | Codex parity | `codex-hooks.json`, `codex-parity-warn.sh`, `postedit-codex-refresh.sh` | OPINIONATED |
 | Language-specific | `go-test-precommit.sh`, `go-vet-post-edit.sh`, `go-complexity-precommit.sh`, `skill-lint-gate.sh` | OPINIONATED |
-| Misc | `precompact-snapshot.sh`, `pending-cleaner.sh`, `research-loop-detector.sh`, `standards-injector.sh`, `config-change-monitor.sh`, `citation-tracker.sh`, `constraint-compiler.sh` | OPINIONATED |
+| Misc | `precompact-snapshot.sh`, `pending-cleaner.sh`, `research-loop-detector.sh`, `config-change-monitor.sh`, `citation-tracker.sh`, `constraint-compiler.sh` | OPINIONATED |
 
 ## Scripts inventory (`scripts/` — ~150)
 

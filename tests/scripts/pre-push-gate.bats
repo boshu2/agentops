@@ -92,7 +92,6 @@ setup() {
     make_stub "$FAKE_REPO/scripts/check-contract-compatibility.sh"
     make_stub "$FAKE_REPO/scripts/validate-swarm-evidence.sh"
     make_stub "$FAKE_REPO/scripts/validate-hook-preflight.sh"
-    make_stub "$FAKE_REPO/scripts/check-standards-injector-completeness.sh"
     make_stub "$FAKE_REPO/scripts/validate-hooks-doc-parity.sh"
     make_stub "$FAKE_REPO/scripts/check-hook-lease-inventory.sh"
     make_stub "$FAKE_REPO/scripts/check-hook-port-replacements.sh"
@@ -1166,14 +1165,13 @@ CANARY
     # .agents/plans/2026-05-03-ci-failures-1-40-handling.md §prepush-hygiene-gate
     # must have a corresponding section header in pre-push-gate.sh. This test
     # is the BATS-side guardrail that prevents silent gate drift.
-    run grep -E '# --- (5\.|6\.|24b\.|25\.|27b\.|28\.|28a\.|28b\.|28c\.|31\.|32\.) ' "$SCRIPT"
+    run grep -E '# --- (5\.|6\.|24b\.|25\.|28\.|28a\.|28b\.|28c\.|31\.|32\.) ' "$SCRIPT"
     [ "$status" -eq 0 ]
     # At least the items above should each appear once.
     [[ "$output" == *"# --- 5. Embedded hooks sync"* ]]
     [[ "$output" == *"# --- 6. Skill count sync"* ]]
     [[ "$output" == *"# --- 24b. CLI docs parity"* ]]
     [[ "$output" == *"# --- 25. Doc-release"* ]]
-    [[ "$output" == *"# --- 27b. Standards-injector"* ]]
     [[ "$output" == *"# --- 28. Hooks/docs parity"* ]]
     [[ "$output" == *"# --- 28a. Hook lease inventory"* ]]
     [[ "$output" == *"# --- 28b. Hook replacement ports"* ]]

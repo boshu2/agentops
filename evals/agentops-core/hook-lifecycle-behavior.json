@@ -49,7 +49,7 @@
       "id": "hook-chain-integration",
       "title": "hook chain integration test passes",
       "kind": "command",
-      "objective": "Exercise session-start and standards-injector with real filesystem state, kill switches, environment manifests, and chained JSON behavior.",
+      "objective": "Exercise session-start with real filesystem state, kill switches, environment manifests, and chained JSON behavior.",
       "runtime": "shell",
       "inputs": {
         "cwd": "../..",

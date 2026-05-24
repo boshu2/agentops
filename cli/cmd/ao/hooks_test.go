@@ -259,7 +259,7 @@ func TestReplacePluginRoot(t *testing.T) {
 			{
 				Matcher: "Write|Edit",
 				Hooks: []HookEntry{
-					{Type: "command", Command: "${CLAUDE_PLUGIN_ROOT}/hooks/standards-injector.sh"},
+					{Type: "command", Command: "${CLAUDE_PLUGIN_ROOT}/hooks/codex-parity-warn.sh"},
 				},
 			},
 		},
@@ -274,7 +274,7 @@ func TestReplacePluginRoot(t *testing.T) {
 
 	replacePluginRoot(config, "/home/user/.agentops")
 
-	if config.PreToolUse[0].Hooks[0].Command != "/home/user/.agentops/hooks/standards-injector.sh" {
+	if config.PreToolUse[0].Hooks[0].Command != "/home/user/.agentops/hooks/codex-parity-warn.sh" {
 		t.Errorf("PreToolUse command not rewritten: %s", config.PreToolUse[0].Hooks[0].Command)
 	}
 	if config.Stop[0].Hooks[0].Command != "/home/user/.agentops/hooks/stop-team-guard.sh" {
@@ -600,7 +600,7 @@ func TestCollectWiredScripts(t *testing.T) {
 			map[string]any{
 				"matcher": "Write|Edit",
 				"hooks": []any{
-					map[string]any{"type": "command", "command": "/home/user/.agentops/hooks/standards-injector.sh"},
+					map[string]any{"type": "command", "command": "/home/user/.agentops/hooks/codex-parity-warn.sh"},
 				},
 			},
 		},
@@ -624,7 +624,7 @@ func TestCollectWiredScripts(t *testing.T) {
 	if len(wiredScripts) != 4 {
 		t.Errorf("expected 4 unique wired scripts, got %d", len(wiredScripts))
 	}
-	for _, name := range []string{"session-start.sh", "stop-team-guard.sh", "session-close.sh", "standards-injector.sh"} {
+	for _, name := range []string{"session-start.sh", "stop-team-guard.sh", "session-close.sh", "codex-parity-warn.sh"} {
 		if !wiredScripts[name] {
 			t.Errorf("expected %s in wired scripts", name)
 		}

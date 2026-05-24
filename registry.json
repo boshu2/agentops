@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-23T23:01:11Z",
+  "generated_at": "2026-05-24T00:11:24Z",
   "summary": {
     "skills": 80,
-    "hooks": 38,
+    "hooks": 36,
     "knowledge_stores": 5,
     "job_types": 14,
     "eval_files": 62,
@@ -827,22 +827,6 @@
         "matcher": "Bash",
         "timeout": 10,
         "path": "hooks/session-pr-counter.sh",
-        "type": "command"
-      },
-      {
-        "name": "standards-injector",
-        "lifecycle": "PreToolUse",
-        "matcher": "Edit",
-        "timeout": 3,
-        "path": "hooks/standards-injector.sh",
-        "type": "command"
-      },
-      {
-        "name": "standards-injector",
-        "lifecycle": "PreToolUse",
-        "matcher": "Write",
-        "timeout": 3,
-        "path": "hooks/standards-injector.sh",
         "type": "command"
       },
       {

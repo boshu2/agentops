@@ -431,20 +431,6 @@ EOF
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# standards-injector.sh
-# ═══════════════════════════════════════════════════════════════════════
-
-@test "standards-injector: python file injects standards context (original)" {
-    OUTPUT=$(printf '%s' '{"tool_input":{"file_path":"/some/path/main.py"}}' | bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)
-    echo "$OUTPUT" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>&1
-}
-
-@test "standards-injector: unknown extension produces no output (original)" {
-    OUTPUT=$(printf '%s' '{"tool_input":{"file_path":"/some/path/data.csv"}}' | bash "$HOOKS_DIR/standards-injector.sh" 2>&1 || true)
-    [ -z "$OUTPUT" ]
-}
-
-# ═══════════════════════════════════════════════════════════════════════
 # git-worker-guard.sh — AGENTOPS_ROLE tests
 # ═══════════════════════════════════════════════════════════════════════
 

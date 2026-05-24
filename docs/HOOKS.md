@@ -23,7 +23,7 @@ AgentOps currently ships a full Claude runtime manifest across the supported hoo
 | `SessionEnd` | Compile session signal, maintain the knowledge pool | `session-end-maintenance.sh`, `compile-session-defrag.sh` |
 | `Stop` | Preserve handoff/team state and close the flywheel for the turn | `stop-team-guard.sh`, `stop-auto-handoff.sh`, `ao-flywheel-close.sh` |
 | `UserPromptSubmit` | Route explicit factory intake, watch context, and capture quality signals | `factory-router.sh`, `context-guard.sh`, `quality-signals.sh` |
-| `PreToolUse` | Gate risky tool calls and inject compact file-scoped guidance | `pre-mortem-gate.sh`, `dangerous-git-guard.sh`, `commit-review-gate.sh`, `standards-injector.sh`, `holdout-isolation-gate.sh` |
+| `PreToolUse` | Gate risky tool calls | `pre-mortem-gate.sh`, `dangerous-git-guard.sh`, `commit-review-gate.sh`, `holdout-isolation-gate.sh` |
 | `PostToolUse` | Quality gate after edits | `go-complexity-precommit.sh` |
 | `TaskCompleted` | Validate task closure metadata and structural checks | `task-validation-gate.sh` |
 | `PreCompact` | Snapshot branch, changed files, and ratchet state before compaction | `precompact-snapshot.sh` |
@@ -75,7 +75,6 @@ Most hooks read environment variables rather than checking in-tree config. See [
 | Variable | Effect |
 |----------|--------|
 | `AGENTOPS_STARTUP_CONTEXT_MODE` | `factory` (default) stages goal-scoped briefing state; `manual` skips prompt-time factory intake |
-| `AGENTOPS_STANDARDS_FULL_INJECT` | Set to `1` only for legacy debugging when you need full standards references injected by `standards-injector.sh` |
 | `AGENTOPS_GITIGNORE_AUTO` | Legacy no-op for repo-root `.agents/`; local agent state must remain git-ignored |
 | `AGENTOPS_HOOKS_DISABLED` | Set to `1` to short-circuit all hooks without uninstalling them |
 | `AGENTOPS_QUIET` | Set to `1` to suppress non-error hook output |
