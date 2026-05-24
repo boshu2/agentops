@@ -1,8 +1,8 @@
 # Hook-Noise Audit (3.0 reconciliation)
 
-> **Bead:** `soc-6zihw` (W3 of the 3.0 reconciliation). **Criterion:** [docs/3.0.md](../3.0.md) — "hooks may help, but they must not inject random noise"; the 3.0-ready acceptance is *"every hook is a bounded adapter or a gate, none a noise-injector."* This audit classifies all 53 hook scripts against that criterion. Edits to hook behavior are tracked separately (see Follow-on).
+> **Bead:** `soc-6zihw` (W3 of the 3.0 reconciliation), resolved through `soc-e2ju0` S1–S3. **Criterion:** [docs/3.0.md](../3.0.md) — "hooks may help, but they must not inject random noise"; the 3.0-ready acceptance is *"every hook is a bounded adapter or a gate, none a noise-injector."* This audit originally classified all 53 hook scripts against that criterion; the noise-injectors have since been deleted, leaving **46 hooks, all gates or bounded adapters — none a noise-injector**. The acceptance box is met.
 >
-> **Status (go-hookless epic `soc-e2ju0`):** operator chose to **delete** the noise-injectors outright, not quiet them (they are value-negative: A/B Δ=0). S1 (`soc-s1i3b`) deleted 5 — `research-loop-detector`, `context-monitor`, `write-time-quality`, `edit-knowledge-surface`, `go-vet-post-edit` — leaving 48 hooks. S2 (`soc-khev6`) deleted `standards-injector` and retired its dedicated `standards-injector-completeness` CI gate, leaving 47 hooks. S3 (`soc-vpmzg`) deleted `commit-review-gate` — the value-negative noise-injector that injected the staged diff + a "SELF-REVIEW" prompt on every `git commit` (never blocked, always exited 0) — leaving 46 hooks. The "+7 conditional injectors" the audit originally grouped with it were reclassified as kept-gates (they speak only on a real violation), so S3 deletes only `commit-review-gate`. Default install goes to zero hooks in S4.
+> **Status (go-hookless epic `soc-e2ju0`) — RESOLVED, all 7 noise-injectors deleted:** the operator chose to **delete** the noise-injectors outright, not quiet them (they are value-negative: A/B Δ=0). S1 (`soc-s1i3b`) deleted 5 — `research-loop-detector`, `context-monitor`, `write-time-quality`, `edit-knowledge-surface`, `go-vet-post-edit` — leaving 48 hooks. S2 (`soc-khev6`) deleted `standards-injector` and retired its dedicated `standards-injector-completeness` CI gate, leaving 47 hooks. S3 (`soc-vpmzg`) deleted `commit-review-gate` — the value-negative noise-injector that injected the staged diff + a "SELF-REVIEW" prompt on every `git commit` (never blocked, always exited 0) — leaving **46 hooks**. The "+7 conditional injectors" the audit originally grouped with the noise-injectors were reclassified as kept-gates (they speak only on a real violation), so S3 deleted only `commit-review-gate`. **No noise-injector remains; the docs/3.0.md "none a noise-injector" box is now met (`soc-cul67`).** The separate default-install-zero-hooks lift is S4 (ADR-0002), still open and not a 3.0-close blocker.
 
 ## Method
 
@@ -16,39 +16,50 @@ The discriminator: *does the hook speak only when it blocks or detects a real pr
 
 ## Summary
 
-| Category | Count | Disposition |
+**Original audit (53 hooks, before deletion):**
+
+| Category | Count | Original disposition |
 |---|---|---|
 | GATE | 14 | keep |
 | BOUNDED-ADAPTER | 25 | keep |
-| NOISE-INJECTOR | 14 | quiet (flip to opt-in default) or raise thresholds |
+| NOISE-INJECTOR | 14 | cut or quiet |
 
-39 of 53 hooks (74%) already meet the 3.0 criterion. The 14 noise-injectors all already honor a per-hook disable env var and `AGENTOPS_HOOKS_DISABLED`; the reconciliation is to flip their **default** from opt-out to opt-in (or raise their thresholds) so the default experience is quiet.
+**Current state (46 hooks, after `soc-e2ju0` S1–S3 deleted the 7 true noise-injectors):**
 
-## Noise-injectors (cut/quiet candidates)
+| Category | Count | Disposition |
+|---|---|---|
+| GATE | 20 | keep — 13 original gates + the 7 conditional injectors reclassified as gates (speak only on a real violation) |
+| BOUNDED-ADAPTER | 26 | keep |
+| NOISE-INJECTOR | 0 | **all 7 deleted** |
 
-Ranked by injection frequency × unconditionality. Each cites the emission site and the existing disable flag.
+The shift: the 14 entries originally bucketed as "noise-injectors" split into **7 true unconditional noise-injectors (deleted)** and **7 conditional injectors that only speak on a real violation (kept, reclassified as gates)**. `go-vet-post-edit` left the gate column too — it was one of the 7 deleted hooks, not a surviving blocking-path gate. **All 46 surviving hooks meet the 3.0 criterion: every one is a bounded adapter or a gate, none a noise-injector.**
 
-| Hook | Event | Emits additionalContext | Disable flag (exists) | Verdict |
-|---|---|---|---|---|
-| `standards-injector.sh` | PreToolUse:Edit/Write (6 file types) | always — JIT language standards on every edit | (removed) | **DELETED in S2 (`soc-khev6`)** — replaced by the standards skill, read on demand |
-| `commit-review-gate.sh` | PreToolUse:Bash (`git commit`) | always — staged diff + "SELF-REVIEW" every commit (misnamed: never blocks, line 4 "Non-blocking, always exit 0") | (removed) | **DELETED in S3 (`soc-vpmzg`)** — value-negative noise-injector, no replacement |
-| `edit-knowledge-surface.sh` | PreToolUse:Edit | always — greps `.agents/learnings/` + "Relevant learnings" on every edit | `AGENTOPS_EDIT_KNOWLEDGE_DISABLED` | quiet: opt-in default or filename-filter |
-| `research-loop-detector.sh` | PostToolUse:Read/Grep/Glob/Web* | escalating "you have made N read-only calls" from 8 reads | `AGENTOPS_RESEARCH_LOOP_DISABLED` | quiet: raise thresholds (8→16) or opt-in |
-| `context-monitor.sh` | PostToolUse | context warnings at 35%/25% remaining (fires 3-5×/session) | (threshold env) | quiet: raise to ~15% remaining |
-| `write-time-quality.sh` | PostToolUse:Edit/Write | advisory quality warnings on routine writes | (per-lang) | quiet: opt-in default |
-| `go-vet-post-edit.sh` | PostToolUse (Go) | density warnings on every Go edit | (always-on by design) | quiet: only on real vet failure |
-| (+7 lower-frequency conditional injectors) | various | conditional advisory prose | per-hook flags | quiet/monitor |
+## Noise-injectors (all 7 deleted)
 
-**Kept despite the "gate"/"warn" name (conditional, gated on a real violation — NOT noise):** `session-pr-counter.sh` (fires once at the 5-PR threshold), `check-test-pair-on-commit.sh`, `check-sibling-citation-on-commit.sh`, `update-principles-check.sh`, `codex-parity-warn.sh` (only on actual skills/ parity drift), `config-change-monitor.sh`, `context-guard.sh` (only on CRITICAL context). These speak only when a real condition holds, so they are bounded gates, not noise.
+The 7 true noise-injectors — those that emitted `additionalContext`/advisory stdout on **every** matching event regardless of relevance — were deleted outright across `soc-e2ju0` S1–S3. None survive. Listed below for the historical record, each with the stage that removed it.
 
-## Gates (14, keep)
+| Hook | Event | Emitted additionalContext | Verdict |
+|---|---|---|---|
+| `research-loop-detector.sh` | PostToolUse:Read/Grep/Glob/Web* | escalating "you have made N read-only calls" from 8 reads | **DELETED in S1 (`soc-s1i3b`)** |
+| `context-monitor.sh` | PostToolUse | context warnings at 35%/25% remaining (fired 3-5×/session) | **DELETED in S1 (`soc-s1i3b`)** |
+| `write-time-quality.sh` | PostToolUse:Edit/Write | advisory quality warnings on routine writes | **DELETED in S1 (`soc-s1i3b`)** |
+| `edit-knowledge-surface.sh` | PreToolUse:Edit | always — greps `.agents/learnings/` + "Relevant learnings" on every edit | **DELETED in S1 (`soc-s1i3b`)** |
+| `go-vet-post-edit.sh` | PostToolUse (Go) | density warnings on every Go edit | **DELETED in S1 (`soc-s1i3b`)** |
+| `standards-injector.sh` | PreToolUse:Edit/Write (6 file types) | always — JIT language standards on every edit | **DELETED in S2 (`soc-khev6`)** — replaced by the standards skill, read on demand; its `standards-injector-completeness` CI gate retired with it |
+| `commit-review-gate.sh` | PreToolUse:Bash (`git commit`) | always — staged diff + "SELF-REVIEW" every commit (misnamed: never blocked, line 4 "Non-blocking, always exit 0") | **DELETED in S3 (`soc-vpmzg`)** — value-negative, no replacement |
 
-`dangerous-git-guard`, `edit-scope-guard`, `go-test-precommit`, `go-complexity-precommit`, `holdout-isolation-gate`, `lead-only-worker-git-guard`, `git-worker-guard`, `pre-mortem-gate`, `stop-team-guard`, `task-validation-gate`, `skill-lint-gate`, `ao-agents-check`, `constraint-compiler`, `go-vet-post-edit`(blocking path) — all block on a real violation and inject nothing on the happy path.
+The original audit grouped "+7 lower-frequency conditional injectors" with these. On closer inspection they only speak on a real violation, so they were **reclassified as kept-gates, not deleted** (see below).
 
-## Bounded adapters (25, keep)
+**Reclassified as kept-gates (conditional, gated on a real violation — NOT noise):** `session-pr-counter.sh` (fires once at the 5-PR threshold), `check-test-pair-on-commit.sh`, `check-sibling-citation-on-commit.sh`, `update-principles-check.sh`, `codex-parity-warn.sh` (only on actual skills/ parity drift), `config-change-monitor.sh`, `context-guard.sh` (only on CRITICAL context). These speak only when a real condition holds, so they are bounded gates, not noise.
 
-Silent or diagnostic side-effects: `session-start`, `ao-inject`, `ao-extract`, `ao-forge`, `ao-flywheel-close`, `ao-maturity-scan`, `ao-ratchet-status`, `ao-session-outcome`, `ao-task-sync`, `ao-feedback-loop`, `citation-tracker`, `compile-session-defrag`, `edit-audit`, `factory-router`, `finding-compiler`, `pending-cleaner`, `postedit-codex-refresh`, `precompact-snapshot`, `quality-signals`, `ratchet-advance`, `session-end-maintenance`, `subagent-stop`, `worktree-setup`, `worktree-cleanup`, `config-change-monitor`(bounded path).
+## Gates (20, keep)
 
-## Follow-on (behavior change, tracked separately)
+The 13 original gates — `dangerous-git-guard`, `edit-scope-guard`, `go-test-precommit`, `go-complexity-precommit`, `holdout-isolation-gate`, `lead-only-worker-git-guard`, `git-worker-guard`, `pre-mortem-gate`, `stop-team-guard`, `task-validation-gate`, `skill-lint-gate`, `ao-agents-check`, `constraint-compiler` — plus the 7 reclassified conditional gates: `session-pr-counter`, `check-test-pair-on-commit`, `check-sibling-citation-on-commit`, `update-principles-check`, `codex-parity-warn`, `config-change-monitor`, `context-guard`. All block or speak only on a real violation and inject nothing on the happy path. (`go-vet-post-edit` was previously listed here for its blocking path — it was one of the 7 deleted hooks and no longer exists.)
 
-This audit is the analysis deliverable. Flipping the 14 noise-injectors to opt-in-by-default (or raising thresholds) is a behavior change to the operator's hook environment, tracked as a follow-on so the default-quiet transition is deliberate and reviewable. It satisfies the docs/3.0.md acceptance box once landed. The default-install-zero-hooks lift is ADR-0002 S2–S5 (separate, not a 3.0-close blocker).
+## Bounded adapters (26, keep)
+
+Silent or diagnostic side-effects: `session-start`, `ao-inject`, `ao-extract`, `ao-forge`, `ao-flywheel-close`, `ao-maturity-scan`, `ao-ratchet-status`, `ao-session-outcome`, `ao-task-sync`, `ao-feedback-loop`, `citation-tracker`, `compile-session-defrag`, `edit-audit`, `eval-verdict-compiler`, `factory-router`, `finding-compiler`, `pending-cleaner`, `postedit-codex-refresh`, `precompact-snapshot`, `quality-signals`, `ratchet-advance`, `session-end-maintenance`, `stop-auto-handoff`, `subagent-stop`, `worktree-setup`, `worktree-cleanup`.
+
+## Resolution + follow-on
+
+This audit was the analysis deliverable; the behavior change has since landed. Rather than flip the noise-injectors to opt-in-by-default, the operator deleted the 7 true noise-injectors outright (`soc-e2ju0` S1–S3) — they were value-negative (A/B Δ=0), so quieting them would have kept dead weight. With them gone, all 46 surviving hooks are gates or bounded adapters, and the docs/3.0.md "none a noise-injector" acceptance box is **met** (`soc-cul67`). The remaining default-install-zero-hooks lift is `soc-e2ju0` S4 (ADR-0002) — separate, still open, and not a 3.0-close blocker.
