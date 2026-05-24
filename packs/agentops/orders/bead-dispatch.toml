@@ -1,11 +1,33 @@
 # bead-dispatch — route a ready bead to the worker pool, which runs `ao rpi`.
 #
+# ============================================================================
+# REFERENCE ORDER — order-level autonomous dispatch is an UPSTREAM-GC GAP, not a
+# turnkey capability of this pack (bead soc-5jwah).
+#
+# This order shows the INTENDED autonomous shape: a cooldown sweep that binds the
+# next ready bead to `rpi-dispatch` and routes it to the refinery pool. As shipped
+# by Gas City today it CANNOT do that: GC Orders have no per-fire variable-binding
+# mechanism, so the formula's required `issue` var (formulas/rpi-dispatch.toml) has
+# no value to bind and the order self-fails on every fire:
+#     order.failed  msg=variable validation failed: - variable "issue" is required
+# Proven in .agents/discovery/2026-05-24-gvkj6-e2e-proof.md (Tier 3 RED).
+#
+# THE HONEST DISPATCH PATH IS MAYOR-DRIVEN: a long-lived mayor agent runs
+# `bd ready` then `gc sling`s the next bead to a refinery worker (which runs
+# `ao rpi <bead>`); cron `exec` Orders handle scheduled maintenance. The
+# var-binding / next-ready-resolution capability that would make this order fire
+# autonomously is an upstream Gas City contribution (soc-5jwah), not an AgentOps
+# feature. Keep this file as a labeled reference; do not claim it dispatches
+# autonomously until the upstream GC capability lands and the e2e proof re-runs
+# green.
+# ============================================================================
+#
 # Modeled on: examples/gastown/packs/maintenance/orders/orphan-sweep.toml (cooldown
 #   shape) + docs/tutorials/07-orders.md event/cooldown triggers. Uses the THIN
 #   one-step `rpi-dispatch` formula (NOT a 4-step mol-rpi-cycle) — see
 #   formulas/rpi-dispatch.toml and the design doc "DDD seam correction".
 #
-# Cooldown sweep (default): poll for ready work every minute. GC's duplicate-
+# Cooldown sweep (intended): poll for ready work every minute. GC's duplicate-
 # prevention (07-orders.md:393-398) skips dispatch if this order already has open
 # work, so the sweep won't pile up. Cooldown (not event) avoids dispatching rpi
 # cycles on non-work / coordination beads — the worker re-checks `bd ready`.

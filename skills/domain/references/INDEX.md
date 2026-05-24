@@ -52,6 +52,20 @@ case-insensitive filesystems (macOS APFS default) do not collapse the two.
 | `context-density-rule.md` | Context Density Rule | canonical  | concept |
 | `behavior-shaping.md`     | Behavior Shaping     | draft      | concept |
 
+### Loop family (the operating loop)
+
+"One loop body, two drivers, one inner tick, one config." Doctrine:
+`docs/architecture/canonical-loop-model.md`.
+
+| Slug                  | Concept          | Status     | Kind    |
+|-----------------------|------------------|------------|---------|
+| `loop.md`             | Loop             | draft      | concept |
+| `evolve.md`           | Evolve           | draft      | concept |
+| `factory.md`          | Factory          | draft      | concept |
+| `rpi.md`              | RPI              | draft      | concept |
+| `autodev.md`          | Autodev          | draft      | concept |
+| `context-compiler.md` | Context-Compiler | draft      | concept |
+
 ## Status legend
 
 - `tracer` — part of the initial tracer-bullet shape, not yet canonical

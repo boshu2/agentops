@@ -775,7 +775,7 @@
     {
       "name": "domain",
       "source_skill": "skills/domain",
-      "source_hash": "03ee3ce743d4a7a9b9f9666e2ea2036b31487c430d9e1e28f4af7b86f115dfe1",
+      "source_hash": "5d4e22f88e2bdabd7b6c21c4d17b3739ca9bf8dca26450cfd17f551826b039b9",
       "generated_hash": "5de534737803c76fab3ad06e1a47dba85eb8f631a159cc6157ce4f932c2e99e4"
     },
     {
@@ -1045,7 +1045,7 @@
     {
       "name": "scope",
       "source_skill": "skills/scope",
-      "source_hash": "63d54698ae3cd396d94f4dccda5ef55003c5b0ff090807c24d3cc627274b1f7f",
+      "source_hash": "48bfe199c168e04a9ed67cfec0fbecb5daca02ef3f5558e37c82af630192b1e9",
       "generated_hash": "5e2f8802349594d45ceb081c3c3acdd02c1b92a82255db7a1d71e96915bfe62f"
     },
     {
@@ -1087,7 +1087,7 @@
     {
       "name": "session-bootstrap",
       "source_skill": "skills/session-bootstrap",
-      "source_hash": "63812cb95987806f14110b1b1e7e95acc66f95f71b71e54e39693987a75abe1f",
+      "source_hash": "6888a26aadff0e14118cbbaaa36761caaaf43af9b1dcf8690bf219dc0dc3f966",
       "generated_hash": "4620320eb1d8b6c724956e566ba5a3c5663a14e1010f9a693f3143326c55d8c4"
     },
     {

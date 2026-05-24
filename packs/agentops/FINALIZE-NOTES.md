@@ -18,6 +18,9 @@ packs/agentops/
   formulas/rpi-dispatch.toml               THIN 1-step dispatch → `ao rpi <bead>`
   formulas/evolve-dispatch.toml            THIN 1-step dispatch → `ao evolve`
   orders/bead-dispatch.toml                cooldown sweep → rpi-dispatch (refinery pool)
+                                           — REFERENCE/UPSTREAM-GC: needs order
+                                             var-binding (soc-5jwah); honest path
+                                             today is MAYOR-DRIVEN dispatch
   orders/evolve-cadence.toml               cron → evolve-dispatch (mayor pool)
   orders/compile-corpus.toml               exec order → ao-compile.sh
   orders/maturity-scan.toml                exec order → ao maturity --scan
@@ -26,6 +29,35 @@ packs/agentops/
   overlay/.claude/settings.json            GC substrate hooks only (hookless-first)
   overlay/.claude/skills/                  PINNED curated skill snapshot + PROVENANCE.md
 ```
+
+## Dispatch posture — MAYOR-DRIVEN today; order-auto-dispatch is an upstream-GC gap
+
+**Be honest about what dispatches work, and how.** The e2e proof
+(`.agents/discovery/2026-05-24-gvkj6-e2e-proof.md`, bead `soc-5jwah`) ran the real
+`gc` binary against this City and found:
+
+- **Works (proven, Tiers 1/2/4/5):** the City is gc-parse-valid; the controller,
+  supervisor, Order engine, and `agentops.mayor` agent come up; the skills overlay
+  lands in the spawned workdir (25 skills); and `ao inject` / `ao validate --gate`
+  run in the dispatched workdir with the corpus compounding. The seam-correct
+  manual path — `gc sling <rig>/refinery <bead>` routing a RAW bead to a worker
+  that runs `ao rpi <bead>` — succeeds.
+- **The honest dispatch path is MAYOR-DRIVEN.** A long-lived mayor agent runs
+  `bd ready`, then `gc sling`s the next bead to a refinery worker; cron `exec`
+  Orders (`compile-corpus`, `maturity-scan`) handle scheduled maintenance. This is
+  what works end-to-end today.
+- **Order-level autonomous dispatch is a GC maturity gap (NOT turnkey here).** The
+  `bead-dispatch` cooldown Order cannot bind a ready bead to `rpi-dispatch` on its
+  own — GC Orders have no per-fire variable-binding mechanism, so the formula's
+  required `issue` var has no value and the order self-fails (`variable "issue" is
+  required`). This is an **upstream Gas City evolution** the operator contributes
+  to (`soc-5jwah`), not something this pack claims as working. `bead-dispatch.toml`
+  ships as a labeled REFERENCE for the intended shape, with the upstream gap called
+  out in-file. Do NOT read "gc-parse-valid" as "autonomous-dispatch-functional."
+
+Operator posture (`soc-5jwah`, 2026-05-24): accept what GC offers today and grow
+with it. Mayor-driven dispatch is the shipped capability; order-auto-dispatch
+arrives with the upstream GC var-binding work.
 
 ## DONE #1 — the skills overlay snapshot (CURATED, pinned)
 
