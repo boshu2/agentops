@@ -205,11 +205,11 @@ Inspect, lint, and triage the `.agents/` write surface contract via `ao agents i
 
 ## Runtime Modes
 
-AgentOps has four runtime modes. Do not assume hook automation exists everywhere.
+AgentOps has several runtime modes. Do not assume hook automation exists everywhere.
 
 | Mode | When it applies | Start path | Closeout path | Guarantees |
 |------|-----------------|------------|---------------|------------|
-| `gc` | Gas City (`gc`) binary available and `city.toml` present | gc controller manages sessions; `ao rpi` auto-selects gc executor | gc event bus captures phase/gate/failure/metric events | Default when gc is available. Phase execution via gc sessions, events via gc event bus, agent health via gc health patrol |
+| `gc` (reference City) | Gas City (`gc`) binary available, used out-of-session via the reference City (`packs/agentops/`) | A long-lived mayor agent dispatches whole `ao rpi` loops to refinery workers (`bd ready` → `gc sling` → `ao rpi <bead>`); cron `exec` Orders run maintenance | The mayor owns the merge gate (CI-green is the signal) and triggers the knowledge-flywheel feedback | gc orchestrates *whole* `ao rpi`/`ao evolve` loops — it never sees the loop's insides. There is no in-CLI `runtime=gc` executor (removed); the seam is `gc` → `ao` as a subprocess. Dispatch is mayor-driven today; order-auto-dispatch is an upstream-GC gap (soc-5jwah). See the `using-gc` skill. |
 | `hook-capable` | Claude/OpenCode with lifecycle hooks installed (no gc) | Runtime hook or `ao inject` / `ao lookup` | Runtime hook or `ao forge transcript` + `ao flywheel close-loop` | Automatic startup/context injection and session-end maintenance when hooks are installed |
 | `codex-native-hooks` | Codex CLI v0.115.0+ with native hook support (March 2026) | Runtime hooks (same as hook-capable) | Runtime hooks (same as hook-capable) | Native lifecycle hooks — same guarantees as hook-capable mode |
 | `codex-hookless-fallback` | Codex Desktop / Codex CLI pre-v0.115.0 without hook surfaces | `ao codex start` | `ao codex stop` | Explicit startup context, citation tracking, transcript fallback, and close-loop metrics without hooks |

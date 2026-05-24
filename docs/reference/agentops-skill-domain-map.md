@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-80 checked-in AgentOps skills before any broad rewrite, using current
+81 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 80 |
+| Skills audited | 81 |
 | Domains classified | 5 of 5 (BC1-BC5) |
-| Dispositions assigned | 80 / 80 |
+| Dispositions assigned | 81 / 81 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -136,6 +136,7 @@ Disposition meanings:
 | `trace` | BC1 Corpus | supporting | update | Decision trace builder; align to provenance and cycle trace. |
 | `update` | BC4 Factory | supporting | cut-review | Low scorer; keep only if it owns install/update workflows distinctly. |
 | `using-agentops` | BC4 Factory | generic | update | Operator education; align to 3.0 first-value path. |
+| `using-gc` | BC5 Runtime | generic | update | Operator guide for running AgentOps on the Gas City substrate. |
 | `validate` | BC2 Validation | driving-adapter | merge-review | Low scorer; decide relationship to `validation` before rewriting. |
 | `validation` | BC2 Validation | domain | update | Canonical post-implementation validation; strengthen self-test first. |
 | `vibe` | BC2 Validation | domain | update | Code-readiness validator; add self-test and tighten result contract. |

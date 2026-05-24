@@ -101,6 +101,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `oss-docs` — Scaffold or audit OSS docs.
 - `readme` — Draft or improve README docs.
 - `using-agentops` — Explain AgentOps workflows.
+- `using-gc` — Explain how to run AgentOps on the Gas City (gc) substrate.
 
 ### unclassified
 
@@ -314,6 +315,7 @@ graph LR
 | `test` | produces | result.json |
 | `trace` | produces | result.json |
 | `using-agentops` | produces | documentation |
+| `using-gc` | produces | documentation |
 | `validate` | consumes | validation |
 | `validate` | produces | result.json |
 | `validation` | consumes | forge |

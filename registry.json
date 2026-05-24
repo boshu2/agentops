@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-24T22:58:57Z",
+  "generated_at": "2026-05-24T23:22:17Z",
   "summary": {
-    "skills": 80,
+    "skills": 81,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
@@ -530,6 +530,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 0
+      },
+      {
+        "name": "using-gc",
+        "tier": "meta",
+        "path": "skills/using-gc/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 2
       },
       {
         "name": "validation",

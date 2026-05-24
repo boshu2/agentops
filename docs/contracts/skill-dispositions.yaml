@@ -402,6 +402,11 @@ dispositions:
     hexagonal_role: generic
     disposition:    update
     rationale:      "Operator education; align to 3.0 first-value path"
+  - skill:          using-gc
+    domain:         "BC5 Runtime"
+    hexagonal_role: generic
+    disposition:    update
+    rationale:      "Operator guide for running AgentOps on the Gas City substrate"
   - skill:          validate
     domain:         "BC2 Validation"
     hexagonal_role: driving-adapter
