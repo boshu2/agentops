@@ -3,6 +3,7 @@ package daemon
 import (
 	"context"
 	"errors"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -170,6 +171,119 @@ func TestSupervisor_KillsHungWorker(t *testing.T) {
 	}
 	if result.Job.Failure == nil || !strings.Contains(result.Job.Failure.Message, "executor timed out") {
 		t.Fatalf("failure = %#v, want timeout failure", result.Job.Failure)
+	}
+}
+
+// TestSupervisor_HeartbeatGoroutineDoesNotLeak asserts that
+// runExecutorWithHeartbeat reaps its spawned executor goroutine on every exit
+// path — the fast/normal completion path, the mid-run context-cancel path, and
+// the execution-timeout path — so the daemon does not accumulate leaked
+// goroutines over its long lifetime.
+//
+// The cancel and timeout sub-tests use slowCleanupExecutor, which observes ctx
+// cancellation but then spends a real cleanup window before returning. Without
+// the worker join, runExecutorWithHeartbeat would return while that goroutine
+// is still alive (a transient-but-real leak that accumulates under load); with
+// the join, the goroutine is guaranteed dead before the call returns, so the
+// count is back at baseline *immediately* — no settle window required. Each
+// sub-test uses sync signals (started/released channels) rather than bare
+// sleeps to stay non-flaky.
+func TestSupervisor_HeartbeatGoroutineDoesNotLeak(t *testing.T) {
+	t.Run("fast executor completes and reaps goroutine", func(t *testing.T) {
+		now := projectionTestTime(t, 0)
+		queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+		if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-fast", JobID: "job-fast", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+			t.Fatalf("submit job: %v", err)
+		}
+		supervisor := newTestSupervisor(t, queue, testOpenClawSnapshotExecutor{})
+
+		runtime.GC()
+		baseline := runtime.NumGoroutine()
+		result, err := supervisor.RunOnce(context.Background())
+		if err != nil {
+			t.Fatalf("run once: %v", err)
+		}
+		if result.Job.Status != JobStatusCompleted {
+			t.Fatalf("job status = %q, want completed", result.Job.Status)
+		}
+		assertGoroutinesAtBaseline(t, baseline)
+	})
+
+	t.Run("context cancel mid-run reaps goroutine before return", func(t *testing.T) {
+		now := projectionTestTime(t, 0)
+		queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+		if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-cancel", JobID: "job-cancel", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+			t.Fatalf("submit job: %v", err)
+		}
+		executor := &slowCleanupExecutor{started: make(chan struct{}), cleanup: 80 * time.Millisecond}
+		supervisor := newTestSupervisor(t, queue, executor)
+
+		runtime.GC()
+		baseline := runtime.NumGoroutine()
+		ctx, cancel := context.WithCancel(context.Background())
+		returned := make(chan struct{})
+		go func() {
+			_, _ = supervisor.RunOnce(ctx)
+			close(returned)
+		}()
+		// Wait for the worker to be running, then cancel mid-run so we exercise
+		// the cancel exit path while the executor is still in its cleanup window.
+		select {
+		case <-executor.started:
+		case <-time.After(time.Second):
+			t.Fatal("executor did not start")
+		}
+		cancel()
+		select {
+		case <-returned:
+		case <-time.After(2 * time.Second):
+			t.Fatal("RunOnce did not return after context cancellation")
+		}
+		// No settle window: the join must already have reaped the worker by the
+		// time RunOnce returned, even though its cleanup window outlasts cancel.
+		assertGoroutinesAtBaseline(t, baseline)
+	})
+
+	t.Run("execution timeout reaps goroutine before return", func(t *testing.T) {
+		now := projectionTestTime(t, 0)
+		queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+		if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-timeout", JobID: "job-timeout", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+			t.Fatalf("submit job: %v", err)
+		}
+		executor := &slowCleanupExecutor{started: make(chan struct{}), cleanup: 80 * time.Millisecond}
+		supervisor := newTestSupervisor(t, queue, executor)
+		supervisor.executionTimeout = 20 * time.Millisecond
+
+		runtime.GC()
+		baseline := runtime.NumGoroutine()
+		result, err := supervisor.RunOnce(context.Background())
+		if err != nil {
+			t.Fatalf("run once: %v", err)
+		}
+		if result.Job.Status != JobStatusFailed {
+			t.Fatalf("job status = %q, want failed", result.Job.Status)
+		}
+		if result.Job.Failure == nil || !strings.Contains(result.Job.Failure.Message, "executor timed out") {
+			t.Fatalf("failure = %#v, want timeout failure", result.Job.Failure)
+		}
+		assertGoroutinesAtBaseline(t, baseline)
+	})
+}
+
+// assertGoroutinesAtBaseline fails if the current goroutine count exceeds the
+// pre-run baseline. A single short retry absorbs scheduler jitter from
+// runtime-internal goroutines without masking a genuine leak (a leaked worker
+// never returns to baseline; transient runtime goroutines do within one tick).
+func assertGoroutinesAtBaseline(t *testing.T, baseline int) {
+	t.Helper()
+	runtime.GC()
+	if after := runtime.NumGoroutine(); after > baseline {
+		// One brief retry for runtime/GC bookkeeping goroutines.
+		time.Sleep(20 * time.Millisecond)
+		runtime.GC()
+		if after = runtime.NumGoroutine(); after > baseline {
+			t.Fatalf("goroutine leak: baseline=%d after=%d (%d leaked) — executor goroutine outlived runExecutorWithHeartbeat", baseline, after, after-baseline)
+		}
 	}
 }
 
@@ -347,6 +461,27 @@ func (e *oneShotPanicExecutor) RunJob(_ context.Context, _ QueueLease) (JobExecu
 		panic(e.panicValue)
 	}
 	return JobExecutionResult{Artifacts: map[string]string{"executor_policy": "recovered"}}, nil
+}
+
+// slowCleanupExecutor observes context cancellation but then spends a real
+// cleanup window before returning, modelling a well-behaved executor whose
+// teardown outlasts the cancel signal. It is used to prove that
+// runExecutorWithHeartbeat joins its worker goroutine before returning rather
+// than leaving it running during that window.
+type slowCleanupExecutor struct {
+	started chan struct{}
+	cleanup time.Duration
+}
+
+func (e *slowCleanupExecutor) JobTypes() []JobType {
+	return []JobType{JobTypeOpenClawSnapshot}
+}
+
+func (e *slowCleanupExecutor) RunJob(ctx context.Context, _ QueueLease) (JobExecutionResult, error) {
+	close(e.started)
+	<-ctx.Done()
+	time.Sleep(e.cleanup) // simulated post-cancel teardown
+	return JobExecutionResult{}, ctx.Err()
 }
 
 type blockingOpenClawExecutor struct {
