@@ -2,7 +2,7 @@
 
 > **Status:** Draft
 > **Decision:** Every commit demonstrates five operator-exemplar properties or is rejected at review.
-> **Consumers:** every contributor; `scripts/check-update-principles.sh` (future); commit-review-gate hook.
+> **Consumers:** every contributor; `scripts/check-update-principles.sh` (future).
 > **Source exemplar:** commit `1b9d139c` (operator-pushed to `nightly/2026-05-12`, cherry-picked to main as `f62295f7` on 2026-05-12).
 
 Source for these principles is observation, not abstraction. Cycles 44-51 demonstrated the inverse — text-only patches, multi-concern commits, no drift tests, narrative quality claims, dirty branch points — and produced 32 commits of red CI invisible to the operator. The exemplar commit `1b9d139c` demonstrated the inverse-inverse: a single 2-file change with 4 bats tests, sibling-pattern citation, and a measured fitness delta. The five principles below codify what made the exemplar a teaching moment.
@@ -68,7 +68,7 @@ The five principles are voluntary until codified. Codification path:
 | Principle | Enforcer | Status |
 |---|---|---|
 | 1. Single concern | `scripts/check-single-concern.sh` reads commit diff, fails if > N files touched without explicit `[multi-concern]` tag | TODO (BC3 epic, separate cycle) |
-| 2. Drift-blocking test | commit-review-gate hook checks for added `*_test.go` / `*.bats` paired with modified `*.go` / `*.sh` | TODO (BC3 epic, separate cycle) |
+| 2. Drift-blocking test | `check-test-pair-on-commit.sh` checks for added `*_test.go` / `*.bats` paired with modified `*.go` / `*.sh` | TODO (BC3 epic, separate cycle) |
 | 3. Sibling-pattern citation | lint commit body for `matching … pattern` / `sibling …` / `following the … shape` phrasing | TODO (BC3 epic, separate cycle) |
 | 4. Fitness delta | regex `/[0-9]+\/[0-9]+ → [0-9]+\/[0-9]+/` or similar numerical-pair pattern in commit body | TODO (BC3 epic, separate cycle) |
 | 5. Clean branch point | `git log --since` check on the commit's first-parent base — already partially enforced by `pre-push-gate.sh` worktree-disposition lane | partial |

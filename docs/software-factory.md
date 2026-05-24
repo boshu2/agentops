@@ -115,7 +115,6 @@ run without operator action and keep the conveyor belt honest.
 | **PreToolUse** | `pre-mortem-gate.sh` | Blocks `/crank` or `/implement` without pre-mortem |
 | | `dangerous-git-guard.sh` | Blocks destructive git operations |
 | | `go-test-precommit.sh` | Requires Go tests pass before commits |
-| | `commit-review-gate.sh` | Reviews commit content before `git commit` |
 | | `git-worker-guard.sh` | Prevents destructive git operations |
 | | `edit-knowledge-surface.sh` | Warns on edits to knowledge-surface files |
 | | `codex-parity-warn.sh` | Warns when skill edits may drift from Codex copies |
@@ -138,8 +137,7 @@ structured JSON on stdout. Exit code `2` blocks the operation (PreToolUse only);
 Hooks enforce the factory's design rules automatically:
 
 - **Validation gates** — `pre-mortem-gate.sh`, `go-test-precommit.sh`,
-  `commit-review-gate.sh`, and `task-validation-gate.sh` prevent unvalidated
-  work from advancing.
+  and `task-validation-gate.sh` prevent unvalidated work from advancing.
 - **Ratchet checkpoints** — `ao-flywheel-close.sh` ensures learnings persist
   after each session.
 - **Execution discipline** — execution-packet `next_action` and `research-loop-detector.sh`

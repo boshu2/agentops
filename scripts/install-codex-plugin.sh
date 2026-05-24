@@ -318,7 +318,6 @@ merge_codex_hook_manifest() {
         "quality-signals.sh",
         "dangerous-git-guard.sh",
         "go-test-precommit.sh",
-        "commit-review-gate.sh",
         "lead-only-worker-git-guard.sh",
         "holdout-isolation-gate.sh",
         "edit-knowledge-surface.sh",

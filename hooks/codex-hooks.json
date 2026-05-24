@@ -61,11 +61,6 @@
           },
           {
             "type": "command",
-            "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/commit-review-gate.sh",
-            "timeout": 10
-          },
-          {
-            "type": "command",
             "command": "bash ${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}/hooks/lead-only-worker-git-guard.sh",
             "timeout": 5
           },

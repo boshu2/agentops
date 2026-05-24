@@ -12,11 +12,11 @@ path required before hook defaults can be removed.
 
 ## Summary
 
-- Manifest hook entries: 36
-- Unique hook files in manifest: 31
+- Manifest hook entries: 35
+- Unique hook files in manifest: 30
 - Additional hook surfaces outside main manifest: 2
 - `remove`: 0
-- `gate`: 22
+- `gate`: 21
 - `event-subscriber`: 7
 - `explicit-command`: 7
 - `optional-adapter`: 0
@@ -59,7 +59,6 @@ This inventory uses concrete migration dispositions. For the
 | PreToolUse | Skill | `pre-mortem-gate.sh` | 30 | Evidence and Trust | `gate` | `deterministic-safety` | no | GateRunnerPort pre-mortem validation lane |
 | PreToolUse | Bash | `dangerous-git-guard.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | no | SafetyPolicyPort or GateRunnerPort git-mutation lane |
 | PreToolUse | Bash | `go-test-precommit.sh` | 60 | Evidence and Trust | `gate` | `deterministic-safety` | no | GateRunnerPort Go test lane |
-| PreToolUse | Bash | `commit-review-gate.sh` | 10 | Evidence and Trust | `gate` | `deterministic-safety` | yes | GateRunnerPort commit-review validation lane |
 | PreToolUse | Bash | `update-principles-check.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | yes | GateRunnerPort update-principles lane |
 | PreToolUse | Bash | `check-test-pair-on-commit.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | yes | GateRunnerPort commit-review validation lane |
 | PreToolUse | Bash | `check-sibling-citation-on-commit.sh` | 5 | Evidence and Trust | `gate` | `deterministic-safety` | yes | GateRunnerPort commit-review validation lane |
@@ -169,12 +168,6 @@ surfaces that are not wired by the active manifests.
 - **Summary:** PreToolUse hook: fast Go validation before git commit.
 - **Side effects:** runs Go tests before commit commands
 - **Rationale:** Tests belong in explicit validation lanes.
-
-### `commit-review-gate.sh`
-
-- **Summary:** commit-review-gate.sh - PreToolUse hook: inject staged diff before git commit
-- **Side effects:** blocks or warns on weak commit review evidence
-- **Rationale:** Commit review is an evidence gate and should be explicit.
 
 ### `update-principles-check.sh`
 

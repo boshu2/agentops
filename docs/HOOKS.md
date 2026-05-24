@@ -23,7 +23,7 @@ AgentOps currently ships a full Claude runtime manifest across the supported hoo
 | `SessionEnd` | Compile session signal, maintain the knowledge pool | `session-end-maintenance.sh`, `compile-session-defrag.sh` |
 | `Stop` | Preserve handoff/team state and close the flywheel for the turn | `stop-team-guard.sh`, `stop-auto-handoff.sh`, `ao-flywheel-close.sh` |
 | `UserPromptSubmit` | Route explicit factory intake, watch context, and capture quality signals | `factory-router.sh`, `context-guard.sh`, `quality-signals.sh` |
-| `PreToolUse` | Gate risky tool calls | `pre-mortem-gate.sh`, `dangerous-git-guard.sh`, `commit-review-gate.sh`, `holdout-isolation-gate.sh` |
+| `PreToolUse` | Gate risky tool calls | `pre-mortem-gate.sh`, `dangerous-git-guard.sh`, `holdout-isolation-gate.sh` |
 | `PostToolUse` | Quality gate after edits | `go-complexity-precommit.sh` |
 | `TaskCompleted` | Validate task closure metadata and structural checks | `task-validation-gate.sh` |
 | `PreCompact` | Snapshot branch, changed files, and ratchet state before compaction | `precompact-snapshot.sh` |
@@ -88,7 +88,6 @@ To disable a single hook, either edit the runtime settings manually or delete th
 | Hook runs but nothing happens | Agent runtime does not emit the event | Check [runtime contract](contracts/hook-runtime-contract.md) |
 | Hook times out | Script exceeded `timeout` in manifest | Increase the timeout in `hooks.json` or make the script cheaper |
 | `ao` not found | CLI not on `PATH` for the runtime's shell | `brew install agentops` or add `~/.local/bin` to PATH |
-| Commit blocked by `commit-review-gate` | Uncommitted or unsigned review trail | Run `/council validate` or review manually |
 | `pre-mortem-gate` fires on every skill call | Expected — it is the shift-left gate | Set `AGENTOPS_PREMORTEM_MODE=advisory` during exploration |
 
 See [`troubleshooting.md`](troubleshooting.md) for more.

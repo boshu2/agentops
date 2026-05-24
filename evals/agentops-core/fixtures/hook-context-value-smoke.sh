@@ -151,35 +151,6 @@ test_context_monitor() {
     rm -f "$bridge"
 }
 
-test_commit_review_gate() {
-    local repo output ctx quiet
-    repo="$TMP_ROOT/commit-review"
-    setup_git_repo "$repo"
-    printf 'seed\n' > "$repo/config.env"
-    git -C "$repo" add config.env
-    git -C "$repo" commit -q -m "seed"
-    {
-        printf 'TOKEN_FOR_REDACTION=secret-fixture-value\n'
-        for i in $(seq 1 80); do
-            printf 'line_%03d=value\n' "$i"
-        done
-    } > "$repo/config.env"
-    git -C "$repo" add config.env
-
-    output="$(cd "$repo" && jq -n '{"tool_name":"Bash","tool_input":{"command":"git commit -m eval"}}' | AGENTOPS_MANAGED_HOOK_BACKEND_DISABLED=1 AGENTOPS_COMMIT_REVIEW_DIFF_LINES=20 bash "$HOOKS_DIR/commit-review-gate.sh" 2>&1 || true)"
-    json_event "$output" "PreToolUse" "commit-review-gate"
-    ctx="$(context_of "$output")"
-    assert_contains "$ctx" "SELF-REVIEW before committing" "commit-review-gate"
-    assert_contains "$ctx" "showing first 20" "commit-review-gate"
-    assert_contains "$ctx" "TOKEN_FOR_REDACTION=[REDACTED]" "commit-review-gate"
-    assert_not_contains "$ctx" "secret-fixture-value" "commit-review-gate"
-    assert_bytes_le "$ctx" 5000 "commit_review_bytes"
-
-    git -C "$repo" reset -q
-    quiet="$(cd "$repo" && jq -n '{"tool_name":"Bash","tool_input":{"command":"git commit -m eval"}}' | AGENTOPS_MANAGED_HOOK_BACKEND_DISABLED=1 bash "$HOOKS_DIR/commit-review-gate.sh" 2>&1 || true)"
-    assert_empty "$quiet" "commit-review-gate without staged diff"
-}
-
 test_edit_knowledge_surface() {
     local repo file output ctx quiet
     repo="$TMP_ROOT/edit-knowledge"
@@ -224,7 +195,6 @@ main() {
 
     test_precompact_snapshot
     test_context_monitor
-    test_commit_review_gate
     test_edit_knowledge_surface
 
     printf 'hook-context-value metrics:'

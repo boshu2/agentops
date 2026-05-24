@@ -69,36 +69,6 @@ run_hook_env() {
 }
 
 # ═══════════════════════════════════════════════════════════════════════
-# 2. commit-review-gate.sh — .tool_input.command (Bash git commit)
-# ═══════════════════════════════════════════════════════════════════════
-
-@test "commit-review-gate: non-git command exits silently" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{"tool_name":"Bash","tool_input":{"command":"go test ./..."}}' "$HOOKS_DIR/commit-review-gate.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
-@test "commit-review-gate: kill switch exits silently" {
-    run bash -c 'printf "%s" "$1" | AGENTOPS_COMMIT_REVIEW_DISABLED=1 bash "$2" 2>&1' \
-        -- '{"tool_name":"Bash","tool_input":{"command":"git commit -m test"}}' "$HOOKS_DIR/commit-review-gate.sh"
-    [ "$status" -eq 0 ]
-    [ -z "$output" ]
-}
-
-@test "commit-review-gate: malformed JSON exits gracefully" {
-    run bash -c 'printf "%s" "$1" | bash "$2" 2>&1' \
-        -- '{{broken json' "$HOOKS_DIR/commit-review-gate.sh"
-    [ "$status" -eq 0 ]
-}
-
-@test "commit-review-gate: empty stdin exits gracefully" {
-    run bash -c 'printf "" | bash "$1" 2>&1' \
-        -- "$HOOKS_DIR/commit-review-gate.sh"
-    [ "$status" -eq 0 ]
-}
-
-# ═══════════════════════════════════════════════════════════════════════
 # 4. context-guard.sh — .prompt (UserPromptSubmit)
 # ═══════════════════════════════════════════════════════════════════════
 
