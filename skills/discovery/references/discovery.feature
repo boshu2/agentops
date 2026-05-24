@@ -19,3 +19,30 @@ Feature: Discovery hands dense intent to planning
     When the discovery DAG completes
     Then it writes a JSON execution packet on disk for the next loop phase
     And the packet carries the goal, research, and design artifact references
+
+  # Open-ended path — generate-winnow → operationalize → refine (ag-yw0).
+  # Additive to the default flow above; strict delegation is preserved.
+  # Documentation-only spec (this file is allowlisted in
+  # scripts/.scenario-linkage-allow); wiring is asserted by the bats regression
+  # test tests/scripts/brainstorm-discovery-ideation.bats.
+
+  Scenario: an open-ended goal takes the generate-winnow path
+    Given an open-ended goal like "improve the project" or the --ideate flag
+    When /discovery runs
+    Then it delegates to /brainstorm in ideation mode as a separate skill invocation
+    And it does not inline the 30-idea generation in Discovery prose
+    And the default specific-goal flow remains unchanged
+
+  Scenario: Discovery operationalizes the winnowed portfolio into self-documenting beads
+    Given a ranked portfolio of 15 ideas from ideation mode
+    When the operationalize step runs
+    Then it creates self-documenting bd beads with dependency structure and explicit test tasks
+    And each bead carries what, why, how, risks, and success criteria
+    And it uses bd for all tracking, never br or bv
+
+  Scenario: Discovery refines beads in plan space before crank
+    Given operationalized beads exist
+    When the refine step runs
+    Then it makes 4-5 refinement passes re-reading AGENTS.md each pass
+    And it does not oversimplify or lose features or functionality
+    And it validates no dependency cycles before handing the packet to /crank
