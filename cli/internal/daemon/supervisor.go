@@ -193,7 +193,7 @@ func (s *Supervisor) runExecutorWithHeartbeat(ctx context.Context, executor JobE
 	}
 	done := make(chan execution, 1)
 	go func() {
-		result, err := executor.RunJob(execCtx, claim)
+		result, err := safeRunJob(execCtx, executor, claim)
 		done <- execution{result: result, err: err}
 	}()
 
@@ -225,4 +225,18 @@ func (s *Supervisor) runExecutorWithHeartbeat(ctx context.Context, executor JobE
 			return JobExecutionResult{}, execCtx.Err()
 		}
 	}
+}
+
+// safeRunJob invokes the executor's RunJob with panic recovery. A panic inside
+// RunJob is recovered and converted into a job error so the supervisor loop (and
+// the daemon process) survives a misbehaving executor instead of crashing. The
+// non-panic path returns the executor's result and error unchanged.
+func safeRunJob(ctx context.Context, executor JobExecutor, claim QueueLease) (result JobExecutionResult, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			result = JobExecutionResult{}
+			err = fmt.Errorf("executor panicked: %v", r)
+		}
+	}()
+	return executor.RunJob(ctx, claim)
 }
