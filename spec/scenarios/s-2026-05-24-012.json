@@ -1,0 +1,12 @@
+{
+  "id": "s-2026-05-24-012",
+  "directive_id": "d-durability-of-the-corpus-across-runtime-cleanup",
+  "version": 1,
+  "date": "2026-05-24",
+  "goal": "Given a fresh checkout after a runtime-state wipe, when the .agents/ snapshot/restore mechanism (soc-rv5p) rehydrates from durable storage, then scripts/corpus-stats.sh reports non-degraded learning/pattern/decision counts and the corpus-freshness gate confirms coverage.",
+  "narrative": "A user or evaluator exercises the system behavior for this goal: Given a fresh checkout after a runtime-state wipe, when the .agents/ snapshot/restore mechanism (soc-rv5p) rehydrates from durable storage, then scripts/corpus-stats.sh reports non-degraded learning/pattern/decision counts and the corpus-freshness gate confirms coverage..",
+  "expected_outcome": "The implementation satisfies the goal in observable behavior: Given a fresh checkout after a runtime-state wipe, when the .agents/ snapshot/restore mechanism (soc-rv5p) rehydrates from durable storage, then scripts/corpus-stats.sh reports non-degraded learning/pattern/decision counts and the corpus-freshness gate confirms coverage..",
+  "satisfaction_threshold": 0.85,
+  "source": "human",
+  "status": "active"
+}

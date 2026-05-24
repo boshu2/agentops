@@ -1,0 +1,12 @@
+{
+  "id": "s-2026-05-24-007",
+  "directive_id": "d-enforce-codex-parity-proactively",
+  "version": 1,
+  "date": "2026-05-24",
+  "goal": "Given a change that introduces codex parity drift, when the codex-parity CI gate (scripts/audit-codex-parity.sh) runs at push time, then it reports zero parity findings and blocks the push if any drift exists.",
+  "narrative": "A user or evaluator exercises the system behavior for this goal: Given a change that introduces codex parity drift, when the codex-parity CI gate (scripts/audit-codex-parity.sh) runs at push time, then it reports zero parity findings and blocks the push if any drift exists..",
+  "expected_outcome": "The implementation satisfies the goal in observable behavior: Given a change that introduces codex parity drift, when the codex-parity CI gate (scripts/audit-codex-parity.sh) runs at push time, then it reports zero parity findings and blocks the push if any drift exists..",
+  "satisfaction_threshold": 1,
+  "source": "human",
+  "status": "active"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "s-2026-05-24-005",
+  "directive_id": "d-keep-complexity-regressions-at-zero",
+  "version": 1,
+  "date": "2026-05-24",
+  "goal": "Given the cli/ and cli/internal/ Go packages, when the go-complexity CI gate runs golangci-lint, then zero functions exceed cyclomatic complexity 20 (cli/) and 18 (cli/internal/).",
+  "narrative": "A user or evaluator exercises the system behavior for this goal: Given the cli/ and cli/internal/ Go packages, when the go-complexity CI gate runs golangci-lint, then zero functions exceed cyclomatic complexity 20 (cli/) and 18 (cli/internal/)..",
+  "expected_outcome": "The implementation satisfies the goal in observable behavior: Given the cli/ and cli/internal/ Go packages, when the go-complexity CI gate runs golangci-lint, then zero functions exceed cyclomatic complexity 20 (cli/) and 18 (cli/internal/)..",
+  "satisfaction_threshold": 1,
+  "source": "human",
+  "status": "active"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "s-2026-05-24-014",
+  "directive_id": "d-every-behavior-has-a-consequence-reinforcement-contract",
+  "version": 1,
+  "date": "2026-05-24",
+  "goal": "Given a newly shipped behavior in GOALS.md, when it is added, then it carries a reinforcing gate (CI check or hook) rather than a prose prohibition — every behavior maps to a measurable consequence.",
+  "narrative": "A user or evaluator exercises the system behavior for this goal: Given a newly shipped behavior in GOALS.md, when it is added, then it carries a reinforcing gate (CI check or hook) rather than a prose prohibition — every behavior maps to a measurable consequence..",
+  "expected_outcome": "The implementation satisfies the goal in observable behavior: Given a newly shipped behavior in GOALS.md, when it is added, then it carries a reinforcing gate (CI check or hook) rather than a prose prohibition — every behavior maps to a measurable consequence..",
+  "satisfaction_threshold": 0.85,
+  "source": "human",
+  "status": "active"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "s-2026-05-24-011",
+  "directive_id": "d-operating-loop-is-the-execution-primitive",
+  "version": 1,
+  "date": "2026-05-24",
+  "goal": "Given a bead tagged non-trivial, when scripts/check-loop-shape.sh inspects its bd JSON, then it confirms a Gherkin Given/When/Then acceptance block and a named bounded context are present before implementation begins (warn-only today; check-loop-shape --self-test passes).",
+  "narrative": "A user or evaluator exercises the system behavior for this goal: Given a bead tagged non-trivial, when scripts/check-loop-shape.sh inspects its bd JSON, then it confirms a Gherkin Given/When/Then acceptance block and a named bounded context are present before implementation begins (warn-only today; check-loop-shape --self-test passes)..",
+  "expected_outcome": "The implementation satisfies the goal in observable behavior: Given a bead tagged non-trivial, when scripts/check-loop-shape.sh inspects its bd JSON, then it confirms a Gherkin Given/When/Then acceptance block and a named bounded context are present before implementation begins (warn-only today; check-loop-shape --self-test passes)..",
+  "satisfaction_threshold": 0.85,
+  "source": "human",
+  "status": "active"
+}
