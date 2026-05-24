@@ -186,15 +186,30 @@ func (s *Supervisor) runExecutorWithHeartbeat(ctx context.Context, executor JobE
 	if s.executionTimeout > 0 {
 		execCtx, cancel = context.WithTimeout(ctx, s.executionTimeout)
 	}
-	defer cancel()
 	type execution struct {
 		result JobExecutionResult
 		err    error
 	}
+	// Buffered (cap 1) so the worker's send never blocks even after an early
+	// return leaves no receiver — the worker can always complete and exit.
 	done := make(chan execution, 1)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		result, err := safeRunJob(execCtx, executor, claim)
 		done <- execution{result: result, err: err}
+	}()
+	// Single deferred teardown so the worker goroutine has a guaranteed
+	// lifecycle on EVERY exit path: cancel() first to signal the worker to
+	// stop, then wg.Wait() to join it so the goroutine is reaped rather than
+	// leaked. Ordering matters — cancel must precede the wait or the join
+	// would block, so they live in one closure instead of two LIFO defers. A
+	// context-respecting executor returns promptly once cancelled, so the join
+	// does not stall the supervisor.
+	defer func() {
+		cancel()
+		wg.Wait()
 	}()
 
 	ticker := time.NewTicker(s.heartbeatInterval)
