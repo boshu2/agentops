@@ -16,7 +16,7 @@ Feature: Domain-governed AgentOps 3.0 evolution
     Given the local AgentOps repository has fetched origin/main
     And PRODUCT.md, GOALS.md, PROGRAM.md, and the operating loop are treated as direction sources
     And bead "soc-y5vh" is the active Loop epic
-    And JSM-derived observations are used only through the clean-room policy
+    And external-corpus-derived observations are used only through the clean-room policy
 
   Scenario: Audit every skill before changing shipped behavior
     Given the checked-in skill catalog contains 80 skills
@@ -38,7 +38,7 @@ Feature: Domain-governed AgentOps 3.0 evolution
     When the bootstrap skill is installed under "/Users/bo/.codex/skills"
     Then it explains how to run the audit, BDD, domain map, architecture map, and evolution plan
     And it points to the AgentOps skill factory for per-skill upgrades
-    And it does not mutate JSM-installed skills or copy JSM skill content
+    And it does not mutate externally installed skills or copy external skill content
 
   Scenario: Run evolution in safe vertical slices
     Given the BDD contract and domain map pass validation

@@ -86,4 +86,4 @@ Recommended wiring for a swarm wave:
 The two guards do not need to share state, but they should share the same fail-open posture so a hook outage never silently disables both lanes at once.
 
 ---
-> Pattern adopted from `dcg` (jsm/ACFS skill corpus). Methodology only — no verbatim text.
+> Pattern adopted from `dcg` (ACFS skill corpus). Methodology only — no verbatim text.

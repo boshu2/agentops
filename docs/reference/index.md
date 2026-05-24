@@ -7,7 +7,7 @@ Three groups worth knowing:
 - **Lookup** — [Glossary](../GLOSSARY.md), [Environment Variables](../ENV-VARS.md), [CLI ↔ Skills Map](../cli-skills-map.md). Skim once, then search-on-demand.
 - **Operations** — [Testing](../TESTING.md), [CI/CD](../CI-CD.md), [Releasing](../RELEASING.md), [Incident Runbook](../INCIDENT-RUNBOOK.md). Load these before you ship a release or page someone.
 - **Field guides** — [Agent Footguns](../agent-footguns.md), [Troubleshooting](../troubleshooting.md), [AgentOps Brief](../agentops-brief.md). Read before onboarding a new teammate.
-- **Curation** — [JSM Skill Standards Snapshot](jsm-skill-standards.md), [JSM CLI Capability Map](jsm-cli-capability-map.md), [JSM Clean-Room Extraction Policy](jsm-clean-room-extraction-policy.md), [Skill Quality Rubric](skill-quality-rubric.md), and [JSM Skill Absorption Matrix](jsm-skill-absorption.md). Use these when checking JSM package standards, extraction boundaries, or what was absorbed from the Bushido standalone skill set.
+- **Curation** — [Skill Quality Rubric](skill-quality-rubric.md). Use this when scoring skill packaging standards and readiness.
 - **Evolution control** — [AgentOps Domain Evolution BDD](agentops-domain-evolution-bdd.md), [AgentOps Skill Domain Map](agentops-skill-domain-map.md), [AgentOps Hexagonal Architecture Map](agentops-hexagonal-architecture-map.md), and [AgentOps Domain Evolution Plan](agentops-domain-evolution-plan.md). Use these before running broad skill, CLI, or hook evolution loops.
 
 <div class="grid cards" markdown>
@@ -84,47 +84,11 @@ Three groups worth knowing:
 
     Deep documentation and pipeline details.
 
--   :material-source-merge: **[JSM Absorption](jsm-skill-absorption.md)**
-
-    ---
-
-    Disposition matrix for the Bushido JSM-managed skill set.
-
--   :material-clipboard-check: **[JSM Skill Standards](jsm-skill-standards.md)**
-
-    ---
-
-    Pattern-only snapshot of the 118-skill local JSM corpus and packaging standards.
-
--   :material-console: **[JSM CLI Capability Map](jsm-cli-capability-map.md)**
-
-    ---
-
-    Read-only and mutating `jsm` command surfaces for clean-room analysis.
-
--   :material-shield-check: **[JSM Clean-Room Policy](jsm-clean-room-extraction-policy.md)**
-
-    ---
-
-    Allowed observations, forbidden source material, and review checklist.
-
 -   :material-star-check: **[Skill Quality Rubric](skill-quality-rubric.md)**
 
     ---
 
-    Scoring model for repo-runtime, JSM-export, and mega-skill readiness.
-
--   :material-clipboard-list: **[JSM Gap Audit](jsm-agentops-gap-audit.md)**
-
-    ---
-
-    Structural AgentOps skill gaps and priority upgrade queue.
-
--   :material-format-list-checks: **[JSM Pilot Backlog](jsm-pilot-upgrade-backlog.md)**
-
-    ---
-
-    First candidate AgentOps skill upgrades.
+    Scoring model for repo-runtime, export, and mega-skill readiness.
 
 -   :material-graph-outline: **[Domain Evolution BDD](agentops-domain-evolution-bdd.md)**
 

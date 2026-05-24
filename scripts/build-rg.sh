@@ -182,4 +182,4 @@ case ":$PATH:" in
   *) log "note: $RG_INSTALL_DIR is not on PATH. Add it to your shell rc to use this rg by default." ;;
 esac
 
-# Pattern adopted from `rg-optimized` (jsm/ACFS skill corpus). Methodology only — no verbatim text.
+# Pattern adopted from `rg-optimized` (ACFS skill corpus). Methodology only — no verbatim text.

@@ -1,13 +1,13 @@
 # Skill Quality Rubric
 
-Use this rubric to score AgentOps skills against a higher market-facing standard while preserving AgentOps repo-runtime constraints. The rubric is AgentOps-owned and derived from pattern-level JSM corpus inspection plus existing AgentOps standards.
+Use this rubric to score AgentOps skills against a higher market-facing standard while preserving AgentOps repo-runtime constraints. The rubric is AgentOps-owned and derived from pattern-level external-corpus inspection plus existing AgentOps standards.
 
 ## Profiles
 
 | Profile | Purpose | Required gate |
 |---|---|---|
 | Repo-runtime | Works inside this repository and AgentOps release pipeline | AgentOps skill, docs, and Codex artifact gates |
-| JSM-export | Can be packaged for a JSM-style marketplace lane | `scripts/check-jsm-export.sh` and `jsm validate` |
+| Marketplace-export | Can be packaged for a marketplace lane | the target marketplace export validator |
 | Mega-skill | Product-bundle skill that intentionally exceeds simple package-clean limits | explicit mega-skill classification and split/defer decision |
 
 ## Scoring
@@ -34,7 +34,7 @@ Score each category from 0 to 3.
 | Assets/templates | none where templates are needed | inline templates bloat `SKILL.md` | assets hold reusable payloads | assets are versioned, referenced, and validated |
 | Subagents/roles | delegation absent despite broad scope | generic delegation guidance | role packets for complex work | subagents have bounded ownership and validation contracts |
 | Safety boundaries | no non-goals or forbidden commands | partial warnings | explicit safe/unsafe operations | clean-room, auth, privacy, and mutation boundaries are mechanically checked |
-| Packaging | unknown package readiness | package mostly works locally | package-clean or classified mega-skill | export validator proves mode normalization and JSM validation class |
+| Packaging | unknown package readiness | package mostly works locally | package-clean or classified mega-skill | export validator proves mode normalization and marketplace validation class |
 
 Maximum score: 30.
 
@@ -64,17 +64,13 @@ bash scripts/refresh-codex-artifacts.sh --scope worktree
 bash scripts/validate-codex-generated-artifacts.sh --scope worktree
 ```
 
-### JSM-Export
+### Marketplace-Export
 
-```bash
-scripts/check-jsm-export.sh --json skills/<name>
-```
-
-The export wrapper must:
+Run the target marketplace's export validator against a temporary package copy. The export wrapper must:
 
 - copy the skill to a temporary directory,
 - normalize exported `scripts/` files to non-executable mode,
-- run `jsm validate <temp-skill> --json`,
+- run the marketplace validator against the temporary copy,
 - classify file-count failures as mega-skill candidates,
 - leave source file modes unchanged.
 
@@ -97,7 +93,7 @@ New market-facing skills should include:
 - `SELF-TEST.md`,
 - runnable validation command or script,
 - explicit non-goals and forbidden operations,
-- export validation through `scripts/check-jsm-export.sh`.
+- export validation against the target marketplace validator.
 
 ## Audit Method
 
@@ -112,4 +108,4 @@ For each skill:
 
 ---
 
-**Source:** Pattern-only inspection of the user-local JSM corpus and AgentOps skill standards. No proprietary source text copied.
+**Source:** Pattern-only inspection of an external skill corpus and AgentOps skill standards. No proprietary source text copied.

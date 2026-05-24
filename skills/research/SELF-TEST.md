@@ -37,12 +37,6 @@ bash skills/heal-skill/scripts/heal.sh --strict skills/research
 bash scripts/validate-skill-frontmatter.sh --strict
 ```
 
-For JSM-style export readiness, run:
-
-```bash
-scripts/check-jsm-export.sh --json skills/research
-```
-
 ## Failure Cases
 
 - Explore agent only described, never dispatched: re-run and dispatch the agent (or perform the exploration inline if no spawn backend is available) — see the Key Rules in `SKILL.md`.

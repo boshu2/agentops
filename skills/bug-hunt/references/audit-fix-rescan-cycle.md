@@ -107,4 +107,4 @@ Without per-pass notes the convergence check (`references/convergence-criteria.m
 
 ---
 
-> Pattern adopted from `multi-pass-bug-hunting` (jsm/ACFS skill corpus). Methodology only — no verbatim text.
+> Pattern adopted from `multi-pass-bug-hunting` (ACFS skill corpus). Methodology only — no verbatim text.

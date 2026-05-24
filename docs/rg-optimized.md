@@ -66,7 +66,7 @@ If `~/.local/bin` is not on your PATH, the script prints a reminder. Add it to y
 ## Related
 
 - Upstream README: `https://github.com/BurntSushi/ripgrep`
-- jsm `rg-optimized` skill — pattern source for this doc and the build script.
+- The `rg-optimized` external skill — pattern source for this doc and the build script.
 
 ---
-> Pattern adopted from `rg-optimized` (jsm/ACFS skill corpus). Methodology only — no verbatim text.
+> Pattern adopted from `rg-optimized` (ACFS skill corpus). Methodology only — no verbatim text.
