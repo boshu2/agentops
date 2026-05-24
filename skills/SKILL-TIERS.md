@@ -18,7 +18,7 @@ Skills fall into three functional categories, plus infrastructure tiers for inte
 | **cross-vendor** | Execution | Multi-runtime orchestration | codex-team, openai-docs, converter |
 | **library** | Internal | Reference skills loaded JIT by other skills | beads, standards, shared |
 | **background** | Internal | Hook-triggered or automatic skills | inject, extract, forge, provenance, ratchet |
-| **meta** | Internal | Skills about skills | using-agentops, heal-skill, update |
+| **meta** | Internal | Skills about skills | using-agentops, using-gc, heal-skill, update |
 
 ## The Three Categories
 
@@ -329,7 +329,7 @@ These are how skills chain in practice:
 | **skill-builder** | meta | Scaffold or absorb new SKILL.md files against the unified template |
 | **update** | meta | Reinstall all AgentOps skills globally |
 
-### Internal Skills (9) — `metadata.internal: true`
+### Internal Skills (10) — `metadata.internal: true`
 
 Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hooks. Loaded JIT by other skills via Read or auto-triggered by hooks.
 
@@ -344,6 +344,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | ratchet | background | Execution | Progress gates |
 | flywheel | background | Knowledge | Knowledge health monitoring |
 | using-agentops | meta | Meta | AgentOps workflow guide (auto-injected) |
+| using-gc | meta | Meta | Guide to running AgentOps on the Gas City (gc) substrate |
 
 ---
 
@@ -410,6 +411,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | trace | provenance | alternative |
 | **update** | - | - (standalone) |
 | using-agentops | - | - |
+| using-gc | - | - |
 | **test** | standards, complexity | required, optional |
 | **review** | standards, council | required, optional |
 | **design** | council, shared | required, optional |

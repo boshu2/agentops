@@ -682,6 +682,12 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
+    },
+    {
+      "name": "using-gc",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Guide to running AgentOps on the Gas City (gc) substrate; gc-specific shell idioms and out-of-session orchestration vocabulary."
     }
   ]
 }

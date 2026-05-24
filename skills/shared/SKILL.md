@@ -67,10 +67,17 @@ fi
 |------------|-------------|-------------------|
 | `bd` | Issue tracking unavailable | Use TaskList for tracking. Note "install bd for persistent issue tracking" |
 | `ao` | Knowledge flywheel unavailable | Write learnings to `.agents/learnings/` directly. Skip flywheel metrics |
+| `gc` | Out-of-session orchestration unavailable | Run the loop in-session (`/rpi`, `/evolve`). gc only adds out-of-session dispatch of whole `ao rpi`/`ao evolve` loops — see the `using-gc` skill |
 | `gt` | Workspace management unavailable | Work in current directory. Skip convoy/sling operations |
+| `gh` | PR/CI automation unavailable | Open PRs via the web UI; skip automated PR status/merge steps |
+| `go` | Build-from-source unavailable | Install a prebuilt `ao` (Homebrew / install script / release binary); no Go needed |
 | `codex` | CLI missing or model unavailable | Fall back to runtime-native agents. Council pre-flight checks CLI presence (`which codex`) and model availability for `--mixed` mode. |
 | `cass` | Session search unavailable | Skip transcript search. Note "install cass for session history" |
+| `jq` | JSON parsing unavailable | Read `--json` output manually or use non-JSON output modes |
+| `rg` (ripgrep) | Fast search unavailable | Fall back to `grep` / `git grep` (slower) |
 | Model tier config | `.agentops/config.yaml` missing | Use built-in defaults (quality=opus, balanced=sonnet, budget=haiku). Tier resolution falls through to "balanced". |
+
+> Full per-tool purpose, required-vs-optional, and fallback detail: [docs/dependencies.md](https://github.com/boshu2/agentops/blob/main/docs/dependencies.md). The README "Requirements" section summarizes; this doc page is the canonical detail.
 
 ### Required Multi-Agent Capabilities
 
