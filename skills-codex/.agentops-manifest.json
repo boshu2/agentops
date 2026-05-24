@@ -697,8 +697,8 @@
     {
       "name": "brainstorm",
       "source_skill": "skills/brainstorm",
-      "source_hash": "009cb68fb190eb1575a4f58267e82deafa16cb93909a6c878d04c979af79f50e",
-      "generated_hash": "feeffc5414cb28ad45c1e0ff182be1e96a65cbc134de889d2fcff5045658454e"
+      "source_hash": "19af5b72dc69e8dfefb83e19983dbe863ba999166e917fa852addf1ca5a293d6",
+      "generated_hash": "d8a1a648f987d6ac2b14c992aca7f166cdc5994676ef1b7c10ecc68fe0753d5c"
     },
     {
       "name": "bug-hunt",
@@ -763,8 +763,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "daf64b6c71cd257f4211fa55f699225b3f9e3a2ee6e545ccaa46f52981d39053",
-      "generated_hash": "b8cfabc0511ff22e356756ec32257d760d7aa26326a0eb5eb23f21b2cdac11ab"
+      "source_hash": "dee7a65b6457abe66c3a7397b140827ed3ec65c00da03aa6f486b50fbb34fae2",
+      "generated_hash": "6c307529f6519b93745a4f410641b4991c0676a5f564de7f2b53d8d9cffe6b48"
     },
     {
       "name": "doc",

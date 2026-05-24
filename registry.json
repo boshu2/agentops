@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-24T21:21:05Z",
+  "generated_at": "2026-05-24T22:58:57Z",
   "summary": {
     "skills": 80,
     "hooks": 0,
@@ -145,7 +145,7 @@
         "path": "skills/brainstorm/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 4
       },
       {
         "name": "bug-hunt",
