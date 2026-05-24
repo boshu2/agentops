@@ -1,0 +1,12 @@
+{
+  "id": "s-2026-05-24-004",
+  "directive_id": "d-verify-knowledge-lifecycle-end-to-end",
+  "version": 1,
+  "date": "2026-05-24",
+  "goal": "Given a single learning in the knowledge corpus, when scripts/check-flywheel-lifecycle.sh runs, then all five stages (capture, retrieval, inject, round-trip, citation) are traced and the flywheel-lifecycle CI gate passes.",
+  "narrative": "A user or evaluator exercises the system behavior for this goal: Given a single learning in the knowledge corpus, when scripts/check-flywheel-lifecycle.sh runs, then all five stages (capture, retrieval, inject, round-trip, citation) are traced and the flywheel-lifecycle CI gate passes..",
+  "expected_outcome": "The implementation satisfies the goal in observable behavior: Given a single learning in the knowledge corpus, when scripts/check-flywheel-lifecycle.sh runs, then all five stages (capture, retrieval, inject, round-trip, citation) are traced and the flywheel-lifecycle CI gate passes..",
+  "satisfaction_threshold": 0.9,
+  "source": "human",
+  "status": "active"
+}

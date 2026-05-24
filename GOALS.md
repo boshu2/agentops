@@ -29,7 +29,9 @@ README and PRODUCT.md promise skills work across 4 runtimes. The current contrac
 
 **Progress:** Tier S is active in CI through `tests/smoke-test.sh`: `tests/skills/test-runtime-claude-code-smoke.sh`, `tests/skills/test-runtime-codex-smoke.sh`, `tests/skills/test-runtime-cursor-smoke.sh`, and `tests/skills/test-runtime-opencode-smoke.sh`. `tests/scripts/test-headless-runtime-skills.sh` exercises the Claude/Codex headless validator contract with mocked runtimes, while `scripts/validate-headless-runtime-skills.sh` performs live Tier I inventory proof when local CLIs/auth are available. Remaining gap: live hosted-runtime execution proof is not a default CI gate.
 
+**Directive ID:** d-close-the-multi-runtime-promise-gap
 **Steer:** increase (runtime coverage count)
+**Scenarios:** s-2026-05-24-001
 
 ### 2. Gate the install path
 
@@ -37,13 +39,17 @@ Three install scripts (`install.sh`, `install-codex.sh`, `install-opencode.sh`) 
 
 **Progress:** `install-smoke` gate added (`tests/install/test-install-smoke.sh`, weight 5) — validates syntax and structure of all install scripts. Gate is active in CI. Runtime execution tests added: when a local `cli/bin/ao` binary exists, the gate now verifies `ao --version`, `ao help`, and that `flywheel`, `goals`, and `inject` subcommands are registered. Remaining gap: end-to-end install execution (running `scripts/install.sh` against a clean environment) requires a sandboxed CI environment with network access — documented as out-of-scope for local gate.
 
+**Directive ID:** d-gate-the-install-path
 **Steer:** increase (install scripts with smoke tests)
+**Scenarios:** s-2026-05-24-002
 
 ### 3. Resurrect quarantined E2E tests
 
 `tests/_quarantine/` currently has zero active quarantined suites. Keep it empty: newly disabled workflow tests must either be promoted back to CI, deleted as obsolete, or tracked as explicit follow-up work before they can remain quarantined.
 
+**Directive ID:** d-resurrect-quarantined-e2e-tests
 **Steer:** decrease (quarantined test count)
+**Scenarios:** s-2026-05-24-003
 
 ### 4. Verify knowledge lifecycle end-to-end
 
@@ -51,7 +57,9 @@ The flywheel-compounding gate proves σρ > δ (escape velocity). But the full l
 
 **Progress:** `flywheel-lifecycle` gate now traces 5 stages: capture → retrieval → inject → round-trip → citation (`scripts/check-flywheel-lifecycle.sh`). Stage 5 (citation) checks for cross-citations between learnings, briefings directory population, and corpus density. Citation checks are soft-fail on sparse corpus (structurally valid but no accumulated sessions yet) — they hard-fail only if the corpus is populated and citations are structurally absent. Gate is active in CI.
 
+**Directive ID:** d-verify-knowledge-lifecycle-end-to-end
 **Steer:** increase (lifecycle stages gated)
+**Scenarios:** s-2026-05-24-004
 
 ### 5. Keep complexity regressions at zero
 
@@ -59,19 +67,25 @@ CC 20 ceiling was achieved. Gate enforces the threshold — the directive is to 
 
 **Progress:** cli/ threshold (20) is green. cli/internal/ threshold (18) is green. Previously `validateRoutingLaneGates` was CC 19; refactored into `validateYieldGate` and `validateLaneAuthority` helpers (2026-05-04).
 
+**Directive ID:** d-keep-complexity-regressions-at-zero
 **Steer:** decrease (functions exceeding CC 20)
+**Scenarios:** s-2026-05-24-005
 
 ### 6. Maintain competitive awareness
 
 Competitive analysis docs (`docs/comparisons/vs-*.md` and `docs/comparisons/competitive-radar.md`) must stay fresh. GSD, Compound Engineer, and sdd are actively iterating — stale analysis means blind spots. Refresh comparisons within 45 days of last update. `/evolve` picks this up automatically when other goals pass.
 
+**Directive ID:** d-maintain-competitive-awareness
 **Steer:** decrease (stale comparison doc count)
+**Scenarios:** s-2026-05-24-006
 
 ### 7. Enforce codex parity proactively
 
 CI catches codex drift at push time, but 40% of fix commits in the March 2026 integration were codex parity issues caught too late. The PreToolUse hook warns during editing; the goal gate blocks push if drift exists.
 
+**Directive ID:** d-enforce-codex-parity-proactively
 **Steer:** decrease (codex parity findings count)
+**Scenarios:** s-2026-05-24-007
 
 ### 8. Automate the dream cycle (nightly flywheel consolidation)
 
@@ -79,7 +93,9 @@ Today harvest/forge/inject are on-demand — an operator runs them when they rem
 
 **Progress:** Implemented in nightly CI. `.github/workflows/nightly.yml` now runs a dedicated dream-cycle proof job (`harvest -> forge -> close-loop -> defrag -> metrics health`) against the checked-in knowledge corpus, uploads the full report artifact, and updates a rolling GitHub issue with a visible compounding summary. v1.0+: end-user repos can run the same loop locally via `ao daemon run --schedule-file .agents/schedule.yaml`. Substrate via soc-8inr (recurrence + JobTypeLLMWikiLoop + scheduling primitives, shipped 2026-05-01); operator-facing dogfood via soc-hxnr (stock .agents/schedule.yaml.example + ao init --with-schedule + operator runtime templates).
 
+**Directive ID:** d-automate-the-dream-cycle-nightly-flywheel-consolidation
 **Steer:** increase (automated consolidation runs per week)
+**Scenarios:** s-2026-05-24-008
 
 ### 9. Build the pattern-to-skill pipeline (self-programming)
 
@@ -87,7 +103,9 @@ When the same pattern appears across 3+ sessions — a debugging technique, a va
 
 **Progress:** Prototype implemented. `ao flywheel close-loop` now generates review-only draft skills under `.agents/skill-drafts/` when a pattern has evidence across 3+ session artifacts. The remaining gap is promotion polish: richer section synthesis, stronger tier heuristics, and a cleaner review/publish path from draft to shipped skill.
 
+**Directive ID:** d-build-the-pattern-to-skill-pipeline-self-programming
 **Steer:** increase (auto-proposed skill drafts)
+**Scenarios:** s-2026-05-24-009
 
 ### 10. Measure skill value through real-task evaluation
 
@@ -96,7 +114,9 @@ The existing eval suites are CI canaries (contract checks). None answers "did th
 <!-- agentops:claim:AOP-CLAIM-GOALS-EVAL-WORKBENCH -->
 **Progress:** Workbench built: 3 components (Go CLI, Python FastAPI, DevOps scripts), 12 tasks with setup/score scripts, behavioral eval suite (`workbench-behavioral-v1`) with 12 cases covering bug-fix, feature implementation, security, refactoring, test-writing, and edge-case handling. `make -C evals/workbench verify` passes golden (12/12) and broken detection (12/12). A/B comparison via DeltaScorecard validated. Agent harness script with industry-proven eval patterns shipped. `eval-skill-delta` CI gate added to `validate.yml` (structural, runs on eval file changes). `--two-pass` mode added to pre-push head gate for local skill-delta validation. Remaining gap: expanding eval-skill-delta from structural-only to a default blocking gate with full skill-on vs skill-off execution across the workbench.
 
+**Directive ID:** d-measure-skill-value-through-real-task-evaluation
 **Steer:** increase (behavioral eval tasks with scoring scripts)
+**Scenarios:** s-2026-05-24-010
 
 ### 12. Operating loop is the execution primitive
 
@@ -108,16 +128,20 @@ This directive starts in **warn-only** posture. The gate is `scripts/check-loop-
 
 Waterfall-shaped speculative plans fail this directive when they create context bulk before proof. The acceptable unit is atomic: one behavior, one bounded context, one first failing test, one write scope, one acceptance proof, and one learning only when it changes future behavior.
 
+**Directive ID:** d-operating-loop-is-the-execution-primitive
 **Steer:** increase (beads with BDD intent + slice decomposition before implementation)
 
+**Scenarios:** s-2026-05-24-011
 **Tags:** loop-shape, warn-only
 
 ### 11. Durability of the corpus across runtime cleanup
 
 On 2026-05-07, routine maintenance wiped most of `.agents/` runtime subdirs (only `.agents/nightly/` is git-tracked); a fresh `scripts/corpus-stats.sh` returns near-zero counts even though the 2026-05-04 stable snapshot recorded ~1,842 learnings, ~186 patterns, ~80 planning rules, and ~3,867 cited decisions. The dogfood receipts claim — and the broader "corpus is the moat" positioning — depends on that asset being durable across cleanup, machine moves, and reinstalls. This directive tracks the design and implementation of a snapshot/restore mechanism: scheduled snapshots of `.agents/` runtime state to durable storage, restore tooling that can rehydrate a fresh checkout, and a freshness/coverage gate so degradation is visible before the receipts go stale. Tracked under bd issue soc-rv5p.
 
+**Directive ID:** d-durability-of-the-corpus-across-runtime-cleanup
 **Steer:** increase (snapshots / restore mechanism)
 
+**Scenarios:** s-2026-05-24-012
 **Tags:** corpus-state
 
 ### 13. Agent-ergonomic ao CLI surface
@@ -126,7 +150,9 @@ The `ao` CLI's primary user is an AI agent: the first command an agent guesses m
 
 **Progress:** Top-level `ao capabilities` and `ao robot-docs` shipped (0 → 2 introspection surfaces); CLI-wide flag-typo correction, required-flag hints, parent-command JSON listing, and corrective-command error messages landed across `autodev` / `claim` / `citation` / `constraint`. `ao plans list/search/diff` fixed to honor `--json` (0/3 → 3/3 read-side `plans` commands). Remaining gap: a wider sweep of read-side leaf commands for `--json` fidelity is still owed, and the doctor extended exit-code dictionary is not shared by other diagnostic commands.
 
+**Directive ID:** d-agent-ergonomic-ao-cli-surface
 **Steer:** increase (read-side `ao` commands honoring `--json` + error-teaches)
+**Scenarios:** s-2026-05-24-013
 
 ### 14. Every behavior has a consequence (reinforcement contract)
 
@@ -134,7 +160,9 @@ Behavior shaping needs a consequence system, not just intent shape (that is dire
 
 This is the consequence half of [Behavior-Shaping Environment](docs/architecture/behavior-shaping-environment.md) (directive #12 is the intent-shape half); vocabulary at [`skills/domain/references/behavior-shaping.md`](skills/domain/references/behavior-shaping.md). Posture: **warn-only doctrine** — the measurable signal is that shipped behaviors carry a gate, reusing directive #12's scenario + loop-shape signals rather than adding a new gate. The anti-pattern is gateless prose-spec work.
 
+**Directive ID:** d-every-behavior-has-a-consequence-reinforcement-contract
 **Steer:** increase (behaviors that ship with a reinforcing gate, not prose prohibitions)
+**Scenarios:** s-2026-05-24-014
 
 ## Three-Gap Contract Proof Surface
 

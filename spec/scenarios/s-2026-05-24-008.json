@@ -1,0 +1,12 @@
+{
+  "id": "s-2026-05-24-008",
+  "directive_id": "d-automate-the-dream-cycle-nightly-flywheel-consolidation",
+  "version": 1,
+  "date": "2026-05-24",
+  "goal": "Given the .github/workflows/nightly.yml dream-cycle job, when it runs on schedule, then harvest -\u003e forge -\u003e close-loop -\u003e defrag -\u003e metrics health complete, the report artifact uploads, and the rolling GitHub issue is updated with a compounding summary (\u003e=1 automated consolidation run per week).",
+  "narrative": "A user or evaluator exercises the system behavior for this goal: Given the .github/workflows/nightly.yml dream-cycle job, when it runs on schedule, then harvest -\u003e forge -\u003e close-loop -\u003e defrag -\u003e metrics health complete, the report artifact uploads, and the rolling GitHub issue is updated with a compounding summary (\u003e=1 automated consolidation run per week)..",
+  "expected_outcome": "The implementation satisfies the goal in observable behavior: Given the .github/workflows/nightly.yml dream-cycle job, when it runs on schedule, then harvest -\u003e forge -\u003e close-loop -\u003e defrag -\u003e metrics health complete, the report artifact uploads, and the rolling GitHub issue is updated with a compounding summary (\u003e=1 automated consolidation run per week)..",
+  "satisfaction_threshold": 0.85,
+  "source": "human",
+  "status": "active"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "s-2026-05-24-009",
+  "directive_id": "d-build-the-pattern-to-skill-pipeline-self-programming",
+  "version": 1,
+  "date": "2026-05-24",
+  "goal": "Given a pattern with evidence across 3+ session artifacts, when ao flywheel close-loop runs, then it generates a review-only draft skill (SKILL.md + frontmatter) under .agents/skill-drafts/ for human review before promotion.",
+  "narrative": "A user or evaluator exercises the system behavior for this goal: Given a pattern with evidence across 3+ session artifacts, when ao flywheel close-loop runs, then it generates a review-only draft skill (SKILL.md + frontmatter) under .agents/skill-drafts/ for human review before promotion..",
+  "expected_outcome": "The implementation satisfies the goal in observable behavior: Given a pattern with evidence across 3+ session artifacts, when ao flywheel close-loop runs, then it generates a review-only draft skill (SKILL.md + frontmatter) under .agents/skill-drafts/ for human review before promotion..",
+  "satisfaction_threshold": 0.85,
+  "source": "human",
+  "status": "active"
+}

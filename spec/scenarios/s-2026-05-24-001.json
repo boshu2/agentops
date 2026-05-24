@@ -1,0 +1,12 @@
+{
+  "id": "s-2026-05-24-001",
+  "directive_id": "d-close-the-multi-runtime-promise-gap",
+  "version": 1,
+  "date": "2026-05-24",
+  "goal": "Given the four runtime smoke suites under tests/skills/, when the smoke-test CI job runs, then test-runtime-claude-code-smoke.sh, test-runtime-codex-smoke.sh, test-runtime-cursor-smoke.sh, and test-runtime-opencode-smoke.sh all exit 0 (Tier S structural proof green for all four runtimes).",
+  "narrative": "A user or evaluator exercises the system behavior for this goal: Given the four runtime smoke suites under tests/skills/, when the smoke-test CI job runs, then test-runtime-claude-code-smoke.sh, test-runtime-codex-smoke.sh, test-runtime-cursor-smoke.sh, and test-runtime-opencode-smoke.sh all exit 0 (Tier S structural proof green for all four runtimes)..",
+  "expected_outcome": "The implementation satisfies the goal in observable behavior: Given the four runtime smoke suites under tests/skills/, when the smoke-test CI job runs, then test-runtime-claude-code-smoke.sh, test-runtime-codex-smoke.sh, test-runtime-cursor-smoke.sh, and test-runtime-opencode-smoke.sh all exit 0 (Tier S structural proof green for all four runtimes)..",
+  "satisfaction_threshold": 0.9,
+  "source": "human",
+  "status": "active"
+}

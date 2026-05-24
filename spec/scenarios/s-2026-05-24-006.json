@@ -1,0 +1,12 @@
+{
+  "id": "s-2026-05-24-006",
+  "directive_id": "d-maintain-competitive-awareness",
+  "version": 1,
+  "date": "2026-05-24",
+  "goal": "Given the competitive analysis docs (docs/comparisons/vs-*.md and competitive-radar.md), when freshness is measured, then every comparison doc was updated within the last 45 days (zero stale comparison docs).",
+  "narrative": "A user or evaluator exercises the system behavior for this goal: Given the competitive analysis docs (docs/comparisons/vs-*.md and competitive-radar.md), when freshness is measured, then every comparison doc was updated within the last 45 days (zero stale comparison docs)..",
+  "expected_outcome": "The implementation satisfies the goal in observable behavior: Given the competitive analysis docs (docs/comparisons/vs-*.md and competitive-radar.md), when freshness is measured, then every comparison doc was updated within the last 45 days (zero stale comparison docs)..",
+  "satisfaction_threshold": 0.9,
+  "source": "human",
+  "status": "active"
+}

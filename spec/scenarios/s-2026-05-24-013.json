@@ -1,0 +1,12 @@
+{
+  "id": "s-2026-05-24-013",
+  "directive_id": "d-agent-ergonomic-ao-cli-surface",
+  "version": 1,
+  "date": "2026-05-24",
+  "goal": "Given a read-side ao command invoked by an agent, when it is run with --json or with an unknown flag, then stdout carries data / stderr carries diagnostics, ao capabilities and ao robot-docs describe the surface, and an unknown flag returns a Levenshtein typo hint naming the corrected flag.",
+  "narrative": "A user or evaluator exercises the system behavior for this goal: Given a read-side ao command invoked by an agent, when it is run with --json or with an unknown flag, then stdout carries data / stderr carries diagnostics, ao capabilities and ao robot-docs describe the surface, and an unknown flag returns a Levenshtein typo hint naming the corrected flag..",
+  "expected_outcome": "The implementation satisfies the goal in observable behavior: Given a read-side ao command invoked by an agent, when it is run with --json or with an unknown flag, then stdout carries data / stderr carries diagnostics, ao capabilities and ao robot-docs describe the surface, and an unknown flag returns a Levenshtein typo hint naming the corrected flag..",
+  "satisfaction_threshold": 0.9,
+  "source": "human",
+  "status": "active"
+}
