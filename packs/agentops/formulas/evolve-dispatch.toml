@@ -1,0 +1,35 @@
+description = """
+THIN dispatch — run the AgentOps evolve OUTER loop (one cadence tick).
+
+One-step "order formula" (same minimal shape as rpi-dispatch.toml, modeled on
+examples/dolt/formulas/mol-dolt-remotes-patrol.toml). Routed to the mayor pool by
+orders/evolve-cadence.toml on a cron cadence.
+
+THIN-SEAM (design doc "DDD seam correction"): GC owns the CADENCE (the cron Order
+fires this); AgentOps owns the LOGIC (`ao evolve` selects the next-best work,
+drives N `ao rpi` cycles toward a GOALS.md directive, and post-mortems at the
+session-scope threshold). GC never sees evolve's insides.
+"""
+formula = "evolve-dispatch"
+version = 1
+
+[[steps]]
+id = "run-evolve"
+title = "Run one ao evolve wave"
+description = """
+Run one outer-loop wave — ONE command:
+
+```bash
+ao evolve
+```
+
+`ao evolve` selects the next-best work (toward a GOALS.md directive), dispatches a
+bounded wave of `ao rpi` cycles, and runs a post-mortem at the 2-4-PR session-scope
+threshold. Do NOT decompose it; the work-selection logic is AgentOps-owned.
+
+As mayor, dispatch each selected bead to the refinery pool (`gc sling
+<rig>/refinery <bead>`) and drive each green PR to merge (CI-green is the gate).
+
+Close this step after the wave completes or the session-scope threshold triggers a
+post-mortem.
+"""

@@ -1,0 +1,28 @@
+# bead-dispatch — route a ready bead to the worker pool, which runs `ao rpi`.
+#
+# Modeled on: examples/gastown/packs/maintenance/orders/orphan-sweep.toml (cooldown
+#   shape) + docs/tutorials/07-orders.md event/cooldown triggers. Uses the THIN
+#   one-step `rpi-dispatch` formula (NOT a 4-step mol-rpi-cycle) — see
+#   formulas/rpi-dispatch.toml and the design doc "DDD seam correction".
+#
+# Cooldown sweep (default): poll for ready work every minute. GC's duplicate-
+# prevention (07-orders.md:393-398) skips dispatch if this order already has open
+# work, so the sweep won't pile up. Cooldown (not event) avoids dispatching rpi
+# cycles on non-work / coordination beads — the worker re-checks `bd ready`.
+[order]
+description = "Sweep bd ready and run an ao rpi cycle on the next bead"
+formula = "rpi-dispatch"
+trigger = "cooldown"
+interval = "1m"
+pool = "refinery"
+
+# Reactive alternative (event trigger). Swap the [order] above for this to
+# dispatch on bead creation instead of polling. Modeled on 07-orders.md event
+# example (`on = "bead.closed"`). Kept commented — cooldown is the default
+# because it filters non-work beads.
+# [order]
+# description = "Run an ao rpi cycle when a work bead is created"
+# formula = "rpi-dispatch"
+# trigger = "event"
+# on = "bead.created"
+# pool = "refinery"
