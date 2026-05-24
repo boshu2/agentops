@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 )
@@ -43,8 +44,13 @@ type Supervisor struct {
 	actor             string
 	pollInterval      time.Duration
 	heartbeatInterval time.Duration
+	heartbeatTimeout  time.Duration
 	executionTimeout  time.Duration
 	claimMu           sync.Mutex
+	// heartbeatFn performs one heartbeat ledger write. It defaults to
+	// queue.Heartbeat; tests override it to inject a slow/blocking store write
+	// and prove the per-tick write is bounded.
+	heartbeatFn func(HeartbeatInput, QueueMutationOptions) (QueueJobState, error)
 }
 
 // NewSupervisor builds a queue supervisor from explicit executors.
@@ -79,14 +85,39 @@ func NewSupervisor(opts SupervisorOptions) (*Supervisor, error) {
 	if heartbeatInterval <= 0 {
 		heartbeatInterval = 15 * time.Second
 	}
-	return &Supervisor{
+	s := &Supervisor{
 		queue:             opts.Queue,
 		executors:         executors,
 		actor:             actor,
 		pollInterval:      pollInterval,
 		heartbeatInterval: heartbeatInterval,
 		executionTimeout:  opts.ExecutionTimeout,
-	}, nil
+	}
+	s.heartbeatFn = s.queue.Heartbeat
+	return s, nil
+}
+
+// maxHeartbeatTimeout caps the per-tick heartbeat-write deadline so a long
+// heartbeat interval does not imply an equally long tolerance for a stuck store
+// write. The deadline is otherwise heartbeatInterval/2.
+const maxHeartbeatTimeout = 10 * time.Second
+
+// resolveHeartbeatTimeout returns the bound for a single heartbeat ledger write.
+// An explicit s.heartbeatTimeout wins (tests set it); otherwise it derives from
+// the current heartbeat interval (half the interval, capped) so the write cannot
+// stall the loop past the point where the next beat is due.
+func (s *Supervisor) resolveHeartbeatTimeout() time.Duration {
+	if s.heartbeatTimeout > 0 {
+		return s.heartbeatTimeout
+	}
+	timeout := s.heartbeatInterval / 2
+	if timeout <= 0 {
+		timeout = s.heartbeatInterval
+	}
+	if timeout > maxHeartbeatTimeout {
+		timeout = maxHeartbeatTimeout
+	}
+	return timeout
 }
 
 // RunOnce attempts to claim and execute one supported job.
@@ -222,13 +253,7 @@ func (s *Supervisor) runExecutorWithHeartbeat(ctx context.Context, executor JobE
 			}
 			return exec.result, exec.err
 		case <-ticker.C:
-			if _, err := s.queue.Heartbeat(HeartbeatInput{
-				JobID:      claim.Job.JobID,
-				RequestID:  RequestID(claim.Job.RequestID),
-				ClaimToken: claim.ClaimToken,
-				LeaseEpoch: claim.LeaseEpoch,
-				Actor:      s.actor,
-			}, QueueMutationOptions{}); err != nil {
+			if err := s.beat(ctx, claim); err != nil {
 				return JobExecutionResult{}, err
 			}
 		case <-ctx.Done():
@@ -239,6 +264,58 @@ func (s *Supervisor) runExecutorWithHeartbeat(ctx context.Context, executor JobE
 			}
 			return JobExecutionResult{}, execCtx.Err()
 		}
+	}
+}
+
+// beat records one heartbeat ledger write, bounded by a per-call timeout so a
+// stuck store write (disk full, lock contention) cannot stall the heartbeat
+// loop. The write runs on its own goroutine; beat returns when the write
+// completes, when the per-call deadline elapses, or when the parent context is
+// cancelled — whichever happens first.
+//
+// On timeout the beat is logged and skipped (nil error) rather than blocked or
+// failed: a single missed beat is recoverable (the next tick retries; the lease
+// only lapses after LeaseDuration, which is many beats), whereas blocking the
+// select would stall the whole supervisor loop. A real write error is still
+// returned so the caller fails the job as before. The leaked goroutine from a
+// timed-out write drains into the buffered channel and exits once the store call
+// eventually returns; it is not joined because the whole point is not to wait on
+// it.
+func (s *Supervisor) beat(ctx context.Context, claim QueueLease) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	timeout := s.resolveHeartbeatTimeout()
+	beatCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	// Buffered (cap 1) so the write goroutine's send never blocks even after a
+	// timeout leaves no receiver — it can always finish and exit.
+	done := make(chan error, 1)
+	go func() {
+		_, err := s.heartbeatFn(HeartbeatInput{
+			JobID:      claim.Job.JobID,
+			RequestID:  RequestID(claim.Job.RequestID),
+			ClaimToken: claim.ClaimToken,
+			LeaseEpoch: claim.LeaseEpoch,
+			Actor:      s.actor,
+		}, QueueMutationOptions{})
+		done <- err
+	}()
+
+	select {
+	case err := <-done:
+		return err
+	case <-beatCtx.Done():
+		if ctx.Err() != nil {
+			// Parent cancellation/deadline: let the loop's own ctx.Done /
+			// execCtx.Done cases handle teardown on the next iteration.
+			return nil
+		}
+		// Per-call heartbeat deadline elapsed while the parent is still live:
+		// skip this beat rather than block the loop.
+		log.Printf("[supervisor] heartbeat write for job %q timed out after %s; skipping beat", claim.Job.JobID, timeout)
+		return nil
 	}
 }
 
