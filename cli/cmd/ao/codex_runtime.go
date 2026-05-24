@@ -11,6 +11,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/boshu2/agentops/cli/internal/bridge"
 )
 
 const (
@@ -156,7 +158,7 @@ func detectLifecycleRuntimeProfileWithOptions(forceCodex bool) lifecycleRuntimeP
 
 func codexSupportsNativeHooks(homeDir string) bool {
 	if version, ok := readCodexLatestVersion(homeDir); ok {
-		return compareSemver(version, codexNativeHooksMinVersion) >= 0
+		return bridge.CompareSemver(version, codexNativeHooksMinVersion) >= 0
 	}
 	return codexHooksFeatureEnabled(filepath.Join(homeDir, ".codex", "config.toml")) ||
 		fileExists(filepath.Join(homeDir, ".codex", "hooks.json"))

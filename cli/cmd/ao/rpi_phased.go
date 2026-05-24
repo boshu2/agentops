@@ -109,7 +109,7 @@ Examples:
 	phasedCmd.Flags().BoolVar(&phasedSwarmFirst, "swarm-first", true, "Default each phase to swarm/agent-team execution; fall back to direct execution if swarm runtime is unavailable")
 	phasedCmd.Flags().BoolVar(&phasedAutoCleanStale, "auto-clean-stale", false, "Run stale-run cleanup before starting phased execution")
 	phasedCmd.Flags().DurationVar(&phasedAutoCleanStaleAfter, "auto-clean-stale-after", 24*time.Hour, "Only clean stale runs older than this age when auto-clean is enabled")
-	phasedCmd.Flags().StringVar(&phasedRuntimeMode, "runtime", "auto", "Phase runtime mode: auto|direct|stream|tmux|gc")
+	phasedCmd.Flags().StringVar(&phasedRuntimeMode, "runtime", "auto", "Phase runtime mode: auto|direct|stream|tmux")
 	phasedCmd.Flags().StringVar(&phasedRuntimeCommand, "runtime-cmd", "claude", "Runtime command used for phase prompts (Claude uses '-p'; Codex uses 'exec')")
 	phasedCmd.Flags().IntVar(&phasedTmuxWorkers, "tmux-workers", 1, "When --runtime tmux, number of worker sessions spawned per phase")
 	phasedCmd.Flags().BoolVar(&phasedNoDashboard, "no-dashboard", false, "Disable auto-opening the web dashboard")
@@ -123,7 +123,7 @@ Examples:
 	phasedCmd.Flags().StringVar(&phasedScaffoldDomain, "scaffold-domain", "", "Write a domain-slice manifest template at docs/domains/<name>/manifest.yaml and exit (does NOT run RPI)")
 	phasedCmd.Flags().BoolVar(&phasedForce, "force", false, "With --scaffold-domain: overwrite an existing manifest")
 	_ = phasedCmd.RegisterFlagCompletionFunc("from", staticCompletionFunc("discovery", "implementation", "validation", "research", "plan", "pre-mortem", "crank", "vibe", "post-mortem"))
-	_ = phasedCmd.RegisterFlagCompletionFunc("runtime", staticCompletionFunc("auto", "direct", "stream", "tmux", "gc"))
+	_ = phasedCmd.RegisterFlagCompletionFunc("runtime", staticCompletionFunc("auto", "direct", "stream", "tmux"))
 
 	rpiCmd.AddCommand(phasedCmd)
 }
@@ -267,30 +267,12 @@ func preflightOpts(opts *phasedEngineOptions) error {
 		return err
 	}
 	switch opts.RuntimeMode {
-	case "gc":
-		return preflightGCRuntimeAvailability(*opts)
-	case "auto":
-		if gcExecutorAvailable(opts.WorkingDir, opts.ExecCommand, opts.LookPath) {
-			return nil
-		}
 	case "tmux":
 		if _, err := defaultLookPath(opts.LookPath)(opts.TmuxCommand); err != nil {
 			return fmt.Errorf("tmux executable %q not found on PATH (required for runtime=tmux)", opts.TmuxCommand)
 		}
 	}
 	return preflightRuntimeAvailability(opts.RuntimeCommand, opts.LookPath)
-}
-
-func preflightGCRuntimeAvailability(opts phasedEngineOptions) error {
-	cityPath := gcCityPathFromOpts(opts)
-	if cityPath == "" {
-		return fmt.Errorf("gc runtime requires city.toml (walk up from %s)", opts.WorkingDir)
-	}
-	ready, reason := gcBridgeReady(cityPath, opts.ExecCommand, opts.LookPath)
-	if !ready {
-		return fmt.Errorf("gc runtime unavailable: %s", reason)
-	}
-	return nil
 }
 
 func minPositiveDuration(a, b time.Duration) time.Duration {

@@ -63,7 +63,6 @@ func gatherDoctorChecks() []doctorCheck {
 		checkDaemonRuntime(),
 		checkDaemonLedgerHealth(time.Now(), daemonpkg.LedgerHealthDefaultThresholds()),
 		checkDaemonTelemetry(),
-		checkGasCityBridge(),
 		checkOpenClawConsumer(),
 		checkKnowledgeBase(),
 		checkKnowledgeFreshness(),
@@ -272,69 +271,11 @@ func daemonTelemetryClock(baseURL string, events []daemonpkg.LedgerEvent) time.T
 	return time.Now().UTC()
 }
 
-func checkGasCityBridge() doctorCheck {
-	cityPath := ""
-	if cwd, err := os.Getwd(); err == nil {
-		cityPath = gcBridgeCityPath(cwd)
-	}
-	return checkGasCityBridgeWith(cityPath, exec.Command, exec.LookPath)
-}
-
-func checkGasCityBridgeWith(cityPath string, execCommand gcExecFn, lookPath gcLookFn) doctorCheck {
-	diag := gcBridgeDiagnose(cityPath, execCommand, lookPath, true)
-	detail := formatGasCityDiagnostic(diag)
-	if cityPath != "" {
-		detail += "; city=" + cityPath
-	}
-	if diag.Ready {
-		return doctorCheck{Name: "GasCity Bridge", Status: "pass", Detail: detail, Required: false}
-	}
-	return doctorCheck{Name: "GasCity Bridge", Status: "warn", Detail: detail, Required: false}
-}
-
 func gatherDoctorProductRuntimeChecks() []doctorCheck {
 	return []doctorCheck{
 		checkDaemonRuntime(),
-		checkGasCityProductRuntime(),
 		checkOpenClawConsumer(),
 	}
-}
-
-func checkGasCityProductRuntime() doctorCheck {
-	cityPath := ""
-	if cwd, err := os.Getwd(); err == nil {
-		cityPath = gcBridgeCityPath(cwd)
-	}
-	return checkGasCityProductRuntimeWith(cityPath, exec.Command, exec.LookPath)
-}
-
-func checkGasCityProductRuntimeWith(cityPath string, execCommand gcExecFn, lookPath gcLookFn) doctorCheck {
-	diag := gcBridgeDiagnose(cityPath, execCommand, lookPath, false)
-	detail := formatGasCityDiagnostic(diag)
-	if cityPath != "" {
-		detail += "; city=" + cityPath
-	}
-	if diag.APIReachable && diag.ReadinessReady && diag.Ready {
-		return doctorCheck{Name: "GasCity Product Runtime", Status: "pass", Detail: detail, Required: true}
-	}
-	return doctorCheck{Name: "GasCity Product Runtime", Status: "fail", Detail: detail, Required: true}
-}
-
-func formatGasCityDiagnostic(diag gcBridgeDiagnostics) string {
-	parts := []string{
-		fmt.Sprintf("binary=%t", diag.BinaryAvailable),
-		fmt.Sprintf("version=%s", doctorValueOrDash(diag.Version)),
-		fmt.Sprintf("version_ok=%t", diag.VersionOK),
-		fmt.Sprintf("api=%t", diag.APIReachable),
-		fmt.Sprintf("ready=%t", diag.ReadinessReady),
-	}
-	if diag.FallbackEnabled {
-		parts = append(parts, "fallback=enabled")
-	}
-	if diag.Reason != "" {
-		parts = append(parts, "reason="+diag.Reason)
-	}
-	return strings.Join(parts, "; ")
 }
 
 func checkOpenClawConsumer() doctorCheck {
