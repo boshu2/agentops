@@ -503,6 +503,148 @@ func (e *blockingOpenClawExecutor) RunJob(ctx context.Context, claim QueueLease)
 	}
 }
 
+// TestSupervisor_BoundsBlockingHeartbeatWrite proves the per-tick heartbeat
+// ledger write is bounded: an injected heartbeatFn that blocks (modelling a
+// store write stuck on disk-full or lock contention) must NOT stall the
+// supervisor loop. With the per-call timeout, the stuck beat is skipped and the
+// loop survives, so the job still completes once the executor releases. Without
+// the timeout the ticker case would block on the write and RunOnce would hang
+// until the test's outer deadline fires.
+//
+// Sync signals (started/beatEntered/release) gate the phases instead of bare
+// sleeps to stay non-flaky.
+func TestSupervisor_BoundsBlockingHeartbeatWrite(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-openclaw", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+	executor := &blockingOpenClawExecutor{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+	}
+	supervisor := newTestSupervisor(t, queue, executor)
+	// Fire heartbeats fast and bound each write tightly so the stuck write is
+	// abandoned quickly instead of stalling the loop.
+	supervisor.heartbeatInterval = 5 * time.Millisecond
+	supervisor.heartbeatTimeout = 20 * time.Millisecond
+
+	beatEntered := make(chan struct{}, 1)
+	beatUnblock := make(chan struct{})
+	supervisor.heartbeatFn = func(HeartbeatInput, QueueMutationOptions) (QueueJobState, error) {
+		select {
+		case beatEntered <- struct{}{}: // non-blocking signal the first time the write starts
+		default:
+		}
+		<-beatUnblock // block like a store write wedged on disk/lock contention
+		return QueueJobState{}, nil
+	}
+
+	resultCh := make(chan SupervisorRunOnceResult, 1)
+	errCh := make(chan error, 1)
+	go func() {
+		result, err := supervisor.RunOnce(context.Background())
+		resultCh <- result
+		errCh <- err
+	}()
+
+	select {
+	case <-executor.started:
+	case <-time.After(time.Second):
+		t.Fatal("executor did not start")
+	}
+	// The blocking heartbeat write must actually be entered (so we are testing
+	// the wedged-write path), and the loop must survive past it.
+	select {
+	case <-beatEntered:
+	case <-time.After(time.Second):
+		t.Fatal("heartbeat write was never attempted")
+	}
+	// Release the executor: if the loop were stalled on the wedged heartbeat
+	// write, the <-done case would never be reached and RunOnce would hang.
+	close(executor.release)
+
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Fatalf("run once returned error despite stuck heartbeat: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("RunOnce hung — stuck heartbeat write stalled the supervisor loop")
+	}
+	result := <-resultCh
+	if result.Job.Status != JobStatusCompleted {
+		t.Fatalf("job status = %q, want completed", result.Job.Status)
+	}
+	// Unblock the lingering write goroutine so it drains and the test exits clean.
+	close(beatUnblock)
+}
+
+// TestSupervisor_beat_TimesOutAndSkips exercises beat directly: a heartbeatFn
+// that blocks for longer than the bound must cause beat to return within ~the
+// timeout (not after the full block) with a nil error (the beat is skipped, not
+// failed). This pins the exact bounded-write contract.
+func TestSupervisor_beat_TimesOutAndSkips(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+	lease, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-beat", JobID: "job-beat", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{})
+	if err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+	supervisor := newTestSupervisor(t, queue, testOpenClawSnapshotExecutor{})
+
+	const timeout = 30 * time.Millisecond
+	const blockFor = 5 * time.Second
+	supervisor.heartbeatTimeout = timeout
+	unblock := make(chan struct{})
+	t.Cleanup(func() { close(unblock) })
+	supervisor.heartbeatFn = func(HeartbeatInput, QueueMutationOptions) (QueueJobState, error) {
+		select {
+		case <-unblock:
+		case <-time.After(blockFor):
+		}
+		return QueueJobState{}, nil
+	}
+
+	start := time.Now()
+	beatErr := supervisor.beat(context.Background(), QueueLease{Job: lease})
+	elapsed := time.Since(start)
+
+	if beatErr != nil {
+		t.Fatalf("beat returned error on timeout, want nil (skipped beat): %v", beatErr)
+	}
+	if elapsed >= blockFor {
+		t.Fatalf("beat blocked %s on stuck write; want bounded near %s", elapsed, timeout)
+	}
+	// Generous upper bound (10x) to stay non-flaky under load while still proving
+	// the call returned on the timeout rather than waiting out the full block.
+	if elapsed > 10*timeout {
+		t.Fatalf("beat took %s, want bounded near %s", elapsed, timeout)
+	}
+}
+
+// TestSupervisor_beat_ReturnsWriteError confirms beat propagates a real write
+// error (not a timeout) unchanged, so the caller still fails the job as before.
+func TestSupervisor_beat_ReturnsWriteError(t *testing.T) {
+	now := projectionTestTime(t, 0)
+	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
+	lease, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-beat-err", JobID: "job-beat-err", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{})
+	if err != nil {
+		t.Fatalf("submit job: %v", err)
+	}
+	supervisor := newTestSupervisor(t, queue, testOpenClawSnapshotExecutor{})
+	supervisor.heartbeatTimeout = time.Second
+	wantErr := errors.New("ledger append failed")
+	supervisor.heartbeatFn = func(HeartbeatInput, QueueMutationOptions) (QueueJobState, error) {
+		return QueueJobState{}, wantErr
+	}
+
+	beatErr := supervisor.beat(context.Background(), QueueLease{Job: lease})
+	if !errors.Is(beatErr, wantErr) {
+		t.Fatalf("beat error = %v, want %v", beatErr, wantErr)
+	}
+}
+
 func waitForQueueEvent(t *testing.T, queue *Queue, eventType EventType) {
 	t.Helper()
 	deadline := time.Now().Add(time.Second)
