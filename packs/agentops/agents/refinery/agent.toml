@@ -1,0 +1,48 @@
+# AgentOps Refinery — rig-scoped worker that runs the `ao rpi` loop on a bead.
+#
+# Modeled on: examples/gastown/packs/gastown/agents/refinery/agent.toml
+#   (scope="rig", wake_mode="fresh", work_dir=".gc/worktrees/{{.Rig}}/refinery",
+#    pre_start worktree-setup, idle_timeout, max_active_sessions). Pool-scaling
+#    and provisioning fields per docs/reference/config.md:59-116.
+#
+# THIN-SEAM (design doc "DDD seam correction" — THE governing boundary):
+# this worker runs `ao rpi` as ONE invocable unit. The loop's internal steps
+# (research→plan→implement→validate) and its ratchet rules live INSIDE AgentOps,
+# NOT in GC TOML. So there is deliberately NO `default_sling_formula` here — a
+# slung bead routes the RAW bead to the worker, and the worker's prompt runs
+# `ao rpi <bead>` (one command). A `default_sling_formula` would re-introduce a
+# GC-side 4-step decomposition, which the seam correction forbids.
+#
+# SYNTAX NOTE (design doc vs real GC, flagged): the design brief says
+# "default_sling = a THIN dispatch that runs `ao rpi`". GC has no `default_sling`
+# field that runs a raw command — the only config field is `default_sling_formula`
+# (config.md:107) which auto-attaches a *formula*. The THIN-SEAM-correct
+# expression is therefore: OMIT the field (route the raw bead) + run `ao rpi` in
+# the prompt. See refinery/prompt.template.md.
+
+scope = "rig"
+wake_mode = "fresh"
+work_dir = ".gc/worktrees/{{.Rig}}/refinery"
+nudge = "Run 'gc prime', claim a ready bead, then run 'ao rpi <bead>'."
+
+# pre_start runs on the target filesystem BEFORE the session exists (config.md:146):
+#   1) prepare an isolated git worktree (modeled on gastown's refinery pre_start)
+#   2) install the AgentOps runtime (ao binary + skills/hooks scaffolding) into it
+pre_start = [
+  "{{.ConfigDir}}/assets/scripts/worktree-setup.sh {{.RigRoot}} {{.WorkDir}} {{.AgentBase}} --sync",
+  "{{.ConfigDir}}/assets/scripts/install-ao.sh {{.WorkDir}}",
+]
+
+# Copy the skill corpus + harness hook config into the working dir (additive).
+# overlay_dir is the canonical provisioning mechanism (config.md:106) — the
+# skills primitive is a tombstone (config.md:209-212).
+overlay_dir = "../../overlay"
+install_agent_hooks = ["claude"]
+
+idle_timeout = "2h"
+# Pool: scale workers under bead pressure. min=0 lets the rig idle to zero
+# sessions; max>1 lets multiple beads run rpi concurrently.
+max_active_sessions = 2
+min_active_sessions = 0
+
+append_fragments = ["agentops-doctrine", "operating-loop"]
