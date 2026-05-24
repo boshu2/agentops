@@ -106,6 +106,67 @@ func TestClaimedScenarios_ExplicitScenariosLineIsHighConfidence(t *testing.T) {
 	}
 }
 
+// TestClaimedScenarios_ExplicitScenariosLineRejectsProse is the soc-bhu6w
+// regression: a bead whose "Scenarios:" line reflows into a free-form
+// "<slug>: <prose>" bullet (the canonical bead-embedded ## Scenarios form) must
+// NOT have its comma/semicolon-split prose tokens (frontmatter field names,
+// "and section structure", "graduation path (...)", etc.) mis-claimed as
+// explicit scenario IDs. Only tokens matching the real scenario-ID grammar are
+// claims; everything else is prose and must be dropped.
+func TestClaimedScenarios_ExplicitScenariosLineRejectsProse(t *testing.T) {
+	// Mirrors the real soc-4mc2 description that produced the 12 false
+	// broken_bead_scenario_claim errors: a Scenarios: line followed by a
+	// "<slug>: <prose>" bullet whose prose contains a comma-separated field
+	// list and English phrases.
+	b := beadRecord{
+		ID:    "soc-bhu6w.test",
+		Title: "prose scenarios bead",
+		Description: "Codify the lesson format.\n" +
+			"Scenarios: - lesson-format-spec: docs/contracts/lesson-format.md exists " +
+			"and defines frontmatter (id, date, severity, trigger, verifiable, rule, " +
+			"falsified_by, practice, related), file naming, graduation path " +
+			"(unassigned -> proposed -> accepted -> encoded), and section structure",
+		Status: "open",
+	}
+	explicit, heuristic := claimedScenarios(b)
+	if len(explicit) != 0 {
+		t.Errorf("explicit = %v, want none — every token is prose, not a scenario ID", explicit)
+	}
+	// The prose tokens (date, rule, trigger, ...) must not leak into the
+	// heuristic list either: none of them match the scenario-ID grammar.
+	for _, id := range heuristic {
+		for _, prose := range []string{"date", "rule", "trigger", "severity", "practice", "verifiable", "and section structure"} {
+			if id == prose {
+				t.Errorf("prose token %q leaked into heuristic claims %v", prose, heuristic)
+			}
+		}
+	}
+}
+
+// TestClaimedScenarios_ExplicitScenariosLineKeepsRealIDAmidProse verifies the
+// true-positive half of the soc-bhu6w fix: a genuine scenario ID on a
+// "Scenarios:" line is still extracted as an explicit claim even when the line
+// also carries prose tokens. A dangling-but-real-format ID must survive to be
+// flagged downstream; prose around it must not.
+func TestClaimedScenarios_ExplicitScenariosLineKeepsRealIDAmidProse(t *testing.T) {
+	b := beadRecord{
+		ID:          "soc-bhu6w.test2",
+		Title:       "mixed scenarios bead",
+		Description: "Scenarios: s-2026-05-17-001, file naming, auto-nightly-evolution-dry-run, and section structure",
+		Status:      "open",
+	}
+	explicit, _ := claimedScenarios(b)
+	want := map[string]bool{"s-2026-05-17-001": true, "auto-nightly-evolution-dry-run": true}
+	if len(explicit) != len(want) {
+		t.Fatalf("explicit = %v, want exactly the two real IDs %v", explicit, want)
+	}
+	for _, id := range explicit {
+		if !want[id] {
+			t.Errorf("explicit contains non-ID token %q", id)
+		}
+	}
+}
+
 // TestBeadClaimEdge_ExplicitMissingScenarioIsError verifies that a
 // broken_bead_scenario_claim from an explicit "Scenarios:" line (high
 // confidence) is classified as error severity — this is the true-defect case
