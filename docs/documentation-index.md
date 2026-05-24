@@ -53,6 +53,7 @@ Bridge / framing docs:
 - [Primitive Chains](architecture/primitive-chains.md) — Audited primitive set, lifecycle chains, and terminology drift ledger
 - [Hook-Noise Audit](architecture/hook-noise-audit.md) — 3.0 classification of all 53 hooks (gate / bounded-adapter / noise-injector) against the docs/3.0.md no-noise criterion
 - [Ports and Adapters](architecture/ports-and-adapters.md) — Hexagonal seam: inner-hexagon domain, driving/driven adapters, ports, and how to add a new adapter
+- [Hexagon Port-Realness Audit](architecture/hexagon-port-realness-audit.md) — Empirical 2026-05-23 inventory of all 26 declared ports (real vs in-memory vs bypassed), direct-coupling hotspots (git/bd/loop/corpus) with file:line, and the recommended adapter build order for epic soc-zvhsl
 - [Operating Loop](architecture/operating-loop.md) — Operational discipline every process skill executes: BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence (cleanroom companion to ports-and-adapters)
 - [Intent-to-Loop Hexagon](architecture/intent-to-loop-hexagon.md) — Process-level ports/adapters from BDD intent through beads, slices, validation, ratchet evidence, and loop steering
 - [Behavior-Shaping Environment](architecture/behavior-shaping-environment.md) — The *why* beneath the loop: AgentOps as an operant-conditioning system (Antecedent → Behavior → Consequence); arrange the environment + reinforce/stop the behaviors you agree on
