@@ -198,3 +198,7 @@ Knowledge relevance decays over time (~17%/week). More recent learnings are weig
 | Irrelevant knowledge | Topic mismatch or stale artifacts dominate | Use `--context "<topic>"` to filter; prune stale artifacts |
 | Token budget exceeded | Too many high-relevance artifacts | Reduce `--max-tokens` or increase topic specificity |
 | Decay too aggressive | Recent learnings not prioritized | Check artifact modification times; verify `--apply-decay` flag |
+
+## Reference Documents
+
+- [references/inject-cli.feature](references/inject-cli.feature) — Executable spec: `ao inject` CLI command behavior (header, JSON contract, `--for` filtering), linked to cmd tests (soc-jnfgi)

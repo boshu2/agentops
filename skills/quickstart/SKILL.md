@@ -123,6 +123,7 @@ Starting a new project? Run `/scaffold <language> <name>` to generate project st
 - [references/getting-started.md](references/getting-started.md)
 - [references/troubleshooting.md](references/troubleshooting.md)
 - [references/full-catalog.md](references/full-catalog.md)
+- [references/daemon-lifecycle.feature](references/daemon-lifecycle.feature) — Executable spec: agentopsd lifecycle (start→submit→validate→panic-recovery→heartbeat→reap), linked to daemon tests (soc-6kf1t)
 
 ## See Also
 

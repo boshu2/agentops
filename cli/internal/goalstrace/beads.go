@@ -22,6 +22,24 @@ var scenariosLineRe = regexp.MustCompile(`(?im)^\s*Scenarios:\s*(.+)$`)
 // hyphen, which the required inner "-[a-z0-9]+" group rejects.
 var scenarioTokenRe = regexp.MustCompile(`\b(s-\d{4}-\d{2}-\d{2}-\d{3}|auto-[a-z0-9]+-[a-z0-9][a-z0-9-]*)\b`)
 
+// scenarioIDRe is the anchored form of the scenario-ID grammar. It matches a
+// string that is *entirely* a scenario ID (the resolvable filename stem under
+// spec/scenarios/<id>.json or .agents/holdout/<id>.json), with no surrounding
+// prose. Unlike scenarioTokenRe (which scans free text for an embedded token),
+// this is applied to each comma/semicolon-split token of an explicit
+// "Scenarios:" line so that bead-description prose — frontmatter field lists,
+// "and section structure", "graduation path (...)", etc. — is rejected rather
+// than mis-claimed as a dangling scenario reference (soc-bhu6w).
+var scenarioIDRe = regexp.MustCompile(`^(s-\d{4}-\d{2}-\d{2}-\d{3}|auto-[a-z0-9]+-[a-z0-9][a-z0-9-]*)$`)
+
+// isScenarioID reports whether s is, in its entirety, a resolvable scenario ID
+// (human "s-YYYY-MM-DD-NNN" or auto "auto-<multi-segment-slug>"). Free-form
+// "## Scenarios" bullet slugs (e.g. "lesson-format-spec") and arbitrary prose
+// tokens are not scenario IDs in the trace-resolution model and return false.
+func isScenarioID(s string) bool {
+	return scenarioIDRe.MatchString(s)
+}
+
 // directiveTokenRe matches a stable directive ID token (d-<slug>) anywhere in
 // free text — used for the body-scan discovery path of directive_has_learning.
 var directiveTokenRe = regexp.MustCompile(`\bd-[a-z0-9][a-z0-9-]*\b`)
@@ -146,6 +164,15 @@ func claimedScenarios(b beadRecord) (explicit, heuristic []string) {
 	explicitSet := map[string]bool{}
 	for _, m := range scenariosLineRe.FindAllStringSubmatch(text, -1) {
 		for _, id := range splitIDList(m[1]) {
+			// A "Scenarios:" line whose first bullet is a "<slug>: <prose>"
+			// description (the canonical bead-embedded ## Scenarios form) reflows
+			// into one logical line, so the comma/semicolon split yields prose
+			// tokens (frontmatter field names, "and section structure", etc.).
+			// Only tokens that are, in full, a resolvable scenario ID are real
+			// claims; everything else is prose and must be dropped (soc-bhu6w).
+			if !isScenarioID(id) {
+				continue
+			}
 			if !explicitSet[id] {
 				explicitSet[id] = true
 				explicit = append(explicit, id)

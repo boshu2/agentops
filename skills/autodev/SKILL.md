@@ -144,3 +144,4 @@ ao evolve --max-cycles 1
 ## Reference Documents
 
 - [references/autodev.feature](references/autodev.feature) — Executable spec: contract-bounded unattended loop, manages-not-replaces evolve/rpi, loop-discipline-under-autonomy (soc-qk4b)
+- [references/autodev-cli.feature](references/autodev-cli.feature) — Executable spec: `ao autodev` CLI command behavior, linked to cmd tests (soc-jnfgi)
