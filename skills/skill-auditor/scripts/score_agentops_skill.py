@@ -123,7 +123,7 @@ def score_helper_scripts(path: Path, metrics: dict) -> tuple[int, str]:
 
 
 def score_validation(path: Path, body: str, metrics: dict) -> tuple[int, str]:
-    validation_terms = ("validate", "test", "check", "lint", "verify", "jsm", "heal-skill")
+    validation_terms = ("validate", "test", "check", "lint", "verify", "heal-skill")
     score = int(any(term in body.lower() for term in validation_terms))
     score += int(has_named_script(path, ("validate", "check", "test", "audit")))
     score += int(metrics["self_test_exists"])

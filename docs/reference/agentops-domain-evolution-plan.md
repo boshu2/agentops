@@ -51,7 +51,7 @@ Done when:
 - the local bootstrap skill validates with Codex `skill-creator`,
 - it can regenerate or inspect the BDD/domain/architecture/control docs,
 - it can score any AgentOps skill and choose the smallest next patch,
-- it refuses JSM content copying and JSM mutation.
+- it refuses external skill content copying and external skill mutation.
 
 ### Phase 1.5: CLI Orchestration Rehearsal
 

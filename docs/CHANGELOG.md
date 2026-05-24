@@ -100,7 +100,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CI workflow path-filters** — added path-filter conditions to 28 CI jobs (the remaining tail); bats path-filter wired so `.bats` changes gate bats-test jobs; `bats` prints captured output on failure.
 - **CI loop boundaries** — `feat(ci): enforce inner/middle/outer loop boundaries` (#230).
 - **Codex parity drift** — `feat(ci): wire check-codex-parity-drift as CI-blocking + pre-push gate (D7)`.
-- **Skill consolidation** — 12 standalone skills consolidated into `beads`, `review`, `doc`, and `research`; JSM quality playbook slices absorbed in two waves.
+- **Skill consolidation** — 12 standalone skills consolidated into `beads`, `review`, `doc`, and `research`; external-corpus quality playbook slices absorbed in two waves.
 - **Documentation reorg** — `docs(claims)` introduced a public evidence manifest for v2.39 README claims (PG4); `docs(parity)` updated four times; `docs(cdlc)`, `docs(readme)`, `docs(eval)`, `docs(release)`, `docs(positioning)` swept across the catalog.
 - **Dependencies bumped** — `chore(deps)` updates for `mkdocs-material` v9.7.6, `mkdocs-section-index` v0.3.12, `mkdocs-literate-nav` v0.6.3, `mkdocs-include-markdown-plugin` v7, `mkdocs-git-revision-date-localized-plugin` v1.5.1, `mkdocs-gen-files` v0.6.1, `linkchecker` v10.6.0, `pymdown-extensions` v10.21.2, Python 3.14, `dorny/paths-filter` v4. `deps(go)`: `pgregory.net/rapid` minor bump in `cli/` plus a go-minor-patch group bump (#268).
 

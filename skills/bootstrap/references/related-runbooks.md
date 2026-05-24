@@ -16,4 +16,4 @@ When a new runbook lands under `docs/runbooks/`, add a sub-section above with a 
 
 ---
 
-> Pattern adopted from `path-rationalization` (jsm/ACFS skill corpus). Methodology only — no verbatim text.
+> Pattern adopted from `path-rationalization` (ACFS skill corpus). Methodology only — no verbatim text.

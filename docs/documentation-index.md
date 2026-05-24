@@ -74,13 +74,7 @@ Bridge / framing docs:
 - [Skills Reference](SKILLS.md) — Complete reference for all AgentOps skills
 - [Skills Decision Tree](skills-decision-tree.md) — "Which skill do I need next?" — single source of truth linked from harvest, compile, knowledge-activation, and quickstart SKILL.md
 - [Skill API](SKILL-API.md) — Frontmatter fields, context declarations, enforcement status
-- [JSM Skill Standards Snapshot](reference/jsm-skill-standards.md) — Pattern-only snapshot of the 118-skill local JSM corpus and publishing standards
-- [JSM CLI Capability Map](reference/jsm-cli-capability-map.md) — Read-only and mutating `jsm` command surfaces for clean-room skill analysis
-- [JSM Clean-Room Extraction Policy](reference/jsm-clean-room-extraction-policy.md) — Allowed and disallowed observations when learning from proprietary skill corpora
-- [Skill Quality Rubric](reference/skill-quality-rubric.md) — Scoring rubric for repo-runtime, JSM-export, and mega-skill readiness
-- [JSM-Informed AgentOps Gap Audit](reference/jsm-agentops-gap-audit.md) — Structural gap report comparing AgentOps skills with the JSM package pattern
-- [JSM-Informed Pilot Upgrade Backlog](reference/jsm-pilot-upgrade-backlog.md) — First candidate AgentOps skill upgrades
-- [JSM Skill Absorption Matrix](reference/jsm-skill-absorption.md) — Disposition table for the older 2026-05-05 Bushido standalone JSM skill set
+- [Skill Quality Rubric](reference/skill-quality-rubric.md) — Scoring rubric for repo-runtime, export, and mega-skill readiness
 - [AgentOps Domain Evolution BDD](reference/agentops-domain-evolution-bdd.md) — Gherkin acceptance contract for skill, CLI, and hook evolution
 - [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 78 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
 - [AgentOps Hexagonal Architecture Map](reference/agentops-hexagonal-architecture-map.md) — Bounded contexts, ports, adapters, and proof gates for the evolution program

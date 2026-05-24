@@ -71,4 +71,4 @@ In each case, file the escalation in the audit report and stop the cycle. Conver
 
 ---
 
-> Pattern adopted from `multi-pass-bug-hunting` (jsm/ACFS skill corpus). Methodology only — no verbatim text.
+> Pattern adopted from `multi-pass-bug-hunting` (ACFS skill corpus). Methodology only — no verbatim text.

@@ -22,8 +22,8 @@ beads, and ratcheted knowledge make trust repeatable.
 ## Hexagonal Rule
 
 Domain policy lives inside the bounded context. Filesystems, GitHub, `bd`,
-agent harnesses, shell scripts, JSM, CI, and local machine state are adapters.
-Adapters can be swapped; the loop contract cannot.
+agent harnesses, shell scripts, external skill corpora, CI, and local machine
+state are adapters. Adapters can be swapped; the loop contract cannot.
 
 The core product is therefore not "more skills" or "more hooks." The product is
 the alignment layer that turns intent, names, ports, proofs, and memory into
@@ -48,7 +48,7 @@ flowchart LR
   BD["bd tracker"]
   Git["Git/GitHub"]
   Harness["Agent harnesses"]
-  JSM["JSM read-only analysis"]
+  ExtCorpus["External skill corpora (read-only analysis)"]
 
   CLI --> Loop
   Skills --> Loop
@@ -62,7 +62,7 @@ flowchart LR
   Loop --> BD
   Runtime --> Git
   Runtime --> Harness
-  Factory --> JSM
+  Factory --> ExtCorpus
 ```
 
 ## Loop Context and `soc-y5vh`

@@ -9,7 +9,7 @@
   - Expected: load `standards` and use `references/go.md`.
 
 - User says: "check whether this skill can absorb an external corpus safely."
-  - Expected: load `references/jsm-attribution.md` and the clean-room extraction policy when applicable.
+  - Expected: load `references/external-source-attribution.md` and apply its clean-room policy when applicable.
 
 ## Non-Trigger Cases
 
@@ -24,7 +24,7 @@
 - `standards` stays a library skill and writes no artifacts by itself.
 - Language standards load on demand by file type rather than all at once.
 - Domain checklists load only when matching risk patterns are present.
-- External-source absorption follows `references/jsm-attribution.md`.
+- External-source absorption follows `references/external-source-attribution.md`.
 - Skill authoring and export guidance points to `references/skill-structure.md`.
 
 ## Validation Commands
@@ -36,14 +36,6 @@ bash skills/standards/scripts/validate.sh
 bash skills/heal-skill/scripts/heal.sh --strict
 bash scripts/validate-skill-frontmatter.sh --strict
 ```
-
-For JSM-style export readiness, run:
-
-```bash
-scripts/check-jsm-export.sh --json skills/standards
-```
-
-Current expected export status: repo-runtime only until the protected-methodology and possible-secret warnings are explicitly reviewed.
 
 ## Failure Cases
 

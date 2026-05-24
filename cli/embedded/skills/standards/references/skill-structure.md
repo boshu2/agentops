@@ -318,15 +318,15 @@ Full taxonomy at `skills/SKILL-TIERS.md`.
 
 Language standards loaded JIT by `/vibe`, `/implement` — see `references/standards-index.md`.
 
-### JSM-Style Export Profile
+### Marketplace Export Profile
 
-Pattern-only inspection of the user-local JSM corpus on 2026-05-16 found a different package shape from AgentOps' repo-runtime shape:
+A marketplace-facing package shape differs from AgentOps' repo-runtime shape:
 
-- Published package candidates should pass `jsm validate /path/to/skill --json`.
-- Package-clean skills should stay at or under the 50-file JSM validator limit.
+- Published package candidates should pass the target marketplace validator before release.
+- Package-clean skills should stay at or under a 50-file validator limit.
 - Mega skills above that limit should be split or handled as an explicit product-bundle profile.
-- Exported `scripts/` files should be non-executable for JSM validation, even if repo-native AgentOps scripts remain executable.
+- Exported `scripts/` files should be non-executable for marketplace validation, even if repo-native AgentOps scripts remain executable.
 - Strong market-facing skills should include `SELF-TEST.md`.
 - Large skills should keep `SKILL.md` as a routing kernel and move expensive context into `references/`, `scripts/`, `assets/`, and, when justified, `subagents/`.
 
-See `docs/reference/jsm-skill-standards.md` for the current snapshot and adoption plan. Use `docs/reference/skill-quality-rubric.md` for scoring and `scripts/check-jsm-export.sh` for export validation against a temporary package copy.
+Use `docs/reference/skill-quality-rubric.md` for scoring against this profile.

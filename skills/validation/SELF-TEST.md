@@ -37,12 +37,6 @@ bash skills/heal-skill/scripts/heal.sh --strict skills/validation
 bash scripts/validate-skill-frontmatter.sh --strict
 ```
 
-For JSM-style export readiness, run:
-
-```bash
-scripts/check-jsm-export.sh --json skills/validation
-```
-
 ## Failure Cases
 
 - Judges spawned via `Agent()` in place of `/vibe`, or post-mortem/forge inlined: reject the compression and re-run via separate `Skill(...)` invocations per the strict delegation contract.

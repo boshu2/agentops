@@ -39,12 +39,6 @@ bash skills/heal-skill/scripts/heal.sh --strict skills/plan
 bash scripts/validate-skill-frontmatter.sh --strict
 ```
 
-For JSM-style export readiness, run:
-
-```bash
-scripts/check-jsm-export.sh --json skills/plan
-```
-
 ## Failure Cases
 
 - Plan written without a baseline audit (file/section/LOC counts): fail the Baseline Audit Gate and quantify ground truth before decomposing (`--skip-audit-gate` for documentation-only plans).
