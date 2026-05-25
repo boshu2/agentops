@@ -155,6 +155,9 @@ jobs:
 - name: validate-skill-frontmatter
   reason: '`scripts/validate-skill-frontmatter.sh` validates each `skills/*/SKILL.md` YAML frontmatter against `schemas/skill-frontmatter.v2.schema.json` (v2 adds optional `hexagonal_role`, `consumes`, `produces`, `context_rel` fields). Default mode fails on schema violations; missing optional hexagonal fields warn. `--strict` (pre-push) fails on warnings. Per DDD+Hexagonal plan Issue #2'
   failure: SKILL.md frontmatter drifts from v2 schema, or `hexagonal_role` enum value invalid
+- name: validate-skill-body-refs
+  reason: '`scripts/validate-skill-body-refs.sh` scans the inline-code prose of every `SKILL.md` + `references/*.md` (skills/ + skills-codex/) for `` `ao <command>` `` / `` `ao <command> --flag` `` tokens and validates each against the live `ao` help tree. The complement of `validate-skill-cli-snippets.sh` (which only checks fenced snippets) — closes the stale-prose-ref regen loop (ag-4x8). Justified historical refs are skipped via an inline marker (Superseded / Historical / removed in / retained for history / (historical)) or `scripts/skill-body-refs-allowlist.txt`'
+  failure: A stale `ao` command/flag is named in skill prose after a CLI rename without updating the prose, adding a historical marker, or allowlisting the file
 - name: validate-codex-override-coverage
   reason: Every `skills-codex-overrides/<name>/` entry covers required override surfaces
   failure: Adding an override skill without the prompt or body coverage the runtime expects
