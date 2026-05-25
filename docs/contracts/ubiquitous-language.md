@@ -81,7 +81,7 @@ Cycle-129 finding: **drift #2 is audit-only.** The "Run/Iteration" usage in the 
 | State transition from one tier to the next | **Promotion** | "promote", "advance" |
 | Registry of admitted/yielded artifacts | **Manifest** | "registry" (where scoped to Factory; `registry.json` is a Manifest of the BC5 Runtime inventory, not Factory) |
 
-**Cross-BC collision:** `Admission` is a BC4 Gate-decision concept. `daemon.agentopsd-control-plane.md` uses "admission" as a job-queue state. The Go type for the latter should rename to `LeaseGrant` or `Admitted` (qualifier) to avoid collision; documentation can say "queue admission" but the canonical Factory concept stays `Admission`.
+**Cross-BC collision:** `Admission` is a BC4 Gate-decision concept. The retired daemon's control-plane notes used "admission" as a job-queue state. The Go type for the latter should rename to `LeaseGrant` or `Admitted` (qualifier) to avoid collision; documentation can say "queue admission" but the canonical Factory concept stays `Admission`.
 
 ### BC5 Runtime
 

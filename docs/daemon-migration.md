@@ -154,8 +154,9 @@ sessions. The AgentOps adapter distinguishes:
 Normal CI uses fake GasCity fixtures. Live GasCity checks should stay opt-in
 with `AGENTOPS_LIVE_GASCITY=1`.
 
-The full no-GasCity, CLI fallback, API/SSE, daemon mode, and OpenClaw consumer
-matrix lives in [GasCity Integration](contracts/gascity-integration.md).
+The old daemon↔GasCity integration matrix was retired with the daemon in 3.0;
+the current Gas City story is the optional out-of-session substrate, documented
+in [dependencies](dependencies.md).
 
 ## OpenClaw Migration
 

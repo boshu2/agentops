@@ -322,16 +322,13 @@ Interactive onboarding — mini RPI cycle for new users.
 
 ### /dream
 
-Interactive Dream operator surface for setup, bedtime runs, and morning
-reports on top of the shared `ao overnight` engine.
+Retirement pointer. The in-tree out-of-session compounding engine was removed
+(soc-2rtm0); scheduled, between-session knowledge compounding now runs via Gas
+City (the reference substrate), and AgentOps ships no out-of-session runner of
+its own. In-session knowledge primitives stay on-demand: `/harvest`, `/forge`,
+`/compile`, `/inject`. Daytime code compounding is `/evolve` via `/rpi`.
 
-```bash
-/dream setup
-/dream start "close the loop on today's auth work"
-/dream report
-```
-
-**Output:** Dream setup preview or `.agents/overnight/<run>/summary.{json,md}`
+**Output:** none — this skill no longer drives an in-repo command.
 
 ### /trace
 

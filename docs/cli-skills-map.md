@@ -148,7 +148,6 @@ Commands that exist in the Go CLI but are not called by any skill or hook. All a
 | `ao version` | User utility | Version query |
 | `ao quick-start` / `ao quickstart` | User utility | Golden path for repo seed; `/quickstart` routes users to the next action |
 | `ao vibe-check` | User utility | `/vibe` skill orchestrates directly |
-| `ao plans` | User utility | Plan management |
 | `ao trace` | User utility | Artifact tracing |
 | `ao gate` | CI/test | Promotion gate — called in test scripts |
 | `ao feedback` | Hidden | UI for providing feedback on learnings |

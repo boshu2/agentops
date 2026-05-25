@@ -285,20 +285,13 @@ Bridge / framing docs:
 - [Repo Execution Profile Example](contracts/repo-execution-profile.json) — Concrete repository execution profile used by local autonomous orchestration
 - [Autodev Program Contract](contracts/autodev-program.md) — Repo-local operational contract for bounded autonomous development
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
-- [AgentOps Daemon Contract](contracts/agentops-daemon.md) — Always-on daemon ledger, job lifecycle, activation, readiness, projection, and threat model contract
 - [Update Principles Contract](contracts/update-principles.md) — Five operator-exemplar properties every commit must demonstrate (single concern, drift-blocking test, sibling citation, fitness delta, clean branch point); sourced from commit 1b9d139c
 - [Ubiquitous Language Contract](contracts/ubiquitous-language.md) — Canonical names per bounded context (BC1 Corpus, BC2 Validation, BC3 Loop, BC4 Factory, BC5 Runtime) for the 5 ranked drifts (Gate/Check, Cycle/Loop, Claim/Evidence, Skill/Pattern/Practice, Session); rename schedule bound to soc-5yuy children
 - [BC1 Corpus Ports Contract](contracts/bc1-corpus-ports.md) — Core BC1 corpus ports scaffolded under `cli/internal/ports/`; semantics cheat-sheet, adapter triplet pattern, soc-pm5t wire-up order
 - [BC Ports Inventory](contracts/bc-ports-inventory.md) — Roster of all 20 BC ports with per-port adapter contracts, the universal triplet construction pattern, and per-BC wire-up order.
-- [Daemon Idempotency Contract](contracts/daemon-idempotency.md) — Submit retry contract defining `idempotency_key` as the dedup key and `request_id` as trace-only
-- [GasCity Integration Contract](contracts/gascity-integration.md) — Narrow handwritten GasCity adapter, fake/live split, compatibility matrix, and API/SSE expectations
 - [Remote Compute Contract](contracts/remote-compute.md) — Product-neutral RemoteTarget, RemoteSession, command ledger, recovery, and GasCity-first remote execution contract
-- [AgentWorker Runtime Contract](contracts/agent-worker.md) — Generic headless Codex/Claude worker and AgentSession lifecycle contract for daemon jobs
-- [`ao outcomes` Contract](contracts/ao-outcomes.md) — Rubric → target → grader → retry loop spec for `ao outcomes run`; off-API analog of Anthropic Managed Agents Outcomes
-- [`ao watch` Contract](contracts/ao-watch.md) — Live worker-event stream spec for `ao watch --follow`; off-API analog of Anthropic Managed Agents Console trace
-- [Rubric Schema](https://github.com/boshu2/agentops/blob/main/schemas/rubric.v1.schema.json) — JSON Schema for `ao outcomes run` rubric files
+- [Rubric Schema](https://github.com/boshu2/agentops/blob/main/schemas/rubric.v1.schema.json) — JSON Schema for rubric files (outcome rubric → target → grader → retry loop)
 - [Worker Spec Schema](https://github.com/boshu2/agentops/blob/main/schemas/worker-spec.v1.schema.json) — JSON Schema for per-worker model/tool/prompt isolation specs
-- [OpenClaw Consumer API Contract](contracts/openclaw-consumer-api.md) — Read-only consumer snapshot API and authorized local trigger contract
 - [Repo Execution Profile Schema](contracts/repo-execution-profile.schema.json) — Machine-readable schema for repo execution profiles
 - [RPI Run Registry](contracts/rpi-run-registry.md) — RPI run registry specification
 - [Eval Environment Contract](contracts/eval-environment.md) — Evaluation suite, run, scorecard, baseline, canary, and holdout contract
@@ -325,7 +318,6 @@ Bridge / framing docs:
 - [v2.39.0 README claim evidence manifest](releases/v2.39.0-claims/README.md) — Maps each `AOP-CLAIM-README-*` marker to its evidence file and verification gate (PG4)
 - [AgentOps 3.0 PMF Scenario — evidence bundle](releases/v3.0/pmf-scenario.md) — Single-day autonomous /evolve drain record: 11 P1 closures, 11 commits, friction modes, durable artifacts (PG2)
 - [Scope Escape Report](contracts/scope-escape-report.md) — Structured template for agent scope-escape reporting
-- [Dream Run Contract](contracts/dream-run-contract.md) — Process model, locking, keep-awake, and artifact floor for private overnight runs
 - [Dream Report Contract](contracts/dream-report.md) — Canonical `summary.json` and `summary.md` schema for Dream outputs
 - [dispatch-checklist.md](contracts/dispatch-checklist.md) — Standard references for agent dispatch prompts
 - [Headless Invocation Standards](contracts/headless-invocation-standards.md) — Required flags, tool allowlists, and timeout strategy for non-interactive Claude/Codex execution

@@ -1,15 +1,15 @@
 ---
 name: dream
-description: 'Run overnight compounding sessions.'
+description: 'Retired pointer — out-of-session compounding moved to Gas City.'
 ---
 # Dream Skill - Retired (out-of-session compounding moved to GC)
 
-**Status: RETIRED (soc-2rtm0).** The in-tree overnight/dream engine and its CLI
-surface (the former ao overnight, ao schedule, ao watch, ao plans commands, and
-the dream/schedule wiring inside the agentopsd daemon) were removed. The daemon
-itself was carved out in wave 5. AgentOps no longer ships the out-of-session
-orchestration substrate — scheduled, between-session knowledge compounding now
-runs via **GC** (Gas City). Do not invent a replacement `$ao` workflow.
+**Status: RETIRED (soc-2rtm0).** The in-tree out-of-session compounding engine
+and its whole CLI surface (the former always-on lane — now Gas City) were
+removed, along with the always-on background process that carried it. AgentOps
+no longer ships the out-of-session orchestration substrate — scheduled,
+between-session knowledge compounding now runs via **GC** (Gas City). Do not
+invent a replacement `$ao` workflow.
 
 ## What stays in AgentOps
 

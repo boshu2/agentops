@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-25T00:30:04Z",
+  "generated_at": "2026-05-25T01:15:06Z",
   "summary": {
     "skills": 81,
     "hooks": 0,
@@ -1846,7 +1846,7 @@
       "bounded_context": "BC1",
       "hex_role": "supporting",
       "tier": "session",
-      "purpose": "Run overnight compounding sessions.",
+      "purpose": "Retired pointer — out-of-session compounding moved to Gas City.",
       "status": "active",
       "disposition": "refactor",
       "consumes": [],
