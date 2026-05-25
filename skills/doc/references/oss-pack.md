@@ -1,17 +1,15 @@
----
-name: oss-docs
-description: 'Scaffold or audit OSS docs.'
----
-# OSS Documentation Skill
+# OSS Doc Pack — scaffold/audit open-source documentation (`/doc --mode=oss`)
 
-Scaffold and audit documentation for open source projects.
+> Scaffold and audit the standard documentation pack for an open-source release. This is the full contract behind `/doc --mode=oss`; it absorbed the former `/oss-docs` skill. Output contract: `CONTRIBUTING.md`, `CHANGELOG.md`, `AGENTS.md`, and the rest of the OSS doc tiers.
 
 ## Overview
 
-This skill helps prepare repositories for open source release by:
+This mode helps prepare repositories for open source release by:
 1. Auditing existing documentation completeness
 2. Scaffolding missing standard files
 3. Generating content tailored to project type
+
+(The legacy `/oss-docs audit`, `/oss-docs scaffold`, `/oss-docs validate` triggers route here.)
 
 ## Commands
 
@@ -20,7 +18,7 @@ This skill helps prepare repositories for open source release by:
 | `audit` | Check which OSS docs exist/missing |
 | `scaffold` | Create all missing standard files |
 | `scaffold [file]` | Create specific file |
-| `update` | Refresh existing docs with latest patterns |
+| `refresh` | Refresh existing docs with latest patterns |
 | `validate` | Check docs follow best practices |
 
 ---
@@ -82,6 +80,8 @@ fi
 | `docs/CONFIG.md` | Configurable software |
 | `examples/` | Complex workflows |
 
+Full tier definitions: [oss-documentation-tiers.md](oss-documentation-tiers.md).
+
 ---
 
 ## Subcommand: scaffold
@@ -95,6 +95,10 @@ fi
 | `service` | API, configuration, deployment |
 | `library` | API reference, examples |
 | `helm` | Values, dependencies, upgrading |
+
+Per-type content templates: [oss-project-types.md](oss-project-types.md).
+
+For a machine-readable tiered audit (project type + per-tier scores + totals as JSON), run the helper script: `bash skills/doc/scripts/audit-oss-docs.sh --json`.
 
 ---
 
@@ -141,6 +145,8 @@ This project uses **<tool>** for <purpose>. Run `<onboard-cmd>` to get started.
 4. **Verify** - All changes committed AND pushed
 ```
 
+Beads-tracker AGENTS.md patterns: [oss-beads-patterns.md](oss-beads-patterns.md).
+
 ---
 
 ## Style Guidelines
@@ -154,7 +160,7 @@ This project uses **<tool>** for <purpose>. Run `<onboard-cmd>` to get started.
 
 ---
 
-## Skill Boundaries
+## Mode Boundaries
 
 **DO:**
 - Audit existing documentation
@@ -163,28 +169,11 @@ This project uses **<tool>** for <purpose>. Run `<onboard-cmd>` to get started.
 
 **DON'T:**
 - Overwrite existing content without confirmation
-- Generate code documentation (use `$doc`)
+- Generate code documentation (use `/doc gen` — the default doc mode)
+- Generate the README hero/landing page (use `/doc --mode=readme`)
 - Create CI/CD files (out of scope — configure CI/CD separately)
 
-## Examples
-
-### OSS Readiness Audit
-
-**User says:** "Audit this repo for open-source documentation readiness."
-
-**What happens:**
-1. Evaluate presence/quality of core OSS docs.
-2. Identify missing or weak sections.
-3. Output prioritized documentation actions.
-
-### Scaffold Missing Docs
-
-**User says:** "Generate missing OSS docs for this project."
-
-**What happens:**
-1. Detect project type and documentation gaps.
-2. Scaffold standard files with project-aware content.
-3. Produce a checklist for final review and landing.
+---
 
 ## Troubleshooting
 
@@ -194,24 +183,3 @@ This project uses **<tool>** for <purpose>. Run `<onboard-cmd>` to get started.
 | Existing docs conflict | Legacy text diverges from current behavior | Reconcile with current code/process and mark obsolete sections |
 | Contributor path unclear | Missing setup/testing guidance | Add explicit quickstart and validation commands |
 | Open-source handoff incomplete | Session-end workflow not reflected | Add landing-the-plane and release hygiene steps |
-
-## Reference Documents
-
-- [references/beads-patterns.md](references/beads-patterns.md)
-- [references/documentation-tiers.md](references/documentation-tiers.md)
-- [references/project-types.md](references/project-types.md)
-
-## Local Resources
-
-### references/
-
-- [references/beads-patterns.md](references/beads-patterns.md)
-- [references/documentation-tiers.md](references/documentation-tiers.md)
-- [references/project-types.md](references/project-types.md)
-
-### scripts/
-
-- `scripts/audit-oss-docs.sh`
-- `scripts/validate.sh`
-
-

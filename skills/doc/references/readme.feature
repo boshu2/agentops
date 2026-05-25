@@ -1,8 +1,8 @@
-# Executable spec for the /readme skill — gold-standard README generation (BC1 Corpus).
-# /readme drafts or improves a README that converts skimmers into users and satisfies
+# Executable spec for /doc --mode=readme — gold-standard README generation (BC4 Factory).
+# /doc --mode=readme drafts or improves a README that converts skimmers into users and satisfies
 # deep readers, enforcing 8 non-negotiable patterns (problem-first lead, trust block
 # near install, collapse-don't-delete depth, adoption-ordered sections), then validates
-# the result with a council before reporting. Hexagon: generic; consumes: project files
+# the result with a council before reporting. Hexagon: supporting (doc factory); consumes: project files
 # + interview answers; produces: documentation (README.md), council-validated. (soc-qk4b)
 
 Feature: README generation converts skimmers into users and survives a council
@@ -14,7 +14,7 @@ Feature: README generation converts skimmers into users and survives a council
     Given a repository with manifest files and an optional existing README.md
 
   Scenario: Mode detection routes by flags and existing README
-    When /readme runs
+    When /doc --mode=readme runs
     Then "--validate" with an existing README skips to council validation only
     And "--rewrite" with an existing README reuses it as rewrite context
     And no README and no flags generates from scratch after an interview
@@ -37,10 +37,10 @@ Feature: README generation converts skimmers into users and survives a council
 
   Scenario: A council validates before the skill reports complete
     When generation or rewrite finishes
-    Then /readme runs a council over the README
+    Then /doc --mode=readme runs a council over the README
     And reports a PASS, WARN, or FAIL verdict rather than claiming done unvalidated
 
   Scenario: Anti-patterns are flagged on rewrite or validate
-    When /readme reviews an existing README
+    When /doc --mode=readme reviews an existing README
     Then it flags flywheel-echo, framework-first, guru tone, buried trust info,
       install scatter, and theory-before-try with a concrete fix for each

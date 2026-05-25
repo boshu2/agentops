@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-25T01:15:06Z",
+  "generated_at": "2026-05-25T02:39:15Z",
   "summary": {
-    "skills": 81,
+    "skills": 75,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 66,
-    "capabilities": 214
+    "capabilities": 208
   },
   "surfaces": {
     "skills": [
@@ -53,25 +53,9 @@
         "reference_count": 0
       },
       {
-        "name": "oss-docs",
-        "tier": "contribute",
-        "path": "skills/oss-docs/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
         "name": "pr-implement",
         "tier": "contribute",
         "path": "skills/pr-implement/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "pr-plan",
-        "tier": "contribute",
-        "path": "skills/pr-plan/",
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 0
@@ -91,14 +75,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 1
-      },
-      {
-        "name": "pr-retro",
-        "tier": "contribute",
-        "path": "skills/pr-retro/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
       },
       {
         "name": "pr-validate",
@@ -333,20 +309,12 @@
         "reference_count": 3
       },
       {
-        "name": "expert-council",
-        "tier": "judgment",
-        "path": "skills/expert-council/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
         "name": "post-mortem",
         "tier": "judgment",
         "path": "skills/post-mortem/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 21
+        "reference_count": 22
       },
       {
         "name": "pre-mortem",
@@ -517,14 +485,6 @@
         "reference_count": 2
       },
       {
-        "name": "update",
-        "tier": "meta",
-        "path": "skills/update/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
         "name": "using-agentops",
         "tier": "meta",
         "path": "skills/using-agentops/",
@@ -554,7 +514,7 @@
         "path": "skills/doc/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 6
+        "reference_count": 11
       },
       {
         "name": "goals",
@@ -568,14 +528,6 @@
         "name": "product",
         "tier": "product",
         "path": "skills/product/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "readme",
-        "tier": "product",
-        "path": "skills/readme/",
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 0
@@ -1376,8 +1328,8 @@
     ]
   },
   "capability_summary": {
-    "total": 214,
-    "skills": 81,
+    "total": 208,
+    "skills": 75,
     "cli_commands": 66,
     "gates": 64,
     "reference_impls": 3
@@ -1509,7 +1461,7 @@
       "consumes": [
         "goals",
         "product",
-        "readme",
+        "doc",
         "shared"
       ],
       "produces": [],
@@ -1635,7 +1587,7 @@
       "tier": "cross-vendor",
       "purpose": "Convert AgentOps skill formats.",
       "status": "active",
-      "disposition": "merge-review",
+      "disposition": "keep",
       "consumes": [],
       "produces": [
         "converted-skill"
@@ -1714,7 +1666,7 @@
       "tier": "knowledge",
       "purpose": "Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or",
       "status": "active",
-      "disposition": "cut-review",
+      "disposition": "keep",
       "consumes": [],
       "produces": [
         ".agents/research/*.md"
@@ -1801,7 +1753,7 @@
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "product",
-      "purpose": "Generate and validate repo docs.",
+      "purpose": "Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss).",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -1812,7 +1764,7 @@
       ],
       "drives_commands": [],
       "path": "skills/doc/",
-      "references": 6
+      "references": 11
     },
     {
       "sku": "skill:domain",
@@ -1903,22 +1855,6 @@
       "references": 25
     },
     {
-      "sku": "skill:expert-council",
-      "name": "expert-council",
-      "type": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "domain",
-      "tier": "judgment",
-      "purpose": "Alias for /council --mode=debate — adversarial named-persona debate. Triggers: \"expert council\", \"dueling council\", \"council of <names>\". Kept one release.",
-      "status": "alias-of:skill:council",
-      "disposition": "merge-review",
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/expert-council/",
-      "references": 0
-    },
-    {
       "sku": "skill:flywheel",
       "name": "flywheel",
       "type": "skill",
@@ -2006,7 +1942,7 @@
       "tier": "execution",
       "purpose": "Validate OpenShift Grafana dashboards.",
       "status": "active",
-      "disposition": "cut-review",
+      "disposition": "keep",
       "consumes": [],
       "produces": [
         "dashboard-validation-report"
@@ -2148,7 +2084,7 @@
       "tier": "knowledge",
       "purpose": "Activate mature .agents knowledge.",
       "status": "active",
-      "disposition": "merge-review",
+      "disposition": "keep",
       "consumes": [],
       "produces": [],
       "drives_commands": [
@@ -2198,26 +2134,6 @@
       "drives_commands": [],
       "path": "skills/openai-docs/",
       "references": 0
-    },
-    {
-      "sku": "skill:oss-docs",
-      "name": "oss-docs",
-      "type": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "generic",
-      "tier": "contribute",
-      "purpose": "Scaffold or audit OSS docs.",
-      "status": "active",
-      "disposition": "merge-review",
-      "consumes": [
-        "repo-context"
-      ],
-      "produces": [
-        "documentation"
-      ],
-      "drives_commands": [],
-      "path": "skills/oss-docs/",
-      "references": 3
     },
     {
       "sku": "skill:perf",
@@ -2296,7 +2212,7 @@
         "ao session close"
       ],
       "path": "skills/post-mortem/",
-      "references": 21
+      "references": 22
     },
     {
       "sku": "skill:pr-implement",
@@ -2316,24 +2232,6 @@
       ],
       "drives_commands": [],
       "path": "skills/pr-implement/",
-      "references": 0
-    },
-    {
-      "sku": "skill:pr-plan",
-      "name": "pr-plan",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "contribute",
-      "purpose": "Plan an open source PR.",
-      "status": "active",
-      "disposition": "cut-review",
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/pr-plan/",
       "references": 0
     },
     {
@@ -2375,24 +2273,6 @@
       "drives_commands": [],
       "path": "skills/pr-research/",
       "references": 1
-    },
-    {
-      "sku": "skill:pr-retro",
-      "name": "pr-retro",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "contribute",
-      "purpose": "Learn from PR outcomes.",
-      "status": "active",
-      "disposition": "merge-review",
-      "consumes": [],
-      "produces": [
-        ".agents/research/*.md"
-      ],
-      "drives_commands": [],
-      "path": "skills/pr-retro/",
-      "references": 0
     },
     {
       "sku": "skill:pr-validate",
@@ -2550,24 +2430,6 @@
         "ao ratchet"
       ],
       "path": "skills/ratchet/",
-      "references": 0
-    },
-    {
-      "sku": "skill:readme",
-      "name": "readme",
-      "type": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "generic",
-      "tier": "product",
-      "purpose": "Draft or improve README docs.",
-      "status": "active",
-      "disposition": "merge-review",
-      "consumes": [],
-      "produces": [
-        "documentation"
-      ],
-      "drives_commands": [],
-      "path": "skills/readme/",
       "references": 0
     },
     {
@@ -2846,7 +2708,7 @@
       "tier": "product",
       "purpose": "Run repository security scans.",
       "status": "active",
-      "disposition": "merge-review",
+      "disposition": "keep",
       "consumes": [
         "repo-context"
       ],
@@ -3117,22 +2979,6 @@
       "references": 3
     },
     {
-      "sku": "skill:update",
-      "name": "update",
-      "type": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "supporting",
-      "tier": "meta",
-      "purpose": "Sync AgentOps skills.",
-      "status": "active",
-      "disposition": "cut-review",
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/update/",
-      "references": 0
-    },
-    {
       "sku": "skill:using-agentops",
       "name": "using-agentops",
       "type": "skill",
@@ -3196,7 +3042,7 @@
       "tier": "judgment",
       "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates.",
       "status": "active",
-      "disposition": "merge-review",
+      "disposition": "keep",
       "consumes": [
         "validation"
       ],

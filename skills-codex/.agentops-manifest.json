@@ -240,12 +240,6 @@
         "reason": "Official-doc retrieval and citation behavior need explicit Codex tooling guidance."
       },
       {
-        "name": "oss-docs",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "The canonical OSS documentation workflow is already explicit enough for Codex without a dedicated override."
-      },
-      {
         "name": "plan",
         "treatment": "bespoke",
         "wave": "backbone",
@@ -290,12 +284,6 @@
         "reason": "Fork-based contribution work needs explicit Codex guidance around isolation, scope control, and proof of completion."
       },
       {
-        "name": "pr-plan",
-        "treatment": "bespoke",
-        "wave": "contribution-workflow",
-        "reason": "PR planning benefits from concise Codex framing around contribution scope, risk, and upstream fit."
-      },
-      {
         "name": "pr-prep",
         "treatment": "bespoke",
         "wave": "contribution-workflow",
@@ -306,12 +294,6 @@
         "treatment": "bespoke",
         "wave": "contribution-workflow",
         "reason": "Upstream research works better in Codex with explicit evidence capture and maintainer-pattern extraction."
-      },
-      {
-        "name": "pr-retro",
-        "treatment": "bespoke",
-        "wave": "contribution-workflow",
-        "reason": "Contribution retros should emphasize actionable maintainer feedback patterns in a Codex-native format."
       },
       {
         "name": "pr-validate",
@@ -367,12 +349,6 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Ratchet commands are procedural and already map cleanly into the generated Codex prompt."
-      },
-      {
-        "name": "readme",
-        "treatment": "bespoke",
-        "wave": "analysis-authoring",
-        "reason": "README generation benefits from Codex-specific interview brevity, artifact output, and validation focus."
       },
       {
         "name": "red-team",
@@ -566,12 +542,6 @@
         "reason": "Builder dispatcher (scripts/build.sh) drives all 4 modes (from-scratch, from-template, absorb-external, from-pattern); the prose is reference material with no Codex-specific runtime divergence."
       },
       {
-        "name": "update",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Skill reinstall/update flow is script-led and does not need extra Codex-native phrasing."
-      },
-      {
         "name": "using-agentops",
         "treatment": "parity_only",
         "wave": "catalog-parity",
@@ -668,12 +638,6 @@
         "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
       },
       {
-        "name": "expert-council",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Absorbed into council as --mode=debate; kept as a one-release thin alias with no Codex-only runtime divergence."
-      },
-      {
         "name": "using-gc",
         "treatment": "parity_only",
         "wave": "catalog-parity",
@@ -697,8 +661,8 @@
     {
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
-      "source_hash": "cb1395019dfc1bc08fd24b49cee5e180ed3486d55e7a471ee2b51c413a8df9b0",
-      "generated_hash": "6519ddbf2f333b7beaf22b9ab1ac53831c9f46f6536b08dd2967fb3eff26b2e5"
+      "source_hash": "c490abfe896c2f3dc2eb61dbb00214d7b652605a80e31624f0d4d2b19b546f57",
+      "generated_hash": "6735bd647fb669c22b950b3447b4adae74ef3349523dbf2acf22382673f75458"
     },
     {
       "name": "brainstorm",
@@ -739,7 +703,7 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "bab6198e85ed06e27ce5a09c6ef6e41f8928c1739dc993fc8c42e33fcec17754",
+      "source_hash": "0a973d41ef7c101aed072f1c7f38471a186d85e4105c55d2efcedbafd4c4c8a3",
       "generated_hash": "6b5ce56f36cb10393e921e524539c3dd41d28a5bdce5eac645075050864222ef"
     },
     {
@@ -775,7 +739,7 @@
     {
       "name": "doc",
       "source_skill": "skills/doc",
-      "source_hash": "d5a4120ac462bcc8778828385cc0fbfd9e10f093bff730f4b4d05f486e4c643c",
+      "source_hash": "c202b43aed74b998825974f77afcff4abd9ff99d82ec38f3b198dd59c1fb2a9c",
       "generated_hash": "6daece452ca597c50748750a960052c47dea99754bf5343fd1d7b59f15b4de24"
     },
     {
@@ -787,7 +751,7 @@
     {
       "name": "dream",
       "source_skill": "skills/dream",
-      "source_hash": "0293ace26e39e5d4c839d8d0f453bb45d88bf19b618de9cfdd1547b9340cd1a0",
+      "source_hash": "30e04bc30a20b4404049a8ca31ecf21047e58ead1d97ccd29d38f476c0c21d47",
       "generated_hash": "e0ff08b8e3e94f8bc6ae5d253a4a5b5d89152c3544991bf05c5f4152d32c2bb6"
     },
     {
@@ -795,12 +759,6 @@
       "source_skill": "skills/evolve",
       "source_hash": "ecfc27d86c3660cbd64b3455265ac89250a1cdf733a2dcadaa1d236c9f53318a",
       "generated_hash": "5c8274c6606089b1a2854015f0f0f5176ed49806e3a6e9fce10749eeabffd01f"
-    },
-    {
-      "name": "expert-council",
-      "source_skill": "skills/expert-council",
-      "source_hash": "086b2e0ecf603e711ad0f1edf09197e6ee7e96af1a7a8f69feb171383d4678fd",
-      "generated_hash": "2db9315d89a07bee38b8975a58be99e1c8aca853f9a0987d5e5286acc57c84b5"
     },
     {
       "name": "flywheel",
@@ -881,12 +839,6 @@
       "generated_hash": "897d7a15f493cf6e64262e0ff44e5083bffee62787bead5fd106658cd9c09e18"
     },
     {
-      "name": "oss-docs",
-      "source_skill": "skills/oss-docs",
-      "source_hash": "65feb5b9a853c238b3456c4d3c8eb374f73f5499445485ac3d6298aca4a92fff",
-      "generated_hash": "dc48da2244b8584404f97852b961e645e6aa13085fb3275c2545fbe3fa16cf33"
-    },
-    {
       "name": "perf",
       "source_skill": "skills/perf",
       "source_hash": "76369d06999ce6adb4b4f37e62fecf0663bf10c8a22337299a91132486b53dee",
@@ -901,20 +853,14 @@
     {
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
-      "source_hash": "ce3c864907b49887ad0fcfbfc32714ca90a24502a17d9d186d1bb1e5f8a3964e",
+      "source_hash": "10d9ae4b461f7542d8bc461a898ac8c08b8e49d5796d6e33f3216afcc3bf3154",
       "generated_hash": "4c781235bd56308a15d5da8f0fadb2e3c8e407821258b3a27c346ff9b4d2193a"
     },
     {
       "name": "pr-implement",
       "source_skill": "skills/pr-implement",
-      "source_hash": "7fdabf4c57f4087c2eb61f8264c02eacc5ea4fe7a2feb2780af3f9e74c70453d",
-      "generated_hash": "c379a9da99b11ec263a4390ac0eb12468245bc47b2eb0df8d2367eca81ebd009"
-    },
-    {
-      "name": "pr-plan",
-      "source_skill": "skills/pr-plan",
-      "source_hash": "e9774059e07eeb4388bf394afded5f39c636a0df097cbd20ce2e1c4c62908739",
-      "generated_hash": "9c642fd106e24221a2120219fcba2da62202a0686d3978c01d94660a6222f336"
+      "source_hash": "e3a8fbe13252c5b02f91a3bd702ba3626411fa369ee3ebd0b1f70dbd311d5737",
+      "generated_hash": "c220971247681b1113b87a2f967477d60ac18569133dfad8bc6075d78c75db74"
     },
     {
       "name": "pr-prep",
@@ -925,14 +871,8 @@
     {
       "name": "pr-research",
       "source_skill": "skills/pr-research",
-      "source_hash": "d380ca03ca98079af750d26cda87616e7abcd4a91d225760f22859afd92686be",
-      "generated_hash": "d2da34d258effceab5c0f0f81ce2cbc4df30c6ad55295484abd96eec43ef8a65"
-    },
-    {
-      "name": "pr-retro",
-      "source_skill": "skills/pr-retro",
-      "source_hash": "6a1a37e38195feed50fb041dd519199fc42224870588ca5437b9a1c23ffa5b2c",
-      "generated_hash": "f17bcb9512aaef9e5cffce80a6712146ec1498565e3ee71b2ba9d80a861cee4a"
+      "source_hash": "d156b43972139c21a352e225a4ff019c2f78060731da7d2f26e95a7fc0c5f0c9",
+      "generated_hash": "2649cfe9f46362529c88d0a65e371b760807bff0ff4917a6959fb034a33732ac"
     },
     {
       "name": "pr-validate",
@@ -967,20 +907,14 @@
     {
       "name": "quickstart",
       "source_skill": "skills/quickstart",
-      "source_hash": "957aed47a37d38f3f25a20805bd81feac7e41765494c25f821d3c9e96d109d0d",
-      "generated_hash": "da863bdcb404bfe1a24691310cc9b39ae84743d6b47c2e1d5631c4d4fdf18b24"
+      "source_hash": "69486ca59b5162001e3bf8500e8cca6462a5cf9b33d20af1ebabaa160b22a36a",
+      "generated_hash": "9d7f5442d8e5cb017d25576a7af3c191b507c85bfed982edf2932e535038b2b0"
     },
     {
       "name": "ratchet",
       "source_skill": "skills/ratchet",
       "source_hash": "7cf8abefd68edfd5a0570dd3503acc1b4b97c5e86bf8a339086fbdfe389ed9df",
       "generated_hash": "2b62557007d2bd62d15db827a4f1a148ebb0e7d6f66035bfddb30f1f6bf08455"
-    },
-    {
-      "name": "readme",
-      "source_skill": "skills/readme",
-      "source_hash": "5d539d8d92c03d9a7f82adc07e9b5f11f760f428263086c2ede77bd58978790b",
-      "generated_hash": "c9050bc20a6e1d64c1beb1f39f17ee343dafee18df7f3c172735c0f0ab2b2d83"
     },
     {
       "name": "recover",
@@ -1081,7 +1015,7 @@
     {
       "name": "ship-loop",
       "source_skill": "skills/ship-loop",
-      "source_hash": "87bcea7bbbd6fd777d92192fb3c73b881340e579cdfd26209b70ea99ed9e508d",
+      "source_hash": "f0b4ba2377651275effc42ed543928aabdb32c2972d8985e51394a7d0bfca30f",
       "generated_hash": "a6b0df3d81b3680704b99b871fae44819cc7b05e7f3353877e4957e7fbbb97a6"
     },
     {
@@ -1133,16 +1067,10 @@
       "generated_hash": "c0a7ce3beb038f142c9ad8ef0eef4a9072eb2a2c6c90b4f1e0f39699462f4cec"
     },
     {
-      "name": "update",
-      "source_skill": "skills/update",
-      "source_hash": "9592f3f9f7d06a9df037b5c62e395328a641220cbea2150dda10f9df12175f23",
-      "generated_hash": "da2116a3e09a09731f3d9b8a11d8b425787861598a75132a2107e94154a16a42"
-    },
-    {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "25e3e9f593d69b7b3d42accf51ece72e7345ef7ebf0b9bf6e0b9b85db140879f",
-      "generated_hash": "be86270549144f59f2365ba76663339605d4c71efe4f0b0b8e3b72c234077452"
+      "source_hash": "42195225b231377bc99e3969970bcd233b22c8b304904b8867620015ed089fb8",
+      "generated_hash": "80119493d38739d5ca4d9377c97c7e4f6e5766365525c965297c1cd78029e74b"
     },
     {
       "name": "using-gc",

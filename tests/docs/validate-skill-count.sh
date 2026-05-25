@@ -104,19 +104,16 @@ check_numeric_match "SKILL-TIERS.md internal header" "$tiers_internal_claim" "$a
 skills_doc_total=$(extract_number 's/.*all \([0-9][0-9]*\) AgentOps skills.*/\1/' "$REPO_ROOT/docs/SKILLS.md" "docs/SKILLS total header")
 skills_doc_user=$(extract_number 's/.*AgentOps skills (\([0-9][0-9]*\) user-facing [+] [0-9][0-9]* internal).*/\1/' "$REPO_ROOT/docs/SKILLS.md" "docs/SKILLS user-facing header")
 skills_doc_internal=$(extract_number 's/.*AgentOps skills ([0-9][0-9]* user-facing [+] \([0-9][0-9]*\) internal).*/\1/' "$REPO_ROOT/docs/SKILLS.md" "docs/SKILLS internal header")
-skills_doc_update_total=$(extract_number 's|.*Reinstall all \([0-9][0-9]*\) skills.*|\1|' "$REPO_ROOT/docs/SKILLS.md" "docs/SKILLS /update command count")
 
 echo "=== docs/SKILLS.md claims ==="
 echo "  Header total: $skills_doc_total"
 echo "  Header user-facing: $skills_doc_user"
 echo "  Header internal: $skills_doc_internal"
-echo "  /update total: $skills_doc_update_total"
 echo ""
 
 check_numeric_match "docs/SKILLS.md header total" "$skills_doc_total" "$actual_total"
 check_numeric_match "docs/SKILLS.md header user-facing" "$skills_doc_user" "$actual_user_facing"
 check_numeric_match "docs/SKILLS.md header internal" "$skills_doc_internal" "$actual_internal"
-check_numeric_match "docs/SKILLS.md /update total" "$skills_doc_update_total" "$actual_total"
 
 # --- Extract counts from docs/ARCHITECTURE.md ---
 
@@ -169,7 +166,6 @@ internals=()
 
 [[ "$tiers_user_claim" != "NOT_FOUND" && "$tiers_internal_claim" != "NOT_FOUND" ]] && totals+=("SKILL-TIERS-headers:$((tiers_user_claim + tiers_internal_claim))")
 [[ "$skills_doc_total" != "NOT_FOUND" ]] && totals+=("docs/SKILLS-header:$skills_doc_total")
-[[ "$skills_doc_update_total" != "NOT_FOUND" ]] && totals+=("docs/SKILLS-/update:$skills_doc_update_total")
 [[ "$architecture_total" != "NOT_FOUND" ]] && totals+=("docs/ARCHITECTURE:$architecture_total")
 [[ "$product_total" != "NOT_FOUND" ]] && totals+=("PRODUCT:$product_total")
 [[ "$product_layer_total" != "NOT_FOUND" ]] && totals+=("PRODUCT-layer:$product_layer_total")

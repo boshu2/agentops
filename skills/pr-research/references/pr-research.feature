@@ -16,7 +16,7 @@ Feature: PR-research explores an upstream repo before contributing
 
   Scenario: it runs before planning or implementation
     When a contribution to an external repo begins
-    Then /pr-research is the first step, before /pr-plan or /pr-implement
+    Then /pr-research is the first step, before /plan or /pr-implement
 
   Scenario: findings are cited
     When the research artifact is written
