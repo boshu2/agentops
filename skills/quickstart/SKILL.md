@@ -100,7 +100,7 @@ Starting a new project? Run `/scaffold <language> <name>` to generate project st
 | Problem | Solution |
 |---------|----------|
 | Skills not installed | `bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)` |
-| Hook activation | Default installs are hookless. Opt into native hooks with `install-codex.sh --with-hooks` or `ao hooks install --force`; legacy explicit fallback commands are `ao codex ensure-start` and `ao codex ensure-stop`. |
+| Hook activation | AgentOps 3.0 is hookless — there is no `ao` command or flag that installs hooks, and CI is the authoritative gate. Hooks are opt-in and author-it-yourself via the `hooks-authoring` skill. |
 | Flywheel count is 0 | First session — run `/rpi "a small goal"` to start it |
 | Want the full skill catalog | Ask: "show me all the skills" or see `references/full-catalog.md` |
 

@@ -190,22 +190,18 @@ If `HAS_PROGRAM` is true and `--force` is not set: skip. Report "PROGRAM.md/AUTO
 
 ### Step 6: Optional Hook Activation
 
-Do not activate hooks by default. AgentOps 3.0's first-value path is hookless:
-`ao quick-start`, execution packets, explicit validation, and knowledge
-compounding work before runtime hooks are installed.
+Do not activate hooks. AgentOps 3.0 is hookless: `ao quick-start`, execution
+packets, explicit validation, and knowledge compounding deliver first value
+with no runtime hooks, and CI is the authoritative gate. There is no `ao`
+command or flag that installs hooks — hooks were removed from the CLI.
 
-If the user explicitly requested hook activation and `HAS_AO` is true AND
-`HAS_HOOKS` is false (or `--force` is set):
+If the user explicitly requests hooks, they are opt-in and author-it-yourself:
+point them at the `hooks-authoring` skill, which scaffolds project-local hooks
+into `.claude/settings.json`. Bootstrap itself never writes hooks.
 
-```bash
-ao init --hooks
-```
+If hooks were not explicitly requested: skip. Report "Hooks optional -- skipped. AgentOps 3.0 is hookless; CI is the authoritative gate. To author your own, use the `hooks-authoring` skill."
 
-If `HAS_AO` is false: skip. Report "Optional hooks skipped -- ao CLI not installed. Run: brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops && brew install agentops"
-
-If hook activation was not explicitly requested: skip. Report "Hooks optional -- skipped. To opt in later, run `ao init --hooks` or `install-codex.sh --with-hooks`."
-
-If `HAS_HOOKS` is true and `--force` is not set: skip. Report "Hooks already configured -- skipped."
+If `HAS_HOOKS` is true: report "Hooks already present in .claude/settings.json -- left untouched."
 
 ### Step 7: Report
 

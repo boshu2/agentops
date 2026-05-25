@@ -697,8 +697,8 @@
     {
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
-      "source_hash": "b09d4eadd3644babf4543a8961cc113640c1ed9644e56e3b62113b4cb7bf2c2c",
-      "generated_hash": "63a23d4e415e3d35556868ecb6a77f5f4b27baf222c16f64806fb1089ea8f542"
+      "source_hash": "cb1395019dfc1bc08fd24b49cee5e180ed3486d55e7a471ee2b51c413a8df9b0",
+      "generated_hash": "6519ddbf2f333b7beaf22b9ab1ac53831c9f46f6536b08dd2967fb3eff26b2e5"
     },
     {
       "name": "brainstorm",
@@ -781,7 +781,7 @@
     {
       "name": "domain",
       "source_skill": "skills/domain",
-      "source_hash": "5d4e22f88e2bdabd7b6c21c4d17b3739ca9bf8dca26450cfd17f551826b039b9",
+      "source_hash": "a9728200b9d491bbc601c446e1fa9fc28fbddc47419963a5481995e59051d71a",
       "generated_hash": "5de534737803c76fab3ad06e1a47dba85eb8f631a159cc6157ce4f932c2e99e4"
     },
     {
@@ -967,8 +967,8 @@
     {
       "name": "quickstart",
       "source_skill": "skills/quickstart",
-      "source_hash": "27ef5cf96af3ba894dd38cb21e2997c2ff81518567b0328dcfc6300686c34eb2",
-      "generated_hash": "31122c8dbded37f3ecd902d2e2317a891d39fc8c7f28b3e7015ccf8618c6866f"
+      "source_hash": "957aed47a37d38f3f25a20805bd81feac7e41765494c25f821d3c9e96d109d0d",
+      "generated_hash": "da863bdcb404bfe1a24691310cc9b39ae84743d6b47c2e1d5631c4d4fdf18b24"
     },
     {
       "name": "ratchet",
@@ -1147,8 +1147,8 @@
     {
       "name": "using-gc",
       "source_skill": "skills/using-gc",
-      "source_hash": "aea447416eeb6381247032ec9bb22fc5990b52ec467029fd1df316eaddd20401",
-      "generated_hash": "77aebcbb19c3767bdfffb2d275f9e7050a7d198718460050926bef2b51b50d28"
+      "source_hash": "abd2d7adb161e872840f5f27354d718f6d5c51e1a033cf1e8e9daccc806e03c6",
+      "generated_hash": "592032dd971333472eff48f75814889b5915d1c65714fd5fa703a772657a1531"
     },
     {
       "name": "validate",
