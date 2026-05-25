@@ -82,7 +82,7 @@ AgentOps is not a chatbot wrapper. It does not make prompts bigger. It does not 
 
 It is not trying to replace thinking. The model thinks. AgentOps manages what the model knows when it thinks.
 
-It is not a SaaS product or a managed service. All state lives locally. All operations are reversible. The product is the compounding environment — the `skills/`, the `ao` CLI, and the discipline enforced by the hooks. That environment is yours to own, version-control, and take with you.
+It is not a SaaS product or a managed service. All state lives locally. All operations are reversible. The product is the compounding environment — the `skills/`, the `ao` CLI, and the discipline enforced in CI. AgentOps 3.0 is hookless: skills and the CLI guide the workflow and CI is the authoritative gate. Hooks are opt-in — you author your own via the `hooks-authoring` skill — never installed by default. That environment is yours to own, version-control, and take with you.
 
 ## The Validated Thesis
 
@@ -91,7 +91,7 @@ As of April 2026, the flywheel thesis is empirically confirmed on a single produ
 - 163 learnings extracted, scored, and curated
 - 13 planning rules enforced at pre-mortem gates
 - 12 patterns promoted from repeated findings
-- 10/12 `ao doctor` checks passing with full 7/7 hook coverage
+- 10/12 `ao doctor` checks passing, with the full CI gate suite green
 
 The compound growth is measurable. Session 1 started cold. Session 100+ starts with a knowledge corpus that catches known failure modes before implementation begins.
 
