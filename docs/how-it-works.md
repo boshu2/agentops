@@ -14,13 +14,12 @@ briefings and startup context prepare the work order, RPI phases run the
 delivery lane, and the flywheel closes the learning loop. See
 [Software Factory Surface](software-factory.md).
 
-The same split now applies to Dream:
+The same split applies to Dream's in-session surface:
 
-- skills remain the interactive operator surface
-- the `ao` binary is the headless automation surface
-- shared config is the control surface
+- skills (`/dream`) are the interactive operator surface for a compounding session
+- the `ao` CLI primitives (`ao compile`, `ao maturity`, `ao flywheel close-loop`) are the headless work the loop performs
 
-That matters most for overnight work. GitHub nightly is the public proof harness. `ao overnight` is the private local compounding engine.
+Running that compounding *out of session* — always-on, scheduled, unattended — is delegated to an orchestration substrate (Gas City is the reference City), not an AgentOps daemon or scheduler; those surfaces were deleted in 3.0. GitHub nightly remains the public CI proof harness for the report contract; the private always-on compounding engine is the Gas City substrate driving the in-session loop.
 
 ## The Proof Gaps
 
@@ -212,22 +211,19 @@ ao rpi parallel --no-merge --manifest m.json # Leave worktrees for manual review
 
 Each phase spawns a fresh session — no context bleed. Worktree isolation means parallel epics can touch the same files without conflicts. The merge order is configurable (manifest `merge_order` or `--merge-order` flag) so dependency-heavy epics land first.
 
-## Dream — Private Overnight Operator Mode
+## Dream — Compounding Run, In Session and Out
 
-Dream is the overnight expression of the same control-plane model:
+Dream is the compounding expression of the same loop model:
 
-- **interactive surface:** `$dream` for setup, bedtime runs, and morning reports
-- **automation surface:** `ao overnight setup|start|run|report`
-- **control plane:** shared `dream.*` config plus explicit output artifacts
+- **interactive surface:** `/dream` for a compounding session, run in the foreground against the real `.agents` corpus
+- **work the loop performs:** `ao compile`, `ao maturity --scan`, `ao flywheel close-loop` — the CLI primitives the session drives
+- **report contract:** `summary.json` and `summary.md` plus DreamScape terrain rendering
 
-The first shipped wave is intentionally bounded. `ao overnight` runs locally against the real `.agents` corpus, writes `summary.json` and `summary.md`, and keeps runtime behavior honest:
+A foreground `/dream` session keeps runtime behavior honest: no tracked source-code edits by default, optional bounded Dream Council synthesis through independent runner reports, and a shared report contract.
 
-- no fake scheduler guarantees on sleeping laptops
-- no tracked source-code edits by default
-- optional bounded Dream Council synthesis through independent runner reports
-- DreamScape terrain rendering inside the shared report contract
+Running Dream **unattended** — always-on, scheduled, queue-driven — is out-of-session orchestration, which AgentOps delegates to a substrate (Gas City is the reference City) rather than shipping its own daemon or scheduler. The Gas City pattern is a long-lived agent running `/dream`-equivalent maintenance Orders (`ao compile`, `ao maturity --scan`) on a cron `exec` schedule. There are no fake scheduler guarantees on a sleeping laptop; the substrate owns when and where.
 
-GitHub nightly remains useful, but for a different job: it proves that Dream's report contract and flywheel primitives still work in CI. It does not replace a private local bedtime run.
+GitHub nightly remains useful for a different job: it proves that Dream's report contract and flywheel primitives still work in CI. It does not replace a substrate-driven unattended run.
 
 ## See Also
 

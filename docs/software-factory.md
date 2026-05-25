@@ -39,8 +39,8 @@ harness-specific hook surface. Workflow is guided by skills + the `ao` CLI, and
 CI is the authoritative gate. The operator lane is the same everywhere:
 
 ```bash
-/rpi "fix auth startup"            # interactive, any harness
-ao daemon submit --kind rpi --goal "fix auth startup"   # pipeline-resident
+/rpi "fix auth startup"            # in-session, any harness
+ao rpi phased "fix auth startup"   # in-session with phase-level resume control
 ```
 
 What used to be hook responsibilities are now explicit, pulled surfaces:
@@ -53,15 +53,20 @@ What used to be hook responsibilities are now explicit, pulled surfaces:
 | Flywheel closure | `ao flywheel close-loop` / `/retro` / `/forge` at session close |
 | Execution discipline | Execution-packet `next_action` + skill instructions |
 
-Both interactive and daemon paths exist because people use Codex or they use
-Claude Code — but neither relies on hooks.
+Both lanes run **in session** because people use Codex or they use Claude
+Code — neither relies on hooks. Running the same loop **out of session**
+(always-on, scheduled, unattended) is a separate concern AgentOps delegates to
+an orchestration substrate; Gas City is the reference City. AgentOps 3.0 ships
+no daemon, scheduler, or overnight runner of its own — those surfaces were
+deleted (see [AgentOps 3.0 north star](3.0.md)).
 
 ## Surface Map
 
 | Layer | Purpose | Primary surfaces |
 |------|---------|------------------|
-| Operator | What the human or lead agent should touch first | `ao factory start`, `/rpi`, `ao rpi phased`, `ao rpi status`, `ao daemon submit` |
-| Briefing + runtime | Bounded startup context and thread-time state | `ao knowledge brief`, `ao context assemble`, `ao daemon submit` |
+| Operator | What the human or lead agent should touch first | `ao factory start`, `/rpi`, `ao rpi phased`, `ao rpi status` |
+| Briefing + runtime | Bounded startup context and thread-time state | `ao knowledge brief`, `ao context assemble` |
+| Out-of-session | Running the loop unattended (always-on, scheduled) | Delegated to an orchestration substrate (Gas City is the reference) — not an AgentOps surface |
 | Delivery line | Research, planning, execution, validation | `/discovery`, `/plan`, `/crank`, `/validation`, `/rpi` |
 | Learning loop | Convert completed work into future advantage | `ao knowledge activate`, `ao flywheel close-loop`, `/retro`, `/forge` |
 | Enforcement | Automatic quality gates and execution discipline | CI (`.github/workflows/validate.yml`), skill-level checks, `cd cli && make test` |
