@@ -193,6 +193,12 @@ jobs:
           fi
           echo "Homebrew token validated"
 
+      - name: Validate curated release notes (hard gate)
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          chmod +x scripts/validate-release-notes.sh
+          scripts/validate-release-notes.sh "$VERSION"
+
       - name: Extract release notes from CHANGELOG.md
         run: |
           VERSION="${{ steps.version.outputs.version }}"
