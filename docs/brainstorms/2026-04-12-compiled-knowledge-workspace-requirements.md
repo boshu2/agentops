@@ -5,6 +5,8 @@ topic: compiled-knowledge-workspace
 
 # Compiled Knowledge Workspace
 
+> **Historical (2026-04-12).** A dated brainstorm retained for provenance. It predates the AgentOps 3.0 rearchitecture, which removed the standalone `ao overnight` / daemon / scheduler surfaces ([ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)): AgentOps is in-session only, the Dream maintenance loop runs as the `/dream` skill, and unattended runs are dispatched on the Gas City reference City. Where the requirements below name `ao overnight` as the scheduled-maintenance home, read it as "the `/dream` skill, dispatched out of session via a Gas City Order." Read for intent, not as a current task list.
+
 ## Problem Frame
 
 Karpathy's LLM Wiki pattern is a strong fit for AgentOps because it names the same product problem AgentOps already solves: agents should not re-derive useful context from raw material every session. The useful product move is not to clone a second-brain app. AgentOps already has a repo-native bookkeeping flywheel, `/compile`, `ao search`, `ao lookup`, `ao curate`, `ao mind`, and `ao overnight`. The gap is that the compiled wiki layer is still mostly skill-led instead of a first-class CLI and lifecycle surface.
@@ -46,7 +48,7 @@ flowchart LR
 
 - R7. `ao search` and retrieval-oriented flows must be able to include compiled knowledge results without hiding whether a result came from raw session history, promoted learnings, findings, or compiled synthesis.
 - R8. `ao lookup` or context assembly must be able to retrieve compiled synthesis when it is the best task-level context, while still preferring verified learnings and findings for rule-like guidance.
-- R9. `ao overnight start` must have a path to run compile/lint as an optional knowledge-maintenance lane inside the existing no-source-mutation Dream boundary.
+- R9. The Dream maintenance lane (the `/dream` skill, dispatched out of session via a Gas City Order) must have a path to run compile/lint as an optional knowledge-maintenance lane inside the existing no-source-mutation Dream boundary.
 - R10. Lint output must be machine-readable enough for Dream reports, CI gates, or future `bd` follow-up creation, while still producing a human-readable markdown report.
 
 **Health and Safety**
@@ -84,7 +86,7 @@ flowchart LR
 - Extend existing `/compile` instead of creating a separate second-brain feature: the skill already contains the Karpathy-aligned behavior and output contract.
 - Treat `skills/llm-wiki/` as a candidate external-vault skill, not the primary CLI foundation: it is useful product exploration, but the first CLI milestone should graduate the existing internal compiler because that is already wired to AgentOps' core flywheel.
 - Put the CLI entry point in the knowledge command group: this matches `ao search`, `ao lookup`, `ao curate`, `ao mind`, `ao store`, and `ao temper`.
-- Use `ao overnight` for scheduled maintenance: it already represents the no-source-mutation night loop and avoids inventing a parallel scheduler.
+- Use the Dream maintenance loop (the `/dream` skill, dispatched out of session via a Gas City Order) for scheduled maintenance: it already represents the no-source-mutation night loop and avoids inventing a parallel scheduler.
 - Keep `.agents/compiled/` as the repo-local default: AgentOps' core product is repo-native agent work, while raw/wiki vault mode should be explicit.
 
 ## Alternatives Considered
@@ -97,7 +99,7 @@ flowchart LR
 
 - `skills/compile/scripts/compile.sh` remains the canonical headless implementation unless planning finds it too brittle for CLI wrapping.
 - `skills/llm-wiki/SKILL.md` is treated as unmerged user/proposal work unless explicitly accepted into scope.
-- `ao overnight` can add an optional compile/lint step without violating Dream anti-goals.
+- The Dream maintenance loop (the `/dream` skill) can add an optional compile/lint step without violating Dream anti-goals.
 - CLI docs must be regenerated if a command or flags are added.
 - Codex artifacts and overrides must be updated if the compile skill behavior or CLI references change.
 

@@ -7,7 +7,8 @@ section, launch post, or video description.
 
 AgentOps is the engineering operating system for agent teams: a disciplined
 engineering layer that gives coding agents shared domain context, review
-verdicts, tracked follow-up work, and optional scheduled compounding.
+verdicts, tracked follow-up work, and optional out-of-session compounding (the
+loop dispatched on the Gas City reference City).
 
 ## Problem Statement
 
@@ -111,19 +112,24 @@ The important shape:
 | Re-explain intent at every phase. | Hand the packet lineage through briefing, verdict, execution, validation, and handoff artifacts. |
 | Automation starts as a giant promise. | Automation is second-stage, after the packet and verdict earn trust. |
 
-## Daemon Expansion Path
+## Out-Of-Session Expansion Path
 
-The daemon is the deeper lane, not the first proof.
+Out-of-session orchestration is the deeper lane, not the first proof.
+AgentOps ships no daemon or scheduler of its own — the loop runs in session,
+and unattended runs are delegated to the Gas City reference City (see
+[ADR-0009](adr/ADR-0009-daemon-deletion-in-session-only.md)).
 
 After the user sees one packet and one verdict:
 
 ```bash
-ao init --with-schedule
-ao daemon run --schedule-file .agents/schedule.yaml
-ao schedule list
+# In the reference City, a long-lived mayor agent slings the next ready bead
+# to a refinery worker, which runs the loop as one invocable unit:
+ao rpi <bead-id>
+# Scheduled maintenance (Dream reports, wiki curation, release checks) runs as
+# Gas City cron Orders. See docs/dependencies.md and the using-gc skill.
 ```
 
-Use the daemon for approved recurring work such as Dream reports, wiki
+Use the Gas City lane for approved recurring work such as Dream reports, wiki
 curation, release checks, or other compounding jobs where the operator has
 already accepted the artifact shape.
 

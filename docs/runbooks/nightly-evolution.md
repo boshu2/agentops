@@ -1,5 +1,17 @@
 # Nightly Evolution Runbook
 
+> **3.0 note:** the daemon-backed handoff this runbook originally described
+> (`ao daemon jobs submit`, `agentopsd`, `ao overnight`) was **removed** in the
+> AgentOps 3.0 rearchitecture — AgentOps is in-session only and ships no daemon,
+> scheduler, or overnight runner of its own (see
+> [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)). The loop
+> (`ao rpi` / `ao evolve`, the `/dream` skill) runs in session; to run it
+> unattended out of session, dispatch it on the **Gas City reference City** (a
+> long-lived mayor agent slings ready beads to refinery workers that run
+> `ao rpi`; scheduled maintenance runs as Gas City cron Orders). This runbook is
+> retained for the repo-owned run-contract and digest mechanics; treat the
+> orchestration surface as Gas City, not an AgentOps daemon.
+
 This runbook describes the private local nightly automation lane. It is separate
 from GitHub Actions.
 
@@ -9,18 +21,18 @@ from GitHub Actions.
 |---------|------|
 | GitHub Nightly | Public proof harness over repo-visible state |
 | Nightly RPI Brief | Evidence packet and prompt issue |
-| Bushido scheduler | Local execution host for private runs |
+| Gas City reference City | Out-of-session orchestration substrate (mayor + refinery agents) for unattended runs |
 | `scripts/nightly-evolution.sh` | Repo-owned run contract and digest writer |
-| `ao daemon jobs submit --type dream.run` | Private Dream/wiki knowledge compounding handoff |
-| `ao rpi` / `ao evolve` | Code-mutating implementation cycles |
+| `/dream` skill | Private Dream/wiki knowledge compounding (in session; dispatched out of session via a Gas City Order) |
+| `ao rpi` / `ao evolve` | Code-mutating implementation cycles, dispatched as one invocable unit |
 | Claude Code | Headless worker/reviewer via local CLI or GitHub companion action |
 | Codex | Headless worker/reviewer via `codex exec` or local AgentOps runtime |
-| Mt. Olympus / Gas City | Future durable orchestration backend |
+| Mt. Olympus | Sovereign full-custom runtime (keeps its own Rust daemon) — alternate out-of-session driver |
 
-Bushido is a private dogfood target, not a public AgentOps namespace. The first
-production scheduler is a host user timer or cron entry that calls the repo
-script. Mt. Olympus can later run the same contract through Gas City once
-provider readiness and replay are proven.
+Bushido is a private dogfood target, not a public AgentOps namespace. Out-of-
+session runs are dispatched on the Gas City reference City; AgentOps ships no
+scheduler of its own. Mt. Olympus can run the same contract through its sovereign
+Rust core once provider readiness and replay are proven.
 
 ## First Safe Run
 
@@ -36,9 +48,11 @@ Run only the private Dream/wiki lane:
 scripts/nightly-evolution.sh --execute --run-dream
 ```
 
-This submits a typed `dream.run` daemon job. If daemon submission fails, the
-wrapper falls back to the legacy `ao overnight start` subprocess for operator
-compatibility unless `--skip-dream-subprocess` is supplied.
+In 3.0 the Dream lane runs the `/dream` skill in session; to run it unattended,
+dispatch it as a Gas City Order. The daemon-backed `dream.run` job submission
+this flag historically used was removed with the daemon
+([ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)); the run
+contract and digest mechanics below are unaffected.
 
 Run one bounded evolve cycle with Codex as the runtime command:
 
@@ -57,7 +71,12 @@ Run both lanes after the dry-run and Dream-only pilot have passed:
 scripts/nightly-evolution.sh --execute --run-dream --run-evolve --max-cycles 1
 ```
 
-## Scheduling
+## Host-OS timing (not an AgentOps scheduler)
+
+AgentOps ships no scheduler; recurring runs are driven by host-OS timing (a
+systemd user timer or cron) calling the repo script, or by a Gas City cron
+Order. The helper below installs a **host systemd user timer** — operator
+infrastructure, not an AgentOps-managed surface.
 
 ### Automated Install
 
@@ -81,7 +100,8 @@ scripts/install-nightly-scheduler.sh --uninstall
 ```
 
 Options: `--schedule`, `--runners`, `--runtime-cmd`, `--max-cycles`. See
-`scripts/install-nightly-scheduler.sh --help` for full reference.
+`scripts/install-nightly-scheduler.sh --help` for full reference. (These are
+flags of the host-timer install helper, not of any AgentOps CLI command.)
 
 ### Manual Install (alternative)
 
@@ -119,15 +139,17 @@ systemctl --user enable --now agentops-nightly-evolution.timer
 
 Use Claude and Codex differently until eval evidence says mixed mode is stable:
 
-- Dream daemon handoff: submit `dream.run` through `agentopsd`. The legacy
-  subprocess fallback still honors the configured Claude/Codex runner list.
+- Dream handoff: run the `/dream` skill in session; dispatch it out of session
+  as a Gas City Order (no AgentOps daemon — see
+  [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)). The run
+  contract still honors the configured Claude/Codex runner list.
 - Planning/review: prefer Claude or mixed mode for synthesis-heavy work.
 - Implementation: use Codex when local shell/code execution is the primary
   burden.
 - CI/GitHub companion: use Claude Code GitHub Actions for repo-visible reviews
   or reports, not private `.agents` mutation.
-- Gas City: use `runtime=gc` only after provider readiness and replay are
-  proven.
+- Gas City: dispatch whole `ao rpi` / `ao evolve` loops as one invocable unit
+  only after provider readiness and replay are proven.
 
 ## Safety Controls
 
