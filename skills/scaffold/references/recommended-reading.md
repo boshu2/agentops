@@ -10,7 +10,7 @@ When a trigger condition listed below fires (new transport surface, new agent-AP
 
 | Skill / source | Origin | Why relevant to scaffold | Trigger to absorb |
 |---|---|---|---|
-| `mcp-server-design` | ACFS | Agent-facing tool UX patterns: anticipating how agents misuse APIs, structured "fail helpfully" errors, "agent theory of mind" framing for tool design, and `make the wrong thing impossible` as a north star for boilerplate defaults. Useful when scaffold output is itself an agent-facing tool surface (MCP server, CLI agent, daemon). Scored 1.00 in the 2026-05-03 external-corpus utility map. | When agentopsd MCP transport work begins, or when a new scaffold mode targets MCP/agent-tool servers. |
+| `mcp-server-design` | ACFS | Agent-facing tool UX patterns: anticipating how agents misuse APIs, structured "fail helpfully" errors, "agent theory of mind" framing for tool design, and `make the wrong thing impossible` as a north star for boilerplate defaults. Useful when scaffold output is itself an agent-facing tool surface (MCP server, CLI agent). Scored 1.00 in the 2026-05-03 external-corpus utility map. | When MCP transport work begins, or when a new scaffold mode targets MCP/agent-tool servers. |
 
 ## Entry shape
 
