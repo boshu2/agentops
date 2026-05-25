@@ -163,12 +163,9 @@ with no runtime hooks, and CI is the authoritative gate. There is no `ao`
 command or flag that installs hooks — hooks were removed from the CLI.
 
 If the user explicitly requests hooks, they are opt-in and author-it-yourself:
-point them at the `hooks-authoring` skill, which scaffolds project-local hooks
-into `.claude/settings.json`. Bootstrap itself never writes hooks.
+point them at the `hooks-authoring` skill. Bootstrap itself never installs hooks.
 
 If hooks were not explicitly requested: skip. Report "Hooks optional -- skipped. AgentOps 3.0 is hookless; CI is the authoritative gate. To author your own, use the `hooks-authoring` skill."
-
-If `HAS_HOOKS` is true: report "Hooks already present in .claude/settings.json -- left untouched."
 
 ### Step 7: Report
 
