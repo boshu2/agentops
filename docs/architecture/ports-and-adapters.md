@@ -22,7 +22,7 @@ Primary adapters drive the domain from the outside: a human, an agent, or a work
 - **CLI commands** in `cli/cmd/ao/` — every `ao <verb>` is a driving adapter.
 - **Slash commands** in `skills/` — invocations like `/plan`, `/discovery`, `/validation`, `/vibe`.
 - **MCP** — Model Context Protocol entry points exposed by `ao` and by skills.
-- **Autonomous loops** — `/dream`, `/evolve`, the `agentopsd` daemon scheduler.
+- **Autonomous loops** — `/dream`, `/evolve`. These are in-session driving adapters; running them out of session (always-on, scheduled) is delegated to an orchestration substrate (Gas City is the reference), not an AgentOps daemon.
 - **CI gates** — `scripts/*.sh` and `.github/workflows/validate.yml` jobs that drive validation against the same domain types they would in interactive runs.
 
 ## Secondary (driven) adapters
