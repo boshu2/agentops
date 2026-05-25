@@ -1,0 +1,22 @@
+# skill-body-refs-allowlist.txt — repo-relative paths whose stale `ao` command
+# refs in PROSE are intentional and justified.
+#
+# Used by scripts/validate-skill-body-refs.sh (ag-4x8). Keep this MINIMAL.
+# Prefer an inline historical marker on the specific line/file (Superseded /
+# Historical / removed in / retained for history / (historical)) over a
+# blanket file allowlist. Only list files that are genuinely migration records:
+# UPGRADING / MIGRATION notes, ADRs, release notes, CHANGELOG, dated
+# plans/brainstorms that must preserve the old command names verbatim.
+#
+# Format: one repo-relative file path per line. Blank lines and `#` comments
+# are ignored.
+
+# Illustrative CLI-naming template: deliberately names hypothetical commands
+# (`ao loop-history`, `ao loop write`, `ao loop tail`) as good/bad naming
+# examples and future-subcommand placeholders — not real invocations.
+skills/standards/references/cli-wireup-template.md
+
+# Release notes: historical changelog prose that records commands as they
+# existed at a past release (e.g. `ao daemon status` from the daemon era).
+skills/release/references/release-notes.md
+skills-codex/release/references/release-notes.md
