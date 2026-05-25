@@ -4,7 +4,7 @@
 
 **Symptom:** You authored your own AgentOps hooks, but they do not fire on session start or tool use.
 
-> AgentOps 3.0 is hookless — the `ao hooks` command and the `ao init` hooks flag were both removed from the CLI. CI is the authoritative gate. Hooks are entirely opt-in and author-it-yourself via the `hooks-authoring` skill, which writes your hook entries into the Codex hook config.
+> AgentOps 3.0 is hookless — the `ao hooks` command and the `ao init` hooks flag were both removed in 3.0. CI is the authoritative gate. Hooks are entirely opt-in and author-it-yourself via the `hooks-authoring` skill, which writes your hook entries into the Codex hook config.
 
 **Checks:**
 ```bash

@@ -24,7 +24,7 @@ metadata:
   internal: true
 output_contract: 'stdout: injected knowledge summary'
 ---
-> **DEPRECATED (removal target: v3.0.0)** — Use `ao lookup --query "topic"` for on-demand learnings retrieval and `ao context assemble` for phase-scoped context packets. This skill and the `ao inject` CLI command still work as compatibility adapters, but they are not the canonical context path and are not called from default hooks or other skills.
+> **DEPRECATED (removal target: v3.0.0)** — Use `ao lookup --query "topic"` for on-demand learnings retrieval and phase-scoped context packets. This skill and the `ao inject` CLI command still work as compatibility adapters, but they are not the canonical context path and are not called from default hooks or other skills.
 
 # Inject Skill
 
@@ -40,13 +40,13 @@ Load relevant prior knowledge into the current session as a legacy adapter.
 |---|---|
 | Lease | retire-candidate |
 | Replacement port | `retrieve_context` / `assemble_context` |
-| Replacement adapters | `ao lookup`, `ao context assemble`, knowledge brief artifacts |
+| Replacement adapters | `ao lookup`, knowledge brief artifacts |
 | Current allowed use | manual compatibility lookup only |
 | Not allowed | default startup injection, hidden hook delivery, task planning |
 
 ## How It Works
 
-In the default `manual` startup mode, MEMORY.md is auto-loaded by Claude Code and no startup injection occurs. Prefer `ao lookup` for on-demand retrieval and `ao context assemble` when a phase needs a bounded packet. Use `/inject` or `ao inject` only for legacy compatibility.
+In the default `manual` startup mode, MEMORY.md is auto-loaded by Claude Code and no startup injection occurs. Prefer `ao lookup` for on-demand retrieval and bounded per-phase packets. Use `/inject` or `ao inject` only for legacy compatibility.
 
 In `lean` or `legacy` startup modes (set via `AGENTOPS_STARTUP_CONTEXT_MODE`), the SessionStart hook runs:
 ```bash
