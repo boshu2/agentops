@@ -11,7 +11,7 @@ Three patterns cover the common cases using infrastructure you already have.
 ## Pattern A — GitHub Actions issue creation
 
 Use when: the work is being run inside a GitHub Actions workflow (nightly
-dream cycle, scheduled `ao daemon` run, release proof harness).
+dream cycle, scheduled out-of-session run, release proof harness).
 
 The repo's `.github/workflows/nightly.yml` already does this for the dream-cycle
 proof job — when the run completes, a step opens or updates a GitHub issue
@@ -71,21 +71,26 @@ Trade-off: scoped to the local clone (only fires on the developer / runner
 that ran the commit), but reaches any HTTP endpoint and runs synchronously
 on commit so debugging is easy.
 
-## Pattern C — `ao daemon` log tailing
+## Pattern C — substrate event tailing (Gas City)
 
-Use when: the work runs as a long-lived job inside `ao daemon` (scheduled
-overnight Dream, recurring `ao goals measure`, scheduled wiki forge) and you
-want a downstream consumer to react to specific job events.
+Use when: the work runs unattended out of session on an orchestration
+substrate (the loop dispatched on the Gas City reference City — a scheduled
+Dream Order, a recurring `ao goals measure` Order, a wiki-forge Order) and you
+want a downstream consumer to react to specific job events. AgentOps ships no
+daemon of its own; out-of-session execution is delegated to the substrate (see
+[ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)), and the
+substrate is where the event stream lives.
 
-The daemon writes one JSON line per job event to its log. A consumer process
-(systemd unit, tmux pane, container sidecar) tails the log and forwards the
-events it cares about.
+The substrate writes one JSON line per Order/job event to its event log. A
+consumer process (systemd unit, tmux pane, container sidecar) tails that log
+and forwards the events it cares about.
 
 Skeleton:
 
 ```bash
-# Consumer running alongside the daemon
-tail -F ~/.local/state/agentops/daemon.log \
+# Consumer running alongside the Gas City substrate.
+# Point the tail at your substrate's event log (path varies by deployment).
+tail -F "$GC_EVENT_LOG" \
   | jq -c --unbuffered 'select(.event == "job.completed" and .job.kind == "dream.run")' \
   | while read -r line; do
       url=$(echo "$line" | jq -r '.job.report_url // empty')
@@ -95,9 +100,9 @@ tail -F ~/.local/state/agentops/daemon.log \
     done
 ```
 
-Trade-off: needs a long-running consumer process and the daemon to be running,
-but is the closest analog to a real webhook stream — every job event is
-visible, including failures and partial runs, with no GitHub or commit
+Trade-off: needs a long-running consumer process and the substrate to be
+running, but is the closest analog to a real webhook stream — every job event
+is visible, including failures and partial runs, with no GitHub or commit
 dependency.
 
 ## Decision matrix
@@ -106,7 +111,7 @@ dependency.
 |---|---|
 | Work runs in GitHub Actions; you watch issues | A — GitHub Actions issue creation |
 | Work writes a tracked artifact; you have a chat webhook URL | B — git post-commit → curl |
-| Work runs continuously under `ao daemon`; you want real-time events | C — daemon log tailing |
+| Work runs unattended on the substrate (Gas City); you want real-time events | C — substrate event tailing |
 | You think you need a webhook server | You probably don't — start with A or B; reach for C only if you genuinely need event streaming |
 
 ## What this is NOT

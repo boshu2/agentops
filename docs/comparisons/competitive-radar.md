@@ -43,8 +43,8 @@ them on) and what AgentOps wins on against them. Sourced from the
 
 | Competitor | Lane | What they win on | What AgentOps wins on |
 |------------|------|------------------|------------------------|
-| [obra/superpowers](https://github.com/obra/superpowers) | Methodology | Official Anthropic marketplace placement, ~29K stars, Jesse Vincent brand, TDD red-green-refactor as a sharp methodology hook | Persistent corpus accumulating across sessions; cross-session memory in `.agents/`; multi-model council as a commit gate; off-API daemon on your hardware |
-| [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin) | Methodology | 10-target runtime conversion CLI; configurable per-project reviewer routing; ideation-to-compound surface area; closest philosophical neighbor | Model-independent **per-phase** routing (Claude for discovery, Codex for implementation, fresh Claude for validation, local model for overnight defrag — in one workflow); persistent corpus that lives in your repo, not the tool |
+| [obra/superpowers](https://github.com/obra/superpowers) | Methodology | Official Anthropic marketplace placement, ~29K stars, Jesse Vincent brand, TDD red-green-refactor as a sharp methodology hook | Persistent corpus accumulating across sessions; cross-session memory in `.agents/`; multi-model council as a commit gate; off-API operation on your hardware (in-session loop, with out-of-session dispatch on the Gas City reference City) |
+| [EveryInc/compound-engineering-plugin](https://github.com/EveryInc/compound-engineering-plugin) | Methodology | 10-target runtime conversion CLI; configurable per-project reviewer routing; ideation-to-compound surface area; closest philosophical neighbor | Model-independent **per-phase** routing (Claude for discovery, Codex for implementation, fresh Claude for validation, local model for unattended defrag — in one workflow); persistent corpus that lives in your repo, not the tool |
 | [anthropics/claude-plugins-official](https://github.com/anthropics/claude-plugins-official) | Curation | First-party authority; default discovery channel; "trust before installing" posture | Operates underneath any harness — Claude Code, Codex, Cursor, OpenCode — turning sessions into a context library you own. AgentOps is not a coding harness; it sits on top of whichever harness you already use |
 | [jeremylongshore/claude-code-plugins-plus-skills](https://github.com/jeremylongshore/claude-code-plugins-plus-skills) | Volume marketplace | 425 plugins / 2,810 skills inventory; CCPI package manager; sponsored placement; daily download metrics | Compounding context vs. static inventory: skills don't accumulate, a wiki does. AgentOps ships a bookkeeping schema that grows; volume marketplaces ship an inventory that doesn't |
 | [alirezarezvani/claude-skills](https://github.com/alirezarezvani/claude-skills) | Volume + breadth | ~5,200+ stars; 235 skills × 12 platforms; 305 stdlib Python tools; multi-domain coverage (engineering + marketing + compliance) | Same persistent-corpus argument plus model-independent phase routing inside one session — breadth of skills doesn't replace cross-session memory |
@@ -118,13 +118,17 @@ discipline that turns sessions into a wiki. Receipts: as of 2026-05-04, this
 repo's `.agents/` contained ~1,842 learnings, ~186 patterns, ~80 planning
 rules, and ~3,867 cited decisions captured by the system on itself.
 
-### 2. Off-API daemon
+### 2. Off-API, off-vendor operation
 
-`ao schedule` + `ao daemon` runs dream / evolve / compile / defrag / forge
-overnight, off-vendor, on your hardware, against your subscription. All seven
-competitors are in-session plugins. The daemon is the structural answer to
-"what if a frontier vendor ships native equivalents in 12 months" — your
-corpus and your scheduler keep running regardless.
+The whole loop — dream / evolve / compile / defrag / forge — runs in session
+on your hardware, against your subscription, off any vendor's API. To run it
+unattended, dispatch it on the Gas City reference City (a long-lived mayor
+agent slings beads to refinery workers that run `ao rpi`); AgentOps ships no
+daemon or scheduler of its own (see [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)).
+All seven competitors are in-session plugins with no off-vendor out-of-session
+story. Off-API operation is the structural answer to "what if a frontier
+vendor ships native equivalents in 12 months" — your corpus and your loop keep
+running regardless.
 
 ### 3. Multi-model council
 
@@ -136,7 +140,7 @@ multi-model commit gate is the strongest validation primitive in the set.
 ### 4. Model-independent phase routing
 
 Pick Claude for ideation, Codex for validation, an open-weights local model
-for overnight defrag — *per phase, in one workflow,* with state preserved
+for unattended defrag — *per phase, in one workflow,* with state preserved
 across the boundaries. Cross-harness *distribution* (everything-claude-code,
 Compound Engineer's 10-target conversion) is multi-runtime spread of one
 workflow shape; per-phase routing is mixing models inside one workflow.
@@ -149,8 +153,9 @@ AgentOps owns "wiki for agents" + "context library" + "context compiler"
 table (source code → context, SDLC → CDLC, libraries → context libraries,
 compilers → context compilers, code review → multi-model councils, CI/CD →
 validation gates, postmortems → automated postmortems, runbooks → skills +
-planning rules, software factories → software factory daemon, Markdown/Git
-/Linux → LLM Wiki of Markdown, open-source corpus → your private corpus).
+planning rules, software factories → the in-session operating loop (with an
+orchestration substrate for out-of-session runs), Markdown/Git/Linux → LLM
+Wiki of Markdown, open-source corpus → your private corpus).
 Vocabulary ownership is durable; Superpowers owns "TDD," AgentOps can own
 "context engineering."
 

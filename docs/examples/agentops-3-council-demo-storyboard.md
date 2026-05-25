@@ -9,8 +9,9 @@ AgentOps makes agents work like a disciplined engineering team.
 
 In the demo, the operator gives Claude and Codex the same domain/practice
 packet. They judge the same product/design/engineering decision, produce one
-verdict artifact, and turn that verdict into tracked work. The daemon appears
-only after first trust, as the second-stage compounding lane.
+verdict artifact, and turn that verdict into tracked work. Out-of-session
+automation (the loop dispatched on the Gas City reference City) appears only
+after first trust, as the second-stage compounding lane.
 
 ## Repo, Task, And Setup
 
@@ -20,7 +21,7 @@ only after first trust, as the second-stage compounding lane.
 | Demo branch | Any clean 3.0 worktree rebased on current `main` |
 | Demo profile | `product-council` from `docs/activation-profiles.md` |
 | Domain packet | `docs/examples/agentops-3-domain-practice-packet.md` |
-| Decision | Should the 3.0 launch demo lead with council-first engineering judgment instead of daemon-first automation? |
+| Decision | Should the 3.0 launch demo lead with council-first engineering judgment instead of automation-first out-of-session orchestration? |
 | Target issue | `soc-m6v5.9.7.8` after packet/profile/storyboard work closes |
 
 Pre-flight:
@@ -42,7 +43,7 @@ Screen setup:
 
 Show the problem without AgentOps:
 
-1. One agent says "lead with daemon because automation is differentiated."
+1. One agent says "lead with out-of-session automation because it is differentiated."
 2. Another agent says "lead with council because it is easier to understand."
 3. Neither answer cites product posture, goals, evidence rules, or release
    constraints.
@@ -108,13 +109,13 @@ Narration:
 Primary command:
 
 ```text
-/council --mixed validate "Given docs/examples/agentops-3-domain-practice-packet.md, should the AgentOps 3.0 launch demo lead with council-first engineering judgment instead of daemon-first automation?"
+/council --mixed validate "Given docs/examples/agentops-3-domain-practice-packet.md, should the AgentOps 3.0 launch demo lead with council-first engineering judgment instead of automation-first out-of-session orchestration?"
 ```
 
 Fallback command:
 
 ```text
-/council --quick validate "Given docs/examples/agentops-3-domain-practice-packet.md, should the AgentOps 3.0 launch demo lead with council-first engineering judgment instead of daemon-first automation?"
+/council --quick validate "Given docs/examples/agentops-3-domain-practice-packet.md, should the AgentOps 3.0 launch demo lead with council-first engineering judgment instead of automation-first out-of-session orchestration?"
 ```
 
 The fallback is acceptable for docs or offline recording only. A public
@@ -130,7 +131,7 @@ The demo should not require a predetermined PASS. The expected shape is:
 | Claude engineering-practice judge | The packet encodes DDD/TDD/BDD/release discipline into the decision context. |
 | Codex implementation judge | The demo is feasible with existing `ao context`, `/council`, bd, and `.agents` surfaces. |
 | Codex release-risk judge | WARN unless public copy avoids PMF/productivity claims without exported evidence. |
-| Consolidated verdict | PASS or WARN: lead with council-first, keep daemon as second-stage, and gate launch claims on exported evidence. |
+| Consolidated verdict | PASS or WARN: lead with council-first, keep out-of-session automation as second-stage, and gate launch claims on exported evidence. |
 
 Expected artifact:
 
@@ -168,19 +169,26 @@ Narration:
 
 ## Act 5: Show The Deeper Automation Lane
 
-Only after the verdict:
+Only after the verdict, show how the same loop runs out of session on the Gas
+City reference City. AgentOps ships no daemon or scheduler of its own (see
+[ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)); out-of-session
+execution is delegated to a substrate, and the loop is dispatched as one
+invocable unit:
 
 ```bash
-ao init --with-schedule
-ao daemon run --schedule-file .agents/schedule.yaml
-ao schedule list
+# In the reference City, a long-lived mayor agent slings the next ready bead
+# to a refinery worker, which runs the loop:
+ao rpi soc-m6v5.9.7.8
+# Scheduled maintenance (ao compile, ao maturity --scan) runs as Gas City
+# cron Orders. See docs/dependencies.md and the using-gc skill.
 ```
 
 Narration:
 
 > Once you trust the packet, verdict, and evidence trail, the same operating
-> layer can run on a schedule. That is the factory lane, not the first thing you
-> need to understand.
+> layer can run unattended out of session — dispatched on the Gas City
+> reference City, not an AgentOps daemon. That is the orchestration lane, not
+> the first thing you need to understand.
 
 ## Engineering Practice On Screen
 
@@ -220,7 +228,7 @@ Do not use:
 | 3:15 | Run `/council --mixed`. |
 | 5:00 | Inspect the verdict artifact. |
 | 6:00 | Show the verdict becoming bd work. |
-| 7:00 | Show schedule/Dream as second-stage automation. |
+| 7:00 | Show out-of-session dispatch on Gas City / Dream as second-stage automation. |
 | 8:00 | Close with the install or gist CTA. |
 
 ## PMF Evidence Fields
@@ -243,5 +251,5 @@ This storyboard is ready for the `ao demo` rebuild when:
 - The packet path is stable.
 - `product-council` is the named first-value profile.
 - The expected verdict shape is accepted.
-- The daemon lane is second-stage.
+- The out-of-session (Gas City) lane is second-stage.
 - Claim boundaries are copied into README/docs/demo work.
