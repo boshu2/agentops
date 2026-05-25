@@ -143,6 +143,9 @@ jobs:
 - name: validate-context-map-drift
   reason: '`scripts/validate-context-map-drift.sh` regenerates `docs/contracts/context-map.md` via `scripts/generate-context-map.sh` and fails on any diff against the committed copy. Restores the original file on exit so working trees stay clean. Per DDD+Hexagonal plan Issue #5 (Fix 3)'
   failure: SKILL.md `hexagonal_role`/`consumes`/`produces`/`context_rel` frontmatter changed without regenerating `docs/contracts/context-map.md`
+- name: validate-sku-catalog-drift
+  reason: 'ag-cbm: `scripts/validate-sku-catalog-drift.sh` regenerates the SKU capability catalog (`registry.json` schema_version 2) and enforces three checks — drift (regenerate + diff vs committed), linkage integrity (every `drives_commands` edge resolves to a real `ao` command), and coverage (every BC1-BC5 + every operating-loop move has an active skill)'
+  failure: SKILL.md frontmatter/body or the CLI surface changed without regenerating `registry.json` via `scripts/generate-sku-catalog.sh`; or a `drives_commands` edge points at a non-existent command
 - name: validate-docs-learning-references
   reason: 'soc-w6vh.5.1 gate: `scripts/check-docs-learning-references.sh` enforces that `docs/plans/` and `docs/learnings/` references to `.agents/learnings/YYYY-MM-DD-*.md` paths have a `docs/learnings/<basename>.md` durable mirror OR an explicit `(local-only)` / `(documentary)` / `(template)` annotation'
   failure: A docs/plans or docs/learnings document cites a specific dated `.agents/learnings/` file without exporting the rationale to `docs/learnings/` or marking the reference exempt

@@ -1,13 +1,14 @@
 {
-  "schema_version": 1,
-  "generated_at": "2026-05-24T23:22:17Z",
+  "schema_version": 2,
+  "generated_at": "2026-05-25T00:30:04Z",
   "summary": {
     "skills": 81,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 163
+    "cli_commands": 66,
+    "capabilities": 214
   },
   "surfaces": {
     "skills": [
@@ -772,659 +773,4554 @@
     ],
     "cli_commands": [
       {
-        "name": "agents",
-        "path": "cli/cmd/ao/agents.go"
-      },
-      {
-        "name": "agents_doctor",
-        "path": "cli/cmd/ao/agents_doctor.go"
-      },
-      {
-        "name": "agents_lint",
-        "path": "cli/cmd/ao/agents_lint.go"
-      },
-      {
-        "name": "autodev",
-        "path": "cli/cmd/ao/autodev.go"
-      },
-      {
-        "name": "badge",
-        "path": "cli/cmd/ao/badge.go"
-      },
-      {
-        "name": "batch_forge",
-        "path": "cli/cmd/ao/batch_forge.go"
-      },
-      {
-        "name": "batch_promote",
-        "path": "cli/cmd/ao/batch_promote.go"
-      },
-      {
-        "name": "beads",
-        "path": "cli/cmd/ao/beads.go"
-      },
-      {
-        "name": "beads_audit_cluster",
-        "path": "cli/cmd/ao/beads_audit_cluster.go"
-      },
-      {
-        "name": "beads_resume",
-        "path": "cli/cmd/ao/beads_resume.go"
-      },
-      {
-        "name": "beads_stale",
-        "path": "cli/cmd/ao/beads_stale.go"
-      },
-      {
-        "name": "capabilities",
-        "path": "cli/cmd/ao/capabilities.go"
-      },
-      {
-        "name": "ci",
-        "path": "cli/cmd/ao/ci.go"
-      },
-      {
-        "name": "citation_cmd",
-        "path": "cli/cmd/ao/citation_cmd.go"
-      },
-      {
-        "name": "claim_cmd",
-        "path": "cli/cmd/ao/claim_cmd.go"
-      },
-      {
-        "name": "codex",
-        "path": "cli/cmd/ao/codex.go"
-      },
-      {
-        "name": "compile",
-        "path": "cli/cmd/ao/compile.go"
-      },
-      {
-        "name": "completion",
-        "path": "cli/cmd/ao/completion.go"
-      },
-      {
-        "name": "completion_values",
-        "path": "cli/cmd/ao/completion_values.go"
-      },
-      {
-        "name": "config",
-        "path": "cli/cmd/ao/config.go"
-      },
-      {
-        "name": "constraint",
-        "path": "cli/cmd/ao/constraint.go"
-      },
-      {
-        "name": "context",
-        "path": "cli/cmd/ao/context.go"
-      },
-      {
-        "name": "context_assemble",
-        "path": "cli/cmd/ao/context_assemble.go"
-      },
-      {
-        "name": "context_explain",
-        "path": "cli/cmd/ao/context_explain.go"
-      },
-      {
-        "name": "context_packet",
-        "path": "cli/cmd/ao/context_packet.go"
-      },
-      {
-        "name": "context_packet_status",
-        "path": "cli/cmd/ao/context_packet_status.go"
-      },
-      {
-        "name": "contradict",
-        "path": "cli/cmd/ao/contradict.go"
-      },
-      {
-        "name": "corpus",
-        "path": "cli/cmd/ao/corpus.go"
-      },
-      {
-        "name": "corpus_capture",
-        "path": "cli/cmd/ao/corpus_capture.go"
-      },
-      {
-        "name": "corpus_inject",
-        "path": "cli/cmd/ao/corpus_inject.go"
-      },
-      {
-        "name": "corpus_snapshot",
-        "path": "cli/cmd/ao/corpus_snapshot.go"
-      },
-      {
-        "name": "cron_self_adjust",
-        "path": "cli/cmd/ao/cron_self_adjust.go"
-      },
-      {
-        "name": "curate",
-        "path": "cli/cmd/ao/curate.go"
-      },
-      {
-        "name": "dedup",
-        "path": "cli/cmd/ao/dedup.go"
-      },
-      {
-        "name": "defrag",
-        "path": "cli/cmd/ao/defrag.go"
-      },
-      {
-        "name": "demo",
-        "path": "cli/cmd/ao/demo.go"
-      },
-      {
-        "name": "doctor",
-        "path": "cli/cmd/ao/doctor.go"
-      },
-      {
-        "name": "doctor_surface",
-        "path": "cli/cmd/ao/doctor_surface.go"
-      },
-      {
-        "name": "eval",
-        "path": "cli/cmd/ao/eval.go"
-      },
-      {
-        "name": "eval_cleanup",
-        "path": "cli/cmd/ao/eval_cleanup.go"
-      },
-      {
-        "name": "eval_suite",
-        "path": "cli/cmd/ao/eval_suite.go"
-      },
-      {
-        "name": "eval_task",
-        "path": "cli/cmd/ao/eval_task.go"
-      },
-      {
-        "name": "evolve",
-        "path": "cli/cmd/ao/evolve.go"
-      },
-      {
-        "name": "evolve_blocked",
-        "path": "cli/cmd/ao/evolve_blocked.go"
-      },
-      {
-        "name": "evolve_config",
-        "path": "cli/cmd/ao/evolve_config.go"
-      },
-      {
-        "name": "evolve_next_work",
-        "path": "cli/cmd/ao/evolve_next_work.go"
-      },
-      {
-        "name": "evolve_write_stop_marker",
-        "path": "cli/cmd/ao/evolve_write_stop_marker.go"
-      },
-      {
-        "name": "extract",
-        "path": "cli/cmd/ao/extract.go"
-      },
-      {
-        "name": "feedback",
-        "path": "cli/cmd/ao/feedback.go"
-      },
-      {
-        "name": "feedback_loop",
-        "path": "cli/cmd/ao/feedback_loop.go"
-      },
-      {
-        "name": "findings",
-        "path": "cli/cmd/ao/findings.go"
-      },
-      {
-        "name": "flag_suggest",
-        "path": "cli/cmd/ao/flag_suggest.go"
-      },
-      {
-        "name": "flywheel_close_loop",
-        "path": "cli/cmd/ao/flywheel_close_loop.go"
-      },
-      {
-        "name": "flywheel_gate",
-        "path": "cli/cmd/ao/flywheel_gate.go"
-      },
-      {
-        "name": "forge",
-        "path": "cli/cmd/ao/forge.go"
-      },
-      {
-        "name": "gate",
-        "path": "cli/cmd/ao/gate.go"
-      },
-      {
-        "name": "gate_cmd",
-        "path": "cli/cmd/ao/gate_cmd.go"
-      },
-      {
-        "name": "goals_add",
-        "path": "cli/cmd/ao/goals_add.go"
-      },
-      {
-        "name": "goals_drift",
-        "path": "cli/cmd/ao/goals_drift.go"
-      },
-      {
-        "name": "goals_export",
-        "path": "cli/cmd/ao/goals_export.go"
-      },
-      {
-        "name": "goals_history",
-        "path": "cli/cmd/ao/goals_history.go"
-      },
-      {
-        "name": "goals_init",
-        "path": "cli/cmd/ao/goals_init.go"
-      },
-      {
-        "name": "goals_measure",
-        "path": "cli/cmd/ao/goals_measure.go"
-      },
-      {
-        "name": "goals_meta",
-        "path": "cli/cmd/ao/goals_meta.go"
-      },
-      {
-        "name": "goals_migrate",
-        "path": "cli/cmd/ao/goals_migrate.go"
-      },
-      {
-        "name": "goals_prune",
-        "path": "cli/cmd/ao/goals_prune.go"
-      },
-      {
-        "name": "goals_render",
-        "path": "cli/cmd/ao/goals_render.go"
-      },
-      {
-        "name": "goals_scenarios",
-        "path": "cli/cmd/ao/goals_scenarios.go"
-      },
-      {
-        "name": "goals_steer",
-        "path": "cli/cmd/ao/goals_steer.go"
-      },
-      {
-        "name": "goals_steer_auto",
-        "path": "cli/cmd/ao/goals_steer_auto.go"
-      },
-      {
-        "name": "goals_trace",
-        "path": "cli/cmd/ao/goals_trace.go"
-      },
-      {
-        "name": "goals_trace_orphans",
-        "path": "cli/cmd/ao/goals_trace_orphans.go"
-      },
-      {
-        "name": "goals_validate",
-        "path": "cli/cmd/ao/goals_validate.go"
-      },
-      {
-        "name": "group_json",
-        "path": "cli/cmd/ao/group_json.go"
-      },
-      {
-        "name": "handoff",
-        "path": "cli/cmd/ao/handoff.go"
-      },
-      {
-        "name": "harness_cmd",
-        "path": "cli/cmd/ao/harness_cmd.go"
-      },
-      {
-        "name": "harvest",
-        "path": "cli/cmd/ao/harvest.go"
-      },
-      {
-        "name": "index",
-        "path": "cli/cmd/ao/index.go"
-      },
-      {
-        "name": "init",
-        "path": "cli/cmd/ao/init.go"
-      },
-      {
-        "name": "inject",
-        "path": "cli/cmd/ao/inject.go"
-      },
-      {
-        "name": "knowledge",
-        "path": "cli/cmd/ao/knowledge.go"
-      },
-      {
-        "name": "lookup",
-        "path": "cli/cmd/ao/lookup.go"
-      },
-      {
-        "name": "loop",
-        "path": "cli/cmd/ao/loop.go"
-      },
-      {
-        "name": "loop_append",
-        "path": "cli/cmd/ao/loop_append.go"
-      },
-      {
-        "name": "loop_converged",
-        "path": "cli/cmd/ao/loop_converged.go"
-      },
-      {
-        "name": "loop_hypothesis",
-        "path": "cli/cmd/ao/loop_hypothesis.go"
-      },
-      {
-        "name": "maturity",
-        "path": "cli/cmd/ao/maturity.go"
-      },
-      {
-        "name": "memory",
-        "path": "cli/cmd/ao/memory.go"
-      },
-      {
-        "name": "metrics_baseline",
-        "path": "cli/cmd/ao/metrics_baseline.go"
-      },
-      {
-        "name": "metrics_cite",
-        "path": "cli/cmd/ao/metrics_cite.go"
-      },
-      {
-        "name": "metrics_cite_report",
-        "path": "cli/cmd/ao/metrics_cite_report.go"
-      },
-      {
-        "name": "metrics_flywheel",
-        "path": "cli/cmd/ao/metrics_flywheel.go"
-      },
-      {
-        "name": "metrics_health",
-        "path": "cli/cmd/ao/metrics_health.go"
-      },
-      {
-        "name": "metrics_nudge",
-        "path": "cli/cmd/ao/metrics_nudge.go"
-      },
-      {
-        "name": "metrics_report",
-        "path": "cli/cmd/ao/metrics_report.go"
-      },
-      {
-        "name": "mind",
-        "path": "cli/cmd/ao/mind.go"
-      },
-      {
-        "name": "mine",
-        "path": "cli/cmd/ao/mine.go"
-      },
-      {
-        "name": "notebook",
-        "path": "cli/cmd/ao/notebook.go"
-      },
-      {
-        "name": "operator_cmd",
-        "path": "cli/cmd/ao/operator_cmd.go"
-      },
-      {
-        "name": "patterns_repair",
-        "path": "cli/cmd/ao/patterns_repair.go"
-      },
-      {
-        "name": "pool",
-        "path": "cli/cmd/ao/pool.go"
-      },
-      {
-        "name": "pool_ingest",
-        "path": "cli/cmd/ao/pool_ingest.go"
-      },
-      {
-        "name": "pool_migrate_legacy",
-        "path": "cli/cmd/ao/pool_migrate_legacy.go"
-      },
-      {
-        "name": "pool_reindex",
-        "path": "cli/cmd/ao/pool_reindex.go"
-      },
-      {
-        "name": "promotion_helpers",
-        "path": "cli/cmd/ao/promotion_helpers.go"
-      },
-      {
-        "name": "quickstart",
-        "path": "cli/cmd/ao/quickstart.go"
-      },
-      {
-        "name": "ratchet_check",
-        "path": "cli/cmd/ao/ratchet_check.go"
-      },
-      {
-        "name": "ratchet_find",
-        "path": "cli/cmd/ao/ratchet_find.go"
-      },
-      {
-        "name": "ratchet_migrate",
-        "path": "cli/cmd/ao/ratchet_migrate.go"
-      },
-      {
-        "name": "ratchet_next",
-        "path": "cli/cmd/ao/ratchet_next.go"
-      },
-      {
-        "name": "ratchet_promote",
-        "path": "cli/cmd/ao/ratchet_promote.go"
-      },
-      {
-        "name": "ratchet_record",
-        "path": "cli/cmd/ao/ratchet_record.go"
-      },
-      {
-        "name": "ratchet_skip",
-        "path": "cli/cmd/ao/ratchet_skip.go"
-      },
-      {
-        "name": "ratchet_spec",
-        "path": "cli/cmd/ao/ratchet_spec.go"
-      },
-      {
-        "name": "ratchet_status",
-        "path": "cli/cmd/ao/ratchet_status.go"
-      },
-      {
-        "name": "ratchet_trace",
-        "path": "cli/cmd/ao/ratchet_trace.go"
-      },
-      {
-        "name": "ratchet_validate",
-        "path": "cli/cmd/ao/ratchet_validate.go"
-      },
-      {
-        "name": "registry",
-        "path": "cli/cmd/ao/registry.go"
-      },
-      {
-        "name": "retrieval_bench",
-        "path": "cli/cmd/ao/retrieval_bench.go"
-      },
-      {
-        "name": "robot_docs",
-        "path": "cli/cmd/ao/robot_docs.go"
-      },
-      {
-        "name": "root",
-        "path": "cli/cmd/ao/root.go"
-      },
-      {
-        "name": "rpi",
-        "path": "cli/cmd/ao/rpi.go"
-      },
-      {
-        "name": "rpi_c2_commands",
-        "path": "cli/cmd/ao/rpi_c2_commands.go"
-      },
-      {
-        "name": "rpi_cancel",
-        "path": "cli/cmd/ao/rpi_cancel.go"
-      },
-      {
-        "name": "rpi_cleanup",
-        "path": "cli/cmd/ao/rpi_cleanup.go"
-      },
-      {
-        "name": "rpi_loop",
-        "path": "cli/cmd/ao/rpi_loop.go"
-      },
-      {
-        "name": "rpi_loop_supervisor",
-        "path": "cli/cmd/ao/rpi_loop_supervisor.go"
-      },
-      {
-        "name": "rpi_mark_probed",
-        "path": "cli/cmd/ao/rpi_mark_probed.go"
-      },
-      {
-        "name": "rpi_nudge",
-        "path": "cli/cmd/ao/rpi_nudge.go"
-      },
-      {
-        "name": "rpi_parallel",
-        "path": "cli/cmd/ao/rpi_parallel.go"
-      },
-      {
-        "name": "rpi_phased",
-        "path": "cli/cmd/ao/rpi_phased.go"
-      },
-      {
-        "name": "rpi_phased_context",
-        "path": "cli/cmd/ao/rpi_phased_context.go"
-      },
-      {
-        "name": "rpi_phased_discovery",
-        "path": "cli/cmd/ao/rpi_phased_discovery.go"
-      },
-      {
-        "name": "rpi_phased_processing",
-        "path": "cli/cmd/ao/rpi_phased_processing.go"
-      },
-      {
-        "name": "rpi_phased_setup",
-        "path": "cli/cmd/ao/rpi_phased_setup.go"
-      },
-      {
-        "name": "rpi_phased_stream",
-        "path": "cli/cmd/ao/rpi_phased_stream.go"
-      },
-      {
-        "name": "rpi_serve",
-        "path": "cli/cmd/ao/rpi_serve.go"
-      },
-      {
-        "name": "rpi_status",
-        "path": "cli/cmd/ao/rpi_status.go"
-      },
-      {
-        "name": "rpi_stream",
-        "path": "cli/cmd/ao/rpi_stream.go"
-      },
-      {
-        "name": "rpi_verify",
-        "path": "cli/cmd/ao/rpi_verify.go"
-      },
-      {
-        "name": "scenario_add",
-        "path": "cli/cmd/ao/scenario_add.go"
-      },
-      {
-        "name": "scenario_init",
-        "path": "cli/cmd/ao/scenario_init.go"
-      },
-      {
-        "name": "scenario_list",
-        "path": "cli/cmd/ao/scenario_list.go"
-      },
-      {
-        "name": "scenario_validate",
-        "path": "cli/cmd/ao/scenario_validate.go"
-      },
-      {
-        "name": "scope",
-        "path": "cli/cmd/ao/scope.go"
-      },
-      {
-        "name": "search",
-        "path": "cli/cmd/ao/search.go"
-      },
-      {
-        "name": "seed",
-        "path": "cli/cmd/ao/seed.go"
-      },
-      {
-        "name": "session_bootstrap",
-        "path": "cli/cmd/ao/session_bootstrap.go"
-      },
-      {
-        "name": "session_close",
-        "path": "cli/cmd/ao/session_close.go"
-      },
-      {
-        "name": "session_outcome",
-        "path": "cli/cmd/ao/session_outcome.go"
-      },
-      {
-        "name": "session_spawn",
-        "path": "cli/cmd/ao/session_spawn.go"
-      },
-      {
-        "name": "sessions",
-        "path": "cli/cmd/ao/sessions.go"
-      },
-      {
-        "name": "skills",
-        "path": "cli/cmd/ao/skills.go"
-      },
-      {
-        "name": "status",
-        "path": "cli/cmd/ao/status.go"
-      },
-      {
-        "name": "store",
-        "path": "cli/cmd/ao/store.go"
-      },
-      {
-        "name": "task_sync",
-        "path": "cli/cmd/ao/task_sync.go"
-      },
-      {
-        "name": "temper",
-        "path": "cli/cmd/ao/temper.go"
-      },
-      {
-        "name": "trace",
-        "path": "cli/cmd/ao/trace.go"
-      },
-      {
-        "name": "validate",
-        "path": "cli/cmd/ao/validate.go"
-      },
-      {
-        "name": "version",
-        "path": "cli/cmd/ao/version.go"
-      },
-      {
-        "name": "vibe_check",
-        "path": "cli/cmd/ao/vibe_check.go"
-      },
-      {
-        "name": "wiki",
-        "path": "cli/cmd/ao/wiki.go"
-      },
-      {
-        "name": "worktree",
-        "path": "cli/cmd/ao/worktree.go"
+        "name": "ao agents",
+        "path": "cli/cmd/ao/",
+        "purpose": "Inspect and manage .agents/ contracts and surfaces",
+        "bounded_context": "BC4",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao anti-patterns",
+        "path": "cli/cmd/ao/",
+        "purpose": "List learnings marked as anti-patterns",
+        "bounded_context": "BC2",
+        "driven_by_skills": [
+          "flywheel"
+        ]
+      },
+      {
+        "name": "ao autodev",
+        "path": "cli/cmd/ao/",
+        "purpose": "Manage the PROGRAM.md operational contract for autonomous development",
+        "bounded_context": "BC3",
+        "driven_by_skills": [
+          "autodev"
+        ]
+      },
+      {
+        "name": "ao badge",
+        "path": "cli/cmd/ao/",
+        "purpose": "Display knowledge flywheel health badge",
+        "bounded_context": "BC2",
+        "driven_by_skills": [
+          "flywheel",
+          "status"
+        ]
+      },
+      {
+        "name": "ao beads",
+        "path": "cli/cmd/ao/",
+        "purpose": "Complementary tooling for the bd (beads) issue tracker",
+        "bounded_context": "BC3",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao capabilities",
+        "path": "cli/cmd/ao/",
+        "purpose": "Print the machine-readable CLI contract (JSON)",
+        "bounded_context": "BC5",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao ci",
+        "path": "cli/cmd/ao/",
+        "purpose": "BC2 CI status operations (latest run by SHA, recent runs)",
+        "bounded_context": "BC2",
+        "driven_by_skills": [
+          "standards"
+        ]
+      },
+      {
+        "name": "ao citation",
+        "path": "cli/cmd/ao/",
+        "purpose": "BC1 CitationPort operations (verify file/function/symbol citations)",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao claim",
+        "path": "cli/cmd/ao/",
+        "purpose": "BC2 ClaimEvidenceBinderPort operations (bind/list claim-evidence)",
+        "bounded_context": "BC3",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao codex",
+        "path": "cli/cmd/ao/",
+        "purpose": "Codex lifecycle commands (fallback for pre-v0.115.0; native hooks preferred)",
+        "bounded_context": "BC5",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao compile",
+        "path": "cli/cmd/ao/",
+        "purpose": "Compile .agents knowledge into an interlinked wiki",
+        "bounded_context": "BC1",
+        "driven_by_skills": [
+          "compile",
+          "domain",
+          "using-gc"
+        ]
+      },
+      {
+        "name": "ao config",
+        "path": "cli/cmd/ao/",
+        "purpose": "Manage configuration",
+        "bounded_context": "BC4",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao constraint",
+        "path": "cli/cmd/ao/",
+        "purpose": "Manage compiled constraints",
+        "bounded_context": "BC2",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao contradict",
+        "path": "cli/cmd/ao/",
+        "purpose": "Detect potentially contradictory learnings",
+        "bounded_context": "BC1",
+        "driven_by_skills": [
+          "compile",
+          "flywheel"
+        ]
+      },
+      {
+        "name": "ao corpus",
+        "path": "cli/cmd/ao/",
+        "purpose": "Corpus-quality probes for Dream and the knowledge flywheel",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao cron",
+        "path": "cli/cmd/ao/",
+        "purpose": "Cron-fire loop helpers (used by /evolve --mode=loop)",
+        "bounded_context": "BC3",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao curate",
+        "path": "cli/cmd/ao/",
+        "purpose": "Curation pipeline operations",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao dedup",
+        "path": "cli/cmd/ao/",
+        "purpose": "Detect near-duplicate learnings",
+        "bounded_context": "BC1",
+        "driven_by_skills": [
+          "compile",
+          "flywheel",
+          "harvest"
+        ]
+      },
+      {
+        "name": "ao defrag",
+        "path": "cli/cmd/ao/",
+        "purpose": "Prune and deduplicate .agents/ learning artifacts",
+        "bounded_context": "BC1",
+        "driven_by_skills": [
+          "compile",
+          "crank",
+          "evolve",
+          "harvest",
+          "validation"
+        ]
+      },
+      {
+        "name": "ao demo",
+        "path": "cli/cmd/ao/",
+        "purpose": "Show the council-first AgentOps 3.0 value path",
+        "bounded_context": "BC3",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao doctor",
+        "path": "cli/cmd/ao/",
+        "purpose": "Check AgentOps health",
+        "bounded_context": "BC4",
+        "driven_by_skills": [
+          "validate"
+        ]
+      },
+      {
+        "name": "ao eval",
+        "path": "cli/cmd/ao/",
+        "purpose": "Run deterministic local evaluation suites",
+        "bounded_context": "BC2",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao evolve",
+        "path": "cli/cmd/ao/",
+        "purpose": "Run the autonomous code-improvement loop",
+        "bounded_context": "BC3",
+        "driven_by_skills": [
+          "autodev",
+          "evolve",
+          "shared",
+          "using-agentops",
+          "using-gc"
+        ]
+      },
+      {
+        "name": "ao extract",
+        "path": "cli/cmd/ao/",
+        "purpose": "Process pending learning extractions",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao feedback-loop",
+        "path": "cli/cmd/ao/",
+        "purpose": "Close the MemRL feedback loop for a session",
+        "bounded_context": "BC5",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao findings",
+        "path": "cli/cmd/ao/",
+        "purpose": "Manage promoted findings",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao flywheel",
+        "path": "cli/cmd/ao/",
+        "purpose": "Knowledge flywheel operations",
+        "bounded_context": "BC1",
+        "driven_by_skills": [
+          "flywheel"
+        ]
+      },
+      {
+        "name": "ao forge",
+        "path": "cli/cmd/ao/",
+        "purpose": "Extract knowledge from sources",
+        "bounded_context": "BC1",
+        "driven_by_skills": [
+          "post-mortem",
+          "validation"
+        ]
+      },
+      {
+        "name": "ao gate",
+        "path": "cli/cmd/ao/",
+        "purpose": "Human review gates",
+        "bounded_context": "BC2",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao goals",
+        "path": "cli/cmd/ao/",
+        "purpose": "Fitness goal measurement and validation",
+        "bounded_context": "BC3",
+        "driven_by_skills": [
+          "dream",
+          "evolve",
+          "goals",
+          "post-mortem",
+          "release",
+          "scaffold",
+          "scenario",
+          "validate"
+        ]
+      },
+      {
+        "name": "ao handoff",
+        "path": "cli/cmd/ao/",
+        "purpose": "Write a structured handoff artifact for session boundary isolation",
+        "bounded_context": "BC1",
+        "driven_by_skills": [
+          "crank"
+        ]
+      },
+      {
+        "name": "ao harness",
+        "path": "cli/cmd/ao/",
+        "purpose": "BC5 HarnessPort operations (sync state across skill harnesses)",
+        "bounded_context": "BC5",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao harvest",
+        "path": "cli/cmd/ao/",
+        "purpose": "Sweep all rigs, extract and deduplicate cross-rig knowledge",
+        "bounded_context": "BC1",
+        "driven_by_skills": [
+          "flywheel",
+          "harvest"
+        ]
+      },
+      {
+        "name": "ao init",
+        "path": "cli/cmd/ao/",
+        "purpose": "Initialize AgentOps in the current repository",
+        "bounded_context": "BC4",
+        "driven_by_skills": [
+          "quickstart"
+        ]
+      },
+      {
+        "name": "ao inject",
+        "path": "cli/cmd/ao/",
+        "purpose": "Output relevant knowledge for explicit or JIT injection",
+        "bounded_context": "BC1",
+        "driven_by_skills": [
+          "domain",
+          "harvest",
+          "inject",
+          "using-agentops",
+          "using-gc"
+        ]
+      },
+      {
+        "name": "ao knowledge",
+        "path": "cli/cmd/ao/",
+        "purpose": "Operationalize a mature .agents corpus into reusable operator surfaces",
+        "bounded_context": "BC1",
+        "driven_by_skills": [
+          "knowledge-activation"
+        ]
+      },
+      {
+        "name": "ao lookup",
+        "path": "cli/cmd/ao/",
+        "purpose": "Retrieve specific knowledge artifacts by ID or query",
+        "bounded_context": "BC1",
+        "driven_by_skills": [
+          "bug-hunt",
+          "crank",
+          "discovery",
+          "evolve",
+          "flywheel",
+          "hooks-authoring",
+          "implement",
+          "inject",
+          "plan",
+          "pre-mortem",
+          "recover",
+          "review",
+          "using-agentops",
+          "validation",
+          "vibe"
+        ]
+      },
+      {
+        "name": "ao loop",
+        "path": "cli/cmd/ao/",
+        "purpose": "BC3 Loop operations (cycle history, etc.)",
+        "bounded_context": "BC3",
+        "driven_by_skills": [
+          "standards"
+        ]
+      },
+      {
+        "name": "ao maturity",
+        "path": "cli/cmd/ao/",
+        "purpose": "Check and manage learning maturity levels",
+        "bounded_context": "BC1",
+        "driven_by_skills": [
+          "domain",
+          "flywheel",
+          "using-gc"
+        ]
+      },
+      {
+        "name": "ao memory",
+        "path": "cli/cmd/ao/",
+        "purpose": "Manage repo-root MEMORY.md for cross-runtime access",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao metrics",
+        "path": "cli/cmd/ao/",
+        "purpose": "Knowledge flywheel metrics",
+        "bounded_context": "BC2",
+        "driven_by_skills": [
+          "crank",
+          "flywheel",
+          "harvest",
+          "quickstart",
+          "status"
+        ]
+      },
+      {
+        "name": "ao mind",
+        "path": "cli/cmd/ao/",
+        "purpose": "Knowledge graph operations",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao mine",
+        "path": "cli/cmd/ao/",
+        "purpose": "Extract knowledge signal from git, .agents/, and code",
+        "bounded_context": "BC1",
+        "driven_by_skills": [
+          "compile",
+          "crank",
+          "evolve"
+        ]
+      },
+      {
+        "name": "ao notebook",
+        "path": "cli/cmd/ao/",
+        "purpose": "Manage the session notebook (MEMORY.md)",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao operator",
+        "path": "cli/cmd/ao/",
+        "purpose": "BC4 OperatorPort operations (record/list operator intents)",
+        "bounded_context": "BC4",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao patterns",
+        "path": "cli/cmd/ao/",
+        "purpose": "Inspect and repair .agents/patterns/ artifacts",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao pool",
+        "path": "cli/cmd/ao/",
+        "purpose": "Manage quality pools",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao quick-start",
+        "path": "cli/cmd/ao/",
+        "purpose": "Set up AgentOps in your project (5 minutes)",
+        "bounded_context": "BC3",
+        "driven_by_skills": [
+          "bootstrap",
+          "quickstart"
+        ]
+      },
+      {
+        "name": "ao ratchet",
+        "path": "cli/cmd/ao/",
+        "purpose": "Brownian Ratchet workflow tracking",
+        "bounded_context": "BC3",
+        "driven_by_skills": [
+          "crank",
+          "discovery",
+          "evolve",
+          "handoff",
+          "implement",
+          "plan",
+          "pre-mortem",
+          "ratchet",
+          "rpi",
+          "status",
+          "validate",
+          "validation",
+          "vibe"
+        ]
+      },
+      {
+        "name": "ao registry",
+        "path": "cli/cmd/ao/",
+        "purpose": "Query the unified registry",
+        "bounded_context": "BC4",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao retrieval-bench",
+        "path": "cli/cmd/ao/",
+        "purpose": "Run retrieval quality benchmarks",
+        "bounded_context": "BC2",
+        "driven_by_skills": [
+          "flywheel"
+        ]
+      },
+      {
+        "name": "ao robot-docs",
+        "path": "cli/cmd/ao/",
+        "purpose": "Print the paste-ready agent handbook for the ao CLI (Markdown)",
+        "bounded_context": "BC5",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao rpi",
+        "path": "cli/cmd/ao/",
+        "purpose": "RPI lifecycle automation",
+        "bounded_context": "BC3",
+        "driven_by_skills": [
+          "autodev",
+          "domain",
+          "shared",
+          "standards",
+          "swarm",
+          "using-agentops",
+          "using-gc"
+        ]
+      },
+      {
+        "name": "ao scenario",
+        "path": "cli/cmd/ao/",
+        "purpose": "Manage holdout scenarios for behavioral validation",
+        "bounded_context": "BC2",
+        "driven_by_skills": [
+          "goals"
+        ]
+      },
+      {
+        "name": "ao scope",
+        "path": "cli/cmd/ao/",
+        "purpose": "Manage edit-scope guard (freeze, unfreeze, status)",
+        "bounded_context": "BC5",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao search",
+        "path": "cli/cmd/ao/",
+        "purpose": "Search workspace session history and repo-local knowledge",
+        "bounded_context": "BC1",
+        "driven_by_skills": [
+          "discovery",
+          "inject",
+          "plan",
+          "pre-mortem",
+          "provenance",
+          "using-agentops",
+          "vibe"
+        ]
+      },
+      {
+        "name": "ao seed",
+        "path": "cli/cmd/ao/",
+        "purpose": "Plant the seed in any repository",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao session",
+        "path": "cli/cmd/ao/",
+        "purpose": "Session lifecycle operations",
+        "bounded_context": "BC5",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao sessions",
+        "path": "cli/cmd/ao/",
+        "purpose": "Manage indexed session pages",
+        "bounded_context": "BC5",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao skills",
+        "path": "cli/cmd/ao/",
+        "purpose": "Inspect and validate the skills/ tree",
+        "bounded_context": "BC4",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao status",
+        "path": "cli/cmd/ao/",
+        "purpose": "Show AgentOps status",
+        "bounded_context": "BC3",
+        "driven_by_skills": [
+          "flywheel"
+        ]
+      },
+      {
+        "name": "ao trace",
+        "path": "cli/cmd/ao/",
+        "purpose": "Track artifact provenance",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao validate",
+        "path": "cli/cmd/ao/",
+        "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
+        "bounded_context": "BC2",
+        "driven_by_skills": [
+          "using-gc"
+        ]
+      },
+      {
+        "name": "ao version",
+        "path": "cli/cmd/ao/",
+        "purpose": "Show version information",
+        "bounded_context": "BC4",
+        "driven_by_skills": [
+          "crank",
+          "shared"
+        ]
+      },
+      {
+        "name": "ao vibe-check",
+        "path": "cli/cmd/ao/",
+        "purpose": "Analyze codebase health and vibe",
+        "bounded_context": "BC2",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao wiki",
+        "path": "cli/cmd/ao/",
+        "purpose": "Unified wiki knowledge surface (experimental)",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
       }
     ]
   },
+  "capability_summary": {
+    "total": 214,
+    "skills": 81,
+    "cli_commands": 66,
+    "gates": 64,
+    "reference_impls": 3
+  },
+  "cli_top_level_commands": [
+    "agents",
+    "anti-patterns",
+    "autodev",
+    "badge",
+    "beads",
+    "capabilities",
+    "ci",
+    "citation",
+    "claim",
+    "codex",
+    "compile",
+    "config",
+    "constraint",
+    "contradict",
+    "corpus",
+    "cron",
+    "curate",
+    "dedup",
+    "defrag",
+    "demo",
+    "doctor",
+    "eval",
+    "evolve",
+    "extract",
+    "feedback-loop",
+    "findings",
+    "flywheel",
+    "forge",
+    "gate",
+    "goals",
+    "handoff",
+    "harness",
+    "harvest",
+    "init",
+    "inject",
+    "knowledge",
+    "lookup",
+    "loop",
+    "maturity",
+    "memory",
+    "metrics",
+    "mind",
+    "mine",
+    "notebook",
+    "operator",
+    "patterns",
+    "pool",
+    "quick-start",
+    "ratchet",
+    "registry",
+    "retrieval-bench",
+    "robot-docs",
+    "rpi",
+    "scenario",
+    "scope",
+    "search",
+    "seed",
+    "session",
+    "sessions",
+    "skills",
+    "status",
+    "trace",
+    "validate",
+    "version",
+    "vibe-check",
+    "wiki"
+  ],
+  "capabilities": [
+    {
+      "sku": "skill:autodev",
+      "name": "autodev",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": "Manage bounded autonomous dev loops.",
+      "status": "active",
+      "disposition": "refactor",
+      "consumes": [
+        "evolve",
+        "rpi"
+      ],
+      "produces": [],
+      "drives_commands": [
+        "ao autodev",
+        "ao autodev init",
+        "ao autodev validate",
+        "ao evolve",
+        "ao rpi"
+      ],
+      "path": "skills/autodev/",
+      "references": 0
+    },
+    {
+      "sku": "skill:beads",
+      "name": "beads",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "driven-adapter",
+      "tier": "library",
+      "purpose": "Track issues with bd/br, triage with bv, and convert plans to beads.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "bd-issue"
+      ],
+      "produces": [
+        "bd-issue"
+      ],
+      "drives_commands": [],
+      "path": "skills/beads/",
+      "references": 19
+    },
+    {
+      "sku": "skill:bootstrap",
+      "name": "bootstrap",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "driving-adapter",
+      "tier": "session",
+      "purpose": "Initialize AgentOps project files.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "goals",
+        "product",
+        "readme",
+        "shared"
+      ],
+      "produces": [],
+      "drives_commands": [
+        "ao autodev init",
+        "ao quick-start"
+      ],
+      "path": "skills/bootstrap/",
+      "references": 1
+    },
+    {
+      "sku": "skill:brainstorm",
+      "name": "brainstorm",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "domain",
+      "tier": "execution",
+      "purpose": "Separate goals from implementation.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        "result.json",
+        "verdict.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/brainstorm/",
+      "references": 4
+    },
+    {
+      "sku": "skill:bug-hunt",
+      "name": "bug-hunt",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "domain",
+      "tier": "execution",
+      "purpose": "Investigate bugs and root causes.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "beads",
+        "standards"
+      ],
+      "produces": [],
+      "drives_commands": [
+        "ao lookup",
+        "ao metrics cite"
+      ],
+      "path": "skills/bug-hunt/",
+      "references": 8
+    },
+    {
+      "sku": "skill:codex-team",
+      "name": "codex-team",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "supporting",
+      "tier": "cross-vendor",
+      "purpose": "Coordinate multiple Codex agents.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        ".agents/swarm/results/*.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/codex-team/",
+      "references": 2
+    },
+    {
+      "sku": "skill:compile",
+      "name": "compile",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "supporting",
+      "tier": "knowledge",
+      "purpose": "Compile .agents knowledge wiki.",
+      "status": "active",
+      "disposition": "refactor",
+      "consumes": [],
+      "produces": [
+        ".agents/compiled/lint-report.md"
+      ],
+      "drives_commands": [
+        "ao compile",
+        "ao contradict",
+        "ao dedup",
+        "ao defrag",
+        "ao mine"
+      ],
+      "path": "skills/compile/",
+      "references": 4
+    },
+    {
+      "sku": "skill:complexity",
+      "name": "complexity",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "domain",
+      "tier": "execution",
+      "purpose": "Find focused refactor hotspots.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "doc",
+        "standards"
+      ],
+      "produces": [
+        "stdout"
+      ],
+      "drives_commands": [],
+      "path": "skills/complexity/",
+      "references": 0
+    },
+    {
+      "sku": "skill:converter",
+      "name": "converter",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "generic",
+      "tier": "cross-vendor",
+      "purpose": "Convert AgentOps skill formats.",
+      "status": "active",
+      "disposition": "merge-review",
+      "consumes": [],
+      "produces": [
+        "converted-skill"
+      ],
+      "drives_commands": [],
+      "path": "skills/converter/",
+      "references": 1
+    },
+    {
+      "sku": "skill:council",
+      "name": "council",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "domain",
+      "tier": "judgment",
+      "purpose": "Run multi-judge consensus.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        "result.json",
+        "verdict.json"
+      ],
+      "drives_commands": [
+        "ao rpi phased"
+      ],
+      "path": "skills/council/",
+      "references": 33
+    },
+    {
+      "sku": "skill:crank",
+      "name": "crank",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "domain",
+      "tier": "execution",
+      "purpose": "Execute epics through waves.",
+      "status": "active",
+      "disposition": "refactor",
+      "consumes": [
+        "beads",
+        "implement",
+        "post-mortem",
+        "swarm",
+        "vibe"
+      ],
+      "produces": [
+        ".agents/swarm/results/*.json",
+        "git-changes"
+      ],
+      "drives_commands": [
+        "ao defrag",
+        "ao flywheel close-loop",
+        "ao forge transcript",
+        "ao handoff",
+        "ao lookup",
+        "ao metrics",
+        "ao metrics cite",
+        "ao mine",
+        "ao pool list",
+        "ao ratchet",
+        "ao rpi phased",
+        "ao version"
+      ],
+      "path": "skills/crank/",
+      "references": 30
+    },
+    {
+      "sku": "skill:curate",
+      "name": "curate",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "supporting",
+      "tier": "knowledge",
+      "purpose": "Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or",
+      "status": "active",
+      "disposition": "cut-review",
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "drives_commands": [],
+      "path": "skills/curate/",
+      "references": 0
+    },
+    {
+      "sku": "skill:deps",
+      "name": "deps",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "driven-adapter",
+      "tier": "execution",
+      "purpose": "Audit dependency risks and updates.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "repo-context"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/deps/",
+      "references": 1
+    },
+    {
+      "sku": "skill:design",
+      "name": "design",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "domain",
+      "tier": "judgment",
+      "purpose": "Validate product fit before discovery.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/design/",
+      "references": 3
+    },
+    {
+      "sku": "skill:discovery",
+      "name": "discovery",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "domain",
+      "tier": "meta",
+      "purpose": "Create dense execution packets.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "brainstorm",
+        "design",
+        "plan",
+        "pre-mortem",
+        "research",
+        "shared"
+      ],
+      "produces": [
+        ".agents/plans/*.md",
+        "bd-issue",
+        "execution-packet.json"
+      ],
+      "drives_commands": [
+        "ao lookup",
+        "ao ratchet",
+        "ao search"
+      ],
+      "path": "skills/discovery/",
+      "references": 9
+    },
+    {
+      "sku": "skill:doc",
+      "name": "doc",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "supporting",
+      "tier": "product",
+      "purpose": "Generate and validate repo docs.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "repo-context"
+      ],
+      "produces": [
+        "documentation"
+      ],
+      "drives_commands": [],
+      "path": "skills/doc/",
+      "references": 6
+    },
+    {
+      "sku": "skill:domain",
+      "name": "domain",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "domain",
+      "tier": "knowledge",
+      "purpose": "Canonical vocabulary for human-AI software work.",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [],
+      "produces": [
+        "stdout"
+      ],
+      "drives_commands": [
+        "ao compile",
+        "ao eval run",
+        "ao inject",
+        "ao maturity",
+        "ao rpi",
+        "ao rpi phased"
+      ],
+      "path": "skills/domain/",
+      "references": 16
+    },
+    {
+      "sku": "skill:dream",
+      "name": "dream",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "supporting",
+      "tier": "session",
+      "purpose": "Run overnight compounding sessions.",
+      "status": "active",
+      "disposition": "refactor",
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "drives_commands": [
+        "ao goals"
+      ],
+      "path": "skills/dream/",
+      "references": 0
+    },
+    {
+      "sku": "skill:evolve",
+      "name": "evolve",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": "Run autonomous improvement loops.",
+      "status": "active",
+      "disposition": "refactor",
+      "consumes": [
+        "rpi",
+        "goals",
+        "post-mortem",
+        "compile"
+      ],
+      "produces": [
+        "git-changes",
+        "goals-fitness-delta"
+      ],
+      "drives_commands": [
+        "ao ci recent",
+        "ao corpus inject",
+        "ao defrag",
+        "ao evolve",
+        "ao evolve blocked",
+        "ao evolve next-work",
+        "ao evolve write-stop-marker",
+        "ao goals",
+        "ao lookup",
+        "ao loop append",
+        "ao loop converged",
+        "ao loop history",
+        "ao loop hypothesis list",
+        "ao loop verify",
+        "ao metrics cite",
+        "ao mine",
+        "ao ratchet",
+        "ao rpi loop"
+      ],
+      "path": "skills/evolve/",
+      "references": 25
+    },
+    {
+      "sku": "skill:expert-council",
+      "name": "expert-council",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "domain",
+      "tier": "judgment",
+      "purpose": "Alias for /council --mode=debate — adversarial named-persona debate. Triggers: \"expert council\", \"dueling council\", \"council of <names>\". Kept one release.",
+      "status": "alias-of:skill:council",
+      "disposition": "merge-review",
+      "consumes": [],
+      "produces": [],
+      "drives_commands": [],
+      "path": "skills/expert-council/",
+      "references": 0
+    },
+    {
+      "sku": "skill:flywheel",
+      "name": "flywheel",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "domain",
+      "tier": "background",
+      "purpose": "Check knowledge flywheel health.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        ".agents/learnings/*.md"
+      ],
+      "drives_commands": [
+        "ao anti-patterns",
+        "ao badge",
+        "ao constraint review",
+        "ao contradict",
+        "ao curate status",
+        "ao dedup",
+        "ao flywheel",
+        "ao flywheel status",
+        "ao harvest",
+        "ao lookup",
+        "ao maturity",
+        "ao metrics",
+        "ao metrics baseline",
+        "ao metrics cite-report",
+        "ao metrics health",
+        "ao retrieval-bench",
+        "ao status"
+      ],
+      "path": "skills/flywheel/",
+      "references": 4
+    },
+    {
+      "sku": "skill:forge",
+      "name": "forge",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "domain",
+      "tier": "background",
+      "purpose": "Mine transcripts into learnings.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "drives_commands": [
+        "ao forge markdown",
+        "ao forge transcript"
+      ],
+      "path": "skills/forge/",
+      "references": 3
+    },
+    {
+      "sku": "skill:goals",
+      "name": "goals",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "domain",
+      "tier": "product",
+      "purpose": "Maintain AgentOps goals.",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [
+        "ao flywheel status",
+        "ao goals",
+        "ao scenario"
+      ],
+      "path": "skills/goals/",
+      "references": 3
+    },
+    {
+      "sku": "skill:grafana-platform-dashboard",
+      "name": "grafana-platform-dashboard",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "driven-adapter",
+      "tier": "execution",
+      "purpose": "Validate OpenShift Grafana dashboards.",
+      "status": "active",
+      "disposition": "cut-review",
+      "consumes": [],
+      "produces": [
+        "dashboard-validation-report"
+      ],
+      "drives_commands": [],
+      "path": "skills/grafana-platform-dashboard/",
+      "references": 3
+    },
+    {
+      "sku": "skill:handoff",
+      "name": "handoff",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "supporting",
+      "tier": "session",
+      "purpose": "Write compact session handoffs.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "drives_commands": [
+        "ao ratchet"
+      ],
+      "path": "skills/handoff/",
+      "references": 0
+    },
+    {
+      "sku": "skill:harvest",
+      "name": "harvest",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "supporting",
+      "tier": "knowledge",
+      "purpose": "Promote .agents knowledge.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "drives_commands": [
+        "ao dedup",
+        "ao defrag",
+        "ao harvest",
+        "ao inject",
+        "ao metrics"
+      ],
+      "path": "skills/harvest/",
+      "references": 1
+    },
+    {
+      "sku": "skill:heal-skill",
+      "name": "heal-skill",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "supporting",
+      "tier": "meta",
+      "purpose": "Repair skill hygiene.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [],
+      "drives_commands": [],
+      "path": "skills/heal-skill/",
+      "references": 2
+    },
+    {
+      "sku": "skill:hooks-authoring",
+      "name": "hooks-authoring",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "domain",
+      "tier": "execution",
+      "purpose": "Author AgentOps runtime hooks.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [
+        "ao lookup"
+      ],
+      "path": "skills/hooks-authoring/",
+      "references": 3
+    },
+    {
+      "sku": "skill:implement",
+      "name": "implement",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "driving-adapter",
+      "tier": "execution",
+      "purpose": "Implement one tracked issue.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "domain"
+      ],
+      "produces": [
+        "git-changes"
+      ],
+      "drives_commands": [
+        "ao lookup",
+        "ao metrics cite",
+        "ao ratchet"
+      ],
+      "path": "skills/implement/",
+      "references": 7
+    },
+    {
+      "sku": "skill:inject",
+      "name": "inject",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "driving-adapter",
+      "tier": "background",
+      "purpose": "Load relevant .agents context.",
+      "status": "active",
+      "disposition": "refactor",
+      "consumes": [],
+      "produces": [],
+      "drives_commands": [
+        "ao inject",
+        "ao lookup",
+        "ao search"
+      ],
+      "path": "skills/inject/",
+      "references": 0
+    },
+    {
+      "sku": "skill:knowledge-activation",
+      "name": "knowledge-activation",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "supporting",
+      "tier": "knowledge",
+      "purpose": "Activate mature .agents knowledge.",
+      "status": "active",
+      "disposition": "merge-review",
+      "consumes": [],
+      "produces": [],
+      "drives_commands": [
+        "ao codex start",
+        "ao knowledge",
+        "ao knowledge activate",
+        "ao knowledge beliefs",
+        "ao knowledge brief",
+        "ao knowledge gaps",
+        "ao knowledge playbooks"
+      ],
+      "path": "skills/knowledge-activation/",
+      "references": 3
+    },
+    {
+      "sku": "skill:llm-wiki",
+      "name": "llm-wiki",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "supporting",
+      "tier": "knowledge",
+      "purpose": "Build external-knowledge wikis.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        "documentation"
+      ],
+      "drives_commands": [],
+      "path": "skills/llm-wiki/",
+      "references": 2
+    },
+    {
+      "sku": "skill:openai-docs",
+      "name": "openai-docs",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "driven-adapter",
+      "tier": "cross-vendor",
+      "purpose": "Use official OpenAI docs.",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "external-api"
+      ],
+      "produces": [],
+      "drives_commands": [],
+      "path": "skills/openai-docs/",
+      "references": 0
+    },
+    {
+      "sku": "skill:oss-docs",
+      "name": "oss-docs",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "generic",
+      "tier": "contribute",
+      "purpose": "Scaffold or audit OSS docs.",
+      "status": "active",
+      "disposition": "merge-review",
+      "consumes": [
+        "repo-context"
+      ],
+      "produces": [
+        "documentation"
+      ],
+      "drives_commands": [],
+      "path": "skills/oss-docs/",
+      "references": 3
+    },
+    {
+      "sku": "skill:perf",
+      "name": "perf",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "domain",
+      "tier": "execution",
+      "purpose": "Profile and optimize hotspots.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "repo-context"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/perf/",
+      "references": 3
+    },
+    {
+      "sku": "skill:plan",
+      "name": "plan",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "domain",
+      "tier": "execution",
+      "purpose": "Decompose goals into issue plans.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        ".agents/plans/*.md",
+        "execution-packet.json"
+      ],
+      "drives_commands": [
+        "ao beads verify",
+        "ao lookup",
+        "ao metrics cite",
+        "ao ratchet",
+        "ao rpi cleanup",
+        "ao rpi status",
+        "ao search"
+      ],
+      "path": "skills/plan/",
+      "references": 14
+    },
+    {
+      "sku": "skill:post-mortem",
+      "name": "post-mortem",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "domain",
+      "tier": "judgment",
+      "purpose": "Review completed work and learn.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "implement",
+        "vibe",
+        "council"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [
+        "ao codex status",
+        "ao codex stop",
+        "ao flywheel close-loop",
+        "ao forge",
+        "ao forge markdown",
+        "ao goals",
+        "ao session close"
+      ],
+      "path": "skills/post-mortem/",
+      "references": 21
+    },
+    {
+      "sku": "skill:pr-implement",
+      "name": "pr-implement",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "driving-adapter",
+      "tier": "contribute",
+      "purpose": "Implement a scoped OSS PR.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "crank"
+      ],
+      "produces": [
+        "git-changes"
+      ],
+      "drives_commands": [],
+      "path": "skills/pr-implement/",
+      "references": 0
+    },
+    {
+      "sku": "skill:pr-plan",
+      "name": "pr-plan",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "supporting",
+      "tier": "contribute",
+      "purpose": "Plan an open source PR.",
+      "status": "active",
+      "disposition": "cut-review",
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/pr-plan/",
+      "references": 0
+    },
+    {
+      "sku": "skill:pr-prep",
+      "name": "pr-prep",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "driving-adapter",
+      "tier": "contribute",
+      "purpose": "Prepare PR commits and body.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "domain"
+      ],
+      "produces": [
+        "git-changes"
+      ],
+      "drives_commands": [],
+      "path": "skills/pr-prep/",
+      "references": 4
+    },
+    {
+      "sku": "skill:pr-research",
+      "name": "pr-research",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "driven-adapter",
+      "tier": "contribute",
+      "purpose": "Research an upstream repo.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "external-api"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/pr-research/",
+      "references": 1
+    },
+    {
+      "sku": "skill:pr-retro",
+      "name": "pr-retro",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "supporting",
+      "tier": "contribute",
+      "purpose": "Learn from PR outcomes.",
+      "status": "active",
+      "disposition": "merge-review",
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "drives_commands": [],
+      "path": "skills/pr-retro/",
+      "references": 0
+    },
+    {
+      "sku": "skill:pr-validate",
+      "name": "pr-validate",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "driving-adapter",
+      "tier": "contribute",
+      "purpose": "Validate PR scope and quality.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "validation"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/pr-validate/",
+      "references": 0
+    },
+    {
+      "sku": "skill:pre-mortem",
+      "name": "pre-mortem",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "domain",
+      "tier": "judgment",
+      "purpose": "Stress-test plans before work.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        "result.json",
+        "verdict.json"
+      ],
+      "drives_commands": [
+        "ao beads verify",
+        "ao lookup",
+        "ao metrics cite",
+        "ao ratchet",
+        "ao rpi phased",
+        "ao search"
+      ],
+      "path": "skills/pre-mortem/",
+      "references": 14
+    },
+    {
+      "sku": "skill:product",
+      "name": "product",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "domain",
+      "tier": "product",
+      "purpose": "Create or refine PRODUCT.md.",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/product/",
+      "references": 0
+    },
+    {
+      "sku": "skill:provenance",
+      "name": "provenance",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "driven-adapter",
+      "tier": "background",
+      "purpose": "Trace artifact provenance.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [
+        "ao search"
+      ],
+      "path": "skills/provenance/",
+      "references": 0
+    },
+    {
+      "sku": "skill:push",
+      "name": "push",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "driving-adapter",
+      "tier": "execution",
+      "purpose": "Validate, commit, and push.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "git-changes"
+      ],
+      "produces": [
+        "git-changes"
+      ],
+      "drives_commands": [],
+      "path": "skills/push/",
+      "references": 0
+    },
+    {
+      "sku": "skill:quickstart",
+      "name": "quickstart",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "driving-adapter",
+      "tier": "session",
+      "purpose": "Show AgentOps next action.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "rpi"
+      ],
+      "produces": [
+        "stdout"
+      ],
+      "drives_commands": [
+        "ao codex ensure-start",
+        "ao codex ensure-stop",
+        "ao codex status",
+        "ao flywheel close-loop",
+        "ao init",
+        "ao metrics",
+        "ao quick-start"
+      ],
+      "path": "skills/quickstart/",
+      "references": 3
+    },
+    {
+      "sku": "skill:ratchet",
+      "name": "ratchet",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "domain",
+      "tier": "background",
+      "purpose": "Record Brownian Ratchet gates.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "validation",
+        "vibe",
+        "post-mortem"
+      ],
+      "produces": [
+        ".agents/rpi/*.md"
+      ],
+      "drives_commands": [
+        "ao ratchet"
+      ],
+      "path": "skills/ratchet/",
+      "references": 0
+    },
+    {
+      "sku": "skill:readme",
+      "name": "readme",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "generic",
+      "tier": "product",
+      "purpose": "Draft or improve README docs.",
+      "status": "active",
+      "disposition": "merge-review",
+      "consumes": [],
+      "produces": [
+        "documentation"
+      ],
+      "drives_commands": [],
+      "path": "skills/readme/",
+      "references": 0
+    },
+    {
+      "sku": "skill:recover",
+      "name": "recover",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "driving-adapter",
+      "tier": "session",
+      "purpose": "Recover session context.",
+      "status": "active",
+      "disposition": "refactor",
+      "consumes": [
+        "bd",
+        "rpi"
+      ],
+      "produces": [
+        ".agents/rpi/*.md"
+      ],
+      "drives_commands": [
+        "ao codex start",
+        "ao codex status",
+        "ao codex stop",
+        "ao lookup",
+        "ao metrics cite"
+      ],
+      "path": "skills/recover/",
+      "references": 0
+    },
+    {
+      "sku": "skill:red-team",
+      "name": "red-team",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "supporting",
+      "tier": "judgment",
+      "purpose": "Probe docs and skills.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "repo-context"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/red-team/",
+      "references": 4
+    },
+    {
+      "sku": "skill:refactor",
+      "name": "refactor",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": "Execute safe refactors.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "complexity",
+        "repo-context"
+      ],
+      "produces": [
+        "git-changes"
+      ],
+      "drives_commands": [],
+      "path": "skills/refactor/",
+      "references": 1
+    },
+    {
+      "sku": "skill:release",
+      "name": "release",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "supporting",
+      "tier": "product",
+      "purpose": "Run release validation.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [
+        "ao goals"
+      ],
+      "path": "skills/release/",
+      "references": 8
+    },
+    {
+      "sku": "skill:research",
+      "name": "research",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "driving-adapter",
+      "tier": "execution",
+      "purpose": "Explore and write findings.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "inject",
+        "repo-context"
+      ],
+      "produces": [
+        ".agents/research/*.md",
+        "result.json"
+      ],
+      "drives_commands": [
+        "ao metrics cite",
+        "ao rpi phased"
+      ],
+      "path": "skills/research/",
+      "references": 17
+    },
+    {
+      "sku": "skill:retro",
+      "name": "retro",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "domain",
+      "tier": "knowledge",
+      "purpose": "Capture a session learning.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/retro/",
+      "references": 0
+    },
+    {
+      "sku": "skill:reverse-engineer-rpi",
+      "name": "reverse-engineer-rpi",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": "Reverse-engineer product specs.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        ".agents/research/*.md"
+      ],
+      "drives_commands": [],
+      "path": "skills/reverse-engineer-rpi/",
+      "references": 0
+    },
+    {
+      "sku": "skill:review",
+      "name": "review",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "driving-adapter",
+      "tier": "judgment",
+      "purpose": "Review diffs for risk, find mocks, scan for bugs, and audit codebases.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "github-pr",
+        "validation"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [
+        "ao lookup",
+        "ao metrics cite"
+      ],
+      "path": "skills/review/",
+      "references": 5
+    },
+    {
+      "sku": "skill:rpi",
+      "name": "rpi",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "supporting",
+      "tier": "meta",
+      "purpose": "Run discovery, crank, validation.",
+      "status": "active",
+      "disposition": "refactor",
+      "consumes": [
+        "crank",
+        "discovery",
+        "domain",
+        "ratchet",
+        "validation"
+      ],
+      "produces": [
+        ".agents/rpi/*.md"
+      ],
+      "drives_commands": [
+        "ao ratchet"
+      ],
+      "path": "skills/rpi/",
+      "references": 17
+    },
+    {
+      "sku": "skill:scaffold",
+      "name": "scaffold",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": "Create project, component, or boilerplate scaffolds.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        "converted-skill"
+      ],
+      "drives_commands": [
+        "ao goals",
+        "ao rpi phased"
+      ],
+      "path": "skills/scaffold/",
+      "references": 2
+    },
+    {
+      "sku": "skill:scenario",
+      "name": "scenario",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": "Manage holdout scenarios.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [
+        "ao goals",
+        "ao scenario add",
+        "ao scenario init",
+        "ao scenario list",
+        "ao scenario validate"
+      ],
+      "path": "skills/scenario/",
+      "references": 1
+    },
+    {
+      "sku": "skill:scope",
+      "name": "scope",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "driven-adapter",
+      "tier": "execution",
+      "purpose": "Hard-block edits outside declared frozen directories via PreToolUse hook.",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [],
+      "produces": [
+        "filesystem-gate"
+      ],
+      "drives_commands": [
+        "ao scope freeze",
+        "ao scope unfreeze"
+      ],
+      "path": "skills/scope/",
+      "references": 3
+    },
+    {
+      "sku": "skill:security",
+      "name": "security",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "driven-adapter",
+      "tier": "product",
+      "purpose": "Run repository security scans.",
+      "status": "active",
+      "disposition": "merge-review",
+      "consumes": [
+        "repo-context"
+      ],
+      "produces": [
+        "security-report.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/security/",
+      "references": 0
+    },
+    {
+      "sku": "skill:security-suite",
+      "name": "security-suite",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "driven-adapter",
+      "tier": "execution",
+      "purpose": "Run composable security analysis.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "repo-context"
+      ],
+      "produces": [
+        "security-report.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/security-suite/",
+      "references": 1
+    },
+    {
+      "sku": "skill:session-bootstrap",
+      "name": "session-bootstrap",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "driving-adapter",
+      "tier": "session",
+      "purpose": "Universal init prompt — every agent spawned into an AgentOps repo runs `ao session bootstrap` first.",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "bd",
+        "onboard"
+      ],
+      "produces": [
+        "stdout",
+        "json"
+      ],
+      "drives_commands": [
+        "ao session bootstrap"
+      ],
+      "path": "skills/session-bootstrap/",
+      "references": 0
+    },
+    {
+      "sku": "skill:shared",
+      "name": "shared",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "domain",
+      "tier": "library",
+      "purpose": "Shared AgentOps skill contracts.",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [],
+      "produces": [
+        "stdout"
+      ],
+      "drives_commands": [
+        "ao beads verify",
+        "ao evolve",
+        "ao rpi",
+        "ao rpi phased",
+        "ao version"
+      ],
+      "path": "skills/shared/",
+      "references": 16
+    },
+    {
+      "sku": "skill:ship-loop",
+      "name": "ship-loop",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "driving-adapter",
+      "tier": "execution",
+      "purpose": "Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close.",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "beads",
+        "rpi",
+        "post-mortem"
+      ],
+      "produces": [
+        "git-changes",
+        "merged-prs"
+      ],
+      "drives_commands": [],
+      "path": "skills/ship-loop/",
+      "references": 4
+    },
+    {
+      "sku": "skill:skill-auditor",
+      "name": "skill-auditor",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "supporting",
+      "tier": "meta",
+      "purpose": "Audit an existing SKILL.md against the unified AgentOps template (15",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/skill-auditor/",
+      "references": 3
+    },
+    {
+      "sku": "skill:skill-builder",
+      "name": "skill-builder",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "supporting",
+      "tier": "meta",
+      "purpose": "Scaffold or absorb new SKILL.md files against the unified AgentOps template.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        "converted-skill"
+      ],
+      "drives_commands": [
+        "ao flywheel close-loop"
+      ],
+      "path": "skills/skill-builder/",
+      "references": 2
+    },
+    {
+      "sku": "skill:standards",
+      "name": "standards",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "domain",
+      "tier": "library",
+      "purpose": "Provide repo coding standards.",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [],
+      "produces": [
+        "stdout"
+      ],
+      "drives_commands": [
+        "ao ci",
+        "ao corpus inject",
+        "ao loop",
+        "ao loop history",
+        "ao rpi"
+      ],
+      "path": "skills/standards/",
+      "references": 23
+    },
+    {
+      "sku": "skill:status",
+      "name": "status",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "driving-adapter",
+      "tier": "session",
+      "purpose": "Show AgentOps work status.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "bd"
+      ],
+      "produces": [
+        "stdout"
+      ],
+      "drives_commands": [
+        "ao badge",
+        "ao metrics",
+        "ao pool list",
+        "ao pool promote",
+        "ao pool stage",
+        "ao ratchet"
+      ],
+      "path": "skills/status/",
+      "references": 0
+    },
+    {
+      "sku": "skill:swarm",
+      "name": "swarm",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": "Dispatch parallel agents.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "implement",
+        "vibe"
+      ],
+      "produces": [
+        ".agents/swarm/results/*.json"
+      ],
+      "drives_commands": [
+        "ao rpi",
+        "ao rpi phased"
+      ],
+      "path": "skills/swarm/",
+      "references": 21
+    },
+    {
+      "sku": "skill:system-tuning",
+      "name": "system-tuning",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "supporting",
+      "tier": "utility",
+      "purpose": "Restore system responsiveness via safe, ordered process cleanup and agent-swarm",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [],
+      "produces": [],
+      "drives_commands": [],
+      "path": "skills/system-tuning/",
+      "references": 3
+    },
+    {
+      "sku": "skill:test",
+      "name": "test",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": "Generate tests and coverage plans.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "standards",
+        "repo-context"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/test/",
+      "references": 6
+    },
+    {
+      "sku": "skill:trace",
+      "name": "trace",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "supporting",
+      "tier": "knowledge",
+      "purpose": "Trace decisions through artifacts.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/trace/",
+      "references": 3
+    },
+    {
+      "sku": "skill:update",
+      "name": "update",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "supporting",
+      "tier": "meta",
+      "purpose": "Sync AgentOps skills.",
+      "status": "active",
+      "disposition": "cut-review",
+      "consumes": [],
+      "produces": [],
+      "drives_commands": [],
+      "path": "skills/update/",
+      "references": 0
+    },
+    {
+      "sku": "skill:using-agentops",
+      "name": "using-agentops",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "generic",
+      "tier": "meta",
+      "purpose": "Explain AgentOps workflows.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        "documentation"
+      ],
+      "drives_commands": [
+        "ao agents inspect",
+        "ao codex start",
+        "ao codex stop",
+        "ao evolve",
+        "ao flywheel close-loop",
+        "ao forge transcript",
+        "ao inject",
+        "ao lookup",
+        "ao rpi",
+        "ao search"
+      ],
+      "path": "skills/using-agentops/",
+      "references": 0
+    },
+    {
+      "sku": "skill:using-gc",
+      "name": "using-gc",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "generic",
+      "tier": "meta",
+      "purpose": "Explain how to run AgentOps on the Gas City (gc) substrate.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [],
+      "produces": [
+        "documentation"
+      ],
+      "drives_commands": [
+        "ao compile",
+        "ao corpus inject",
+        "ao evolve",
+        "ao inject",
+        "ao maturity",
+        "ao rpi",
+        "ao validate"
+      ],
+      "path": "skills/using-gc/",
+      "references": 2
+    },
+    {
+      "sku": "skill:validate",
+      "name": "validate",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "driving-adapter",
+      "tier": "judgment",
+      "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates.",
+      "status": "active",
+      "disposition": "merge-review",
+      "consumes": [
+        "validation"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [
+        "ao doctor",
+        "ao goals",
+        "ao ratchet",
+        "ao rpi phased"
+      ],
+      "path": "skills/validate/",
+      "references": 0
+    },
+    {
+      "sku": "skill:validation",
+      "name": "validation",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "domain",
+      "tier": "meta",
+      "purpose": "Run post-implementation validation.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "forge",
+        "post-mortem",
+        "retro",
+        "shared",
+        "vibe"
+      ],
+      "produces": [
+        ".agents/research/*.md",
+        "result.json",
+        "verdict.json"
+      ],
+      "drives_commands": [
+        "ao codex stop",
+        "ao defrag",
+        "ao forge",
+        "ao forge transcript",
+        "ao lookup",
+        "ao metrics cite",
+        "ao ratchet",
+        "ao scenario list"
+      ],
+      "path": "skills/validation/",
+      "references": 13
+    },
+    {
+      "sku": "skill:vibe",
+      "name": "vibe",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "domain",
+      "tier": "judgment",
+      "purpose": "Validate code readiness.",
+      "status": "active",
+      "disposition": "update",
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        "result.json",
+        "verdict.json"
+      ],
+      "drives_commands": [
+        "ao lookup",
+        "ao metrics cite",
+        "ao ratchet",
+        "ao search"
+      ],
+      "path": "skills/vibe/",
+      "references": 22
+    },
+    {
+      "sku": "cmd:ao.agents",
+      "name": "ao agents",
+      "type": "cli-command",
+      "bounded_context": "BC4",
+      "purpose": "Inspect and manage .agents/ contracts and surfaces",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.anti-patterns",
+      "name": "ao anti-patterns",
+      "type": "cli-command",
+      "bounded_context": "BC2",
+      "purpose": "List learnings marked as anti-patterns",
+      "status": "active",
+      "driven_by_skills": [
+        "flywheel"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--format",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.autodev",
+      "name": "ao autodev",
+      "type": "cli-command",
+      "bounded_context": "BC3",
+      "purpose": "Manage the PROGRAM.md operational contract for autonomous development",
+      "status": "active",
+      "driven_by_skills": [
+        "autodev"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--file",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.badge",
+      "name": "ao badge",
+      "type": "cli-command",
+      "bounded_context": "BC2",
+      "purpose": "Display knowledge flywheel health badge",
+      "status": "active",
+      "driven_by_skills": [
+        "flywheel",
+        "status"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.beads",
+      "name": "ao beads",
+      "type": "cli-command",
+      "bounded_context": "BC3",
+      "purpose": "Complementary tooling for the bd (beads) issue tracker",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.capabilities",
+      "name": "ao capabilities",
+      "type": "cli-command",
+      "bounded_context": "BC5",
+      "purpose": "Print the machine-readable CLI contract (JSON)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.ci",
+      "name": "ao ci",
+      "type": "cli-command",
+      "bounded_context": "BC2",
+      "purpose": "BC2 CI status operations (latest run by SHA, recent runs)",
+      "status": "active",
+      "driven_by_skills": [
+        "standards"
+      ],
+      "flags": [
+        "--commit",
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.citation",
+      "name": "ao citation",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "BC1 CitationPort operations (verify file/function/symbol citations)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.claim",
+      "name": "ao claim",
+      "type": "cli-command",
+      "bounded_context": "BC3",
+      "purpose": "BC2 ClaimEvidenceBinderPort operations (bind/list claim-evidence)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.codex",
+      "name": "ao codex",
+      "type": "cli-command",
+      "bounded_context": "BC5",
+      "purpose": "Codex lifecycle commands (fallback for pre-v0.115.0; native hooks preferred)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.compile",
+      "name": "ao compile",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Compile .agents knowledge into an interlinked wiki",
+      "status": "active",
+      "driven_by_skills": [
+        "compile",
+        "domain",
+        "using-gc"
+      ],
+      "flags": [
+        "--batch-size",
+        "--compile-only",
+        "--config",
+        "--defrag-only",
+        "--dry-run",
+        "--force",
+        "--force-repair",
+        "--full",
+        "--incremental",
+        "--json",
+        "--lint-only",
+        "--max-batches",
+        "--mine-only",
+        "--output",
+        "--output-dir",
+        "--quiet",
+        "--repair",
+        "--reset",
+        "--runtime",
+        "--since",
+        "--sources",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.config",
+      "name": "ao config",
+      "type": "cli-command",
+      "bounded_context": "BC4",
+      "purpose": "Manage configuration",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--show",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.constraint",
+      "name": "ao constraint",
+      "type": "cli-command",
+      "bounded_context": "BC2",
+      "purpose": "Manage compiled constraints",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.contradict",
+      "name": "ao contradict",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Detect potentially contradictory learnings",
+      "status": "active",
+      "driven_by_skills": [
+        "compile",
+        "flywheel"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.corpus",
+      "name": "ao corpus",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Corpus-quality probes for Dream and the knowledge flywheel",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.cron",
+      "name": "ao cron",
+      "type": "cli-command",
+      "bounded_context": "BC3",
+      "purpose": "Cron-fire loop helpers (used by /evolve --mode=loop)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--mode",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.curate",
+      "name": "ao curate",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Curation pipeline operations",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.dedup",
+      "name": "ao dedup",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Detect near-duplicate learnings",
+      "status": "active",
+      "driven_by_skills": [
+        "compile",
+        "flywheel",
+        "harvest"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--merge",
+        "--output",
+        "--verbose",
+        "--yes"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.defrag",
+      "name": "ao defrag",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Prune and deduplicate .agents/ learning artifacts",
+      "status": "active",
+      "driven_by_skills": [
+        "compile",
+        "crank",
+        "evolve",
+        "harvest",
+        "validation"
+      ],
+      "flags": [
+        "--config",
+        "--dedup",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--output-dir",
+        "--prune",
+        "--quiet",
+        "--stale-days",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.demo",
+      "name": "ao demo",
+      "type": "cli-command",
+      "bounded_context": "BC3",
+      "purpose": "Show the council-first AgentOps 3.0 value path",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--concepts",
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--quick",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.doctor",
+      "name": "ao doctor",
+      "type": "cli-command",
+      "bounded_context": "BC4",
+      "purpose": "Check AgentOps health",
+      "status": "active",
+      "driven_by_skills": [
+        "validate"
+      ],
+      "flags": [
+        "--before",
+        "--config",
+        "--dry-run",
+        "--explain",
+        "--fix",
+        "--json",
+        "--online",
+        "--only",
+        "--output",
+        "--quick",
+        "--robot",
+        "--robot-triage",
+        "--severity",
+        "--since",
+        "--skip",
+        "--verbose",
+        "--yes"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.eval",
+      "name": "ao eval",
+      "type": "cli-command",
+      "bounded_context": "BC2",
+      "purpose": "Run deterministic local evaluation suites",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--delete",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--tmp-files",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.evolve",
+      "name": "ao evolve",
+      "type": "cli-command",
+      "bounded_context": "BC3",
+      "purpose": "Run the autonomous code-improvement loop",
+      "status": "active",
+      "driven_by_skills": [
+        "autodev",
+        "evolve",
+        "shared",
+        "using-agentops",
+        "using-gc"
+      ],
+      "flags": [
+        "--auto-clean",
+        "--auto-clean-stale-after",
+        "--bd-sync-policy",
+        "--cleanup-prune-branches",
+        "--cleanup-prune-worktrees",
+        "--command-timeout",
+        "--compile",
+        "--compile-defrag",
+        "--compile-interval",
+        "--compile-since",
+        "--config",
+        "--cycle-delay",
+        "--cycle-retries",
+        "--detached-branch-prefix",
+        "--detached-heal",
+        "--dry-run",
+        "--ensure-cleanup",
+        "--failure-policy",
+        "--gate-fast-script",
+        "--gate-policy",
+        "--gate-security-script",
+        "--json",
+        "--kill-switch-path",
+        "--landing-branch",
+        "--landing-commit-message",
+        "--landing-lock-path",
+        "--landing-policy",
+        "--lease",
+        "--lease-path",
+        "--lease-ttl",
+        "--max-cycles",
+        "--mode",
+        "--output",
+        "--ralph",
+        "--repo-filter",
+        "--retry-backoff",
+        "--supervisor",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.extract",
+      "name": "ao extract",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Process pending learning extractions",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--all",
+        "--bead",
+        "--clear",
+        "--config",
+        "--dry-run",
+        "--json",
+        "--max-content",
+        "--output",
+        "--queue",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.feedback-loop",
+      "name": "ao feedback-loop",
+      "type": "cli-command",
+      "bounded_context": "BC5",
+      "purpose": "Close the MemRL feedback loop for a session",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--alpha",
+        "--citation-type",
+        "--config",
+        "--drain",
+        "--drain-reward",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--reward",
+        "--session",
+        "--transcript",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.findings",
+      "name": "ao findings",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Manage promoted findings",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.flywheel",
+      "name": "ao flywheel",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Knowledge flywheel operations",
+      "status": "active",
+      "driven_by_skills": [
+        "flywheel"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.forge",
+      "name": "ao forge",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Extract knowledge from sources",
+      "status": "active",
+      "driven_by_skills": [
+        "post-mortem",
+        "validation"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.gate",
+      "name": "ao gate",
+      "type": "cli-command",
+      "bounded_context": "BC2",
+      "purpose": "Human review gates",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--reason",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.goals",
+      "name": "ao goals",
+      "type": "cli-command",
+      "bounded_context": "BC3",
+      "purpose": "Fitness goal measurement and validation",
+      "status": "active",
+      "driven_by_skills": [
+        "dream",
+        "evolve",
+        "goals",
+        "post-mortem",
+        "release",
+        "scaffold",
+        "scenario",
+        "validate"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--file",
+        "--json",
+        "--output",
+        "--timeout",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.handoff",
+      "name": "ao handoff",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Write a structured handoff artifact for session boundary isolation",
+      "status": "active",
+      "driven_by_skills": [
+        "crank"
+      ],
+      "flags": [
+        "--collect",
+        "--config",
+        "--dry-run",
+        "--epic",
+        "--goal",
+        "--json",
+        "--no-kill",
+        "--output",
+        "--rpi-phase",
+        "--run-id",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.harness",
+      "name": "ao harness",
+      "type": "cli-command",
+      "bounded_context": "BC5",
+      "purpose": "BC5 HarnessPort operations (sync state across skill harnesses)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.harvest",
+      "name": "ao harvest",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Sweep all rigs, extract and deduplicate cross-rig knowledge",
+      "status": "active",
+      "driven_by_skills": [
+        "flywheel",
+        "harvest"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--include",
+        "--json",
+        "--max-file-size",
+        "--max-promotions",
+        "--min-confidence",
+        "--output",
+        "--output-dir",
+        "--promote-to",
+        "--quiet",
+        "--roots",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.init",
+      "name": "ao init",
+      "type": "cli-command",
+      "bounded_context": "BC4",
+      "purpose": "Initialize AgentOps in the current repository",
+      "status": "active",
+      "driven_by_skills": [
+        "quickstart"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--stealth",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.inject",
+      "name": "ao inject",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Output relevant knowledge for explicit or JIT injection",
+      "status": "active",
+      "driven_by_skills": [
+        "domain",
+        "harvest",
+        "inject",
+        "using-agentops",
+        "using-gc"
+      ],
+      "flags": [
+        "--apply-decay",
+        "--bead",
+        "--config",
+        "--context",
+        "--dry-run",
+        "--for",
+        "--format",
+        "--index-only",
+        "--json",
+        "--max-tokens",
+        "--no-cite",
+        "--output",
+        "--predecessor",
+        "--profile",
+        "--quarantine-flagged",
+        "--session",
+        "--session-type",
+        "--utility-weight",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.knowledge",
+      "name": "ao knowledge",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Operationalize a mature .agents corpus into reusable operator surfaces",
+      "status": "active",
+      "driven_by_skills": [
+        "knowledge-activation"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.lookup",
+      "name": "ao lookup",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Retrieve specific knowledge artifacts by ID or query",
+      "status": "active",
+      "driven_by_skills": [
+        "bug-hunt",
+        "crank",
+        "discovery",
+        "evolve",
+        "flywheel",
+        "hooks-authoring",
+        "implement",
+        "inject",
+        "plan",
+        "pre-mortem",
+        "recover",
+        "review",
+        "using-agentops",
+        "validation",
+        "vibe"
+      ],
+      "flags": [
+        "--bead",
+        "--cite",
+        "--config",
+        "--dry-run",
+        "--json",
+        "--limit",
+        "--no-cite",
+        "--output",
+        "--query",
+        "--session",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.loop",
+      "name": "ao loop",
+      "type": "cli-command",
+      "bounded_context": "BC3",
+      "purpose": "BC3 Loop operations (cycle history, etc.)",
+      "status": "active",
+      "driven_by_skills": [
+        "standards"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.maturity",
+      "name": "ao maturity",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Check and manage learning maturity levels",
+      "status": "active",
+      "driven_by_skills": [
+        "domain",
+        "flywheel",
+        "using-gc"
+      ],
+      "flags": [
+        "--apply",
+        "--archive",
+        "--config",
+        "--curate",
+        "--dry-run",
+        "--evict",
+        "--expire",
+        "--global",
+        "--json",
+        "--migrate-md",
+        "--output",
+        "--recalibrate",
+        "--scan",
+        "--target-size",
+        "--uncited-days",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.memory",
+      "name": "ao memory",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Manage repo-root MEMORY.md for cross-runtime access",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.metrics",
+      "name": "ao metrics",
+      "type": "cli-command",
+      "bounded_context": "BC2",
+      "purpose": "Knowledge flywheel metrics",
+      "status": "active",
+      "driven_by_skills": [
+        "crank",
+        "flywheel",
+        "harvest",
+        "quickstart",
+        "status"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.mind",
+      "name": "ao mind",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Knowledge graph operations",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose",
+        "--write"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.mine",
+      "name": "ao mine",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Extract knowledge signal from git, .agents/, and code",
+      "status": "active",
+      "driven_by_skills": [
+        "compile",
+        "crank",
+        "evolve"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--emit-work-items",
+        "--json",
+        "--output",
+        "--output-dir",
+        "--quiet",
+        "--since",
+        "--sources",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.notebook",
+      "name": "ao notebook",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Manage the session notebook (MEMORY.md)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.operator",
+      "name": "ao operator",
+      "type": "cli-command",
+      "bounded_context": "BC4",
+      "purpose": "BC4 OperatorPort operations (record/list operator intents)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.patterns",
+      "name": "ao patterns",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Inspect and repair .agents/patterns/ artifacts",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.pool",
+      "name": "ao pool",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Manage quality pools",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--tier",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.quick-start",
+      "name": "ao quick-start",
+      "type": "cli-command",
+      "bounded_context": "BC3",
+      "purpose": "Set up AgentOps in your project (5 minutes)",
+      "status": "active",
+      "driven_by_skills": [
+        "bootstrap",
+        "quickstart"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--minimal",
+        "--no-beads",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.ratchet",
+      "name": "ao ratchet",
+      "type": "cli-command",
+      "bounded_context": "BC3",
+      "purpose": "Brownian Ratchet workflow tracking",
+      "status": "active",
+      "driven_by_skills": [
+        "crank",
+        "discovery",
+        "evolve",
+        "handoff",
+        "implement",
+        "plan",
+        "pre-mortem",
+        "ratchet",
+        "rpi",
+        "status",
+        "validate",
+        "validation",
+        "vibe"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.registry",
+      "name": "ao registry",
+      "type": "cli-command",
+      "bounded_context": "BC4",
+      "purpose": "Query the unified registry",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.retrieval-bench",
+      "name": "ao retrieval-bench",
+      "type": "cli-command",
+      "bounded_context": "BC2",
+      "purpose": "Run retrieval quality benchmarks",
+      "status": "active",
+      "driven_by_skills": [
+        "flywheel"
+      ],
+      "flags": [
+        "--config",
+        "--corpus",
+        "--dry-run",
+        "--eval-set",
+        "--global",
+        "--json",
+        "--k",
+        "--live",
+        "--output",
+        "--search-backend",
+        "--search-compare-backends",
+        "--search-eval",
+        "--search-root",
+        "--seed",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.robot-docs",
+      "name": "ao robot-docs",
+      "type": "cli-command",
+      "bounded_context": "BC5",
+      "purpose": "Print the paste-ready agent handbook for the ao CLI (Markdown)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.rpi",
+      "name": "ao rpi",
+      "type": "cli-command",
+      "bounded_context": "BC3",
+      "purpose": "RPI lifecycle automation",
+      "status": "active",
+      "driven_by_skills": [
+        "autodev",
+        "domain",
+        "shared",
+        "standards",
+        "swarm",
+        "using-agentops",
+        "using-gc"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.scenario",
+      "name": "ao scenario",
+      "type": "cli-command",
+      "bounded_context": "BC2",
+      "purpose": "Manage holdout scenarios for behavioral validation",
+      "status": "active",
+      "driven_by_skills": [
+        "goals"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.scope",
+      "name": "ao scope",
+      "type": "cli-command",
+      "bounded_context": "BC5",
+      "purpose": "Manage edit-scope guard (freeze, unfreeze, status)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--lock",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.search",
+      "name": "ao search",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Search workspace session history and repo-local knowledge",
+      "status": "active",
+      "driven_by_skills": [
+        "discovery",
+        "inject",
+        "plan",
+        "pre-mortem",
+        "provenance",
+        "using-agentops",
+        "vibe"
+      ],
+      "flags": [
+        "--cass",
+        "--cite",
+        "--config",
+        "--dry-run",
+        "--json",
+        "--limit",
+        "--local",
+        "--output",
+        "--session",
+        "--type",
+        "--use-sc",
+        "--verbose",
+        "--workspace"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.seed",
+      "name": "ao seed",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Plant the seed in any repository",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--force",
+        "--hooks",
+        "--json",
+        "--output",
+        "--template",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.session",
+      "name": "ao session",
+      "type": "cli-command",
+      "bounded_context": "BC5",
+      "purpose": "Session lifecycle operations",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--session",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.sessions",
+      "name": "ao sessions",
+      "type": "cli-command",
+      "bounded_context": "BC5",
+      "purpose": "Manage indexed session pages",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.skills",
+      "name": "ao skills",
+      "type": "cli-command",
+      "bounded_context": "BC4",
+      "purpose": "Inspect and validate the skills/ tree",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.status",
+      "name": "ao status",
+      "type": "cli-command",
+      "bounded_context": "BC3",
+      "purpose": "Show AgentOps status",
+      "status": "active",
+      "driven_by_skills": [
+        "flywheel"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.trace",
+      "name": "ao trace",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Track artifact provenance",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--graph",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.validate",
+      "name": "ao validate",
+      "type": "cli-command",
+      "bounded_context": "BC2",
+      "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
+      "status": "active",
+      "driven_by_skills": [
+        "using-gc"
+      ],
+      "flags": [
+        "--bead",
+        "--changes",
+        "--config",
+        "--dry-run",
+        "--gate",
+        "--json",
+        "--lenient",
+        "--lenient-expiry",
+        "--output",
+        "--strict",
+        "--verbose",
+        "--warn-as-fail"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.version",
+      "name": "ao version",
+      "type": "cli-command",
+      "bounded_context": "BC4",
+      "purpose": "Show version information",
+      "status": "active",
+      "driven_by_skills": [
+        "crank",
+        "shared"
+      ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.vibe-check",
+      "name": "ao vibe-check",
+      "type": "cli-command",
+      "bounded_context": "BC2",
+      "purpose": "Analyze codebase health and vibe",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--full",
+        "--json",
+        "--markdown",
+        "--output",
+        "--repo",
+        "--since",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.wiki",
+      "name": "ao wiki",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Unified wiki knowledge surface (experimental)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "gate:changes",
+      "name": "changes",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:doc-release-gate",
+      "name": "doc-release-gate",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:smoke-test",
+      "name": "smoke-test",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:agentops-eval-baseline-audit",
+      "name": "agentops-eval-baseline-audit",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-ci-policy-parity",
+      "name": "validate-ci-policy-parity",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-codex-runtime-sections",
+      "name": "validate-codex-runtime-sections",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-codex-generated-artifacts",
+      "name": "validate-codex-generated-artifacts",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-codex-backbone-prompts",
+      "name": "validate-codex-backbone-prompts",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-codex-override-coverage",
+      "name": "validate-codex-override-coverage",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-codex-rpi-contract",
+      "name": "validate-codex-rpi-contract",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-codex-lifecycle-guards",
+      "name": "validate-codex-lifecycle-guards",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-codex-parity-drift",
+      "name": "validate-codex-parity-drift",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-quarantine-empty",
+      "name": "validate-quarantine-empty",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-registry-drift",
+      "name": "validate-registry-drift",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-bounded-contexts-drift",
+      "name": "validate-bounded-contexts-drift",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-skill-domain-map-golden",
+      "name": "validate-skill-domain-map-golden",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-flywheel-proof",
+      "name": "validate-flywheel-proof",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-goals-validate",
+      "name": "validate-goals-validate",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-wiring-closure",
+      "name": "validate-wiring-closure",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-corpus-freshness",
+      "name": "validate-corpus-freshness",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-flywheel-compounding-snapshot",
+      "name": "validate-flywheel-compounding-snapshot",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-finding-registry",
+      "name": "validate-finding-registry",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-agents-split",
+      "name": "validate-agents-split",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-sovereignty-proof-citations",
+      "name": "validate-sovereignty-proof-citations",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-contracts-structural-floor",
+      "name": "validate-contracts-structural-floor",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-docs-learning-references",
+      "name": "validate-docs-learning-references",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-three-gap-supergate",
+      "name": "validate-three-gap-supergate",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-headless-runtime-skills",
+      "name": "validate-headless-runtime-skills",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-skill-frontmatter",
+      "name": "validate-skill-frontmatter",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-context-map-drift",
+      "name": "validate-context-map-drift",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:embedded-sync",
+      "name": "embedded-sync",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:cli-docs-parity",
+      "name": "cli-docs-parity",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:registry-check",
+      "name": "registry-check",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-sku-catalog-drift",
+      "name": "validate-sku-catalog-drift",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:agentops-contract-canaries",
+      "name": "agentops-contract-canaries",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:eval-workbench-verify",
+      "name": "eval-workbench-verify",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:eval-skill-delta",
+      "name": "eval-skill-delta",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:shellcheck",
+      "name": "shellcheck",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:markdownlint",
+      "name": "markdownlint",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:security-scan",
+      "name": "security-scan",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:security-toolchain-gate",
+      "name": "security-toolchain-gate",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:skill-integrity",
+      "name": "skill-integrity",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:skill-schema",
+      "name": "skill-schema",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:skill-dependency-check",
+      "name": "skill-dependency-check",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:contract-compatibility-gate",
+      "name": "contract-compatibility-gate",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:memrl-health",
+      "name": "memrl-health",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:plugin-load-test",
+      "name": "plugin-load-test",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:retrieval-quality",
+      "name": "retrieval-quality",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:go-build",
+      "name": "go-build",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:windows-smoke",
+      "name": "windows-smoke",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:cli-integration",
+      "name": "cli-integration",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:json-flag-consistency",
+      "name": "json-flag-consistency",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:file-manifest-overlap",
+      "name": "file-manifest-overlap",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:lint-evidence-lines-advisory",
+      "name": "lint-evidence-lines-advisory",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:check-skill-catalog-drift-advisory",
+      "name": "check-skill-catalog-drift-advisory",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:doctor-check",
+      "name": "doctor-check",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:skill-lint",
+      "name": "skill-lint",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:bats-tests",
+      "name": "bats-tests",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:check-test-staleness",
+      "name": "check-test-staleness",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:swarm-evidence",
+      "name": "swarm-evidence",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:executable-spec-link-integrity",
+      "name": "executable-spec-link-integrity",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-scenario-test-linkage",
+      "name": "validate-scenario-test-linkage",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-pr-evidence-claims",
+      "name": "validate-pr-evidence-claims",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:summary",
+      "name": "summary",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "ref-impl:agentops-pack",
+      "name": "agentops reference City pack",
+      "type": "reference-impl",
+      "bounded_context": "BC5",
+      "purpose": "Reference Gas City pack: mayor + refinery agents drive ao rpi/evolve loops.",
+      "status": "active",
+      "path": "packs/agentops/"
+    },
+    {
+      "sku": "ref-impl:agentops-agent.mayor",
+      "name": "agentops mayor agent",
+      "type": "reference-impl",
+      "bounded_context": "BC5",
+      "purpose": "Reference City mayor agent role.",
+      "status": "active",
+      "path": "packs/agentops/agents/mayor/"
+    },
+    {
+      "sku": "ref-impl:agentops-agent.refinery",
+      "name": "agentops refinery agent",
+      "type": "reference-impl",
+      "bounded_context": "BC5",
+      "purpose": "Reference City refinery agent role.",
+      "status": "active",
+      "path": "packs/agentops/agents/refinery/"
+    }
+  ],
   "cadence_recommendations": [
     {
       "name": "dream-cycle",
