@@ -641,10 +641,19 @@ jobs:
     # main until a workflow-touching PR (#364) re-triggered it. soc-xhp6
     # closes the path-filter-SKIPPED-≠-drift-absent gap. See
     # .agents/learnings/2026-05-20-path-filter-skipped-not-absent.md.
-    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
+    # ag-cbm: schema v2 added the SKU catalog, which also reads contracts/
+    # (skill-dispositions.yaml, SKILL-TIERS.md, bounded-contexts.yaml,
+    # validate.yml gate jobs, packs/) and needs a built `ao` binary.
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.contracts == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
 
       - name: Install jq
         run: sudo apt-get install -y jq
@@ -653,6 +662,34 @@ jobs:
         run: |
           chmod +x scripts/generate-registry.sh
           ./scripts/generate-registry.sh --check
+
+  validate-sku-catalog-drift:
+    needs: [changes]
+    # ag-cbm: the SKU capability catalog (registry.json schema v2) is a derived
+    # JOIN of SKILL.md frontmatter + skill-dispositions.yaml + SKILL-TIERS.md +
+    # the live `ao` cobra tree + validate.yml gate jobs + packs/agentops. This
+    # gate enforces (a) no drift, (b) linkage integrity (every skill
+    # drives_commands edge resolves to a real ao command), and (c) coverage
+    # (every BC + every operating-loop move has an active skill). Trigger on any
+    # source it reads.
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.contracts == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Validate SKU capability catalog (drift + linkage + coverage)
+        run: |
+          chmod +x scripts/validate-sku-catalog-drift.sh
+          ./scripts/validate-sku-catalog-drift.sh
 
   agentops-contract-canaries:
     needs: [changes]
@@ -1647,7 +1684,7 @@ jobs:
     # with `summary` and depends on the same broad set so all sibling-job logs
     # are present when we fetch. `summary` also depends on this job so its
     # verdict surfaces in the CI summary.
-    needs: [changes, doc-release-gate, smoke-test, agentops-eval-baseline-audit, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-finding-registry, validate-agents-split, validate-sovereignty-proof-citations, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity, validate-scenario-test-linkage]
+    needs: [changes, doc-release-gate, smoke-test, agentops-eval-baseline-audit, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-finding-registry, validate-agents-split, validate-sovereignty-proof-citations, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, validate-sku-catalog-drift, agentops-contract-canaries, eval-workbench-verify, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity, validate-scenario-test-linkage]
     if: always() && github.event_name == 'pull_request'
     name: AP#7 — verify Evidence claims in PR body
     runs-on: ubuntu-latest
@@ -1756,7 +1793,7 @@ jobs:
           echo "::notice::AP#7 verification skipped — no completed sibling jobs returned logs. The PR's Evidence: line was extracted but cannot be cross-checked against per-job logs in this CI shape (likely: only this job ran, or all siblings were skipped)."
 
   summary:
-    needs: [changes, doc-release-gate, smoke-test, agentops-eval-baseline-audit, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-pr-evidence-claims, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-finding-registry, validate-agents-split, validate-sovereignty-proof-citations, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity, validate-scenario-test-linkage, lint-evidence-lines-advisory, check-skill-catalog-drift-advisory]
+    needs: [changes, doc-release-gate, smoke-test, agentops-eval-baseline-audit, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-pr-evidence-claims, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-finding-registry, validate-agents-split, validate-sovereignty-proof-citations, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, validate-sku-catalog-drift, agentops-contract-canaries, eval-workbench-verify, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity, validate-scenario-test-linkage, lint-evidence-lines-advisory, check-skill-catalog-drift-advisory]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1796,6 +1833,7 @@ jobs:
           echo "embedded-sync: ${{ needs.embedded-sync.result }}"
           echo "cli-docs-parity: ${{ needs.cli-docs-parity.result }}"
           echo "registry-check: ${{ needs.registry-check.result }}"
+          echo "validate-sku-catalog-drift: ${{ needs.validate-sku-catalog-drift.result }}"
           echo "agentops-contract-canaries: ${{ needs.agentops-contract-canaries.result }}"
           echo "eval-workbench-verify: ${{ needs.eval-workbench-verify.result }}"
           echo "eval-skill-delta: ${{ needs.eval-skill-delta.result }}"
