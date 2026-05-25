@@ -11,14 +11,14 @@ Skills fall into three functional categories, plus infrastructure tiers for inte
 | **judgment** | Validation | Internal tier for validation, review, and quality gates — council is the foundation | council, vibe, pre-mortem, post-mortem, red-team |
 | **execution** | Primitives + flows | Research, plan, build, and ship — the work itself | research, plan, implement, crank, swarm, rpi |
 | **knowledge** | Bookkeeping | The flywheel — capture, store, query, inject, and promote learnings | retro (quick-capture), flywheel, forge |
-| **product** | Execution | Define mission, goals, release, docs | product, goals, release, readme, doc |
+| **product** | Execution | Define mission, goals, release, docs | product, goals, release, doc |
 | **session** | Execution | Session continuity and status | handoff, recover, status, session-bootstrap |
 | **utility** | Execution | Standalone tools | quickstart, brainstorm, bug-hunt, complexity |
-| **contribute** | Execution | Upstream PR workflow | pr-research, pr-plan, pr-implement, pr-validate, pr-prep, pr-retro, oss-docs |
+| **contribute** | Execution | Upstream PR workflow | pr-research, pr-implement, pr-validate, pr-prep |
 | **cross-vendor** | Execution | Multi-runtime orchestration | codex-team, openai-docs, converter |
 | **library** | Internal | Reference skills loaded JIT by other skills | beads, standards, shared |
 | **background** | Internal | Hook-triggered or automatic skills | inject, extract, forge, provenance, ratchet |
-| **meta** | Internal | Skills about skills | using-agentops, using-gc, heal-skill, update |
+| **meta** | Internal | Skills about skills | using-agentops, using-gc, heal-skill |
 
 ## The Three Categories
 
@@ -172,7 +172,7 @@ What are you trying to do?
 │   └─ Generate CI config ───────► /scaffold ci <platform>
 │
 ├─ "Contribute upstream"
-│   └─ Full PR workflow ──────────► /pr-research → /pr-plan → /pr-implement
+│   └─ Full PR workflow ──────────► /pr-research → /plan → /pr-implement
 │
 ├─ "Ship a release"
 │   └─ Changelog + tag ──────────► /release <version>
@@ -204,7 +204,7 @@ These are how skills chain in practice:
 | **Planned epic** | `/plan` → `/pre-mortem` → `/crank` → `/post-mortem` | Multi-issue, structured |
 | **Full pipeline** | `/rpi` (chains all above) | End-to-end, autonomous |
 | **Evolve loop** | `/evolve` (chains `/rpi` repeatedly) | Fitness-scored improvement |
-| **PR contribution** | `/pr-research` → `/pr-plan` → `/pr-implement` → `/pr-validate` → `/pr-prep` | External repo |
+| **PR contribution** | `/pr-research` → `/plan` → `/pr-implement` → `/pr-validate` → `/pr-prep` | External repo |
 | **Knowledge query** | `/compile` → `/research` (if gaps) | Understanding before building |
 | **Standalone review** | `/council validate <target>` | Ad-hoc multi-judge review |
 | **Time-boxed pipeline** | `/rpi --budget=research:180,plan:120` | Prevent research/plan stalls |
@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (71)
+### User-Facing Skills (65)
 
 **Judgment:**
 
@@ -235,7 +235,6 @@ These are how skills chain in practice:
 | **review** | judgment | Review incoming PRs, agent-generated changes, or diffs — SCORED checklist |
 | **design** | judgment | Product validation gate — checks goal alignment, persona fit, competitive differentiation before discovery |
 | **red-team** | judgment | Persona-based adversarial validation — probe docs and skills from constrained user perspectives |
-| **expert-council** | judgment | Alias (1 release) — routes to `/council --mode=debate`; adversarial named-persona duel |
 
 **Execution:**
 
@@ -289,8 +288,7 @@ These are how skills chain in practice:
 | **release** | product | Pre-flight, changelog, version bumps, tag |
 | **security** | product | Continuous security scanning and release gating |
 | **security-suite** | execution | Composable security suite for binary and prompt-surface assurance, offline redteam, and policy gating |
-| **readme** | product | Gold-standard README generation with council validation |
-| **doc** | product | Generate documentation |
+| **doc** | product | Generate repo docs (default), gold-standard README (`--mode=readme`, council-validated), and OSS doc packs (`--mode=oss`) |
 
 **Session & Status:**
 
@@ -309,12 +307,9 @@ These are how skills chain in practice:
 | Skill | Tier | Description |
 |-------|------|-------------|
 | **pr-research** | contribute | Upstream repository research before contribution |
-| **pr-plan** | contribute | Contribution planning for external PRs |
 | **pr-implement** | contribute | Fork-based implementation for external PRs |
 | **pr-validate** | contribute | PR-specific isolation and scope validation |
 | **pr-prep** | contribute | PR preparation and structured PR body generation |
-| **pr-retro** | contribute | Learn from accepted/rejected PR outcomes |
-| **oss-docs** | contribute | Scaffold and audit OSS documentation packs |
 
 **Cross-Vendor & Meta:**
 
@@ -327,7 +322,6 @@ These are how skills chain in practice:
 | **heal-skill** | meta | Detect and fix skill hygiene issues |
 | **skill-auditor** | meta | Two-pass audit of an existing SKILL.md against the unified template (15 checks) |
 | **skill-builder** | meta | Scaffold or absorb new SKILL.md files against the unified template |
-| **update** | meta | Reinstall all AgentOps skills globally |
 
 ### Internal Skills (10) — `metadata.internal: true`
 
@@ -381,15 +375,12 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **push** | - | - (standalone) |
 | **product** | - | - (standalone) |
 | **pr-research** | - | - (standalone) |
-| **pr-plan** | pr-research | optional |
-| **pr-implement** | pr-plan, pr-validate | optional, optional |
+| **pr-implement** | plan, pr-validate | optional, optional |
 | **pr-validate** | - | - (standalone) |
 | **pr-prep** | pr-validate | optional |
-| **pr-retro** | pr-prep | optional |
-| **oss-docs** | doc | optional |
 | provenance | - | - |
 | **quickstart** | - | - (zero dependencies) |
-| **bootstrap** | goals, product, readme, shared | all optional (progressive — skips what exists) |
+| **bootstrap** | goals, product, doc, shared | all optional (progressive — skips what exists) |
 | **discovery** | brainstorm, research, plan, pre-mortem, shared | brainstorm optional, rest required |
 | **validation** | vibe, post-mortem, retro, forge, shared | vibe+post-mortem required, retro+forge optional |
 | **rpi** | discovery, crank, validation, ratchet | all required |

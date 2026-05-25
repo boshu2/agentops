@@ -73,34 +73,32 @@
     },
     {
       "id": "docs-readme-oss-skill-validators",
-      "title": "doc, README, and OSS docs skill validators pass across runtimes",
+      "title": "doc skill validators pass across runtimes (README + OSS folded as modes)",
       "kind": "command",
-      "objective": "Keep documentation authoring skills healthy across shared and Codex artifacts, including README validation and OSS documentation workflows.",
+      "objective": "Keep documentation authoring skills healthy across shared and Codex artifacts, including README validation (--mode=readme) and OSS documentation workflows (--mode=oss) now absorbed into doc.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "bash skills/doc/scripts/validate.sh && bash skills-codex/doc/scripts/validate.sh && bash skills/readme/scripts/validate.sh && bash skills-codex/readme/scripts/validate.sh && bash skills/oss-docs/scripts/validate.sh && bash skills-codex/oss-docs/scripts/validate.sh"
+        "shell": "bash skills/doc/scripts/validate.sh && bash skills-codex/doc/scripts/validate.sh"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Results: 5 passed, 0 failed"},
-        {"type": "stdout_contains", "value": "Results: 2 passed, 0 failed"},
-        {"type": "stdout_contains", "value": "PASS: OSS-docs skill validation passed"}
+        {"type": "stdout_contains", "value": "Results: 5 passed, 0 failed"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
       "critical": true
     },
     {
       "id": "oss-docs-audit-json-behavior",
-      "title": "OSS docs audit emits valid tiered JSON",
+      "title": "OSS docs audit emits valid tiered JSON (--mode=oss helper)",
       "kind": "command",
       "objective": "Behaviorally protect the OSS docs audit command's JSON mode so future doc tooling can consume project type, tier scores, and totals deterministically.",
       "runtime": "shell",
       "timeout_seconds": 60,
       "inputs": {
         "cwd": "../..",
-        "shell": "skills/oss-docs/scripts/audit-oss-docs.sh --json | jq -e '.tier1.total == 4 and .tier2.total == 5 and .tier3.total == 6 and .total_possible == 15' >/dev/null && echo oss-docs-json-ok"
+        "shell": "skills/doc/scripts/audit-oss-docs.sh --json | jq -e '.tier1.total == 4 and .tier2.total == 5 and .tier3.total == 6 and .total_possible == 15' >/dev/null && echo oss-docs-json-ok"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
@@ -120,9 +118,8 @@
         {"type": "artifact_contains", "target": "../../skills/doc/references/validation-rules.md", "value": "Establish ONE authoritative file per domain. Other docs MUST reference, not duplicate."},
         {"type": "artifact_contains", "target": "../../skills/doc/references/validation-rules.md", "value": "When running `/doc coverage --verify-claims`"},
         {"type": "artifact_contains", "target": "../../skills-codex/doc/prompt.md", "value": "Prefer source-backed updates, doc-gap findings, and validation commands over generic prose."},
-        {"type": "artifact_contains", "target": "../../skills/readme/SKILL.md", "value": "Assertions without evidence trigger hostility."},
-        {"type": "artifact_contains", "target": "../../skills/readme/SKILL.md", "value": "Trust block near install"},
-        {"type": "artifact_contains", "target": "../../skills-codex/readme/prompt.md", "value": "Validate claims against the repo before presenting the draft as ready."}
+        {"type": "artifact_contains", "target": "../../skills/doc/references/readme-craft.md", "value": "Assertions without evidence trigger hostility."},
+        {"type": "artifact_contains", "target": "../../skills/doc/references/readme-craft.md", "value": "Trust block near install"}
       ],
       "dimensions": ["process_adherence", "artifact_quality", "safety"],
       "critical": true

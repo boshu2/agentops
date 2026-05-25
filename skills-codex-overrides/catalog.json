@@ -95,12 +95,6 @@
       "reason": "Multi-judge review flow and evidence handling differ materially in Codex sessions."
     },
     {
-      "name": "expert-council",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Absorbed into council as --mode=debate; kept as a one-release thin alias with no Codex-only runtime divergence."
-    },
-    {
       "name": "crank",
       "treatment": "bespoke",
       "wave": "backbone",
@@ -241,12 +235,6 @@
       "reason": "Official-doc retrieval and citation behavior need explicit Codex tooling guidance."
     },
     {
-      "name": "oss-docs",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "The canonical OSS documentation workflow is already explicit enough for Codex without a dedicated override."
-    },
-    {
       "name": "plan",
       "treatment": "bespoke",
       "wave": "backbone",
@@ -291,12 +279,6 @@
       "reason": "Fork-based contribution work needs explicit Codex guidance around isolation, scope control, and proof of completion."
     },
     {
-      "name": "pr-plan",
-      "treatment": "bespoke",
-      "wave": "contribution-workflow",
-      "reason": "PR planning benefits from concise Codex framing around contribution scope, risk, and upstream fit."
-    },
-    {
       "name": "pr-prep",
       "treatment": "bespoke",
       "wave": "contribution-workflow",
@@ -307,12 +289,6 @@
       "treatment": "bespoke",
       "wave": "contribution-workflow",
       "reason": "Upstream research works better in Codex with explicit evidence capture and maintainer-pattern extraction."
-    },
-    {
-      "name": "pr-retro",
-      "treatment": "bespoke",
-      "wave": "contribution-workflow",
-      "reason": "Contribution retros should emphasize actionable maintainer feedback patterns in a Codex-native format."
     },
     {
       "name": "pr-validate",
@@ -368,12 +344,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Ratchet commands are procedural and already map cleanly into the generated Codex prompt."
-    },
-    {
-      "name": "readme",
-      "treatment": "bespoke",
-      "wave": "analysis-authoring",
-      "reason": "README generation benefits from Codex-specific interview brevity, artifact output, and validation focus."
     },
     {
       "name": "red-team",
@@ -574,12 +544,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Builder dispatcher (scripts/build.sh) drives all 4 modes (from-scratch, from-template, absorb-external, from-pattern); the prose is reference material with no Codex-specific runtime divergence."
-    },
-    {
-      "name": "update",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Skill reinstall/update flow is script-led and does not need extra Codex-native phrasing."
     },
     {
       "name": "using-agentops",

@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-05-25T01:16:07Z",
-  "skill_count": 81,
+  "generated_at": "2026-05-25T02:39:14Z",
+  "skill_count": 75,
   "skills": [
     {
       "name": "autodev",
@@ -58,7 +58,7 @@
       "consumes": [
         "goals",
         "product",
-        "readme",
+        "doc",
         "shared"
       ],
       "produces": [],
@@ -348,7 +348,7 @@
     },
     {
       "name": "doc",
-      "description": "Generate and validate repo docs.",
+      "description": "Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss).",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -363,7 +363,7 @@
         "pragmatic-programmer"
       ],
       "context_rel": [],
-      "references_count": 6,
+      "references_count": 11,
       "codex_override_present": true
     },
     {
@@ -429,20 +429,6 @@
         }
       ],
       "references_count": 25,
-      "codex_override_present": true
-    },
-    {
-      "name": "expert-council",
-      "description": "Alias for /council --mode=debate — adversarial named-persona debate. Triggers: \"expert council\", \"dueling council\", \"council of <names>\". Kept one release.",
-      "hexagonal_role": "domain",
-      "user_invocable": true,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "llm-eval-harness"
-      ],
-      "context_rel": [],
-      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -695,25 +681,6 @@
       "codex_override_present": true
     },
     {
-      "name": "oss-docs",
-      "description": "Scaffold or audit OSS docs.",
-      "hexagonal_role": "generic",
-      "user_invocable": false,
-      "consumes": [
-        "repo-context"
-      ],
-      "produces": [
-        "documentation"
-      ],
-      "practices": [
-        "code-complete",
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 3,
-      "codex_override_present": true
-    },
-    {
       "name": "perf",
       "description": "Profile and optimize hotspots.",
       "hexagonal_role": "domain",
@@ -788,7 +755,7 @@
           "with": "standards"
         }
       ],
-      "references_count": 21,
+      "references_count": 22,
       "codex_override_present": true
     },
     {
@@ -813,24 +780,6 @@
           "with": "crank"
         }
       ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "pr-plan",
-      "description": "Plan an open source PR.",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "practices": [
-        "agile-manifesto",
-        "adr",
-        "lean-startup"
-      ],
-      "context_rel": [],
       "references_count": 0,
       "codex_override_present": true
     },
@@ -877,24 +826,6 @@
       ],
       "context_rel": [],
       "references_count": 1,
-      "codex_override_present": true
-    },
-    {
-      "name": "pr-retro",
-      "description": "Learn from PR outcomes.",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [
-        ".agents/research/*.md"
-      ],
-      "practices": [
-        "dora-metrics",
-        "sre",
-        "lean-startup"
-      ],
-      "context_rel": [],
-      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -1057,24 +988,6 @@
           "with": "standards"
         }
       ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "readme",
-      "description": "Draft or improve README docs.",
-      "hexagonal_role": "generic",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [
-        "documentation"
-      ],
-      "practices": [
-        "code-complete",
-        "wiki-knowledge-surface",
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
       "references_count": 0,
       "codex_override_present": true
     },
@@ -1646,22 +1559,6 @@
       ],
       "context_rel": [],
       "references_count": 3,
-      "codex_override_present": true
-    },
-    {
-      "name": "update",
-      "description": "Sync AgentOps skills.",
-      "hexagonal_role": "supporting",
-      "user_invocable": true,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "gitops",
-        "continuous-delivery",
-        "infrastructure-as-code"
-      ],
-      "context_rel": [],
-      "references_count": 0,
       "codex_override_present": true
     },
     {

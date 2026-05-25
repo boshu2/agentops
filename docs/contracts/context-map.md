@@ -17,7 +17,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `design` — Validate product fit before discovery.
 - `discovery` — Create dense execution packets.
 - `domain` — Canonical vocabulary for human-AI software work.
-- `expert-council` — Alias for /council --mode=debate — adversarial named-persona debate. Triggers: "expert council", "dueling council", "council of <names>". Kept one release.
 - `flywheel` — Check knowledge flywheel health.
 - `forge` — Mine transcripts into learnings.
 - `goals` — Maintain AgentOps goals.
@@ -70,7 +69,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `codex-team` — Coordinate multiple Codex agents.
 - `compile` — Compile .agents knowledge wiki.
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.
-- `doc` — Generate and validate repo docs.
+- `doc` — Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss).
 - `dream` — Retired pointer — out-of-session compounding moved to Gas City.
 - `evolve` — Run autonomous improvement loops.
 - `handoff` — Write compact session handoffs.
@@ -78,8 +77,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `heal-skill` — Repair skill hygiene.
 - `knowledge-activation` — Activate mature .agents knowledge.
 - `llm-wiki` — Build external-knowledge wikis.
-- `pr-plan` — Plan an open source PR.
-- `pr-retro` — Learn from PR outcomes.
 - `red-team` — Probe docs and skills.
 - `refactor` — Execute safe refactors.
 - `release` — Run release validation.
@@ -93,13 +90,10 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `system-tuning` — Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene.
 - `test` — Generate tests and coverage plans.
 - `trace` — Trace decisions through artifacts.
-- `update` — Sync AgentOps skills.
 
 ### generic
 
 - `converter` — Convert AgentOps skill formats.
-- `oss-docs` — Scaffold or audit OSS docs.
-- `readme` — Draft or improve README docs.
 - `using-agentops` — Explain AgentOps workflows.
 - `using-gc` — Explain how to run AgentOps on the Gas City (gc) substrate.
 
@@ -165,9 +159,9 @@ graph LR
 | `autodev` | consumes | rpi |
 | `beads` | consumes | bd-issue |
 | `beads` | produces | bd-issue |
+| `bootstrap` | consumes | doc |
 | `bootstrap` | consumes | goals |
 | `bootstrap` | consumes | product |
-| `bootstrap` | consumes | readme |
 | `bootstrap` | consumes | shared |
 | `brainstorm` | consumes | standards |
 | `brainstorm` | produces | result.json |
@@ -225,8 +219,6 @@ graph LR
 | `implement` | produces | git-changes |
 | `llm-wiki` | produces | documentation |
 | `openai-docs` | consumes | external-api |
-| `oss-docs` | consumes | repo-context |
-| `oss-docs` | produces | documentation |
 | `perf` | consumes | repo-context |
 | `perf` | produces | result.json |
 | `plan` | consumes | standards |
@@ -238,12 +230,10 @@ graph LR
 | `post-mortem` | produces | result.json |
 | `pr-implement` | consumes | crank |
 | `pr-implement` | produces | git-changes |
-| `pr-plan` | produces | result.json |
 | `pr-prep` | consumes | domain |
 | `pr-prep` | produces | git-changes |
 | `pr-research` | consumes | external-api |
 | `pr-research` | produces | result.json |
-| `pr-retro` | produces | .agents/research/*.md |
 | `pr-validate` | consumes | validation |
 | `pr-validate` | produces | result.json |
 | `pre-mortem` | consumes | standards |
@@ -259,7 +249,6 @@ graph LR
 | `ratchet` | consumes | validation |
 | `ratchet` | consumes | vibe |
 | `ratchet` | produces | .agents/rpi/*.md |
-| `readme` | produces | documentation |
 | `recover` | consumes | bd |
 | `recover` | consumes | rpi |
 | `recover` | produces | .agents/rpi/*.md |

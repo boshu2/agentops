@@ -235,14 +235,11 @@ formats, heal scripts, hook manifests.
 |---|---|---|
 | `bootstrap` | driving-adapter | Initializes project files and install surfaces. |
 | `converter` | generic | Converts skill formats across runtimes. |
-| `doc` | supporting | Generates and validates repo docs. |
+| `doc` | supporting | Generates and validates repo docs; `--mode=readme` (absorbed readme) and `--mode=oss` (absorbed oss-docs). |
 | `heal-skill` | supporting | Repairs skill hygiene. |
 | `hooks-authoring` | domain | Authors runtime hook contracts. `needs-follow-up`: may belong to Runtime once hook guard adapters are fully mapped. |
-| `oss-docs` | generic | Scaffolds or audits OSS docs. |
-| `readme` | generic | Drafts or improves README docs. |
 | `skill-auditor` | supporting | Audits SKILL.md quality. |
 | `skill-builder` | supporting | Scaffolds or absorbs SKILL.md files. |
-| `update` | supporting | Syncs installed AgentOps skills. |
 
 ## PR and Release Delivery
 
@@ -264,10 +261,8 @@ validation gates.
 | Skill | Current hexagonal role | Primary reason |
 |---|---|---|
 | `pr-implement` | driving-adapter | Implements scoped OSS PR work. |
-| `pr-plan` | supporting | Plans open source PR work. |
 | `pr-prep` | driving-adapter | Prepares PR commits and body. |
 | `pr-research` | driven-adapter | Researches upstream repositories. |
-| `pr-retro` | supporting | Learns from PR outcomes. |
 | `pr-validate` | driving-adapter | Validates PR scope and quality. |
 | `push` | driving-adapter | Validates, commits, and pushes. |
 | `release` | supporting | Runs release validation. |

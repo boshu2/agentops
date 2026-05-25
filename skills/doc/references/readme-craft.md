@@ -1,49 +1,24 @@
----
-name: readme
-description: Draft or improve README docs.
-practices:
-- code-complete
-- wiki-knowledge-surface
-- pragmatic-programmer
-hexagonal_role: generic
-consumes: []
-produces:
-- documentation
-context_rel: []
-skill_api_version: 1
-context:
-  window: fork
-  intent:
-    mode: task
-  sections:
-    exclude:
-    - HISTORY
-  intel_scope: full
-metadata:
-  tier: product
-  dependencies:
-  - council
-output_contract: README.md
----
-# /readme — Gold-Standard README Generation
+# README Craft — Gold-Standard README Generation (`/doc --mode=readme`)
 
-> **Purpose:** Generate a README that converts skimmers into users and satisfies deep readers — then validate it with a council.
+> Generate a README that converts skimmers into users and satisfies deep readers — then validate it with a council. This is the full contract behind `/doc --mode=readme`; it absorbed the former `/readme` skill.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
 ## Quick Start
 
 ```bash
-/readme                    # Interview + generate + validate (new README)
-/readme --rewrite          # Rewrite existing README with same patterns
-/readme --validate         # Council-validate an existing README without rewriting
+/doc --mode=readme                    # Interview + generate + validate (new README)
+/doc --mode=readme --rewrite          # Rewrite existing README with same patterns
+/doc --mode=readme --validate         # Council-validate an existing README without rewriting
 ```
+
+(The legacy `/readme`, `/readme --rewrite`, `/readme --validate` triggers route here.)
 
 ---
 
 ## The Patterns
 
-These are non-negotiable. Every README this skill produces follows them.
+These are non-negotiable. Every README this mode produces follows them.
 
 ### 1. Lead with the problem, not the framework
 
@@ -104,7 +79,7 @@ Theory and architecture come AFTER the user has seen examples and knows how to s
 
 ## Execution Steps
 
-Given `/readme [--rewrite] [--validate]`:
+Given `/doc --mode=readme [--rewrite] [--validate]`:
 
 ### Step 1: Pre-flight
 
@@ -338,46 +313,12 @@ When rewriting or validating, flag these:
 
 ---
 
-## Examples
-
-### Generating a README from scratch for a new project
-
-**User says:** `/readme`
-
-**What happens:**
-1. Pre-flight detects no existing README.md and proceeds to generate from scratch.
-2. The skill reads project context (manifest files, source directories, license) and runs a short interview asking about the problem, the fix, the audience, install command, quick demo, and trust concerns.
-3. A README is generated following all 8 gold-standard patterns (problem-first lead, trust block near install, collapsed depth, etc.) and validated by a quick council review.
-
-**Result:** A complete `README.md` written to disk that converts skimmers into users and serves deep readers, with a council verdict confirming quality.
-
-### Validating an existing README without changes
-
-**User says:** `/readme --validate`
-
-**What happens:**
-1. Pre-flight confirms README.md exists and enters validate-only mode, skipping the interview and generation steps.
-2. A full council review (2 judges) evaluates the README against the 8 patterns and the anti-pattern detection table (flywheel echo, guru tone, buried trust info, etc.).
-3. Findings are presented with options to auto-fix, review manually, or ship as-is.
-
-**Result:** A detailed council report identifying specific anti-patterns and structural issues in the existing README, with actionable fix suggestions.
-
 ## Troubleshooting
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| Council validation step fails or hangs | The `/council` skill dependency is not installed or is broken | Run `/update` to reinstall all skills, then retry. Verify `/council` works independently |
-| Generated README has no trust block | No trust concerns were selected during the interview (step 3f answered "None of the above") | If your tool does run hooks, modify config, or make network calls, re-run `/readme --rewrite` and select the applicable trust concerns |
-| `<details>` blocks render as raw HTML on GitHub | Missing blank line after `<summary>` tag or before `</details>` | The skill enforces this formatting rule, but manual edits may break it. Ensure there is a blank line after every `<summary>...</summary>` line and before every `</details>` |
+| Council validation step fails or hangs | The `/council` dependency is not installed or is broken | Reinstall skills (re-run the install one-liner from CLAUDE.md), then retry. Verify `/council` works independently |
+| Generated README has no trust block | No trust concerns were selected during the interview (step 3f answered "None of the above") | If your tool does run hooks, modify config, or make network calls, re-run `/doc --mode=readme --rewrite` and select the applicable trust concerns |
+| `<details>` blocks render as raw HTML on GitHub | Missing blank line after `<summary>` tag or before `</details>` | This mode enforces the formatting rule, but manual edits may break it. Ensure a blank line after every `<summary>...</summary>` line and before every `</details>` |
 | Interview keeps asking questions the project manifest already answers | The manifest file format is not recognized by the context-gathering step | Ensure your project has a standard manifest (`package.json`, `go.mod`, `pyproject.toml`, `Cargo.toml`) in the repo root |
 | Anti-pattern detection flags false positives on rewrite | Some content patterns trigger heuristic detection even when intentional | Review each finding during the council step and select "Ship it" for intentional choices. The detection is heuristic, not absolute |
-
-## Reference Documents
-
-- [references/readme.feature](references/readme.feature) — Executable spec: mode detection, problem-first lead, trust block near install, collapse-don't-delete depth, the council gate, anti-pattern detection (soc-qk4b)
-
-## See Also
-
-- `skills/product/SKILL.md` — PRODUCT.md generation (feeds into README context)
-- `skills/doc/SKILL.md` — Code documentation (different scope — API docs, not README)
-- `skills/council/SKILL.md` — Validation engine used in Step 5

@@ -48,7 +48,7 @@ output_contract: merged PR on origin/main + closed bead
 
 # /ship-loop — Bot-paired fast lane PR cycle
 
-> **Lane choice:** use this skill for **coherent-arc internal PRs** — one closable bead, or one small-epic slice (≤5 child beads of the same surface), with paired tests. The PR is the *atomic-revert unit*: bundle scenarios that ship-or-revert together; split scenarios with independent rollback. For fork-based OSS contributions, use the `/pr-*` family (`pr-research`, `pr-plan`, `pr-implement`, etc.; tier `contribute`). For large epics (15+ child beads) or multi-wave work, use `/crank`. See `CLAUDE.md ## Workflow` for the canonical unit-of-PR rule.
+> **Lane choice:** use this skill for **coherent-arc internal PRs** — one closable bead, or one small-epic slice (≤5 child beads of the same surface), with paired tests. The PR is the *atomic-revert unit*: bundle scenarios that ship-or-revert together; split scenarios with independent rollback. For fork-based OSS contributions, use the `/pr-*` family (`pr-research`, `plan`, `pr-implement`, etc.; tier `contribute`). For large epics (15+ child beads) or multi-wave work, use `/crank`. See `CLAUDE.md ## Workflow` for the canonical unit-of-PR rule.
 
 Capture of the discipline that landed 8/9 internal PRs in the 2026-05-18 session at 19.5-min median time-to-merge. Five named failure modes (F1–F5); four closed mechanically. The full rationale lives in [`docs/learnings/2026-05-18-xp-bdd-tdd-workflow-synthesis.md`](https://github.com/boshu2/agentops/blob/main/docs/learnings/2026-05-18-xp-bdd-tdd-workflow-synthesis.md).
 

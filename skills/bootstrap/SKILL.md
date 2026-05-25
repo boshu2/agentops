@@ -9,7 +9,7 @@ hexagonal_role: driving-adapter
 consumes:
 - goals
 - product
-- readme
+- doc
 - shared
 produces: []
 context_rel: []
@@ -25,7 +25,7 @@ metadata:
   dependencies:
   - goals
   - product
-  - readme
+  - doc
   - shared
 output_contract: .agents/ directory structure, GOALS.md, PRODUCT.md
 ---
@@ -119,10 +119,10 @@ If `HAS_PRODUCT` is true and `--force` is not set: skip. Report "PRODUCT.md exis
 
 If `HAS_README` is false (or `--force` is set) AND PRODUCT.md now exists:
 
-Run the readme skill to generate README.md:
+Run the doc skill in README mode to generate README.md:
 
 ```
-Skill(skill="readme")
+Skill(skill="doc", args="--mode=readme")
 ```
 
 If `HAS_README` is true and `--force` is not set: skip. Report "README.md exists -- skipped."
@@ -229,13 +229,13 @@ Repo is now AgentOps-ready. Next: /rpi "your first goal"
 
 **User says:** `/bootstrap`
 
-**What happens:** Agent detects no AgentOps artifacts. Runs /goals init, /product, /readme, creates .agents/ structure, leaves hooks optional. Reports all five core artifacts created.
+**What happens:** Agent detects no AgentOps artifacts. Runs /goals init, /product, /doc --mode=readme, creates .agents/ structure, leaves hooks optional. Reports all five core artifacts created.
 
 ### Partial Repo (has GOALS.md and .agents/)
 
 **User says:** `/bootstrap`
 
-**What happens:** Agent detects existing artifacts. Skips GOALS.md and .agents/. Runs /product, /readme. Leaves hooks optional unless explicitly requested. Reports two created, three skipped.
+**What happens:** Agent detects existing artifacts. Skips GOALS.md and .agents/. Runs /product, /doc --mode=readme. Leaves hooks optional unless explicitly requested. Reports two created, three skipped.
 
 ### Dry Run
 
@@ -258,7 +258,7 @@ Repo is now AgentOps-ready. Next: /rpi "your first goal"
 
 - [goals](../goals/SKILL.md) -- Fitness specification and directive management
 - [product](../product/SKILL.md) -- Product definition generation
-- [readme](../readme/SKILL.md) -- README generation
+- [doc](../doc/SKILL.md) -- README generation (`--mode=readme`) + repo docs
 - [quickstart](../quickstart/SKILL.md) -- New user onboarding (lighter than bootstrap)
 - [related operator runbooks](references/related-runbooks.md) -- host-hygiene runbooks (PATH rationalization, etc.)
 

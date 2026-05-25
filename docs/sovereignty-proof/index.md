@@ -112,6 +112,5 @@ The CI gate `validate-sovereignty-proof-citations` scans this page and the commi
 
 ## See also
 
-- [Council skill](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) — how to invoke `/council --mixed --deep`
-- [Expert council skill](https://github.com/boshu2/agentops/blob/main/skills/expert-council/SKILL.md) — persona-debate variant for fungibility decisions
+- [Council skill](https://github.com/boshu2/agentops/blob/main/skills/council/SKILL.md) — how to invoke `/council --mixed --deep`; the persona-debate variant for fungibility decisions is `/council --mode=debate`
 - [Operating loop](../architecture/operating-loop.md) — where council fits in the 7-move doctrine

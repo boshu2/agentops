@@ -57,6 +57,7 @@ Six phases:
 /post-mortem                    # wraps up recent work
 /post-mortem epic-123           # wraps up specific epic
 /post-mortem --quick "insight"  # quick-capture single learning (no council)
+/post-mortem --scope=pr <num>   # learn from a merged/rejected PR outcome (absorbed /pr-retro)
 /post-mortem --process-only     # skip council+extraction, run Phase 3-5 on backlog
 /post-mortem --skip-activate    # extract + process but don't write MEMORY.md
 /post-mortem --deep recent      # thorough council review
@@ -82,6 +83,7 @@ ao codex status
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--quick "text"` | off | Quick-capture a single learning directly to `.agents/learnings/` without running a full post-mortem. Formerly handled by `/retro --quick`. |
+| `--scope=pr [num]` | off | Read a merged/rejected PR outcome as the wrap-up signal instead of a closed bead/epic — mine reviewer feedback into a PR learning. Absorbed the former pr-retro skill. See [references/pr-scope.md](references/pr-scope.md). |
 | `--process-only` | off | Skip council and extraction (Phase 1-2). Run Phase 3-5 on the existing backlog only. |
 | `--skip-activate` | off | Extract and process learnings but do not write to MEMORY.md (skip Phase 4 promotions). |
 | `--deep` | off | 3 judges (default for post-mortem) |
@@ -96,6 +98,10 @@ ao codex status
 ## Quick Mode
 
 Read [references/quick-mode.md](references/quick-mode.md) when you need the `--quick` flag procedure (slug generation, direct learning write, confirmation).
+
+## PR-Outcome Scope (`--scope=pr`)
+
+Read [references/pr-scope.md](references/pr-scope.md) when invoked with `--scope=pr`. It swaps the bead/epic wrap-up signal for a PR's merge/reject/changes-requested outcome: discover the PR, analyze the outcome, mine reviewer feedback via `gh`, extract success/failure patterns, and write a dated PR learning to `.agents/learnings/`. After the PR learning lands, the standard maintenance phases (process → activate → retire → harvest) run as usual. The trigger phrases "PR retro", "learn from this PR", and the legacy pr-retro command all route here.
 
 ---
 
@@ -251,6 +257,8 @@ should change. See the `/goals` skill.
 ## Reference Documents
 
 - [references/post-mortem.feature](references/post-mortem.feature) — Executable spec: validate-shipped, ratcheted learning promotion, next-work harvest, result.json (soc-qk4b.2)
+- [references/pr-retro.feature](references/pr-retro.feature) — Executable spec (`--scope=pr`): categorize PR feedback, extract success/failure patterns by outcome, write a dated PR learning (soc-qk4b)
+- [references/pr-scope.md](references/pr-scope.md) — `--scope=pr`: PR discovery, outcome analysis, gh feedback mining, PR learning template (absorbed /pr-retro)
 - [references/harvest-next-work.md](references/harvest-next-work.md)
 - [references/learning-templates.md](references/learning-templates.md)
 - [references/plan-compliance-checklist.md](references/plan-compliance-checklist.md)
