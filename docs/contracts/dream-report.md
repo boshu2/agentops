@@ -106,7 +106,7 @@ Minimum sections:
 
 Future consumers of this contract:
 
-- `ao overnight report`
+- the in-session `/dream` report (the standalone overnight runner was removed in 3.0)
 - Dream Setup validation
 - Dream Council synthesis
 - DreamScape terrain visualization
