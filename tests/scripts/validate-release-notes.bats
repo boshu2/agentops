@@ -132,3 +132,46 @@ EOF
   [ "$status" -ne 0 ]
   [[ "$output" == *"canonical action label"* ]]
 }
+
+@test "reports the tier (hotfix) for an X.Y.Z version" {
+  write_patch_notes "9.9.9"
+  run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.9
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"tier hotfix"* ]]
+}
+
+@test "reports the tier (minor) for an X.Y.0 version" {
+  write_patch_notes "9.9.0"
+  run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.0
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"tier minor"* ]]
+}
+
+@test "minor (X.Y.0) does NOT require a Breaking Changes section" {
+  write_patch_notes "9.9.0"
+  run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.0
+  [ "$status" -eq 0 ]
+}
+
+@test "coverage gate FAILS when a touched area is missing from the notes" {
+  write_patch_notes "9.9.9"   # notes document only "Eval, Validation, and Release Gates"
+  printf 'cli/cmd/ao/a.go\ncli/cmd/ao/b.go\ncli/cmd/ao/c.go\n' > "$SANDBOX/changed.txt"
+  run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.9 --changed-files "$SANDBOX/changed.txt"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"CLI and Operator Commands"* ]]
+  [[ "$output" == *"no '### CLI and Operator Commands' section"* ]]
+}
+
+@test "coverage gate PASSES when all touched areas are documented" {
+  write_patch_notes "9.9.9"   # documents "Eval, Validation, and Release Gates"
+  printf 'tests/scripts/x.bats\ntests/scripts/y.bats\nevals/z.json\n' > "$SANDBOX/changed.txt"
+  run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.9 --changed-files "$SANDBOX/changed.txt"
+  [ "$status" -eq 0 ]
+}
+
+@test "coverage gate ignores areas below the file threshold" {
+  write_patch_notes "9.9.9"
+  printf 'cli/cmd/ao/just-one.go\n' > "$SANDBOX/changed.txt"   # 1 file < threshold 3
+  run "$SANDBOX/scripts/validate-release-notes.sh" v9.9.9 --changed-files "$SANDBOX/changed.txt"
+  [ "$status" -eq 0 ]
+}

@@ -5,6 +5,24 @@ developer-facing. `docs/releases/YYYY-MM-DD-v<version>-notes.md` is the public
 GitHub Release body: scannable, product-area-first, and curated for users who
 want to know whether a release touches the part of AgentOps they care about.
 
+## Scope rule (read this first)
+
+**The notes cover the git range since the previous release — `git log <prev-tag>..HEAD` — not the single `## [version]` CHANGELOG stanza.** This is the rule that prevents under-scoped notes. For a major, the previous release is the last minor/patch, so the range *is the entire major* (every product area the major touched). Derive scope from `git diff --name-only <prev-tag>..HEAD`, never from one changelog entry.
+
+Don't hand-mine from scratch — run `scripts/scaffold-release-notes.sh v<version> --since <prev-tag>` to emit a tier-correct draft (one `### ` per touched area, seeded with that area's commit subjects), then curate. `scripts/validate-release-notes.sh v<version> --since <prev-tag>` enforces both the shape and **coverage** (every area the range touched must appear), and runs as a hard gate in `release.yml`.
+
+## Release tiers
+
+The version determines the tier and the shape:
+
+| Tier | Version | Scope (git range) | `## Breaking Changes` |
+|---|---|---|---|
+| **major** | `X.0.0` | last release → HEAD (the whole major) | **required** |
+| **minor** | `X.Y.0` | last minor/patch → HEAD | only if actually breaking |
+| **hotfix** | `X.Y.Z` (Z>0) | last patch → HEAD (narrow) | only if actually breaking |
+
+All tiers use the same required section skeleton below; only `## Breaking Changes` (required for majors) and the breadth of `## Product Areas` differ. A hotfix typically has one or two areas; a major has many.
+
 ## Audience
 
 Write for people scrolling a GitHub release page, not for contributors reading
