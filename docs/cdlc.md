@@ -18,7 +18,7 @@ The translation is direct. Each piece of the software-engineering stack has a co
 | CI/CD | Validation gates (`/vibe`, `/pre-mortem`) |
 | Postmortems | Automated postmortems (`/post-mortem` → learnings) |
 | Runbooks | Skills + planning rules |
-| Software factories | Software factory daemon (`ao daemon`) |
+| Software factories | The in-session loop (`ao rpi`, `/evolve`) run out of session on an orchestration substrate (Gas City is the reference) |
 | Markdown / Git / Linux (open primitives) | LLM Wiki of Markdown |
 | Open-source corpus | Your private corpus (`.agents/` in your repo) |
 
