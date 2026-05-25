@@ -14,6 +14,8 @@ research_refs:
 
 # Evolution Road Map — 2026-05-11
 
+> **Historical (2026-05-11).** A dated planning snapshot retained for provenance. Some surfaces it names have since changed — notably the standalone daemon (`agentopsd`) and its code map were removed in the AgentOps 3.0 rearchitecture ([ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)); AgentOps is in-session only, with out-of-session orchestration delegated to the Gas City reference City. Read for intent, not as a current task list.
+
 ## Purpose
 
 The 13-cycle /evolve session on 2026-05-11 shipped the practice-citation epic (756/756) and surfaced a structural friction: /evolve's Step 3 ladder picks from `bd ready` or `next-work.jsonl` but neither captures the **largest source of work in this repo** — the gap between aspirational docs (`PRODUCT.md`, `GOALS.md`, `PRACTICE-REGISTRY.md`, `docs/contracts/`, `docs/code-map/`, `docs/plans/`) and what the code actually does.
@@ -188,7 +190,7 @@ Currently enforced. Bead is to ratchet stricter: add `council-coverage` gate tha
 
 ## A3: Code-Map Drift Audit (1 audit bead + N follow-ups)
 
-`docs/code-map/` has `agentopsd-codebase-map.md` and `eval-lid-primitives.md`. Audit cycle:
+`docs/code-map/` has `eval-lid-primitives.md` (the `agentopsd` code map was removed with the daemon in 3.0 — see [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)). Audit cycle:
 
 1. For each code map, extract claimed file structure / module layout / function names.
 2. Diff against actual repo via `find`, `ls`, and `grep`.
