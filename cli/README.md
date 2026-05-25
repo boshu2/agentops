@@ -95,7 +95,6 @@ These commands remain important, but they sit below the higher-level flows:
 ## Reference
 
 - [Software Factory Surface](../docs/software-factory.md)
-- [Dream Run Contract](../docs/contracts/dream-run-contract.md)
 - [Dream Report Contract](../docs/contracts/dream-report.md)
 - [Session Lifecycle](../docs/workflows/session-lifecycle.md)
 - [CLI Reference](docs/COMMANDS.md)

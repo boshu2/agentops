@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-05-20T22:21:21Z",
-  "skill_count": 79,
+  "generated_at": "2026-05-25T01:16:07Z",
+  "skill_count": 81,
   "skills": [
     {
       "name": "autodev",
@@ -93,7 +93,7 @@
           "with": "standards"
         }
       ],
-      "references_count": 1,
+      "references_count": 4,
       "codex_override_present": true
     },
     {
@@ -143,7 +143,9 @@
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],
-      "produces": [],
+      "produces": [
+        ".agents/compiled/lint-report.md"
+      ],
       "practices": [
         "wiki-knowledge-surface",
         "ddd-bounded-context"
@@ -272,7 +274,9 @@
       "description": "Audit dependency risks and updates.",
       "hexagonal_role": "driven-adapter",
       "user_invocable": false,
-      "consumes": [],
+      "consumes": [
+        "repo-context"
+      ],
       "produces": [
         "result.json"
       ],
@@ -347,7 +351,9 @@
       "description": "Generate and validate repo docs.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
-      "consumes": [],
+      "consumes": [
+        "repo-context"
+      ],
       "produces": [
         "documentation"
       ],
@@ -375,12 +381,12 @@
         "pragmatic-programmer"
       ],
       "context_rel": [],
-      "references_count": 9,
+      "references_count": 16,
       "codex_override_present": true
     },
     {
       "name": "dream",
-      "description": "Run overnight compounding sessions.",
+      "description": "Retired pointer — out-of-session compounding moved to Gas City.",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],
@@ -401,15 +407,28 @@
       "description": "Run autonomous improvement loops.",
       "hexagonal_role": "supporting",
       "user_invocable": true,
-      "consumes": [],
-      "produces": [],
+      "consumes": [
+        "rpi",
+        "goals",
+        "post-mortem",
+        "compile"
+      ],
+      "produces": [
+        "git-changes",
+        "goals-fitness-delta"
+      ],
       "practices": [
         "lean-startup",
         "dora-metrics",
         "agile-manifesto"
       ],
-      "context_rel": [],
-      "references_count": 23,
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "rpi"
+        }
+      ],
+      "references_count": 25,
       "codex_override_present": true
     },
     {
@@ -680,7 +699,9 @@
       "description": "Scaffold or audit OSS docs.",
       "hexagonal_role": "generic",
       "user_invocable": false,
-      "consumes": [],
+      "consumes": [
+        "repo-context"
+      ],
       "produces": [
         "documentation"
       ],
@@ -697,7 +718,9 @@
       "description": "Profile and optimize hotspots.",
       "hexagonal_role": "domain",
       "user_invocable": false,
-      "consumes": [],
+      "consumes": [
+        "repo-context"
+      ],
       "produces": [
         "result.json"
       ],
@@ -746,7 +769,11 @@
       "description": "Review completed work and learn.",
       "hexagonal_role": "domain",
       "user_invocable": false,
-      "consumes": [],
+      "consumes": [
+        "implement",
+        "vibe",
+        "council"
+      ],
       "produces": [
         "result.json"
       ],
@@ -1011,7 +1038,11 @@
       "description": "Record Brownian Ratchet gates.",
       "hexagonal_role": "domain",
       "user_invocable": false,
-      "consumes": [],
+      "consumes": [
+        "validation",
+        "vibe",
+        "post-mortem"
+      ],
       "produces": [
         ".agents/rpi/*.md"
       ],
@@ -1052,7 +1083,10 @@
       "description": "Recover session context.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
-      "consumes": [],
+      "consumes": [
+        "bd",
+        "rpi"
+      ],
       "produces": [
         ".agents/rpi/*.md"
       ],
@@ -1070,7 +1104,9 @@
       "description": "Probe docs and skills.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
-      "consumes": [],
+      "consumes": [
+        "repo-context"
+      ],
       "produces": [
         "result.json"
       ],
@@ -1088,7 +1124,10 @@
       "description": "Execute safe refactors.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
-      "consumes": [],
+      "consumes": [
+        "complexity",
+        "repo-context"
+      ],
       "produces": [
         "git-changes"
       ],
@@ -1361,6 +1400,49 @@
       "codex_override_present": true
     },
     {
+      "name": "session-bootstrap",
+      "description": "Universal init prompt — every agent spawned into an AgentOps repo runs `ao session bootstrap` first.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "bd",
+        "onboard"
+      ],
+      "produces": [
+        "stdout",
+        "json"
+      ],
+      "practices": [
+        "agile-manifesto",
+        "dora-metrics",
+        "fungibility-charter"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "AGENTS.md"
+        },
+        {
+          "kind": "customer-of",
+          "with": "AGENTS-WORKFLOW.md"
+        },
+        {
+          "kind": "customer-of",
+          "with": "AGENTS-CI.md"
+        },
+        {
+          "kind": "customer-of",
+          "with": "AGENTS-CODEX.md"
+        },
+        {
+          "kind": "customer-of",
+          "with": "AGENTS-RUNTIME.md"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "shared",
       "description": "Shared AgentOps skill contracts.",
       "hexagonal_role": "domain",
@@ -1471,7 +1553,9 @@
       "description": "Show AgentOps work status.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
-      "consumes": [],
+      "consumes": [
+        "bd"
+      ],
       "produces": [
         "stdout"
       ],
@@ -1530,7 +1614,10 @@
       "description": "Generate tests and coverage plans.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
-      "consumes": [],
+      "consumes": [
+        "standards",
+        "repo-context"
+      ],
       "produces": [
         "result.json"
       ],
@@ -1593,6 +1680,24 @@
       ],
       "context_rel": [],
       "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "using-gc",
+      "description": "Explain how to run AgentOps on the Gas City (gc) substrate.",
+      "hexagonal_role": "generic",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "documentation"
+      ],
+      "practices": [
+        "wiki-knowledge-surface",
+        "twelve-factor-app",
+        "agile-manifesto"
+      ],
+      "context_rel": [],
+      "references_count": 2,
       "codex_override_present": true
     },
     {

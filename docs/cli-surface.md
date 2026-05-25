@@ -17,7 +17,15 @@
 | `ao beads cluster` | `public-stateful-fixture-needed` | `allowlisted` | Requires a beads database fixture; apply mode mutates issue parents. |
 | `ao beads harvest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao beads lint` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao beads resume` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao beads stale-claims` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao beads verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao capabilities` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao ci latest` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao ci recent` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao citation verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao claim bind` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao claim list` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
 | `ao codex ensure-start` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao codex ensure-stop` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao codex start` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -31,25 +39,27 @@
 | `ao constraint retire` | `public-tested` | `allowlisted` | Covered by constraint list smoke behavior. |
 | `ao constraint review` | `public-tested` | `allowlisted` | Covered by constraint list smoke behavior. |
 | `ao contradict` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao corpus capture` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao corpus fitness` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao corpus inject` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao corpus restore` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao corpus snapshot` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao cron self-adjust` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao curate catalog` | `public-tested` | `allowlisted` | Covered by curate command tests. |
 | `ao curate status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao curate verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao daemon events tail` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
-| `ao daemon jobs cancel` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
-| `ao daemon jobs list` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
-| `ao daemon jobs show` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
-| `ao daemon jobs submit` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
-| `ao daemon jobs wait` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
-| `ao daemon ready` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao daemon run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao daemon service install` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao daemon soak` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao daemon status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao dedup` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao defrag` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao demo` | `manual-only` | `allowlisted` | Interactive council-first demonstration requires a TTY. |
-| `ao doctor` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao demo` | `manual-only` | `allowlisted` | Interactive demonstration requires a TTY. |
+| `ao doctor capabilities` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao doctor diff` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao doctor explain` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao doctor fix` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao doctor gc` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao doctor health` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao doctor ls` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao doctor robot-docs` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao doctor undo` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
 | `ao eval baseline` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao eval baseline-audit` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao eval cleanup` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -63,10 +73,11 @@
 | `ao eval task list` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
 | `ao eval task run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao eval task show` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
-| `ao evolve` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao evolve blocked` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao evolve config` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao evolve next-work` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao evolve write-stop-marker` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao extract` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao factory pilot` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao factory start` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao feedback-loop` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao findings export` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao findings list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -86,6 +97,7 @@
 | `ao gate bulk-approve` | `public-tested` | `allowlisted` | Covered by gate command tests. |
 | `ao gate pending` | `public-tested` | `allowlisted` | Covered by gate command tests. |
 | `ao gate reject` | `public-tested` | `allowlisted` | Covered by gate command tests. |
+| `ao gate run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao goals add` | `public-stateful-fixture-needed` | `allowlisted` | Writes GOALS.md and needs an isolated goal fixture. |
 | `ao goals drift` | `public-stateful-fixture-needed` | `allowlisted` | Requires two goal snapshots to compare. |
 | `ao goals export` | `public-tested` | `allowlisted` | Covered through goals measure snapshot behavior. |
@@ -95,18 +107,19 @@
 | `ao goals meta` | `public-tested` | `allowlisted` | Covered through goals measure behavior. |
 | `ao goals migrate` | `public-stateful-fixture-needed` | `allowlisted` | Migrates GOALS.md format and needs a disposable fixture. |
 | `ao goals prune` | `public-stateful-fixture-needed` | `allowlisted` | Removes stale goal entries and needs a disposable fixture. |
+| `ao goals render` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao goals scenarios` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao goals steer add` | `public-stateful-fixture-needed` | `allowlisted` | Writes GOALS.md and needs an isolated goal fixture. |
+| `ao goals steer apply` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
 | `ao goals steer prioritize` | `public-stateful-fixture-needed` | `allowlisted` | Writes GOALS.md and needs an isolated goal fixture. |
+| `ao goals steer recommend` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
 | `ao goals steer remove` | `public-stateful-fixture-needed` | `allowlisted` | Writes GOALS.md and needs an isolated goal fixture. |
+| `ao goals trace` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao goals validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao handoff` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao harness status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao harvest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao help` | `internal-hidden` | `allowlisted` | Built-in Cobra help dispatcher with no application handler. |
-| `ao hooks init` | `public-tested` | `allowlisted` | Covered by hook helper tests. |
-| `ao hooks install` | `public-tested` | `allowlisted` | Covered by hook helper tests. |
-| `ao hooks run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao hooks show` | `public-tested` | `allowlisted` | Covered by hook helper tests. |
-| `ao hooks test` | `public-tested` | `allowlisted` | Covered by hook helper tests. |
 | `ao init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao inject` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao knowledge activate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -115,6 +128,12 @@
 | `ao knowledge gaps` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao knowledge playbooks` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao lookup` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao loop append` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao loop converged` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao loop history` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao loop hypothesis append` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao loop hypothesis list` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao loop verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao maturity` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao memory sync` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao metrics baseline` | `public-tested` | `allowlisted` | Covered by metrics command tests. |
@@ -130,21 +149,9 @@
 | `ao mind scan` | `public-tested` | `allowlisted` | Covered by mind command argument construction tests. |
 | `ao mine` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao notebook update` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao overnight curator compact` | `unsafe-live` | `allowlisted` | Executes a configured local curator worker script. |
-| `ao overnight curator diagnose` | `manual-only` | `allowlisted` | Depends on local curator, runner, and Ollama environment. |
-| `ao overnight curator enqueue` | `public-stateful-fixture-needed` | `allowlisted` | Writes jobs into a configured local curator queue. |
-| `ao overnight curator event` | `public-stateful-fixture-needed` | `allowlisted` | Appends events to a configured local curator ledger. |
-| `ao overnight curator status` | `manual-only` | `allowlisted` | Depends on local curator, runner, and Ollama environment. |
-| `ao overnight report` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao overnight setup` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao overnight start` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao overnight warn-only reset` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao plans diff` | `public-tested` | `allowlisted` | Covered by plans command tests. |
-| `ao plans list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao plans register` | `public-tested` | `allowlisted` | Covered by plans command tests. |
-| `ao plans search` | `public-tested` | `allowlisted` | Covered by plans command tests. |
-| `ao plans sync` | `public-tested` | `allowlisted` | Covered by plans command tests. |
-| `ao plans update` | `public-tested` | `allowlisted` | Covered by plans command tests. |
+| `ao operator list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao operator record` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao patterns repair-filenames` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao pool auto-promote` | `public-tested` | `allowlisted` | Covered by pool command tests. |
 | `ao pool batch-promote` | `public-tested` | `allowlisted` | Covered by batch promote tests. |
 | `ao pool ingest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -168,7 +175,9 @@
 | `ao ratchet status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao ratchet trace` | `public-tested` | `allowlisted` | Covered through trace command behavior. |
 | `ao ratchet validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao registry list` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
 | `ao retrieval-bench` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao robot-docs` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao rpi cancel` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao rpi cleanup` | `public-tested` | `allowlisted` | Covered by rpi cleanup tests. |
 | `ao rpi loop` | `unsafe-live` | `allowlisted` | Autonomous loop is long-running and state-modifying. |
@@ -184,20 +193,25 @@
 | `ao scenario init` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao scenario list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao scenario validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao schedule add` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
-| `ao schedule list` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
-| `ao schedule remove` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
-| `ao schedule run` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
 | `ao scope freeze` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao scope status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao scope unfreeze` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao search` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao seed` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao session bootstrap` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao session close` | `public-tested` | `allowlisted` | Covered by session close tests. |
 | `ao sessions index` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao sessions spawn` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
 | `ao skills check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao trace` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao version` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao vibe-check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao watch` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao wiki doctor` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao wiki index` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao wiki inject` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao wiki lint` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao wiki promote` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao wiki query` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao wiki search` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |

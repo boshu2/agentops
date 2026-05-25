@@ -71,7 +71,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `compile` — Compile .agents knowledge wiki.
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.
 - `doc` — Generate and validate repo docs.
-- `dream` — Run overnight compounding sessions.
+- `dream` — Retired pointer — out-of-session compounding moved to Gas City.
 - `evolve` — Run autonomous improvement loops.
 - `handoff` — Write compact session handoffs.
 - `harvest` — Promote .agents knowledge.

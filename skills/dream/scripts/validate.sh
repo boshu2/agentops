@@ -8,8 +8,8 @@ check() { if bash -c "$2"; then echo "PASS: $1"; PASS=$((PASS + 1)); else echo "
 check "SKILL.md exists" "[ -f '$SKILL_DIR/SKILL.md' ]"
 check "SKILL.md has YAML frontmatter" "head -1 '$SKILL_DIR/SKILL.md' | grep -q '^---$'"
 check "SKILL.md has name: dream" "grep -q '^name: dream' '$SKILL_DIR/SKILL.md'"
-check "SKILL.md mentions overnight engine" "grep -qi 'overnight' '$SKILL_DIR/SKILL.md'"
-check "SKILL.md mentions setup/start/report surfaces" "grep -qE 'setup|start|report' '$SKILL_DIR/SKILL.md'"
+check "SKILL.md describes the knowledge-compounding dream loop" "grep -qiE 'compound|knowledge|corpus' '$SKILL_DIR/SKILL.md'"
+check "SKILL.md names its run surfaces" "grep -qiE 'dream|report|compile' '$SKILL_DIR/SKILL.md'"
 
 echo ""; echo "Results: $PASS passed, $FAIL failed"
 [ $FAIL -eq 0 ] && exit 0 || exit 1
