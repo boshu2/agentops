@@ -42,6 +42,52 @@ teardown() {
     [[ "$output" == *"Usage"* ]]
 }
 
+@test "--help documents the --quick sanity mode" {
+    run bash "$SCRIPT" --help
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"--quick"* ]]
+    [[ "$output" == *"--sanity"* ]]
+}
+
+@test "--quick is an accepted flag (help-exit path)" {
+    run bash "$SCRIPT" --quick --help
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Usage"* ]]
+}
+
+@test "--sanity is an accepted alias (help-exit path)" {
+    run bash "$SCRIPT" --sanity --help
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Usage"* ]]
+}
+
+@test "script defines a QUICK_MODE default of false" {
+    run grep -q 'QUICK_MODE=false' "$SCRIPT"
+    [ "$status" -eq 0 ]
+}
+
+@test "--quick skips the release-rehearsal lane (SBOM/cross-build/scan)" {
+    # Guard the core contract: --quick must not invoke the slow rehearsal steps.
+    run grep -q 'if \[\[ "\$QUICK_MODE" == "true" \]\]; then' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run grep -q 'run_go_quick_build_and_test' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    # The quick lane must announce that it is skipping the rehearsal lane.
+    run grep -q 'skipping release-rehearsal lane' "$SCRIPT"
+    [ "$status" -eq 0 ]
+}
+
+@test "--quick treats local-env checks as advisory not gating" {
+    # Worktree-disposition + MemRL feedback are local-machine state, not committed code.
+    run grep -q 'run_step_advisory "Worktree disposition gate"' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    run grep -q 'run_step_advisory "MemRL feedback loop health"' "$SCRIPT"
+    [ "$status" -eq 0 ]
+    # The advisory helper must not bump the error count.
+    run grep -qE '^run_step_advisory\(\) \{' "$SCRIPT"
+    [ "$status" -eq 0 ]
+}
+
 @test "unknown flag is rejected with usage and exit 1" {
     run bash "$SCRIPT" --not-a-real-flag
     [ "$status" -eq 1 ]

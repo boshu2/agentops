@@ -7,9 +7,23 @@ set -euo pipefail
 #
 # Usage:
 #   ./scripts/ci-local-release.sh              # full gate (parallel where possible)
+#   ./scripts/ci-local-release.sh --quick      # fast pre-tag sanity (<5min): code-correctness subset, skips release-rehearsal lane
 #   ./scripts/ci-local-release.sh --fast       # skip heavy checks (~20s vs ~100s)
 #   ./scripts/ci-local-release.sh --security-mode quick
 #   ./scripts/ci-local-release.sh --release-version X.Y.Z --hil-target 'local:gpu:ao version && ao init --help && ao rpi status'
+#
+# --quick vs --fast vs default:
+#   default  Full release rehearsal (~78min): cross-build + SBOM (cyclonedx/spdx) + vuln scan
+#            (syft/grype/trivy) + race tests + eval/HIL/digital-twin/readiness gates. Run this
+#            before the ACTUAL tag.
+#   --quick  Fast pre-tag sanity (<5min). Runs the code-correctness subset: current-platform
+#            build + go test (no -race) + manifest version-consistency + release smoke + the cheap
+#            doc/snippet/shellcheck gates. SKIPS the slow release-rehearsal lane (SBOM, multi-platform
+#            cross-build, vuln scan, eval/HIL/digital-twin/readiness). Local-env-state checks
+#            (worktree-disposition, MemRL feedback) are advisory in --quick, not failures, because they
+#            reflect the local machine, not committed code. NOT a substitute for the full run before a tag.
+#   --fast   Skip the heaviest checks (race tests, security gate, SBOM, hook integration) but still run
+#            the binary validation + eval/HIL/readiness advisory gates.
 #
 # Exit codes:
 #   0 = all checks passed
@@ -27,6 +41,7 @@ LOCAL_CI_MUTATION_ESCAPE_HATCH="operator-run-release-validation"
 
 SECURITY_MODE="full"
 FAST_MODE=false
+QUICK_MODE=false
 RELEASE_VERSION_OVERRIDE=""
 
 USER_MAX_JOBS=""
@@ -39,6 +54,12 @@ usage() {
 Usage: scripts/ci-local-release.sh [options]
 
 Options:
+  --quick, --sanity    Fast pre-tag sanity (<5min). Code-correctness subset only:
+                       current-platform build + go test (no -race) + version consistency
+                       + release smoke + cheap doc/snippet/shellcheck gates. SKIPS the
+                       release-rehearsal lane (SBOM, multi-platform cross-build, vuln scan,
+                       eval/HIL/digital-twin/readiness). Local-env checks (worktree-disposition,
+                       MemRL) are advisory, not failures. Run the full gate before the actual tag.
   --fast               Skip heavy checks (race tests, security gate, SBOM, hook integration)
   --release-version V  Record artifacts against the target release version (for release audits)
   --readiness-mode M   official|advisory|fast (default: official only with --release-version)
@@ -58,6 +79,10 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --fast)
             FAST_MODE=true
+            shift
+            ;;
+        --quick|--sanity)
+            QUICK_MODE=true
             shift
             ;;
         --release-version)
@@ -138,6 +163,22 @@ run_step() {
         pass "$name"
     else
         fail "$name"
+    fi
+}
+
+# run_step_advisory runs a step but NEVER contributes to the error count.
+# Used in --quick for LOCAL-env-state checks (worktree-disposition, MemRL feedback)
+# that reflect the local machine, not committed code — they should not gate the
+# code-readiness verdict. Reported as a warning when they fail, pass otherwise.
+run_step_advisory() {
+    local name="$1"
+    shift
+    echo ""
+    echo -e "${BLUE}== $name (advisory) ==${NC}"
+    if "$@"; then
+        pass "$name"
+    else
+        warn "$name failed (advisory — local-env state, not gating --quick verdict)"
     fi
 }
 
@@ -433,6 +474,22 @@ run_go_build_only() {
         cd cli
         go build ./cmd/ao/
         go vet ./...
+    )
+}
+
+# run_go_quick_build_and_test is the --quick code-correctness lane: current-platform
+# `make build` (lands the binary at cli/bin/ao so Phase 5 smoke tests can run it),
+# vet, and the test suite WITHOUT `-race`/coverage. The race detector dominates the
+# heavy lane; dropping it keeps --quick under the <5min target while still proving
+# the committed code compiles and its tests pass on the current platform.
+run_go_quick_build_and_test() {
+    local version
+    version="$(release_version)"
+    (
+        cd cli
+        make build VERSION="$version"
+        go vet ./...
+        go test -count=1 ./...
     )
 }
 
@@ -819,7 +876,11 @@ START_TIME=$(date +%s)
 
 echo ""
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
-if [[ "$FAST_MODE" == "true" ]]; then
+if [[ "$QUICK_MODE" == "true" ]]; then
+    echo -e "${BLUE}  AgentOps Local CI (Release Gate) — QUICK SANITY MODE${NC}"
+    echo -e "${YELLOW}  [--quick] skipping release-rehearsal lane (SBOM/cross-build/scan);${NC}"
+    echo -e "${YELLOW}            run full mode before the actual tag${NC}"
+elif [[ "$FAST_MODE" == "true" ]]; then
     echo -e "${BLUE}  AgentOps Local CI (Release Gate) — FAST MODE${NC}"
     echo -e "${YELLOW}  Skipping: race tests, security gate, SBOM, hook integration${NC}"
 else
@@ -869,7 +930,11 @@ run_step_bg "Doc-release gate" ./tests/docs/validate-doc-release.sh
 run_step_bg "Manifest schema validation" ./scripts/validate-manifests.sh --repo-root "$REPO_ROOT"
 run_step_bg "Manifest version consistency" check_manifest_version_consistency
 run_step_bg "CI policy/docs parity" ./scripts/validate-ci-policy-parity.sh
-run_step_bg "Worktree disposition gate" ./scripts/check-worktree-disposition.sh
+# Worktree-disposition is a LOCAL-env-state check (reflects the local working tree, not
+# committed code). In --quick it runs advisory (after collect_parallel); otherwise it gates.
+if [[ "$QUICK_MODE" != "true" ]]; then
+    run_step_bg "Worktree disposition gate" ./scripts/check-worktree-disposition.sh
+fi
 run_step_bg "Skill integrity" bash ./skills/heal-skill/scripts/heal.sh --strict
 run_step_bg "Skill runtime parity" bash ./scripts/validate-skill-runtime-parity.sh
 run_step_bg "Codex runtime sections" bash ./scripts/validate-codex-runtime-sections.sh
@@ -887,10 +952,20 @@ run_step_bg "Secret pattern scan" run_security_scan_patterns
 run_step_bg "Dangerous shell pattern scan" run_dangerous_pattern_scan
 run_step_bg "Skill CLI snippets" bash ./scripts/validate-skill-cli-snippets.sh
 run_step_bg "Command/test pairing gate" ./scripts/check-go-command-test-pair.sh
-run_step_bg "MemRL feedback loop health" ./scripts/check-memrl-health.sh
+# MemRL feedback health is a LOCAL-env-state check (depends on local feedback data, not
+# committed code). In --quick it runs advisory (after collect_parallel); otherwise it gates.
+if [[ "$QUICK_MODE" != "true" ]]; then
+    run_step_bg "MemRL feedback loop health" ./scripts/check-memrl-health.sh
+fi
 run_step_bg "Doctor health check" ./scripts/check-doctor-health.sh
 
 collect_parallel
+
+# --quick: run the LOCAL-env-state checks as advisory (do not gate the code-readiness verdict).
+if [[ "$QUICK_MODE" == "true" ]]; then
+    run_step_advisory "Worktree disposition gate" ./scripts/check-worktree-disposition.sh
+    run_step_advisory "MemRL feedback loop health" ./scripts/check-memrl-health.sh
+fi
 
 # ── Phase 3: Parallel medium-weight checks ──
 
@@ -926,9 +1001,24 @@ run_step_bg "JSON flag temp workspace" ./tests/cli/test-json-flag-consistency-te
 
 collect_parallel
 
-# ── Phase 4: Heavy checks (skipped in --fast mode) ──
+# ── Phase 4: Heavy checks (skipped in --quick / --fast mode) ──
 
-if [[ "$FAST_MODE" == "true" ]]; then
+if [[ "$QUICK_MODE" == "true" ]]; then
+    # --quick: code-correctness only. Build the binary (current platform), vet, and run
+    # the test suite WITHOUT -race. Skip the entire release-rehearsal lane: SBOM
+    # (cyclonedx/spdx), the multi-platform release-binary validation, the vuln-scan
+    # security gate, and the contract canaries — those belong to the full pre-tag run.
+    echo ""
+    echo -e "${YELLOW}  [--quick] skipping release-rehearsal lane (SBOM/cross-build/scan);${NC}"
+    echo -e "${YELLOW}            run full mode before the actual tag${NC}"
+    warn "Skipped SBOM generation (cyclonedx/spdx) (--quick)"
+    warn "Skipped multi-platform release-binary validation (--quick)"
+    warn "Skipped vuln-scan security gate (syft/grype/trivy) (--quick)"
+    warn "Skipped AgentOps contract canaries (--quick)"
+    warn "Skipped Go race tests (--quick; runs non-race go test instead)"
+
+    run_step "Go build + vet + test (current platform, no -race)" run_go_quick_build_and_test
+elif [[ "$FAST_MODE" == "true" ]]; then
     warn "Skipped Go race tests (--fast)"
     warn "Skipped SBOM generation (--fast)"
     warn "Skipped Security gate (--fast)"
@@ -956,19 +1046,33 @@ run_step_bg "Release smoke test (all commands)" ./scripts/release-smoke-test.sh 
 
 collect_parallel
 
-run_step "Digital twin/VIL evidence" write_release_digital_twin_evidence
-run_step "AgentOps eval evidence" run_release_eval_evidence
+# Digital-twin/VIL + eval evidence are release-rehearsal artifacts (the eval lane runs
+# the AgentOps eval suite, which is slow). --quick skips them entirely; the full pre-tag
+# run produces them.
+if [[ "$QUICK_MODE" != "true" ]]; then
+    run_step "Digital twin/VIL evidence" write_release_digital_twin_evidence
+    run_step "AgentOps eval evidence" run_release_eval_evidence
+else
+    warn "Skipped digital-twin/VIL + AgentOps eval evidence (--quick)"
+fi
 
 # ── Phase 6: Post-hoc ~/.agents content-hash gate ──
 # Fails if any protected subtree under $HOME/.agents was mutated since
-# the snapshot was captured in Phase 1.
+# the snapshot was captured in Phase 1. Cheap + a real isolation protection, so it
+# runs in every mode (including --quick).
 run_step "Agents-hub content-hash gate" check_agents_hash_gate
 
 # ── Phase 7: Release readiness evidence ──
 # Official release audits (--release-version) require HIL evidence or an
 # explicit waiver. Normal local runs and --fast runs still write advisory JSON.
-run_step "HIL release evidence" run_release_hil_evidence
-run_step "Release readiness score gate" check_release_readiness
+# --quick skips the HIL + readiness-score release-rehearsal gates outright — they
+# audit release readiness, not code correctness.
+if [[ "$QUICK_MODE" != "true" ]]; then
+    run_step "HIL release evidence" run_release_hil_evidence
+    run_step "Release readiness score gate" check_release_readiness
+else
+    warn "Skipped HIL release evidence + release readiness score gate (--quick)"
+fi
 
 # ═══════════════════════════════════════════════════════
 #  Summary
@@ -977,8 +1081,13 @@ run_step "Release readiness score gate" check_release_readiness
 END_TIME=$(date +%s)
 ELAPSED=$((END_TIME - START_TIME))
 
-write_release_artifact_manifest
-write_tag_index
+# Release-provenance artifacts (manifest + tag-index) record a release rehearsal.
+# --quick is explicitly NOT a rehearsal, so it does not write them — that keeps the
+# tag-index free of non-rehearsal entries.
+if [[ "$QUICK_MODE" != "true" ]]; then
+    write_release_artifact_manifest
+    write_tag_index
+fi
 
 echo ""
 echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
@@ -987,6 +1096,14 @@ if [[ "$errors" -gt 0 ]]; then
     echo "  Scan/SBOM artifacts: $ARTIFACT_DIR"
     echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
     exit 1
+fi
+
+if [[ "$QUICK_MODE" == "true" ]]; then
+    echo -e "${GREEN}  LOCAL CI QUICK SANITY PASSED [${ELAPSED}s]${NC}"
+    echo -e "${YELLOW}  --quick skipped the release-rehearsal lane (SBOM/cross-build/scan/eval/HIL/readiness).${NC}"
+    echo -e "${YELLOW}  Run the full gate (no flag) before the actual tag.${NC}"
+    echo -e "${BLUE}═══════════════════════════════════════════════════════${NC}"
+    exit 0
 fi
 
 echo -e "${GREEN}  LOCAL CI PASSED [${ELAPSED}s]${NC}"
