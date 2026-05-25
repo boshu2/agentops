@@ -74,6 +74,14 @@ jobs:
           ./scripts/security-gate.sh --mode full --json > release-artifacts/security-gate-summary.json
           SECURITY_RC=$?
           set -e
+          # [v3.0.0 release-block debug] surface the gate finding to the log — the summary
+          # is not uploaded when this step fails, so print it + the per-tool detail before the gate check.
+          echo "::group::security-gate-summary.json"
+          jq . release-artifacts/security-gate-summary.json 2>/dev/null || cat release-artifacts/security-gate-summary.json
+          echo "::endgroup::"
+          echo "::group::toolchain-findings-detail"
+          find "${TMPDIR:-/tmp}/agentops-tooling" "${TMPDIR:-/tmp}/agentops-security" -type f 2>/dev/null | while read -r _ff; do echo "=== ${_ff} ==="; sed -n '1,60p' "${_ff}"; done | head -400
+          echo "::endgroup::"
           jq empty release-artifacts/security-gate-summary.json
           jq -e '((.gate_status // "") | ascii_downcase) == "pass"' release-artifacts/security-gate-summary.json
           if [[ "$SECURITY_RC" -ne 0 ]]; then
