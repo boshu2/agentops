@@ -1,6 +1,6 @@
 # Skills Reference
 
-Complete reference for all 81 AgentOps skills (71 user-facing + 10 internal).
+Complete reference for all 75 AgentOps skills (65 user-facing + 10 internal).
 
 Skills are the primitive layer of AgentOps. Higher-level entry points like
 `/implement`, `/validation`, `/rpi`, and `/evolve` compose those primitives
@@ -239,10 +239,12 @@ Code complexity analysis using radon (Python) or gocyclo (Go).
 
 ### /doc
 
-Generate documentation for code.
+Generate and validate repo documentation. `--mode` selects the artifact family: default (code/API docs, code-maps), `--mode=readme` (gold-standard README via interview + council validation, absorbed `/readme`), `--mode=oss` (open-source doc pack — CONTRIBUTING/CHANGELOG/AGENTS, absorbed `/oss-docs`).
 
 ```bash
-/doc services/auth/
+/doc services/auth/          # code/API docs (default)
+/doc --mode=readme           # gold-standard README
+/doc --mode=oss              # scaffold/audit OSS doc pack
 ```
 
 ### /pre-mortem
@@ -407,28 +409,12 @@ Use official OpenAI docs MCP access for current API/platform guidance with citat
 /openai-docs "responses api tools"
 ```
 
-### /oss-docs
-
-Scaffold and audit open-source documentation packs (README, CONTRIBUTING, changelog, AGENTS).
-
-```bash
-/oss-docs
-```
-
 ### /pr-research
 
 Research upstream contribution conventions before implementing an external PR.
 
 ```bash
 /pr-research https://github.com/org/repo
-```
-
-### /pr-plan
-
-Create a scoped contribution plan from PR research artifacts.
-
-```bash
-/pr-plan
 ```
 
 ### /pr-implement
@@ -455,22 +441,6 @@ Prepare structured PR bodies with validation evidence. Includes commit split adv
 /pr-prep
 ```
 
-### /pr-retro
-
-Capture lessons from accepted/rejected PR outcomes.
-
-```bash
-/pr-retro
-```
-
-### /update
-
-Reinstall all AgentOps skills globally from the latest source.
-
-```bash
-/update                      # Reinstall all 81 skills
-```
-
 ---
 
 ## Additional Skills
@@ -492,7 +462,6 @@ phases, and flags.
 | `/hooks-authoring` | Author and validate AgentOps runtime hooks |
 | `/perf` | Performance profiling, benchmarking, regression detection, optimization |
 | `/push` | Atomic test-commit-push with conventional-commit message |
-| `/readme` | Generate a gold-standard README via interview + council validation |
 | `/red-team` | Persona-based adversarial validation — probes whether docs/skills actually work |
 | `/refactor` | Safe, verified refactoring with regression tests at each step |
 | `/reverse-engineer-rpi` | Reverse-engineer a product into feature catalog, code map, and specs |

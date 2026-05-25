@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-81 checked-in AgentOps skills before any broad rewrite, using current
+75 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 81 |
+| Skills audited | 75 |
 | Domains classified | 5 of 5 (BC1-BC5) |
-| Dispositions assigned | 81 / 81 |
+| Dispositions assigned | 75 / 75 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -67,10 +67,10 @@ Disposition meanings:
 | `codex-team` | BC5 Runtime | supporting | update | Runtime coordination adapter; align with worktree/wave rules. |
 | `compile` | BC1 Corpus | supporting | refactor | Corpus compiler is core; align read/write flows to Corpus ports. |
 | `complexity` | BC2 Validation | domain | update | Generator for refactor work; add self-test and threshold evidence. |
-| `converter` | BC4 Factory | generic | merge-review | Keep if it owns cross-runtime packaging distinct from skill-builder. |
+| `converter` | BC4 Factory | generic | keep | Cross-runtime packaging adapter (Codex/Cursor twins); skill-builder consumes it — live producer→consumer edge (resolved 2026-05-24). |
 | `council` | BC2 Validation | domain | update | Core judgment gate; strengthen scenario and verdict self-test. |
 | `crank` | BC3 Loop | domain | refactor | Wave executor; align with vertical-slice and conflict-free wave contract. |
-| `curate` | BC1 Corpus | supporting | cut-review | Overlaps compile/forge/harvest; retain only if unique curation lane remains. |
+| `curate` | BC1 Corpus | supporting | keep | Designed-future canonical unified miner (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24). |
 | `deps` | BC2 Validation | driven-adapter | update | Dependency risk generator; add threshold and no-network fallback tests. |
 | `design` | BC3 Loop | domain | update | Product-fit pre-discovery gate; should produce BDD-ready intent. |
 | `discovery` | BC3 Loop | domain | update | Creates execution packets; add explicit loop-shape SELF-TEST. |
@@ -78,29 +78,25 @@ Disposition meanings:
 | `domain` | BC4 Factory | domain | keep | Ubiquitous-language kernel; central to DDD. |
 | `dream` | BC1 Corpus | supporting | refactor | Scheduled compounding lane; align with Corpus ports and convergence proof. |
 | `evolve` | BC3 Loop | supporting | refactor | Main loop; must use `soc-y5vh` typed Loop ports and convergence STOP. |
-| `expert-council` | BC2 Validation | domain | merge-review | Absorbed into `council` as `--mode=debate`; thin alias kept one release. |
 | `flywheel` | BC1 Corpus | domain | update | Flywheel health kernel; needs productized self-test. |
 | `forge` | BC1 Corpus | domain | update | Learning extraction; align to capture quality and promotion ratchet. |
 | `goals` | BC3 Loop | domain | keep | Fitness source; use as evolution selection input. |
-| `grafana-platform-dashboard` | BC2 Validation | driven-adapter | cut-review | Domain-specific validator; keep only if marketplace specialization is intentional. |
+| `grafana-platform-dashboard` | BC2 Validation | driven-adapter | keep | Domain-specific validator with no overlap; marketplace specialization is intended — operator decision (resolved KEEP 2026-05-24). |
 | `handoff` | BC1 Corpus | supporting | update | Session continuity artifact; clarify promotion vs local-only notes. |
 | `harvest` | BC1 Corpus | supporting | update | Promotion adapter; tie to CorpusWriter/Citation behavior. |
 | `heal-skill` | BC4 Factory | supporting | update | Skill hygiene gate; should consume the new domain map. |
 | `hooks-authoring` | BC5 Runtime | domain | update | Hook adapter authoring; align with Runtime/EventBus domain. |
 | `implement` | BC3 Loop | driving-adapter | update | Slice executor; enforce first-failing-test language. |
 | `inject` | BC1 Corpus | driving-adapter | refactor | Context injection should be explicit CorpusReader adapter use. |
-| `knowledge-activation` | BC1 Corpus | supporting | merge-review | Compare with inject/compile/flywheel before expanding. |
+| `knowledge-activation` | BC1 Corpus | supporting | keep | Outer-loop operationalization (beliefs/playbooks/briefings) — write/promote surface downstream of inject/compile/flywheel, not a duplicate (resolved KEEP 2026-05-24). |
 | `llm-wiki` | BC1 Corpus | supporting | update | External wiki builder; align with Corpus compiler contracts. |
 | `openai-docs` | BC5 Runtime | driven-adapter | keep | External API documentation adapter with clear scope. |
-| `oss-docs` | BC4 Factory | generic | merge-review | Compare with doc/readme before deeper investment. |
 | `perf` | BC2 Validation | domain | update | Performance generator; add thresholds and proof examples. |
 | `plan` | BC3 Loop | domain | update | Must output vertical slices and wave-validity checks. |
 | `post-mortem` | BC3 Loop | domain | update | Loop closeout; connect to next-work and ratchet evidence. |
 | `pr-implement` | BC5 Runtime | driving-adapter | update | GitHub PR implementation adapter; map to loop slices. |
-| `pr-plan` | BC5 Runtime | supporting | cut-review | Low scorer; keep only if PR planning is distinct from plan + pr-research. |
 | `pr-prep` | BC5 Runtime | driving-adapter | update | PR publication adapter; align to evidence and release discipline. |
 | `pr-research` | BC5 Runtime | driven-adapter | update | Upstream repo research adapter; add clean source/citation self-test. |
-| `pr-retro` | BC5 Runtime | supporting | merge-review | Compare with retro/post-mortem before expanding. |
 | `pr-validate` | BC5 Runtime | driving-adapter | update | PR validation adapter; should reuse BC2 validation contracts. |
 | `pre-mortem` | BC2 Validation | domain | update | Plan risk gate; add scenario/verdict self-test. |
 | `product` | BC3 Loop | domain | keep | Product intent source; important for loop work selection. |
@@ -108,7 +104,6 @@ Disposition meanings:
 | `push` | BC5 Runtime | driving-adapter | update | Git adapter; add branch/worktree disposition self-test. |
 | `quickstart` | BC3 Loop | driving-adapter | update | Operator routing entrypoint; align to current 3.0 first-value path. |
 | `ratchet` | BC3 Loop | domain | update | Loop evidence ratchet; connect to cycle trace contract. |
-| `readme` | BC4 Factory | generic | merge-review | Compare with doc/oss-docs before productizing. |
 | `recover` | BC1 Corpus | driving-adapter | refactor | Session recovery is valuable but currently structurally heavy. |
 | `red-team` | BC2 Validation | supporting | update | Probe generator; add severity/evidence contract. |
 | `refactor` | BC2 Validation | supporting | update | Refactor generator; align with complexity thresholds and TDD proof. |
@@ -121,7 +116,7 @@ Disposition meanings:
 | `scaffold` | BC4 Factory | supporting | update | Code/artifact scaffolder; add non-goal and validation examples. |
 | `scenario` | BC2 Validation | supporting | update | Holdout scenario manager; important for behavioral evals. |
 | `scope` | BC5 Runtime | driven-adapter | keep | Runtime filesystem gate; hard boundary skill. |
-| `security` | BC2 Validation | driven-adapter | merge-review | Low scorer; compare with security-suite before expansion. |
+| `security` | BC2 Validation | driven-adapter | keep | Continuous release-gate driver (security-gate.sh); distinct cadence role from security-suite's composable primitive library (resolved KEEP 2026-05-24). |
 | `security-suite` | BC2 Validation | driven-adapter | update | Composable scanner; likely canonical security validation lane. |
 | `session-bootstrap` | BC5 Runtime | driving-adapter | keep | Universal init prompt; the fungibility contract for any-agent spawn (soc-vuu6.25). |
 | `shared` | BC4 Factory | domain | keep | Shared contracts; avoid broad edits. |
@@ -134,10 +129,9 @@ Disposition meanings:
 | `system-tuning` | BC5 Runtime | supporting | keep | Machine-health adapter; keep separate from product loop. |
 | `test` | BC2 Validation | supporting | update | Test generator; central to first-failing-test loop. |
 | `trace` | BC1 Corpus | supporting | update | Decision trace builder; align to provenance and cycle trace. |
-| `update` | BC4 Factory | supporting | cut-review | Low scorer; keep only if it owns install/update workflows distinctly. |
 | `using-agentops` | BC4 Factory | generic | update | Operator education; align to 3.0 first-value path. |
 | `using-gc` | BC5 Runtime | generic | update | Operator guide for running AgentOps on the Gas City substrate. |
-| `validate` | BC2 Validation | driving-adapter | merge-review | Low scorer; decide relationship to `validation` before rewriting. |
+| `validate` | BC2 Validation | driving-adapter | keep | Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24). |
 | `validation` | BC2 Validation | domain | update | Canonical post-implementation validation; strengthen self-test first. |
 | `vibe` | BC2 Validation | domain | update | Code-readiness validator; add self-test and tighten result contract. |
 <!-- END:full-skill-map -->

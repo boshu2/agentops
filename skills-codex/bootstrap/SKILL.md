@@ -90,7 +90,7 @@ If `HAS_PRODUCT` is true and `--force` is not set: skip. Report "PRODUCT.md exis
 
 If `HAS_README` is false (or `--force` is set) AND PRODUCT.md now exists:
 
-Invoke `$readme` to generate README.md from PRODUCT.md content. Include project name, description, installation, usage, and contributing sections.
+Invoke `$doc --mode=readme` to generate README.md from PRODUCT.md content. Include project name, description, installation, usage, and contributing sections.
 
 If `HAS_README` is true and `--force` is not set: skip. Report "README.md exists -- skipped."
 
@@ -202,6 +202,6 @@ Repo is now AgentOps-ready. Next: $rpi "your first goal"
 
 - `../goals/SKILL.md` -- Fitness specification and directive management
 - `../product/SKILL.md` -- Product definition generation
-- `../readme/SKILL.md` -- README generation
+- `../doc/SKILL.md` -- README generation (`--mode=readme`) + repo docs
 - `../quickstart/SKILL.md` -- New user onboarding (lighter than bootstrap)
 - [references/related-runbooks.md](references/related-runbooks.md) -- host-hygiene runbooks (PATH rationalization, etc.)

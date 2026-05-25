@@ -162,12 +162,6 @@ patch_file "$REPO_ROOT/docs/SKILLS.md" \
   "s|^Complete reference for all [0-9]+ AgentOps skills \\([0-9]+ user-facing [+] [0-9]+ internal\\)\\.$|Complete reference for all ${TOTAL} AgentOps skills (${USER_FACING} user-facing + ${INTERNAL} internal).|" \
   "docs/SKILLS.md header"
 
-# docs/SKILLS.md command: "/update  # Reinstall all N skills"
-patch_file "$REPO_ROOT/docs/SKILLS.md" \
-  '^/update[[:space:]]+# Reinstall all [0-9]+ skills$' \
-  "s|^(/update[[:space:]]+# Reinstall all )[0-9]+( skills)$|\\1${TOTAL}\\2|" \
-  "docs/SKILLS.md /update command"
-
 # docs/ARCHITECTURE.md: "skills/ # N skills (M user-facing, K internal)"
 patch_file "$REPO_ROOT/docs/ARCHITECTURE.md" \
   'skills/[[:space:]]+# [0-9]+ skills \([0-9]+ user-facing, [0-9]+ internal\)$' \

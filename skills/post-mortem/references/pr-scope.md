@@ -1,38 +1,25 @@
----
-name: pr-retro
-description: 'Learn from PR outcomes.'
----
-# PR Retro Skill
+# PR-Outcome Scope — `/post-mortem --scope=pr`
 
-Learn from PR outcomes by analyzing accept/reject patterns.
+> Learn from a merged or rejected pull request instead of a closed bead/epic. This is the full contract behind `/post-mortem --scope=pr`; it absorbed the former `/pr-retro` skill. Output: `.agents/learnings/YYYY-MM-DD-pr-{repo}-{outcome}.md`.
 
-## Overview
+The default post-mortem reads bead close / epic completion as its signal. `--scope=pr` swaps that signal for a PR's merge/reject/changes-requested outcome and mines reviewer feedback. The extract → process → activate → retire phases are otherwise the same — this reference only covers the PR-specific front end (Phases 1-2 of the legacy pr-retro workflow).
 
-After a PR is merged or rejected, analyze what worked and what didn't to
-improve future contributions.
-
-**Output:** `.agents/learnings/YYYY-MM-DD-pr-{repo}-{outcome}.md`
-
-**When to Use**:
+**When to use:**
 - After a PR is merged (capture success patterns)
 - After a PR is rejected (understand why)
 - After receiving significant review feedback
 - Periodically to review contribution patterns
 
----
-
 ## Workflow
 
 ```
-1.  PR Discovery    -> Find the PR to analyze
-2.  Outcome Analysis -> Merged/rejected/changes requested
+1.  PR Discovery        -> Find the PR to analyze
+2.  Outcome Analysis    -> Merged/rejected/changes requested
 3.  Feedback Extraction -> What did reviewers say?
 4.  Pattern Identification -> What worked/didn't
-5.  Lesson Extraction -> Reusable learnings
-6.  Output -> Write retro document
+5.  Lesson Extraction   -> Reusable learnings
+6.  Output              -> Write retro document
 ```
-
----
 
 ## Phase 1: PR Discovery
 
@@ -47,8 +34,6 @@ gh pr list --state all --author @me --limit 10
 gh pr list -R <owner/repo> --state all --author @me --limit 10
 ```
 
----
-
 ## Phase 2: Outcome Analysis
 
 | Outcome | Meaning | Focus |
@@ -59,11 +44,8 @@ gh pr list -R <owner/repo> --state all --author @me --limit 10
 | **Changes requested** | Needs work | What feedback? |
 
 ```bash
-# Get PR outcome
 gh pr view <number> --json state,mergedAt,closedAt,reviews
 ```
-
----
 
 ## Phase 3: Feedback Extraction
 
@@ -89,8 +71,6 @@ gh pr view <number> --json reviews --jq '.reviews[] | select(.state == "CHANGES_
 | **Documentation** | Missing docs, unclear comments |
 | **Process** | Wrong branch, missing sign-off |
 
----
-
 ## Phase 4: Pattern Identification
 
 ### Success Patterns (If Merged)
@@ -111,11 +91,7 @@ gh pr view <number> --json reviews --jq '.reviews[] | select(.state == "CHANGES_
 | Missing tests | "Please add tests" |
 | Wrong approach | "Consider using X instead" |
 
----
-
 ## Phase 5: Lesson Extraction
-
-### Lesson Template
 
 ```markdown
 ## Lesson: [Title]
@@ -137,8 +113,6 @@ gh pr view <number> --json reviews --jq '.reviews[] | select(.state == "CHANGES_
 | Style mismatch | Run linter before PR |
 | Missing tests | Add tests for new code |
 | Slow review | Ping after 1 week |
-
----
 
 ## Phase 6: Output
 
@@ -183,14 +157,14 @@ Write to `.agents/learnings/YYYY-MM-DD-pr-{repo}-{outcome}.md`
 
 ## Updates to Process
 
-{Any changes to make to pr-prep, pr-plan, or other skills}
+{Any changes to make to pr-prep, plan, or other skills}
 
 ## Next Steps
 
 {Future actions based on this retro}
 ```
 
----
+After writing the learning, hand off to the standard post-mortem maintenance phases (process backlog → activate → retire → harvest) so the PR lesson is scored, deduped, and promoted under the ratchet like any other learning.
 
 ## Anti-Patterns
 
@@ -201,26 +175,6 @@ Write to `.agents/learnings/YYYY-MM-DD-pr-{repo}-{outcome}.md`
 | Generic lessons | Specific, actionable learnings |
 | Skip rejected PRs | Most valuable learning source |
 
-## Examples
-
-### Learn From Rejected PR
-
-**User says:** "Run a retro on why this PR was rejected."
-
-**What happens:**
-1. Analyze reviewer feedback and timeline.
-2. Identify preventable process and scope issues.
-3. Capture reusable lessons for future PRs.
-
-### Learn From Successful Merge
-
-**User says:** "Extract what worked from this merged PR."
-
-**What happens:**
-1. Identify patterns that sped review/approval.
-2. Distill actionable playbook updates.
-3. Save lessons for future contribution flows.
-
 ## Troubleshooting
 
 | Problem | Cause | Solution |
@@ -229,11 +183,3 @@ Write to `.agents/learnings/YYYY-MM-DD-pr-{repo}-{outcome}.md`
 | No clear lesson extracted | Analysis stayed descriptive | Convert observations into behavior changes |
 | Maintainer signal is mixed | Contradictory review comments | Separate hard blockers from preference feedback |
 | Process changes not adopted | Lessons not operationalized | Add explicit updates to prep/plan/validate workflow |
-
-## Local Resources
-
-### scripts/
-
-- `scripts/validate.sh`
-
-

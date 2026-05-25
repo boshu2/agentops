@@ -60,18 +60,13 @@ dispositions:
   - skill:          converter
     domain:         "BC4 Factory"
     hexagonal_role: generic
-    disposition:    merge-review
-    rationale:      "Keep if it owns cross-runtime packaging distinct from skill-builder"
+    disposition:    keep
+    rationale:      "Cross-runtime packaging adapter (Codex/Cursor twins); skill-builder consumes it — live producer→consumer edge (resolved 2026-05-24)"
   - skill:          council
     domain:         "BC2 Validation"
     hexagonal_role: domain
     disposition:    update
     rationale:      "Core judgment gate; strengthen scenario and verdict self-test"
-  - skill:          expert-council
-    domain:         "BC2 Validation"
-    hexagonal_role: domain
-    disposition:    merge-review
-    rationale:      "Absorbed into `council` as `--mode=debate`; thin alias kept one release"
   - skill:          crank
     domain:         "BC3 Loop"
     hexagonal_role: domain
@@ -80,8 +75,8 @@ dispositions:
   - skill:          curate
     domain:         "BC1 Corpus"
     hexagonal_role: supporting
-    disposition:    cut-review
-    rationale:      "Overlaps compile/forge/harvest; retain only if unique curation lane remains"
+    disposition:    keep
+    rationale:      "Designed-future canonical unified miner (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24)"
   - skill:          deps
     domain:         "BC2 Validation"
     hexagonal_role: driven-adapter
@@ -135,8 +130,8 @@ dispositions:
   - skill:          grafana-platform-dashboard
     domain:         "BC2 Validation"
     hexagonal_role: driven-adapter
-    disposition:    cut-review
-    rationale:      "Domain-specific validator; keep only if marketplace specialization is intentional"
+    disposition:    keep
+    rationale:      "Domain-specific validator with no overlap; marketplace specialization is intended — operator decision (resolved KEEP 2026-05-24)"
   - skill:          handoff
     domain:         "BC1 Corpus"
     hexagonal_role: supporting
@@ -170,8 +165,8 @@ dispositions:
   - skill:          knowledge-activation
     domain:         "BC1 Corpus"
     hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Compare with inject/compile/flywheel before expanding"
+    disposition:    keep
+    rationale:      "Outer-loop operationalization (beliefs/playbooks/briefings) — write/promote surface downstream of inject/compile/flywheel, not a duplicate (resolved KEEP 2026-05-24)"
   - skill:          llm-wiki
     domain:         "BC1 Corpus"
     hexagonal_role: supporting
@@ -182,11 +177,6 @@ dispositions:
     hexagonal_role: driven-adapter
     disposition:    keep
     rationale:      "External API documentation adapter with clear scope"
-  - skill:          oss-docs
-    domain:         "BC4 Factory"
-    hexagonal_role: generic
-    disposition:    merge-review
-    rationale:      "Compare with doc/readme before deeper investment"
   - skill:          perf
     domain:         "BC2 Validation"
     hexagonal_role: domain
@@ -207,11 +197,6 @@ dispositions:
     hexagonal_role: driving-adapter
     disposition:    update
     rationale:      "GitHub PR implementation adapter; map to loop slices"
-  - skill:          pr-plan
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    cut-review
-    rationale:      "Low scorer; keep only if PR planning is distinct from plan + pr-research"
   - skill:          pr-prep
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
@@ -222,11 +207,6 @@ dispositions:
     hexagonal_role: driven-adapter
     disposition:    update
     rationale:      "Upstream repo research adapter; add clean source/citation self-test"
-  - skill:          pr-retro
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Compare with retro/post-mortem before expanding"
   - skill:          pr-validate
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
@@ -262,11 +242,6 @@ dispositions:
     hexagonal_role: domain
     disposition:    update
     rationale:      "Loop evidence ratchet; connect to cycle trace contract"
-  - skill:          readme
-    domain:         "BC4 Factory"
-    hexagonal_role: generic
-    disposition:    merge-review
-    rationale:      "Compare with doc/oss-docs before productizing"
   - skill:          recover
     domain:         "BC1 Corpus"
     hexagonal_role: driving-adapter
@@ -335,8 +310,8 @@ dispositions:
   - skill:          security
     domain:         "BC2 Validation"
     hexagonal_role: driven-adapter
-    disposition:    merge-review
-    rationale:      "Low scorer; compare with security-suite before expansion"
+    disposition:    keep
+    rationale:      "Continuous release-gate driver (security-gate.sh); distinct cadence role from security-suite's composable primitive library (resolved KEEP 2026-05-24)"
   - skill:          security-suite
     domain:         "BC2 Validation"
     hexagonal_role: driven-adapter
@@ -392,11 +367,6 @@ dispositions:
     hexagonal_role: supporting
     disposition:    update
     rationale:      "Decision trace builder; align to provenance and cycle trace"
-  - skill:          update
-    domain:         "BC4 Factory"
-    hexagonal_role: supporting
-    disposition:    cut-review
-    rationale:      "Low scorer; keep only if it owns install/update workflows distinctly"
   - skill:          using-agentops
     domain:         "BC4 Factory"
     hexagonal_role: generic
@@ -410,8 +380,8 @@ dispositions:
   - skill:          validate
     domain:         "BC2 Validation"
     hexagonal_role: driving-adapter
-    disposition:    merge-review
-    rationale:      "Low scorer; decide relationship to `validation` before rewriting"
+    disposition:    keep
+    rationale:      "Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24)"
   - skill:          validation
     domain:         "BC2 Validation"
     hexagonal_role: domain

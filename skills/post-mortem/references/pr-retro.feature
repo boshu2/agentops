@@ -1,5 +1,5 @@
-# Executable spec for the /pr-retro skill — learning from PR outcomes (BC1 Corpus).
-# /pr-retro turns a merged or rejected pull request into durable lessons: it categorizes
+# Executable spec for /post-mortem --scope=pr — learning from PR outcomes (BC3 Loop).
+# /post-mortem --scope=pr turns a merged or rejected pull request into durable lessons: it categorizes
 # the feedback, extracts success patterns when merged and failure patterns when rejected,
 # and writes a learning. Hexagon: supporting; consumes: PR feedback + outcome; produces:
 # .agents/learnings/YYYY-MM-DD-pr-*.md. (soc-qk4b)
@@ -13,7 +13,7 @@ Feature: PR-retro extracts durable lessons from a PR outcome
     Given a pull request that was merged or rejected, with its feedback
 
   Scenario: Feedback is categorized by type
-    When /pr-retro runs
+    When /post-mortem --scope=pr runs
     Then it categorizes the feedback (positive, requested changes, rejection reasons)
 
   Scenario: Outcome selects success or failure patterns

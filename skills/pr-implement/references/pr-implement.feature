@@ -9,7 +9,7 @@ Feature: PR-implement executes a scoped contribution on a fork with isolation
   So that the resulting PR is clean, focused, and free of unrelated changes
 
   Scenario: a contribution plan is implemented on a fork branch
-    Given a plan artifact from /pr-plan (or a repo URL)
+    Given a plan artifact from /plan (after /pr-research) or a repo URL
     When /pr-implement runs
     Then it produces the code changes on a fork branch
 
