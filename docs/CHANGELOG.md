@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-05-25
+
+Patch release. No runtime behavior change — it advances the plugin/marketplace version so existing `3.0.0` installs can `claude plugin update` cleanly (the `3.0.0` version label never moved across the 15 commits that landed the skill consolidation and doc reconciliation, so a plain update reported "already latest"). Also reconciles two release-engineering surfaces the per-PR gate did not exercise:
+
+- **`claude plugin update` now works for early 3.0.0 installs.** Version bumped to 3.0.1 across `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` (metadata + plugin), and the `install-ao.sh` pin.
+- **Nightly Static Validation is green again.** Removed the Nightly step that ran the deleted `scripts/validate-hooks-doc-parity.sh` (hooks were removed in 3.0). Repointed/retired two stale `tests/docs/validate-skill-count.sh` extraction patterns that grepped PRODUCT.md for hook-era phrasing ("runtime hook event sections", the "### 1. Skills (N across 4 runtimes)" heading) that the 3.0 restructure removed.
+
 ## [3.0.0] - 2026-05-24
 
 AgentOps 3.0 is the **hookless-first** major. The headline: AgentOps is what runs **in-session** — skills + the `ao` CLI + the RPI/evolve/crank/swarm loops + the context-compiler. Out-of-session orchestration (scheduling, daemons, autonomous dispatch) is delegated to Gas City (a reference City ships in this release) or Olympus. The default install registers **zero hooks**; the lifecycle is driven by skills and CI gates. See `docs/3.0.md` for the north star.

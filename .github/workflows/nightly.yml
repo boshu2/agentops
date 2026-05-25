@@ -54,11 +54,6 @@ jobs:
           chmod +x tests/docs/validate-doc-release.sh
           ./tests/docs/validate-doc-release.sh
 
-      - name: Validate hooks/docs parity
-        run: |
-          chmod +x scripts/validate-hooks-doc-parity.sh
-          ./scripts/validate-hooks-doc-parity.sh
-
   retrieval-bench:
     name: Retrieval Quality Bench
     runs-on: ubuntu-latest
