@@ -127,6 +127,8 @@ See `.claude/rules/go.md` and `.claude/rules/python.md` for language-specific te
 
 Tag triggers GoReleaser + GitHub Actions: `git tag v2.X.0 && git push origin v2.X.0`. **Always run `scripts/ci-local-release.sh` before tagging.** Retag with `scripts/retag-release.sh v2.X.0`.
 
+For iterative pre-tag work, use `scripts/ci-local-release.sh --quick` (alias `--sanity`) — the fast code-correctness subset (current-platform build + test + version consistency + release smoke + cheap doc/snippet/shellcheck gates) that skips the slow release-rehearsal lane (SBOM, multi-platform cross-build, vuln scan, eval/HIL/readiness). Run the full gate (no flag) once before the actual tag.
+
 ## Agent Goals
 
 GOALS.md is the strategic intent layer consumed by `/evolve` and `/goals`:

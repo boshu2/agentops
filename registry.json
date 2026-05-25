@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-25T02:39:15Z",
+  "generated_at": "2026-05-25T02:48:51Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -8,7 +8,7 @@
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 66,
-    "capabilities": 208
+    "capabilities": 209
   },
   "surfaces": {
     "skills": [
@@ -1053,10 +1053,12 @@
           "hooks-authoring",
           "implement",
           "inject",
+          "knowledge-activation",
           "plan",
           "pre-mortem",
           "recover",
           "review",
+          "swarm",
           "using-agentops",
           "validation",
           "vibe"
@@ -1328,10 +1330,10 @@
     ]
   },
   "capability_summary": {
-    "total": 208,
+    "total": 209,
     "skills": 75,
     "cli_commands": 66,
-    "gates": 64,
+    "gates": 65,
     "reference_impls": 3
   },
   "cli_top_level_commands": [
@@ -2094,7 +2096,8 @@
         "ao knowledge beliefs",
         "ao knowledge brief",
         "ao knowledge gaps",
-        "ao knowledge playbooks"
+        "ao knowledge playbooks",
+        "ao lookup"
       ],
       "path": "skills/knowledge-activation/",
       "references": 3
@@ -2209,6 +2212,7 @@
         "ao forge",
         "ao forge markdown",
         "ao goals",
+        "ao metrics cite",
         "ao session close"
       ],
       "path": "skills/post-mortem/",
@@ -2917,6 +2921,7 @@
         ".agents/swarm/results/*.json"
       ],
       "drives_commands": [
+        "ao lookup",
         "ao rpi",
         "ao rpi phased"
       ],
@@ -3932,10 +3937,12 @@
         "hooks-authoring",
         "implement",
         "inject",
+        "knowledge-activation",
         "plan",
         "pre-mortem",
         "recover",
         "review",
+        "swarm",
         "using-agentops",
         "validation",
         "vibe"
@@ -4818,6 +4825,15 @@
     {
       "sku": "gate:validate-skill-frontmatter",
       "name": "validate-skill-frontmatter",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-skill-body-refs",
+      "name": "validate-skill-body-refs",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
