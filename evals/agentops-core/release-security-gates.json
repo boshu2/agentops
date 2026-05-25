@@ -75,8 +75,8 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "1..44"},
-        {"type": "stdout_contains", "value": "ok 41 validate-release-audit-artifacts skips older missing local artifact dirs"}
+        {"type": "stdout_contains", "value": "1..50"},
+        {"type": "stdout_contains", "value": "ok 47 validate-release-audit-artifacts skips older missing local artifact dirs"}
       ],
       "dimensions": ["correctness", "process_adherence", "artifact_quality"],
       "critical": true
