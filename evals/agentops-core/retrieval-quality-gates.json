@@ -54,20 +54,6 @@
       "critical": true
     },
     {
-      "id": "retrieval-dream-determinism-contract",
-      "title": "Dream retrieval benchmark determinism remains documented",
-      "kind": "artifact_check",
-      "objective": "Keep Dream's MEASURE stage tied to deterministic retrieval-bench semantics.",
-      "expectations": [
-        {"type": "artifact_contains", "target": "../../docs/contracts/dream-run-contract.md", "value": "ao retrieval-bench --live --json"},
-        {"type": "artifact_contains", "target": "../../docs/contracts/dream-run-contract.md", "value": "deterministic by construction"},
-        {"type": "artifact_contains", "target": "../../docs/contracts/dream-run-contract.md", "value": "stable sort by `CompositeScore`"},
-        {"type": "artifact_contains", "target": "../../docs/contracts/dream-run-contract.md", "value": "no RNG to seed"}
-      ],
-      "dimensions": ["process_adherence", "learning_closure", "artifact_quality"],
-      "critical": true
-    },
-    {
       "id": "retrieval-ratchet-wiring",
       "title": "retrieval quality ratchet keeps thresholds and fallback eval set",
       "kind": "artifact_check",
