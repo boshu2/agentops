@@ -3,9 +3,9 @@
 #
 # PER PRE-MORTEM AMENDMENT A2 (security, soc-8inr.5): proves that
 # registerMutationRoute is the ONLY path through which mutation HTTP routes
-# are registered in cli/internal/daemon/. A developer could otherwise call
-# mux.HandleFunc("/v1/foo", handler) directly and bypass the auth wrapper
-# entirely.
+# are registered in cli/internal/daemon/ when that package exists. AgentOps 3.0
+# deleted the daemon package; in that state there is no daemon route surface to
+# bypass, so this gate passes with an explicit no-surface message.
 #
 # CI gate: this script must exit 0. Wired into scripts/pre-push-gate.sh.
 #
@@ -29,8 +29,8 @@ fi
 SERVER_DIR="$REPO_ROOT/cli/internal/daemon"
 
 if [[ ! -d "$SERVER_DIR" ]]; then
-    echo "ERROR: daemon source dir not found: $SERVER_DIR" >&2
-    exit 2
+    echo "OK: daemon source dir absent; no mutation route surface remains"
+    exit 0
 fi
 
 # Find all mux.HandleFunc callsites in non-test daemon files. Exclude auth.go

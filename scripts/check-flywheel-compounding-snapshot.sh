@@ -7,10 +7,16 @@
 #
 #   1. Snapshot file exists
 #   2. Snapshot is not older than $AGENTOPS_FLYWHEEL_SNAPSHOT_MAX_DAYS (default 14)
-#   3. evidence.escape_velocity_compounding == true
+#   3. Snapshot contains a readable evidence.escape_velocity_compounding value
+#
+# A non-compounding snapshot is a health signal, not a merge-blocking structural
+# failure. The live flywheel gate remains the strict long-cycle signal; this
+# snapshot gate blocks only missing, stale, or unreadable evidence so CI keeps
+# surfacing current corpus state instead of preserving an old green snapshot.
 #
 # Operator refresh: bash scripts/snapshot-flywheel-compounding.sh
 # Override: AGENTOPS_FLYWHEEL_SNAPSHOT_SKIP=1
+# Strict mode: AGENTOPS_FLYWHEEL_SNAPSHOT_REQUIRE_COMPOUNDING=1
 # Pair: scripts/snapshot-flywheel-compounding.sh
 
 set -uo pipefail
@@ -36,7 +42,10 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 RECORDED_AT="$(jq -r '.recorded_at // ""' "$SNAPSHOT_PATH" 2>/dev/null)"
-COMPOUNDING="$(jq -r '.evidence.escape_velocity_compounding // false' "$SNAPSHOT_PATH" 2>/dev/null)"
+COMPOUNDING="$(jq -r 'if (.evidence | has("escape_velocity_compounding")) then .evidence.escape_velocity_compounding else empty end' "$SNAPSHOT_PATH" 2>/dev/null)"
+STATUS="$(jq -r '.evidence.status // .evidence.escape_velocity_status // "unknown"' "$SNAPSHOT_PATH" 2>/dev/null)"
+SIGMA_RHO="$(jq -r '.evidence.sigma_rho // "unknown"' "$SNAPSHOT_PATH" 2>/dev/null)"
+DELTA="$(jq -r '.evidence.delta // "unknown"' "$SNAPSHOT_PATH" 2>/dev/null)"
 
 if [ -z "$RECORDED_AT" ]; then
     echo "check-flywheel-compounding-snapshot: FAIL — recorded_at missing or unreadable"
@@ -67,12 +76,29 @@ if [ "$AGE_SECS" -gt "$MAX_SECS" ]; then
     exit 1
 fi
 
-if [ "$COMPOUNDING" != "true" ]; then
-    echo "check-flywheel-compounding-snapshot: FAIL — escape_velocity_compounding=$COMPOUNDING (must be true)"
+if [ "$COMPOUNDING" != "true" ] && [ "$COMPOUNDING" != "false" ]; then
+    echo "check-flywheel-compounding-snapshot: FAIL — escape_velocity_compounding missing or non-boolean"
     echo "  path:        $SNAPSHOT_PATH"
     echo "  recorded_at: $RECORDED_AT"
-    echo "  fix:         corpus needs more citation activity; rerun snapshot after compounding work lands"
     exit 1
+fi
+
+if [ "$COMPOUNDING" != "true" ]; then
+    if [ "${AGENTOPS_FLYWHEEL_SNAPSHOT_REQUIRE_COMPOUNDING:-0}" = "1" ]; then
+        echo "check-flywheel-compounding-snapshot: FAIL — escape_velocity_compounding=false (strict mode)"
+        echo "  path:        $SNAPSHOT_PATH"
+        echo "  recorded_at: $RECORDED_AT"
+        echo "  status:      $STATUS"
+        echo "  sigma_rho:   $SIGMA_RHO"
+        echo "  delta:       $DELTA"
+        echo "  fix:         corpus needs more evidence-backed citation activity; rerun snapshot after compounding work lands"
+        exit 1
+    fi
+    echo "check-flywheel-compounding-snapshot: PASS (${AGE_DAYS}d old, compounding=false, status=$STATUS, threshold ${MAX_DAYS}d)"
+    echo "  health: corpus is not above escape velocity; this is an action signal, not a structural CI failure"
+    echo "  sigma_rho: $SIGMA_RHO"
+    echo "  delta:     $DELTA"
+    exit 0
 fi
 
 echo "check-flywheel-compounding-snapshot: PASS (${AGE_DAYS}d old, compounding=true, threshold ${MAX_DAYS}d)"

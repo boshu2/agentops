@@ -181,9 +181,9 @@ Four layers that compound:
 | Layer | Problem | What changes |
 |-------|---------|--------------|
 | **Bookkeeping** | Agents forget what they tried, why they changed course, and what evidence mattered | `.agents/` captures run packets, handoffs, findings, citations, decisions, verdicts, retros, and post-mortems |
-| **Context Compiler** | Every session starts cold | `ao context assemble` builds phase-scoped packets; `ao lookup` retrieves decay-ranked knowledge on demand; skills and execution packets make context explicit; hooks are optional adapters |
+| **Context Compiler** | Every session starts cold | `ao context assemble` builds phase-scoped packets; `ao lookup` retrieves decay-ranked knowledge on demand; skills and execution packets make context explicit; runtime hooks are deliberately custom, not the default path |
 | **Validation Gates** | Agents ship confident garbage | `/pre-mortem`, `/vibe`, `/council`: multi-model consensus validates plans before build and code before commit; gates block, not advise |
-| **Knowledge Flywheel** | Lessons disappear between sessions | `/forge` extracts learnings from the bookkeeping trail, `ao flywheel close-loop` scores and promotes them, `/evolve` runs a bounded reconciliation loop, `/dream` prepares overnight compounding runs |
+| **Knowledge Flywheel** | Lessons disappear between sessions | `/forge` extracts learnings from the bookkeeping trail, `ao flywheel close-loop` scores and promotes them, `/evolve` runs a bounded reconciliation loop, `/dream` prepares compounding runs |
 
 All state lives in local `.agents/`: plain text you can grep, diff, and review. No AgentOps-managed telemetry or hosted control plane. Runtime-neutral across Claude Code, Codex CLI, Cursor, and OpenCode.
 
@@ -226,7 +226,7 @@ ao quick-start     # Canonical
 ao quickstart      # Stable alias
 ```
 
-That command applies the repeatable core seed: `.agents/`, `GOALS.md`, AgentOps instructions, starter knowledge, and readiness guidance. Use `/bootstrap` after that when you want the product/operations layer: `PRODUCT.md`, `README.md`, `PROGRAM.md`/`AUTODEV.md`, and optional hooks.
+That command applies the repeatable core seed: `.agents/`, `GOALS.md`, AgentOps instructions, starter knowledge, and readiness guidance. Use `/bootstrap` after that when you want the product/operations layer: `PRODUCT.md`, `README.md`, `PROGRAM.md`/`AUTODEV.md`, and optional custom hook guidance for runtimes where you deliberately author your own hooks.
 
 Already installed? Ask your agent for the next action:
 
@@ -241,7 +241,7 @@ ao doctor
 ao demo
 ```
 
-`ao demo` walks the product loop end-to-end: domain/practice packet, bounded task context, mixed Claude/Codex council verdict, tracked follow-up work, and the optional scheduled compounding lane. First-session walkthrough: [docs/first-value-path.md](docs/first-value-path.md).
+`ao demo` walks the product loop end-to-end: domain/practice packet, bounded task context, mixed Claude/Codex council verdict, tracked follow-up work, and the optional substrate-backed compounding lane. First-session walkthrough: [docs/first-value-path.md](docs/first-value-path.md).
 
 Full catalog: [docs/SKILLS.md](docs/SKILLS.md) · Unsure what to run? [Skill Router](docs/SKILL-ROUTER.md)
 
@@ -261,7 +261,7 @@ Every skill works alone. Flows compose them when you want more structure.
 | `/rpi` | You want discovery, build, validation, and bookkeeping in one flow |
 | `/vibe` | You want a code-quality and risk review before shipping |
 | `/evolve` | You want a goal-driven improvement loop with regression gates |
-| `/dream` | You want overnight knowledge compounding that never mutates source code |
+| `/dream` | You want bounded knowledge compounding that never mutates source code |
 
 Full reference: [docs/SKILLS.md](docs/SKILLS.md).
 

@@ -5,6 +5,7 @@
 # without re-running the live multi-session computation.
 #
 # Output: docs/releases/flywheel-compounding-snapshot.json (tracked).
+# Optional envelope overrides: SNAPSHOT_GIT_SHA, SNAPSHOT_GIT_BRANCH.
 #
 # Pair: scripts/check-flywheel-compounding-snapshot.sh (CI gate that
 # validates this artifact). Companion bead: soc-45sg.1 (G1).
@@ -32,8 +33,8 @@ if ! LIVE_JSON="$("$AO_BIN" flywheel status --json 2>/dev/null)"; then
     exit 1
 fi
 
-GIT_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || echo unknown)"
-GIT_BRANCH="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)"
+GIT_SHA="${SNAPSHOT_GIT_SHA:-$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || echo unknown)}"
+GIT_BRANCH="${SNAPSHOT_GIT_BRANCH:-$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)}"
 RECORDED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 mkdir -p "$(dirname "$SNAPSHOT_PATH")"
