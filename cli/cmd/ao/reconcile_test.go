@@ -66,7 +66,10 @@ func TestReconcileFindsReleaseTagFailureAndOpenReleaseBeads(t *testing.T) {
 	if report.Summary.High != 1 {
 		t.Fatalf("High findings = %d, want 1: %+v", report.Summary.High, report.Findings)
 	}
-	assertFinding(t, report, "release-tag-validate-not-green")
+	releaseFinding := findFinding(t, report, "release-tag-validate-not-green")
+	if !strings.Contains(releaseFinding.NextAction, "newer release tag") {
+		t.Fatalf("release next action should offer superseding tag path, got %q", releaseFinding.NextAction)
+	}
 	assertFinding(t, report, "beads-release-stale")
 	assertFinding(t, report, "beads-ready-p0")
 	if !report.Agents.Available || report.Agents.RecentFiles == 0 {
@@ -171,10 +174,16 @@ func writeRecentAgentEvidence(t *testing.T, root string, when time.Time) {
 
 func assertFinding(t *testing.T, report reconcileReport, id string) {
 	t.Helper()
+	_ = findFinding(t, report, id)
+}
+
+func findFinding(t *testing.T, report reconcileReport, id string) reconcileFinding {
+	t.Helper()
 	for _, finding := range report.Findings {
 		if finding.ID == id {
-			return
+			return finding
 		}
 	}
 	t.Fatalf("finding %q not found in %+v", id, report.Findings)
+	return reconcileFinding{}
 }

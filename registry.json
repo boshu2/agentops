@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-26T20:34:23Z",
+  "generated_at": "2026-05-26T22:58:05Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -1186,7 +1186,12 @@
         "path": "cli/cmd/ao/",
         "purpose": "Join git, CI, release, beads, and .agents truth into one report",
         "bounded_context": "",
-        "driven_by_skills": []
+        "driven_by_skills": [
+          "beads",
+          "quickstart",
+          "release",
+          "status"
+        ]
       },
       {
         "name": "ao registry",
@@ -1454,7 +1459,9 @@
       "produces": [
         "bd-issue"
       ],
-      "drives_commands": [],
+      "drives_commands": [
+        "ao reconcile"
+      ],
       "path": "skills/beads/",
       "references": 19
     },
@@ -2417,7 +2424,8 @@
         "ao flywheel close-loop",
         "ao init",
         "ao metrics",
-        "ao quick-start"
+        "ao quick-start",
+        "ao reconcile"
       ],
       "path": "skills/quickstart/",
       "references": 3
@@ -2529,7 +2537,8 @@
         "result.json"
       ],
       "drives_commands": [
-        "ao goals"
+        "ao goals",
+        "ao reconcile"
       ],
       "path": "skills/release/",
       "references": 8
@@ -2908,7 +2917,8 @@
         "ao pool list",
         "ao pool promote",
         "ao pool stage",
-        "ao ratchet"
+        "ao ratchet",
+        "ao reconcile"
       ],
       "path": "skills/status/",
       "references": 0
@@ -4236,7 +4246,12 @@
       "bounded_context": "",
       "purpose": "Join git, CI, release, beads, and .agents truth into one report",
       "status": "active",
-      "driven_by_skills": [],
+      "driven_by_skills": [
+        "beads",
+        "quickstart",
+        "release",
+        "status"
+      ],
       "flags": [
         "--config",
         "--dry-run",

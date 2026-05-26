@@ -570,7 +570,7 @@ func buildReconcileFindings(report reconcileReport) []reconcileFinding {
 	} else {
 		latest := report.Release.TagValidateRuns[0]
 		if latest.Status != "completed" || latest.Conclusion != "success" {
-			add("release-tag-validate-not-green", "high", "release", "Latest release tag Validate is not green", statusLabel(latest.Status, latest.Conclusion)+" for "+report.Release.TagName, latest.URL, "Rerun tag Validate or fix the release-tag workflow before claiming release health.")
+			add("release-tag-validate-not-green", "high", "release", "Latest release tag Validate is not green", statusLabel(latest.Status, latest.Conclusion)+" for "+report.Release.TagName, latest.URL, "Rerun tag Validate when appropriate, or cut a newer release tag whose Validate run is green before claiming release health.")
 		}
 	}
 	if !report.Beads.Available {

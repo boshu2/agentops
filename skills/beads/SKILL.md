@@ -51,6 +51,7 @@ Graph-based issue tracker that survives conversation compaction.
 ## Operating Rules
 
 - Treat live `bd` reads as authoritative. Use `bd show`, `bd ready`, `bd list`, and `bd export` to inspect current tracker state. Do not treat `.beads/issues.jsonl` as the primary decision source when live `bd` data is available.
+- Before selecting new ready work after CI, release, or rollout activity, prefer `ao reconcile --json` when available. Treat `bd ready` as planning input only after high-severity main/release/bead evidence findings are resolved or explicitly superseded.
 - Treat `.beads/issues.jsonl` as a git-friendly export artifact. If the repo tracks `.beads/issues.jsonl` and you mutate tracker state, refresh it explicitly with `bd export -o .beads/issues.jsonl`.
 - After closing or materially updating a child issue, reconcile the open parent in the same session. Update stale "remaining gap" notes immediately, and close the parent when the child resolved the parent's last real gap.
 - Before closing a child issue, include scoped closure proof in the `bd close --reason` text.

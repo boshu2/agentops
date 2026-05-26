@@ -6,7 +6,7 @@ CI ensures code quality, security, and release integrity for the AgentOps reposi
 
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|
-| Validate | `validate.yml` | Push to `main`, `v*` tag push, PRs to `main` | Primary quality gate; tag pushes force every path-filtered lane on |
+| Validate | `validate.yml` | Push to `main`, `v*` tag push, PRs to `main` | Primary quality gate; tag pushes force every path-filtered release lane on and allowlist PR-only evidence jobs |
 | Release Publisher | `release.yml` | Tag push (`v*`), manual dispatch | Build, publish, attest releases |
 | Nightly | `nightly.yml` | Daily 6am UTC, manual | Public proof harness: full test suite + retrieval + security + compile cycle + Dream report-shape validation over repo-visible artifacts |
 | Nightly RPI Brief | `nightly-rpi-brief.yml` | Daily 11:30am UTC, manual | Builds a two-week Nightly evidence digest and updates the `$agentops:rpi --auto` prompt packet issue |
