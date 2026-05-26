@@ -34,10 +34,26 @@ setup() {
     done
 }
 
-@test "summary fails release tags with skipped jobs" {
-    run grep -F "Release-tag Validate had skipped jobs" "$WORKFLOW_PATH"
+@test "summary fails release tags with unexpected skipped jobs" {
+    run grep -F "Release-tag Validate had unexpected skipped jobs" "$WORKFLOW_PATH"
     [ "$status" -eq 0 ]
 
+    run grep -F "skipped release lanes are not a release verdict" "$WORKFLOW_PATH"
+    [ "$status" -eq 0 ]
+}
+
+@test "summary does not fail release tags on every skipped job blindly" {
     run grep -F "contains(needs.*.result, 'skipped')" "$WORKFLOW_PATH"
+    [ "$status" -ne 0 ]
+}
+
+@test "summary allows explicitly PR-only jobs to skip on release tags" {
+    run grep -F "toJson(needs)" "$WORKFLOW_PATH"
+    [ "$status" -eq 0 ]
+
+    run grep -F '"validate-pr-evidence-claims"' "$WORKFLOW_PATH"
+    [ "$status" -eq 0 ]
+
+    run grep -F '"lint-evidence-lines-advisory"' "$WORKFLOW_PATH"
     [ "$status" -eq 0 ]
 }
