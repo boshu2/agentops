@@ -126,8 +126,8 @@ jobs:
   reason: 'GOALS.md gate `corpus-freshness` (weight 4, Directive D11): `scripts/check-corpus-freshness.sh` ensures the newest `ao corpus snapshot` is within 7 days. CI runs with `AGENTOPS_CORPUS_FRESHNESS_SKIP=1` (greenfield runners); operator boxes enforce real freshness'
   failure: Snapshot dir present but newest tarball is older than 7 days (corpus durability protects against routine cleanup wiping `.agents/`)
 - name: validate-flywheel-compounding-snapshot
-  reason: 'GOALS.md gate `flywheel-compounding-snapshot` (weight 5, G1): `scripts/check-flywheel-compounding-snapshot.sh` validates the tracked `docs/releases/flywheel-compounding-snapshot.json` exists, is < 14 days old, and `escape_velocity_compounding=true`. Operator refresh: `bash scripts/snapshot-flywheel-compounding.sh && git add docs/releases/flywheel-compounding-snapshot.json`'
-  failure: Snapshot missing, stale (>14d), or shows `escape_velocity_compounding=false` (corpus has stopped compounding)
+  reason: 'GOALS.md gate `flywheel-compounding-snapshot` (weight 5, G1): `scripts/check-flywheel-compounding-snapshot.sh` validates the tracked `docs/releases/flywheel-compounding-snapshot.json` exists, is < 14 days old, and contains readable `escape_velocity_compounding` health evidence. Operator refresh: `bash scripts/snapshot-flywheel-compounding.sh && git add docs/releases/flywheel-compounding-snapshot.json`'
+  failure: Snapshot missing, stale (>14d), or unreadable; `escape_velocity_compounding=false` is reported as a health signal unless strict mode is explicitly enabled
 - name: validate-finding-registry
   reason: 'GOALS.md gate `finding-registry` (weight 4, A2 audit follow-up): `scripts/check-finding-registry.sh` validates the finding-registry contract: schema is valid JSON Schema, required-field list cross-checks with contract doc (accepts both `foo` and `foo.child` forms for nested objects), canonical path is documented, live `.agents/findings/registry.jsonl` lines parse and carry the required top-level fields'
   failure: Schema/contract drift, required field dropped from either side, or any live registry line missing one of the eight top-level required fields

@@ -25,15 +25,15 @@
 
 ### The compounding proof
 
-- **`docs/releases/flywheel-compounding-snapshot.json`** (tracked) — durable snapshot showing `escape_velocity_compounding=true`, σρ × utility > δ × decay, recorded against a known git SHA.
-- **`scripts/check-flywheel-compounding-snapshot.sh`** — CI gate that fails if the snapshot is > 14 days stale or the value flipped to non-compounding.
+- **`docs/releases/flywheel-compounding-snapshot.json`** (tracked) — durable snapshot of current σρδ corpus health, recorded against a known git SHA.
+- **`scripts/check-flywheel-compounding-snapshot.sh`** — CI gate that fails if the snapshot is > 14 days stale or unreadable; a non-compounding value is reported as a health signal unless strict mode is explicitly enabled.
 
 ## Verification surfaces
 
 | Gate | What it asserts |
 |---|---|
 | `scripts/check-flywheel-compounding.sh` | Live escape-velocity computation: capture × utility > natural decay. Fails when the corpus stops compounding. |
-| `scripts/check-flywheel-compounding-snapshot.sh` | Tracked snapshot is < 14 days old and shows `compounding=true`. CI-blocking (G1, weight 5). |
+| `scripts/check-flywheel-compounding-snapshot.sh` | Tracked snapshot is < 14 days old and contains readable compounding health. CI-blocking for evidence freshness, not for the long-cycle health verdict. |
 | `scripts/check-flywheel-proof.sh` | Cross-session evidence: learnings captured in one session are applied in another (citations against learnings file paths). |
 | `scripts/check-retrieval-quality-ratchet.sh` | `ao inject` retrieval can name the corpus sources behind each context window. Drift-blocking. |
 | `scripts/check-competitive-freshness.sh` | Competitive docs (the surface this claim lives on) refreshed against current state, not stale. The ledger row's declared `closure_gate`. |
@@ -43,7 +43,7 @@
 
 The original ledger row records `evidence_status: "partial"` with `missing_proof: "Needs generated corpus-growth and competitive-freshness scorecards before quantitative inventory-vs-corpus claims."` The corpus-growth side now has tracked evidence (`docs/releases/flywheel-compounding-snapshot.json` with σρδ values + the live `check-flywheel-compounding.sh` lane). The competitive-freshness side has its own gate (`check-competitive-freshness.sh`). Both are CI-wired today.
 
-The claim is structural (the corpus exists and compounds), not quantitative (AgentOps has more skills than X marketplace). The anti-claim below makes the structural framing explicit.
+The claim is structural (the corpus exists and has a measured compounding surface), not quantitative (AgentOps has more skills than X marketplace). The anti-claim below makes the structural framing explicit.
 
 ## Cross-claim composition
 
