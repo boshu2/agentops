@@ -294,11 +294,18 @@ run:
 
 ```bash
 scripts/verify-release-ci.sh v<version>
+ao reconcile --json
 ```
 
 The helper resolves `v<version>` to a local commit, polls GitHub Actions for a
 matching `validate.yml` run, watches it when still in progress, and exits
 non-zero unless the run completes with `conclusion=success`.
+
+`ao reconcile --json` is the cross-check that release evidence, `main`, beads,
+git, and `.agents` agree. Do not ignore a release-tag finding because it points
+at an older tag. Either fix/rerun that tag validation when appropriate, or
+explicitly supersede it with a newer release tag whose Validate evidence is
+green.
 
 Record the verifier output in the release handoff or append it to the internal
 audit notes after the push. The record must include at least:
@@ -309,9 +316,12 @@ audit notes after the push. The record must include at least:
 - GitHub Actions run id
 - conclusion
 - run URL
+- `ao reconcile` overall status
+- latest release tag finding state
 
 Do not describe the release as complete until the verifier prints `GO
-release-ci`.
+release-ci` and reconciliation has no high-severity release-tag finding for the
+latest intended release.
 
 ## Step 16: Post-release guidance
 
@@ -323,11 +333,12 @@ Release v1.7.0 prepared locally.
 Next steps:
   git push origin main --tags     # push commit + tag
   scripts/verify-release-ci.sh v1.7.0
+  ao reconcile --json
 
 CI publisher will handle: release publish, GitHub Release page, SBOM/security assets, provenance
   (detected: .github/workflows/release.yml, .goreleaser.yml)
   Curated release notes: docs/releases/YYYY-MM-DD-v1.7.0-notes.md
-Release is complete only after verify-release-ci prints GO release-ci.
+Release is complete only after verify-release-ci prints GO release-ci and ao reconcile has no high-severity latest-release finding.
 ```
 
 If no CI detected:

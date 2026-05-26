@@ -40,7 +40,7 @@ git tag vX.Y.Z
 - [ ] Local gate artifacts generated (`.agents/releases/local-ci/<timestamp>/` includes SBOM, security report, readiness, and HIL evidence)
 - [ ] Release validation did not mutate tracked `.agents/findings/*` metadata; `scripts/ci-local-release.sh` guards this by default.
 - [ ] All tests pass locally (`cd cli && make test`)
-- [ ] Full Validate green on the exact release SHA (`scripts/verify-release-ci.sh vX.Y.Z` after pushing; release tag pushes force every path-filtered lane on)
+- [ ] Full Validate green on the exact release SHA (`scripts/verify-release-ci.sh vX.Y.Z` after pushing; release tag pushes force every path-filtered release lane on, PR-only evidence jobs may be skipped, and unexpected skipped release lanes fail the summary)
 - [ ] Version number follows semver (vX.Y.Z)
 - [ ] CHANGELOG.md updated with release notes
 - [ ] plugin.json version matches tag
