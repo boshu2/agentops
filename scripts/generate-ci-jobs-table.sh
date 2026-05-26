@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# generate-ci-jobs-table.sh — render AGENTS.md "### CI Jobs and What They Check"
+# generate-ci-jobs-table.sh — render AGENTS-CI.md "### CI Jobs and What They Check"
 # table from .github/workflows/validate.yml + docs/contracts/ci-jobs.yaml.
 #
 # soc-3oij: AGENTS CI table generator. Eliminates hand-edit drift — adding a
@@ -9,11 +9,11 @@
 #
 # Modes:
 #   (default)    Render table to stdout
-#   --check      Render, diff against AGENTS.md section, exit 1 if drift
+#   --check      Render, diff against AGENTS-CI.md section, exit 1 if drift
 #   --write      Render and rewrite the section in-place
 #
 # Inputs:
-#   AGENTS_PATH=$REPO_ROOT/AGENTS.md
+#   AGENTS_PATH=$REPO_ROOT/AGENTS-CI.md
 #   WORKFLOW_PATH=$REPO_ROOT/.github/workflows/validate.yml
 #   MANIFEST_PATH=$REPO_ROOT/docs/contracts/ci-jobs.yaml
 
@@ -22,9 +22,20 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-AGENTS_PATH="${AGENTS_PATH:-$REPO_ROOT/AGENTS-CI.md}"
-WORKFLOW_PATH="${WORKFLOW_PATH:-$REPO_ROOT/.github/workflows/validate.yml}"
-MANIFEST_PATH="${MANIFEST_PATH:-$REPO_ROOT/docs/contracts/ci-jobs.yaml}"
+AGENTS_PATH="${AGENTS_PATH:-${CI_POLICY_PARITY_AGENTS_PATH:-$REPO_ROOT/AGENTS-CI.md}}"
+WORKFLOW_PATH="${WORKFLOW_PATH:-${CI_POLICY_PARITY_WORKFLOW_PATH:-$REPO_ROOT/.github/workflows/validate.yml}}"
+MANIFEST_PATH="${MANIFEST_PATH:-${CI_POLICY_PARITY_MANIFEST_PATH:-$REPO_ROOT/docs/contracts/ci-jobs.yaml}}"
+
+display_path() {
+    local path="$1"
+    if [[ "$path" == "$REPO_ROOT/"* ]]; then
+        printf '%s' "${path#"$REPO_ROOT/"}"
+    else
+        printf '%s' "$path"
+    fi
+}
+
+AGENTS_LABEL="$(display_path "$AGENTS_PATH")"
 
 MODE="render"
 for arg in "$@"; do
@@ -114,7 +125,7 @@ for job in needs:
 PYEOF
 }
 
-# Find AGENTS.md table boundaries: section header → next ### or EOF.
+# Find AGENTS-CI.md table boundaries: section header → next ### or EOF.
 extract_agents_section() {
     awk '
         BEGIN { in_section=0 }
@@ -131,24 +142,26 @@ case "$MODE" in
     check)
         TMP_GEN="$(mktemp)"
         TMP_HAVE="$(mktemp)"
-        trap 'rm -f "$TMP_GEN" "$TMP_HAVE"' EXIT
+        TMP_GEN_STRIPPED="$(mktemp)"
+        trap 'rm -f "$TMP_GEN" "$TMP_HAVE" "$TMP_GEN_STRIPPED"' EXIT
 
         render_table > "$TMP_GEN"
         # Extract just the table from AGENTS section (skip leading blank/heading)
         extract_agents_section | awk '/^\|/{print}' > "$TMP_HAVE"
         # Drop trailing blank lines from generated output
-        sed -i '/^$/d' "$TMP_GEN"
+        awk 'NF { print }' "$TMP_GEN" > "$TMP_GEN_STRIPPED"
+        mv "$TMP_GEN_STRIPPED" "$TMP_GEN"
 
         if diff -u "$TMP_HAVE" "$TMP_GEN" >/dev/null; then
             echo "CI_JOBS_TABLE: PASS ($(wc -l < "$TMP_GEN" | tr -d ' ') rows)"
             exit 0
         else
-            echo "CI_JOBS_TABLE: FAIL — AGENTS.md table drifts from generator output"
-            echo "--- AGENTS.md (have)"
+            echo "CI_JOBS_TABLE: FAIL — ${AGENTS_LABEL} table drifts from generator output"
+            echo "--- ${AGENTS_LABEL} (have)"
             echo "+++ generator (want from docs/contracts/ci-jobs.yaml + validate.yml)"
             diff -u "$TMP_HAVE" "$TMP_GEN" || true
             echo ""
-            echo "Action: run scripts/generate-ci-jobs-table.sh --write to refresh."
+            echo "Action: run scripts/generate-ci-jobs-table.sh --write to refresh ${AGENTS_LABEL}."
             exit 1
         fi
         ;;
@@ -158,7 +171,7 @@ case "$MODE" in
         trap 'rm -f "$TMP_GEN" "$TMP_NEW"' EXIT
 
         render_table > "$TMP_GEN"
-        # Walk AGENTS.md replacing the section content between
+        # Walk AGENTS-CI.md replacing the section content between
         # "### CI Jobs and What They Check" and the next "### " header.
         awk -v gen_file="$TMP_GEN" '
             BEGIN {
