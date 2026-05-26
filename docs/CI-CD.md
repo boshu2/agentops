@@ -99,8 +99,10 @@ Current non-blocking validate jobs are `doctor-check`, `factory-claim-ledger-str
 For normal `main` pushes and PRs, the `changes` job path-filters expensive lanes.
 For `refs/tags/v*` pushes, `changes` forces every category output to `true` and
 skips the path-filter step. The release-tag `summary` also fails if any job is
-skipped. A green release Validate run therefore means every blocking lane ran
-for the exact tagged SHA; skipped is not treated as passed for releases.
+unexpectedly skipped. PR-only evidence jobs are allowlisted because tag push
+events do not have a pull request body to inspect. A green release Validate run
+therefore means every blocking release lane ran for the exact tagged SHA;
+skipped is not treated as passed for releases.
 
 ## Blocking vs Soft Gates
 

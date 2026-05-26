@@ -193,6 +193,15 @@ jobs:
           fi
           echo "Homebrew token validated"
 
+      - name: Validate curated release notes (hard gate)
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${VERSION}$" | head -1)
+          chmod +x scripts/validate-release-notes.sh
+          # --since runs the coverage gate: every product area the release actually
+          # touched must be documented (guards against an under-scoped major).
+          scripts/validate-release-notes.sh "$VERSION" --since "$PREV_TAG"
+
       - name: Extract release notes from CHANGELOG.md
         run: |
           VERSION="${{ steps.version.outputs.version }}"

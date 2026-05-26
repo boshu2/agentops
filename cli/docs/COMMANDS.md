@@ -1077,6 +1077,25 @@ ao pool stage <candidate-id> [flags]
 
 ---
 
+### `ao reconcile`
+
+Build a read-only reconciliation report for the current AgentOps repo.
+
+```
+ao reconcile [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for reconcile
+      --limit int      maximum bead and run records to sample (default 80)
+      --repo string    GitHub repo override for gh calls (owner/name)
+      --since string   recent .agents evidence window (default "48h")
+```
+
+---
+
 ### `ao robot-docs`
 
 Print a paste-ready, agent-targeted handbook for the whole ao CLI.

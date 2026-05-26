@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-25T02:48:51Z",
+  "generated_at": "2026-05-26T20:34:23Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 66,
-    "capabilities": 209
+    "cli_commands": 67,
+    "capabilities": 210
   },
   "surfaces": {
     "skills": [
@@ -1182,6 +1182,13 @@
         ]
       },
       {
+        "name": "ao reconcile",
+        "path": "cli/cmd/ao/",
+        "purpose": "Join git, CI, release, beads, and .agents truth into one report",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao registry",
         "path": "cli/cmd/ao/",
         "purpose": "Query the unified registry",
@@ -1330,9 +1337,9 @@
     ]
   },
   "capability_summary": {
-    "total": 209,
+    "total": 210,
     "skills": 75,
-    "cli_commands": 66,
+    "cli_commands": 67,
     "gates": 65,
     "reference_impls": 3
   },
@@ -1386,6 +1393,7 @@
     "pool",
     "quick-start",
     "ratchet",
+    "reconcile",
     "registry",
     "retrieval-bench",
     "robot-docs",
@@ -2028,7 +2036,8 @@
         "result.json"
       ],
       "drives_commands": [
-        "ao lookup"
+        "ao lookup",
+        "ao metrics cite"
       ],
       "path": "skills/hooks-authoring/",
       "references": 3
@@ -2097,7 +2106,8 @@
         "ao knowledge brief",
         "ao knowledge gaps",
         "ao knowledge playbooks",
-        "ao lookup"
+        "ao lookup",
+        "ao metrics cite"
       ],
       "path": "skills/knowledge-activation/",
       "references": 3
@@ -4215,6 +4225,26 @@
         "--dry-run",
         "--json",
         "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.reconcile",
+      "name": "ao reconcile",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Join git, CI, release, beads, and .agents truth into one report",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--limit",
+        "--output",
+        "--repo",
+        "--since",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"
