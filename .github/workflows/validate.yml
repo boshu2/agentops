@@ -1887,19 +1887,45 @@ jobs:
           echo "executable-spec-link-integrity: ${{ needs.executable-spec-link-integrity.result }}"
           echo "validate-scenario-test-linkage: ${{ needs.validate-scenario-test-linkage.result }}"
 
-          # Fail on actual failures. On release tags, skipped jobs are also a
-          # failure because validate.yml must be a full exact-SHA release
-          # verdict, not a path-filtered partial signal.
+          # Fail on actual failures. On release tags, skipped release lanes are
+          # also failures because validate.yml must be a full exact-SHA release
+          # verdict, not a path-filtered partial signal. PR-only jobs are
+          # explicitly allowlisted because they cannot run for tag push events.
           if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
             echo ""
             echo "❌ Some checks failed (failure detected)"
             exit 1
           fi
 
-          if [[ "${GITHUB_REF}" == refs/tags/v* && "${{ contains(needs.*.result, 'skipped') }}" == "true" ]]; then
-            echo ""
-            echo "❌ Release-tag Validate had skipped jobs; skipped is not a release verdict"
-            exit 1
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            release_needs_json='${{ toJson(needs) }}'
+            release_skipped="$(
+              NEEDS_JSON="$release_needs_json" python3 - <<'PY'
+          import json
+          import os
+
+          allowed_skips = {
+              "lint-evidence-lines-advisory",
+              "validate-pr-evidence-claims",
+          }
+
+          needs = json.loads(os.environ["NEEDS_JSON"])
+          unexpected = sorted(
+              name
+              for name, metadata in needs.items()
+              if metadata.get("result") == "skipped" and name not in allowed_skips
+          )
+
+          for name in unexpected:
+              print(name)
+          PY
+            )"
+            if [[ -n "$release_skipped" ]]; then
+              echo ""
+              echo "❌ Release-tag Validate had unexpected skipped jobs; skipped release lanes are not a release verdict"
+              printf '%s\n' "$release_skipped" | sed 's/^/- /'
+              exit 1
+            fi
           fi
 
           echo ""
