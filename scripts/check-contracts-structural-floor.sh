@@ -9,13 +9,12 @@
 #   4. If a paired schema file exists (schemas/<name>.v*.schema.json or
 #      docs/contracts/<name>.schema.json) it must be valid JSON.
 #
-# This is the FLOOR. Stronger contract-specific gates (e.g., factory-yield-
-# ledger, finding-registry, factory-admission) layer on top and validate
+# This is the FLOOR. Stronger contract-specific gates layer on top and validate
 # domain-specific shape, fixtures, required fields, and live artifacts.
 #
 # Closes batch of A2 audit-followup beads as "covered by structural floor."
 # Promotion path: any contract that wants strong schema-level enforcement
-# follows the per-contract gate pattern (see check-factory-*.sh).
+# follows the per-contract gate pattern.
 
 set -uo pipefail
 

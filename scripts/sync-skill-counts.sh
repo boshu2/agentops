@@ -180,8 +180,8 @@ patch_file "$REPO_ROOT/PRODUCT.md" \
   "PRODUCT.md context compiler skill count"
 
 check_file_pattern "$REPO_ROOT/PRODUCT.md" \
-  'Optional lifecycle hooks — adapter profiles' \
-  "PRODUCT.md optional hook posture"
+  'Runtime hooks are not an AgentOps default' \
+  "PRODUCT.md hookless posture"
 
 patch_file "$REPO_ROOT/PRODUCT.md" \
   'Distribution/runtime reach: [0-9]+ shared skills, [0-9]+ checked-in Codex artifacts, and [0-9]+ Codex overrides' \
