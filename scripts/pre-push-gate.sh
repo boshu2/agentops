@@ -478,7 +478,7 @@ if [[ "$FAST_MODE" == "true" ]]; then
     else
         HAS_CONTRACT=0
     fi
-    if echo "$all_changed" | grep -qE '^\.github/workflows/validate\.yml$|^docs/CI-CD\.md$|^AGENTS\.md$|^scripts/validate-ci-policy-parity\.sh$'; then
+    if echo "$all_changed" | grep -qE '^\.github/workflows/validate\.yml$|^docs/CI-CD\.md$|^AGENTS\.md$|^AGENTS-CI\.md$|^scripts/(generate-ci-jobs-table|validate-ci-policy-parity)\.sh$'; then
         HAS_CI_POLICY=1
     else
         HAS_CI_POLICY=0
@@ -1771,6 +1771,8 @@ if needs_check hook || needs_check contract; then
             fail "hook lease inventory"
             indent_output "$hook_lease_output"
         fi
+    elif [[ ! -f docs/contracts/hook-lease-inventory.md && ! -f schemas/hook-lease.v1.schema.json && ! -d hooks && ! -d cli/embedded/hooks ]]; then
+        skip "hook lease inventory (retired hook lease surface absent)"
     else
         fail "missing executable: scripts/check-hook-lease-inventory.sh"
     fi

@@ -709,7 +709,7 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "53926734bea9af373d0196d8644b9a5a86febb2f8872937af75b64c1b0833c03",
+      "source_hash": "19827ed271f1a839da41c644b297872cc6072bf61c424c9e055e2bee04587a15",
       "generated_hash": "d1f156a392be40cb5f72a424de9a7c165df4c1677c984a963cf20ad1cbd15c6f"
     },
     {
@@ -805,7 +805,7 @@
     {
       "name": "hooks-authoring",
       "source_skill": "skills/hooks-authoring",
-      "source_hash": "eaa5cd674047426494b34030de56376c4bfd3c718b998da20e602207590c1aeb",
+      "source_hash": "408c57bfc62acfc64611d7f9105b0823c6be43f021dfdc5b97f1b2546e2d4cf4",
       "generated_hash": "d94123e8bff5f45114552743edf7334c61db5e2b61f192c2d012fb5b44c5834a"
     },
     {
@@ -823,8 +823,8 @@
     {
       "name": "knowledge-activation",
       "source_skill": "skills/knowledge-activation",
-      "source_hash": "31b0566762a9a5f389ebbfc32b5b5073e859758aff7c655777d8c9972a887ba5",
-      "generated_hash": "198b92ba5e8d9c4990d8e15da72fb9e58cdb302c4d3a0f70ac197cd8c1988c97"
+      "source_hash": "a60f83683eb88ce0a8dfee30e8cf65f37bb304ba2f31d813cb40168dccb11db2",
+      "generated_hash": "324bf2ac895f58b1acabf292353c8a1d980ce1147883df4b2ea7d487111883f6"
     },
     {
       "name": "llm-wiki",
