@@ -39,7 +39,7 @@ EOF
 write_workflow() {
   local path="$1"
   local needs_line="$2"
-  local fail_expr="$3"
+  local nonblocking_jobs="${3:-}"
   cat > "$path" <<EOF
 name: Validate
 on:
@@ -47,12 +47,20 @@ on:
     branches: [main]
 
 jobs:
-  doc-release-gate:
-    runs-on: ubuntu-latest
-  hook-preflight:
-    runs-on: ubuntu-latest
-  security-toolchain-gate:
-    runs-on: ubuntu-latest
+EOF
+  local jobs_csv="${needs_line//,/ }"
+  for job in $jobs_csv; do
+    job="$(echo "$job" | xargs)"
+    [[ -z "$job" ]] && continue
+    {
+      echo "  ${job}:"
+      echo "    runs-on: ubuntu-latest"
+    } >> "$path"
+    if grep -qw "$job" <<<"$nonblocking_jobs"; then
+      echo "    continue-on-error: true" >> "$path"
+    fi
+  done
+  cat >> "$path" <<EOF
   summary:
     needs: [$needs_line]
     runs-on: ubuntu-latest
@@ -60,18 +68,34 @@ jobs:
     steps:
       - name: Check results
         run: |
-          if $fail_expr; then
-            exit 1
-          fi
+          echo summary
 EOF
+}
+
+write_manifest() {
+  local path="$1"
+  shift
+  {
+    echo "jobs:"
+    for entry in "$@"; do
+      local name="${entry%%|*}"
+      local rest="${entry#*|}"
+      local reason="${rest%%|*}"
+      local failure="${rest#*|}"
+      printf '  - name: %s\n    reason: %s\n    failure: %s\n' \
+        "$name" "$reason" "$failure"
+    done
+  } > "$path"
 }
 
 run_with_fixtures() {
   local agents_file="$1"
   local workflow_file="$2"
-  local out_file="$3"
-  CI_POLICY_PARITY_AGENTS_PATH="$agents_file" \
-  CI_POLICY_PARITY_WORKFLOW_PATH="$workflow_file" \
+  local manifest_file="$3"
+  local out_file="$4"
+  AGENTS_PATH="$agents_file" \
+  WORKFLOW_PATH="$workflow_file" \
+  MANIFEST_PATH="$manifest_file" \
   bash "$SCRIPT" > "$out_file" 2>&1
 }
 
@@ -80,17 +104,23 @@ test_pass_aligned_policy() {
   mkdir -p "$fixture"
   local agents="$fixture/AGENTS.md"
   local workflow="$fixture/validate.yml"
+  local manifest="$fixture/ci-jobs.yaml"
   local out="$fixture/out.txt"
 
   write_agents "$agents" \
     "The summary job gates on all checks except security-toolchain-gate (non-blocking)." \
-    $'| **doc-release-gate** | docs parity | stale docs |\n| **hook-preflight** | hook safety | missing guard |\n| **security-toolchain-gate** | scanners | tool not installed |'
+    $'| **doc-release-gate** | docs parity | stale docs |\n| **hook-preflight** | hook safety | missing guard |\n| **security-toolchain-gate** (non-blocking) | scanners | tool not installed |'
 
   write_workflow "$workflow" \
     "doc-release-gate, hook-preflight, security-toolchain-gate" \
-    "[[ \"\${{ needs.doc-release-gate.result }}\" != \"success\" ]] || [[ \"\${{ needs.hook-preflight.result }}\" != \"success\" ]]"
+    "security-toolchain-gate"
 
-  if run_with_fixtures "$agents" "$workflow" "$out"; then
+  write_manifest "$manifest" \
+    "doc-release-gate|docs parity|stale docs" \
+    "hook-preflight|hook safety|missing guard" \
+    "security-toolchain-gate|scanners|tool not installed"
+
+  if run_with_fixtures "$agents" "$workflow" "$manifest" "$out"; then
     pass "passes when AGENTS CI policy matches workflow"
   else
     fail "should pass when policy is aligned"
@@ -103,6 +133,7 @@ test_fail_job_list_drift() {
   mkdir -p "$fixture"
   local agents="$fixture/AGENTS.md"
   local workflow="$fixture/validate.yml"
+  local manifest="$fixture/ci-jobs.yaml"
   local out="$fixture/out.txt"
 
   write_agents "$agents" \
@@ -111,14 +142,18 @@ test_fail_job_list_drift() {
 
   write_workflow "$workflow" \
     "doc-release-gate, hook-preflight" \
-    "[[ \"\${{ needs.doc-release-gate.result }}\" != \"success\" ]] || [[ \"\${{ needs.hook-preflight.result }}\" != \"success\" ]]"
+    ""
 
-  if run_with_fixtures "$agents" "$workflow" "$out"; then
+  write_manifest "$manifest" \
+    "doc-release-gate|docs parity|stale docs" \
+    "hook-preflight|hook safety|missing guard"
+
+  if run_with_fixtures "$agents" "$workflow" "$manifest" "$out"; then
     fail "should fail when AGENTS job table drifts from workflow needs"
     return
   fi
 
-  if grep -q "Job list drift detected" "$out"; then
+  if grep -q "table drifts from generator output" "$out"; then
     pass "reports job list drift"
   else
     fail "missing job list drift message"
@@ -130,6 +165,7 @@ test_fail_nonblocking_drift() {
   mkdir -p "$fixture"
   local agents="$fixture/AGENTS.md"
   local workflow="$fixture/validate.yml"
+  local manifest="$fixture/ci-jobs.yaml"
   local out="$fixture/out.txt"
 
   write_agents "$agents" \
@@ -138,14 +174,18 @@ test_fail_nonblocking_drift() {
 
   write_workflow "$workflow" \
     "doc-release-gate, security-toolchain-gate" \
-    "[[ \"\${{ needs.doc-release-gate.result }}\" != \"success\" ]] || [[ \"\${{ needs.security-toolchain-gate.result }}\" != \"success\" ]]"
+    "security-toolchain-gate"
 
-  if run_with_fixtures "$agents" "$workflow" "$out"; then
+  write_manifest "$manifest" \
+    "doc-release-gate|docs parity|stale docs" \
+    "security-toolchain-gate|scanners|tool not installed"
+
+  if run_with_fixtures "$agents" "$workflow" "$manifest" "$out"; then
     fail "should fail when non-blocking policy drifts"
     return
   fi
 
-  if grep -q "Non-blocking policy drift detected" "$out"; then
+  if grep -q "non-blocking" "$out"; then
     pass "reports non-blocking drift"
   else
     fail "missing non-blocking drift message"

@@ -18,8 +18,8 @@
 #   T5. Codex parity copies (skills-codex/crank/, skills-codex/swarm/) carry
 #       matching gate references.
 #   T6. The validator dependency exists and is executable.
-#   T7. Behavioral fixture: synthesize a drifted (validate.yml, AGENTS.md)
-#       pair under CI_POLICY_PARITY_* env overrides and assert exit 1.
+#   T7. Behavioral fixture: synthesize a drifted (validate.yml, AGENTS.md,
+#       ci-jobs.yaml) set under CI_POLICY_PARITY_* env overrides and assert exit 1.
 #   T8. Behavioral fixture: synthesize an aligned pair and assert exit 0.
 #   T9. Sanity: invoking the validator on the live repo exits 0
 #       (current main is parity-clean — guards against repo-level regression).
@@ -118,9 +118,6 @@ TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 # Minimal AGENTS.md with the table header the validator looks for.
-# The validator extracts non-blocking jobs by grepping for the literal
-# "<job> (non-blocking)" prose pattern, so the stub emits a
-# "Non-blocking jobs:" enumeration ABOVE the table for any nonblocking entries.
 make_agents_md() {
     local out="$1"
     shift
@@ -149,11 +146,11 @@ make_agents_md() {
         for entry in "$@"; do
             local job="${entry%%:*}"
             local kind="${entry##*:}"
-            if [[ "$kind" == "blocking" ]]; then
-                echo "| **${job}** | stub | stub |"
-            else
-                echo "| **${job}** | stub | Non-blocking (\`continue-on-error: true\`); stub |"
+            local name_cell="**${job}**"
+            if [[ "$kind" == "nonblocking" ]]; then
+                name_cell="**${job}** (non-blocking)"
             fi
+            echo "| ${name_cell} | stub | stub |"
         done
     } > "$out"
 }
@@ -195,6 +192,18 @@ make_workflow_yml() {
     } > "$out"
 }
 
+make_manifest_yml() {
+    local out="$1"
+    shift
+    {
+        echo "jobs:"
+        for entry in "$@"; do
+            local job="${entry%%:*}"
+            printf '  - name: %s\n    reason: stub\n    failure: stub\n' "$job"
+        done
+    } > "$out"
+}
+
 # T7: drifted state — workflow has new advisory job, AGENTS.md does NOT.
 DRIFT_DIR="$TMP_DIR/drift"
 mkdir -p "$DRIFT_DIR/.github/workflows"
@@ -205,9 +214,14 @@ make_workflow_yml "$DRIFT_DIR/.github/workflows/validate.yml" \
     "alpha-gate:blocking" \
     "beta-gate:blocking" \
     "factory-claim-ledger-strict:nonblocking"
+make_manifest_yml "$DRIFT_DIR/ci-jobs.yaml" \
+    "alpha-gate:blocking" \
+    "beta-gate:blocking" \
+    "factory-claim-ledger-strict:nonblocking"
 
 if CI_POLICY_PARITY_AGENTS_PATH="$DRIFT_DIR/AGENTS.md" \
    CI_POLICY_PARITY_WORKFLOW_PATH="$DRIFT_DIR/.github/workflows/validate.yml" \
+   CI_POLICY_PARITY_MANIFEST_PATH="$DRIFT_DIR/ci-jobs.yaml" \
    bash "$VALIDATOR" >"$TMP_DIR/drift.out" 2>&1; then
     ko "T7 drifted fixture should exit non-zero but exited 0"
     sed 's/^/    /' "$TMP_DIR/drift.out" >&2
@@ -232,9 +246,14 @@ make_workflow_yml "$ALIGN_DIR/.github/workflows/validate.yml" \
     "alpha-gate:blocking" \
     "beta-gate:blocking" \
     "factory-claim-ledger-strict:nonblocking"
+make_manifest_yml "$ALIGN_DIR/ci-jobs.yaml" \
+    "alpha-gate:blocking" \
+    "beta-gate:blocking" \
+    "factory-claim-ledger-strict:nonblocking"
 
 if CI_POLICY_PARITY_AGENTS_PATH="$ALIGN_DIR/AGENTS.md" \
    CI_POLICY_PARITY_WORKFLOW_PATH="$ALIGN_DIR/.github/workflows/validate.yml" \
+   CI_POLICY_PARITY_MANIFEST_PATH="$ALIGN_DIR/ci-jobs.yaml" \
    bash "$VALIDATOR" >"$TMP_DIR/align.out" 2>&1; then
     ok "T8 aligned fixture exits 0 (PASS)"
 else

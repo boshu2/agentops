@@ -69,6 +69,7 @@ ao knowledge gaps
 The skill owns routing, sequencing, interpretation, and next-step recommendations. The builders do the heavy lifting.
 
 `ao lookup` and `ao codex start` consume these outputs as operator context. Matched knowledge briefings are the preferred dynamic startup surface, while selected beliefs and healthy playbooks provide bounded supporting guidance.
+When a retrieved briefing, belief, or playbook changes a recommendation, record it with `ao metrics cite "<path>" --type applied 2>/dev/null || true`; use `--type retrieved` for loaded-but-unused context.
 
 ## Execution Steps
 

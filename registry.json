@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-25T02:48:51Z",
+  "generated_at": "2026-05-26T15:33:24Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -2028,7 +2028,8 @@
         "result.json"
       ],
       "drives_commands": [
-        "ao lookup"
+        "ao lookup",
+        "ao metrics cite"
       ],
       "path": "skills/hooks-authoring/",
       "references": 3
@@ -2097,7 +2098,8 @@
         "ao knowledge brief",
         "ao knowledge gaps",
         "ao knowledge playbooks",
-        "ao lookup"
+        "ao lookup",
+        "ao metrics cite"
       ],
       "path": "skills/knowledge-activation/",
       "references": 3
