@@ -94,6 +94,7 @@ echo "--- Core commands ---"
 test_json_cmd "ao version"          version
 test_json_cmd "ao config --show"    config --show
 test_json_cmd "ao status"           status
+test_json_cmd "ao reconcile"        reconcile
 test_json_cmd --diagnostic "ao doctor" doctor
 test_json_cmd "ao badge"            badge
 
