@@ -228,6 +228,21 @@ func resetCommandState(t *testing.T) {
 	origNoBeads := noBeads
 	origMinimal := minimal
 	origGoalsJSON := output
+	// Goals subcommand flag globals (ag-pah): cli/cmd/ao/goals_*.go
+	// declares these as package-level vars bound to cobra flags. Tests
+	// that mutate them must save+restore here or a panic in one test
+	// leaks state into the next. This was the root cause of the
+	// TestGoals_Integration_* flake family observed on PRs #551 and #553.
+	origGoalsFile := goalsFile
+	origGoalsTimeout := goalsTimeout
+	origGoalsMeasureGoalID := goalsMeasureGoalID
+	origGoalsMeasureDirectives := goalsMeasureDirectives
+	origGoalsMeasureExcludeTag := goalsMeasureExcludeTag
+	origGoalsMeasureTotalTimeout := goalsMeasureTotalTimeout
+	origGoalsMeasureScenariosOnly := goalsMeasureScenariosOnly
+	origGoalsInitNonInteractive := goalsInitNonInteractive
+	origGoalsInitTemplate := goalsInitTemplate
+	origGoalsRenderOut := goalsRenderOut
 	origMemorySyncQuiet := memorySyncQuiet
 	origMemorySyncMaxEntries := memorySyncMaxEntries
 	origMemorySyncOutput := memorySyncOutput
@@ -299,6 +314,17 @@ func resetCommandState(t *testing.T) {
 		noBeads = origNoBeads
 		minimal = origMinimal
 		output = origGoalsJSON
+		// Goals subcommand flag globals (ag-pah): paired with saves above.
+		goalsFile = origGoalsFile
+		goalsTimeout = origGoalsTimeout
+		goalsMeasureGoalID = origGoalsMeasureGoalID
+		goalsMeasureDirectives = origGoalsMeasureDirectives
+		goalsMeasureExcludeTag = origGoalsMeasureExcludeTag
+		goalsMeasureTotalTimeout = origGoalsMeasureTotalTimeout
+		goalsMeasureScenariosOnly = origGoalsMeasureScenariosOnly
+		goalsInitNonInteractive = origGoalsInitNonInteractive
+		goalsInitTemplate = origGoalsInitTemplate
+		goalsRenderOut = origGoalsRenderOut
 		memorySyncQuiet = origMemorySyncQuiet
 		memorySyncMaxEntries = origMemorySyncMaxEntries
 		memorySyncOutput = origMemorySyncOutput
@@ -370,6 +396,20 @@ func resetCommandState(t *testing.T) {
 	seedForce = false
 	noBeads = false
 	minimal = false
+	// Goals subcommand flag globals (ag-pah): explicit reset to flag defaults
+	// so a polluted prior-test state doesn't carry into the current test.
+	// Save+restore above handles after-test cleanup; this handles before-test
+	// hygiene.
+	goalsFile = ""
+	goalsTimeout = defaultGoalsTimeoutSeconds
+	goalsMeasureGoalID = ""
+	goalsMeasureDirectives = false
+	goalsMeasureExcludeTag = ""
+	goalsMeasureTotalTimeout = 0
+	goalsMeasureScenariosOnly = false
+	goalsInitNonInteractive = false
+	goalsInitTemplate = ""
+	goalsRenderOut = ""
 	output = "table"
 	memorySyncQuiet = false
 	memorySyncMaxEntries = 10
