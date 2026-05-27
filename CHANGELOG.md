@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Warmind V2: Local learnings no longer shadow warmind learnings** — `warmind sync` now moves local learnings to `.agents/learnings/.synced/` after staging, ensuring `inject` finds the warmind version and records proper citations. Previously, deduplication logic would skip warmind versions if a local copy existed.
+
+- **Warmind V2: Citations now update pool and trigger auto-promotion** — `recordWarmindCitations()` now updates the pool entry's `citation_count` via `pool.RecordCitation()` and checks for auto-promotion eligibility. Silver tier learnings with 1 citation and bronze tier learnings with 3 citations are now automatically promoted to `.warmind/learnings/`.
+
+### Added
+
+- **Warmind post-mortem documentation** — Added `cli/docs/warmind/POST-MORTEM-2026-05-27.md` documenting the Gas City integration test findings and fixes.
+
 ## [2.40.0] - 2026-05-13
 
 ### Added
