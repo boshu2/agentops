@@ -16,6 +16,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/resolver"
 	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/warmind"
 )
 
 // validPhases — canonical definition in internal/search.
@@ -64,10 +65,11 @@ func LastQualityFilteredCount() int {
 	return qualityFilteredCount
 }
 
-// collectLearnings finds recent learnings from .agents/learnings/ and optionally ~/.agents/learnings/.
+// collectLearnings finds recent learnings from .agents/learnings/, ~/.agents/learnings/, and .warmind/learnings/.
 // Implements MemRL Two-Phase retrieval: Phase A (similarity/freshness) + Phase B (utility-weighted)
 // With CASS integration: applies confidence decay when --apply-decay is set.
 // Global learnings receive a post-scoring weight penalty (globalWeight, default 0.8).
+// Warmind (team-shared) learnings receive warmindWeight penalty (default 0.9).
 func collectLearnings(cwd, query string, limit int, globalDir string, globalWeight float64) ([]learning, error) {
 	// Reset before any early return so callers always see the count
 	// for the most recent collectLearnings call, not a stale prior one.
@@ -87,14 +89,27 @@ func collectLearnings(cwd, query string, limit int, globalDir string, globalWeig
 		learnings = appendGlobalLearnings(learnings, globalDir, localPaths, localTitles, localContentHashes, tokens, now)
 	}
 
+	// Append warmind (team-shared) learnings
+	warmindDir := filepath.Join(cwd, ".warmind", "learnings")
+	if _, statErr := os.Stat(warmindDir); statErr == nil {
+		localPaths, localTitles, localContentHashes := localLearningDedupeSets(files, learnings)
+		learnings = appendWarmindLearnings(learnings, warmindDir, localPaths, localTitles, localContentHashes, tokens, now)
+	}
+
 	if len(learnings) == 0 {
 		return nil, nil
 	}
 
 	rankLearnings(learnings)
 	applyGlobalLearningWeight(learnings, globalWeight)
+	applyWarmindLearningWeight(learnings, 0.9) // warmind slightly deprioritized vs local
 
-	return limitCollectedLearnings(learnings, limit), nil
+	result := limitCollectedLearnings(learnings, limit)
+
+	// Record citations for warmind learnings that made it into the results
+	recordWarmindCitations(cwd, result, query)
+
+	return result, nil
 }
 
 func collectLocalLearnings(files []string, tokens []string, now time.Time) []learning {
@@ -203,6 +218,181 @@ func applyGlobalLearningWeight(learnings []learning, globalWeight float64) {
 			return cmp.Compare(b.CompositeScore, a.CompositeScore)
 		})
 	}
+}
+
+// appendWarmindLearnings adds team-shared learnings from .warmind/learnings/.
+func appendWarmindLearnings(learnings []learning, warmindDir string, localPaths, localTitles, localContentHashes map[string]bool, tokens []string, now time.Time) []learning {
+	warmindFiles := globLearningFiles(warmindDir)
+	for _, file := range warmindFiles {
+		abs, err := filepath.Abs(file)
+		if err == nil && localPaths[abs] {
+			continue
+		}
+		l, ok := processLearningFile(file, tokens, now)
+		if !ok {
+			continue
+		}
+		if l.Title != "" && localTitles[strings.ToLower(l.Title)] {
+			continue
+		}
+		contentHash := learningDedupContentHash(l)
+		if contentHash != "" && localContentHashes[contentHash] {
+			continue
+		}
+		if contentHash != "" {
+			localContentHashes[contentHash] = true
+		}
+		l.Warmind = true
+		learnings = append(learnings, l)
+	}
+	return learnings
+}
+
+// applyWarmindLearningWeight applies weight penalty to warmind learnings.
+func applyWarmindLearningWeight(learnings []learning, warmindWeight float64) {
+	if warmindWeight > 0 && warmindWeight < 1.0 {
+		for i := range learnings {
+			if learnings[i].Warmind {
+				learnings[i].CompositeScore *= warmindWeight
+			}
+		}
+		// Re-sort after weight adjustment
+		slices.SortFunc(learnings, func(a, b learning) int {
+			return cmp.Compare(b.CompositeScore, a.CompositeScore)
+		})
+	}
+}
+
+// recordWarmindCitations records citations for warmind learnings that were retrieved.
+// This enables citation-gated promotion in the warmind V2 pipeline.
+// Also updates pool citation counts and triggers auto-promotion when thresholds are met.
+func recordWarmindCitations(cwd string, learnings []learning, query string) {
+	// Count warmind learnings to avoid unnecessary setup
+	warmindCount := 0
+	for _, l := range learnings {
+		if l.Warmind {
+			warmindCount++
+		}
+	}
+	if warmindCount == 0 {
+		return
+	}
+
+	// Load warmind config
+	cfg := warmind.DefaultConfig()
+
+	// Create citation tracker and pool
+	tracker := warmind.NewCitationTracker(cwd, cfg)
+	pool := warmind.NewPool(cwd, cfg)
+
+	// Get session ID from environment or generate a placeholder
+	sessionID := os.Getenv("AGENTOPS_SESSION_ID")
+	if sessionID == "" {
+		sessionID = fmt.Sprintf("inject-%d", time.Now().UnixNano())
+	}
+
+	// Get current user for citation attribution
+	citedBy, citedByEmail := warmind.GetCurrentGitUser()
+
+	// Record citation for each warmind learning
+	for _, l := range learnings {
+		if !l.Warmind {
+			continue
+		}
+
+		// Use the learning's file path and ID
+		artifactPath := l.FilePath
+		artifactID := l.ID
+		if artifactID == "" {
+			// Fallback to filename-based ID
+			artifactID = filepath.Base(artifactPath)
+		}
+
+		// Record citation in warmind tracker
+		if err := tracker.RecordCitation(artifactPath, artifactID, query, sessionID); err != nil {
+			VerbosePrintf("Warning: failed to record warmind citation for %s: %v\n", artifactID, err)
+			continue
+		}
+		VerbosePrintf("Recorded warmind citation for %s (query: %s)\n", artifactID, query)
+
+		// Extract candidate ID from artifact path (e.g., "2026-05-27-learn-abc123.md" -> "learn-abc123")
+		candidateID := extractCandidateIDFromPath(artifactPath)
+		if candidateID == "" {
+			continue
+		}
+
+		// Check if this is a self-citation
+		artifactAuthor, artifactAuthorEmail := getArtifactAuthorInfo(artifactPath)
+		isSelf := (citedBy == artifactAuthor) || (citedByEmail != "" && citedByEmail == artifactAuthorEmail)
+
+		// Update pool citation count (this increments and persists)
+		if err := pool.RecordCitation(candidateID, citedBy, citedByEmail, isSelf); err != nil {
+			// Candidate might already be promoted - that's fine
+			VerbosePrintf("Note: could not update pool citation count for %s: %v\n", candidateID, err)
+			continue
+		}
+
+		// Check for auto-promotion
+		eligible, reason := pool.CheckPromotion(candidateID)
+		if eligible {
+			if artifactPath, err := pool.Promote(candidateID); err == nil {
+				VerbosePrintf("Auto-promoted %s: %s -> %s\n", candidateID, reason, artifactPath)
+			}
+		}
+	}
+}
+
+// extractCandidateIDFromPath extracts the candidate ID from a warmind artifact path.
+// Example: ".warmind/learnings/2026-05-27-learn-abc123-def456.md" -> "learn-abc123-def456"
+func extractCandidateIDFromPath(path string) string {
+	base := filepath.Base(path)
+	// Remove date prefix (YYYY-MM-DD-) and extension
+	if len(base) > 11 && base[4] == '-' && base[7] == '-' && base[10] == '-' {
+		base = base[11:] // Remove "YYYY-MM-DD-"
+	}
+	base = strings.TrimSuffix(base, ".md")
+	base = strings.TrimSuffix(base, ".jsonl")
+	return base
+}
+
+// getArtifactAuthorInfo extracts author info from a learning file's frontmatter.
+func getArtifactAuthorInfo(path string) (string, string) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", ""
+	}
+
+	lines := strings.Split(string(content), "\n")
+	inFrontmatter := false
+	author := ""
+	authorEmail := ""
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if trimmed == "---" {
+			if !inFrontmatter {
+				inFrontmatter = true
+				continue
+			}
+			break
+		}
+
+		if !inFrontmatter {
+			continue
+		}
+
+		if strings.HasPrefix(trimmed, "author:") {
+			author = strings.TrimSpace(strings.TrimPrefix(trimmed, "author:"))
+			author = strings.Trim(author, "\"'")
+		}
+		if strings.HasPrefix(trimmed, "author_email:") {
+			authorEmail = strings.TrimSpace(strings.TrimPrefix(trimmed, "author_email:"))
+			authorEmail = strings.Trim(authorEmail, "\"'")
+		}
+	}
+
+	return author, authorEmail
 }
 
 func limitCollectedLearnings(learnings []learning, limit int) []learning {
