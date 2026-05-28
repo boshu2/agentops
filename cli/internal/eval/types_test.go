@@ -100,6 +100,125 @@ func TestEnvironmentRecordRoundTripPreservesHooksDisabled(t *testing.T) {
 	}
 }
 
+func TestTierConstants(t *testing.T) {
+	tiers := []Tier{TierDeterministic, TierHeadless, TierLive, TierRelease}
+	seen := make(map[Tier]bool)
+	for _, tier := range tiers {
+		if tier == "" {
+			t.Error("empty tier constant")
+		}
+		if seen[tier] {
+			t.Errorf("duplicate tier: %q", tier)
+		}
+		seen[tier] = true
+	}
+}
+
+func TestStatusConstants(t *testing.T) {
+	statuses := []Status{StatusPass, StatusFail, StatusError, StatusSkipped, StatusInconclusive}
+	seen := make(map[Status]bool)
+	for _, s := range statuses {
+		if s == "" {
+			t.Error("empty status constant")
+		}
+		if seen[s] {
+			t.Errorf("duplicate status: %q", s)
+		}
+		seen[s] = true
+	}
+}
+
+func TestVerdictConstants(t *testing.T) {
+	verdicts := []Verdict{VerdictPass, VerdictFail, VerdictImprovement, VerdictRegression, VerdictAdvisory, VerdictInconclusive}
+	seen := make(map[Verdict]bool)
+	for _, v := range verdicts {
+		if v == "" {
+			t.Error("empty verdict constant")
+		}
+		if seen[v] {
+			t.Errorf("duplicate verdict: %q", v)
+		}
+		seen[v] = true
+	}
+}
+
+func TestCaseResultRoundTrip(t *testing.T) {
+	original := CaseResult{
+		ID:     "case-1",
+		Status: StatusPass,
+		Score:  0.95,
+		DimensionScores: map[Dimension]float64{
+			DimensionCorrectness: 1.0,
+			DimensionSafety:      0.9,
+		},
+		DurationMS:     1500,
+		Critical:       true,
+		FailureMessage: "",
+		Diagnostics:    []string{"note1"},
+	}
+	data, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var decoded CaseResult
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if decoded.ID != original.ID {
+		t.Errorf("ID: got %q, want %q", decoded.ID, original.ID)
+	}
+	if decoded.Status != original.Status {
+		t.Errorf("Status: got %q, want %q", decoded.Status, original.Status)
+	}
+	if decoded.Score != original.Score {
+		t.Errorf("Score: got %f, want %f", decoded.Score, original.Score)
+	}
+	if decoded.DimensionScores[DimensionCorrectness] != 1.0 {
+		t.Errorf("DimensionScores[correctness]: got %f", decoded.DimensionScores[DimensionCorrectness])
+	}
+	if decoded.DurationMS != 1500 {
+		t.Errorf("DurationMS: got %d", decoded.DurationMS)
+	}
+	if !decoded.Critical {
+		t.Error("Critical should be true")
+	}
+}
+
+func TestBaselineComparisonRoundTrip(t *testing.T) {
+	original := BaselineComparison{
+		Verdict:        VerdictRegression,
+		BaselineRunID:  "run-001",
+		BaselineScore:  0.85,
+		AggregateDelta: -0.05,
+		DimensionDelta: map[Dimension]float64{
+			DimensionCorrectness: -0.1,
+		},
+		Regressions: []ComparisonItem{
+			{CaseID: "case-1", Dimension: DimensionCorrectness, Delta: -0.1, Reason: "score dropped"},
+		},
+	}
+	data, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var decoded BaselineComparison
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if decoded.Verdict != VerdictRegression {
+		t.Errorf("Verdict: got %q", decoded.Verdict)
+	}
+	if decoded.AggregateDelta != -0.05 {
+		t.Errorf("AggregateDelta: got %f", decoded.AggregateDelta)
+	}
+	if len(decoded.Regressions) != 1 {
+		t.Fatalf("Regressions count: got %d", len(decoded.Regressions))
+	}
+	if decoded.Regressions[0].CaseID != "case-1" {
+		t.Errorf("Regression CaseID: got %q", decoded.Regressions[0].CaseID)
+	}
+}
+
 func containsKey(data []byte, key string) bool {
 	var m map[string]json.RawMessage
 	if err := json.Unmarshal(data, &m); err != nil {
