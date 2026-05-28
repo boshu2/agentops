@@ -2805,6 +2805,21 @@ ao beads scenarios extract <bead-id> [flags]
       --json    Emit extracted scenarios as JSON (data on stdout) instead of a Gherkin block
 ```
 
+##### `ao beads scenarios validate`
+
+Read a bead via 'bd show <id> --json' and validate its authored
+
+```
+ao beads scenarios validate <bead-id> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for validate
+      --json   Emit a structured validation verdict as JSON on stdout
+```
+
 #### `ao beads stale-claims`
 
 Lists in_progress beads whose claim activity is older than --threshold.

@@ -1,15 +1,17 @@
-// `ao beads scenarios` — convert a bead's free-text acceptance criteria into
+// `ao beads scenarios` — convert and check a bead's acceptance criteria as
 // Gherkin scenarios.
 //
-// This slice ships a single read-only subcommand:
+// This surface ships two read-only subcommands:
 //
-//	ao beads scenarios extract <bead-id>
+//	ao beads scenarios extract <bead-id>    convert acceptance -> candidate block
+//	ao beads scenarios validate <bead-id>   check an authored block is well-formed
 //
-// It fetches the bead via `bd show <id> --json`, deterministically converts
-// the acceptance bullets into Given/When/Then triples, and prints a candidate
-// "## Scenarios" block to stdout. It is a dry-run: the bead is never modified.
-// Operator-confirmed write-back, idempotent guards, a validate subcommand, and
-// an LLM fallback are tracked as later slices of the parent feature (ag-dwq).
+// extract fetches the bead via `bd show <id> --json`, deterministically
+// converts the acceptance bullets into Given/When/Then triples, and prints a
+// candidate "## Scenarios" block to stdout. It is a dry-run: the bead is never
+// modified. validate parses an authored "## Scenarios" block and exits non-zero
+// when it is missing or malformed. Operator-confirmed write-back and an LLM
+// fallback are tracked as later slices of the parent feature (ag-dwq).
 package main
 
 import (
@@ -24,8 +26,9 @@ import (
 )
 
 var (
-	beadsScenariosJSON  bool
-	beadsScenariosForce bool
+	beadsScenariosJSON         bool
+	beadsScenariosForce        bool
+	beadsScenariosValidateJSON bool
 )
 
 // fetchedBead is the subset of a bead the scenarios command needs: the
@@ -55,7 +58,9 @@ var beadsScenariosCmd = &cobra.Command{
 Given/When/Then scenarios.
 
 The 'extract' subcommand is a dry-run: it prints a candidate '## Scenarios'
-block to stdout for review and never modifies the bead.`,
+block to stdout for review and never modifies the bead. The 'validate'
+subcommand checks that an authored '## Scenarios' block is well-formed Gherkin
+and exits non-zero (naming the parse error) when it is not.`,
 }
 
 var beadsScenariosExtractCmd = &cobra.Command{
@@ -76,13 +81,32 @@ acceptance.`,
 	RunE: runBeadsScenariosExtract,
 }
 
+var beadsScenariosValidateCmd = &cobra.Command{
+	Use:   "validate <bead-id>",
+	Short: "Check that a bead's authored '## Scenarios' block is well-formed Gherkin",
+	Args:  cobra.ExactArgs(1),
+	Long: `Read a bead via 'bd show <id> --json' and validate its authored
+'## Scenarios' block. Each scenario must declare a name and a Given/When/Then
+step (in that order) with a non-empty body; And/But lines are accepted as
+continuations.
+
+Exits 0 when the block is well-formed. Exits non-zero, naming the parse error,
+when the block is missing or malformed. With --json a verdict object is emitted
+on stdout ({"bead_id","valid","scenarios"} on success, or
+{"bead_id","valid":false,"error"} on failure) while diagnostics go to stderr.`,
+	RunE: runBeadsScenariosValidate,
+}
+
 func init() {
 	beadsCmd.AddCommand(beadsScenariosCmd)
 	beadsScenariosCmd.AddCommand(beadsScenariosExtractCmd)
+	beadsScenariosCmd.AddCommand(beadsScenariosValidateCmd)
 	beadsScenariosExtractCmd.Flags().BoolVar(&beadsScenariosJSON, "json", false,
 		"Emit extracted scenarios as JSON (data on stdout) instead of a Gherkin block")
 	beadsScenariosExtractCmd.Flags().BoolVar(&beadsScenariosForce, "force", false,
 		"Extract even when the bead already has a '## Scenarios' block")
+	beadsScenariosValidateCmd.Flags().BoolVar(&beadsScenariosValidateJSON, "json", false,
+		"Emit a structured validation verdict as JSON on stdout")
 }
 
 func runBeadsScenariosExtract(cmd *cobra.Command, args []string) error {
@@ -123,6 +147,57 @@ func runBeadsScenariosExtract(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Fprint(cmd.OutOrStdout(), scenarios.Render(extracted))
+	return nil
+}
+
+func runBeadsScenariosValidate(cmd *cobra.Command, args []string) error {
+	id := args[0]
+
+	if !bdAvailable() {
+		fmt.Fprintln(cmd.ErrOrStderr(),
+			"warning: bd not found on PATH; cannot fetch bead. Install bd or author scenarios manually.")
+		return nil
+	}
+
+	bead, err := beadsScenariosFetch(id)
+	if err != nil {
+		return fmt.Errorf("fetch bead %s: %w (inspect with 'bd show %s --json')", id, err, id)
+	}
+
+	// The authored '## Scenarios' block lives in the description; fall back to
+	// the acceptance field when the description carries no block.
+	text := bead.Description
+	if !scenarios.HasScenariosBlock(text) && scenarios.HasScenariosBlock(bead.Acceptance) {
+		text = bead.Acceptance
+	}
+
+	parsed, vErr := scenarios.ParseBlock(text)
+	if vErr != nil {
+		if beadsScenariosValidateJSON {
+			enc := json.NewEncoder(cmd.OutOrStdout())
+			enc.SetIndent("", "  ")
+			_ = enc.Encode(struct {
+				BeadID string `json:"bead_id"`
+				Valid  bool   `json:"valid"`
+				Error  string `json:"error"`
+			}{BeadID: id, Valid: false, Error: vErr.Error()})
+		}
+		return fmt.Errorf(
+			"validate scenarios for %s: %w; fix the block or regenerate it with 'ao beads scenarios extract %s --force'",
+			id, vErr, id)
+	}
+
+	if beadsScenariosValidateJSON {
+		enc := json.NewEncoder(cmd.OutOrStdout())
+		enc.SetIndent("", "  ")
+		return enc.Encode(struct {
+			BeadID    string               `json:"bead_id"`
+			Valid     bool                 `json:"valid"`
+			Scenarios []scenarios.Scenario `json:"scenarios"`
+		}{BeadID: id, Valid: true, Scenarios: parsed})
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), "%s: %d scenario(s) well-formed\n", id, len(parsed))
 	return nil
 }
 
