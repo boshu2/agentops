@@ -277,7 +277,9 @@ func recordLikelyFixedAuditFinding(report *AuditReport, bead beadRecord, desc st
 			Evidence: evidence,
 		})
 		if autoClose {
-			autoCloseLikelyFixed(bead.ID, "Auto-closed by ao beads audit: commit evidence found: "+evidence)
+			if err := autoCloseLikelyFixed(bead.ID, "Auto-closed by ao beads audit: commit evidence found: "+evidence); err != nil {
+				fmt.Fprintf(os.Stderr, "WARN: %v\n", err)
+			}
 		}
 		return true
 	}
@@ -291,7 +293,9 @@ func recordLikelyFixedAuditFinding(report *AuditReport, bead beadRecord, desc st
 				Evidence: evidence,
 			})
 			if autoClose {
-				autoCloseLikelyFixed(bead.ID, "Auto-closed by ao beads audit: mentioned files modified since creation.")
+				if err := autoCloseLikelyFixed(bead.ID, "Auto-closed by ao beads audit: mentioned files modified since creation."); err != nil {
+					fmt.Fprintf(os.Stderr, "WARN: %v\n", err)
+				}
 			}
 			return true
 		}
@@ -498,8 +502,14 @@ func fileChangesSinceCommits(commits []auditCommit, createdAt string, paths []st
 	return strings.Join(chunks, "\n")
 }
 
-func autoCloseLikelyFixed(id, note string) {
-	_, _ = execBD("update", id, "--status", "closed", "--append-notes", note)
+// autoCloseLikelyFixed mutates the tracker by closing the given bead. It
+// returns any error from the bd update so callers can surface a failed state
+// mutation instead of silently dropping it.
+func autoCloseLikelyFixed(id, note string) error {
+	if _, err := execBD("update", id, "--status", "closed", "--append-notes", note); err != nil {
+		return fmt.Errorf("auto-close bead %s: %w", id, err)
+	}
+	return nil
 }
 
 func extractAuditFilePaths(desc string, limit int) []string {

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -429,6 +430,32 @@ func TestParseWindow_Smoke(t *testing.T) {
 	}
 	if d != 7*24*time.Hour {
 		t.Errorf("7d = %v, want 168h", d)
+	}
+}
+
+// TestMineGitLogContext_ExitErrorPreservesChain verifies the exitErr branch of
+// MineGitLogContext keeps the error chain so errors.As can still recover the
+// underlying *exec.ExitError (ag-uha). Running git log outside a repo exits
+// non-zero with stderr, which is exactly the branch that previously dropped
+// the chain by formatting only the stderr text.
+func TestMineGitLogContext_ExitErrorPreservesChain(t *testing.T) {
+	dir := t.TempDir() // a fresh temp dir is not a git repo
+
+	_, err := MineGitLogContext(context.Background(), dir, time.Hour)
+	if err == nil {
+		t.Fatal("MineGitLogContext in a non-git dir returned nil error, want failure")
+	}
+
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) {
+		t.Errorf("errors.As could not recover *exec.ExitError from %v; the error chain was dropped", err)
+	}
+	if !strings.Contains(err.Error(), "git log:") {
+		t.Errorf("error %q lacks the 'git log:' context prefix", err)
+	}
+	// The stderr text (git's diagnostic) should still be present in the message.
+	if !strings.Contains(err.Error(), "not a git repository") {
+		t.Errorf("error %q dropped the git stderr diagnostic", err)
 	}
 }
 
