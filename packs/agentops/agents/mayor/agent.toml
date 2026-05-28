@@ -20,6 +20,9 @@ max_active_sessions = 1
 # /pr-validate, /post-mortem. overlay_dir is the canonical "ship files into the
 # agent workdir" mechanism (config.md:106); the skills primitive is a tombstone
 # (config.md:209-212), so AgentOps brings its own runtime in the overlay.
-overlay_dir = "../../overlay"
+# Resolved relative to the PACK ROOT (packs/agentops), so the value is the
+# pack-relative "overlay" → packs/agentops/overlay (verified via gc doctor; a
+# "../../overlay" value climbs to repo-root/overlay which does not exist — ag-2mi).
+overlay_dir = "overlay"
 install_agent_hooks = ["claude"]
 append_fragments = ["agentops-doctrine", "operating-loop"]
