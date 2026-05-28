@@ -6,7 +6,7 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 
 **Gas City (`gc`)** is the optional out-of-session orchestration substrate that runs whole `ao rpi`/`ao evolve` loops (mayor + refinery agents over the reference City at `packs/agentops/`). `ao` does NOT wrap `gc` — it is a guided dependency, just like `bd`. See the [`using-gc`](skills/using-gc/SKILL.md) skill for the workflow and [docs/dependencies.md](docs/dependencies.md) for the full tool list.
 
-> **Spawning an agent? Run this first:** `ao session bootstrap` (when [soc-vuu6.25](https://github.com/boshu2/agentops/issues?q=soc-vuu6.25) lands) — the universal init prompt that orients every agent identically regardless of model. Until then, follow the read order below.
+> **Spawning an agent? Run this first:** `ao session bootstrap` — the universal init prompt that orients every agent identically regardless of model. AgentOps 3.0 is hookless, so nothing auto-injects this: run it explicitly, then `ao inject` / `ao corpus inject --query "<topic>"` to pull decay-ranked prior context. Then follow the read order below.
 
 ## Session Start (Zero-Context Agent)
 
