@@ -917,6 +917,45 @@ func TestServeRPIArtifact_RejectsTraversal(t *testing.T) {
 	}
 }
 
+// TestServeRPIArtifact_InternalErrorNotLeaked verifies serveRPIArtifact returns
+// a generic "internal error" body on a read failure rather than leaking the
+// raw internal error (which carries filesystem paths) to the HTTP client
+// (ag-1pp).
+func TestServeRPIArtifact_InternalErrorNotLeaked(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("chmod 000 is not enforced for root; cannot provoke a read failure")
+	}
+	root := t.TempDir()
+	rpiDir := filepath.Join(root, ".agents", "rpi")
+	if err := os.MkdirAll(rpiDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// The packet is collectable (os.Stat succeeds) but unreadable, so the
+	// handler reaches readRunArtifactContent and fails inside os.Open.
+	packetPath := filepath.Join(rpiDir, "execution-packet.json")
+	if err := os.WriteFile(packetPath, []byte("{\"objective\":\"x\"}\n"), 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(packetPath, 0o644) })
+
+	req := httptest.NewRequest(http.MethodGet, "/artifact?path=.agents/rpi/execution-packet.json", nil)
+	rr := httptest.NewRecorder()
+	serveRPIArtifact(rr, req, root, "")
+
+	if rr.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500", rr.Code)
+	}
+	body := strings.TrimSpace(rr.Body.String())
+	if body != "internal error" {
+		t.Fatalf("body = %q, want generic \"internal error\"", body)
+	}
+	// The raw error embeds the artifact path and an "open ..." prefix; neither
+	// must leak to the client.
+	if strings.Contains(rr.Body.String(), "open ") || strings.Contains(rr.Body.String(), "execution-packet.json") {
+		t.Errorf("client body leaked internal error detail: %q", rr.Body.String())
+	}
+}
+
 func TestIsLocalhostOrigin_AcceptsLocalhost(t *testing.T) {
 	if !isLocalhostOrigin("http://localhost:8080") {
 		t.Fatal("expected true for http://localhost:8080")
