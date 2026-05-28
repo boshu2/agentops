@@ -3898,5 +3898,21 @@ ao skills check [flags]
       --strict         Exit non-zero on any finding (CI mode)
 ```
 
+#### `ao skills find`
+
+Score every skills/<name>/SKILL.md against a free-text intent and
+
+```
+ao skills find <intent> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help        help for find
+      --json        Emit machine-readable JSON on stdout
+      --limit int   Maximum number of results to return (default 5)
+```
+
 ---
 

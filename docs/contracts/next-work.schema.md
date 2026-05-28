@@ -4,6 +4,8 @@ schema_version: 1.4
 
 Contract for `.agents/rpi/next-work.jsonl` — the carry-forward queue that feeds harvested findings from `/post-mortem` into `/evolve`, `/rpi loop`, and related pre-flight checks.
 
+This document is the human-readable spec. The machine-checkable realization is the committed JSON Schema pair `schemas/next-work-batch.v1.schema.json` (one JSONL line = one batch entry) and `schemas/next-work-item.v1.schema.json` (each `items[]` element). Validate rows with `scripts/validate-next-work.sh` (`--strict` to gate).
+
 ---
 
 ## File Format

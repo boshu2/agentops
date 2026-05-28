@@ -2,6 +2,26 @@
 
 ## Schema Validation
 
+The canonical machine-checkable contract is the committed JSON Schema pair
+[../../../schemas/next-work-batch.v1.schema.json](../../../schemas/next-work-batch.v1.schema.json)
+(one JSONL line = one batch entry) and
+[../../../schemas/next-work-item.v1.schema.json](../../../schemas/next-work-item.v1.schema.json)
+(each `items[]` element), both derived from
+[../../../docs/contracts/next-work.schema.md](../../../docs/contracts/next-work.schema.md).
+The reusable validator is
+[../../../scripts/validate-next-work.sh](../../../scripts/validate-next-work.sh):
+
+```bash
+# Advisory (logs violations, exits 0); add --strict to reject and exit non-zero
+# naming the offending file:line + field. --json emits a machine-readable verdict.
+bash scripts/validate-next-work.sh --strict .agents/rpi/next-work.jsonl
+```
+
+The validator reads its enums and required-field lists directly from the schema
+files, so the schema is the single source of truth. The inline bash below is a
+dependency-free fallback (jq-only) that mirrors the same checks for environments
+where running the script is inconvenient; prefer the script when available.
+
 Before writing, validate each harvested item against the tracked schema
 contract in [../../../docs/contracts/next-work.schema.md](../../../docs/contracts/next-work.schema.md):
 
