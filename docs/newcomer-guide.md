@@ -4,14 +4,14 @@ If you're new to this repository, this guide gives you a practical mental model,
 
 ## What this repo is
 
-AgentOps is the **operational layer for coding agents**: a skills + hooks + CLI system that provides bookkeeping, validation, primitives, and flows so sessions compound instead of restarting from zero.
+AgentOps is the **operational layer for coding agents**: a skills + CLI system (with opt-in hooks) that provides bookkeeping, validation, primitives, and flows so sessions compound instead of restarting from zero.
 
 At a high level:
 
 1. Run primitives and flows with skills (`/research`, `/implement`, `/validation`, `/rpi`)
 2. Persist bookkeeping in `.agents/`
 3. Inject the best prior learnings into the next session
-4. Enforce quality through hooks and CI gates
+4. Enforce quality through CI gates (AgentOps 3.0 is hookless — CI is the authoritative gate; hooks are opt-in)
 
 See also:
 

@@ -117,14 +117,25 @@ session start -> phased handoff -> handoff / recover -> session end -> next sess
 
 | Continuity Surface | Role |
 |--------------------|------|
-| `hooks/session-start.sh` | Injects lightweight repo context and points at durable artifacts |
+| `ao session bootstrap` / `ao inject` | Explicitly loads repo context and points at durable artifacts at session start |
 | `ao rpi phased` + phase manifests | Keeps each phase context-bounded and disk-backed |
 | `/handoff` | Leaves a structured continuation packet for the next operator |
 | `/recover` | Rehydrates in-progress work after compaction or interruption |
-| `hooks/session-end-maintenance.sh` | Extracts and curates end-of-session knowledge |
-| `hooks/ao-flywheel-close.sh` | Closes the loop at stop time |
+| `ao forge transcript` + `ao flywheel close-loop` | Extracts end-of-session knowledge and closes the loop at stop time |
 
-This is the stigmergic memory layer. No agent has to remember yesterday if the environment was updated correctly.
+This is the stigmergic memory layer. No agent has to remember yesterday if the environment was updated correctly. AgentOps 3.0 is hookless, so every surface above is an explicit command an agent runs — nothing fires automatically at session start or stop.
+
+### Removed hooks → replacement
+
+AgentOps 3.0 ships no hooks. Every behavior a lifecycle hook used to fire automatically is now an explicit command, an always-on CI gate, or opt-in (author-it-yourself via the `hooks-authoring` skill). Audited by user-facing behavior, none of the removed value is lost:
+
+| Removed hook behavior | What fired automatically | Hookless replacement |
+|-----------------------|--------------------------|----------------------|
+| Cold-start context injection (`session-start.sh`) | Injected lightweight repo context at session start | `ao session bootstrap`, then `ao inject` / `ao corpus inject --query "<topic>"` |
+| End-of-session curation (`session-end-maintenance.sh`, `ao-flywheel-close.sh`) | Curated end-of-session knowledge and closed the flywheel loop at stop | `ao forge transcript` (capture) → `ao flywheel close-loop` (curate + close) |
+| Standards surfacing (edit-time standards injector) | Surfaced coding standards on edit | The `standards` skill plus `.claude/rules/*.md`, referenced from CLAUDE.md and read on demand |
+| Validation reminders (edit / commit guardrails) | Reminded the agent to run gates | CI is the authoritative gate (`.github/workflows/validate.yml`); run the per-tool checks locally and the `vibe` skill before pushing |
+| Prompt nudges (`prompt-nudge.sh`, `intent-echo.sh`, `new-user-welcome.sh`) | Injected prompt-time nudges and a welcome banner | Confirmed noise — removed first as pure context bloat; no replacement |
 
 ## Terminology Drift Ledger
 
