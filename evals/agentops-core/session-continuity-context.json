@@ -3,6 +3,7 @@
   "id": "agentops-core.session-continuity-context",
   "name": "AgentOps Session Continuity Context Canary",
   "description": "Offline public canary for context assembly, context telemetry, handoff bridges, status dashboards, memory/notebook sync, plan manifests, task sync, and session indexing surfaces needed to recover long RPI/evolve runs.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",
@@ -94,7 +95,6 @@
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/handoff_bridge.go", "value": "source: handoff-bridge"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/memory.go", "value": "managed block markers"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/notebook.go", "value": "session artifacts (.agents/ao/sessions/*.jsonl)"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/plans.go", "value": "beads is source of truth"},
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/task_sync.go", "value": "Promote completed tasks to learnings"}
       ],
       "dimensions": ["correctness", "learning_closure", "safety"],

@@ -3,6 +3,7 @@
   "id": "agentops-core.skill-catalog",
   "name": "AgentOps Skill Catalog Canary",
   "description": "Offline public canary for shared skills, Codex runtime artifacts, override coverage, and strict skill integrity.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",

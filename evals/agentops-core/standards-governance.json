@@ -3,6 +3,7 @@
   "id": "agentops-core.standards-governance",
   "name": "AgentOps Standards Governance Canary",
   "description": "Offline public canary for the shared standards library: validator health, JIT reference catalog completeness, high-risk checklist contracts, Codex skill constraints, and AI-native test pyramid defaults.",
+  "practices": ["llm-eval-harness", "sre"],
   "domain": "quality",
   "visibility": "public_canary",
   "tier": "deterministic",

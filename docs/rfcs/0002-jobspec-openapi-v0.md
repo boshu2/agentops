@@ -1,8 +1,14 @@
 # RFC 0002: JobSpec OpenAPI v0
 
-Status: draft
+Status: superseded (the daemon was deleted in AgentOps 3.0 — see [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md))
 Date: 2026-04-30
-Companion spec: [`docs/contracts/jobspec-openapi-v0.yaml`](../contracts/jobspec-openapi-v0.yaml)
+Companion spec: `docs/contracts/jobspec-openapi-v0.yaml` (removed with the daemon)
+
+> **Superseded.** This RFC proposed a conformance contract for the standalone
+> `agentopsd` daemon. The daemon, its job queue, and this companion spec were
+> *deleted* in the 3.0 in-session-only rearchitecture. AgentOps runs the loop in
+> session; out-of-session orchestration is delegated to a substrate (Gas City is
+> the reference). Kept as a historical decision record only.
 
 ## Decision Ask
 

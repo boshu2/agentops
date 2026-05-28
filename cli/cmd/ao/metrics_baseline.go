@@ -1,3 +1,4 @@
+// practices: [dora-metrics, sre]
 package main
 
 import (

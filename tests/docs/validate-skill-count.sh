@@ -104,19 +104,16 @@ check_numeric_match "SKILL-TIERS.md internal header" "$tiers_internal_claim" "$a
 skills_doc_total=$(extract_number 's/.*all \([0-9][0-9]*\) AgentOps skills.*/\1/' "$REPO_ROOT/docs/SKILLS.md" "docs/SKILLS total header")
 skills_doc_user=$(extract_number 's/.*AgentOps skills (\([0-9][0-9]*\) user-facing [+] [0-9][0-9]* internal).*/\1/' "$REPO_ROOT/docs/SKILLS.md" "docs/SKILLS user-facing header")
 skills_doc_internal=$(extract_number 's/.*AgentOps skills ([0-9][0-9]* user-facing [+] \([0-9][0-9]*\) internal).*/\1/' "$REPO_ROOT/docs/SKILLS.md" "docs/SKILLS internal header")
-skills_doc_update_total=$(extract_number 's|.*Reinstall all \([0-9][0-9]*\) skills.*|\1|' "$REPO_ROOT/docs/SKILLS.md" "docs/SKILLS /update command count")
 
 echo "=== docs/SKILLS.md claims ==="
 echo "  Header total: $skills_doc_total"
 echo "  Header user-facing: $skills_doc_user"
 echo "  Header internal: $skills_doc_internal"
-echo "  /update total: $skills_doc_update_total"
 echo ""
 
 check_numeric_match "docs/SKILLS.md header total" "$skills_doc_total" "$actual_total"
 check_numeric_match "docs/SKILLS.md header user-facing" "$skills_doc_user" "$actual_user_facing"
 check_numeric_match "docs/SKILLS.md header internal" "$skills_doc_internal" "$actual_internal"
-check_numeric_match "docs/SKILLS.md /update total" "$skills_doc_update_total" "$actual_total"
 
 # --- Extract counts from docs/ARCHITECTURE.md ---
 
@@ -136,8 +133,11 @@ check_numeric_match "docs/ARCHITECTURE.md internal" "$architecture_internal" "$a
 
 # --- Extract counts from PRODUCT.md ---
 
-product_total=$(extract_number 's|.*[^0-9]\([0-9][0-9]*\) skills, [0-9][0-9]* runtime hook event sections,.*|\1|' "$REPO_ROOT/PRODUCT.md" "PRODUCT.md zero-setup value proposition total")
-product_layer_total=$(extract_number 's|^### 1[.] Skills (\([0-9][0-9]*\) skills across 4 runtimes).*|\1|' "$REPO_ROOT/PRODUCT.md" "PRODUCT.md skill layer heading")
+# 3.0 removed hooks and restructured PRODUCT.md, so the old anchors
+# ("N skills, M runtime hook event sections" and the "### 1. Skills (N across 4 runtimes)"
+# heading) no longer exist. product_total now anchors on the four-layers skill-count line;
+# the former product_layer_total check is retired (no equivalent heading post-rip).
+product_total=$(extract_number 's|^- \([0-9][0-9]*\) skills .*reusable context packages.*|\1|' "$REPO_ROOT/PRODUCT.md" "PRODUCT.md four-layers skill count")
 product_convergence_total=$(extract_number 's|.*Skills system — \([0-9][0-9]*\) skills,.*|\1|' "$REPO_ROOT/PRODUCT.md" "PRODUCT.md convergence skill count")
 product_distribution_shared=$(extract_number 's|.*Distribution/runtime reach: \([0-9][0-9]*\) shared skills, [0-9][0-9]* checked-in Codex artifacts, and [0-9][0-9]* Codex overrides.*|\1|' "$REPO_ROOT/PRODUCT.md" "PRODUCT.md distribution shared skill count")
 product_distribution_codex=$(extract_number 's|.*Distribution/runtime reach: [0-9][0-9]* shared skills, \([0-9][0-9]*\) checked-in Codex artifacts, and [0-9][0-9]* Codex overrides.*|\1|' "$REPO_ROOT/PRODUCT.md" "PRODUCT.md distribution Codex artifact count")
@@ -145,7 +145,6 @@ product_distribution_overrides=$(extract_number 's|.*Distribution/runtime reach:
 
 echo "=== PRODUCT.md claims ==="
 echo "  Total: $product_total"
-echo "  Skill layer heading: $product_layer_total"
 echo "  Convergence skill count: $product_convergence_total"
 echo "  Distribution shared skills: $product_distribution_shared"
 echo "  Distribution Codex artifacts: $product_distribution_codex"
@@ -153,7 +152,6 @@ echo "  Distribution Codex overrides: $product_distribution_overrides"
 echo ""
 
 check_numeric_match "PRODUCT.md total" "$product_total" "$actual_total"
-check_numeric_match "PRODUCT.md skill layer heading" "$product_layer_total" "$actual_total"
 check_numeric_match "PRODUCT.md convergence skill count" "$product_convergence_total" "$actual_total"
 check_numeric_match "PRODUCT.md distribution shared skill count" "$product_distribution_shared" "$actual_total"
 check_numeric_match "PRODUCT.md distribution Codex artifact count" "$product_distribution_codex" "$actual_codex_total"
@@ -169,10 +167,8 @@ internals=()
 
 [[ "$tiers_user_claim" != "NOT_FOUND" && "$tiers_internal_claim" != "NOT_FOUND" ]] && totals+=("SKILL-TIERS-headers:$((tiers_user_claim + tiers_internal_claim))")
 [[ "$skills_doc_total" != "NOT_FOUND" ]] && totals+=("docs/SKILLS-header:$skills_doc_total")
-[[ "$skills_doc_update_total" != "NOT_FOUND" ]] && totals+=("docs/SKILLS-/update:$skills_doc_update_total")
 [[ "$architecture_total" != "NOT_FOUND" ]] && totals+=("docs/ARCHITECTURE:$architecture_total")
 [[ "$product_total" != "NOT_FOUND" ]] && totals+=("PRODUCT:$product_total")
-[[ "$product_layer_total" != "NOT_FOUND" ]] && totals+=("PRODUCT-layer:$product_layer_total")
 [[ "$product_convergence_total" != "NOT_FOUND" ]] && totals+=("PRODUCT-convergence:$product_convergence_total")
 [[ "$product_distribution_shared" != "NOT_FOUND" ]] && totals+=("PRODUCT-distribution-shared:$product_distribution_shared")
 

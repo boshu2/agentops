@@ -3,6 +3,7 @@
   "id": "agentops-core.red-team-adversarial-validation",
   "name": "AgentOps Red-Team Adversarial Validation Canary",
   "description": "Offline public canary for the red-team skill's persona-constrained usability probes, scenario/report/reference contracts, and Codex runtime artifact parity.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",

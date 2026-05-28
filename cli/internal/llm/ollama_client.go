@@ -206,7 +206,7 @@ func (c *OllamaClient) generateOnce(body []byte) (string, bool, error) {
 		// — we don't retry timeouts because the whole session should move on.
 		return "", false, fmt.Errorf("ollama: POST /api/generate: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 500 {
 		return "", true, fmt.Errorf("ollama: /api/generate returned %d", resp.StatusCode)
 	}
@@ -226,8 +226,8 @@ func (c *OllamaClient) fetchTags() (*tagsResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("status %d", resp.StatusCode)
 	}
 	var out tagsResponse
@@ -245,13 +245,13 @@ func (c *OllamaClient) fetchContextBudget() (int, bool) {
 		return 0, false
 	}
 	resp, err := c.httpClient.Post(c.endpoint+"/api/show", "application/json", bytes.NewReader(body))
-	if err != nil || resp.StatusCode != 200 {
+	if err != nil || resp.StatusCode != http.StatusOK {
 		if resp != nil {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 		}
 		return 0, false
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	var out showResponse
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		return 0, false

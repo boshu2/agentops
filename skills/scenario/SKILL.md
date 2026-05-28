@@ -1,11 +1,20 @@
 ---
 name: scenario
-description: 'Manage holdout scenarios.'
+description: Manage holdout scenarios.
+practices:
+- property-based-testing
+- snapshot-testing
+- llm-eval-harness
+hexagonal_role: supporting
+consumes: []
+produces:
+- result.json
+context_rel: []
 skill_api_version: 1
 metadata:
   tier: execution
   stability: experimental
-output_contract: "Scenario artifacts in .agents/holdout/*.json"
+output_contract: Scenario artifacts in .agents/holdout/*.json
 ---
 # Scenario Skill
 
@@ -95,6 +104,21 @@ ao scenario list --status draft
 ao scenario list --status retired
 ```
 
+### Linking scenarios to GOALS.md directives
+
+A scenario linked to a GOALS.md directive becomes part of the executable
+spec. `ao goals scenarios --create "<goal>" --directive N` scaffolds a
+promoted spec scenario and links it bidirectionally; `ao goals scenarios`
+lists each directive's linked scenarios; `ao goals scenarios --lint` checks
+the link graph. Ad hoc holdout scenarios authored with `ao scenario add`
+stay unlinked until promoted. See the `/goals` skill and `docs/adr/ADR-0003`.
+
+Once linked, a scenario's pass/fail feeds the directive's fitness:
+`ao goals measure` rolls linked scenario results into a per-directive
+`scenario_satisfaction` ratio (RED below threshold), and `ao goals trace`
+renders the directive → scenario → bead → verdict → learning lineage and
+audits it for orphans. See the `/goals` skill for both surfaces.
+
 ### Step 5: Integration with Validation
 
 Scenarios are consumed by **STEP 1.8** in the `/validation` skill. During
@@ -149,6 +173,7 @@ is the weighted average across all vectors.
 
 - [Scenario Schema Reference](references/scenario-schema.md) -- full field
   documentation and example JSON for the scenario schema
+- [references/scenario.feature](references/scenario.feature) — Executable spec: author holdout scenarios, schema-validate, list + link to GOALS directives, feed /validation (soc-qk4b)
 
 ## Troubleshooting
 

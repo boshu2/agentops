@@ -1,19 +1,30 @@
 ---
 name: deps
-description: 'Audit dependency risks and updates.'
+description: Audit dependency risks and updates.
+practices:
+- supply-chain-integrity
+- continuous-delivery
+- sre
+hexagonal_role: driven-adapter
+consumes:
+- repo-context
+produces:
+- result.json
+context_rel: []
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: execution
   dependencies:
-    - standards  # optional - language conventions
-output_contract: "stdout: dependency audit report"
+  - standards
+output_contract: 'stdout: dependency audit report'
 ---
 # Deps Skill
 
@@ -295,3 +306,7 @@ File name format: `YYYY-MM-DD-deps-<mode>.md`
 - `skills/security/SKILL.md` -- Broader security scanning
 - `skills/vibe/SKILL.md` -- Code quality validation
 - [references/library-update-ratchet.md](references/library-update-ratchet.md)
+
+## Reference Documents
+
+- [references/deps.feature](references/deps.feature) — Executable spec: scan manifests, audit vulns/outdated/licenses, vuln+license modes, multi-ecosystem, result.json (soc-qk4b)

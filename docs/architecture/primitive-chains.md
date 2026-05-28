@@ -117,14 +117,25 @@ session start -> phased handoff -> handoff / recover -> session end -> next sess
 
 | Continuity Surface | Role |
 |--------------------|------|
-| `hooks/session-start.sh` | Injects lightweight repo context and points at durable artifacts |
+| `ao session bootstrap` / `ao inject` | Explicitly loads repo context and points at durable artifacts at session start |
 | `ao rpi phased` + phase manifests | Keeps each phase context-bounded and disk-backed |
 | `/handoff` | Leaves a structured continuation packet for the next operator |
 | `/recover` | Rehydrates in-progress work after compaction or interruption |
-| `hooks/session-end-maintenance.sh` | Extracts and curates end-of-session knowledge |
-| `hooks/ao-flywheel-close.sh` | Closes the loop at stop time |
+| `ao forge transcript` + `ao flywheel close-loop` | Extracts end-of-session knowledge and closes the loop at stop time |
 
-This is the stigmergic memory layer. No agent has to remember yesterday if the environment was updated correctly.
+This is the stigmergic memory layer. No agent has to remember yesterday if the environment was updated correctly. AgentOps 3.0 is hookless, so every surface above is an explicit command an agent runs — nothing fires automatically at session start or stop.
+
+### Removed hooks → replacement
+
+AgentOps 3.0 ships no hooks. Every behavior a lifecycle hook used to fire automatically is now an explicit command, an always-on CI gate, or opt-in (author-it-yourself via the `hooks-authoring` skill). Audited by user-facing behavior, none of the removed value is lost:
+
+| Removed hook behavior | What fired automatically | Hookless replacement |
+|-----------------------|--------------------------|----------------------|
+| Cold-start context injection (`session-start.sh`) | Injected lightweight repo context at session start | `ao session bootstrap`, then `ao inject` / `ao corpus inject --query "<topic>"` |
+| End-of-session curation (`session-end-maintenance.sh`, `ao-flywheel-close.sh`) | Curated end-of-session knowledge and closed the flywheel loop at stop | `ao forge transcript` (capture) → `ao flywheel close-loop` (curate + close) |
+| Standards surfacing (edit-time standards injector) | Surfaced coding standards on edit | The `standards` skill plus `.claude/rules/*.md`, referenced from CLAUDE.md and read on demand |
+| Validation reminders (edit / commit guardrails) | Reminded the agent to run gates | CI is the authoritative gate (`.github/workflows/validate.yml`); run the per-tool checks locally and the `vibe` skill before pushing |
+| Prompt nudges (`prompt-nudge.sh`, `intent-echo.sh`, `new-user-welcome.sh`) | Injected prompt-time nudges and a welcome banner | Confirmed noise — removed first as pure context bloat; no replacement |
 
 ## Terminology Drift Ledger
 
@@ -135,7 +146,7 @@ This is the stigmergic memory layer. No agent has to remember yesterday if the e
 | `knowledge injection` | startup context loading | Now broader: `lookup`, `search`, notebooks, handoffs, findings, and phase manifests assemble context together |
 | `three hooks` | session start/end/stop | The runtime currently declares 7 hook event sections, with three lifecycle anchors plus prompt/tool/task guardrails |
 | `Research-Plan-Implement` | product slogan | Still appears in names and legacy docs, but phased execution and validation are first-class now |
-| `orchestrators never fork` | architectural rule of thumb | Desired direction, but some live skill contracts still declare `context.window: fork`; trust `SKILL.md` until the contracts are fully harmonized |
+| `orchestrators never fork` | architectural rule of thumb | Refined: lifecycle orchestration stays visible; expensive phase execution may isolate behind the declared skill contract and bounded artifacts |
 
 ## Audit Snapshot
 
@@ -148,6 +159,16 @@ The current repo state behind this document:
 
 For the current command-to-skill matrix, see [CLI ↔ Skills/Hooks Map](../cli-skills-map.md).
 
+## Hexagonal seams
+
+The primitive chains above are realized in code through a hexagonal seam. The inner hexagon is the AgentOps domain — currently the `ExecutionPacket` aggregate root — and everything else (CLI commands, slash commands, MCP, autonomous loops, CI gates, filesystem / git / tracker / LLM-provider adapters) hangs off it through narrow port interfaces.
+
+- `cli/internal/domain/` — the inner hexagon. First inhabitant: the `packet` package, holding the `ExecutionPacket` aggregate root and its four invariants.
+- `cli/internal/ports/` — driven-port interfaces (`PacketRepository`, `IssueTracker`, `LLMClient`).
+- `cli/internal/adapters/` — concrete adapters that implement those ports. The first is `storage_fs` (filesystem-backed `PacketRepository`).
+
+For the architectural rationale and the recipe for adding a new adapter, see [Ports and Adapters](ports-and-adapters.md) and [ADR-0001: Adopt DDD + Hexagonal Architecture](../adr/ADR-0001-ddd-hexagonal-adoption.md).
+
 ## See Also
 
 - [How It Works](../how-it-works.md)
@@ -155,3 +176,5 @@ For the current command-to-skill matrix, see [CLI ↔ Skills/Hooks Map](../cli-s
 - [Context Lifecycle Contract](../context-lifecycle.md)
 - [Brownian Ratchet](../brownian-ratchet.md)
 - [CLI ↔ Skills/Hooks Map](../cli-skills-map.md)
+- [Ports and Adapters](ports-and-adapters.md)
+- [ADR-0001: Adopt DDD + Hexagonal Architecture](../adr/ADR-0001-ddd-hexagonal-adoption.md)

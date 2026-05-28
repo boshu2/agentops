@@ -1,3 +1,4 @@
+// practices: [wiki-knowledge-surface, ai-assisted-dev]
 package main
 
 import (
@@ -350,10 +351,6 @@ func extractLearningSectionHeading(section, fallbackTitle string, index int) (st
 
 func buildLearningSectionLocator(heading string, index int, seen map[string]int) string {
 	return search.BuildLearningSectionLocator(heading, index, seen)
-}
-
-func slugifyLearningSectionHeading(heading string) string {
-	return search.SlugifyLearningSectionHeading(heading)
 }
 
 // processLearningFile parses, filters, and scores a single learning file.

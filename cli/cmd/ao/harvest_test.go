@@ -1,3 +1,4 @@
+// practices: [wiki-knowledge-surface, lean-startup]
 package main
 
 import (
@@ -595,8 +596,8 @@ func TestHarvest_RefusesDuringDreamRun(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error when Dream holds a live lock, got nil")
 	}
-	if !strings.Contains(err.Error(), "Dream holds the overnight lock") {
-		t.Fatalf("error message = %q, want substring %q", err.Error(), "Dream holds the overnight lock")
+	if !strings.Contains(err.Error(), "live writer holds the overnight lock") {
+		t.Fatalf("error message = %q, want substring %q", err.Error(), "live writer holds the overnight lock")
 	}
 }
 

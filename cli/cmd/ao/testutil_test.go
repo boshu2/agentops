@@ -1,3 +1,4 @@
+// practices: [tdd, pragmatic-programmer]
 package main
 
 // testutil_test.go consolidates test helper functions that are shared across
@@ -226,13 +227,25 @@ func resetCommandState(t *testing.T) {
 	origSeedForce := seedForce
 	origNoBeads := noBeads
 	origMinimal := minimal
-	origGoalsJSON := goalsJSON
+	origGoalsJSON := output
+	// Goals subcommand flag globals (ag-pah): cli/cmd/ao/goals_*.go
+	// declares these as package-level vars bound to cobra flags. Tests
+	// that mutate them must save+restore here or a panic in one test
+	// leaks state into the next. This was the root cause of the
+	// TestGoals_Integration_* flake family observed on PRs #551 and #553.
+	origGoalsFile := goalsFile
+	origGoalsTimeout := goalsTimeout
+	origGoalsMeasureGoalID := goalsMeasureGoalID
+	origGoalsMeasureDirectives := goalsMeasureDirectives
+	origGoalsMeasureExcludeTag := goalsMeasureExcludeTag
+	origGoalsMeasureTotalTimeout := goalsMeasureTotalTimeout
+	origGoalsMeasureScenariosOnly := goalsMeasureScenariosOnly
+	origGoalsInitNonInteractive := goalsInitNonInteractive
+	origGoalsInitTemplate := goalsInitTemplate
+	origGoalsRenderOut := goalsRenderOut
 	origMemorySyncQuiet := memorySyncQuiet
 	origMemorySyncMaxEntries := memorySyncMaxEntries
 	origMemorySyncOutput := memorySyncOutput
-	origHooksFull := hooksFull
-	origHooksDryRun := hooksDryRun
-	origHooksForce := hooksForce
 	origSearchLimit := searchLimit
 	origSearchType := searchType
 	origSearchCiteType := searchCiteType
@@ -243,13 +256,6 @@ func resetCommandState(t *testing.T) {
 	origCodexStartLimit := codexStartLimit
 	origCodexStartQuery := codexStartQuery
 	origCodexStartNoMaintenance := codexStartNoMaintenance
-	origFactoryStartGoal := factoryStartGoal
-	origFactoryStartLimit := factoryStartLimit
-	origFactoryStartNoMaintenance := factoryStartNoMaintenance
-	origFactoryPilotGoal := factoryPilotGoal
-	origFactoryPilotRunID := factoryPilotRunID
-	origFactoryPilotWorktreeRoot := factoryPilotWorktreeRoot
-	origFactoryPilotValidationCommands := factoryPilotValidationCommands
 	origCodexStopSessionID := codexStopSessionID
 	origCodexStopTranscriptPath := codexStopTranscriptPath
 	origCodexStopAutoExtract := codexStopAutoExtract
@@ -307,13 +313,21 @@ func resetCommandState(t *testing.T) {
 		seedForce = origSeedForce
 		noBeads = origNoBeads
 		minimal = origMinimal
-		goalsJSON = origGoalsJSON
+		output = origGoalsJSON
+		// Goals subcommand flag globals (ag-pah): paired with saves above.
+		goalsFile = origGoalsFile
+		goalsTimeout = origGoalsTimeout
+		goalsMeasureGoalID = origGoalsMeasureGoalID
+		goalsMeasureDirectives = origGoalsMeasureDirectives
+		goalsMeasureExcludeTag = origGoalsMeasureExcludeTag
+		goalsMeasureTotalTimeout = origGoalsMeasureTotalTimeout
+		goalsMeasureScenariosOnly = origGoalsMeasureScenariosOnly
+		goalsInitNonInteractive = origGoalsInitNonInteractive
+		goalsInitTemplate = origGoalsInitTemplate
+		goalsRenderOut = origGoalsRenderOut
 		memorySyncQuiet = origMemorySyncQuiet
 		memorySyncMaxEntries = origMemorySyncMaxEntries
 		memorySyncOutput = origMemorySyncOutput
-		hooksFull = origHooksFull
-		hooksDryRun = origHooksDryRun
-		hooksForce = origHooksForce
 		searchLimit = origSearchLimit
 		searchType = origSearchType
 		searchCiteType = origSearchCiteType
@@ -324,13 +338,6 @@ func resetCommandState(t *testing.T) {
 		codexStartLimit = origCodexStartLimit
 		codexStartQuery = origCodexStartQuery
 		codexStartNoMaintenance = origCodexStartNoMaintenance
-		factoryStartGoal = origFactoryStartGoal
-		factoryStartLimit = origFactoryStartLimit
-		factoryStartNoMaintenance = origFactoryStartNoMaintenance
-		factoryPilotGoal = origFactoryPilotGoal
-		factoryPilotRunID = origFactoryPilotRunID
-		factoryPilotWorktreeRoot = origFactoryPilotWorktreeRoot
-		factoryPilotValidationCommands = origFactoryPilotValidationCommands
 		codexStopSessionID = origCodexStopSessionID
 		codexStopTranscriptPath = origCodexStopTranscriptPath
 		codexStopAutoExtract = origCodexStopAutoExtract
@@ -389,13 +396,24 @@ func resetCommandState(t *testing.T) {
 	seedForce = false
 	noBeads = false
 	minimal = false
-	goalsJSON = false
+	// Goals subcommand flag globals (ag-pah): explicit reset to flag defaults
+	// so a polluted prior-test state doesn't carry into the current test.
+	// Save+restore above handles after-test cleanup; this handles before-test
+	// hygiene.
+	goalsFile = ""
+	goalsTimeout = defaultGoalsTimeoutSeconds
+	goalsMeasureGoalID = ""
+	goalsMeasureDirectives = false
+	goalsMeasureExcludeTag = ""
+	goalsMeasureTotalTimeout = 0
+	goalsMeasureScenariosOnly = false
+	goalsInitNonInteractive = false
+	goalsInitTemplate = ""
+	goalsRenderOut = ""
+	output = "table"
 	memorySyncQuiet = false
 	memorySyncMaxEntries = 10
 	memorySyncOutput = ""
-	hooksFull = false
-	hooksDryRun = false
-	hooksForce = false
 	searchLimit = 10
 	searchType = ""
 	searchCiteType = ""

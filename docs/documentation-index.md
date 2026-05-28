@@ -8,34 +8,67 @@
 
 - [README](https://github.com/boshu2/agentops/blob/main/README.md) — Project overview and quick start
 - [Getting Started](getting-started/index.md) — Install + first command landing page
+- [PRACTICE-REGISTRY.md](https://github.com/boshu2/agentops/blob/main/PRACTICE-REGISTRY.md) — Practice lineage and canonical `practices: [slug]` registry
+- [AgentOps 3.0 — the north star](3.0.md) — The single source of truth for what 3.0 is: the hookless-first CDLC loop, the four-practice waist (BDD/DDD/Hexagonal/TDD), and what "3.0-ready" means
+- [Roadmap](ROADMAP.md) — Designed-but-not-built features (planned, not committed): CLI roadmap, curation pipeline later stages, hookless default-install
+- [3.0-Readiness Level-Set](3.0-readiness.md) — Honest box-by-box status against the 3.0 acceptance criteria after the 2026-05-23 reconciliation: what's done, fitness snapshot, named remaining work
+- [AgentOps 3.0 Explainer Kit](agentops-3-explainer-kit.md) — Public gist/launch copy for the council-first 3.0 story
+- [AgentOps 3.0 First-Value Path](first-value-path.md) — First-session path from install to domain packet, council verdict, tracked work, and optional out-of-session substrate lane
+- [AgentOps 3.0 YouTube Starter Series](agentops-3-youtube-starter-series.md) — Launch video plan, scripts, clip hooks, CTAs, and PMF measurement fields
+- [AgentOps 3.0 PMF Evidence Loop](agentops-3-pmf-evidence-loop.md) — Content-led discovery loop and claim-gated evidence plan
 - [Behavioral Discipline](behavioral-discipline.md) — Before/after examples of good coding-agent behavior
 - [Newcomer Guide](newcomer-guide.md) — Fast orientation to repo structure, architecture, and contribution path
 - [FAQ](FAQ.md) — Comparisons, limitations, subagent nesting, uninstall
 - [CONTRIBUTING](CONTRIBUTING.md) — How to contribute
 - [Create Your First Skill](create-your-first-skill.md) — Fast path for authoring a first skill without tripping CI
+- [Dependencies](dependencies.md) — Complete tool-dependency declaration (ao, git, bd+Dolt, gc, gh, go, and utilities) with purpose, required-vs-optional, and fallback-if-absent
 - [Upgrading](UPGRADING.md) — Version-to-version migration notes and breaking changes
+- [Migrating to AgentOps 3.0](MIGRATION-3.0.md) — What was removed in 3.0 (hooks, daemon, scheduler, factory) and what to use instead (in-session loop + Gas City substrate)
 - [AGENTS.md](https://github.com/boshu2/agentops/blob/main/AGENTS.md) — Local agent instructions for this repo
 - [Changelog](CHANGELOG.md) — Release history
 - [Security](SECURITY.md) — Vulnerability reporting
 
-## Three Product Layers
+## Four Product Layers
 
 | Layer | What it does | Key surfaces |
 |-------|-------------|-------------|
-| **Context Compiler** (L1) | Assembles the right context for the right phase | `ao inject`, `ao compile`, skills, hooks |
+| **Bookkeeping** (L0) | Records agent work so attempts, decisions, verdicts, and handoffs leave evidence | `.agents/`, RPI packets, council verdicts, retros, post-mortems |
+| **Context Compiler** (L1) | Assembles the right context for the right phase | `ao inject`, `ao compile`, skills, execution packets |
 | **Validation Gates** (L2) | Challenges plans and code before they ship | `/council`, `/vibe`, `/pre-mortem`, `/post-mortem` |
 | **Knowledge Flywheel** (L3) | Extracts, scores, and resurfaces learnings | `/retro`, `/forge`, `ao lookup`, `.agents/` |
 
-Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowledge-flywheel.md), [Context Lifecycle](context-lifecycle.md), [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
+Deep dives: [CDLC](cdlc.md) (AgentOps' context-native SDLC under token scarcity), [Knowledge Flywheel](knowledge-flywheel.md), [Context Lifecycle](context-lifecycle.md), [Assurance Profile](assurance-profile.md), [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
+
+Bridge / framing docs:
+
+- [A wiki for your agents](wiki-for-agents.md) — `.agents/` as a markdown wiki agents read, traverse, and contribute to (deflationary framing for the busy buyer)
+- [AgentOps as a Trust Factory](trust-factory.md) — Mapping AgentOps to the five-step trust-factory primitive (identity, reproducibility, evaluation, evidence, recovery)
 
 ## Architecture
 
 - [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, agent backends, hooks, context windowing
 - [Software Factory Surface](software-factory.md) — Explicit automation surface for briefings, RPI flows, and operator-controlled closeout
+- [Assurance Profile](assurance-profile.md) — High-assurance operating posture, authority boundaries, and evidence artifact expectations for constrained environments
 - [Architecture](ARCHITECTURE.md) — System design and component overview
 - [Architecture Folder Index](architecture/index.md) — Architecture subdocs overview
 - [Codex Hookless Lifecycle](architecture/codex-hookless-lifecycle.md) — Runtime-aware lifecycle fallback for Codex when hooks are unavailable
 - [Primitive Chains](architecture/primitive-chains.md) — Audited primitive set, lifecycle chains, and terminology drift ledger
+- [Ports and Adapters](architecture/ports-and-adapters.md) — Hexagonal seam: inner-hexagon domain, driving/driven adapters, ports, and how to add a new adapter
+- [Hexagon Port-Realness Audit](architecture/hexagon-port-realness-audit.md) — Empirical 2026-05-23 inventory of all 26 declared ports (real vs in-memory vs bypassed), direct-coupling hotspots (git/bd/loop/corpus) with file:line, and the recommended adapter build order for epic soc-zvhsl
+- [Operating Loop](architecture/operating-loop.md) — Operational discipline every process skill executes: BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence (cleanroom companion to ports-and-adapters)
+- [The Canonical Loop Model](architecture/canonical-loop-model.md) — "One loop body, two drivers, one inner tick, one config": how rpi/evolve/factory/crank/swarm/autodev relate; the in-session loop is AgentOps-shipped, the out-of-session Factory driver is substrate-owned (Gas City reference)
+- [GC Posture](architecture/gc-posture.md) — Canonical boundary doc: Gas City is one opt-in, swappable adapter behind AgentOps ports (not the runtime AgentOps runs inside); the never-make-AgentOps-a-managed-city-resource guardrail with its flap rationale; and the "no cloud required" sovereignty promise
+- [Intent-to-Loop Hexagon](architecture/intent-to-loop-hexagon.md) — Process-level ports/adapters from BDD intent through beads, slices, validation, ratchet evidence, and loop steering
+- [Behavior-Shaping Environment](architecture/behavior-shaping-environment.md) — The *why* beneath the loop: AgentOps as an operant-conditioning system (Antecedent → Behavior → Consequence); arrange the environment + reinforce/stop the behaviors you agree on
+- [ADR-0001: Adopt DDD + Hexagonal Architecture](adr/ADR-0001-ddd-hexagonal-adoption.md) — Decision record for encoding DDD + Hexagonal with `ExecutionPacket` as the tracer-bullet aggregate
+- [ADR-0002: AgentOps 3.0 Hookless-First CDLC Rearchitecture](adr/ADR-0002-agentops-3-hookless-cdlc-rearchitecture.md) — Proposed 3.0 direction: demote hooks to optional runtime adapters and center CDLC bounded contexts
+- [ADR-0003: Executable-Spec Artifact Durability](adr/ADR-0003-executable-spec-artifact-durability.md) — Where executable-spec scenarios and domain manifests live: promoted spec scenarios in tracked `spec/scenarios/`, ad hoc holdout scenarios stay in `.agents/holdout/`
+- [ADR-0004: Domain-Slice Manifest Contract](adr/ADR-0004-domain-slice-manifest-contract.md) — Schema and resolution rules for `docs/domains/<name>/manifest.yaml`, the domain-scoped boundary contract consumed by `ao rpi phased --domain`
+- [ADR-0005: Trace-Link Convention](adr/ADR-0005-trace-link-convention.md) — The directive→scenario→bead→verdict→learning link grammar that `ao goals trace` renders and audits, including warning/error defect classes and `--strict` escalation
+- [ADR-0006: Re-Steer Policy and Mutation Safety](adr/ADR-0006-re-steer-policy-and-mutation-safety.md) — The `docs/re-steer-policy.json` engine, human-gate, and non-lossy GOALS.md patcher that govern `ao goals steer recommend`/`apply`
+- [ADR-0007: Deterministic /evolve Loop — Only the Operator Stops It](adr/ADR-0007-deterministic-loop-only-operator-stops.md) — Mechanical pre-cycle gate (`scripts/evolve/halt-check.sh`): operator-only markers, goal-regression halt, revert-on-red; ported from the mt-olympus unbounded-evolve substrate
+- [ADR-0008: /evolve Operating Model — Intelligent-Agile, Not Waterfall](adr/ADR-0008-evolve-intelligent-agile-operating-model.md) — Three-layer loop contract (intent re-read each cycle / locked architecture / bounded shaping authority) + the scope-precondition audit that prevents building-the-wrong-thing drift
+- [ADR-0009: Delete the Daemon — AgentOps Is In-Session Only](adr/ADR-0009-daemon-deletion-in-session-only.md) — Why the standalone daemon/scheduler/overnight-runner was deleted (not deprecated): AgentOps is a Gas City reference config with no core to protect, the in-session loop is the zero-dependency sovereignty floor, always-on opts into Gas City; names the rejected deprecate-keep-standalone alternative and the e2e-proof GC dispatch gap
 - [PDC Framework](architecture/pdc-framework.md) — Prevent, Detect, Correct quality control approach
 - [FAAFO Alignment](architecture/faafo-alignment.md) — FAAFO promise framework for vibe coding value
 - [Failure Patterns](architecture/failure-patterns.md) — The 12 failure patterns reference guide
@@ -45,7 +78,11 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [Skills Reference](SKILLS.md) — Complete reference for all AgentOps skills
 - [Skills Decision Tree](skills-decision-tree.md) — "Which skill do I need next?" — single source of truth linked from harvest, compile, knowledge-activation, and quickstart SKILL.md
 - [Skill API](SKILL-API.md) — Frontmatter fields, context declarations, enforcement status
-- [JSM Skill Absorption Matrix](reference/jsm-skill-absorption.md) — Disposition table for the 2026-05-05 Bushido standalone JSM skill set
+- [Skill Quality Rubric](reference/skill-quality-rubric.md) — Scoring rubric for repo-runtime, export, and mega-skill readiness
+- [AgentOps Domain Evolution BDD](reference/agentops-domain-evolution-bdd.md) — Gherkin acceptance contract for skill, CLI, and hook evolution
+- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 78 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
+- [AgentOps Hexagonal Architecture Map](reference/agentops-hexagonal-architecture-map.md) — Bounded contexts, ports, adapters, and proof gates for the evolution program
+- [AgentOps Domain Evolution Plan](reference/agentops-domain-evolution-plan.md) — Sequenced bootstrap and evolution plan anchored to `soc-y5vh`
 - [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph
 - [skill-builder](https://github.com/boshu2/agentops/blob/main/skills/skill-builder/SKILL.md) — Scaffold or absorb new SKILL.md files against the unified template
 - [skill-auditor](https://github.com/boshu2/agentops/blob/main/skills/skill-auditor/SKILL.md) — Two-pass audit of an existing SKILL.md against the unified template (15 checks)
@@ -77,7 +114,9 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 ## Concepts
 
 - [Philosophy](philosophy.md) — Five validated principles for building with coding agents, with evidence from five months of production use
-- [Context Lifecycle Contract](context-lifecycle.md) — Internal proof contract behind the three product layers
+- [Sovereignty Proof](sovereignty-proof/index.md) — Falsifiable case studies showing where independent-vendor review caught what same-vendor review missed (2026-05-15 RPI reframe, 2026-05-16 F6/F7 findings). CI gate `validate-sovereignty-proof-citations` keeps the cited file:line evidence honest.
+- [Assurance Profile](assurance-profile.md) — High-assurance operating posture for local, auditable, constrained-environment agent work
+- [Context Lifecycle Contract](context-lifecycle.md) — Internal proof contract behind the compounding product loop
 - [Knowledge Flywheel](knowledge-flywheel.md) — How every session makes the next one smarter
 - [The Science](the-science.md) — Research behind knowledge decay and compounding
 - [Brownian Ratchet](brownian-ratchet.md) — AI-native development philosophy
@@ -86,6 +125,7 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [Scale Without Swarms](scale-without-swarms.md) — Single-agent scaling patterns
 - [Curation Pipeline](curation-pipeline.md) — Six-stage knowledge curation lifecycle
 - [Context Packet](context-packet.md) — Agent context assembly specification
+- [Domain and Practice Packets](domain-practice-packets.md) — Product-facing contract for the shared engineering domain agents judge work against
 - [Strategic Direction](strategic-direction.md) — Product strategy and roadmap
 - [Leverage Points](leverage-points.md) — Meadows-inspired system intervention points
 
@@ -155,6 +195,7 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 
 ## Profiles
 
+- [Activation Profiles](activation-profiles.md) — 3.0 first-value workflow recipes with explicit inputs, commands, artifacts, and fallbacks
 - [Profiles Overview](profiles/README.md) — Role-based profile organization
 - [Profile Comparison](profiles/COMPARISON.md) — Workspace profiles vs 12-Factor examples
 - [Meta-Patterns](profiles/META_PATTERNS.md) — Patterns extracted from role-based taxonomy
@@ -171,6 +212,8 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [vs Superpowers](comparisons/vs-superpowers.md) — AgentOps vs Superpowers plugin
 - [vs Claude-Flow](comparisons/vs-claude-flow.md) — AgentOps vs Claude-Flow orchestration
 - [vs Compound Engineer](comparisons/vs-compound-engineer.md) — AgentOps vs Compound Engineering plugin
+- [vs Tons-of-Skills](comparisons/vs-tons-of-skills.md) — AgentOps vs `jeremylongshore/claude-code-plugins-plus-skills` (volume marketplace lane)
+- [vs everything-claude-code](comparisons/vs-everything-claude-code.md) — AgentOps vs `affaan-m/everything-claude-code` (cross-harness lane)
 - [Competitive Radar](comparisons/competitive-radar.md) — Current market read and improvement pressure
 
 ## Positioning
@@ -185,16 +228,21 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [Validated Release Pipeline](plans/2026-01-28-validated-release-pipeline.md) — Release pipeline design (2026-01-28)
 - [All Improvements](plans/2026-02-24-all-improvements.md) — Comprehensive improvement plan (2026-02-24)
 - [AO Search as an Upstream CASS Wrapper](plans/2026-03-22-ao-search-cass-wrapper.md) — Make `ao search` broker to upstream `cass` plus AO-local fallback (2026-03-22)
+- [AgentOps 3.0 Hookless CDLC Rearchitecture](plans/2026-05-15-agentops-3-hookless-cdlc-rearchitecture.md) — Hookless-first 3.0 plan with bounded contexts, hook lease disposition, and migration waves
 
 ## Templates
 
 - [Templates Overview](templates/README.md) — Templates index
+- [Intent Issue Template](templates/intent-issue.md) — BDD-shaped intent issue (Given/When/Then acceptance examples, bounded context, slice candidates) — produced by `/discovery`, consumed by `/plan`
+- [Slice Validation Plan Template](templates/slice-validation.md) — Per-slice proof with first failing test, write-scope, wave-validity check, and roll-up acceptance — produced by `/plan`, executed by `/validation`
 - [Workflow Template](templates/workflow.template.md) — Template for new workflows
 - [Agent Template](templates/agent.template.md) — Template for new agents
 - [Skill Template](templates/skill.template.md) — Template for new skills
 - [Command Template](templates/command.template.md) — Template for new commands
 - [Kernel Template](templates/kernel.template.md) — Template for new project kernels
-- [Dark Factory Schedule Example](templates/dark-factory-schedule.yaml.example) — Disabled agentopsd schedule template for reviewed Dream and local factory pilots
+- [AgentOps 3.0 Domain/Practice Packet](examples/agentops-3-domain-practice-packet.md) — Tracked launch-demo packet example
+- [AgentOps 3.0 Council Demo Storyboard](examples/agentops-3-council-demo-storyboard.md) — Canonical council-first launch demo script
+- [AgentOps 3.0 Council Verdict Example](examples/agentops-3-council-verdict-example.md) — Public sample verdict artifact for the explainer kit
 - [Product Template](PRODUCT-TEMPLATE.md) — Template for writing a PRODUCT.md
 
 ## Reference
@@ -206,8 +254,7 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [Glossary](GLOSSARY.md) — Definitions of domain-specific terms (Beads, Brownian Ratchet, RPI, etc.)
 - [CLI Reference](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md) — Complete `ao` command reference (generated from source)
 - [CLI Command Surface](cli-surface.md) — Generated classification of leaf commands by coverage and runtime safety
-- [Hooks Reference](HOOKS.md) — Lifecycle events, what each hook does, how to customize
-- [CLI ↔ Skills/Hooks Map](cli-skills-map.md) — Which commands are called by which skills and hooks
+- [CLI ↔ Skills Map](cli-skills-map.md) — Which commands are called by which skills
 - [Reference](reference.md) — Pipeline stages, execution-model table, and skill-selection matrix (deep-dive companion to SKILLS.md)
 - [Releasing](RELEASING.md) — Release process for ao CLI and plugin
 - [Environment Variables](ENV-VARS.md) — All configuration variables with defaults and precedence
@@ -215,39 +262,37 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [Skill Router](SKILL-ROUTER.md) — Which skill to use for which task
 - [Troubleshooting](troubleshooting.md) — Common issues and quick fixes
 - [Incident Runbook](INCIDENT-RUNBOOK.md) — Operational runbook for incidents and recovery
-- [Autonomy Runtime Cycle-1 Runbook](runbooks/autonomy-runtime-cycle-1.md) — Safe activation/rollback/evidence checks for cycle-1 autonomy runtime work (ported from olympus)
+- [Autonomy Runtime Cycle-1 Runbook](runbooks/autonomy-runtime-cycle-1.md) — Safe activation/rollback/evidence checks for RPI, evolve, and daemon-backed autonomy work
 - [bd Server-Mode Tracker Closeout](runbooks/bd-server-mode-closeout.md) — Distinguish Git push, local bd durability, and conditional Dolt remote push for server-mode trackers
-- [Release Process Runbook](runbooks/release-process.md) — Step-by-step release runbook (gates, version bump, goreleaser, post-release; ported from olympus and complements `RELEASING.md`)
-- [Factory Manual Merge Runbook](runbooks/factory-manual-merge.md) — Operator recovery and manual merge procedure for factory worktrees and validation evidence
-- [Daemon Factory Admission Runbook](runbooks/daemon-factory-admission.md) — Rehearsal procedure for daemon-native factory admission, blocked decisions, RPI handoff, and schedule payloads
-- [Cloud-Frontier Factory Pilot Runbook](runbooks/cloud-frontier-pilot.md) — Bounded one-versus-two worker pilot procedure using cloud/frontier coding lanes and manual merge
+- [Release Process Runbook](runbooks/release-process.md) — Step-by-step release runbook for gates, version injection, goreleaser, and post-release checks; complements `RELEASING.md`
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
+- [Lesson Format](contracts/lesson-format.md) — Schema for `.agents/learnings/` entries with frontmatter (id/severity/trigger/verifiable/rule/falsified_by/practice/related) and graduation path (unassigned → proposed → accepted → encoded)
+- [Bounded Contexts (yaml)](contracts/bounded-contexts.yaml) — Canonical BC1-BC5 definitions (id/name/responsibility/ports/center-of-gravity); registry doc prose must match this yaml (drift-checked by `scripts/check-bounded-contexts-drift.sh`, soc-zxia.2)
+- [add-validate-job scaffolder](https://github.com/boshu2/agentops/blob/main/scripts/add-validate-job.sh) — CI integration scaffolder; emits all 5 touch-points (workflow + summary needs + summary echo + pre-push + bats stub + AGENTS table) atomically when adding a new `validate-*` job (soc-3oij)
+- [CI Jobs Manifest (yaml)](contracts/ci-jobs.yaml) — Canonical reason+failure for every validate.yml CI job; AGENTS.md `### CI Jobs and What They Check` table is rendered from this yaml + workflow `summary.needs` via `scripts/generate-ci-jobs-table.sh` (golden-file gate enforced by `validate-ci-policy-parity`, soc-3oij)
+- [Scenario → Test Linkage](contracts/scenario-test-linkage.md) — Every Gherkin scenario in `skills/*/references/*.feature` must declare its covering test via a `@covered-by:<test-path>` tag or be allowlisted as doc-only in `scripts/.scenario-linkage-allow`; gate is `scripts/check-scenario-test-linkage.sh` / `validate-scenario-test-linkage` (sibling to executable-spec-link-integrity; links scenarios→tests, soc-63xfx)
+- [@claude Bot Delegation](contracts/claude-bot-delegation.md) — Operational runbook for the `@claude` GitHub App: permissions, triggers, status decoding, gotchas, when to delegate
+- [Local Pre-Push Gate Retirement](contracts/local-pre-push-gate-retirement.md) — ADR (soc-g2r9): CI is the sole authoritative push gate; `scripts/pre-push-gate.sh` and its helpers are retired in follow-up waves; AP#7 mechanical enforcement migrates from pre-push to a validate.yml job
+- [Skill Dispositions (yaml)](contracts/skill-dispositions.yaml) — Canonical per-skill domain/disposition/rationale data; source-of-truth for `agentops-skill-domain-map.md`. Hand-edits to the .md forbidden — edit yaml and run `scripts/generate-skill-domain-map.sh` (golden-file gate, soc-zxia.3)
+- [Context Map](contracts/context-map.md) — Auto-generated bounded-context map of skills by hexagonal role with relationship and data-flow views (see ADR-0001)
+- [PMF Evidence Gate](contracts/pmf-evidence.md) — Public docs (PRODUCT.md, README, launch artifacts) must promote `.agents/` evidence to `docs/evidence/<bead-id>/` via `scripts/export-evidence.sh`; `scripts/check-pmf-evidence.sh` is the gate (soc-m6v5.8)
+- [Skill Domain Map](contracts/skill-domain-map.md) — V0 DDD map assigning every shared skill to one explicit skill domain with ports, artifacts, and adapters
+- [Registry as derived artifact](contracts/registry-as-derived.md) — Design contract (soc-jbea, status:design): move `registry.json` out of version control to eliminate sibling-PR conflict cascade (40-50% of waste in the 2026-05-20 PR-cleanup session per Council 220-240). Same pattern for `skills-codex/.agentops-manifest.json` and `skills-codex/*/.agentops-generated.json`. Implementation deferred to soc-jbea.1 through soc-jbea.7.
+- [SKU Capability Catalog](contracts/sku-catalog.md) — `registry.json` schema_version 2: the generated SKU catalog (skills + CLI commands + gates + reference-impls) as a 4th derived JOIN projection. Defines the SKU entry schema, the `drives_commands` skill↔command join key (derived from skill bodies), `status` derivation, and the `validate-sku-catalog-drift` gate's three checks (drift + linkage-integrity + BC/loop-move coverage). Retires the bogus "163 cli_commands" count (ag-cbm).
+- [Skill Ports and Adapters](contracts/skill-ports-and-adapters.md) — V0 skill-boundary vocabulary for inbound ports, outbound ports, adapters, context packets, and guard surfaces
+- [Skill Lease Audit](contracts/skill-lease-audit.md) — V0 lease-on-life audit classifying all shared skills as keep, merge, split, retire, or unknown
 - [Repo Execution Profile](contracts/repo-execution-profile.md) — Repo-local bootstrap, validation, tracker, and done-criteria contract for autonomous orchestration
 - [Repo Execution Profile Example](contracts/repo-execution-profile.json) — Concrete repository execution profile used by local autonomous orchestration
 - [Autodev Program Contract](contracts/autodev-program.md) — Repo-local operational contract for bounded autonomous development
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
-- [AgentOps Daemon Contract](contracts/agentops-daemon.md) — Always-on daemon ledger, job lifecycle, activation, readiness, projection, and threat model contract
-- [AgentOpsd Control Plane Contract](contracts/agentopsd-control-plane.md) — Production control-plane contract for worker slots, worktree ownership, lifecycle telemetry, validation gates, yield, and operator status
-- [Factory Admission Contract](contracts/factory-admission.md) — Daemon-owned work-order admission contract for fail-closed local factory pilots and RPI handoff
-- [Factory Work Order Schema](https://github.com/boshu2/agentops/blob/main/schemas/factory-work-order.v1.schema.json) — JSON Schema for daemon-native factory work-order inputs
-- [Factory Admission Decision Schema](https://github.com/boshu2/agentops/blob/main/schemas/factory-admission.v1.schema.json) — JSON Schema for daemon-native admission decisions
-- [Routing Policy Contract](contracts/routing-policy.md) — Schema-backed model/provider/runtime lane policy, authority levels, and milestone-1 production-routing guardrails
-- [Routing Policy Schema](https://github.com/boshu2/agentops/blob/main/schemas/routing-policy.v1.schema.json) — JSON Schema for `agentopsd` routing policy lane contracts
-- [Factory Yield Ledger Contract](contracts/factory-yield-ledger.md) — Schema-backed baseline/treatment yield observations for routing, validation, merge, and artifact correlation
-- [Factory Yield Ledger Schema](contracts/factory-yield-ledger.schema.json) — Contract-local JSON Schema used to validate the yield ledger fixture
-- [Factory Yield Ledger Example](contracts/factory-yield-ledger.example.json) — Valid fixture for a `factory.yield_observation` event
-- [Daemon Idempotency Contract](contracts/daemon-idempotency.md) — Submit retry contract defining `idempotency_key` as the dedup key and `request_id` as trace-only
-- [AgentOps Daemon Scheduling Contract](contracts/agentopsd-schedule.md) — `.agents/schedule.yaml` schema, cron syntax, backpressure, mutation auth, ledger event vocabulary, executor idempotency, and migration recipe for native daemon scheduling
-- [JobSpec OpenAPI v0](contracts/jobspec-openapi-v0.yaml) — Machine-readable current-behavior OpenAPI contract for `agentopsd` job submission, queue state, ledger replay, projections, and OpenClaw consumer routes
-- [GasCity Integration Contract](contracts/gascity-integration.md) — Narrow handwritten GasCity adapter, fake/live split, compatibility matrix, and API/SSE expectations
+- [Update Principles Contract](contracts/update-principles.md) — Five operator-exemplar properties every commit must demonstrate (single concern, drift-blocking test, sibling citation, fitness delta, clean branch point); sourced from commit 1b9d139c
+- [Ubiquitous Language Contract](contracts/ubiquitous-language.md) — Canonical names per bounded context (BC1 Corpus, BC2 Validation, BC3 Loop, BC4 Factory, BC5 Runtime) for the 5 ranked drifts (Gate/Check, Cycle/Loop, Claim/Evidence, Skill/Pattern/Practice, Session); rename schedule bound to soc-5yuy children
+- [BC1 Corpus Ports Contract](contracts/bc1-corpus-ports.md) — Core BC1 corpus ports scaffolded under `cli/internal/ports/`; semantics cheat-sheet, adapter triplet pattern, soc-pm5t wire-up order
+- [BC Ports Inventory](contracts/bc-ports-inventory.md) — Roster of all 20 BC ports with per-port adapter contracts, the universal triplet construction pattern, and per-BC wire-up order.
 - [Remote Compute Contract](contracts/remote-compute.md) — Product-neutral RemoteTarget, RemoteSession, command ledger, recovery, and GasCity-first remote execution contract
-- [AgentWorker Runtime Contract](contracts/agent-worker.md) — Generic headless Codex/Claude worker and AgentSession lifecycle contract for daemon jobs
-- [`ao outcomes` Contract](contracts/ao-outcomes.md) — Rubric → target → grader → retry loop spec for `ao outcomes run`; off-API analog of Anthropic Managed Agents Outcomes
-- [`ao watch` Contract](contracts/ao-watch.md) — Live worker-event stream spec for `ao watch --follow`; off-API analog of Anthropic Managed Agents Console trace
-- [Rubric Schema](https://github.com/boshu2/agentops/blob/main/schemas/rubric.v1.schema.json) — JSON Schema for `ao outcomes run` rubric files
+- [Rubric Schema](https://github.com/boshu2/agentops/blob/main/schemas/rubric.v1.schema.json) — JSON Schema for rubric files (outcome rubric → target → grader → retry loop)
 - [Worker Spec Schema](https://github.com/boshu2/agentops/blob/main/schemas/worker-spec.v1.schema.json) — JSON Schema for per-worker model/tool/prompt isolation specs
-- [OpenClaw Consumer API Contract](contracts/openclaw-consumer-api.md) — Read-only consumer snapshot API and authorized local trigger contract
 - [Repo Execution Profile Schema](contracts/repo-execution-profile.schema.json) — Machine-readable schema for repo execution profiles
 - [RPI Run Registry](contracts/rpi-run-registry.md) — RPI run registry specification
 - [Eval Environment Contract](contracts/eval-environment.md) — Evaluation suite, run, scorecard, baseline, canary, and holdout contract
@@ -258,7 +303,7 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [Release Readiness Contract](contracts/release-readiness.md) — 8/10 release readiness score, SIL/VIL/HIL evidence, artifact manifest requirements, and HIL waiver policy
 - [MemRL Policy Schema](contracts/memrl-policy.schema.json) — Machine-readable retry/escalation policy profile for memory-reinforcement feedback loops
 - [MemRL Policy Profile Example](contracts/memrl-policy.profile.example.json) — Example deterministic MemRL retry/escalation policy profile
-- [Eval Workbench](../evals/workbench/) — Known-good fixture project (Go CLI, Python FastAPI, DevOps scripts) with 12 behavioral eval tasks and scoring scripts
+- [Eval Workbench](https://github.com/boshu2/agentops/tree/main/evals/workbench) — Known-good fixture project (Go CLI, Python FastAPI, DevOps scripts) with 12 behavioral eval tasks and scoring scripts
 - [Eval Suite Schema](https://github.com/boshu2/agentops/blob/main/schemas/eval-suite.v1.schema.json) — JSON Schema for public canary and private holdout evaluation suites
 - [Eval Run Schema](https://github.com/boshu2/agentops/blob/main/schemas/eval-run.v1.schema.json) — JSON Schema for evaluation run records and scorecards
 - [Remote Compute Target Schema](https://github.com/boshu2/agentops/blob/main/schemas/remote-compute-target.schema.json) — JSON Schema for product-neutral GasCity-backed remote compute targets
@@ -270,9 +315,10 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 - [Swarm Worker Result Schema](contracts/swarm-worker-result.schema.json) — Machine-readable schema for `.agents/swarm/results/<task-id>.json` worker artifacts (strict completion contract)
 - [Swarm Evidence Contract](contracts/swarm-evidence.md) — Permissive shape covering all historical swarm result files; enforced by `scripts/validate-swarm-evidence.sh`
 - [Swarm Evidence Schema](https://github.com/boshu2/agentops/blob/main/schemas/swarm-evidence.schema.json) — JSON Schema for the permissive swarm evidence shape
-- [Hook Runtime Contract](contracts/hook-runtime-contract.md) — Canonical event mapping across Claude, Codex, and manual runtimes
+- [Multi-Runtime Tier Charter](contracts/multi-runtime-tier-charter.md) — Explicit Tier S/I/E declaration: Tier S structural blocks CI; Tier E live execution is opt-in (Directive D1)
+- [v2.39.0 README claim evidence manifest](releases/v2.39.0-claims/README.md) — Maps each `AOP-CLAIM-README-*` marker to its evidence file and verification gate (PG4)
+- [AgentOps 3.0 PMF Scenario — evidence bundle](releases/v3.0/pmf-scenario.md) — Single-day autonomous /evolve drain record: 11 P1 closures, 11 commits, friction modes, durable artifacts (PG2)
 - [Scope Escape Report](contracts/scope-escape-report.md) — Structured template for agent scope-escape reporting
-- [Dream Run Contract](contracts/dream-run-contract.md) — Process model, locking, keep-awake, and artifact floor for private overnight runs
 - [Dream Report Contract](contracts/dream-report.md) — Canonical `summary.json` and `summary.md` schema for Dream outputs
 - [dispatch-checklist.md](contracts/dispatch-checklist.md) — Standard references for agent dispatch prompts
 - [Headless Invocation Standards](contracts/headless-invocation-standards.md) — Required flags, tool allowlists, and timeout strategy for non-interactive Claude/Codex execution
@@ -288,16 +334,3 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 ## Migration Trackers
 
 - [resolve-project-dir.md](migration-trackers/resolve-project-dir.md) — os.Getwd() → resolveProjectDir() migration status
-
-## Reference: Olympus v4 Specs
-
-> Verbatim port of `olympus/docs/specs/v4/` for cross-reference during the Olympus → agentopsd extraction. **NOT canonical for agentopsd.** Where these disagree with `.agents/design/2026-04-28-design-agentops-daemon-gascity-vertical-slices.md`, agentopsd canonical wins.
-
-- [Architecture](design/olympus-v4-specs/architecture.md) — Olympus v4 architecture (reference)
-- [CLI](design/olympus-v4-specs/cli.md) — `ol` CLI specification (reference)
-- [Consensus](design/olympus-v4-specs/consensus.md) — Multi-model consensus before ratchet locks (reference)
-- [Context](design/olympus-v4-specs/context.md) — Context as control plane (reference)
-- [Daemon](design/olympus-v4-specs/daemon.md) — Daemon Phase 0 mechanical spec (reference)
-- [Execution](design/olympus-v4-specs/execution.md) — Execution model (reference)
-- [Knowledge](design/olympus-v4-specs/knowledge.md) — Knowledge compounding via constraint tests (reference)
-- [Validation](design/olympus-v4-specs/validation.md) — Validation contract (reference)

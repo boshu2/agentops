@@ -1,14 +1,21 @@
 # AgentOps — One-Page Brief
 
-**The problem:** AI coding tools behave like contractors with amnesia. Every session starts from zero — no memory of what broke last week, no record of decisions already made, no awareness of what was tried and abandoned. You brief them today. Tomorrow you brief them again.
+AgentOps is an SDLC control plane for agentic software development. It keeps the books, compiles context, gates output, and compounds learning so coding agents can work in small, verifiable slices instead of cold one-off prompts.
+
+`.agents/` is the substrate: a wiki of markdown files in your repo, version-controlled with your code, that agents read, traverse, and contribute to. The kind of wiki your team should already have. AgentOps automates the discipline of building one.
+
+*The only verifiable moat in this uncertain time is context. Models will get smarter, harnesses will commoditize, agents will get cheaper. Your accumulated context — the lessons learned about your individual problems, the patterns that worked, the decisions that survived review — is the one asset that compounds and doesn't get eaten by the next vendor release. That's what your company actually is.*
+
+AgentOps is the shovel. Start digging.
 
 ---
 
 ## What It Is
 
-A repo-native operational layer for coding agents.
+An SDLC control plane backed by a repo-native, version-controlled, mechanically maintained wiki for your agents.
 
-AgentOps gives every session three product layers: a **Context Compiler** that loads the right repo context before work starts, **Validation Gates** that challenge plans and code before they ship, and a **Knowledge Flywheel** that extracts learnings and feeds them back so the next session starts smarter.
+<!-- agentops:claim:AOP-CLAIM-BRIEF-FOUR-LAYERS -->
+AgentOps gives every session four product layers: **Bookkeeping** that records what agents tried and validated, a **Context Compiler** that loads the right repo context before work starts, **Validation Gates** that challenge plans and code before they ship, and a **Knowledge Flywheel** that extracts learnings and feeds them back so the next session starts smarter.
 
 The institutional knowledge stops walking out the door because the repo keeps it.
 
@@ -25,12 +32,15 @@ Most coding-agent tooling handles prompt construction and routing well. The fail
 | **Closure** (internal: loop closure) | Completed work does not produce better next work | `/post-mortem` harvests learnings and next-work, finding compiler promotes failures into constraints, `GOALS.md` + `/evolve` turn findings into measurable improvements |
 
 The compound effect below only works because Validation Gates catch the problem,
-the Knowledge Flywheel preserves the lesson, and the Context Compiler ensures
+the Bookkeeping layer preserves the trace, the Knowledge Flywheel preserves the lesson, and the Context Compiler ensures
 the next session loads better context before repeating the mistake.
 
 ---
 
-## Three Product Layers
+## Four Product Layers
+
+### Layer 0: Bookkeeping
+Records the operational memory agents do not keep for themselves: attempts, decisions, citations, verdicts, handoffs, findings, retros, and post-mortems. The work leaves a trace in `.agents/`.
 
 ### Layer 1: Context Compiler
 Assembles the right context for the right phase. Research gets prior knowledge; plan gets a compressed summary; workers get fresh context per wave. Skills, hooks, and the `ao` CLI collaborate to load, scope, and trim context to the token budget before the agent sees it.
@@ -67,10 +77,10 @@ Next session starts with a richer environment than this one did.
 
 | Property | Detail |
 |----------|--------|
-| **Local-only** | No telemetry, no cloud, no vendor accounts. Nothing phones home. |
+| **Local-first** | No AgentOps-managed telemetry or hosted control plane. Model runtimes, Git remotes, installers, and external tools are operator-selected dependencies. |
 | **Open source** | Every line auditable. Apache 2.0 licensed. |
 | **Multi-tool** | Works with Claude Code, Codex, Cursor, OpenCode. Not locked to one vendor. |
-| **Air-gap compatible** | Runs fully offline. Knowledge base is plain files. |
+| **Constrained-network fit** | Repo-local evidence and plain files fit mirrored, reviewed, or disconnected operator workflows. |
 | **Auditable trail** | Every learning, decision, and review verdict written to `.agents/` with timestamps. |
 
 ---
@@ -83,6 +93,7 @@ With AgentOps:     [2 hrs] → [10 min] → [2 min] → instant  =  ~2.2 hours t
                     learn     recall     refine    mastered
 ```
 
+<!-- agentops:claim:AOP-CLAIM-BRIEF-VALIDATED-PATTERNS -->
 By session 100, the repo already carries prior failures, design choices, planning rules, and validated patterns that new sessions can load before they repeat old mistakes.
 
 ---
@@ -92,17 +103,31 @@ By session 100, the repo already carries prior failures, design choices, plannin
 The most accurate current framing is:
 
 ```text
-Public category    -> context compiler for coding agents
-Product layers     -> Context Compiler + Validation Gates + Knowledge Flywheel
+Public category    -> SDLC control plane for coding agents
+Product layers     -> Bookkeeping + Context Compiler + Validation Gates + Knowledge Flywheel
 Internal proof     -> three-gap lifecycle contract
 Runtime mechanics  -> Brownian Ratchet + Stigmergic Spiral + Knowledge Flywheel
 ```
 
 The claim is not "better models." The claim is "better repo mechanics around
-the models you already have." Three product layers deliver that: the Context
-Compiler loads the right context, Validation Gates block bad output, and the
-Knowledge Flywheel ensures every session leaves the repo smarter. The
+the models you already have." Four product layers deliver that: Bookkeeping
+preserves the evidence trail, the Context Compiler loads the right context,
+Validation Gates block bad output, and the Knowledge Flywheel ensures every
+session leaves the repo smarter. The
 three-gap contract remains the internal proof model.
+
+---
+
+## What if the labs ship this natively?
+
+They will. Anthropic's Managed Agents is the first move; others will follow. That's fine — the value isn't in this tool, it's in the corpus you build with it. AgentOps is bridge infrastructure: your `.agents/` directory is plain markdown in your repo, so if a frontier vendor ships native equivalents in 12 months, your corpus carries forward unchanged.
+
+---
+
+## See also
+
+- [docs/wiki-for-agents.md](wiki-for-agents.md) — the wiki framing as a standalone document.
+- [docs/trust-factory.md](trust-factory.md) — AgentOps mapped to the five-step trust factory primitive.
 
 ---
 
@@ -118,7 +143,7 @@ three-gap contract remains the internal proof model.
 ┌──────────────────────────────────────────────────────────────────┐
 │                    AgentOps at a Glance                          │
 ├───────────────────┬──────────────────────┬───────────────────────┤
-│ 66 shared skills  │   `ao` Control Plane │   7 Hook Events       │
+│ 73 shared skills  │   `ao` Control Plane │   12 Hook Events      │
 │ plus runtime      │ repo-native retrieval│  runtime manifest     │
 │    artifacts      │ goals, and automation│                       │
 └───────────────────┴──────────────────────┴───────────────────────┘
@@ -174,7 +199,7 @@ TRIGGER                   HOOK                        WHAT IT DOES
 Session starts         session-start.sh            Stage runtime state
 Session ends           session-end-maintenance.sh  Harvest learnings
 Agent stops            ao-flywheel-close.sh        Close learning loop
-Prompt submit         prompt-nudge.sh             Remind missing intent / ratchet state
+Prompt submit         factory-router.sh           Route explicit factory intake
 Pre tool use          pre-mortem-gate.sh          Require review before risky work
 Post tool use         go-complexity-precommit.sh  Block over-complex edits
 Task complete         task-validation-gate.sh     Execute compiled validation constraints

@@ -1,26 +1,25 @@
 # How It Works
 
-> Agent output quality is determined by context input quality. Every pattern below — fresh context per worker, ratcheted progress, least-privilege loading — exists to ensure the right information is in the right window at the right time.
+> Agent output quality is determined by context input quality. AgentOps is the SDLC control plane that keeps that context small, bounded, verifiable, and compounding.
 
 Parallel agents produce noisy output; councils filter it; ratchets lock progress so it can never regress.
 
-AgentOps delivers three product layers: the Context Compiler, Validation Gates,
-and Knowledge Flywheel. This page explains the internal mechanics beneath those
-layers: the proof gaps they must close, the Brownian Ratchet, and the flywheel
-that makes sessions compound.
+AgentOps delivers four product layers: Bookkeeping, the Context Compiler,
+Validation Gates, and the Knowledge Flywheel. This page explains the internal
+mechanics beneath those layers: the proof gaps they must close, the Brownian
+Ratchet, and the flywheel that makes sessions compound.
 
 Think of the mechanics below as the substrate under the operator surface:
 briefings and startup context prepare the work order, RPI phases run the
 delivery lane, and the flywheel closes the learning loop. See
 [Software Factory Surface](software-factory.md).
 
-The same split now applies to Dream:
+The same split applies to Dream's in-session surface:
 
-- skills remain the interactive operator surface
-- the `ao` binary is the headless automation surface
-- shared config is the control plane
+- skills (`/dream`) are the interactive operator surface for a compounding session
+- the `ao` CLI primitives (`ao compile`, `ao maturity`, `ao flywheel close-loop`) are the headless work the loop performs
 
-That matters most for overnight work. GitHub nightly is the public proof harness. `ao overnight` is the private local compounding engine.
+Running that compounding *out of session* — always-on, scheduled, unattended — is delegated to an orchestration substrate (Gas City is the reference City), not an AgentOps daemon or scheduler; those surfaces were deleted in 3.0. GitHub nightly remains the public CI proof harness for the report contract; the private always-on compounding engine is the Gas City substrate driving the in-session loop.
 
 ## The Proof Gaps
 
@@ -89,16 +88,24 @@ Supports both Codex sub-agents (`spawn_agent`) and Claude agent teams (`TeamCrea
 
 Operational contract reference: `skills/shared/references/ralph-loop-contract.md` (reverse-engineered from `ghuntley/how-to-ralph-wiggum` and mapped to AgentOps primitives).
 
-## Two-Tier Execution Model
+## Execution Isolation Model
 
-The target model is: **keep orchestration visible in the main session, and let spawned workers carry the isolated context.** Most current meta-skills follow that shape, but a few SKILL contracts still declare `context.window: fork` while the runtime behavior has shifted toward visible orchestration. When docs and contracts disagree, treat the live `SKILL.md` as authoritative.
+The target model is: **keep lifecycle orchestration visible in the main
+session, and isolate expensive execution behind skill contracts.** The main
+session should show phase order, retry decisions, and operator intervention
+points. Phase and worker contexts should die after they write bounded
+artifacts.
 
 | Tier | Skills | Behavior |
 |------|--------|----------|
-| **NO-FORK** (orchestrators) | evolve, rpi, crank, vibe, post-mortem, pre-mortem | Stay in main session — operator sees progress and can intervene |
-| **FORK** (worker spawners) | council, codex-team | Fork into subagents — results merge back via filesystem |
+| **Visible orchestration** | evolve, rpi | Stay in main session - operator sees progress and can intervene |
+| **Phase isolation** | discovery, crank, validation when called by rpi | Execute the declared phase skill contract in an isolated phase context; return artifact path, verdict, and next action |
+| **Worker isolation** | council, codex-team, swarm workers | Fork into subagents or equivalent workers; results merge back via filesystem |
 
-This was learned through production experience: orchestration that disappears into a fork becomes hard to supervise. The long-term direction is to keep macro progress visible and isolate only the worker layer, but the repo still contains a small amount of contract drift that has not been fully normalized.
+This was learned through production experience: orchestration that disappears
+into a fork becomes hard to supervise. The refined direction is visible
+orchestration plus isolated execution, not direct agent work replacing skill
+contracts.
 
 `/swarm` is a special case — it's an orchestrator (no fork) that spawns runtime workers via `TeamCreate`/`spawn_agent`. The workers are runtime sub-agents, not SKILL.md skills.
 
@@ -130,28 +137,23 @@ Skills auto-select the best available backend:
 }
 ```
 
-## Hooks — The Operational Layer Enforces Itself
+## Hookless — The Operational Layer Enforces Itself
 
-The active runtime manifest currently declares **7 hook event sections** in `hooks/hooks.json`. All have a kill switch: `AGENTOPS_HOOKS_DISABLED=1`.
+AgentOps 3.0 ships **zero hooks**. Everything a hook used to do is now an
+explicit, pulled surface — which means the operating loop works identically on
+every harness (Claude Code, Codex, Cursor, OpenCode) and CI is the single
+authoritative gate.
 
-### Lifecycle anchors
+| Former hook responsibility | Hookless surface | Gap closed |
+|----------------------------|------------------|------------|
+| Startup maintenance / handoff recovery / factory-state staging | `ao knowledge brief`, `ao context assemble`, `ao handoff` | Runtime continuity |
+| Transcript mining / maturity management / defrag | `/forge`, `ao maturity`, `ao compile` at session close | Durable learning, Loop closure |
+| Flywheel close | `ao flywheel close-loop` / `/retro` | Loop closure |
+| Prompt guidance / context pressure | `ao lookup`, factory briefings, `/inject` (pulled, not injected) | Judgment validation |
+| Validation gates / quality / completion | CI (`.github/workflows/validate.yml`) + skill-level checks + `cd cli && make test` | Judgment validation, Loop closure |
 
-| Hook surface | Trigger | What it does | Gap closed |
-|--------------|---------|--------------|------------|
-| Session start | `SessionStart` | Runs `session-start.sh` — startup maintenance, handoff recovery, and silent factory-state staging | Runtime continuity |
-| Session end maintenance | `SessionEnd` | Runs `session-end-maintenance.sh` (transcript mining, maturity management) and `compile-session-defrag.sh` (knowledge deduplication and defrag) | Durable learning (extraction), Loop closure |
-| Flywheel close | `Stop` | Runs `ao-flywheel-close.sh` — closes the feedback loop via `ao flywheel close-loop` | Loop closure |
-
-### Guardrails and continuity surfaces
-
-| Hook surface | Trigger | What it does | Gap closed |
-|--------------|---------|--------------|------------|
-| Prompt guidance | `UserPromptSubmit` | Runs `factory-router.sh` (captures first-goal intake when startup had none), `new-user-welcome.sh` (one-time fresh-repo onboarding), `prompt-nudge.sh` (ratchet nudges), and `intent-echo.sh` (confirms high-stakes intent) without adding startup briefings to the conversation | Judgment validation |
-| Pre-tool gates | `PreToolUse` | `pre-mortem-gate.sh` (blocks `/crank` without plan review), `commit-review-gate.sh` (pre-commit checks), `go-test-precommit.sh`, `git-worker-guard.sh` (worker isolation), `edit-knowledge-surface.sh`, `codex-parity-warn.sh` | Judgment validation |
-| Post-tool checks | `PostToolUse` | `write-time-quality.sh` (edit quality), `go-complexity-precommit.sh`, `go-vet-post-edit.sh`, `research-loop-detector.sh` (detects stalled loops), `context-monitor.sh` | Judgment validation, Loop closure |
-| Task completion gate | `TaskCompleted` | Runs `task-validation-gate.sh` — executes compiled constraints from `.agents/constraints/index.json` before accepting task completion | Judgment validation, Loop closure |
-
-All hooks use `lib/hook-helpers.sh` for structured error recovery — failures include suggested next actions and auto-handoff context.
+Operators who *want* runtime hooks can author their own with the
+`hooks-authoring` skill; they are opt-in and not part of the default product.
 
 ## Compaction Resilience — Long Runs That Don't Lose State
 
@@ -209,22 +211,19 @@ ao rpi parallel --no-merge --manifest m.json # Leave worktrees for manual review
 
 Each phase spawns a fresh session — no context bleed. Worktree isolation means parallel epics can touch the same files without conflicts. The merge order is configurable (manifest `merge_order` or `--merge-order` flag) so dependency-heavy epics land first.
 
-## Dream — Private Overnight Operator Mode
+## Dream — Compounding Run, In Session and Out
 
-Dream is the overnight expression of the same control-plane model:
+Dream is the compounding expression of the same loop model:
 
-- **interactive surface:** `$dream` for setup, bedtime runs, and morning reports
-- **automation surface:** `ao overnight setup|start|run|report`
-- **control plane:** shared `dream.*` config plus explicit output artifacts
+- **interactive surface:** `/dream` for a compounding session, run in the foreground against the real `.agents` corpus
+- **work the loop performs:** `ao compile`, `ao maturity --scan`, `ao flywheel close-loop` — the CLI primitives the session drives
+- **report contract:** `summary.json` and `summary.md` plus DreamScape terrain rendering
 
-The first shipped wave is intentionally bounded. `ao overnight` runs locally against the real `.agents` corpus, writes `summary.json` and `summary.md`, and keeps runtime behavior honest:
+A foreground `/dream` session keeps runtime behavior honest: no tracked source-code edits by default, optional bounded Dream Council synthesis through independent runner reports, and a shared report contract.
 
-- no fake scheduler guarantees on sleeping laptops
-- no tracked source-code edits by default
-- optional bounded Dream Council synthesis through independent runner reports
-- DreamScape terrain rendering inside the shared report contract
+Running Dream **unattended** — always-on, scheduled, queue-driven — is out-of-session orchestration, which AgentOps delegates to a substrate (Gas City is the reference City) rather than shipping its own daemon or scheduler. The Gas City pattern is a long-lived agent running `/dream`-equivalent maintenance Orders (`ao compile`, `ao maturity --scan`) on a cron `exec` schedule. There are no fake scheduler guarantees on a sleeping laptop; the substrate owns when and where.
 
-GitHub nightly remains useful, but for a different job: it proves that Dream's report contract and flywheel primitives still work in CI. It does not replace a private local bedtime run.
+GitHub nightly remains useful for a different job: it proves that Dream's report contract and flywheel primitives still work in CI. It does not replace a substrate-driven unattended run.
 
 ## See Also
 

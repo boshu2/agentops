@@ -1,3 +1,4 @@
+// practices: [microservices, design-by-contract]
 package main
 
 import (
@@ -160,6 +161,7 @@ type codexStatusResult struct {
 var codexCmd = &cobra.Command{
 	Use:   "codex",
 	Short: "Codex lifecycle commands (fallback for pre-v0.115.0; native hooks preferred)",
+	Args:  cobra.NoArgs,
 	Long: `Codex lifecycle commands for the AgentOps knowledge flywheel.
 
 Codex CLI v0.115.0+ supports native hooks — prefer those for automatic lifecycle.
@@ -354,9 +356,6 @@ func performCodexStart(cwd string) (codexStartResult, error) {
 	startupContextPath, err := writeCodexStartupContext(cwd, profile, query, briefings, learnings, patterns, findings, recentSessions, nextWork, research, showNewUserWelcome)
 	if err != nil {
 		return codexStartResult{}, fmt.Errorf("write codex startup context: %w", err)
-	}
-	if showNewUserWelcome {
-		_ = os.Remove(filepath.Join(cwd, ".agents", "ao", ".new-user-welcome-needed"))
 	}
 
 	state, statePath, err := loadOrInitCodexLifecycleState(cwd)
@@ -766,9 +765,6 @@ func ensureCodexLifecycleDirs(cwd string) error {
 }
 
 func codexShouldShowNewUserWelcome(cwd string) bool {
-	if _, err := os.Stat(filepath.Join(cwd, ".agents", "ao", ".new-user-welcome-needed")); err == nil {
-		return true
-	}
 	_, err := os.Stat(filepath.Join(cwd, ".agents"))
 	return os.IsNotExist(err)
 }

@@ -3,6 +3,7 @@
   "id": "agentops-core.runtime-smoke-matrix",
   "name": "AgentOps Runtime Smoke Matrix Canary",
   "description": "Offline public canary for Tier S structural/install smoke coverage across Claude Code, Codex, Cursor, and OpenCode.",
+  "practices": ["llm-eval-harness", "sre"],
   "domain": "runtime",
   "visibility": "public_canary",
   "tier": "deterministic",

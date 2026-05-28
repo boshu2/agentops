@@ -1,3 +1,4 @@
+// practices: [ai-assisted-dev, wiki-knowledge-surface]
 package main
 
 import (

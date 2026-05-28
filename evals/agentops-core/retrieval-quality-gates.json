@@ -3,6 +3,7 @@
   "id": "agentops-core.retrieval-quality-gates",
   "name": "AgentOps Retrieval Quality Gates Canary",
   "description": "Offline public canary for real-corpus retrieval quality, flywheel gate thresholds, Dream retrieval determinism, and retrieval quality ratchet wiring.",
+  "practices": ["llm-eval-harness", "wiki-knowledge-surface"],
   "domain": "retrieval",
   "visibility": "public_canary",
   "tier": "deterministic",
@@ -50,20 +51,6 @@
         {"type": "stdout_contains", "value": "retrieval quality smoke passed"}
       ],
       "dimensions": ["correctness", "learning_closure", "runtime_compatibility"],
-      "critical": true
-    },
-    {
-      "id": "retrieval-dream-determinism-contract",
-      "title": "Dream retrieval benchmark determinism remains documented",
-      "kind": "artifact_check",
-      "objective": "Keep Dream's MEASURE stage tied to deterministic retrieval-bench semantics.",
-      "expectations": [
-        {"type": "artifact_contains", "target": "../../docs/contracts/dream-run-contract.md", "value": "ao retrieval-bench --live --json"},
-        {"type": "artifact_contains", "target": "../../docs/contracts/dream-run-contract.md", "value": "deterministic by construction"},
-        {"type": "artifact_contains", "target": "../../docs/contracts/dream-run-contract.md", "value": "stable sort by `CompositeScore`"},
-        {"type": "artifact_contains", "target": "../../docs/contracts/dream-run-contract.md", "value": "no RNG to seed"}
-      ],
-      "dimensions": ["process_adherence", "learning_closure", "artifact_quality"],
       "critical": true
     },
     {

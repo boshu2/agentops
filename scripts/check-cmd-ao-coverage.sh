@@ -6,10 +6,17 @@ set -euo pipefail
 # rather than re-running the test suite, so it composes with the existing
 # `go test -coverprofile=coverage.out -covermode=atomic ./...` step in CI.
 #
-# Threshold ratchet: cmd/ao is currently 76.8% statement-weighted against
-# the full-suite coverage.out (2026-04-15). Source epic
-# `evolve-cycle-6-coverage-85pct` is driving this to 85%. Each time real
-# coverage rises, bump MIN_COVERAGE here in lockstep.
+# Threshold ratchet: cmd/ao was 76.8% statement-weighted against the
+# full-suite coverage.out on 2026-04-15. By 2026-05-12 actual coverage
+# had drifted down to 75.7% — a 1pp regression that kept go-build red
+# across cycles 49-59. Floor was recalibrated 76→75 on 2026-05-12 to
+# unblock go-build, with soc-wxh5.1 tracking the climb back. Cycle 170
+# (2026-05-13) ratchets the floor back to 76 after actual coverage
+# climbed to 76.1% (23553/30953) on the v2.41-evolve-run baseline.
+# Source epic `evolve-cycle-6-coverage-85pct` is driving this to 85%.
+# Each time real coverage rises, bump MIN_COVERAGE here in lockstep;
+# never lower without an explicit recalibration cycle that files
+# paired bd work.
 #
 # Usage:
 #   scripts/check-cmd-ao-coverage.sh                       # default profile + threshold

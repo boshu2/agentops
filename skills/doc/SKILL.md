@@ -1,27 +1,56 @@
 ---
 name: doc
-description: 'Generate and validate repo docs.'
+description: Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss).
+practices:
+- wiki-knowledge-surface
+- code-complete
+- pragmatic-programmer
+hexagonal_role: supporting
+consumes:
+- repo-context
+produces:
+- documentation
+context_rel: []
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: product
   dependencies:
-    - standards  # loads markdown standards
-output_contract: "documentation files"
+  - standards
+  - council
+output_contract: documentation files
 ---
 # Doc Skill
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
-Generate and validate documentation for any project.
+Generate and validate documentation for any project. `--mode` selects the artifact family — the default mode handles code/API docs and code-maps; `--mode=readme` generates a gold-standard README; `--mode=oss` scaffolds and audits the open-source doc pack.
 
-## Execution Steps
+## Modes
+
+| `--mode` | Artifact | Read first |
+|----------|----------|-----------|
+| *(default)* | API docs, code-maps, doc coverage/validation | this file |
+| `readme` | Gold-standard README (interview → generate → council-validate) | [references/readme-craft.md](references/readme-craft.md) |
+| `oss` | OSS doc pack (CONTRIBUTING/CHANGELOG/AGENTS.md, audit + scaffold) | [references/oss-pack.md](references/oss-pack.md) |
+
+**Mode routing (absorbed skills):**
+
+| You typed | Runs |
+|-----------|------|
+| "readme", "rewrite the README", "validate the README" | `/doc --mode=readme [...]` |
+| "oss docs", "scaffold contributing", "audit OSS docs" | `/doc --mode=oss [...]` |
+
+When invoked with `--mode=readme` or `--mode=oss`, read the corresponding reference above and follow its workflow verbatim. The default-mode steps below apply only when no mode (or the implied code-docs mode) is selected.
+
+## Execution Steps (default mode — code/API docs)
 
 Given `/doc [command] [target]`:
 
@@ -256,6 +285,15 @@ Tell the user:
 
 ## Reference Documents
 
+- [references/doc.feature](references/doc.feature) — Executable spec: detect project type, generate type-appropriate docs from the repo, validate existing docs against source (soc-qk4b)
+- [references/readme.feature](references/readme.feature) — Executable spec (`--mode=readme`): mode detection, problem-first lead, trust block near install, collapse-don't-delete depth, the council gate, anti-pattern detection (soc-qk4b)
+- [references/oss-docs.feature](references/oss-docs.feature) — Executable spec (`--mode=oss`): audit existing/missing OSS docs, scaffold missing without overwrite, project-type-tailored (soc-qk4b)
+
+- [references/readme-craft.md](references/readme-craft.md) — `--mode=readme`: the 8 gold-standard README patterns, interview, generation structure, council validation, anti-pattern table
+- [references/oss-pack.md](references/oss-pack.md) — `--mode=oss`: audit + scaffold the OSS doc pack (CONTRIBUTING/CHANGELOG/AGENTS.md), project-type templates
+- [references/oss-documentation-tiers.md](references/oss-documentation-tiers.md) — OSS doc tier definitions (core/standard/enhanced)
+- [references/oss-project-types.md](references/oss-project-types.md) — Per-type OSS scaffolding templates (cli/operator/service/library/helm)
+- [references/oss-beads-patterns.md](references/oss-beads-patterns.md) — AGENTS.md beads-tracker patterns for OSS projects
 - [references/generation-templates.md](references/generation-templates.md)
 - [references/prose-and-report-workmanship.md](references/prose-and-report-workmanship.md)
 - [references/project-types.md](references/project-types.md)

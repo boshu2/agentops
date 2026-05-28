@@ -4,3 +4,4 @@ cli/cmd/ao/.tmp
 .dolt/
 *.db
 .beads-credential-key
+agent_ergonomics_audit/

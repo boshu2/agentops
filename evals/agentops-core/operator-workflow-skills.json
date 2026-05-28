@@ -3,6 +3,7 @@
   "id": "agentops-core.operator-workflow-skills",
   "name": "AgentOps Operator Workflow Skills Canary",
   "description": "Offline public canary for high-use planning, review, investigation, refactor, optimization, PR, swarm, and provenance skill contracts that were previously only covered indirectly by aggregate skill lint.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",
@@ -104,8 +105,8 @@
       "kind": "artifact_check",
       "objective": "Protect operator workflows that turn evidence into docs or runtime artifacts without stale, speculative, or runtime-incompatible output.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../skills/readme/SKILL.md", "value": "Assertions without evidence trigger hostility."},
-        {"type": "artifact_contains", "target": "../../skills/oss-docs/SKILL.md", "value": "CONTRIBUTING.md"},
+        {"type": "artifact_contains", "target": "../../skills/doc/references/readme-craft.md", "value": "Assertions without evidence trigger hostility."},
+        {"type": "artifact_contains", "target": "../../skills/doc/references/oss-pack.md", "value": "CONTRIBUTING.md"},
         {"type": "artifact_contains", "target": "../../skills/openai-docs/SKILL.md", "value": "Treat OpenAI docs as the source of truth"},
         {"type": "artifact_contains", "target": "../../skills/llm-wiki/SKILL.md", "value": "Not a replacement for `compile`"},
         {"type": "artifact_contains", "target": "../../skills/converter/SKILL.md", "value": "passthrough parity"}
@@ -116,13 +117,13 @@
       "id": "pr-workflow-contracts",
       "title": "open-source PR workflow skills preserve upstream fit and isolation",
       "kind": "artifact_check",
-      "objective": "Protect contribution workflows from scope creep by checking PR research, planning, implementation, preparation, validation, and retro artifacts.",
+      "objective": "Protect contribution workflows from scope creep by checking PR research, implementation, preparation, validation, and PR-outcome learning artifacts (planning folds into /plan; PR retros into /post-mortem --scope=pr).",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../skills/pr-plan/SKILL.md", "value": "Define success from maintainer perspective"},
+        {"type": "artifact_contains", "target": "../../skills/pr-research/SKILL.md", "value": "Maintainer Research -> Response patterns, review expectations"},
         {"type": "artifact_contains", "target": "../../skills/pr-implement/SKILL.md", "value": "DO NOT PROCEED IF PRE-CHECK FAILS"},
         {"type": "artifact_contains", "target": "../../skills/pr-validate/SKILL.md", "value": "scope creep"},
         {"type": "artifact_contains", "target": "../../skills-codex/pr-validate/prompt.md", "value": "findings-first output"},
-        {"type": "artifact_contains", "target": "../../skills-codex/pr-retro/prompt.md", "value": "Separate one-off reviewer taste from durable contribution patterns."}
+        {"type": "artifact_contains", "target": "../../skills/post-mortem/references/pr-scope.md", "value": "Success Patterns (If Merged)"}
       ],
       "dimensions": ["process_adherence", "correctness", "artifact_quality"]
     },

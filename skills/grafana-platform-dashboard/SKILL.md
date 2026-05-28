@@ -1,20 +1,31 @@
 ---
 name: grafana-platform-dashboard
-description: 'Validate OpenShift Grafana dashboards.'
+description: Validate OpenShift Grafana dashboards.
+practices:
+- sre
+- distributed-tracing
+- dora-metrics
+hexagonal_role: driven-adapter
+consumes: []
+produces:
+- dashboard-validation-report
+context_rel: []
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: questions
   sections:
-    exclude: [HISTORY, TASK]
+    exclude:
+    - HISTORY
+    - TASK
   intel_scope: none
 metadata:
   tier: execution
   dependencies:
-    - research
-    - brainstorm
-output_contract: "Grafana dashboard JSON"
+  - research
+  - brainstorm
+output_contract: Grafana dashboard JSON
 ---
 # Grafana Platform Dashboard
 
@@ -122,3 +133,4 @@ Report:
 1. [Platform Contract](references/platform-contract.md)
 2. [PromQL Panel Library](references/promql-library.md)
 3. [Layout Guidelines](references/layout-guidelines.md)
+4. [references/grafana-platform-dashboard.feature](references/grafana-platform-dashboard.feature) — Executable spec: lock scope + IA from contracts, queries from known library, validate before apply, verify sync (soc-qk4b)

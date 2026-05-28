@@ -25,82 +25,12 @@ skills, the runtime, and external integrations.
 
     RPI run registry specification.
 
--   :material-server: **[AgentOps Daemon](agentops-daemon.md)**
-
-    ---
-
-    Architecture boundary for `agentopsd`, the daemon ledger, job queue, local
-    trust, projections, and migration from foreground command flows.
-
--   :material-factory: **[AgentOpsd Control Plane](agentopsd-control-plane.md)**
-
-    ---
-
-    Production control-plane contract for worker slots, worktree ownership,
-    lifecycle telemetry, validation gates, yield, and operator status.
-
--   :material-shield-check: **[Factory Admission](factory-admission.md)**
-
-    ---
-
-    Daemon-owned work-order admission contract for fail-closed local factory
-    pilots and RPI handoff.
-
--   :material-routes: **[Routing Policy](routing-policy.md)**
-
-    ---
-
-    Schema-backed model/provider/runtime lane policy, authority levels, and
-    milestone-1 GasCity / Mt. Olympus production-routing guardrails.
-
--   :material-chart-timeline-variant: **[Factory Yield Ledger](factory-yield-ledger.md)**
-
-    ---
-
-    Baseline/treatment yield observations correlated to routing, validation,
-    manual merge decisions, cost, latency, defects, and artifacts.
-
--   :material-lock-check: **[Daemon Idempotency](daemon-idempotency.md)**
-
-    ---
-
-    Submit retry contract for `request_id`, `idempotency_key`, and
-    daemon-submitting CLI helpers.
-
--   :material-file-code: **[JobSpec OpenAPI v0](jobspec-openapi-v0.yaml)**
-
-    ---
-
-    Machine-readable OpenAPI contract for the current `agentopsd` job,
-    readiness, ledger replay, projection, and OpenClaw consumer HTTP surface.
-
--   :material-api: **[GasCity Integration](gascity-integration.md)**
-
-    ---
-
-    Public GasCity API/SSE boundary, mutation headers, request IDs, readiness,
-    replay, versioning, and adapter rules.
-
 -   :material-lan-connect: **[Remote Compute](remote-compute.md)**
 
     ---
 
     Product-neutral RemoteTarget, RemoteSession, command ledger, recovery, and
     GasCity-first remote execution contract.
-
--   :material-robot-outline: **[AgentWorker Runtime](agent-worker.md)**
-
-    ---
-
-    Headless Claude/Codex worker session lifecycle contract consumed by
-    wiki/forge and future daemon jobs.
-
--   :material-application-braces-outline: **[OpenClaw Consumer API](openclaw-consumer-api.md)**
-
-    ---
-
-    Read-only projection resources, snapshot versions, mutation gates, and
-    `.agents` non-ownership rules for OpenClaw clients.
 
 -   :material-clipboard-pulse: **[Eval Environment](eval-environment.md)**
 
@@ -154,12 +84,6 @@ skills, the runtime, and external integrations.
 
     V2 promotion ladder, executable constraint index, and lifecycle rules.
 
--   :material-hook: **[Hook Runtime Contract](hook-runtime-contract.md)**
-
-    ---
-
-    Canonical event mapping across Claude, Codex, and manual runtimes.
-
 -   :material-console: **[Headless Invocation Standards](headless-invocation-standards.md)**
 
     ---
@@ -180,18 +104,32 @@ skills, the runtime, and external integrations.
 
     Interface contract for adaptive context assembly and token budgeting.
 
+-   :material-vector-polyline: **[Skill Domain Map](skill-domain-map.md)**
+
+    ---
+
+    V0 DDD map assigning every shared skill to one primary skill domain with
+    ports, artifacts, and adapters.
+
+-   :material-call-split: **[Skill Ports and Adapters](skill-ports-and-adapters.md)**
+
+    ---
+
+    V0 skill-boundary vocabulary for inbound ports, outbound ports, adapters,
+    context packets, and guard surfaces.
+
+-   :material-clipboard-check-outline: **[Skill Lease Audit](skill-lease-audit.md)**
+
+    ---
+
+    V0 lease-on-life audit classifying every shared skill as keep, merge,
+    split, retire, or unknown before any cut is attempted.
+
 -   :material-shield-star: **[Session Intelligence Trust Model](session-intelligence-trust-model.md)**
 
     ---
 
     Artifact eligibility contract for runtime context assembly.
-
--   :material-moon-waning-crescent: **[Dream Run](dream-run-contract.md)**
-
-    ---
-
-    Process model, generator authoring, locking, keep-awake, and artifact floor
-    for private overnight runs.
 
 -   :material-file-chart: **[Dream Report](dream-report.md)**
 

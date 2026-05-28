@@ -35,9 +35,31 @@ func ParseMarkdownGoals(data []byte) (*GoalFile, error) {
 	gf.NorthStars = parseListSection(lines, "North Stars")
 	gf.AntiStars = parseListSection(lines, "Anti Stars")
 	gf.Directives = parseDirectives(lines)
+	applyDirectiveSpecAttrs(gf.Directives, data)
 	gf.Goals = parseGatesTable(lines)
 
 	return gf, nil
+}
+
+// applyDirectiveSpecAttrs wires the executable-spec directive attributes —
+// the stable Directive ID and the Scenarios link list — onto the directive
+// model. The values come from the non-lossy patcher (ParseDirectiveBlocks) so
+// the directive model and the patcher share one parser and never diverge.
+func applyDirectiveSpecAttrs(directives []Directive, data []byte) {
+	blocks, err := ParseDirectiveBlocks(data)
+	if err != nil {
+		return
+	}
+	byNumber := make(map[int]ParsedDirective, len(blocks))
+	for _, b := range blocks {
+		byNumber[b.Number] = b
+	}
+	for i := range directives {
+		if b, ok := byNumber[directives[i].Number]; ok {
+			directives[i].StableID = b.StableID
+			directives[i].Scenarios = b.Scenarios
+		}
+	}
 }
 
 // parseMission extracts the mission statement — the first non-empty paragraph

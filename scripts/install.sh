@@ -10,15 +10,19 @@ usage() {
 Usage:
   bash scripts/install.sh
   bash scripts/install.sh --dev
+  bash scripts/install.sh --with-hooks
 
 Options:
   --dev       Configure this checkout for AgentOps development: install repo
               hooks, build cli/bin/ao, and smoke-test pre-push wiring.
+  --with-hooks
+              Also install runtime hooks. Default install is hookless.
   -h, --help  Show this help.
 EOF
 }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WITH_HOOKS="${AGENTOPS_INSTALL_HOOKS:-0}"
 
 install_dev() {
     local repo_root
@@ -30,39 +34,62 @@ install_dev() {
     fi
 
     echo "Installing AgentOps development wiring..."
-    echo "Step 1/3: Configuring repo-managed git hooks..."
+    echo "Step 1/2: Configuring repo-managed git hooks..."
     bash "$repo_root/scripts/install-dev-hooks.sh"
 
-    echo "Step 2/3: Building cli/bin/ao..."
+    echo "Step 2/2: Building cli/bin/ao..."
     make -C "$repo_root/cli" build
 
-    echo "Step 3/3: Verifying pre-push gate wiring..."
-    bash "$repo_root/scripts/check-pre-push-gate-wired.sh" --dry-run-smoke --check-activation
+    # Pre-push gate-wiring verification retired (soc-bbvw / soc-g2r9):
+    # local pre-push gate retired; CI is sole authoritative push gate.
+    # See docs/contracts/local-pre-push-gate-retirement.md.
 
     echo ""
     echo "Done! Development checkout ready."
 }
 
-case "${1:-}" in
-    --dev)
-        shift
-        if [[ $# -gt 0 ]]; then
-            echo "Unknown option for --dev: $1" >&2
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dev)
+            shift
+            if [[ $# -gt 0 ]]; then
+                echo "Unknown option for --dev: $1" >&2
+                usage >&2
+                exit 2
+            fi
+            install_dev
+            exit 0
+            ;;
+        --with-hooks)
+            WITH_HOOKS=1
+            shift
+            ;;
+        --no-hooks)
+            WITH_HOOKS=0
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1" >&2
             usage >&2
             exit 2
-        fi
-        install_dev
-        exit 0
+            ;;
+    esac
+done
+
+WITH_HOOKS_NORMALIZED="$(printf '%s' "$WITH_HOOKS" | tr '[:upper:]' '[:lower:]')"
+case "$WITH_HOOKS_NORMALIZED" in
+    1|true|yes|on)
+        WITH_HOOKS=1
         ;;
-    -h|--help)
-        usage
-        exit 0
-        ;;
-    "")
+    0|false|no|off|"")
+        WITH_HOOKS=0
         ;;
     *)
-        echo "Unknown option: $1" >&2
-        usage >&2
+        echo "Invalid AGENTOPS_INSTALL_HOOKS/--with-hooks value: $WITH_HOOKS" >&2
         exit 2
         ;;
 esac
@@ -71,13 +98,32 @@ echo "Installing AgentOps..."
 
 # Check prerequisites
 command -v curl >/dev/null 2>&1 || { echo "Error: curl required."; exit 1; }
-command -v claude >/dev/null 2>&1 || command -v codex >/dev/null 2>&1 || {
+
+# Per-runtime detection (soc-vuu6.31). The old `claude || codex` test bounced
+# only on zero runtimes — single-runtime users got the README mixed-model
+# example silently. Detect each runtime explicitly so we can: (a) report
+# yes/no per runtime, (b) name the mode AgentOps will operate in, and
+# (c) point single-runtime users at the install link for the other.
+HAS_CLAUDE=no
+HAS_CODEX=no
+command -v claude >/dev/null 2>&1 && HAS_CLAUDE=yes
+command -v codex >/dev/null 2>&1 && HAS_CODEX=yes
+echo "Detected Claude Code: $HAS_CLAUDE. Detected Codex CLI: $HAS_CODEX."
+if [ "$HAS_CLAUDE" = "yes" ] && [ "$HAS_CODEX" = "yes" ]; then
+    echo "AgentOps will use mixed-model mode (cross-vendor council, parallel /rpi)."
+elif [ "$HAS_CLAUDE" = "yes" ]; then
+    echo "AgentOps will use single-runtime mode (Claude Code only)."
+    echo "To unlock mixed-model judging, install Codex CLI: https://github.com/openai/codex"
+elif [ "$HAS_CODEX" = "yes" ]; then
+    echo "AgentOps will use single-runtime mode (Codex CLI only)."
+    echo "To unlock mixed-model judging, install Claude Code: https://docs.anthropic.com/en/docs/claude-code"
+else
     echo "Warning: No supported coding agent found (claude, codex)."
     echo "AgentOps requires Claude Code or Codex CLI. Install one first:"
     echo "  Claude Code: https://docs.anthropic.com/en/docs/claude-code"
     echo "  Codex CLI:   https://github.com/openai/codex"
     echo "Continuing anyway — you can install an agent later."
-}
+fi
 
 # Step 1: Install Codex plugin
 echo "Step 1/3: Installing Codex plugin..."
@@ -87,7 +133,11 @@ curl -fsSL https://codeload.github.com/boshu2/agentops/tar.gz/refs/heads/main \
     | tar xz -C "$TMP" --strip-components=1
 
 if command -v codex >/dev/null 2>&1; then
-    AGENTOPS_BUNDLE_ROOT="$TMP" bash "$TMP/scripts/install-codex.sh"
+    codex_args=()
+    if [[ "$WITH_HOOKS" == "1" ]]; then
+        codex_args+=(--with-hooks)
+    fi
+    AGENTOPS_BUNDLE_ROOT="$TMP" bash "$TMP/scripts/install-codex.sh" "${codex_args[@]}"
 else
     echo "Codex CLI not found. Skipping Codex plugin install."
     echo "For Claude Code, install skills via the plugin system:"
@@ -112,11 +162,16 @@ if command -v brew >/dev/null 2>&1; then
         fi
     fi
 
-    # Step 3: Install hooks
+    # Step 3: Optional hooks
     if command -v ao >/dev/null 2>&1; then
-        echo "Step 3/3: Registering hooks..."
         echo "Note: To create repo-local .agents/ scaffolding, run 'ao init' from your repo root."
-        ao hooks install --force
+        if [[ "$WITH_HOOKS" == "1" ]]; then
+            echo "Step 3/3: Registering hooks..."
+            ao hooks install --force
+        else
+            echo "Step 3/3: Hooks skipped (hookless default)."
+            echo "Optional: rerun with --with-hooks, or run 'ao hooks install --force' later."
+        fi
 
         # Optional health check
         ao doctor 2>/dev/null && echo "Health check: PASS" || echo "Health check: run 'ao doctor' after setup"
@@ -125,7 +180,7 @@ else
     echo "Step 2/3: Skipping CLI (Homebrew not found). Install manually:"
     echo "  brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops"
     echo "  brew install agentops"
-    echo "Step 3/3: Skipped (CLI needed for hooks)"
+    echo "Step 3/3: Skipped (CLI needed for optional hooks)"
 fi
 
 echo ""

@@ -1,3 +1,4 @@
+// practices: [agile-manifesto, dora-metrics]
 package main
 
 import (
@@ -173,8 +174,8 @@ func probeBackendCapabilities(liveStatus bool, runtimeMode string) backendCapabi
 // Selection order (first match wins):
 //  1. runtime=stream — always stream
 //  2. runtime=direct — always direct
-//  3. runtime=gc     — Gas City session management
-//  4. runtime=auto   — stream when live-status enabled, otherwise direct
+//  3. runtime=tmux   — tmux-multiplexed worker sessions
+//  4. runtime=auto   — stream
 func selectExecutorFromCaps(caps backendCapabilities, statusPath string, allPhases []PhaseProgress, opts phasedEngineOptions) (PhaseExecutor, string) {
 	stdWriter := opts.StdoutWriter
 	if stdWriter == nil {
@@ -207,29 +208,7 @@ func selectExecutorFromCaps(caps backendCapabilities, statusPath string, allPhas
 			pollInterval:   5 * time.Second,
 			workerCount:    opts.TmuxWorkers,
 		}, "runtime=tmux"
-	case "gc":
-		return &gcExecutor{
-			cityPath:     gcCityPathFromOpts(opts),
-			phaseTimeout: opts.PhaseTimeout,
-			pollInterval: 10 * time.Second,
-			execCommand:  opts.ExecCommand,
-			lookPath:     opts.LookPath,
-			apiClient:    opts.GasCityClient,
-			apiCityName:  opts.GCCityName,
-		}, gcExecutorSelectionReason("runtime=gc", opts.GasCityClient, "")
-	default: // auto — prefer gc when available, fall back to stream
-		gcReady, gcReason := gcExecutorAvailability(opts.WorkingDir, opts.ExecCommand, opts.LookPath)
-		if gcReady {
-			return &gcExecutor{
-				cityPath:     gcCityPathFromOpts(opts),
-				phaseTimeout: opts.PhaseTimeout,
-				pollInterval: 10 * time.Second,
-				execCommand:  opts.ExecCommand,
-				lookPath:     opts.LookPath,
-				apiClient:    opts.GasCityClient,
-				apiCityName:  opts.GCCityName,
-			}, gcExecutorSelectionReason("runtime=auto", opts.GasCityClient, "")
-		}
+	default: // auto — stream
 		return &streamExecutor{
 			runtimeCommand:       opts.RuntimeCommand,
 			statusPath:           statusPath,
@@ -239,7 +218,7 @@ func selectExecutorFromCaps(caps backendCapabilities, statusPath string, allPhas
 			streamStartupTimeout: opts.StreamStartupTimeout,
 			stallCheckInterval:   opts.StallCheckInterval,
 			stdoutWriter:         stdWriter,
-		}, fmt.Sprintf("runtime=auto backend=stream gc-degraded=%q", gcReason)
+		}, "runtime=auto backend=stream"
 	}
 }
 
@@ -260,9 +239,6 @@ func selectExecutorWithLog(statusPath string, allPhases []PhaseProgress, logPath
 	caps := probeBackendCapabilities(liveStatus, opts.RuntimeMode)
 	executor, reason := selectExecutorFromCaps(caps, statusPath, allPhases, opts)
 	displayBackend := executor.Name()
-	if gcExec, ok := executor.(*gcExecutor); ok {
-		displayBackend = gcExec.backendMode()
-	}
 	msg := fmt.Sprintf("backend=%s reason=%q", displayBackend, reason)
 	fmt.Printf("Executor backend: %s (%s)\n", displayBackend, reason)
 	if logPath != "" {
@@ -589,7 +565,7 @@ func cleanEnvNoClaude() []string {
 // --- Runtime process helpers ---
 
 // defaultLookPath returns exec.LookPath if fn is nil.
-func defaultLookPath(fn gcLookFn) gcLookFn {
+func defaultLookPath(fn lookFn) lookFn {
 	if fn != nil {
 		return fn
 	}

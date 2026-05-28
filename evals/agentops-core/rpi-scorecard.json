@@ -3,6 +3,7 @@
   "id": "agentops-core.rpi-scorecard",
   "name": "AgentOps RPI Scorecard Canary",
   "description": "Offline public canary for the required RPI scorecard categories.",
+  "practices": ["llm-eval-harness", "agile-manifesto"],
   "domain": "rpi",
   "visibility": "public_canary",
   "tier": "deterministic",

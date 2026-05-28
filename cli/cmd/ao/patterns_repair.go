@@ -14,6 +14,7 @@
 // rewrites the frontmatter `name:` / `id:` field if it references the old
 // filename. The operation is idempotent: a second run on the same directory
 // surfaces zero proposals.
+// practices: [wiki-knowledge-surface, design-patterns]
 package main
 
 import (

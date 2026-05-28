@@ -1,6 +1,15 @@
 ---
 name: status
-description: 'Show AgentOps work status.'
+description: Show AgentOps work status.
+practices:
+- dora-metrics
+- sre
+hexagonal_role: driving-adapter
+consumes:
+- bd
+produces:
+- stdout
+context_rel: []
 skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash
 model: haiku
@@ -12,7 +21,7 @@ context:
 metadata:
   tier: session
   dependencies: []
-output_contract: "stdout: dashboard"
+output_contract: 'stdout: dashboard'
 ---
 # /status — Workflow Dashboard
 
@@ -38,6 +47,15 @@ output_contract: "stdout: dashboard"
 ### Step 1: Gather State (Parallel)
 
 Run ALL of the following in parallel bash calls for speed:
+
+**Call 0 - Reconciliation Snapshot:**
+```bash
+if command -v ao &>/dev/null; then
+  ao reconcile --json 2>/dev/null || echo "RECONCILE_UNAVAILABLE"
+else
+  echo "AO_UNAVAILABLE"
+fi
+```
 
 **Call 1 — RPI + Ratchet + Task State:**
 ```bash
@@ -136,6 +154,11 @@ Assemble gathered data into this format. Use Unicode indicators for visual clari
   Workflow Dashboard
 ══════════════════════════════════════════════════
 
+RECONCILIATION
+  Overall: <ao reconcile overall_status, or "unavailable">
+  High: <top high-severity findings, max 3, or "none">
+  Next: <first high finding next_action, or "none">
+
 RPI PROGRESS
   Phase: <current phase from chain.jsonl: research | plan | implement | validate | idle>
   Gate:  <last completed gate or "none">
@@ -197,6 +220,7 @@ QUICK COMMANDS
   /crank        Autonomous epic execution
   /validation   Full close-out and learnings
   /vibe         Targeted code review
+  ao reconcile --json   Joined git/CI/release/beads/.agents truth
 ══════════════════════════════════════════════════
 ```
 
@@ -206,6 +230,7 @@ Evaluate state top-to-bottom. Use the FIRST matching condition:
 
 | Priority | Condition | Suggestion |
 |----------|-----------|------------|
+| 0 | `ao reconcile` reports a high-severity finding | "Resolve reconciliation blockers from `ao reconcile --json` before picking backlog work" |
 | 1 | No ratchet chain exists | "Start with `/quickstart` or `/research` to begin a workflow" |
 | 2 | Research done, no plan | "Run `/plan` to decompose research into actionable issues" |
 | 3 | Plan done, no pre-mortem | "Run `/pre-mortem` to validate the plan before coding" |
@@ -218,12 +243,18 @@ Evaluate state top-to-bottom. Use the FIRST matching condition:
 | 11 | Pending knowledge items | "Promote learnings: `ao pool list --status pending --json`, then `ao pool stage <id>` and `ao pool promote <id>`" |
 | 12 | Clean state, nothing pending | "All clear. Start with `/research` or `/plan` to find new work" |
 
+If Call 0 is unavailable, skip Priority 0 and continue evaluating the remaining conditions.
+
 ### Step 4: JSON Output (--json flag)
 
 If the user passed `--json`, output all dashboard data as structured JSON instead of the visual dashboard:
 
 ```json
 {
+  "reconciliation": {
+    "overall_status": "green",
+    "high_findings": []
+  },
   "rpi": {
     "phase": "implement",
     "last_gate": "plan",
@@ -274,7 +305,7 @@ Render this with a single code block. No visual dashboard when `--json` is activ
 **User says:** `/status`
 
 **What happens:**
-1. Agent runs 5 parallel bash calls to gather all state
+1. Agent runs 7 parallel bash calls to gather all state
 2. Agent reads ratchet chain showing "implement" phase
 3. Agent queries beads showing epic ag-042 with 3/7 issues completed
 4. Agent finds 2 in-progress issues and 4 ready issues
@@ -306,3 +337,7 @@ Render this with a single code block. No visual dashboard when `--json` is activ
 | Ratchet phase shows stale data | Old chain.jsonl not cleaned up | Check timestamp of `.agents/ao/chain.jsonl`. If stale, delete it or run `/validation` to complete cycle and reset state. |
 | Suggested action doesn't match intent | State-aware rules didn't capture edge case | Review priority table in Step 3. May need to refine conditions. Use `--json` to inspect raw state and debug rule matching. |
 | JSON output malformed | Parallel bash calls returned unexpected format | Check each bash call individually. Ensure jq parsing works on actual data. Validate JSON structure with `jq .` before returning to user. |
+
+## Reference Documents
+
+- [references/status.feature](references/status.feature) — Executable spec: work dashboard from bd (ready/in-progress/epics) + ratchet/flywheel/git, --json, fail-soft on missing tools (soc-qk4b)

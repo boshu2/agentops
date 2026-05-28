@@ -1,20 +1,33 @@
 ---
 name: perf
-description: 'Profile and optimize hotspots.'
+description: Profile and optimize hotspots.
+practices:
+- dora-metrics
+- sre
+- code-complete
+hexagonal_role: domain
+consumes:
+- repo-context
+produces:
+- result.json
+context_rel:
+- kind: shared-kernel
+  with: standards
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: execution
   dependencies:
-    - standards   # optional - language conventions
-    - complexity  # optional - identifies hot paths
-output_contract: "stdout: performance profile/benchmark report"
+  - standards
+  - complexity
+output_contract: 'stdout: performance profile/benchmark report'
 ---
 # Perf Skill
 
@@ -327,6 +340,8 @@ COMPARISON: baseline vs candidate
 - [vibe](../vibe/SKILL.md) — Validate optimized code quality
 
 ## Reference Documents
+
+- [references/perf.feature](references/perf.feature) — Executable spec: profile hotspots with metrics, bench, compare-regression, optimize (soc-qk4b)
 
 - [references/profiling-playbook.md](references/profiling-playbook.md)
 - [references/system-pressure-triage.md](references/system-pressure-triage.md)

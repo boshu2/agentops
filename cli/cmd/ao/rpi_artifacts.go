@@ -1,3 +1,4 @@
+// practices: [agile-manifesto, dora-metrics]
 package main
 
 import (
@@ -139,10 +140,6 @@ func executionPacketReferencedPaths(root string) []string {
 
 func classifyRPIArtifact(rel string) (kind, label string, phase int) {
 	return rpi.ClassifyRPIArtifact(rel, phasedStateFile, rpiC2EventsFileName)
-}
-
-func artifactPhaseNumber(name string) int {
-	return rpi.ArtifactPhaseNumber(name)
 }
 
 func artifactContentType(rel string) string {

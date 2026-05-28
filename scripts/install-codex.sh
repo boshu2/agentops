@@ -3,6 +3,7 @@
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash -s -- --with-hooks
 #
 # What it does:
 #   1. Downloads a temporary AgentOps archive (no local git clone)
@@ -29,6 +30,32 @@ fail()  { echo -e "${RED}✗${NC} $*"; exit 1; }
 UPDATE_CMD="curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash"
 SOURCE_ROOT_OVERRIDE="${AGENTOPS_BUNDLE_ROOT:-}"
 INSTALL_REF="${AGENTOPS_INSTALL_REF:-main}"
+
+usage() {
+  cat <<'EOF'
+install-codex.sh
+
+Install AgentOps into the local Codex native plugin cache.
+
+Options:
+  --help        Show this help
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown arg: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
 if [[ "$INSTALL_REF" == "main" ]]; then
   ARCHIVE_URL="https://codeload.github.com/boshu2/agentops/tar.gz/refs/heads/main"
 else
@@ -72,10 +99,13 @@ fi
 
 # skills-codex/ is pre-built in the bundle (manually maintained, no sync needed)
 
-bash "$SRC_ROOT/scripts/install-codex-plugin.sh" \
-  --repo-root "$SRC_ROOT" \
-  --version "$INSTALL_REF" \
+plugin_args=(
+  --repo-root "$SRC_ROOT"
+  --version "$INSTALL_REF"
   --update-command "$UPDATE_CMD"
+)
+
+bash "$SRC_ROOT/scripts/install-codex-plugin.sh" "${plugin_args[@]}"
 
 echo ""
 echo "Update note:"

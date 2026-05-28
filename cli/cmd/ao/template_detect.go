@@ -1,3 +1,4 @@
+// practices: [pragmatic-programmer, design-patterns]
 package main
 
 import (

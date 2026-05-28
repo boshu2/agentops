@@ -1,3 +1,4 @@
+// practices: [ai-assisted-dev, distributed-tracing]
 package main
 
 import (

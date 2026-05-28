@@ -1,3 +1,4 @@
+// practices: [agile-manifesto, dora-metrics]
 package main
 
 import (
@@ -5,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"strings"
 	"text/template"
 	"time"
@@ -12,6 +14,15 @@ import (
 	cliConfig "github.com/boshu2/agentops/cli/internal/config"
 	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
+
+// execFn is the type for exec.Command-compatible functions. It is an injectable
+// dependency point that lets the phased engine and runtime preflight checks be
+// tested without spawning real processes.
+type execFn func(name string, arg ...string) *exec.Cmd
+
+// lookFn is the type for exec.LookPath-compatible functions. It is an injectable
+// dependency point for runtime/binary availability checks (tmux, tracker CLI).
+type lookFn func(file string) (string, error)
 
 // phasedEngineOptions captures all configurable parameters for runPhasedEngine.
 // This allows the loop and other callers to invoke the phased engine programmatically
@@ -37,12 +48,9 @@ type phasedEngineOptions struct {
 	BDCommand            string
 	TmuxCommand          string
 	TmuxWorkers          int
-	GCCityPath           string           // explicit city.toml directory for gc backend; empty = auto-discover
-	GCCityName           string           `json:"-"` // API city name override; empty = derive from city path
-	GasCityClient        rpiGasCityClient `json:"-"` // injectable GasCity API client
-	ExecCommand          gcExecFn         `json:"-"` // nil = exec.Command; injectable for testing
-	LookPath             gcLookFn         `json:"-"` // nil = exec.LookPath; injectable for testing
-	Mixed                bool             // opt-in cross-vendor mixed-model execution
+	ExecCommand          execFn `json:"-"` // nil = exec.Command; injectable for testing
+	LookPath             lookFn `json:"-"` // nil = exec.LookPath; injectable for testing
+	Mixed                bool   // opt-in cross-vendor mixed-model execution
 	NoBudget             bool
 	BudgetSpec           string
 	WorkingDir           string `json:"-"` // runtime-only; base directory for repo/worktree resolution
@@ -51,10 +59,7 @@ type phasedEngineOptions struct {
 	DiscoveryArtifact    string                // path to pre-validated discovery artifact; skips Phase 1 when set with --from=implementation
 	StdoutWriter         io.Writer             `json:"-"` // runtime-only; suppresses raw Claude output when dashboard active
 	OnSpawnCwdReady      func(spawnCwd string) `json:"-"` // called after worktree resolved; serve mode uses this to update mux root
-	DaemonSubmit         bool                  `json:"-"` // submit to agentopsd instead of running foreground phases
-	DaemonURL            string                `json:"-"` // explicit daemon URL; empty = activation file
-	DaemonToken          string                `json:"-"` // mutation token for daemon-submit
-	DaemonFallback       bool                  `json:"-"` // when daemon is unavailable, continue foreground execution
+	Domain               string                // domain-slice name; empty = unscoped run. Resolves docs/domains/<name>/manifest.yaml.
 }
 
 // defaultPhasedEngineOptions returns options matching the default cobra flag values.
@@ -87,31 +92,33 @@ var phases = cliRPI.Phases
 
 // phasedState persists orchestrator state between phase spawns.
 type phasedState struct {
-	SchemaVersion   int                 `json:"schema_version"`
-	Goal            string              `json:"goal"`
-	EpicID          string              `json:"epic_id,omitempty"`
-	TrackerMode     string              `json:"tracker_mode,omitempty"`
-	TrackerReason   string              `json:"tracker_reason,omitempty"`
-	Phase           int                 `json:"phase"`
-	StartPhase      int                 `json:"start_phase"`
-	Cycle           int                 `json:"cycle"`
-	ParentEpic      string              `json:"parent_epic,omitempty"`
-	FastPath        bool                `json:"fast_path"`
-	TestFirst       bool                `json:"test_first"`
-	SwarmFirst      bool                `json:"swarm_first"`
-	Complexity      ComplexityLevel     `json:"complexity,omitempty"` // fast, standard, full
-	ProgramPath     string              `json:"program_path,omitempty"`
-	Verdicts        map[string]string   `json:"verdicts"`
-	Attempts        map[string]int      `json:"attempts"`
-	StartedAt       string              `json:"started_at"`
-	WorktreePath    string              `json:"worktree_path,omitempty"`
-	RunID           string              `json:"run_id,omitempty"`
-	OrchestratorPID int                 `json:"orchestrator_pid,omitempty"`
-	Backend         string              `json:"backend,omitempty"`
-	TerminalStatus  string              `json:"terminal_status,omitempty"` // interrupted, failed, stale, completed
-	TerminalReason  string              `json:"terminal_reason,omitempty"`
-	TerminatedAt    string              `json:"terminated_at,omitempty"`
-	Opts            phasedEngineOptions `json:"opts"`
+	SchemaVersion   int                  `json:"schema_version"`
+	Goal            string               `json:"goal"`
+	EpicID          string               `json:"epic_id,omitempty"`
+	Domain          string               `json:"domain,omitempty"`          // domain-slice name when --domain scoped run
+	DomainManifest  *domainSliceEvidence `json:"domain_manifest,omitempty"` // recorded domain-slice boundaries for evidence/audit
+	TrackerMode     string               `json:"tracker_mode,omitempty"`
+	TrackerReason   string               `json:"tracker_reason,omitempty"`
+	Phase           int                  `json:"phase"`
+	StartPhase      int                  `json:"start_phase"`
+	Cycle           int                  `json:"cycle"`
+	ParentEpic      string               `json:"parent_epic,omitempty"`
+	FastPath        bool                 `json:"fast_path"`
+	TestFirst       bool                 `json:"test_first"`
+	SwarmFirst      bool                 `json:"swarm_first"`
+	Complexity      ComplexityLevel      `json:"complexity,omitempty"` // fast, standard, full
+	ProgramPath     string               `json:"program_path,omitempty"`
+	Verdicts        map[string]string    `json:"verdicts"`
+	Attempts        map[string]int       `json:"attempts"`
+	StartedAt       string               `json:"started_at"`
+	WorktreePath    string               `json:"worktree_path,omitempty"`
+	RunID           string               `json:"run_id,omitempty"`
+	OrchestratorPID int                  `json:"orchestrator_pid,omitempty"`
+	Backend         string               `json:"backend,omitempty"`
+	TerminalStatus  string               `json:"terminal_status,omitempty"` // interrupted, failed, stale, completed
+	TerminalReason  string               `json:"terminal_reason,omitempty"`
+	TerminatedAt    string               `json:"terminated_at,omitempty"`
+	Opts            phasedEngineOptions  `json:"opts"`
 }
 
 // retryContext is a thin alias for the internal RetryContext type.
@@ -177,10 +184,10 @@ func effectiveTmuxCommand(command string) string {
 
 func validateRuntimeMode(mode string) error {
 	switch normalizeRuntimeMode(mode) {
-	case "auto", "direct", "stream", "tmux", "gc":
+	case "auto", "direct", "stream", "tmux":
 		return nil
 	default:
-		return fmt.Errorf("invalid runtime %q (valid: auto|direct|stream|tmux|gc)", mode)
+		return fmt.Errorf("invalid runtime %q (valid: auto|direct|stream|tmux)", mode)
 	}
 }
 
@@ -266,6 +273,13 @@ func buildPromptForPhase(cwd string, phaseNum int, state *phasedState, _ *retryC
 
 	var prompt strings.Builder
 	renderPreambleInstructions(&prompt, data)
+
+	// Domain-slice boundaries — prepended for every phase when the run is
+	// scoped via --domain. Unscoped runs render "" so the prompt is unchanged.
+	if block := renderDomainBoundariesBlock(state); block != "" {
+		prompt.WriteString(block)
+		prompt.WriteString("\n")
+	}
 
 	// Cross-phase context for phases 2+ — prefer structured handoffs, fall back to raw summaries
 	if phaseNum >= 2 {
@@ -375,6 +389,12 @@ func buildRetryPrompt(cwd string, phaseNum int, state *phasedState, retryCtx *re
 		if err := summaryTmpl.Execute(&prompt, data); err != nil {
 			VerbosePrintf("Warning: could not render summary instruction: %v\n", err)
 		}
+	}
+
+	// 2b. Domain-slice boundaries — carry the read fence into retries too.
+	if block := renderDomainBoundariesBlock(state); block != "" {
+		prompt.WriteString("\n")
+		prompt.WriteString(block)
 	}
 
 	// 3. Retry-specific context discipline (avoid repeating prior work)

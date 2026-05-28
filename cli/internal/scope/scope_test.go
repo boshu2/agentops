@@ -206,7 +206,7 @@ func TestIsAllowed_Predicate(t *testing.T) {
 		{"exact-dir-allows", []string{"cli/cmd/ao"}, "cli/cmd/ao", true},
 	}
 	for _, tc := range cases {
-		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
 			lock := &Lock{FrozenDirs: tc.frozen}
 			if tc.frozen == nil {
@@ -238,7 +238,7 @@ func TestWrite_AtomicityUnderConcurrency(t *testing.T) {
 	wg.Add(N)
 	errs := make(chan error, N)
 	for i := 0; i < N; i++ {
-		i := i
+
 		go func() {
 			defer wg.Done()
 			if err := Freeze(path, []string{"dir/" + itoa(i)}); err != nil {

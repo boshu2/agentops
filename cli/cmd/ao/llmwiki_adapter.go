@@ -1,3 +1,4 @@
+// practices: [wiki-knowledge-surface, llm-eval-harness]
 package main
 
 import (

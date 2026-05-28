@@ -1,3 +1,4 @@
+// practices: [dora-metrics, continuous-delivery]
 package main
 
 import (

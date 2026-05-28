@@ -1,3 +1,4 @@
+// practices: [continuous-delivery, supply-chain-integrity]
 package main
 
 import (
@@ -36,6 +37,21 @@ func TestVersion_RegisteredOnRoot(t *testing.T) {
 	}
 	if !found {
 		t.Error("versionCmd should be registered on rootCmd")
+	}
+}
+
+func TestVersion_RootVersionFlagWired(t *testing.T) {
+	// CLI-C2 (soc-nx1o): rootCmd.Version must be set so `ao --version` works,
+	// not only the `ao version` subcommand.
+	if rootCmd.Version != version {
+		t.Errorf("rootCmd.Version = %q, want %q", rootCmd.Version, version)
+	}
+	out, err := executeCommand("--version")
+	if err != nil {
+		t.Fatalf("ao --version returned error: %v", err)
+	}
+	if !strings.Contains(out, version) {
+		t.Errorf("ao --version output should contain %q, got: %s", version, out)
 	}
 }
 

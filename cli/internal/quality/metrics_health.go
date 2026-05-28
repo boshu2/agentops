@@ -1,8 +1,6 @@
 package quality
 
 import (
-	"bufio"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -124,28 +122,4 @@ func CountUniqueSessions(citations []types.CitationEvent) int {
 		}
 	}
 	return len(seen)
-}
-
-// LoadCycleHistory loads cycle-history.jsonl entries. Returns nil on missing file.
-func LoadCycleHistory(baseDir string) []map[string]any {
-	path := filepath.Join(baseDir, ".agents", "evolve", "cycle-history.jsonl")
-	f, err := os.Open(path)
-	if err != nil {
-		return nil
-	}
-	defer func() {
-		_ = f.Close()
-	}()
-
-	var entries []map[string]any
-	scanner := bufio.NewScanner(f)
-	buf := make([]byte, 0, 64*1024)
-	scanner.Buffer(buf, 1024*1024)
-	for scanner.Scan() {
-		var entry map[string]any
-		if err := json.Unmarshal(scanner.Bytes(), &entry); err == nil {
-			entries = append(entries, entry)
-		}
-	}
-	return entries
 }

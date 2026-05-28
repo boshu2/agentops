@@ -57,7 +57,7 @@ extract_commands() {
       next
     }
 
-    /^[[:space:]]{2,}[a-z0-9][a-z0-9-]*([[:space:]]+|$)/ {
+    /^[[:space:]][[:space:]]+[a-z0-9][a-z0-9-]*([[:space:]]+|$)/ {
       cmd=$1
       if (cmd != "ao" && cmd !~ /^-/ && cmd !~ /:$/ && !seen[cmd]++) print cmd
     }

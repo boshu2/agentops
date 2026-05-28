@@ -3,6 +3,7 @@
   "id": "agentops-core.headless-runtime-skills",
   "name": "AgentOps Headless Runtime Skills Canary",
   "description": "Public deterministic canary for Claude and Codex headless skill inventory validation, fallback controls, and CI/release wiring.",
+  "practices": ["llm-eval-harness", "sre"],
   "domain": "runtime",
   "visibility": "public_canary",
   "tier": "deterministic",

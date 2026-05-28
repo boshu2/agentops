@@ -59,6 +59,7 @@ type ReadinessOptions struct {
 // CoreAgentSubdirs are the canonical .agents subdirectories created by repo setup.
 var CoreAgentSubdirs = []string{
 	"briefings",
+	"packets",
 	"research",
 	"products",
 	"knowledge",

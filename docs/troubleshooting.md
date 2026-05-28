@@ -97,11 +97,10 @@ The `ao doctor` "Plugin" check scans the `skills/` directory for subdirectories 
    claude --plugin ./
    ```
 
-5. If skills load but automation hooks are missing, install hooks from repo root:
-   ```bash
-   ao init --hooks
-   ao hooks test
-   ```
+5. AgentOps 3.0 ships **zero hooks** — there is nothing to install. The workflow
+   is guided by skills plus the `ao` CLI, and **CI is the authoritative gate**.
+   If you want a bounded gate of your own (block a dangerous op, bootstrap a
+   session, run a parity check), author it with the `hooks-authoring` skill.
 
 ---
 
@@ -276,7 +275,7 @@ This is expected behavior in the **lead-only commit** pattern used by `/crank` a
 
 ## Phantom command error
 
-If you see errors for commands like `bd mol`, `gt convoy`, or `bd cook`, these are **planned future features** that do not exist yet.
+If you see an error for a command that is documented as planned, it does not exist yet. Designed-but-unbuilt commands are tracked in [ROADMAP.md](ROADMAP.md).
 
 **How to identify:** Look for `FUTURE` markers in skill documentation. These indicate commands or features that are designed but not yet implemented.
 
@@ -305,7 +304,6 @@ If you see errors for commands like `bd mol`, `gt convoy`, or `bd cook`, these a
 | Check | What it verifies | How to fix |
 |-------|-----------------|------------|
 | **CLI Dependencies** | `gt` and `bd` are on your PATH (nice-to-have for multi-repo ops + beads issue tracking). | Install missing tools (e.g., `brew install gastown`, `brew install beads`). |
-| **Hook Coverage** | Claude Code: hooks configured via `~/.claude/settings.json`. Codex v0.115.0+: native hooks configured via `~/.codex/hooks.json`; older Codex versions fall back to `ao codex start/stop`. | Claude: `ao hooks install`. Codex: `scripts/install-codex-plugin.sh` or `curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash`. See `docs/contracts/hook-runtime-contract.md`. |
 | **Knowledge Freshness** | At least one recent session exists under `.agents/ao/sessions/`. | After a session, run `ao forge transcript <path>` to ingest it. |
 | **Search Index** | A non-empty `.agents/ao/index.jsonl` exists for faster repo-local searches. | Run `ao store rebuild`. |
 | **Flywheel Health** | At least one learning exists under `.agents/ao/learnings/` (or legacy `.agents/learnings/`). | Run `/retro` or `/forge` to extract learnings; empty is normal early on. |
@@ -317,12 +315,11 @@ If you see errors for commands like `bd mol`, `gt convoy`, or `bd cook`, these a
 ao doctor
 ─────────
  ✓ ao CLI              vX.Y.Z
- ! Hook Coverage       No hooks found — run 'ao hooks install'
  ✓ Knowledge Base      .agents/ao initialized
  ✓ Plugin              skills found
  ! Codex CLI           not found (optional — needed for --mixed council)
 
- 7/9 checks passed, 2 warnings
+ 7/8 checks passed, 1 warning
 ```
 
 - `✓` = pass

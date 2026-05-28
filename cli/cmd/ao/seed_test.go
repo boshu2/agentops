@@ -1,3 +1,4 @@
+// practices: [llm-eval-harness, snapshot-testing]
 package main
 
 import (
@@ -775,4 +776,16 @@ func TestValidTemplatesMatchEmbeddedTemplates(t *testing.T) {
 			t.Errorf("validTemplates map contains %q but templates/%q.yaml is missing", template, template)
 		}
 	}
+}
+
+// containsString reports whether items contains an entry exactly equal to
+// needle. Extracted from the retired overnight curator (soc-2rtm0) for the KEEP
+// seed test.
+func containsString(items []string, needle string) bool {
+	for _, item := range items {
+		if item == needle {
+			return true
+		}
+	}
+	return false
 }

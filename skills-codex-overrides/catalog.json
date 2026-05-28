@@ -235,12 +235,6 @@
       "reason": "Official-doc retrieval and citation behavior need explicit Codex tooling guidance."
     },
     {
-      "name": "oss-docs",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "The canonical OSS documentation workflow is already explicit enough for Codex without a dedicated override."
-    },
-    {
       "name": "plan",
       "treatment": "bespoke",
       "wave": "backbone",
@@ -285,12 +279,6 @@
       "reason": "Fork-based contribution work needs explicit Codex guidance around isolation, scope control, and proof of completion."
     },
     {
-      "name": "pr-plan",
-      "treatment": "bespoke",
-      "wave": "contribution-workflow",
-      "reason": "PR planning benefits from concise Codex framing around contribution scope, risk, and upstream fit."
-    },
-    {
       "name": "pr-prep",
       "treatment": "bespoke",
       "wave": "contribution-workflow",
@@ -301,12 +289,6 @@
       "treatment": "bespoke",
       "wave": "contribution-workflow",
       "reason": "Upstream research works better in Codex with explicit evidence capture and maintainer-pattern extraction."
-    },
-    {
-      "name": "pr-retro",
-      "treatment": "bespoke",
-      "wave": "contribution-workflow",
-      "reason": "Contribution retros should emphasize actionable maintainer feedback patterns in a Codex-native format."
     },
     {
       "name": "pr-validate",
@@ -362,12 +344,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Ratchet commands are procedural and already map cleanly into the generated Codex prompt."
-    },
-    {
-      "name": "readme",
-      "treatment": "bespoke",
-      "wave": "analysis-authoring",
-      "reason": "README generation benefits from Codex-specific interview brevity, artifact output, and validation focus."
     },
     {
       "name": "red-team",
@@ -491,10 +467,28 @@
       "reason": "This non-invocable shared-reference skill does not need bespoke Codex prompt wording."
     },
     {
+      "name": "ship-loop",
+      "treatment": "parity_only",
+      "wave": "core-execution",
+      "reason": "Vendor-neutral internal-PR cycle; Codex stays in parity with the Claude SKILL.md after slim-frontmatter conversion."
+    },
+    {
+      "name": "session-bootstrap",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Universal init prompt is identical across runtimes by design (fungibility contract, soc-vuu6.25); no bespoke Codex variant."
+    },
+    {
       "name": "standards",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Standards are loaded as reference material and do not currently need a Codex-specific prompt layer."
+    },
+    {
+      "name": "domain",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Vocabulary corpus loaded as reference material; entries are vendor-neutral markdown and do not currently need a Codex-specific prompt layer."
     },
     {
       "name": "status",
@@ -550,12 +544,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Builder dispatcher (scripts/build.sh) drives all 4 modes (from-scratch, from-template, absorb-external, from-pattern); the prose is reference material with no Codex-specific runtime divergence."
-    },
-    {
-      "name": "update",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Skill reinstall/update flow is script-led and does not need extra Codex-native phrasing."
     },
     {
       "name": "using-agentops",
@@ -640,6 +628,30 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "New utility skill for restoring system responsiveness; converter parity is acceptable."
+    },
+    {
+      "name": "hooks-authoring",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Hook authoring is documentation-led and portable across runtimes; converter parity is sufficient until a Codex-only hook workflow diverges."
+    },
+    {
+      "name": "curate",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Canonical miner role; converter parity is acceptable while the release train decides which legacy miner shims remain."
+    },
+    {
+      "name": "validate",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
+    },
+    {
+      "name": "using-gc",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Guide to running AgentOps on the Gas City (gc) substrate; gc-specific shell idioms and out-of-session orchestration vocabulary."
     }
   ]
 }

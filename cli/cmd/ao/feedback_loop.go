@@ -1,3 +1,4 @@
+// practices: [dora-metrics, lean-startup]
 package main
 
 import (
@@ -62,8 +63,6 @@ var (
 // for InitialUtility, so a single drain pass nudges utilities toward the
 // long-run prior without spuriously rewarding or punishing learnings.
 const defaultDrainReward = 0.5
-
-var validFeedbackCitationTypes = lifecycle.ValidFeedbackLoopCitationTypes
 
 func init() {
 	feedbackLoopCmd.Hidden = false

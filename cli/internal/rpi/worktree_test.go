@@ -300,6 +300,31 @@ func TestAcquireMergeLock_CreatesDir(t *testing.T) {
 	}
 }
 
+func TestAcquireMergeLock_LinkedWorktreeUsesCommonGitDir(t *testing.T) {
+	repo := initGitRepo(t)
+	worktree := filepath.Join(t.TempDir(), "linked")
+	runGit(t, repo, "worktree", "add", "-b", "lock-test", worktree)
+
+	gitEntry, err := os.Stat(filepath.Join(worktree, ".git"))
+	if err != nil {
+		t.Fatalf("expected linked worktree .git entry: %v", err)
+	}
+	if gitEntry.IsDir() {
+		t.Fatal("expected linked worktree .git entry to be a file")
+	}
+
+	lock, err := acquireMergeLock(worktree)
+	if err != nil {
+		t.Fatalf("failed to acquire lock from linked worktree: %v", err)
+	}
+	releaseMergeLock(lock)
+
+	commonLockPath := filepath.Join(repo, ".git", "agentops", "merge.lock")
+	if _, err := os.Stat(commonLockPath); err != nil {
+		t.Fatalf("expected merge lock under common git dir: %v", err)
+	}
+}
+
 func TestReleaseMergeLock_NilSafe(t *testing.T) {
 	// Should not panic
 	releaseMergeLock(nil)

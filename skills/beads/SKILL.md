@@ -1,19 +1,33 @@
 ---
 name: beads
-description: 'Track issues with bd/br, triage with bv, and convert plans to beads.'
+description: Track issues with bd/br, triage with bv, and convert plans to beads.
+practices:
+- agile-manifesto
+- pragmatic-programmer
+hexagonal_role: driven-adapter
+consumes:
+- bd-issue
+produces:
+- bd-issue
+context_rel:
+- kind: supplier-to
+  with: crank
+- kind: supplier-to
+  with: ratchet
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: library
   dependencies: []
   internal: true
-output_contract: "beads (via bd/br/bv CLI)"
+output_contract: beads (via bd/br/bv CLI)
 ---
 # Beads - Persistent Task Memory for AI Agents
 
@@ -37,6 +51,7 @@ Graph-based issue tracker that survives conversation compaction.
 ## Operating Rules
 
 - Treat live `bd` reads as authoritative. Use `bd show`, `bd ready`, `bd list`, and `bd export` to inspect current tracker state. Do not treat `.beads/issues.jsonl` as the primary decision source when live `bd` data is available.
+- Before selecting new ready work after CI, release, or rollout activity, prefer `ao reconcile --json` when available. Treat `bd ready` as planning input only after high-severity main/release/bead evidence findings are resolved or explicitly superseded.
 - Treat `.beads/issues.jsonl` as a git-friendly export artifact. If the repo tracks `.beads/issues.jsonl` and you mutate tracker state, refresh it explicitly with `bd export -o .beads/issues.jsonl`.
 - After closing or materially updating a child issue, reconcile the open parent in the same session. Update stale "remaining gap" notes immediately, and close the parent when the child resolved the parent's last real gap.
 - Before closing a child issue, include scoped closure proof in the `bd close --reason` text.
@@ -136,14 +151,28 @@ NEVER run bare `bv`. Always use `--robot-*` flags.
 
 Convert a markdown plan into fully dependency-wired beads:
 
-1. Read the plan file
-2. Create beads with `br create` for each issue, including full context in the description
-3. Wire dependencies with `br dep add`
-4. Polish iteratively (run polish prompt 6-9 times until steady-state)
-5. Validate: `br dep cycles` must be empty, `bv --robot-insights` for graph health
-6. Begin: `bv --robot-next` for first bead
+1. Read the full plan, AGENTS.md, README, linked intent issue, and acceptance criteria.
+2. Create beads with `br create` for each issue, including full context in the description.
+3. For every feature, bug, or product-facing behavior, include a fenced `gherkin`
+   block or link to a filled intent issue. Mechanical chores may omit Gherkin
+   only when their acceptance criteria are fully command/file based.
+4. Include the `hexagon:` boundary block from
+   `docs/architecture/intent-to-loop-hexagon.md` for substantial beads:
+   inbound port, bounded context, adapters, context packet, and done state.
+5. Wire dependencies with `br dep add` / `bd dep add`. Do not hand-edit JSONL or
+   database files.
+6. Polish iteratively (usually 6-9 passes) until steady-state. Check for lost
+   features, oversimplification, missing tests, unclear boundaries, missing e2e
+   coverage, and weak logging.
+7. Validate: `br dep cycles` must be empty; run `bv --robot-insights` for graph
+   health; use `bv --robot-next` for the first bead. Never run bare `bv`.
+8. Sync explicitly before commit: `br sync --flush-only`, then `git add .beads/`
+   and commit tracker changes when appropriate.
 
-Beads should be so detailed that a fresh agent can implement without consulting the original plan.
+Beads should be so detailed that a fresh agent can implement without consulting
+the original plan. Ready-to-implement beads have clear scope, explicit
+dependencies, BDD or mechanical acceptance, unit/e2e test expectations, detailed
+logging expectations, a named done state, and no dependency cycles.
 
 ## Troubleshooting
 
@@ -159,8 +188,11 @@ Beads should be so detailed that a fresh agent can implement without consulting 
 
 ## Reference Documents
 
+- [references/beads.feature](references/beads.feature) — Executable spec: bd-mandatory tracker, create-before-code, ready-detection, discovered-from links, live-reads-authoritative (soc-qk4b)
+
 - [references/ANTI_PATTERNS.md](references/ANTI_PATTERNS.md)
 - [references/BOUNDARIES.md](references/BOUNDARIES.md)
+- [references/composition-over-invention.md](references/composition-over-invention.md) — Run `bd <subcmd> --help` before specifying enforcement commands; compose primitives, don't invent
 - [references/BR_REFERENCE.md](references/BR_REFERENCE.md)
 - [references/BV_TRIAGE.md](references/BV_TRIAGE.md)
 - [references/CLI_REFERENCE.md](references/CLI_REFERENCE.md)

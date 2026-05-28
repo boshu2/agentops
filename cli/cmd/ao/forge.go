@@ -1,3 +1,4 @@
+// practices: [wiki-knowledge-surface, lean-startup]
 package main
 
 import (
@@ -22,6 +23,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/storage"
 	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/wiki"
 )
 
 var (
@@ -55,11 +57,7 @@ const (
 // issueIDPattern matches beads issue IDs like "ol-0001", "at-v123", "gt-abc-def".
 var issueIDPattern = regexp.MustCompile(`\b([a-z]{2,3})-([a-z0-9]{3,7}(?:-[a-z0-9]+)?)\b`)
 
-var (
-	sessionUUIDPattern             = regexp.MustCompile(`[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}`)
-	sessionClaudeTranscriptPattern = regexp.MustCompile(`(ses_[A-Za-z0-9]+)`)
-	errTranscriptHasNoChatMessages = errors.New("transcript has no chat messages")
-)
+var errTranscriptHasNoChatMessages = errors.New("transcript has no chat messages")
 
 var forgeCmd = &cobra.Command{
 	Use:   "forge",
@@ -224,7 +222,7 @@ func resolveForgeReviewSessionsDir(cmd *cobra.Command, cwd string) (string, erro
 		return "", err
 	}
 	if strings.TrimSpace(sessionsDir) == "" {
-		sessionsDir = filepath.Join(agentsDirIn(cwd), "ao", "sessions")
+		sessionsDir = filepath.Join(wiki.AgentsDirIn(cwd), "ao", "sessions")
 	}
 	if filepath.IsAbs(sessionsDir) {
 		return filepath.Clean(sessionsDir), nil
@@ -1022,7 +1020,7 @@ func runForgeTier1(w io.Writer, files []string) error {
 		fmt.Fprintln(w, forgeLegacyLocalLLMDeprecationWarning)
 	}
 	cwd, _ := os.Getwd()
-	outDir := filepath.Join(agentsDirIn(cwd), "wiki", "sources")
+	outDir := filepath.Join(wiki.AgentsDirIn(cwd), "wiki", "sources")
 	_, err := llm.RunForgeTier1(llm.Tier1Options{
 		SourcePaths:    files,
 		OutputDir:      outDir,

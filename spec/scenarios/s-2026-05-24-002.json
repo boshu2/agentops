@@ -1,0 +1,12 @@
+{
+  "id": "s-2026-05-24-002",
+  "directive_id": "d-gate-the-install-path",
+  "version": 1,
+  "date": "2026-05-24",
+  "goal": "Given the three install scripts (install.sh, install-codex.sh, install-opencode.sh), when the install-smoke CI gate runs tests/install/test-install-smoke.sh, then all three scripts pass syntax+structure validation and, when cli/bin/ao exists, ao --version / ao help / and the flywheel, goals, inject subcommands are confirmed registered.",
+  "narrative": "A user or evaluator exercises the system behavior for this goal: Given the three install scripts (install.sh, install-codex.sh, install-opencode.sh), when the install-smoke CI gate runs tests/install/test-install-smoke.sh, then all three scripts pass syntax+structure validation and, when cli/bin/ao exists, ao --version / ao help / and the flywheel, goals, inject subcommands are confirmed registered..",
+  "expected_outcome": "The implementation satisfies the goal in observable behavior: Given the three install scripts (install.sh, install-codex.sh, install-opencode.sh), when the install-smoke CI gate runs tests/install/test-install-smoke.sh, then all three scripts pass syntax+structure validation and, when cli/bin/ao exists, ao --version / ao help / and the flywheel, goals, inject subcommands are confirmed registered..",
+  "satisfaction_threshold": 0.9,
+  "source": "human",
+  "status": "active"
+}

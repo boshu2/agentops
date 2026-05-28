@@ -3,6 +3,7 @@
   "id": "agentops-core.workbench-behavioral-v1",
   "name": "Workbench Behavioral Eval v1",
   "description": "First behavioral eval suite. Exercises agent task completion on known-good workbench fixtures (Go CLI, Python API, DevOps scripts). Each case sets up a broken state, runs a scoring script, and checks whether the fix is correct. Compatible with --baseline-mode=both for A/B comparison.",
+  "practices": ["llm-eval-harness", "bdd-gherkin"],
   "domain": "behavioral",
   "visibility": "public_canary",
   "tier": "deterministic",

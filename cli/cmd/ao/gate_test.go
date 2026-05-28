@@ -1,3 +1,4 @@
+// practices: [design-by-contract, continuous-delivery]
 package main
 
 import (

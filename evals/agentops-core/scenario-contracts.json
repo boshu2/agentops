@@ -3,6 +3,7 @@
   "id": "agentops-core.scenario-contracts",
   "name": "AgentOps Scenario Contracts Canary",
   "description": "Offline public canary for holdout scenario schema, scenario skill docs, CLI docs, and isolated scenario authoring validation.",
+  "practices": ["llm-eval-harness", "property-based-testing"],
   "domain": "scenario",
   "visibility": "public_canary",
   "tier": "deterministic",

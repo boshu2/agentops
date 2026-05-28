@@ -50,10 +50,30 @@ setup() {
     make_stub "$FAKE_REPO/scripts/validate-codex-override-coverage.sh"
     make_stub "$FAKE_REPO/scripts/validate-next-work-contract-parity.sh"
     make_stub "$FAKE_REPO/scripts/validate-bd-closeout-contract.sh"
+    make_stub "$FAKE_REPO/scripts/verify-gate-claim.sh"
     make_stub "$FAKE_REPO/scripts/check-retrieval-quality-ratchet.sh"
     make_stub "$FAKE_REPO/scripts/validate-skill-runtime-formats.sh"
+    make_stub "$FAKE_REPO/scripts/validate-context-map-drift.sh"
     make_stub "$FAKE_REPO/scripts/validate-codex-rpi-contract.sh"
     make_stub "$FAKE_REPO/scripts/validate-codex-lifecycle-guards.sh"
+    make_stub "$FAKE_REPO/scripts/check-codex-parity-drift.sh"
+    make_stub "$FAKE_REPO/scripts/check-quarantine-empty.sh"
+    make_stub "$FAKE_REPO/scripts/check-registry-drift.sh"
+    make_stub "$FAKE_REPO/scripts/check-bounded-contexts-drift.sh"
+    make_stub "$FAKE_REPO/scripts/generate-skill-domain-map.sh"
+    make_stub "$FAKE_REPO/scripts/proof-run.sh"
+    make_stub "$FAKE_REPO/scripts/check-wiring-closure.sh"
+    make_stub "$FAKE_REPO/scripts/check-agentops-domain-evolution-plan.sh"
+    make_stub "$FAKE_REPO/scripts/check-corpus-freshness.sh"
+    make_stub "$FAKE_REPO/scripts/check-loop-shape.sh"
+    make_stub "$FAKE_REPO/scripts/check-flywheel-compounding-snapshot.sh"
+    make_stub "$FAKE_REPO/scripts/snapshot-flywheel-compounding.sh"
+    make_stub "$FAKE_REPO/scripts/check-factory-yield-ledger.sh"
+    make_stub "$FAKE_REPO/scripts/check-finding-registry.sh"
+    make_stub "$FAKE_REPO/scripts/check-factory-admission.sh"
+    make_stub "$FAKE_REPO/scripts/check-contracts-structural-floor.sh"
+    make_stub "$FAKE_REPO/scripts/check-docs-learning-references.sh"
+    make_stub "$FAKE_REPO/scripts/check-three-gap-supergate.sh"
     make_stub "$FAKE_REPO/scripts/validate-skill-cli-snippets.sh"
     make_stub "$FAKE_REPO/scripts/validate-headless-runtime-skills.sh"
     make_stub "$FAKE_REPO/scripts/eval-agentops.sh"
@@ -72,8 +92,9 @@ setup() {
     make_stub "$FAKE_REPO/scripts/check-contract-compatibility.sh"
     make_stub "$FAKE_REPO/scripts/validate-swarm-evidence.sh"
     make_stub "$FAKE_REPO/scripts/validate-hook-preflight.sh"
-    make_stub "$FAKE_REPO/scripts/check-standards-injector-completeness.sh"
     make_stub "$FAKE_REPO/scripts/validate-hooks-doc-parity.sh"
+    make_stub "$FAKE_REPO/scripts/check-hook-lease-inventory.sh"
+    make_stub "$FAKE_REPO/scripts/check-hook-port-replacements.sh"
     make_stub "$FAKE_REPO/scripts/validate-ci-policy-parity.sh"
     make_stub "$FAKE_REPO/scripts/validate-embedded-sync.sh"
     make_stub "$FAKE_REPO/scripts/validate-cli-skills-map.sh"
@@ -97,6 +118,32 @@ setup() {
     make_stub "$FAKE_REPO/scripts/test-agentops-contract-canaries.sh"
     mkdir -p "$FAKE_REPO/tests/canaries"
     make_eval_baseline_audit_stub
+
+    # soc-xban safety net: auto-discover any helper-script reference in
+    # scripts/pre-push-gate.sh that the explicit list above might have
+    # missed. Catches the registries-drift class at the bats layer — same
+    # principle as the soc-zxia DDD doc generators. If a future pre-push
+    # section adds a new `bash scripts/foo.sh` or `scripts/foo.sh` call,
+    # this loop stubs it without anyone having to remember a manual edit.
+    #
+    # Edge cases not handled by this loop (skipped because the existing
+    # block uses special stub functions for them):
+    #   - scripts/pre-push-gate.sh itself (would self-stub)
+    #   - scripts/check-agents-hash-snapshot.sh (uses make_hash_snapshot_stub)
+    #   - scripts/check-home-isolation.sh (uses make_hash_snapshot_stub semantics)
+    while IFS= read -r ref_script; do
+        case "$ref_script" in
+            scripts/pre-push-gate.sh) continue ;;
+            scripts/check-agents-hash-snapshot.sh) continue ;;
+            scripts/check-home-isolation.sh) continue ;;
+        esac
+        # Idempotent: make_stub overwrites; if explicit list already stubbed
+        # it, this is a no-op.
+        if [[ ! -f "$FAKE_REPO/$ref_script" ]]; then
+            mkdir -p "$FAKE_REPO/$(dirname "$ref_script")"
+            make_stub "$FAKE_REPO/$ref_script"
+        fi
+    done < <(grep -oE '(scripts|tests|skills|hooks)/[a-zA-Z0-9_./-]+\.sh\b' "$GATE" | sort -u)
 }
 
 teardown() {
@@ -773,6 +820,32 @@ GIT
     [[ "$output" == *"AgentOps eval canaries"*"skipped"* ]]
 }
 
+@test "pre-push-gate.sh skips eval canaries by default for eval changes in local fast mode" {
+    make_eval_baseline_audit_stub
+
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "evals/agentops-core/example.json"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cat > "$FAKE_REPO/scripts/eval-agentops.sh" <<'EVAL'
+#!/usr/bin/env bash
+echo "eval should not run" > "$BATS_TEST_TMPDIR/eval-called"
+exit 1
+EVAL
+    chmod +x "$FAKE_REPO/scripts/eval-agentops.sh"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream --single-pass
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"AgentOps eval canaries"*"local fast: opt-in"* ]]
+    [ ! -e "$BATS_TEST_TMPDIR/eval-called" ]
+}
+
 @test "pre-push-gate.sh runs local fast eval canaries as advisory when requested" {
     make_eval_baseline_audit_stub
 
@@ -794,7 +867,7 @@ EVAL
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run env -u CI -u GITHUB_ACTIONS BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream --single-pass
+    run env -u CI -u GITHUB_ACTIONS PRE_PUSH_RUN_EVAL=1 BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream --single-pass
     [ "$status" -eq 0 ]
     [[ "$output" == *"WARN"*"AgentOps eval canaries (advisory)"* ]]
     run grep -q -- '--advisory' "$BATS_TEST_TMPDIR/eval-args.txt"
@@ -827,7 +900,7 @@ EVAL
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run env -u CI -u GITHUB_ACTIONS BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream --single-pass
+    run env -u CI -u GITHUB_ACTIONS PRE_PUSH_RUN_EVAL=1 BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream --single-pass
     [ "$status" -eq 0 ]
     [[ "$output" == *"AgentOps eval canaries"* ]]
     run grep -q -- '--suite evals/agentops-core/context-packet-ab-wave0.json' "$BATS_TEST_TMPDIR/eval-args.txt"
@@ -860,7 +933,7 @@ EVAL
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run env -u CI -u GITHUB_ACTIONS BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream
+    run env -u CI -u GITHUB_ACTIONS PRE_PUSH_RUN_EVAL=1 BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream
     [ "$status" -eq 0 ]
     run grep -q -- '--suite' "$BATS_TEST_TMPDIR/eval-args.txt"
     [ "$status" -eq 1 ]
@@ -884,7 +957,7 @@ EVAL
     cd "$FAKE_REPO"
     export PATH="$MOCK_BIN:$PATH"
 
-    run env -u CI -u GITHUB_ACTIONS PRE_PUSH_STRICT_EVAL=1 bash "$GATE" --fast --scope upstream --single-pass
+    run env -u CI -u GITHUB_ACTIONS PRE_PUSH_RUN_EVAL=1 PRE_PUSH_STRICT_EVAL=1 bash "$GATE" --fast --scope upstream --single-pass
     [ "$status" -eq 1 ]
     [[ "$output" == *"FAIL"*"AgentOps eval canaries"* ]]
 }
@@ -1036,21 +1109,73 @@ GIT
     [[ "$output" == *"codex hook manifest parity"*"no $fake_codex_home/hooks.json"* ]]
 }
 
+@test "pre-push-gate.sh skips contract canaries by default for workflow changes in local fast mode" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ".github/workflows/validate.yml"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cat > "$FAKE_REPO/scripts/test-agentops-contract-canaries.sh" <<'CANARY'
+#!/usr/bin/env bash
+echo "contract canaries should not run" > "$BATS_TEST_TMPDIR/contract-called"
+exit 1
+CANARY
+    chmod +x "$FAKE_REPO/scripts/test-agentops-contract-canaries.sh"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream --single-pass
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"contract canaries"*"local fast: opt-in"* ]]
+    [ ! -e "$BATS_TEST_TMPDIR/contract-called" ]
+}
+
+@test "pre-push-gate.sh runs contract canaries in local fast mode when explicitly requested" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ".github/workflows/validate.yml"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cat > "$FAKE_REPO/scripts/test-agentops-contract-canaries.sh" <<'CANARY'
+#!/usr/bin/env bash
+printf '%s\n' "$*" > "$BATS_TEST_TMPDIR/contract-args.txt"
+exit 0
+CANARY
+    chmod +x "$FAKE_REPO/scripts/test-agentops-contract-canaries.sh"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS PRE_PUSH_RUN_CONTRACT_CANARIES=1 BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --scope upstream --single-pass
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ok"*"contract canaries"* ]]
+    run grep -q -- '--ao-bin' "$BATS_TEST_TMPDIR/contract-args.txt"
+    [ "$status" -eq 0 ]
+}
+
 @test "pre-push-gate.sh prepush-hygiene-gate items 5, 8-12, 17, 25, 26, 28, 32 are wired into the script" {
     # Symmetric audit per f-2026-04-27-002: each item from
     # .agents/plans/2026-05-03-ci-failures-1-40-handling.md §prepush-hygiene-gate
     # must have a corresponding section header in pre-push-gate.sh. This test
     # is the BATS-side guardrail that prevents silent gate drift.
-    run grep -E '# --- (5\.|6\.|24b\.|25\.|27b\.|28\.|28b\.|31\.|32\.) ' "$SCRIPT"
+    run grep -E '# --- (5\.|6\.|24b\.|25\.|28\.|28a\.|28b\.|28c\.|31\.|32\.) ' "$SCRIPT"
     [ "$status" -eq 0 ]
     # At least the items above should each appear once.
     [[ "$output" == *"# --- 5. Embedded hooks sync"* ]]
     [[ "$output" == *"# --- 6. Skill count sync"* ]]
     [[ "$output" == *"# --- 24b. CLI docs parity"* ]]
     [[ "$output" == *"# --- 25. Doc-release"* ]]
-    [[ "$output" == *"# --- 27b. Standards-injector"* ]]
     [[ "$output" == *"# --- 28. Hooks/docs parity"* ]]
-    [[ "$output" == *"# --- 28b. Codex hook manifest parity"* ]]
+    [[ "$output" == *"# --- 28a. Hook lease inventory"* ]]
+    [[ "$output" == *"# --- 28b. Hook replacement ports"* ]]
+    [[ "$output" == *"# --- 28c. Codex hook manifest parity"* ]]
     [[ "$output" == *"# --- 31. Plugin load test"* ]]
     [[ "$output" == *"# --- 32. Learning coherence"* ]]
 }
@@ -1175,6 +1300,25 @@ GIT
 # soc-7c3v: two-pass mode tests
 # ─────────────────────────────────────────────────────────────────────────
 
+@test "pre-push-gate.sh does not default to two-pass locally" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+if [[ "$*" == *"show --name-only"* ]]; then echo ""; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"Two-pass mode"* ]]
+    [[ "$output" == *"pre-push gate (fast): passed"* ]]
+}
+
 @test "pre-push-gate.sh --two-pass re-invokes with pass 1 (head) and pass 2 (upstream)" {
     cat > "$MOCK_BIN/git" <<'GIT'
 #!/usr/bin/env bash
@@ -1220,6 +1364,37 @@ GO
     [ "$status" -eq 0 ]
     [[ "$output" == *"Pass 1: PASSED"* ]]
     [[ "$output" == *"advisory"* ]]
+}
+
+@test "pre-push-gate.sh --fast two-pass keeps pass 2 fast and skips evals for non-eval changes" {
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"show --name-only"* ]]; then echo ""; exit 0; fi
+if [[ "$*" == *"diff --name-only"* && "$*" == *"upstream"* ]]; then echo "docs/README.md"; exit 0; fi
+if [[ "$*" == *"diff --name-only"* ]]; then echo ""; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cat > "$FAKE_REPO/scripts/eval-agentops.sh" <<'EVAL'
+#!/usr/bin/env bash
+mkdir -p .agents/evals
+touch .agents/evals/should-not-exist
+echo "eval should not run" > "$BATS_TEST_TMPDIR/eval-called"
+exit 1
+EVAL
+    chmod +x "$FAKE_REPO/scripts/eval-agentops.sh"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" bash "$GATE" --fast --two-pass
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Pass 1: PASSED"* ]]
+    [[ "$output" == *"AgentOps eval canaries"*"skipped"* ]]
+    [ ! -e "$BATS_TEST_TMPDIR/eval-called" ]
+    [ ! -e "$FAKE_REPO/.agents/evals/should-not-exist" ]
 }
 
 @test "pre-push-gate.sh --two-pass exits 1 when pass 1 fails" {

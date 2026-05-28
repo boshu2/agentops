@@ -3,6 +3,7 @@
   "id": "agentops-core.cli-onboarding-health",
   "name": "AgentOps CLI Onboarding Health Canary",
   "description": "Offline public canary for installer smoke, ao init, ao quick-start, and ao doctor health surfaces.",
+  "practices": ["llm-eval-harness", "pragmatic-programmer"],
   "domain": "cli",
   "visibility": "public_canary",
   "tier": "deterministic",

@@ -1,12 +1,12 @@
 # CI/CD Architecture
 
-CI ensures code quality, security, and release integrity for the AgentOps repository. Every push and PR runs the validation pipeline. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
+CI ensures code quality, security, and release integrity for the AgentOps repository. Every push and PR runs the validation pipeline. Release tag pushes run a full, non-path-filtered Validate verdict for the exact tagged SHA. Releases are automated through GoReleaser with SBOM generation and SLSA provenance attestation.
 
 ## Workflow Map
 
 | Workflow | File | Trigger | Purpose |
 |----------|------|---------|---------|
-| Validate | `validate.yml` | Push to `main`, PRs to `main` | Primary quality gate |
+| Validate | `validate.yml` | Push to `main`, `v*` tag push, PRs to `main` | Primary quality gate; tag pushes force every path-filtered release lane on and allowlist PR-only evidence jobs |
 | Release Publisher | `release.yml` | Tag push (`v*`), manual dispatch | Build, publish, attest releases |
 | Nightly | `nightly.yml` | Daily 6am UTC, manual | Public proof harness: full test suite + retrieval + security + compile cycle + Dream report-shape validation over repo-visible artifacts |
 | Nightly RPI Brief | `nightly-rpi-brief.yml` | Daily 11:30am UTC, manual | Builds a two-week Nightly evidence digest and updates the `$agentops:rpi --auto` prompt packet issue |
@@ -18,7 +18,7 @@ CI ensures code quality, security, and release integrity for the AgentOps reposi
 AgentOps has two different overnight surfaces:
 
 - **GitHub nightly** validates AgentOps the product. It runs in GitHub Actions against the checked-out repository and proves the CI, flywheel, and Dream report contracts still work.
-- **`ao overnight`** is the private local compounding engine. It runs on the operator's machine against the real repo-local `.agents` corpus and writes the morning report defined in [Dream Report Contract](contracts/dream-report.md).
+- **The Dream loop** is the private local compounding engine. AgentOps runs it **in session** via the `/dream` skill against the real repo-local `.agents` corpus, writing the morning report defined in [Dream Report Contract](contracts/dream-report.md). To run it *unattended*, hand it to an orchestration substrate (Gas City is the reference) as a scheduled `exec` Order — AgentOps ships no daemon or scheduler of its own.
 
 They share primitive steps and report shapes, but they are not the same pipeline.
 
@@ -34,11 +34,12 @@ issue with a ready `$agentops:rpi --auto` command. This keeps autonomous RPI
 selection grounded in observed Nightly drift and current CI blockers while
 avoiding hidden source-code mutation from GitHub Actions.
 
-If you want scheduled private Dream runs, use `ao overnight setup` to inspect the
-host, persist `dream.*` config, and generate host-specific `launchd`, `cron`, or
-`systemd` assistance artifacts. The host scheduler still owns the actual wake
-and scheduling semantics. For the cross-vendor private local chain that combines
-Dream, Claude/Codex runners, RPI/evolve, and PR digest output, see
+If you want scheduled private Dream runs, delegate them to an orchestration
+substrate. Point the AgentOps reference Gas City (`city.toml` + `packs/agentops`)
+at the repo and wire a cron `exec` Order that runs the Dream loop on a schedule;
+the substrate owns the wake, scheduling, and supervision semantics. For the
+cross-vendor private local chain that combines Dream, Claude/Codex runners,
+RPI/evolve, and PR digest output, see
 [`docs/runbooks/nightly-evolution.md`](runbooks/nightly-evolution.md).
 
 ## validate.yml Architecture
@@ -49,16 +50,17 @@ The validate workflow runs many focused jobs across 4 tiers of parallelism. Most
 
 ```text
                     ┌───────────────────────────────────────────────┐
-                    │         27 independent parallel jobs          │
+                    │   independent validate jobs, path-filtered    │
                     │                                               │
                     │  doc-release-gate    smoke-test               │
-                    │  hook-preflight      validate-hooks-doc-parity│
+                    │  hook-preflight                               │
                     │  validate-ci-policy-parity                    │
-                    │  codex-runtime-sections                       │
+                    │  validate-codex-* runtime/parity checks       │
+                    │  validate-goals/registry/flywheel gates       │
                     │  embedded-sync       cli-docs-parity          │
                     │  agentops-contract-canaries                  │
                     │  eval-workbench-verify                       │
-                    │  agentops-eval-advisory                      │
+                    │  factory/practice advisory observations       │
                     │  shellcheck          markdownlint             │
                     │  security-scan       security-toolchain-gate  │
                     │  skill-integrity     skill-schema             │
@@ -90,23 +92,32 @@ The validate workflow runs many focused jobs across 4 tiers of parallelism. Most
 
 ### The `summary` Aggregator Pattern
 
-The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It checks each job's result and fails if any **blocking** job did not succeed. This single aggregator is the branch protection target -- repository settings only need to require `summary` to pass, not every individual job.
+The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It fails when any `needs.*.result` is `failure`. Advisory and warn-only jobs avoid blocking through `continue-on-error: true` at the job or step level, so their findings remain visible without producing a failing `needs` result. This single aggregator is the branch protection target -- repository settings only need to require `summary` to pass, not every individual job.
 
-Notably, `summary` excludes `agentops-eval-advisory`, `security-toolchain-gate`, `doctor-check`, `check-test-staleness`, and `swarm-evidence` from its failure condition (these are soft gates), while still listing them in `needs` so they appear in the summary output. `agentops-contract-canaries` is the blocking deterministic test gate for the stable public canary subset.
+Current non-blocking validate jobs are `doctor-check`, `factory-claim-ledger-strict`, `practice-citations`, `check-test-staleness`, `swarm-evidence`, and `executable-spec-link-integrity`. `security-toolchain-gate` is blocking. The old `agentops-eval-advisory` job is no longer part of `validate.yml`; `agentops-contract-canaries` remains the blocking deterministic test gate for the stable public canary subset.
+
+For normal `main` pushes and PRs, the `changes` job path-filters expensive lanes.
+For `refs/tags/v*` pushes, `changes` forces every category output to `true` and
+skips the path-filter step. The release-tag `summary` also fails if any job is
+unexpectedly skipped. PR-only evidence jobs are allowlisted because tag push
+events do not have a pull request body to inspect. A green release Validate run
+therefore means every blocking release lane ran for the exact tagged SHA;
+skipped is not treated as passed for releases.
 
 ## Blocking vs Soft Gates
 
 ### Soft Gates (continue-on-error: true)
 
-These jobs run but their failure does **not** block merges. Each carries an `(advisory)` suffix in its GitHub check name. Triage SLAs and escalation rules are codified in root `AGENTS.md` §Advisory Job Triage SLAs — keep that table and this one in sync (`scripts/validate-ci-policy-parity.sh`).
+These jobs run but their failure does **not** block merges. Advisory jobs carry an `(advisory)` suffix in the GitHub check name; `executable-spec-link-integrity` is named `(warn-only, F1.6)`. Triage SLAs and escalation rules are codified in root `AGENTS.md` §Advisory Job Triage SLAs — keep that table and this one in sync (`scripts/validate-ci-policy-parity.sh`).
 
 | Job | Triage SLA | Reason |
 |-----|------------|--------|
-| `agentops-eval-advisory` | 7d (release-blocking when stale) | The broad eval/canary corpus still runs on every PR, but brittle exact-string checks and baseline ratchets stay advisory until promoted |
-| `security-toolchain-gate` | 14d | External scanner tools may be unavailable; pattern scan (`security-scan`) is the blocking check. Install steps use 3-attempt exponential-backoff retry to absorb transient trivy/hadolint network timeouts (item 40, soc-z7qq) |
 | `doctor-check` | 30d | Reports stale CLI references; CI environment lacks some expected tools |
+| `factory-claim-ledger-strict` | 14d | Advisory claim-ledger drift observation for Wave 1E promotion evidence |
+| `practice-citations` | 14d | Advisory strict walk for missing or invalid `practices: [slug,...]` citations |
 | `check-test-staleness` | none (info-only) | Advisory -- flags tests that may need updating (item 33) |
 | `swarm-evidence` | none (info-only) | Advisory -- validates swarm evidence artifact shape; missing/malformed swarm artifacts are informational, not blocking (item 34) |
+| `executable-spec-link-integrity` | none (warn-only) | Warn-only directive/scenario link lint and orphan/gap trace until the F1.6 promotion criterion is met |
 
 ### Retrieval-bench ratchet (nightly)
 
@@ -210,27 +221,18 @@ One CI check is intentionally **not** wired into the local gate:
 |--------|--------|
 | `validate-learning-coherence.sh` | Fails on pre-existing frontmatter-only learning files; needs repo cleanup before local enforcement |
 
-## Git Hooks
+## Hookless by default — CI is the authoritative gate
 
-Hooks are installed via `ao init --hooks` or `ao hooks install`. They live in `hooks/` (source of truth) and are embedded into the CLI binary via `cli/embedded/hooks/`.
+AgentOps 3.0 ships **zero hooks**. The hooks were deleted, not demoted. What a
+pre-commit, pre-push, or session hook used to enforce locally is now enforced by
+a CI job on push (`.github/workflows/validate.yml`) — complexity budgets, ratchet
+non-regression, pre-mortem and task-metadata checks all run as required CI gates.
+The workflow is guided by skills plus the `ao` CLI; context flows through explicit
+channels (`ao inject` / context packets through ports), not hook side effects.
 
-### Pre-commit Hooks
-
-| Hook | Purpose |
-|------|---------|
-| `go-complexity-precommit.sh` | Enforces cyclomatic complexity budget on staged Go files (warn 15, fail 25) |
-| `pre-mortem-gate.sh` | Validates pre-mortem checklist completion before commit |
-| `task-validation-gate.sh` | Validates task metadata and constraints |
-
-### Pre-push Hooks
-
-| Hook | Purpose |
-|------|---------|
-| `ratchet-advance.sh` | Checks that quality ratchet metrics have not regressed |
-
-### Session Hooks
-
-The `ao` CLI also installs Claude Code session hooks (`SessionStart`, `PreToolUse`, `PostToolUse`, `UserPromptSubmit`) that drive AgentOps workflow nudges, validation gates, and JIT context. These are managed separately from git hooks.
+If you want a bounded gate of your own (block a dangerous operation, bootstrap a
+session, run a parity check), author it with the `hooks-authoring` skill.
+AgentOps does not ship one.
 
 ## Security Gate
 
@@ -274,14 +276,15 @@ scripts/toolchain-validate.sh --gate --json
 
 The release workflow (`release.yml`) triggers on version tags (`v*`) or manual dispatch:
 
-1. **Pre-flight gates:** `doc-release-gate` (blocking) + `security-gate` (soft -- release proceeds if security-gate fails)
+1. **Pre-flight gates:** `doc-release-gate` and `pre-publish-evidence` are both blocking
 2. **Version resolution:** Extracts version from tag or manual input
 3. **Validation:** Verifies tag exists, Homebrew token is valid
 4. **Release notes:** Extracts from CHANGELOG.md via `scripts/extract-release-notes.sh`
-5. **Publish:** GoReleaser builds cross-platform binaries (darwin/linux/windows, amd64/arm64)
-6. **Post-publish:** Applies curated release notes, generates CycloneDX SBOM, runs full security gate, writes advisory VIL readiness, uploads SBOM + security report + readiness as release assets
-7. **Attestation:** SLSA provenance via `actions/attest-build-provenance@v4` covering all tarballs, checksums, SBOM, security report, and readiness
-8. **Homebrew:** GoReleaser auto-updates `boshu2/homebrew-agentops` tap
+5. **Pre-publish evidence:** Generates CycloneDX SBOM, runs the full security gate, and writes release readiness before GoReleaser can start
+6. **Publish:** GoReleaser builds cross-platform binaries (darwin/linux/windows, amd64/arm64)
+7. **Post-publish:** Applies curated release notes and uploads the already-passed SBOM, security report, and readiness evidence as release assets
+8. **Attestation:** SLSA provenance via `actions/attest-build-provenance@v4` covering all tarballs, checksums, SBOM, security report, and readiness
+9. **Homebrew:** GoReleaser auto-updates `boshu2/homebrew-agentops` tap
 
 Manual dispatch is a rerun path, not the primary publish path for a new version. For a fresh release, push the tag. For post-tag fixes, use `scripts/retag-release.sh vX.Y.Z`. Do not start a manual dispatch in parallel with the tag-push workflow for the same tag.
 

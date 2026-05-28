@@ -111,7 +111,7 @@ while [[ $# -gt 0 ]]; do
       usage >&2
       exit 2
       ;;
-  esac
+esac
 done
 
 if [[ "$REPO_ROOT" != /* ]]; then
@@ -231,71 +231,41 @@ upsert_toml_key() {
   mv "$tmp" "$file"
 }
 
-count_codex_hook_handlers() {
-  local path="$1"
+remove_toml_key() {
+  local file="$1"
+  local section="$2"
+  local key="$3"
+  local tmp
 
-  jq -r '[.hooks | to_entries[]? | .value[]? | .hooks[]?] | length' "$path"
-}
+  [[ -f "$file" ]] || return 0
 
-merge_codex_hooks() {
-  local existing_file="$1"
-  local new_file="$2"
-  local tmp_file
-
-  tmp_file="$(mktemp)"
-
-  jq -n \
-    --slurpfile existing "$existing_file" \
-    --slurpfile new "$new_file" \
+  tmp="$(mktemp)"
+  awk \
+    -v section="$section" \
+    -v key="$key" \
     '
-    def agentops_scripts:
-      [
-        "session-start.sh",
-        "stop-team-guard.sh",
-        "stop-auto-handoff.sh",
-        "ao-flywheel-close.sh",
-        "prompt-nudge.sh",
-        "intent-echo.sh",
-        "quality-signals.sh",
-        "dangerous-git-guard.sh",
-        "go-test-precommit.sh",
-        "commit-review-gate.sh",
-        "lead-only-worker-git-guard.sh",
-        "holdout-isolation-gate.sh",
-        "standards-injector.sh",
-        "edit-knowledge-surface.sh",
-        "codex-parity-warn.sh",
-        "write-time-quality.sh",
-        "ratchet-advance.sh"
-      ];
-    def is_agentops_command($cmd):
-      ($cmd | type == "string") and any(agentops_scripts[]; $cmd | endswith("/hooks/" + .));
-    def strip_agentops_groups:
-      if (.hooks | type? == "object") then
-        .hooks |= with_entries(
-          .value |= [
-            .[]?
-            | .hooks = [
-                .hooks[]?
-                | select(is_agentops_command(.command // "") | not)
-              ]
-            | select((.hooks | length) > 0)
-          ]
-        )
-        | .hooks |= with_entries(select((.value | length) > 0))
-      else
-        .hooks = {}
-      end;
-    ($existing[0] // {}) as $existing_doc
-    | ($new[0] // {}) as $new_doc
-    | ($existing_doc | strip_agentops_groups) as $cleaned
-    | ($new_doc."$schema" // $existing_doc."$schema") as $schema
-    | {
-        "$schema": $schema,
-        "hooks": (($cleaned.hooks // {}) + ($new_doc.hooks // {}))
+    BEGIN {
+      in_section = 0
+    }
+    {
+      if ($0 == section) {
+        in_section = 1
+        print
+        next
       }
-    ' > "$tmp_file"
-  mv "$tmp_file" "$existing_file"
+
+      if (in_section && $0 ~ /^\[/) {
+        in_section = 0
+      }
+
+      if (in_section && $0 ~ ("^[[:space:]]*" key "[[:space:]]*=")) {
+        next
+      }
+
+      print
+    }
+    ' "$file" > "$tmp"
+  mv "$tmp" "$file"
 }
 
 stage_plugin_source() {
@@ -408,6 +378,7 @@ cp -R "$TMP_DIR/plugin" "$PLUGIN_CACHE_ROOT"
 upsert_toml_key "$CONFIG_FILE" "[features]" "plugins" "true"
 upsert_toml_key "$CONFIG_FILE" "[plugins.\"${PLUGIN_KEY}\"]" "enabled" "true"
 upsert_toml_key "$CONFIG_FILE" "[ui]" "suppress_unstable_features_warning" "true"
+remove_toml_key "$CONFIG_FILE" "[features]" "codex_hooks"
 
 INSTALLED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 MANIFEST_HASH="$(sha256_file "$PLUGIN_SKILLS_SRC/$SKILL_MANIFEST_NAME")"
@@ -415,6 +386,8 @@ require_path "$PLUGIN_SKILLS_DST/$SKILL_MANIFEST_NAME" "installed Codex skill ma
 INSTALLED_MANIFEST_HASH="$(sha256_file "$PLUGIN_SKILLS_DST/$SKILL_MANIFEST_NAME")"
 [[ "$MANIFEST_HASH" == "$INSTALLED_MANIFEST_HASH" ]] || fail "Installed plugin cache manifest hash mismatch; expected $MANIFEST_HASH, got $INSTALLED_MANIFEST_HASH"
 SKILL_COUNT="$(find "$PLUGIN_SKILLS_DST" -mindepth 2 -maxdepth 2 -name SKILL.md 2>/dev/null | wc -l | tr -d ' ')"
+HOOK_RUNTIME="hookless-default"
+HOOKS_INSTALLED=false
 
 archive_legacy_codex_skills
 archive_user_raw_skills
@@ -423,7 +396,8 @@ cat > "$PLUGIN_STATE_FILE" <<EOF
 {
   "installed_at": "$INSTALLED_AT",
   "install_mode": "native-plugin",
-  "hook_runtime": "codex-native-hooks",
+  "hook_runtime": "$HOOK_RUNTIME",
+  "hooks_installed": $HOOKS_INSTALLED,
   "version": "$VERSION",
   "manifest_hash": "$MANIFEST_HASH",
   "skill_count": $SKILL_COUNT,
@@ -436,9 +410,9 @@ cat > "$INSTALL_META" <<EOF
   "installed_at": "$INSTALLED_AT",
   "source": "install-codex-plugin.sh",
   "install_mode": "native-plugin",
-  "hook_runtime": "codex-native-hooks",
-  "hook_contract": "docs/contracts/hook-runtime-contract.md",
-  "lifecycle_commands": ["ao codex start", "ao codex stop"],
+  "hook_runtime": "$HOOK_RUNTIME",
+  "hooks_installed": $HOOKS_INSTALLED,
+  "lifecycle_commands": ["ao rpi phased", "ao codex status"],
   "plugin_key": "$PLUGIN_KEY",
   "version": "$VERSION",
   "plugin_root": "$PLUGIN_CACHE_ROOT",
@@ -450,59 +424,11 @@ cat > "$INSTALL_META" <<EOF
 }
 EOF
 
-# ── Install Codex-native hooks ──
-HOOKS_SRC="${REPO_ROOT}/hooks"
-HOOKS_DST="${PLUGIN_CACHE_ROOT}/hooks"
-
-if [[ -f "${HOOKS_SRC}/codex-hooks.json" ]]; then
-  mkdir -p "$HOOKS_DST"
-  # Copy hook scripts to plugin cache
-  for hook_script in "$HOOKS_SRC"/*.sh; do
-    [[ -f "$hook_script" ]] || continue
-    cp "$hook_script" "$HOOKS_DST/"
-    chmod +x "$HOOKS_DST/$(basename "$hook_script")"
-  done
-  # Copy shared helpers
-  if [[ -d "${REPO_ROOT}/lib" ]]; then
-    PLUGIN_LIB_DST="${PLUGIN_CACHE_ROOT}/lib"
-    mkdir -p "$PLUGIN_LIB_DST"
-    cp "${REPO_ROOT}/lib/"*.sh "$PLUGIN_LIB_DST/" 2>/dev/null || true
-    # Compatibility for older hooks that sourced helpers from hooks/ directly.
-    cp "${REPO_ROOT}/lib/"*.sh "$HOOKS_DST/" 2>/dev/null || true
-  fi
-
-  # Install hooks.json to ~/.codex/hooks.json (merge if exists)
-  CODEX_HOOKS_FILE="${CODEX_HOME}/hooks.json"
-  CODEX_HOOKS_SRC="${HOOKS_SRC}/codex-hooks.json"
-
-  # Replace AGENTOPS_PLUGIN_ROOT with actual path
-  RENDERED_HOOKS="$(sed "s|\${AGENTOPS_PLUGIN_ROOT:-~/.codex/plugins/cache/agentops}|${PLUGIN_CACHE_ROOT}|g" "$CODEX_HOOKS_SRC")"
-  RENDERED_HOOKS_FILE="${TMP_DIR}/rendered-codex-hooks.json"
-  printf '%s\n' "$RENDERED_HOOKS" > "$RENDERED_HOOKS_FILE"
-
-  if [[ -f "$CODEX_HOOKS_FILE" ]]; then
-    # Backup existing hooks
-    cp "$CODEX_HOOKS_FILE" "${CODEX_HOOKS_FILE}.bak.$(date +%s)"
-    if jq -e '.hooks | type == "array"' "$CODEX_HOOKS_FILE" >/dev/null 2>&1; then
-      warn "Existing ~/.codex/hooks.json uses the legacy flat-array shape; replacing it with the current Codex event-map schema."
-    fi
-    merge_codex_hooks "$CODEX_HOOKS_FILE" "$RENDERED_HOOKS_FILE"
-  else
-    mkdir -p "$(dirname "$CODEX_HOOKS_FILE")"
-    jq '.' "$RENDERED_HOOKS_FILE" > "$CODEX_HOOKS_FILE"
-  fi
-
-  # Enable hooks feature in config
-  upsert_toml_key "$CONFIG_FILE" "[features]" "codex_hooks" "true"
-
-  HOOK_HANDLER_COUNT="$(count_codex_hook_handlers "$RENDERED_HOOKS_FILE")"
-  HOOK_EVENT_COUNT="$(jq -r '.hooks | length' "$RENDERED_HOOKS_FILE")"
-  info "Codex hooks installed (${HOOK_HANDLER_COUNT} handlers across ${HOOK_EVENT_COUNT} events)"
-  echo "  Hooks config: $CODEX_HOOKS_FILE"
-  echo "  Hook scripts: $HOOKS_DST/"
-else
-  warn "No codex-hooks.json found — hooks not installed"
-fi
+# ── Hookless default ──
+# AgentOps 3.0 ships zero hooks: the Codex lifecycle is driven by skills + the
+# `ao` CLI. Ensure any stale Codex hooks feature flag is disabled.
+remove_toml_key "$CONFIG_FILE" "[features]" "hooks"
+info "Codex hooks not installed (hookless — skills + ao CLI only)"
 
 info "Native Codex plugin installed"
 echo "  Plugin key: $PLUGIN_KEY"

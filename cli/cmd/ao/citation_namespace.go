@@ -1,3 +1,4 @@
+// practices: [wiki-knowledge-surface, distributed-tracing]
 package main
 
 import (

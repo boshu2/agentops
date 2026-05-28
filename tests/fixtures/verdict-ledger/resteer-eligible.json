@@ -1,0 +1,106 @@
+{
+  "schema_version": "verdict-ledger.v1",
+  "generated_at": "2026-05-17T20:00:00Z",
+  "records": [
+    {
+      "record_type": "iteration",
+      "directive_id": "d-reduce-flaky-tests",
+      "run_timestamp": "2026-05-17T10:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.4,
+      "scenario_count": 5,
+      "evaluated_count": 5,
+      "run_id": "run-301"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-reduce-flaky-tests",
+      "run_timestamp": "2026-05-17T11:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.41,
+      "scenario_count": 5,
+      "evaluated_count": 5,
+      "run_id": "run-302"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-reduce-flaky-tests",
+      "run_timestamp": "2026-05-17T12:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.42,
+      "scenario_count": 5,
+      "evaluated_count": 5,
+      "run_id": "run-303"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-reduce-flaky-tests",
+      "run_timestamp": "2026-05-17T13:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.43,
+      "scenario_count": 5,
+      "evaluated_count": 5,
+      "run_id": "run-304"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-reduce-flaky-tests",
+      "run_timestamp": "2026-05-17T14:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.44,
+      "scenario_count": 5,
+      "evaluated_count": 5,
+      "run_id": "run-305"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-improve-coverage",
+      "run_timestamp": "2026-05-17T10:00:00Z",
+      "scenario_verdict": "pass",
+      "scenario_satisfaction": 0.91,
+      "scenario_count": 4,
+      "evaluated_count": 4,
+      "run_id": "run-301"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-improve-coverage",
+      "run_timestamp": "2026-05-17T11:00:00Z",
+      "scenario_verdict": "pass",
+      "scenario_satisfaction": 0.93,
+      "scenario_count": 4,
+      "evaluated_count": 4,
+      "run_id": "run-302"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-improve-coverage",
+      "run_timestamp": "2026-05-17T12:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.6,
+      "scenario_count": 4,
+      "evaluated_count": 4,
+      "run_id": "run-303"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-improve-coverage",
+      "run_timestamp": "2026-05-17T13:00:00Z",
+      "scenario_verdict": "pass",
+      "scenario_satisfaction": 0.95,
+      "scenario_count": 4,
+      "evaluated_count": 4,
+      "run_id": "run-304"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-improve-coverage",
+      "run_timestamp": "2026-05-17T14:00:00Z",
+      "scenario_verdict": "pass",
+      "scenario_satisfaction": 0.96,
+      "scenario_count": 4,
+      "evaluated_count": 4,
+      "run_id": "run-305"
+    }
+  ]
+}

@@ -172,7 +172,6 @@ harvest_promoted_count="$(count_files "$PROMOTE_DIR" '*.md')"
   "$AO_BIN" defrag \
     --prune \
     --dedup \
-    --oscillation-sweep \
     --output-dir "$DEFRAG_DIR" \
     --quiet >/dev/null
 )

@@ -56,11 +56,21 @@ make_common_stubs() {
 #!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$*" >> "${AO_LOG:?}"
-if [[ "$1 $2" == "overnight setup" ]]; then
+# Strip leading global flags (--output FOO / -o FOO) so subcommand match works.
+args=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --output|-o) shift 2 ;;
+    --output=*|-o=*) shift ;;
+    *) args+=("$1"); shift ;;
+  esac
+done
+set -- "${args[@]}"
+if [[ "${1:-} ${2:-}" == "overnight setup" ]]; then
   printf '{"status":"dry-run","dream":{"runners":["claude","codex"],"scheduler_mode":"systemd"}}\n'
   exit 0
 fi
-if [[ "$1 $2 $3" == "daemon jobs submit" ]]; then
+if [[ "${1:-} ${2:-} ${3:-}" == "daemon jobs submit" ]]; then
   if [[ "${AO_DAEMON_SUBMIT_FAIL:-}" == "1" ]]; then
     printf 'daemon submit failed\n' >&2
     exit 55
@@ -68,7 +78,16 @@ if [[ "$1 $2 $3" == "daemon jobs submit" ]]; then
   printf '{"job_id":"job-dream","status":"queued"}\n'
   exit 0
 fi
-if [[ "$1 $2" == "overnight start" ]]; then
+if [[ "${1:-} ${2:-} ${3:-}" == "daemon jobs wait" ]]; then
+  if [[ "${AO_DAEMON_WAIT_FAIL:-}" == "1" ]]; then
+    printf '{"status":"failed"}\n'; exit 0
+  fi
+  printf '{"status":"completed"}\n'; exit 0
+fi
+if [[ "${1:-} ${2:-} ${3:-}" == "daemon jobs list" ]]; then
+  printf '[]\n'; exit 0
+fi
+if [[ "${1:-} ${2:-}" == "overnight start" ]]; then
   printf '{"status":"ok"}\n'
   exit 0
 fi
@@ -476,7 +495,9 @@ add_remote_nightly_branches() {
         --landing-policy off
 
     [ "$status" -eq 0 ]
-    grep -q -- '--landing-branch nightly/2026-05-01' "$AO_RPI_LOG"
+    # soc-bcrn UW5/5b: nightly migrated from shell wrapper to `ao daemon jobs submit`.
+    # The landing-branch arg is now a JSON payload field, not a CLI arg in $AO_RPI_LOG.
+    jq -e '.landing_branch == "nightly/2026-05-01" and .landing_policy == "off"' "$TMP_DIR/out/evolve-rpi-run-payload.json"
     jq -e '.runtime.command == "codex" and .runtime.mode == "direct" and .phases.evolve == "ok"' "$TMP_DIR/out/digest.json"
 }
 

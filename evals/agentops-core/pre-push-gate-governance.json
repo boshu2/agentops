@@ -3,6 +3,7 @@
   "id": "agentops-core.pre-push-gate-governance",
   "name": "AgentOps Pre-Push Gate Governance Canary",
   "description": "Offline public canary for pre-push gate behavior and eval-gate wiring: BATS fixture coverage, eval-agentops fast gate integration, GIT env isolation, and warning/failure handling.",
+  "practices": ["llm-eval-harness", "cmm-process-maturity"],
   "domain": "process",
   "visibility": "public_canary",
   "tier": "deterministic",
@@ -40,11 +41,11 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "1..50"},
+        {"type": "stdout_contains_auto_detect", "value": {"command": "bats tests/scripts/pre-push-gate.bats", "pattern": "^1\\.\\.([0-9]+)", "expected_group": 1, "tolerance_pct": 0}},
         {"type": "stdout_contains", "value": "ok 6 pre-push-gate.sh passes when no Go changes"},
         {"type": "stdout_contains", "value": "ok 21 pre-push-gate.sh clears GIT env for skill CLI snippets"},
         {"type": "stdout_contains", "value": "ok 22 pre-push-gate.sh clears GIT env for CLI docs parity"},
-        {"type": "stdout_contains", "value": "ok 42 pre-push-gate.sh test-home-isolation lint stub exists in fake repo (paired stub guard)"}
+        {"type": "stdout_contains", "value": "ok 45 pre-push-gate.sh test-home-isolation lint stub exists in fake repo (paired stub guard)"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "safety"],
       "critical": true

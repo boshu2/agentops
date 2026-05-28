@@ -271,7 +271,7 @@ Scan the compiled wiki for quality issues.
 Run cleanup to find stale, duplicate, and oscillating artifacts.
 
 ```bash
-ao defrag --prune --dedup --oscillation-sweep
+ao defrag --prune --dedup
 ```
 
 Read `.agents/defrag/latest.json` and note: orphaned learnings (unreferenced, >30 days
@@ -310,8 +310,9 @@ AgentOps exposes this flow through `ao compile`. If you want unattended
 compilation, use your host scheduler (`launchd`, `cron`, `systemd`, CI, etc.)
 to invoke `ao compile --force --runtime ollama` or call the lower-level
 `bash skills-codex/compile/scripts/compile.sh` directly.
-If you want the broader private overnight loop, use `ao overnight start`
-instead of inventing a parallel Dream wrapper inside `$compile`.
+If you want the broader out-of-session compounding loop, run it on Gas City (the
+reference out-of-session substrate) instead of inventing a parallel Dream
+wrapper inside `$compile`.
 
 ## Interactive Modes
 

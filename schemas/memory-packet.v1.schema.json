@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/memory-packet.v1.schema.json",
   "title": "AgentOps Memory Packet v1",
   "description": "Boundary-memory packet emitted by lifecycle hooks for session continuity.",
+  "practices": ["wiki-knowledge-surface", "event-sourcing-cqrs"],
   "type": "object",
   "additionalProperties": false,
   "required": [

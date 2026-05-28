@@ -36,7 +36,7 @@ jobs:
           chmod +x tests/docs/validate-doc-release.sh
           ./tests/docs/validate-doc-release.sh
 
-  security-gate:
+  pre-publish-evidence:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -44,7 +44,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Set up Python
@@ -59,15 +59,64 @@ jobs:
           GOBIN=/usr/local/bin go install github.com/securego/gosec/v2/cmd/gosec@latest
           GOBIN=/usr/local/bin go install github.com/zricethezav/gitleaks/v8@latest
 
-      - name: Run security gate
+      - name: Generate pre-publish release evidence
         run: |
+          mkdir -p release-artifacts
+
+          # CycloneDX SBOM for Go module dependencies.
+          GOBIN=/usr/local/bin go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0
+          (cd cli && cyclonedx-gomod mod -licenses -json -output ../release-artifacts/sbom-cyclonedx-go-mod.json)
+
+          # Security is a pre-publish gate. Keep the JSON for release consumers,
+          # but fail before GoReleaser when the gate returns findings.
           chmod +x scripts/security-gate.sh
-          ./scripts/security-gate.sh --mode quick
-        continue-on-error: true
+          set +e
+          ./scripts/security-gate.sh --mode full --json > release-artifacts/security-gate-summary.json
+          SECURITY_RC=$?
+          set -e
+          jq empty release-artifacts/security-gate-summary.json
+          # The toolchain grades quality-lint findings as WARN_QUALITY — explicitly non-blocking
+          # ("Gate: PASS (quality warnings, non-blocking)" in scripts/toolchain-validate.sh). This
+          # pre-publish SECURITY gate blocks only on actual security findings (BLOCKED_HIGH /
+          # BLOCKED_CRITICAL), so accept pass + warn_quality and print the summary on a real block.
+          GATE_STATUS="$(jq -r '(.gate_status // "") | ascii_downcase' release-artifacts/security-gate-summary.json)"
+          if [[ "$GATE_STATUS" != "pass" && "$GATE_STATUS" != "warn_quality" ]]; then
+            echo "ERROR: pre-publish security gate blocked: gate_status=${GATE_STATUS}"
+            jq . release-artifacts/security-gate-summary.json 2>/dev/null || cat release-artifacts/security-gate-summary.json
+            exit 1
+          fi
+          if [[ "$SECURITY_RC" -ne 0 ]]; then
+            echo "ERROR: pre-publish security gate failed with exit code $SECURITY_RC"
+            exit "$SECURITY_RC"
+          fi
+
+          # Public CI is a VIL lane. Physical HIL remains attached through the
+          # authoritative local release audit because private targets are not
+          # available to the public publisher runner.
+          chmod +x scripts/check-release-readiness.sh
+          scripts/check-release-readiness.sh \
+            --mode official \
+            --artifact-dir release-artifacts \
+            --out release-artifacts/release-readiness.json \
+            --sil pass \
+            --vil pass \
+            --hil-status waived \
+            --hil-waiver "GitHub release publisher cannot access private HIL targets; local release audit remains authoritative for HIL" \
+            --artifacts pass \
+            --security pass \
+            --eval pass
+          jq -e '.release_status == "pass"' release-artifacts/release-readiness.json
+
+      - name: Upload pre-publish release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: pre-publish-release-evidence
+          path: release-artifacts
+          if-no-files-found: error
 
   publish:
-    needs: [doc-release-gate, security-gate]
-    if: always() && needs.doc-release-gate.result == 'success'
+    needs: [doc-release-gate, pre-publish-evidence]
+    if: needs.doc-release-gate.result == 'success' && needs.pre-publish-evidence.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -77,12 +126,18 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
 
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.14'
+
+      - name: Download pre-publish release evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: pre-publish-release-evidence
+          path: release-artifacts
 
       - name: Resolve version
         id: version
@@ -138,6 +193,15 @@ jobs:
           fi
           echo "Homebrew token validated"
 
+      - name: Validate curated release notes (hard gate)
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${VERSION}$" | head -1)
+          chmod +x scripts/validate-release-notes.sh
+          # --since runs the coverage gate: every product area the release actually
+          # touched must be documented (guards against an under-scoped major).
+          scripts/validate-release-notes.sh "$VERSION" --since "$PREV_TAG"
+
       - name: Extract release notes from CHANGELOG.md
         run: |
           VERSION="${{ steps.version.outputs.version }}"
@@ -174,47 +238,6 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           gh release edit "$VERSION" --notes-file release-notes.md
           echo "Release notes applied to $VERSION ($(wc -l < release-notes.md) lines)"
-
-      - name: Install scanner tools
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install semgrep
-          GOBIN=/usr/local/bin go install github.com/securego/gosec/v2/cmd/gosec@latest
-          GOBIN=/usr/local/bin go install github.com/zricethezav/gitleaks/v8@latest
-
-      - name: Generate SBOM and security report assets
-        run: |
-          mkdir -p release-artifacts
-
-          # CycloneDX SBOM for Go module dependencies
-          GOBIN=/usr/local/bin go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@v1.9.0
-          (cd cli && cyclonedx-gomod mod -licenses -json -output ../release-artifacts/sbom-cyclonedx-go-mod.json)
-
-          # Security report for release consumers (non-blocking at publish stage)
-          chmod +x scripts/security-gate.sh
-          set +e
-          ./scripts/security-gate.sh --mode full --json > release-artifacts/security-gate-summary.json
-          SECURITY_RC=$?
-          set -e
-          echo "security-gate exit code: $SECURITY_RC"
-
-          if ! jq empty release-artifacts/security-gate-summary.json > /dev/null 2>&1; then
-            jq -n --arg note "security-gate output was not valid JSON" '{parse_error:true,note:$note}' > release-artifacts/security-gate-summary.json
-          fi
-
-          # Public CI is a VIL lane. HIL is captured by the authoritative local
-          # release audit because private physical hosts are not available here.
-          chmod +x scripts/check-release-readiness.sh
-          scripts/check-release-readiness.sh \
-            --mode advisory \
-            --artifact-dir release-artifacts \
-            --out release-artifacts/release-readiness.json \
-            --sil pass \
-            --vil pass \
-            --hil-status skipped \
-            --artifacts pass \
-            --security pass \
-            --eval pass
 
       - name: Upload SBOM, security report, and readiness evidence to release
         env:

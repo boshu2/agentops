@@ -1,3 +1,4 @@
+// practices: [ddd-bounded-context, design-by-contract]
 package main
 
 import (

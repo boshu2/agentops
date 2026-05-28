@@ -2,10 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.dev/schemas/codex-marketplace.v1.schema.json",
   "title": "AgentOps Codex Marketplace Manifest v1",
+  "$comment": "practices: [microservices, team-topologies]",
   "type": "object",
   "additionalProperties": false,
   "required": ["name", "plugins"],
   "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
     "$schema": {
       "type": "string"
     },

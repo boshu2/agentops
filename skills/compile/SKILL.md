@@ -1,6 +1,14 @@
 ---
 name: compile
-description: 'Compile .agents knowledge wiki.'
+description: Compile .agents knowledge wiki.
+practices:
+- wiki-knowledge-surface
+- ddd-bounded-context
+hexagonal_role: supporting
+consumes: []
+produces:
+- .agents/compiled/lint-report.md
+context_rel: []
 skill_api_version: 1
 user-invocable: true
 context:
@@ -8,13 +16,15 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [TASK]
+    exclude:
+    - TASK
   intel_scope: full
 metadata:
   tier: knowledge
   stability: stable
   dependencies: []
-output_contract: ".agents/compiled/*.md, .agents/compiled/index.md, .agents/compiled/log.md, .agents/compiled/lint-report.md"
+output_contract: .agents/compiled/*.md, .agents/compiled/index.md, .agents/compiled/log.md,
+  .agents/compiled/lint-report.md
 ---
 # Compile — Knowledge Compiler
 
@@ -131,8 +141,9 @@ AgentOps exposes this flow through `ao compile`. If you want unattended
 compilation, use your host scheduler (`launchd`, `cron`, `systemd`, CI, etc.)
 to invoke `ao compile --force --runtime ollama` or call the lower-level
 `bash skills/compile/scripts/compile.sh` directly.
-If you want the broader private overnight loop, use `ao overnight start`
-instead of inventing a parallel Dream wrapper inside `/compile`.
+If you want the broader out-of-session compounding loop, run it on Gas City (the
+reference out-of-session substrate) instead of inventing a parallel Dream
+wrapper inside `/compile`.
 
 ## Interactive Modes
 
@@ -189,6 +200,8 @@ For unattended runs, `bash skills/compile/scripts/compile.sh` supports:
 | Hash file missing | First compilation | Normal — full compile runs, hashes saved after |
 
 ## Reference Documents
+
+- [references/compile.feature](references/compile.feature) — Executable spec: Mine→Grow→Lint→Defrag rebuild, lint-not-autofix, incremental batching, evolve warmup (soc-qk4b)
 
 - [references/phases.md](references/phases.md) — full per-phase procedure (mine → grow → compile → lint → defrag → report)
 - [references/confidence-scoring.md](references/confidence-scoring.md)

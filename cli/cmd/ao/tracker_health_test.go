@@ -1,3 +1,4 @@
+// practices: [dora-metrics, distributed-tracing]
 package main
 
 import (

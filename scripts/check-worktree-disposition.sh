@@ -53,7 +53,7 @@ is_tracked_policy_path() {
 
 is_disposition_ignored_path() {
     case "$1" in
-        .agents/*|wiki/*)
+        .agents/*|.ntm/*|wiki/*)
             return 0
             ;;
         *)

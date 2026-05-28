@@ -130,6 +130,95 @@ teardown() {
     [[ "$output" == *"--goals-passing must be numeric"* ]]
 }
 
+@test "evolve-log-cycle.sh records an XP/BDD/TDD trace from --trace-json" {
+    echo "real change" >> "$FAKE_REPO/README.md"
+    git -C "$FAKE_REPO" add README.md
+    git -C "$FAKE_REPO" commit -q -m "real change"
+    CANONICAL_SHA="$(git -C "$FAKE_REPO" rev-parse --short HEAD)"
+
+    cat > "$FAKE_REPO/trace.json" <<'EOF'
+{
+  "goal_hypothesis": "raise test-pass-rate",
+  "selected_gap": "cycle ledger lacks an evidence trace",
+  "gherkin": "Feature: trace\n  Scenario: reconstruct a cycle",
+  "first_failing_proof": "bats evolve-log-cycle FAIL",
+  "red_evidence": "trace test red",
+  "green_evidence": "trace test green",
+  "refactor_note": "none",
+  "validation_evidence": "go test ./... green",
+  "ratchet_action": "ao ratchet record implement",
+  "goal_reshape": "gap closed; goal unchanged"
+}
+EOF
+
+    run bash "$FAKE_REPO/scripts/evolve-log-cycle.sh" \
+        --repo-root "$FAKE_REPO" \
+        --cycle 1 \
+        --target evolve-trace \
+        --result improved \
+        --canonical-sha "$CANONICAL_SHA" \
+        --cycle-start-sha "$BASE_SHA" \
+        --goals-passing 17 \
+        --goals-total 18 \
+        --trace-json "$FAKE_REPO/trace.json" \
+        --timestamp 2026-03-07T16:00:00Z
+
+    [ "$status" -eq 0 ]
+    run jq -r '.trace.goal_hypothesis' "$FAKE_REPO/.agents/evolve/cycle-history.jsonl"
+    [ "$status" -eq 0 ]
+    [ "$output" = "raise test-pass-rate" ]
+    run jq -r '.trace.ratchet_action' "$FAKE_REPO/.agents/evolve/cycle-history.jsonl"
+    [ "$output" = "ao ratchet record implement" ]
+}
+
+@test "evolve-log-cycle.sh records an exemption-only trace for trivial cycles" {
+    run bash "$FAKE_REPO/scripts/evolve-log-cycle.sh" \
+        --repo-root "$FAKE_REPO" \
+        --cycle 1 \
+        --target idle \
+        --result unchanged \
+        --trace-json '{"exemption_reason":"trivial one-shot bookkeeping; no Gherkin appropriate"}' \
+        --timestamp 2026-03-07T16:00:00Z
+
+    [ "$status" -eq 0 ]
+    run jq -r '.trace.exemption_reason' "$FAKE_REPO/.agents/evolve/cycle-history.jsonl"
+    [ "$status" -eq 0 ]
+    [ "$output" = "trivial one-shot bookkeeping; no Gherkin appropriate" ]
+}
+
+@test "evolve-log-cycle.sh rejects a malformed --trace-json payload" {
+    run bash "$FAKE_REPO/scripts/evolve-log-cycle.sh" \
+        --repo-root "$FAKE_REPO" \
+        --cycle 1 \
+        --target idle \
+        --result unchanged \
+        --trace-json '{not json'
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"--trace-json"* ]]
+
+    run bash "$FAKE_REPO/scripts/evolve-log-cycle.sh" \
+        --repo-root "$FAKE_REPO" \
+        --cycle 1 \
+        --target idle \
+        --result unchanged \
+        --trace-json '[1,2,3]'
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"--trace-json"* ]]
+}
+
+@test "evolve-log-cycle.sh omits the trace field when --trace-json is absent" {
+    run bash "$FAKE_REPO/scripts/evolve-log-cycle.sh" \
+        --repo-root "$FAKE_REPO" \
+        --cycle 1 \
+        --target idle \
+        --result unchanged \
+        --timestamp 2026-03-07T16:00:00Z
+    [ "$status" -eq 0 ]
+    run jq -r 'has("trace")' "$FAKE_REPO/.agents/evolve/cycle-history.jsonl"
+    [ "$status" -eq 0 ]
+    [ "$output" = "false" ]
+}
+
 @test "evolve-log-cycle.sh rejects non-sequential cycle numbers" {
     echo "real change" >> "$FAKE_REPO/README.md"
     git -C "$FAKE_REPO" add README.md

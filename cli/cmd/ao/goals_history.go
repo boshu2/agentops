@@ -1,3 +1,4 @@
+// practices: [dora-metrics, lean-startup]
 package main
 
 import (
@@ -17,7 +18,7 @@ var goalsHistoryCmd = &cobra.Command{
 		return goals.RunHistory(goals.HistoryOptions{
 			GoalID: goalsHistoryGoalID,
 			Since:  goalsHistorySince,
-			JSON:   goalsJSON,
+			JSON:   goalsJSONOutput(),
 		})
 	},
 }

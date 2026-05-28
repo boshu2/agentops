@@ -3,6 +3,7 @@
   "id": "agentops-core.hidden-cli-internals",
   "name": "AgentOps Hidden CLI Internals Canary",
   "description": "Offline public canary for hidden and backwards-compatible CLI internals that support knowledge storage, indexing, tempering, and MemRL migration.",
+  "practices": ["llm-eval-harness", "pragmatic-programmer"],
   "domain": "cli",
   "visibility": "public_canary",
   "tier": "deterministic",

@@ -1,3 +1,4 @@
+// practices: [dora-metrics, lean-startup]
 package main
 
 import (
@@ -15,7 +16,7 @@ var goalsMetaCmd = &cobra.Command{
 		return goals.RunMeta(goals.MetaOptions{
 			GoalsFile: resolveGoalsFile(),
 			Timeout:   time.Duration(goalsTimeout) * time.Second,
-			JSON:      goalsJSON,
+			JSON:      goalsJSONOutput(),
 		})
 	},
 }

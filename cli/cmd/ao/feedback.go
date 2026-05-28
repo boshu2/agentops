@@ -1,3 +1,4 @@
+// practices: [dora-metrics, lean-startup]
 package main
 
 import (
@@ -20,11 +21,6 @@ var (
 	feedbackAlpha   float64
 	feedbackHelpful bool
 	feedbackHarmful bool
-)
-
-const (
-	impliedHelpfulRewardThreshold = lifecycle.ImpliedHelpfulRewardThreshold
-	impliedHarmfulRewardThreshold = lifecycle.ImpliedHarmfulRewardThreshold
 )
 
 var feedbackCmd = &cobra.Command{

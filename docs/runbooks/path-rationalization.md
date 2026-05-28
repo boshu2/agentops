@@ -159,4 +159,4 @@ If any of those fail, restore the backup and rework the offending step rather th
 
 ---
 
-> Pattern adopted from `path-rationalization` (jsm/ACFS skill corpus). Methodology only — no verbatim text.
+> Pattern adopted from `path-rationalization` (ACFS skill corpus). Methodology only — no verbatim text.

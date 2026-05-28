@@ -377,13 +377,18 @@ func reviewOnePageWithOptions(path string, opts reviewPageOptions) (bool, error)
 	}
 	tmpPath := tmp.Name()
 	if _, err := tmp.WriteString(promoted); err != nil {
-		tmp.Close()
-		os.Remove(tmpPath)
+		// Best-effort cleanup; the write error below is the actionable one.
+		_ = tmp.Close()
+		_ = os.Remove(tmpPath)
 		return false, err
 	}
-	tmp.Close()
+	// Close gates durability of the buffered write before the rename.
+	if err := tmp.Close(); err != nil {
+		_ = os.Remove(tmpPath)
+		return false, fmt.Errorf("close review tempfile: %w", err)
+	}
 	if err := os.Rename(tmpPath, path); err != nil {
-		os.Remove(tmpPath)
+		_ = os.Remove(tmpPath)
 		return false, err
 	}
 	return true, nil

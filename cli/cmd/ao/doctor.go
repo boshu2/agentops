@@ -1,27 +1,22 @@
+// practices: [sre, resilience-patterns]
 package main
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
-	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
-	"github.com/boshu2/agentops/cli/internal/openclaw"
+	"github.com/boshu2/agentops/cli/internal/doctor"
 	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
 var (
-	doctorJSON           bool
-	doctorProductRuntime bool
+	doctorJSON bool
 )
 
 var doctorCmd = &cobra.Command{
@@ -41,7 +36,11 @@ Examples:
 func init() {
 	doctorCmd.GroupID = "core"
 	doctorCmd.Flags().BoolVar(&doctorJSON, "json", false, "Output results as JSON")
-	doctorCmd.Flags().BoolVar(&doctorProductRuntime, "product-runtime", false, "Fail closed on daemon product runtime readiness checks")
+	// Attach the diagnose-and-repair engine surface: additive flags
+	// (--fix, --dry-run, --only, ...) plus subcommands (fix, undo, explain,
+	// capabilities, health, robot-docs, gc, ls, diff). The legacy 16-check
+	// behavior is preserved when no engine flag/subcommand is used.
+	registerDoctorSurface()
 	rootCmd.AddCommand(doctorCmd)
 }
 
@@ -54,12 +53,6 @@ func gatherDoctorChecks() []doctorCheck {
 	return []doctorCheck{
 		{Name: "ao CLI", Status: "pass", Detail: formatVersion(version), Required: true},
 		checkCLIDependencies(),
-		checkDaemonRuntime(),
-		checkDaemonLedgerHealth(time.Now(), daemonpkg.LedgerHealthDefaultThresholds()),
-		checkDaemonTelemetry(),
-		checkGasCityBridge(),
-		checkOpenClawConsumer(),
-		checkHookCoverage(),
 		checkKnowledgeBase(),
 		checkKnowledgeFreshness(),
 		checkSearchIndex(),
@@ -80,388 +73,64 @@ func newestFileModTime(entries []os.DirEntry) time.Time  { return quality.Newest
 func countEstablished(dir string) int                    { return quality.CountEstablished(dir) }
 
 func runDoctor(cmd *cobra.Command, args []string) error {
-	checks := gatherDoctorChecks()
-	if doctorProductRuntime {
-		checks = gatherDoctorProductRuntimeChecks()
+	// Engine-flag invocations (--fix, --explain, --robot-triage) route entirely
+	// through the diagnose-and-repair engine.
+	if doctorFix || doctorExplainFlag != "" || doctorRobotTriage {
+		return runDoctorEngineDefault(cmd)
 	}
-	return quality.RunDoctor(quality.DoctorOptions{
+
+	// `ao doctor --json` is the engine's machine surface: a single diagnose
+	// Report (schema_version, exit_code, findings).
+	if doctorWantsJSON() {
+		return runDoctorEngineDefault(cmd)
+	}
+
+	// Human-readable form: the legacy check table, with engine findings
+	// appended additively so existing output never regresses.
+	checks := gatherDoctorChecks()
+	if err := quality.RunDoctor(quality.DoctorOptions{
 		JSON:   doctorJSON,
 		Checks: checks,
 		Stdout: cmd.OutOrStdout(),
-	})
+	}); err != nil {
+		return err
+	}
+	// Additive: also run the registered failure-mode detectors and surface
+	// their findings without disturbing the legacy `checks` output above. With
+	// the FOUNDATION wave's empty registry this is a no-op; later waves light up.
+	return appendEngineFindings(cmd)
+}
+
+// appendEngineFindings runs the doctor engine's detectors and appends their
+// findings to the human-readable `ao doctor` output. It never alters the legacy
+// `checks` output or the bare command's exit semantics — a doctorExitError is
+// only returned when engine findings exist (mapped to exit 1).
+func appendEngineFindings(cmd *cobra.Command) error {
+	// With no detectors registered there is nothing to add and no reason to
+	// create a run directory; skip entirely so the legacy command stays
+	// side-effect-free.
+	if len(doctor.Detectors()) == 0 {
+		return nil
+	}
+	// JSON callers receive the engine Report from the dedicated --json path in
+	// runDoctor; never emit a second JSON document here.
+	if doctorWantsJSON() {
+		return nil
+	}
+	opts, err := doctorEngineOptions()
+	if err != nil {
+		return nil // never let the engine break the legacy command
+	}
+	rep, derr := doctor.Diagnose(opts)
+	if derr != nil || rep == nil || len(rep.Findings) == 0 {
+		return nil
+	}
+	renderEngineFindings(cmd, rep)
+	return exitErr(rep.ExitCode, "doctor findings present")
 }
 
 func checkCLIDependencies() doctorCheck {
 	return quality.CheckCLIDependencies(exec.LookPath)
-}
-
-func checkDaemonRuntime() doctorCheck {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return doctorCheck{Name: "Daemon Runtime", Status: "warn", Detail: "cannot determine working directory", Required: false}
-	}
-	baseURL, err := resolveDaemonURL(cwd, "")
-	if err != nil {
-		return doctorCheck{Name: "Daemon Runtime", Status: "warn", Detail: fmt.Sprintf("activation unavailable: %v", err), Required: false}
-	}
-	return checkDaemonRuntimeURL(baseURL)
-}
-
-func checkDaemonRuntimeURL(baseURL string) doctorCheck {
-	baseURL = strings.TrimRight(baseURL, "/")
-	ready, err := fetchDaemonReady(context.Background(), baseURL)
-	if err != nil {
-		return doctorCheck{Name: "Daemon Runtime", Status: "warn", Detail: fmt.Sprintf("readiness unavailable at %s: %v", baseURL, err), Required: false}
-	}
-	detail := fmt.Sprintf(
-		"%s; replay=%s projection=%s events=%d last_event=%s",
-		baseURL,
-		ready.LedgerReplayStatus,
-		ready.ProjectionStatus,
-		ready.ProjectionLag.EventCount,
-		doctorValueOrDash(ready.ProjectionLag.LastEventID),
-	)
-	if len(ready.DegradedReasons) > 0 {
-		detail += "; degraded=" + strings.Join(ready.DegradedReasons, "; ")
-	}
-	if !ready.Ready {
-		return doctorCheck{Name: "Daemon Runtime", Status: "warn", Detail: "not ready at " + detail, Required: false}
-	}
-	return doctorCheck{Name: "Daemon Runtime", Status: "pass", Detail: "ready at " + detail, Required: false}
-}
-
-func checkDaemonLedgerHealth(now time.Time, thresholds daemonpkg.LedgerHealthThresholds) doctorCheck {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return doctorCheck{Name: "Daemon Ledger Health", Status: "warn", Detail: "cannot determine working directory", Required: false}
-	}
-	store := daemonpkg.NewStore(cwd)
-	if _, statErr := os.Stat(store.Dir()); os.IsNotExist(statErr) {
-		return doctorCheck{Name: "Daemon Ledger Health", Status: "pass", Detail: "no daemon store at " + store.Dir(), Required: false}
-	}
-	health, err := store.LedgerHealth(now, thresholds)
-	if err != nil {
-		return doctorCheck{Name: "Daemon Ledger Health", Status: "warn", Detail: fmt.Sprintf("ledger health unavailable: %v", err), Required: false}
-	}
-	detail := formatLedgerHealthDetail(health)
-	if len(health.WarnReasons) > 0 {
-		return doctorCheck{Name: "Daemon Ledger Health", Status: "warn", Detail: detail + "; " + strings.Join(health.WarnReasons, "; "), Required: false}
-	}
-	return doctorCheck{Name: "Daemon Ledger Health", Status: "pass", Detail: detail, Required: false}
-}
-
-func formatLedgerHealthDetail(h daemonpkg.LedgerHealth) string {
-	parts := []string{
-		fmt.Sprintf("ledger=%dB/%dB", h.LedgerSizeBytes, h.LedgerMaxBytes),
-	}
-	if h.HasSnapshot {
-		parts = append(parts, fmt.Sprintf("snapshot_age=%s", h.LatestSnapshotAge.Round(time.Second)))
-	} else {
-		parts = append(parts, "snapshot=none")
-	}
-	parts = append(parts, fmt.Sprintf("archives=%d", h.ArchiveCount))
-	if !h.OldestArchiveTime.IsZero() {
-		parts = append(parts, "oldest_archive="+h.OldestArchiveTime.Format(time.RFC3339))
-	}
-	return strings.Join(parts, "; ")
-}
-
-func checkDaemonTelemetry() doctorCheck {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return doctorCheck{Name: "Daemon Telemetry", Status: "warn", Detail: "cannot determine working directory", Required: false}
-	}
-	baseURL, err := resolveDaemonURL(cwd, "")
-	if err != nil {
-		return doctorCheck{Name: "Daemon Telemetry", Status: "warn", Detail: fmt.Sprintf("activation unavailable: %v", err), Required: false}
-	}
-	return checkDaemonTelemetryURL(baseURL)
-}
-
-func checkDaemonTelemetryURL(baseURL string) doctorCheck {
-	baseURL = strings.TrimRight(baseURL, "/")
-	events, err := fetchDaemonEvents(context.Background(), baseURL)
-	if err != nil {
-		return doctorCheck{Name: "Daemon Telemetry", Status: "warn", Detail: fmt.Sprintf("events unavailable at %s: %v", baseURL, err), Required: false}
-	}
-	telemetry := daemonpkg.BuildLedgerTelemetry(events.Events, daemonTelemetryClock(baseURL, events.Events), daemonpkg.DefaultTelemetryWindow)
-	return doctorCheck{
-		Name:     "Daemon Telemetry",
-		Status:   "pass",
-		Detail:   daemonpkg.FormatLedgerTelemetrySummary(telemetry),
-		Required: false,
-	}
-}
-
-func daemonTelemetryClock(baseURL string, events []daemonpkg.LedgerEvent) time.Time {
-	var health daemonpkg.ReadOnlyHealthResponse
-	if err := fetchDaemonJSON(context.Background(), strings.TrimRight(baseURL, "/")+"/health", &health); err == nil {
-		if parsed, parseErr := time.Parse(time.RFC3339Nano, health.Now); parseErr == nil {
-			return parsed.UTC()
-		}
-	}
-	latest := time.Time{}
-	for _, event := range events {
-		occurredAt, err := time.Parse(time.RFC3339Nano, event.OccurredAt)
-		if err != nil {
-			continue
-		}
-		occurredAt = occurredAt.UTC()
-		if latest.IsZero() || occurredAt.After(latest) {
-			latest = occurredAt
-		}
-	}
-	if !latest.IsZero() {
-		return latest
-	}
-	return time.Now().UTC()
-}
-
-func checkGasCityBridge() doctorCheck {
-	cityPath := ""
-	if cwd, err := os.Getwd(); err == nil {
-		cityPath = gcBridgeCityPath(cwd)
-	}
-	return checkGasCityBridgeWith(cityPath, exec.Command, exec.LookPath)
-}
-
-func checkGasCityBridgeWith(cityPath string, execCommand gcExecFn, lookPath gcLookFn) doctorCheck {
-	diag := gcBridgeDiagnose(cityPath, execCommand, lookPath, true)
-	detail := formatGasCityDiagnostic(diag)
-	if cityPath != "" {
-		detail += "; city=" + cityPath
-	}
-	if diag.Ready {
-		return doctorCheck{Name: "GasCity Bridge", Status: "pass", Detail: detail, Required: false}
-	}
-	return doctorCheck{Name: "GasCity Bridge", Status: "warn", Detail: detail, Required: false}
-}
-
-func gatherDoctorProductRuntimeChecks() []doctorCheck {
-	return []doctorCheck{
-		checkDaemonRuntime(),
-		checkGasCityProductRuntime(),
-		checkOpenClawConsumer(),
-	}
-}
-
-func checkGasCityProductRuntime() doctorCheck {
-	cityPath := ""
-	if cwd, err := os.Getwd(); err == nil {
-		cityPath = gcBridgeCityPath(cwd)
-	}
-	return checkGasCityProductRuntimeWith(cityPath, exec.Command, exec.LookPath)
-}
-
-func checkGasCityProductRuntimeWith(cityPath string, execCommand gcExecFn, lookPath gcLookFn) doctorCheck {
-	diag := gcBridgeDiagnose(cityPath, execCommand, lookPath, false)
-	detail := formatGasCityDiagnostic(diag)
-	if cityPath != "" {
-		detail += "; city=" + cityPath
-	}
-	if diag.APIReachable && diag.ReadinessReady && diag.Ready {
-		return doctorCheck{Name: "GasCity Product Runtime", Status: "pass", Detail: detail, Required: true}
-	}
-	return doctorCheck{Name: "GasCity Product Runtime", Status: "fail", Detail: detail, Required: true}
-}
-
-func formatGasCityDiagnostic(diag gcBridgeDiagnostics) string {
-	parts := []string{
-		fmt.Sprintf("binary=%t", diag.BinaryAvailable),
-		fmt.Sprintf("version=%s", doctorValueOrDash(diag.Version)),
-		fmt.Sprintf("version_ok=%t", diag.VersionOK),
-		fmt.Sprintf("api=%t", diag.APIReachable),
-		fmt.Sprintf("ready=%t", diag.ReadinessReady),
-	}
-	if diag.FallbackEnabled {
-		parts = append(parts, "fallback=enabled")
-	}
-	if diag.Reason != "" {
-		parts = append(parts, "reason="+diag.Reason)
-	}
-	return strings.Join(parts, "; ")
-}
-
-func checkOpenClawConsumer() doctorCheck {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return doctorCheck{Name: "OpenClaw Consumer", Status: "warn", Detail: "cannot determine working directory", Required: false}
-	}
-	baseURL, err := resolveDaemonURL(cwd, "")
-	if err != nil {
-		return doctorCheck{Name: "OpenClaw Consumer", Status: "warn", Detail: fmt.Sprintf("daemon activation unavailable: %v", err), Required: false}
-	}
-	return checkOpenClawConsumerURL(baseURL)
-}
-
-func checkOpenClawConsumerURL(baseURL string) doctorCheck {
-	baseURL = strings.TrimRight(baseURL, "/")
-	var health openclaw.HealthResponse
-	if err := fetchDaemonJSON(context.Background(), baseURL+"/openclaw/v1/health", &health); err != nil {
-		return doctorCheck{Name: "OpenClaw Consumer", Status: "warn", Detail: fmt.Sprintf("health unavailable at %s: %v", baseURL, err), Required: false}
-	}
-	detail := fmt.Sprintf(
-		"%s; status=%s snapshot=%s snapshot_status=%s runs=%d jobs=%d wiki=%d last_event=%s",
-		baseURL,
-		doctorValueOrDash(health.Status),
-		doctorValueOrDash(health.SnapshotID),
-		health.SnapshotStatus,
-		health.ResourceCounts.Runs,
-		health.ResourceCounts.Jobs,
-		health.ResourceCounts.Wiki,
-		doctorValueOrDash(health.Source.LastEventID),
-	)
-	if len(health.DegradedReasons) > 0 {
-		detail += "; degraded=" + strings.Join(health.DegradedReasons, "; ")
-	}
-	if health.Status != "ok" || !health.Ready || health.SnapshotStatus != openclaw.SnapshotStatusCurrent {
-		return doctorCheck{Name: "OpenClaw Consumer", Status: "warn", Detail: "not ready at " + detail, Required: false}
-	}
-	return doctorCheck{Name: "OpenClaw Consumer", Status: "pass", Detail: "ready at " + detail, Required: false}
-}
-
-func doctorValueOrDash(value string) string {
-	if strings.TrimSpace(value) == "" {
-		return "-"
-	}
-	return value
-}
-
-// checkHookCoverage checks if Claude hooks are installed with event coverage.
-// Stays in cmd/ao because it depends on local AllEventNames / hookCoverageContract / hookGroupContainsAo.
-func checkHookCoverage() doctorCheck {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return doctorCheck{Name: "Hook Coverage", Status: "fail", Detail: "cannot determine home directory", Required: true}
-	}
-	contract := resolveHookCoverageContract()
-
-	// Prefer settings.json (active Claude configuration).
-	settingsPath := filepath.Join(homeDir, ".claude", "settings.json")
-	if data, err := os.ReadFile(settingsPath); err == nil {
-		if hooksMap, ok := extractHooksMap(data); ok {
-			return evaluateHookCoverageWithContract(hooksMap, contract)
-		}
-	}
-
-	// Fallback: standalone hooks.json format.
-	hooksPath := filepath.Join(homeDir, ".claude", "hooks.json")
-	if data, err := os.ReadFile(hooksPath); err == nil {
-		if hooksMap, ok := extractHooksMap(data); ok {
-			return evaluateHookCoverageWithContract(hooksMap, contract)
-		}
-	}
-
-	return doctorCheck{
-		Name:     "Hook Coverage",
-		Status:   "warn",
-		Detail:   "No hooks found \u2014 run 'ao hooks install --force'" + hookCoverageFallbackDetail(contract.FallbackReason),
-		Required: false,
-	}
-}
-
-func evaluateHookCoverage(hooksMap map[string]any) doctorCheck {
-	return evaluateHookCoverageWithContract(hooksMap, resolveHookCoverageContract())
-}
-
-func hookCoverageFallbackDetail(reason string) string {
-	if reason == "" {
-		return ""
-	}
-	return fmt.Sprintf(" (coverage contract fallback: %s)", reason)
-}
-
-func evaluateHookCoverageWithContract(hooksMap map[string]any, contract hookCoverageContract) doctorCheck {
-	activeEvents := contract.ActiveEvents
-	if len(activeEvents) == 0 {
-		activeEvents = AllEventNames()
-	}
-	installedEvents := countInstalledEventsForList(hooksMap, activeEvents)
-	fallbackSuffix := hookCoverageFallbackDetail(contract.FallbackReason)
-
-	if installedEvents == 0 {
-		return doctorCheck{
-			Name:     "Hook Coverage",
-			Status:   "warn",
-			Detail:   "No hooks found \u2014 run 'ao hooks install --force'" + fallbackSuffix,
-			Required: false,
-		}
-	}
-
-	if !hookGroupContainsAo(hooksMap, "SessionStart") {
-		return doctorCheck{
-			Name:     "Hook Coverage",
-			Status:   "warn",
-			Detail:   "Non-ao hooks detected \u2014 run 'ao hooks install --force'" + fallbackSuffix,
-			Required: false,
-		}
-	}
-
-	if installedEvents < len(activeEvents) {
-		return doctorCheck{
-			Name:     "Hook Coverage",
-			Status:   "warn",
-			Detail:   fmt.Sprintf("Partial coverage: %d/%d events \u2014 run 'ao hooks install --force'%s", installedEvents, len(activeEvents), fallbackSuffix),
-			Required: false,
-		}
-	}
-
-	return doctorCheck{
-		Name:     "Hook Coverage",
-		Status:   "pass",
-		Detail:   fmt.Sprintf("Full coverage: %d/%d events%s", installedEvents, len(activeEvents), fallbackSuffix),
-		Required: false,
-	}
-}
-
-func extractHooksMap(data []byte) (map[string]any, bool) {
-	var parsed map[string]any
-	if err := json.Unmarshal(data, &parsed); err != nil {
-		return nil, false
-	}
-
-	// settings.json shape
-	if hooksRaw, ok := parsed["hooks"]; ok {
-		if hooksMap, ok := hooksRaw.(map[string]any); ok {
-			return hooksMap, true
-		}
-	}
-
-	// hooks.json shape with top-level events
-	for _, event := range AllEventNames() {
-		if _, ok := parsed[event]; ok {
-			return parsed, true
-		}
-	}
-
-	return nil, false
-}
-
-func countHooksInMap(raw any) int {
-	count := 0
-	switch v := raw.(type) {
-	case map[string]any:
-		for _, val := range v {
-			if arr, ok := val.([]any); ok {
-				count += len(arr)
-			} else {
-				count += countHooksInMap(val)
-			}
-		}
-	case []any:
-		count += len(v)
-	}
-	return count
-}
-
-func countInstalledEvents(hooksMap map[string]any) int {
-	installed := 0
-	for _, event := range AllEventNames() {
-		if groups, ok := hooksMap[event].([]any); ok && len(groups) > 0 {
-			installed++
-		}
-	}
-	return installed
 }
 
 func checkKnowledgeBase() doctorCheck {
@@ -537,15 +206,12 @@ type staleReference = quality.StaleReference
 
 func checkStaleReferences() doctorCheck {
 	return quality.CheckStaleReferences([]string{
-		"hooks/*.sh",
 		"skills/*/SKILL.md",
 		"skills/*/references/*.md",
 		"skills-codex/*/SKILL.md",
 		"skills-codex-overrides/*/SKILL.md",
 		"docs/*.md",
 		"scripts/*.sh",
-		"hooks/examples/*.sh",
-		"cli/embedded/hooks/*.sh",
 		"docs/contracts/*.md",
 		"docs/plans/*.md",
 	})

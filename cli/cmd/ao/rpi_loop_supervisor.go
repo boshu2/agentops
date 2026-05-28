@@ -1,3 +1,4 @@
+// practices: [agile-manifesto, dora-metrics]
 package main
 
 import (
@@ -50,6 +51,7 @@ var (
 
 type rpiLoopSupervisorConfig struct {
 	Surface               string
+	MaxCycles             int
 	RalphPreset           bool
 	FailurePolicy         string
 	CycleRetries          int
@@ -124,6 +126,7 @@ func resolveLoopSupervisorConfig(cmd *cobra.Command, cwd string) (rpiLoopSupervi
 func buildBaseLoopConfig() rpiLoopSupervisorConfig {
 	return rpiLoopSupervisorConfig{
 		Surface:               loopSurfaceRPI,
+		MaxCycles:             rpiMaxCycles,
 		RalphPreset:           rpiRalph,
 		FailurePolicy:         strings.ToLower(strings.TrimSpace(rpiFailurePolicy)),
 		CycleRetries:          rpiCycleRetries,

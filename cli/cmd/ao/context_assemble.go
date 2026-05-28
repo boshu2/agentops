@@ -1,3 +1,4 @@
+// practices: [ai-assisted-dev, distributed-tracing]
 package main
 
 import (
@@ -306,14 +307,6 @@ func gatherHistory(cwd string, budget int) string {
 
 func formatHistoryEntry(entry map[string]interface{}, index int) string {
 	return aocontext.FormatHistoryEntry(entry, index)
-}
-
-func lookupHistoryField(entry map[string]interface{}, primary string, aliases ...string) (interface{}, bool) {
-	return aocontext.LookupHistoryField(entry, primary, aliases...)
-}
-
-func formatHistoryValue(value interface{}) interface{} {
-	return aocontext.FormatHistoryValue(value)
 }
 
 func gatherIntel(cwd, task, phase string, budget int) string {

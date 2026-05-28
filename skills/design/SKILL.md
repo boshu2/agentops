@@ -1,6 +1,18 @@
 ---
 name: design
-description: 'Validate product fit before discovery.'
+description: Validate product fit before discovery.
+practices:
+- lean-startup
+- ddd-bounded-context
+- mythical-man-month
+hexagonal_role: domain
+consumes:
+- standards
+produces:
+- result.json
+context_rel:
+- kind: shared-kernel
+  with: standards
 skill_api_version: 1
 user-invocable: true
 context:
@@ -8,13 +20,14 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: full
 metadata:
   tier: judgment
   dependencies:
-    - council
-    - shared
+  - council
+  - shared
 output_contract: skills/council/schemas/verdict.json
 ---
 # /design -- Product Validation Gate
@@ -137,6 +150,8 @@ DESIGN VERDICT: <PASS|WARN|FAIL>
 ---
 
 ## Reference Documents
+
+- [references/design.feature](references/design.feature) — Executable spec: goal-vs-PRODUCT.md council verdict before discovery, --quick inline, --strict threshold (soc-qk4b)
 
 - [references/alignment-matrix.md](references/alignment-matrix.md) -- Scoring rubric for the five alignment dimensions
 - [references/project-reality-check.md](references/project-reality-check.md) -- Quick reality-check prompts before committing to a project direction

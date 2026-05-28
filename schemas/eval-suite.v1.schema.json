@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/eval-suite.v1.schema.json",
   "title": "AgentOps Eval Suite v1",
   "description": "Manifest schema for AgentOps public canary and private holdout evaluation suites.",
+  "practices": ["llm-eval-harness", "tdd"],
   "type": "object",
   "additionalProperties": false,
   "required": [

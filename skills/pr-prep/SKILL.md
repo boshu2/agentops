@@ -1,23 +1,36 @@
 ---
 name: pr-prep
-description: 'Prepare PR commits and body.'
+description: Prepare PR commits and body.
+practices:
+- continuous-integration
+- continuous-delivery
+- gitops
+hexagonal_role: driving-adapter
+consumes:
+- domain
+produces:
+- git-changes
+context_rel:
+- kind: customer-of
+  with: domain
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 license: MIT
 compatibility: Requires git, gh CLI
 metadata:
   author: AI Platform Team
-  version: "1.4.0"
+  version: 1.4.0
   tier: contribute
   internal: false
 allowed-tools: Read, Write, Bash, Grep, Glob
-output_contract: "PR body (markdown), git branch"
+output_contract: PR body (markdown), git branch
 ---
 # PR Preparation Skill
 
@@ -251,6 +264,8 @@ gh pr create --title "type(scope): brief description" \
 | Title/body mismatch | Scope drift during edits | Regenerate from latest branch diff and constraints |
 
 ## Reference Documents
+
+- [references/pr-prep.feature](references/pr-prep.feature) — Executable spec: analyze repo conventions/history, validate tests first, generate PR body + branch (soc-qk4b)
 
 - [references/case-study-historical-context.md](references/case-study-historical-context.md)
 - [references/lessons-learned.md](references/lessons-learned.md)

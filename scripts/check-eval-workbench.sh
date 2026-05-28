@@ -56,4 +56,92 @@ fi
 # Verify DevOps tests pass
 (cd "$WORKBENCH/devops" && bash tests/test-deploy.sh >/dev/null 2>&1) || fail "DevOps deploy tests broken"
 
-echo "eval-workbench-verify: PASS ($task_count tasks, suite has $(python3 -c "import json; print(len(json.load(open('$suite'))['cases']))" 2>/dev/null) cases)"
+behavioral_case_count=$(python3 -c "import json; print(len(json.load(open('$suite'))['cases']))" 2>/dev/null)
+
+# --- D10: head-to-head delta against baseline scorecard ---
+# Generates a current scorecard JSON and compares to the committed baseline.
+# Any structural regression (fewer tasks, fewer cases, missing components,
+# missing required dimensions) fails the gate with the delta payload so a
+# PR reviewer sees what regressed.
+baseline="$WORKBENCH/baseline-scorecard.json"
+scorecard_out="$WORKBENCH/scorecard-latest.json"
+
+python3 <<PY > "$scorecard_out"
+import json
+import os
+
+agent_suite_path = "$agent_suite"
+behavioral_suite_path = "$suite"
+behavioral_suite = json.load(open(behavioral_suite_path))
+dims = str(behavioral_suite.get("scoring", {}).get("dimensions", []))
+
+current = {
+    "task_count": $task_count,
+    "prompt_count": $prompt_count,
+    "agent_eval_cases": $agent_case_count,
+    "behavioral_eval_cases": $behavioral_case_count,
+    "behavioral_evidence_kind": behavioral_suite.get("evidence_kind"),
+    "behavioral_scoring_dimensions_include_correctness": "correctness" in dims,
+    "go_components_present": os.path.isfile("$WORKBENCH/go-cli/go.mod"),
+    "python_components_present": os.path.isfile("$WORKBENCH/python-api/pyproject.toml"),
+    "devops_components_present": os.path.isfile("$WORKBENCH/devops/scripts/deploy.sh"),
+}
+print(json.dumps(current, indent=2, sort_keys=True))
+PY
+
+if [ -f "$baseline" ]; then
+    delta_output=$(python3 - <<PY
+import json, sys
+
+baseline = json.load(open("$baseline"))
+current = json.load(open("$scorecard_out"))
+
+tracked_numeric = ["task_count", "prompt_count", "agent_eval_cases", "behavioral_eval_cases"]
+tracked_bool = [
+    "behavioral_scoring_dimensions_include_correctness",
+    "go_components_present", "python_components_present", "devops_components_present",
+]
+
+regressions = []
+for k in tracked_numeric:
+    if k.startswith("_"): continue
+    b = baseline.get(k)
+    c = current.get(k)
+    if b is None or c is None: continue
+    if c < b:
+        regressions.append(f"{k}: baseline={b} current={c} (regressed by {b - c})")
+for k in tracked_bool:
+    if k.startswith("_"): continue
+    b = baseline.get(k)
+    c = current.get(k)
+    if b is True and c is not True:
+        regressions.append(f"{k}: baseline=true current={c}")
+
+# evidence_kind must remain behavior_fixture
+if baseline.get("behavioral_evidence_kind") == "behavior_fixture" and current.get("behavioral_evidence_kind") != "behavior_fixture":
+    regressions.append(f"behavioral_evidence_kind: baseline=behavior_fixture current={current.get('behavioral_evidence_kind')}")
+
+if regressions:
+    print("REGRESSION")
+    for r in regressions:
+        print("  - " + r)
+    sys.exit(1)
+print("DELTA_OK")
+PY
+)
+    delta_rc=$?
+    if [ "$delta_rc" -ne 0 ]; then
+        echo "eval-workbench-verify: FAIL — D10 delta detected vs baseline-scorecard.json" >&2
+        echo "$delta_output" >&2
+        echo "" >&2
+        echo "Delta scorecard artifact: $scorecard_out" >&2
+        echo "Baseline:                 $baseline" >&2
+        echo "Refresh baseline only if regression is intentional:" >&2
+        echo "  cp $scorecard_out $baseline" >&2
+        exit 1
+    fi
+else
+    echo "eval-workbench-verify: WARN — no baseline-scorecard.json present (D10 delta check skipped)"
+fi
+
+echo "eval-workbench-verify: PASS ($task_count tasks, $agent_case_count agent cases, $behavioral_case_count behavioral cases; D10 delta check OK)"

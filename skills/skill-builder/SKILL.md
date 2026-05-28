@@ -1,19 +1,30 @@
 ---
 name: skill-builder
-description: 'Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill".'
+description: 'Scaffold or absorb new SKILL.md files against the unified AgentOps template.
+  Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill".'
+practices:
+- code-complete
+- pragmatic-programmer
+- design-patterns
+hexagonal_role: supporting
+consumes: []
+produces:
+- converted-skill
+context_rel: []
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: questions
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: meta
   dependencies:
-    - skill-auditor
-    - converter
+  - skill-auditor
+  - converter
   stability: experimental
 output_contract: skills/skill-builder/schemas/build-report.json
 ---
@@ -28,6 +39,7 @@ Materializes a new skill against the unified template at `references/skill-templ
 - **Self-audit is mandatory.** After every successful build, the build script invokes `/skill-auditor` against the new skill directory. A FAIL verdict aborts the build. **Why:** PR-002 (external validation gate) — the builder must not declare its own work complete.
 - **Codex parity is day-1, not later.** `from-scratch`, `from-template`, and `absorb-external` modes must produce both `skills/<name>/SKILL.md` AND `skills-codex/<name>/SKILL.md` + `skills-codex/<name>/prompt.md`. **Why:** finding `2026-05-03-codex-skill-shape-is-dual-file` — codex SKILL.md uses slim frontmatter (no `skill_api_version`); prompt.md is mandatory; `audit-codex-parity.sh` is a content scanner that won't catch frontmatter drift.
 - **250-line ceiling on new SKILL.md.** Use `references/` for overflow. **Why:** finding `f-2026-05-01-025` — every Skill() invocation reloads 5-15KB; multi-lifecycle sessions compound to 150-200KB+ pure scaffolding.
+- **Clean-room factory inputs only.** When using lessons learned from external corpora, read [references/agentops-skill-factory.md](references/agentops-skill-factory.md) and use only AgentOps-owned summaries, scripts, and rubrics. **Why:** productization must improve structure without copying protected third-party skill content.
 
 ## Modes
 
@@ -72,6 +84,18 @@ For `absorb-external`, the external SKILL.md's content (Constraints / Workflow /
 The build script tail invokes `/skill-auditor` on `skills/<new-name>`. WARN is acceptable for v1 skills (e.g., `experimental` stability). FAIL aborts.
 
 **Checkpoint:** `audit_pass=true` in build report.
+
+### Phase 5: Factory score overlay
+
+For AgentOps skill upgrades, use the productization score as a patch selector,
+not as a replacement for `skill-auditor`:
+
+```bash
+python3 skills/skill-auditor/scripts/score_agentops_skill.py skills/<name> --markdown
+```
+
+Choose the smallest patch that improves the score while preserving the
+canonical template and Codex parity constraints.
 
 ## Output Specification
 
@@ -144,3 +168,5 @@ skills-codex/<name>/
 ## References
 
 - [references/skill-template.md](references/skill-template.md) — canonical SKILL.md template + auditor checklist + PRODUCT.md alignment
+- [references/agentops-skill-factory.md](references/agentops-skill-factory.md) — clean-room factory workflow and productization rules
+- [references/skill-builder.feature](references/skill-builder.feature) — Executable spec: mode dispatch, materialize from template, Codex parity bundle, self-audit + factory score (soc-qk4b)

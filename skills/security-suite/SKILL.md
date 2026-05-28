@@ -1,13 +1,26 @@
 ---
 name: security-suite
-description: 'Run composable security analysis.'
+description: Run composable security analysis.
+practices:
+- supply-chain-integrity
+- design-by-contract
+- sre
+hexagonal_role: driven-adapter
+consumes:
+- repo-context
+produces:
+- security-report.json
+context_rel:
+- kind: supplier-to
+  with: vibe
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: execution
@@ -214,6 +227,8 @@ python3 skills/security-suite/scripts/prompt_redteam.py scan \
 | Redteam scan fails after a wording cleanup | The attack pack no longer matches the intended guardrail language in target files | Review `redteam/redteam-results.json`, confirm whether the control regressed or the regex is too brittle, then update the target file or the pack intentionally. |
 
 ## Reference Documents
+
+- [references/security-suite.feature](references/security-suite.feature) — Executable spec: composable primitives (static/dynamic/contract) → security-report.json, authorization-bounded, supplier-to vibe (soc-qk4b)
 
 - [references/owasp-checklist.md](references/owasp-checklist.md)
 - [references/agentops-redteam-pack.json](references/agentops-redteam-pack.json)

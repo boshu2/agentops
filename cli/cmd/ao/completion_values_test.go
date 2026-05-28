@@ -1,3 +1,4 @@
+// practices: [pragmatic-programmer, agile-manifesto]
 package main
 
 import (
@@ -98,7 +99,6 @@ func TestFlagCompletions_Registered(t *testing.T) {
 	tmplValues := templateCompletionValues()
 	phaseValues := sortedCompletionValues("task", "startup", "planning", "pre-mortem", "validation")
 	tierValues := sortedCompletionValues("gold", "silver", "bronze")
-	planStatusValues := sortedCompletionValues("active", "completed", "abandoned", "superseded")
 
 	cases := []struct {
 		name string
@@ -129,15 +129,9 @@ func TestFlagCompletions_Registered(t *testing.T) {
 		{"rpi phased --from", mustFindCompletionCommand(t, "rpi", "phased"), "from",
 			sortedCompletionValues("discovery", "implementation", "validation", "research", "plan", "pre-mortem", "crank", "vibe", "post-mortem")},
 		{"rpi phased --runtime", mustFindCompletionCommand(t, "rpi", "phased"), "runtime",
-			sortedCompletionValues("auto", "direct", "stream", "tmux", "gc")},
-		{"overnight curator enqueue --kind", overnightCuratorEnqueueCmd, "kind",
-			sortedCompletionValues("ingest-claude-session", "lint-wiki", "dream-seed")},
-		{"overnight curator event --severity", overnightCuratorEventCmd, "severity",
-			sortedCompletionValues("info", "warn", "high", "critical")},
+			sortedCompletionValues("auto", "direct", "stream", "tmux")},
 		{"feedback-loop --citation-type", feedbackLoopCmd, "citation-type",
 			sortedCompletionValues("retrieved", "applied", "all")},
-		{"plans list --status", plansListCmd, "status", planStatusValues},
-		{"plans update --status", plansUpdateCmd, "status", planStatusValues},
 	}
 
 	for _, tc := range cases {

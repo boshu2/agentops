@@ -1,3 +1,4 @@
+// practices: [snapshot-testing, llm-eval-harness]
 package main
 
 import (

@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/learning.v1.schema.json",
   "title": "Learning",
   "description": "Knowledge artifact extracted by Hephaestus",
+  "practices": ["wiki-knowledge-surface", "lean-startup"],
   "type": "object",
   "required": ["learning_id", "content", "category", "confidence", "utility_score", "briefing_count", "source_session", "created_at", "tombstoned", "schema_version"],
   "properties": {

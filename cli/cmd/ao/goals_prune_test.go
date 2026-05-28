@@ -1,3 +1,4 @@
+// practices: [dora-metrics, lean-startup]
 package main
 
 import (
@@ -120,15 +121,15 @@ Mission.
 
 	oldFile := goalsFile
 	oldDryRun := dryRun
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
 		dryRun = oldDryRun
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = goalsPath
 	dryRun = false
-	goalsJSON = false
+	output = "table"
 
 	err := goalsPruneCmd.RunE(goalsPruneCmd, nil)
 	if err != nil {
@@ -159,15 +160,15 @@ Mission.
 
 	oldFile := goalsFile
 	oldDryRun := dryRun
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
 		dryRun = oldDryRun
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = goalsPath
 	dryRun = true
-	goalsJSON = false
+	output = "table"
 
 	err := goalsPruneCmd.RunE(goalsPruneCmd, nil)
 	if err != nil {
@@ -207,15 +208,15 @@ Mission.
 
 	oldFile := goalsFile
 	oldDryRun := dryRun
-	oldJSON := goalsJSON
+	oldJSON := output
 	defer func() {
 		goalsFile = oldFile
 		dryRun = oldDryRun
-		goalsJSON = oldJSON
+		output = oldJSON
 	}()
 	goalsFile = goalsPath
 	dryRun = false
-	goalsJSON = false
+	output = "table"
 
 	err := goalsPruneCmd.RunE(goalsPruneCmd, nil)
 	if err != nil {

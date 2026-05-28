@@ -3,6 +3,7 @@
   "id": "agentops-core.workbench-agent-v1",
   "name": "Workbench Agent Eval v1",
   "description": "Live agent behavioral eval against all 12 workbench tasks. Invokes claude/codex CLI against broken fixtures, scores the fix. Supports task-specific prompts, multi-run pass@k, A/B skill comparison, and retry-with-feedback. Use --dry-run for CI; real agent invocation for local metrics.",
+  "practices": ["llm-eval-harness", "bdd-gherkin"],
   "domain": "behavioral",
   "visibility": "public_canary",
   "tier": "deterministic",

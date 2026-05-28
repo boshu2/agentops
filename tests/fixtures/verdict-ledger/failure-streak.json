@@ -1,0 +1,36 @@
+{
+  "schema_version": "verdict-ledger.v1",
+  "generated_at": "2026-05-17T18:00:00Z",
+  "records": [
+    {
+      "record_type": "iteration",
+      "directive_id": "d-reduce-flaky-tests",
+      "run_timestamp": "2026-05-17T12:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.4,
+      "scenario_count": 5,
+      "evaluated_count": 5,
+      "run_id": "run-001"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-reduce-flaky-tests",
+      "run_timestamp": "2026-05-17T13:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.45,
+      "scenario_count": 5,
+      "evaluated_count": 5,
+      "run_id": "run-002"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-reduce-flaky-tests",
+      "run_timestamp": "2026-05-17T14:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.42,
+      "scenario_count": 5,
+      "evaluated_count": 5,
+      "run_id": "run-003"
+    }
+  ]
+}

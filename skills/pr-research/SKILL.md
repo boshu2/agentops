@@ -1,23 +1,34 @@
 ---
 name: pr-research
-description: 'Research an upstream repo.'
+description: Research an upstream repo.
+practices:
+- wiki-knowledge-surface
+- legacy-code-seams
+- pragmatic-programmer
+hexagonal_role: driven-adapter
+consumes:
+- external-api
+produces:
+- result.json
+context_rel: []
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 license: MIT
 compatibility: Requires git, gh CLI
 metadata:
   author: AI Platform Team
-  version: "1.0.0"
+  version: 1.0.0
   tier: contribute
   internal: false
 allowed-tools: Read, Write, Bash, Grep, Glob
-output_contract: ".agents/research/YYYY-MM-DD-upstream-*.md"
+output_contract: .agents/research/YYYY-MM-DD-upstream-*.md
 ---
 # PR Research Skill
 
@@ -170,7 +181,7 @@ Write to `.agents/research/YYYY-MM-DD-pr-{repo-slug}.md`
 | #N | bug/feat | easy/medium |
 
 ## Next Steps
--> `$pr-plan .agents/research/YYYY-MM-DD-pr-{repo}.md`
+-> `$plan .agents/research/YYYY-MM-DD-pr-{repo}.md`
 ```
 
 ---
@@ -188,7 +199,7 @@ Write to `.agents/research/YYYY-MM-DD-pr-{repo-slug}.md`
 ## Workflow Integration
 
 ```
-$pr-research <repo> -> $pr-plan <research> -> implement -> $pr-prep
+$pr-research <repo> -> $plan <research> -> implement -> $pr-prep
 ```
 
 ## Examples
@@ -221,5 +232,7 @@ $pr-research <repo> -> $pr-plan <research> -> implement -> $pr-prep
 | Output is too generic | Insufficient repository evidence | Add concrete file/PR references and explicit pattern findings |
 
 ## Reference Documents
+
+- [references/pr-research.feature](references/pr-research.feature) — Executable spec: explore upstream conventions/structure, write cited upstream artifact, first-step-before-plan (soc-qk4b)
 
 - [references/upstream-research-checklist.md](references/upstream-research-checklist.md)

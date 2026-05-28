@@ -1,6 +1,6 @@
 # Skills Reference
 
-Complete reference for all 73 AgentOps skills (64 user-facing + 9 internal).
+Complete reference for all 75 AgentOps skills (65 user-facing + 10 internal).
 
 Skills are the primitive layer of AgentOps. Higher-level entry points like
 `/implement`, `/validation`, `/rpi`, and `/evolve` compose those primitives
@@ -239,10 +239,12 @@ Code complexity analysis using radon (Python) or gocyclo (Go).
 
 ### /doc
 
-Generate documentation for code.
+Generate and validate repo documentation. `--mode` selects the artifact family: default (code/API docs, code-maps), `--mode=readme` (gold-standard README via interview + council validation, absorbed `/readme`), `--mode=oss` (open-source doc pack — CONTRIBUTING/CHANGELOG/AGENTS, absorbed `/oss-docs`).
 
 ```bash
-/doc services/auth/
+/doc services/auth/          # code/API docs (default)
+/doc --mode=readme           # gold-standard README
+/doc --mode=oss              # scaffold/audit OSS doc pack
 ```
 
 ### /pre-mortem
@@ -322,16 +324,13 @@ Interactive onboarding — mini RPI cycle for new users.
 
 ### /dream
 
-Interactive Dream operator surface for setup, bedtime runs, and morning
-reports on top of the shared `ao overnight` engine.
+Retirement pointer. The in-tree out-of-session compounding engine was removed
+(soc-2rtm0); scheduled, between-session knowledge compounding now runs via Gas
+City (the reference substrate), and AgentOps ships no out-of-session runner of
+its own. In-session knowledge primitives stay on-demand: `/harvest`, `/forge`,
+`/compile`, `/inject`. Daytime code compounding is `/evolve` via `/rpi`.
 
-```bash
-/dream setup
-/dream start "close the loop on today's auth work"
-/dream report
-```
-
-**Output:** Dream setup preview or `.agents/overnight/<run>/summary.{json,md}`
+**Output:** none — this skill no longer drives an in-repo command.
 
 ### /trace
 
@@ -410,28 +409,12 @@ Use official OpenAI docs MCP access for current API/platform guidance with citat
 /openai-docs "responses api tools"
 ```
 
-### /oss-docs
-
-Scaffold and audit open-source documentation packs (README, CONTRIBUTING, changelog, AGENTS).
-
-```bash
-/oss-docs
-```
-
 ### /pr-research
 
 Research upstream contribution conventions before implementing an external PR.
 
 ```bash
 /pr-research https://github.com/org/repo
-```
-
-### /pr-plan
-
-Create a scoped contribution plan from PR research artifacts.
-
-```bash
-/pr-plan
 ```
 
 ### /pr-implement
@@ -458,22 +441,6 @@ Prepare structured PR bodies with validation evidence. Includes commit split adv
 /pr-prep
 ```
 
-### /pr-retro
-
-Capture lessons from accepted/rejected PR outcomes.
-
-```bash
-/pr-retro
-```
-
-### /update
-
-Reinstall all AgentOps skills globally from the latest source.
-
-```bash
-/update                      # Reinstall all 73 skills
-```
-
 ---
 
 ## Additional Skills
@@ -484,7 +451,7 @@ phases, and flags.
 | Skill | Purpose |
 |-------|---------|
 | `/autodev` | Manage the `PROGRAM.md` operational contract for autonomous development loops |
-| `/bootstrap` | One-command product-layer setup (`GOALS.md`, `PRODUCT.md`, `README.md`, `.agents/`, hooks) |
+| `/bootstrap` | One-command product-layer setup (`GOALS.md`, `PRODUCT.md`, `README.md`, `.agents/`, optional hooks) |
 | `/compile` | Compile raw `.agents/` artifacts into an interlinked wiki at `.agents/compiled/` (Mine → Grow → Defrag → Lint) |
 | `/deps` | Dependency audit, updates, vulnerability scanning, license compliance |
 | `/design` | Product validation gate — aligns goal with `PRODUCT.md` before discovery |
@@ -492,9 +459,9 @@ phases, and flags.
 | `/goals` | Maintain `GOALS.yaml`/`GOALS.md` fitness specs; measure drift; add/prune directives |
 | `/grafana-platform-dashboard` | Design/refactor/validate Grafana dashboards for OpenShift/Kubernetes platform ops |
 | `/harvest` | Cross-rig knowledge consolidation and tiered promotion to the global hub |
+| `/hooks-authoring` | Author and validate AgentOps runtime hooks |
 | `/perf` | Performance profiling, benchmarking, regression detection, optimization |
 | `/push` | Atomic test-commit-push with conventional-commit message |
-| `/readme` | Generate a gold-standard README via interview + council validation |
 | `/red-team` | Persona-based adversarial validation — probes whether docs/skills actually work |
 | `/refactor` | Safe, verified refactoring with regression tests at each step |
 | `/reverse-engineer-rpi` | Reverse-engineer a product into feature catalog, code map, and specs |

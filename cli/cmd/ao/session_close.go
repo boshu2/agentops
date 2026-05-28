@@ -1,3 +1,4 @@
+// practices: [event-sourcing-cqrs, distributed-tracing]
 package main
 
 import (
@@ -21,6 +22,7 @@ import (
 var sessionCmd = &cobra.Command{
 	Use:   "session",
 	Short: "Session lifecycle operations",
+	Args:  cobra.NoArgs,
 	Long: `Session lifecycle operations.
 
 Commands:

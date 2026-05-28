@@ -147,6 +147,8 @@ nav:
   - Home: index.md
   - Getting Started:
       - getting-started/index.md
+      - "AgentOps 3.0 (North Star)": 3.0.md
+      - Roadmap: ROADMAP.md
       - Newcomer Guide: newcomer-guide.md
       - Create Your First Skill: create-your-first-skill.md
       - Behavioral Discipline: behavioral-discipline.md
@@ -155,6 +157,7 @@ nav:
       - Security: SECURITY.md
       - Changelog: CHANGELOG.md
       - Upgrading: UPGRADING.md
+      - Migrating to 3.0: MIGRATION-3.0.md
       - Daemon Migration: daemon-migration.md
   - Skills:
       - skills/index.md
@@ -167,13 +170,13 @@ nav:
       - cli/index.md
       - Command Reference: cli/commands.md
       - CLI ↔ Skills Map: cli-skills-map.md
-      - Hooks Overview: HOOKS.md
-      - Hooks Reference: cli/hooks.md
   - Architecture:
       - architecture/index.md
       - How It Works: how-it-works.md
       - Architecture Overview: ARCHITECTURE.md
       - Software Factory: software-factory.md
+      - Intent-to-Loop Hexagon: architecture/intent-to-loop-hexagon.md
+      - Behavior-Shaping Environment: architecture/behavior-shaping-environment.md
       - Codex Hookless Lifecycle: architecture/codex-hookless-lifecycle.md
       - Primitive Chains: architecture/primitive-chains.md
       - PDC Framework: architecture/pdc-framework.md
@@ -195,6 +198,11 @@ nav:
       - Meta-Observer: workflows/meta-observer-pattern.md
   - Concepts:
       - Philosophy: philosophy.md
+      - Sovereignty Proof:
+          - sovereignty-proof/index.md
+          - 2026-05-15 RPI-leanness reframe: sovereignty-proof/evidence/2026-05-15-rpi-leanness-codex-reframe.md
+          - 2026-05-16 CDLC F6+F7 findings: sovereignty-proof/evidence/2026-05-16-cdlc-f6-f7-codex-findings.md
+      - Assurance Profile: assurance-profile.md
       - Knowledge Flywheel: knowledge-flywheel.md
       - The Science: the-science.md
       - CDLC: cdlc.md
@@ -244,16 +252,10 @@ nav:
       - Next-Work Queue: contracts/next-work.schema.md
       - Finding Registry: contracts/finding-registry.md
       - Finding Compiler: contracts/finding-compiler.md
-      - Hook Runtime Contract: contracts/hook-runtime-contract.md
       - Headless Invocation: contracts/headless-invocation-standards.md
       - Codex Skill API: contracts/codex-skill-api.md
       - Context Assembly Interface: contracts/context-assembly-interface.md
       - Session Intelligence Trust Model: contracts/session-intelligence-trust-model.md
-      - AgentOps Daemon: contracts/agentops-daemon.md
-      - GasCity Integration: contracts/gascity-integration.md
-      - AgentWorker Runtime: contracts/agent-worker.md
-      - OpenClaw Consumer API: contracts/openclaw-consumer-api.md
-      - Dream Run: contracts/dream-run-contract.md
       - Dream Report: contracts/dream-report.md
       - Swarm Evidence: contracts/swarm-evidence.md
       - Scope Escape Report: contracts/scope-escape-report.md

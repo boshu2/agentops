@@ -1,6 +1,15 @@
 ---
 name: system-tuning
-description: 'Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene.'
+description: Restore system responsiveness via safe, ordered process cleanup and agent-swarm
+  hygiene.
+practices:
+- sre
+- resilience-patterns
+- ebpf-observability
+hexagonal_role: supporting
+consumes: []
+produces: []
+context_rel: []
 skill_api_version: 1
 user-invocable: true
 context:
@@ -8,12 +17,13 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: execution
   dependencies: []
-output_contract: "stdout: triage report; stderr: warnings on protected processes"
+output_contract: 'stdout: triage report; stderr: warnings on protected processes'
 ---
 # System Tuning Skill
 
@@ -138,7 +148,8 @@ Run reports go to `.agents/system-tuning/YYYY-MM-DD-triage.md`. Each report incl
 - [references/kill-hierarchy.md](references/kill-hierarchy.md)
 - [references/whack-a-mole-anti-pattern.md](references/whack-a-mole-anti-pattern.md)
 - [references/agent-swarm-cleanup.md](references/agent-swarm-cleanup.md)
+- [references/system-tuning.feature](references/system-tuning.feature) — Executable spec: diagnose-first, ordered safe cleanup hierarchy, protect in-flight processes, verify + report (soc-qk4b)
 
 ## Attribution
 
-Methodology pattern-adopted from the jsm `system-performance-remediation` skill. See `LICENSE.md` in this skill directory for full attribution. No source text reused.
+Methodology pattern-adopted from an external `system-performance-remediation` skill corpus. See `LICENSE.md` in this skill directory for full attribution. No source text reused.

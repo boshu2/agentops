@@ -3,6 +3,7 @@
   "id": "agentops-core.rpi-behavior",
   "name": "AgentOps RPI Behavior Canary",
   "description": "Offline public canary for RPI phased runner contracts and deterministic runtime boundaries.",
+  "practices": ["llm-eval-harness", "agile-manifesto"],
   "domain": "rpi",
   "visibility": "public_canary",
   "tier": "deterministic",
@@ -73,7 +74,7 @@
       "objective": "Protect deterministic public canaries from live Claude or Codex execution.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "Live Claude and Codex adapters are evaluated by a later runtime tier."},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "runtime %q is out of deterministic scope"}
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/eval.go", "value": "unknown runtime %q (use static, mock, shell, claude, or codex)"}
       ],
       "dimensions": ["runtime_compatibility", "safety"],
       "critical": true

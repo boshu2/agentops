@@ -83,7 +83,6 @@ scripts/pre-push-gate.sh --single-pass         # Full single-pass (old behavior)
 | embedded-sync | hooks | Outer |
 | hook-preflight | hooks | Outer |
 | hook-output-schema-lint | hooks | Outer |
-| validate-hooks-doc-parity | hooks | Outer |
 | bats-tests | hooks | Outer |
 | skill-integrity | skills | Outer |
 | skill-lint | skills | Outer |
@@ -111,7 +110,6 @@ scripts/pre-push-gate.sh --single-pass         # Full single-pass (old behavior)
 | validate-ci-policy-parity | ci | Outer |
 | pre-push-gate-wired | always | Outer |
 | registry-check | skills | Outer |
-| standards-injector-completeness | skills | Outer |
 | plugin-load-test | always | Outer |
 | learning-coherence | learning | Outer |
 | memrl-health | always | Outer |

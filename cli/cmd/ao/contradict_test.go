@@ -1,3 +1,4 @@
+// practices: [llm-eval-harness, design-by-contract]
 package main
 
 import (

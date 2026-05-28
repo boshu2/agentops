@@ -3,6 +3,7 @@
   "id": "agentops-core.mock-runtime-contracts",
   "name": "AgentOps Mock Runtime Contracts Canary",
   "description": "Offline public canary for deterministic mock runtime coverage and schema/docs contracts.",
+  "practices": ["llm-eval-harness", "sre"],
   "domain": "runtime",
   "visibility": "public_canary",
   "tier": "deterministic",

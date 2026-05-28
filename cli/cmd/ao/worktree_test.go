@@ -1,3 +1,4 @@
+// practices: [microservices, team-topologies]
 package main
 
 import (

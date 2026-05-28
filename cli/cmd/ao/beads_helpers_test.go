@@ -4,6 +4,7 @@
 // would silently truncate at the wrong boundary). Both are utility-level,
 // but the call sites are user-visible.
 
+// practices: [dora-metrics, lean-startup]
 package main
 
 import "testing"

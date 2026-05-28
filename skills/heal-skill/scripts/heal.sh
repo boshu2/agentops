@@ -266,7 +266,7 @@ for skill_dir in "${TARGETS[@]}"; do
     fi
   fi
 
-  # Check 4: Unlinked references
+  # Check 4: Unlinked references (.md files — strict markdown-link / Read form)
   if [[ -d "$skill_dir/references" ]]; then
     for ref_file in "$skill_dir"/references/*.md; do
       [[ -f "$ref_file" ]] || continue
@@ -277,6 +277,35 @@ for skill_dir in "${TARGETS[@]}"; do
         if [[ "$MODE" == "fix" ]]; then
           fix_unlinked_ref "$skill_md" "$ref_rel"
         fi
+      fi
+    done
+  fi
+
+  # Check 4b: Unreferenced non-.md references (.feature, .json, .txt, etc.)
+  #
+  # Mirrors the Go contract test TestSkillContract_ReferencesLinkedInSKILLMD
+  # (cli/cmd/ao/skill_contract_test.go): EVERY top-level file in references/
+  # (any extension, excluding dotfiles and subdirectories) must have its
+  # basename appear somewhere in SKILL.md. The Go test gates go-build, which is
+  # path-filtered to cli/** — so a skills-only PR that adds an unreferenced
+  # .feature file (e.g. PRs #504/#505) skipped go-build and merged the breakage
+  # onto main, only surfacing on the next cli/ PR (soc-oemfm).
+  #
+  # heal.sh (skill-integrity job) runs on skills/** changes, so checking the
+  # same invariant here closes the gap on the right trigger. The rule mirrors
+  # the Go test's permissive basename containment (NOT the stricter markdown-link
+  # form used for .md above) so this gate and the Go test agree exactly.
+  if [[ -d "$skill_dir/references" ]]; then
+    for ref_file in "$skill_dir"/references/*; do
+      [[ -f "$ref_file" ]] || continue
+      ref_basename="$(basename "$ref_file")"
+      # Skip dotfiles and .md files (.md handled by Check 4 above).
+      [[ "$ref_basename" == .* ]] && continue
+      [[ "$ref_basename" == *.md ]] && continue
+      ref_rel="references/$ref_basename"
+      # Mirror the Go test: basename must appear anywhere in SKILL.md.
+      if ! grep -qF "$ref_basename" "$skill_md" 2>/dev/null; then
+        report "UNREFERENCED_REF" "$skill_dir" "$ref_rel not referenced in SKILL.md"
       fi
     done
   fi
@@ -301,7 +330,8 @@ for skill_dir in "${TARGETS[@]}"; do
 
   # Check 6: Dead references (SKILL.md mentions references/ files that don't exist)
   # Strip fenced code blocks before scanning to avoid false positives from examples
-  # Supports both local (references/foo.md) and shared (../shared/references/foo.md) paths
+  # Supports local (references/foo.md), shared (../shared/references/foo.md), and
+  # cross-skill (../<skill>/references/foo.md) paths
   while IFS= read -r ref_path; do
     [[ -z "$ref_path" ]] && continue
     if [[ ! -f "$skill_dir/$ref_path" ]]; then
@@ -310,7 +340,7 @@ for skill_dir in "${TARGETS[@]}"; do
         echo "  [WARN] Cannot auto-fix DEAD_REF -- manually remove or create $ref_path"
       fi
     fi
-  done < <(awk 'BEGIN{skip=0} /^```/{skip=1-skip; next} skip==0{print}' "$skill_md" | grep -oE '(\.\./shared/)?references/[A-Za-z0-9_.-]+\.md' 2>/dev/null | sort -u || true)
+  done < <(awk 'BEGIN{skip=0} /^```/{skip=1-skip; next} skip==0{print}' "$skill_md" | grep -oE '(\.\./[A-Za-z0-9_.-]+/)?references/[A-Za-z0-9_.-]+\.md' 2>/dev/null | sort -u || true)
 
   # Check 7: Script reference integrity
   # Strip fenced code blocks and URLs before scanning to avoid false positives from examples

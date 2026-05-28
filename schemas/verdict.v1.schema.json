@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/verdict.v1.schema.json",
   "title": "Verdict",
   "description": "Athena validation verdict for a bead",
+  "practices": ["llm-eval-harness", "adr"],
   "type": "object",
   "required": ["verdict_id", "bead_id", "verdict", "confidence", "briefing_learnings", "findings", "not_checked", "validated_at", "validator_session", "schema_version"],
   "properties": {

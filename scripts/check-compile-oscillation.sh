@@ -26,7 +26,7 @@ if [[ ! -f "$DEFRAG_LATEST" && -z "${COMPILE_OUTPUT_DIR:-}" ]]; then
 fi
 
 if [[ ! -f "$DEFRAG_LATEST" ]]; then
-    echo "FAIL: $DEFRAG_LATEST not found — run 'ao defrag --oscillation-sweep' first"
+    echo "FAIL: $DEFRAG_LATEST not found — run 'ao defrag' first"
     exit 1
 fi
 

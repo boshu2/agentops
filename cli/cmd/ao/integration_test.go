@@ -1,3 +1,4 @@
+// practices: [continuous-integration, design-by-contract]
 package main
 
 import (

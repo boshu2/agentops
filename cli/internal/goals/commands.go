@@ -14,8 +14,38 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/boshu2/agentops/cli/internal/paths"
 	"github.com/boshu2/agentops/cli/internal/shellutil"
 )
+
+// withGoalFileCwd anchors the current process working directory to the git
+// repo root that contains goalsFile, so relative-path goal checks like
+// `bash scripts/foo.sh` resolve regardless of where `ao goals measure` was
+// invoked from (soc-crzz). Returns a restore function the caller must defer.
+// If goalsFile is not inside a git repo or cannot be resolved, returns a
+// no-op restorer and leaves cwd untouched (preserves prior behavior).
+func withGoalFileCwd(goalsFile string) func() {
+	noop := func() {}
+	if strings.TrimSpace(goalsFile) == "" {
+		return noop
+	}
+	abs, err := filepath.Abs(goalsFile)
+	if err != nil {
+		return noop
+	}
+	resolved := paths.ResolveFromRoot(filepath.Dir(abs))
+	if resolved == nil || resolved.RepoRoot == "" {
+		return noop
+	}
+	prev, err := os.Getwd()
+	if err != nil {
+		return noop
+	}
+	if err := os.Chdir(resolved.RepoRoot); err != nil {
+		return noop
+	}
+	return func() { _ = os.Chdir(prev) }
+}
 
 // HistoryOptions configures the goals history command.
 type HistoryOptions struct {
@@ -136,6 +166,9 @@ func RunMeasure(opts MeasureOptions) error {
 	if opts.SnapDir == "" {
 		opts.SnapDir = ".agents/ao/goals/baselines"
 	}
+
+	restore := withGoalFileCwd(opts.GoalsFile)
+	defer restore()
 
 	gf, err := LoadGoals(opts.GoalsFile)
 	if err != nil {
@@ -646,6 +679,8 @@ func RunSteerAdd(opts SteerAddOptions) error {
 		return fmt.Errorf("invalid steer value %q (valid: increase, decrease, hold, explore)", opts.Steer)
 	}
 
+	// LoadMDGoals enforces the GOALS.md-format guard (YAML is rejected) and
+	// gives the current directive numbering.
 	gf, resolvedPath, err := LoadMDGoals(opts.GoalsFile)
 	if err != nil {
 		return err
@@ -657,23 +692,43 @@ func RunSteerAdd(opts SteerAddOptions) error {
 			maxNum = d.Number
 		}
 	}
+	newNum := maxNum + 1
 
-	newDirective := Directive{Number: maxNum + 1, Title: opts.Title, Description: opts.Description, Steer: opts.Steer}
-	gf.Directives = append(gf.Directives, newDirective)
+	// --dry-run previews without writing (either output format). --json is an
+	// output-format flag, NOT a no-write flag — a write command must persist
+	// under --json and emit the result as JSON (soc-3z69s).
+	if opts.DryRun {
+		if opts.JSON {
+			enc := json.NewEncoder(opts.Stdout)
+			enc.SetIndent("", "  ")
+			return enc.Encode(Directive{Number: newNum, Title: opts.Title, Description: opts.Description, Steer: opts.Steer})
+		}
+		fmt.Fprintf(opts.Stdout, "Would add directive #%d: %s\n", newNum, opts.Title)
+		return nil
+	}
 
+	// Persist through GoalsPatcher, NOT WriteMDGoals: the latter re-renders
+	// GOALS.md from the GoalFile model and silently drops the "## Three-Gap
+	// Contract Proof Surface" section, the Gates table, prose, and
+	// agentops:claim comments. The patcher appends the new directive block and
+	// preserves every other byte (soc-byt52).
+	p, _, err := LoadGoalsPatcher(opts.GoalsFile)
+	if err != nil {
+		return err
+	}
+	num, err := p.AppendDirective(opts.Title, opts.Description, opts.Steer)
+	if err != nil {
+		return err
+	}
+	if err := p.WriteFile(resolvedPath); err != nil {
+		return err
+	}
 	if opts.JSON {
 		enc := json.NewEncoder(opts.Stdout)
 		enc.SetIndent("", "  ")
-		return enc.Encode(newDirective)
+		return enc.Encode(Directive{Number: num, Title: opts.Title, Description: opts.Description, Steer: opts.Steer})
 	}
-	if opts.DryRun {
-		fmt.Fprintf(opts.Stdout, "Would add directive #%d: %s\n", newDirective.Number, newDirective.Title)
-		return nil
-	}
-	if err := WriteMDGoals(gf, resolvedPath); err != nil {
-		return err
-	}
-	fmt.Fprintf(opts.Stdout, "Added directive #%d: %s (steer: %s)\n", newDirective.Number, newDirective.Title, newDirective.Steer)
+	fmt.Fprintf(opts.Stdout, "Added directive #%d: %s (steer: %s)\n", num, opts.Title, opts.Steer)
 	return nil
 }
 
@@ -713,17 +768,35 @@ func RunSteerRemove(opts SteerRemoveOptions) error {
 	}
 	gf.Directives = remaining
 
+	// --dry-run previews without writing (either format); --json is output
+	// format, not a no-write flag (soc-3z69s).
+	if opts.DryRun {
+		if opts.JSON {
+			enc := json.NewEncoder(opts.Stdout)
+			enc.SetIndent("", "  ")
+			return enc.Encode(gf.Directives)
+		}
+		fmt.Fprintf(opts.Stdout, "Would remove directive #%d and renumber %d remaining\n", opts.Number, len(remaining))
+		return nil
+	}
+	// Persist via GoalsPatcher, not WriteMDGoals: the latter re-renders from
+	// the model and drops non-directive sections (Three-Gap, Gates, claim
+	// comments). The patcher deletes the block + renumbers, preserving every
+	// other byte (soc-5335b).
+	p, _, err := LoadGoalsPatcher(opts.GoalsFile)
+	if err != nil {
+		return err
+	}
+	if err := p.RemoveDirective(opts.Number); err != nil {
+		return err
+	}
+	if err := p.WriteFile(resolvedPath); err != nil {
+		return err
+	}
 	if opts.JSON {
 		enc := json.NewEncoder(opts.Stdout)
 		enc.SetIndent("", "  ")
 		return enc.Encode(gf.Directives)
-	}
-	if opts.DryRun {
-		fmt.Fprintf(opts.Stdout, "Would remove directive #%d and renumber %d remaining\n", opts.Number, len(remaining))
-		return nil
-	}
-	if err := WriteMDGoals(gf, resolvedPath); err != nil {
-		return err
 	}
 	fmt.Fprintf(opts.Stdout, "Removed directive #%d, renumbered %d remaining\n", opts.Number, len(remaining))
 	return nil
@@ -784,17 +857,33 @@ func RunSteerPrioritize(opts SteerPrioritizeOptions) error {
 	}
 	gf.Directives = result
 
+	// --dry-run previews without writing (either format); --json is output
+	// format, not a no-write flag (soc-3z69s).
+	if opts.DryRun {
+		if opts.JSON {
+			enc := json.NewEncoder(opts.Stdout)
+			enc.SetIndent("", "  ")
+			return enc.Encode(gf.Directives)
+		}
+		fmt.Fprintf(opts.Stdout, "Would move directive %q to position %d\n", moving.Title, opts.NewPosition)
+		return nil
+	}
+	// Persist via GoalsPatcher, not WriteMDGoals: preserves non-directive
+	// sections while reordering + renumbering the directive blocks (soc-5335b).
+	p, _, err := LoadGoalsPatcher(opts.GoalsFile)
+	if err != nil {
+		return err
+	}
+	if err := p.MoveDirective(opts.Number, opts.NewPosition); err != nil {
+		return err
+	}
+	if err := p.WriteFile(resolvedPath); err != nil {
+		return err
+	}
 	if opts.JSON {
 		enc := json.NewEncoder(opts.Stdout)
 		enc.SetIndent("", "  ")
 		return enc.Encode(gf.Directives)
-	}
-	if opts.DryRun {
-		fmt.Fprintf(opts.Stdout, "Would move directive %q to position %d\n", moving.Title, opts.NewPosition)
-		return nil
-	}
-	if err := WriteMDGoals(gf, resolvedPath); err != nil {
-		return err
 	}
 	fmt.Fprintf(opts.Stdout, "Moved directive %q to position %d\n", moving.Title, opts.NewPosition)
 	return nil

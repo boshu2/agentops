@@ -4,6 +4,7 @@
 // shared-keyword summarization, deterministic JSON ordering), so a regression
 // would manifest as garbled output rather than a panic.
 
+// practices: [dora-metrics, lean-startup]
 package main
 
 import (

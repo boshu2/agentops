@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/phase.v1.schema.json",
   "title": "Phase State Machine",
   "description": "Defines legal state transitions for beads",
+  "practices": ["continuous-delivery", "agile-manifesto"],
   "type": "object",
   "required": ["allowed_transitions", "schema_version"],
   "properties": {

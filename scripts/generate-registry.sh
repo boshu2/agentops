@@ -110,8 +110,11 @@ build_hooks() {
 # ─── Knowledge Stores (.agents/ dirs) ────────────────────────────────────────
 
 build_knowledge_stores() {
-  local agents_dir="${REPO_ROOT}/.agents"
-  [[ -d "$agents_dir" ]] || { echo "[]"; return; }
+  # soc-k47k: don't early-return on missing .agents/ — `git ls-files` reads the
+  # index, which is authoritative regardless of working-tree state. CI clean
+  # checkout always populates the tracked files, so the only case where the
+  # tracked list is empty is when the repo genuinely has no tracked .agents/
+  # entries.
 
   # Known purpose map — manually maintained since .agents/ has no manifest
   local -A purposes=(
@@ -163,15 +166,34 @@ build_knowledge_stores() {
     [wiki]="Internal wiki entries"
   )
 
-  local result="[]"
-  for dir in "${agents_dir}"/*/; do
-    [[ -d "$dir" ]] || continue
-    local name
-    name="$(basename "$dir")"
-    local purpose="${purposes[$name]:-"Unknown — needs documentation"}"
-    local file_count
-    file_count=$(find "$dir" -type f 2>/dev/null | wc -l | tr -d ' ')
+  # soc-k47k: walk `git ls-files .agents/` instead of filesystem so the registry
+  # is deterministic across environments. CI's clean checkout and a session-built
+  # local checkout will produce identical output. Only directories containing
+  # tracked files appear in knowledge_stores; the file_count is the tracked-file
+  # count (which is reproducible — `find` was not).
+  local tracked
+  tracked=$(cd "$REPO_ROOT" && git ls-files .agents/ 2>/dev/null || true)
+  if [[ -z "$tracked" ]]; then
+    echo "[]"
+    return
+  fi
 
+  # Build (name → file_count) map from tracked .agents/<name>/... entries.
+  declare -A counts=()
+  while IFS= read -r tracked_path; do
+    [[ -z "$tracked_path" ]] && continue
+    # Extract the immediate child of .agents/ (e.g., "nightly" from ".agents/nightly/2026-05-07/foo.json").
+    local subdir
+    subdir="${tracked_path#.agents/}"
+    subdir="${subdir%%/*}"
+    [[ -n "$subdir" && "$subdir" != "$tracked_path" ]] || continue
+    counts[$subdir]=$((${counts[$subdir]:-0} + 1))
+  done <<< "$tracked"
+
+  local result="[]"
+  for name in "${!counts[@]}"; do
+    local purpose="${purposes[$name]:-"Unknown — needs documentation"}"
+    local file_count="${counts[$name]}"
     result=$(echo "$result" | jq --arg name "$name" \
       --arg purpose "$purpose" \
       --arg path ".agents/${name}/" \
@@ -206,20 +228,28 @@ build_job_types() {
 # ─── Scheduled Jobs (from example) ──────────────────────────────────────────
 
 build_schedules() {
-  local schedule_example="${REPO_ROOT}/.agents/schedule.yaml.example"
+  local schedule_example="${REPO_ROOT}/docs/templates/schedule.yaml.example"
+  local legacy_schedule_example="${REPO_ROOT}/.agents/schedule.yaml.example"
   local schedule_live="${REPO_ROOT}/.agents/schedule.yaml"
 
   local result='{"example": [], "live": []}'
 
-  # Parse example schedules (YAML → JSON via simple extraction)
+  # Parse the tracked canonical example first. Ignore operator-local .agents
+  # copies unless they are intentionally tracked, so registry generation is
+  # deterministic across CI and developer machines.
   if [[ -f "$schedule_example" ]]; then
     local entries
     entries=$(parse_schedule_yaml "$schedule_example")
     result=$(echo "$result" | jq --argjson entries "$entries" '.example = $entries')
+  elif git -C "$REPO_ROOT" ls-files --error-unmatch ".agents/schedule.yaml.example" >/dev/null 2>&1; then
+    local entries
+    entries=$(parse_schedule_yaml "$legacy_schedule_example")
+    result=$(echo "$result" | jq --argjson entries "$entries" '.example = $entries')
   fi
 
-  # Parse live schedules if present
-  if [[ -f "$schedule_live" ]]; then
+  # Parse live schedules only when tracked. A live .agents/schedule.yaml is
+  # normally operator-local runtime state and must not make registry.json drift.
+  if git -C "$REPO_ROOT" ls-files --error-unmatch ".agents/schedule.yaml" >/dev/null 2>&1; then
     local entries
     entries=$(parse_schedule_yaml "$schedule_live")
     result=$(echo "$result" | jq --argjson entries "$entries" '.live = $entries')
@@ -249,16 +279,34 @@ build_evals() {
   local evals_dir="${REPO_ROOT}/evals"
   [[ -d "$evals_dir" ]] || { echo "[]"; return; }
 
+  # soc-k47k pattern: walk `git ls-files evals/` instead of filesystem `find`
+  # so untracked artifacts (e.g. evals/workbench/scorecard-latest.json written
+  # by local eval runs) don't drift the registry vs CI's clean checkout.
+  local tracked
+  tracked=$(cd "$REPO_ROOT" && git ls-files 'evals/*/*.json' 2>/dev/null || true)
+
   local result="[]"
-  for suite_dir in "${evals_dir}"/*/; do
-    [[ -d "$suite_dir" ]] || continue
-    local suite_name
-    suite_name="$(basename "$suite_dir")"
+  declare -A suites=()
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    local rel suite_name leaf
+    rel="${line#evals/}"
+    suite_name="${rel%%/*}"
+    leaf="${rel#*/}"
+    [[ -n "$suite_name" && -n "$leaf" && "$leaf" != */* ]] || continue
+    suites[$suite_name]=1
+  done <<< "$tracked"
+
+  for suite_name in "${!suites[@]}"; do
 
     local eval_files=()
-    while IFS= read -r -d '' f; do
-      eval_files+=("$(basename "$f" .json)")
-    done < <(find "$suite_dir" -maxdepth 1 -name '*.json' -type f -print0 2>/dev/null)
+    while IFS= read -r line; do
+      [[ -z "$line" ]] && continue
+      # Match only direct children of the suite (one level deep).
+      [[ "$line" == "evals/${suite_name}/"*.json ]] || continue
+      [[ "${line#evals/${suite_name}/}" == */*.json ]] && continue
+      eval_files+=("$(basename "$line" .json)")
+    done <<< "$tracked"
 
     local file_count=${#eval_files[@]}
     local files_json
@@ -279,23 +327,68 @@ build_evals() {
   echo "$result" | jq 'sort_by(.suite)'
 }
 
+# ─── SKU catalog (schema v2) ─────────────────────────────────────────────────
+#
+# The SKU block (capabilities + capability_summary + cli_top_level_commands) is
+# the schema-v2 capability catalog: a JOIN of SKILL.md frontmatter +
+# skill-dispositions.yaml + SKILL-TIERS.md + the live `ao` cobra tree +
+# validate.yml gate jobs + the packs/agentops reference City. It needs a built
+# `ao` binary, so generate-registry.sh builds one once and reuses it for both the
+# SKU block and the real CLI-command list. AGENTOPS_AO_BIN short-circuits the
+# build (used by CI to avoid double-building).
+
+# ensure_ao_bin echoes a path to a usable `ao` binary, or empty string if one
+# cannot be produced (e.g. no cli/ dir, no Go toolchain). Callers degrade
+# gracefully: an empty SKU block is emitted instead of crashing. The
+# validate-sku-catalog-drift gate (which always runs in a real checkout with
+# cli/) is the authoritative enforcer that the catalog is fully populated, so a
+# silently-empty block on main is impossible — the gate would fail on drift.
+ensure_ao_bin() {
+  if [[ -n "${AGENTOPS_AO_BIN:-}" && -x "${AGENTOPS_AO_BIN}" ]]; then
+    echo "${AGENTOPS_AO_BIN}"
+    return
+  fi
+  if [[ ! -d "${REPO_ROOT}/cli" ]] || ! command -v go >/dev/null 2>&1; then
+    echo ""
+    return
+  fi
+  local bin
+  bin="$(mktemp -d)/ao"
+  if ( cd "${REPO_ROOT}/cli" && go build -o "$bin" ./cmd/ao ) >&2; then
+    echo "$bin"
+  else
+    echo ""
+  fi
+}
+
+# build_sku_block prints the SKU catalog JSON. Returns an empty-but-valid block
+# when the ao binary or the generator helper is unavailable.
+build_sku_block() {
+  local ao_bin="$1"
+  local empty='{"capabilities":[],"capability_summary":{"total":0,"skills":0,"cli_commands":0,"gates":0,"reference_impls":0},"cli_top_level_commands":[]}'
+  if [[ -z "$ao_bin" || ! -f "${REPO_ROOT}/scripts/generate-sku-catalog.sh" ]]; then
+    echo "$empty"
+    return
+  fi
+  AGENTOPS_AO_BIN="$ao_bin" bash "${REPO_ROOT}/scripts/generate-sku-catalog.sh" 2>/dev/null || echo "$empty"
+}
+
 # ─── CLI Commands ────────────────────────────────────────────────────────────
+#
+# schema v2: the cli_commands surface is now the REAL top-level cobra command
+# nodes (from the live tree via the SKU catalog), not a count of cli/cmd/ao/*.go
+# files. The old file-count produced the misleading "163 commands" number
+# (ag-cbm / oracle Gap #6); the truth is the top-level cobra command count.
 
 build_cli_commands() {
-  local cmd_dir="${REPO_ROOT}/cli/cmd/ao"
-  [[ -d "$cmd_dir" ]] || { echo "[]"; return; }
-
-  # Extract top-level command groups from non-test Go files
-  find "$cmd_dir" -maxdepth 1 -name '*.go' -not -name '*_test.go' -type f -print0 |
-    xargs -0 grep -l 'func.*Command\(\)' 2>/dev/null |
-    while read -r f; do
-      basename "$f" .go
-    done |
-    sort -u |
-    jq -R -s 'split("\n") | map(select(length > 0)) | map({
-      name: .,
-      path: ("cli/cmd/ao/" + . + ".go")
-    })'
+  local sku_block="$1"
+  echo "$sku_block" | jq '[.capabilities[] | select(.type == "cli-command") | {
+    name: .name,
+    path: .path,
+    purpose: .purpose,
+    bounded_context: .bounded_context,
+    driven_by_skills: .driven_by_skills
+  }] | sort_by(.name)'
 }
 
 # ─── Cadence Recommendations ────────────────────────────────────────────────
@@ -393,6 +486,11 @@ main() {
   generated_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
   local skills hooks knowledge_stores job_types schedules evals cli_commands cadence
+  local ao_bin sku_block
+
+  # Build ao once; the SKU block + the real CLI-command list both need it.
+  ao_bin="$(ensure_ao_bin)"
+  sku_block="$(build_sku_block "$ao_bin")"
 
   # Build each surface
   skills=$(build_skills)
@@ -401,7 +499,7 @@ main() {
   job_types=$(build_job_types)
   schedules=$(build_schedules)
   evals=$(build_evals)
-  cli_commands=$(build_cli_commands)
+  cli_commands=$(build_cli_commands "$sku_block")
   cadence=$(build_cadence_recommendations)
 
   # Count totals
@@ -413,7 +511,16 @@ main() {
   eval_suite_count=$(echo "$evals" | jq '[.[].eval_count] | add // 0')
   cli_count=$(echo "$cli_commands" | jq 'length')
 
-  # Assemble the registry
+  # SKU catalog block (schema v2)
+  local capabilities capability_summary cli_top_level capability_count
+  capabilities=$(echo "$sku_block" | jq '.capabilities')
+  capability_summary=$(echo "$sku_block" | jq '.capability_summary')
+  cli_top_level=$(echo "$sku_block" | jq '.cli_top_level_commands')
+  capability_count=$(echo "$capabilities" | jq 'length')
+
+  # Assemble the registry (schema v2 — superset of v1; existing consumers read
+  # summary/surfaces/cadence_recommendations unchanged, new consumers read
+  # capabilities/capability_summary).
   local registry
   registry=$(jq -n \
     --arg generated_at "$generated_at" \
@@ -423,6 +530,7 @@ main() {
     --argjson job_type_count "$job_type_count" \
     --argjson eval_suite_count "$eval_suite_count" \
     --argjson cli_count "$cli_count" \
+    --argjson capability_count "$capability_count" \
     --argjson skills "$skills" \
     --argjson hooks "$hooks" \
     --argjson knowledge_stores "$knowledge_stores" \
@@ -431,8 +539,11 @@ main() {
     --argjson evals "$evals" \
     --argjson cli_commands "$cli_commands" \
     --argjson cadence "$cadence" \
+    --argjson capabilities "$capabilities" \
+    --argjson capability_summary "$capability_summary" \
+    --argjson cli_top_level "$cli_top_level" \
     '{
-      schema_version: 1,
+      schema_version: 2,
       generated_at: $generated_at,
       summary: {
         skills: $skill_count,
@@ -440,7 +551,8 @@ main() {
         knowledge_stores: $store_count,
         job_types: $job_type_count,
         eval_files: $eval_suite_count,
-        cli_commands: $cli_count
+        cli_commands: $cli_count,
+        capabilities: $capability_count
       },
       surfaces: {
         skills: $skills,
@@ -451,6 +563,9 @@ main() {
         evals: $evals,
         cli_commands: $cli_commands
       },
+      capability_summary: $capability_summary,
+      cli_top_level_commands: $cli_top_level,
+      capabilities: $capabilities,
       cadence_recommendations: $cadence
     }')
 
@@ -476,7 +591,7 @@ main() {
       ;;
     write)
       echo "$registry" > "$OUTPUT"
-      echo "Wrote ${OUTPUT} (${skill_count} skills, ${hook_count} hooks, ${store_count} stores, ${job_type_count} job types, ${eval_suite_count} evals, ${cli_count} CLI commands)"
+      echo "Wrote ${OUTPUT} (schema v2: ${skill_count} skills, ${hook_count} hooks, ${store_count} stores, ${job_type_count} job types, ${eval_suite_count} evals, ${cli_count} CLI commands, ${capability_count} SKU capabilities)"
       ;;
   esac
 }

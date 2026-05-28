@@ -1,3 +1,4 @@
+// practices: [wiki-knowledge-surface, design-patterns]
 package main
 
 import (

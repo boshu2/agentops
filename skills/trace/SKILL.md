@@ -1,6 +1,15 @@
 ---
 name: trace
-description: 'Trace decisions through artifacts.'
+description: Trace decisions through artifacts.
+practices:
+- distributed-tracing
+- adr
+- ebpf-observability
+hexagonal_role: supporting
+consumes: []
+produces:
+- result.json
+context_rel: []
 skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash
 context:
@@ -8,13 +17,14 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: full
 metadata:
   tier: knowledge
   dependencies:
-    - provenance # alternative - for artifact lineage
-output_contract: "stdout: decision provenance chain"
+  - provenance
+output_contract: 'stdout: decision provenance chain'
 ---
 # Trace Skill
 
@@ -165,3 +175,10 @@ Use `/trace` for: "How did we decide on this architecture?"
 | Timeline has gaps | Not all decisions documented in searchable artifacts | Note gaps in report. Suggest interviewing team members or checking Slack/email archives for missing context. |
 | Too many results (>50 matches) | Very broad concept or high-frequency term | Read `references/edge-cases.md` for ambiguous concept handling. Narrow query or filter by date range. Ask user for more specific aspect to trace. |
 | Empty trace report (all sources failed) | Concept genuinely undocumented or typo | Verify spelling. Try synonyms. Report to user: "No documented history found. This may be a new concept or may need different search terms." |
+
+## Reference Documents
+
+- [references/trace.feature](references/trace.feature) — Executable spec: target-type routing, parallel multi-source search, cited chronological timeline, key-decision extraction, report + graceful gaps (soc-qk4b)
+- [references/discovery-patterns.md](references/discovery-patterns.md) — Search-agent definitions and git-based tracing commands
+- [references/report-template.md](references/report-template.md) — Trace report format and deduplication rules
+- [references/edge-cases.md](references/edge-cases.md) — Empty/ambiguous source handling

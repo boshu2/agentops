@@ -1,6 +1,16 @@
 ---
 name: push
-description: 'Validate, commit, and push.'
+description: Validate, commit, and push.
+practices:
+- continuous-delivery
+- gitops
+- dora-metrics
+hexagonal_role: driving-adapter
+consumes:
+- git-changes
+produces:
+- git-changes
+context_rel: []
 skill_api_version: 1
 user-invocable: true
 context:
@@ -8,17 +18,20 @@ context:
   intent:
     mode: none
   sections:
-    exclude: [HISTORY, INTEL, TASK]
+    exclude:
+    - HISTORY
+    - INTEL
+    - TASK
   intel_scope: none
 metadata:
   tier: execution
   dependencies: []
   triggers:
-    - push
-    - ship it
-    - commit and push
-    - push changes
-output_contract: "git commit + push"
+  - push
+  - ship it
+  - commit and push
+  - push changes
+output_contract: git commit + push
 ---
 # Push Skill
 
@@ -128,3 +141,7 @@ Output a summary:
 | Tests fail | Code has errors | Fix failing tests before retrying |
 | Push rejected | Remote has new commits | Pull and rebase, then retry |
 | No changes to commit | Working tree is clean | Make changes first |
+
+## Reference Documents
+
+- [references/push.feature](references/push.feature) — Executable spec: detect project type, run tests first, block push on failure, commit+push on green (soc-qk4b)

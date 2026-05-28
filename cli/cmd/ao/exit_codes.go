@@ -14,6 +14,7 @@
 // caller that actually emits 42 from agentopsd's own success path would be a
 // BREAKING change vs the existing contract — see the finding doc's
 // "Compatibility notes" section before wiring them into the daemon binary.
+// practices: [sre, resilience-patterns]
 package main
 
 // Olympus quest-supervisor exit codes.
@@ -34,10 +35,11 @@ const (
 
 	// CodeBeadClaimed (2) — Olympus zeus protocol. A bead was claimed but
 	// needs a separate worker process to make progress. Per the finding
-	// doc, this is non-overlapping with existing agentopsd behavior (no
-	// current code path emits 2 at the process level; the only `return 2`
-	// in cli/internal/daemon/ is dreamStageOrder, which is an int-ordering
-	// helper, not a process exit).
+	// doc, this is non-overlapping with the pre-Olympus agentopsd behavior:
+	// no current code path emits 2 at the process level. (The historical
+	// daemon's only `return 2` lived in dreamStageOrder, an int-ordering
+	// helper rather than a process exit; that package was removed in the
+	// daemon carve, soc-2rtm0 wave 5.)
 	CodeBeadClaimed = 2
 
 	// CodeQuestComplete (42) — Olympus zeus protocol. The full quest is

@@ -1,0 +1,124 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://agentops.dev/schemas/domain-slice-manifest.v1.schema.json",
+    "title": "AgentOps Domain-Slice Manifest v1",
+    "description": "Durable, git-tracked manifest declaring a bounded DDD domain slice: owned directives, scenarios, context roots, read-fence globs, validation commands, and owner. Stored at docs/domains/<name>/manifest.yaml. See docs/adr/ADR-0004-domain-slice-manifest-contract.md.",
+    "practices": ["ddd-bounded-context", "design-by-contract", "pragmatic-programmer"],
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "schema_version",
+        "domain",
+        "version",
+        "bounded_context",
+        "directive_ids",
+        "scenario_ids",
+        "context_roots",
+        "allowed_read_globs",
+        "denied_read_globs",
+        "validation_commands",
+        "owner"
+    ],
+    "properties": {
+        "schema_version": {
+            "type": "integer",
+            "const": 1,
+            "description": "Schema version for this manifest format."
+        },
+        "domain": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "Short machine-readable domain name (e.g. 'goals', 'rpi', 'eval'). Matches the directory name under docs/domains/."
+        },
+        "version": {
+            "type": "string",
+            "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+            "description": "Semver string for the manifest itself (not the domain implementation). Increment on any structural change to the manifest."
+        },
+        "bounded_context": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable bounded-context statement: a single sentence describing what this domain slice owns and what it does NOT own (DDD anti-corruption layer framing)."
+        },
+        "directive_ids": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "pattern": "^d-[a-z0-9][a-z0-9-]*$",
+                "description": "Stable directive ID from GOALS.md (pattern d-<slug>). This manifest owns delivery of the directive's acceptance criteria."
+            },
+            "uniqueItems": true,
+            "description": "Stable directive IDs from GOALS.md whose acceptance criteria this domain slice owns. Pattern: d-<slug>. These are the executable-spec anchors for this slice."
+        },
+        "scenario_ids": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "description": "Scenario ID (e.g. s-2026-05-17-001 or auto-<slug>). Matches scenario files in spec/scenarios/."
+            },
+            "uniqueItems": true,
+            "description": "Promoted spec scenario IDs (from spec/scenarios/) whose satisfaction constitutes delivery of this domain's directives. See ADR-0003 for the promoted_spec lifecycle."
+        },
+        "context_roots": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "description": "Repo-relative path to a directory or file that is the primary implementation surface for this domain slice."
+            },
+            "minItems": 1,
+            "description": "Repo-relative paths to directories or files that form the implementation surface of this domain slice. Used by ao rpi phased --domain to scope context loading."
+        },
+        "allowed_read_globs": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "description": "Glob pattern (gitignore syntax) for files agents may read when operating within this domain slice."
+            },
+            "description": "Glob patterns (gitignore syntax) that define the read fence for agents working in this domain slice. Files matching these patterns are readable; used by the holdout-isolation-gate and context-assembly hooks."
+        },
+        "denied_read_globs": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "description": "Glob pattern (gitignore syntax) for files agents must NOT read when working within this domain slice."
+            },
+            "description": "Glob patterns for files that are explicitly off-limits for agents working in this domain slice. Denied globs take precedence over allowed_read_globs when both match."
+        },
+        "validation_commands": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["label", "command"],
+                "properties": {
+                    "label": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Short human-readable label for this validation step (e.g. 'build', 'unit-tests', 'lint')."
+                    },
+                    "command": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Shell command to run from the repo root. Must exit 0 for validation to pass."
+                    },
+                    "working_dir": {
+                        "type": "string",
+                        "description": "Optional repo-relative directory to run the command from. Defaults to repo root."
+                    },
+                    "timeout_seconds": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "description": "Optional per-command timeout in seconds. Defaults to 120."
+                    }
+                }
+            },
+            "description": "Ordered list of validation commands that must pass for this domain slice. Executed by ao rpi phased --domain after implementation. All commands run from repo root unless working_dir is set."
+        },
+        "owner": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Team or person responsible for this domain slice (e.g. 'maintainers', 'bo', 'goals-team'). Informs who reviews changes to this manifest and the scenario acceptance criteria it owns."
+        }
+    }
+}

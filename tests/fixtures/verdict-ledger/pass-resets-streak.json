@@ -1,0 +1,46 @@
+{
+  "schema_version": "verdict-ledger.v1",
+  "generated_at": "2026-05-17T18:00:00Z",
+  "records": [
+    {
+      "record_type": "iteration",
+      "directive_id": "d-improve-coverage",
+      "run_timestamp": "2026-05-17T10:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.5,
+      "scenario_count": 4,
+      "evaluated_count": 4,
+      "run_id": "run-010"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-improve-coverage",
+      "run_timestamp": "2026-05-17T11:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.55,
+      "scenario_count": 4,
+      "evaluated_count": 4,
+      "run_id": "run-011"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-improve-coverage",
+      "run_timestamp": "2026-05-17T12:00:00Z",
+      "scenario_verdict": "pass",
+      "scenario_satisfaction": 0.92,
+      "scenario_count": 4,
+      "evaluated_count": 4,
+      "run_id": "run-012"
+    },
+    {
+      "record_type": "iteration",
+      "directive_id": "d-improve-coverage",
+      "run_timestamp": "2026-05-17T13:00:00Z",
+      "scenario_verdict": "fail",
+      "scenario_satisfaction": 0.6,
+      "scenario_count": 4,
+      "evaluated_count": 4,
+      "run_id": "run-013"
+    }
+  ]
+}

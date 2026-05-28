@@ -1,6 +1,34 @@
-# Context Development Life Cycle (CDLC)
+# Context Development Life Cycle
 
-> **TL;DR:** DevOps gave us the SDLC — a disciplined lifecycle for code. CDLC is the same thing for context. Every phase of the software development lifecycle has a context counterpart. AgentOps implements all of them.
+> **TL;DR:** AgentOps is an SDLC control plane for agentic software development. Its internal mechanism is the Context Development Life Cycle (CDLC): every phase of software delivery has a context counterpart, and every high-value context token follows the **Context Density Rule**: carry intent, boundary, evidence, decision, constraint, or next action.
+
+Software engineering took 50 years to build the discipline that turned indeterministic teams into shippable software. AgentOps keeps the public category language people already understand - SDLC, DevOps, CI/CD, tests, review, release gates - and applies that same shape to context.
+
+Packets, briefings, skills, verdicts, and learnings are artifacts. The deeper product is the practice layer: BDD/Gherkin, DDD, hexagonal architecture, TDD, CI/CD, SRE, ADRs, wikis, Agile/XP, and pragmatic engineering encoded into the runtime structure agents work inside.
+
+The translation is direct. Each piece of the software-engineering stack has a coding-agent counterpart:
+
+| Software Engineering | Coding-Agent World |
+|---|---|
+| Source code | Context (corpus, planning rules, learnings) |
+| SDLC | Context Development Life Cycle |
+| Libraries (Maven, npm, crates.io) | Context libraries (the `.agents/` corpus) |
+| Compilers | Context compilers (`ao compile` → wiki) |
+| Code review | Multi-model councils |
+| CI/CD | Validation gates (`/vibe`, `/pre-mortem`) |
+| Postmortems | Automated postmortems (`/post-mortem` → learnings) |
+| Runbooks | Skills + planning rules |
+| Software factories | The in-session loop (`ao rpi`, `/evolve`) run out of session on an orchestration substrate (Gas City is the reference) |
+| Markdown / Git / Linux (open primitives) | LLM Wiki of Markdown |
+| Open-source corpus | Your private corpus (`.agents/` in your repo) |
+
+We call the internal lifecycle the **Context Development Life Cycle (CDLC)**. You do not need to know that name to understand the product: AgentOps is the SDLC control plane, and CDLC is how it compiles context for agent work.
+
+### Companion docs
+
+- [Operating loop](./architecture/operating-loop.md) — the **operational** discipline that runs inside these phases: BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence. The CDLC describes the seven phases of context engineering; the operating loop describes how an agent actually executes work through them.
+- [Wiki for agents](./wiki-for-agents.md) — what `.agents/` actually is and why agents can read it natively
+- [Trust factory](./trust-factory.md) — how the validation gates and councils make agent output trustworthy
 
 ---
 
@@ -8,7 +36,7 @@
 
 In 2009, DevOps asked: *what if ops looked more like dev?* The answer was CI/CD, infrastructure as code, and the SDLC infinity loop — Plan, Code, Build, Test, Release, Deploy, Operate, Monitor.
 
-CDLC asks the same question about context: *what if the instructions, knowledge, and constraints we feed to coding agents were engineered with the same rigor as the code they produce?*
+Inside an agentic SDLC, the CDLC asks the same question about context: *what if the instructions, knowledge, and constraints we feed to coding agents were engineered with the same rigor as the code they produce?*
 
 The answer is the same shape. Different substrate.
 
@@ -28,7 +56,40 @@ The answer is the same shape. Different substrate.
     infinity loop                  infinity loop
 ```
 
-The SDLC produces deployable artifacts. The CDLC produces injectable context. Both compound through feedback loops. Both degrade without discipline.
+The SDLC produces deployable artifacts. The CDLC produces injectable context for the agents doing that work. Both compound through feedback loops. Both degrade without discipline.
+
+---
+
+## The Narrow Waist
+
+The CDLC has a narrow waist because LLM agents do not have infinite context:
+
+```
+historical software-engineering practice
+        ↓
+agent-context-limited constraint
+        ↓
+small verifiable slices
+        ↓
+dense intent + executable evidence
+        ↓
+less rediscovery, less drift, less hallucinated done
+```
+
+Four practices carry the highest density:
+
+| Practice | CDLC role |
+|---|---|
+| **BDD / Gherkin** | States what behavior matters in observable terms |
+| **DDD** | Gives humans and agents shared names, aggregates, and bounded contexts |
+| **Hexagonal architecture** | Keeps tools, model runtimes, and vendor adapters outside the core loop |
+| **TDD** | Gives the agent an executable local done condition |
+
+Everything else plugs into that waist. CI/CD runs the proof repeatedly. SRE/DORA measures health. ADRs and provenance explain why decisions happened. Wikis and ratchets keep knowledge durable. Agile/XP keeps work in small vertical increments. Pragmatic engineering keeps the slice evidence-bearing and reversible.
+
+The density invariant has a domain name: **Context Density Rule**. The domain entry lives at [`skills/domain/references/context-density-rule.md`](https://github.com/boshu2/agentops/blob/main/skills/domain/references/context-density-rule.md).
+
+That is why waterfall is the wrong shape here. It spends context on large speculative artifacts before proof exists. CDLC prefers atomic process: one behavior, one bounded context, one first failing test, one write scope, one acceptance proof, and one learning only when it changes future behavior.
 
 ---
 
@@ -48,7 +109,7 @@ Create the context that agents will consume. Prompts, skills, instructions, spec
 - `/research` — investigate before writing context
 - `/plan` — decompose goals into structured implementation specs
 - SKILL.md authoring — reusable context packages with triggers, steps, and output contracts
-- `ao inject --for=<skill>` — pull library documentation into the context window
+- `ao context assemble` — request skill- or phase-scoped context explicitly
 - MCP integrations — pull context from GitLab, GitHub, Slack, tickets
 
 The generation phase is where most teams stop. They write a Claude.md, maybe a few rules, and call it done. CDLC says generation is one-seventh of the work.
@@ -65,7 +126,8 @@ Assemble raw context into phase-appropriate, role-scoped, freshness-weighted pac
 **AgentOps implementation:**
 
 - `ao context assemble` — build phase-scoped context packets
-- `ao inject` — retrieve decay-ranked learnings, trim to token budget
+- `ao lookup` — retrieve decay-ranked learnings on demand
+- `ao inject` — deprecated compatibility adapter for legacy retrieval paths
 - `ao compile` — rebuild the derived knowledge wiki (Mine → Grow → Defrag → Lint)
 - `ao maturity --expire/--evict` — remove stale context before it pollutes the window
 - Finding compiler — distill raw findings into prevention rules
@@ -122,8 +184,8 @@ Inject the right context into the right session at the right time.
 
 **AgentOps implementation:**
 
-- `SessionStart` hooks — automatic context loading on every session
-- `ao inject` — decay-ranked retrieval with token budgeting
+- Explicit context packets — deliver the assembled phase context to the agent
+- Optional `SessionStart` hooks — runtime adapter profile, not the default path
 - `ao lookup` — on-demand knowledge search during a session
 - SkillLoadEvent — track which skills were loaded (citation pipeline)
 - Phase-scoped delivery — `/research` gets different context than `/implement`
@@ -176,14 +238,33 @@ Adaptation is where the CDLC becomes a flywheel. Each session's outcomes improve
 | SDLC Phase | CDLC Phase | Key Question | AgentOps Surface |
 |---|---|---|---|
 | Plan | Generate | What context should exist? | `/research`, `/plan`, SKILL.md |
-| Code + Build | Compile | How is context assembled for this task? | `ao context assemble`, `ao inject`, `ao compile` |
+| Code + Build | Compile | How is context assembled for this task? | `ao context assemble`, `ao lookup`, `ao compile` |
 | Test | Test | Does this context produce the right behavior? | `/pre-mortem`, `/vibe`, `ao eval run` |
 | Release | Distribute | How do others get this context? | Skills registry, `/converter`, `install.sh` |
-| Deploy | Deliver | Did the right context reach the agent? | `SessionStart` hooks, `ao inject`, SkillLoadEvent |
+| Deploy | Deliver | Did the right context reach the agent? | Explicit phase packets, optional `SessionStart` hooks, SkillLoadEvent |
 | Operate | Observe | Is the context working in practice? | `quality-signals.sh`, citation tracking, session-outcome |
 | Monitor → Plan | Adapt | What should change for next time? | MemRL feedback, `/forge`, `/evolve`, `/dream` |
 
 ---
+
+## Operating loop within the phases
+
+The seven phases describe **what context engineering is**. The operating loop describes **how an agent executes work** through them. They are not the same artifact.
+
+A single turn of the operating loop touches every CDLC phase:
+
+```
+BDD-shaped intent issue            ← Generate (the intent is the spec; phase 1)
+  → vertical slices                ← Compile (one slice per Given/When/Then; phase 2)
+  → TDD per slice                  ← Test (first failing test before code; phase 3)
+  → conflict-free parallel wave    ← Distribute + Deliver (workers receive scoped context; phases 4–5)
+  → integrated bead completion     ← Observe (acceptance examples must pass; phase 6)
+  → evidence + learning capture    ← Adapt (ratcheted promotion into the next loop turn; phase 7)
+```
+
+The loop is the unit of work that compounds. The phases are the layers it travels through. Every process skill in this repo (`/discovery`, `/plan`, `/implement`, `/crank`, `/validation`, `/council`, `/pre-mortem`, `/vibe`, `/post-mortem`, `/forge`, `/retro`) is one move in that loop, with the upstream artifact contracts and downstream evidence requirements pinned to the loop position — not to a free-floating phase number.
+
+Canonical reference: [Operating loop](./architecture/operating-loop.md). Doctrine source: [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-15-cdlc-dojo-doctrine.md). Fitness gate: [GOALS.md Directive #12](https://github.com/boshu2/agentops/blob/main/GOALS.md).
 
 ## The Leverage Hierarchy
 
@@ -199,13 +280,13 @@ Not all phases are equal. Donella Meadows ranked twelve places to intervene in a
 
 The pattern: the phases most teams skip are the ones Meadows says matter most. Writing a prompt is #12. Building a system that improves its own context based on what it observes is #4. That's an 8-level leverage gap.
 
-Full leverage-point mapping: [docs/leverage-points.md](leverage-points.md). Convergence map tying each CDLC phase to all five theoretical pillars: [docs/the-science.md](the-science.md#part-6-the-convergence--cdlc-as-the-unifying-spine).
+Full leverage-point mapping: [docs/leverage-points.md](leverage-points.md). Convergence map tying each CDLC phase to all five theoretical pillars: [docs/the-science.md](the-science.md#part-6-the-convergence-cdlc-as-the-unifying-spine).
 
 ---
 
 ## How the 12 Factors Build the Flywheel
 
-The [12-factor doctrine](https://12factoragentops.com) is a build order — four tiers that construct the three product layers in sequence. The flywheel emerges when all three layers are running.
+The [12-factor doctrine](https://12factoragentops.com) is a build order — four tiers that construct the compounding product loop in sequence. The flywheel emerges when bookkeeping, context compilation, validation gates, and learning loops are running together.
 
 | Tier | Factors | Product Layer | What It Builds | Theory |
 |---|---|---|---|---|
@@ -226,13 +307,13 @@ Each tier draws from a different body of theory:
 - **Control theory** enables the Scale tier: declared state (GOALS.md) + reconcile loop (`/evolve`) + error budgets (fitness gates). The system continuously reconciles actual state to desired state.
 - **Systems dynamics** (Meadows 2008) provides the leverage hierarchy: Foundation is necessary infrastructure (#12–#10), Flow adds feedback (#8–#7), Knowledge reaches self-organization (#4–#3). The highest-leverage phases are the ones most teams never build.
 
-Full convergence map tying each CDLC phase to all five threads: [The Science — Part 6](the-science.md#part-6-the-convergence--cdlc-as-the-unifying-spine).
+Full convergence map tying each CDLC phase to all five threads: [The Science — Part 6](the-science.md#part-6-the-convergence-cdlc-as-the-unifying-spine).
 
 ---
 
 ## Why This Matters
 
-LLMs are engines. Context is fuel. You can't tune the engine — that's the model vendor's job. But you can engineer the fuel. The CDLC is how.
+LLMs are engines. Context is fuel. You can't tune the engine — that's the model vendor's job. But you can engineer the fuel. AgentOps is the SDLC control plane; the CDLC is how it engineers the fuel.
 
 DevOps proved that disciplined systems around indeterministic workers (humans) produce reliable output. SRE proved it again with SLOs and error budgets. Kubernetes proved it for infrastructure with control loops.
 

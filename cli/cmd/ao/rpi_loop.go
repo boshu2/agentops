@@ -1,3 +1,4 @@
+// practices: [agile-manifesto, dora-metrics]
 package main
 
 import (
@@ -214,8 +215,8 @@ func executeLoopCycles(cwd, explicitGoal, nextWorkPath string, cfg rpiLoopSuperv
 	for {
 		cycle++
 
-		if rpiMaxCycles > 0 && cycle > rpiMaxCycles {
-			fmt.Printf("\nReached max cycles (%d). Stopping.\n", rpiMaxCycles)
+		if cfg.MaxCycles > 0 && cycle > cfg.MaxCycles {
+			fmt.Printf("\nReached max cycles (%d). Stopping.\n", cfg.MaxCycles)
 			break
 		}
 		stop, err := applyCycleDelay(ctx, cycle, cfg)

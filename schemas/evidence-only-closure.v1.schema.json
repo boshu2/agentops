@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/evidence-only-closure.v1.schema.json",
   "title": "AgentOps Evidence-Only Closure Artifact v1",
   "description": "Schema-backed proof artifact for closures that rely on validation or policy evidence instead of a code delta.",
+  "practices": ["adr", "cmm-process-maturity"],
   "type": "object",
   "additionalProperties": false,
   "required": [

@@ -1,3 +1,4 @@
+// practices: [ai-assisted-dev, distributed-tracing]
 package main
 
 import (
@@ -153,9 +154,4 @@ func printPacketHuman(cmd *cobra.Command, packet StigmergicPacket) {
 // detectRepoName returns the base directory name as a repo identifier.
 func detectRepoName(cwd string) string {
 	return aocontext.DetectRepoName(cwd)
-}
-
-// fileBase returns the last path component.
-func fileBase(path string) string {
-	return aocontext.FileBase(path)
 }

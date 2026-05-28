@@ -50,7 +50,7 @@ This is a deliberate bet against the current tooling consensus. Vector databases
 - Volume is bounded (one project, not the internet)
 - Freshness matters more than recall breadth (stale knowledge is worse than no knowledge)
 - Human curation is the highest-leverage action
-- Portability is required (no cloud dependency, works air-gapped)
+- Portability is required (repo-local state, no AgentOps-hosted control plane, mirrorable dependencies)
 
 ...markdown + wikilinks outperforms embeddings. The agent can grep it, the human can read it, and `ao defrag` can maintain it.
 
@@ -64,7 +64,7 @@ Not every knowledge operation needs a frontier model. AgentOps uses three tiers:
 | Frontier (Claude, GPT-4o, etc.) | Quality work — council validation, pre-mortem review, pattern extraction | Accuracy matters more than throughput. |
 | Human | Curation and promotion decisions | Judgment calls that agents get wrong systematically. |
 
-`/dream` and `ao overnight` use the local tier for continuous compounding. `/council` and `/pre-mortem` use the frontier tier for high-stakes validation. The human reviews promotions from learning → finding → rule.
+`/dream` uses the local tier for continuous compounding; when that compounding runs out of session — always-on, scheduled, unattended — it runs on the Gas City substrate (the reference out-of-session orchestrator), not an AgentOps daemon. `/council` and `/pre-mortem` use the frontier tier for high-stakes validation. The human reviews promotions from learning → finding → rule.
 
 The ratio is intentional. Validation and curation cost 3-5x implementation time. This is not overhead — it is the ratchet. Without it, the flywheel runs backward.
 
@@ -82,7 +82,7 @@ AgentOps is not a chatbot wrapper. It does not make prompts bigger. It does not 
 
 It is not trying to replace thinking. The model thinks. AgentOps manages what the model knows when it thinks.
 
-It is not a SaaS product or a managed service. All state lives locally. All operations are reversible. The product is the compounding environment — the `skills/`, the `ao` CLI, and the discipline enforced by the hooks. That environment is yours to own, version-control, and take with you.
+It is not a SaaS product or a managed service. All state lives locally. All operations are reversible. The product is the compounding environment — the `skills/`, the `ao` CLI, and the discipline enforced in CI. AgentOps 3.0 is hookless: skills and the CLI guide the workflow and CI is the authoritative gate. Hooks are opt-in — you author your own via the `hooks-authoring` skill — never installed by default. That environment is yours to own, version-control, and take with you.
 
 ## The Validated Thesis
 
@@ -91,7 +91,7 @@ As of April 2026, the flywheel thesis is empirically confirmed on a single produ
 - 163 learnings extracted, scored, and curated
 - 13 planning rules enforced at pre-mortem gates
 - 12 patterns promoted from repeated findings
-- 10/12 `ao doctor` checks passing with full 7/7 hook coverage
+- 10/12 `ao doctor` checks passing, with the full CI gate suite green
 
 The compound growth is measurable. Session 1 started cold. Session 100+ starts with a knowledge corpus that catches known failure modes before implementation begins.
 

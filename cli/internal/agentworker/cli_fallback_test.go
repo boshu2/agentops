@@ -15,9 +15,6 @@ import (
 )
 
 func TestWorkerProcessGroupIsolation_StartsInOwnProcessGroup(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("process groups are POSIX-only")
-	}
 	worker := newShellFallbackWorker(t, `printf "%s %s" "$$" "$(ps -o pgid= -p $$)"`)
 	session, err := worker.Start(context.Background(), StartRequest{
 		WorkerKind: WorkerKindCodex,
@@ -52,9 +49,6 @@ func TestWorkerProcessGroupIsolation_StartsInOwnProcessGroup(t *testing.T) {
 }
 
 func TestWorkerProcessGroupIsolation_KillsHungProcessGroup(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("process group kill is POSIX-only")
-	}
 	pidFile := filepath.Join(t.TempDir(), "child.pid")
 	script := `sleep 10 & echo $! > "$PIDFILE"; wait`
 	worker, err := NewCLIFallbackWorker(CLIFallbackWorkerOptions{

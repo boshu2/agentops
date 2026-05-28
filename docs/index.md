@@ -1,6 +1,6 @@
 ---
 title: AgentOps
-description: Context compiler for coding agents. Compile context, gate output, compound knowledge — so every session starts loaded, not cold.
+description: SDLC control plane for coding agents. Keep the books, compile context, gate output, and compound knowledge so every session starts loaded, not cold.
 hide:
   - navigation
   - toc
@@ -8,15 +8,16 @@ hide:
 
 # AgentOps { .landing-hero }
 
-<p class="hero-tagline">
-  Context compiler for coding agents.<br>
-  Compile context. Gate output. Compound knowledge.<br>
-  <strong>Right context, right window, right time.</strong>
-</p>
+### The SDLC control plane for coding agents.
 
-<p class="hero-subtagline">
-  Every coding session reads from the corpus on the way in and writes back on the way out — typed, versioned, validated, decay-ranked. Vendor memory follows the chat. The corpus follows the team.
-</p>
+<!-- agentops:claim:AOP-CLAIM-DOCS-INDEX-CORPUS -->
+AgentOps keeps the books, compiles context, gates output, and compounds learning for agentic software development. Its substrate is `.agents/`: a wiki of markdown files in your repo, version-controlled with your code, that agents read, traverse, and contribute to.
+
+AgentOps uses software-engineering practice people already understand — Agile/XP, BDD/Gherkin, DDD, hexagonal architecture, TDD, CI/CD, SRE, ADRs, provenance, and durable knowledge — then compiles those practices into dense, verifiable context for LLM agents under token scarcity. The internal lifecycle is the CDLC: context gets developed, tested, delivered, observed, and improved like any other software asset.
+
+*The only verifiable moat in this uncertain time is context. Models will get smarter, harnesses will commoditize, agents will get cheaper. Your accumulated context — the lessons learned about your individual problems, the patterns that worked, the decisions that survived review — is the one asset that compounds and doesn't get eaten by the next vendor release. That's what your company actually is.*
+
+*AgentOps is the shovel. Start digging.*
 
 <p class="hero-actions" markdown>
 [:octicons-rocket-24: Install](#install){ .md-button .md-button--primary }
@@ -30,10 +31,11 @@ hide:
 
 Every agent session starts cold. Same mistakes. Same rework. The landmine in `auth.py`, the two-hour timeout debug, the flag the reviewer always catches — none of it carries forward.
 
-**AgentOps solves this** with three product layers:
+**AgentOps solves this** with four product layers:
 
 | Layer | What it does |
 |-------|-------------|
+| **Bookkeeping** | Records what agents tried, changed, validated, and learned so the work leaves evidence |
 | **Context Compiler** | Assembles the right context for the right phase — decay-ranked, token-budgeted, loaded at session start |
 | **Validation Gates** | `/pre-mortem`, `/vibe`, and `/council` challenge plans and code before they ship |
 | **Knowledge Flywheel** | Extracts learnings, scores them, and resurfaces them so the next session starts smarter |
@@ -42,13 +44,14 @@ Session 1, your agent spends two hours debugging a timeout bug. Session 15, a ne
 
 ```mermaid
 flowchart LR
+    B[Bookkeeping] --> C[Context Compiler]
     C[Context Compiler] --> S[Session work]
     S --> G[Validation Gates]
     G --> F[Knowledge Flywheel]
-    F --> C
+    F --> B
 ```
 
-All state lives in local `.agents/` — auditable, versionable, yours. Plain text you can grep, diff, review, and commit. Zero telemetry. Zero cloud dependency.
+All AgentOps state lives in local `.agents/` — auditable, versionable, yours. Plain text you can grep, diff, review, and exclude from source control. No AgentOps-managed telemetry or hosted control plane; model runtimes, Git remotes, installers, and external tools are operator-selected dependencies. For constrained environments, see the [Assurance Profile](assurance-profile.md).
 
 ---
 
@@ -132,7 +135,7 @@ Consensus: WARN — add rate limiting to /login before shipping
 [flywheel]    Next session starts with better context
 ```
 
-The point is not a bigger prompt. The point is a repo that remembers what worked.
+The point is not a bigger prompt. The point is a repo that remembers what was tried, what worked, what failed, and what should constrain the next run.
 
 ---
 
@@ -153,13 +156,14 @@ Every skill works alone. Compose flows for end-to-end cycles.
 | [`/dream`](skills/dream.md) | You want overnight knowledge compounding that never mutates source code |
 
 !!! info "Full catalog"
-    [:octicons-book-24: **All 70 skills**](skills/catalog.md) — complete reference with source links and descriptions.
+    [:octicons-book-24: **All 73 skills**](skills/catalog.md) — complete reference with source links and descriptions.
     [:octicons-routes-24: **Decision tree**](skills-decision-tree.md) — "which skill do I need next?"
 
 ---
 
 ## Unsupervised Cycles
 
+<!-- agentops:claim:AOP-CLAIM-DOCS-INDEX-AUTONOMOUS-CYCLES -->
 **Day: autonomous improvement.** `/evolve` reads `GOALS.md`, fixes the worst fitness gap, runs regression gates, records each cycle.
 
 ```text
@@ -193,7 +197,7 @@ Run Dream overnight, then Evolve in the morning against a fresher corpus. Same m
 
 1. **[Install](#install)** — pick your runtime.
 2. **Seed** your repo with `ao quick-start` (`ao quickstart` also works), then run `/quickstart` in your agent chat.
-3. **Choose a golden path:** `/rpi "a small goal"` for a first validated change, `/council validate this PR` for review-only, or `bd ready` to continue tracked work.
+3. **Choose a golden path:** `/rpi "a small goal"` for a first validated change, `/council validate this PR` for review-only, or `ao reconcile --json` then `bd ready` to continue tracked work.
 
 Read the lineage at [12factoragentops.com](https://12factoragentops.com) — DevOps applied to coding agents in twelve factors.
 

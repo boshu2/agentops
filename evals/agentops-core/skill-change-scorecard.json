@@ -3,6 +3,7 @@
   "id": "agentops-core.skill-change-scorecard",
   "name": "AgentOps Skill Change Scorecard Canary",
   "description": "Offline public canary for required skill-change scorecard categories.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",

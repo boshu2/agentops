@@ -31,7 +31,6 @@ printf -- "---\n"
 
 while IFS= read -r skill_md; do
     lines=$(wc -l < "$skill_md")
-    name=$(basename "$(dirname "$skill_md")")
     if [[ "$lines" -gt "$FAIL_LINES" ]]; then
         printf "FAIL  %4d lines  %s  (move reference material to %s/references/)\n" \
             "$lines" "$skill_md" "$(dirname "$skill_md")"

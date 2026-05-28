@@ -20,7 +20,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Run CLI tests with coverage
@@ -54,11 +54,6 @@ jobs:
           chmod +x tests/docs/validate-doc-release.sh
           ./tests/docs/validate-doc-release.sh
 
-      - name: Validate hooks/docs parity
-        run: |
-          chmod +x scripts/validate-hooks-doc-parity.sh
-          ./scripts/validate-hooks-doc-parity.sh
-
   retrieval-bench:
     name: Retrieval Quality Bench
     runs-on: ubuntu-latest
@@ -69,7 +64,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Run retrieval bench (synthetic corpus)
@@ -119,7 +114,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -182,7 +177,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao
@@ -218,7 +213,7 @@ jobs:
           NIGHTLY_KNOWLEDGE_CYCLE_DIR: ${{ runner.temp }}/knowledge-cycle
         run: |
           ./cli/bin/ao defrag \
-            --prune --dedup --oscillation-sweep \
+            --prune --dedup \
             --output-dir "${RUNNER_TEMP}/knowledge-cycle/compile/defrag"
           scripts/nightly-knowledge-cycle.sh record-stage compile-defrag ok "defrag wrote $(ls "${RUNNER_TEMP}/knowledge-cycle/compile/defrag" | wc -l | tr -d ' ') file(s)"
 

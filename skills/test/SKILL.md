@@ -1,20 +1,32 @@
 ---
 name: test
-description: 'Generate tests and coverage plans.'
+description: Generate tests and coverage plans.
+practices:
+- tdd
+- property-based-testing
+- bdd-gherkin
+hexagonal_role: supporting
+consumes:
+- standards
+- repo-context
+produces:
+- result.json
+context_rel: []
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: execution
   dependencies:
-    - standards  # loads language-specific test conventions
-    - complexity # optional - identifies high-risk untested code
-output_contract: "test files, coverage report"
+  - standards
+  - complexity
+output_contract: test files, coverage report
 ---
 # Test Skill
 
@@ -117,6 +129,8 @@ If the target needs a specialized test pattern, load the matching reference befo
 - Contract/API/CLI compatibility: [references/conformance-harnesses.md](references/conformance-harnesses.md)
 - Parsers, serializers, and untrusted inputs: [references/fuzzing.md](references/fuzzing.md)
 - Generated files, snapshots, and rendered output: [references/golden-artifacts.md](references/golden-artifacts.md)
+- Metamorphic/invariant-heavy behavior: [references/metamorphic-testing.md](references/metamorphic-testing.md)
+- Golden artifact update review: [references/golden-artifact-strategy.md](references/golden-artifact-strategy.md)
 - Real databases, services, queues, or APIs where mocks would hide failures: [references/real-service-e2e.md](references/real-service-e2e.md)
 
 ### Go: Table-Driven Tests
@@ -385,3 +399,7 @@ All artifacts are written to `.agents/test/`:
 | `summary.md` | Before/after coverage delta and test inventory |
 | `tdd-log.md` | TDD cycle log (tdd mode only) |
 | `strategy.md` | Test architecture recommendations (strategy mode only) |
+
+## Reference Documents
+
+- [references/test.feature](references/test.feature) — Executable spec: load standards + detect language, generate real passing tests (not a plan), coverage gap-fill, artifacts in .agents/test/ (soc-qk4b)

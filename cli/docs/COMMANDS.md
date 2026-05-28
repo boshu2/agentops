@@ -11,6 +11,7 @@
           --json            Output as JSON (shorthand for -o json)
       -o, --output string   Output format (json, table, yaml) (default "table")
       -v, --verbose         Enable verbose output
+          --version         version for ao
 
 ---
 
@@ -18,7 +19,7 @@
 
 ### `ao demo`
 
-Run an interactive demonstration of AgentOps capabilities.
+Run a demonstration of AgentOps as the engineering operating system
 
 ```
 ao demo [flags]
@@ -27,16 +28,16 @@ ao demo [flags]
 **Flags:**
 
 ```
-      --concepts   Just explain core concepts
+      --concepts   Explain product model
   -h, --help       help for demo
-      --quick      2-minute quick overview
+      --quick      2-minute council-first overview
 ```
 
 ---
 
 ### `ao init`
 
-Set up a repository for AgentOps: directories, gitignore, and optional hooks.
+Set up a repository for AgentOps: directories and gitignore.
 
 ```
 ao init [flags]
@@ -45,12 +46,8 @@ ao init [flags]
 **Flags:**
 
 ```
-      --full            With --hooks, explicitly request full coverage (legacy explicit flag)
-  -h, --help            help for init
-      --hooks           Also register hooks (full 12-event coverage by default; equivalent to ao hooks install --full)
-      --minimal-hooks   With --hooks, install SessionStart + SessionEnd + Stop hooks (lightweight)
-      --stealth         Use .git/info/exclude instead of .gitignore
-      --with-schedule   Copy .agents/schedule.yaml.example to .agents/schedule.yaml (opt-in continuous-worker scheduling). In a TTY, ao init prompts [Y/n] when this flag is unset. In non-TTY runs, scheduling is silently skipped unless AGENTOPS_INIT_WITH_SCHEDULE=1 is set to opt-in.
+  -h, --help      help for init
+      --stealth   Use .git/info/exclude instead of .gitignore
 ```
 
 ---
@@ -113,6 +110,117 @@ Display a visual badge showing knowledge flywheel health status.
 
 ```
 ao badge [flags]
+```
+
+---
+
+### `ao capabilities`
+
+Print the machine-readable contract for the whole ao CLI as JSON.
+
+```
+ao capabilities [flags]
+```
+
+---
+
+### `ao ci`
+
+Operations on CI run history via the typed BC2 CIStatusPort. The 'latest' subcommand wraps 'gh run list --commit <sha>' through productionCIStatus; 'recent' wraps the unbound-by-sha variant.
+
+```
+ao ci [command]
+```
+
+**Subcommands:**
+
+#### `ao ci latest`
+
+Get the most recent CI run for a given commit SHA via the typed
+
+```
+ao ci latest <sha> [flags]
+```
+
+#### `ao ci recent`
+
+List recent CI runs (any SHA) via productionCIStatus. Default
+
+```
+ao ci recent [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help        help for recent
+      --limit int   max runs to emit (0 = all up to port cap of 50) (default 10)
+```
+
+---
+
+### `ao citation`
+
+Verify citation freshness via the typed BC1 CitationPort. Useful for cross-repo citation auditing and dream-loop staleness checks.
+
+```
+ao citation [command]
+```
+
+**Subcommands:**
+
+#### `ao citation verify`
+
+Verify a single citation (file, function, or symbol) against HEAD
+
+```
+ao citation verify --kind <file|function|symbol> --raw <text> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help          help for verify
+      --kind string   citation kind (required: file|function|symbol)
+      --raw string    citation text to verify (required)
+```
+
+---
+
+### `ao claim`
+
+Bind claims to evidence files at a promotion level (PG1-PG4) and list existing bindings, via the typed BC2 ClaimEvidenceBinderPort.
+
+```
+ao claim [command]
+```
+
+**Subcommands:**
+
+#### `ao claim bind`
+
+Append (or upgrade) a claim→evidence binding via the typed BC2
+
+```
+ao claim bind --claim <AOP-CLAIM-X> --path <evidence-path> [--level PG1|PG2|PG3|PG4] [--anchor ...] [flags]
+```
+
+**Flags:**
+
+```
+      --anchor stringArray   optional in-file anchors (repeatable)
+      --claim string         claim ID (required, e.g. AOP-CLAIM-X)
+  -h, --help                 help for bind
+      --level string         promotion level: PG1|PG2|PG3|PG4 (default "PG1")
+      --path string          evidence file path (required, relative to repo root)
+```
+
+#### `ao claim list`
+
+Emit all known claim→evidence bindings via the typed BC2 ClaimEvidenceBinderPort. Output is line-delimited JSON.
+
+```
+ao claim list [flags]
 ```
 
 ---
@@ -237,15 +345,115 @@ ao dedup [flags]
 Run health checks on your AgentOps installation.
 
 ```
-ao doctor [flags]
+ao doctor [command]
 ```
 
 **Flags:**
 
 ```
+      --dry-run           With --fix: print the plan, change nothing
+      --explain string    Expand a single finding by id
+      --fix               Apply fixers for findings (routes through mutate())
   -h, --help              help for doctor
       --json              Output results as JSON
-      --product-runtime   Fail closed on daemon product runtime readiness checks
+      --online            Enable network probes (default: offline-only)
+      --only strings      Scope to a subset of detectors or subsystems
+      --quick             Run only fast-path detectors (< 200ms)
+      --robot             Alias for --json with structured wrapper
+      --robot-triage      Emit the mega-command triage JSON
+      --severity string   Minimum severity to emit (P0|P1|P2|P3) (default "P3")
+      --since string      Diff findings against an earlier run
+      --skip strings      Inverse of --only
+```
+
+**Subcommands:**
+
+#### `ao doctor capabilities`
+
+Print the machine-readable doctor contract (JSON)
+
+```
+ao doctor capabilities [flags]
+```
+
+#### `ao doctor diff`
+
+Show what --fix would change (read-only)
+
+```
+ao doctor diff [flags]
+```
+
+#### `ao doctor explain`
+
+Expand a single finding with full evidence
+
+```
+ao doctor explain <finding-id> [flags]
+```
+
+#### `ao doctor fix`
+
+Run detectors, then apply fixers (backs up before every mutation)
+
+```
+ao doctor fix [flags]
+```
+
+#### `ao doctor gc`
+
+Prune old runs (requires --yes and --before <date>)
+
+```
+ao doctor gc [flags]
+```
+
+**Flags:**
+
+```
+      --before string   Prune runs started before this date (YYYY-MM-DD)
+  -h, --help            help for gc
+      --yes             Confirm pruning (required)
+```
+
+#### `ao doctor health`
+
+Cheap one-line liveness summary
+
+```
+ao doctor health [flags]
+```
+
+#### `ao doctor ls`
+
+List runs in .doctor/runs/
+
+```
+ao doctor ls [flags]
+```
+
+#### `ao doctor robot-docs`
+
+Print the paste-ready agent handbook (Markdown)
+
+```
+ao doctor robot-docs [flags]
+```
+
+#### `ao doctor undo`
+
+Restore from .doctor/runs/<run-id>/backups/ (run-id may be 'latest')
+
+```
+ao doctor undo <run-id> [flags]
+```
+
+**Flags:**
+
+```
+      --dry-run   Print the restore plan; do not execute
+  -h, --help      help for undo
+      --strict    Refuse if any backup is missing or hash-mismatched (default true)
 ```
 
 ---
@@ -397,6 +605,161 @@ ao gate reject <candidate-id> [flags]
       --reason string   Required rejection reason
 ```
 
+#### `ao gate run`
+
+Invoke a check-*.sh gate via the typed BC2 GateRunnerPort
+
+```
+ao gate run <name> [flags]
+```
+
+---
+
+### `ao harness`
+
+Inspect the sync state between the canonical skills/ tree and the skills-codex/ mirror via the typed BC5 HarnessPort. Useful as a typed alternative to scripts/audit-codex-parity.sh for drift detection.
+
+```
+ao harness [command]
+```
+
+**Subcommands:**
+
+#### `ao harness status`
+
+Emit HarnessSkillSync entries via the typed BC5 HarnessPort
+
+```
+ao harness status [--skill <name>] [--out-of-sync-only] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help               help for status
+      --out-of-sync-only   emit only entries with OutOfSync=true
+      --skill string       filter to one skill name (empty = all)
+```
+
+---
+
+### `ao loop`
+
+Operations on the /evolve cycle history and related Loop bounded-context state. The 'history' subcommand reads .agents/evolve/cycle-history.jsonl via the typed BC3 LoopReaderPort.
+
+```
+ao loop [command]
+```
+
+**Subcommands:**
+
+#### `ao loop append`
+
+Append a new entry to .agents/evolve/cycle-history.jsonl via the
+
+```
+ao loop append --mode <m> --result <r> [flags]
+```
+
+**Flags:**
+
+```
+      --commit string       git commit SHA (optional)
+      --cycle int           cycle number (0 = auto-assign max+1)
+  -h, --help                help for append
+      --milestone string    milestone note (optional)
+      --mode string         cycle mode (required)
+      --result string       cycle result: improved|harvested|unchanged|idle (required)
+      --trace-json string   XP/BDD/TDD evidence trace as a JSON object — a file path or inline JSON (optional)
+```
+
+#### `ao loop converged`
+
+Evaluate the evolve loop's convergence STOP predicate via the typed
+
+```
+ao loop converged [flags]
+```
+
+**Flags:**
+
+```
+      --fitness-baseline             a fitness baseline artifact has been captured
+      --green-streak int             current leading green CI streak (caller-supplied evidence)
+  -h, --help                         help for converged
+      --unconsumed-high-medium int   current unconsumed HIGH+MEDIUM finding count
+```
+
+#### `ao loop history`
+
+Read .agents/evolve/cycle-history.jsonl via the typed BC3 LoopReaderPort.
+
+```
+ao loop history [flags]
+```
+
+**Flags:**
+
+```
+      --end int     end cycle number (inclusive; 0 = unbounded)
+  -h, --help        help for history
+      --latest      emit only the latest entry
+      --limit int   max entries to emit (0 = all)
+      --start int   start cycle number (inclusive; 0 = unbounded)
+```
+
+#### `ao loop hypothesis`
+
+Operations on the /evolve hypothesis ledger (.agents/evolve/hypotheses.jsonl) via the typed BC3 HypothesisLedgerPort.
+
+```
+ao loop hypothesis [command]
+```
+
+##### `ao loop hypothesis append`
+
+Append a falsifiable hypothesis to .agents/evolve/hypotheses.jsonl
+
+```
+ao loop hypothesis append --id <id> --hypothesis <h> --measure <m> [flags]
+```
+
+**Flags:**
+
+```
+      --check-at-cycle int   future cycle that evaluates the measure
+      --cycle-landed int     cycle the patch landed
+  -h, --help                 help for append
+      --hypothesis string    expected effect of the patch
+      --id string            unique hypothesis ID, e.g. H210.1 (required)
+      --measure string       how the effect is verified
+      --patch string         one-line description of what landed
+      --verdict string       verdict: PENDING|VERIFIED|FALSIFIED (default "PENDING")
+```
+
+##### `ao loop hypothesis list`
+
+Read .agents/evolve/hypotheses.jsonl via the typed BC3
+
+```
+ao loop hypothesis list [flags]
+```
+
+#### `ao loop verify`
+
+Audit .agents/evolve/cycle-history.jsonl integrity via the typed
+
+```
+ao loop verify [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for verify
+      --max-idle int   max acceptable trailing idle/unchanged streak before flagging dormancy (default 5)
+```
+
 ---
 
 ### `ao maturity`
@@ -513,6 +876,43 @@ ao metrics report [flags]
 ```
       --days int   Period in days for metrics calculation (default 7)
   -h, --help       help for report
+```
+
+---
+
+### `ao operator`
+
+Read and write operator intents via the typed BC4 OperatorPort. Intents are durable records of operator decisions (halt, rescope, handoff) appended to .agents/operator/intents.jsonl.
+
+```
+ao operator [command]
+```
+
+**Subcommands:**
+
+#### `ao operator list`
+
+Emit recorded OperatorIntents from .agents/operator/intents.jsonl
+
+```
+ao operator list [flags]
+```
+
+#### `ao operator record`
+
+Append an OperatorIntent to .agents/operator/intents.jsonl via the
+
+```
+ao operator record --kind <kind> [--subject S] [--note N] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help             help for record
+      --kind string      intent kind (required: halt|rescope|handoff|other)
+      --note string      free-text note
+      --subject string   intent subject (e.g., bd ID, file path)
 ```
 
 ---
@@ -677,6 +1077,35 @@ ao pool stage <candidate-id> [flags]
 
 ---
 
+### `ao reconcile`
+
+Build a read-only reconciliation report for the current AgentOps repo.
+
+```
+ao reconcile [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for reconcile
+      --limit int      maximum bead and run records to sample (default 80)
+      --repo string    GitHub repo override for gh calls (owner/name)
+      --since string   recent .agents evidence window (default "48h")
+```
+
+---
+
+### `ao robot-docs`
+
+Print a paste-ready, agent-targeted handbook for the whole ao CLI.
+
+```
+ao robot-docs [flags]
+```
+
+---
+
 ### `ao status`
 
 Display the current state of AgentOps knowledge base.
@@ -719,26 +1148,6 @@ ao vibe-check [flags]
       --markdown       Output as markdown report
       --repo string    Path to git repository (default ".")
       --since string   Time window for analysis (e.g., 7d, 30d, 90d) (default "7d")
-```
-
----
-
-### `ao watch`
-
-Poll agentopsd /v1/events and print new ledger events as a TTY-friendly stream.
-
-```
-ao watch [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                help for watch
-      --interval duration   Polling interval (default 1s)
-      --once                Fetch once and exit
-      --since string        Only show events after this event id
-      --url string          Daemon base URL (defaults to activation file)
 ```
 
 ---
@@ -894,223 +1303,34 @@ ao codex stop [flags]
 
 ---
 
-### `ao daemon`
+### `ao cron`
 
-Run and inspect the AgentOps daemon
+Helpers for the /evolve --mode=loop cron-fire continuity primitive.
 
 ```
-ao daemon [command]
+ao cron [command]
 ```
 
 **Subcommands:**
 
-#### `ao daemon events`
+#### `ao cron self-adjust`
 
-Inspect daemon events
-
-```
-ao daemon events [command]
-```
-
-**Flags:**
+Render the next /evolve loop-mode cron prompt and emit JSON for the harness.
 
 ```
-  -h, --help         help for events
-      --url string   Daemon base URL (defaults to activation file)
-```
-
-##### `ao daemon events tail`
-
-Show daemon events after an optional event id
-
-```
-ao daemon events tail [flags]
+ao cron self-adjust [flags]
 ```
 
 **Flags:**
 
 ```
-      --after string   Only show events after this event id
-  -h, --help           help for tail
-```
-
-#### `ao daemon jobs`
-
-Inspect and control daemon jobs
-
-```
-ao daemon jobs [command]
-```
-
-**Flags:**
-
-```
-  -h, --help                help for jobs
-      --token string        Mutation token for daemon write routes
-      --token-file string   Path to mutation token file
-      --url string          Daemon base URL (defaults to activation file)
-```
-
-##### `ao daemon jobs cancel`
-
-Cancel a daemon job
-
-```
-ao daemon jobs cancel <job-id> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help            help for cancel
-      --reason string   Cancellation reason
-```
-
-##### `ao daemon jobs list`
-
-List daemon jobs
-
-```
-ao daemon jobs list [flags]
-```
-
-##### `ao daemon jobs show`
-
-Show a daemon job
-
-```
-ao daemon jobs show <job-id> [flags]
-```
-
-##### `ao daemon jobs submit`
-
-Submit a job to the daemon queue.
-
-```
-ao daemon jobs submit [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help             help for submit
-      --payload string   JSON payload (required; '@-' for stdin, '@path' for file)
-      --type string      Job type (required; one of dream.run, dream.stage, eval.skill-delta, eval.suite, factory.admission, factory.local-pilot, llmwiki.loop, openclaw.snapshot, plans.projection, rpi.phase, rpi.run, wiki.build, wiki.forge)
-```
-
-##### `ao daemon jobs wait`
-
-Wait for a daemon job to reach terminal state
-
-```
-ao daemon jobs wait <job-id> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help               help for wait
-      --timeout duration   Maximum time to wait for terminal job state (default 30s)
-```
-
-#### `ao daemon ready`
-
-Check daemon readiness
-
-```
-ao daemon ready [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help         help for ready
-      --url string   Daemon base URL (defaults to activation file)
-```
-
-#### `ao daemon run`
-
-Run agentopsd in the foreground
-
-```
-ao daemon run [flags]
-```
-
-**Flags:**
-
-```
-      --addr string                   Loopback address for foreground daemon (default "127.0.0.1:8765")
-      --executor-policy string        Daemon executor policy for workers (fake, gascity, cli-fallback) (default "fake")
-      --gascity-city string           GasCity city name for gascity executor policy
-      --gascity-endpoint string       GasCity API endpoint for gascity executor policy
-      --gascity-token string          GasCity mutation token for gascity executor policy
-      --gascity-token-file string     Path to GasCity mutation token file
-  -h, --help                          help for run
-      --schedule-file string          Path to .agents/schedule.yaml. If empty, auto-detect at .agents/schedule.yaml relative to cwd. Skip schedule loading entirely if neither flag nor default file exists.
-      --token string                  Mutation token for daemon write routes
-      --token-file string             Path to mutation token file
-      --worker-cgroup-root string     Linux cgroup v2 root for worker caps (default /sys/fs/cgroup)
-      --worker-memory-max-bytes int   Linux cgroup v2 memory.max cap for CLI fallback workers in bytes (0 disables)
-      --worker-once                   Exit after each worker makes one claim attempt
-      --worker-timeout duration       Per-job worker wall-clock cap (0 disables)
-      --workers int                   Number of daemon worker loops to run in the foreground
-```
-
-#### `ao daemon service`
-
-Service lifecycle scaffolding for agentopsd
-
-```
-ao daemon service [command]
-```
-
-##### `ao daemon service install`
-
-Print the service install plan
-
-```
-ao daemon service install [flags]
-```
-
-**Flags:**
-
-```
-      --addr string         Loopback address for service plan (default "127.0.0.1:8765")
-      --executable string   ao executable path for service plan (default "ao")
-  -h, --help                help for install
-```
-
-#### `ao daemon soak`
-
-Run a daemon product proof scenario
-
-```
-ao daemon soak [flags]
-```
-
-**Flags:**
-
-```
-      --duration duration   Maximum scenario duration (default 2m0s)
-  -h, --help                help for soak
-      --interval duration   Polling interval for scenario checks (default 15s)
-      --require-terminal    Fail unless scenario jobs reach terminal daemon state
-      --scenario string     Soak scenario (queue-only, fake-executor, dream, plans-projection) (default "queue-only")
-```
-
-#### `ao daemon status`
-
-Show daemon status
-
-```
-ao daemon status [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help         help for status
-      --url string   Daemon base URL (defaults to activation file)
+  -h, --help                 help for self-adjust
+      --next string          Optional recommended next bead
+      --on string            Trigger marker: 'cycle-close' for default loop usage (default "cycle-close")
+      --shipped string       Comma-separated commit:bead entries shipped this cycle
+      --sub-beads string     Comma-separated bead ids filed this cycle
+      --template string      Path to the cron-loop-mode template (default ".agents/evolve/cron-template.md")
+      --tests-delta string   Human-readable tests delta summary
 ```
 
 ---
@@ -1334,13 +1554,13 @@ ao eval task run <task-id> [flags]
 
 ```
       --allow-weak-labels        Allow runs against confidence=weak ground-truth rows (gate #7)
-      --cross-spec               Allow ModelSpec drift (Day-4 gate #4)
+      --cross-spec               Allow ModelSpec drift (gate #4)
       --dry-run                  Run gates and exit without writing a Run manifest
       --ground-truth string      Ground-truth row id (head of supersession chain)
       --harness string           Harness id (recorded into manifest)
       --harness-dir string       Path to harness source dir for snapshot + gate #8
   -h, --help                     help for run
-      --inspect-command string   Recorded inspect_command (Day-2 placeholder; Day-3 wires real launch)
+      --inspect-command string   Inspect command recorded into the Run manifest (not executed yet)
       --inspect-version string   Inspect AI version stamped into manifest (default "0.3.216")
       --model-spec string        ModelSpec id (already captured via ao eval models capture)
       --n-samples int            Override Suite.n_samples
@@ -1366,7 +1586,7 @@ ao eval task show <task-id> [flags]
 Run the v2 autonomous improvement loop.
 
 ```
-ao evolve [goal] [flags]
+ao evolve [command]
 ```
 
 **Flags:**
@@ -1386,9 +1606,6 @@ ao evolve [goal] [flags]
       --cycle-retries int                 Automatic retry count per cycle after a failed attempt
       --detached-branch-prefix string     Branch prefix used by detached HEAD self-heal (default "codex/auto-rpi")
       --detached-heal                     Auto-create/switch to a named branch when HEAD is detached
-      --dream-first                       Run Dream knowledge sub-cycle before code cycles
-      --dream-only                        Knowledge compounding only, no code cycles
-      --dream-timeout string              Timeout for the Dream sub-cycle (default "30m")
       --ensure-cleanup                    Run stale-run cleanup after each cycle (cleanup guarantee)
       --failure-policy string             Cycle failure policy: stop|continue (default "stop")
       --gate-fast-script string           Fast validation gate script path (default "scripts/validate-go-fast.sh")
@@ -1404,80 +1621,87 @@ ao evolve [goal] [flags]
       --lease-path string                 Lease lock file path (absolute or repo-relative) (default ".agents/rpi/supervisor.lock")
       --lease-ttl duration                Lease heartbeat TTL for supervisor lock metadata (default 2m0s)
       --max-cycles int                    Maximum cycles (0 = unlimited, stop when queue empty)
+      --mode string                       Execution contract: 'burst' (default, agent self-regulates) or 'loop' (operator-driven; STOP markers mechanically refused) (default "burst")
       --ralph                             Enable Ralph-mode preset for unattended external loop supervision (implies supervisor defaults with safe nonstop settings)
       --repo-filter string                Only process queue items targeting this repo (empty = all)
       --retry-backoff duration            Backoff between cycle retry attempts (default 30s)
       --supervisor                        Enable autonomous supervisor mode (lease lock, self-heal, retries, gates, cleanup) (default true)
 ```
 
----
-
-### `ao factory`
-
-Software-factory operator surface for AgentOps.
-
-```
-ao factory [command]
-```
-
 **Subcommands:**
 
-#### `ao factory admit`
+#### `ao evolve blocked`
 
-Submit a typed factory work order to agentopsd as factory.admission
-
-```
-ao factory admit [flags]
-```
-
-**Flags:**
+Record or inspect typed blocked-events emitted by the /evolve loop.
 
 ```
-      --epic-id string            Optional epic id for --rpi-handoff
-      --execution-packet string   Execution packet path for --rpi-handoff
-  -h, --help                      help for admit
-      --local-pilot               Submit as factory.local-pilot instead of factory.admission
-      --rpi-handoff               Request an admitted rpi.run child job
-      --run-id string             Factory run id (default generated from current time)
-      --token string              Mutation token for daemon write routes
-      --token-file string         Path to mutation token file
-      --url string                Daemon base URL (defaults to activation file)
-      --work-order string         Factory work-order JSON ('@path', '@-', or inline object)
-```
-
-#### `ao factory pilot`
-
-Print the smallest safe factory pilot plan for comparing one worker
-
-```
-ao factory pilot [flags]
+ao evolve blocked [flags]
 ```
 
 **Flags:**
 
 ```
-      --goal string              Pilot objective to compare with 1-vs-2 cloud/frontier workers
-  -h, --help                     help for pilot
-      --run-id string            Stable pilot run id (default generated from current time)
-      --validation stringArray   Validation command required before manual merge review (repeatable)
-      --worktree-root string     Factory-owned worktree root for allocated worker worktrees
+      --bead string              Bead id the agent was working on (write mode, optional)
+      --clear string             Clear mode: delete entries for the given cycle id (operator-only)
+      --cycle string             Override cycle-id (write mode; defaults to date-derived counter)
+  -h, --help                     help for blocked
+      --json                     Read mode: emit JSON instead of human-readable text
+      --ladder-step-failed int   Ladder step that failed (write mode, optional)
+      --list                     Read mode: list blocked events
+      --needed-context string    Missing context description (write mode, optional)
+      --reason string            Reason text (write mode)
+      --tail int                 Read mode: show last N entries (default 10)
 ```
 
-#### `ao factory start`
+#### `ao evolve config`
 
-Start the software-factory operator lane for a concrete goal.
+Display the resolved per-repo /evolve preferences.
 
 ```
-ao factory start [flags]
+ao evolve config [flags]
 ```
 
 **Flags:**
 
 ```
-      --goal string      Goal to brief and use as the startup query
-  -h, --help             help for start
-      --limit int        Maximum artifacts to surface per category during startup (default 3)
-      --no-maintenance   Skip safe close-loop maintenance on start
+  -h, --help   help for config
+      --json   Emit JSON instead of YAML
+      --show   Print the resolved preferences (defaults + preferences.yaml)
+```
+
+#### `ao evolve next-work`
+
+Run the 5-step next-work ladder and recommend a bead to claim.
+
+```
+ao evolve next-work [flags]
+```
+
+**Flags:**
+
+```
+      --bd-binary string         Override path to the 'bd' binary (default: resolves via PATH)
+  -h, --help                     help for next-work
+      --include-operator-shape   Do not filter operator-shape beads at step 1
+      --json                     Emit JSON instead of human-readable text
+      --mode string              Execution contract: 'burst' (default) or 'loop' (default "burst")
+```
+
+#### `ao evolve write-stop-marker`
+
+Write a DORMANT, STOP, or KILL marker under .agents/evolve/.
+
+```
+ao evolve write-stop-marker [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for write-stop-marker
+      --marker string   Marker name: dormant, stop, or kill
+      --mode string     Execution contract: 'burst' or 'loop' (loop refuses unconditionally) (default "burst")
+      --reason string   Reason text written to the marker file
 ```
 
 ---
@@ -1518,7 +1742,6 @@ ao goals [command]
 ```
       --file string   Path to goals file (auto-detects GOALS.md then GOALS.yaml)
   -h, --help          help for goals
-      --json          Output as JSON
       --timeout int   Check timeout in seconds (default 240)
 ```
 
@@ -1545,6 +1768,7 @@ ao goals measure [flags]
       --exclude-tag string   Skip goals whose Tags include this value (e.g. long-cycle)
       --goal string          Measure a single goal by ID
   -h, --help                 help for measure
+      --scenarios-only       Evaluate only executable-spec scenario satisfaction; skip shell gate-command execution
       --total-timeout int    Overall measurement timeout in seconds (0 disables)
 ```
 
@@ -1610,6 +1834,60 @@ ao goals history [flags]
       --goal string    Filter history to a specific goal
   -h, --help           help for history
       --since string   Show entries since date (YYYY-MM-DD)
+```
+
+#### `ao goals render`
+
+Render the executable-spec layer as BDD/Gherkin text.
+
+```
+ao goals render [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help         help for render
+      --out string   Write Gherkin to this file instead of stdout
+```
+
+#### `ao goals scenarios`
+
+List or create the executable-spec scenarios linked to GOALS.md directives.
+
+```
+ao goals scenarios [flags]
+```
+
+**Flags:**
+
+```
+      --create string         Create a scenario from this goal description and link it to --directive
+      --directive int         Directive display number (filter when listing, target when creating)
+      --directive-id string   Filter listing to one directive by stable Directive ID
+  -h, --help                  help for scenarios
+      --lint                  Lint the directive↔scenario link graph instead of listing
+      --source string         Source for a created scenario (human, agent, prod-telemetry) (default "human")
+      --status string         Status for a created scenario (active, draft, retired) (default "draft")
+      --strict                With --lint, exit non-zero on warnings as well as errors
+      --threshold float       Satisfaction threshold for a created scenario (default 0.8)
+```
+
+#### `ao goals trace`
+
+Walk the executable-spec trace chain defined in docs/adr/ADR-0005.
+
+```
+ao goals trace [flags]
+```
+
+**Flags:**
+
+```
+      --from string   Render the trace lineage rooted at this directive, scenario, or bead ID
+  -h, --help          help for trace
+      --orphans       Audit the whole chain for broken references (errors) and missing yields (warnings)
+      --strict        Escalate warning-class defects to a non-zero exit (ADR-0005 §4.2)
 ```
 
 #### `ao goals add`
@@ -1718,12 +1996,44 @@ ao goals steer add <title> [flags]
       --steer string         Steer direction (increase, decrease, hold, explore) (default "increase")
 ```
 
+##### `ao goals steer apply`
+
+Apply the top re-steer recommendation to GOALS.md via the non-lossy directive-block patcher. Requires policy auto_apply:true AND explicit human confirmation (interactive prompt, or --auto --yes for scripts). A run without confirmation never changes GOALS.md.
+
+```
+ao goals steer apply [flags]
+```
+
+**Flags:**
+
+```
+      --auto            Equivalent to --yes: explicit non-interactive consent to apply
+  -h, --help            help for apply
+      --policy string   Re-steer policy path (default: docs/re-steer-policy.json)
+      --yes             Pre-confirm the apply for non-interactive/scripted use (explicit consent)
+```
+
 ##### `ao goals steer prioritize`
 
 Move a directive to a new position
 
 ```
 ao goals steer prioritize <number> <new-position> [flags]
+```
+
+##### `ao goals steer recommend`
+
+Run the re-steer policy engine over the verdict ledger and print recommended directive mutations and skip reasons. GOALS.md is never modified. Use `ao goals steer apply` to apply a recommendation.
+
+```
+ao goals steer recommend [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for recommend
+      --policy string   Re-steer policy path (default: docs/re-steer-policy.json)
 ```
 
 ##### `ao goals steer remove`
@@ -1755,210 +2065,6 @@ ao handoff [summary] [flags]
       --no-kill         Write artifact without restarting the session via tmux
       --rpi-phase int   RPI phase number (populates RPI context, sets type=rpi)
       --run-id string   Run ID for RPI context
-```
-
----
-
-### `ao overnight`
-
-Dream is AgentOps' private overnight operator mode.
-
-```
-ao overnight [command]
-```
-
-**Subcommands:**
-
-#### `ao overnight curator`
-
-Inspect and operate a local Tier 1 Dream curator such as Ollama/Gemma.
-
-```
-ao overnight curator [command]
-```
-
-##### `ao overnight curator compact`
-
-Run the local curator pending-log compactor
-
-```
-ao overnight curator compact [flags]
-```
-
-**Flags:**
-
-```
-      --apply     Apply pending-log compaction
-      --dry-run   Preview pending-log compaction without writing
-  -h, --help      help for compact
-```
-
-##### `ao overnight curator diagnose`
-
-Explain local curator setup problems
-
-```
-ao overnight curator diagnose [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help   help for diagnose
-      --json   Render curator diagnosis as JSON
-```
-
-##### `ao overnight curator enqueue`
-
-Enqueue an allowlisted local curator job
-
-```
-ao overnight curator enqueue [flags]
-```
-
-**Flags:**
-
-```
-      --chunk-end int     End chunk index for ingest-claude-session jobs
-      --chunk-start int   Start chunk index for ingest-claude-session jobs
-  -h, --help              help for enqueue
-      --kind string       Job kind to enqueue: ingest-claude-session, lint-wiki, or dream-seed
-      --source string     Source path for ingest-claude-session jobs
-```
-
-##### `ao overnight curator event`
-
-Write a bounded needs-review escalation event
-
-```
-ao overnight curator event [flags]
-```
-
-**Flags:**
-
-```
-      --budget int              Maximum downstream event budget (default 1)
-      --desired-action string   Requested bounded action for Tier 2 review
-  -h, --help                    help for event
-      --note string             Optional operator note
-      --severity string         Event severity: info, warn, high, or critical
-      --source string           Event source, for example gemma or local-soc
-      --target string           Escalation target (default "dream-council")
-```
-
-##### `ao overnight curator status`
-
-Report local curator queue, worker, and model health
-
-```
-ao overnight curator status [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help   help for status
-      --json   Render curator status as JSON
-```
-
-#### `ao overnight report`
-
-Read a Dream report from summary.json and render it as JSON, YAML, or
-
-```
-ao overnight report [flags]
-```
-
-**Flags:**
-
-```
-      --from string   Directory containing summary.json, or the summary.json file itself
-  -h, --help          help for report
-```
-
-#### `ao overnight setup`
-
-Inspect the current machine, detect available Dream runtimes and scheduler
-
-```
-ao overnight setup [flags]
-```
-
-**Flags:**
-
-```
-      --apply              Persist the detected Dream config and generate scheduler assistance artifacts
-      --at string          Preferred local Dream run time in HH:MM (used for scheduler assistance)
-  -h, --help               help for setup
-      --keep-awake         Persist keep-awake on for Dream runs
-      --no-keep-awake      Persist keep-awake off for Dream runs
-      --runner strings     Dream runner to persist (repeatable: --runner codex --runner claude)
-      --scheduler string   Scheduler mode to persist (auto, manual, launchd, cron, systemd, task-scheduler) (default "auto")
-```
-
-#### `ao overnight start`
-
-Start a private overnight Dream run against the local repository.
-
-```
-ao overnight start [flags]
-```
-
-**Aliases:**
-
-```
-  start, run
-```
-
-**Flags:**
-
-```
-      --checkpoint-max-mb int     Max total MB of checkpoint storage per run (default 512)
-      --creative-lane             Enable the bounded wildcard lane when Dream Council is running
-      --daemon-fallback           When --daemon-submit cannot reach a ready daemon, continue the one-shot local path
-      --daemon-submit             Submit the Dream run to agentopsd instead of executing the one-shot local path
-      --daemon-timeout duration   Maximum time to wait for --daemon-wait (default 30s)
-      --daemon-token string       agentopsd mutation token for --daemon-submit
-      --daemon-url string         agentopsd base URL for --daemon-submit (default: activation file)
-      --daemon-wait               Wait for the submitted daemon Dream job to reach terminal state
-      --goal string               Optional goal to include in the morning report and briefing step
-  -h, --help                      help for start
-      --keep-awake                Force keep-awake assistance on for this run
-      --long-haul                 Enable the opt-in long-haul Dream controller after the default short path
-      --long-haul-budget string   Maximum extra time the long-haul controller may spend after the short path (default "1h")
-      --max-iterations int        Cap iteration count (0 = budget-bounded only)
-      --no-keep-awake             Disable keep-awake assistance for this run
-      --output-dir string         Directory for overnight artifacts (defaults to dream.report_dir)
-      --plateau-epsilon float     Plateau threshold: |delta| below this counts as plateau (default 0.01)
-      --plateau-window int        Plateau window K (consecutive sub-epsilon deltas required to halt) (default 2)
-      --queue string              Operator-pinned nightly priorities (markdown file)
-      --run-timeout string        Maximum duration for the overnight run (defaults to dream.run_timeout)
-      --runner strings            Dream runner to execute (repeatable: --runner codex --runner claude)
-      --warn-only                 First-N-runs mode: warn on plateau/regression, don't halt. Default true; flip to false once thresholds are calibrated. (default true)
-```
-
-#### `ao overnight warn-only`
-
-Dream's warn-only ratchet protects the first 2-3 production runs
-
-```
-ao overnight warn-only [command]
-```
-
-##### `ao overnight warn-only reset`
-
-Reset .agents/overnight/warn-only-budget.json to a fresh state.
-
-```
-ao overnight warn-only reset [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help          help for reset
-      --initial int   Initial rescue ceiling (defaults to 3)
-      --json          Emit the reset result as JSON instead of human-readable text
 ```
 
 ---
@@ -2312,12 +2418,10 @@ ao rpi phased <goal> [flags]
       --auto-clean-stale                  Run stale-run cleanup before starting phased execution
       --auto-clean-stale-after duration   Only clean stale runs older than this age when auto-clean is enabled (default 24h0m0s)
       --budget string                     Override phase budgets in seconds (<phase>:<seconds>, comma-separated), e.g. discovery:300,validation:120
-      --daemon-fallback                   When --daemon-submit cannot reach a ready daemon, continue foreground execution
-      --daemon-submit                     Submit the RPI run to agentopsd instead of executing foreground phases
-      --daemon-token string               agentopsd mutation token for --daemon-submit
-      --daemon-url string                 agentopsd base URL for --daemon-submit (default: activation file)
       --discovery-artifact string         Path to a pre-validated discovery artifact (markdown) used to skip Phase 1 when combined with --from=implementation
+      --domain string                     Scope the run to a domain slice (loads docs/domains/<name>/manifest.yaml; phase prompts carry its boundaries)
       --fast-path                         Force fast path (--quick for gates)
+      --force                             With --scaffold-domain: overwrite an existing manifest
       --from string                       Start from phase (discovery, implementation, validation; aliases: research, plan, pre-mortem, crank, vibe, post-mortem) (default "discovery")
   -h, --help                              help for phased
       --interactive                       Enable human gates at research and plan phases
@@ -2329,8 +2433,9 @@ ao rpi phased <goal> [flags]
       --no-test-first                     Opt out of strict-quality spec-first execution (do not pass --test-first to /crank)
       --no-worktree                       Disable worktree isolation (run in current directory)
       --phase-timeout duration            Maximum wall-clock runtime per phase (0 disables timeout) (default 1h30m0s)
-      --runtime string                    Phase runtime mode: auto|direct|stream|tmux|gc (default "auto")
+      --runtime string                    Phase runtime mode: auto|direct|stream|tmux (default "auto")
       --runtime-cmd string                Runtime command used for phase prompts (Claude uses '-p'; Codex uses 'exec') (default "claude")
+      --scaffold-domain string            Write a domain-slice manifest template at docs/domains/<name>/manifest.yaml and exit (does NOT run RPI)
       --stall-timeout duration            Maximum time without progress before declaring stall (0 disables) (default 10m0s)
       --stream-startup-timeout duration   Maximum time to wait for first stream event before falling back to direct execution (0 disables) (default 45s)
       --swarm-first                       Default each phase to swarm/agent-team execution; fall back to direct execution if swarm runtime is unavailable (default true)
@@ -2369,11 +2474,8 @@ ao rpi status [flags]
 **Flags:**
 
 ```
-      --daemon              Read RPI status from agentopsd
-      --daemon-fallback     Fall back to local RPI registry when daemon status is unavailable (default true)
-      --daemon-url string   Daemon base URL (defaults to activation file)
-  -h, --help                help for status
-      --watch               Poll every 5s and redraw (Ctrl-C to exit)
+  -h, --help    help for status
+      --watch   Poll every 5s and redraw (Ctrl-C to exit)
 ```
 
 #### `ao rpi stream`
@@ -2420,6 +2522,26 @@ ao session [command]
 
 **Subcommands:**
 
+#### `ao session bootstrap`
+
+Universal init prompt for any agent spawned into an AgentOps repo.
+
+```
+ao session bootstrap [flags]
+```
+
+**Flags:**
+
+```
+  --json       Emit the full status object as JSON (default: 1-line summary).
+  --no-mail    Skip the mcp-agent-mail probe even if the MCP server is reachable.
+  --robot      Same as --json but tighter exit-code contract for hooks.
+  -h, --help      help for bootstrap
+      --json      Emit machine-readable status as JSON
+      --no-mail   Skip the mcp-agent-mail probe
+      --robot     Robot mode: JSON output with tight exit-code contract for SessionStart hooks
+```
+
 #### `ao session close`
 
 Close a session by forging its transcript, extracting learnings,
@@ -2434,6 +2556,30 @@ ao session close [flags]
       --auto-extract     Extract lightweight learnings (quality-filtered) and write handoff artifact
   -h, --help             help for close
       --session string   Session ID to close (default: most recent transcript)
+```
+
+---
+
+### `ao validate`
+
+Run a deterministic validation gate over RPI artifacts and emit a single
+
+```
+ao validate [flags]
+```
+
+**Flags:**
+
+```
+      --bead string          Validate artifacts bound to a bead id
+      --changes strings      Explicit files to validate
+      --gate                 Exit-code mode: 0=PASS/WARN, 1=FAIL, 2=error
+  -h, --help                 help for validate
+      --json                 Structured verdict (honored in both modes)
+      --lenient              Allow legacy artifacts without schema_version
+      --lenient-expiry int   Days until lenient bypass expires (default 90)
+      --strict               Promote WARN to FAIL (exit 1)
+      --warn-as-fail         Alias for --strict
 ```
 
 ---
@@ -2479,82 +2625,6 @@ ao config models [flags]
   -h, --help               help for models
       --set-skill string   Set a skill-specific tier override (e.g. council=quality)
       --set-tier string    Set the default model cost tier (quality, balanced, budget)
-```
-
----
-
-### `ao hooks`
-
-The hooks command manages runtime hooks that automate the CASS knowledge flywheel.
-
-```
-ao hooks [command]
-```
-
-**Subcommands:**
-
-#### `ao hooks init`
-
-Generate hooks configuration for the CASS knowledge flywheel (Claude Code format).
-
-```
-ao hooks init [flags]
-```
-
-**Flags:**
-
-```
-      --format string   Output format: json, shell (default "json")
-  -h, --help            help for init
-```
-
-#### `ao hooks install`
-
-Install ao hooks to ~/.claude/settings.json.
-
-```
-ao hooks install [flags]
-```
-
-**Flags:**
-
-```
-      --dry-run             Show what would be installed without making changes
-      --force               Overwrite existing ao hooks
-      --full                Install all hook events from hooks.json with scripts copied to ~/.agentops/
-  -h, --help                help for install
-      --source-dir string   Path to agentops repo checkout (for --full script installation)
-```
-
-#### `ao hooks run`
-
-Run a managed AgentOps hook backend.
-
-```
-ao hooks run <hook-name> [flags]
-```
-
-#### `ao hooks show`
-
-Display the current hooks configuration from ~/.claude/settings.json (Claude Code runtime).
-
-```
-ao hooks show [flags]
-```
-
-#### `ao hooks test`
-
-Test that all hook dependencies are available and working.
-
-```
-ao hooks test [flags]
-```
-
-**Flags:**
-
-```
-      --dry-run   Show test steps without running hooks
-  -h, --help      help for test
 ```
 
 ---
@@ -2615,98 +2685,6 @@ ao notebook update [flags]
       --quiet                Suppress output (for hooks)
       --session string       Specific session ID to update from
       --source string        Source: auto|sessions|pending (default "auto")
-```
-
----
-
-### `ao plans`
-
-Plans manages the plan manifest at .agents/plans/manifest.jsonl.
-
-```
-ao plans [command]
-```
-
-**Subcommands:**
-
-#### `ao plans diff`
-
-Diff compares the plan manifest against beads reality.
-
-```
-ao plans diff [flags]
-```
-
-#### `ao plans list`
-
-List shows all plans in the manifest.
-
-```
-ao plans list [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help             help for list
-      --project string   Filter by project path
-      --status string    Filter by status (active, completed, abandoned, superseded)
-```
-
-#### `ao plans register`
-
-Register adds a plan to the manifest.jsonl for discovery.
-
-```
-ao plans register <plan-path> [flags]
-```
-
-**Flags:**
-
-```
-      --beads-id string   Beads issue/epic ID this plan implements
-  -h, --help              help for register
-      --name string       Human-readable plan name
-      --project string    Project path this plan applies to
-```
-
-#### `ao plans search`
-
-Search plans by name or project
-
-```
-ao plans search <query> [flags]
-```
-
-#### `ao plans sync`
-
-Sync pulls plan metadata from beads to prevent drift.
-
-```
-ao plans sync [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help         help for sync
-      --via-daemon   Route plans sync through the agentopsd plans.projection job-type. Default false in this release; flipped to true in a later release after the soak window. With --via-daemon=false the command takes the legacy direct path (file-locked).
-```
-
-#### `ao plans update`
-
-Update a plan's status or metadata
-
-```
-ao plans update <plan-path> [flags]
-```
-
-**Flags:**
-
-```
-      --beads-id string   Update beads ID
-  -h, --help              help for update
-      --status string     New status for the plan
 ```
 
 ---
@@ -2786,6 +2764,79 @@ ao beads lint [flags]
       --status string   bd status filter (open, closed, all) (default "open")
 ```
 
+#### `ao beads resume`
+
+Transfers a stale claim via 'bd update <bead-id> --claim', then appends a
+
+```
+ao beads resume <bead-id> [flags]
+```
+
+**Flags:**
+
+```
+      --agent string    New claimant id (defaults to BEADS_ACTOR env var, else ao-beads-resume).
+  -h, --help            help for resume
+      --json            Emit the claim_transferred event to stdout (always written to ledger).
+      --ledger string   Path to the provenance ledger (relative to repo root). (default "docs/provenance/ledger.jsonl")
+```
+
+#### `ao beads scenarios`
+
+Turn a bead's free-text acceptance criteria into structured Gherkin
+
+```
+ao beads scenarios [command]
+```
+
+##### `ao beads scenarios extract`
+
+Read a bead's acceptance criteria via 'bd show <id> --json', convert the
+
+```
+ao beads scenarios extract <bead-id> [flags]
+```
+
+**Flags:**
+
+```
+      --force   Extract even when the bead already has a '## Scenarios' block
+  -h, --help    help for extract
+      --json    Emit extracted scenarios as JSON (data on stdout) instead of a Gherkin block
+      --write   After printing the block and an operator y/N confirmation, append it to the bead via 'bd update'
+```
+
+##### `ao beads scenarios validate`
+
+Read a bead via 'bd show <id> --json' and validate its authored
+
+```
+ao beads scenarios validate <bead-id> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for validate
+      --json   Emit a structured validation verdict as JSON on stdout
+```
+
+#### `ao beads stale-claims`
+
+Lists in_progress beads whose claim activity is older than --threshold.
+
+```
+ao beads stale-claims [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help              help for stale-claims
+      --json              Emit JSON array conforming to stale-claim-event.v1 (event_type: stale_detected).
+      --threshold float   Staleness threshold in hours (claim updated more than N hours ago). (default 4)
+```
+
 #### `ao beads verify`
 
 Reads a bead description via 'bd show <id>' and checks every file
@@ -2847,6 +2898,26 @@ ao corpus [command]
 
 **Subcommands:**
 
+#### `ao corpus capture`
+
+Write an artifact to a corpus root via the typed BC1
+
+```
+ao corpus capture --path <relpath> [--body <text>] [--body-file <file>] [--body-stdin] [--root <dir>] [--meta k=v ...] [flags]
+```
+
+**Flags:**
+
+```
+      --body string        body text (mutually exclusive with --body-file and --body-stdin)
+      --body-file string   read body from file
+      --body-stdin         read body from stdin
+  -h, --help               help for capture
+      --meta stringArray   metadata key=value (repeatable)
+      --path string        relative path within root (required)
+      --root string        corpus root (default: .agents/learnings/)
+```
+
 #### `ao corpus fitness`
 
 Compute the corpus-quality fitness vector for the current .agents/
@@ -2860,6 +2931,58 @@ ao corpus fitness [flags]
 ```
   -h, --help   help for fitness
       --json   Emit the fitness vector as JSON
+```
+
+#### `ao corpus inject`
+
+Read knowledge from a corpus root via the typed BC1
+
+```
+ao corpus inject [--query <text>] [--root <path>] [--limit N] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for inject
+      --limit int      max items to emit (0 = all) (default 10)
+      --query string   ranking query (empty = all items, score 0)
+      --root string    corpus root (default: .agents/learnings/)
+```
+
+#### `ao corpus restore`
+
+Untars a snapshot produced by ao corpus snapshot. By default refuses to overwrite an
+
+```
+ao corpus restore [flags]
+```
+
+**Flags:**
+
+```
+      --from string   Explicit snapshot tarball path
+  -h, --help          help for restore
+      --into string   Destination directory (default: .agents) (default ".agents")
+      --json          Emit the result as JSON to stdout
+      --latest        Pick the newest tarball in the snapshot dir
+      --overwrite     Replace an existing destination directory (with .bak rescue)
+```
+
+#### `ao corpus snapshot`
+
+Writes the entire .agents/ tree as a tar.gz to a durable directory outside the repo,
+
+```
+ao corpus snapshot [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                help for snapshot
+      --json                Emit the manifest as JSON to stdout
+      --output-dir string   Override snapshot dir (default: $AGENTOPS_CORPUS_SNAPSHOT_DIR or ~/.agentops/corpus-snapshots)
 ```
 
 ---
@@ -2877,7 +3000,6 @@ ao defrag [flags]
 ```
       --dedup               Flag learnings with >80% content similarity
   -h, --help                help for defrag
-      --oscillation-sweep   Flag evolve goals alternating improved/fail >=3 consecutive cycles
       --output-dir string   Directory for defrag report JSON (default ".agents/defrag")
       --prune               Find orphaned learnings not referenced in patterns or research
       --quiet               Suppress progress output
@@ -3427,6 +3549,118 @@ ao trace <artifact-path> [flags]
 
 ---
 
+### `ao wiki`
+
+ao wiki is the experimental unified surface for the wiki bounded context.
+
+```
+ao wiki [command]
+```
+
+**Subcommands:**
+
+#### `ao wiki doctor`
+
+Report on the wiki corpus directory and the persistent index.
+
+```
+ao wiki doctor [flags]
+```
+
+**Flags:**
+
+```
+      --base string   Corpus base directory (default: current directory)
+  -h, --help          help for doctor
+```
+
+#### `ao wiki index`
+
+Scan the .agents/ corpus and update the persistent JSONL document index.
+
+```
+ao wiki index [flags]
+```
+
+**Flags:**
+
+```
+      --base string   Corpus base directory (default: current directory)
+  -h, --help          help for index
+```
+
+#### `ao wiki inject`
+
+Assemble just-in-time .agents/ context.
+
+```
+ao wiki inject [flags]
+```
+
+#### `ao wiki lint`
+
+Walk the wiki tree and write a dated lint report.
+
+```
+ao wiki lint [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for lint
+      --vault string   Vault root (default: current directory)
+```
+
+#### `ao wiki promote`
+
+Promote mature wiki pages into authored content.
+
+```
+ao wiki promote [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for promote
+      --vault string   Vault root (default: current directory)
+```
+
+#### `ao wiki query`
+
+Answer a pending wiki question into wiki/synthesis/.
+
+```
+ao wiki query [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help           help for query
+      --vault string   Vault root (default: current directory)
+```
+
+#### `ao wiki search`
+
+Rank documents in the wiki index against a free-text query.
+
+```
+ao wiki search <query> [flags]
+```
+
+**Flags:**
+
+```
+      --base string   Corpus base directory (default: current directory)
+  -h, --help          help for search
+      --limit int     Maximum results to print (default 20)
+      --reindex       Rebuild the index before searching
+```
+
+---
+
 ### `ao agents`
 
 Tooling for the .agents/ knowledge surface that backs the
@@ -3610,89 +3844,6 @@ ao scenario validate [flags]
 
 ---
 
-### `ao schedule`
-
-Manage daemon schedules
-
-```
-ao schedule [command]
-```
-
-**Flags:**
-
-```
-  -h, --help         help for schedule
-      --url string   Daemon base URL (defaults to activation file)
-```
-
-**Subcommands:**
-
-#### `ao schedule add`
-
-Add schedules from a YAML file
-
-```
-ao schedule add [flags]
-```
-
-**Flags:**
-
-```
-      --file string         Path to schedule YAML file (required)
-  -h, --help                help for add
-      --token string        Mutation token for daemon write routes
-      --token-file string   Path to mutation token file
-```
-
-#### `ao schedule list`
-
-List active schedules
-
-```
-ao schedule list [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help   help for list
-      --json   Emit machine-readable JSON output
-```
-
-#### `ao schedule remove`
-
-Remove a schedule by name
-
-```
-ao schedule remove <name> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                help for remove
-      --token string        Mutation token for daemon write routes
-      --token-file string   Path to mutation token file
-```
-
-#### `ao schedule run`
-
-One-shot test fire of a named schedule (immediate Queue.Submit)
-
-```
-ao schedule run <name> [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                help for run
-      --token string        Mutation token for daemon write routes
-      --token-file string   Path to mutation token file
-```
-
----
-
 ### `ao scope`
 
 Declare which directories are in scope for the current work session.
@@ -3762,6 +3913,22 @@ ao skills check [flags]
       --json           Emit machine-readable JSON
       --skill string   Restrict the audit to a single skill name
       --strict         Exit non-zero on any finding (CI mode)
+```
+
+#### `ao skills find`
+
+Score every skills/<name>/SKILL.md against a free-text intent and
+
+```
+ao skills find <intent> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help        help for find
+      --json        Emit machine-readable JSON on stdout
+      --limit int   Maximum number of results to return (default 5)
 ```
 
 ---

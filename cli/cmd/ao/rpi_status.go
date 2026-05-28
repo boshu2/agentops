@@ -1,3 +1,4 @@
+// practices: [agile-manifesto, dora-metrics]
 package main
 
 import (
@@ -10,18 +11,15 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
-	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
 	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 	"github.com/spf13/cobra"
 )
 
 var rpiStatusWatch bool
-var rpiStatusDaemon bool
-var rpiStatusDaemonURL string
-var rpiStatusDaemonFallback bool
 
 func init() {
 	statusCmd := &cobra.Command{
@@ -43,9 +41,6 @@ Examples:
 		RunE: runRPIStatus,
 	}
 	statusCmd.Flags().BoolVar(&rpiStatusWatch, "watch", false, "Poll every 5s and redraw (Ctrl-C to exit)")
-	statusCmd.Flags().BoolVar(&rpiStatusDaemon, "daemon", false, "Read RPI status from agentopsd")
-	statusCmd.Flags().StringVar(&rpiStatusDaemonURL, "daemon-url", "", "Daemon base URL (defaults to activation file)")
-	statusCmd.Flags().BoolVar(&rpiStatusDaemonFallback, "daemon-fallback", true, "Fall back to local RPI registry when daemon status is unavailable")
 	rpiCmd.AddCommand(statusCmd)
 }
 
@@ -79,6 +74,15 @@ func runRPIStatus(cmd *cobra.Command, args []string) error {
 	return runRPIStatusOnceContext(cobraContext(cmd))
 }
 
+// cobraContext returns the command's context, falling back to a fresh
+// background context when the command or its context is nil.
+func cobraContext(cmd *cobra.Command) context.Context {
+	if cmd == nil || cmd.Context() == nil {
+		return context.Background()
+	}
+	return cmd.Context()
+}
+
 func runRPIStatusOnce() error {
 	return runRPIStatusOnceContext(context.Background())
 }
@@ -89,40 +93,12 @@ func runRPIStatusOnceContext(ctx context.Context) error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	output, err := buildRPIStatusOutputForMode(ctx, cwd, rpiStatusDaemonModeOptions{
-		Enabled:  rpiStatusDaemon,
-		URL:      rpiStatusDaemonURL,
-		Fallback: rpiStatusDaemonFallback,
-	})
-	if err != nil {
-		return err
-	}
+	output := buildRPIStatusOutput(cwd)
 	if GetOutput() == "json" {
 		return writeRPIStatusJSON(output)
 	}
 
 	return renderRPIStatusTable(cwd, output)
-}
-
-type rpiStatusDaemonModeOptions struct {
-	Enabled  bool
-	URL      string
-	Fallback bool
-}
-
-func buildRPIStatusOutputForMode(ctx context.Context, cwd string, opts rpiStatusDaemonModeOptions) (rpiStatusOutput, error) {
-	if !opts.Enabled {
-		return buildRPIStatusOutput(cwd), nil
-	}
-	output, err := buildDaemonRPIStatusOutput(ctx, cwd, opts.URL)
-	if err == nil {
-		return output, nil
-	}
-	if !opts.Fallback {
-		return rpiStatusOutput{}, err
-	}
-	VerbosePrintf("daemon RPI status unavailable; falling back to registry: %v\n", err)
-	return buildRPIStatusOutput(cwd), nil
 }
 
 func buildRPIStatusOutput(cwd string) rpiStatusOutput {
@@ -140,136 +116,6 @@ func buildRPIStatusOutput(cwd string) rpiStatusOutput {
 		LogRuns:      logRuns,
 		LiveStatuses: liveStatuses,
 		Count:        len(allRuns),
-	}
-}
-
-func buildDaemonRPIStatusOutput(ctx context.Context, cwd, explicitURL string) (rpiStatusOutput, error) {
-	baseURL, err := resolveDaemonURL(cwd, explicitURL)
-	if err != nil {
-		return rpiStatusOutput{}, err
-	}
-	status, err := fetchDaemonStatus(ctx, baseURL)
-	if err != nil {
-		return rpiStatusOutput{}, err
-	}
-	return buildRPIStatusOutputFromDaemon(status), nil
-}
-
-func buildRPIStatusOutputFromDaemon(status daemonpkg.ReadOnlyStatusResponse) rpiStatusOutput {
-	var active []rpiRunInfo
-	var historical []rpiRunInfo
-	for _, job := range status.Queue.Jobs {
-		run, ok := daemonRPIJobToRunInfo(job)
-		if !ok {
-			continue
-		}
-		if run.IsActive {
-			active = append(active, run)
-		} else {
-			historical = append(historical, run)
-		}
-	}
-	allRuns := make([]rpiRunInfo, 0, len(active)+len(historical))
-	allRuns = append(allRuns, active...)
-	allRuns = append(allRuns, historical...)
-	return rpiStatusOutput{
-		Active:     active,
-		Historical: historical,
-		Runs:       allRuns,
-		Count:      len(allRuns),
-	}
-}
-
-func daemonRPIJobToRunInfo(job daemonpkg.QueueJobState) (rpiRunInfo, bool) {
-	var runID, goal, epicID, phaseName, startedAt string
-	var phase int
-	switch job.JobType {
-	case daemonpkg.JobTypeRPIRun:
-		spec, err := daemonpkg.RPIRunJobSpecFromPayload(job.Payload)
-		if err != nil {
-			return rpiRunInfo{}, false
-		}
-		runID = spec.RunID
-		goal = spec.Goal
-		epicID = spec.EpicID
-		phase = firstDaemonRPIPhase(job.Artifacts, spec.StartPhase)
-		phaseName = daemonpkg.RPIPhaseName(phase)
-	case daemonpkg.JobTypeRPIPhase:
-		spec, err := daemonpkg.RPIPhaseJobSpecFromPayload(job.Payload)
-		if err != nil {
-			return rpiRunInfo{}, false
-		}
-		runID = spec.RunID
-		goal = spec.Goal
-		epicID = spec.EpicID
-		phase = firstDaemonRPIPhase(job.Artifacts, spec.Phase)
-		phaseName = daemonpkg.RPIPhaseName(phase)
-	default:
-		return rpiRunInfo{}, false
-	}
-	if phaseName == "" {
-		phaseName = fmt.Sprintf("phase-%d", phase)
-	}
-	startedAt = firstNonEmpty(job.CreatedAt, job.UpdatedAt)
-	status := string(job.Status)
-	reason := daemonRPIJobReason(job)
-	isActive := !daemonRPIJobTerminal(job.Status)
-	return rpiRunInfo{
-		RunID:     runID,
-		Goal:      goal,
-		Phase:     phase,
-		PhaseName: phaseName,
-		Status:    status,
-		Reason:    reason,
-		EpicID:    epicID,
-		Worktree:  "agentopsd",
-		StartedAt: startedAt,
-		Elapsed:   daemonRPIElapsed(startedAt),
-		IsActive:  isActive,
-	}, true
-}
-
-func firstDaemonRPIPhase(artifacts map[string]string, fallback int) int {
-	if artifacts != nil {
-		if raw := strings.TrimSpace(artifacts["active_phase"]); raw != "" {
-			var phase int
-			if _, err := fmt.Sscanf(raw, "%d", &phase); err == nil && phase > 0 {
-				return phase
-			}
-		}
-	}
-	return fallback
-}
-
-func daemonRPIJobReason(job daemonpkg.QueueJobState) string {
-	if job.Failure != nil {
-		return firstNonEmpty(job.Failure.Message, string(job.Failure.Code))
-	}
-	if job.Status == daemonpkg.JobStatusRetryWaiting {
-		return "lease expired; waiting for retry"
-	}
-	return ""
-}
-
-func daemonRPIElapsed(startedAt string) string {
-	if startedAt == "" {
-		return ""
-	}
-	if t, err := time.Parse(time.RFC3339Nano, startedAt); err == nil {
-		return time.Since(t).Truncate(time.Second).String()
-	}
-	if t, err := time.Parse(time.RFC3339, startedAt); err == nil {
-		return time.Since(t).Truncate(time.Second).String()
-	}
-	return ""
-}
-
-func daemonRPIJobTerminal(status daemonpkg.JobStatus) bool {
-	switch status {
-	case daemonpkg.JobStatusCompleted, daemonpkg.JobStatusFailed, daemonpkg.JobStatusCancelled:
-		return true
-	default:
-		return false
 	}
 }
 
@@ -955,28 +801,87 @@ func displayPhaseName(state phasedState) string {
 	return cliRPI.DisplayPhaseName(state.SchemaVersion, state.Phase)
 }
 
-// checkTmuxSessionAlive checks if any tmux session matching ao-rpi-<runID>-* exists.
-func checkTmuxSessionAlive(runID string) bool {
-	if runID == "" {
-		return false
+// rpiTmuxSessions memoizes the tmux session snapshot for the lifetime of one
+// `ao rpi status` invocation. checkTmuxSessionAlive used to fork
+// `tmux has-session` up to 3 times per non-terminal run — 3N subprocesses with
+// a 2s timeout each, so a status scan over N runs could stall for ~6N seconds
+// if tmux was slow or absent. A single `tmux ls` filtered in Go collapses that
+// to one subprocess regardless of run count (soc-d7v5, PERF-C1). The snapshot
+// also folds in the single resolveRPIToolchainDefaults call.
+var (
+	rpiTmuxMu       sync.Mutex
+	rpiTmuxLoaded   bool
+	rpiTmuxSessions map[string]struct{}
+)
+
+// liveTmuxSessions returns the set of tmux session names visible to the daemon,
+// captured once per process. An absent tmux server or any probe error yields
+// an empty set, matching the prior has-session "not found" behavior.
+func liveTmuxSessions() map[string]struct{} {
+	rpiTmuxMu.Lock()
+	defer rpiTmuxMu.Unlock()
+	if rpiTmuxLoaded {
+		return rpiTmuxSessions
 	}
+	rpiTmuxSessions = probeTmuxSessions()
+	rpiTmuxLoaded = true
+	return rpiTmuxSessions
+}
+
+// resetTmuxSessionCache clears the memoized snapshot so the next
+// liveTmuxSessions call re-probes. Only tests that swap the tmux binary or
+// PATH need this; production never calls it.
+func resetTmuxSessionCache() {
+	rpiTmuxMu.Lock()
+	defer rpiTmuxMu.Unlock()
+	rpiTmuxLoaded = false
+	rpiTmuxSessions = nil
+}
+
+// probeTmuxSessions runs a single `tmux ls` and parses the session names.
+func probeTmuxSessions() map[string]struct{} {
+	sessions := map[string]struct{}{}
 	tmuxCommand := "tmux"
 	if tc, err := resolveRPIToolchainDefaults(); err == nil {
 		tmuxCommand = tc.TmuxCommand
 	} else {
 		VerbosePrintf("Warning: could not resolve RPI toolchain for tmux probe: %v\n", err)
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), tmuxProbeTimeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, tmuxCommand, "ls", "-F", "#{session_name}").Output()
+	if err != nil {
+		return sessions // no tmux server or probe failure: empty set
+	}
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		if name := strings.TrimSpace(line); name != "" {
+			sessions[name] = struct{}{}
+		}
+	}
+	return sessions
+}
+
+// tmuxSessionAlive reports whether any ao-rpi-<runID>-p{1,2,3} session is
+// present in the given session set. Split from checkTmuxSessionAlive so the
+// matching logic is testable without a tmux server.
+func tmuxSessionAlive(runID string, sessions map[string]struct{}) bool {
+	if runID == "" {
+		return false
+	}
 	for i := 1; i <= 3; i++ {
-		sessionName := fmt.Sprintf("ao-rpi-%s-p%d", runID, i)
-		ctx, cancel := context.WithTimeout(context.Background(), tmuxProbeTimeout)
-		cmd := exec.CommandContext(ctx, tmuxCommand, "has-session", "-t", sessionName)
-		err := cmd.Run()
-		cancel()
-		if err == nil {
+		if _, ok := sessions[fmt.Sprintf("ao-rpi-%s-p%d", runID, i)]; ok {
 			return true
 		}
 	}
 	return false
+}
+
+// checkTmuxSessionAlive checks if any tmux session matching ao-rpi-<runID>-* exists.
+func checkTmuxSessionAlive(runID string) bool {
+	if runID == "" {
+		return false
+	}
+	return tmuxSessionAlive(runID, liveTmuxSessions())
 }
 
 // locateRunMetadata finds the phasedState for a given run ID.

@@ -1,6 +1,15 @@
 ---
 name: using-agentops
-description: 'Explain AgentOps workflows.'
+description: Explain AgentOps workflows.
+practices:
+- wiki-knowledge-surface
+- pragmatic-programmer
+- agile-manifesto
+hexagonal_role: generic
+consumes: []
+produces:
+- documentation
+context_rel: []
 skill_api_version: 1
 user-invocable: false
 context:
@@ -8,13 +17,16 @@ context:
   intent:
     mode: none
   sections:
-    exclude: [HISTORY, INTEL, TASK]
+    exclude:
+    - HISTORY
+    - INTEL
+    - TASK
   intel_scope: none
 metadata:
   tier: meta
   dependencies: []
   internal: true
-output_contract: "stdout: operating guide"
+output_contract: 'stdout: operating guide'
 ---
 # AgentOps Operating Model
 
@@ -104,6 +116,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/bootstrap` | One-command full AgentOps setup — fills gaps only |
 | `/research` | Deep codebase exploration |
 | `/council` | Multi-model consensus review + finding auto-extraction |
+| `/validate` | Canonical PASS/WARN/FAIL verdict over an artifact, plan, code change, PR, or gate |
 | `/vibe` | Code validation (classification + suppression + domain checklists) |
 | `/rpi` | Full RPI lifecycle orchestrator (`/discovery` → `/crank` → `/validation`) |
 | `/implement` | Execute single issue |
@@ -111,13 +124,13 @@ These are the skills every user needs first. Everything else is available when y
 | `/status` | Single-screen dashboard of current work and suggested next action |
 | `/goals` | Maintain GOALS.yaml fitness specification |
 | `/push` | Atomic test-commit-push workflow |
-| `/flywheel` | Knowledge flywheel health monitoring (σ×ρ > δ/100) |
 
 ## Advanced Skills (when you need them)
 
 | Skill | Purpose |
 |-------|---------|
-| `/compile` | Active knowledge intelligence — Mine → Grow → Defrag cycle |
+| `/compile`, `/flywheel` | Active knowledge intelligence and flywheel health — Mine → Grow → Defrag cycle |
+| `/curate` | Canonical miner role for transcripts, `.agents/`, bd, git, skill diffs, and rare wiki entries |
 | `/llm-wiki` | External reading wiki proposal — raw sources to compiled wiki |
 | `/harvest` | Cross-rig knowledge consolidation — sweep, dedup, promote to global hub |
 | `/knowledge-activation` | Operationalize a mature `.agents` corpus into beliefs, playbooks, briefings, and gap surfaces |
@@ -134,15 +147,15 @@ These are the skills every user needs first. Everything else is available when y
 | `/evolve` | Goal-driven fitness-scored improvement loop |
 | `/autodev` | PROGRAM.md autonomous development contract setup and validation |
 | `/dream` | Interactive Dream operator surface for setup, bedtime runs, and morning reports |
-| `/doc` | Documentation generation |
+| `/doc` | Documentation generation — repo docs (default), gold-standard README (`--mode=readme`), OSS doc packs (`--mode=oss`) |
 | `/retro` | Quick-capture a learning (full retro → /post-mortem) |
 | `/validation` | Full validation phase orchestrator (vibe → post-mortem → retro → forge) |
 | `/ratchet` | Brownian Ratchet progress gates for RPI workflow |
 | `/forge` | Mine transcripts for knowledge — decisions, learnings, patterns |
-| `/readme` | Generate gold-standard README for any project |
 | `/security` | Continuous repository security scanning and release gating |
 | `/security-suite` | Binary and prompt-surface security suite — static analysis, dynamic tracing, offline redteam, policy gating |
 | `/test` | Test generation, coverage analysis, and TDD workflow |
+| `/hooks-authoring` | Author and validate AgentOps runtime hooks |
 | `/red-team` | Persona-based adversarial validation — probe docs and skills from constrained user perspectives |
 | `/review` | Review incoming PRs, agent output, or diffs — SCORED checklist |
 | `/refactor` | Safe, verified refactoring with regression testing at each step |
@@ -161,24 +174,24 @@ These are the skills every user needs first. Everything else is available when y
 | `/grafana-platform-dashboard` | Build Grafana platform dashboards from templates/contracts |
 | `/codex-team` | Parallel Codex agent execution |
 | `/openai-docs` | Official OpenAI docs lookup with citations |
-| `/oss-docs` | OSS documentation scaffold and audit |
 | `/reverse-engineer-rpi` | Reverse-engineer a product into feature catalog and specs |
 | `/pr-research` | Upstream repository research before contribution |
-| `/pr-plan` | External contribution planning |
 | `/pr-implement` | Fork-based PR implementation |
 | `/pr-validate` | PR-specific validation and isolation checks |
 | `/pr-prep` | PR preparation and structured body generation |
-| `/pr-retro` | Learn from PR outcomes |
+| `/ship-loop` | Bot-paired internal-PR fast-lane cycle |
 | `/complexity` | Code complexity analysis |
 | `/product` | Interactive PRODUCT.md generation |
 | `/handoff` | Session handoff for continuation |
 | `/recover` | Post-compaction context recovery |
+| `/session-bootstrap` | Universal init prompt — every agent runs this first (soc-vuu6.25) |
 | `/trace` | Trace design decisions through history |
 | `/provenance` | Trace artifact lineage to sources |
 | `/beads` | Issue tracking operations |
 | `/heal-skill` | Detect and fix skill hygiene issues |
 | `/converter` | Convert skills to Codex/Cursor formats |
-| `/update` | Reinstall all AgentOps skills from latest source |
+
+**To update installed skills:** re-run the install one-liner — `bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)`. (There is no update skill; skill refresh is an install-script concern.)
 
 ## Knowledge Flywheel
 
@@ -188,11 +201,11 @@ Inspect, lint, and triage the `.agents/` write surface contract via `ao agents i
 
 ## Runtime Modes
 
-AgentOps has four runtime modes. Do not assume hook automation exists everywhere.
+AgentOps has several runtime modes. Do not assume hook automation exists everywhere.
 
 | Mode | When it applies | Start path | Closeout path | Guarantees |
 |------|-----------------|------------|---------------|------------|
-| `gc` | Gas City (`gc`) binary available and `city.toml` present | gc controller manages sessions; `ao rpi` auto-selects gc executor | gc event bus captures phase/gate/failure/metric events | Default when gc is available. Phase execution via gc sessions, events via gc event bus, agent health via gc health patrol |
+| `gc` (reference City) | Gas City (`gc`) binary available, used out-of-session via the reference City (`packs/agentops/`) | A long-lived mayor agent dispatches whole `ao rpi` loops to refinery workers (`bd ready` → `gc sling` → `ao rpi <bead>`); cron `exec` Orders run maintenance | The mayor owns the merge gate (CI-green is the signal) and triggers the knowledge-flywheel feedback | gc orchestrates *whole* `ao rpi`/`ao evolve` loops — it never sees the loop's insides. There is no in-CLI `runtime=gc` executor (removed); the seam is `gc` → `ao` as a subprocess. Dispatch is mayor-driven today; order-auto-dispatch is an upstream-GC gap (soc-5jwah). See the `using-gc` skill. |
 | `hook-capable` | Claude/OpenCode with lifecycle hooks installed (no gc) | Runtime hook or `ao inject` / `ao lookup` | Runtime hook or `ao forge transcript` + `ao flywheel close-loop` | Automatic startup/context injection and session-end maintenance when hooks are installed |
 | `codex-native-hooks` | Codex CLI v0.115.0+ with native hook support (March 2026) | Runtime hooks (same as hook-capable) | Runtime hooks (same as hook-capable) | Native lifecycle hooks — same guarantees as hook-capable mode |
 | `codex-hookless-fallback` | Codex Desktop / Codex CLI pre-v0.115.0 without hook surfaces | `ao codex start` | `ao codex stop` | Explicit startup context, citation tracking, transcript fallback, and close-loop metrics without hooks |
@@ -211,32 +224,10 @@ bd vc status          # Inspect Dolt state if needed (JSONL auto-sync is automat
 
 ## Examples
 
-### Startup Context Loading
+**Startup context loading.** Hook-capable runtimes run `session-start.sh` at session start (`manual` mode auto-loads MEMORY.md and points to `ao search`/`ao lookup`; `lean` mode injects prior learnings on a reduced token budget). Codex v0.115.0+ fires hooks automatically; pre-v0.115.0 runs `ao codex start` / `ao codex stop` explicitly. Either way the agent gets the RPI workflow, prior context, and a citation path.
 
-**Hook-capable runtimes**
-1. `session-start.sh` (or equivalent) can run at session start.
-2. In `manual` mode, MEMORY.md is auto-loaded and the hook points to on-demand retrieval (`ao search`, `ao lookup`).
-3. In `lean` mode, the hook extracts pending knowledge and injects prior learnings with a reduced token budget.
-4. This skill can be injected automatically into session context.
+**Workflow reference during planning.** When a user asks how to approach a feature, the agent uses this skill's RPI section to recommend Research → Plan → Implement → Validate — `/research` for exploration, `/plan` for decomposition, `/pre-mortem` for failure simulation — instead of an ad-hoc approach.
 
-**Codex (v0.115.0+: native hooks, older: hookless fallback)**
-1. v0.115.0+: hooks fire automatically — same behavior as hook-capable runtimes above.
-2. Pre-v0.115.0: run `ao codex start` explicitly, use `ao lookup` for citations, end with `ao codex stop`.
-
-**Result:** The agent gets the RPI workflow, prior context, and a citation path in all modes.
-
-### Workflow Reference During Planning
-
-**User says:** "How should I approach this feature?"
-
-**What happens:**
-1. Agent references this skill's RPI workflow section
-2. Agent recommends Research → Plan → Implement → Validate phases
-3. Agent suggests `/research` for codebase exploration, `/plan` for decomposition
-4. Agent explains `/pre-mortem` for failure simulation before implementation
-5. User follows recommended workflow with agent guidance
-
-**Result:** Agent provides structured workflow guidance based on this meta-skill, avoiding ad-hoc approaches.
 ## Troubleshooting
 
 | Problem | Cause | Solution |

@@ -3,6 +3,7 @@
   "id": "agentops-core.beads-issue-tracking",
   "name": "AgentOps Beads Issue Tracking Canary",
   "description": "Offline public canary for bd/beads issue-tracking behavior, ao beads parsing and degradation logic, shared/Codex beads skill contracts, current bd JSON health probes, and RPI tasklist fallback behavior.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",

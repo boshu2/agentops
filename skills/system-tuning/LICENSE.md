@@ -3,10 +3,10 @@
 ## Methodology Source
 
 The triage method in this skill — diagnose → ordered kill hierarchy → confused-parent
-detection → renice survivors → verify — was pattern-adopted from the jsm
-`system-performance-remediation` skill authored by jsm.
+detection → renice survivors → verify — was pattern-adopted from an external
+`system-performance-remediation` skill corpus.
 
-That skill is the conceptual reference. The shape of the kill hierarchy
+That external work is the conceptual reference. The shape of the kill hierarchy
 (reap → stuck children → confused parents → renice) and the framing of the
 "whack-a-mole" anti-pattern (kill the parent, not the child) are both due to
 the original work.

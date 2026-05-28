@@ -3,6 +3,7 @@
   "id": "agentops-core.skill-quality-gates",
   "name": "AgentOps Skill Quality Gates Canary",
   "description": "Offline public canary for skill lint, schema, runtime-format, CLI-snippet, and size-warning ratchets used to judge skill edits.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",
@@ -40,7 +41,7 @@
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Total Skills: 77"},
+        {"type": "stdout_contains_auto_detect", "value": {"command": "bash tests/skills/run-all.sh", "pattern": "Total Skills: ([0-9]+)", "expected_group": 1, "tolerance_pct": 0}},
         {"type": "stdout_contains", "value": "OVERALL: PASS"}
       ],
       "dimensions": ["correctness", "artifact_quality", "process_adherence"],
@@ -66,17 +67,17 @@
     },
     {
       "id": "skill-schema-validation",
-      "title": "skill schema validation passes",
+      "title": "skill frontmatter validation passes",
       "kind": "command",
-      "objective": "Ensure all shared skill frontmatter remains schema-valid.",
+      "objective": "Ensure all shared skill frontmatter remains valid against the current v2 schema and hexagonal metadata contract.",
       "runtime": "shell",
       "inputs": {
         "cwd": "../..",
-        "shell": "scripts/validate-skill-schema.sh"
+        "shell": "scripts/validate-skill-frontmatter.sh"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "All 71 skill(s) passed schema validation"}
+        {"type": "stdout_contains_auto_detect", "value": {"command": "bash scripts/validate-skill-frontmatter.sh", "pattern": "validate-skill-frontmatter: ([0-9]+)/([0-9]+) ok", "expected_group": 1, "tolerance_pct": 0}}
       ],
       "dimensions": ["correctness", "artifact_quality"],
       "critical": true

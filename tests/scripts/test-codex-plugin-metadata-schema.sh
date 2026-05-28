@@ -124,7 +124,7 @@ run_manifest_validation() {
   local fixture="$1"
   local out="$2"
 
-  bash "$ROOT/scripts/validate-manifests.sh" --repo-root "$fixture" --skip-hooks > "$out" 2>&1
+  bash "$ROOT/scripts/validate-manifests.sh" --repo-root "$fixture" > "$out" 2>&1
 }
 
 test_legacy_codex_metadata_shape_still_validates() {

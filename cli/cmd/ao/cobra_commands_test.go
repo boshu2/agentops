@@ -1,3 +1,4 @@
+// practices: [pragmatic-programmer, twelve-factor-app]
 package main
 
 import (
@@ -45,13 +46,10 @@ func executeCommand(args ...string) (string, error) {
 	origSeedForce := seedForce
 	origNoBeads := noBeads
 	origMinimal := minimal
-	origGoalsJSON := goalsJSON
+	origGoalsJSON := output
 	origMemorySyncQuiet := memorySyncQuiet
 	origMemorySyncMaxEntries := memorySyncMaxEntries
 	origMemorySyncOutput := memorySyncOutput
-	origHooksFull := hooksFull
-	origHooksDryRun := hooksDryRun
-	origHooksForce := hooksForce
 	origSearchLimit := searchLimit
 	origSearchType := searchType
 	origSearchCiteType := searchCiteType
@@ -62,13 +60,6 @@ func executeCommand(args ...string) (string, error) {
 	origCodexStartLimit := codexStartLimit
 	origCodexStartQuery := codexStartQuery
 	origCodexStartNoMaintenance := codexStartNoMaintenance
-	origFactoryStartGoal := factoryStartGoal
-	origFactoryStartLimit := factoryStartLimit
-	origFactoryStartNoMaintenance := factoryStartNoMaintenance
-	origFactoryPilotGoal := factoryPilotGoal
-	origFactoryPilotRunID := factoryPilotRunID
-	origFactoryPilotWorktreeRoot := factoryPilotWorktreeRoot
-	origFactoryPilotValidationCommands := factoryPilotValidationCommands
 	origCodexStopSessionID := codexStopSessionID
 	origCodexStopTranscriptPath := codexStopTranscriptPath
 	origCodexStopAutoExtract := codexStopAutoExtract
@@ -89,25 +80,6 @@ func executeCommand(args ...string) (string, error) {
 	origFindingsRetireBy := findingsRetireBy
 	origForgeTier1LegacyLocalLLM := forgeTier1LegacyLocalLLM
 	origScenarioListStatus := scenarioListStatus
-	origOvernightGoal := overnightGoal
-	origOvernightOutputDir := overnightOutputDir
-	origOvernightRunTimeout := overnightRunTimeout
-	origOvernightKeepAwake := overnightKeepAwake
-	origOvernightNoKeepAwake := overnightNoKeepAwake
-	origOvernightRunners := append([]string{}, overnightRunners...)
-	origOvernightModels := overnightModels
-	origOvernightCreative := overnightCreative
-	origOvernightDaemonSubmit := overnightDaemonSubmit
-	origOvernightDaemonURL := overnightDaemonURL
-	origOvernightDaemonToken := overnightDaemonToken
-	origOvernightDaemonFallback := overnightDaemonFallback
-	origOvernightReportFrom := overnightReportFrom
-	origOvernightSetupApply := overnightSetupApply
-	origOvernightSetupScheduler := overnightSetupScheduler
-	origOvernightSetupAt := overnightSetupAt
-	origOvernightSetupRunners := append([]string{}, overnightSetupRunners...)
-	origOvernightSetupKeepAwake := overnightSetupKeepAwake
-	origOvernightSetupNoKeepAwake := overnightSetupNoKeepAwake
 	// Struct-type flag vars (fields persist across Execute calls):
 	origContextPacketFlags := contextPacketFlags
 	origContextExplainFlags := contextExplainFlags
@@ -147,13 +119,10 @@ func executeCommand(args ...string) (string, error) {
 		seedForce = origSeedForce
 		noBeads = origNoBeads
 		minimal = origMinimal
-		goalsJSON = origGoalsJSON
+		output = origGoalsJSON
 		memorySyncQuiet = origMemorySyncQuiet
 		memorySyncMaxEntries = origMemorySyncMaxEntries
 		memorySyncOutput = origMemorySyncOutput
-		hooksFull = origHooksFull
-		hooksDryRun = origHooksDryRun
-		hooksForce = origHooksForce
 		searchLimit = origSearchLimit
 		searchType = origSearchType
 		searchCiteType = origSearchCiteType
@@ -164,13 +133,6 @@ func executeCommand(args ...string) (string, error) {
 		codexStartLimit = origCodexStartLimit
 		codexStartQuery = origCodexStartQuery
 		codexStartNoMaintenance = origCodexStartNoMaintenance
-		factoryStartGoal = origFactoryStartGoal
-		factoryStartLimit = origFactoryStartLimit
-		factoryStartNoMaintenance = origFactoryStartNoMaintenance
-		factoryPilotGoal = origFactoryPilotGoal
-		factoryPilotRunID = origFactoryPilotRunID
-		factoryPilotWorktreeRoot = origFactoryPilotWorktreeRoot
-		factoryPilotValidationCommands = origFactoryPilotValidationCommands
 		codexStopSessionID = origCodexStopSessionID
 		codexStopTranscriptPath = origCodexStopTranscriptPath
 		codexStopAutoExtract = origCodexStopAutoExtract
@@ -191,25 +153,6 @@ func executeCommand(args ...string) (string, error) {
 		findingsRetireBy = origFindingsRetireBy
 		forgeTier1LegacyLocalLLM = origForgeTier1LegacyLocalLLM
 		scenarioListStatus = origScenarioListStatus
-		overnightGoal = origOvernightGoal
-		overnightOutputDir = origOvernightOutputDir
-		overnightRunTimeout = origOvernightRunTimeout
-		overnightKeepAwake = origOvernightKeepAwake
-		overnightNoKeepAwake = origOvernightNoKeepAwake
-		overnightRunners = append([]string{}, origOvernightRunners...)
-		overnightModels = origOvernightModels
-		overnightCreative = origOvernightCreative
-		overnightDaemonSubmit = origOvernightDaemonSubmit
-		overnightDaemonURL = origOvernightDaemonURL
-		overnightDaemonToken = origOvernightDaemonToken
-		overnightDaemonFallback = origOvernightDaemonFallback
-		overnightReportFrom = origOvernightReportFrom
-		overnightSetupApply = origOvernightSetupApply
-		overnightSetupScheduler = origOvernightSetupScheduler
-		overnightSetupAt = origOvernightSetupAt
-		overnightSetupRunners = append([]string{}, origOvernightSetupRunners...)
-		overnightSetupKeepAwake = origOvernightSetupKeepAwake
-		overnightSetupNoKeepAwake = origOvernightSetupNoKeepAwake
 		contextPacketFlags = origContextPacketFlags
 		contextExplainFlags = origContextExplainFlags
 		contextPacketStatusFlags = origContextPacketStatusFlags
@@ -247,13 +190,10 @@ func executeCommand(args ...string) (string, error) {
 	seedForce = false
 	noBeads = false
 	minimal = false
-	goalsJSON = false
+	output = "table"
 	memorySyncQuiet = false
 	memorySyncMaxEntries = 10
 	memorySyncOutput = ""
-	hooksFull = false
-	hooksDryRun = false
-	hooksForce = false
 	searchLimit = 10
 	searchType = ""
 	searchCiteType = ""
@@ -301,25 +241,6 @@ func executeCommand(args ...string) (string, error) {
 	evalCoverageDomains = []string{"cli", "hook", "skill", "rpi", "runtime", "retrieval", "scenario", "mixed", "security"}
 	evalCoverageDims = []string{"correctness", "process_adherence", "artifact_quality", "runtime_compatibility", "efficiency", "safety", "learning_closure"}
 	evalCoverageRuntimes = []string{"static", "shell", "mock"}
-	overnightGoal = ""
-	overnightOutputDir = ""
-	overnightRunTimeout = ""
-	overnightKeepAwake = false
-	overnightNoKeepAwake = false
-	overnightRunners = nil
-	overnightModels = ""
-	overnightCreative = false
-	overnightDaemonSubmit = false
-	overnightDaemonURL = ""
-	overnightDaemonToken = ""
-	overnightDaemonFallback = false
-	overnightReportFrom = ""
-	overnightSetupApply = false
-	overnightSetupScheduler = "auto"
-	overnightSetupAt = ""
-	overnightSetupRunners = nil
-	overnightSetupKeepAwake = false
-	overnightSetupNoKeepAwake = false
 	doctorJSON = false
 	maturityApply = false
 	maturityScan = false
@@ -375,16 +296,30 @@ func executeCommand(args ...string) (string, error) {
 	rootCmd.SetErr(cmdBuf)
 	rootCmd.SetArgs(args)
 
+	// Always restore rootCmd output writers even if rootCmd.Execute() panics.
+	// Without this defer, a panicking Execute() leaves rootCmd.outWriter pointing
+	// at the now-out-of-scope cmdBuf; subsequent tests that invoke a subcommand's
+	// RunE directly (e.g. goalsMeasureCmd.RunE) will have cobra's OutOrStdout()
+	// resolve to the leaked buffer via parent-walking, silently swallowing their
+	// output and breaking tests that capture os.Stdout. (soc-n6vb)
+	defer func() {
+		rootCmd.SetOut(nil)
+		rootCmd.SetErr(nil)
+		rootCmd.SetArgs(nil)
+	}()
+
 	// Also capture os.Stdout for commands that use fmt.Printf directly
 	oldStdout := os.Stdout
 	r, w, pipeErr := os.Pipe()
 	if pipeErr != nil {
-		rootCmd.SetOut(nil)
-		rootCmd.SetErr(nil)
-		rootCmd.SetArgs(nil)
 		return "", pipeErr
 	}
 	os.Stdout = w
+	// Restore os.Stdout even if Execute panics; otherwise subsequent tests
+	// inherit a stale (possibly closed) pipe writer as os.Stdout. (soc-n6vb)
+	defer func() {
+		os.Stdout = oldStdout
+	}()
 
 	var stdoutBuf bytes.Buffer
 	copyDone := make(chan struct{})
@@ -399,10 +334,6 @@ func executeCommand(args ...string) (string, error) {
 	w.Close()
 	os.Stdout = oldStdout
 	<-copyDone
-
-	rootCmd.SetOut(nil)
-	rootCmd.SetErr(nil)
-	rootCmd.SetArgs(nil)
 
 	// Combine cmd buffer and stdout capture
 	combined := cmdBuf.String() + stdoutBuf.String()
@@ -434,16 +365,16 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 
 	// Verify all top-level commands are registered (flat namespace)
 	expectedCmds := []string{
-		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "completion", "config",
-		"constraint", "context", "codex", "compile", "contradict", "corpus", "curate", "dedup",
-		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
-		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harvest", "hooks",
-		"index", "init", "inject", "knowledge", "lookup", "maturity",
-		"memory", "metrics", "migrate", "mind", "mine", "notebook", "overnight", "patterns", "plans",
-		"pool", "quick-start", "ratchet", "retrieval-bench", "rpi",
-		"registry", "scenario", "schedule", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
+		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
+		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
+		"defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
+		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
+		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
+		"memory", "metrics", "migrate", "mind", "mine", "notebook", "operator", "patterns",
+		"pool", "quick-start", "ratchet", "reconcile", "retrieval-bench", "robot-docs", "rpi",
+		"registry", "scenario", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
 		"store", "task-feedback", "task-status", "task-sync", "temper",
-		"trace", "version", "vibe-check", "watch", "worktree",
+		"trace", "validate", "version", "vibe-check", "wiki", "worktree",
 	}
 	cmdSet := make(map[string]bool)
 	for _, name := range cmdNames {
@@ -459,17 +390,15 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 	parentExpectations := map[string][]string{
 		"autodev":    {"init", "validate", "show"},
 		"beads":      {"verify", "lint", "harvest"},
-		"daemon":     {"run", "ready", "status", "service"},
 		"eval":       {"run", "compare", "baseline", "baseline-audit", "scorecard", "coverage"},
-		"factory":    {"start", "pilot", "admit"},
 		"goals":      {"validate", "measure", "drift"},
 		"knowledge":  {"activate", "beliefs", "playbooks", "brief", "gaps"},
 		"ratchet":    {"status", "check", "next"},
 		"metrics":    {"baseline", "report"},
-		"overnight":  {"start", "report", "setup"},
 		"flywheel":   {"status", "nudge", "gate", "compare", "close-loop"},
 		"constraint": {"activate", "retire", "review", "list"},
 		"corpus":     {"fitness"},
+		"cron":       {"self-adjust"},
 		"patterns":   {"repair-filenames"},
 		"pool":       {"list", "ingest"},
 		"store":      {"rebuild", "search"},
@@ -495,16 +424,16 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 
 	// Same list as TestCobraCommandTreeRegistration
 	expectedCmds := []string{
-		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "completion", "config",
-		"constraint", "context", "codex", "compile", "contradict", "corpus", "curate", "dedup",
-		"daemon", "defrag", "demo", "doctor", "eval", "evolve", "extract", "factory", "feedback", "feedback-loop",
-		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harvest", "hooks",
-		"index", "init", "inject", "knowledge", "lookup", "maturity",
-		"memory", "metrics", "migrate", "mind", "mine", "notebook", "overnight", "patterns", "plans",
-		"pool", "quick-start", "ratchet", "retrieval-bench", "rpi",
-		"registry", "scenario", "schedule", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
+		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
+		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
+		"defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
+		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
+		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
+		"memory", "metrics", "migrate", "mind", "mine", "notebook", "operator", "patterns",
+		"pool", "quick-start", "ratchet", "reconcile", "retrieval-bench", "robot-docs", "rpi",
+		"registry", "scenario", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
 		"store", "task-feedback", "task-status", "task-sync", "temper",
-		"trace", "version", "vibe-check", "watch", "worktree",
+		"trace", "validate", "version", "vibe-check", "wiki", "worktree",
 	}
 
 	// Every expected command must be registered
@@ -564,13 +493,17 @@ func TestCobraDoctorCommand(t *testing.T) {
 	t.Run("json_output", func(t *testing.T) {
 		out, err := executeCommand("doctor", "--json")
 		_ = err
-		if !strings.Contains(out, "checks") {
-			t.Errorf("expected 'checks' in JSON output, got: %s", out)
-		}
-		// Verify it's valid JSON
+		// `ao doctor --json` emits a single engine Report. A strict unmarshal
+		// fails if a second JSON document leaked onto stdout.
 		var result map[string]any
 		if jsonErr := json.Unmarshal([]byte(out), &result); jsonErr != nil {
-			t.Errorf("doctor --json did not produce valid JSON: %v\noutput: %s", jsonErr, out)
+			t.Errorf("doctor --json did not produce a single valid JSON document: %v\noutput: %s", jsonErr, out)
+		}
+		if result["schema_version"] != "1.0" {
+			t.Errorf("expected schema_version 1.0 in engine Report, got: %v", result["schema_version"])
+		}
+		if _, ok := result["findings"]; !ok {
+			t.Errorf("expected 'findings' key in engine Report, got: %s", out)
 		}
 	})
 }
@@ -672,11 +605,11 @@ func TestCobraDemoConceptsCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ao demo --concepts failed: %v", err)
 	}
-	if !strings.Contains(out, "CORE CONCEPTS") {
-		t.Errorf("expected 'CORE CONCEPTS' in output, got: %s", out)
+	if !strings.Contains(out, "AGENTOPS 3.0 PRODUCT MODEL") {
+		t.Errorf("expected 'AGENTOPS 3.0 PRODUCT MODEL' in output, got: %s", out)
 	}
-	if !strings.Contains(out, "KNOWLEDGE FLYWHEEL") {
-		t.Errorf("expected 'KNOWLEDGE FLYWHEEL' in output, got: %s", out)
+	if !strings.Contains(out, "COUNCIL VERDICTS") {
+		t.Errorf("expected 'COUNCIL VERDICTS' in output, got: %s", out)
 	}
 }
 
@@ -883,8 +816,8 @@ Increase coverage
 		t.Fatal(err)
 	}
 
-	goalsJSON = true
-	defer func() { goalsJSON = false }()
+	output = "json"
+	defer func() { output = "table" }()
 
 	out, err := executeCommand("goals", "validate", "--json")
 	if err != nil {
@@ -1326,7 +1259,7 @@ func TestCobraGlobalFlags(t *testing.T) {
 // TestCobraOutputValidateResult exercises outputValidateResult directly.
 func TestCobraOutputValidateResult(t *testing.T) {
 	t.Run("valid_table", func(t *testing.T) {
-		goalsJSON = false
+		output = "table"
 		// Capture stdout
 		old := os.Stdout
 		r, w, _ := os.Pipe()
@@ -1356,7 +1289,7 @@ func TestCobraOutputValidateResult(t *testing.T) {
 	})
 
 	t.Run("invalid_table", func(t *testing.T) {
-		goalsJSON = false
+		output = "table"
 		old := os.Stdout
 		r, w, _ := os.Pipe()
 		os.Stdout = w
@@ -1383,8 +1316,8 @@ func TestCobraOutputValidateResult(t *testing.T) {
 	})
 
 	t.Run("valid_json", func(t *testing.T) {
-		goalsJSON = true
-		defer func() { goalsJSON = false }()
+		output = "json"
+		defer func() { output = "table" }()
 
 		old := os.Stdout
 		r, w, _ := os.Pipe()
@@ -2335,11 +2268,11 @@ func TestCobraShowConcepts(t *testing.T) {
 
 	out := buf.String()
 
-	if !strings.Contains(out, "KNOWLEDGE FLYWHEEL") {
-		t.Errorf("expected KNOWLEDGE FLYWHEEL, got: %s", out[:200])
+	if !strings.Contains(out, "ENGINEERING OS FOR AGENT TEAMS") {
+		t.Errorf("expected ENGINEERING OS FOR AGENT TEAMS, got: %s", out[:200])
 	}
-	if !strings.Contains(out, "BROWNIAN RATCHET") {
-		t.Errorf("expected BROWNIAN RATCHET in output")
+	if !strings.Contains(out, "COUNCIL VERDICTS") {
+		t.Errorf("expected COUNCIL VERDICTS in output")
 	}
 }
 
@@ -2533,61 +2466,6 @@ func TestCobraResolveGoalsFile(t *testing.T) {
 		got := resolveGoalsFile()
 		if got != "GOALS.md" {
 			t.Errorf("resolveGoalsFile = %q, want default 'GOALS.md'", got)
-		}
-	})
-}
-
-// TestCobraHookGroupContainsAo exercises hookGroupContainsAo indirectly
-// through extractHooksMap and evaluateHookCoverage.
-func TestCobraExtractHooksMap(t *testing.T) {
-	t.Run("settings_json_format", func(t *testing.T) {
-		data := []byte(`{"hooks": {"SessionStart": [{"hooks": [{"type": "command", "command": "ao hooks run SessionStart"}]}]}}`)
-		hooksMap, ok := extractHooksMap(data)
-		if !ok {
-			t.Error("expected extractHooksMap to return true for settings.json format")
-		}
-		if hooksMap == nil {
-			t.Error("expected non-nil hooks map")
-		}
-	})
-
-	t.Run("hooks_json_format", func(t *testing.T) {
-		data := []byte(`{"SessionStart": [{"hooks": [{"type": "command", "command": "echo hi"}]}]}`)
-		hooksMap, ok := extractHooksMap(data)
-		if !ok {
-			t.Error("expected extractHooksMap to return true for hooks.json format")
-		}
-		if hooksMap == nil {
-			t.Error("expected non-nil hooks map")
-		}
-	})
-
-	t.Run("invalid_json", func(t *testing.T) {
-		data := []byte(`not json`)
-		_, ok := extractHooksMap(data)
-		if ok {
-			t.Error("expected false for invalid JSON")
-		}
-	})
-}
-
-// TestCobraCountHooksInMap exercises countHooksInMap.
-func TestCobraCountHooksInMap(t *testing.T) {
-	t.Run("array", func(t *testing.T) {
-		got := countHooksInMap([]any{"a", "b"})
-		if got != 2 {
-			t.Errorf("countHooksInMap(array) = %d, want 2", got)
-		}
-	})
-
-	t.Run("nested_map", func(t *testing.T) {
-		data := map[string]any{
-			"SessionStart": []any{"a", "b"},
-			"SessionEnd":   []any{"c"},
-		}
-		got := countHooksInMap(data)
-		if got != 3 {
-			t.Errorf("countHooksInMap(map) = %d, want 3", got)
 		}
 	})
 }

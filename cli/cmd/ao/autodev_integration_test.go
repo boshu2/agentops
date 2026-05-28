@@ -1,3 +1,4 @@
+// practices: [ai-assisted-dev, agile-manifesto]
 package main
 
 import (

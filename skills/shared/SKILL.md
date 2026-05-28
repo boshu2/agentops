@@ -1,6 +1,15 @@
 ---
 name: shared
-description: 'Shared AgentOps skill contracts.'
+description: Shared AgentOps skill contracts.
+practices:
+- design-by-contract
+- pragmatic-programmer
+- twelve-factor-app
+hexagonal_role: domain
+consumes: []
+produces:
+- stdout
+context_rel: []
 skill_api_version: 1
 user-invocable: false
 context:
@@ -8,12 +17,15 @@ context:
   intent:
     mode: none
   sections:
-    exclude: [HISTORY, INTEL, TASK]
+    exclude:
+    - HISTORY
+    - INTEL
+    - TASK
   intel_scope: none
 metadata:
   tier: library
   internal: true
-output_contract: "reference documents (loaded JIT)"
+output_contract: reference documents (loaded JIT)
 ---
 # Shared References
 
@@ -55,10 +67,17 @@ fi
 |------------|-------------|-------------------|
 | `bd` | Issue tracking unavailable | Use TaskList for tracking. Note "install bd for persistent issue tracking" |
 | `ao` | Knowledge flywheel unavailable | Write learnings to `.agents/learnings/` directly. Skip flywheel metrics |
+| `gc` | Out-of-session orchestration unavailable | Run the loop in-session (`/rpi`, `/evolve`). gc only adds out-of-session dispatch of whole `ao rpi`/`ao evolve` loops — see the `using-gc` skill |
 | `gt` | Workspace management unavailable | Work in current directory. Skip convoy/sling operations |
+| `gh` | PR/CI automation unavailable | Open PRs via the web UI; skip automated PR status/merge steps |
+| `go` | Build-from-source unavailable | Install a prebuilt `ao` (Homebrew / install script / release binary); no Go needed |
 | `codex` | CLI missing or model unavailable | Fall back to runtime-native agents. Council pre-flight checks CLI presence (`which codex`) and model availability for `--mixed` mode. |
 | `cass` | Session search unavailable | Skip transcript search. Note "install cass for session history" |
+| `jq` | JSON parsing unavailable | Read `--json` output manually or use non-JSON output modes |
+| `rg` (ripgrep) | Fast search unavailable | Fall back to `grep` / `git grep` (slower) |
 | Model tier config | `.agentops/config.yaml` missing | Use built-in defaults (quality=opus, balanced=sonnet, budget=haiku). Tier resolution falls through to "balanced". |
+
+> Full per-tool purpose, required-vs-optional, and fallback detail: [docs/dependencies.md](https://github.com/boshu2/agentops/blob/main/docs/dependencies.md). The README "Requirements" section summarizes; this doc page is the canonical detail.
 
 ### Required Multi-Agent Capabilities
 
@@ -167,6 +186,8 @@ Skills that chain to other skills (e.g., `/rpi` calls `/research`, `/vibe` calls
 
 ## Reference Documents
 
+- [references/substring-rename-overreach.md](references/substring-rename-overreach.md) — Pre-rename checklist for bulk sed across same-prefix concepts
+- [references/cross-harness-skill-parity.md](references/cross-harness-skill-parity.md) — Knowledge parity beyond audit-codex-parity.sh; codex frontmatter strictness
 - [references/content-hash-cache.md](references/content-hash-cache.md)
 - [references/compaction-signals.md](references/compaction-signals.md)
 - [references/backend-background-tasks.md](references/backend-background-tasks.md)

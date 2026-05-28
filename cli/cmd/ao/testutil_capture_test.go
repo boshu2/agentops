@@ -1,3 +1,4 @@
+// practices: [tdd, pragmatic-programmer]
 package main
 
 import (

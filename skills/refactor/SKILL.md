@@ -1,21 +1,33 @@
 ---
 name: refactor
-description: 'Execute safe refactors.'
+description: Execute safe refactors.
+practices:
+- refactoring
+- legacy-code-seams
+- design-patterns
+hexagonal_role: supporting
+consumes:
+- complexity
+- repo-context
+produces:
+- git-changes
+context_rel: []
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: execution
   dependencies:
-    - standards   # loads language-specific conventions
-    - complexity  # identifies high-complexity targets
-    - beads       # optional - for issue tracking
-output_contract: "code changes with regression verification"
+  - standards
+  - complexity
+  - beads
+output_contract: code changes with regression verification
 ---
 # Refactor Skill
 
@@ -391,6 +403,19 @@ vulture <directory>
 - Not used in build tags or conditional compilation
 - Not referenced in external packages (if this is a library)
 
+**CLI command, flag, or cross-language surface removal:** source-language
+callers are not enough. Before considering the removal complete, grep every
+tracked callsite surface that agents commonly forget:
+
+```bash
+scripts/check-removed-symbol-refs.sh -- <removed-command-or-flag>
+```
+
+The check searches tracked repo files across source, shell scripts, GitHub
+workflow YAML, docs, skills, Codex skills, and tests while excluding historical
+changelogs and release notes. Any remaining hit is a blocker unless it is
+explicitly excluded with `--exclude` and justified in the closeout.
+
 ## Guardrails
 
 ### What NOT to Refactor
@@ -423,5 +448,7 @@ vulture <directory>
 - `/implement` -- if refactoring requires new code
 
 ## Reference Documents
+
+- [references/refactor.feature](references/refactor.feature) — Executable spec: one transformation/one test/one commit, target + hotspot (complexity-first) modes, revert on test fail (soc-qk4b)
 
 - [references/behavior-preserving-simplification.md](references/behavior-preserving-simplification.md)

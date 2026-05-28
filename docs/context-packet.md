@@ -14,6 +14,12 @@ schema_version: 1
 
 A context packet is the structured payload assembled by `ao lookup` and delivered into an agent's context window on demand. It replaces the current raw knowledge dump with a purpose-built artifact containing exactly what an agent needs to do its work — no more, no less.
 
+For product-facing launch and council work, pair context packets with a
+[domain/practice packet](domain-practice-packets.md). The domain/practice
+packet names the shared product, goals, standards, issues, tests, scenarios, and
+evidence rules. `ao context assemble` and `ao context packet` then prepare the
+phase-specific runtime context from that shared operating frame.
+
 The packet has five sections, each with a defined character budget, content source, and eviction priority. The total budget is ~28K characters (~7K tokens at `InjectCharsPerToken = 4`), which leaves 90%+ of the context window available for actual work.
 
 ```

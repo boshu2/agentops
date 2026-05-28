@@ -1,0 +1,42 @@
+# nightly-evolve.yaml - daemon-owned autonomous improvement loop
+#
+# What it does:
+#   Fires an `rpi.run` job through agentopsd once per night. The daemon
+#   materializes the run ID, applies supervisor gates, and records the job
+#   through the ledger/projection surface.
+#
+# Why schedule it:
+#   This is the daemon-native replacement for a host timer that launches
+#   `scripts/nightly-evolution.sh --execute --run-evolve`. The script path
+#   already submits `rpi.run`; this recipe lets operators register the same
+#   cadence directly with `ao schedule`.
+#
+# Cadence: nightly at 04:30 local. `landing_policy: off` keeps this safe as a
+# non-mutating autonomous loop by default; operators can create a reviewed copy
+# with a stronger landing policy when their daemon lane is ready.
+#
+# Wire up:
+#   ao daemon run --workers 2 --executor-policy cli-fallback
+#   ao schedule add --file examples/schedules/nightly-evolve.yaml
+
+schedules:
+  - name: nightly-evolve
+    cron: "30 4 * * *"
+    job_type: rpi.run
+    payload:
+      schema_version: 1
+      goal: "Nightly daemon-owned RPI/evolve cycle"
+      start_phase: 1
+      max_phase: 3
+      test_first: true
+      backend: gascity-api
+      max_cycles: 1
+      gate_policy: required
+      landing_policy: off
+      bd_sync_policy: auto
+      failure_policy: stop
+      kill_switch_path: ".agents/rpi/KILL"
+    timeout: "3h"
+    backpressure:
+      skip_if_running: true
+      max_queue_depth: 1

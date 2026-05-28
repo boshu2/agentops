@@ -1,3 +1,4 @@
+// practices: [agile-manifesto, dora-metrics]
 package main
 
 // phaseManifest declares what context a phase needs from prior handoffs.

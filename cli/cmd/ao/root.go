@@ -1,3 +1,4 @@
+// practices: [pragmatic-programmer, twelve-factor-app]
 package main
 
 import (
@@ -9,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/boshu2/agentops/cli/internal/doctor"
 )
 
 var (
@@ -22,8 +25,9 @@ var (
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
-	Use:   "ao",
-	Short: "AgentOps Knowledge Compounding CLI",
+	Use:     "ao",
+	Version: version,
+	Short:   "AgentOps Knowledge Compounding CLI",
 	Long: `ao is the CLI for AgentOps, a software-factory control plane for repo-native agent work.
 
 "Problem in. Value out. Intelligence compounds."
@@ -36,6 +40,11 @@ Software Factory Lane:
 The Knowledge Flywheel underneath it:
   Sessions compound via .agents/ + Smart Connections.
   Others start fresh. You get smarter every session.
+
+For AI agents:
+  ao capabilities     Machine-readable CLI contract (JSON) — run this first.
+  ao robot-docs       Paste-ready agent handbook.
+  Append --json to any read-side command for structured output.
 
 Use "ao <command> --help" for more information about a command.`,
 	SilenceUsage: true,
@@ -71,11 +80,34 @@ Use "ao <command> --help" for more information about a command.`,
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	executedCmd, err := rootCmd.ExecuteC()
+	if err != nil {
 		var lintErr *AgentsLintError
 		if errors.As(err, &lintErr) {
 			os.Exit(lintErr.ExitCode)
 		}
+		var docErr *doctorExitError
+		if errors.As(err, &docErr) {
+			// Exit 1 means findings are present — a normal diagnostic result,
+			// not a failure, so it carries no stderr noise. Higher codes are
+			// genuine failures; surface the reason on stderr (doctor commands
+			// set SilenceErrors, so cobra prints nothing itself).
+			if docErr.ExitCode() != doctor.ExitFindings && docErr.Error() != "" {
+				fmt.Fprintln(os.Stderr, "ao doctor: "+docErr.Error())
+			}
+			os.Exit(docErr.ExitCode())
+		}
+		var gateErr *gateExitError
+		if errors.As(err, &gateErr) {
+			// The exit code IS the verdict in `ao validate --gate`. A FAIL (1)
+			// carries no stderr noise (detail already went to stderr); an
+			// internal error (2) surfaces its reason.
+			if gateErr.ExitCode() == gateExitInternal && gateErr.Error() != "" {
+				fmt.Fprintln(os.Stderr, "ao validate: "+gateErr.Error())
+			}
+			os.Exit(gateErr.ExitCode())
+		}
+		printRequiredFlagHint(executedCmd, err)
 		os.Exit(1)
 	}
 }
@@ -99,6 +131,21 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "Config file (default: ~/.agentops/config.yaml)")
 
 	_ = rootCmd.RegisterFlagCompletionFunc("output", staticCompletionFunc("json", "table", "yaml"))
+
+	// Turn opaque "unknown flag" errors into actionable typo hints. Inherited
+	// by every subcommand that does not set its own FlagErrorFunc.
+	rootCmd.SetFlagErrorFunc(flagErrorWithSuggestion)
+
+	// When a parent command is invoked with --json, emit a machine-readable
+	// subcommand listing instead of human help text. Inherited by all
+	// subcommands; falls back to cobra's default help rendering otherwise.
+	defaultHelp := rootCmd.HelpFunc()
+	rootCmd.SetHelpFunc(func(c *cobra.Command, args []string) {
+		if maybeEmitGroupJSON(c) {
+			return
+		}
+		defaultHelp(c, args)
+	})
 }
 
 // GetDryRun returns the dry-run flag value for use by subcommands.

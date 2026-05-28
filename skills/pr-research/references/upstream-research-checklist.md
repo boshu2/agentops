@@ -100,5 +100,5 @@ Research findings should follow this structure:
 | {risk} | {how to handle} |
 
 ## Next Steps
--> `/pr-plan .agents/research/YYYY-MM-DD-pr-{repo}.md`
+-> `/plan .agents/research/YYYY-MM-DD-pr-{repo}.md`
 ```

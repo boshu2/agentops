@@ -3,6 +3,7 @@
   "id": "agentops-core.security-suite-behavioral-gates",
   "name": "AgentOps Security Suite Behavioral Gates Canary",
   "description": "Offline public canary for security-suite policy enforcement, baseline removed-command gating, prompt-surface redteam artifacts, shared/Codex validators, and security-suite operator contracts.",
+  "practices": ["llm-eval-harness", "supply-chain-integrity"],
   "domain": "security",
   "visibility": "public_canary",
   "tier": "deterministic",

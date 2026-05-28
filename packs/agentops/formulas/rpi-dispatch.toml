@@ -1,0 +1,67 @@
+description = """
+THIN dispatch — run the AgentOps rpi loop on ONE bead.
+
+This is the minimal GC primitive that can route a bead to an agent pool: a
+ONE-step "order formula" (modeled on examples/dolt/formulas/mol-dolt-remotes-patrol.toml,
+whose single step's description is one command). It is NOT a 4-step decomposition.
+
+THIN-SEAM (design doc "DDD seam correction" — THE governing boundary): the rpi
+loop's internal steps (research→plan→implement→validate) and its ratchet rules
+(no-self-grade, fresh-agent-on-failure, knowledge→constraints) live INSIDE
+AgentOps, behind the single command `ao rpi`. GC dispatches the WHOLE loop; it
+never sees the loop's insides. There is deliberately no `mol-rpi-cycle` 4-step
+formula — that would duplicate the loop shape across the GC seam and pit GC's
+`check.max_attempts` retry against AgentOps's fresh-agent-on-failure invariant.
+
+GC's order schema forces a pool-routing order to name a `formula` (an order is
+either `formula`-or-`exec`; a raw bead cannot route to a pool). This one-step
+formula is that minimal wrapper — the single step just runs `ao rpi`.
+"""
+formula = "rpi-dispatch"
+version = 1
+
+# UPSTREAM-GC GAP (soc-5jwah): `issue` is required with no default because a
+# dispatch cycle needs a per-fire value (which bead). GC Orders have no per-fire
+# var-binding mechanism, so an autonomous cooldown Order (orders/bead-dispatch.toml)
+# CANNOT bind this var on its own — it self-fails with `variable "issue" is
+# required`. The honest dispatch path today is MAYOR-DRIVEN: the mayor runs
+# `bd ready` and `gc sling`s the bead to a worker, where the bead ID flows as
+# routing metadata, not as this formula var. Closing the autonomous gap needs the
+# upstream GC var-binding / next-ready-resolution capability (an upstream
+# contribution, not an AgentOps feature). See the e2e proof Tier 3.
+[vars]
+[vars.issue]
+description = "The work bead this cycle implements (the coherent arc)."
+required = true
+
+[[steps]]
+id = "run-rpi"
+title = "Run the AgentOps rpi loop on this bead"
+description = """
+Run the whole AgentOps rpi inner loop on this bead — ONE command:
+
+```bash
+ao rpi {{issue}}
+```
+
+`ao rpi` runs research → plan → implement → validate internally and enforces the
+ratchet rules. Do NOT decompose it into GC steps; the loop is AgentOps-owned.
+
+Context flows through the rig's `.agents/` corpus (`ao inject`/`ao compile`) and
+the bead's notes/metadata — GC formulas have no typed step I/O, which is exactly
+why the loop lives inside AgentOps, not in this TOML.
+
+When `ao rpi` lands a green verdict, hand the bead to the mayor for merge (you do
+NOT merge — the mayor owns the merge gate, CI-green is the signal):
+
+```bash
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+gc bd update {{issue}} --status=open --assignee="mayor" \
+  --set-metadata branch="$BRANCH" --set-metadata verdict=PASS \
+  --notes "ao rpi green — verdict under .agents/"
+gc mail send mayor/ -s "READY-TO-MERGE {{issue}}" -m "rpi cycle green; ready to merge."
+gc runtime drain-ack
+```
+
+Close this step after `ao rpi` completes and the bead is handed off.
+"""

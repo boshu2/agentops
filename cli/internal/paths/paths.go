@@ -30,7 +30,15 @@ import (
 
 // Paths bundles every resolved AgentOps state root.
 type Paths struct {
-	Home          string
+	Home string
+	// RepoRoot is the git repository top-level used as the fallback root
+	// when resolving relative paths. Empty when the resolver was not given
+	// a directory inside a git repo (e.g. Resolve() called from /tmp on a
+	// machine without git, or ResolveFromRoot("") falling through to "."
+	// which is not a repo). Callers that need to anchor a child process's
+	// cwd to the repo root should check `if p.RepoRoot != ""` before use
+	// so the no-repo fallback preserves the caller's inherited cwd.
+	RepoRoot      string
 	AgentsDir     string
 	KnowledgeRoot string
 	HooksDir      string
@@ -83,7 +91,9 @@ func ResolveFromRoot(dir string) *Paths {
 
 // resolveFrom is the env+layout core, parameterized by the directory used as
 // the fallback "repo root" when no explicit AO_HOME / CLAUDE_PLUGIN_DATA env
-// is set.
+// is set. RepoRoot is set to repoRootDir only when it is a real git repo
+// top-level (i.e. when `git rev-parse --show-toplevel` succeeded for it);
+// otherwise it stays empty so callers can detect the no-repo fallback.
 func resolveFrom(repoRootDir string) *Paths {
 	home := envHome(repoRootDir)
 
@@ -99,8 +109,14 @@ func resolveFrom(repoRootDir string) *Paths {
 	patterns := envOr("AO_PATTERNS_DIR", filepath.Join(agentsDir, "patterns"))
 	decisions := envOr("AO_DECISIONS_DIR", filepath.Join(agentsDir, "decisions"))
 
+	// Only populate RepoRoot when repoRootDir is a real git top-level. This
+	// keeps the no-repo path (cwd not in a repo) as cmd.Dir-untouched at the
+	// caller, preserving inherited cwd behavior.
+	repoTop := repoRoot(repoRootDir)
+
 	return &Paths{
 		Home:          home,
+		RepoRoot:      repoTop,
 		AgentsDir:     agentsDir,
 		KnowledgeRoot: knowledge,
 		HooksDir:      hooks,

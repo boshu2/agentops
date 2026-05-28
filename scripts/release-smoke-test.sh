@@ -480,10 +480,8 @@ test_help "ao quick-start --help" "$AO" quick-start --help
 test_help "ao quickstart --help" "$AO" quickstart --help
 test_help "ao forge --help" "$AO" forge --help
 test_help "ao session --help" "$AO" session --help
-test_help "ao hooks --help" "$AO" hooks --help
 test_help "ao config --help" "$AO" config --help
 test_help "ao completion --help" "$AO" completion --help
-test_help "ao plans --help" "$AO" plans --help
 test_help "ao gate --help" "$AO" gate --help
 test_help "ao curate verify --help" "$AO" curate verify --help
 
@@ -507,6 +505,7 @@ test_help "ao memory --help" "$AO" memory --help
 test_help "ao notebook --help" "$AO" notebook --help
 test_help "ao trace --help" "$AO" trace --help
 test_help "ao findings --help" "$AO" findings --help
+test_help "ao validate --help" "$AO" validate --help
 
 # ═══════════════════════════════════════════════════════
 #  Flag Testing (verify key flags produce valid output)
@@ -581,10 +580,10 @@ EXPECTED_COMMANDS=(
     search inject lookup forge trace findings
     rpi ratchet goals session
     flywheel pool metrics gate maturity
-    config plans hooks memory notebook
+    config hooks memory notebook
     demo init seed quick-start
     badge constraint contradict dedup curate
-    anti-patterns vibe-check extract
+    anti-patterns vibe-check extract validate
 )
 
 for cmd in "${EXPECTED_COMMANDS[@]}"; do

@@ -2,10 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.dev/schemas/hooks-manifest.v1.schema.json",
   "title": "AgentOps Hooks Manifest v1",
+  "$comment": "practices: [gitops, infrastructure-as-code]",
   "type": "object",
   "additionalProperties": false,
   "required": ["$schema", "hooks"],
   "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
     "$schema": {
       "type": "string"
     },

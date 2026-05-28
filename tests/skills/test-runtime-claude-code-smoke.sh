@@ -57,29 +57,8 @@ fi
 
 echo ""
 
-# ── 2. Claude Code hooks configuration ───────────────────────────────────────
-echo "Stage 2: Claude Code hooks"
-
-HOOKS_JSON="$REPO_ROOT/hooks/hooks.json"
-if [[ -f "$HOOKS_JSON" ]]; then
-    python3 -m json.tool "$HOOKS_JSON" >/dev/null 2>&1 \
-        && pass "hooks/hooks.json is valid JSON" || fail "hooks/hooks.json is invalid JSON"
-
-    # Hooks must define at least one hook entry
-    hook_count=$(jq 'length' "$HOOKS_JSON" 2>/dev/null || echo 0)
-    if [[ "$hook_count" -gt 0 ]]; then
-        pass "hooks/hooks.json defines $hook_count hook(s)"
-    else
-        fail "hooks/hooks.json is empty"
-    fi
-else
-    fail "hooks/hooks.json not found"
-fi
-
-echo ""
-
-# ── 3. Skill frontmatter name field matches directory ─────────────────────────
-echo "Stage 3: Skill name/directory consistency (Claude Code loads by name)"
+# ── 2. Skill frontmatter name field matches directory ─────────────────────────
+echo "Stage 2: Skill name/directory consistency (Claude Code loads by name)"
 
 mismatch=0
 for skill_md in "$REPO_ROOT/skills"/*/SKILL.md; do

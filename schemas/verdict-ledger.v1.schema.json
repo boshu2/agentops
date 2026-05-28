@@ -1,0 +1,131 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://agentops.dev/schemas/verdict-ledger.v1.schema.json",
+    "title": "AgentOps Verdict Ledger v1",
+    "description": "Append-only per-iteration record of each GOALS.md directive's scenario verdict, written by `ao goals measure` (F2) and read by the F5.2 re-steer policy engine to detect failure streaks and cooldowns. An iteration is exactly one completed `ao goals measure` run that recorded a scenario verdict for the directive (see docs/adr/ADR-0006-re-steer-policy-and-mutation-safety.md). The runtime artifact lives at .agents/goals/verdict-ledger.json (untracked); this schema and its fixtures are tracked.",
+    "practices": ["llm-eval-harness", "dora-metrics", "adr"],
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["schema_version", "generated_at", "records"],
+    "properties": {
+        "schema_version": {
+            "type": "string",
+            "const": "verdict-ledger.v1",
+            "description": "Schema discriminator."
+        },
+        "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 timestamp when this ledger file was last rewritten."
+        },
+        "records": {
+            "type": "array",
+            "description": "Append-only ledger records in iteration order (oldest first). Iteration records and cooldown records are interleaved on the timeline and discriminated by the `record_type` field.",
+            "items": {
+                "oneOf": [
+                    {"$ref": "#/$defs/iteration_record"},
+                    {"$ref": "#/$defs/cooldown_record"}
+                ]
+            }
+        }
+    },
+    "$defs": {
+        "iteration_record": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "One completed `ao goals measure` iteration's scenario verdict for one directive.",
+            "required": [
+                "record_type",
+                "directive_id",
+                "run_timestamp",
+                "scenario_verdict",
+                "scenario_satisfaction",
+                "scenario_count",
+                "evaluated_count"
+            ],
+            "properties": {
+                "record_type": {
+                    "const": "iteration",
+                    "description": "Discriminator: a per-iteration scenario verdict record."
+                },
+                "directive_id": {
+                    "type": "string",
+                    "pattern": "^d-[a-z0-9][a-z0-9-]*$",
+                    "description": "Stable GOALS.md directive ID this verdict belongs to. Never a display number."
+                },
+                "run_timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "RFC3339 timestamp of the `ao goals measure` run that produced this verdict."
+                },
+                "scenario_verdict": {
+                    "type": "string",
+                    "enum": ["pass", "fail", "skip", "unknown"],
+                    "description": "Per-directive scenario verdict. `unknown` (no scenarios linked) breaks any in-progress failure streak; `skip` likewise does not advance a streak."
+                },
+                "scenario_satisfaction": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "description": "Aggregate scenario satisfaction for the directive (0.0-1.0)."
+                },
+                "scenario_count": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of scenarios linked to the directive at iteration time."
+                },
+                "evaluated_count": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of linked scenarios that were actually evaluated this iteration."
+                },
+                "run_id": {
+                    "type": "string",
+                    "description": "Optional RPI run identifier that triggered the measure run."
+                }
+            }
+        },
+        "cooldown_record": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "A re-steer proposal or application recorded against a directive. Its position in the records timeline marks the start of the cooldown window (the directive is skipped by the re-steer engine for the next `cooldown_iterations` iterations).",
+            "required": [
+                "record_type",
+                "directive_id",
+                "run_timestamp",
+                "cooldown_kind",
+                "mutation_type"
+            ],
+            "properties": {
+                "record_type": {
+                    "const": "cooldown",
+                    "description": "Discriminator: a re-steer cooldown record."
+                },
+                "directive_id": {
+                    "type": "string",
+                    "pattern": "^d-[a-z0-9][a-z0-9-]*$",
+                    "description": "Stable GOALS.md directive ID the re-steer event targeted."
+                },
+                "run_timestamp": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "RFC3339 timestamp when the re-steer proposal/application was recorded."
+                },
+                "cooldown_kind": {
+                    "type": "string",
+                    "enum": ["proposed", "applied"],
+                    "description": "Whether the mutation was proposed (recommendation-only) or applied to GOALS.md."
+                },
+                "mutation_type": {
+                    "type": "string",
+                    "enum": ["priority_bump", "setpoint_tighten", "setpoint_loosen", "steer_flip"],
+                    "description": "The re-steer mutation type recorded. Matches the re-steer-policy.v1 mutation enum."
+                },
+                "note": {
+                    "type": "string",
+                    "description": "Optional human-readable rationale for the re-steer event."
+                }
+            }
+        }
+    }
+}

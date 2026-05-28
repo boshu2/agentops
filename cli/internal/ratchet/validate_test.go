@@ -1123,7 +1123,7 @@ func TestValidateForPromotion(t *testing.T) {
 	v, tmpDir := helperNewValidator(t)
 
 	for _, tc := range validateForPromotionCases() {
-		tc := tc
+
 		t.Run(tc.name, func(t *testing.T) {
 			tc.run(t, v, tmpDir)
 		})

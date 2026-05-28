@@ -1,6 +1,16 @@
 ---
 name: autodev
-description: 'Manage bounded autonomous dev loops.'
+description: Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.
+practices:
+- cmm-process-maturity
+- ai-assisted-dev
+- dora-metrics
+hexagonal_role: supporting
+consumes:
+- evolve
+- rpi
+produces: []
+context_rel: []
 skill_api_version: 1
 user-invocable: true
 context:
@@ -11,14 +21,19 @@ context:
 metadata:
   tier: execution
   dependencies:
-    - evolve
-    - rpi
-output_contract: "validated PROGRAM.md/AUTODEV.md contract or clear evolve/RPI execution handoff"
+  - evolve
+  - rpi
+output_contract: validated PROGRAM.md/AUTODEV.md contract or clear evolve/RPI execution
+  handoff
 ---
 # /autodev
 
 `/autodev` manages the repo-local operational contract for autonomous development.
 It does not replace `/evolve` or `/rpi`.
+
+## Loop position
+
+The config/intent layer the [operating loop](../../docs/architecture/operating-loop.md) reads each tick — NOT a loop itself. `/autodev` defines and validates the contract declared in `PROGRAM.md`/`AUTODEV.md` — mutable scope, immutable scope, validation commands, escalation rules, stop conditions. The drivers ([`/evolve`](../evolve/SKILL.md) and Factory, the daemon) consume that contract and run the loop; autodev does not run it. Loop discipline still applies under autonomy: no parallel wave without the wave-validity check; no slice closes without a passing test mapped to a Given/When/Then; capture goes through the promotion ratchet, not into a landfill.
 
 - `PROGRAM.md` or `AUTODEV.md` defines the contract: mutable scope, immutable
   scope, experiment unit, validation commands, decision policy, escalation rules,
@@ -125,3 +140,8 @@ ao evolve --max-cycles 1
 | validation reports missing sections | Patch the missing required sections, then rerun `ao autodev validate --json`. |
 | requested work is outside immutable scope | Stop direct edits and create a bead or ask for an explicit contract change. |
 | user asks "is this evolve?" | Answer: `autodev` defines the loop contract; `evolve` runs the loop. |
+
+## Reference Documents
+
+- [references/autodev.feature](references/autodev.feature) — Executable spec: contract-bounded unattended loop, manages-not-replaces evolve/rpi, loop-discipline-under-autonomy (soc-qk4b)
+- [references/autodev-cli.feature](references/autodev-cli.feature) — Executable spec: `ao autodev` CLI command behavior, linked to cmd tests (soc-jnfgi)

@@ -1,3 +1,4 @@
+// practices: [agile-manifesto, dora-metrics]
 package main
 
 import (
@@ -43,10 +44,9 @@ var (
 	phasedNoDashboard          bool
 	phasedMixed                bool
 	phasedDiscoveryArtifact    string
-	phasedDaemonSubmit         bool
-	phasedDaemonURL            string
-	phasedDaemonToken          string
-	phasedDaemonFallback       bool
+	phasedDomain               string
+	phasedScaffoldDomain       string
+	phasedForce                bool
 )
 
 // phaseFailureReason is a thin alias for the internal PhaseFailureReason type.
@@ -105,18 +105,17 @@ Examples:
 	phasedCmd.Flags().BoolVar(&phasedSwarmFirst, "swarm-first", true, "Default each phase to swarm/agent-team execution; fall back to direct execution if swarm runtime is unavailable")
 	phasedCmd.Flags().BoolVar(&phasedAutoCleanStale, "auto-clean-stale", false, "Run stale-run cleanup before starting phased execution")
 	phasedCmd.Flags().DurationVar(&phasedAutoCleanStaleAfter, "auto-clean-stale-after", 24*time.Hour, "Only clean stale runs older than this age when auto-clean is enabled")
-	phasedCmd.Flags().StringVar(&phasedRuntimeMode, "runtime", "auto", "Phase runtime mode: auto|direct|stream|tmux|gc")
+	phasedCmd.Flags().StringVar(&phasedRuntimeMode, "runtime", "auto", "Phase runtime mode: auto|direct|stream|tmux")
 	phasedCmd.Flags().StringVar(&phasedRuntimeCommand, "runtime-cmd", "claude", "Runtime command used for phase prompts (Claude uses '-p'; Codex uses 'exec')")
 	phasedCmd.Flags().IntVar(&phasedTmuxWorkers, "tmux-workers", 1, "When --runtime tmux, number of worker sessions spawned per phase")
 	phasedCmd.Flags().BoolVar(&phasedNoDashboard, "no-dashboard", false, "Disable auto-opening the web dashboard")
 	phasedCmd.Flags().BoolVar(&phasedMixed, "mixed", false, "Enable cross-vendor mixed-model execution (planner and reviewer from different vendors)")
 	phasedCmd.Flags().StringVar(&phasedDiscoveryArtifact, "discovery-artifact", "", "Path to a pre-validated discovery artifact (markdown) used to skip Phase 1 when combined with --from=implementation")
-	phasedCmd.Flags().BoolVar(&phasedDaemonSubmit, "daemon-submit", false, "Submit the RPI run to agentopsd instead of executing foreground phases")
-	phasedCmd.Flags().StringVar(&phasedDaemonURL, "daemon-url", "", "agentopsd base URL for --daemon-submit (default: activation file)")
-	phasedCmd.Flags().StringVar(&phasedDaemonToken, "daemon-token", "", "agentopsd mutation token for --daemon-submit")
-	phasedCmd.Flags().BoolVar(&phasedDaemonFallback, "daemon-fallback", false, "When --daemon-submit cannot reach a ready daemon, continue foreground execution")
+	phasedCmd.Flags().StringVar(&phasedDomain, "domain", "", "Scope the run to a domain slice (loads docs/domains/<name>/manifest.yaml; phase prompts carry its boundaries)")
+	phasedCmd.Flags().StringVar(&phasedScaffoldDomain, "scaffold-domain", "", "Write a domain-slice manifest template at docs/domains/<name>/manifest.yaml and exit (does NOT run RPI)")
+	phasedCmd.Flags().BoolVar(&phasedForce, "force", false, "With --scaffold-domain: overwrite an existing manifest")
 	_ = phasedCmd.RegisterFlagCompletionFunc("from", staticCompletionFunc("discovery", "implementation", "validation", "research", "plan", "pre-mortem", "crank", "vibe", "post-mortem"))
-	_ = phasedCmd.RegisterFlagCompletionFunc("runtime", staticCompletionFunc("auto", "direct", "stream", "tmux", "gc"))
+	_ = phasedCmd.RegisterFlagCompletionFunc("runtime", staticCompletionFunc("auto", "direct", "stream", "tmux"))
 
 	rpiCmd.AddCommand(phasedCmd)
 }
@@ -138,6 +137,17 @@ func runPhasedEngine(ctx context.Context, cwd, goal string, opts phasedEngineOpt
 // runRPIPhased is the cobra RunE handler for `ao rpi phased`.
 // It reads options from package-level cobra flag variables and delegates to runRPIPhasedWithOpts.
 func runRPIPhased(cmd *cobra.Command, args []string) error {
+	// --scaffold-domain is a write-and-exit flag: it generates a domain-slice
+	// manifest template and returns WITHOUT running RPI. Handle it before any
+	// option assembly so no run lifecycle is started.
+	if strings.TrimSpace(phasedScaffoldDomain) != "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("get working directory: %w", err)
+		}
+		return runScaffoldDomain(cwd, phasedScaffoldDomain, phasedForce)
+	}
+
 	opts := phasedEngineOptions{
 		From:                 phasedFrom,
 		FastPath:             phasedFastPath,
@@ -161,10 +171,7 @@ func runRPIPhased(cmd *cobra.Command, args []string) error {
 		NoDashboard:          phasedNoDashboard,
 		Mixed:                phasedMixed,
 		DiscoveryArtifact:    phasedDiscoveryArtifact,
-		DaemonSubmit:         phasedDaemonSubmit,
-		DaemonURL:            phasedDaemonURL,
-		DaemonToken:          phasedDaemonToken,
-		DaemonFallback:       phasedDaemonFallback,
+		Domain:               phasedDomain,
 	}
 	if phasedNoTestFirst {
 		opts.TestFirst = false
@@ -248,30 +255,12 @@ func preflightOpts(opts *phasedEngineOptions) error {
 		return err
 	}
 	switch opts.RuntimeMode {
-	case "gc":
-		return preflightGCRuntimeAvailability(*opts)
-	case "auto":
-		if gcExecutorAvailable(opts.WorkingDir, opts.ExecCommand, opts.LookPath) {
-			return nil
-		}
 	case "tmux":
 		if _, err := defaultLookPath(opts.LookPath)(opts.TmuxCommand); err != nil {
 			return fmt.Errorf("tmux executable %q not found on PATH (required for runtime=tmux)", opts.TmuxCommand)
 		}
 	}
 	return preflightRuntimeAvailability(opts.RuntimeCommand, opts.LookPath)
-}
-
-func preflightGCRuntimeAvailability(opts phasedEngineOptions) error {
-	cityPath := gcCityPathFromOpts(opts)
-	if cityPath == "" {
-		return fmt.Errorf("gc runtime requires city.toml (walk up from %s)", opts.WorkingDir)
-	}
-	ready, reason := gcBridgeReady(cityPath, opts.ExecCommand, opts.LookPath)
-	if !ready {
-		return fmt.Errorf("gc runtime unavailable: %s", reason)
-	}
-	return nil
 }
 
 func minPositiveDuration(a, b time.Duration) time.Duration {
@@ -303,6 +292,12 @@ func initPhasedState(cwd string, opts phasedEngineOptions, args []string) (*phas
 	state := newPhasedState(opts, startPhase, goal)
 	applyComplexityFastPath(state, opts)
 
+	// Resolve --domain against the original cwd, where docs/domains/ lives.
+	// Unscoped runs (no --domain) are a no-op so existing behavior is unchanged.
+	if err := applyDomainScopeToState(cwd, opts, state); err != nil {
+		return nil, 0, "", err
+	}
+
 	spawnCwd, err := resumePhasedStateIfNeeded(cwd, opts, startPhase, goal, state)
 	if err != nil {
 		return nil, 0, "", err
@@ -326,11 +321,6 @@ type phasedRunLifecycle struct {
 }
 
 func runRPIPhasedWithOpts(ctx context.Context, opts phasedEngineOptions, args []string) (retErr error) {
-	handled, err := maybeSubmitRPIPhasedDaemon(ctx, opts, args)
-	if handled || err != nil {
-		return err
-	}
-
 	run, err := preparePhasedRun(&opts, args)
 	if err != nil {
 		return err
@@ -482,6 +472,7 @@ func finalizeFailedPhasedRun(spawnCwd string, state *phasedState, runStart time.
 	if proofErr := updateExecutionPacketProof(spawnCwd, state); proofErr != nil {
 		VerbosePrintf("Warning: could not refresh failed-run proof artifact set: %v\n", proofErr)
 	}
+	recordDomainScopeAudit(spawnCwd, state)
 }
 
 func finalizeSuccessfulPhasedRun(spawnCwd string, state *phasedState, runStart time.Time, logPath string) {
@@ -490,6 +481,7 @@ func finalizeSuccessfulPhasedRun(spawnCwd string, state *phasedState, runStart t
 	if err := updateExecutionPacketProof(spawnCwd, state); err != nil {
 		VerbosePrintf("Warning: could not refresh completed-run proof artifact set: %v\n", err)
 	}
+	recordDomainScopeAudit(spawnCwd, state)
 
 	writeFinalPhasedReport(state, logPath)
 }

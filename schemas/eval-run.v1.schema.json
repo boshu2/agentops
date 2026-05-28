@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/eval-run.v1.schema.json",
   "title": "AgentOps Eval Run v1",
   "description": "Run record and scorecard schema for AgentOps evaluation suites.",
+  "practices": ["llm-eval-harness", "dora-metrics"],
   "type": "object",
   "additionalProperties": false,
   "required": [

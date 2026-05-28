@@ -1,3 +1,4 @@
+// practices: [dora-metrics, lean-startup]
 package main
 
 import (
@@ -41,9 +42,15 @@ Examples:
 }
 
 var (
-	evolveDreamFirst   bool
-	evolveDreamOnly    bool
-	evolveDreamTimeout string
+	evolveMode string
+)
+
+// Evolve --mode values. Burst is the legacy default (agent self-regulates and
+// may write STOP/DORMANT markers). Loop is the operator-driven cron contract
+// (CLI mechanically refuses self-written STOPs; only the operator stops it).
+const (
+	evolveModeBurst = "burst"
+	evolveModeLoop  = "loop"
 )
 
 func init() {
@@ -52,13 +59,26 @@ func init() {
 	if flag := evolveCmd.Flags().Lookup("supervisor"); flag != nil {
 		flag.DefValue = "true"
 	}
-	evolveCmd.Flags().BoolVar(&evolveDreamFirst, "dream-first", false, "Run Dream knowledge sub-cycle before code cycles")
-	evolveCmd.Flags().BoolVar(&evolveDreamOnly, "dream-only", false, "Knowledge compounding only, no code cycles")
-	evolveCmd.Flags().StringVar(&evolveDreamTimeout, "dream-timeout", "30m", "Timeout for the Dream sub-cycle")
+	evolveCmd.Flags().StringVar(&evolveMode, "mode", evolveModeBurst, "Execution contract: 'burst' (default, agent self-regulates) or 'loop' (operator-driven; STOP markers mechanically refused)")
 	rootCmd.AddCommand(evolveCmd)
 }
 
+// validateEvolveMode returns nil iff mode is one of the supported values. It
+// is the single source of truth for accepted --mode values across evolve.go
+// and the evolve write-stop-marker subcommand.
+func validateEvolveMode(mode string) error {
+	switch mode {
+	case evolveModeBurst, evolveModeLoop:
+		return nil
+	default:
+		return fmt.Errorf("--mode must be 'burst' or 'loop'")
+	}
+}
+
 func runEvolve(cmd *cobra.Command, args []string) error {
+	if err := validateEvolveMode(evolveMode); err != nil {
+		return err
+	}
 	applyEvolveDefaults(cmd)
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -71,49 +91,9 @@ func runEvolve(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	w := cmd.OutOrStdout()
-
-	// Phase 1: Dream sub-cycle (knowledge compounding).
-	if evolveDreamFirst || evolveDreamOnly {
-		dreamTimeout, err := time.ParseDuration(evolveDreamTimeout)
-		if err != nil {
-			return fmt.Errorf("evolve: parse --dream-timeout: %w", err)
-		}
-		runID := time.Now().UTC().Format("20060102T150405Z")
-		fmt.Fprintf(w, "=== Dream sub-cycle (timeout %s) ===\n", dreamTimeout)
-
-		dreamResult, dreamErr := RunDreamSubCycle(cmd.Context(), DreamSubCycleOptions{
-			Cwd:           cwd,
-			OutputDir:     filepath.Join(cwd, ".agents", "evolve", "dream-"+runID),
-			RunID:         "dream-" + runID,
-			RunTimeout:    dreamTimeout,
-			MaxIterations: 10,
-			LogWriter:     w,
-		})
-		if dreamErr != nil {
-			fmt.Fprintf(w, "Dream sub-cycle failed (degraded): %v\n", dreamErr)
-		} else {
-			fmt.Fprintf(w, "Dream: %d iterations", dreamResult.Iterations)
-			if dreamResult.PlateauReason != "" {
-				fmt.Fprintf(w, " (plateau: %s)", dreamResult.PlateauReason)
-			}
-			if dreamResult.Tier1Forge != nil {
-				if dreamResult.Tier1Forge.Queued > 0 {
-					fmt.Fprintf(w, ", tier1 forge: %d queued", dreamResult.Tier1Forge.Queued)
-				} else {
-					fmt.Fprintf(w, ", tier1 forge: %d sessions", dreamResult.Tier1Forge.SessionsWrote)
-				}
-			}
-			fmt.Fprintln(w)
-		}
-	}
-
-	if evolveDreamOnly {
-		fmt.Fprintf(w, "=== Dream-only mode, skipping code cycles ===\n")
-		return nil
-	}
-
-	// Phase 2: Daytime code cycles via the RPI loop.
+	// Daytime code cycles via the RPI loop. The Dream knowledge sub-cycle
+	// (`--dream-first` / `--dream-only`) was removed with the overnight/dream
+	// engine (soc-2rtm0); knowledge compounding now runs out-of-session via GC.
 	return runRPILoop(cmd, args)
 }
 

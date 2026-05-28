@@ -1,18 +1,33 @@
 ---
 name: scope
-description: 'Hard-block edits outside declared frozen directories via PreToolUse hook.'
+description: Hard-block edits outside declared frozen directories via PreToolUse hook.
+practices:
+- ddd-bounded-context
+- design-by-contract
+- mythical-man-month
+hexagonal_role: driven-adapter
+consumes: []
+produces:
+- filesystem-gate
+context_rel:
+- kind: supplier-to
+  with: domain
 skill_api_version: 1
 context:
   window: isolated
   intent:
     mode: none
   sections:
-    exclude: [HISTORY, INTEL, TASK]
+    exclude:
+    - HISTORY
+    - INTEL
+    - TASK
   intel_scope: none
 metadata:
   tier: meta
   dependencies: []
-output_contract: "stdout: scope status / lock state; stderr: blocked-edit reason from hook"
+output_contract: 'stdout: scope status / lock state; stderr: blocked-edit reason from
+  hook'
 ---
 # /scope — Edit Scope Guard
 
@@ -106,12 +121,14 @@ Reserved for a follow-up skill that combines `freeze` + status + spawn-orchestra
 
 - Wave 1 hardcodes the `.agents/scope.lock` path. Wave 2 (issue I5) migrates the path through `lib/ao-paths.sh`.
 - The hook's defensive parse on malformed JSON is intentional. See [references/lock-file-format.md](references/lock-file-format.md) for the rationale.
-- Hooks (session-boundary) and `agentopsd` (cron-cadence) compose; this skill is purely session-boundary.
+- This skill is purely session-boundary (path-scope freezing within a session). Cron-cadence orchestration lives outside AgentOps on the orchestration substrate (the reference Gas City City), not in an AgentOps-shipped daemon.
 - Path-scope freezing handles *where* edits land. For a complementary lane that gates *what* commands run (`rm -rf`, `git reset --hard`, `DROP DATABASE`, `kubectl delete`, `terraform destroy`) — including allowlist layering, one-shot override codes, and PreToolUse wiring — see [references/destructive-command-guard-patterns.md](references/destructive-command-guard-patterns.md). Wire it alongside the scope guard when a wave touches infrastructure or shared data.
 - When a workflow needs human approval, hook parity, or simultaneous command review rather than only path freezing, use [references/command-approval-and-hook-guardrails.md](references/command-approval-and-hook-guardrails.md).
+- When authoring new hook behavior rather than using scope's existing guard, use `/hooks-authoring`.
 
 ## References
 
 - [references/lock-file-format.md](references/lock-file-format.md)
 - [references/destructive-command-guard-patterns.md](references/destructive-command-guard-patterns.md)
 - [references/command-approval-and-hook-guardrails.md](references/command-approval-and-hook-guardrails.md)
+- [references/scope.feature](references/scope.feature) — Executable spec: declare in-scope dirs, allow in-scope edits, hard-block out-of-scope edits via PreToolUse hook, report/release scope state (soc-qk4b)

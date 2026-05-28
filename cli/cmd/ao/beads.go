@@ -17,6 +17,7 @@
 // descriptions that drift from HEAD before a new session acts on them. The
 // planning rule at skills/plan/references/stale-scope-validation.md explains
 // when to run these.
+// practices: [dora-metrics, lean-startup]
 package main
 
 import (
@@ -56,6 +57,7 @@ var bdAvailable = func() bool {
 var beadsCmd = &cobra.Command{
 	Use:   "beads",
 	Short: "Complementary tooling for the bd (beads) issue tracker",
+	Args:  cobra.NoArgs,
 	Long: `Commands that help maintain the bd issue tracker alongside the main
 bd CLI. These tools focus on catching stale descriptions before a new
 session acts on them and harvesting closure reasons into durable learnings.
@@ -133,6 +135,8 @@ func init() {
 	beadsCmd.AddCommand(beadsVerifyCmd)
 	beadsCmd.AddCommand(beadsLintCmd)
 	beadsCmd.AddCommand(beadsHarvestCmd)
+	beadsCmd.AddCommand(beadsStaleCmd)  // soc-vuu6.27 slice 2
+	beadsCmd.AddCommand(beadsResumeCmd) // soc-vuu6.27 slice 3
 
 	beadsVerifyCmd.Flags().BoolVar(&beadsVerifyJSON, "json", false,
 		"Emit verification report as JSON instead of human-readable text")

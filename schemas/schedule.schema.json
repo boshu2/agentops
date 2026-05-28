@@ -2,10 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/boshu2/agentops/schemas/schedule.schema.json",
   "title": "AgentOps schedule.yaml",
+  "$comment": "practices: [sre, continuous-delivery]",
   "type": "object",
   "additionalProperties": false,
   "required": ["schedules"],
   "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
     "schedules": {
       "type": "array",
       "items": {

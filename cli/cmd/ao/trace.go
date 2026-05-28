@@ -1,3 +1,4 @@
+// practices: [distributed-tracing, adr]
 package main
 
 import (

@@ -1,3 +1,4 @@
+// practices: [microservices, design-by-contract]
 package main
 
 import (

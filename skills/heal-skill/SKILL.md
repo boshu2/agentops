@@ -1,18 +1,28 @@
 ---
 name: heal-skill
-description: 'Repair skill hygiene.'
+description: Repair skill hygiene.
+practices:
+- refactoring
+- code-complete
+hexagonal_role: supporting
+consumes: []
+produces: []
+context_rel: []
 skill_api_version: 1
 context:
   window: isolated
   intent:
     mode: none
   sections:
-    exclude: [HISTORY, INTEL, TASK]
+    exclude:
+    - HISTORY
+    - INTEL
+    - TASK
   intel_scope: none
 metadata:
   tier: meta
   dependencies: []
-output_contract: "stdout: heal report, auto-fixed skill files"
+output_contract: 'stdout: heal report, auto-fixed skill files'
 ---
 # /heal-skill — Automated Skill Maintenance
 
@@ -174,3 +184,4 @@ One line per finding:
 
 - [references/skill-stocktake.md](references/skill-stocktake.md)
 - [references/codex-parity.md](references/codex-parity.md)
+- [references/heal-skill.feature](references/heal-skill.feature) — Executable spec: detect hygiene issues, flag Codex-parity drift, auto-fix + report, --strict fails on remaining findings (soc-qk4b)

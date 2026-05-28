@@ -1,3 +1,4 @@
+// practices: [microservices, sre]
 package main
 
 import (

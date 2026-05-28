@@ -3,6 +3,7 @@
   "id": "agentops-core.explicit-skill-prompts",
   "name": "AgentOps Explicit Skill Prompt Canary",
   "description": "Offline public canary for explicit skill request prompt catalog integrity across shared and Codex skill artifacts.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",

@@ -3,6 +3,7 @@
   "$id": "https://agentops.dev/schemas/quest.v1.schema.json",
   "title": "Quest",
   "description": "A quest groups related beads into a single goal",
+  "practices": ["agile-manifesto", "lean-startup"],
   "type": "object",
   "required": ["quest_id", "title", "goal", "status", "beads", "created_at", "schema_version"],
   "properties": {

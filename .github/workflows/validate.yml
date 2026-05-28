@@ -3,6 +3,8 @@ name: Validate
 on:
   push:
     branches: [main]
+    tags:
+      - 'v*'
   pull_request:
     branches: [main]
 
@@ -10,20 +12,31 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      go: ${{ steps.filter.outputs.go }}
-      skills: ${{ steps.filter.outputs.skills }}
-      hooks: ${{ steps.filter.outputs.hooks }}
-      docs: ${{ steps.filter.outputs.docs }}
-      eval: ${{ steps.filter.outputs.eval }}
-      codex: ${{ steps.filter.outputs.codex }}
-      shell: ${{ steps.filter.outputs.shell }}
-      ci: ${{ steps.filter.outputs.ci }}
-      contracts: ${{ steps.filter.outputs.contracts }}
-      learning: ${{ steps.filter.outputs.learning }}
-      markdown: ${{ steps.filter.outputs.markdown }}
+      go: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.go }}
+      skills: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.skills }}
+      hooks: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.hooks }}
+      docs: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.docs }}
+      eval: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.eval }}
+      codex: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.codex }}
+      shell: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.shell }}
+      bats: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.bats }}
+      ci: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.ci }}
+      contracts: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.contracts }}
+      learning: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.learning }}
+      markdown: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.markdown }}
     steps:
       - uses: actions/checkout@v6
+      - name: Detect release tag push
+        id: release
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: dorny/paths-filter@v4
+        if: steps.release.outputs.release != 'true'
         id: filter
         with:
           filters: |
@@ -31,13 +44,13 @@ jobs:
               - 'cli/**'
               - 'go.mod'
               - 'go.sum'
+              - 'tests/windows/**'
             skills:
               - 'skills/**'
               - 'skills-codex/**'
               - 'skills-codex-overrides/**'
               - 'tests/skills/**'
             hooks:
-              - 'hooks/**'
               - 'lib/**'
               - 'cli/embedded/**'
             docs:
@@ -57,6 +70,8 @@ jobs:
             shell:
               - '**/*.sh'
               - 'scripts/**'
+            bats:
+              - '**/*.bats'
             ci:
               - '.github/**'
             contracts:
@@ -96,31 +111,6 @@ jobs:
           chmod +x tests/smoke-test.sh
           ./tests/smoke-test.sh --verbose
 
-  hook-preflight:
-    needs: [changes]
-    if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Run hook preflight checks
-        run: |
-          chmod +x scripts/validate-hook-preflight.sh
-          ./scripts/validate-hook-preflight.sh
-
-  pre-push-gate-wired:
-    needs: [changes]
-    if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
-    name: pre-push-gate-wired (required)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Verify pre-push gate chain is intact
-        run: |
-          chmod +x scripts/check-pre-push-gate-wired.sh
-          ./scripts/check-pre-push-gate-wired.sh --dry-run-smoke
-
   agentops-eval-baseline-audit:
     needs: [changes]
     if: needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
@@ -132,7 +122,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao binary
@@ -163,52 +153,19 @@ jobs:
           fi
           echo "ok: stale_suite_hashes=0 (info: policy_mismatch_count=$mismatch)"
 
-  standards-injector-completeness:
-    needs: [changes]
-    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Verify standards-injector references are complete
-        run: |
-          chmod +x scripts/check-standards-injector-completeness.sh
-          ./scripts/check-standards-injector-completeness.sh
-
-  validate-hooks-doc-parity:
-    needs: [changes]
-    if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Validate hook/docs parity
-        run: |
-          chmod +x scripts/validate-hooks-doc-parity.sh
-          ./scripts/validate-hooks-doc-parity.sh
-
-  hook-output-schema-lint:
-    needs: [changes]
-    if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.ci == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Validate hook output JSON shape (Codex/Claude parity allow-list)
-        run: |
-          chmod +x scripts/test-hooks-output.sh
-          ./scripts/test-hooks-output.sh
-
   validate-ci-policy-parity:
     needs: [changes]
-    if: needs.changes.outputs.ci == 'true' || needs.changes.outputs.shell == 'true'
+    if: needs.changes.outputs.ci == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Validate CI policy parity
+      - name: Install yaml dependency
+        run: python3 -m pip install --user pyyaml
+
+      - name: Validate CI policy parity (golden-file diff)
         run: |
-          chmod +x scripts/validate-ci-policy-parity.sh
+          chmod +x scripts/generate-ci-jobs-table.sh scripts/validate-ci-policy-parity.sh
           ./scripts/validate-ci-policy-parity.sh
 
   # Codex runtime checks split into 7 modular jobs (soc-ltp2) so each fails/passes
@@ -286,6 +243,313 @@ jobs:
           chmod +x scripts/validate-codex-lifecycle-guards.sh
           ./scripts/validate-codex-lifecycle-guards.sh
 
+  validate-codex-parity-drift:
+    needs: [changes]
+    if: needs.changes.outputs.codex == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Check Codex parity drift (GOALS.md directive D7)
+        run: |
+          chmod +x scripts/check-codex-parity-drift.sh
+          ./scripts/check-codex-parity-drift.sh
+
+  validate-quarantine-empty:
+    needs: [changes]
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check tests/_quarantine/ is empty (GOALS.md directive D3)
+        run: |
+          chmod +x scripts/check-quarantine-empty.sh
+          ./scripts/check-quarantine-empty.sh
+
+  validate-registry-drift:
+    needs: [changes]
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install PyYAML (registry drift script dep)
+        run: pip install pyyaml
+
+      - name: Check skill registry drift (registries-drift lesson)
+        run: |
+          chmod +x scripts/check-registry-drift.sh
+          ./scripts/check-registry-drift.sh
+
+  validate-bounded-contexts-drift:
+    needs: [changes]
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install PyYAML (bounded-contexts drift script dep)
+        run: pip install pyyaml
+
+      - name: Check bounded-contexts drift (soc-zxia.2 Phase 2)
+        run: |
+          chmod +x scripts/check-bounded-contexts-drift.sh
+          ./scripts/check-bounded-contexts-drift.sh
+
+  validate-skill-domain-map-golden:
+    needs: [changes]
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install PyYAML (generator script dep)
+        run: pip install pyyaml
+
+      - name: Check skill-domain-map golden (soc-zxia.3 Phase 3)
+        run: |
+          chmod +x scripts/generate-skill-domain-map.sh
+          ./scripts/generate-skill-domain-map.sh --check
+
+  validate-flywheel-proof:
+    needs: [changes]
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: Build ao binary (reused by proof-run for speed)
+        run: |
+          cd cli && go build -o bin/ao ./cmd/ao
+
+      - name: Run flywheel-proof gate (GOALS.md gate id flywheel-proof, weight 7)
+        run: |
+          chmod +x scripts/proof-run.sh
+          ./scripts/proof-run.sh
+
+  validate-goals-validate:
+    needs: [changes]
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: Build ao binary
+        run: |
+          cd cli && go build -o bin/ao ./cmd/ao
+
+      - name: Validate GOALS.md structure (GOALS.md gate id goals-validate, weight 5)
+        run: |
+          cli/bin/ao goals validate --json | jq -e '.valid == true'
+
+      - name: F1 executable-spec link e2e (epic soc-58nt)
+        run: |
+          chmod +x tests/e2e/goals-scenarios-link.sh
+          bash tests/e2e/goals-scenarios-link.sh
+
+      - name: F2 scenario-satisfaction gate e2e (epic soc-58nt)
+        run: |
+          chmod +x tests/e2e/goals-measure-scenarios.sh
+          bash tests/e2e/goals-measure-scenarios.sh
+
+      - name: F3 domain-scoped RPI e2e (epic soc-58nt)
+        run: |
+          chmod +x tests/e2e/rpi-phased-domain.sh
+          bash tests/e2e/rpi-phased-domain.sh
+
+      - name: F4 trace-chain e2e (epic soc-58nt)
+        run: |
+          chmod +x tests/e2e/goals-trace-chain.sh
+          bash tests/e2e/goals-trace-chain.sh
+
+      - name: F5 auto re-steer e2e (epic soc-58nt)
+        run: |
+          chmod +x tests/e2e/goals-steer-auto.sh
+          bash tests/e2e/goals-steer-auto.sh
+
+  validate-wiring-closure:
+    needs: [changes]
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Verify all scripts/skills/hooks are wired (GOALS.md gate id wiring-closure, weight 7)
+        run: |
+          chmod +x scripts/check-wiring-closure.sh
+          timeout 60 bash scripts/check-wiring-closure.sh
+
+  validate-corpus-freshness:
+    needs: [changes]
+    if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run corpus-freshness gate (GOALS.md gate id corpus-freshness, weight 4 — Directive D11)
+        env:
+          # CI runners are greenfield (no snapshot dir); the gate is structural and exercises
+          # the SKIP path. The freshness check is meaningful on operator machines where
+          # `ao corpus snapshot` runs on a regular cadence.
+          AGENTOPS_CORPUS_FRESHNESS_SKIP: '1'
+        run: |
+          chmod +x scripts/check-corpus-freshness.sh
+          ./scripts/check-corpus-freshness.sh
+
+  validate-flywheel-compounding-snapshot:
+    needs: [changes]
+    if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate flywheel-compounding snapshot (GOALS.md gate id flywheel-compounding-snapshot, weight 5 — G1)
+        run: |
+          chmod +x scripts/check-flywheel-compounding-snapshot.sh
+          ./scripts/check-flywheel-compounding-snapshot.sh
+
+  validate-finding-registry:
+    needs: [changes]
+    if: needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate finding-registry contract (GOALS.md gate id finding-registry, weight 4 — A2 audit follow-up)
+        run: |
+          chmod +x scripts/check-finding-registry.sh
+          ./scripts/check-finding-registry.sh
+
+  validate-agents-split:
+    # soc-vuu6.3 — enforces the tiered AGENTS.md split contract: AGENTS.md
+    # stays <=250 lines (orientation budget), AGENTS-{WORKFLOW,CI,CODEX,RUNTIME}.md
+    # exist, links are bidirectional. Without this gate the split silently
+    # drifts back to a monolith every time someone "just adds one more section."
+    needs: [changes]
+    if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.shell == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate AGENTS.md tiered-split contract
+        run: |
+          chmod +x scripts/validate-agents-split.sh
+          ./scripts/validate-agents-split.sh
+
+  validate-sovereignty-proof-citations:
+    # soc-vuu6.32 — docs/sovereignty-proof/ is the falsifiable artifact behind the
+    # README sovereignty claim. Every file:line citation on the page must resolve
+    # at HEAD. If a cited file is renamed/deleted or its line count shrinks below
+    # a cited line number, this gate fails before the proof page becomes a lie.
+    # Trigger pattern mirrors registry-check (any referenced surface change re-runs).
+    needs: [changes]
+    if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.contracts == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate sovereignty-proof citations resolve at HEAD
+        run: |
+          chmod +x scripts/validate-sovereignty-proof-citations.sh
+          ./scripts/validate-sovereignty-proof-citations.sh
+
+  validate-contracts-structural-floor:
+    needs: [changes]
+    if: needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Structural enforcement floor for all contracts (GOALS.md gate id contracts-structural-floor, weight 4)
+        run: |
+          chmod +x scripts/check-contracts-structural-floor.sh
+          ./scripts/check-contracts-structural-floor.sh
+
+  validate-docs-learning-references:
+    needs: [changes]
+    if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.learning == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate docs/plans + docs/learnings do not reference absent .agents/learnings paths (soc-w6vh.5.1)
+        run: |
+          chmod +x scripts/check-docs-learning-references.sh
+          ./scripts/check-docs-learning-references.sh
+
+  validate-three-gap-supergate:
+    needs: [changes]
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # fetch-depth: 0 required so the Gap 1 --strict-coverage advisory
+          # step below can resolve `main..HEAD` against the full base history.
+          fetch-depth: 0
+
+      - name: Set up Go (for goals-validate + flywheel-proof children)
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: Build ao binary
+        run: |
+          cd cli && go build -o bin/ao ./cmd/ao
+
+      - name: Run three-gap super-gates (GOALS.md gate id three-gap-supergate, weight 5)
+        run: |
+          chmod +x scripts/check-three-gap-supergate.sh
+          ./scripts/check-three-gap-supergate.sh --gap=all
+
+      # soc-33bw — advisory PR-commit-to-council mapping for Gap 1. The
+      # --strict-coverage flag ships with backwards-compatible default OFF
+      # (see scripts/check-three-gap-supergate.sh strict_council_coverage).
+      # This step exercises the opt-in path for visibility; failures DO NOT
+      # block the gate yet — the trailing `|| echo` keeps the step exit
+      # code zero and the WARN signal lives in captured output. Promote to
+      # required after calibration. soc-w6vh.6 acceptance. NOTE: do NOT
+      # use the step-level GH Actions opt-out keyword for this advisory
+      # behavior — validate-ci-policy-parity.sh's awk parser
+      # misattributes that keyword to the parent job and flips the job's
+      # blocking classification.
+      - name: Gap 1 --strict-coverage (advisory; soc-33bw / soc-w6vh.6)
+        run: |
+          ./scripts/check-three-gap-supergate.sh \
+            --gap=council-coverage --strict-coverage \
+            || echo "ADVISORY-WARN: --strict-coverage non-blocking failure (soc-33bw)"
+
   validate-headless-runtime-skills:
     needs: [changes]
     if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
@@ -298,6 +562,71 @@ jobs:
           chmod +x scripts/validate-headless-runtime-skills.sh
           ./scripts/validate-headless-runtime-skills.sh
 
+  validate-skill-frontmatter:
+    needs: [changes]
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install pyyaml jsonschema
+        run: pip install pyyaml jsonschema
+
+      - name: Validate SKILL.md frontmatter against v2 schema
+        run: |
+          chmod +x scripts/validate-skill-frontmatter.sh
+          bash scripts/validate-skill-frontmatter.sh
+
+  validate-skill-body-refs:
+    needs: [changes]
+    # Trigger on skill prose changes (skills/, skills-codex/) AND on CLI changes
+    # (a command/flag rename can strand prose refs even when no skill changed).
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Validate skill-body command/flag refs against live CLI
+        run: |
+          chmod +x scripts/validate-skill-body-refs.sh
+          bash scripts/validate-skill-body-refs.sh
+
+  validate-context-map-drift:
+    needs: [changes]
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install pyyaml
+        run: pip install pyyaml
+
+      - name: Validate context map is in sync with SKILL.md frontmatter
+        run: |
+          chmod +x scripts/validate-context-map-drift.sh
+          bash scripts/validate-context-map-drift.sh
+
   embedded-sync:
     needs: [changes]
     if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
@@ -305,7 +634,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Verify embedded hooks are in sync
+      - name: Verify embedded lib/skills are in sync
         run: |
           chmod +x scripts/validate-embedded-sync.sh
           ./scripts/validate-embedded-sync.sh
@@ -320,7 +649,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Verify CLI docs are up to date
@@ -330,10 +659,26 @@ jobs:
 
   registry-check:
     needs: [changes]
-    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+    # Trigger on ANY input scripts/generate-registry.sh actually reads
+    # (skills/, hooks/, evals/, cli/cmd/ao/) — not just skills/. The MVP
+    # filter missed `hooks` and `eval` and `go`, which let PR #362 land
+    # session-pr-counter.sh without re-running this check; the drift sat on
+    # main until a workflow-touching PR (#364) re-triggered it. soc-xhp6
+    # closes the path-filter-SKIPPED-≠-drift-absent gap. See
+    # .agents/learnings/2026-05-20-path-filter-skipped-not-absent.md.
+    # ag-cbm: schema v2 added the SKU catalog, which also reads contracts/
+    # (skill-dispositions.yaml, SKILL-TIERS.md, bounded-contexts.yaml,
+    # validate.yml gate jobs, packs/) and needs a built `ao` binary.
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.contracts == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
 
       - name: Install jq
         run: sudo apt-get install -y jq
@@ -342,6 +687,34 @@ jobs:
         run: |
           chmod +x scripts/generate-registry.sh
           ./scripts/generate-registry.sh --check
+
+  validate-sku-catalog-drift:
+    needs: [changes]
+    # ag-cbm: the SKU capability catalog (registry.json schema v2) is a derived
+    # JOIN of SKILL.md frontmatter + skill-dispositions.yaml + SKILL-TIERS.md +
+    # the live `ao` cobra tree + validate.yml gate jobs + packs/agentops. This
+    # gate enforces (a) no drift, (b) linkage integrity (every skill
+    # drives_commands edge resolves to a real ao command), and (c) coverage
+    # (every BC + every operating-loop move has an active skill). Trigger on any
+    # source it reads.
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.contracts == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Validate SKU capability catalog (drift + linkage + coverage)
+        run: |
+          chmod +x scripts/validate-sku-catalog-drift.sh
+          ./scripts/validate-sku-catalog-drift.sh
 
   agentops-contract-canaries:
     needs: [changes]
@@ -354,16 +727,34 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
+
+      # Cache the version-pinned tool binaries this job installs from outside
+      # the cli module (gocyclo, bd). setup-go's module/build cache covers
+      # cli/go.sum dependencies but doesn't cache `go install` outputs to
+      # GOBIN. See ag-56y / .agents/research/2026-05-26-ci-pr-bottleneck-diagnosis.md.
+      - name: Cache pinned Go tool binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/.local/bin
+          key: canary-tools-${{ runner.os }}-gocyclo-v0.6.0-bd-v1.0.3
 
       - name: Install AgentOps contract canary dependencies
         run: |
           sudo apt-get install -y jq ripgrep
           sudo npm install -g bats@1.12.0
-          GOBIN="$HOME/go/bin" go install github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0
+          # Skip `go install` on cache hit — binaries are version-pinned and
+          # the cache key encodes both versions, so any pin bump invalidates.
+          if [ ! -x "$HOME/go/bin/gocyclo" ]; then
+            GOBIN="$HOME/go/bin" go install github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0
+          fi
           echo "$HOME/go/bin" >> "$GITHUB_PATH"
-          GOBIN="$HOME/.local/bin" go install github.com/steveyegge/beads/cmd/bd@v1.0.3
+          if [ ! -x "$HOME/.local/bin/bd" ]; then
+            GOBIN="$HOME/.local/bin" go install github.com/steveyegge/beads/cmd/bd@v1.0.3
+          fi
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           bd_eval_root="$RUNNER_TEMP/agentops-bd"
           mkdir -p "$bd_eval_root"
@@ -390,7 +781,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: evals/workbench/go-cli/go.mod
 
       - name: Set up Python
@@ -405,48 +796,26 @@ jobs:
           source .venv/bin/activate
           pip install fastapi uvicorn httpx pytest ruff black
 
-      - name: Verify workbench golden state
+      - name: Verify workbench golden state (D10 head-to-head delta)
         run: |
           chmod +x scripts/check-eval-workbench.sh
           bash scripts/check-eval-workbench.sh
 
-  agentops-eval-advisory:
-    needs: [changes]
-    if: needs.changes.outputs.eval == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-    name: agentops-eval-advisory (advisory)
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
+      - name: Upload scorecard-latest.json (D10 delta artifact)
+        # Runs whether the verify step passed or failed so a reviewer can
+        # inspect the delta when a regression triggered the gate.
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          go-version: '1.26'
-          cache-dependency-path: cli/go.sum
+          name: workbench-scorecard
+          path: evals/workbench/scorecard-latest.json
+          if-no-files-found: warn
 
-      - name: Install AgentOps eval dependencies
-        run: |
-          sudo apt-get install -y jq ripgrep
-          sudo npm install -g bats@1.12.0
-          GOBIN="$HOME/go/bin" go install github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0
-          echo "$HOME/go/bin" >> "$GITHUB_PATH"
-          GOBIN="$HOME/.local/bin" go install github.com/steveyegge/beads/cmd/bd@v1.0.3
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          bd_eval_root="$RUNNER_TEMP/agentops-bd"
-          mkdir -p "$bd_eval_root"
-          git -C "$bd_eval_root" init --quiet
-          (
-            cd "$bd_eval_root"
-            "$HOME/.local/bin/bd" init --non-interactive --skip-agents --skip-hooks --quiet
-          )
-          echo "BEADS_DIR=$bd_eval_root/.beads" >> "$GITHUB_ENV"
-
-      - name: Run broad AgentOps eval advisory corpus
-        run: |
-          chmod +x scripts/eval-agentops.sh
-          ./scripts/eval-agentops.sh --fast
-
+  # practice-citations RETIRED 2026-05-19. Advisory job with 79% failure rate
+  # across 19 recent runs (15/19 fail); blocked zero merges; trained
+  # operators to ignore CI red. The underlying validator script remains
+  # available at scripts/validate-practice-citations.sh for ad-hoc local
+  # use. Audit rationale: see "CI Validator Audit" session 2026-05-18.
   eval-skill-delta:
     needs: [changes]
     if: needs.changes.outputs.eval == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
@@ -513,6 +882,8 @@ jobs:
             **/*.md
 
   security-scan:
+    needs: [changes]
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -594,9 +965,10 @@ jobs:
           echo "✅ No dangerous patterns"
 
   security-toolchain-gate:
-    name: security-toolchain-gate (advisory)
+    needs: [changes]
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+    name: security-toolchain-gate
     runs-on: ubuntu-latest
-    continue-on-error: true
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
@@ -604,7 +976,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Set up Python
@@ -854,16 +1226,6 @@ jobs:
             echo "✅ $agent_count agents found"
           fi
 
-          # Check hooks/ directory (optional)
-          if [[ -f "hooks/hooks.json" ]]; then
-            if jq empty "hooks/hooks.json" 2>/dev/null; then
-              echo "✅ hooks.json valid"
-            else
-              echo "❌ hooks.json invalid JSON"
-              failed=1
-            fi
-          fi
-
           [[ $failed -eq 1 ]] && exit 1
           echo ""
           echo "✅ Plugin structure valid"
@@ -879,7 +1241,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
@@ -915,7 +1277,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
@@ -1007,17 +1369,17 @@ jobs:
             echo "✅ All test packages completed within ${THRESHOLD}s"
           fi
 
-      - name: Verify embedded hooks in sync
+      - name: Verify embedded lib/skills in sync
         run: |
-          echo "=== Verifying embedded hooks are in sync ==="
+          echo "=== Verifying embedded lib/skills are in sync ==="
           cd cli && make sync-hooks
           if ! git diff --exit-code -- embedded/; then
             echo ""
-            echo "❌ Embedded hooks are out of sync with hooks/ source files."
+            echo "❌ Embedded lib/skills are out of sync with source files."
             echo "   Run 'cd cli && make sync-hooks' and commit the result."
             exit 1
           fi
-          echo "✅ Embedded hooks are in sync"
+          echo "✅ Embedded lib/skills are in sync"
 
       - name: Enforce Go complexity budget on changed files
         env:
@@ -1061,7 +1423,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Run native Windows smoke tests
@@ -1080,7 +1442,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
@@ -1092,17 +1454,8 @@ jobs:
       - name: Run v2.18 commands integration test
         run: bash tests/integration/test-v218-commands.sh
 
-      - name: Run hook lifecycle test
-        run: bash tests/hooks/test-hook-lifecycle.sh
-
       - name: Run release smoke test
         run: bash scripts/release-smoke-test.sh --skip-build
-
-      - name: Copy embedded ao hooks for test-hooks compatibility
-        run: cp cli/embedded/hooks/ao-*.sh hooks/
-
-      - name: Run hook integration tests
-        run: bash tests/hooks/test-hooks.sh
 
   json-flag-consistency:
     runs-on: ubuntu-latest
@@ -1113,7 +1466,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
@@ -1145,6 +1498,56 @@ jobs:
           echo '[{"id":"1","subject":"A","files":["a.go"]},{"id":"2","subject":"B","files":["b.go"]}]' > "$CLEAN_TMP"
           scripts/check-file-manifest-overlap.sh "$CLEAN_TMP"
 
+  lint-evidence-lines-advisory:
+    # I0 advisory wiring for scripts/lint-evidence-lines.sh (soc-dspz). Runs
+    # pre-AP#7 check on PR-body `Evidence:` lines so authors get an annotation
+    # before the strict verify-pr-evidence-claims gate (line 1781) runs.
+    # Initial promotion path: I0 advisory → T2 required after one clean week.
+    needs: [changes]
+    if: github.event_name == 'pull_request'
+    name: lint-evidence-lines (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - name: Lint Evidence claims (pre-AP#7)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          chmod +x scripts/lint-evidence-lines.sh
+          scripts/lint-evidence-lines.sh "${{ github.event.pull_request.number }}"
+          rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::warning::lint-evidence-lines.sh found issues (advisory; rc=$rc)"
+          fi
+          # advisory: never propagate non-zero
+          exit 0
+
+  check-skill-catalog-drift-advisory:
+    # I0 advisory wiring for scripts/check-skill-catalog-drift.sh (soc-dspz).
+    # Annotates when skills/catalog.json is out of sync with skills/*/SKILL.md
+    # frontmatter, without blocking the merge. Promotion path: I0 advisory →
+    # T2 required after one clean week.
+    needs: [changes]
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+    name: check-skill-catalog-drift (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check catalog drift
+        run: |
+          set +e
+          chmod +x scripts/check-skill-catalog-drift.sh
+          scripts/check-skill-catalog-drift.sh
+          rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::warning::skills/catalog.json drift detected (advisory; rc=$rc). Regenerate via scripts/generate-skill-catalog.sh."
+          fi
+          # advisory: never propagate non-zero
+          exit 0
+
   doctor-check:
     name: doctor-check (advisory)
     runs-on: ubuntu-latest
@@ -1157,7 +1560,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26'
+          go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao CLI
@@ -1188,21 +1591,21 @@ jobs:
           chmod +x tests/skills/run-all.sh
           bash tests/skills/run-all.sh
 
-  learning-coherence:
-    needs: [changes]
-    if: needs.changes.outputs.learning == 'true' || needs.changes.outputs.ci == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Validate learning file quality
-        run: |
-          chmod +x scripts/validate-learning-coherence.sh
-          bash scripts/validate-learning-coherence.sh .agents/learnings
+  # learning-coherence RETIRED 2026-05-19. Dead-by-design: triggered only by
+  # changes to .agents/learnings/** paths, which are gitignored — the path
+  # filter can never match in a PR diff. 19/19 runs in the audit window
+  # were "skipped"; zero positive signal across the validator's lifetime.
+  # The validator script remains at scripts/validate-learning-coherence.sh
+  # for ad-hoc local use against the operator's .agents/learnings/ corpus.
+  # Audit rationale: see "CI Validator Audit" session 2026-05-18.
 
   bats-tests:
     needs: [changes]
-    if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+    # skills + docs included because several bats tests assert SKILL.md / reference
+    # content (e.g. evolve-primitive-wiring.bats); a skills/docs-only change that
+    # breaks such an assertion must trigger bats, not merge undetected (soc-xrdwp;
+    # #413's wiring move hid for 11 PRs because skills/ did not trigger this job).
+    if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -1214,11 +1617,8 @@ jobs:
       - name: Run bats tests
         run: |
           echo "=== Running bats tests ==="
-          bats tests/hooks/*.bats tests/scripts/*.bats
+          bats --print-output-on-failure tests/scripts/*.bats
           echo "✅ Bats tests passed"
-
-      - name: Run orphan hooks audit
-        run: bash tests/hooks/test-orphan-hooks.sh
 
   check-test-staleness:
     needs: [changes]
@@ -1263,8 +1663,207 @@ jobs:
           fi
           echo "File manifests found in evidence — overlap check delegated to file-manifest-overlap job"
 
+  executable-spec-link-integrity:
+    # T1 (≤5min). Blocking (soc-x7y9f): now that PR #490/soc-m8tdn linked all 14
+    # GOALS.md directives to scenarios, the directive↔scenario link lint
+    # (`ao goals scenarios --lint`) is promoted from warn-only to a required
+    # check — it fails the job (and the summary) on any broken directive↔scenario
+    # edge. The broader whole-chain orphan/gap audit (`ao goals trace --orphans`)
+    # stays warn-only here: it audits directive→scenario→bead→artifact→learning
+    # lineage and still surfaces pre-existing bead-claim-parse defects that are
+    # out of this gate's scope (tracked separately under soc-gqhrz). Sibling
+    # blocking gate: validate-scenario-test-linkage (scenarios→tests).
+    needs: [changes]
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
+    name: executable-spec-link-integrity (T1, soc-x7y9f)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: Build ao binary
+        run: |
+          cd cli && go build -o bin/ao ./cmd/ao
+
+      - name: Directive-to-scenario link lint (ao goals scenarios --lint, blocking)
+        run: |
+          echo "=== ao goals scenarios --lint ==="
+          cli/bin/ao goals scenarios --lint
+
+      - name: Whole-chain orphan/gap audit (ao goals trace --orphans, warn-only)
+        run: |
+          echo "=== ao goals trace --orphans ==="
+          cli/bin/ao goals trace --orphans || echo "WARN: trace --orphans found issues (warn-only, F1.6 / soc-58nt.1.9; out of soc-x7y9f scope, tracked under soc-gqhrz)"
+
+  validate-scenario-test-linkage:
+    # T1 (≤5min). Sibling to executable-spec-link-integrity: that gate links
+    # GOALS directives → scenarios; this one links scenarios → tests. Blocking.
+    # Every Gherkin Scenario in skills/*/references/*.feature must carry a
+    # @covered-by:<test-path> tag OR have its feature file allowlisted in
+    # scripts/.scenario-linkage-allow (doc-only). Fails on unlinked-and-
+    # unlisted scenarios, dangling links, and stale allowlist entries.
+    # (soc-63xfx)
+    needs: [changes]
+    if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+    name: validate-scenario-test-linkage (T1, soc-63xfx)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Scenario→test linkage gate (scripts/check-scenario-test-linkage.sh)
+        run: |
+          chmod +x scripts/check-scenario-test-linkage.sh
+          ./scripts/check-scenario-test-linkage.sh
+
+  validate-test-count-noregress:
+    # T1 (≤5min). Test-count non-regression ratchet for cli/internal/ packages
+    # (ag-h2z). For each cli/internal/<pkg> with a changed _test.go file, sums
+    # `^func Test` declarations at the PR base vs HEAD; a net per-package
+    # decrease fails the gate unless a `Test-Removal-Reason:` trailer is present
+    # in a commit body in the range. Locks in test-coverage gains as a ratchet.
+    # Sibling to validate-scenario-test-linkage; blocking. fetch-depth: 0 so the
+    # PR base ref resolves for the before/after count diff (origin/<base_ref>).
+    needs: [changes]
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+    name: validate-test-count-noregress (T1, ag-h2z)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Test-count non-regression gate (scripts/check-test-count-regression.sh)
+        # Pass the base ref via env (not `${{ }}` interpolation inside run:) so a
+        # branch name carrying shell metacharacters cannot inject into the runner
+        # (semgrep run-shell-injection / CWE-78). The script reads $BASE_REF.
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: |
+          chmod +x scripts/check-test-count-regression.sh
+          ./scripts/check-test-count-regression.sh
+
+  validate-pr-evidence-claims:
+    # AP#7 mechanical enforcement (soc-eqjd, replaces local pre-push check #39
+    # retired by soc-g2r9). For each `Evidence:` line in the PR body, assert
+    # the claim appears verbatim in this workflow run's logs. Runs in parallel
+    # with `summary` and depends on the same broad set so all sibling-job logs
+    # are present when we fetch. `summary` also depends on this job so its
+    # verdict surfaces in the CI summary.
+    needs: [changes, doc-release-gate, smoke-test, agentops-eval-baseline-audit, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-finding-registry, validate-agents-split, validate-sovereignty-proof-citations, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-skill-body-refs, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, validate-sku-catalog-drift, agentops-contract-canaries, eval-workbench-verify, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity, validate-scenario-test-linkage, validate-test-count-noregress]
+    if: always() && github.event_name == 'pull_request'
+    name: AP#7 — verify Evidence claims in PR body
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Extract Evidence claims from PR body
+        id: claims
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          body="$(gh pr view "${{ github.event.pull_request.number }}" --json body --jq .body)"
+          claims="$(printf '%s\n' "$body" | sed -n 's/^Evidence:[[:space:]]*//p' || true)"
+          if [[ -z "$claims" ]]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::No Evidence: line in PR body; AP#7 verification skipped"
+            exit 0
+          fi
+          printf '%s\n' "$claims" > /tmp/evidence-claims.txt
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "count=$(wc -l < /tmp/evidence-claims.txt | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          echo "Evidence claims to verify ($(wc -l < /tmp/evidence-claims.txt | tr -d ' ')):"
+          cat /tmp/evidence-claims.txt
+
+      - name: Fetch this workflow run's logs (per-job, durable)
+        if: steps.claims.outputs.skip != 'true'
+        id: fetch_log
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Per-job log fetch (soc-1nsx, supersedes the soc-eqjd MVP).
+          # `gh run view --log` returns the concatenated workflow log via an
+          # endpoint that lags behind individual job-log availability by tens of
+          # seconds to minutes — PR #358 dogfood saw ~81 bytes mid-run even
+          # when sibling jobs reported "completed". The per-job endpoint
+          # (`actions/jobs/{job_id}/logs`) serves each completed job's log as
+          # soon as that job finishes, with no whole-run eventual-consistency
+          # window. We page through the run's jobs, fetch each completed
+          # (non-skipped) sibling's log, and concatenate.
+          : > /tmp/run.log
+          page=1
+          jobs_seen=0
+          jobs_with_logs=0
+          while : ; do
+            page_json="$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100&page=${page}")"
+            page_count="$(jq '.jobs | length' <<<"$page_json")"
+            if [[ "${page_count}" -eq 0 ]]; then
+              break
+            fi
+            jobs_seen=$((jobs_seen + page_count))
+            while IFS=$'\t' read -r job_id job_conclusion; do
+              # Skip in-progress (empty conclusion) and skipped jobs — they
+              # have no log payload to verify against.
+              if [[ -z "${job_conclusion}" || "${job_conclusion}" = "skipped" ]]; then
+                continue
+              fi
+              if gh api "repos/${{ github.repository }}/actions/jobs/${job_id}/logs" >> /tmp/run.log 2>/dev/null; then
+                jobs_with_logs=$((jobs_with_logs + 1))
+              fi
+            done < <(jq -r '.jobs[] | "\(.id)\t\(.conclusion // "")"' <<<"$page_json")
+            if [[ "${page_count}" -lt 100 ]]; then
+              break
+            fi
+            page=$((page + 1))
+          done
+          log_bytes="$(wc -c < /tmp/run.log)"
+          echo "fetched per-job logs: ${jobs_with_logs}/${jobs_seen} jobs, ${log_bytes} bytes"
+          if [[ "${jobs_with_logs}" -eq 0 ]]; then
+            # No completed sibling jobs — either this job ran first or every
+            # sibling was skipped. Either way, no Evidence claim can resolve.
+            echo "log_ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No completed sibling jobs returned logs (${jobs_seen} jobs total); skipping AP#7 verification this run."
+          else
+            echo "log_ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify each Evidence claim
+        if: steps.claims.outputs.skip != 'true' && steps.fetch_log.outputs.log_ok == 'true'
+        run: |
+          set -euo pipefail
+          chmod +x scripts/verify-gate-claim.sh
+          failures=0
+          total=0
+          while IFS= read -r claim; do
+            [[ -z "$claim" ]] && continue
+            total=$((total + 1))
+            if scripts/verify-gate-claim.sh --log /tmp/run.log \
+                "pr-${{ github.event.pull_request.number }}" "$claim" >/dev/null; then
+              echo "::notice::Evidence claim verified: $claim"
+            else
+              failures=$((failures + 1))
+              echo "::error::Evidence claim absent from workflow logs: $claim"
+            fi
+          done < /tmp/evidence-claims.txt
+          if [[ "$failures" -gt 0 ]]; then
+            echo "::error::$failures of $total Evidence claim(s) failed verification (ship-loop anti-pattern #7)"
+            exit 1
+          fi
+          echo "::notice::All $total Evidence claim(s) verified against workflow run logs"
+
+      - name: AP#7 verification unavailable (no sibling logs)
+        if: steps.claims.outputs.skip != 'true' && steps.fetch_log.outputs.log_ok != 'true'
+        run: |
+          echo "::notice::AP#7 verification skipped — no completed sibling jobs returned logs. The PR's Evidence: line was extracted but cannot be cross-checked against per-job logs in this CI shape (likely: only this job ran, or all siblings were skipped)."
+
   summary:
-    needs: [changes, doc-release-gate, smoke-test, hook-preflight, pre-push-gate-wired, agentops-eval-baseline-audit, standards-injector-completeness, validate-hooks-doc-parity, hook-output-schema-lint, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-headless-runtime-skills, embedded-sync, cli-docs-parity, registry-check, agentops-contract-canaries, eval-workbench-verify, agentops-eval-advisory, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, learning-coherence, bats-tests, check-test-staleness, swarm-evidence]
+    needs: [changes, doc-release-gate, smoke-test, agentops-eval-baseline-audit, validate-ci-policy-parity, validate-codex-runtime-sections, validate-codex-generated-artifacts, validate-codex-backbone-prompts, validate-codex-override-coverage, validate-codex-rpi-contract, validate-codex-lifecycle-guards, validate-codex-parity-drift, validate-pr-evidence-claims, validate-quarantine-empty, validate-registry-drift, validate-bounded-contexts-drift, validate-skill-domain-map-golden, validate-flywheel-proof, validate-goals-validate, validate-wiring-closure, validate-corpus-freshness, validate-flywheel-compounding-snapshot, validate-finding-registry, validate-agents-split, validate-sovereignty-proof-citations, validate-contracts-structural-floor, validate-docs-learning-references, validate-three-gap-supergate, validate-headless-runtime-skills, validate-skill-frontmatter, validate-skill-body-refs, validate-context-map-drift, embedded-sync, cli-docs-parity, registry-check, validate-sku-catalog-drift, agentops-contract-canaries, eval-workbench-verify, eval-skill-delta, shellcheck, markdownlint, security-scan, security-toolchain-gate, skill-integrity, skill-schema, skill-dependency-check, contract-compatibility-gate, memrl-health, plugin-load-test, retrieval-quality, go-build, windows-smoke, cli-integration, json-flag-consistency, file-manifest-overlap, doctor-check, skill-lint, bats-tests, check-test-staleness, swarm-evidence, executable-spec-link-integrity, validate-scenario-test-linkage, validate-test-count-noregress, lint-evidence-lines-advisory, check-skill-catalog-drift-advisory]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1273,12 +1872,7 @@ jobs:
           echo "=== CI Summary ==="
           echo "doc-release-gate: ${{ needs.doc-release-gate.result }}"
           echo "smoke-test: ${{ needs.smoke-test.result }}"
-          echo "hook-preflight: ${{ needs.hook-preflight.result }}"
-          echo "pre-push-gate-wired: ${{ needs.pre-push-gate-wired.result }}"
           echo "agentops-eval-baseline-audit: ${{ needs.agentops-eval-baseline-audit.result }}"
-          echo "standards-injector-completeness: ${{ needs.standards-injector-completeness.result }}"
-          echo "validate-hooks-doc-parity: ${{ needs.validate-hooks-doc-parity.result }}"
-          echo "hook-output-schema-lint: ${{ needs.hook-output-schema-lint.result }}"
           echo "validate-ci-policy-parity: ${{ needs.validate-ci-policy-parity.result }}"
           echo "validate-codex-runtime-sections: ${{ needs.validate-codex-runtime-sections.result }}"
           echo "validate-codex-generated-artifacts: ${{ needs.validate-codex-generated-artifacts.result }}"
@@ -1286,13 +1880,33 @@ jobs:
           echo "validate-codex-override-coverage: ${{ needs.validate-codex-override-coverage.result }}"
           echo "validate-codex-rpi-contract: ${{ needs.validate-codex-rpi-contract.result }}"
           echo "validate-codex-lifecycle-guards: ${{ needs.validate-codex-lifecycle-guards.result }}"
+          echo "validate-codex-parity-drift: ${{ needs.validate-codex-parity-drift.result }}"
+          echo "validate-pr-evidence-claims: ${{ needs.validate-pr-evidence-claims.result }}"
+          echo "validate-quarantine-empty: ${{ needs.validate-quarantine-empty.result }}"
+          echo "validate-registry-drift: ${{ needs.validate-registry-drift.result }}"
+          echo "validate-bounded-contexts-drift: ${{ needs.validate-bounded-contexts-drift.result }}"
+          echo "validate-skill-domain-map-golden: ${{ needs.validate-skill-domain-map-golden.result }}"
+          echo "validate-flywheel-proof: ${{ needs.validate-flywheel-proof.result }}"
+          echo "validate-goals-validate: ${{ needs.validate-goals-validate.result }}"
+          echo "validate-wiring-closure: ${{ needs.validate-wiring-closure.result }}"
+          echo "validate-corpus-freshness: ${{ needs.validate-corpus-freshness.result }}"
+          echo "validate-flywheel-compounding-snapshot: ${{ needs.validate-flywheel-compounding-snapshot.result }}"
+          echo "validate-finding-registry: ${{ needs.validate-finding-registry.result }}"
+          echo "validate-agents-split: ${{ needs.validate-agents-split.result }}"
+          echo "validate-sovereignty-proof-citations: ${{ needs.validate-sovereignty-proof-citations.result }}"
+          echo "validate-contracts-structural-floor: ${{ needs.validate-contracts-structural-floor.result }}"
+          echo "validate-docs-learning-references: ${{ needs.validate-docs-learning-references.result }}"
+          echo "validate-three-gap-supergate: ${{ needs.validate-three-gap-supergate.result }}"
           echo "validate-headless-runtime-skills: ${{ needs.validate-headless-runtime-skills.result }}"
+          echo "validate-skill-frontmatter: ${{ needs.validate-skill-frontmatter.result }}"
+          echo "validate-skill-body-refs: ${{ needs.validate-skill-body-refs.result }}"
+          echo "validate-context-map-drift: ${{ needs.validate-context-map-drift.result }}"
           echo "embedded-sync: ${{ needs.embedded-sync.result }}"
           echo "cli-docs-parity: ${{ needs.cli-docs-parity.result }}"
           echo "registry-check: ${{ needs.registry-check.result }}"
+          echo "validate-sku-catalog-drift: ${{ needs.validate-sku-catalog-drift.result }}"
           echo "agentops-contract-canaries: ${{ needs.agentops-contract-canaries.result }}"
           echo "eval-workbench-verify: ${{ needs.eval-workbench-verify.result }}"
-          echo "agentops-eval-advisory: ${{ needs.agentops-eval-advisory.result }}"
           echo "eval-skill-delta: ${{ needs.eval-skill-delta.result }}"
           echo "shellcheck: ${{ needs.shellcheck.result }}"
           echo "markdownlint: ${{ needs.markdownlint.result }}"
@@ -1312,16 +1926,52 @@ jobs:
           echo "file-manifest-overlap: ${{ needs.file-manifest-overlap.result }}"
           echo "doctor-check: ${{ needs.doctor-check.result }}"
           echo "skill-lint: ${{ needs.skill-lint.result }}"
-          echo "learning-coherence: ${{ needs.learning-coherence.result }}"
           echo "bats-tests: ${{ needs.bats-tests.result }}"
           echo "check-test-staleness: ${{ needs.check-test-staleness.result }}"
           echo "swarm-evidence: ${{ needs.swarm-evidence.result }}"
+          echo "executable-spec-link-integrity: ${{ needs.executable-spec-link-integrity.result }}"
+          echo "validate-scenario-test-linkage: ${{ needs.validate-scenario-test-linkage.result }}"
+          echo "validate-test-count-noregress: ${{ needs.validate-test-count-noregress.result }}"
 
-          # Fail only on actual failures — skipped jobs (path-filtered) are OK
+          # Fail on actual failures. On release tags, skipped release lanes are
+          # also failures because validate.yml must be a full exact-SHA release
+          # verdict, not a path-filtered partial signal. PR-only jobs are
+          # explicitly allowlisted because they cannot run for tag push events.
           if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
             echo ""
             echo "❌ Some checks failed (failure detected)"
             exit 1
+          fi
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            release_needs_json='${{ toJson(needs) }}'
+            release_skipped="$(
+              NEEDS_JSON="$release_needs_json" python3 - <<'PY'
+          import json
+          import os
+
+          allowed_skips = {
+              "lint-evidence-lines-advisory",
+              "validate-pr-evidence-claims",
+          }
+
+          needs = json.loads(os.environ["NEEDS_JSON"])
+          unexpected = sorted(
+              name
+              for name, metadata in needs.items()
+              if metadata.get("result") == "skipped" and name not in allowed_skips
+          )
+
+          for name in unexpected:
+              print(name)
+          PY
+            )"
+            if [[ -n "$release_skipped" ]]; then
+              echo ""
+              echo "❌ Release-tag Validate had unexpected skipped jobs; skipped release lanes are not a release verdict"
+              printf '%s\n' "$release_skipped" | sed 's/^/- /'
+              exit 1
+            fi
           fi
 
           echo ""

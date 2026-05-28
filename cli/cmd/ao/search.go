@@ -1,3 +1,4 @@
+// practices: [wiki-knowledge-surface, ai-assisted-dev]
 package main
 
 import (
@@ -615,7 +616,7 @@ func searchMarkdownFilesByTokens(query, dir, resultType string, limit int) []sea
 		VerbosePrintf("token fallback search root error for %s: %v\n", dir, err)
 		return nil
 	}
-	defer root.Close()
+	defer func() { _ = root.Close() }()
 
 	if err := filepath.WalkDir(dir, func(path string, entry os.DirEntry, err error) error {
 		if err != nil || entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
@@ -666,7 +667,7 @@ func searchMarkdownFilesByTokens(query, dir, resultType string, limit int) []sea
 
 func searchFallbackTokens(query string) []string {
 	fields := strings.FieldsFunc(strings.ToLower(query), func(r rune) bool {
-		return !((r >= 'a' && r <= 'z') || (r >= '0' && r <= '9'))
+		return (r < 'a' || r > 'z') && (r < '0' || r > '9')
 	})
 	seen := make(map[string]bool, len(fields))
 	tokens := make([]string, 0, len(fields))
@@ -760,8 +761,6 @@ func extractLearningContext(data map[string]any) string {
 func calculateCASSScore(data map[string]any) float64 {
 	return search.CalculateCASSScore(data)
 }
-
-var maturityWeights = search.MaturityWeights
 
 func maturityToWeight(data map[string]any) float64 {
 	return search.MaturityToWeight(data)

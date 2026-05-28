@@ -1,8 +1,6 @@
 package lifecycle
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,11 +11,10 @@ import (
 
 // DefragReport is the top-level output of a defrag run.
 type DefragReport struct {
-	Timestamp   time.Time          `json:"timestamp"`
-	DryRun      bool               `json:"dry_run"`
-	Prune       *PruneResult       `json:"prune,omitempty"`
-	Dedup       *DefragDedupResult `json:"dedup,omitempty"`
-	Oscillation *OscillationResult `json:"oscillation,omitempty"`
+	Timestamp time.Time          `json:"timestamp"`
+	DryRun    bool               `json:"dry_run"`
+	Prune     *PruneResult       `json:"prune,omitempty"`
+	Dedup     *DefragDedupResult `json:"dedup,omitempty"`
 }
 
 // PruneResult holds orphan-detection results.
@@ -33,18 +30,6 @@ type DefragDedupResult struct {
 	Checked        int         `json:"checked"`
 	DuplicatePairs [][2]string `json:"duplicate_pairs,omitempty"`
 	Deleted        []string    `json:"deleted,omitempty"`
-}
-
-// OscillationResult holds oscillating-goal sweep results.
-type OscillationResult struct {
-	OscillatingGoals []OscillatingGoal `json:"oscillating_goals,omitempty"`
-}
-
-// OscillatingGoal describes a goal that alternates improved/fail.
-type OscillatingGoal struct {
-	Target           string `json:"target"`
-	AlternationCount int    `json:"alternation_count"`
-	LastCycle        int    `json:"last_cycle"`
 }
 
 // ExecutePrune finds orphan learnings and optionally deletes them.
@@ -261,110 +246,4 @@ func TrigramOverlap(a, b map[string]bool) float64 {
 		return 0
 	}
 	return float64(intersect) / float64(union)
-}
-
-// CycleRecord represents one line in cycle-history.jsonl.
-type CycleRecord struct {
-	Cycle  int    `json:"cycle"`
-	Target string `json:"target"`
-	Result string `json:"result"`
-}
-
-// SweepOscillatingGoals parses .agents/evolve/cycle-history.jsonl and finds
-// goals whose result alternates between "improved" and non-"improved" >=3 times.
-func SweepOscillatingGoals(cwd string) (*OscillationResult, error) {
-	histPath := filepath.Join(cwd, ".agents", "evolve", "cycle-history.jsonl")
-	targetRecords, err := collectCycleRecordsByTarget(histPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return buildOscillationResult(targetRecords), nil
-}
-
-func collectCycleRecordsByTarget(histPath string) (map[string][]CycleRecord, error) {
-	f, err := os.Open(histPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return map[string][]CycleRecord{}, nil
-		}
-		return nil, fmt.Errorf("open cycle history: %w", err)
-	}
-	defer func() { _ = f.Close() }()
-
-	targetRecords := make(map[string][]CycleRecord)
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		rec, ok := parseCycleRecordLine(scanner.Text())
-		if ok {
-			targetRecords[rec.Target] = append(targetRecords[rec.Target], rec)
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("scan cycle history: %w", err)
-	}
-	return targetRecords, nil
-}
-
-func parseCycleRecordLine(line string) (CycleRecord, bool) {
-	line = strings.TrimSpace(line)
-	if line == "" {
-		return CycleRecord{}, false
-	}
-	var rec CycleRecord
-	if err := json.Unmarshal([]byte(line), &rec); err != nil {
-		return CycleRecord{}, false
-	}
-	return rec, rec.Target != ""
-}
-
-func buildOscillationResult(targetRecords map[string][]CycleRecord) *OscillationResult {
-	result := &OscillationResult{}
-
-	for _, target := range sortedCycleTargets(targetRecords) {
-		if goal, ok := oscillatingGoalForTarget(target, targetRecords[target]); ok {
-			result.OscillatingGoals = append(result.OscillatingGoals, goal)
-		}
-	}
-
-	return result
-}
-
-func sortedCycleTargets(targetRecords map[string][]CycleRecord) []string {
-	targets := make([]string, 0, len(targetRecords))
-	for t := range targetRecords {
-		targets = append(targets, t)
-	}
-	sort.Strings(targets)
-	return targets
-}
-
-func oscillatingGoalForTarget(target string, records []CycleRecord) (OscillatingGoal, bool) {
-	alternations := CountAlternations(records)
-	if alternations < 3 {
-		return OscillatingGoal{}, false
-	}
-	lastCycle := records[len(records)-1].Cycle
-	return OscillatingGoal{
-		Target:           target,
-		AlternationCount: alternations,
-		LastCycle:        lastCycle,
-	}, true
-}
-
-// CountAlternations counts how many times the result alternates between
-// "improved" and non-"improved" in a sequence of records.
-func CountAlternations(records []CycleRecord) int {
-	if len(records) < 2 {
-		return 0
-	}
-	count := 0
-	for i := 1; i < len(records); i++ {
-		prevImproved := records[i-1].Result == "improved"
-		currImproved := records[i].Result == "improved"
-		if prevImproved != currImproved {
-			count++
-		}
-	}
-	return count
 }

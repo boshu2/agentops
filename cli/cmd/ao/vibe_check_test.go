@@ -1,3 +1,4 @@
+// practices: [ai-assisted-dev, code-complete]
 package main
 
 import (

@@ -1,6 +1,18 @@
 ---
 name: brainstorm
-description: 'Separate goals from implementation.'
+description: Separate goals from implementation.
+practices:
+- lean-startup
+- mythical-man-month
+hexagonal_role: domain
+consumes:
+- standards
+produces:
+- result.json
+- verdict.json
+context_rel:
+- kind: shared-kernel
+  with: standards
 skill_api_version: 1
 metadata:
   tier: execution
@@ -10,7 +22,10 @@ context:
   intent:
     mode: none
   sections:
-    exclude: [INTEL, HISTORY, TASK]
+    exclude:
+    - INTEL
+    - HISTORY
+    - TASK
   intel_scope: none
 output_contract: skills/research/schemas/findings.json
 ---
@@ -18,7 +33,22 @@ output_contract: skills/research/schemas/findings.json
 
 > **Purpose:** Separate WHAT from HOW. Explore the problem space before committing to a solution.
 
-Four phases:
+## Loop position
+
+Upstream of move **1 (shape intent as BDD)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes a free-text goal; produces Given/When/Then-shaped acceptance examples that `/discovery` can fold into a [BDD intent issue](../../docs/templates/intent-issue.md). The Capture step (phase 4 below) is not complete until at least one happy path and one critical edge are written as testable Gherkin — "it should work" is not a captured example.
+
+## Two modes
+
+`/brainstorm` runs in one of two modes. They are complementary, not exclusive — a session may start in ideation mode, pick one idea, and hand it to goal-clarification for HOW-exploration.
+
+| Mode | Use when | Shape |
+|------|----------|-------|
+| **Goal-clarification** (default; the four phases below) | The goal names ONE specific capability (`"add JWT auth"`, `"fix the login bug"`) | Sharpen the WHAT, explore the HOW for that single goal. |
+| **Ideation** (open-ended; see [Ideation Mode](#ideation-mode-open-ended-generate-winnow)) | The goal is open-ended (`"improve the project"`, `"what should we build next"`) OR Phase 1 returns `exploring` with no single goal emerging OR `--ideate` is passed | Generate MANY candidate improvements, winnow ruthlessly, operationalize the survivors. |
+
+The full mode-selection table lives in [references/ideation-mode.md](references/ideation-mode.md).
+
+Four phases (goal-clarification mode):
 1. **Assess clarity** — Is the goal specific enough?
 2. **Understand idea** — What problem, who benefits, what exists?
 3. **Explore approaches** — Generate options, compare tradeoffs, adversarial critique
@@ -113,6 +143,45 @@ Create the `.agents/brainstorm/` directory if it does not exist.
 
 ---
 
+## Ideation Mode (open-ended generate-winnow)
+
+> **Additive to the four-phase flow above — it does not replace it.** Ideation mode is for "improve the project"-style goals where the WHAT is unknown and you must generate a portfolio and select, rather than clarify ONE known goal. Full detail: [references/ideation-mode.md](references/ideation-mode.md).
+
+**Trigger:** the `exploring` clarity path (Phase 1) when no single goal emerges after follow-up, OR an explicit `--ideate` flag, OR an open-ended goal string (`"improve the project"`, `"what should we build next"`, `"make X more robust"`).
+
+The methodology is **generate → winnow → expand → operationalize → refine**. Steps 1-3 belong to `/brainstorm`; steps 4-5 are handed to `/discovery` on its open-ended path (see [references/bead-operationalization.md](references/bead-operationalization.md)).
+
+### Step 1 — Ground in reality
+
+Read project state so ideas align and don't duplicate work:
+
+```bash
+cat AGENTS.md                      # or CLAUDE.md — rules, constraints, non-goals
+bd list --json                     # open work — don't duplicate
+bd list --status closed --json     # closed work — don't re-propose cut ideas
+bd ready --json                    # what is actionable now
+```
+
+### Step 2 — Generate 30, winnow to 5 (ranked, with rationale)
+
+Generate **30** candidate improvements (criteria = the rubric dimensions: robust, reliable, performant, intuitive, user-friendly, ergonomic, useful, compelling, while staying obviously **accretive** and **pragmatic**). Think each one through: **how it works**, **how users perceive it**, **how we implement it**. Then **winnow ruthlessly to the VERY best 5**, presented **ranked best-to-worst** with full rationale and rubric scores. Apply the winnowing rounds and scoring from [references/idea-rubric.md](references/idea-rubric.md), and stress-test survivors with [references/red-team-checklist.md](references/red-team-checklist.md). Do NOT stop at the first 5 you think of — generate the full 30 first.
+
+### Step 3 — Expand with the next 10 (→ 15)
+
+Generate the **next best 10** (each with rationale) for a ranked portfolio of **15** — #6-15 are often complementary to the top 5.
+
+### Steps 4-5 — Operationalize + refine (handed to `/discovery`)
+
+Carry the ranked 15 (with how/perceive/implement notes + rubric scores + red-team findings) forward. `/discovery` operationalizes them into self-documenting `bd` beads (deps + explicit test tasks) and refines 4-5x in plan space. See [references/bead-operationalization.md](references/bead-operationalization.md).
+
+### Output
+
+Standalone (`/brainstorm --ideate`): write the ranked portfolio to `.agents/brainstorm/YYYY-MM-DD-<slug>-ideation.md` (template in [references/ideation-mode.md](references/ideation-mode.md)). Invoked by `/discovery`: return the ranked portfolio inline for the operationalize step.
+
+> **Tracking is `bd`, never `br`/`bv`** — this is AgentOps.
+
+---
+
 ## Termination
 
 Phase 4 output written = done. No further phases, no loops.
@@ -173,4 +242,12 @@ Phase 4: Writes .agents/brainstorm/2026-02-17-search-performance.md
 
 ## Reference Documents
 
+- [references/brainstorm.feature](references/brainstorm.feature) — Executable spec: WHAT-not-HOW 4-phase clarification, options+tradeoffs, capture Gherkin (happy + edge) for /plan (soc-qk4b)
+
 - [references/red-team-checklist.md](references/red-team-checklist.md) — Adversarial critique template for Phase 3b
+
+- [references/ideation-mode.md](references/ideation-mode.md) — Open-ended generate-winnow methodology: mode-selection table, generate-30 → winnow-5 → expand-15, output template (ag-yw0)
+
+- [references/idea-rubric.md](references/idea-rubric.md) — Ten-dimension evaluation rubric (robust/reliable/performant/intuitive/user-friendly/ergonomic/useful/compelling/accretive/pragmatic) + winnowing rounds (ag-yw0)
+
+- [references/bead-operationalization.md](references/bead-operationalization.md) — Operationalize the ranked portfolio into self-documenting `bd` beads (deps + test tasks) and refine 4-5x in plan space (ag-yw0)

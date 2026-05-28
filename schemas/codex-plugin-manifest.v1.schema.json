@@ -2,10 +2,15 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://agentops.dev/schemas/codex-plugin-manifest.v1.schema.json",
   "title": "AgentOps Codex Plugin Manifest v1",
+  "$comment": "practices: [microservices, design-by-contract]",
   "type": "object",
   "additionalProperties": false,
   "required": ["name"],
   "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
     "$schema": {
       "type": "string"
     },

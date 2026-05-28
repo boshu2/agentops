@@ -200,7 +200,9 @@ Deploy continuously.
 
 No vulnerabilities.
 
+**Directive ID:** d-stay-secure
 **Steer:** hold
+**Scenarios:** s-2026-05-17-001, s-2026-05-17-002
 
 ## Gates
 
@@ -237,6 +239,12 @@ No vulnerabilities.
 	}
 	if dirs[1].Steer != "hold" {
 		t.Errorf("dirs[1].Steer = %q, want 'hold'", dirs[1].Steer)
+	}
+	if dirs[1].StableID != "d-stay-secure" {
+		t.Errorf("dirs[1].StableID = %q, want d-stay-secure", dirs[1].StableID)
+	}
+	if got := strings.Join(dirs[1].Scenarios, ","); got != "s-2026-05-17-001,s-2026-05-17-002" {
+		t.Errorf("dirs[1].Scenarios = %q", got)
 	}
 }
 

@@ -1,3 +1,4 @@
+// practices: [llm-eval-harness, dora-metrics]
 package main
 
 import (

@@ -3,6 +3,7 @@
   "id": "agentops-core.cli-contracts",
   "name": "AgentOps CLI Contracts Canary",
   "description": "Offline public canary for generated command docs, CLI surface parity, JSON flag consistency, and eval command registration.",
+  "practices": ["llm-eval-harness", "pragmatic-programmer"],
   "domain": "cli",
   "visibility": "public_canary",
   "tier": "deterministic",

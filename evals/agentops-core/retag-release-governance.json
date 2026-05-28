@@ -3,6 +3,7 @@
   "id": "agentops-core.retag-release-governance",
   "name": "AgentOps Retag Release Governance Canary",
   "description": "Offline public canary for retag release behavior: annotated tag preservation/recreation, tag-push workflow waiting, Homebrew upgrade contract, and release documentation wiring.",
+  "practices": ["llm-eval-harness", "cmm-process-maturity"],
   "domain": "process",
   "visibility": "public_canary",
   "tier": "deterministic",

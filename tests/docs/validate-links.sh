@@ -47,9 +47,13 @@ done < <(find "$REPO_ROOT" -maxdepth 1 -name '*.md' -type f)
 
 for dir in docs skills skills-codex cli; do
   if [[ -d "$REPO_ROOT/$dir" ]]; then
+    # Skip cli/embedded/ — a generated verbatim mirror of skills/ synced by
+    # `make sync-hooks`. Its markdown sits deeper than the source, so
+    # source-correct relative links resolve wrong there. The source copies
+    # under skills/ are still validated; validating the mirror is a category error.
     while IFS= read -r f; do
       md_files+=("$f")
-    done < <(find "$REPO_ROOT/$dir" -name '*.md' -type f -not -path '*/.agents/*')
+    done < <(find "$REPO_ROOT/$dir" -name '*.md' -type f -not -path '*/.agents/*' -not -path '*/embedded/*')
   fi
 done
 

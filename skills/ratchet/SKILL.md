@@ -1,6 +1,20 @@
 ---
 name: ratchet
-description: 'Record Brownian Ratchet gates.'
+description: Record Brownian Ratchet gates.
+practices:
+- dora-metrics
+- refactoring
+- continuous-integration
+hexagonal_role: domain
+consumes:
+- validation
+- vibe
+- post-mortem
+produces:
+- .agents/rpi/*.md
+context_rel:
+- kind: shared-kernel
+  with: standards
 skill_api_version: 1
 user-invocable: false
 context:
@@ -8,13 +22,16 @@ context:
   intent:
     mode: none
   sections:
-    exclude: [HISTORY, INTEL, TASK]
+    exclude:
+    - HISTORY
+    - INTEL
+    - TASK
   intel_scope: none
 metadata:
   tier: background
   dependencies: []
   internal: true
-output_contract: "stdout: gate check result"
+output_contract: 'stdout: gate check result'
 ---
 # Ratchet Skill
 
@@ -137,3 +154,7 @@ Progress stored in `.agents/ao/chain.jsonl`:
 | Step already completed error | Attempting to re-ratchet locked step | Use `ao ratchet status` to check state; skip if already done |
 | chain.jsonl corrupted | Malformed JSON entries | Manually edit to fix JSON; validate each line with `jq -c '.' <file>` |
 | Out-of-order steps | Implementing before planning | Follow RPI order strictly; use `--skip` only with explicit reason |
+
+## Reference Documents
+
+- [references/ratchet.feature](references/ratchet.feature) — Executable spec: Chaos×Filter→Ratchet, record/check loop-step gates, monotonic chain (soc-qk4b.2)

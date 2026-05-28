@@ -1078,3 +1078,36 @@ func TestParseGatesTable_TagsRoundTrip(t *testing.T) {
 		t.Errorf("g-bare Tags = %v, want nil", gf.Goals[1].Tags)
 	}
 }
+
+func TestParseMarkdownGoals_DirectiveSpecAttrs(t *testing.T) {
+	src := "# Goals\n\nmission\n\n## Directives\n\n" +
+		"### 1. Linked directive\n\nbody\n\n" +
+		"**Directive ID:** d-linked-directive\n" +
+		"**Steer:** increase (x)\n" +
+		"**Scenarios:** s-2026-05-17-001, s-2026-05-17-002\n\n" +
+		"### 2. Unlinked directive\n\nbody\n\n**Steer:** decrease (y)\n"
+	gf, err := ParseMarkdownGoals([]byte(src))
+	if err != nil {
+		t.Fatalf("ParseMarkdownGoals: %v", err)
+	}
+	if len(gf.Directives) != 2 {
+		t.Fatalf("directive count = %d, want 2", len(gf.Directives))
+	}
+
+	// The linked directive exposes the stable ID and scenario list, sourced
+	// from the non-lossy patcher (applyDirectiveSpecAttrs).
+	d1 := gf.Directives[0]
+	if d1.StableID != "d-linked-directive" {
+		t.Errorf("d1.StableID = %q, want d-linked-directive", d1.StableID)
+	}
+	if len(d1.Scenarios) != 2 ||
+		d1.Scenarios[0] != "s-2026-05-17-001" || d1.Scenarios[1] != "s-2026-05-17-002" {
+		t.Errorf("d1.Scenarios = %v, want [s-2026-05-17-001 s-2026-05-17-002]", d1.Scenarios)
+	}
+
+	// An unlinked directive carries no executable-spec attributes.
+	d2 := gf.Directives[1]
+	if d2.StableID != "" || d2.Scenarios != nil {
+		t.Errorf("unlinked directive: StableID=%q Scenarios=%v, want empty", d2.StableID, d2.Scenarios)
+	}
+}

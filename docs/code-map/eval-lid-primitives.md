@@ -16,7 +16,7 @@ status: initial — Wave 1 (skill-on/off A/B) shipped; Wave 2 (finding-coverage)
 > **Primary contracts:**
 > - `docs/contracts/eval-baseline-ab.md` — `--baseline-mode` semantics + `DeltaScorecard` shape
 > - `docs/contracts/eval-environment.md` — base eval environment contract
-> - `.agents/plans/2026-05-02-lid-primitives-eval-integration.md` — full plan
+> - Operator-local plan archive: see `.agents/plans/` on the implementing operator's box (not tracked; bead `soc-x5yz` covers the plan history)
 
 ## At A Glance
 
@@ -66,5 +66,5 @@ The fixture has two cases: one delta-bearing (asserts `AGENTOPS_HOOKS_DISABLED` 
 ## Open questions / follow-ups
 
 - HIL/VIL extension (live Claude/Codex runtime A/B with N-run variance bands) is **out of scope** for Wave 1. Filed as follow-up; needs a separate epic to design the variance methodology.
-- Promotion of skill-baseline-delta to a `release-readiness.json` blocking gate is gated on ≥3 measured skills with delta ≥ +20% (per the cross-vendor council verdict at `.agents/council/2026-05-02-validate-mixed-lid-release-fit.md` in personal-site).
+- Promotion of skill-baseline-delta to a `release-readiness.json` blocking gate is gated on ≥3 measured skills with delta ≥ +20% (per cross-vendor council verdict, 2026-05-02; verdict artifact lives operator-local in personal-site `.agents/council/`).
 - The Wave 2 anchor (`finding_refs`) is intentionally NOT introduced in Wave 1 — pick the namespace decision deliberately based on Wave 1 evidence.

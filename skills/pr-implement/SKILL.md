@@ -1,23 +1,36 @@
 ---
 name: pr-implement
-description: 'Implement a scoped OSS PR.'
+description: Implement a scoped OSS PR.
+practices:
+- continuous-delivery
+- xp
+- pragmatic-programmer
+hexagonal_role: driving-adapter
+consumes:
+- crank
+produces:
+- git-changes
+context_rel:
+- kind: customer-of
+  with: crank
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 license: MIT
 compatibility: Requires git, gh CLI
 metadata:
   author: AI Platform Team
-  version: "1.0.0"
+  version: 1.0.0
   tier: contribute
   internal: false
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob
-output_contract: "code changes on fork branch"
+output_contract: code changes on fork branch
 ---
 # PR Implement Skill
 
@@ -28,16 +41,16 @@ Fork-based implementation for open source contributions with mandatory isolation
 Execute a contribution plan with fork isolation. Ensures PRs are clean
 and focused by running isolation checks before and during implementation.
 
-**Input**: Plan artifact from `$pr-plan` or repo URL
+**Input**: Plan artifact from `$plan` (after `$pr-research`) or repo URL
 
 **When to Use**:
 - Implementing a planned OSS contribution
 - Need isolation enforcement for clean PRs
-- After completing `$pr-plan`
+- After completing `$pr-research` and `$plan`
 
 **When NOT to Use**:
 - Internal project work (use `$implement`)
-- Haven't planned yet (run `$pr-plan` first)
+- Haven't planned yet (run `$pr-research` then `$plan` first)
 
 ---
 
@@ -155,7 +168,7 @@ Next step: $pr-prep
 | Skip isolation pre-check | Run Phase 3 FIRST |
 | Skip isolation post-check | Run Phase 5 before push |
 | Mix concerns in commits | One type prefix per PR |
-| Implement without plan | Run $pr-plan first |
+| Implement without plan | Run $pr-research then $plan first |
 
 ## Examples
 
@@ -185,3 +198,7 @@ Next step: $pr-prep
 | Commits mix concerns | Implementation drifted from plan | Re-split commits by concern and revalidate |
 | Scope keeps expanding | Weak boundaries in plan | Re-anchor to `Out of Scope` and stop additional changes |
 | Hard to hand off | Missing summary/test context | Add concise change summary and verification notes |
+
+## Reference Documents
+
+- [references/pr-implement.feature](references/pr-implement.feature) — Executable spec: execute plan on fork branch, mandatory isolation before+during, scoped/focused PR (soc-qk4b)

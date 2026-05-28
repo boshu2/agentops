@@ -1,0 +1,16 @@
+{
+  "_schema_version": "v1",
+  "_purpose": "Baseline scorecard for evals/workbench. Tracks structural counts that must not regress; CI gate eval-workbench-verify compares current state against this file and fails on any decrease. See bead soc-ymph.10 (D10).",
+  "_refresh_command": "make -C evals/workbench head-to-head > evals/workbench/scorecard-latest.json && git diff -- evals/workbench/scorecard-latest.json",
+  "_recorded_at": "2026-05-11T18:10:00Z",
+  "_recorded_at_git_sha": "0c0b79e2",
+  "task_count": 12,
+  "prompt_count": 12,
+  "agent_eval_cases": 12,
+  "behavioral_eval_cases": 12,
+  "behavioral_evidence_kind": "behavior_fixture",
+  "behavioral_scoring_dimensions_include_correctness": true,
+  "go_components_present": true,
+  "python_components_present": true,
+  "devops_components_present": true
+}

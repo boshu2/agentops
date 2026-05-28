@@ -122,6 +122,7 @@ static_check() {
   fi
 
   # Check 3: Claude paths
+  # shellcheck disable=SC2088  # intentional literal match of the documented path
   if grep -q '~/\.claude/' "$skill_md" 2>/dev/null; then
     issues+=("claude-paths")
   fi
@@ -138,6 +139,7 @@ static_check() {
       if grep -qE "\b($primitives)\b" "$ref_file" 2>/dev/null; then
         issues+=("ref-primitives:$(basename "$ref_file")")
       fi
+      # shellcheck disable=SC2088  # intentional literal match of the documented path
       if grep -q '~/\.claude/' "$ref_file" 2>/dev/null; then
         issues+=("ref-claude-paths:$(basename "$ref_file")")
       fi
@@ -175,7 +177,7 @@ Output EXACTLY one JSON line at the end:
 {\"skill\": \"${skill_name}\", \"verdict\": \"PASS|PARTIAL|FAIL\", \"reason\": \"brief explanation\"}"
 
   local codex_output
-  if codex_output=$(AGENTOPS_INTENT_ECHO_DISABLED=1 timeout "$TIMEOUT" codex exec -s read-only -m "$MODEL" -C "$REPO_ROOT" "$prompt" 2>&1); then
+  if codex_output=$(timeout "$TIMEOUT" codex exec -s read-only -m "$MODEL" -C "$REPO_ROOT" "$prompt" 2>&1); then
     # Extract JSON verdict from output
     local json_line
     json_line=$(echo "$codex_output" | tr -d '\n' | grep -oE '\{[^}]*"verdict"[^}]*\}' | tail -1 || true)
@@ -290,7 +292,7 @@ main() {
   elif [[ "$DRY_RUN" == "true" ]]; then
     echo "--- Phase 2: Dry Run ---"
     for skill in $skills; do
-      echo "  Would run: AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec -s read-only -m $MODEL -C $REPO_ROOT \"smoke test $skill\""
+      echo "  Would run: codex exec -s read-only -m $MODEL -C $REPO_ROOT \"smoke test $skill\""
     done
     echo ""
     # In dry-run, score from static only

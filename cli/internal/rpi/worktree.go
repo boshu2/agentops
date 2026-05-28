@@ -233,9 +233,33 @@ func tryCreateWorktree(repoRoot, currentCommit string, timeout time.Duration, ve
 	return "", "", ErrWorktreeCollision
 }
 
+// mergeLockGitDir returns the shared git directory used for merge
+// serialization. Linked worktrees expose .git as a file, so locks must live
+// under git's common dir rather than repoRoot/.git.
+func mergeLockGitDir(repoRoot string) string {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--git-common-dir")
+	cmd.Dir = repoRoot
+	out, err := cmd.Output()
+	if err != nil {
+		return filepath.Join(repoRoot, ".git")
+	}
+
+	gitDir := strings.TrimSpace(string(out))
+	if gitDir == "" {
+		return filepath.Join(repoRoot, ".git")
+	}
+	if !filepath.IsAbs(gitDir) {
+		gitDir = filepath.Join(repoRoot, gitDir)
+	}
+	return filepath.Clean(gitDir)
+}
+
 // acquireMergeLock obtains an exclusive file lock for merge serialization.
 func acquireMergeLock(repoRoot string) (*os.File, error) {
-	lockPath := filepath.Join(repoRoot, ".git", "agentops", "merge.lock")
+	lockPath := filepath.Join(mergeLockGitDir(repoRoot), "agentops", "merge.lock")
 	if err := os.MkdirAll(filepath.Dir(lockPath), 0o750); err != nil {
 		return nil, fmt.Errorf("create lock dir: %w", err)
 	}

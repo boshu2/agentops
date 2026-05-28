@@ -3,6 +3,7 @@
   "id": "agentops-core.goals-autodev-evolve",
   "name": "AgentOps Goals Autodev Evolve Canary",
   "description": "Offline public canary for the fitness and autonomous-loop control plane: ao goals, PROGRAM/AUTODEV validation, and ao evolve operator defaults.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",

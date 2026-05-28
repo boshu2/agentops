@@ -1,3 +1,4 @@
+// practices: [wiki-knowledge-surface, design-by-contract]
 package main
 
 import (

@@ -1,19 +1,32 @@
 ---
 name: bug-hunt
-description: 'Investigate bugs and root causes.'
+description: Investigate bugs and root causes.
+practices:
+- refactoring
+- property-based-testing
+- code-complete
+hexagonal_role: domain
+consumes:
+- beads
+- standards
+produces: []
+context_rel:
+- kind: shared-kernel
+  with: standards
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: execution
   dependencies:
-    - beads  # optional - for issue tracking
-output_contract: "diagnosis report, optional fix commits"
+  - beads
+output_contract: diagnosis report, optional fix commits
 ---
 # Bug Hunt Skill
 
@@ -395,6 +408,8 @@ Common bug patterns to check:
 | Bug report missing key information | Incomplete investigation or skipped steps | Verify all 4 phases completed. Ensure root cause identified with file:line. Check git blame ran for responsible commit. |
 
 ## Reference Documents
+
+- [references/bug-hunt.feature](references/bug-hunt.feature) — Executable spec: 4-phase root-cause investigation, fix-the-cause-not-symptom, --audit sweep, cited artifact (soc-qk4b)
 
 - [references/audit-report-template.md](references/audit-report-template.md)
 - [references/bug-report-template.md](references/bug-report-template.md)

@@ -1,0 +1,26 @@
+{
+  "schema_version": "scenario-results.v1",
+  "run_id": "run-2026-05-17-001",
+  "iteration": 0,
+  "generated_at": "2026-05-17T09:00:00Z",
+  "results": [
+    {
+      "scenario_id": "s-2026-05-17-001",
+      "directive_id": "d-scenario-gate",
+      "score": 0.95,
+      "threshold": 0.8,
+      "verdict": "pass",
+      "judged_at": "2026-05-17T08:59:00Z",
+      "evidence": [".agents/rpi/phase-3-result.json"]
+    },
+    {
+      "scenario_id": "s-2026-05-17-002",
+      "directive_id": "d-trace-chain",
+      "score": 0.88,
+      "threshold": 0.8,
+      "verdict": "pass",
+      "judged_at": "2026-05-17T08:59:30Z",
+      "evidence": [".agents/rpi/phase-3-result.json"]
+    }
+  ]
+}

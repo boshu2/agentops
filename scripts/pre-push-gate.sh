@@ -50,6 +50,15 @@
 #  33. BATS orphan hooks audit
 #  34. Skill citation parity (ao lookup → ao metrics cite)
 #  35. Flywheel health (warn only, non-blocking)
+#  36. CHANGELOG sync (docs/CHANGELOG.md must match root)
+#  37. ~/.agents content-hash gate (post-hoc mutation detector)
+#  38. Executable-spec link integrity (warn-only, F1.6 / soc-58nt.1.9)
+#      ao goals scenarios --lint + ao goals trace --orphans; never blocks.
+#      Promote to blocking after 2 consecutive clean CI runs on main.
+#  39. PR Evidence claim verification (ship-loop anti-pattern #7)
+#      Each `Evidence:` line in the open PR body must appear verbatim in this
+#      run's verdict log. Skips when gh missing / no PR / no Evidence: line.
+#      Skip-key: AGENTOPS_PREPUSH_SKIP_EVIDENCE_CLAIM=1.
 #
 # Usage:
 #   scripts/pre-push-gate.sh [--scope auto|upstream|staged|worktree|head]
@@ -116,15 +125,30 @@ else
 fi
 FAST_MODE=false
 TWO_PASS=false
-SINGLE_PASS=false
 SMOKE_EVOLVE=false
 FAIL_FAST_SETTING="${PRE_PUSH_FAIL_FAST:-auto}"
 FAIL_FAST_EFFECTIVE=false
 FAIL_FAST_PENDING=false
 HASH_GATE_SNAPSHOT=""
-pass() { echo -e "${GREEN}  ok${NC}  $1"; }
-skip() { echo -e "  --  $1 (skipped)"; skipped=$((skipped + 1)); }
-warn() { echo -e "${YELLOW}WARN${NC}  $1"; }
+
+# PRE_PUSH_GATE_LOG — captures each check's verdict line synchronously so
+# check #39 (PR Evidence claim verification, ship-loop anti-pattern #7) can
+# grep this run's output without re-running the gate. The log holds only
+# verdict lines (pass/fail/skip/warn) — not indented sub-output — which is
+# exactly what an Evidence: claim should reference.
+: "${PRE_PUSH_GATE_LOG:=$(mktemp -t pre-push-gate.XXXXXX.log)}"
+export PRE_PUSH_GATE_LOG
+PRE_PUSH_GATE_LOG_OWNED=true
+cleanup_gate_log() {
+    if [[ "${PRE_PUSH_GATE_LOG_OWNED:-false}" == "true" && -n "${PRE_PUSH_GATE_LOG:-}" ]]; then
+        rm -f "$PRE_PUSH_GATE_LOG" 2>/dev/null || true
+    fi
+}
+trap cleanup_gate_log EXIT
+
+pass() { echo -e "${GREEN}  ok${NC}  $1"; printf '  ok  %s\n' "$1" >>"$PRE_PUSH_GATE_LOG"; }
+skip() { echo -e "  --  $1 (skipped)"; printf '  --  %s (skipped)\n' "$1" >>"$PRE_PUSH_GATE_LOG"; skipped=$((skipped + 1)); }
+warn() { echo -e "${YELLOW}WARN${NC}  $1"; printf 'WARN  %s\n' "$1" >>"$PRE_PUSH_GATE_LOG"; }
 indent_output() {
     while IFS= read -r line; do
         printf '    %s\n' "$line"
@@ -177,8 +201,10 @@ blocked_exit() {
 fail() {
     if truthy "${_PRE_PUSH_ADVISORY:-0}"; then
         echo -e "${YELLOW}WARN${NC}  $1 (advisory)"
+        printf 'WARN  %s (advisory)\n' "$1" >>"$PRE_PUSH_GATE_LOG"
     else
         echo -e "${RED}FAIL${NC}  $1"
+        printf 'FAIL  %s\n' "$1" >>"$PRE_PUSH_GATE_LOG"
     fi
     errors=$((errors + 1))
     if [[ "${FAIL_FAST_EFFECTIVE:-false}" == "true" ]]; then
@@ -212,8 +238,8 @@ Options:
   --accumulate  Continue after failures and report all blocking failures
   --two-pass    Pass 1: --fast --scope head --fail-fast (blocking)
                 Pass 2: --scope upstream --accumulate (advisory, WARN not FAIL)
-                NOTE: two-pass is now the default for local pushes
-  --single-pass Opt out of two-pass default; run full single-pass gate
+                Opt-in only; local --fast defaults to one bounded pass.
+  --single-pass Compatibility no-op; local default is already single-pass.
   --smoke-evolve Opt-in: after the normal gate, run scripts/test-evolve-cycle-smoke.sh
                  (one bounded ao evolve cycle; asserts commit lands and no new
                  orphans). Takes 15-30 min; off by default. soc-k3fa / mc-m3.5-pre4.
@@ -221,7 +247,9 @@ Options:
 Environment:
   PRE_PUSH_FAIL_FAST=0|1|auto   default auto: enabled for local --fast, off in CI
   PRE_PUSH_TWO_PASS=1           enable two-pass mode via env
-  PRE_PUSH_RUN_EVAL=1           run eval canaries even when eval files did not change
+  PRE_PUSH_RUN_EVAL=1           run eval canaries in local fast mode
+  PRE_PUSH_RUN_CONTRACT_CANARIES=1
+                                run blocking contract canaries in local fast mode
   PRE_PUSH_STRICT_EVAL=1        make local fast eval canaries blocking
   PRE_PUSH_AGENT_HEALTH=1       run local fast AgentOps health/ratchet checks
   PRE_PUSH_AGENT_HASH=1         force local fast agents-hub content hash gate
@@ -231,8 +259,6 @@ EOF
 
 if truthy "${PRE_PUSH_TWO_PASS:-0}"; then
     TWO_PASS=true
-elif [[ -n "${PRE_PUSH_TWO_PASS:-}" ]] && ! truthy "${PRE_PUSH_TWO_PASS}"; then
-    SINGLE_PASS=true
 fi
 
 while [[ $# -gt 0 ]]; do
@@ -259,7 +285,6 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --single-pass)
-            SINGLE_PASS=true
             shift
             ;;
         --smoke-evolve)
@@ -301,14 +326,13 @@ elif truthy "$FAIL_FAST_SETTING"; then
     FAIL_FAST_EFFECTIVE=true
 fi
 
-# --- Default to two-pass for local pushes (inner/middle loop separation) ---
-if [[ "$SINGLE_PASS" != "true" ]] && [[ "$TWO_PASS" != "true" ]] && ! is_ci_env; then
-    TWO_PASS=true
-fi
-
 # --- Two-pass mode: re-invoke as pass 1 (blocking) + pass 2 (advisory) ---
 if [[ "$TWO_PASS" == "true" ]]; then
     SELF="$SCRIPT_DIR/pre-push-gate.sh"
+    pass2_args=(--scope upstream --accumulate)
+    if [[ "$FAST_MODE" == "true" ]]; then
+        pass2_args=(--fast "${pass2_args[@]}")
+    fi
     echo "=== Two-pass mode ==="
     echo ""
     echo "--- Pass 1: HEAD commit (blocking) ---"
@@ -324,7 +348,7 @@ if [[ "$TWO_PASS" == "true" ]]; then
     echo -e "${GREEN}--- Pass 1: PASSED ---${NC}"
     echo ""
     echo "--- Pass 2: upstream range (advisory) ---"
-    _PRE_PUSH_ADVISORY=1 PRE_PUSH_TWO_PASS=0 "$SELF" --scope upstream --accumulate || true
+    _PRE_PUSH_ADVISORY=1 PRE_PUSH_TWO_PASS=0 "$SELF" "${pass2_args[@]}" || true
     exit 0
 fi
 
@@ -383,6 +407,22 @@ select_fast_eval_suites() {
 }
 
 # --- Fast mode: detect changed file categories ---
+#
+# FOOTGUN WARNING (soc-7ovd, learning 2026-05-19): the HAS_<surface> variables
+# below default to 1 and are reset to 0 ONLY inside the `if [[ "$FAST_MODE" ==
+# "true" ]]` block. In FULL mode the reset never runs — HAS_<surface> stays at
+# the default 1. Therefore any later check `[[ "$HAS_<surface>" -eq 1 ]]`
+# outside the FAST_MODE block reads a STALE-TRUE default, not a path filter.
+#
+# If you need path-filtered behavior in FULL mode, EITHER:
+#   1. Wrap the check inside `if [[ "$FAST_MODE" == "true" ]]` (same scope), OR
+#   2. Inline a fresh diff computation in your block:
+#        diff="$(collect_all_changed 2>/dev/null || true)"
+#        if echo "$diff" | grep -qE '<your-pattern>'; then ... ; fi
+#
+# Refactor candidate (filed as next-work, evolve-2026-05-19): compute the diff
+# once at script start and populate HAS_<surface> regardless of FAST_MODE.
+#
 HAS_GO=1
 HAS_SKILL=1
 HAS_HOOK=1
@@ -392,6 +432,7 @@ HAS_LEARNING=1
 HAS_EVAL=1
 HAS_CONTRACT=1
 HAS_CI_POLICY=1
+HAS_CONTEXT_MAP=1
 HAS_SWARM=1
 HAS_CHANGELOG=1
 
@@ -437,10 +478,15 @@ if [[ "$FAST_MODE" == "true" ]]; then
     else
         HAS_CONTRACT=0
     fi
-    if echo "$all_changed" | grep -qE '^\.github/workflows/validate\.yml$|^docs/CI-CD\.md$|^AGENTS\.md$|^scripts/validate-ci-policy-parity\.sh$'; then
+    if echo "$all_changed" | grep -qE '^\.github/workflows/validate\.yml$|^docs/CI-CD\.md$|^AGENTS\.md$|^AGENTS-CI\.md$|^scripts/(generate-ci-jobs-table|validate-ci-policy-parity)\.sh$'; then
         HAS_CI_POLICY=1
     else
         HAS_CI_POLICY=0
+    fi
+    if echo "$all_changed" | grep -qE '^skills/.*/SKILL\.md$|^scripts/generate-context-map\.sh$|^scripts/validate-context-map-drift\.sh$|^docs/contracts/context-map\.md$'; then
+        HAS_CONTEXT_MAP=1
+    else
+        HAS_CONTEXT_MAP=0
     fi
     if echo "$all_changed" | grep -qE '^\.agents/swarm/|^schemas/swarm-|^scripts/validate-swarm-evidence\.sh$'; then
         HAS_SWARM=1
@@ -470,6 +516,7 @@ needs_check() {
         eval)     [[ "$HAS_EVAL" -eq 1 ]] ;;
         contract) [[ "$HAS_CONTRACT" -eq 1 ]] ;;
         ci_policy) [[ "$HAS_CI_POLICY" -eq 1 ]] ;;
+        context_map) [[ "$HAS_CONTEXT_MAP" -eq 1 ]] ;;
         swarm)    [[ "$HAS_SWARM" -eq 1 ]] ;;
         changelog) [[ "$HAS_CHANGELOG" -eq 1 ]] ;;
         always)   return 0 ;;
@@ -516,12 +563,48 @@ needs_release_audit_artifact_check() {
     changed_paths | grep -qE '^(docs/releases/.*-audit\.md|scripts/(ci-local-release|resolve-release-artifacts|validate-release-audit-artifacts)\.sh|tests/scripts/release-artifacts\.bats)$'
 }
 
+# --- 28c. Codex hook manifest parity (early local runtime drift) ---
+run_codex_hook_manifest_parity() {
+    # When hooks/ changes, verify the local Codex hook manifest still maps
+    # cleanly to AgentOps-managed handlers. Run this before expensive eval/docs
+    # tails so stale local runtime drift fails fast.
+    # Skip key: AGENTOPS_PREPUSH_SKIP_CODEX_HOOKS=1 for emergency disable
+    # without --no-verify.
+    if needs_check hook; then
+        if prepush_skip_flag CODEX_HOOKS; then
+            skip "codex hook manifest parity (AGENTOPS_PREPUSH_SKIP_CODEX_HOOKS=1)"
+        elif [[ -x scripts/audit-codex-hooks.sh ]]; then
+            codex_home_path="${CODEX_HOME:-$HOME/.codex}"
+            if [[ -f "$codex_home_path/hooks.json" ]]; then
+                if codex_hooks_output="$(scripts/audit-codex-hooks.sh --strict 2>&1)"; then
+                    pass "codex hook manifest parity"
+                else
+                    fail "codex hook manifest parity (run: bash scripts/audit-codex-hooks.sh --strict)"
+                    indent_output "$codex_hooks_output"
+                fi
+            else
+                skip "codex hook manifest parity (no $codex_home_path/hooks.json)"
+            fi
+        else
+            fail "missing executable: scripts/audit-codex-hooks.sh"
+        fi
+    else
+        skip "codex hook manifest parity"
+    fi
+}
+
 if [[ "$FAST_MODE" == "true" ]]; then
     echo "pre-push gate (fast): validating changed files before push..."
     echo "  go=$HAS_GO skill=$HAS_SKILL hook=$HAS_HOOK docs=$HAS_DOCS shell=$HAS_SHELL learning=$HAS_LEARNING eval=$HAS_EVAL contract=$HAS_CONTRACT ci_policy=$HAS_CI_POLICY swarm=$HAS_SWARM changelog=$HAS_CHANGELOG"
+    if ! is_ci_env; then
+        echo "  lane=local-fast heavy=opt-in eval=${PRE_PUSH_RUN_EVAL:-0} contract_canaries=${PRE_PUSH_RUN_CONTRACT_CANARIES:-0} two_pass=${PRE_PUSH_TWO_PASS:-0}"
+    fi
 else
     echo "pre-push gate: validating before push..."
 fi
+
+# --- 0. Local runtime drift before expensive tails ---
+run_codex_hook_manifest_parity
 
 # --- 1. Go build + vet ---
 if needs_check go; then
@@ -1028,6 +1111,286 @@ else
     skip "codex lifecycle guards"
 fi
 
+# --- 22b. Codex parity drift (GOALS.md directive D7) ---
+if needs_check skill; then
+    if [[ -f scripts/check-codex-parity-drift.sh ]]; then
+        if codex_parity_drift_output="$(bash scripts/check-codex-parity-drift.sh 2>&1)"; then
+            pass "codex parity drift"
+        else
+            fail "codex parity drift"
+            indent_output "$codex_parity_drift_output"
+        fi
+    else
+        fail "missing file: scripts/check-codex-parity-drift.sh"
+    fi
+else
+    skip "codex parity drift"
+fi
+
+# --- 22c. Quarantine-empty (GOALS.md directive D3) ---
+# Always runs (no needs_check guard): the quarantine directory is shared
+# infrastructure and any populated state must surface even on unrelated diffs.
+# Single-cycle override: ALLOW_QUARANTINE=1.
+if [[ -f scripts/check-quarantine-empty.sh ]]; then
+    if quarantine_empty_output="$(bash scripts/check-quarantine-empty.sh 2>&1)"; then
+        pass "quarantine empty"
+    else
+        fail "quarantine empty"
+        indent_output "$quarantine_empty_output"
+    fi
+else
+    fail "missing file: scripts/check-quarantine-empty.sh"
+fi
+
+# --- 22e. Goals-validate (GOALS.md gate goals-validate, weight 5) ---
+# Always runs (no needs_check guard): GOALS.md changes can happen in any
+# diff scope and structural breakage must surface even on docs-only pushes.
+# Requires cli/bin/ao; in fast mode skip with friendly hint when absent.
+if [[ "$FAST_MODE" == "true" && ! -x "cli/bin/ao" ]]; then
+    skip "goals validate (no pre-built cli/bin/ao; run 'cd cli && make build' to enable)"
+elif [[ -x "cli/bin/ao" ]] && command -v jq >/dev/null 2>&1; then
+    if goals_validate_output="$(cli/bin/ao goals validate --json 2>&1)" && \
+       echo "$goals_validate_output" | jq -e '.valid == true' >/dev/null 2>&1; then
+        pass "goals validate"
+    else
+        fail "goals validate"
+        indent_output "$goals_validate_output"
+    fi
+elif [[ ! -d "cli/cmd/ao" ]]; then
+    # Bats fake-repo, partial checkout, or any environment where cli/cmd/ao
+    # isn't present: skip rather than attempt a no-source build that emits
+    # a misleading "/tmp/ao-goals-val: No such file or directory" error.
+    skip "goals validate (cli/cmd/ao/ not present in this tree)"
+elif command -v jq >/dev/null 2>&1; then
+    # Full-mode fallback: build into a temp binary the gate row's way.
+    if goals_validate_output="$(bash -c 'cd cli && go build -o /tmp/ao-goals-val ./cmd/ao && /tmp/ao-goals-val goals validate --json' 2>&1)" && \
+       echo "$goals_validate_output" | jq -e '.valid == true' >/dev/null 2>&1; then
+        pass "goals validate"
+    else
+        fail "goals validate"
+        indent_output "$goals_validate_output"
+    fi
+else
+    skip "goals validate (jq not installed)"
+fi
+
+# --- 22f. Wiring-closure (GOALS.md gate wiring-closure, weight 7) ---
+# Always runs: any script/skill/hook addition or registry edit can break
+# closure, regardless of which diff category fired. Fast (~1-2s).
+if [[ -f scripts/check-wiring-closure.sh ]]; then
+    if wiring_closure_output="$(timeout 60 bash scripts/check-wiring-closure.sh 2>&1)"; then
+        pass "wiring closure"
+    else
+        fail "wiring closure"
+        indent_output "$wiring_closure_output"
+    fi
+else
+    fail "missing file: scripts/check-wiring-closure.sh"
+fi
+
+# --- 22f2. AgentOps domain-evolution control artifacts ---
+# Runs when present so the BDD/DDD/Hexagonal/TDD/XP control surface stays wired.
+if [[ -f scripts/check-agentops-domain-evolution-plan.sh ]]; then
+    if domain_evolution_output="$(bash scripts/check-agentops-domain-evolution-plan.sh 2>&1)"; then
+        pass "agentops domain evolution plan"
+    else
+        fail "agentops domain evolution plan"
+        indent_output "$domain_evolution_output"
+    fi
+fi
+
+# --- 22g. Corpus-freshness (GOALS.md gate corpus-freshness, weight 4 — Directive D11) ---
+# Always runs: structural gate; skips cleanly when no snapshot dir exists so
+# greenfield boxes do not block. Real teeth: operator boxes that DO have a
+# snapshot dir will fail if their newest snapshot is >7d old. Fast (<100ms).
+if [[ -f scripts/check-corpus-freshness.sh ]]; then
+    if corpus_freshness_output="$(bash scripts/check-corpus-freshness.sh 2>&1)"; then
+        pass "corpus freshness"
+    else
+        fail "corpus freshness"
+        indent_output "$corpus_freshness_output"
+    fi
+else
+    fail "missing file: scripts/check-corpus-freshness.sh"
+fi
+
+# --- 22g2. Loop-shape (GOALS.md Directive 12 — warn-only) ---
+# Warn-only by design: flags non-trivial beads missing a Gherkin block or slice
+# candidate. Never blocks a push (Directive 12 posture). Skips cleanly when bd
+# or jq is absent. Fast (<200ms).
+if prepush_skip_flag LOOP_SHAPE; then
+    skip "loop-shape (AGENTOPS_PREPUSH_SKIP_LOOP_SHAPE=1)"
+elif [[ -f scripts/check-loop-shape.sh ]]; then
+    loop_shape_output="$(bash scripts/check-loop-shape.sh 2>&1 || true)"
+    if grep -q '^WARN: ' <<<"$loop_shape_output"; then
+        warn "loop-shape (non-trivial beads missing BDD/slice shape — Directive 12 warn-only)"
+        indent_output "$loop_shape_output"
+    elif grep -q '^check-loop-shape: SKIP' <<<"$loop_shape_output"; then
+        skip "loop-shape (${loop_shape_output#check-loop-shape: })"
+    else
+        pass "loop-shape"
+    fi
+fi
+
+# --- 22h. Flywheel-compounding snapshot (GOALS.md gate flywheel-compounding-snapshot, weight 5 — G1) ---
+# Validates the tracked corpus-state evidence file docs/releases/flywheel-compounding-snapshot.json.
+# Fast (<100ms). Refresh with: bash scripts/snapshot-flywheel-compounding.sh
+if [[ -f scripts/check-flywheel-compounding-snapshot.sh ]]; then
+    if flywheel_compounding_snapshot_output="$(bash scripts/check-flywheel-compounding-snapshot.sh 2>&1)"; then
+        pass "flywheel-compounding snapshot"
+    else
+        fail "flywheel-compounding snapshot"
+        indent_output "$flywheel_compounding_snapshot_output"
+    fi
+else
+    fail "missing file: scripts/check-flywheel-compounding-snapshot.sh"
+fi
+
+# --- 22i. Factory-yield-ledger contract (retired with factory contract corpus) ---
+# AgentOps 3.0 retired the factory contract corpus. Keep the gate blocking if a
+# checker or contract resurfaces, but skip cleanly on current hookless trees.
+if [[ -f scripts/check-factory-yield-ledger.sh ]]; then
+    if factory_yield_ledger_output="$(bash scripts/check-factory-yield-ledger.sh 2>&1)"; then
+        pass "factory-yield ledger"
+    else
+        fail "factory-yield ledger"
+        indent_output "$factory_yield_ledger_output"
+    fi
+elif [[ ! -f docs/contracts/factory-yield-ledger.md ]]; then
+    skip "factory-yield ledger (retired factory contract corpus absent)"
+else
+    fail "missing file: scripts/check-factory-yield-ledger.sh"
+fi
+
+# --- 22j. Finding-registry contract (GOALS.md gate finding-registry, weight 4 — A2 audit follow-up) ---
+# Validates docs/contracts/finding-registry.* schema + cross-check + live registry.
+# Fast (<200ms with a populated registry).
+if [[ -f scripts/check-finding-registry.sh ]]; then
+    if finding_registry_output="$(bash scripts/check-finding-registry.sh 2>&1)"; then
+        pass "finding-registry"
+    else
+        fail "finding-registry"
+        indent_output "$finding_registry_output"
+    fi
+else
+    fail "missing file: scripts/check-finding-registry.sh"
+fi
+
+# --- 22k. Factory-admission contract (retired with factory contract corpus) ---
+# AgentOps 3.0 retired the factory contract corpus. Keep the gate blocking if a
+# checker or contract resurfaces, but skip cleanly on current hookless trees.
+if [[ -f scripts/check-factory-admission.sh ]]; then
+    if factory_admission_output="$(bash scripts/check-factory-admission.sh 2>&1)"; then
+        pass "factory-admission"
+    else
+        fail "factory-admission"
+        indent_output "$factory_admission_output"
+    fi
+elif [[ ! -f docs/contracts/factory-admission.md ]]; then
+    skip "factory-admission (retired factory contract corpus absent)"
+else
+    fail "missing file: scripts/check-factory-admission.sh"
+fi
+
+# --- 22l. Contracts structural floor (GOALS.md gate contracts-structural-floor, weight 4) ---
+# Every docs/contracts/*.md meets the minimum bar: heading, cataloged in
+# documentation-index, body >= 200 bytes, paired schema is valid JSON.
+if [[ -f scripts/check-contracts-structural-floor.sh ]]; then
+    if contracts_floor_output="$(bash scripts/check-contracts-structural-floor.sh 2>&1)"; then
+        pass "contracts structural floor"
+    else
+        fail "contracts structural floor"
+        indent_output "$contracts_floor_output"
+    fi
+else
+    fail "missing file: scripts/check-contracts-structural-floor.sh"
+fi
+
+# --- 22m. Docs learning references (soc-w6vh.5.1, cycle 62) ---
+# docs/plans/ + docs/learnings/ MUST NOT reference absent
+# .agents/learnings/YYYY-MM-DD-*.md paths without a docs/learnings/<basename>.md
+# mirror or an explicit (local-only)/(documentary)/(template) annotation.
+if [[ -f scripts/check-docs-learning-references.sh ]]; then
+    if docs_learning_output="$(bash scripts/check-docs-learning-references.sh 2>&1)"; then
+        pass "docs learning references"
+    else
+        fail "docs learning references"
+        indent_output "$docs_learning_output"
+    fi
+else
+    fail "missing file: scripts/check-docs-learning-references.sh"
+fi
+
+# --- 22n. Registry drift (registries-drift lesson, 2026-05-17) ---
+# Detects drift between skills/ (source of truth) and the hand-edited DDD/hex
+# registry docs: declared skill counts, listed skill set, hexagonal_role
+# column matching frontmatter.
+# Always runs (no needs_check guard): drift can be introduced by any skill
+# add/rename/remove regardless of which CI category was touched.
+if [[ -f scripts/check-registry-drift.sh ]]; then
+    if registry_drift_output="$(bash scripts/check-registry-drift.sh 2>&1)"; then
+        pass "registry drift"
+    else
+        fail "registry drift"
+        indent_output "$registry_drift_output"
+    fi
+else
+    fail "missing file: scripts/check-registry-drift.sh"
+fi
+
+# --- 22o. Bounded-contexts drift (soc-zxia.2 Phase 2) ---
+# Verifies docs/contracts/bounded-contexts.yaml (canonical BC1-BC5 definitions)
+# matches the prose in the two registry docs that cite them.
+# Always runs (no needs_check guard): BC edits can come from any diff scope.
+if [[ -f scripts/check-bounded-contexts-drift.sh ]]; then
+    if bc_drift_output="$(bash scripts/check-bounded-contexts-drift.sh 2>&1)"; then
+        pass "bounded-contexts drift"
+    else
+        fail "bounded-contexts drift"
+        indent_output "$bc_drift_output"
+    fi
+else
+    fail "missing file: scripts/check-bounded-contexts-drift.sh"
+fi
+
+# --- 22p. Skill-domain-map golden gate (soc-zxia.3 Phase 3) ---
+# Verifies docs/reference/agentops-skill-domain-map.md matches what the
+# generator would produce from yaml canonical sources. Forbids hand
+# edits to the table sections; eliminates the entire class of drift.
+# Always runs: yaml or skills/ changes can come from any diff scope.
+if [[ -f scripts/generate-skill-domain-map.sh ]]; then
+    if domain_map_output="$(bash scripts/generate-skill-domain-map.sh --check 2>&1)"; then
+        pass "skill-domain-map golden gate"
+    else
+        fail "skill-domain-map golden gate"
+        indent_output "$domain_map_output"
+    fi
+else
+    fail "missing file: scripts/generate-skill-domain-map.sh"
+fi
+
+# --- 22d. Flywheel-proof (GOALS.md gate flywheel-proof, weight 7) ---
+# Runs the 20-check end-to-end flywheel proof against an isolated repo.
+# ~1.7s with a pre-built cli/bin/ao; otherwise auto-builds (~30s cold) so
+# we only run in fast mode when relevant diff categories are present AND
+# a pre-built binary already exists. Full mode always runs.
+if needs_check go || needs_check skill || needs_check hook || needs_check eval; then
+    if [[ "$FAST_MODE" == "true" && ! -x "cli/bin/ao" ]]; then
+        skip "flywheel proof (no pre-built cli/bin/ao; run 'cd cli && make build' to enable)"
+    elif [[ -f scripts/proof-run.sh ]]; then
+        if flywheel_proof_output="$(bash scripts/proof-run.sh 2>&1)"; then
+            pass "flywheel proof"
+        else
+            fail "flywheel proof"
+            indent_output "$flywheel_proof_output"
+        fi
+    else
+        fail "missing file: scripts/proof-run.sh"
+    fi
+else
+    skip "flywheel proof"
+fi
+
 # --- 23. Skill CLI snippets ---
 if needs_check skill; then
     if [[ -x scripts/validate-skill-cli-snippets.sh ]]; then
@@ -1086,19 +1449,47 @@ else
 fi
 
 # --- 24c. AgentOps eval canaries ---
+# Path-filter parity with CI (eval-workbench-verify runs only when eval/go/ci
+# surfaces changed). The previous fix (soc-nmhp, PR #350) relied on HAS_EVAL,
+# which is initialized to 1 by default and only reset to 0 inside the
+# FAST_MODE block — so in full mode HAS_EVAL stayed 1 and the check was
+# effectively always-true. This iteration (soc-98o8) inlines the eval-diff
+# path check for FULL mode only. Triggers in priority order:
+#   1. PRE_PUSH_SKIP_EVAL=1            → never run (operator force-off)
+#   2. PRE_PUSH_RUN_EVAL=1             → always run (operator force-on)
+#   3. is_ci_env                       → always run (CI; matches eval-workbench-verify)
+#   4. FAST_MODE && ! is_ci_env        → never auto-run (require operator opt-in;
+#                                        preserves the conservative fast-mode
+#                                        behavior covered by pre-push-gate.bats
+#                                        tests around line 823)
+#   5. full mode + eval-surface diff   → run when evals/, schemas/eval-,
+#                                        scripts/eval-agentops.sh,
+#                                        cli/internal/eval/, or cli/cmd/ao/eval changed
+#   6. otherwise (full mode no diff)   → skip (local-env-no-baselines guard)
 run_eval_canaries=false
 if [[ "${PRE_PUSH_SKIP_EVAL:-0}" == "1" ]]; then
     run_eval_canaries=false
 elif truthy "${PRE_PUSH_RUN_EVAL:-0}"; then
     run_eval_canaries=true
-elif needs_check eval; then
+elif is_ci_env; then
     run_eval_canaries=true
+elif [[ "$FAST_MODE" == "true" ]]; then
+    # Fast mode local: never auto-run; require operator opt-in via
+    # PRE_PUSH_RUN_EVAL=1 (semantics preserved from pre-soc-nmhp behavior).
+    run_eval_canaries=false
+else
+    # Full mode local: run only when eval surfaces actually changed. Compute
+    # the diff inline because HAS_EVAL is default=1 outside FAST_MODE.
+    eval_diff="$(collect_all_changed 2>/dev/null || true)"
+    if echo "$eval_diff" | grep -qE '^evals/|^schemas/eval-|^scripts/eval-agentops\.sh$|^cli/internal/eval/|^cli/cmd/ao/eval'; then
+        run_eval_canaries=true
+    fi
 fi
 
 if [[ "$run_eval_canaries" == "true" ]]; then
     if [[ -x scripts/eval-agentops.sh ]]; then
         eval_args=(--fast)
-        if [[ "$FAST_MODE" == "true" ]] && ! truthy "${PRE_PUSH_RUN_EVAL:-0}"; then
+        if [[ "$FAST_MODE" == "true" ]]; then
             selected_eval_suites="$(select_fast_eval_suites "$all_changed" || true)"
             if [[ -n "$selected_eval_suites" ]]; then
                 while IFS= read -r suite_path; do
@@ -1134,7 +1525,11 @@ if [[ "$run_eval_canaries" == "true" ]]; then
         fail "missing executable: scripts/eval-agentops.sh"
     fi
 else
-    skip "AgentOps eval canaries (local fast: no eval changes; set PRE_PUSH_RUN_EVAL=1)"
+    if [[ "$FAST_MODE" == "true" ]] && ! is_ci_env; then
+        skip "AgentOps eval canaries (local fast: opt-in with PRE_PUSH_RUN_EVAL=1)"
+    else
+        skip "AgentOps eval canaries (no eval changes; set PRE_PUSH_RUN_EVAL=1)"
+    fi
 fi
 
 # --- 24d. AgentOps eval baseline-audit ---
@@ -1146,6 +1541,8 @@ if [[ "${PRE_PUSH_SKIP_EVAL:-0}" == "1" ]]; then
     run_baseline_audit=false
 elif truthy "${PRE_PUSH_RUN_EVAL:-0}"; then
     run_baseline_audit=true
+elif [[ "$FAST_MODE" == "true" ]] && ! is_ci_env; then
+    run_baseline_audit=false
 elif needs_check eval; then
     run_baseline_audit=true
 fi
@@ -1198,13 +1595,21 @@ except Exception:
         fi
     fi
 else
-    skip "AgentOps eval baseline-audit (local fast: no eval changes; set PRE_PUSH_RUN_EVAL=1)"
+    if [[ "$FAST_MODE" == "true" ]] && ! is_ci_env; then
+        skip "AgentOps eval baseline-audit (local fast: opt-in with PRE_PUSH_RUN_EVAL=1)"
+    else
+        skip "AgentOps eval baseline-audit (no eval changes; set PRE_PUSH_RUN_EVAL=1)"
+    fi
 fi
 
 # --- 24e. Official contract canaries (blocking, canary-sensitive changes) ---
 run_contract_canaries=false
 if [[ "${PRE_PUSH_SKIP_EVAL:-0}" != "1" ]]; then
     if truthy "${PRE_PUSH_RUN_CONTRACT_CANARIES:-0}"; then
+        run_contract_canaries=true
+    elif [[ "$FAST_MODE" == "true" ]] && ! is_ci_env; then
+        run_contract_canaries=false
+    elif [[ "$FAST_MODE" != "true" ]]; then
         run_contract_canaries=true
     elif [[ "$FAST_MODE" == "true" ]] && [[ -n "${all_changed:-}" ]]; then
         if echo "$all_changed" | grep -qE '^tests/canaries/|^scripts/test-agentops-contract-canaries\.sh$|^\.github/workflows/validate\.yml$'; then
@@ -1236,7 +1641,11 @@ if [[ "$run_contract_canaries" == "true" ]]; then
         skip "contract canaries (runner not found)"
     fi
 else
-    skip "contract canaries (no canary-sensitive changes; set PRE_PUSH_RUN_CONTRACT_CANARIES=1)"
+    if [[ "$FAST_MODE" == "true" ]] && ! is_ci_env; then
+        skip "contract canaries (local fast: opt-in with PRE_PUSH_RUN_CONTRACT_CANARIES=1)"
+    else
+        skip "contract canaries (no canary-sensitive changes; set PRE_PUSH_RUN_CONTRACT_CANARIES=1)"
+    fi
 fi
 
 # --- 25. Doc-release stabilization gate ---
@@ -1337,22 +1746,6 @@ else
     skip "hook preflight"
 fi
 
-# --- 27b. Standards-injector reference completeness ---
-if needs_check hook; then
-    if [[ -x scripts/check-standards-injector-completeness.sh ]]; then
-        if standards_inj_output="$(./scripts/check-standards-injector-completeness.sh 2>&1)"; then
-            pass "standards-injector references complete"
-        else
-            fail "standards-injector references complete"
-            indent_output "$standards_inj_output"
-        fi
-    else
-        fail "missing executable: scripts/check-standards-injector-completeness.sh"
-    fi
-else
-    skip "standards-injector references complete"
-fi
-
 # --- 28. Hooks/docs parity ---
 if needs_check hook; then
     if [[ -x scripts/validate-hooks-doc-parity.sh ]]; then
@@ -1369,31 +1762,40 @@ else
     skip "hooks/docs parity"
 fi
 
-# --- 28b. Codex hook manifest parity (R2 from soc-h53j) ---
-# When hooks/ changes, verify the local Codex hook manifest still maps cleanly to
-# AgentOps-managed handlers. Skip silently when no Codex install is present so
-# operators without ~/.codex (or with a non-AgentOps install path) are not blocked.
-# Skip key: AGENTOPS_PREPUSH_SKIP_CODEX_HOOKS=1 for emergency disable without --no-verify.
-if needs_check hook; then
-    if prepush_skip_flag CODEX_HOOKS; then
-        skip "codex hook manifest parity (AGENTOPS_PREPUSH_SKIP_CODEX_HOOKS=1)"
-    elif [[ -x scripts/audit-codex-hooks.sh ]]; then
-        codex_home_path="${CODEX_HOME:-$HOME/.codex}"
-        if [[ -f "$codex_home_path/hooks.json" ]]; then
-            if codex_hooks_output="$(scripts/audit-codex-hooks.sh --strict 2>&1)"; then
-                pass "codex hook manifest parity"
-            else
-                fail "codex hook manifest parity (run: bash scripts/audit-codex-hooks.sh --strict)"
-                indent_output "$codex_hooks_output"
-            fi
+# --- 28a. Hook lease inventory ---
+if needs_check hook || needs_check contract; then
+    if [[ -x scripts/check-hook-lease-inventory.sh ]]; then
+        if hook_lease_output="$(./scripts/check-hook-lease-inventory.sh 2>&1)"; then
+            pass "hook lease inventory"
         else
-            skip "codex hook manifest parity (no $codex_home_path/hooks.json)"
+            fail "hook lease inventory"
+            indent_output "$hook_lease_output"
         fi
+    elif [[ ! -f docs/contracts/hook-lease-inventory.md && ! -f schemas/hook-lease.v1.schema.json && ! -d hooks && ! -d cli/embedded/hooks ]]; then
+        skip "hook lease inventory (retired hook lease surface absent)"
     else
-        fail "missing executable: scripts/audit-codex-hooks.sh"
+        fail "missing executable: scripts/check-hook-lease-inventory.sh"
     fi
 else
-    skip "codex hook manifest parity"
+    skip "hook lease inventory"
+fi
+
+# --- 28b. Hook replacement ports ---
+if needs_check hook || needs_check contract || needs_check go; then
+    if [[ -x scripts/check-hook-port-replacements.sh ]]; then
+        if hook_port_output="$(./scripts/check-hook-port-replacements.sh 2>&1)"; then
+            pass "hook replacement ports"
+        else
+            fail "hook replacement ports"
+            indent_output "$hook_port_output"
+        fi
+    elif [[ ! -d hooks && ! -d cli/embedded/hooks ]]; then
+        skip "hook replacement ports (retired hook product surface absent)"
+    else
+        fail "missing executable: scripts/check-hook-port-replacements.sh"
+    fi
+else
+    skip "hook replacement ports"
 fi
 
 # --- 29. CI policy parity ---
@@ -1412,43 +1814,71 @@ else
     skip "CI policy parity"
 fi
 
-# --- 30. ShellCheck on changed scripts ---
-if needs_check shell; then
-    if command -v shellcheck >/dev/null 2>&1; then
-        shell_errors=0
-        if [[ "$FAST_MODE" == "true" ]]; then
-            # Only check changed .sh files
-            changed_sh="$(echo "$all_changed" | grep '\.sh$' || true)"
-            if [[ -n "$changed_sh" ]]; then
-                while IFS= read -r f; do
-                    [[ -f "$f" ]] || continue
-                    if ! shellcheck_out="$(shellcheck -S warning "$f" 2>&1)"; then
-                        shell_errors=1
-                        indent_output "$shellcheck_out"
-                    fi
-                done <<< "$changed_sh"
-            fi
+# --- 29b. Context map drift (Fix 3 / DDD+Hexagonal v1 Issue #5) ---
+if needs_check context_map; then
+    if [[ -x scripts/validate-context-map-drift.sh ]]; then
+        if context_map_output="$(bash scripts/validate-context-map-drift.sh 2>&1)"; then
+            pass "context map drift"
         else
-            # Full mode: check all scripts with shebangs
+            fail "context map drift"
+            indent_output "$context_map_output"
+        fi
+    else
+        fail "missing executable: scripts/validate-context-map-drift.sh"
+    fi
+else
+    skip "context map drift"
+fi
+
+# --- 30. ShellCheck on changed scripts ---
+# UNCONDITIONAL in fast mode: shellcheck every staged or working-tree *.sh
+# file regardless of `needs_check shell`. The diff-based HAS_SHELL detection
+# can miss staged .sh files when `all_changed` is computed against the wrong
+# base (e.g. branch behind main mid-rebase). The cost is < 1s per file, so
+# always running it on the actual set of .sh files in the local diff is the
+# safer default. Full mode keeps the broader scripts/hooks/lib/bin walk.
+# History: F1 in 2026-05-18 merge-arc post-mortem
+# (.agents/learnings/2026-05-18-script-rewrites-leave-dead-variables.md):
+# PR #322 left an unused REPO_ROOT in a rewritten script; the SC2034 warning
+# only surfaced on the NEXT cycle, requiring PR #325 as cleanup. Closes the
+# class by removing the diff-detection gating.
+if command -v shellcheck >/dev/null 2>&1; then
+    shell_errors=0
+    if [[ "$FAST_MODE" == "true" ]]; then
+        # Collect all .sh files in the local diff (staged + working tree),
+        # independent of upstream-diff detection.
+        staged_sh="$(git diff --name-only --cached 2>/dev/null | grep '\.sh$' || true)"
+        worktree_sh="$(git diff --name-only 2>/dev/null | grep '\.sh$' || true)"
+        # Also include anything `needs_check shell` saw — defense in depth.
+        all_sh_files="$(printf '%s\n%s\n%s\n' "$staged_sh" "$worktree_sh" "$(echo "$all_changed" | grep '\.sh$' || true)" \
+            | sed '/^[[:space:]]*$/d' | sort -u)"
+        if [[ -n "$all_sh_files" ]]; then
             while IFS= read -r f; do
                 [[ -f "$f" ]] || continue
-                head -1 "$f" | grep -q '^#!' || continue
                 if ! shellcheck_out="$(shellcheck -S warning "$f" 2>&1)"; then
                     shell_errors=1
                     indent_output "$shellcheck_out"
                 fi
-            done < <(find scripts hooks lib bin -name '*.sh' -type f 2>/dev/null)
-        fi
-        if [[ "$shell_errors" -eq 0 ]]; then
-            pass "shellcheck"
-        else
-            fail "shellcheck"
+            done <<< "$all_sh_files"
         fi
     else
-        skip "shellcheck (not installed)"
+        # Full mode: check all scripts with shebangs
+        while IFS= read -r f; do
+            [[ -f "$f" ]] || continue
+            head -1 "$f" | grep -q '^#!' || continue
+            if ! shellcheck_out="$(shellcheck -S warning "$f" 2>&1)"; then
+                shell_errors=1
+                indent_output "$shellcheck_out"
+            fi
+        done < <(find scripts hooks lib bin -name '*.sh' -type f 2>/dev/null)
+    fi
+    if [[ "$shell_errors" -eq 0 ]]; then
+        pass "shellcheck"
+    else
+        fail "shellcheck"
     fi
 else
-    skip "shellcheck"
+    skip "shellcheck (not installed)"
 fi
 
 # --- 31. Plugin load test (symlinks + manifest) ---
@@ -1593,6 +2023,104 @@ elif [[ -n "$HASH_GATE_SNAPSHOT" && -x scripts/check-agents-hash-snapshot.sh ]];
         fi
     fi
     cleanup_hash_snapshot
+fi
+
+# --- 38. Executable-spec link integrity (warn-only, F1.6 / soc-58nt.1.9) ---
+# Runs `ao goals scenarios --lint` (directive↔scenario link lint) and
+# `ao goals trace --orphans` (whole-chain orphan/gap audit) in warn-only mode.
+# Never blocks a push. Promote to blocking by re-filing this gate under `fail`
+# once two consecutive CI runs show zero findings on main.
+# Skip-key: AGENTOPS_PREPUSH_SKIP_EXECUTABLE_SPEC_LINK_INTEGRITY
+if prepush_skip_flag "EXECUTABLE_SPEC_LINK_INTEGRITY"; then
+    skip "executable-spec link integrity (AGENTOPS_PREPUSH_SKIP_EXECUTABLE_SPEC_LINK_INTEGRITY=1)"
+elif command -v ao >/dev/null 2>&1; then
+    exec_spec_findings=0
+    exec_spec_output=""
+
+    # ao goals scenarios --lint: directive↔scenario link lint
+    if lint_out="$(ao goals scenarios --lint 2>&1)"; then
+        :  # clean exit means no findings
+    else
+        exec_spec_findings=$((exec_spec_findings + 1))
+        exec_spec_output+="[scenarios --lint]"$'\n'"$lint_out"$'\n'
+    fi
+
+    # ao goals trace --orphans: whole-chain orphan/gap audit (no --strict)
+    if orphan_out="$(ao goals trace --orphans 2>&1)"; then
+        :  # clean exit means no findings
+    else
+        exec_spec_findings=$((exec_spec_findings + 1))
+        exec_spec_output+="[trace --orphans]"$'\n'"$orphan_out"$'\n'
+    fi
+
+    if [[ "$exec_spec_findings" -gt 0 ]]; then
+        warn "executable-spec link integrity: $exec_spec_findings command(s) found issues (warn-only, F1.6)"
+        indent_output "$exec_spec_output"
+    else
+        pass "executable-spec link integrity"
+    fi
+else
+    skip "executable-spec link integrity (ao not in PATH)"
+fi
+
+# --- 39. PR Evidence claim verification (ship-loop anti-pattern #7) ---
+# If the current branch has an open PR with `Evidence:` trailer line(s) in its
+# body, each such line must appear verbatim in this run's verdict log. Catches
+# AP#7 ("claiming a gate fix landed without re-running the gate") at write-time
+# rather than waiting for post-merge surprise.
+#
+# Skip-gracefully matrix:
+#   - gh not in PATH                 → skip
+#   - verify-gate-claim.sh missing   → skip
+#   - no PR for branch               → skip
+#   - PR body has no Evidence: line  → skip
+#   - $PRE_PUSH_GATE_LOG empty       → skip (defensive; should never happen)
+#
+# Skip-key: AGENTOPS_PREPUSH_SKIP_EVIDENCE_CLAIM=1 disables the check without
+# requiring --no-verify when running on a machine without gh.
+if prepush_skip_flag EVIDENCE_CLAIM; then
+    skip "PR Evidence claim verification (skipped via AGENTOPS_PREPUSH_SKIP_EVIDENCE_CLAIM)"
+elif [[ ! -x scripts/verify-gate-claim.sh ]]; then
+    skip "PR Evidence claim verification (scripts/verify-gate-claim.sh not executable)"
+elif ! command -v gh >/dev/null 2>&1; then
+    skip "PR Evidence claim verification (gh not in PATH)"
+elif [[ ! -s "$PRE_PUSH_GATE_LOG" ]]; then
+    skip "PR Evidence claim verification (verdict log empty)"
+else
+    evidence_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo HEAD)"
+    evidence_pr_num="$(gh pr view --json number --jq .number 2>/dev/null || true)"
+    if [[ -z "$evidence_pr_num" ]]; then
+        skip "PR Evidence claim verification (no open PR for $evidence_branch)"
+    else
+        evidence_pr_body="$(gh pr view "$evidence_pr_num" --json body --jq .body 2>/dev/null || true)"
+        # Pull Evidence: lines verbatim; strip the prefix per line.
+        evidence_lines="$(printf '%s\n' "$evidence_pr_body" | sed -n 's/^Evidence:[[:space:]]*//p' || true)"
+        if [[ -z "$evidence_lines" ]]; then
+            skip "PR Evidence claim verification (no Evidence: line in PR #$evidence_pr_num body)"
+        else
+            evidence_total=0
+            evidence_failures=0
+            evidence_failed_claims=""
+            while IFS= read -r claim_line; do
+                [[ -z "$claim_line" ]] && continue
+                evidence_total=$((evidence_total + 1))
+                if ! scripts/verify-gate-claim.sh --log "$PRE_PUSH_GATE_LOG" \
+                        "$evidence_branch" "$claim_line" >/dev/null 2>&1; then
+                    evidence_failures=$((evidence_failures + 1))
+                    evidence_failed_claims+="  - $claim_line"$'\n'
+                fi
+            done <<<"$evidence_lines"
+
+            if [[ "$evidence_failures" -eq 0 ]]; then
+                pass "PR Evidence claim verification (PR #$evidence_pr_num, $evidence_total claim(s) matched)"
+            else
+                fail "PR Evidence claim verification: $evidence_failures of $evidence_total claim(s) absent from gate output (AP#7)"
+                indent_output "PR #$evidence_pr_num claims not present in this gate's verdict log:"
+                indent_output "$evidence_failed_claims"
+                indent_output "Either re-run the affected gate locally and confirm the claim, or update the PR body."
+            fi
+        fi
+    fi
 fi
 
 # --- Summary ---

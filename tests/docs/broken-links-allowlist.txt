@@ -117,3 +117,10 @@ skills-codex/review/references/BUG_SCANNER.md:FALSE-POSITIVES.md
 skills-codex/review/references/DEEP_SCAN.md:references/TRIAGE.md
 skills-codex/review/references/DEEP_SCAN.md:references/PATTERNS.md
 skills-codex/review/references/DEEP_SCAN.md:references/TOOLS.md
+
+# DDD operating-loop doctrine note — lives in .agents/research/ (repo-root gitignored,
+# .gitignore:46); the maintainer's local doctrine source. The shipped canonical is
+# docs/architecture/operating-loop.md. Links kept as breadcrumbs; targets do not ship.
+GOALS.md:.agents/research/2026-05-15-cdlc-dojo-doctrine.md
+docs/architecture/operating-loop.md:../../.agents/research/2026-05-15-cdlc-dojo-doctrine.md
+docs/cdlc.md:../.agents/research/2026-05-15-cdlc-dojo-doctrine.md

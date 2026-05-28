@@ -15,16 +15,14 @@ The flywheel is the mechanism that closes both gaps. Each stage below maps to on
 
 ## The Solution
 
-AgentOps turns session output into durable environment state. The automation path depends on the runtime: hook-capable runtimes (including Codex v0.115.0+ with native hooks) can drive startup and closeout automatically, while older Codex versions use explicit lifecycle commands that provide the same flywheel stages without pretending hooks exist.
+AgentOps turns session output into durable environment state. AgentOps 3.0 ships **zero hooks** — the flywheel runs through explicit lifecycle commands, and **CI is the authoritative gate**. The same start/closeout stages work on every runtime without depending on hook side effects; if you want a bounded gate of your own, author it with the `hooks-authoring` skill (AgentOps does not ship one).
 
 ## Runtime Modes
 
-| Mode | Start path | Closeout path | What is automatic |
-|------|------------|---------------|-------------------|
-| Hook-capable runtime | SessionStart hook or `ao inject` | SessionEnd/Stop hooks or `ao forge transcript` + `ao flywheel close-loop` | Startup retrieval, transcript forging, pool maintenance when hooks are installed |
-| Codex native hooks (v0.115.0+) | Quiet native `SessionStart` hook via `scripts/install-codex-plugin.sh` | Native `Stop` hook plus explicit `ao codex stop` when transcript-driven closeout is needed | Silent startup maintenance, prompt/tool guardrails, and turn-scope close-loop are automatic; context retrieval stays explicit through `ao codex start` / `ao codex ensure-start` to avoid noisy hook injection |
-| Codex hookless fallback (pre-v0.115.0) | `ao codex start` | `ao codex stop` | Startup context assembly, transcript discovery fallback, citation capture, and close-loop status through explicit commands |
-| Manual fallback | `ao inject` / `ao lookup` | `ao forge transcript` + `ao flywheel close-loop` | Nothing hidden; operator runs the lifecycle directly |
+| Mode | Start path | Closeout path | What runs the stages |
+|------|------------|---------------|----------------------|
+| Any runtime (hookless default) | `ao inject` / `ao codex start` / `ao rpi phased` | `ao forge transcript` + `ao flywheel close-loop` (or `ao codex stop`) | Startup context assembly, transcript discovery, citation capture, and close-loop status through explicit commands — portable across Claude, Codex, and OpenCode |
+| Self-authored gate (optional) | A hook you write with the `hooks-authoring` skill | A hook you write with the `hooks-authoring` skill | Only what you choose to wire; AgentOps ships no hooks, so nothing fires unless you author it |
 
 ## The Flywheel
 

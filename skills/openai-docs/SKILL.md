@@ -1,18 +1,28 @@
 ---
-name: "openai-docs"
-description: 'Use official OpenAI docs.'
+name: openai-docs
+description: Use official OpenAI docs.
+practices:
+- prompt-as-spec
+- ai-assisted-dev
+hexagonal_role: driven-adapter
+consumes:
+- external-api
+produces: []
+context_rel: []
 skill_api_version: 1
 context:
   window: fork
   intent:
     mode: questions
   sections:
-    exclude: [HISTORY, TASK]
+    exclude:
+    - HISTORY
+    - TASK
   intel_scope: none
 metadata:
   tier: cross-vendor
   internal: false
-output_contract: "stdout: documentation with citations"
+output_contract: 'stdout: documentation with citations'
 ---
 # OpenAI Docs
 
@@ -108,3 +118,7 @@ If MCP tools fail or no OpenAI docs resources are available:
 | Results are stale/unclear | Query too broad | Narrow query by product + feature, then fetch exact page section |
 | Need citation-ready answer | Source not fetched | Fetch specific doc section before answering |
 | Docs do not cover question | Gap in official docs | State gap explicitly and provide safe best-effort guidance |
+
+## Reference Documents
+
+- [references/openai-docs.feature](references/openai-docs.feature) — Executable spec: search official docs, fetch+quote exact sections, doc-grounded not from-memory (soc-qk4b)

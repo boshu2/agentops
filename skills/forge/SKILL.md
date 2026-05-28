@@ -1,6 +1,16 @@
 ---
 name: forge
-description: 'Mine transcripts into learnings.'
+description: Mine transcripts into learnings.
+practices:
+- wiki-knowledge-surface
+- lean-startup
+hexagonal_role: domain
+consumes: []
+produces:
+- .agents/research/*.md
+context_rel:
+- kind: shared-kernel
+  with: standards
 skill_api_version: 1
 user-invocable: false
 context:
@@ -8,19 +18,22 @@ context:
   intent:
     mode: task
   sections:
-    exclude: [TASK]
+    exclude:
+    - TASK
   intel_scope: full
 metadata:
   tier: background
   dependencies: []
   internal: true
-output_contract: ".agents/learnings/*.md, .agents/patterns/*.md"
+output_contract: .agents/learnings/*.md, .agents/patterns/*.md
 ---
 # Forge Skill
 
 > **Cross-vendor analog:** the capture half of Anthropic Managed Agents' memory + dreaming pair (May 2026). Forge mines transcripts; `/dream` curates between sessions. Off the API, local, cross-vendor.
 
 **Typically runs automatically via SessionEnd hook.**
+
+> **Loop position:** capture sub-step of move 7 in the [operating loop](../../docs/architecture/operating-loop.md). Extracts candidate learnings from transcripts; the [promotion ratchet](../../docs/architecture/operating-loop.md#the-promotion-ratchet) decides which ones survive (one-offs die at handoff; repeats promote to `.agents/learnings/`). Forge is the funnel, not the filter.
 
 Extract knowledge from session transcripts.
 
@@ -201,15 +214,9 @@ Tell the user:
 
 ## The Quality Pool
 
-Forged candidates enter at Tier 0:
-```
-Transcript → /forge → .agents/forge/ (Tier 0)
-                           ↓
-                   Human review or 2+ citations
-                   OR auto-promote (confidence >= 0.7, ao-free fallback)
-                           ↓
-                   .agents/learnings/ (Tier 1)
-```
+Forged candidates enter at Tier 0 (`.agents/forge/`), then promote to Tier 1
+(`.agents/learnings/`) via human review, 2+ citations, or auto-promote when
+confidence >= 0.7 (ao-free fallback).
 
 ## Key Rules
 
@@ -220,31 +227,8 @@ Transcript → /forge → .agents/forge/ (Tier 0)
 
 ## Examples
 
-### SessionEnd Hook Invocation
-
-**Hook triggers:** `session-end.sh` runs when session ends
-
-**What happens:**
-1. Hook calls `ao forge transcript --last-session --queue --quiet`
-2. CLI analyzes session transcript for decisions, learnings, failures, patterns
-3. CLI writes session ID to `.agents/ao/pending.jsonl` queue
-4. Next session start triggers `/forge --promote` to process the queue
-
-**Result:** Session transcript automatically queued for knowledge extraction without user action.
-
-### Manual Transcript Mining
-
-**User says:** `/forge <path>` or "mine this transcript for knowledge"
-
-**What happens:**
-1. Agent identifies transcript path or uses `ao forge transcript --last-session`
-2. Agent scans transcript for knowledge patterns (decisions, learnings, failures, patterns)
-3. Agent scores each extraction by confidence (0.0-1.0)
-4. Agent writes candidates to `.agents/forge/YYYY-MM-DD-forge.md`
-5. Agent indexes forge output with `ao forge markdown`
-6. Agent reports extraction counts and candidate locations
-
-**Result:** Transcript mined for reusable knowledge, candidates ready for human review or 2+ citations promotion.
+See [references/examples.md](references/examples.md) for the SessionEnd hook
+invocation walkthrough and manual transcript-mining walkthrough.
 
 ## Troubleshooting
 
@@ -257,4 +241,6 @@ Transcript → /forge → .agents/forge/ (Tier 0)
 
 ## Reference Documents
 
+- [references/forge.feature](references/forge.feature) — Executable spec: mine transcripts → queued candidates, funnel-not-filter, --promote, consumes-transcripts-not-skills (soc-qk4b)
 - [references/uncaptured-lesson-patterns.md](references/uncaptured-lesson-patterns.md) — signal patterns and 26 known uncaptured lesson categories for transcript mining
+- [references/feedback-compiler-drafts.md](references/feedback-compiler-drafts.md) — auto-drafted learning workflow (F5.4 fail->pass ledger transitions, `cli/internal/feedbackcompiler`)

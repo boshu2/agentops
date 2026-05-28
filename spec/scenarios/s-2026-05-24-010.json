@@ -1,0 +1,12 @@
+{
+  "id": "s-2026-05-24-010",
+  "directive_id": "d-measure-skill-value-through-real-task-evaluation",
+  "version": 1,
+  "date": "2026-05-24",
+  "goal": "Given the workbench-behavioral-v1 eval suite (12 tasks), when make -C evals/workbench verify runs, then golden solutions score 12/12 pass and broken variants are detected 12/12, and the eval-skill-delta CI gate validates the structure.",
+  "narrative": "A user or evaluator exercises the system behavior for this goal: Given the workbench-behavioral-v1 eval suite (12 tasks), when make -C evals/workbench verify runs, then golden solutions score 12/12 pass and broken variants are detected 12/12, and the eval-skill-delta CI gate validates the structure..",
+  "expected_outcome": "The implementation satisfies the goal in observable behavior: Given the workbench-behavioral-v1 eval suite (12 tasks), when make -C evals/workbench verify runs, then golden solutions score 12/12 pass and broken variants are detected 12/12, and the eval-skill-delta CI gate validates the structure..",
+  "satisfaction_threshold": 0.9,
+  "source": "human",
+  "status": "active"
+}

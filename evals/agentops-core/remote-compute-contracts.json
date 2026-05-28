@@ -3,6 +3,7 @@
   "id": "agentops-core.remote-compute-contracts",
   "name": "AgentOps Remote Compute Contracts Canary",
   "description": "Offline public canary for the product-neutral remote compute contract, GasCity-first provider boundary, durable command ledger semantics, schema cataloguing, and the private Bushido boundary.",
+  "practices": ["llm-eval-harness", "ai-assisted-dev"],
   "domain": "mixed",
   "visibility": "public_canary",
   "tier": "deterministic",

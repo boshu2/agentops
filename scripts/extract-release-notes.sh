@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# Extract release notes for a given version from CHANGELOG.md.
-# Generates user-facing highlights + full changelog for GitHub Release page.
+# Assemble the GitHub Release body for a given version.
+# Body = curated highlights + the version's CHANGELOG section embedded in <details>.
 #
 # Usage: scripts/extract-release-notes.sh v2.9.2 [v2.9.0]
 #   $1 = current tag (required)
 #   $2 = previous tag (optional, for footer link)
 #
-# Expects: docs/releases/YYYY-MM-DD-v<version>-notes.md for curated highlights.
-# Falls back to CHANGELOG.md extraction if no curated notes exist.
+# Requires: docs/releases/YYYY-MM-DD-v<version>-notes.md curated highlights AND a
+# matching CHANGELOG.md section. There is NO fallback to a raw CHANGELOG dump — a
+# missing curated file or CHANGELOG entry is a hard error (3.0.0/3.0.1 shipped raw
+# dumps precisely because this used to fall back). Structure is enforced by
+# scripts/validate-release-notes.sh.
 #
 # Output: writes release-notes.md to repo root
 
@@ -34,6 +37,12 @@ CHANGELOG_SECTION=$(awk -v ver="$VERSION" '
   found { print }
 ' "$CHANGELOG")
 
+# Strip leading + trailing blank lines so the section doesn't introduce
+# double-blanks when wrapped in `echo ""` boilerplate by the formatters below.
+CHANGELOG_SECTION="$(printf '%s\n' "$CHANGELOG_SECTION" \
+  | awk 'NF { found = 1 } found' \
+  | awk 'NF { last = NR } { line[NR] = $0 } END { for (i = 1; i <= last; i++) print line[i] }')"
+
 if [[ -z "$CHANGELOG_SECTION" ]]; then
   echo "ERROR: No CHANGELOG entry for $VERSION — add entry before releasing" >&2
   exit 1
@@ -41,16 +50,23 @@ fi
 
 # Check for curated release notes (written by /release skill or manually).
 # These are plain-English highlights, not the raw changelog.
-CURATED_NOTES=""
+# Curated notes are REQUIRED — no silent fallback to the raw CHANGELOG. A missing
+# or non-conforming file is a hard error (3.0.0/3.0.1 shipped raw CHANGELOG dumps
+# precisely because this used to fall back). Structure is enforced separately by
+# scripts/validate-release-notes.sh; here we only require the file to exist.
 NOTES_FILE=$(find docs/releases -name "*-v${VERSION}-notes.md" 2>/dev/null | head -1 || true)
-if [[ -n "$NOTES_FILE" && -f "$NOTES_FILE" ]]; then
-  CURATED_NOTES=$(cat "$NOTES_FILE")
-  CURATED_NOTES="$(printf '%s' "$CURATED_NOTES" \
-    | sed \
-      -e "s#(../../CHANGELOG.md)#(https://github.com/${REPO}/blob/main/CHANGELOG.md)#g" \
-      -e "s#(../CHANGELOG.md)#(https://github.com/${REPO}/blob/main/docs/CHANGELOG.md)#g")"
-  echo "Using curated release notes from $NOTES_FILE" >&2
+if [[ -z "$NOTES_FILE" || ! -f "$NOTES_FILE" ]]; then
+  echo "ERROR: no curated release-notes file docs/releases/*-v${VERSION}-notes.md" >&2
+  echo "       Write one per skills/release/references/release-notes.md before tagging." >&2
+  echo "       The raw CHANGELOG is not an acceptable release body." >&2
+  exit 1
 fi
+CURATED_NOTES=$(cat "$NOTES_FILE")
+CURATED_NOTES="$(printf '%s' "$CURATED_NOTES" \
+  | sed \
+    -e "s#(../../CHANGELOG.md)#(https://github.com/${REPO}/blob/main/CHANGELOG.md)#g" \
+    -e "s#(../CHANGELOG.md)#(https://github.com/${REPO}/blob/main/docs/CHANGELOG.md)#g")"
+echo "Using curated release notes from $NOTES_FILE" >&2
 
 # Build the release notes file
 {
@@ -62,22 +78,17 @@ fi
 
 HEADER
 
-  # Curated highlights (if available)
-  if [[ -n "$CURATED_NOTES" ]]; then
-    echo "$CURATED_NOTES"
-    echo ""
-    echo "---"
-    echo ""
-    echo "<details>"
-    echo "<summary>Full changelog</summary>"
-    echo ""
-    echo "$CHANGELOG_SECTION"
-    echo ""
-    echo "</details>"
-  else
-    # No curated notes — use changelog directly
-    echo "$CHANGELOG_SECTION"
-  fi
+  # Curated highlights (required) + the full changelog tucked in a <details>.
+  echo "$CURATED_NOTES"
+  echo ""
+  echo "---"
+  echo ""
+  echo "<details>"
+  echo "<summary>Full changelog</summary>"
+  echo ""
+  echo "$CHANGELOG_SECTION"
+  echo ""
+  echo "</details>"
 
   echo ""
   echo "---"

@@ -3,6 +3,7 @@
   "id": "agentops-core.parallel-execution-evidence",
   "name": "AgentOps Parallel Execution Evidence Canary",
   "description": "Offline public canary for swarm and codex-team parallel execution safety: validators, swarm evidence schema behavior, file ownership manifests, worktree evidence, and no-worker-git-mutation contracts.",
+  "practices": ["llm-eval-harness", "design-by-contract"],
   "domain": "skill",
   "visibility": "public_canary",
   "tier": "deterministic",
