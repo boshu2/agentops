@@ -42,6 +42,142 @@ func runScenariosExtract(t *testing.T, jsonOut bool, id string) (stdout, stderr 
 	return out.String(), errBuf.String(), err
 }
 
+func runScenariosValidate(t *testing.T, jsonOut bool, id string) (stdout, stderr string, err error) {
+	t.Helper()
+	beadsScenariosValidateJSON = jsonOut
+	t.Cleanup(func() { beadsScenariosValidateJSON = false })
+
+	var out, errBuf bytes.Buffer
+	beadsScenariosValidateCmd.SetOut(&out)
+	beadsScenariosValidateCmd.SetErr(&errBuf)
+	t.Cleanup(func() {
+		beadsScenariosValidateCmd.SetOut(nil)
+		beadsScenariosValidateCmd.SetErr(nil)
+	})
+
+	err = runBeadsScenariosValidate(beadsScenariosValidateCmd, []string{id})
+	return out.String(), errBuf.String(), err
+}
+
+func TestRunBeadsScenariosValidate_WellFormedExitsZero(t *testing.T) {
+	calls := withStubbedBD(t, true, func(args ...string) ([]byte, error) {
+		if len(args) >= 1 && args[0] == "show" {
+			return []byte(`[{"id":"ag-x","description":"prose\n\n## Scenarios\nScenario: ok\n  Given a\n  When b\n  Then c\n"}]`), nil
+		}
+		return nil, fmt.Errorf("unexpected bd call: %v", args)
+	})
+
+	stdout, _, err := runScenariosValidate(t, false, "ag-x")
+	if err != nil {
+		t.Fatalf("expected exit 0 for well-formed scenarios, got error: %v", err)
+	}
+	if !strings.Contains(stdout, "well-formed") {
+		t.Errorf("stdout should confirm well-formedness, got %q", stdout)
+	}
+	// Read-only contract: validate must never mutate the bead.
+	for _, c := range *calls {
+		if len(c) > 0 && c[0] == "update" {
+			t.Errorf("validate must not call bd update: %v", c)
+		}
+	}
+}
+
+func TestRunBeadsScenariosValidate_MalformedIsError(t *testing.T) {
+	withStubbedBD(t, true, func(args ...string) ([]byte, error) {
+		// Missing the When step — malformed.
+		return []byte(`[{"id":"ag-x","description":"## Scenarios\nScenario: broken\n  Given a\n  Then c\n"}]`), nil
+	})
+
+	_, _, err := runScenariosValidate(t, false, "ag-x")
+	if err == nil {
+		t.Fatal("expected a non-nil error (non-zero exit) for malformed scenarios")
+	}
+	if !strings.Contains(err.Error(), "When") {
+		t.Errorf("error should name the parse problem (missing When), got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "extract") {
+		t.Errorf("error should name the corrective command, got: %v", err)
+	}
+}
+
+func TestRunBeadsScenariosValidate_NoBlockIsError(t *testing.T) {
+	withStubbedBD(t, true, func(args ...string) ([]byte, error) {
+		return []byte(`[{"id":"ag-x","description":"just free text","acceptance_criteria":"no block here"}]`), nil
+	})
+
+	_, _, err := runScenariosValidate(t, false, "ag-x")
+	if err == nil {
+		t.Fatal("expected an error when no '## Scenarios' block is present")
+	}
+	if !strings.Contains(err.Error(), "Scenarios") {
+		t.Errorf("error should mention the missing block, got: %v", err)
+	}
+}
+
+func TestRunBeadsScenariosValidate_JSONVerdict(t *testing.T) {
+	withStubbedBD(t, true, func(args ...string) ([]byte, error) {
+		return []byte(`[{"id":"ag-x","description":"## Scenarios\nScenario: ok\n  Given a\n  When b\n  Then c\n"}]`), nil
+	})
+
+	stdout, _, err := runScenariosValidate(t, true, "ag-x")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var payload struct {
+		BeadID    string `json:"bead_id"`
+		Valid     bool   `json:"valid"`
+		Scenarios []struct {
+			Name string `json:"name"`
+		} `json:"scenarios"`
+	}
+	if jErr := json.Unmarshal([]byte(stdout), &payload); jErr != nil {
+		t.Fatalf("stdout is not valid JSON: %v\n%s", jErr, stdout)
+	}
+	if !payload.Valid || payload.BeadID != "ag-x" || len(payload.Scenarios) != 1 {
+		t.Errorf("unexpected verdict: %+v", payload)
+	}
+}
+
+func TestRunBeadsScenariosValidate_JSONFailureVerdictOnStdout(t *testing.T) {
+	withStubbedBD(t, true, func(args ...string) ([]byte, error) {
+		return []byte(`[{"id":"ag-x","description":"## Scenarios\nScenario: broken\n  Given a\n  Then c\n"}]`), nil
+	})
+
+	stdout, _, err := runScenariosValidate(t, true, "ag-x")
+	if err == nil {
+		t.Fatal("expected a non-nil error (non-zero exit) for malformed scenarios")
+	}
+	var payload struct {
+		BeadID string `json:"bead_id"`
+		Valid  bool   `json:"valid"`
+		Error  string `json:"error"`
+	}
+	if jErr := json.Unmarshal([]byte(stdout), &payload); jErr != nil {
+		t.Fatalf("failure verdict on stdout is not valid JSON: %v\n%s", jErr, stdout)
+	}
+	if payload.Valid || payload.BeadID != "ag-x" || payload.Error == "" {
+		t.Errorf("unexpected failure verdict: %+v", payload)
+	}
+}
+
+func TestRunBeadsScenariosValidate_BDUnavailableWarnsAndSucceeds(t *testing.T) {
+	withStubbedBD(t, false, func(args ...string) ([]byte, error) {
+		t.Fatalf("execBD must not be called when bd is unavailable: %v", args)
+		return nil, nil
+	})
+
+	stdout, stderr, err := runScenariosValidate(t, false, "ag-x")
+	if err != nil {
+		t.Fatalf("expected graceful exit, got error: %v", err)
+	}
+	if stdout != "" {
+		t.Errorf("expected empty stdout when bd unavailable, got %q", stdout)
+	}
+	if !strings.Contains(stderr, "bd not found") {
+		t.Errorf("expected a bd-not-found warning on stderr, got %q", stderr)
+	}
+}
+
 func TestRunBeadsScenariosExtract_PrintsGherkinToStdout(t *testing.T) {
 	calls := withStubbedBD(t, true, func(args ...string) ([]byte, error) {
 		if len(args) >= 1 && args[0] == "show" {
