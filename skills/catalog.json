@@ -1,11 +1,11 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-05-25T02:39:14Z",
+  "generated_at": "2026-05-28T10:23:15Z",
   "skill_count": 75,
   "skills": [
     {
       "name": "autodev",
-      "description": "Manage bounded autonomous dev loops.",
+      "description": "Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [
