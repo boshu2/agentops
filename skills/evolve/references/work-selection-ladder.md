@@ -51,6 +51,22 @@ FAILING=$(jq -r '.goals[] | select(.result=="fail") | .id' .agents/evolve/fitnes
 
 **Oscillation check:** Before working a failing goal, check if it has oscillated (improved-to-fail transitions >= 3 times). If so, quarantine it and try the next goal. See `references/oscillation.md` and `references/fitness-scoring.md` for the detection procedure.
 
+**Duplicate-work guard (mandatory before every generator `bd create`).** The
+generators below (3.4–3.7) and the Step-4 Split rung all create beads. A stale
+phase-1 handoff repeatedly re-seeded beads for work already covered by an
+existing bead or merged PR (ag-b8m≈ag-jov, ag-6kw≈ag-c2i — ag-6jt). Before
+`bd create`, run the guard; skip creation when it reports a duplicate:
+
+```bash
+skills/evolve/scripts/duplicate-work-guard.sh "<candidate title>" || {
+  echo "skip: existing work already covers this surface"; }
+# exit 1 + "DUPLICATE: <id> [<status>] <title>" → an open/closed bead already
+# covers it (exact title OR significant-token overlap). exit 0 → safe to create.
+```
+
+This complements the loop's origin/main fast-forward (the cron syncs local
+`main` to `origin/main` before discovery so already-merged work is not re-seen).
+
 **Step 3.4: Testing improvements**
 
 When queues and goals are empty, generate concrete testing work via `/test`:
