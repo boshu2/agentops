@@ -53,7 +53,7 @@ The validate workflow runs many focused jobs across 4 tiers of parallelism. Most
                     │   independent validate jobs, path-filtered    │
                     │                                               │
                     │  doc-release-gate    smoke-test               │
-                    │  hook-preflight      validate-hooks-doc-parity│
+                    │  hook-preflight                               │
                     │  validate-ci-policy-parity                    │
                     │  validate-codex-* runtime/parity checks       │
                     │  validate-goals/registry/flywheel gates       │

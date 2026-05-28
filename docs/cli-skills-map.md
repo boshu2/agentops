@@ -251,8 +251,7 @@ When skills, hooks, or command usage changes, refresh this map as follows:
 
 1. Re-scan source invocations in: `skills/*/SKILL.md`, `skills-codex/*/SKILL.md`, `hooks/*.sh`, `hooks/hooks.json`.
 2. Update the relevant rows in this document, keeping hidden/subcommands aligned with the live command tree (`ao anti-patterns`, `ao context assemble`, etc.).
-3. Run `bash scripts/validate-hooks-doc-parity.sh` and ensure no stale hook-count wording remains.
-4. Update the audit header date above.
+3. Update the audit header date above.
 
 ## Maintaining This Document
 

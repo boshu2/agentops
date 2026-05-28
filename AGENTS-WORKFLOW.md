@@ -84,33 +84,30 @@ cd cli && make build && make test
 # 6. Contract compatibility
 ./scripts/check-contract-compatibility.sh
 
-# 7. Hook/docs parity
-bash scripts/validate-hooks-doc-parity.sh
-
-# 8. CI policy/docs parity
+# 7. CI policy/docs parity
 bash scripts/validate-ci-policy-parity.sh
 
-# 9. Worktree disposition
+# 8. Worktree disposition
 bash scripts/check-worktree-disposition.sh
 
-# 10. Plugin structure (symlinks, manifests)
+# 9. Plugin structure (symlinks, manifests)
 ./scripts/validate-manifests.sh --repo-root .
 find skills -type l  # must be empty — zero symlinks allowed
 
- # 11. Headless runtime skill smoke (local Claude/Codex sessions; skips missing CLIs)
+ # 10. Headless runtime skill smoke (local Claude/Codex sessions; skips missing CLIs)
  bash scripts/validate-headless-runtime-skills.sh
 
- # 12. Codex-first override coverage (full skill catalog is classified and covered)
+ # 11. Codex-first override coverage (full skill catalog is classified and covered)
  bash scripts/validate-codex-override-coverage.sh
 
- # 13. Codex RPI contract and lifecycle guard checks
+ # 12. Codex RPI contract and lifecycle guard checks
  bash scripts/validate-codex-rpi-contract.sh
  bash scripts/validate-codex-lifecycle-guards.sh
 
- # 14. Codex semantic parity audit (generated skills still match Codex-native tool/runtime semantics)
+ # 13. Codex semantic parity audit (generated skills still match Codex-native tool/runtime semantics)
  bash scripts/audit-codex-parity.sh
 
- # 15. AgentOps contract canaries (official deterministic test gate)
+ # 14. AgentOps contract canaries (official deterministic test gate)
  scripts/test-agentops-contract-canaries.sh
 
 # Full gate (runs everything above and more):
