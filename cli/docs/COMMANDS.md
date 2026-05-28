@@ -2800,8 +2800,9 @@ ao beads scenarios extract <bead-id> [flags]
 **Flags:**
 
 ```
-  -h, --help   help for extract
-      --json   Emit extracted scenarios as JSON (data on stdout) instead of a Gherkin block
+      --force   Extract even when the bead already has a '## Scenarios' block
+  -h, --help    help for extract
+      --json    Emit extracted scenarios as JSON (data on stdout) instead of a Gherkin block
 ```
 
 #### `ao beads stale-claims`
