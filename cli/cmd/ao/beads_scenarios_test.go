@@ -59,6 +59,89 @@ func runScenariosValidate(t *testing.T, jsonOut bool, id string) (stdout, stderr
 	return out.String(), errBuf.String(), err
 }
 
+// runScenariosExtractWrite runs extract in --write mode with a canned stdin
+// response for the y/N confirmation prompt.
+func runScenariosExtractWrite(t *testing.T, id, stdin string) (stdout, stderr string, err error) {
+	t.Helper()
+	beadsScenariosWrite = true
+	t.Cleanup(func() { beadsScenariosWrite = false })
+
+	var out, errBuf bytes.Buffer
+	beadsScenariosExtractCmd.SetOut(&out)
+	beadsScenariosExtractCmd.SetErr(&errBuf)
+	beadsScenariosExtractCmd.SetIn(strings.NewReader(stdin))
+	t.Cleanup(func() {
+		beadsScenariosExtractCmd.SetOut(nil)
+		beadsScenariosExtractCmd.SetErr(nil)
+		beadsScenariosExtractCmd.SetIn(nil)
+	})
+
+	err = runBeadsScenariosExtract(beadsScenariosExtractCmd, []string{id})
+	return out.String(), errBuf.String(), err
+}
+
+func TestRunBeadsScenariosExtract_WriteUpdatesBeadAfterConfirmation(t *testing.T) {
+	var updateDesc string
+	calls := withStubbedBD(t, true, func(args ...string) ([]byte, error) {
+		switch {
+		case len(args) >= 1 && args[0] == "show":
+			return []byte(`[{"id":"ag-x","acceptance_criteria":"Given a bead when extract runs then a block is written","description":"original prose"}]`), nil
+		case len(args) >= 1 && args[0] == "update":
+			for i := 0; i+1 < len(args); i++ {
+				if args[i] == "--description" || args[i] == "-d" {
+					updateDesc = args[i+1]
+				}
+			}
+			return []byte("ok"), nil
+		}
+		return nil, fmt.Errorf("unexpected bd call: %v", args)
+	})
+
+	_, _, err := runScenariosExtractWrite(t, "ag-x", "y\n")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var updated bool
+	for _, c := range *calls {
+		if len(c) > 0 && c[0] == "update" {
+			updated = true
+		}
+	}
+	if !updated {
+		t.Fatal("expected 'bd update' after confirmation; bead was not written")
+	}
+	if !strings.Contains(updateDesc, "## Scenarios") {
+		t.Errorf("written description must carry the '## Scenarios' block, got %q", updateDesc)
+	}
+	// Lossless write: the original description text must be preserved.
+	if !strings.Contains(updateDesc, "original prose") {
+		t.Errorf("written description must preserve the original prose, got %q", updateDesc)
+	}
+}
+
+func TestRunBeadsScenariosExtract_WriteAbortsWithoutConfirmation(t *testing.T) {
+	calls := withStubbedBD(t, true, func(args ...string) ([]byte, error) {
+		if len(args) >= 1 && args[0] == "show" {
+			return []byte(`[{"id":"ag-x","acceptance_criteria":"Given a bead when extract runs then a block is written","description":"original prose"}]`), nil
+		}
+		return nil, fmt.Errorf("unexpected bd call: %v", args)
+	})
+
+	_, stderr, err := runScenariosExtractWrite(t, "ag-x", "n\n")
+	if err != nil {
+		t.Fatalf("declining the prompt should exit gracefully, got error: %v", err)
+	}
+	for _, c := range *calls {
+		if len(c) > 0 && c[0] == "update" {
+			t.Errorf("without confirmation the bead must be unchanged; 'bd update' was called: %v", c)
+		}
+	}
+	if !strings.Contains(stderr, "unchanged") {
+		t.Errorf("stderr should report the bead was left unchanged, got %q", stderr)
+	}
+}
+
 func TestRunBeadsScenariosValidate_WellFormedExitsZero(t *testing.T) {
 	calls := withStubbedBD(t, true, func(args ...string) ([]byte, error) {
 		if len(args) >= 1 && args[0] == "show" {

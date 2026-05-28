@@ -2803,6 +2803,7 @@ ao beads scenarios extract <bead-id> [flags]
       --force   Extract even when the bead already has a '## Scenarios' block
   -h, --help    help for extract
       --json    Emit extracted scenarios as JSON (data on stdout) instead of a Gherkin block
+      --write   After printing the block and an operator y/N confirmation, append it to the bead via 'bd update'
 ```
 
 ##### `ao beads scenarios validate`
