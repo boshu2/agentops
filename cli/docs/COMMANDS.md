@@ -2781,6 +2781,29 @@ ao beads resume <bead-id> [flags]
       --ledger string   Path to the provenance ledger (relative to repo root). (default "docs/provenance/ledger.jsonl")
 ```
 
+#### `ao beads scenarios`
+
+Turn a bead's free-text acceptance criteria into structured Gherkin
+
+```
+ao beads scenarios [command]
+```
+
+##### `ao beads scenarios extract`
+
+Read a bead's acceptance criteria via 'bd show <id> --json', convert the
+
+```
+ao beads scenarios extract <bead-id> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for extract
+      --json   Emit extracted scenarios as JSON (data on stdout) instead of a Gherkin block
+```
+
 #### `ao beads stale-claims`
 
 Lists in_progress beads whose claim activity is older than --threshold.
