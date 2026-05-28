@@ -56,10 +56,10 @@ if [[ -f "$HISTORY" ]]; then
 fi
 
 TOTAL=$(printf '%s\n' "$TODAY_CYCLES" | grep -c . 2>/dev/null || echo 0)
-PRODUCTIVE=$(printf '%s\n' "$TODAY_CYCLES" | jq -r 'select(.result=="improved") | .cycle' 2>/dev/null | wc -l | tr -d ' ')
-SCOUTS=$(printf '%s\n' "$TODAY_CYCLES" | jq -r 'select(.result=="harvested") | .cycle' 2>/dev/null | wc -l | tr -d ' ')
-IDLE=$(printf '%s\n' "$TODAY_CYCLES" | jq -r 'select(.result=="idle" or .result=="unchanged") | .cycle' 2>/dev/null | wc -l | tr -d ' ')
-REGRESSED=$(printf '%s\n' "$TODAY_CYCLES" | jq -r 'select(.result=="regressed") | .cycle' 2>/dev/null | wc -l | tr -d ' ')
+PRODUCTIVE=$(printf '%s\n' "$TODAY_CYCLES" | jq -r 'select(.result=="improved") | .cycle' 2>/dev/null | wc -l | tr -d ' ' || echo 0)
+SCOUTS=$(printf '%s\n' "$TODAY_CYCLES" | jq -r 'select(.result=="harvested") | .cycle' 2>/dev/null | wc -l | tr -d ' ' || echo 0)
+IDLE=$(printf '%s\n' "$TODAY_CYCLES" | jq -r 'select(.result=="idle" or .result=="unchanged") | .cycle' 2>/dev/null | wc -l | tr -d ' ' || echo 0)
+REGRESSED=$(printf '%s\n' "$TODAY_CYCLES" | jq -r 'select(.result=="regressed") | .cycle' 2>/dev/null | wc -l | tr -d ' ' || echo 0)
 
 # --- Gather: micro-capture lines from today's daily log ---
 MICRO_LINES=""

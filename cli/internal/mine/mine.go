@@ -399,7 +399,7 @@ func MineGitLogContext(ctx context.Context, cwd string, window time.Duration) (*
 		}
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) && len(exitErr.Stderr) > 0 {
-			return nil, fmt.Errorf("git log: %s", strings.TrimSpace(string(exitErr.Stderr)))
+			return nil, fmt.Errorf("git log: %s: %w", strings.TrimSpace(string(exitErr.Stderr)), err)
 		}
 		return nil, fmt.Errorf("git log: %w", err)
 	}
