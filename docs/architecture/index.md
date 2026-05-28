@@ -45,6 +45,13 @@ The rest are specialized references. Skim titles and jump in when a topic become
 
     Process-level ports and adapters from BDD intent through evidence ratchet.
 
+-   :material-city: **[GC Posture](gc-posture.md)**
+
+    ---
+
+    Gas City is one opt-in, swappable adapter behind AgentOps ports — plus the
+    managed-city guardrail and the "no cloud required" sovereignty promise.
+
 -   :material-school: **[Behavior-Shaping Environment](behavior-shaping-environment.md)**
 
     ---
