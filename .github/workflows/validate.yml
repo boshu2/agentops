@@ -1738,9 +1738,14 @@ jobs:
           fetch-depth: 0
 
       - name: Test-count non-regression gate (scripts/check-test-count-regression.sh)
+        # Pass the base ref via env (not `${{ }}` interpolation inside run:) so a
+        # branch name carrying shell metacharacters cannot inject into the runner
+        # (semgrep run-shell-injection / CWE-78). The script reads $BASE_REF.
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
         run: |
           chmod +x scripts/check-test-count-regression.sh
-          BASE_REF="origin/${{ github.base_ref }}" ./scripts/check-test-count-regression.sh
+          ./scripts/check-test-count-regression.sh
 
   validate-pr-evidence-claims:
     # AP#7 mechanical enforcement (soc-eqjd, replaces local pre-push check #39
