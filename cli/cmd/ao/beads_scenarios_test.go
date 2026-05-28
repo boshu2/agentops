@@ -134,27 +134,30 @@ func TestRunBeadsScenariosExtract_BDUnavailableWarnsAndSucceeds(t *testing.T) {
 	}
 }
 
-func TestParseAcceptanceFromBDJSON(t *testing.T) {
+func TestParseBeadFromBDJSON(t *testing.T) {
 	tests := []struct {
-		name    string
-		in      string
-		want    string
-		wantErr bool
+		name        string
+		in          string
+		wantAccept  string
+		wantDescrip string
+		wantErr     bool
 	}{
 		{
-			name: "array form prefers acceptance_criteria",
-			in:   `[{"acceptance_criteria":"crit text","description":"desc text"}]`,
-			want: "crit text",
+			name:        "array form prefers acceptance_criteria and keeps description",
+			in:          `[{"acceptance_criteria":"crit text","description":"desc text"}]`,
+			wantAccept:  "crit text",
+			wantDescrip: "desc text",
 		},
 		{
-			name: "single object form",
-			in:   `{"acceptance_criteria":"crit text"}`,
-			want: "crit text",
+			name:       "single object form",
+			in:         `{"acceptance_criteria":"crit text"}`,
+			wantAccept: "crit text",
 		},
 		{
-			name: "falls back to description when acceptance empty",
-			in:   `[{"acceptance_criteria":"  ","description":"desc text"}]`,
-			want: "desc text",
+			name:        "falls back to description when acceptance empty",
+			in:          `[{"acceptance_criteria":"  ","description":"desc text"}]`,
+			wantAccept:  "desc text",
+			wantDescrip: "desc text",
 		},
 		{
 			name:    "empty array is an error",
@@ -174,19 +177,68 @@ func TestParseAcceptanceFromBDJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseAcceptanceFromBDJSON([]byte(tt.in))
+			got, err := parseBeadFromBDJSON([]byte(tt.in))
 			if tt.wantErr {
 				if err == nil {
-					t.Fatalf("parseAcceptanceFromBDJSON(%q) = %q, want error", tt.in, got)
+					t.Fatalf("parseBeadFromBDJSON(%q) = %+v, want error", tt.in, got)
 				}
 				return
 			}
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if got != tt.want {
-				t.Errorf("got %q, want %q", got, tt.want)
+			if got.Acceptance != tt.wantAccept {
+				t.Errorf("Acceptance = %q, want %q", got.Acceptance, tt.wantAccept)
+			}
+			if got.Description != tt.wantDescrip {
+				t.Errorf("Description = %q, want %q", got.Description, tt.wantDescrip)
 			}
 		})
+	}
+}
+
+func TestRunBeadsScenariosExtract_RefusesWhenScenariosExist(t *testing.T) {
+	calls := withStubbedBD(t, true, func(args ...string) ([]byte, error) {
+		// acceptance_criteria is parseable, but the description already carries
+		// an authored '## Scenarios' block — the guard must short-circuit.
+		return []byte(`[{"id":"ag-x","acceptance_criteria":"Given a bead when extract runs then a block prints","description":"## Scenarios\nScenario: existing\n  Given a\n  When b\n  Then c"}]`), nil
+	})
+
+	stdout, stderr, err := runScenariosExtract(t, false, "ag-x")
+	if err != nil {
+		t.Fatalf("guard should refuse gracefully, got error: %v", err)
+	}
+	if stdout != "" {
+		t.Errorf("expected no stdout when scenarios already exist, got %q", stdout)
+	}
+	if !strings.Contains(stderr, "--force") {
+		t.Errorf("stderr should name --force as the corrective action, got %q", stderr)
+	}
+	for _, c := range *calls {
+		if len(c) > 0 && c[0] == "update" {
+			t.Errorf("dry-run violated: bd update was called: %v", c)
+		}
+	}
+}
+
+func TestRunBeadsScenariosExtract_ForceReExtractsOverExisting(t *testing.T) {
+	withStubbedBD(t, true, func(args ...string) ([]byte, error) {
+		return []byte(`[{"id":"ag-x","acceptance_criteria":"Given a bead when extract runs then a block prints","description":"## Scenarios\nScenario: existing\n  Given a\n  When b\n  Then c"}]`), nil
+	})
+
+	beadsScenariosForce = true
+	t.Cleanup(func() { beadsScenariosForce = false })
+
+	stdout, _, err := runScenariosExtract(t, false, "ag-x")
+	if err != nil {
+		t.Fatalf("unexpected error with --force: %v", err)
+	}
+	if !strings.Contains(stdout, "## Scenarios") {
+		t.Errorf("--force should print a freshly extracted block, got %q", stdout)
+	}
+	// The printed block is extracted from acceptance_criteria, not the bead's
+	// pre-existing description block.
+	if !strings.Contains(stdout, "When extract runs") {
+		t.Errorf("--force output should reflect the acceptance text, got %q", stdout)
 	}
 }

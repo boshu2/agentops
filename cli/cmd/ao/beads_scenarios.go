@@ -23,16 +23,28 @@ import (
 	"github.com/boshu2/agentops/cli/internal/scenarios"
 )
 
-var beadsScenariosJSON bool
+var (
+	beadsScenariosJSON  bool
+	beadsScenariosForce bool
+)
 
-// beadsScenariosFetchAcceptance fetches a bead's acceptance text. It is a
+// fetchedBead is the subset of a bead the scenarios command needs: the
+// acceptance text it extracts from, and the description it guards against. A
+// bead whose description already carries a "## Scenarios" block is not
+// re-extracted over unless --force is passed.
+type fetchedBead struct {
+	Acceptance  string
+	Description string
+}
+
+// beadsScenariosFetch fetches a bead's acceptance and description text. It is a
 // package var so tests can inject a fake without shelling out to bd.
-var beadsScenariosFetchAcceptance = func(id string) (string, error) {
+var beadsScenariosFetch = func(id string) (fetchedBead, error) {
 	out, err := execBD("show", id, "--json")
 	if err != nil {
-		return "", fmt.Errorf("bd show %s --json: %w", id, err)
+		return fetchedBead{}, fmt.Errorf("bd show %s --json: %w", id, err)
 	}
-	return parseAcceptanceFromBDJSON(out)
+	return parseBeadFromBDJSON(out)
 }
 
 var beadsScenariosCmd = &cobra.Command{
@@ -56,7 +68,11 @@ and print a candidate '## Scenarios' block to stdout.
 
 This is a dry-run — the bead is never modified. Review the output and author
 it into the bead manually. With --json the scenarios are emitted as structured
-data on stdout instead of a Gherkin block.`,
+data on stdout instead of a Gherkin block.
+
+If the bead already carries a '## Scenarios' block, extract refuses (nothing to
+do) unless --force is passed, to avoid generating noise over already-shaped
+acceptance.`,
 	RunE: runBeadsScenariosExtract,
 }
 
@@ -65,6 +81,8 @@ func init() {
 	beadsScenariosCmd.AddCommand(beadsScenariosExtractCmd)
 	beadsScenariosExtractCmd.Flags().BoolVar(&beadsScenariosJSON, "json", false,
 		"Emit extracted scenarios as JSON (data on stdout) instead of a Gherkin block")
+	beadsScenariosExtractCmd.Flags().BoolVar(&beadsScenariosForce, "force", false,
+		"Extract even when the bead already has a '## Scenarios' block")
 }
 
 func runBeadsScenariosExtract(cmd *cobra.Command, args []string) error {
@@ -76,12 +94,19 @@ func runBeadsScenariosExtract(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	acceptance, err := beadsScenariosFetchAcceptance(id)
+	bead, err := beadsScenariosFetch(id)
 	if err != nil {
 		return fmt.Errorf("fetch acceptance for %s: %w (inspect with 'bd show %s --json')", id, err, id)
 	}
 
-	extracted, err := scenarios.Extract(acceptance)
+	if !beadsScenariosForce &&
+		(scenarios.HasScenariosBlock(bead.Description) || scenarios.HasScenariosBlock(bead.Acceptance)) {
+		fmt.Fprintf(cmd.ErrOrStderr(),
+			"bead %s already has a '## Scenarios' block; nothing to extract. Re-run with --force to extract anyway.\n", id)
+		return nil
+	}
+
+	extracted, err := scenarios.Extract(bead.Acceptance)
 	if err != nil {
 		return fmt.Errorf(
 			"extract scenarios from %s: %w; author a '## Scenarios' block manually (see CLAUDE.md acceptance doctrine)",
@@ -101,11 +126,14 @@ func runBeadsScenariosExtract(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// parseAcceptanceFromBDJSON extracts the acceptance text from the output of
-// `bd show <id> --json`. bd emits a JSON array of bead objects; older versions
-// may emit a single object, so both shapes are handled. The acceptance_criteria
-// field is preferred, falling back to the description when it is empty.
-func parseAcceptanceFromBDJSON(out []byte) (string, error) {
+// parseBeadFromBDJSON extracts the acceptance and description text from the
+// output of `bd show <id> --json`. bd emits a JSON array of bead objects; older
+// versions may emit a single object, so both shapes are handled. The
+// acceptance field used for extraction prefers acceptance_criteria, falling
+// back to the description when it is empty; the raw description is returned
+// separately so the caller can guard against an already-present scenarios
+// block.
+func parseBeadFromBDJSON(out []byte) (fetchedBead, error) {
 	type bead struct {
 		AcceptanceCriteria string `json:"acceptance_criteria"`
 		Description        string `json:"description"`
@@ -116,22 +144,23 @@ func parseAcceptanceFromBDJSON(out []byte) (string, error) {
 	if len(trimmed) > 0 && trimmed[0] == '[' {
 		var arr []bead
 		if err := json.Unmarshal(trimmed, &arr); err != nil {
-			return "", fmt.Errorf("parse bd json array: %w", err)
+			return fetchedBead{}, fmt.Errorf("parse bd json array: %w", err)
 		}
 		if len(arr) == 0 {
-			return "", fmt.Errorf("bead not found")
+			return fetchedBead{}, fmt.Errorf("bead not found")
 		}
 		b = arr[0]
 	} else if err := json.Unmarshal(trimmed, &b); err != nil {
-		return "", fmt.Errorf("parse bd json: %w", err)
+		return fetchedBead{}, fmt.Errorf("parse bd json: %w", err)
 	}
 
+	desc := strings.TrimSpace(b.Description)
 	acc := strings.TrimSpace(b.AcceptanceCriteria)
 	if acc == "" {
-		acc = strings.TrimSpace(b.Description)
+		acc = desc
 	}
 	if acc == "" {
-		return "", fmt.Errorf("bead has no acceptance_criteria or description text")
+		return fetchedBead{}, fmt.Errorf("bead has no acceptance_criteria or description text")
 	}
-	return acc, nil
+	return fetchedBead{Acceptance: acc, Description: desc}, nil
 }
