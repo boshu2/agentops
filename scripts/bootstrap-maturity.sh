@@ -62,7 +62,7 @@ if command -v jq >/dev/null 2>&1; then
         # Count lines missing the maturity field. JSONL is one object per
         # line, so we must treat each line independently — a single -e check
         # only inspects the first object.
-        missing=$(jq -c 'select(has("maturity") | not)' "$file" 2>/dev/null | wc -l | tr -d ' ')
+        missing=$(jq -c 'select(has("maturity") | not)' "$file" 2>/dev/null | wc -l | tr -d ' ' || echo 0)
         if [[ "${missing:-0}" -eq 0 ]]; then
             jsonl_skipped=$((jsonl_skipped + 1))
             continue
