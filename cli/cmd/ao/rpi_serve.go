@@ -663,7 +663,10 @@ func serveRPIArtifact(w http.ResponseWriter, r *http.Request, root, defaultRunID
 
 	content, err := readRunArtifactContent(resolvedRoot, *matched, artifactPreviewByteLimit)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		// Do not leak the raw internal error to the client; log it server-side
+		// and return a generic message.
+		fmt.Fprintf(os.Stderr, "ao rpi serve: read artifact %q: %v\n", relPath, err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 

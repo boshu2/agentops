@@ -119,6 +119,74 @@ func TestPatternExistsInIndex(t *testing.T) {
 	}
 }
 
+// TestAutoCloseLikelyFixed_SurfacesError verifies the tracker mutation no
+// longer swallows a failed `bd update` (ag-3lt): on bd failure it returns a
+// wrapped error, on success it returns nil, and it shells out with the
+// close arguments.
+func TestAutoCloseLikelyFixed_SurfacesError(t *testing.T) {
+	origExec := execBD
+	t.Cleanup(func() { execBD = origExec })
+
+	var gotArgs []string
+	bdErr := errors.New("bd update failed: server unreachable")
+	execBD = func(args ...string) ([]byte, error) {
+		gotArgs = args
+		return nil, bdErr
+	}
+
+	err := autoCloseLikelyFixed("soc-aaa", "note text")
+	if err == nil {
+		t.Fatal("autoCloseLikelyFixed swallowed the bd error; want it surfaced")
+	}
+	if !errors.Is(err, bdErr) {
+		t.Errorf("autoCloseLikelyFixed error = %v, want it to wrap the bd error", err)
+	}
+	wantArgs := []string{"update", "soc-aaa", "--status", "closed", "--append-notes", "note text"}
+	if len(gotArgs) != len(wantArgs) {
+		t.Fatalf("execBD args = %v, want %v", gotArgs, wantArgs)
+	}
+	for i := range wantArgs {
+		if gotArgs[i] != wantArgs[i] {
+			t.Errorf("execBD arg[%d] = %q, want %q", i, gotArgs[i], wantArgs[i])
+		}
+	}
+
+	// Success path returns nil.
+	execBD = func(args ...string) ([]byte, error) { return []byte("ok"), nil }
+	if err := autoCloseLikelyFixed("soc-aaa", "note"); err != nil {
+		t.Errorf("autoCloseLikelyFixed on success = %v, want nil", err)
+	}
+}
+
+// TestRecordLikelyFixed_AutoCloseInvokesBD verifies the commit-evidence path
+// triggers the (now error-returning) tracker close when autoClose is on, and
+// that a failing close does not panic or abort the report-recording flow.
+func TestRecordLikelyFixed_AutoCloseInvokesBD(t *testing.T) {
+	origExec := execBD
+	t.Cleanup(func() { execBD = origExec })
+
+	var closeCount int
+	execBD = func(args ...string) ([]byte, error) {
+		closeCount++
+		return nil, errors.New("bd update failed") // failure must not be swallowed silently
+	}
+
+	report := &AuditReport{LikelyFixed: []AuditFinding{}}
+	bead := beadRecord{ID: "soc-aaa", Subject: "fix the thing"}
+	commits := []auditCommit{{shortSHA: "c1", subject: "fix: soc-aaa here"}}
+
+	handled := recordLikelyFixedAuditFinding(report, bead, bead.textBody(), true, commits)
+	if !handled {
+		t.Fatal("recordLikelyFixedAuditFinding did not record commit evidence")
+	}
+	if closeCount != 1 {
+		t.Errorf("autoClose invoked execBD %d times, want 1", closeCount)
+	}
+	if len(report.LikelyFixed) != 1 || report.LikelyFixed[0].ID != "soc-aaa" {
+		t.Errorf("report.LikelyFixed = %+v, want one finding for soc-aaa", report.LikelyFixed)
+	}
+}
+
 func TestRepoContentCacheBuildsOnce(t *testing.T) {
 	cache := &repoContentCache{}
 	first := cache.index()
