@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "$id": "https://agentops.dev/schemas/next-work-item.v1.schema.json",
+  "title": "Next-Work Item",
+  "description": "One actionable follow-up item harvested into .agents/rpi/next-work.jsonl. Canonical typed contract for the post-mortem harvest output (docs/contracts/next-work.schema.md, schema_version 1.4). Enums mirror validate_next_work_item() in skills/post-mortem/references/harvest-next-work.md. additionalProperties is true: readers MUST tolerate unknown fields for forward compatibility.",
+  "type": "object",
+  "required": ["title", "type", "severity", "source", "description"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short imperative title."
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "tech-debt",
+        "improvement",
+        "pattern-fix",
+        "process-improvement",
+        "feature",
+        "bug",
+        "task",
+        "docs",
+        "chore"
+      ],
+      "description": "Work category."
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "description": "Priority signal."
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "council-finding",
+        "retro-learning",
+        "retro-pattern",
+        "evolve-generator",
+        "feature-suggestion",
+        "backlog-processing",
+        "post-mortem-finding",
+        "manifest-classification",
+        "dream-degraded"
+      ],
+      "description": "Origin of the item."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Full problem statement and recommended action."
+    },
+    "evidence": {
+      "type": "string",
+      "description": "Concrete supporting evidence."
+    },
+    "target_repo": {
+      "type": "string",
+      "description": "Repo slug this applies to, or '*' for cross-repo/process work."
+    },
+    "proof_ref": {
+      "type": "object",
+      "required": ["kind"],
+      "description": "Explicit completion-proof anchor for later consumers.",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["completed_run", "evidence_only_closure", "execution_packet"]
+        },
+        "target_id": { "type": "string" },
+        "run_id": { "type": "string" },
+        "path": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "completed_run" } } },
+          "then": { "required": ["run_id"] }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "evidence_only_closure" } } },
+          "then": { "required": ["target_id"] }
+        },
+        {
+          "if": { "properties": { "kind": { "const": "execution_packet" } } },
+          "then": { "required": ["path"] }
+        }
+      ],
+      "additionalProperties": true
+    },
+    "consumed": {
+      "type": "boolean",
+      "description": "Item lifecycle flag; omitted or false means not yet consumed."
+    },
+    "claim_status": {
+      "type": "string",
+      "enum": ["available", "in_progress", "consumed"],
+      "description": "Item lifecycle state; omitted means available."
+    },
+    "claimed_by": { "type": ["string", "null"] },
+    "claimed_at": { "type": ["string", "null"] },
+    "consumed_by": { "type": ["string", "null"] },
+    "consumed_at": { "type": ["string", "null"] },
+    "failed_at": { "type": ["string", "null"] },
+    "probed_stale_at": { "type": ["string", "null"] },
+    "probed_by": { "type": ["string", "null"] },
+    "dedup_key": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["ready", "proposed"],
+      "description": "Advisory release-readiness signal; default ready when omitted."
+    },
+    "requires": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Explicit gates that must be satisfied before a selector may pick this item (e.g. human-review)."
+    }
+  },
+  "additionalProperties": true
+}

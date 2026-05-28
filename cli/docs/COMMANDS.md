@@ -2781,6 +2781,46 @@ ao beads resume <bead-id> [flags]
       --ledger string   Path to the provenance ledger (relative to repo root). (default "docs/provenance/ledger.jsonl")
 ```
 
+#### `ao beads scenarios`
+
+Turn a bead's free-text acceptance criteria into structured Gherkin
+
+```
+ao beads scenarios [command]
+```
+
+##### `ao beads scenarios extract`
+
+Read a bead's acceptance criteria via 'bd show <id> --json', convert the
+
+```
+ao beads scenarios extract <bead-id> [flags]
+```
+
+**Flags:**
+
+```
+      --force   Extract even when the bead already has a '## Scenarios' block
+  -h, --help    help for extract
+      --json    Emit extracted scenarios as JSON (data on stdout) instead of a Gherkin block
+      --write   After printing the block and an operator y/N confirmation, append it to the bead via 'bd update'
+```
+
+##### `ao beads scenarios validate`
+
+Read a bead via 'bd show <id> --json' and validate its authored
+
+```
+ao beads scenarios validate <bead-id> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for validate
+      --json   Emit a structured validation verdict as JSON on stdout
+```
+
 #### `ao beads stale-claims`
 
 Lists in_progress beads whose claim activity is older than --threshold.
@@ -3873,6 +3913,22 @@ ao skills check [flags]
       --json           Emit machine-readable JSON
       --skill string   Restrict the audit to a single skill name
       --strict         Exit non-zero on any finding (CI mode)
+```
+
+#### `ao skills find`
+
+Score every skills/<name>/SKILL.md against a free-text intent and
+
+```
+ao skills find <intent> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help        help for find
+      --json        Emit machine-readable JSON on stdout
+      --limit int   Maximum number of results to return (default 5)
 ```
 
 ---
