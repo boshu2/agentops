@@ -649,8 +649,8 @@
     {
       "name": "autodev",
       "source_skill": "skills/autodev",
-      "source_hash": "4ad1828489b40ea336c593c1b04054b5c0faa1cc194ce2bc29c49fa8aa8cd9ec",
-      "generated_hash": "7fe2526d5e4792cb4b52e59745010fb752547b5163495e59904a13e4535f4024"
+      "source_hash": "8b7b7c6dd2d79b745608a9c7ee60c503589f9953a61f6980c25b9bc8901dc901",
+      "generated_hash": "8d43e8d6c0542593918a5d43badec8759d91edc4768dfcaa793bbfc96c397378"
     },
     {
       "name": "beads",

@@ -1,6 +1,6 @@
 ---
 name: autodev
-description: 'Manage bounded autonomous dev loops.'
+description: 'Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer the Evolve and Factory drivers read each tick, not a loop it runs.'
 ---
 # $autodev
 

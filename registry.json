@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-26T22:58:05Z",
+  "generated_at": "2026-05-28T10:48:57Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -1425,7 +1425,7 @@
       "bounded_context": "BC3",
       "hex_role": "supporting",
       "tier": "execution",
-      "purpose": "Manage bounded autonomous dev loops.",
+      "purpose": "Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer the Evolve and Factory drivers read each tick, not a loop it runs.",
       "status": "active",
       "disposition": "refactor",
       "consumes": [

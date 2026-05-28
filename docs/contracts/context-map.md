@@ -65,7 +65,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### supporting
 
-- `autodev` — Manage bounded autonomous dev loops.
+- `autodev` — Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer the Evolve and Factory drivers read each tick, not a loop it runs.
 - `codex-team` — Coordinate multiple Codex agents.
 - `compile` — Compile .agents knowledge wiki.
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.

@@ -1,6 +1,6 @@
 ---
 name: autodev
-description: Manage bounded autonomous dev loops.
+description: Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer the Evolve and Factory drivers read each tick, not a loop it runs.
 practices:
 - cmm-process-maturity
 - ai-assisted-dev
@@ -33,7 +33,7 @@ It does not replace `/evolve` or `/rpi`.
 
 ## Loop position
 
-Bounded executor of the full [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence. `/autodev` runs the loop unattended within the contract declared in `PROGRAM.md`/`AUTODEV.md` — mutable scope, immutable scope, validation commands, escalation rules, stop conditions. Loop discipline still applies under autonomy: no parallel wave without the wave-validity check; no slice closes without a passing test mapped to a Given/When/Then; capture goes through the promotion ratchet, not into a landfill.
+The config/intent layer that drives the [operating loop](../../docs/architecture/operating-loop.md) — BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence — NOT a loop it runs. `/autodev` manages the contract declared in `PROGRAM.md`/`AUTODEV.md` — mutable scope, immutable scope, validation commands, escalation rules, stop conditions — that the loop reads every tick. The drivers (Evolve and Factory) consume that contract each tick; autodev is the highest-leverage antecedent, so arranging it well makes the loop's behavior follow. Loop discipline still applies under autonomy: no parallel wave without the wave-validity check; no slice closes without a passing test mapped to a Given/When/Then; capture goes through the promotion ratchet, not into a landfill.
 
 - `PROGRAM.md` or `AUTODEV.md` defines the contract: mutable scope, immutable
   scope, experiment unit, validation commands, decision policy, escalation rules,
