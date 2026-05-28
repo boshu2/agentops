@@ -36,7 +36,10 @@ pre_start = [
 # Copy the skill corpus + harness hook config into the working dir (additive).
 # overlay_dir is the canonical provisioning mechanism (config.md:106) — the
 # skills primitive is a tombstone (config.md:209-212).
-overlay_dir = "../../overlay"
+# Resolved relative to the PACK ROOT (packs/agentops): "overlay" →
+# packs/agentops/overlay (verified via gc doctor; "../../overlay" climbed to the
+# nonexistent repo-root/overlay — ag-2mi).
+overlay_dir = "overlay"
 install_agent_hooks = ["claude"]
 
 idle_timeout = "2h"
