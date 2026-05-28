@@ -8,16 +8,20 @@
 //
 // extract fetches the bead via `bd show <id> --json`, deterministically
 // converts the acceptance bullets into Given/When/Then triples, and prints a
-// candidate "## Scenarios" block to stdout. It is a dry-run: the bead is never
-// modified. validate parses an authored "## Scenarios" block and exits non-zero
-// when it is missing or malformed. Operator-confirmed write-back and an LLM
-// fallback are tracked as later slices of the parent feature (ag-dwq).
+// candidate "## Scenarios" block to stdout. By default it is a dry-run: the
+// bead is never modified. With --write it appends the block to the bead's
+// description via `bd update`, but only after an operator y/N confirmation.
+// validate parses an authored "## Scenarios" block and exits non-zero when it
+// is missing or malformed. An LLM fallback for unparseable acceptance is
+// tracked as a later slice of the parent feature (ag-dwq).
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -28,6 +32,7 @@ import (
 var (
 	beadsScenariosJSON         bool
 	beadsScenariosForce        bool
+	beadsScenariosWrite        bool
 	beadsScenariosValidateJSON bool
 )
 
@@ -71,9 +76,11 @@ var beadsScenariosExtractCmd = &cobra.Command{
 free-text bullets into Given/When/Then scenarios using deterministic rules,
 and print a candidate '## Scenarios' block to stdout.
 
-This is a dry-run — the bead is never modified. Review the output and author
-it into the bead manually. With --json the scenarios are emitted as structured
-data on stdout instead of a Gherkin block.
+By default this is a dry-run — the bead is never modified. Review the output
+and author it into the bead manually. With --json the scenarios are emitted as
+structured data on stdout instead of a Gherkin block. With --write the block is
+appended to the bead's description via 'bd update', but only after you confirm
+the printed block at a y/N prompt; declining leaves the bead unchanged.
 
 If the bead already carries a '## Scenarios' block, extract refuses (nothing to
 do) unless --force is passed, to avoid generating noise over already-shaped
@@ -105,6 +112,8 @@ func init() {
 		"Emit extracted scenarios as JSON (data on stdout) instead of a Gherkin block")
 	beadsScenariosExtractCmd.Flags().BoolVar(&beadsScenariosForce, "force", false,
 		"Extract even when the bead already has a '## Scenarios' block")
+	beadsScenariosExtractCmd.Flags().BoolVar(&beadsScenariosWrite, "write", false,
+		"After printing the block and an operator y/N confirmation, append it to the bead via 'bd update'")
 	beadsScenariosValidateCmd.Flags().BoolVar(&beadsScenariosValidateJSON, "json", false,
 		"Emit a structured validation verdict as JSON on stdout")
 }
@@ -137,6 +146,10 @@ func runBeadsScenariosExtract(cmd *cobra.Command, args []string) error {
 			id, err)
 	}
 
+	if beadsScenariosWrite {
+		return writeExtractedScenarios(cmd, id, bead, extracted)
+	}
+
 	if beadsScenariosJSON {
 		enc := json.NewEncoder(cmd.OutOrStdout())
 		enc.SetIndent("", "  ")
@@ -148,6 +161,55 @@ func runBeadsScenariosExtract(cmd *cobra.Command, args []string) error {
 
 	fmt.Fprint(cmd.OutOrStdout(), scenarios.Render(extracted))
 	return nil
+}
+
+// writeExtractedScenarios prints the candidate block, asks the operator for a
+// y/N confirmation on stdin, and — only when confirmed — appends the block to
+// the bead's description via `bd update`. Declining leaves the bead unchanged.
+// The block is appended (not replacing the description) so the original
+// acceptance prose is preserved.
+func writeExtractedScenarios(cmd *cobra.Command, id string, bead fetchedBead, extracted []scenarios.Scenario) error {
+	rendered := scenarios.Render(extracted)
+	fmt.Fprintf(cmd.ErrOrStderr(),
+		"About to append this block to %s's description:\n\n%s\nProceed? [y/N]: ", id, rendered)
+
+	if !confirmScenarioWrite(cmd.InOrStdin()) {
+		fmt.Fprintf(cmd.ErrOrStderr(), "aborted; %s left unchanged\n", id)
+		return nil
+	}
+
+	newDesc := composeDescriptionWithScenarios(bead.Description, rendered)
+	if _, err := execBD("update", id, "--description", newDesc); err != nil {
+		return fmt.Errorf("write '## Scenarios' into %s: %w (inspect with 'bd show %s')", id, err, id)
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), "%s updated with %d scenario(s)\n", id, len(extracted))
+	return nil
+}
+
+// confirmScenarioWrite reads a single line and treats "y"/"yes"
+// (case-insensitive) as confirmation. Any other input — including EOF or an
+// empty line — is a decline, so the default is the safe no-op.
+func confirmScenarioWrite(r io.Reader) bool {
+	line, _ := bufio.NewReader(r).ReadString('\n')
+	switch strings.ToLower(strings.TrimSpace(line)) {
+	case "y", "yes":
+		return true
+	default:
+		return false
+	}
+}
+
+// composeDescriptionWithScenarios appends the rendered block to the existing
+// description with a blank-line separator, preserving the original text. When
+// the description is empty the block stands alone.
+func composeDescriptionWithScenarios(desc, rendered string) string {
+	block := strings.TrimRight(rendered, "\n")
+	base := strings.TrimRight(desc, "\n")
+	if base == "" {
+		return block + "\n"
+	}
+	return base + "\n\n" + block + "\n"
 }
 
 func runBeadsScenariosValidate(cmd *cobra.Command, args []string) error {
