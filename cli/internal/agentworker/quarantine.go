@@ -11,6 +11,15 @@ import (
 
 const QuarantineSchemaVersion = 1
 
+// DefaultQuarantineDir is the standard .agents/ write surface for durable
+// worker quarantine records — failed worker payloads retained for operator
+// review (see the "quarantine" entry in docs/contracts/agents-write-surfaces.md).
+// Callers constructing a QuarantineWriter without an explicit Dir should default
+// to this location so the on-disk layout stays contract-consistent.
+func DefaultQuarantineDir() string {
+	return filepath.Join(".agents", "quarantine", "agentworker")
+}
+
 // QuarantineRecord captures worker output that failed strict validation.
 type QuarantineRecord struct {
 	SchemaVersion int           `json:"schema_version"`
