@@ -148,6 +148,16 @@ and the write procedure in
 [`references/harvest-next-work.md`](references/harvest-next-work.md).
 Follow the claim/finalize lifecycle documented in `references/harvest-next-work.md`.
 
+The machine-checkable typed contract is the committed JSON Schema pair
+[`../../schemas/next-work-batch.v1.schema.json`](../../schemas/next-work-batch.v1.schema.json)
+(one JSONL line = one batch entry) and
+[`../../schemas/next-work-item.v1.schema.json`](../../schemas/next-work-item.v1.schema.json)
+(each `items[]` element). Validate written rows with
+[`../../scripts/validate-next-work.sh`](../../scripts/validate-next-work.sh)
+(`--strict` to reject malformed output naming the offending field; advisory by
+default). The inline bash in `references/harvest-next-work.md` remains a
+dependency-free fallback when the script is unavailable.
+
 ```bash
 mkdir -p .agents/rpi
 # Build VALID_ITEMS via the schema-validation flow in references/harvest-next-work.md
@@ -175,6 +185,9 @@ printf '%s\n' "$(jq -cn \
     consumed_at: null
   }'
 )" >> .agents/rpi/next-work.jsonl
+
+# Validate the written contract (advisory; add --strict to gate).
+bash scripts/validate-next-work.sh .agents/rpi/next-work.jsonl
 ```
 
 #### Step ACT.4: Update Marker
