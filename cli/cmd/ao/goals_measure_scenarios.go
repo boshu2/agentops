@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/feedbackcompiler"
 	"github.com/boshu2/agentops/cli/internal/goals"
 	"github.com/boshu2/agentops/cli/internal/goalsfitness"
 	"github.com/boshu2/agentops/cli/internal/verdictledger"
@@ -210,6 +211,21 @@ func recordVerdictLedgerIterations(projectRoot string, reports []directiveScenar
 		if err != nil && stderr != nil {
 			fmt.Fprintf(stderr, "warning: verdict ledger append for %s: %v\n", r.DirectiveID, err)
 		}
+	}
+
+	// F5.4: auto-draft learnings for any fail→pass transitions the iterations
+	// above just recorded. This is the trigger orphaned when #515 removed the
+	// daemon that used to invoke the feedback compiler. The compiler is
+	// idempotent (existing drafts are skipped) and writes status:draft files
+	// that still require human promotion — so it is safe to run on every
+	// measure. A draft failure must never fail `ao goals measure`.
+	compiler := feedbackcompiler.Compiler{}
+	if res, err := compiler.Compile(projectRoot); err != nil {
+		if stderr != nil {
+			fmt.Fprintf(stderr, "warning: feedback compiler draft: %v\n", err)
+		}
+	} else if len(res.Drafts) > 0 && stderr != nil {
+		fmt.Fprintf(stderr, "auto-drafted %d learning(s) from fail→pass transitions\n", len(res.Drafts))
 	}
 }
 
