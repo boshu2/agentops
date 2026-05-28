@@ -80,6 +80,9 @@ jobs:
 - name: validate-scenario-test-linkage
   reason: 'Every Gherkin scenario in skills/*/references/*.feature must declare its covering test via a `@covered-by:<test-path>` tag, or have its feature file allowlisted as documentation-only in scripts/.scenario-linkage-allow (soc-63xfx). Sibling to executable-spec-link-integrity: that gate links GOALS directives→scenarios; this one links scenarios→tests. Blocking (T1).'
   failure: A scenario has no @covered-by tag and is not allowlisted, a @covered-by link is dangling (test path or named test missing), or the allowlist references a deleted feature file
+- name: validate-test-count-noregress
+  reason: 'Test-count non-regression ratchet for cli/internal/ packages (ag-h2z): for each cli/internal/<pkg> with a changed _test.go file, sums `^func Test` declarations at the PR base vs HEAD and fails on a net per-package decrease unless a `Test-Removal-Reason:` trailer is present in a commit body. Counts are summed per package, so moving a test between files in the same package is net-zero. Sibling to validate-scenario-test-linkage; blocking (T1).'
+  failure: Removing tests from a cli/internal package (net per-package decrease) without a `Test-Removal-Reason:` trailer on a commit, or the `AGENTOPS_TEST_COUNT_NOREGRESS=skip` emergency bypass
 - name: validate-ci-policy-parity
   reason: AGENTS CI table and blocking policy match workflow summary enforcement
   failure: Docs say non-blocking/required but workflow differs

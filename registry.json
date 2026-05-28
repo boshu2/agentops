@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-26T22:58:05Z",
+  "generated_at": "2026-05-28T03:04:05Z",
   "summary": {
     "skills": 75,
     "hooks": 0,
@@ -8,7 +8,7 @@
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 67,
-    "capabilities": 210
+    "capabilities": 211
   },
   "surfaces": {
     "skills": [
@@ -1342,10 +1342,10 @@
     ]
   },
   "capability_summary": {
-    "total": 210,
+    "total": 211,
     "skills": 75,
     "cli_commands": 67,
-    "gates": 65,
+    "gates": 66,
     "reference_impls": 3
   },
   "cli_top_level_commands": [
@@ -5176,6 +5176,15 @@
     {
       "sku": "gate:validate-scenario-test-linkage",
       "name": "validate-scenario-test-linkage",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:validate-test-count-noregress",
+      "name": "validate-test-count-noregress",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
