@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# Extract release notes for a given version from CHANGELOG.md.
-# Generates user-facing highlights + full changelog for GitHub Release page.
+# Assemble the GitHub Release body for a given version.
+# Body = curated highlights + the version's CHANGELOG section embedded in <details>.
 #
 # Usage: scripts/extract-release-notes.sh v2.9.2 [v2.9.0]
 #   $1 = current tag (required)
 #   $2 = previous tag (optional, for footer link)
 #
-# Expects: docs/releases/YYYY-MM-DD-v<version>-notes.md for curated highlights.
-# Falls back to CHANGELOG.md extraction if no curated notes exist.
+# Requires: docs/releases/YYYY-MM-DD-v<version>-notes.md curated highlights AND a
+# matching CHANGELOG.md section. There is NO fallback to a raw CHANGELOG dump — a
+# missing curated file or CHANGELOG entry is a hard error (3.0.0/3.0.1 shipped raw
+# dumps precisely because this used to fall back). Structure is enforced by
+# scripts/validate-release-notes.sh.
 #
 # Output: writes release-notes.md to repo root
 
