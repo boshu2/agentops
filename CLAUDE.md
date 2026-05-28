@@ -6,7 +6,7 @@ AgentOps compiles and compounds the context that feeds your software factory. It
 
 ## Zero-Context Startup (Read First)
 
-If this is your first message in a fresh session, orient in this order:
+AgentOps 3.0 is hookless: nothing auto-injects orientation at session start. Run `ao session bootstrap` (the universal init prompt) to get the standard orientation report, then `ao inject` / `ao corpus inject --query "<topic>"` to pull decay-ranked prior context — this is the explicit replacement for the SessionStart context the runtime used to inject. Then, on your first message in a fresh session, read in this order:
 
 1. `docs/newcomer-guide.md` for a practical repo orientation and learning path.
 2. `docs/index.md` (MkDocs landing) and `docs/documentation-index.md` (full catalog) for navigation.
