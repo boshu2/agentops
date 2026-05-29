@@ -1432,6 +1432,30 @@ ao eval coverage [suite.json ...] [flags]
       --root string                         suite root to scan when no suite paths are provided (default "evals/agentops-core")
 ```
 
+#### `ao eval outcomes`
+
+Outcomes is a derived projection of the locked eval substrate (SCHEMA.md), never an alternate authority. Subcommands compile holdout-safe rubric payloads and ingest returned scores into the one verdict format.
+
+```
+ao eval outcomes [command]
+```
+
+##### `ao eval outcomes compile`
+
+Compile a holdout-safe Outcomes rubric payload from a locked Task + criteria
+
+```
+ao eval outcomes compile <input.json> [flags]
+```
+
+##### `ao eval outcomes ingest`
+
+Ingest an Outcomes score payload into the one council verdict record
+
+```
+ao eval outcomes ingest <score.json> [flags]
+```
+
 #### `ao eval run`
 
 Run a deterministic eval suite

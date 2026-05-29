@@ -897,6 +897,18 @@ jobs:
           chmod +x scripts/check-contracts-structural-floor.sh
           ./scripts/check-contracts-structural-floor.sh
 
+      - name: Outcomes holdout-leak gate (deny-by-default)
+        if: needs.changes.outputs.contracts == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/check-outcomes-holdout-leak.sh
+          # Scan any committed Outcomes rubric/score payload fixtures; empty set = pass.
+          mapfile -t payloads < <(find evals .agents/tests -type f -name '*outcomes*.json' 2>/dev/null || true)
+          if [ "${#payloads[@]}" -gt 0 ]; then
+            scripts/check-outcomes-holdout-leak.sh "${payloads[@]}"
+          else
+            echo "ok: no committed Outcomes payloads to scan (gate armed for future fixtures)"
+          fi
+
       # ── agentops-contract-canaries (heavy bespoke setup: bd, gocyclo, bats) ──
       - name: Cache pinned Go tool binaries
         if: needs.changes.outputs.contracts == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'

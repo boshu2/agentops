@@ -104,3 +104,5 @@ manual-only|overnight curator diagnose|Depends on local curator, runner, and Oll
 public-stateful-fixture-needed|overnight curator enqueue|Writes jobs into a configured local curator queue.
 public-stateful-fixture-needed|overnight curator event|Appends events to a configured local curator ledger.
 manual-only|overnight curator status|Depends on local curator, runner, and Ollama environment.
+public-stateful-fixture-needed|eval outcomes compile|Holdout-safe rubric projection; core logic unit-tested (eval_outcomes_test.go compileOutcomesRubric); CLI smoke needs an input.json fixture (follow-up).
+public-stateful-fixture-needed|eval outcomes ingest|Maps an Outcomes score to the council verdict record; core logic unit-tested (eval_outcomes_ingest_test.go ingestOutcomesScore); CLI smoke needs a score.json fixture (follow-up).
