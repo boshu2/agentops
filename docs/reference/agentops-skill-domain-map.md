@@ -59,8 +59,8 @@ Disposition meanings:
 <!-- BEGIN:full-skill-map -->
 | Skill | Domain | Hex role | First disposition | Rationale |
 |---|---|---|---|---|
-| `automation-shape-routing` | BC4 Factory | supporting | keep | Front-door router (Workflow vs NTM vs skill) feeding skill-builder/workflow-builder; keep as-is. |
 | `autodev` | BC3 Loop | supporting | refactor | Must compose with PROGRAM.md and RPI as one vertical-slice executor. |
+| `automation-shape-routing` | BC4 Factory | supporting | keep | Front-door router: decides Workflow vs NTM swarm vs plain skill, hands off to the right builder. |
 | `beads` | BC3 Loop | driven-adapter | update | Tracker adapter is core; add BDD/slice acceptance self-test. |
 | `bootstrap` | BC4 Factory | driving-adapter | update | First-run factory entrypoint; needs current 3.0/domain packet shape. |
 | `brainstorm` | BC3 Loop | domain | update | Intent-shaping skill; should emit BDD-ready language. |
@@ -136,7 +136,7 @@ Disposition meanings:
 | `validate` | BC2 Validation | driving-adapter | keep | Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24). |
 | `validation` | BC2 Validation | domain | update | Canonical post-implementation validation; strengthen self-test first. |
 | `vibe` | BC2 Validation | domain | update | Code-readiness validator; add self-test and tighten result contract. |
-| `workflow-builder` | BC4 Factory | supporting | keep | Scaffolds Claude Workflow scripts from the operating-loop.js template; counterpart to skill-builder. |
+| `workflow-builder` | BC4 Factory | supporting | keep | Scaffolds Claude Workflow scripts (composite capability); counterpart to skill-builder. |
 <!-- END:full-skill-map -->
 
 ## Priority Queue
