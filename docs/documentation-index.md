@@ -334,3 +334,5 @@ Bridge / framing docs:
 ## Migration Trackers
 
 - [resolve-project-dir.md](migration-trackers/resolve-project-dir.md) — os.Getwd() → resolveProjectDir() migration status
+
+<!-- ag-1eqi: no-op gate verification (2026-05-29) -->
