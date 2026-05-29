@@ -342,6 +342,16 @@ dispositions:
     hexagonal_role: supporting
     disposition:    update
     rationale:      "Builder should scaffold SELF-TEST and domain metadata by default"
+  - skill:          automation-shape-routing
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Front-door router: decides Workflow vs NTM swarm vs plain skill, hands off to the right builder"
+  - skill:          workflow-builder
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Scaffolds Claude Workflow scripts (composite capability); counterpart to skill-builder"
   - skill:          standards
     domain:         "BC4 Factory"
     hexagonal_role: domain

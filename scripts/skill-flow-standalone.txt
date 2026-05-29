@@ -27,7 +27,6 @@ push                      # commits/pushes git-changes (terminal VCS sink)
 
 # --- orchestration / install adapters (drive other agents or install artifacts) ---
 codex-team                # coordinate multiple Codex agents (orchestration)
-operating-loop-workflow   # install + run the operating-loop Workflow for plugin users
 session-bootstrap         # universal init entry point (customer-of AGENTS*.md docs)
 system-tuning             # restore system responsiveness (process/host hygiene)
 

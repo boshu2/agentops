@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-29T02:10:24Z",
+  "generated_at": "2026-05-29T17:02:40Z",
   "summary": {
-    "skills": 76,
+    "skills": 78,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 67,
-    "capabilities": 212
+    "cli_commands": 68,
+    "capabilities": 160
   },
   "surfaces": {
     "skills": [
@@ -453,6 +453,14 @@
         "reference_count": 23
       },
       {
+        "name": "automation-shape-routing",
+        "tier": "meta",
+        "path": "skills/automation-shape-routing/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
         "name": "discovery",
         "tier": "meta",
         "path": "skills/discovery/",
@@ -515,6 +523,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 13
+      },
+      {
+        "name": "workflow-builder",
+        "tier": "meta",
+        "path": "skills/workflow-builder/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "doc",
@@ -1145,6 +1161,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao orchestrate",
+        "path": "cli/cmd/ao/",
+        "purpose": "Resolve and inspect the orchestration backend ladder",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao patterns",
         "path": "cli/cmd/ao/",
         "purpose": "Inspect and repair .agents/patterns/ artifacts",
@@ -1350,10 +1373,10 @@
     ]
   },
   "capability_summary": {
-    "total": 212,
-    "skills": 76,
-    "cli_commands": 67,
-    "gates": 66,
+    "total": 160,
+    "skills": 78,
+    "cli_commands": 68,
+    "gates": 11,
     "reference_impls": 3
   },
   "cli_top_level_commands": [
@@ -1402,6 +1425,7 @@
     "mine",
     "notebook",
     "operator",
+    "orchestrate",
     "patterns",
     "pool",
     "quick-start",
@@ -1449,6 +1473,22 @@
         "ao rpi"
       ],
       "path": "skills/autodev/",
+      "references": 0
+    },
+    {
+      "sku": "skill:automation-shape-routing",
+      "name": "automation-shape-routing",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "supporting",
+      "tier": "meta",
+      "purpose": "Front door for agent automation — decide the SHAPE (Workflow vs NTM vs skill), then hand off. Triggers: \"build automation\", \"convert skills to workflows\", \"which shape\".",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [],
+      "produces": [],
+      "drives_commands": [],
+      "path": "skills/automation-shape-routing/",
       "references": 0
     },
     {
@@ -2884,7 +2924,7 @@
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "meta",
-      "purpose": "Scaffold or absorb new SKILL.md files against the unified AgentOps template.",
+      "purpose": "Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\".",
       "status": "active",
       "disposition": "update",
       "consumes": [],
@@ -3169,6 +3209,24 @@
       ],
       "path": "skills/vibe/",
       "references": 22
+    },
+    {
+      "sku": "skill:workflow-builder",
+      "name": "workflow-builder",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "supporting",
+      "tier": "meta",
+      "purpose": "Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: \"build a workflow\", \"create a workflow\", \"scaffold workflow\", \"author a workflow\".",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [],
+      "produces": [
+        "workflow-script"
+      ],
+      "drives_commands": [],
+      "path": "skills/workflow-builder/",
+      "references": 0
     },
     {
       "sku": "cmd:ao.agents",
@@ -4178,6 +4236,23 @@
       "path": "cli/cmd/ao/"
     },
     {
+      "sku": "cmd:ao.orchestrate",
+      "name": "ao orchestrate",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Resolve and inspect the orchestration backend ladder",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
       "sku": "cmd:ao.patterns",
       "name": "ao patterns",
       "type": "cli-command",
@@ -4651,8 +4726,8 @@
       "path": ".github/workflows/validate.yml"
     },
     {
-      "sku": "gate:doc-release-gate",
-      "name": "doc-release-gate",
+      "sku": "gate:correctness",
+      "name": "correctness",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
@@ -4660,8 +4735,8 @@
       "path": ".github/workflows/validate.yml"
     },
     {
-      "sku": "gate:smoke-test",
-      "name": "smoke-test",
+      "sku": "gate:lint",
+      "name": "lint",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
@@ -4669,8 +4744,8 @@
       "path": ".github/workflows/validate.yml"
     },
     {
-      "sku": "gate:agentops-eval-baseline-audit",
-      "name": "agentops-eval-baseline-audit",
+      "sku": "gate:security",
+      "name": "security",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
@@ -4678,8 +4753,8 @@
       "path": ".github/workflows/validate.yml"
     },
     {
-      "sku": "gate:validate-ci-policy-parity",
-      "name": "validate-ci-policy-parity",
+      "sku": "gate:skills-integrity",
+      "name": "skills-integrity",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
@@ -4687,8 +4762,8 @@
       "path": ".github/workflows/validate.yml"
     },
     {
-      "sku": "gate:validate-codex-runtime-sections",
-      "name": "validate-codex-runtime-sections",
+      "sku": "gate:contracts-sync",
+      "name": "contracts-sync",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
@@ -4696,8 +4771,8 @@
       "path": ".github/workflows/validate.yml"
     },
     {
-      "sku": "gate:validate-codex-generated-artifacts",
-      "name": "validate-codex-generated-artifacts",
+      "sku": "gate:codex-parity",
+      "name": "codex-parity",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
@@ -4705,8 +4780,8 @@
       "path": ".github/workflows/validate.yml"
     },
     {
-      "sku": "gate:validate-codex-backbone-prompts",
-      "name": "validate-codex-backbone-prompts",
+      "sku": "gate:doctrine-proof",
+      "name": "doctrine-proof",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
@@ -4714,8 +4789,8 @@
       "path": ".github/workflows/validate.yml"
     },
     {
-      "sku": "gate:validate-codex-override-coverage",
-      "name": "validate-codex-override-coverage",
+      "sku": "gate:eval",
+      "name": "eval",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
@@ -4723,503 +4798,8 @@
       "path": ".github/workflows/validate.yml"
     },
     {
-      "sku": "gate:validate-codex-rpi-contract",
-      "name": "validate-codex-rpi-contract",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-codex-lifecycle-guards",
-      "name": "validate-codex-lifecycle-guards",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-codex-parity-drift",
-      "name": "validate-codex-parity-drift",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-quarantine-empty",
-      "name": "validate-quarantine-empty",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-registry-drift",
-      "name": "validate-registry-drift",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-bounded-contexts-drift",
-      "name": "validate-bounded-contexts-drift",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-skill-domain-map-golden",
-      "name": "validate-skill-domain-map-golden",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-flywheel-proof",
-      "name": "validate-flywheel-proof",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-goals-validate",
-      "name": "validate-goals-validate",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-wiring-closure",
-      "name": "validate-wiring-closure",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-corpus-freshness",
-      "name": "validate-corpus-freshness",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-flywheel-compounding-snapshot",
-      "name": "validate-flywheel-compounding-snapshot",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-finding-registry",
-      "name": "validate-finding-registry",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-agents-split",
-      "name": "validate-agents-split",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-sovereignty-proof-citations",
-      "name": "validate-sovereignty-proof-citations",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-contracts-structural-floor",
-      "name": "validate-contracts-structural-floor",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-docs-learning-references",
-      "name": "validate-docs-learning-references",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-three-gap-supergate",
-      "name": "validate-three-gap-supergate",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-headless-runtime-skills",
-      "name": "validate-headless-runtime-skills",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-skill-frontmatter",
-      "name": "validate-skill-frontmatter",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-skill-body-refs",
-      "name": "validate-skill-body-refs",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-context-map-drift",
-      "name": "validate-context-map-drift",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:embedded-sync",
-      "name": "embedded-sync",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:cli-docs-parity",
-      "name": "cli-docs-parity",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:registry-check",
-      "name": "registry-check",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-sku-catalog-drift",
-      "name": "validate-sku-catalog-drift",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:agentops-contract-canaries",
-      "name": "agentops-contract-canaries",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:eval-workbench-verify",
-      "name": "eval-workbench-verify",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:eval-skill-delta",
-      "name": "eval-skill-delta",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:shellcheck",
-      "name": "shellcheck",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:markdownlint",
-      "name": "markdownlint",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:security-scan",
-      "name": "security-scan",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:security-toolchain-gate",
-      "name": "security-toolchain-gate",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:skill-integrity",
-      "name": "skill-integrity",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:skill-schema",
-      "name": "skill-schema",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:skill-dependency-check",
-      "name": "skill-dependency-check",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:contract-compatibility-gate",
-      "name": "contract-compatibility-gate",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:memrl-health",
-      "name": "memrl-health",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:plugin-load-test",
-      "name": "plugin-load-test",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:retrieval-quality",
-      "name": "retrieval-quality",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:go-build",
-      "name": "go-build",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:windows-smoke",
-      "name": "windows-smoke",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:cli-integration",
-      "name": "cli-integration",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:json-flag-consistency",
-      "name": "json-flag-consistency",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:file-manifest-overlap",
-      "name": "file-manifest-overlap",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:lint-evidence-lines-advisory",
-      "name": "lint-evidence-lines-advisory",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:check-skill-catalog-drift-advisory",
-      "name": "check-skill-catalog-drift-advisory",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:doctor-check",
-      "name": "doctor-check",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:skill-lint",
-      "name": "skill-lint",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:bats-tests",
-      "name": "bats-tests",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:check-test-staleness",
-      "name": "check-test-staleness",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:swarm-evidence",
-      "name": "swarm-evidence",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:executable-spec-link-integrity",
-      "name": "executable-spec-link-integrity",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-scenario-test-linkage",
-      "name": "validate-scenario-test-linkage",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-test-count-noregress",
-      "name": "validate-test-count-noregress",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:validate-pr-evidence-claims",
-      "name": "validate-pr-evidence-claims",
+      "sku": "gate:process-hygiene",
+      "name": "process-hygiene",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",

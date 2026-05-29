@@ -1,7 +1,6 @@
 ---
 name: skill-builder
-description: 'Scaffold or absorb new SKILL.md files against the unified AgentOps template.
-  Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill".'
+description: 'Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill".'
 practices:
 - code-complete
 - pragmatic-programmer
@@ -10,7 +9,11 @@ hexagonal_role: supporting
 consumes: []
 produces:
 - converted-skill
-context_rel: []
+context_rel:
+- kind: customer-of
+  with: automation-shape-routing
+- kind: supplier-to
+  with: skill-auditor
 skill_api_version: 1
 context:
   window: fork
@@ -32,6 +35,8 @@ output_contract: skills/skill-builder/schemas/build-report.json
 # /skill-builder — Scaffold or absorb a new SKILL.md
 
 Materializes a new skill against the unified template at `references/skill-template.md` (extracted from anthropics/financial-services). Runs `skill-auditor` on the new skill as a self-check before declaring success.
+
+> **If unsure whether the work should be a skill, a Workflow, or an NTM swarm, run `/automation-shape-routing` first** — it is the front door that decides the shape and hands off to the right builder.
 
 ## ⚠️ Critical Constraints
 

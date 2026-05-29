@@ -67,6 +67,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 ### supporting
 
 - `autodev` — Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.
+- `automation-shape-routing` — Front door for agent automation — decide the SHAPE (Workflow vs NTM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".
 - `codex-team` — Coordinate multiple Codex agents.
 - `compile` — Compile .agents knowledge wiki.
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.
@@ -91,6 +92,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `system-tuning` — Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene.
 - `test` — Generate tests and coverage plans.
 - `trace` — Trace decisions through artifacts.
+- `workflow-builder` — Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: "build a workflow", "create a workflow", "scaffold workflow", "author a workflow".
 
 ### generic
 
@@ -106,6 +108,8 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ```mermaid
 graph LR
+  automation-shape-routing -- "supplier-to" --> skill-builder
+  automation-shape-routing -- "supplier-to" --> workflow-builder
   beads -- "supplier-to" --> crank
   beads -- "supplier-to" --> ratchet
   brainstorm -- "shared-kernel" --> standards
@@ -120,6 +124,7 @@ graph LR
   flywheel -- "shared-kernel" --> standards
   forge -- "shared-kernel" --> standards
   goals -- "shared-kernel" --> standards
+  heal-skill -- "customer-of" --> skill-auditor
   hooks-authoring -- "shared-kernel" --> standards
   implement -- "customer-of" --> domain
   perf -- "shared-kernel" --> standards
@@ -151,11 +156,17 @@ graph LR
   session-bootstrap -- "customer-of" --> AGENTS.md
   ship-loop -- "customer-of" --> post-mortem
   ship-loop -- "customer-of" --> rpi
+  skill-auditor -- "supplier-to" --> heal-skill
+  skill-auditor -- "customer-of" --> skill-builder
+  skill-builder -- "customer-of" --> automation-shape-routing
+  skill-builder -- "supplier-to" --> skill-auditor
   swarm -- "customer-of" --> crank
   trace -- "customer-of" --> provenance
   validate -- "customer-of" --> validation
   validation -- "shared-kernel" --> standards
   vibe -- "shared-kernel" --> standards
+  workflow-builder -- "customer-of" --> automation-shape-routing
+  workflow-builder -- "shared-kernel" --> operating-loop-workflow
 ```
 
 ## Data flow (consumes / produces)
@@ -326,3 +337,4 @@ graph LR
 | `vibe` | consumes | standards |
 | `vibe` | produces | result.json |
 | `vibe` | produces | verdict.json |
+| `workflow-builder` | produces | workflow-script |
