@@ -16,15 +16,17 @@
 # — same shape: grep the artifact-under-test for the expected wiring strings
 # and assert each is present.
 
-# Resolve WORKFLOW_PATH in setup() via a PHYSICAL path (cd && pwd), not a lexical
-# "$BATS_TEST_DIRNAME/../.." string. Under bats >=1.12 (CI) the test dir is a
-# symlinked/temp location, so a lexical "../.." resolved to the wrong file and
-# this self-test read stale workflow content, missing the new grouped-job wiring
-# (ag-877). This is the exact pattern validate-release-tag-full-ci.bats uses,
-# which passes CI.
+# Read the COMMITTED workflow (git show HEAD:) into a private temp file rather
+# than the working tree. Under bats >=1.12 (CI) the working-tree validate.yml
+# transiently held stale content when this suite ran (a sibling suite's mid-run
+# git operation, order-dependent — does not repro under local bats 1.10), so
+# working-tree reads missed the new grouped-job wiring (ag-877). The committed
+# blob at HEAD is immutable and is exactly what CI executes.
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    WORKFLOW_PATH="$REPO_ROOT/.github/workflows/validate.yml"
+    WORKFLOW_PATH="$BATS_TEST_TMPDIR/validate.yml"
+    git -C "$REPO_ROOT" show HEAD:.github/workflows/validate.yml > "$WORKFLOW_PATH" 2>/dev/null \
+        || cp "$REPO_ROOT/.github/workflows/validate.yml" "$WORKFLOW_PATH"
 }
 
 @test "validate.yml declares a bats: filter under the changes job" {
