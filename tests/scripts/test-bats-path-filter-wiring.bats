@@ -16,10 +16,14 @@
 # — same shape: grep the artifact-under-test for the expected wiring strings
 # and assert each is present.
 
-# Anchor unconditionally to this repo's workflow — do NOT honor an inherited
-# WORKFLOW_PATH. Under bats >=1.12 (CI) a sibling suite's WORKFLOW_PATH can leak
-# across files, which made this self-test read the wrong workflow (ag-877).
-WORKFLOW_PATH="$BATS_TEST_DIRNAME/../../.github/workflows/validate.yml"
+# Resolve WORKFLOW_PATH inside setup() (per-test), NOT at file scope. Under
+# bats >=1.12 (CI) $BATS_TEST_DIRNAME is reliable in setup() but a file-scope
+# value resolved against a different cwd/leaked path, making this self-test read
+# stale workflow content and miss the new grouped-job wiring (ag-877). The
+# sibling validate-release-tag-full-ci.bats uses this same setup() pattern.
+setup() {
+    WORKFLOW_PATH="$BATS_TEST_DIRNAME/../../.github/workflows/validate.yml"
+}
 
 @test "validate.yml declares a bats: filter under the changes job" {
     run grep -E "^            bats:" "$WORKFLOW_PATH"
