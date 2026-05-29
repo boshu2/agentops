@@ -39,9 +39,11 @@ fi
 | **Track retries** | `bd comments add` | Task description update |
 | **Epic tracking** | `bd update <epic-id> --append-notes` | In-memory wave counter |
 
-### Step 0.6: Detect gc Pool Backend
+### Step 0.6: Select Dispatch Backend (NTM > runtime-native > beads floor)
 
-Check `gc status --json` for a running controller. Set `GC_POOL_AVAILABLE=true` if gc is available. When true, gc pool handles worker lifecycle and auto-scales based on `bd ready --count`. Crank simplifies to: create issues, gc scales workers, workers close issues, crank validates. See [gc-pool-dispatch.md](gc-pool-dispatch.md) for dispatch details.
+Select the wave-dispatch backend per the canonical ladder in `skills/shared/SKILL.md` ("Selection policy"): if `AGENTOPS_ORCHESTRATION=off`, degrade to the **beads floor** (create issues, validate; no spawn). Otherwise prefer **NTM** (capability-probed via `ntm --robot-capabilities`), then **runtime-native** (Claude Native Teams / Codex sub-agents) via `/swarm`. Output-contract parity is unchanged on every tier: workers write `.agents/swarm/results/*.json`, crank verifies-then-trusts.
+
+> **gc pool is NOT selected (DEPRECATION).** gc tier removed (soc-2rtm0); retained for historical reference only — NOT selected. The Gas City (`gc`) CLI bridge was removed and `runtime=gc` is rejected by the CLI (see `agentops/CLAUDE.md`). [gc-pool-dispatch.md](gc-pool-dispatch.md) documents the old gc pool dispatch shape for archival purposes only — the top tier is **NTM**.
 
 ### Step 1: Identify the Epic / Work Source
 

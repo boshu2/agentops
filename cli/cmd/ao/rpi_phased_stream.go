@@ -226,7 +226,7 @@ func selectExecutorFromCaps(caps backendCapabilities, statusPath string, allPhas
 // The selection policy, chosen backend, and reason are logged to logPath for
 // observability. Pass an empty logPath to skip log writing (e.g., in tests).
 //
-// Selection order: runtime override (stream/direct) > auto (live-status=>stream, else direct).
+// Selection order: runtime override (stream/direct/tmux) > auto (always resolves to stream).
 func selectExecutor(statusPath string, allPhases []PhaseProgress) PhaseExecutor {
 	return selectExecutorWithLog(statusPath, allPhases, "", "", false, defaultPhasedEngineOptions())
 }
