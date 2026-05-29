@@ -16,13 +16,15 @@
 # — same shape: grep the artifact-under-test for the expected wiring strings
 # and assert each is present.
 
-# Resolve WORKFLOW_PATH inside setup() (per-test), NOT at file scope. Under
-# bats >=1.12 (CI) $BATS_TEST_DIRNAME is reliable in setup() but a file-scope
-# value resolved against a different cwd/leaked path, making this self-test read
-# stale workflow content and miss the new grouped-job wiring (ag-877). The
-# sibling validate-release-tag-full-ci.bats uses this same setup() pattern.
+# Resolve WORKFLOW_PATH in setup() via a PHYSICAL path (cd && pwd), not a lexical
+# "$BATS_TEST_DIRNAME/../.." string. Under bats >=1.12 (CI) the test dir is a
+# symlinked/temp location, so a lexical "../.." resolved to the wrong file and
+# this self-test read stale workflow content, missing the new grouped-job wiring
+# (ag-877). This is the exact pattern validate-release-tag-full-ci.bats uses,
+# which passes CI.
 setup() {
-    WORKFLOW_PATH="$BATS_TEST_DIRNAME/../../.github/workflows/validate.yml"
+    REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
+    WORKFLOW_PATH="$REPO_ROOT/.github/workflows/validate.yml"
 }
 
 @test "validate.yml declares a bats: filter under the changes job" {
