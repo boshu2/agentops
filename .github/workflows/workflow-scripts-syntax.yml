@@ -1,0 +1,39 @@
+name: workflow-scripts-syntax
+
+# S7: durable regression gate for the Claude Code Workflow-tool scripts under
+# .claude/workflows/. These are plain JS run by the harness; `node --check`
+# catches syntax breakage that would otherwise only surface at invocation time.
+# Isolated from validate.yml on purpose (no shared job registry to drift).
+
+on:
+  pull_request:
+    paths:
+      - '.claude/workflows/*.js'
+      - '.github/workflows/workflow-scripts-syntax.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.claude/workflows/*.js'
+
+jobs:
+  node-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: node --check every workflow script
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(.claude/workflows/*.js)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No workflow scripts to check."
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            echo "checking $f"
+            node --check "$f"
+          done
+          echo "All ${#files[@]} workflow script(s) parse cleanly."
