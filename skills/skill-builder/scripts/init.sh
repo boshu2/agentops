@@ -252,6 +252,21 @@ cat > "$BUILD_REPORT" <<EOF
 }
 EOF
 
+# --- New-skill plumbing (ag-cw2y): make the scaffold one-shot-green ----------
+# The local/CI gates that silently tripped /burndown #600 are pre-empted here:
+# 1. Dispositions row — else heal.sh Check 12 (MISSING_DISPOSITION).
+if [[ -f "$REPO_ROOT/scripts/append-skill-disposition.sh" ]]; then
+  bash "$REPO_ROOT/scripts/append-skill-disposition.sh" "$SKILL_NAME" "$REPO_ROOT" \
+    || echo "init.sh: WARN could not append dispositions row — add one manually" >&2
+fi
+# 2. Narrative skill counts — --fix-counts bumps the "N checked-in skills" tokens
+#    in the domain-map + bdd Gherkin so the new skill doesn't trip registry-drift.
+if [[ -x "$REPO_ROOT/scripts/check-registry-drift.sh" ]]; then
+  bash "$REPO_ROOT/scripts/check-registry-drift.sh" --fix-counts >/dev/null 2>&1 \
+    || echo "init.sh: WARN registry-drift --fix-counts could not run — bump counts manually" >&2
+fi
+
 echo "init.sh: created skill skeleton at $NEW_DIR"
 echo "init.sh: codex parity at $CODEX_DIR"
 echo "init.sh: build report at $BUILD_REPORT"
+echo "init.sh: dispositions row + narrative counts scaffolded (refine the placeholder row)"
