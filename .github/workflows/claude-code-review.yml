@@ -10,6 +10,12 @@ on:
     #   - "src/**/*.js"
     #   - "src/**/*.jsx"
 
+# Auto-cancel a superseded review when a new commit is pushed to the same PR so a
+# hung/stuck run does not linger and block the required check indefinitely.
+concurrency:
+  group: claude-review-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   claude-review:
     # Optional: Filter by PR author
@@ -19,6 +25,10 @@ jobs:
     #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
 
     runs-on: ubuntu-latest
+    # Bound the LLM review so a hung claude-code-action call FAILS fast (visible,
+    # re-runnable) instead of sitting in_progress to GitHub's 6h default and
+    # blocking the required merge gate. Observed: PR #591 stuck ~17min (ag-1kcr).
+    timeout-minutes: 20
     permissions:
       contents: read
       pull-requests: read
