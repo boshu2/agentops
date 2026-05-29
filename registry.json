@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-29T03:55:37Z",
+  "generated_at": "2026-05-29T17:02:40Z",
   "summary": {
-    "skills": 76,
+    "skills": 78,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 67,
-    "capabilities": 157
+    "cli_commands": 68,
+    "capabilities": 160
   },
   "surfaces": {
     "skills": [
@@ -453,6 +453,14 @@
         "reference_count": 23
       },
       {
+        "name": "automation-shape-routing",
+        "tier": "meta",
+        "path": "skills/automation-shape-routing/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
         "name": "discovery",
         "tier": "meta",
         "path": "skills/discovery/",
@@ -515,6 +523,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 13
+      },
+      {
+        "name": "workflow-builder",
+        "tier": "meta",
+        "path": "skills/workflow-builder/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "doc",
@@ -1145,6 +1161,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao orchestrate",
+        "path": "cli/cmd/ao/",
+        "purpose": "Resolve and inspect the orchestration backend ladder",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao patterns",
         "path": "cli/cmd/ao/",
         "purpose": "Inspect and repair .agents/patterns/ artifacts",
@@ -1350,9 +1373,9 @@
     ]
   },
   "capability_summary": {
-    "total": 157,
-    "skills": 76,
-    "cli_commands": 67,
+    "total": 160,
+    "skills": 78,
+    "cli_commands": 68,
     "gates": 11,
     "reference_impls": 3
   },
@@ -1402,6 +1425,7 @@
     "mine",
     "notebook",
     "operator",
+    "orchestrate",
     "patterns",
     "pool",
     "quick-start",
@@ -1449,6 +1473,22 @@
         "ao rpi"
       ],
       "path": "skills/autodev/",
+      "references": 0
+    },
+    {
+      "sku": "skill:automation-shape-routing",
+      "name": "automation-shape-routing",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "supporting",
+      "tier": "meta",
+      "purpose": "Front door for agent automation — decide the SHAPE (Workflow vs NTM vs skill), then hand off. Triggers: \"build automation\", \"convert skills to workflows\", \"which shape\".",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [],
+      "produces": [],
+      "drives_commands": [],
+      "path": "skills/automation-shape-routing/",
       "references": 0
     },
     {
@@ -2884,7 +2924,7 @@
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "meta",
-      "purpose": "Scaffold or absorb new SKILL.md files against the unified AgentOps template.",
+      "purpose": "Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\".",
       "status": "active",
       "disposition": "update",
       "consumes": [],
@@ -3169,6 +3209,24 @@
       ],
       "path": "skills/vibe/",
       "references": 22
+    },
+    {
+      "sku": "skill:workflow-builder",
+      "name": "workflow-builder",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "supporting",
+      "tier": "meta",
+      "purpose": "Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: \"build a workflow\", \"create a workflow\", \"scaffold workflow\", \"author a workflow\".",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [],
+      "produces": [
+        "workflow-script"
+      ],
+      "drives_commands": [],
+      "path": "skills/workflow-builder/",
+      "references": 0
     },
     {
       "sku": "cmd:ao.agents",
@@ -4166,6 +4224,23 @@
       "type": "cli-command",
       "bounded_context": "BC4",
       "purpose": "BC4 OperatorPort operations (record/list operator intents)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.orchestrate",
+      "name": "ao orchestrate",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Resolve and inspect the orchestration backend ladder",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
