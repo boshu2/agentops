@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/boshu2/agentops/cli/internal/evalsubstrate"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +18,15 @@ type outcomesScore struct {
 	Aggregate        float64            `json:"aggregate"`
 	Threshold        float64            `json:"threshold"`
 	CriterionScores  map[string]float64 `json:"criterion_scores"`
+
+	// Burn-ledger carriers (ag-hdqu0.5). Split is the eval split the candidate
+	// was graded against; only "holdout" consumes quota. SuiteRef +
+	// GroundTruthVersion key the burn; RunID identifies the consuming run.
+	// Absent on dev-split or pre-.5 payloads (→ no burn).
+	Split              string `json:"split,omitempty"`
+	SuiteRef           string `json:"suite_ref,omitempty"`
+	GroundTruthVersion string `json:"ground_truth_version,omitempty"`
+	RunID              string `json:"run_id,omitempty"`
 }
 
 // outcomesVerdict is the one verdict record (skills/council/schemas/verdict.json
@@ -62,6 +72,26 @@ func ingestOutcomesScore(s outcomesScore) outcomesVerdict {
 		SatisfactionBreakdown: s.CriterionScores,
 		Findings:              []map[string]any{},
 	}
+}
+
+// registerOutcomesBurn is the write-side of the holdout burn ledger (ag-hdqu0.5),
+// the counterpart to gate #3's read-side (#607). When an Outcomes grade was
+// produced against the holdout split, ingest unconditionally appends exactly one
+// BurnRecord to the global ledger — so a cloud/async/Codex Outcomes run cannot
+// silently bypass holdout quota the way a local holdout run cannot. Dev-split
+// (and absent-split) grades register no burn, since the dev split is reusable.
+// Returns the updated ledger for the caller to persist; the global-Dolt store is
+// a separate adapter concern, exactly as gate #3 reads an injected ledger.
+func registerOutcomesBurn(led evalsubstrate.HoldoutBurnLedger, s outcomesScore) evalsubstrate.HoldoutBurnLedger {
+	if s.Split != "holdout" {
+		return led
+	}
+	led.Records = append(led.Records, evalsubstrate.BurnRecord{
+		SuiteRef:  s.SuiteRef,
+		GTVersion: s.GroundTruthVersion,
+		RunID:     s.RunID,
+	})
+	return led
 }
 
 var evalOutcomesIngestCmd = &cobra.Command{
