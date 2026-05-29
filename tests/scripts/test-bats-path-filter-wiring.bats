@@ -16,7 +16,10 @@
 # — same shape: grep the artifact-under-test for the expected wiring strings
 # and assert each is present.
 
-WORKFLOW_PATH="${WORKFLOW_PATH:-$BATS_TEST_DIRNAME/../../.github/workflows/validate.yml}"
+setup() {
+    REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
+    WORKFLOW_PATH="$REPO_ROOT/.github/workflows/validate.yml"
+}
 
 @test "validate.yml declares a bats: filter under the changes job" {
     run grep -E "^            bats:" "$WORKFLOW_PATH"
@@ -36,9 +39,12 @@ WORKFLOW_PATH="${WORKFLOW_PATH:-$BATS_TEST_DIRNAME/../../.github/workflows/valid
     [ "$status" -eq 0 ]
 }
 
-@test "validate.yml bats-tests job triggers on needs.changes.outputs.bats" {
-    # The bats-tests block must include the bats output in its `if:` clause
-    run bash -c "awk '/^  bats-tests:/{inblock=1} inblock && /^    if:/{print; exit}' '$WORKFLOW_PATH'"
+@test "validate.yml bats step triggers on needs.changes.outputs.bats" {
+    # Post-rebuild (ag-877): bats is no longer a standalone `bats-tests:` job —
+    # it runs as the "Run bats tests" step inside the `correctness` job. Its
+    # step-level `if:` must still gate on the bats path-filter output so a
+    # .bats-only change re-runs it.
+    run bash -c "awk '/name: Run bats tests/{inblock=1} inblock && /^        if:/{print; exit}' '$WORKFLOW_PATH'"
     [ "$status" -eq 0 ]
     [[ "$output" == *"needs.changes.outputs.bats == 'true'"* ]]
 }
