@@ -177,6 +177,11 @@ dispositions:
     hexagonal_role: driven-adapter
     disposition:    keep
     rationale:      "External API documentation adapter with clear scope"
+  - skill:          operating-loop-workflow
+    domain:         "BC3 Loop"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "Installs + invokes the operating-loop Workflow so plugin users get the seven-move loop"
   - skill:          perf
     domain:         "BC2 Validation"
     hexagonal_role: domain
