@@ -1,0 +1,35 @@
+# skill-flow-standalone.txt — intentionally-standalone skills.
+#
+# Skills listed here are permitted to have ZERO skill-to-skill edges (no peer
+# referenced in consumes/context_rel/metadata.dependencies, and not referenced
+# by any peer). They are boundary adapters, meta-tooling, or human-facing
+# explainers that legitimately do not participate in the inter-skill flow.
+#
+# Enforced by scripts/validate-skill-flow.sh. Adding a skill here is a
+# deliberate act: it asserts "this skill is a leaf by design." If a skill here
+# later gains an edge, the gate flags it as a stale entry — remove it.
+#
+# Contract: docs/contracts/skill-flow.md
+# Format: one skill slug per line; everything after '#' is a comment.
+
+# --- knowledge / .agents boundary writers (emit .agents/research/*.md; the
+#     flywheel reads them out-of-band, not via a declared skill edge) ---
+curate                    # mine transcripts/.agents/bd/git into knowledge diffs
+dream                     # retired pointer; out-of-session compounding via Gas City
+handoff                   # write compact session handoff notes
+reverse-engineer-rpi      # reverse-engineer product specs into research notes
+
+# --- external-boundary adapters (driven adapters to systems outside the corpus) ---
+openai-docs               # reads upstream OpenAI docs (external-api)
+pr-research               # researches an upstream OSS repo (external-api)
+status                    # reports bd work status (external bd store)
+push                      # commits/pushes git-changes (terminal VCS sink)
+
+# --- orchestration / install adapters (drive other agents or install artifacts) ---
+codex-team                # coordinate multiple Codex agents (orchestration)
+session-bootstrap         # universal init entry point (customer-of AGENTS*.md docs)
+system-tuning             # restore system responsiveness (process/host hygiene)
+
+# --- human-facing explainers (documentation skills, no pipeline role) ---
+using-agentops            # explain AgentOps workflows
+using-gc                  # explain running AgentOps on the Gas City substrate
