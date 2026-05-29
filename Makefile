@@ -1,6 +1,6 @@
 SHELL := /usr/bin/env bash
 
-.PHONY: local-ci local-ci-fast ci build test docs-check clean help
+.PHONY: local-ci local-ci-fast ci build test docs-check regen-all regen-check clean help
 
 # Default: run the release-grade local CI gate.
 # Note: scripts/ci-local-release.sh already includes build + test + release-binary validation.
@@ -24,6 +24,12 @@ docs-check: ## Run docs and hook safety drift checks
 	./scripts/generate-cli-reference.sh --check
 	./scripts/validate-hook-preflight.sh
 	./tests/docs/validate-doc-release.sh
+
+regen-all: ## Regenerate every derived artifact after adding a skill/command (one-command finalizer)
+	./scripts/regen-all.sh
+
+regen-check: ## Run the derived-artifact drift/gate sweep (no writes; pre-push gate)
+	./scripts/regen-all.sh --check
 
 clean: ## Clean CLI build artifacts
 	$(MAKE) -C cli clean
