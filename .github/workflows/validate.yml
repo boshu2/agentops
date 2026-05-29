@@ -123,16 +123,25 @@ jobs:
         with:
           fetch-depth: 2
 
-      # Record the pristine checkout SHA. The Go test phase below shares this
-      # working tree, and some cli/ test exercises git plumbing that can leave
-      # the shared repo's HEAD moved (observed: detached at origin/main). The
-      # bats step later reads .github/workflows/validate.yml, so we restore it
-      # from this SHA right before bats to immunize the workflow self-tests
-      # against that cross-step pollution (ag-877). Underlying isolation bug
-      # tracked separately.
-      - name: Record pristine checkout SHA
-        if: runner.os == 'Linux'
-        run: echo "PRISTINE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      # ── bats runs FIRST, on the pristine checkout, before the Go build/test
+      # steps below. The Go test phase shares this working tree and a cli/ test
+      # exercises git plumbing that can leave the shared repo HEAD moved
+      # (observed: detached at origin/main), which would make the workflow
+      # self-tests in the bats suite read stale validate.yml. Running bats up
+      # front — exactly the pristine-checkout + npm-bats setup the standalone
+      # bats-tests job used pre-rebuild — keeps it pollution-free (ag-877).
+      # bats needs only the runner's preinstalled python+PyYAML/jq/ripgrep; it
+      # does not need Go or a built ao.
+      - name: Install bats
+        if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
+        run: sudo npm install -g bats@1.12.0
+
+      - name: Run bats tests
+        if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
+        run: |
+          echo "=== Running bats tests ==="
+          bats --print-output-on-failure tests/scripts/*.bats
+          echo "✅ Bats tests passed"
 
       - name: Setup Go
         uses: actions/setup-go@v6
@@ -153,10 +162,6 @@ jobs:
         # so reinstall it whenever we've shadowed the system python.
         if: runner.os == 'Linux' && (needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true')
         run: python3 -m pip install pyyaml
-
-      - name: Install bats
-        if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
-        run: sudo npm install -g bats@1.12.0
 
       # ── go-build (Linux) ──────────────────────────────────────────────────
       - name: Build ao CLI
@@ -327,30 +332,6 @@ jobs:
         run: |
           chmod +x tests/smoke-test.sh
           ./tests/smoke-test.sh --verbose
-
-      # ── bats-tests (Linux) ────────────────────────────────────────────────
-      # skills + docs included because several bats tests assert SKILL.md / reference
-      # content (e.g. evolve-primitive-wiring.bats); a skills/docs-only change that
-      # breaks such an assertion must trigger bats, not merge undetected (soc-xrdwp;
-      # #413's wiring move hid for 11 PRs because skills/ did not trigger this job).
-      # Restore tracked files from the pristine checkout before bats runs, in
-      # case an earlier same-job step (Go tests share this working tree) moved
-      # the shared repo's HEAD or mutated tracked files. Workflow self-tests in
-      # the bats suite read .github/workflows/validate.yml from the working tree
-      # and must see the PR content, not a polluted state (ag-877).
-      - name: Restore pristine working tree for bats
-        if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
-        run: |
-          if [ -n "${PRISTINE_SHA:-}" ]; then
-            git checkout "$PRISTINE_SHA" -- . 2>/dev/null || true
-          fi
-
-      - name: Run bats tests
-        if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
-        run: |
-          echo "=== Running bats tests ==="
-          bats --print-output-on-failure tests/scripts/*.bats
-          echo "✅ Bats tests passed"
 
       # ── doctor-check (Linux; advisory; was needs go-build → go||ci) ───────
       - name: Run ao doctor (advisory dead-reference check)
