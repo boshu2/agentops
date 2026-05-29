@@ -113,6 +113,7 @@ graph LR
   complexity -- "shared-kernel" --> standards
   council -- "shared-kernel" --> standards
   crank -- "shared-kernel" --> standards
+  deps -- "supplier-to" --> vibe
   design -- "shared-kernel" --> standards
   discovery -- "shared-kernel" --> standards
   evolve -- "customer-of" --> rpi
@@ -129,13 +130,17 @@ graph LR
   pr-validate -- "customer-of" --> validation
   pre-mortem -- "shared-kernel" --> standards
   product -- "shared-kernel" --> standards
+  provenance -- "supplier-to" --> trace
   quickstart -- "customer-of" --> rpi
   ratchet -- "shared-kernel" --> standards
+  red-team -- "supplier-to" --> vibe
+  release -- "supplier-to" --> ship-loop
   retro -- "shared-kernel" --> standards
   review -- "customer-of" --> validation
   rpi -- "customer-of" --> crank
   rpi -- "customer-of" --> discovery
   rpi -- "customer-of" --> validation
+  scenario -- "supplier-to" --> validation
   scope -- "supplier-to" --> domain
   security -- "supplier-to" --> vibe
   security-suite -- "supplier-to" --> vibe
@@ -147,6 +152,7 @@ graph LR
   ship-loop -- "customer-of" --> post-mortem
   ship-loop -- "customer-of" --> rpi
   swarm -- "customer-of" --> crank
+  trace -- "customer-of" --> provenance
   validate -- "customer-of" --> validation
   validation -- "shared-kernel" --> standards
   vibe -- "shared-kernel" --> standards

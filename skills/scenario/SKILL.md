@@ -9,7 +9,9 @@ hexagonal_role: supporting
 consumes: []
 produces:
 - result.json
-context_rel: []
+context_rel:
+- kind: supplier-to
+  with: validation
 skill_api_version: 1
 metadata:
   tier: execution
