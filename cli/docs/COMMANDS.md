@@ -1448,6 +1448,14 @@ Compile a holdout-safe Outcomes rubric payload from a locked Task + criteria
 ao eval outcomes compile <input.json> [flags]
 ```
 
+##### `ao eval outcomes ingest`
+
+Ingest an Outcomes score payload into the one council verdict record
+
+```
+ao eval outcomes ingest <score.json> [flags]
+```
+
 #### `ao eval run`
 
 Run a deterministic eval suite
