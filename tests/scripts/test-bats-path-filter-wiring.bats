@@ -52,6 +52,13 @@ setup() {
     # it runs as the "Run bats tests" step inside the `correctness` job. Its
     # step-level `if:` must still gate on the bats path-filter output so a
     # .bats-only change re-runs it.
+    echo "DEBUG repo=$REPO_ROOT" >&2
+    echo "DEBUG wf=$WORKFLOW_PATH exists=$([ -f "$WORKFLOW_PATH" ] && echo Y || echo N)" >&2
+    echo "DEBUG headsha=$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>&1)" >&2
+    echo "DEBUG tmpfile_dp=$(grep -c '^  doctrine-proof:' "$WORKFLOW_PATH" 2>/dev/null)" >&2
+    echo "DEBUG head_dp=$(git -C "$REPO_ROOT" show HEAD:.github/workflows/validate.yml 2>&1 | grep -c '^  doctrine-proof:')" >&2
+    echo "DEBUG wt_dp=$(grep -c '^  doctrine-proof:' "$REPO_ROOT/.github/workflows/validate.yml" 2>/dev/null)" >&2
+    echo "DEBUG nbatslines=$(grep -c 'name: Run bats tests' "$WORKFLOW_PATH" 2>/dev/null)" >&2
     run bash -c "awk '/name: Run bats tests/{inblock=1} inblock && /^        if:/{print; exit}' '$WORKFLOW_PATH'"
     [ "$status" -eq 0 ]
     [[ "$output" == *"needs.changes.outputs.bats == 'true'"* ]]
