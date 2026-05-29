@@ -20,9 +20,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Find repo root (location of skills/ directory)
+# Find repo root (location of skills/ directory). HEAL_REPO_ROOT overrides for
+# fixture-driven tests (tests/scripts/heal-dispositions.bats); production derives
+# it from the script location.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+REPO_ROOT="${HEAL_REPO_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
 SKILLS_ROOT="$REPO_ROOT/skills"
 
 # If no targets, scan all skill dirs (skills/ and skills-codex/)
@@ -458,6 +460,25 @@ for skill_check in "$SKILLS_ROOT"/*/SKILL.md; do
     fi
   fi
 done
+
+# Check 12: Dispositions coverage (global, not per-skill). Every user-invocable
+# skills/<n> must have a row in docs/contracts/skill-dispositions.yaml. This is
+# the gate that silently passed when /burndown (ag-3yl8 #600) was added, costing
+# a CI round — heal --strict now catches it locally (ag-cw2y item 1).
+DISPOSITIONS_FILE="$REPO_ROOT/docs/contracts/skill-dispositions.yaml"
+if [[ -f "$DISPOSITIONS_FILE" ]]; then
+  for skill_check in "$SKILLS_ROOT"/*/SKILL.md; do
+    [[ -f "$skill_check" ]] || continue
+    check_dir="$(dirname "$skill_check")"
+    check_name="$(basename "$check_dir")"
+    # Skip internal/non-invocable skills (same exemptions as catalog check).
+    if grep -q 'user-invocable: false' "$skill_check" 2>/dev/null; then continue; fi
+    if grep -q 'internal: true' "$skill_check" 2>/dev/null; then continue; fi
+    if ! grep -qE "^[[:space:]]*-[[:space:]]+skill:[[:space:]]+${check_name}[[:space:]]*$" "$DISPOSITIONS_FILE" 2>/dev/null; then
+      report "MISSING_DISPOSITION" "$check_dir" "user-invocable but has no row in docs/contracts/skill-dispositions.yaml"
+    fi
+  done
+fi
 
 if [[ $FINDINGS -gt 0 ]]; then
   echo ""
