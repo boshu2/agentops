@@ -821,6 +821,12 @@ jobs:
           chmod +x scripts/validate-context-map-drift.sh
           bash scripts/validate-context-map-drift.sh
 
+      - name: Validate skill-flow connectivity and closed consumes vocabulary
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/validate-skill-flow.sh
+          bash scripts/validate-skill-flow.sh
+
       - name: Verify embedded lib/skills are in sync
         if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
         run: |
