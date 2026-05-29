@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (68)
+### User-Facing Skills (67)
 
 **Judgment:**
 
@@ -250,6 +250,7 @@ These are how skills chain in practice:
 | **swarm** | execution | Parallelize any skill — fresh context per agent |
 | **rpi** | meta | Thin wrapper: /discovery → /crank → /validation with complexity classification and loop |
 | **evolve** | execution | Autonomous fitness-scored improvement loop |
+| **burndown** | execution | Bounded epic-completion loop — drive a finite target to all-merged, then stop |
 | **operating-loop-workflow** | execution | Install + run the operating-loop multi-agent Workflow (seven-move loop) for plugin users |
 | **autodev** | execution | PROGRAM.md autonomous development contract setup and validation |
 | **bug-hunt** | execution | Investigate bugs with git archaeology |
@@ -323,8 +324,6 @@ These are how skills chain in practice:
 | **heal-skill** | meta | Detect and fix skill hygiene issues |
 | **skill-auditor** | meta | Two-pass audit of an existing SKILL.md against the unified template (15 checks) |
 | **skill-builder** | meta | Scaffold or absorb new SKILL.md files against the unified template |
-| **automation-shape-routing** | meta | Front door for building automation: route to Workflow vs NTM swarm vs plain skill, then hand off |
-| **workflow-builder** | meta | Scaffold a new Claude Workflow script (.claude/workflows/*.js) from the operating-loop.js template |
 
 ### Internal Skills (10) — `metadata.internal: true`
 
