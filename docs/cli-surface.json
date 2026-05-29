@@ -101,6 +101,20 @@
     },
     {
       "category": "public-tested",
+      "command": "beads scenarios extract",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "beads scenarios validate",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "beads stale-claims",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -1031,6 +1045,13 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
+      "category": "manual-only",
+      "command": "orchestrate select",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
       "category": "public-tested",
       "command": "patterns repair-filenames",
       "coverage_status": "covered",
@@ -1194,6 +1215,13 @@
     {
       "category": "public-tested",
       "command": "ratchet validate",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "reconcile",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
@@ -1390,6 +1418,13 @@
     {
       "category": "public-tested",
       "command": "skills check",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "skills find",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."

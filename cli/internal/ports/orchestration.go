@@ -41,9 +41,9 @@ type WorkSpec struct {
 // that produced it. Considered lists the backends the ladder evaluated,
 // in order, for auditability; it is safe for callers to mutate.
 type SelectionTrace struct {
-	Chosen     Backend
-	Reason     string
-	Considered []Backend
+	Chosen     Backend   `json:"chosen"`
+	Reason     string    `json:"reason"`
+	Considered []Backend `json:"considered"`
 }
 
 // OrchestrationPort selects an orchestration backend for a unit of
