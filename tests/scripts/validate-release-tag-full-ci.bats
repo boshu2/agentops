@@ -47,13 +47,17 @@ setup() {
     [ "$status" -ne 0 ]
 }
 
-@test "summary allows explicitly PR-only jobs to skip on release tags" {
+@test "summary uses a selective toJson(needs) allowlist, not a blind skip check" {
+    # Post-rebuild (ag-877): the 67→10 collapse removed the standalone PR-only
+    # jobs (validate-pr-evidence-claims, lint-evidence-lines-advisory) — AP#7
+    # Evidence verification and the Evidence-line lint are now STEPS (in summary
+    # and process-hygiene respectively), gated by github.event_name. So no
+    # top-level job needs allowlisting on release tags. The selective mechanism
+    # itself must still exist: summary inspects toJson(needs) against an
+    # allowed_skips set rather than blindly failing on any skip.
     run grep -F "toJson(needs)" "$WORKFLOW_PATH"
     [ "$status" -eq 0 ]
 
-    run grep -F '"validate-pr-evidence-claims"' "$WORKFLOW_PATH"
-    [ "$status" -eq 0 ]
-
-    run grep -F '"lint-evidence-lines-advisory"' "$WORKFLOW_PATH"
+    run grep -F "allowed_skips" "$WORKFLOW_PATH"
     [ "$status" -eq 0 ]
 }

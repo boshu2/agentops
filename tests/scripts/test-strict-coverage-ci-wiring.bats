@@ -16,11 +16,16 @@
 # (cycle 68) — same shape: grep validate.yml for the wired pattern and
 # assert each piece is present in the right place.
 
-WORKFLOW_PATH="${WORKFLOW_PATH:-$BATS_TEST_DIRNAME/../../.github/workflows/validate.yml}"
+setup() {
+    REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
+    WORKFLOW_PATH="$REPO_ROOT/.github/workflows/validate.yml"
+}
 
-@test "validate-three-gap-supergate uses fetch-depth: 0" {
-    # The fetch-depth line should appear within ~20 lines after the job header
-    run bash -c "awk '/^  validate-three-gap-supergate:/{p=NR} p && NR>=p && NR<=p+20' '$WORKFLOW_PATH' | grep -E 'fetch-depth:[[:space:]]*0'"
+@test "doctrine-proof (host of three-gap-supergate) uses fetch-depth: 0" {
+    # Post-rebuild (ag-877): the three-gap-supergate checks run as steps inside
+    # the `doctrine-proof` job, whose checkout must use fetch-depth: 0 so the
+    # Gap 1 --strict-coverage advisory step can resolve `main..HEAD`.
+    run bash -c "awk '/^  doctrine-proof:/{p=NR} p && NR>=p && NR<=p+20' '$WORKFLOW_PATH' | grep -E 'fetch-depth:[[:space:]]*0'"
     [ "$status" -eq 0 ]
 }
 
