@@ -20,24 +20,26 @@ See `skills/shared/SKILL.md` for the capability contract.
 
 See also `local-mode.md` for swarm-specific execution details (worktrees, validation, git commit policy, wave repeat).
 
-## Step 0.5: gc Backend Detection (Before Worker Dispatch)
+## Step 0.5: Select Spawn Backend (Before Worker Dispatch)
 
-Before spawning workers via Claude teams or Codex sub-agents, check if gc is available:
+Select the worker-dispatch backend by the ladder **NTM > runtime-native > beads floor** (see `skills/shared/SKILL.md` "Selection policy" for the canonical statement):
 
 ```bash
-if command -v gc &>/dev/null && gc status --json 2>/dev/null | jq -e '.controller.state == "running"' >/dev/null 2>&1; then
-    SWARM_BACKEND="gc"
+if [[ "${AGENTOPS_ORCHESTRATION:-}" == "off" ]]; then
+    SWARM_BACKEND="beads"   # global opt-out — single-agent inline, work tracked via bd
+elif command -v ntm &>/dev/null && ntm --robot-capabilities 2>/dev/null | jq -e '.spawn == true' >/dev/null 2>&1; then
+    SWARM_BACKEND="ntm"     # top tier — capability-probed
 else
-    SWARM_BACKEND="native"  # fallback to Claude teams / Codex sub-agents
+    SWARM_BACKEND="native"  # runtime-native: Claude teams / Codex sub-agents; beads floor if neither
 fi
 ```
 
-When `SWARM_BACKEND="gc"`:
-- Use `gc session nudge <worker-alias> "<task prompt>"` instead of `spawn_agent()`
-- Monitor workers via `gc session peek <worker-alias> --lines 50`
-- Workers already use `bd` for issue tracking — no change needed
-- Results still written to `.agents/swarm/results/` — no change needed
-- gc pool auto-scaling handles worker lifecycle (based on `scale_check = "bd ready --count"`)
+- `AGENTOPS_ORCHESTRATION=off` is the global opt-out (mirrors `AGENTOPS_HOOKS_DISABLED=1`): no spawn backend, degrade to the beads floor.
+- `SWARM_BACKEND="ntm"`: dispatch and monitor workers through NTM's robot API.
+- `SWARM_BACKEND="native"`: spawn via Claude Native Teams or Codex sub-agents per the runtime; if neither is available, fall to the beads floor (`--quick`).
+- **Output-contract parity holds on every tier:** workers write results to `.agents/swarm/results/`, lead verifies-then-trusts. Workers already use `bd` for issue tracking — no change needed.
+
+> **`gc` is NOT a selectable backend (DEPRECATION).** The Gas City (`gc`) CLI bridge was removed (soc-2rtm0); `runtime=gc` is rejected by the CLI (see `agentops/CLAUDE.md`). The `SWARM_BACKEND="gc"` dispatch block later in this file is retained for historical reference only — it is never selected. The top tier is **NTM**.
 
 ## Step 1: Ensure Tasks Exist
 
@@ -210,9 +212,11 @@ done
 
 > **Pre-task checks:** Inject the Quick-Reference Inject Block from `worker-pre-task-checks.md` into every worker dispatch prompt — grep-for-existing-impls, file-manifest existence, deletion-adjacent symbol verify. Prevents workers from duplicating existing utilities or operating on stale plan symbols.
 
-### gc Worker Dispatch (when `SWARM_BACKEND="gc"`)
+### gc Worker Dispatch — DEPRECATED, historical reference only
 
-When gc is the selected backend, dispatch and monitor workers through gc sessions instead of Claude teams or Codex sub-agents:
+> **gc tier removed (soc-2rtm0); retained for historical reference only — NOT selected.** The Gas City (`gc`) CLI bridge was severed and `runtime=gc` is rejected by the CLI (see `agentops/CLAUDE.md`). Step 0.5 never sets `SWARM_BACKEND="gc"`. The top tier is **NTM**. The block below documents the old gc dispatch shape for archival purposes only — do not select or invoke it.
+
+When gc was the selected backend (no longer reachable), dispatch and monitoring went through gc sessions instead of Claude teams or Codex sub-agents:
 
 ```bash
 # Dispatch a task to a gc-managed worker

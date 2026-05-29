@@ -167,6 +167,8 @@ These are the skills every user needs first. Everything else is available when y
 | `/scenario` | Author and manage holdout scenarios for behavioral validation |
 | `/skill-auditor` | Two-pass audit of an existing SKILL.md against the unified template (15 checks) |
 | `/skill-builder` | Scaffold or absorb new SKILL.md files against the unified template |
+| `/automation-shape-routing` | Front door for building agent automation — decide the SHAPE (Workflow vs NTM swarm vs plain skill), then hand off to the right builder |
+| `/workflow-builder` | Scaffold a new Claude Workflow script (`.claude/workflows/*.js`) — deterministic multi-agent orchestration |
 
 ## Expert Skills (specialized workflows)
 

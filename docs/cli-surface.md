@@ -18,6 +18,8 @@
 | `ao beads harvest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao beads lint` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao beads resume` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao beads scenarios extract` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao beads scenarios validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao beads stale-claims` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao beads verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao capabilities` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -151,6 +153,7 @@
 | `ao notebook update` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao operator list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao operator record` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao orchestrate select` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
 | `ao patterns repair-filenames` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao pool auto-promote` | `public-tested` | `allowlisted` | Covered by pool command tests. |
 | `ao pool batch-promote` | `public-tested` | `allowlisted` | Covered by batch promote tests. |
@@ -175,6 +178,7 @@
 | `ao ratchet status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao ratchet trace` | `public-tested` | `allowlisted` | Covered through trace command behavior. |
 | `ao ratchet validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao reconcile` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao registry list` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
 | `ao retrieval-bench` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao robot-docs` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -203,6 +207,7 @@
 | `ao sessions index` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao sessions spawn` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
 | `ao skills check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao skills find` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao trace` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
