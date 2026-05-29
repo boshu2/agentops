@@ -652,6 +652,12 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Guide to running AgentOps on the Gas City (gc) substrate; gc-specific shell idioms and out-of-session orchestration vocabulary."
+    },
+    {
+      "name": "operating-loop-workflow",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Ship operating-loop Workflow to plugin users via installer skill; Codex twin redirects to the $rpi chain since Codex lacks the Workflow tool"
     }
   ]
 }

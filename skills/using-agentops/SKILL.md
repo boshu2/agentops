@@ -145,6 +145,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/crank` | Autonomous epic loop (uses swarm for each wave) |
 | `/swarm` | Fresh-context parallel execution (Ralph pattern) |
 | `/evolve` | Goal-driven fitness-scored improvement loop |
+| `/operating-loop-workflow` | Install + run the operating-loop multi-agent Workflow (seven-move loop) |
 | `/autodev` | PROGRAM.md autonomous development contract setup and validation |
 | `/dream` | Interactive Dream operator surface for setup, bedtime runs, and morning reports |
 | `/doc` | Documentation generation — repo docs (default), gold-standard README (`--mode=readme`), OSS doc packs (`--mode=oss`) |

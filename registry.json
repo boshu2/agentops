@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-28T10:23:15Z",
+  "generated_at": "2026-05-29T02:10:24Z",
   "summary": {
-    "skills": 75,
+    "skills": 76,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 67,
-    "capabilities": 211
+    "capabilities": 212
   },
   "surfaces": {
     "skills": [
@@ -187,6 +187,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 7
+      },
+      {
+        "name": "operating-loop-workflow",
+        "tier": "execution",
+        "path": "skills/operating-loop-workflow/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "perf",
@@ -1342,8 +1350,8 @@
     ]
   },
   "capability_summary": {
-    "total": 211,
-    "skills": 75,
+    "total": 212,
+    "skills": 76,
     "cli_commands": 67,
     "gates": 66,
     "reference_impls": 3
@@ -2153,6 +2161,24 @@
       "produces": [],
       "drives_commands": [],
       "path": "skills/openai-docs/",
+      "references": 0
+    },
+    {
+      "sku": "skill:operating-loop-workflow",
+      "name": "operating-loop-workflow",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "driving-adapter",
+      "tier": "execution",
+      "purpose": "Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users.",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [],
+      "produces": [
+        "git-changes"
+      ],
+      "drives_commands": [],
+      "path": "skills/operating-loop-workflow/",
       "references": 0
     },
     {

@@ -38,6 +38,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `bootstrap` — Initialize AgentOps project files.
 - `implement` — Implement one tracked issue.
 - `inject` — Load relevant .agents context.
+- `operating-loop-workflow` — Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users.
 - `pr-implement` — Implement a scoped OSS PR.
 - `pr-prep` — Prepare PR commits and body.
 - `pr-validate` — Validate PR scope and quality.
@@ -219,6 +220,7 @@ graph LR
 | `implement` | produces | git-changes |
 | `llm-wiki` | produces | documentation |
 | `openai-docs` | consumes | external-api |
+| `operating-loop-workflow` | produces | git-changes |
 | `perf` | consumes | repo-context |
 | `perf` | produces | result.json |
 | `plan` | consumes | standards |

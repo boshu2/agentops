@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "4b7376af85273d2df0dfec3b3a027b43d34789e6af2eecfe424158c978c18507",
+  "codex_override_catalog_hash": "aef940bdfe26c2955145f7338854b193e9ef2b3baf7448e4fadebfbb26bb8fa1",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -642,6 +642,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Guide to running AgentOps on the Gas City (gc) substrate; gc-specific shell idioms and out-of-session orchestration vocabulary."
+      },
+      {
+        "name": "operating-loop-workflow",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Ship operating-loop Workflow to plugin users via installer skill; Codex twin redirects to the $rpi chain since Codex lacks the Workflow tool"
       }
     ]
   },
@@ -655,7 +661,7 @@
     {
       "name": "beads",
       "source_skill": "skills/beads",
-      "source_hash": "85281e81a770ff1f081b37664ded15efca08acbe3cb9e9e402666ba0afc31321",
+      "source_hash": "ed5f5d242b6bb903c7ba3120e7ffe82a8c2a7bd7f21b21d9c6274de205d710e1",
       "generated_hash": "51db26466d4646eddfc2132ea521508fe2ced556ef0ab69db41acd363afba770"
     },
     {
@@ -733,7 +739,7 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "fc6873f7e0d7bb541e9ee6f85ac00179d88c30e9ad879fcea6d654696c286347",
+      "source_hash": "da99e855580351e6dc3155cf73b6e5669eb70d6774ca55f624cb7f84785f46fe",
       "generated_hash": "6c307529f6519b93745a4f410641b4991c0676a5f564de7f2b53d8d9cffe6b48"
     },
     {
@@ -757,7 +763,7 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "ecfc27d86c3660cbd64b3455265ac89250a1cdf733a2dcadaa1d236c9f53318a",
+      "source_hash": "a82ec266a2f22a2d6a065695f365cbf778efc063baea7aa01541f0291b1cffcb",
       "generated_hash": "5c8274c6606089b1a2854015f0f0f5176ed49806e3a6e9fce10749eeabffd01f"
     },
     {
@@ -839,6 +845,12 @@
       "generated_hash": "897d7a15f493cf6e64262e0ff44e5083bffee62787bead5fd106658cd9c09e18"
     },
     {
+      "name": "operating-loop-workflow",
+      "source_skill": "skills/operating-loop-workflow",
+      "source_hash": "a5101f268118143a999e8b95601e71a9fa844bf53d0b65572730c9fd928966cb",
+      "generated_hash": "26ea2810425effbed57406c48138ac8f906165b961f3d9ee0c593cf11b8bef42"
+    },
+    {
       "name": "perf",
       "source_skill": "skills/perf",
       "source_hash": "76369d06999ce6adb4b4f37e62fecf0663bf10c8a22337299a91132486b53dee",
@@ -853,7 +865,7 @@
     {
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
-      "source_hash": "16ace03ff20aa116ac02077be568a0d1f44fe99eac9a5b0b394cfb02cab7e47d",
+      "source_hash": "629f0c1d95807d58e251bf26e3b864906598435ea772857749b74fcedc33d7f9",
       "generated_hash": "960c599da43c3a8167fbb2a766cfc88a45fe1f8fb29295f5ccd006b8f52442bb"
     },
     {
@@ -907,7 +919,7 @@
     {
       "name": "quickstart",
       "source_skill": "skills/quickstart",
-      "source_hash": "8ef0d01365670314f08d3c334fe1bdbb832390dbfa5a2539250b72c419bae35c",
+      "source_hash": "70c965d7efee46753e3eb5be858ddcf76ef9844ea0191fae2fcb4d6f85c871e5",
       "generated_hash": "d84dba4d4b56458c7777aa073920992e32e45ee3a58bd6196967eb676c12addf"
     },
     {
@@ -937,7 +949,7 @@
     {
       "name": "release",
       "source_skill": "skills/release",
-      "source_hash": "84e3cc2973070840ad30014bf0e37bf05f4c340761ed676896db48a4a109edb5",
+      "source_hash": "de0db99fec8d814411fcdb57772fb6a2b4e4bbba6c0aed2bc25e52e561fdcbbb",
       "generated_hash": "5b3075bdee6aeed794ad7841e990f0cc94dbad414506c57f8cb4f42515c4e465"
     },
     {
@@ -1039,7 +1051,7 @@
     {
       "name": "status",
       "source_skill": "skills/status",
-      "source_hash": "31124196d17cb64f0676d7747943ec1df897d84eddbe2795ca5ef4ca3a7763e7",
+      "source_hash": "9f9a3dcdaedf9bb1f98257b169436bada82f173e6fe0230f18920cb9e9d0fe46",
       "generated_hash": "54b1562de6d9c7beb832214ffe14c5fb1d3caf702487151145a80092063d7600"
     },
     {
@@ -1069,7 +1081,7 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "42195225b231377bc99e3969970bcd233b22c8b304904b8867620015ed089fb8",
+      "source_hash": "3687114d95f67041a24c2cf04bc21ea5dd8e18c8208e8ee56d3fdcf9a489f890",
       "generated_hash": "80119493d38739d5ca4d9377c97c7e4f6e5766365525c965297c1cd78029e74b"
     },
     {
