@@ -1,31 +1,8 @@
 ---
 name: automation-shape-routing
-description: 'Front door for agent automation — decide the SHAPE (Workflow vs NTM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".'
-practices:
-- hexagonal-architecture
-- team-topologies
-- pragmatic-programmer
-hexagonal_role: supporting
-consumes: []
-produces: []
-context_rel:
-- kind: supplier-to
-  with: skill-builder
-- kind: supplier-to
-  with: workflow-builder
-skill_api_version: 1
-context:
-  window: inherit
-  intent:
-    mode: task
-  intel_scope: none
-metadata:
-  tier: meta
-  dependencies: []
-output_contract: 'a routing verdict — Workflow | NTM swarm | plain skill — with the deciding axis named'
+description: 'Front door for agent automation: route to the right builder.'
 ---
-
-# Automation Shape Routing — Workflow vs NTM vs Skill
+# $automation-shape-routing — Workflow vs NTM vs Skill
 
 > **The trap this kills:** "I built a lot of skills; they should become
 > workflows." Mostly false. Most orchestration-looking skills are either
@@ -68,7 +45,7 @@ all three backends. Two findings refine the rule:
    **NTM is a control-plane** that *runs Claude/Codex/Gemini as panes* — it is not a
    peer of the native runtimes, it is the supervisor tier above them. Choose NTM when
    you need the control plane (attach/steer, persistence, multi-vendor); choose
-   in-session native (Workflow/Task) when you don't.
+   in-session native (Workflow/subagents) when you don't.
 2. **Parallel buys quality/independence, NOT wall-clock — at small N.** Measured: a
    3-way Workflow fan-out **tied** a single sequential agent on wall-clock (191s vs
    180s) and cost **~2.7× the tokens** — because the synthesis barrier eats the
@@ -77,7 +54,7 @@ all three backends. Two findings refine the rule:
    want *independent verification / fresh eyes*, not for speed. For speed, you need
    large N **and** no barrier — use `pipeline()` (no barrier), not `parallel()`.
 
-Degradation (NTM → Claude-native → beads floor) is governed by the
+Degradation (NTM → native → beads floor) is governed by the
 `OrchestrationPort` selector; opt out entirely with `AGENTOPS_ORCHESTRATION=off` →
 beads floor, which always works.
 
@@ -127,8 +104,8 @@ decided, hand off:
 
 | Verdict | Next | What it does |
 |---|---|---|
-| **plain skill** | `skill-builder` | Scaffold a new `SKILL.md` against the unified template → then `skill-auditor` → `heal-skill`. |
-| **Workflow** | `workflow-builder` | Scaffold a new `.claude/workflows/*.js` from the operating-loop.js template. |
+| **plain skill** | `$skill-builder` | Scaffold a new `SKILL.md` against the unified template → then `$skill-auditor` → `$heal-skill`. |
+| **Workflow** | `$workflow-builder` | Scaffold a new `.claude/workflows/*.js` from the operating-loop.js template. |
 | **NTM swarm** | `ntm` + `vibing-with-ntm` | Stand up + tend a persistent, human-attachable tmux swarm. |
 
 State the verdict and the deciding axis in one line, then invoke the chosen

@@ -1,49 +1,21 @@
 ---
 name: workflow-builder
-description: 'Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: "build a workflow", "create a workflow", "scaffold workflow", "author a workflow".'
-practices:
-- pragmatic-programmer
-- hexagonal-architecture
-- agile-manifesto
-hexagonal_role: supporting
-consumes: []
-produces:
-- workflow-script
-context_rel:
-- kind: customer-of
-  with: automation-shape-routing
-- kind: shared-kernel
-  with: operating-loop-workflow
-skill_api_version: 1
-context:
-  window: fork
-  intent:
-    mode: questions
-  sections:
-    exclude:
-    - HISTORY
-  intel_scope: topic
-metadata:
-  tier: meta
-  dependencies:
-  - automation-shape-routing
-output_contract: 'a runnable .claude/workflows/<name>.js with a meta block and agent()/parallel()/pipeline()/phase() body'
+description: 'Scaffold a new Claude Workflow script.'
 ---
+# $workflow-builder — scaffold a Claude Workflow script
 
-# Workflow Builder — scaffold a Claude Workflow script
-
-> Counterpart to `skill-builder`. `skill-builder` authors a `SKILL.md` (a leaf
+> Counterpart to `$skill-builder`. `$skill-builder` authors a `SKILL.md` (a leaf
 > capability); this authors a **Workflow** (a composite capability — deterministic
-> orchestration of subagents). Reach this skill via `automation-shape-routing`
+> orchestration of subagents). Reach this skill via `$automation-shape-routing`
 > once the shape is confirmed **Workflow** (deterministic DAG + structured-JSON
 > returns + headless). If the shape is NTM or plain skill, you're in the wrong
-> builder — go back to `automation-shape-routing`.
+> builder — go back to `$automation-shape-routing`.
 
 ## Confirm the shape first
 
 Do NOT scaffold a workflow for: an attach-and-steer run (→ NTM: `ntm` /
 `vibing-with-ntm`), or a hard-sequential edit-loop with no parallelism (→ plain
-skill: `skill-builder`). If unconfirmed, run `automation-shape-routing`.
+skill: `$skill-builder`). If unconfirmed, run `$automation-shape-routing`.
 
 ## The template
 
@@ -80,7 +52,7 @@ return { verified }
 
 ## Authoring checklist
 
-1. **Shape confirmed Workflow** (via `automation-shape-routing`).
+1. **Shape confirmed Workflow** (via `$automation-shape-routing`).
 2. **Schemas first** — define the JSON schema each `agent()` returns; structured
    output is what makes a workflow deterministic and composable.
 3. **Default to `pipeline()`**; reach for `parallel()` only when a stage genuinely
@@ -90,7 +62,7 @@ return { verified }
 5. **Budget** — for loops, gate on `budget.total && budget.remaining() > N`.
 6. **Dry-run to validate** — invoke the workflow on a tiny input; confirm the
    `meta` block parses and each phase returns its schema. This is the workflow
-   analog of `skill-auditor`.
+   analog of `$skill-auditor`.
 
 ## Relationship to the SDK
 
