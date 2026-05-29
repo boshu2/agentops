@@ -6,29 +6,35 @@ import (
 	"strings"
 )
 
-// GateInputs aggregates everything needed to run the Day-2 manifest-checkable
-// gates. Day 4 will extend with Judge calibration + holdout-burn-ledger inputs.
+// GateInputs aggregates everything needed to run the manifest-checkable gates.
+// Day-4 gate #3 (holdout burn) reads BurnLedger; Judge calibration + ModelSpec
+// drift (gates 2/4/5) remain deferred to later Day-4 surfaces.
 type GateInputs struct {
 	Suite             *Suite
 	Task              *Task
-	Harness           *Harness         // declared content_hash from harness.yaml
-	HarnessLock       *HarnessLock     // computed lock file
-	HarnessDir        string           // source dir for re-verification (gate #8)
-	GroundTruth       []GroundTruthRow // current GT rows
-	GTRequested       string           // ground_truth_id requested by the run
-	AllowWeak         bool             // --allow-weak-labels passthrough
-	NRequiredOverride int              // Day-3 power-derived n_required (overrides Task.stats.min_n_samples)
+	Harness           *Harness           // declared content_hash from harness.yaml
+	HarnessLock       *HarnessLock       // computed lock file
+	HarnessDir        string             // source dir for re-verification (gate #8)
+	GroundTruth       []GroundTruthRow   // current GT rows
+	GTRequested       string             // ground_truth_id requested by the run
+	AllowWeak         bool               // --allow-weak-labels passthrough
+	NRequiredOverride int                // Day-3 power-derived n_required (overrides Task.stats.min_n_samples)
+	BurnLedger        *HoldoutBurnLedger // Day-4 gate #3 input: projected global holdout-burn state; nil when not wired
 }
 
-// RunGates executes Day-2 gates 1, 6, 7, 8, 9 in §6 order.
+// RunGates executes gates 1, 3, 6, 7, 8, 9 in §6 order.
 // Returns the populated Refusals; callers proceed iff Empty().
 //
-// Day-2 scope: gates that need only manifest-time inputs (Suite + Task +
-// Harness + GT). Gates 2/3/4/5 (Judge calibration, holdout burn, ModelSpec
-// drift, self-grading) require Day-4 surfaces.
+// Manifest-time gates (1, 6, 7, 8, 9) need only Suite + Task + Harness + GT.
+// Gate 3 (holdout burn) additionally consults the projected BurnLedger when one
+// is wired (Day-4); it is a no-op otherwise. Gates 2/4/5 (Judge calibration,
+// ModelSpec drift, self-grading) remain deferred to later Day-4 surfaces.
 func RunGates(in GateInputs) Refusals {
 	var rs Refusals
 	if r := gate1NoHeldConstant(in); r != nil {
+		rs = append(rs, *r)
+	}
+	if r := gate3HoldoutBurn(in); r != nil {
 		rs = append(rs, *r)
 	}
 	if r := gate6Underpowered(in); r != nil {
@@ -61,6 +67,48 @@ func gate1NoHeldConstant(in GateInputs) *Refusal {
 		Evidence:   fmt.Sprintf("suite_id=%s held_constant={}", in.Suite.ID),
 		Fix:        "Add a held_constant block to the Suite (task, harness, judge, ground_truth_version, decoding) or change kind to 'calibration'.",
 	}
+}
+
+// gate3HoldoutBurn: §6 #3 — a run that grades against the holdout split when the
+// global burn ledger shows the (suite, gt_version) quota is already exhausted must
+// refuse. Once a holdout observation budget is spent, reusing the split lets the
+// iteration loop overfit to held-out answers, voiding the split's statistical
+// guarantee — the load-bearing eval invariant at every boundary. Dev-split runs
+// never consume the budget, so this never fires for them (the dev-split-only
+// escape valve). When no ledger is wired (Day-2 manifest-only runs) or no budget
+// is configured, the gate is a no-op.
+func gate3HoldoutBurn(in GateInputs) *Refusal {
+	if in.BurnLedger == nil || in.BurnLedger.Budget <= 0 {
+		return nil // Day-4 input absent or no ceiling configured
+	}
+	if in.Suite == nil || in.GTRequested == "" {
+		return nil
+	}
+	if !requestedSplitIsHoldout(in) {
+		return nil // dev split (or unknown) never burns holdout budget
+	}
+	spent := in.BurnLedger.Spent(in.Suite.ID, in.GTRequested)
+	if spent < in.BurnLedger.Budget {
+		return nil
+	}
+	return &Refusal{
+		GateNumber: 3,
+		GateName:   "holdout_burn_exhausted",
+		Why:        "Holdout-split grading budget for this (suite, ground_truth_version) is already spent; reusing the holdout lets the loop overfit to held-out answers and voids the split's statistical guarantee.",
+		Evidence:   fmt.Sprintf("suite_id=%s ground_truth_ref=%s spent=%d budget=%d split=holdout", in.Suite.ID, in.GTRequested, spent, in.BurnLedger.Budget),
+		Fix:        "Re-run against the dev split, or mint a fresh holdout ground-truth version (resets the per-version burn budget). Do NOT re-grade spent holdout.",
+	}
+}
+
+// requestedSplitIsHoldout reports whether the run's requested ground-truth row is
+// on the holdout split. Mirrors gate7's id-matching against GroundTruth rows.
+func requestedSplitIsHoldout(in GateInputs) bool {
+	for _, row := range in.GroundTruth {
+		if row.ID == in.GTRequested && row.Split == "holdout" {
+			return true
+		}
+	}
+	return false
 }
 
 // gate6Underpowered: §6 #6 — n_samples < n_required.
