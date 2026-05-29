@@ -1,8 +1,0 @@
-{
-  "ready": true,
-  "status": "ready",
-  "providers": [
-    "codex",
-    "claude"
-  ]
-}

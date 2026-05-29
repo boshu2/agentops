@@ -1,0 +1,12 @@
+{
+  "id": "s-2026-05-24-015",
+  "directive_id": "d-teardown-removed-apparatus-stays-removed",
+  "version": 1,
+  "date": "2026-05-24",
+  "goal": "Given a surface the teardown (epic ag-097) explicitly removed and recorded in scripts/removed-apparatus.txt, when an /evolve cycle or any change reintroduces that surface, then the no-apparatus-regrowth gate fails — teardown-removed apparatus stays removed.",
+  "narrative": "A user or evaluator exercises the system behavior for this goal: Given a surface the teardown (epic ag-097) explicitly removed and recorded in scripts/removed-apparatus.txt, when an /evolve cycle or any change reintroduces that surface, then the no-apparatus-regrowth gate fails — teardown-removed apparatus stays removed..",
+  "expected_outcome": "The implementation satisfies the goal in observable behavior: Given a surface the teardown (epic ag-097) explicitly removed and recorded in scripts/removed-apparatus.txt, when an /evolve cycle or any change reintroduces that surface, then the no-apparatus-regrowth gate fails — teardown-removed apparatus stays removed..",
+  "satisfaction_threshold": 0.85,
+  "source": "human",
+  "status": "active"
+}
