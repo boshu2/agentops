@@ -1,0 +1,20 @@
+# removed-apparatus.txt — teardown-removed surfaces that must STAY removed.
+#
+# Consumed by scripts/check-no-apparatus-regrowth.sh (GOALS.md directive D15,
+# anti-regeneration fitness gate). One repo-root-relative path per line. The
+# gate FAILS if any listed path exists again — that means the /evolve loop (or
+# anything else) regrew apparatus the teardown (epic ag-097) deliberately
+# removed. This is a stay-removed OUTCOME guard, NOT a size/line/file metric:
+# legitimate new growth is fine; only the return of these specific surfaces fails.
+#
+# Append a line here in the SAME change that lands a teardown deletion, so the
+# removal is locked in. Lines starting with `#` and blank lines are ignored;
+# an inline `# ...` comment after a path is also stripped.
+#
+# Each entry below was verified ABSENT on this branch before being asserted.
+
+cli/internal/wikiworker     # removed, PR #589 (ag-jqx, dead caller pkg)
+cli/internal/plans          # removed, PR #581 (ag-nxm, S1)
+cli/internal/worker         # removed, PR #581 (ag-nxm, S1)
+cli/internal/gascity        # removed, PR #590 (ag-hfc, S2 orphan cluster)
+cli/internal/bridge/gc.go   # removed, PR #590 (ag-hfc, S2 — GC* symbols; semver helpers kept in bridge/semver.go)
