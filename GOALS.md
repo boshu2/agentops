@@ -164,6 +164,16 @@ This is the consequence half of [Behavior-Shaping Environment](docs/architecture
 **Steer:** increase (behaviors that ship with a reinforcing gate, not prose prohibitions)
 **Scenarios:** s-2026-05-24-014
 
+### 15. Teardown-removed apparatus stays removed (anti-regeneration)
+
+The teardown (epic ag-097 and its waves) deletes over-projected apparatus — dead packages, the gascity compat cluster, duplicated projections. Nothing in the fitness function rewards that subtraction, so the `/evolve` loop could rebuild what was deliberately removed. This directive makes "the slop we removed stays removed" a measured outcome: the `no-apparatus-regrowth` gate (`scripts/check-no-apparatus-regrowth.sh`) reads the committed `scripts/removed-apparatus.txt` manifest and fails only when a surface the teardown explicitly removed comes BACK.
+
+It is a stay-removed OUTCOME guard, not a code-size metric (GOALS.md "## Anti Stars": "Goals that measure code metrics instead of user outcomes"). It does not count lines, files, or CI jobs and does not penalize legitimate new growth — it fires only on regrowth of specifically-removed surfaces. Each teardown wave appends its deleted path to the manifest in the same change, locking the removal in; an intentional return must delete the manifest line in that same change with a rationale.
+
+**Directive ID:** d-teardown-removed-apparatus-stays-removed
+**Steer:** decrease (teardown-removed surfaces that regrew)
+**Scenarios:** s-2026-05-24-015
+
 ## Three-Gap Contract Proof Surface
 
 AgentOps defines a three-gap contract ([context lifecycle](docs/context-lifecycle.md)) covering the failure modes that persist after prompt construction and agent routing. Honesty rule: gates only appear in the **Currently enforcing** column when they (a) run in CI/pre-push/release automation AND (b) reliably go green in single-session work. Gates that are declared but not yet enforced — usually because they measure cross-session or corpus-level state — sit in the **Roadmap** column.
@@ -224,3 +234,4 @@ artifact produced by a separate run (e.g. `ao defrag` writing
 | eval-workbench-verify | `timeout 60 bash scripts/check-eval-workbench.sh` | 6 | Behavioral eval workbench golden state, task scoring, and suite structure verified |  |
 | state-path-resolver-coverage | `bash scripts/check-paths-resolver-coverage.sh` | 3 | Tracks executable-code sites that still hardcode `.agents/` paths instead of sourcing the canonical resolver (lib/ao-paths.sh / cli/internal/paths from soc-irg1.1). Warn-only initially per warn-then-fail-ratchet pattern; flip to blocking is a separate follow-up issue under epic soc-irg1 after 2 weeks of baseline data. See `.agents/patterns/2026-05-01-state-path-resolver.md`. | warn-only |
 | executable-spec-link-integrity | `ao goals scenarios --lint && ao goals trace --orphans` | 4 | Directive↔scenario link lint and whole-chain orphan/gap audit (F1.6, soc-58nt.1.9). Warn-only until two consecutive clean CI runs on main; promote to blocking by removing `continue-on-error: true` from the `executable-spec-link-integrity` CI job and replacing warn with fail in pre-push check 38. | warn-only |
+| no-apparatus-regrowth | `bash scripts/check-no-apparatus-regrowth.sh` | 5 | Anti-regeneration (Directive D15): teardown-removed apparatus stays removed. Reads the committed `scripts/removed-apparatus.txt` manifest and FAILS only when a surface the teardown (epic ag-097) explicitly removed comes BACK. Stay-removed OUTCOME guard, NOT a size/line/file/job metric — legitimate new growth is fine; only regrowth of the listed surfaces fails. Future teardown waves append the deleted path to the manifest in the same change. |  |
