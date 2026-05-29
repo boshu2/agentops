@@ -54,6 +54,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `nightly` | rolling | scripts | local-nightly-state | Private local nightly run digests, readiness snapshots, scheduler templates, and phase logs |
 | `opencode-tests` | regenerated | scripts, tests | test-output | Opencode runtime test fixtures and outputs |
 | `operator` | rolling | cli | operator-intents | Durable OperatorIntent records (halt, rescope, handoff) appended via the BC4 OperatorPort |
+| `orchestration` | rolling | cli | orchestration-result | OrchestrationResult parity artifacts written by OrchestrationPort backends (beads-floor + tier results) |
 | `overnight` | rolling | scripts, skills | overnight-run-state | Overnight run state and morning packets |
 | `packets` | rolling | cli | context-packet-cache | Source manifests and promoted packets feeding the context-explain surface |
 | `patterns` | persistent | cli, skills | promoted-pattern | Promoted pattern artifacts |
@@ -120,6 +121,7 @@ mine
 nightly
 opencode-tests
 operator
+orchestration
 overnight
 packets
 patterns

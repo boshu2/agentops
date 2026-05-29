@@ -2069,6 +2069,35 @@ ao handoff [summary] [flags]
 
 ---
 
+### `ao orchestrate`
+
+Tooling for the orchestration safe-degradation ladder
+
+```
+ao orchestrate [command]
+```
+
+**Subcommands:**
+
+#### `ao orchestrate select`
+
+Resolve the orchestration backend via the safe-degradation ladder
+
+```
+ao orchestrate select [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help         help for select
+      --json         Emit the selection trace as JSON
+      --opt-out      Bypass swarm engines and run on the beads floor
+      --pin string   Force a backend: ntm|claude|codex|beads (overrides --opt-out and availability)
+```
+
+---
+
 ### `ao ratchet`
 
 Track progress through the phased RPI workflow.

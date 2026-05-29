@@ -10,7 +10,11 @@ hexagonal_role: supporting
 consumes: []
 produces:
 - result.json
-context_rel: []
+context_rel:
+- kind: customer-of
+  with: skill-builder
+- kind: supplier-to
+  with: heal-skill
 skill_api_version: 1
 user-invocable: true
 context:

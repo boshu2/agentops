@@ -107,11 +107,17 @@ Every runtime maps these capabilities to its own API. Skills describe WHAT to do
 
 Use capability detection at runtime, not hardcoded tool names. The same skill must work across any agent harness that provides multi-agent primitives. If no multi-agent capability is detected, degrade to single-agent inline mode (`--quick`).
 
-**Selection policy (runtime-native first):**
-1. If running in a Claude session and `TeamCreate`/`SendMessage` are available, use **Claude Native Teams** as the primary backend.
-2. If running in a Codex session and `spawn_agent` is available, use **Codex sub-agents** as the primary backend.
-3. If both are technically available, pick the backend native to the current runtime unless the user explicitly requests mixed/cross-vendor execution.
-4. Only use background tasks when neither native backend is available.
+**Selection policy (NTM > runtime-native > beads floor):**
+
+Global opt-out first: if `AGENTOPS_ORCHESTRATION=off` is set, skip all spawn backends and degrade to the **beads floor** (single-agent inline / `--quick`; workers' work is tracked through `bd`). This mirrors the `AGENTOPS_HOOKS_DISABLED=1` convention. Otherwise, select in this order:
+
+1. **NTM (top tier).** If `ntm` is on PATH, capability-probe it with `ntm --robot-capabilities`. When the probe confirms multi-agent primitives, use **NTM** as the primary backend.
+2. **Runtime-native.** If NTM is unavailable: in a Claude session with `TeamCreate`/`SendMessage`, use **Claude Native Teams**; in a Codex session with `spawn_agent`, use **Codex sub-agents**. If both are technically available, pick the backend native to the current runtime unless the user explicitly requests mixed/cross-vendor execution. Only use background tasks when neither native backend is available.
+3. **Beads floor.** If no multi-agent capability is detected, degrade to single-agent inline mode (`--quick`).
+
+> **`gc` is NOT a selectable tier.** The Gas City (`gc`) CLI bridge was removed (soc-2rtm0); `runtime=gc` is rejected by the CLI (see `agentops/CLAUDE.md`, "Gas City (gc) bridge — REMOVED"). Any `gc`-based dispatch prose in the swarm/crank references is retained for historical reference only and is never selected.
+
+**Output-contract parity is unchanged across all tiers:** workers write results to `.agents/swarm/results/*.json`, and the lead verifies-then-trusts those artifacts. This invariant holds whether the backend is NTM, a runtime-native team, or the beads floor.
 
 | Operation | Codex Sub-Agents | Claude Native Teams | OpenCode Subagents | Inline Fallback |
 |-----------|------------------|---------------------|--------------------|-----------------|

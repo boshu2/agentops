@@ -128,9 +128,11 @@ fi
 
 Before spawning workers, extract cross-cutting constraints from the plan's `## Boundaries` / `## Cross-Cutting Constraints` section and inject into every TaskCreate's `metadata.validation.cross_cutting` array. Each entry has `name`, `type` (e.g., `content_check`), `file`, and `pattern`. "Ask First" boundaries are annotation-only in auto mode.
 
-**gc pool dispatch (when `GC_POOL_AVAILABLE=true`):**
+**Backend dispatch ladder (NTM > runtime-native > beads floor):**
 
-When gc pool is available, replace `/swarm` with gc pool dispatch — workers are pre-started, assigned via `gc session nudge`, and gc handles crash recovery automatically. When unavailable, the existing `/swarm` path is used unchanged. See [gc-pool-dispatch.md](gc-pool-dispatch.md) for the full dispatch script.
+Dispatch the wave per the canonical ladder in `skills/shared/SKILL.md` ("Selection policy"): prefer **NTM** (capability-probed via `ntm --robot-capabilities`), then **runtime-native** via `/swarm` (Claude Native Teams / Codex sub-agents), with the `AGENTOPS_ORCHESTRATION=off` opt-out degrading to the beads floor. Output-contract parity is unchanged: workers write `.agents/swarm/results/*.json`, the lead verifies-then-trusts.
+
+> **gc pool is NOT selected (DEPRECATION).** gc tier removed (soc-2rtm0); retained for historical reference only — NOT selected. The Gas City (`gc`) CLI bridge was removed and `runtime=gc` is rejected by the CLI (see `agentops/CLAUDE.md`). [gc-pool-dispatch.md](gc-pool-dispatch.md) documents the old gc pool dispatch shape for archival purposes only — the top tier is **NTM**.
 
 **For wave execution details (beads sync, TaskList bridging, swarm invocation), read `skills/crank/references/team-coordination.md`.**
 

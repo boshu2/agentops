@@ -658,6 +658,18 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Ship operating-loop Workflow to plugin users via installer skill; Codex twin redirects to the $rpi chain since Codex lacks the Workflow tool"
+    },
+    {
+      "name": "automation-shape-routing",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Front-door routing skill that names the deciding axis (Workflow vs NTM vs plain skill) and hands off; the prose is decision guidance with no Codex-specific runtime divergence."
+    },
+    {
+      "name": "workflow-builder",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Scaffolds a Claude Workflow JS script from the operating-loop.js template; the authoring guidance is tool-specific reference material with no Codex-specific runtime divergence."
     }
   ]
 }
