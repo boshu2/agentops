@@ -135,6 +135,14 @@ jobs:
         with:
           python-version: '3.14'
 
+      - name: Install PyYAML for bats python helpers
+        # setup-python@v6 provisions a clean interpreter WITHOUT the runner's
+        # preinstalled PyYAML. Several bats suites run inside this job invoke
+        # `python3 ... import yaml` (audit-skill-metadata, generate-ci-jobs-table),
+        # so reinstall it whenever we've shadowed the system python.
+        if: runner.os == 'Linux' && (needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true')
+        run: python3 -m pip install pyyaml
+
       - name: Install bats
         if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
         run: sudo npm install -g bats@1.12.0

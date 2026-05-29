@@ -16,7 +16,10 @@
 # (cycle 68) — same shape: grep validate.yml for the wired pattern and
 # assert each piece is present in the right place.
 
-WORKFLOW_PATH="${WORKFLOW_PATH:-$BATS_TEST_DIRNAME/../../.github/workflows/validate.yml}"
+# Anchor unconditionally to this repo's workflow — do NOT honor an inherited
+# WORKFLOW_PATH. Under bats >=1.12 (CI) a sibling suite's WORKFLOW_PATH can leak
+# across files, which made this self-test read the wrong workflow (ag-877).
+WORKFLOW_PATH="$BATS_TEST_DIRNAME/../../.github/workflows/validate.yml"
 
 @test "doctrine-proof (host of three-gap-supergate) uses fetch-depth: 0" {
     # Post-rebuild (ag-877): the three-gap-supergate checks run as steps inside
