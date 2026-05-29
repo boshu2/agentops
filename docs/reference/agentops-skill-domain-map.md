@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-75 checked-in AgentOps skills before any broad rewrite, using current
+76 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 75 |
+| Skills audited | 76 |
 | Domains classified | 5 of 5 (BC1-BC5) |
-| Dispositions assigned | 75 / 75 |
+| Dispositions assigned | 76 / 76 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -91,6 +91,7 @@ Disposition meanings:
 | `knowledge-activation` | BC1 Corpus | supporting | keep | Outer-loop operationalization (beliefs/playbooks/briefings) — write/promote surface downstream of inject/compile/flywheel, not a duplicate (resolved KEEP 2026-05-24). |
 | `llm-wiki` | BC1 Corpus | supporting | update | External wiki builder; align with Corpus compiler contracts. |
 | `openai-docs` | BC5 Runtime | driven-adapter | keep | External API documentation adapter with clear scope. |
+| `operating-loop-workflow` | BC3 Loop | driving-adapter | keep | Installs + invokes the operating-loop Workflow so plugin users get the seven-move loop. |
 | `perf` | BC2 Validation | domain | update | Performance generator; add thresholds and proof examples. |
 | `plan` | BC3 Loop | domain | update | Must output vertical slices and wave-validity checks. |
 | `post-mortem` | BC3 Loop | domain | update | Loop closeout; connect to next-work and ratchet evidence. |
