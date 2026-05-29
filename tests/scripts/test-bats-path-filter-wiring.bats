@@ -16,17 +16,9 @@
 # — same shape: grep the artifact-under-test for the expected wiring strings
 # and assert each is present.
 
-# Read the COMMITTED workflow (git show HEAD:) into a private temp file rather
-# than the working tree. Under bats >=1.12 (CI) the working-tree validate.yml
-# transiently held stale content when this suite ran (a sibling suite's mid-run
-# git operation, order-dependent — does not repro under local bats 1.10), so
-# working-tree reads missed the new grouped-job wiring (ag-877). The committed
-# blob at HEAD is immutable and is exactly what CI executes.
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    WORKFLOW_PATH="$BATS_TEST_TMPDIR/validate.yml"
-    git -C "$REPO_ROOT" show HEAD:.github/workflows/validate.yml > "$WORKFLOW_PATH" 2>/dev/null \
-        || cp "$REPO_ROOT/.github/workflows/validate.yml" "$WORKFLOW_PATH"
+    WORKFLOW_PATH="$REPO_ROOT/.github/workflows/validate.yml"
 }
 
 @test "validate.yml declares a bats: filter under the changes job" {
@@ -52,13 +44,6 @@ setup() {
     # it runs as the "Run bats tests" step inside the `correctness` job. Its
     # step-level `if:` must still gate on the bats path-filter output so a
     # .bats-only change re-runs it.
-    echo "DEBUG repo=$REPO_ROOT" >&2
-    echo "DEBUG wf=$WORKFLOW_PATH exists=$([ -f "$WORKFLOW_PATH" ] && echo Y || echo N)" >&2
-    echo "DEBUG headsha=$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>&1)" >&2
-    echo "DEBUG tmpfile_dp=$(grep -c '^  doctrine-proof:' "$WORKFLOW_PATH" 2>/dev/null)" >&2
-    echo "DEBUG head_dp=$(git -C "$REPO_ROOT" show HEAD:.github/workflows/validate.yml 2>&1 | grep -c '^  doctrine-proof:')" >&2
-    echo "DEBUG wt_dp=$(grep -c '^  doctrine-proof:' "$REPO_ROOT/.github/workflows/validate.yml" 2>/dev/null)" >&2
-    echo "DEBUG nbatslines=$(grep -c 'name: Run bats tests' "$WORKFLOW_PATH" 2>/dev/null)" >&2
     run bash -c "awk '/name: Run bats tests/{inblock=1} inblock && /^        if:/{print; exit}' '$WORKFLOW_PATH'"
     [ "$status" -eq 0 ]
     [[ "$output" == *"needs.changes.outputs.bats == 'true'"* ]]

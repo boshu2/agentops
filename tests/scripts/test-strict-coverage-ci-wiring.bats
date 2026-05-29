@@ -16,17 +16,9 @@
 # (cycle 68) — same shape: grep validate.yml for the wired pattern and
 # assert each piece is present in the right place.
 
-# Read the COMMITTED workflow (git show HEAD:) into a private temp file rather
-# than the working tree. Under bats >=1.12 (CI) the working-tree validate.yml
-# transiently held stale content when this suite ran (a sibling suite's mid-run
-# git operation, order-dependent — does not repro under local bats 1.10), so
-# working-tree reads missed the new grouped-job wiring (ag-877). The committed
-# blob at HEAD is immutable and is exactly what CI executes.
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    WORKFLOW_PATH="$BATS_TEST_TMPDIR/validate.yml"
-    git -C "$REPO_ROOT" show HEAD:.github/workflows/validate.yml > "$WORKFLOW_PATH" 2>/dev/null \
-        || cp "$REPO_ROOT/.github/workflows/validate.yml" "$WORKFLOW_PATH"
+    WORKFLOW_PATH="$REPO_ROOT/.github/workflows/validate.yml"
 }
 
 @test "doctrine-proof (host of three-gap-supergate) uses fetch-depth: 0" {
