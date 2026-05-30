@@ -365,7 +365,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 
 	// Verify all top-level commands are registered (flat namespace)
 	expectedCmds := []string{
-		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
+		"agent", "agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
 		"defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
@@ -424,7 +424,7 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 
 	// Same list as TestCobraCommandTreeRegistration
 	expectedCmds := []string{
-		"agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
+		"agent", "agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
 		"defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",

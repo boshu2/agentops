@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-30T03:15:58Z",
+  "generated_at": "2026-05-30T04:55:48Z",
   "summary": {
     "skills": 81,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 68,
-    "capabilities": 163
+    "cli_commands": 69,
+    "capabilities": 164
   },
   "surfaces": {
     "skills": [
@@ -773,6 +773,13 @@
     ],
     "cli_commands": [
       {
+        "name": "ao agent",
+        "path": "cli/cmd/ao/",
+        "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao agents",
         "path": "cli/cmd/ao/",
         "purpose": "Inspect and manage .agents/ contracts and surfaces",
@@ -1400,13 +1407,14 @@
     ]
   },
   "capability_summary": {
-    "total": 163,
+    "total": 164,
     "skills": 81,
-    "cli_commands": 68,
+    "cli_commands": 69,
     "gates": 11,
     "reference_impls": 3
   },
   "cli_top_level_commands": [
+    "agent",
     "agents",
     "anti-patterns",
     "autodev",
@@ -1496,6 +1504,7 @@
         "docs/contracts/agent-runtime-profile.md"
       ],
       "drives_commands": [
+        "ao agent bundle",
         "ao corpus inject",
         "ao goals",
         "ao inject",
@@ -3332,6 +3341,23 @@
       "drives_commands": [],
       "path": "skills/workflow-builder/",
       "references": 0
+    },
+    {
+      "sku": "cmd:ao.agent",
+      "name": "ao agent",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
     },
     {
       "sku": "cmd:ao.agents",

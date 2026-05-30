@@ -10,6 +10,13 @@
   "commands": [
     {
       "category": "public-tested",
+      "command": "agent bundle",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "agents doctor",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -441,6 +448,20 @@
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-stateful-fixture-needed",
+      "command": "eval outcomes compile",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Holdout-safe rubric projection; core logic unit-tested (eval_outcomes_test.go compileOutcomesRubric); CLI smoke needs an input.json fixture (follow-up)."
+    },
+    {
+      "category": "public-stateful-fixture-needed",
+      "command": "eval outcomes ingest",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Maps an Outcomes score to the council verdict record; core logic unit-tested (eval_outcomes_ingest_test.go ingestOutcomesScore); CLI smoke needs a score.json fixture (follow-up)."
     },
     {
       "category": "public-tested",
