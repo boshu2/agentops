@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-30T05:58:17Z",
+  "generated_at": "2026-05-30T16:42:46Z",
   "summary": {
     "skills": 81,
     "hooks": 0,
@@ -402,7 +402,7 @@
         "path": "skills/domain/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 16
+        "reference_count": 17
       },
       {
         "name": "harvest",
@@ -1951,7 +1951,7 @@
         "ao rpi phased"
       ],
       "path": "skills/domain/",
-      "references": 16
+      "references": 17
     },
     {
       "sku": "skill:dream",

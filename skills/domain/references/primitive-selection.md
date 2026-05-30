@@ -22,7 +22,7 @@ primitives, each owning one axis.
 ## The core relationship
 
 **The CLI subcommand is the reusable deterministic core. Hooks and CI gates are
-two _trigger surfaces_ that call it:**
+two *trigger surfaces* that call it:**
 
 ```
 ao <cmd>   ── the deterministic logic (written ONCE)
