@@ -76,22 +76,38 @@ func ingestOutcomesScore(s outcomesScore) outcomesVerdict {
 
 // registerOutcomesBurn is the write-side of the holdout burn ledger (ag-hdqu0.5),
 // the counterpart to gate #3's read-side (#607). When an Outcomes grade was
-// produced against the holdout split, ingest unconditionally appends exactly one
-// BurnRecord to the global ledger — so a cloud/async/Codex Outcomes run cannot
-// silently bypass holdout quota the way a local holdout run cannot. Dev-split
-// (and absent-split) grades register no burn, since the dev split is reusable.
+// produced against the holdout split, ingest appends exactly one BurnRecord to
+// the global ledger — so a cloud/async/Codex Outcomes run cannot silently bypass
+// holdout quota the way a local holdout run cannot. Dev-split (and absent-split)
+// grades register no burn, since the dev split is reusable.
+//
+// Gate #3 write-side enforcement (ag-62g68): if the (suite_ref, gt_version)
+// holdout quota is already spent (Spent >= Budget, with a positive Budget), the
+// burn is REFUSED and the ledger is returned unmutated — symmetric with the
+// read-side gate #3 in gates.go, which refuses a local run on the same
+// condition. Without this, a cloud/Codex Outcomes run could re-burn an exhausted
+// holdout split, the exact statistical leak the ledger exists to prevent
+// (Managed Agents are not ZDR). A non-positive Budget means no ceiling is
+// configured (Day-4 input absent → no-op), so burns are recorded without refusal.
+//
 // Returns the updated ledger for the caller to persist; the global-Dolt store is
 // a separate adapter concern, exactly as gate #3 reads an injected ledger.
-func registerOutcomesBurn(led evalsubstrate.HoldoutBurnLedger, s outcomesScore) evalsubstrate.HoldoutBurnLedger {
+func registerOutcomesBurn(led evalsubstrate.HoldoutBurnLedger, s outcomesScore) (evalsubstrate.HoldoutBurnLedger, error) {
 	if s.Split != "holdout" {
-		return led
+		return led, nil
+	}
+	if led.Budget > 0 {
+		if spent := led.Spent(s.SuiteRef, s.GroundTruthVersion); spent >= led.Budget {
+			return led, fmt.Errorf("outcomes ingest: holdout burn refused — quota for (suite=%q, gt_version=%q) is exhausted (%d/%d spent); the holdout split is statistically spent and may not be re-observed (gate #3, no escape)",
+				s.SuiteRef, s.GroundTruthVersion, spent, led.Budget)
+		}
 	}
 	led.Records = append(led.Records, evalsubstrate.BurnRecord{
 		SuiteRef:  s.SuiteRef,
 		GTVersion: s.GroundTruthVersion,
 		RunID:     s.RunID,
 	})
-	return led
+	return led, nil
 }
 
 var evalOutcomesIngestCmd = &cobra.Command{
