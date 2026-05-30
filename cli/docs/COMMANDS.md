@@ -1456,6 +1456,13 @@ Ingest an Outcomes score payload into the one council verdict record
 ao eval outcomes ingest <score.json> [flags]
 ```
 
+**Flags:**
+
+```
+      --expect-judge-hash string   refuse the ingest if the score's judge_content_hash does not match this value (gate #2 rubric-drift parity)
+  -h, --help                       help for ingest
+```
+
 #### `ao eval run`
 
 Run a deterministic eval suite
