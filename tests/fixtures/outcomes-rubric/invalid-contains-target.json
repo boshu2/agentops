@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "source_task_id": "task-leak-attempt",
+  "judge_content_hash": "sha256:deadbeef00000000000000000000000000000000000000000000000000000000",
+  "target": "the holdout ground-truth answer is 42",
+  "criteria": [
+    {
+      "id": "x",
+      "description": "A criterion that would be valid on its own.",
+      "weight": 1.0
+    }
+  ]
+}

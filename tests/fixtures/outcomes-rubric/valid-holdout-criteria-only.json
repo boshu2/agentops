@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "source_task_id": "task-holdout-intent-classify",
+  "judge_content_hash": "sha256:a0b1c2d3e4f5061728394a5b6c7d8e9f00112233445566778899aabbccddeeff",
+  "criteria": [
+    {
+      "id": "label-match",
+      "description": "The predicted label matches the rubric category definition for the input.",
+      "weight": 1.0
+    },
+    {
+      "id": "calibrated-confidence",
+      "description": "Reported confidence is calibrated to the likelihood of correctness.",
+      "weight": 0.5
+    }
+  ]
+}
