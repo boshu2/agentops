@@ -586,7 +586,7 @@ run_codex_hook_manifest_parity() {
                 skip "codex hook manifest parity (no $codex_home_path/hooks.json)"
             fi
         else
-            fail "missing executable: scripts/audit-codex-hooks.sh"
+            skip "codex hook manifest parity (hookless 3.0: scripts/audit-codex-hooks.sh removed in #511)"
         fi
     else
         skip "codex hook manifest parity"
@@ -1740,7 +1740,7 @@ if needs_check hook; then
             indent_output "$hook_preflight_output"
         fi
     else
-        fail "missing executable: scripts/validate-hook-preflight.sh"
+        skip "hook preflight (hookless 3.0: scripts/validate-hook-preflight.sh removed in #511)"
     fi
 else
     skip "hook preflight"
@@ -1756,7 +1756,7 @@ if needs_check hook; then
             indent_output "$hooks_doc_output"
         fi
     else
-        fail "missing executable: scripts/validate-hooks-doc-parity.sh"
+        skip "hooks/docs parity (hookless 3.0: scripts/validate-hooks-doc-parity.sh removed in #511)"
     fi
 else
     skip "hooks/docs parity"
