@@ -12,7 +12,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# BUDGET_REPO_ROOT overrides for fixture tests
+# (tests/scripts/codex-desc-avg-budget.bats); production derives from script location.
+REPO_ROOT="${BUDGET_REPO_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 SKILL_ROOTS=("$REPO_ROOT/skills" "$REPO_ROOT/skills-codex")
 
 # Colors
@@ -27,11 +29,13 @@ SKILL_FAIL_LIMIT=10000
 SKILL_WARN_LIMIT=8000
 SESSION_FAIL_LIMIT=8000
 DESC_FAIL_CHARS=180
-# Always-loaded codex skill catalog. Sized to fit the catalog with modest
-# headroom: ~81 skills x ~34 avg description chars. Raised from 2600 (calibrated
-# at exactly 77 skills with zero slack) to 2700 when expert-council landed, then
-# to 2800 when using-gc landed (the catalog grew to 81 skills, ag-p4p).
-CODEX_DESC_TOTAL_FAIL_CHARS=2800
+# Always-loaded codex skill catalog. The budget is a PER-SKILL AVERAGE, not a hard
+# aggregate (ag-vzbt): a hard total (raised 2600→2700→2800 as skills landed) walls
+# off the Nth+ skill and forced /burndown into a 17-char stub. An average scales
+# with the catalog — each terse description keeps the avg low; the gate fails only
+# if descriptions are bloated on average. Current avg ~35; cap 45 = comfortable
+# headroom while preserving the terse-description discipline.
+CODEX_DESC_AVG_FAIL_CHARS=45
 
 # Token estimation: bytes / 4
 estimate_tokens() {
@@ -195,12 +199,12 @@ fi
 
 if [[ "$codex_desc_count" -gt 0 ]]; then
     codex_desc_avg=$((codex_desc_total / codex_desc_count))
-    if [[ "$codex_desc_total" -gt "$CODEX_DESC_TOTAL_FAIL_CHARS" ]]; then
-        echo -e "  ${RED}[FAIL]${NC} skills-codex description catalog: ${codex_desc_total} chars > ${CODEX_DESC_TOTAL_FAIL_CHARS} aggregate limit"
+    if [[ "$codex_desc_avg" -gt "$CODEX_DESC_AVG_FAIL_CHARS" ]]; then
+        echo -e "  ${RED}[FAIL]${NC} skills-codex description catalog: avg ${codex_desc_avg} chars/skill > ${CODEX_DESC_AVG_FAIL_CHARS} per-skill-avg limit (${codex_desc_total} chars over ${codex_desc_count} skills)"
         ((failed++)) || true
     else
-        pct=$((codex_desc_total * 100 / CODEX_DESC_TOTAL_FAIL_CHARS))
-        echo -e "  ${GREEN}[PASS]${NC} skills-codex description catalog: ${codex_desc_total} chars (${pct}% of ${CODEX_DESC_TOTAL_FAIL_CHARS}, avg ${codex_desc_avg})"
+        pct=$((codex_desc_avg * 100 / CODEX_DESC_AVG_FAIL_CHARS))
+        echo -e "  ${GREEN}[PASS]${NC} skills-codex description catalog: avg ${codex_desc_avg} chars/skill (${pct}% of ${CODEX_DESC_AVG_FAIL_CHARS} per-skill-avg; ${codex_desc_total} chars over ${codex_desc_count} skills)"
         ((passed++)) || true
     fi
 else
