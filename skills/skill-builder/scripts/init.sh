@@ -265,6 +265,12 @@ if [[ -x "$REPO_ROOT/scripts/check-registry-drift.sh" ]]; then
   bash "$REPO_ROOT/scripts/check-registry-drift.sh" --fix-counts >/dev/null 2>&1 \
     || echo "init.sh: WARN registry-drift --fix-counts could not run — bump counts manually" >&2
 fi
+# 3. Codex override catalog entry — else validate-codex-override-coverage fails
+#    ("source skill missing from Codex catalog"). Default parity_only (derived).
+if [[ -f "$REPO_ROOT/scripts/append-codex-override-entry.sh" ]]; then
+  bash "$REPO_ROOT/scripts/append-codex-override-entry.sh" "$SKILL_NAME" "$REPO_ROOT" \
+    || echo "init.sh: WARN could not add codex override catalog entry — add one manually" >&2
+fi
 
 echo "init.sh: created skill skeleton at $NEW_DIR"
 echo "init.sh: codex parity at $CODEX_DIR"
