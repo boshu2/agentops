@@ -1088,6 +1088,32 @@ GIT
     [[ "$output" == *"codex hook manifest parity (AGENTOPS_PREPUSH_SKIP_CODEX_HOOKS=1)"* ]]
 }
 
+@test "pre-push-gate.sh skips hook checks when hook scripts are absent (hookless 3.0, ag-nrn7)" {
+    # In hookless-first 3.0 the hook-validation scripts were intentionally
+    # removed (#511). When a hook diff triggers `needs_check hook` but the
+    # scripts are absent, the gate must SKIP — not fail "missing executable".
+    # Before ag-nrn7 the `else fail` branches turned pristine-main full runs red.
+    rm -f "$FAKE_REPO/scripts/audit-codex-hooks.sh" \
+          "$FAKE_REPO/scripts/validate-hook-preflight.sh" \
+          "$FAKE_REPO/scripts/validate-hooks-doc-parity.sh"
+    cat > "$MOCK_BIN/git" <<'GIT'
+#!/usr/bin/env bash
+if [[ "$*" == *"diff --name-only"* ]]; then echo "hooks/hooks.json"; fi
+if [[ "$*" == *"rev-parse"* ]]; then echo "/tmp"; fi
+exit 0
+GIT
+    chmod +x "$MOCK_BIN/git"
+
+    cd "$FAKE_REPO"
+    export PATH="$MOCK_BIN:$PATH"
+
+    run env -u CI -u GITHUB_ACTIONS bash "$GATE" --fast --scope upstream --accumulate --single-pass
+    # The removed hook scripts must NOT produce "missing executable" failures.
+    [[ "$output" != *"missing executable: scripts/audit-codex-hooks.sh"* ]]
+    [[ "$output" != *"missing executable: scripts/validate-hook-preflight.sh"* ]]
+    [[ "$output" != *"missing executable: scripts/validate-hooks-doc-parity.sh"* ]]
+}
+
 @test "pre-push-gate.sh skips codex hook manifest parity when CODEX_HOME has no hooks.json" {
     cat > "$MOCK_BIN/git" <<'GIT'
 #!/usr/bin/env bash
