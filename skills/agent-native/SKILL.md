@@ -40,6 +40,8 @@ Run a Claude loop *outside* an interactive Claude Code / Codex session — an An
 
 So an out-of-session agent becomes AgentOps-native by: **(a)** loading AgentOps skills into the Agent definition, **(b)** exposing the `ao` CLI as a callable tool (MCP or shell-tool) so the agent can `ao session bootstrap` / `ao inject` / `ao validate` itself, and **(c)** running the same CI-style validation gate on its outputs before the work is accepted. The Agent SDK's own hooks become an **optional thin adapter** for teams wanting in-loop interception — never the primary mechanism.
 
+> **Mechanism status (planned, not yet shipped).** This skill is the **doctrine layer** and lands first; the two concrete commands it names — `ao agent bundle` (ag-jspr) and `ao mcp serve` (ag-higd) — are open, ready beads under epic ag-7s9fo, not yet in the live CLI. The `ao session bootstrap` / `ao inject` / `ao corpus inject` / `ao validate` / `ao goals measure` commands the bundled agent calls are real today. When ag-jspr and ag-higd land, remove this skill's entry from `scripts/skill-body-refs-allowlist.txt`.
+
 This is an **extension of two existing skills**, not a rewrite:
 - [standards](../standards/SKILL.md) — gains an Agent-runtime profile: how the standards/behavioral-discipline checklists get loaded by a non-interactive Claude and enforced via CI rather than `/vibe`.
 - [converter](../converter/SKILL.md) + the `skills/` ↔ `skills-codex/` parity machinery — reused as-is to keep the bundle dual-runtime.
@@ -81,7 +83,7 @@ For Agent SDK users who *want* in-loop interception, a documented `PreToolUse`/`
 
 ## Output Specification
 
-**Format:** JSON Agent definition (`agent-def.json`) + a validated PR/artifact. **Structure:** model, instructions (stitched skills), `skills` array, `ao` MCP descriptor; the output is accepted only on a green CI run.
+**Format:** a JSON Agent definition plus a validated PR/artifact. **Path:** the Agent definition is written to `agent-def.json` at the repo root; the runtime profile is written to `docs/contracts/agent-runtime-profile.md` (the frontmatter `produces` path). **Structure:** model, instructions (stitched skills), `skills` array, `ao` MCP descriptor; the output is accepted only on a green CI run.
 
 ## Quality Rubric
 
