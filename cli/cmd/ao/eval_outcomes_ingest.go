@@ -126,6 +126,21 @@ func requireJudgeHashParity(scoreHash, expected string) error {
 		scoreHash, expected)
 }
 
+// uncheckedJudgeHashWarning returns a gate #2 advisory (council 2026-05-30
+// caveat #2) for the case where a score carries a judge_content_hash but no
+// --expect-judge-hash was configured: parity is then silently unenforced, so a
+// stale drifted-rubric score would ingest with no signal. The warning makes the
+// gap VISIBLE without requiring the operator to remember the flag. It returns ""
+// when parity is configured (requireJudgeHashParity handles the refuse) or the
+// score carries no hash to check.
+func uncheckedJudgeHashWarning(scoreHash, expected string) string {
+	if expected != "" || scoreHash == "" {
+		return ""
+	}
+	return fmt.Sprintf("WARN outcomes ingest: score carries judge_content_hash %q but --expect-judge-hash was not provided; rubric-drift parity (gate #2) was NOT checked — pass --expect-judge-hash <active-rubric-hash> to enforce it",
+		scoreHash)
+}
+
 // loadBurnLedger reads a HoldoutBurnLedger JSON file. A missing file is an empty
 // ledger (Budget 0 → no enforceable ceiling, gate #3 no-op), so a first ingest
 // against a fresh path does not error — the operator seeds Budget by writing the
@@ -206,6 +221,9 @@ func runEvalOutcomesIngest(cmd *cobra.Command, args []string) error {
 	var s outcomesScore
 	if err := json.Unmarshal(raw, &s); err != nil {
 		return fmt.Errorf("parse %s: %w", args[0], err)
+	}
+	if w := uncheckedJudgeHashWarning(s.JudgeContentHash, evalOutcomesIngestExpectHash); w != "" {
+		fmt.Fprintln(cmd.ErrOrStderr(), w)
 	}
 	if err := requireJudgeHashParity(s.JudgeContentHash, evalOutcomesIngestExpectHash); err != nil {
 		return err
