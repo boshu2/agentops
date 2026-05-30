@@ -271,6 +271,15 @@ if [[ -f "$REPO_ROOT/scripts/append-codex-override-entry.sh" ]]; then
   bash "$REPO_ROOT/scripts/append-codex-override-entry.sh" "$SKILL_NAME" "$REPO_ROOT" \
     || echo "init.sh: WARN could not add codex override catalog entry — add one manually" >&2
 fi
+# 4. registry.json SKU catalog — else contracts-sync + correctness(ubuntu) BOTH
+#    fail ("registry.json is stale" / "SKU_CATALOG: DRIFT"). This is the 5th
+#    one-shot-green surface ag-cw2y missed; it cost /burndown #600 a 2nd
+#    fix-and-repush (ag-ekyq). MUST run last — it scans the whole skills/ tree,
+#    so the new skeleton must already exist on disk.
+if [[ -f "$REPO_ROOT/scripts/generate-registry.sh" ]]; then
+  bash "$REPO_ROOT/scripts/generate-registry.sh" >/dev/null 2>&1 \
+    || echo "init.sh: WARN could not regen registry.json — run scripts/generate-registry.sh manually" >&2
+fi
 
 echo "init.sh: created skill skeleton at $NEW_DIR"
 echo "init.sh: codex parity at $CODEX_DIR"
