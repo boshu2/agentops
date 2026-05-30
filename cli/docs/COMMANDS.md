@@ -3714,6 +3714,37 @@ ao wiki search <query> [flags]
 
 ---
 
+### `ao agent`
+
+Emit a runtime-specific Agent definition (Managed Agents payload or
+
+```
+ao agent [command]
+```
+
+**Subcommands:**
+
+#### `ao agent bundle`
+
+Stitch the selected AgentOps skills + the ao tool surface into an
+
+```
+ao agent bundle [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help             help for bundle
+      --json             Emit machine-readable JSON (always JSON for now; reserved for parity)
+      --out string       Write the bundle to this path instead of stdout
+      --runtime string   Target runtime: managed | codex-ntm (required)
+      --sandbox string   Sandbox placement: self-hosted | cloud
+      --skills string    Comma-separated skill names (default: session-bootstrap,standards,validation,provenance)
+```
+
+---
+
 ### `ao agents`
 
 Tooling for the .agents/ knowledge surface that backs the
