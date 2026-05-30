@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-30T02:15:34Z",
+  "generated_at": "2026-05-30T03:15:58Z",
   "summary": {
-    "skills": 80,
+    "skills": 81,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 68,
-    "capabilities": 162
+    "capabilities": 163
   },
   "surfaces": {
     "skills": [
@@ -467,6 +467,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 23
+      },
+      {
+        "name": "agent-native",
+        "tier": "meta",
+        "path": "skills/agent-native/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "automation-shape-routing",
@@ -1012,6 +1020,7 @@
         "purpose": "Fitness goal measurement and validation",
         "bounded_context": "BC3",
         "driven_by_skills": [
+          "agent-native",
           "dream",
           "evolve",
           "goals",
@@ -1063,6 +1072,7 @@
         "purpose": "Output relevant knowledge for explicit or JIT injection",
         "bounded_context": "BC1",
         "driven_by_skills": [
+          "agent-native",
           "domain",
           "harvest",
           "inject",
@@ -1359,6 +1369,7 @@
         "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
         "bounded_context": "BC2",
         "driven_by_skills": [
+          "agent-native",
           "using-gc"
         ]
       },
@@ -1389,8 +1400,8 @@
     ]
   },
   "capability_summary": {
-    "total": 162,
-    "skills": 80,
+    "total": 163,
+    "skills": 81,
     "cli_commands": 68,
     "gates": 11,
     "reference_impls": 3
@@ -1466,6 +1477,34 @@
     "wiki"
   ],
   "capabilities": [
+    {
+      "sku": "skill:agent-native",
+      "name": "agent-native",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "supporting",
+      "tier": "meta",
+      "purpose": "Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native — via skills + the ao CLI + CI, not hooks.",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "standards",
+        "converter",
+        "validation"
+      ],
+      "produces": [
+        "docs/contracts/agent-runtime-profile.md"
+      ],
+      "drives_commands": [
+        "ao corpus inject",
+        "ao goals",
+        "ao inject",
+        "ao session bootstrap",
+        "ao validate"
+      ],
+      "path": "skills/agent-native/",
+      "references": 0
+    },
     {
       "sku": "skill:autodev",
       "name": "autodev",
@@ -3925,6 +3964,7 @@
       "purpose": "Fitness goal measurement and validation",
       "status": "active",
       "driven_by_skills": [
+        "agent-native",
         "dream",
         "evolve",
         "goals",
@@ -4043,6 +4083,7 @@
       "purpose": "Output relevant knowledge for explicit or JIT injection",
       "status": "active",
       "driven_by_skills": [
+        "agent-native",
         "domain",
         "harvest",
         "inject",
@@ -4706,6 +4747,7 @@
       "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
       "status": "active",
       "driven_by_skills": [
+        "agent-native",
         "using-gc"
       ],
       "flags": [

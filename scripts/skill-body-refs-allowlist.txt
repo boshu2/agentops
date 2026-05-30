@@ -20,3 +20,10 @@ skills/standards/references/cli-wireup-template.md
 # existed at a past release (e.g. `ao daemon status` from the daemon era).
 skills/release/references/release-notes.md
 skills-codex/release/references/release-notes.md
+
+# agent-native doctrine skill: names two PLANNED subcommands as forward-refs —
+# `ao agent bundle` (ag-jspr) and `ao mcp serve` (ag-higd), open ready beads
+# under epic ag-7s9fo. The doctrine layer lands first; the commands follow.
+# REMOVE this entry when ag-jspr and ag-higd ship (the skill's "Mechanism
+# status" note tracks the same condition).
+skills/agent-native/SKILL.md
