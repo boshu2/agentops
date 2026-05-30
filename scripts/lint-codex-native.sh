@@ -142,6 +142,9 @@ check_skill() {
 
     # --- Check 3: ~/.claude/ paths ---
     local path_hits
+    # The tilde here is a literal grep PATTERN (matching the string "~/.claude/"
+    # in skill files), not a path meant to expand — SC2088 is a false positive.
+    # shellcheck disable=SC2088
     path_hits=$(grep -n '~/\.claude/' "$skill_file" | grep -v 'Portability\|non-Codex\|appendix' || true)
     if [[ -n "$path_hits" ]]; then
         local count
