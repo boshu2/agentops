@@ -67,6 +67,11 @@ dispositions:
     hexagonal_role: domain
     disposition:    update
     rationale:      "Core judgment gate; strengthen scenario and verdict self-test"
+  - skill:          burndown
+    domain:         "BC3 Loop"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "Bounded epic-completion loop; terminating counterpart to evolve (finite target → all-merged → STOP)"
   - skill:          crank
     domain:         "BC3 Loop"
     hexagonal_role: domain

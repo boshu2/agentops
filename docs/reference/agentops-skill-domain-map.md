@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-78 checked-in AgentOps skills before any broad rewrite, using current
+79 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 78 |
+| Skills audited | 79 |
 | Domains classified | 5 of 5 (BC1-BC5) |
-| Dispositions assigned | 78 / 78 |
+| Dispositions assigned | 79 / 79 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -65,6 +65,7 @@ Disposition meanings:
 | `bootstrap` | BC4 Factory | driving-adapter | update | First-run factory entrypoint; needs current 3.0/domain packet shape. |
 | `brainstorm` | BC3 Loop | domain | update | Intent-shaping skill; should emit BDD-ready language. |
 | `bug-hunt` | BC2 Validation | domain | update | Validation generator; needs acceptance examples and result contract. |
+| `burndown` | BC3 Loop | domain | keep | Bounded epic-completion loop; terminating counterpart to evolve (finite target → all-merged → STOP). |
 | `codex-team` | BC5 Runtime | supporting | update | Runtime coordination adapter; align with worktree/wave rules. |
 | `compile` | BC1 Corpus | supporting | refactor | Corpus compiler is core; align read/write flows to Corpus ports. |
 | `complexity` | BC2 Validation | domain | update | Generator for refactor work; add self-test and threshold evidence. |

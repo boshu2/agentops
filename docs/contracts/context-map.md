@@ -11,6 +11,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 - `brainstorm` — Separate goals from implementation.
 - `bug-hunt` — Investigate bugs and root causes.
+- `burndown` — Drive a finite epic set to all-merged, then stop.
 - `complexity` — Find focused refactor hotspots.
 - `council` — Run multi-judge consensus.
 - `crank` — Execute epics through waves.
@@ -114,6 +115,7 @@ graph LR
   beads -- "supplier-to" --> ratchet
   brainstorm -- "shared-kernel" --> standards
   bug-hunt -- "shared-kernel" --> standards
+  burndown -- "shared-kernel" --> standards
   complexity -- "shared-kernel" --> standards
   council -- "shared-kernel" --> standards
   crank -- "shared-kernel" --> standards
@@ -186,6 +188,12 @@ graph LR
 | `brainstorm` | produces | verdict.json |
 | `bug-hunt` | consumes | beads |
 | `bug-hunt` | consumes | standards |
+| `burndown` | consumes | beads |
+| `burndown` | consumes | implement |
+| `burndown` | consumes | post-mortem |
+| `burndown` | consumes | rpi |
+| `burndown` | produces | .agents/burndown/*.json |
+| `burndown` | produces | git-changes |
 | `codex-team` | produces | .agents/swarm/results/*.json |
 | `compile` | produces | .agents/compiled/lint-report.md |
 | `complexity` | consumes | doc |

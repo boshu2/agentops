@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "aef940bdfe26c2955145f7338854b193e9ef2b3baf7448e4fadebfbb26bb8fa1",
+  "codex_override_catalog_hash": "57959cbf3093ab0881e4769fee318b6f1aa3fbef3155dba02a8a2642f281ea36",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -648,6 +648,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Ship operating-loop Workflow to plugin users via installer skill; Codex twin redirects to the $rpi chain since Codex lacks the Workflow tool"
+      },
+      {
+        "name": "burndown",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Bounded epic-completion loop; codex form is canonical-derived (no bespoke shell idioms)."
       }
     ]
   },
@@ -687,6 +693,12 @@
       "source_skill": "skills/bug-hunt",
       "source_hash": "2f574ca482c52bb099550117a73619966ffc09a868088ca9f84c92caebf7d139",
       "generated_hash": "f2492483bba6e13b0e0004a2ac431afa98708729d8ae5224e6df08b556bdd932"
+    },
+    {
+      "name": "burndown",
+      "source_skill": "skills/burndown",
+      "source_hash": "917f7277558d79c72c428fa6692d86d34d808a120d061341f5a393da063d4068",
+      "generated_hash": "ef6c65f7053775a2f7cf6c3111adca2ca1d630eece87d43bf620cc89a51fd748"
     },
     {
       "name": "codex-team",
