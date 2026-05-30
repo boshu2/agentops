@@ -670,6 +670,12 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Scaffolds a Claude Workflow JS script from the operating-loop.js template; the authoring guidance is tool-specific reference material with no Codex-specific runtime divergence."
+    },
+    {
+      "name": "burndown",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for burndown"
     }
   ]
 }

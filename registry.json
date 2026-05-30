@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-29T17:02:40Z",
+  "generated_at": "2026-05-30T00:53:31Z",
   "summary": {
-    "skills": 78,
+    "skills": 79,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 68,
-    "capabilities": 160
+    "capabilities": 161
   },
   "surfaces": {
     "skills": [
@@ -131,6 +131,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 8
+      },
+      {
+        "name": "burndown",
+        "tier": "execution",
+        "path": "skills/burndown/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "complexity",
@@ -1373,8 +1381,8 @@
     ]
   },
   "capability_summary": {
-    "total": 160,
-    "skills": 78,
+    "total": 161,
+    "skills": 79,
     "cli_commands": 68,
     "gates": 11,
     "reference_impls": 3
@@ -1579,6 +1587,30 @@
       ],
       "path": "skills/bug-hunt/",
       "references": 8
+    },
+    {
+      "sku": "skill:burndown",
+      "name": "burndown",
+      "type": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "domain",
+      "tier": "execution",
+      "purpose": "Drive a finite epic set to all-merged, then stop.",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "beads",
+        "rpi",
+        "implement",
+        "post-mortem"
+      ],
+      "produces": [
+        ".agents/burndown/*.json",
+        "git-changes"
+      ],
+      "drives_commands": [],
+      "path": "skills/burndown/",
+      "references": 0
     },
     {
       "sku": "skill:codex-team",
