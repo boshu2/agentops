@@ -79,7 +79,7 @@ A reusable workflow (`agent-output-validate.yml`) runs `ao validate` + the stand
 
 ### Optional: SDK hook adapter
 
-For Agent SDK users who *want* in-loop interception, a documented `PreToolUse`/`Stop` adapter shells out to `ao validate` (with the `standards` checklist loaded). **Clearly optional — the default path is CI, never hooks.**
+For Agent SDK users who *want* in-loop interception, a documented `PreToolUse`/`Stop` adapter shells out to `ao validate` (with the `standards` checklist loaded). **Clearly optional — the default path is CI, never hooks.** Reference samples (TypeScript + Python, wired into no runtime by default): [references/sdk-hook-adapter.md](references/sdk-hook-adapter.md).
 
 ## Output Specification
 
