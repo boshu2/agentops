@@ -87,6 +87,7 @@ Operating discipline:
 
 - [`references/context-density-rule.md`](references/context-density-rule.md) — Context Density Rule: every context token carries intent, boundary, evidence, decision, constraint, or next action
 - [`references/behavior-shaping.md`](references/behavior-shaping.md) — Behavior Shaping: the ABC register (antecedent/behavior/consequence/reinforcement/extinction/shaping); building agent capability is operant conditioning, not specification
+- [`references/primitive-selection.md`](references/primitive-selection.md) — Primitive Selection: when to use a Skill vs CLI subcommand vs Hook vs CI gate (CLI is the deterministic core; hook + CI-gate are trigger surfaces that call it)
 
 Loop family (the operating loop — "one loop body, two drivers, one inner tick, one config"; doctrine in [`docs/architecture/canonical-loop-model.md`](../../docs/architecture/canonical-loop-model.md)):
 
