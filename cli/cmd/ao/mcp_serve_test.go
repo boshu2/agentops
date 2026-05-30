@@ -74,14 +74,21 @@ func TestRunMCPServePrintTools_JSON(t *testing.T) {
 	}
 }
 
-func TestMCPServe_LiveTransportNotYet(t *testing.T) {
-	// Slice 1 ships only the descriptor surface; bare `serve` must fail loudly,
-	// pointing at the live-transport follow-up — never silently no-op.
-	err := runMCPServe(mcpServeOptions{PrintTools: false})
-	if err == nil {
-		t.Fatal("bare `ao mcp serve` (no --print-tools) must error in slice 1")
+func TestRunMCPServe_LiveTransportWired(t *testing.T) {
+	// ag-3ucpd: bare `ao mcp serve` now runs the live JSON-RPC transport.
+	// runMCPServe must drive serveMCP over the injected reader/writer/executor.
+	in := strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/list"}` + "\n")
+	var out strings.Builder
+	err := runMCPServe(mcpServeOptions{
+		PrintTools: false,
+		In:         in,
+		Out:        &out,
+		Exec:       func(string, map[string]string) (string, error) { return "", nil },
+	})
+	if err != nil {
+		t.Fatalf("live serve: %v", err)
 	}
-	if !strings.Contains(err.Error(), "--print-tools") {
-		t.Errorf("error should point users at --print-tools, got %q", err.Error())
+	if !strings.Contains(out.String(), `"tools"`) {
+		t.Errorf("live transport did not answer tools/list: %s", out.String())
 	}
 }
