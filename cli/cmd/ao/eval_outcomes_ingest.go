@@ -110,6 +110,23 @@ func registerOutcomesBurn(led evalsubstrate.HoldoutBurnLedger, s outcomesScore) 
 	return led, nil
 }
 
+// requireJudgeHashParity is the gate #2 (rubric-drift parity) guard for ingest.
+// An Outcomes score carries the judge_content_hash of the rubric it was graded
+// against (SCHEMA rc2 drift key). If the caller supplies the active Suite's
+// current judge hash and it differs from the score's, the rubric drifted between
+// projection and grading — the score is stale and MUST be refused, exactly as a
+// stale local judge self-invalidates. An empty expected hash means the caller
+// did not configure a parity check (no-op), so legacy/dev flows are unaffected.
+func requireJudgeHashParity(scoreHash, expected string) error {
+	if expected == "" || scoreHash == expected {
+		return nil
+	}
+	return fmt.Errorf("outcomes ingest: judge_content_hash mismatch — score was graded against %q but the active rubric is %q; the rubric drifted and this score is stale (gate #2 parity, refused)",
+		scoreHash, expected)
+}
+
+var evalOutcomesIngestExpectHash string
+
 var evalOutcomesIngestCmd = &cobra.Command{
 	Use:   "ingest <score.json>",
 	Short: "Ingest an Outcomes score payload into the one council verdict record",
@@ -126,6 +143,9 @@ func runEvalOutcomesIngest(cmd *cobra.Command, args []string) error {
 	if err := json.Unmarshal(raw, &s); err != nil {
 		return fmt.Errorf("parse %s: %w", args[0], err)
 	}
+	if err := requireJudgeHashParity(s.JudgeContentHash, evalOutcomesIngestExpectHash); err != nil {
+		return err
+	}
 	out, err := json.MarshalIndent(ingestOutcomesScore(s), "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode verdict: %w", err)
@@ -135,5 +155,7 @@ func runEvalOutcomesIngest(cmd *cobra.Command, args []string) error {
 }
 
 func init() {
+	evalOutcomesIngestCmd.Flags().StringVar(&evalOutcomesIngestExpectHash, "expect-judge-hash", "",
+		"refuse the ingest if the score's judge_content_hash does not match this value (gate #2 rubric-drift parity)")
 	evalOutcomesCmd.AddCommand(evalOutcomesIngestCmd)
 }
