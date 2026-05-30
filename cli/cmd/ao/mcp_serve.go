@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -78,20 +80,61 @@ func runMCPServePrintTools(w io.Writer) error {
 // mcpServeOptions is the resolved input to runMCPServe.
 type mcpServeOptions struct {
 	PrintTools bool
-	Out        io.Writer
+	In         io.Reader       // live transport input (default os.Stdin)
+	Out        io.Writer       // print-tools / live transport output (default os.Stdout)
+	Exec       mcpToolExecutor // tool executor (default realMCPExecutor)
 }
 
 // runMCPServe handles `ao mcp serve`. Slice 1 supports --print-tools only; the
 // live JSON-RPC transport is the ag-3ucpd follow-up and errors loudly until then.
 func runMCPServe(opts mcpServeOptions) error {
-	if !opts.PrintTools {
-		return fmt.Errorf("live MCP transport is not yet implemented (follow-up ag-3ucpd); use `ao mcp serve --print-tools` to emit the tool surface")
+	if opts.PrintTools {
+		out := opts.Out
+		if out == nil {
+			return fmt.Errorf("runMCPServe: print-tools requires a non-nil writer")
+		}
+		return runMCPServePrintTools(out)
+	}
+	// Live MCP JSON-RPC stdio transport (ag-3ucpd).
+	in := opts.In
+	if in == nil {
+		in = os.Stdin
 	}
 	out := opts.Out
 	if out == nil {
-		return fmt.Errorf("runMCPServe: print-tools requires a non-nil writer")
+		out = os.Stdout
 	}
-	return runMCPServePrintTools(out)
+	exec := opts.Exec
+	if exec == nil {
+		exec = realMCPExecutor
+	}
+	return serveMCP(in, out, exec)
+}
+
+// realMCPExecutor shells the curated tool's underlying `ao` subcommand. Each
+// tool is read-mostly and deterministic. `standards` has no standalone command
+// — the standards checklist is enforced through `ao validate`, so it routes
+// there. Only reachable for non-denied calls (mcpToolDenied runs first).
+func realMCPExecutor(name string, args map[string]string) (string, error) {
+	var argv []string
+	switch name {
+	case "session_bootstrap":
+		argv = []string{"session", "bootstrap"}
+	case "inject":
+		argv = []string{"inject", "--query", args["query"]}
+	case "corpus_inject":
+		argv = []string{"corpus", "inject", "--query", args["query"]}
+	case "validate":
+		argv = []string{"validate", "--gate", "--changes", args["target"]}
+	case "standards":
+		argv = []string{"validate", "--gate"} // standards checklist runs via validate
+	case "goals_measure":
+		argv = []string{"goals", "measure"}
+	default:
+		return "", fmt.Errorf("unknown tool %q", name)
+	}
+	out, err := exec.Command("ao", argv...).CombinedOutput()
+	return string(out), err
 }
 
 // --- cobra wiring ---
