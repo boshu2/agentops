@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -125,7 +126,70 @@ func requireJudgeHashParity(scoreHash, expected string) error {
 		scoreHash, expected)
 }
 
-var evalOutcomesIngestExpectHash string
+// loadBurnLedger reads a HoldoutBurnLedger JSON file. A missing file is an empty
+// ledger (Budget 0 → no enforceable ceiling, gate #3 no-op), so a first ingest
+// against a fresh path does not error — the operator seeds Budget by writing the
+// ledger file once.
+func loadBurnLedger(path string) (evalsubstrate.HoldoutBurnLedger, error) {
+	var led evalsubstrate.HoldoutBurnLedger
+	raw, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return led, nil
+	}
+	if err != nil {
+		return led, fmt.Errorf("read burn ledger %s: %w", path, err)
+	}
+	if err := json.Unmarshal(raw, &led); err != nil {
+		return led, fmt.Errorf("parse burn ledger %s: %w", path, err)
+	}
+	return led, nil
+}
+
+// saveBurnLedger atomically persists the ledger (temp file + rename) so a crash
+// mid-write cannot corrupt the global holdout-burn accounting.
+func saveBurnLedger(path string, led evalsubstrate.HoldoutBurnLedger) error {
+	blob, err := json.MarshalIndent(led, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode burn ledger: %w", err)
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, blob, 0o644); err != nil {
+		return fmt.Errorf("write burn ledger temp: %w", err)
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		return fmt.Errorf("commit burn ledger: %w", err)
+	}
+	return nil
+}
+
+// applyOutcomesBurn is the gate #3 RUNTIME enforcement (ag-vbwx) — the wiring
+// that makes registerOutcomesBurn a live guard rather than an unexercised
+// primitive (council post-mortem 2026-05-30 WARN). When a --burn-ledger path is
+// configured and the score is a holdout grade, it loads the persisted ledger,
+// registers the burn (which REFUSES on exhausted (suite,gt) quota), and persists
+// the updated ledger across invocations so a cloud/Codex Outcomes run cannot
+// re-observe a spent holdout split. An empty path is a no-op (enforcement not
+// configured), preserving dev/legacy flows; dev-split scores register no burn,
+// so the ledger is only rewritten when an actual burn was appended.
+func applyOutcomesBurn(path string, s outcomesScore) error {
+	if path == "" || s.Split != "holdout" {
+		return nil
+	}
+	led, err := loadBurnLedger(path)
+	if err != nil {
+		return err
+	}
+	updated, err := registerOutcomesBurn(led, s)
+	if err != nil {
+		return err // gate #3 refuse — surfaced to the operator, no verdict emitted
+	}
+	return saveBurnLedger(path, updated)
+}
+
+var (
+	evalOutcomesIngestExpectHash string
+	evalOutcomesIngestBurnLedger string
+)
 
 var evalOutcomesIngestCmd = &cobra.Command{
 	Use:   "ingest <score.json>",
@@ -146,6 +210,9 @@ func runEvalOutcomesIngest(cmd *cobra.Command, args []string) error {
 	if err := requireJudgeHashParity(s.JudgeContentHash, evalOutcomesIngestExpectHash); err != nil {
 		return err
 	}
+	if err := applyOutcomesBurn(evalOutcomesIngestBurnLedger, s); err != nil {
+		return err
+	}
 	out, err := json.MarshalIndent(ingestOutcomesScore(s), "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode verdict: %w", err)
@@ -157,5 +224,7 @@ func runEvalOutcomesIngest(cmd *cobra.Command, args []string) error {
 func init() {
 	evalOutcomesIngestCmd.Flags().StringVar(&evalOutcomesIngestExpectHash, "expect-judge-hash", "",
 		"refuse the ingest if the score's judge_content_hash does not match this value (gate #2 rubric-drift parity)")
+	evalOutcomesIngestCmd.Flags().StringVar(&evalOutcomesIngestBurnLedger, "burn-ledger", "",
+		"path to a JSON HoldoutBurnLedger; when set, a holdout-split score registers a burn and is REFUSED if the (suite,gt) quota is exhausted (gate #3 runtime enforcement), persisted across invocations")
 	evalOutcomesCmd.AddCommand(evalOutcomesIngestCmd)
 }

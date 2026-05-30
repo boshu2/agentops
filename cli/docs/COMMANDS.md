@@ -1459,6 +1459,7 @@ ao eval outcomes ingest <score.json> [flags]
 **Flags:**
 
 ```
+      --burn-ledger string         path to a JSON HoldoutBurnLedger; when set, a holdout-split score registers a burn and is REFUSED if the (suite,gt) quota is exhausted (gate #3 runtime enforcement), persisted across invocations
       --expect-judge-hash string   refuse the ingest if the score's judge_content_hash does not match this value (gate #2 rubric-drift parity)
   -h, --help                       help for ingest
 ```
