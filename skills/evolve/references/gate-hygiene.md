@@ -52,3 +52,23 @@ Documented release valve for the eval canary lane only, when:
 - A recorded recent run has confirmed the canary is currently 50/50
 
 Never use `--no-verify`. The pre-commit hook is a no-op for most diffs but the principle violation is durable in `git log` and surfaces in post-mortem.
+
+## Pre-push diff-scope check (mandatory before every commit)
+
+Two cheap pre-commit reads catch the failure modes that cost a full fix-and-repush round each (the 2026-05-29 `/burndown` + codex-budget reds):
+
+1. **`git status --short` must show ALL intended files staged.** A half-staged commit — the feature gate-script left out while only its test was committed — let CI run the *old* code so the new assertion could not pass (the #612 red). A feature and its test are one commit, not the test alone.
+2. **`git diff origin/main --stat` must be SCOPE-ONLY.** Confirm: no collateral deletions (a `git checkout --theirs` conflict take silently dropped two *unrelated* skill rows in the #600 rebase), and no lossy whole-file reformats (a 252-line `catalog.json` round-trip — discard those and use the idempotent appender). For generated/narrative files, restore `origin/main`'s version and **re-run the generator** rather than hand-merging.
+
+## Triage red precisely — pre-existing-main vs your-change
+
+Not every red is yours. The `agentops` main branch carries known pre-existing failures a local gate or a broad generator will surface:
+
+- **Local `mkdocs --strict`** fails on tracked docs because the system `mkdocs` (≤1.1.2) can't parse the modern `mkdocs.yml` (needs material plugins). CI uses the venv and passes. Confirm a flagged file is `git ls-tree origin/main`-tracked AND absent from your diff → pre-existing, proceed.
+- **~7 codex `.agentops-generated.json` drifts** (deps, provenance, red-team, release, scenario, trace, using-agentops): `regen-codex-hashes.sh` "updates" them because they're drifted on main. **REVERT them** (`git checkout origin/main -- <those>`) and keep only your skill's hash; surgically rebuild the manifest from `origin/main` + your delta. The CI artifact gate is changed-files-scoped (`--scope head`) so it ignores the pre-existing drift; sweeping them in adds unrelated churn and risks a manifest↔marker mismatch.
+
+**Rule:** only fix red your own diff introduced. When a generator touches files outside your bead's scope, revert those files. "The generator changed it" never justifies shipping unrelated drift.
+
+## See also
+
+- [new-skill-landing.md](new-skill-landing.md) — the six derived surfaces a new/modified skill must regenerate in one shot (the companion to this diff-scope discipline).
