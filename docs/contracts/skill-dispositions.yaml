@@ -412,3 +412,8 @@ dispositions:
     hexagonal_role: domain
     disposition:    update
     rationale:      "Code-readiness validator; add self-test and tighten result contract"
+  - skill:          eval-outcomes
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Holdout-safe Outcomes grading transport projecting the locked eval substrate; extends validation+ratchet, emits the one council verdict — never an alternate bar"

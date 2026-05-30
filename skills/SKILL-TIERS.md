@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (69)
+### User-Facing Skills (70)
 
 **Judgment:**
 
@@ -251,6 +251,7 @@ These are how skills chain in practice:
 | **rpi** | meta | Thin wrapper: /discovery → /crank → /validation with complexity classification and loop |
 | **evolve** | execution | Autonomous fitness-scored improvement loop |
 | **burndown** | execution | Bounded epic-completion loop — drive a finite target to all-merged, then stop |
+| **eval-outcomes** | execution | Grade via Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes |
 | **operating-loop-workflow** | execution | Install + run the operating-loop multi-agent Workflow (seven-move loop) for plugin users |
 | **autodev** | execution | PROGRAM.md autonomous development contract setup and validation |
 | **bug-hunt** | execution | Investigate bugs with git archaeology |

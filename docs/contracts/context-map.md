@@ -74,6 +74,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.
 - `doc` — Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss).
 - `dream` — Retired pointer — out-of-session compounding moved to Gas City.
+- `eval-outcomes` — Grade against Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes.
 - `evolve` — Run autonomous improvement loops.
 - `handoff` — Write compact session handoffs.
 - `harvest` — Promote .agents knowledge.
@@ -228,6 +229,10 @@ graph LR
 | `doc` | produces | documentation |
 | `domain` | produces | stdout |
 | `dream` | produces | .agents/research/*.md |
+| `eval-outcomes` | consumes | council |
+| `eval-outcomes` | consumes | ratchet |
+| `eval-outcomes` | consumes | validation |
+| `eval-outcomes` | produces | skills/council/schemas/verdict.json |
 | `evolve` | consumes | compile |
 | `evolve` | consumes | goals |
 | `evolve` | consumes | post-mortem |
