@@ -1,0 +1,67 @@
+name: agent-output-validate
+
+# Reusable, authoritative CI gate over agent-produced output (ag-mptr, epic
+# ag-7s9fo "Make Managed/SDK agents AgentOps-native").
+#
+# AgentOps 3.0 is hookless: the guardrail on an out-of-session agent (Claude
+# Managed Agent, Agent SDK loop, or NTM/Codex swarm) is NOT a ported PreToolUse
+# hook — it is this CI job running `ao validate --gate`, the SAME authoritative
+# gate interactive work hits in validate.yml. Runtime-agnostic: it gates both
+# Managed-Agent PRs and NTM-swarm PRs because both target a PR branch.
+#
+# Wired as `workflow_call` so an overnight Managed Agent job or an NTM lead pane
+# can invoke it against the branch/artifact it produced. The optional in-loop
+# SDK hook adapter (ag-50m3) is convenience only — this gate is the boundary.
+
+on:
+  workflow_call:
+    inputs:
+      changes:
+        description: >-
+          Optional space-separated files to scope the gate to (maps to
+          `ao validate --gate --changes`). Empty gates the RPI artifacts in cwd.
+        required: false
+        type: string
+        default: ''
+      strict:
+        description: 'Promote WARN to FAIL (ao validate --gate --strict).'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  agent-output-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: cli/go.mod
+          cache-dependency-path: cli/go.sum
+
+      - name: Build ao
+        run: |
+          set -euo pipefail
+          GOBIN="$HOME/.local/bin" go -C cli install ./cmd/ao
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Gate agent-produced output (ao validate --gate)
+        env:
+          GATE_CHANGES: ${{ inputs.changes }}
+          GATE_STRICT: ${{ inputs.strict }}
+        run: |
+          set -euo pipefail
+          chmod +x scripts/agent-output-validate.sh
+          args=()
+          if [ -n "$GATE_CHANGES" ]; then
+            # shellcheck disable=SC2206
+            args+=(--changes $GATE_CHANGES)
+          fi
+          if [ "$GATE_STRICT" = "true" ]; then
+            args+=(--strict)
+          fi
+          ./scripts/agent-output-validate.sh "${args[@]}"
