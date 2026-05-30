@@ -3839,6 +3839,34 @@ ao help [command] [flags]
 
 ---
 
+### `ao mcp`
+
+Model Context Protocol surface for out-of-session Claude loops (Managed
+
+```
+ao mcp [command]
+```
+
+**Subcommands:**
+
+#### `ao mcp serve`
+
+Emit the curated MCP tool surface (--print-tools) consumable by
+
+```
+ao mcp serve [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help          help for serve
+      --json          Machine-readable JSON (always JSON for --print-tools; reserved for parity)
+      --print-tools   Emit the curated tool surface as JSON and exit
+```
+
+---
+
 ### `ao registry`
 
 Query the unified registry
