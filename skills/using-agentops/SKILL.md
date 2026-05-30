@@ -171,6 +171,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/skill-builder` | Scaffold or absorb new SKILL.md files against the unified template |
 | `/automation-shape-routing` | Front door for building agent automation — decide the SHAPE (Workflow vs NTM swarm vs plain skill), then hand off to the right builder |
 | `/workflow-builder` | Scaffold a new Claude Workflow script (`.claude/workflows/*.js`) — deterministic multi-agent orchestration |
+| `/agent-native` | Make out-of-session agents AgentOps-native via skills + ao CLI + CI, not hooks |
 
 ## Expert Skills (specialized workflows)
 

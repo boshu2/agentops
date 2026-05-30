@@ -67,6 +67,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### supporting
 
+- `agent-native` — Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native — via skills + the ao CLI + CI, not hooks.
 - `autodev` — Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.
 - `automation-shape-routing` — Front door for agent automation — decide the SHAPE (Workflow vs NTM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".
 - `codex-team` — Coordinate multiple Codex agents.
@@ -176,6 +177,10 @@ graph LR
 
 | Skill | Direction | Artifact |
 |-------|-----------|----------|
+| `agent-native` | consumes | converter |
+| `agent-native` | consumes | standards |
+| `agent-native` | consumes | validation |
+| `agent-native` | produces | docs/contracts/agent-runtime-profile.md |
 | `autodev` | consumes | evolve |
 | `autodev` | consumes | rpi |
 | `beads` | consumes | bd-issue |

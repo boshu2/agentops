@@ -417,3 +417,8 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "Holdout-safe Outcomes grading transport projecting the locked eval substrate; extends validation+ratchet, emits the one council verdict — never an alternate bar"
+  - skill:          agent-native
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Hookless reframe: makes out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI; extends standards+converter, never a hook revival"
