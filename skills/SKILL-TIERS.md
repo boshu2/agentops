@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (70)
+### User-Facing Skills (71)
 
 **Judgment:**
 
@@ -327,6 +327,7 @@ These are how skills chain in practice:
 | **skill-builder** | meta | Scaffold or absorb new SKILL.md files against the unified template |
 | **automation-shape-routing** | meta | Front door for building automation: route to Workflow vs NTM swarm vs plain skill, then hand off |
 | **workflow-builder** | meta | Scaffold a new Claude Workflow script (.claude/workflows/*.js) from the operating-loop.js template |
+| **agent-native** | meta | Make out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI, not hooks |
 
 ### Internal Skills (10) — `metadata.internal: true`
 

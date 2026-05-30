@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "aa61d52a460da3e5e6f122c340830a2667c88f2198ae138cbb45ee5141552b8d",
+  "codex_override_catalog_hash": "391a3d1bc2aae59453208361f11612fad2ab840739ec7489612a0ee5ebec018d",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -660,10 +660,22 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Documents ao eval outcomes as a holdout-safe grading transport; codex form is canonical-derived (no bespoke shell idioms)."
+      },
+      {
+        "name": "agent-native",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Hookless Agent-native pattern; codex form is canonical-derived (no bespoke shell idioms)."
       }
     ]
   },
   "skills": [
+    {
+      "name": "agent-native",
+      "source_skill": "skills/agent-native",
+      "source_hash": "69d47e41db52fc872e263fec2510f08819ecb7a3581859b898056c2537c3a183",
+      "generated_hash": "314b9cc76584601464e2bf70c1356f8e8a7f6d8c557c29e0e2abf6c45cffa51f"
+    },
     {
       "name": "autodev",
       "source_skill": "skills/autodev",
@@ -1111,7 +1123,7 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "fa900a3758b9e440253e83918f99319c0dadd1f388bd6feb4d529bffced76e97",
+      "source_hash": "0590d919e318a9e99e2f819e10150875640ab3c46af8a4ec2fe82b58718df738",
       "generated_hash": "80119493d38739d5ca4d9377c97c7e4f6e5766365525c965297c1cd78029e74b"
     },
     {
