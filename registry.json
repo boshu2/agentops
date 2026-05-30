@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-30T05:58:17Z",
+  "generated_at": "2026-05-30T17:19:18Z",
   "summary": {
     "skills": 81,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 70,
-    "capabilities": 165
+    "cli_commands": 71,
+    "capabilities": 166
   },
   "surfaces": {
     "skills": [
@@ -1187,6 +1187,13 @@
         ]
       },
       {
+        "name": "ao next-work",
+        "path": "cli/cmd/ao/",
+        "purpose": "Operate on the harvested next-work queue (.agents/rpi/next-work.jsonl)",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao notebook",
         "path": "cli/cmd/ao/",
         "purpose": "Manage the session notebook (MEMORY.md)",
@@ -1414,9 +1421,9 @@
     ]
   },
   "capability_summary": {
-    "total": 165,
+    "total": 166,
     "skills": 81,
-    "cli_commands": 70,
+    "cli_commands": 71,
     "gates": 11,
     "reference_impls": 3
   },
@@ -1466,6 +1473,7 @@
     "metrics",
     "mind",
     "mine",
+    "next-work",
     "notebook",
     "operator",
     "orchestrate",
@@ -2419,6 +2427,7 @@
         "ao forge markdown",
         "ao goals",
         "ao metrics cite",
+        "ao next-work materialize",
         "ao session close"
       ],
       "path": "skills/post-mortem/",
@@ -4356,6 +4365,23 @@
         "--quiet",
         "--since",
         "--sources",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.next-work",
+      "name": "ao next-work",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Operate on the harvested next-work queue (.agents/rpi/next-work.jsonl)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"
