@@ -3875,6 +3875,37 @@ ao mcp serve [flags]
 
 ---
 
+### `ao next-work`
+
+Commands that act on the carry-forward next-work queue that /post-mortem
+
+```
+ao next-work [command]
+```
+
+**Subcommands:**
+
+#### `ao next-work materialize`
+
+Read .agents/rpi/next-work.jsonl and create one durable bead per
+
+```
+ao next-work materialize [flags]
+```
+
+**Flags:**
+
+```
+      --dry-run                  Show what would be created without creating beads or mutating the queue
+      --file string              Path to next-work.jsonl (default: <cwd>/.agents/rpi/next-work.jsonl)
+  -h, --help                     help for materialize
+      --json                     Emit a machine-readable JSON summary
+      --materialized-by string   Actor recorded in provenance metadata (default "next-work-materialize")
+      --source-epic string       Only materialize items whose batch source_epic equals this value
+```
+
+---
+
 ### `ao registry`
 
 Query the unified registry

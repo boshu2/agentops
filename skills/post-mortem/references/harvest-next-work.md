@@ -174,6 +174,27 @@ Use the Write tool to append a single JSON line to `.agents/rpi/next-work.jsonl`
 - `items`: array of harvested items (min 0 — if nothing found, write entry with empty items array)
 - `consumed`: false, `claim_status`: "available", `claimed_by`: null, `claimed_at`: null, `consumed_by`: null, `consumed_at`: null
 
+## Materialize into durable beads (lessons → beads)
+
+The queue line is a carry-forward signal, not the durable record. Writing it is
+only half the flywheel — harvested follow-ups must also become tracked beads so
+the lesson compounds into the backlog instead of living only in a queue file.
+
+After appending the queue entry, materialize the fresh items into durable beads:
+
+```bash
+# Idempotent: creates one bead per unmaterialized item, stamps bead_id back onto
+# the queue item, and carries source_epic + proof_ref on the bead's native
+# metadata. Re-runs skip already-materialized / consumed / held-for-review items.
+ao next-work materialize
+# Preview without creating: ao next-work materialize --dry-run
+# Scope to this run's epic:  ao next-work materialize --source-epic <epic-id>
+```
+
+The CLI owns the deterministic core (the `bd create` + back-reference); this
+skill just invokes it. Held-for-review items (`requires` set or
+`status != ready`) are intentionally left in the queue for explicit promotion.
+
 ## Queue Lifecycle
 
 Writers always append entries in **available** state. Consumers use a claim/finalize lifecycle. In batched entries, lifecycle is tracked per item; the entry-level fields are aggregate summaries only:
