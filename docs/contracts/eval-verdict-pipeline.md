@@ -71,6 +71,7 @@ Defined in SCHEMA.md §6 (rc3). Override via env or GOALS.md:
 ## Cross-links
 
 - Sibling: [Finding Registry Contract](finding-registry.md)
+- Upstream projection: [Outcomes Rubric Projection Contract](outcomes-rubric-projection.md) — holdout-safe rubric payloads whose ingested scores land in this verdict format (Flywheel close)
 - Schema: `~/.agents/evals/SCHEMA.md` §4 / §6 / §11 entry #18
 - Plan: `.agents/plans/2026-05-01-eval-as-self-pruning-corpus.md`
 - Pre-mortem: `.agents/council/2026-05-01-pre-mortem-eval-corpus*.md`

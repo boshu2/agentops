@@ -303,6 +303,7 @@ Bridge / framing docs:
 - [Eval Baseline-A/B Contract](contracts/eval-baseline-ab.md) — `ao eval run --baseline-mode` semantics, `DeltaScorecard` schema, hook-suppression scope
 - [Context Usefulness Eval Contract](contracts/context-usefulness-eval.md) — Wave 0 deterministic `context_off` versus `context_on` evaluation, scorecard fields, hook-preservation boundaries
 - [Eval Verdict Pipeline Contract](contracts/eval-verdict-pipeline.md) — Verdict compiler pipeline from eval run manifests to learning utility and retirement signals
+- [Outcomes Rubric Projection Contract](contracts/outcomes-rubric-projection.md) — Holdout-safe projection of the locked eval substrate into an Outcomes-style grading payload (`schemas/outcomes-rubric.v1.schema.json`); `additionalProperties:false` at every level forbids target/ground_truth/expected_output (Managed Agents are not ZDR); validator `scripts/validate-outcomes-rubric.sh` + Go schema↔struct drift guard (ag-hguuf)
 - [Retrieval Comparison Contract](contracts/retrieval-comparison.md) — Deterministic search-eval backend comparison, promotion thresholds, optional rerank behavior, and deferred vector/graph-store policy
 - [Release Readiness Contract](contracts/release-readiness.md) — 8/10 release readiness score, SIL/VIL/HIL evidence, artifact manifest requirements, and HIL waiver policy
 - [MemRL Policy Schema](contracts/memrl-policy.schema.json) — Machine-readable retry/escalation policy profile for memory-reinforcement feedback loops

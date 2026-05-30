@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentops.dev/schemas/outcomes-rubric.v1.schema.json",
+  "title": "Outcomes Rubric Projection (v1)",
+  "description": "Holdout-safe projection of a locked eval Task's grading criteria into an Outcomes-style grading payload (cloud Managed Agents, async jobs, or the local Codex/NTM path). DERIVED artifact: ~/.agents/evals/SCHEMA.md remains the sole authority; a rubric is never an alternate bar. The payload NEVER carries ground-truth answers, holdout values, targets, or expected outputs — that is the load-bearing holdout-isolation invariant at the cloud boundary, because Managed Agents are not ZDR. additionalProperties:false at every nesting level is the structural enforcement: any leak field (target, ground_truth, expected_output, samples-holdout) makes the document fail validation, not merely a code check. Mirrors cli/internal/evalsubstrate/rubric.go (Rubric, Criterion); schema_version pins evalsubstrate.SchemaVersion.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "source_task_id",
+    "judge_content_hash",
+    "criteria"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Pins evalsubstrate.SchemaVersion (=1). Bump only when the projected shape changes."
+    },
+    "source_task_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Locked Task.ID this rubric was projected from. Provenance back-pointer; never a ground-truth id."
+    },
+    "judge_content_hash": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Copied from the judge spec (SCHEMA rc2 drift key). Lets a stale rubric self-invalidate exactly like a stale local judge."
+    },
+    "instructions": {
+      "type": "string",
+      "description": "Optional grader-facing instructions, projected from Task.Description. Holdout rubrics SHOULD omit this when the task description could echo a holdout prompt (criteria-only projection)."
+    },
+    "criteria": {
+      "type": "array",
+      "description": "Allowlisted grading dimensions. Only id/description/weight ever cross the boundary — no target, value, or answer.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "description",
+          "weight"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  }
+}
