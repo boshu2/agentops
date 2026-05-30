@@ -4,26 +4,13 @@
 
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
-**Gas City (`gc`)** is the optional out-of-session orchestration substrate that runs whole `ao rpi`/`ao evolve` loops (mayor + refinery agents over the reference City at `packs/agentops/`). `ao` does NOT wrap `gc` — it is a guided dependency, just like `bd`. See the [`using-gc`](skills/using-gc/SKILL.md) skill for the workflow and [docs/dependencies.md](docs/dependencies.md) for the full tool list.
+**Gas City (`gc`)** is the optional out-of-session orchestration substrate that runs whole `ao rpi`/`ao evolve` loops (mayor + refinery agents over the reference City at `packs/agentops/`). `ao` does NOT wrap `gc` — it is a guided dependency, just like `bd`. See the [`using-gc`](skills/using-gc/SKILL.md) skill and [docs/dependencies.md](docs/dependencies.md).
 
-> **Spawning an agent? Run this first:** `ao session bootstrap` — the universal init prompt that orients every agent identically regardless of model. AgentOps 3.0 is hookless, so nothing auto-injects this: run it explicitly, then `ao inject` / `ao corpus inject --query "<topic>"` to pull decay-ranked prior context. Then follow the read order below.
+> **Spawning an agent? Run this first:** `ao session bootstrap` — the universal init prompt that orients every agent identically regardless of model. AgentOps 3.0 is hookless, so nothing auto-injects this: run it explicitly, then `ao inject` / `ao corpus inject --query "<topic>"` to pull decay-ranked prior context.
 
-## Session Start (Zero-Context Agent)
+## Session start + source-of-truth precedence
 
-If you spawn into this repo without context, do this first:
-
-1. Read `docs/newcomer-guide.md` first for a practical repo orientation.
-2. Open `docs/index.md` (MkDocs landing) then `docs/documentation-index.md` (full catalog) to get the current doc map.
-3. Identify your task domain:
-   - CLI behavior: `cli/cmd/ao/`, `cli/internal/`, `cli/docs/COMMANDS.md`
-   - Skill behavior: `skills/<name>/SKILL.md`
-   - Validation/gate behavior: `.github/workflows/validate.yml` + `scripts/*.sh` (AgentOps 3.0 is hookless — CI is the authoritative gate)
-   - Validation/release/security flows: `scripts/*.sh` + `tests/`
-4. Use source-of-truth precedence when docs disagree:
-   1. Executable code and generated artifacts (`cli/**`, `scripts/**`, `cli/docs/COMMANDS.md`)
-   2. Skill contracts and manifests (`skills/**/SKILL.md`, `schemas/**`)
-   3. Explanatory docs (`docs/**`, `README.md`)
-5. If you find conflicts, follow the higher-precedence source and call out the mismatch explicitly in your report/PR.
+The canonical zero-context read order and the source-of-truth precedence rule live in [`CLAUDE.md`](CLAUDE.md) (sections "Zero-Context Startup" and "Source-of-Truth Precedence"). Read those first; this file does not duplicate them.
 
 ## Foundation texts
 
@@ -44,10 +31,7 @@ curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/instal
 # OpenCode
 curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-opencode.sh | bash
 
-# Other agents (for example Cursor): install only selected skills
-bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)
-
-# Update all installed skills
+# Other agents (for example Cursor) or update-all: install only selected skills
 bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)
 ```
 
@@ -59,41 +43,22 @@ bd ready              # Find available work
 bd show <id>          # View issue details
 bd update <id> --status in_progress  # Claim work
 bd close <id>         # Complete work
-bd vc status          # Inspect Dolt state if needed (JSONL auto-sync is automatic)
-bd dolt push          # Only if a real Dolt remote is configured
 
 # CLI development
 cd cli && make build  # Build ao binary
 cd cli && make test   # Run tests
 cd cli && make lint   # Run linter
-
-# Validation (run before pushing)
-scripts/pre-push-gate.sh --fast  # Smart conditional gate (only checks relevant to changed files)
-bash scripts/install-dev-hooks.sh  # Activate repo-managed git hooks once per clone/worktree
-scripts/ci-local-release.sh     # Full local release gate (runs everything)
-scripts/validate-go-fast.sh     # Quick Go validation (build + vet + test)
 ```
+
+Push, let CI validate (it is the authoritative gate — no local omnibus gate). Per-tool sanity checks + the full release gate live in [`docs/agent-workflow-reference.md`](docs/agent-workflow-reference.md).
 
 ## What's where (tiered AGENTS.md split, soc-vuu6.3)
 
-| If you need… | Read | Owner area |
-|---|---|---|
-| Workflow phases · branch/PR shape · Local Pre-Push · Releasing · Landing the Plane · bd issue tracking · Session Completion | [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md) | How work flows |
-| CI gate detail · Advisory triage SLAs · DEFERRED hardening matrix · per-job descriptions · Nightly workflow jobs | [`AGENTS-CI.md`](AGENTS-CI.md) | What CI checks |
-| CLI Skill-Map Refresh · Codex Skill Maintenance · audit scripts · override conventions | [`AGENTS-CODEX.md`](AGENTS-CODEX.md) | Codex parity rules |
-| Canonical Root and Worktrees · Key Constraints Agents Must Follow · no-tracked-`.agents` · no-symlinks · embedded-sync | [`AGENTS-RUNTIME.md`](AGENTS-RUNTIME.md) | Runtime constraints |
-
-Each file is self-contained for its scope and back-links here for orientation. Authors mutating `AGENTS-*.md` should rerun `scripts/validate-agents-split.sh` to confirm the split contract still holds.
-
-## Previously here, now in <X> (1-release deprecation footer)
-
-The sections below moved out of `AGENTS.md` on 2026-05-20 (soc-vuu6.3). This footer stays for one release cycle so agents that hard-coded section anchors find the new home.
-
-| Old anchor (this file) | New home |
+| If you need… | Read |
 |---|---|
-| `## Workflow` and `### Phases / ### Branch + PR shape / ### Multi-agent discipline / ### Provenance / ### Doctrine altitudes / ### Source layer / ### CI tiers` | [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md#workflow) |
-| `## CI Validation — Passing the Pipeline` and subsections except those listed below | [`AGENTS-CI.md`](AGENTS-CI.md) |
-| `### Local Pre-Push Checklist` | [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md#local-pre-push-checklist) |
-| `### CLI Skill-Map Refresh` and `### Codex Skill Maintenance` | [`AGENTS-CODEX.md`](AGENTS-CODEX.md) |
-| `### Canonical Root and Worktrees` and `### Key Constraints Agents Must Follow` | [`AGENTS-RUNTIME.md`](AGENTS-RUNTIME.md) |
-| `## Releasing` / `## Landing the Plane (Session Completion)` / `## Issue Tracking with bd (beads)` / `## Session Completion` | [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md) |
+| Workflow phases · branch/PR shape · Local Pre-Push · Releasing · Landing the Plane · bd issue tracking · Session Completion | [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md) |
+| CI gate detail · Advisory triage SLAs · DEFERRED hardening matrix · per-job descriptions · Nightly workflow jobs | [`AGENTS-CI.md`](AGENTS-CI.md) |
+| CLI Skill-Map Refresh · Codex Skill Maintenance · audit scripts · override conventions | [`AGENTS-CODEX.md`](AGENTS-CODEX.md) |
+| Canonical Root and Worktrees · Key Constraints Agents Must Follow · no-tracked-`.agents` · no-symlinks · embedded-sync | [`AGENTS-RUNTIME.md`](AGENTS-RUNTIME.md) |
+
+Each file is self-contained for its scope and back-links here. Authors mutating `AGENTS-*.md` should rerun `scripts/validate-agents-split.sh` to confirm the split contract still holds.

@@ -91,6 +91,7 @@ Bridge / framing docs:
 
 ## Workflows
 
+- [Agent Workflow Reference](agent-workflow-reference.md) — On-demand deep detail behind the thin `CLAUDE.md` router: building the CLI, key scripts, CI-validation rules, testing rules, release pipeline, `ao goals` surface
 - [Workflow Guide](workflows/README.md) — Decision matrix for choosing the right workflow
 - [Complete Cycle](workflows/complete-cycle.md) — Full Research, Plan, Implement, Validate, Learn workflow
 - [Session Lifecycle](workflows/session-lifecycle.md) — Runtime-aware session start and closeout across hook-capable and Codex hookless runtimes
