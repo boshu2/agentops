@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-30T04:55:48Z",
+  "generated_at": "2026-05-30T05:37:14Z",
   "summary": {
     "skills": 81,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 69,
-    "capabilities": 164
+    "cli_commands": 70,
+    "capabilities": 165
   },
   "surfaces": {
     "skills": [
@@ -1142,6 +1142,13 @@
         ]
       },
       {
+        "name": "ao mcp",
+        "path": "cli/cmd/ao/",
+        "purpose": "Expose the ao tool surface over MCP for hosted/SDK Claude loops",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao memory",
         "path": "cli/cmd/ao/",
         "purpose": "Manage repo-root MEMORY.md for cross-runtime access",
@@ -1407,9 +1414,9 @@
     ]
   },
   "capability_summary": {
-    "total": 164,
+    "total": 165,
     "skills": 81,
-    "cli_commands": 69,
+    "cli_commands": 70,
     "gates": 11,
     "reference_impls": 3
   },
@@ -1454,6 +1461,7 @@
     "lookup",
     "loop",
     "maturity",
+    "mcp",
     "memory",
     "metrics",
     "mind",
@@ -1508,6 +1516,7 @@
         "ao corpus inject",
         "ao goals",
         "ao inject",
+        "ao mcp serve",
         "ao session bootstrap",
         "ao validate"
       ],
@@ -4246,6 +4255,23 @@
         "--scan",
         "--target-size",
         "--uncited-days",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.mcp",
+      "name": "ao mcp",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Expose the ao tool surface over MCP for hosted/SDK Claude loops",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"

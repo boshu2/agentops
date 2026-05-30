@@ -140,6 +140,7 @@
 | `ao loop hypothesis list` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
 | `ao loop verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao maturity` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao mcp serve` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao memory sync` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao metrics baseline` | `public-tested` | `allowlisted` | Covered by metrics command tests. |
 | `ao metrics cite` | `public-tested` | `allowlisted` | Covered by metrics command tests. |
