@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-30T00:53:31Z",
+  "generated_at": "2026-05-30T01:23:51Z",
   "summary": {
-    "skills": 79,
+    "skills": 80,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 68,
-    "capabilities": 161
+    "capabilities": 162
   },
   "surfaces": {
     "skills": [
@@ -163,6 +163,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 1
+      },
+      {
+        "name": "eval-outcomes",
+        "tier": "execution",
+        "path": "skills/eval-outcomes/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "evolve",
@@ -1381,8 +1389,8 @@
     ]
   },
   "capability_summary": {
-    "total": 161,
-    "skills": 79,
+    "total": 162,
+    "skills": 80,
     "cli_commands": 68,
     "gates": 11,
     "reference_impls": 3
@@ -1906,6 +1914,32 @@
         "ao goals"
       ],
       "path": "skills/dream/",
+      "references": 0
+    },
+    {
+      "sku": "skill:eval-outcomes",
+      "name": "eval-outcomes",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": "Grade against Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes.",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "validation",
+        "ratchet",
+        "council"
+      ],
+      "produces": [
+        "skills/council/schemas/verdict.json"
+      ],
+      "drives_commands": [
+        "ao eval outcomes compile",
+        "ao eval outcomes ingest",
+        "ao eval run"
+      ],
+      "path": "skills/eval-outcomes/",
       "references": 0
     },
     {

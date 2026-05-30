@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "57959cbf3093ab0881e4769fee318b6f1aa3fbef3155dba02a8a2642f281ea36",
+  "codex_override_catalog_hash": "aa61d52a460da3e5e6f122c340830a2667c88f2198ae138cbb45ee5141552b8d",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -654,6 +654,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Bounded epic-completion loop; codex form is canonical-derived (no bespoke shell idioms)."
+      },
+      {
+        "name": "eval-outcomes",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Documents ao eval outcomes as a holdout-safe grading transport; codex form is canonical-derived (no bespoke shell idioms)."
       }
     ]
   },
@@ -777,6 +783,12 @@
       "source_skill": "skills/dream",
       "source_hash": "30e04bc30a20b4404049a8ca31ecf21047e58ead1d97ccd29d38f476c0c21d47",
       "generated_hash": "e0ff08b8e3e94f8bc6ae5d253a4a5b5d89152c3544991bf05c5f4152d32c2bb6"
+    },
+    {
+      "name": "eval-outcomes",
+      "source_skill": "skills/eval-outcomes",
+      "source_hash": "13e509fa4ebf06539d63fafff38535c5bb3ec481f0221f650e82f9fd2788180a",
+      "generated_hash": "ace058738218b463620ccaee4034f104c8ab7a3b5894a4496f38c4c32bf9d536"
     },
     {
       "name": "evolve",
@@ -1099,7 +1111,7 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "31e2e5a81cbf35a206a9e4d98300a779bd59fa69968cf08afec9397baea525ee",
+      "source_hash": "fa900a3758b9e440253e83918f99319c0dadd1f388bd6feb4d529bffced76e97",
       "generated_hash": "80119493d38739d5ca4d9377c97c7e4f6e5766365525c965297c1cd78029e74b"
     },
     {
