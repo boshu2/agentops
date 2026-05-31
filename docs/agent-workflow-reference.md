@@ -22,6 +22,8 @@ cd cli && make sync-hooks   # Sync embedded lib/skills into cli/embedded/
 
 | Script | Purpose |
 |--------|---------|
+| `make regen-all` | **One-command finalizer** — regenerates *every* derived artifact (skill counts, skill-domain-map, `registry.json`, context-map, embedded skills, CLI reference, cli-surface inventory, codex hashes) after adding a skill/command. Run this instead of hunting the generators one CI round at a time (`ag-jima`, ex-PR #598). |
+| `make regen-check` | The no-write companion: runs the matching drift validators (the same gates `contracts-sync` enforces). Green here ⇒ those gates pass in CI. |
 | `scripts/ship.sh` | One-knob ship loop — detects inventory changes, runs regen sweep, opens PR |
 | `scripts/ci-local-release.sh` | Local release validation gate (run before tagging) |
 | `scripts/sync-skill-counts.sh` | Sync skill counts across docs after adding/removing skills |
@@ -37,6 +39,7 @@ All pushes to `main` run `.github/workflows/validate.yml` (65 jobs). **CI is the
 
 ```bash
 cd cli && make build && make test         # If you changed Go code
+make regen-all && make regen-check        # If you ADDED/REMOVED a skill or `ao` command (then commit the regenerated files)
 cd cli && make sync-hooks                 # If you changed lib/ or skills/standards/references/
 scripts/regen-codex-hashes.sh             # If you changed skills-codex/ files
 bats tests/scripts/<script-you-touched>.bats   # Per-script regression suite
@@ -58,7 +61,7 @@ Run only the per-tool checks for the surfaces you actually touched. Push, let CI
 scripts/sync-skill-counts.sh
 ```
 
-This updates SKILL-TIERS.md, PRODUCT.md, README.md, docs/SKILLS.md, docs/ARCHITECTURE.md, and using-agentops/SKILL.md. Forgetting this fails the doc-release-gate.
+This updates SKILL-TIERS.md, PRODUCT.md, README.md, docs/SKILLS.md, docs/ARCHITECTURE.md, and using-agentops/SKILL.md. Forgetting this fails the doc-release-gate. `make regen-all` runs this **plus** every other derived-artifact generator, so prefer it when adding a skill rather than remembering each script individually.
 
 **Every `references/*.md` must be linked in SKILL.md.** If a file exists in `skills/<name>/references/`, the skill's SKILL.md must contain a markdown link to it or a `Read` instruction referencing it. Use `heal.sh --strict` to check.
 
