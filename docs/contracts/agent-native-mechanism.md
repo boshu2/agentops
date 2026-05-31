@@ -34,8 +34,8 @@ A runtime-specific Agent definition is emitted by `ao agent bundle` (`--managed`
 | **Commit / output review** (commit-review) | the PR + `agent-output-validate.yml` | same (Codex output bundled, then validated) | `claude-review` + `agent-output-validate.yml` |
 | **Holdout isolation** (holdout-isolation-gate) | rubric projection strips ground truth *by construction*; payloads never carry holdout | same — the Outcomes/local score is the only thing that crosses | `Outcomes holdout-leak gate` (`check-outcomes-holdout-leak.sh`, deny-by-default) |
 
-**Conclusion: zero hooks are required.** Every old-hook intent maps onto a skill
-+ an `ao` subcommand + a CI job. The CI gate is the enforcement boundary; the
+**Conclusion: zero hooks are required.** Every old-hook intent maps onto a skill,
+an `ao` subcommand, and a CI job. The CI gate is the enforcement boundary; the
 skill/`ao` layer is advisory-by-design (an agent that ignores them simply fails CI).
 
 ## 2. Managed Agents Agent definition + self-hosted sandbox
