@@ -14,7 +14,7 @@ func edgeAt(ts, fromID, toID string) Edge {
 		FromType:      "decision",
 		ToID:          toID,
 		ToType:        "artifact",
-		Relation:      "decision_produces_artifact",
+		Relation:      "wasGeneratedBy",
 		TrustTier:     "authored",
 		TS:            ts,
 	}
