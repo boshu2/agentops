@@ -218,6 +218,20 @@ Run proactive bug-hunt audit on target files.
 
 Read [references/test-pyramid-inventory.md](references/test-pyramid-inventory.md) when you need the full inventory procedure: per-module L0–L3 coverage checks, BF1–BF5 boundary checks, the `weighted_score` formula, satisfaction-score exposure, the council-packet `test_pyramid` JSON shape, and verdict rules. Runs in both `--quick` and full modes — file existence checks are cheap. Weight L0–L1 at 1x, L2 at 3x, L3+ at 5x; `weighted_score < 0.3` with L0–L1 only is a WARN.
 
+### Step 2g.1: Scenario→Test Coverage (MANDATORY when the slice has scenarios)
+
+Test-pyramid inventory (2g) checks that tests *exist* and are well-shaped — it does NOT check that each of the slice's acceptance scenarios maps to a test. The leaf gate for that is `scripts/check-bead-scenario-coverage.sh` (C2, ag-9jle.4). It parses the bead's `## Scenarios` block (or a `.feature` file) and FAILS if any scenario lacks a `@covered-by:<test-path>` link — i.e. it works *forward from behavior*, not backward from coverage %.
+
+```bash
+# When validating a tracked bead with a ## Scenarios block:
+bash scripts/check-bead-scenario-coverage.sh --bead <bead-id> --json
+
+# When validating a .feature directly:
+bash scripts/check-bead-scenario-coverage.sh skills/<skill>/references/<name>.feature --json
+```
+
+A FAIL here is a vibe blocker, not a WARN: "tests exist" or a coverage percentage is NOT sufficient — every scenario must declare a covering test. Add `@covered-by:<test-path>` (optionally `::<TestName>`) directly above each uncovered `Scenario:`. Skip only when the slice has no scenarios (free-text acceptance must be promoted to scenarios first — see the workflow contract). When the covering tests are runnable in this checkout, prefer `--run` to require they actually PASS, not merely exist.
+
 ### Step 4: Run Council Validation
 
 **With spec found — use code-review preset:**
