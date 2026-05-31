@@ -4066,6 +4066,21 @@ ao skills check [flags]
       --strict         Exit non-zero on any finding (CI mode)
 ```
 
+#### `ao skills consumers`
+
+Print the skills whose consumes[] list includes <skill> — i.e. who
+
+```
+ao skills consumers <skill> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for consumers
+      --json   Emit machine-readable JSON
+```
+
 #### `ao skills find`
 
 Score every skills/<name>/SKILL.md against a free-text intent and
@@ -4080,6 +4095,56 @@ ao skills find <intent> [flags]
   -h, --help        help for find
       --json        Emit machine-readable JSON on stdout
       --limit int   Maximum number of results to return (default 5)
+```
+
+#### `ao skills graph`
+
+Render the skill dependency graph (A --> B means A consumes B) from
+
+```
+ao skills graph [flags]
+```
+
+**Flags:**
+
+```
+      --format string   Graph output format (mermaid) (default "mermaid")
+  -h, --help            help for graph
+```
+
+#### `ao skills list`
+
+Filter the generated skill catalog by hexagonal role, produced or
+
+```
+ao skills list [flags]
+```
+
+**Flags:**
+
+```
+      --consumes string         Filter to skills that consume this port/sibling
+  -h, --help                    help for list
+      --json                    Emit machine-readable JSON
+      --practice string         Filter to skills that apply this practice
+      --produces string         Filter to skills that produce this port/artifact
+      --role string             Filter by hexagonal_role (domain, driving-adapter, ...)
+      --user-invocable string   Filter by user-invocability (true|false)
+```
+
+#### `ao skills producers`
+
+Print the skills whose produces[] list includes <output> — i.e. who
+
+```
+ao skills producers <output> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for producers
+      --json   Emit machine-readable JSON
 ```
 
 ---
