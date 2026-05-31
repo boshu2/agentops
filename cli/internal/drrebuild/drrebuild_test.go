@@ -62,7 +62,7 @@ func fixturePayloads() ([]LedgerEvent, MapBlobStore) {
 			SchemaVersion: "agentops-sdlc-provenance.v1",
 			FromID:        "ag-lmdx", FromType: "bead",
 			ToID: "ag-lmdx.1", ToType: "decision",
-			Relation: "bead_scopes_decision", TrustTier: "authored",
+			Relation: "wasInfluencedBy", TrustTier: "authored",
 			TS:          "2026-05-30T00:00:00Z",
 			EvidenceRef: "ag-lmdx",
 		},
@@ -70,7 +70,7 @@ func fixturePayloads() ([]LedgerEvent, MapBlobStore) {
 			SchemaVersion: "agentops-sdlc-provenance.v1",
 			FromID:        "ag-lmdx.1", FromType: "decision",
 			ToID: "schemas/agentops-sdlc-provenance.v1.schema.json", ToType: "artifact",
-			Relation: "decision_produces_artifact", TrustTier: "authored",
+			Relation: "wasGeneratedBy", TrustTier: "authored",
 			TS:          "2026-05-30T01:00:00Z",
 			EvidenceRef: GitBlobOID([]byte(artifactBlob)),
 		},
@@ -78,7 +78,7 @@ func fixturePayloads() ([]LedgerEvent, MapBlobStore) {
 			SchemaVersion: "agentops-sdlc-provenance.v1",
 			FromID:        "commit:004fcbc2", FromType: "commit",
 			ToID: "ag-lmdx.1", ToType: "decision",
-			Relation: "commit_implements_decision", TrustTier: "inferred",
+			Relation: "wasRevisionOf", TrustTier: "inferred",
 			TS:          "2026-05-30T02:00:00Z",
 			EvidenceRef: GitBlobOID([]byte(decisionBlob)),
 		},
@@ -130,7 +130,7 @@ func TestRebuild_MatchesOriginal(t *testing.T) {
 	// Content-addressed evidence must be resolved verbatim into the projection.
 	var found bool
 	for _, e := range rebuilt.Edges {
-		if e.Relation == "decision_produces_artifact" {
+		if e.Relation == "wasGeneratedBy" {
 			found = true
 			if e.Evidence != artifactBlob {
 				t.Fatalf("resolved evidence = %q, want %q", e.Evidence, artifactBlob)
@@ -138,7 +138,7 @@ func TestRebuild_MatchesOriginal(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Fatal("decision_produces_artifact edge not present in rebuilt graph")
+		t.Fatal("wasGeneratedBy edge not present in rebuilt graph")
 	}
 }
 
@@ -239,7 +239,7 @@ func TestVerifyChain_DetectsTamper(t *testing.T) {
 
 	tampered := append([]LedgerEvent(nil), chained...)
 	tampered[1].TrustTier = "authored" // was authored already; change to a real downgrade
-	tampered[1].Relation = "verdict_attests_artifact"
+	tampered[1].Relation = "wasAttributedTo"
 
 	if err := VerifyChain(tampered); err == nil {
 		t.Fatal("expected chain verification to detect the tampered relation, got nil")

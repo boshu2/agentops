@@ -19,21 +19,21 @@ func fixtureRows() []DoltRow {
 			SchemaVersion: "agentops-sdlc-provenance.v1",
 			FromID:        "commit:abc123", FromType: "commit",
 			ToID: "ag-lmdx.3", ToType: "bead",
-			Relation: "commit_implements_decision", EvidenceRef: "ci://run/9",
+			Relation: "wasRevisionOf", EvidenceRef: "ci://run/9",
 			TrustTier: "inferred", TS: "2026-05-30T02:00:00Z",
 		},
 		{
 			SchemaVersion: "agentops-sdlc-provenance.v1",
 			FromID:        "ag-lmdx", FromType: "bead",
 			ToID: "ag-lmdx.3", ToType: "decision",
-			Relation: "bead_scopes_decision", EvidenceRef: "ag-lmdx",
+			Relation: "wasInfluencedBy", EvidenceRef: "ag-lmdx",
 			TrustTier: "authored", TS: "2026-05-30T00:00:00Z",
 		},
 		{
 			SchemaVersion: "agentops-sdlc-provenance.v1",
 			FromID:        "ag-lmdx.3", FromType: "decision",
 			ToID: "scripts/witness-dolt-jsonl-crosscheck.sh", ToType: "artifact",
-			Relation: "decision_produces_artifact", EvidenceRef: "GOALS.md",
+			Relation: "wasGeneratedBy", EvidenceRef: "GOALS.md",
 			TrustTier: "authored", TS: "2026-05-30T01:00:00Z",
 		},
 	}
@@ -167,7 +167,7 @@ func TestCrossCheck_ExtraDoltRowFails(t *testing.T) {
 		SchemaVersion: "agentops-sdlc-provenance.v1",
 		FromID:        "ag-lmdx.3", FromType: "decision",
 		ToID: "verdict:green", ToType: "verdict",
-		Relation: "decision_produces_artifact", EvidenceRef: "ci://run/10",
+		Relation: "wasGeneratedBy", EvidenceRef: "ci://run/10",
 		TrustTier: "inferred", TS: "2026-05-30T03:00:00Z",
 	})
 
