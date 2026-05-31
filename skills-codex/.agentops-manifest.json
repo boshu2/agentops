@@ -1111,8 +1111,8 @@
     {
       "name": "test",
       "source_skill": "skills/test",
-      "source_hash": "04f0b05a580c0d89307302d723827c2da337365a5a7bd6b69d0ae201b36c8cd3",
-      "generated_hash": "9c2547ad936fbe0289c0fbe7c322e8c2418a09516594edfd4461547c94bb35fb"
+      "source_hash": "c269a74fee173b40849ab3908e11715b1398b4b0a6a74eb9b9c87934cfda5566",
+      "generated_hash": "100b04302b947d970b6d3158e0879248c42cbc3c565b8ad66bf8e6808b8495be"
     },
     {
       "name": "trace",
@@ -1147,8 +1147,8 @@
     {
       "name": "vibe",
       "source_skill": "skills/vibe",
-      "source_hash": "3de4aa35036213350fac4ea144186579ddf40753cff3247fd7e6c60d65aa80ea",
-      "generated_hash": "c0a5605f01736725d021050b32ea966ccd1a3e6296b4e8d4995d0f2c4e95e365"
+      "source_hash": "26612fcfa3570444f0c19db6ace2e28b6b1ebb8a1bffc174c6c38adc8c0b1cc0",
+      "generated_hash": "5d634b66e1b976630d41dc97bdff520930b0f4da2220096e61ca8a4f0762169e"
     },
     {
       "name": "workflow-builder",
