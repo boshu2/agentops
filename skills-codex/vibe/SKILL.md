@@ -523,7 +523,21 @@ The acceptance verdict must NOT be graded by the artifact's own author. A verdic
 
 **Rule:** the judge context MUST be distinct from the author context. Validation MAY run inside the authoring session, but the judge MUST be a **blind sub-agent** — a fresh, context-isolated agent acting as if it has no authoring context. Record `judge_id` (the isolated sub-agent context) distinct from `author_id` (the authoring context). The council judges spawned in Step 4 satisfy this when they are context-isolated sub-agents; an inline self-review by the authoring agent does NOT.
 
-**Refuse** to emit a PASS verdict when the judge context equals the author context (`judge_id == author_id`) — re-run the verdict through a blind sub-agent judge instead.
+**Blind sub-agent judge spawn (the mechanism, MANDATORY when validating in the authoring session):**
+
+When the verdict is being produced inside the session that authored the code, you MUST spawn the acceptance judge as a fresh-context sub-agent — do NOT grade inline. Concretely:
+
+1. Spawn the judge via the Codex sub-agent mechanism (the same context-isolated sub-agents Step 4's council uses). The sub-agent is the judge; the orchestrating authoring agent is NOT.
+2. Hand the blind judge **ONLY** the acceptance inputs — never the authoring conversation, plan, or reasoning:
+   - the **diff/artifact** under review (changed files + `git diff`),
+   - the **acceptance scenarios** (the bead's `## Scenarios` block or the `.feature` file) and any spec, complexity hotspots, and domain checklists,
+   - the verdict contract (`skills/council/schemas/verdict.json`).
+   Do NOT pass the authoring transcript, intermediate design notes, or "here's why I think it's correct" framing. The judge acts as if it has no authoring context.
+3. Use the sub-agent's PASS/WARN/FAIL as the acceptance verdict. Record `judge_id` = the isolated sub-agent context, `author_id` = the authoring context, into the turn-input consumed by `ao turn verify` (Enforcement below).
+
+This is what makes same-session validation trustworthy: the verdict is produced by a context that did not author the artifact, so the author's blind spots do not pass it.
+
+**Refuse** to emit a PASS verdict when the judge context equals the author context (`judge_id == author_id`) — i.e. when no blind sub-agent was spawned and the authoring agent graded itself. Re-run the verdict through a blind sub-agent judge instead.
 
 **Escape:** `--allow-self` (default OFF) waives the invariant for the inline fallback only (e.g. no sub-agent runtime available). Using it stamps the verdict as self-graded; downstream `ao turn verify` reports it as waived, not independently validated.
 
