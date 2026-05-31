@@ -41,7 +41,7 @@ func provEdge(t *testing.T, from, to string) provenancegraph.Edge {
 		FromType: "commit",
 		ToID:     to,
 		ToType:   "bead",
-		Relation: "commit_implements_decision",
+		Relation: "wasRevisionOf",
 		EvidenceRef: "deadbeef",
 		TrustTier: "inferred",
 		TS:        "2026-05-31T03:00:00Z",

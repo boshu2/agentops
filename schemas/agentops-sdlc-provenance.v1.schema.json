@@ -95,16 +95,16 @@
     "relation": {
       "type": "string",
       "enum": [
-        "decision_produces_artifact",
-        "decision_authorizes",
-        "artifact_derived_from",
-        "scenario_covers_artifact",
-        "verdict_attests_artifact",
-        "bead_scopes_decision",
-        "commit_implements_decision",
-        "learning_revises_decision"
+        "wasGeneratedBy",
+        "wasAssociatedWith",
+        "wasDerivedFrom",
+        "wasInformedBy",
+        "wasAttributedTo",
+        "wasInfluencedBy",
+        "wasRevisionOf",
+        "wasInvalidatedBy"
       ],
-      "description": "Typed provenance relation. PROV-DM-aligned: produces≈wasGeneratedBy, authorizes≈wasAuthorizedBy, derived_from≈wasDerivedFrom, attests≈wasAttributedTo."
+      "description": "Typed provenance relation, named with the W3C PROV-O / PROV-DM standard vocabulary so an external auditor recognizes the term (ag-lmdx.7). The enum ENFORCES the standard verbs: a colloquial value such as 'derives_from' or the prior AgentOps-local 'artifact_derived_from' is rejected in favor of the PROV-O term 'wasDerivedFrom'. Edge direction is from->to. Mapping from the prior AgentOps-local vocabulary: decision_produces_artifact->wasGeneratedBy (artifact wasGeneratedBy the decision activity), decision_authorizes->wasAssociatedWith, artifact_derived_from->wasDerivedFrom, scenario_covers_artifact->wasInformedBy, verdict_attests_artifact->wasAttributedTo, bead_scopes_decision->wasInfluencedBy, commit_implements_decision->wasRevisionOf, learning_revises_decision->wasInvalidatedBy. Guard-read/queryable fields (from_id, to_id, relation, trust_tier, and the hash-chain anchors) are first-class top-level columns of each ledger record, never buried inside a nested JSON payload, because Dolt JSON-path generated-column indexing is unreliable; any Dolt projection of this ledger MUST materialize these as real columns rather than indexing JSON paths."
     },
     "sha256_hex": {
       "type": "string",

@@ -100,7 +100,7 @@ func beadEdgeLine(t *testing.T, bead string) string {
 		"from_type":      "commit",
 		"to_id":          bead,
 		"to_type":        "bead",
-		"relation":       "commit_implements_decision",
+		"relation":       "wasRevisionOf",
 		"evidence_ref":   "deadbeef",
 		"trust_tier":     "inferred",
 		"ts":             "2026-05-31T03:00:00Z",

@@ -54,9 +54,9 @@ evidence, and trust tier is a no-op (no duplicate row).
 
 Examples:
   ao provenance add ag-x31t.4 cli/cmd/ao/provenance_add.go \
-    --relation decision_produces_artifact --to-type artifact
+    --relation wasGeneratedBy --to-type artifact
   ao provenance add soc-byl.3 ag-x31t \
-    --relation bead_scopes_decision --from-type bead --to-type decision \
+    --relation wasInfluencedBy --from-type bead --to-type decision \
     --trust-tier authored --evidence .agents/council/2026-05-30-debate-provenance-substrate.md`,
 	Args: cobra.ExactArgs(2),
 	RunE: runProvenanceAdd,
@@ -72,7 +72,7 @@ Examples:
   ao provenance list
   ao provenance list --json
   ao provenance list --from-id ag-x31t.4
-  ao provenance list --relation decision_produces_artifact`,
+  ao provenance list --relation wasGeneratedBy`,
 	Args: cobra.NoArgs,
 	RunE: runProvenanceList,
 }
@@ -82,7 +82,7 @@ func init() {
 	provenanceCmd.AddCommand(provenanceAddCmd)
 	provenanceCmd.AddCommand(provenanceListCmd)
 
-	provenanceAddCmd.Flags().StringVar(&provAddRelation, "relation", "", "Typed relation (required), e.g. decision_produces_artifact")
+	provenanceAddCmd.Flags().StringVar(&provAddRelation, "relation", "", "Typed PROV-O relation (required), e.g. wasGeneratedBy")
 	provenanceAddCmd.Flags().StringVar(&provAddFromType, "from-type", "decision", "Source node type (decision|artifact|bead|...)")
 	provenanceAddCmd.Flags().StringVar(&provAddToType, "to-type", "artifact", "Target node type (decision|artifact|bead|...)")
 	provenanceAddCmd.Flags().StringVar(&provAddTrustTier, "trust-tier", "authored", "Trust tier (authored|inferred|mined)")

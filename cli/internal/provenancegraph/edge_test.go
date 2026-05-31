@@ -14,7 +14,7 @@ func validEdge() Edge {
 		FromType:      "decision",
 		ToID:          "cli/cmd/ao/provenance_add.go",
 		ToType:        "artifact",
-		Relation:      "decision_produces_artifact",
+		Relation:      "wasGeneratedBy",
 		TrustTier:     "authored",
 		TS:            "2026-05-31T00:00:00Z",
 	}

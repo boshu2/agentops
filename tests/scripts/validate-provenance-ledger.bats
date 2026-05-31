@@ -2,8 +2,10 @@
 # Acceptance surface for ag-x31t.2: the provenance ledger event contract +
 # schema (schemas/agentops-sdlc-provenance.v1.schema.json). The validator
 # enforces the committed JSON Schema over the tracked fixtures — a
-# decision_produces_artifact edge VALIDATES, and an otherwise-identical edge
-# missing trust_tier is REJECTED (the bead's named pass/fail case). Each event
+# wasGeneratedBy (PROV-O) edge VALIDATES, the prior AgentOps-local
+# decision_produces_artifact / colloquial derives_from terms are REJECTED, and
+# an otherwise-identical edge missing trust_tier is REJECTED (the bead's named
+# pass/fail case + ag-lmdx.7 PROV-O vocabulary enforcement). Each event
 # is one line of the hash-chained audit ledger at docs/provenance/ledger.jsonl;
 # the committed ledger is the audit authority (council 2026-05-30).
 
@@ -40,8 +42,13 @@ setup() {
     [ "$status" -eq 0 ]
 }
 
-@test "decision_produces_artifact is a valid relation" {
-    run python3 -c "import json,sys; s=json.load(open('$SCHEMA')); sys.exit(0 if 'decision_produces_artifact' in s['\$defs']['relation']['enum'] else 1)"
+@test "relation enum uses W3C PROV-O vocabulary (wasGeneratedBy/wasDerivedFrom/wasAttributedTo)" {
+    run python3 -c "import json,sys; s=json.load(open('$SCHEMA')); enum=set(s['\$defs']['relation']['enum']); sys.exit(0 if {'wasGeneratedBy','wasDerivedFrom','wasAttributedTo'} <= enum else 1)"
+    [ "$status" -eq 0 ]
+}
+
+@test "the prior AgentOps-local relation vocabulary is rejected (PROV-O enforced)" {
+    run python3 -c "import json,sys; s=json.load(open('$SCHEMA')); enum=set(s['\$defs']['relation']['enum']); legacy={'decision_produces_artifact','artifact_derived_from','derives_from'}; sys.exit(0 if not (legacy & enum) else 1)"
     [ "$status" -eq 0 ]
 }
 
@@ -58,10 +65,20 @@ setup() {
     [[ "$output" == *"PASS: invalid-missing-trust-tier.json"* ]]
 }
 
-@test "decision_produces_artifact edge validates" {
+@test "a wasGeneratedBy (PROV-O) edge validates" {
     if [ "$HAVE_JSONSCHEMA" -eq 0 ]; then skip "python3 jsonschema unavailable"; fi
     run "$SCRIPT" "$FIX/valid-decision-produces-artifact.json"
     [ "$status" -eq 0 ]
+}
+
+@test "an edge using the prior non-PROV-O relation vocabulary is rejected" {
+    if [ "$HAVE_JSONSCHEMA" -eq 0 ]; then skip "python3 jsonschema unavailable"; fi
+    tmp="$BATS_TEST_TMPDIR/legacy-relation.json"
+    cat > "$tmp" <<'JSON'
+{"schema_version":"agentops-sdlc-provenance.v1","from_id":"ag-x31t.2","from_type":"decision","to_id":"schemas/x.json","to_type":"artifact","relation":"derives_from","trust_tier":"authored","ts":"2026-05-31T00:00:00Z","prev_hash":"","payload_hash":"cd137deeb225f94ee884b3703485a0effd56937b57f191a10981cc3cc4d4dcee","hash":"0e7224e46af26b3e7b35cfcad9b4bc9838629ae084e48fe024045ea51a5c9ada"}
+JSON
+    run "$SCRIPT" "$tmp"
+    [ "$status" -ne 0 ]
 }
 
 @test "an edge missing trust_tier is rejected" {
@@ -74,7 +91,7 @@ setup() {
     if [ "$HAVE_JSONSCHEMA" -eq 0 ]; then skip "python3 jsonschema unavailable"; fi
     tmp="$BATS_TEST_TMPDIR/badtier.json"
     cat > "$tmp" <<'JSON'
-{"schema_version":"agentops-sdlc-provenance.v1","from_id":"ag-x31t.2","from_type":"decision","to_id":"schemas/x.json","to_type":"artifact","relation":"decision_produces_artifact","trust_tier":"guessed","ts":"2026-05-31T00:00:00Z","prev_hash":"","payload_hash":"cd137deeb225f94ee884b3703485a0effd56937b57f191a10981cc3cc4d4dcee","hash":"0e7224e46af26b3e7b35cfcad9b4bc9838629ae084e48fe024045ea51a5c9ada"}
+{"schema_version":"agentops-sdlc-provenance.v1","from_id":"ag-x31t.2","from_type":"decision","to_id":"schemas/x.json","to_type":"artifact","relation":"wasGeneratedBy","trust_tier":"guessed","ts":"2026-05-31T00:00:00Z","prev_hash":"","payload_hash":"cd137deeb225f94ee884b3703485a0effd56937b57f191a10981cc3cc4d4dcee","hash":"0e7224e46af26b3e7b35cfcad9b4bc9838629ae084e48fe024045ea51a5c9ada"}
 JSON
     run "$SCRIPT" "$tmp"
     [ "$status" -ne 0 ]
@@ -84,7 +101,7 @@ JSON
     if [ "$HAVE_JSONSCHEMA" -eq 0 ]; then skip "python3 jsonschema unavailable"; fi
     tmp="$BATS_TEST_TMPDIR/extra.json"
     cat > "$tmp" <<'JSON'
-{"schema_version":"agentops-sdlc-provenance.v1","from_id":"ag-x31t.2","from_type":"decision","to_id":"schemas/x.json","to_type":"artifact","relation":"decision_produces_artifact","trust_tier":"authored","ts":"2026-05-31T00:00:00Z","prev_hash":"","payload_hash":"cd137deeb225f94ee884b3703485a0effd56937b57f191a10981cc3cc4d4dcee","hash":"0e7224e46af26b3e7b35cfcad9b4bc9838629ae084e48fe024045ea51a5c9ada","smuggled":"x"}
+{"schema_version":"agentops-sdlc-provenance.v1","from_id":"ag-x31t.2","from_type":"decision","to_id":"schemas/x.json","to_type":"artifact","relation":"wasGeneratedBy","trust_tier":"authored","ts":"2026-05-31T00:00:00Z","prev_hash":"","payload_hash":"cd137deeb225f94ee884b3703485a0effd56937b57f191a10981cc3cc4d4dcee","hash":"0e7224e46af26b3e7b35cfcad9b4bc9838629ae084e48fe024045ea51a5c9ada","smuggled":"x"}
 JSON
     run "$SCRIPT" "$tmp"
     [ "$status" -ne 0 ]
@@ -94,7 +111,7 @@ JSON
     if [ "$HAVE_JSONSCHEMA" -eq 0 ]; then skip "python3 jsonschema unavailable"; fi
     tmp="$BATS_TEST_TMPDIR/badhash.json"
     cat > "$tmp" <<'JSON'
-{"schema_version":"agentops-sdlc-provenance.v1","from_id":"ag-x31t.2","from_type":"decision","to_id":"schemas/x.json","to_type":"artifact","relation":"decision_produces_artifact","trust_tier":"authored","ts":"2026-05-31T00:00:00Z","prev_hash":"","payload_hash":"not-a-sha","hash":"0e7224e46af26b3e7b35cfcad9b4bc9838629ae084e48fe024045ea51a5c9ada"}
+{"schema_version":"agentops-sdlc-provenance.v1","from_id":"ag-x31t.2","from_type":"decision","to_id":"schemas/x.json","to_type":"artifact","relation":"wasGeneratedBy","trust_tier":"authored","ts":"2026-05-31T00:00:00Z","prev_hash":"","payload_hash":"not-a-sha","hash":"0e7224e46af26b3e7b35cfcad9b4bc9838629ae084e48fe024045ea51a5c9ada"}
 JSON
     run "$SCRIPT" "$tmp"
     [ "$status" -ne 0 ]

@@ -3931,7 +3931,7 @@ ao provenance add <from-id> <to-id> [flags]
       --from-type string    Source node type (decision|artifact|bead|...) (default "decision")
   -h, --help                help for add
       --json                Emit the sealed edge as JSON
-      --relation string     Typed relation (required), e.g. decision_produces_artifact
+      --relation string     Typed PROV-O relation (required), e.g. wasGeneratedBy
       --to-type string      Target node type (decision|artifact|bead|...) (default "artifact")
       --trust-tier string   Trust tier (authored|inferred|mined) (default "authored")
       --ts string           Override the UTC RFC3339 timestamp (defaults to now)

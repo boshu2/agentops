@@ -40,16 +40,27 @@ var NodeTypes = []string{
 	"pr", "ci_run", "verdict", "learning", "agent",
 }
 
-// Relations is the closed set of typed provenance relations from the v1 schema.
+// Relations is the closed set of typed provenance relations from the v1
+// schema, named with the W3C PROV-O / PROV-DM standard vocabulary so an
+// external auditor recognizes the term (ag-lmdx.7). The enum enforces the
+// standard verbs: a colloquial value such as "derives_from" or the prior
+// AgentOps-local "artifact_derived_from" is rejected in favor of the PROV-O
+// term "wasDerivedFrom". Mapping from the prior vocabulary:
+// decision_produces_artifact->wasGeneratedBy, decision_authorizes->
+// wasAssociatedWith, artifact_derived_from->wasDerivedFrom,
+// scenario_covers_artifact->wasInformedBy, verdict_attests_artifact->
+// wasAttributedTo, bead_scopes_decision->wasInfluencedBy,
+// commit_implements_decision->wasRevisionOf, learning_revises_decision->
+// wasInvalidatedBy.
 var Relations = []string{
-	"decision_produces_artifact",
-	"decision_authorizes",
-	"artifact_derived_from",
-	"scenario_covers_artifact",
-	"verdict_attests_artifact",
-	"bead_scopes_decision",
-	"commit_implements_decision",
-	"learning_revises_decision",
+	"wasGeneratedBy",
+	"wasAssociatedWith",
+	"wasDerivedFrom",
+	"wasInformedBy",
+	"wasAttributedTo",
+	"wasInfluencedBy",
+	"wasRevisionOf",
+	"wasInvalidatedBy",
 }
 
 // TrustTiers is the closed, monotonic set of trust tiers (authored > inferred
