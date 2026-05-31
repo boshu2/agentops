@@ -1,0 +1,3 @@
+{"record":"node","id":"claim:65-jobs","type":"artifact","label":"stale doctrine claim: '65 jobs'","path":"docs/architecture/operating-loop.md"}
+{"record":"node","id":"d-operating-loop","type":"directive","label":"7-move agent operating loop","path":"GOALS.md"}
+{"record":"edge","edge_type":"directive_has_scenario","from_id":"d-operating-loop","to_id":"s-operating-loop-001","confidence":"high","evidence":"GOALS.md"}

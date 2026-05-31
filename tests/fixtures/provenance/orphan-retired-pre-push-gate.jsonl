@@ -1,0 +1,3 @@
+{"record":"node","id":"artifact:scripts/pre-push-gate.sh","type":"artifact","label":"retired pre-push-gate.sh reference","path":"scripts/pre-push-gate.sh"}
+{"record":"node","id":"d-hookless-first","type":"directive","label":"AgentOps 3.0 is hookless: CI is the authoritative gate","path":"GOALS.md"}
+{"record":"edge","edge_type":"directive_has_scenario","from_id":"d-hookless-first","to_id":"s-hookless-ci-gate-001","confidence":"high","evidence":"GOALS.md"}

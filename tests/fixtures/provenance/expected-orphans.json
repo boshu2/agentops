@@ -1,0 +1,39 @@
+{
+  "_comment": "Expected orphan findings for the future gate ag-x31t.6 (ao provenance trace --orphans --strict). Each fixture seeds one engineered artifact node that has NO inbound authored/inferred edge, so the gate must flag it. These are FAILING fixtures by design: they demonstrate the three audit gaps from epic ag-x31t (phantom scenario-hash-stability gate, retired-but-present pre-push-gate.sh, stale '65 jobs'). They become passing once a provenance edge wires each artifact back to its authoring directive.",
+  "schema": "agentops-provenance-orphan-fixture.v1",
+  "fixtures": [
+    {
+      "file": "orphan-scenario-hash-stability.jsonl",
+      "orphan_artifact_id": "gate:scenario-hash-stability",
+      "gap": "phantom-ci-gate",
+      "expected_finding": {
+        "severity": "error",
+        "code": "no_inbound_authored_edge",
+        "path": ".github/workflows/validate.yml",
+        "message": "artifact gate:scenario-hash-stability has no inbound authored/inferred provenance edge"
+      }
+    },
+    {
+      "file": "orphan-retired-pre-push-gate.jsonl",
+      "orphan_artifact_id": "artifact:scripts/pre-push-gate.sh",
+      "gap": "retired-but-present",
+      "expected_finding": {
+        "severity": "error",
+        "code": "no_inbound_authored_edge",
+        "path": "scripts/pre-push-gate.sh",
+        "message": "artifact artifact:scripts/pre-push-gate.sh has no inbound authored/inferred provenance edge"
+      }
+    },
+    {
+      "file": "orphan-stale-65-jobs.jsonl",
+      "orphan_artifact_id": "claim:65-jobs",
+      "gap": "stale-doctrine-claim",
+      "expected_finding": {
+        "severity": "error",
+        "code": "no_inbound_authored_edge",
+        "path": "docs/architecture/operating-loop.md",
+        "message": "artifact claim:65-jobs has no inbound authored/inferred provenance edge"
+      }
+    }
+  ]
+}
