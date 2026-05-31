@@ -3906,6 +3906,56 @@ ao next-work materialize [flags]
 
 ---
 
+### `ao provenance`
+
+Append-only write model for the SDLC provenance/intent graph
+
+```
+ao provenance [command]
+```
+
+**Subcommands:**
+
+#### `ao provenance add`
+
+Append one schema-valid, hash-chained provenance edge linking a source
+
+```
+ao provenance add <from-id> <to-id> [flags]
+```
+
+**Flags:**
+
+```
+      --evidence string     Optional evidence pointer (path, commit, CI run URL, event id)
+      --from-type string    Source node type (decision|artifact|bead|...) (default "decision")
+  -h, --help                help for add
+      --json                Emit the sealed edge as JSON
+      --relation string     Typed relation (required), e.g. decision_produces_artifact
+      --to-type string      Target node type (decision|artifact|bead|...) (default "artifact")
+      --trust-tier string   Trust tier (authored|inferred|mined) (default "authored")
+      --ts string           Override the UTC RFC3339 timestamp (defaults to now)
+```
+
+#### `ao provenance list`
+
+Read the provenance edges recorded in docs/provenance/ledger.jsonl, in
+
+```
+ao provenance list [flags]
+```
+
+**Flags:**
+
+```
+      --from-id string    Filter to edges whose from_id matches
+  -h, --help              help for list
+      --json              Emit machine-readable JSON
+      --relation string   Filter to edges with this relation
+```
+
+---
+
 ### `ao registry`
 
 Query the unified registry

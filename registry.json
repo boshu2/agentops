@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-30T17:19:18Z",
+  "generated_at": "2026-05-31T16:54:58Z",
   "summary": {
     "skills": 81,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 71,
-    "capabilities": 166
+    "cli_commands": 72,
+    "capabilities": 167
   },
   "surfaces": {
     "skills": [
@@ -1229,6 +1229,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao provenance",
+        "path": "cli/cmd/ao/",
+        "purpose": "Write and read the SDLC provenance edge ledger",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao quick-start",
         "path": "cli/cmd/ao/",
         "purpose": "Set up AgentOps in your project (5 minutes)",
@@ -1421,9 +1428,9 @@
     ]
   },
   "capability_summary": {
-    "total": 166,
+    "total": 167,
     "skills": 81,
-    "cli_commands": 71,
+    "cli_commands": 72,
     "gates": 11,
     "reference_impls": 3
   },
@@ -1479,6 +1486,7 @@
     "orchestrate",
     "patterns",
     "pool",
+    "provenance",
     "quick-start",
     "ratchet",
     "reconcile",
@@ -4468,6 +4476,23 @@
         "--json",
         "--output",
         "--tier",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.provenance",
+      "name": "ao provenance",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Write and read the SDLC provenance edge ledger",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"
