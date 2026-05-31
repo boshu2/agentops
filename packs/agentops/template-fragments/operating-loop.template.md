@@ -28,5 +28,7 @@ Context compounds through the rig's `.agents/` corpus, not chat history:
 - `ao maturity --scan` — find stale entries; `--evict` archives low-utility knowledge.
 
 Durable decisions/attempts/verdicts also land on the bead (`gc bd update
---set-metadata ...`) — the bead/Dolt substrate is the cross-session memory.
+--set-metadata ...`) — the bead/Dolt metadata is the write-model projection of
+the cross-session memory; the append-only `docs/provenance/ledger.jsonl` is the
+source of truth and wins on disagreement.
 {{ end }}
