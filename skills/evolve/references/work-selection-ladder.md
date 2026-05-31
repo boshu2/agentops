@@ -64,8 +64,17 @@ skills/evolve/scripts/duplicate-work-guard.sh "<candidate title>" || {
 # covers it (exact title OR significant-token overlap). exit 0 → safe to create.
 ```
 
-This complements the loop's origin/main fast-forward (the cron syncs local
-`main` to `origin/main` before discovery so already-merged work is not re-seen).
+This complements the loop's origin/main fast-forward: the cron runs
+`skills/evolve/scripts/sync-main-to-origin.sh` before discovery (wired into
+`scripts/overnight-evolve.sh`), which fetches origin and fast-forwards local
+`main` to `origin/main` so discovery diffs candidate slices against the true
+merge base — already-merged work reports as done, not re-seen (ag-6jt). Run it
+manually in any rpi worktree whose local `main` may be stale:
+
+```bash
+skills/evolve/scripts/sync-main-to-origin.sh
+# → "DIFF_BASE: origin/main <sha>" — diff slices against THIS, not local main.
+```
 
 **Step 3.4: Testing improvements**
 
