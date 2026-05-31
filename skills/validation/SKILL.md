@@ -81,6 +81,13 @@ Run the DAG in [references/dag.md](references/dag.md) — STEP 1 (vibe) → 1.5 
 
 See [references/flags.md](references/flags.md) for flag interactions, precedence, and combined-flag examples.
 
+## Blind Sub-Agent Judge (author ≠ validator, same-session OK)
+
+The acceptance verdict this phase certifies MUST be produced by a context that did not author the code (`ag-9jle.5`, the no-self-grading invariant from `ag-lmdx.4`). Validation MAY run inside the authoring session, but the judge MUST be a **blind sub-agent**: a fresh, context-isolated agent given **only** the diff/artifact + the acceptance scenarios (the bead's `## Scenarios` block or the `.feature` file) — **never** the authoring conversation, plan, or reasoning.
+
+- STEP 1 delegates to `/vibe`, whose council judges are context-isolated sub-agents and whose Step 4.5 spawns the blind judge and records `judge_id` (sub-agent context) distinct from `author_id` (authoring context). This is the acceptance judge — do NOT replace it with an inline self-review by the authoring orchestrator.
+- **Refuse** to certify acceptance (output `<promise>DONE</promise>`) when no context-isolated judge produced the verdict — i.e. when `judge_id == author_id`. Re-run the verdict through a blind sub-agent judge instead. The only escape is `/vibe --allow-self` (inline fallback when no sub-agent runtime is available), which stamps the verdict as self-graded; `ao turn verify` then reports it as waived, not independently validated.
+
 ## Expensive Command Policy
 
 Routine validation is targeted by default. Broad proof commands such as
