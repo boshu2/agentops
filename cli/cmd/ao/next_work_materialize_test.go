@@ -213,6 +213,51 @@ func TestNextWorkMaterialize_SkipsConsumedAndHeld(t *testing.T) {
 	}
 }
 
+// TestNextWorkMaterialize_SkipsBatchConsumedEntry is the ag-mjlg regression
+// contract. The real next-work.jsonl marks consumption at the BATCH level
+// (entry.consumed / consumed_by), not per item — so an entry can be fully
+// consumed while its items carry no item-level consumed flag.
+//
+//	Given a next-work.jsonl entry whose batch-level consumed is true with an
+//	     item that has no item-level consumed flag
+//	When materialize enumerates candidates
+//	Then that entry's items are skipped and produce zero bd-create calls.
+func TestNextWorkMaterialize_SkipsBatchConsumedEntry(t *testing.T) {
+	consumedBy := "soc-xlw8"
+	consumedAt := "2026-05-08T09:30:00-04:00"
+	// Item itself looks fresh — no item-level consumed flag, no bead_id —
+	// exactly how historical queue entries store their items.
+	freshLooking := rpi.NextWorkItem{
+		Title: "Historical work already handled by soc-xlw8", Type: "task",
+		Severity: "medium", Source: "post-mortem-finding", Description: "Done long ago.",
+	}
+	entry := rpi.NextWorkEntry{
+		SourceEpic:  "soc-9xn0",
+		Timestamp:   "2026-05-07T21:45:29-04:00",
+		Items:       []rpi.NextWorkItem{freshLooking},
+		Consumed:    true,
+		ClaimStatus: "consumed",
+		ConsumedBy:  &consumedBy,
+		ConsumedAt:  &consumedAt,
+	}
+	data, err := json.Marshal(entry)
+	if err != nil {
+		t.Fatalf("marshal consumed entry: %v", err)
+	}
+	path := writeMaterializeQueue(t, string(data))
+
+	out, calls, err := runMaterialize(t, nil, matOpts{file: path})
+	if err != nil {
+		t.Fatalf("materialize: %v", err)
+	}
+	if len(calls) != 0 {
+		t.Fatalf("batch-consumed entry must yield zero bd-create calls, got %d: %v", len(calls), calls)
+	}
+	if !strings.Contains(out, "no unmaterialized items") {
+		t.Errorf("expected no-op summary for a fully batch-consumed queue, got: %s", out)
+	}
+}
+
 func TestNextWorkMaterialize_DryRunDoesNotMutate(t *testing.T) {
 	item := rpi.NextWorkItem{
 		Title: "Candidate item", Type: "improvement", Severity: "medium",

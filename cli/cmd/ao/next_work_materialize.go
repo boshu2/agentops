@@ -194,6 +194,14 @@ func enumerateMaterializeCandidates(path, sourceEpicFilter string) ([]materializ
 		if sourceEpicFilter != "" && entry.SourceEpic != sourceEpicFilter {
 			continue
 		}
+		// Consumption is recorded at the BATCH level in the real queue
+		// (entry.consumed / consumed_by set after the items[] array); the
+		// per-item consumed flag is rarely populated. Skip a batch-consumed
+		// entry wholesale so historically-consumed work is not re-materialized
+		// into stale duplicate beads.
+		if isEntryConsumed(&entry) {
+			continue
+		}
 		for itemIdx, item := range entry.Items {
 			if !isMaterializable(item) {
 				continue
@@ -207,6 +215,15 @@ func enumerateMaterializeCandidates(path, sourceEpicFilter string) ([]materializ
 		}
 	}
 	return candidates, nil
+}
+
+// isEntryConsumed reports whether a batch entry is already consumed at the
+// entry level (the dominant case: the legacy evolve/rpi-loop consumer marks the
+// whole entry consumed via entry.consumed / consumed_by). Items inside such an
+// entry must not be materialized, even though their per-item consumed flags are
+// unset. Mirrors the entry half of rpi.IsFullyConsumed.
+func isEntryConsumed(entry *nextWorkEntry) bool {
+	return entry.Consumed || rpi.NormalizeClaimStatus(entry.Consumed, entry.ClaimStatus) == "consumed"
 }
 
 // isMaterializable reports whether an item should become a durable bead.
