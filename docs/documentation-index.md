@@ -327,6 +327,7 @@ Bridge / framing docs:
 - [AgentOps 3.0 PMF Scenario — evidence bundle](releases/v3.0/pmf-scenario.md) — Single-day autonomous /evolve drain record: 11 P1 closures, 11 commits, friction modes, durable artifacts (PG2)
 - [Scope Escape Report](contracts/scope-escape-report.md) — Structured template for agent scope-escape reporting
 - [Dream Report Contract](contracts/dream-report.md) — Canonical `summary.json` and `summary.md` schema for Dream outputs
+- [Dreaming/Memory Writers Characterization](contracts/dreaming-writers-characterization.md) — Spike (ag-cj8mk): the three foreign Dreaming/memory writers (Anthropic Managed-Agents Dreaming `/v1/dreams`→memory store, OpenClaw memory-wiki indexer, local gc-dream/T3 synthesis), their output shapes/destinations, the normalized `.agents/learnings/*.md` target via `ao corpus capture`, the NOT-ZDR holdout/PII constraint enforced by the ag-onf37 leak guard, and GO on the Claude-side REST pull feeder
 - [dispatch-checklist.md](contracts/dispatch-checklist.md) — Standard references for agent dispatch prompts
 - [Headless Invocation Standards](contracts/headless-invocation-standards.md) — Required flags, tool allowlists, and timeout strategy for non-interactive Claude/Codex execution
 - [Codex Skill API Contract](contracts/codex-skill-api.md) — Source of truth for Codex runtime skill structure, frontmatter, discovery paths, and multi-agent primitives
