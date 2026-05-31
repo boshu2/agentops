@@ -154,6 +154,8 @@ When crank drives PRs to `main` itself (orchestrator-merge model), reconcile eac
 5. **Close on confirmed-MERGED only.** `bd close` a child bead ONLY after `gh pr view <pr> --json state -q .state` returns `MERGED` — never on a log line or batch `bd --json` query (those flake to null/0).
 6. **Epic-close gate.** **NEVER close a parent epic before EVERY child PR is independently confirmed `MERGED`** — re-query `gh pr view --json state` per child first. One non-merged child aborts the close. (Post-mortem governance checkpoint: this is a hard gate, not advisory.)
 
+> Enforce steps 5–6 with the committed scripts, not by hand: `scripts/reconcile-pr.sh <pr> <bead> [--epic <epic>]` (polls checks, reruns the lone correctness-ubuntu flake once, merges `--squash --admin`, closes the bead only on confirmed `MERGED`) and `scripts/check-epic-children-closed.sh <epic>` (the no-epic-close-with-open-child gate). Tests: `tests/scripts/reconcile-pr.bats`, `tests/scripts/check-epic-children-closed.bats`.
+
 ## The FIRE Loop
 
 Crank repeats FIRE (Find → Ignite → Reap → Vibe → Escalate) for each wave until all issues are CLOSED (beads) or all tasks are completed (TaskList). Read `references/wave-patterns.md` for the loop model, parallel wave rules, and acceptance check details.
