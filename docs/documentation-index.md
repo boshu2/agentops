@@ -217,6 +217,8 @@ Bridge / framing docs:
 - [vs Tons-of-Skills](comparisons/vs-tons-of-skills.md) — AgentOps vs `jeremylongshore/claude-code-plugins-plus-skills` (volume marketplace lane)
 - [vs everything-claude-code](comparisons/vs-everything-claude-code.md) — AgentOps vs `affaan-m/everything-claude-code` (cross-harness lane)
 - [Competitive Radar](comparisons/competitive-radar.md) — Current market read and improvement pressure
+- [Convergence Ledger](comparisons/convergence-ledger.md) — Dated record of external parties independently arriving at the AgentOps thesis
+- [Google SRE Convergence](comparisons/agentops-vs-google-sre-convergence.md) — Encoding map: where Google's 2026 SRE AI whitepaper aligns with AgentOps doctrine
 
 ## Positioning
 
