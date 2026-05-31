@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-30T17:19:18Z",
+  "generated_at": "2026-05-31T19:47:39Z",
   "summary": {
     "skills": 81,
     "hooks": 0,
@@ -522,7 +522,7 @@
         "path": "skills/skill-builder/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 2
+        "reference_count": 3
       },
       {
         "name": "using-agentops",
@@ -3067,7 +3067,7 @@
         "ao flywheel close-loop"
       ],
       "path": "skills/skill-builder/",
-      "references": 2
+      "references": 3
     },
     {
       "sku": "skill:standards",
