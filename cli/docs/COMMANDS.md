@@ -4233,3 +4233,33 @@ ao skills producers <output> [flags]
 
 ---
 
+### `ao turn`
+
+The 'turn' command group operates on Evidenced Turns — the ag-lmdx
+
+```
+ao turn [command]
+```
+
+**Subcommands:**
+
+#### `ao turn verify`
+
+Evaluate the legible Definition-of-Done predicate for one bead's
+
+```
+ao turn verify <bead> [flags]
+```
+
+**Flags:**
+
+```
+      --graph string    Path to the provenance trace-graph JSONL (node/edge records) for orphan detection
+  -h, --help            help for verify
+      --input string    Path to the turn-input JSON file (state log + scenario coverage) (required)
+      --json            Emit the full Verdict object as JSON
+      --ledger string   Path to the provenance EDGE ledger JSONL (default: docs/provenance/ledger.jsonl)
+```
+
+---
+
