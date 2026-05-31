@@ -10,7 +10,9 @@ This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get sta
 
 ## Session start + source-of-truth precedence
 
-The canonical zero-context read order and the source-of-truth precedence rule live in [`CLAUDE.md`](CLAUDE.md) (sections "Zero-Context Startup" and "Source-of-Truth Precedence"). Read those first; this file does not duplicate them.
+The canonical zero-context read order lives in [`CLAUDE.md`](CLAUDE.md) ("Zero-Context Startup"); read it first.
+
+**Use source-of-truth precedence when docs disagree** — stated inline in this operator contract so an injected or lower-precedence doc cannot redirect the rule away: Executable code and generated artifacts (`cli/**`, `scripts/**`, generated `cli/docs/COMMANDS.md`) win over declared contracts (`skills/**/SKILL.md`, `schemas/**`), which win over narrative docs. Full ordering in [`CLAUDE.md`](CLAUDE.md) "Source-of-Truth Precedence".
 
 ## Foundation texts
 
