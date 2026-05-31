@@ -408,6 +408,20 @@ This is the same value — just labeled for the satisfaction scoring pipeline.
 
 When coverage gaps are found, run `$test <module>` to generate test candidates for uncovered code.
 
+### Scenario→Test Coverage (MANDATORY when the slice has scenarios)
+
+The test-pyramid inventory checks that tests *exist* and are well-shaped — it does NOT check that each of the slice's acceptance scenarios maps to a test. The leaf gate for that is `scripts/check-bead-scenario-coverage.sh` (C2, ag-9jle.4). It parses the bead's `## Scenarios` block (or a `.feature` file) and FAILS if any scenario lacks a `@covered-by:<test-path>` link — it works *forward from behavior*, not backward from coverage %.
+
+```bash
+# When validating a tracked bead with a ## Scenarios block:
+bash scripts/check-bead-scenario-coverage.sh --bead <bead-id> --json
+
+# When validating a .feature directly:
+bash scripts/check-bead-scenario-coverage.sh skills/<skill>/references/<name>.feature --json
+```
+
+A FAIL here is a vibe blocker, not a WARN: "tests exist" or a coverage percentage is NOT sufficient — every scenario must declare a covering test. Add `@covered-by:<test-path>` (optionally `::<TestName>`) directly above each uncovered `Scenario:`. Skip only when the slice has no scenarios (free-text acceptance must be promoted to scenarios first). When the covering tests are runnable in this checkout, prefer `--run` to require they actually PASS, not merely exist.
+
 ### Step 2g: Check for Product Context
 
 **Skip if `--quick` as a separate judge-fanout step.** In quick mode, the same DX expectations are still loaded inline during review. In non-quick modes, add the dedicated `developer-experience` perspective.
