@@ -38,7 +38,7 @@ package drrebuild
 
 import (
 	"bufio"
-	"crypto/sha1" // #nosec G505 -- git object IDs are SHA-1 by definition; not a security primitive here.
+	"crypto/sha1" // #nosec G505 // nosemgrep: use-of-weak-crypto -- git object IDs are SHA-1 by definition; not a security primitive here.
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -136,7 +136,7 @@ func (m MapBlobStore) Resolve(contentHash string) ([]byte, bool) {
 // a ledger content_hash be resolved against the real git object store during
 // production recovery.
 func GitBlobOID(content []byte) string {
-	h := sha1.New() // #nosec G401 -- git blob IDs are SHA-1; matching git, not securing anything.
+	h := sha1.New() // #nosec G401 // nosemgrep: use-of-weak-crypto -- git blob IDs are SHA-1; matching git, not securing anything.
 	fmt.Fprintf(h, "blob %d\x00", len(content))
 	h.Write(content)
 	return hex.EncodeToString(h.Sum(nil))
