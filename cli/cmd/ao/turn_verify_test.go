@@ -18,6 +18,7 @@ func resetTurnVerifyFlags() {
 	turnVerifyInput = ""
 	turnVerifyLedger = ""
 	turnVerifyJSON = false
+	turnVerifyAllowSelf = false
 }
 
 // closedTransitionsJSON builds a sealed ""->in_progress->validated->closed log
@@ -42,10 +43,21 @@ func closedTransitions(t *testing.T, bead string) []turnstate.Transition {
 	return log
 }
 
-// writeTurnInput marshals a turn-input file to a temp path and returns it.
+// writeTurnInput marshals a turn-input file to a temp path and returns it. It
+// records a distinct author/judge by default so the no-self-grading invariant
+// (author_neq_validator, ag-lmdx.4) passes for the otherwise-complete fixtures;
+// tests exercising the guard set author_id/judge_id explicitly via
+// writeTurnInputGraded.
 func writeTurnInput(t *testing.T, bead string, transitions []turnstate.Transition, scenarios []evidencedturn.Scenario) string {
 	t.Helper()
-	tf := turnInputFile{BeadID: bead, Transitions: transitions, Scenarios: scenarios}
+	return writeTurnInputGraded(t, bead, transitions, scenarios, "session:author", "session:judge")
+}
+
+// writeTurnInputGraded is writeTurnInput with explicit author/judge identities,
+// for tests of the author_neq_validator predicate.
+func writeTurnInputGraded(t *testing.T, bead string, transitions []turnstate.Transition, scenarios []evidencedturn.Scenario, authorID, judgeID string) string {
+	t.Helper()
+	tf := turnInputFile{BeadID: bead, Transitions: transitions, Scenarios: scenarios, AuthorID: authorID, JudgeID: judgeID}
 	b, err := json.Marshal(tf)
 	if err != nil {
 		t.Fatalf("marshal turn input: %v", err)
@@ -201,8 +213,48 @@ func TestTurnVerify_JSONShape(t *testing.T) {
 	if v.Done != true {
 		t.Errorf("done = %v, want true", v.Done)
 	}
-	if len(v.Predicates) != 6 {
-		t.Errorf("len(predicates) = %d, want 6", len(v.Predicates))
+	if len(v.Predicates) != 7 {
+		t.Errorf("len(predicates) = %d, want 7", len(v.Predicates))
+	}
+}
+
+// TestTurnVerify_SelfGradedRefused: a verdict whose judge_id equals author_id
+// is refused (the no-self-grading invariant, ag-lmdx.4) and exits non-zero.
+func TestTurnVerify_SelfGradedRefused(t *testing.T) {
+	resetTurnVerifyFlags()
+	bead := "ag-lmdx.5"
+	input := writeTurnInputGraded(t, bead, closedTransitions(t, bead),
+		[]evidencedturn.Scenario{{Slug: "ao-turn-verify", HasPassingTest: true, EvidenceResolved: true}},
+		"session:same", "session:same")
+	ledger := writeLedger(t, []string{beadEdgeLine(t, bead)})
+	graph := writeCleanGraph(t, bead)
+
+	out, err := executeCommand("turn", "verify", bead, "--input", input, "--ledger", ledger, "--graph", graph)
+	if err == nil {
+		t.Fatalf("self-graded verdict must exit non-zero\noutput=%s", out)
+	}
+	if !strings.Contains(out, "[FAIL] author_neq_validator") {
+		t.Errorf("output missing author_neq_validator FAIL:\n%s", out)
+	}
+}
+
+// TestTurnVerify_AllowSelfPasses: --allow-self waives the no-self-grading guard
+// for the inline fallback path; an otherwise-complete self-graded turn is DONE.
+func TestTurnVerify_AllowSelfPasses(t *testing.T) {
+	resetTurnVerifyFlags()
+	bead := "ag-lmdx.5"
+	input := writeTurnInputGraded(t, bead, closedTransitions(t, bead),
+		[]evidencedturn.Scenario{{Slug: "ao-turn-verify", HasPassingTest: true, EvidenceResolved: true}},
+		"session:same", "session:same")
+	ledger := writeLedger(t, []string{beadEdgeLine(t, bead)})
+	graph := writeCleanGraph(t, bead)
+
+	out, err := executeCommand("turn", "verify", bead, "--input", input, "--ledger", ledger, "--graph", graph, "--allow-self")
+	if err != nil {
+		t.Fatalf("turn verify --allow-self should succeed, got err=%v\noutput=%s", err, out)
+	}
+	if !strings.Contains(out, "VERDICT: DONE") {
+		t.Errorf("output missing DONE verdict with --allow-self:\n%s", out)
 	}
 }
 
