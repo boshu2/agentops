@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-31T19:47:39Z",
+  "generated_at": "2026-05-31T20:11:38Z",
   "summary": {
     "skills": 81,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 71,
-    "capabilities": 166
+    "cli_commands": 73,
+    "capabilities": 168
   },
   "surfaces": {
     "skills": [
@@ -1229,6 +1229,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao provenance",
+        "path": "cli/cmd/ao/",
+        "purpose": "Write and read the SDLC provenance edge ledger",
+        "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao quick-start",
         "path": "cli/cmd/ao/",
         "purpose": "Set up AgentOps in your project (5 minutes)",
@@ -1385,6 +1392,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao turn",
+        "path": "cli/cmd/ao/",
+        "purpose": "Evidenced-Turn operations (the enforced unit-of-work definition-of-done)",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao validate",
         "path": "cli/cmd/ao/",
         "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
@@ -1421,9 +1435,9 @@
     ]
   },
   "capability_summary": {
-    "total": 166,
+    "total": 168,
     "skills": 81,
-    "cli_commands": 71,
+    "cli_commands": 73,
     "gates": 11,
     "reference_impls": 3
   },
@@ -1479,6 +1493,7 @@
     "orchestrate",
     "patterns",
     "pool",
+    "provenance",
     "quick-start",
     "ratchet",
     "reconcile",
@@ -1495,6 +1510,7 @@
     "skills",
     "status",
     "trace",
+    "turn",
     "validate",
     "version",
     "vibe-check",
@@ -2536,7 +2552,8 @@
         "ao metrics cite",
         "ao ratchet",
         "ao rpi phased",
-        "ao search"
+        "ao search",
+        "ao turn verify"
       ],
       "path": "skills/pre-mortem/",
       "references": 14
@@ -3311,7 +3328,8 @@
         "ao lookup",
         "ao metrics cite",
         "ao ratchet",
-        "ao scenario list"
+        "ao scenario list",
+        "ao turn verify"
       ],
       "path": "skills/validation/",
       "references": 13
@@ -3337,7 +3355,8 @@
         "ao lookup",
         "ao metrics cite",
         "ao ratchet",
-        "ao search"
+        "ao search",
+        "ao turn verify"
       ],
       "path": "skills/vibe/",
       "references": 22
@@ -4473,6 +4492,23 @@
       "path": "cli/cmd/ao/"
     },
     {
+      "sku": "cmd:ao.provenance",
+      "name": "ao provenance",
+      "type": "cli-command",
+      "bounded_context": "BC1",
+      "purpose": "Write and read the SDLC provenance edge ledger",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
       "sku": "cmd:ao.quick-start",
       "name": "ao quick-start",
       "type": "cli-command",
@@ -4811,6 +4847,23 @@
         "--config",
         "--dry-run",
         "--graph",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.turn",
+      "name": "ao turn",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Evidenced-Turn operations (the enforced unit-of-work definition-of-done)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
         "--json",
         "--output",
         "--verbose"

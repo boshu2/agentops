@@ -1,0 +1,13 @@
+{
+  "schema_version": "agentops-sdlc-provenance.v1",
+  "from_id": "ag-x31t.2",
+  "from_type": "decision",
+  "to_id": "schemas/agentops-sdlc-provenance.v1.schema.json",
+  "to_type": "artifact",
+  "relation": "wasGeneratedBy",
+  "evidence_ref": ".agents/council/2026-05-30-debate-provenance-substrate.md",
+  "ts": "2026-05-31T00:00:00Z",
+  "prev_hash": "",
+  "payload_hash": "cd137deeb225f94ee884b3703485a0effd56937b57f191a10981cc3cc4d4dcee",
+  "hash": "0e7224e46af26b3e7b35cfcad9b4bc9838629ae084e48fe024045ea51a5c9ada"
+}

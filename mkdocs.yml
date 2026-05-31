@@ -10,6 +10,13 @@ edit_uri: edit/main/docs/
 docs_dir: docs
 site_dir: _site
 
+# Operationalized methodology corpora are repo artifacts (kernel + operator library
+# + validators + a fair-use quote bank), not website content — kept tracked in the
+# repo but excluded from the published site (avoids re-hosting source material and
+# keeps internal scaffolding out of nav/search).
+exclude_docs: |
+  convergence/operationalized/
+
 # Keep building even when the knowledge graph links outside docs/ (e.g., ../skills/).
 # Strict link checking runs as a separate CI job via tests/docs/validate-links.sh + lychee.
 strict: false
@@ -176,6 +183,7 @@ nav:
       - Architecture Overview: ARCHITECTURE.md
       - Software Factory: software-factory.md
       - Intent-to-Loop Hexagon: architecture/intent-to-loop-hexagon.md
+      - Fungibility Charter: architecture/fungibility-charter.md
       - Behavior-Shaping Environment: architecture/behavior-shaping-environment.md
       - Codex Hookless Lifecycle: architecture/codex-hookless-lifecycle.md
       - Primitive Chains: architecture/primitive-chains.md
@@ -230,6 +238,11 @@ nav:
       - vs Superpowers: comparisons/vs-superpowers.md
       - vs Claude-Flow: comparisons/vs-claude-flow.md
       - vs Compound Engineer: comparisons/vs-compound-engineer.md
+  - Convergence:
+      - convergence/index.md
+      - The Reading: convergence/the-reading.md
+      - Ledger: convergence/ledger.md
+      - Google SRE: convergence/google-sre.md
   - Reference:
       - reference/index.md
       - Glossary: GLOSSARY.md

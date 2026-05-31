@@ -151,6 +151,7 @@ The loop is operational discipline. The architectural seams are structural. They
 
 - [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-15-cdlc-dojo-doctrine.md) — doctrine source (promote changes here first)
 - [Ports and Adapters](ports-and-adapters.md) — architectural seams the loop runs through
+- [Fungibility Charter](fungibility-charter.md) — the six doctrinal commitments behind the loop's stateless, role-free, single-model-default agents
 - [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) — process-level ports/adapters from BDD intent through evidence ratchet
 - [ADR-0001](../adr/ADR-0001-ddd-hexagonal-adoption.md) — DDD + Hexagonal adoption
 - [CDLC](../cdlc.md) — conceptual seven phases this loop runs inside

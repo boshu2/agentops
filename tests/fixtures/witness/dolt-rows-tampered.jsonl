@@ -1,0 +1,3 @@
+{"schema_version":"agentops-sdlc-provenance.v1","from_id":"commit:abc123","from_type":"commit","to_id":"ag-lmdx.3","to_type":"bead","relation":"wasRevisionOf","evidence_ref":"ci://run/9","trust_tier":"inferred","ts":"2026-05-30T02:00:00Z"}
+{"schema_version":"agentops-sdlc-provenance.v1","from_id":"ag-lmdx","from_type":"bead","to_id":"ag-lmdx.3","to_type":"decision","relation":"wasInfluencedBy","evidence_ref":"ag-lmdx","trust_tier":"mined","ts":"2026-05-30T00:00:00Z"}
+{"schema_version":"agentops-sdlc-provenance.v1","from_id":"ag-lmdx.3","from_type":"decision","to_id":"scripts/witness-dolt-jsonl-crosscheck.sh","to_type":"artifact","relation":"wasGeneratedBy","evidence_ref":"GOALS.md","trust_tier":"authored","ts":"2026-05-30T01:00:00Z"}
