@@ -1219,6 +1219,18 @@ jobs:
           chmod +x scripts/check-provenance-orphans.sh
           AO_BIN="$PWD/cli/bin/ao" ./scripts/check-provenance-orphans.sh
 
+      - name: Witness Dolt→JSONL cross-check gate (scripts/witness-dolt-jsonl-crosscheck.sh)
+        # T1 (≤5min, ag-lmdx.3). Blocking: the watcher-that-watches-the-watcher.
+        # Re-derives the hash-chained JSONL witness FROM the Dolt projection and
+        # hash-compares against the committed witness — the inverse of drrebuild
+        # (#646, which rebuilds Dolt FROM the witness). Hermetic: CI has no live
+        # Dolt, so it drives committed fixtures (faithful + tampered) through the
+        # re-derive+hash-compare helper and asserts the gate fires correctly.
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.shell == 'true'
+        run: |
+          chmod +x scripts/witness-dolt-jsonl-crosscheck.sh
+          ./scripts/witness-dolt-jsonl-crosscheck.sh
+
       - name: Scenario→test linkage gate (scripts/check-scenario-test-linkage.sh)
         # T1 (≤5min, soc-63xfx). Every Gherkin Scenario in skills/*/references/*.feature
         # must carry a @covered-by:<test-path> tag OR be allowlisted (doc-only).
