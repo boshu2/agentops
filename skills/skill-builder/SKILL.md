@@ -162,6 +162,22 @@ skills-codex/<name>/
 | SKILL.md > 250 lines | Mode generated too much inline content | Move section bodies to `references/<topic>.md`; reference inline as `[text](references/<topic>.md)` |
 | `from-pattern` produces no SKILL.md | Expected behavior — passthrough only in v1 | Use `from-scratch` or `absorb-external` if you need a SKILL.md draft |
 
+## Corpus authoring health
+
+Skill selection is pure LLM reasoning over the `description` field, so a missing
+trigger phrase is a skill that silently never fires. The per-skill auditor checks
+this only as a WARN, so the gap accumulates. Audit the whole corpus at once:
+
+```bash
+python3 skills/skill-builder/scripts/scan_descriptions.py skills          # remediation report
+python3 skills/skill-builder/scripts/scan_descriptions.py skills --strict # exit 1 on any miss
+```
+
+The scanner mirrors `skill-auditor`'s three-form trigger detection and adds a
+suggested `Triggers:` stub per offender. See
+[references/skill-authoring-standard.md](references/skill-authoring-standard.md)
+for the full authoring doctrine and the best-practice-to-enforcement crosswalk.
+
 ## See Also
 
 - [skill-auditor](../skill-auditor/SKILL.md) — companion audit gate, invoked by build self-check
@@ -174,4 +190,5 @@ skills-codex/<name>/
 
 - [references/skill-template.md](references/skill-template.md) — canonical SKILL.md template + auditor checklist + PRODUCT.md alignment
 - [references/agentops-skill-factory.md](references/agentops-skill-factory.md) — clean-room factory workflow and productization rules
+- [references/skill-authoring-standard.md](references/skill-authoring-standard.md) — clean-room best-practices doctrine + best-practice-to-enforcement crosswalk; backs the `scan_descriptions.py` trigger scanner
 - [references/skill-builder.feature](references/skill-builder.feature) — Executable spec: mode dispatch, materialize from template, Codex parity bundle, self-audit + factory score (soc-qk4b)
