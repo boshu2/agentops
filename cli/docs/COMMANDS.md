@@ -3937,6 +3937,22 @@ ao provenance add <from-id> <to-id> [flags]
       --ts string           Override the UTC RFC3339 timestamp (defaults to now)
 ```
 
+#### `ao provenance export`
+
+Read docs/provenance/ledger.jsonl, canonically sort its edges by
+
+```
+ao provenance export [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help     help for export
+      --json     Emit a single indented JSON array instead of JSONL
+      --verify   Verify the re-chained export and print only a one-line summary
+```
+
 #### `ao provenance list`
 
 Read the provenance edges recorded in docs/provenance/ledger.jsonl, in
@@ -3952,6 +3968,24 @@ ao provenance list [flags]
   -h, --help              help for list
       --json              Emit machine-readable JSON
       --relation string   Filter to edges with this relation
+```
+
+#### `ao provenance trace`
+
+Audit a provenance trace-graph for orphans: engineered artifact nodes
+
+```
+ao provenance trace [flags]
+```
+
+**Flags:**
+
+```
+      --graph string   Path to the JSONL trace-graph to audit (required)
+  -h, --help           help for trace
+      --json           Emit each finding as one JSON object per line
+      --orphans        Audit for artifact nodes with no inbound provenance edge
+      --strict         Exit non-zero when any orphan exists
 ```
 
 ---
