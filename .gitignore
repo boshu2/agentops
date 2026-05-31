@@ -72,6 +72,7 @@ skills/vibe/README.md
 # Go binaries (built locally)
 cli/ao
 cli/bin/ao
+cli/bin/witness-crosscheck
 cli/cmd/ao/ao
 cli/cmd/ao/ao-test-bin
 cli/coverage.out
