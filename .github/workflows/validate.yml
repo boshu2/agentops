@@ -37,6 +37,7 @@ jobs:
       bats: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.bats }}
       ci: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.ci }}
       contracts: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.contracts }}
+      goals: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.goals }}
       learning: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.learning }}
       markdown: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.markdown }}
     steps:
@@ -92,6 +93,32 @@ jobs:
             contracts:
               - 'schemas/**'
               - 'docs/contracts/**'
+              # redteam-pack target globs (ag-nl1u): every file the
+              # security-suite redteam pack
+              # (skills/security-suite/references/agentops-redteam-pack.json)
+              # asserts behavioral contracts against MUST re-run the
+              # contracts-sync canaries when edited — otherwise a break to a
+              # guarded file lands without the canary that guards it (the #634
+              # regression). The guard test
+              # tests/scripts/test-pathfilter-gate-coverage.sh asserts this
+              # list stays a superset of the pack's target globs.
+              - 'AGENTS.md'
+              - 'docs/ARCHITECTURE.md'
+              - 'docs/CI-CD.md'
+              - 'docs/strategic-direction.md'
+              - 'docs/standards/shell-script-standards.md'
+              - 'skills/security/**'
+              - 'skills/security-suite/**'
+            goals:
+              # correctness/doctrine gates that police GOALS.md + the executable
+              # spec scenarios (ag-n4m7): a GOALS.md-only or scenario-only edit
+              # must trigger the directive↔scenario link gates, which previously
+              # ran only on go/docs/ci and silently SKIPPED on these paths (the
+              # #591/#593 phantom-scenario regression). docs/** already covers
+              # the ADR; GOALS.md + spec/scenarios/** are added explicitly here.
+              - 'GOALS.md'
+              - 'spec/scenarios/**'
+              - 'docs/adr/ADR-0003*'
             learning:
               - '.agents/learnings/**'
             markdown:
@@ -1025,7 +1052,7 @@ jobs:
       needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' ||
       needs.changes.outputs.eval == 'true' || needs.changes.outputs.ci == 'true' ||
       needs.changes.outputs.docs == 'true' || needs.changes.outputs.contracts == 'true' ||
-      needs.changes.outputs.learning == 'true'
+      needs.changes.outputs.learning == 'true' || needs.changes.outputs.goals == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -1036,14 +1063,14 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Go
-        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
         uses: actions/setup-go@v6
         with:
           go-version: '1.26.3'
           cache-dependency-path: cli/go.sum
 
       - name: Build ao binary
-        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.eval == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
         run: |
           cd cli && go build -o bin/ao ./cmd/ao
 
@@ -1060,18 +1087,18 @@ jobs:
           ./scripts/check-flywheel-compounding-snapshot.sh
 
       - name: Validate GOALS.md structure (GOALS.md gate id goals-validate, weight 5)
-        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
         run: |
           cli/bin/ao goals validate --json | jq -e '.valid == true'
 
       - name: F1 executable-spec link e2e (epic soc-58nt)
-        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
         run: |
           chmod +x tests/e2e/goals-scenarios-link.sh
           bash tests/e2e/goals-scenarios-link.sh
 
       - name: F2 scenario-satisfaction gate e2e (epic soc-58nt)
-        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
         run: |
           chmod +x tests/e2e/goals-measure-scenarios.sh
           bash tests/e2e/goals-measure-scenarios.sh
@@ -1171,21 +1198,43 @@ jobs:
         # T1 (≤5min). Blocking (soc-x7y9f): the directive↔scenario link lint
         # fails the job on any broken edge. The broader whole-chain orphan/gap
         # audit (ao goals trace --orphans) stays warn-only below.
-        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
         run: |
           echo "=== ao goals scenarios --lint ==="
           cli/bin/ao goals scenarios --lint
 
       - name: Whole-chain orphan/gap audit (ao goals trace --orphans, warn-only)
-        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
         run: |
           echo "=== ao goals trace --orphans ==="
           cli/bin/ao goals trace --orphans || echo "WARN: trace --orphans found issues (warn-only, F1.6 / soc-58nt.1.9; out of soc-x7y9f scope, tracked under soc-gqhrz)"
 
+      - name: No-orphan provenance gate (ao provenance trace --orphans --strict, blocking)
+        # T1 (≤5min, ag-x31t.6). Blocking: generalizes goals_trace_orphans onto
+        # the provenance graph. Asserts the strict audit CATCHES every seeded
+        # orphan fixture (artifact node with no inbound authored/inferred edge)
+        # and PASSES once an inbound edge wires the artifact back to a directive.
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.goals == 'true'
+        run: |
+          chmod +x scripts/check-provenance-orphans.sh
+          AO_BIN="$PWD/cli/bin/ao" ./scripts/check-provenance-orphans.sh
+
+      - name: Witness Dolt→JSONL cross-check gate (scripts/witness-dolt-jsonl-crosscheck.sh)
+        # T1 (≤5min, ag-lmdx.3). Blocking: the watcher-that-watches-the-watcher.
+        # Re-derives the hash-chained JSONL witness FROM the Dolt projection and
+        # hash-compares against the committed witness — the inverse of drrebuild
+        # (#646, which rebuilds Dolt FROM the witness). Hermetic: CI has no live
+        # Dolt, so it drives committed fixtures (faithful + tampered) through the
+        # re-derive+hash-compare helper and asserts the gate fires correctly.
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.shell == 'true'
+        run: |
+          chmod +x scripts/witness-dolt-jsonl-crosscheck.sh
+          ./scripts/witness-dolt-jsonl-crosscheck.sh
+
       - name: Scenario→test linkage gate (scripts/check-scenario-test-linkage.sh)
         # T1 (≤5min, soc-63xfx). Every Gherkin Scenario in skills/*/references/*.feature
         # must carry a @covered-by:<test-path> tag OR be allowlisted (doc-only).
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
         run: |
           chmod +x scripts/check-scenario-test-linkage.sh
           ./scripts/check-scenario-test-linkage.sh

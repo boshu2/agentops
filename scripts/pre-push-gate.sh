@@ -830,6 +830,22 @@ else
 fi
 
 # --- 7. Worktree disposition ---
+# 7a. Committed-tmp-worktree gate (ag-4oj9.2). Cheap, read-only, and CI-safe:
+# it inspects only tracked paths (not the live worktree list, which is empty on
+# a fresh CI checkout), so it runs unconditionally even in fast mode — an
+# undisposed worktree that got committed is never acceptable to push.
+if [[ -x scripts/gc-stale-worktrees.sh ]]; then
+    if committed_wt_output="$(scripts/gc-stale-worktrees.sh --check-committed 2>&1)"; then
+        pass "no committed tmp-worktree artifacts"
+    else
+        fail "committed tmp-worktree artifacts"
+        indent_output "$committed_wt_output"
+    fi
+else
+    fail "missing executable: scripts/gc-stale-worktrees.sh"
+fi
+
+# 7b. Live worktree disposition.
 # Full/release gates still enforce repository worktree governance. Local fast
 # pre-push skips it by default because stale unrelated worktrees should not
 # block pushing a scoped commit; opt in with PRE_PUSH_STRICT_WORKTREE=1.

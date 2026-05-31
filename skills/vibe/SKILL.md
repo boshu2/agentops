@@ -218,6 +218,20 @@ Run proactive bug-hunt audit on target files.
 
 Read [references/test-pyramid-inventory.md](references/test-pyramid-inventory.md) when you need the full inventory procedure: per-module L0–L3 coverage checks, BF1–BF5 boundary checks, the `weighted_score` formula, satisfaction-score exposure, the council-packet `test_pyramid` JSON shape, and verdict rules. Runs in both `--quick` and full modes — file existence checks are cheap. Weight L0–L1 at 1x, L2 at 3x, L3+ at 5x; `weighted_score < 0.3` with L0–L1 only is a WARN.
 
+### Step 2g.1: Scenario→Test Coverage (MANDATORY when the slice has scenarios)
+
+Test-pyramid inventory (2g) checks that tests *exist* and are well-shaped — it does NOT check that each of the slice's acceptance scenarios maps to a test. The leaf gate for that is `scripts/check-bead-scenario-coverage.sh` (C2, ag-9jle.4). It parses the bead's `## Scenarios` block (or a `.feature` file) and FAILS if any scenario lacks a `@covered-by:<test-path>` link — i.e. it works *forward from behavior*, not backward from coverage %.
+
+```bash
+# When validating a tracked bead with a ## Scenarios block:
+bash scripts/check-bead-scenario-coverage.sh --bead <bead-id> --json
+
+# When validating a .feature directly:
+bash scripts/check-bead-scenario-coverage.sh skills/<skill>/references/<name>.feature --json
+```
+
+A FAIL here is a vibe blocker, not a WARN: "tests exist" or a coverage percentage is NOT sufficient — every scenario must declare a covering test. Add `@covered-by:<test-path>` (optionally `::<TestName>`) directly above each uncovered `Scenario:`. Skip only when the slice has no scenarios (free-text acceptance must be promoted to scenarios first — see the workflow contract). When the covering tests are runnable in this checkout, prefer `--run` to require they actually PASS, not merely exist.
+
 ### Step 4: Run Council Validation
 
 **With spec found — use code-review preset:**
@@ -244,6 +258,18 @@ The spec content is injected into the council packet context so the `spec-compli
 - Sweep manifest (when `--deep` or `--sweep`, in `context.sweep_manifest` — judges shift to adjudication mode, see `references/deep-audit-protocol.md`)
 
 All council flags pass through: `--quick` (inline), `--mixed` (cross-vendor), `--preset=<name>` (override perspectives), `--explorers=N`, `--debate` (adversarial 2-round), `--tier=<name>` (model cost tier: quality/balanced/budget). See Quick Start examples and `/council` docs.
+
+### Step 4.5: No-self-grading invariant (author ≠ validator)
+
+The acceptance verdict must NOT be graded by the artifact's own author. A verdict produced by the authoring context is autocorrelated — the same blind spots that shipped the bug pass it. This is the no-self-grading invariant (`ag-lmdx.4`): the independent-trust-domain check that guards the `evidenced->validated` transition.
+
+**Rule:** the judge context MUST be distinct from the author context. Validation MAY run inside the authoring session, but the judge MUST be a **blind sub-agent** — a fresh, context-isolated agent acting as if it has no authoring context. Record `judge_id` (the isolated sub-agent context) distinct from `author_id` (the authoring context). The council judges spawned in Step 4 satisfy this when they are context-isolated sub-agents; an inline self-review by the authoring agent does NOT.
+
+**Refuse** to emit a PASS verdict when the judge context equals the author context (`judge_id == author_id`) — re-run the verdict through a blind sub-agent judge instead.
+
+**Escape:** `--allow-self` (default OFF) waives the invariant for the inline fallback only (e.g. no sub-agent runtime available). Using it stamps the verdict as self-graded; downstream `ao turn verify` reports it as waived, not independently validated.
+
+**Enforcement:** `ao turn verify <bead>` evaluates the `author_neq_validator` predicate from the turn-input file's `author_id`/`judge_id` and fails the Evidenced-Turn DoD on a self-graded verdict unless `--allow-self` is passed. The `evidenced->validated` guard rejects a self-graded verdict.
 
 ### Step 5: Council Checks
 

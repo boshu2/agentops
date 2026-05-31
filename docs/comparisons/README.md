@@ -23,7 +23,10 @@ The AI coding agent ecosystem has exploded. Here's how the major players stack u
 | [Compound Engineer](vs-compound-engineer.md) | Plan/work/review/compound | Stack-aware routing, 10 runtimes | Manual/doc-solution compounding, no validation gates |
 
 For the operator-facing readout across all competitors, see the
-[Competitive Radar](competitive-radar.md).
+[Competitive Radar](competitive-radar.md). For the record of external parties
+*independently arriving at* the AgentOps thesis (vindication, not competition),
+see the [Convergence Ledger](../convergence/ledger.md) — anchored by the
+[Google SRE encoding map](../convergence/google-sre.md).
 
 ---
 
