@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-31T18:33:01Z",
+  "generated_at": "2026-05-31T19:01:29Z",
   "summary": {
     "skills": 81,
     "hooks": 0,
@@ -2552,7 +2552,8 @@
         "ao metrics cite",
         "ao ratchet",
         "ao rpi phased",
-        "ao search"
+        "ao search",
+        "ao turn verify"
       ],
       "path": "skills/pre-mortem/",
       "references": 14
@@ -3353,7 +3354,8 @@
         "ao lookup",
         "ao metrics cite",
         "ao ratchet",
-        "ao search"
+        "ao search",
+        "ao turn verify"
       ],
       "path": "skills/vibe/",
       "references": 22
