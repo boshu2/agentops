@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-31T19:01:29Z",
+  "generated_at": "2026-05-31T19:49:44Z",
   "summary": {
     "skills": 81,
     "hooks": 0,
@@ -3328,7 +3328,8 @@
         "ao lookup",
         "ao metrics cite",
         "ao ratchet",
-        "ao scenario list"
+        "ao scenario list",
+        "ao turn verify"
       ],
       "path": "skills/validation/",
       "references": 13

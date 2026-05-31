@@ -25,9 +25,18 @@ fi
 ```
 STEP 1  ──  Skill(skill="vibe", args="recent [--quick]")
               Use --quick for fast/standard. Full council for full.
+              Blind-judge requirement (ag-9jle.5): /vibe's verdict MUST come from a
+              context-isolated sub-agent judge (its Step 4.5 spawns one, given only the
+              diff + acceptance scenarios, recording judge_id != author_id). Even
+              same-session validation routes acceptance through that blind judge — never
+              an inline self-review by this orchestrator.
               PASS/WARN? → continue
               FAIL?      → write summary, output <promise>FAIL</promise>, stop
                            (validation cannot fix code — caller decides retry)
+              judge_id == author_id (no blind judge spawned)?
+                         → refuse to certify: write summary, output <promise>FAIL</promise>,
+                           stop. Re-run the verdict through a blind sub-agent judge
+                           (only escape: /vibe --allow-self, which marks it self-graded).
 
 STEP 1.5 ── Four-Surface Closure (mandatory)
               Read `skills/validation/references/four-surface-closure.md` for the mandatory four-surface closure check.

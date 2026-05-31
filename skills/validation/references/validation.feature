@@ -33,3 +33,14 @@ Feature: Validation rolls slice and bead acceptance into a verdict
     Given --strict-surfaces is set
     When any of the four closure surfaces fails
     Then the verdict is FAIL, not WARN
+
+  Scenario: Self-validation still gets an independent judge
+    Given an artifact authored in session S
+    When /validation validates it in the same session S
+    Then the acceptance verdict is produced by a fresh-context sub-agent with no authoring context
+    And judge_id != author_id is recorded
+
+  Scenario: Missing blind judge is refused
+    Given /validation runs without a context-isolated judge producing the verdict
+    When it attempts to certify acceptance
+    Then it refuses because the judge context must differ from the author context

@@ -29,3 +29,14 @@ Feature: Vibe judges a slice's code quality before it counts
   Scenario: deep-audit mode widens the review
     Given /vibe --sweep recent
     Then per-file explorers feed the council for a deeper audit over the recent changes
+
+  Scenario: same-session validation still gets a blind sub-agent judge
+    Given the slice was authored in the current session
+    When /vibe produces the acceptance verdict in that same session
+    Then it spawns a fresh-context sub-agent as the judge, given only the diff and acceptance scenarios
+    And the sub-agent's verdict is the acceptance verdict, with judge_id != author_id recorded
+
+  Scenario: a self-graded verdict is refused
+    Given no blind sub-agent judge was spawned and the authoring agent graded itself
+    When /vibe attempts to emit a PASS verdict with judge_id == author_id
+    Then it refuses and re-runs the verdict through a blind sub-agent judge unless --allow-self is set
