@@ -127,7 +127,10 @@ skill-factory guardrails.
 
 ### Step 0: Setup
 
+**Stale-checkout survey guard (run FIRST).** Before any tree-reading survey: `git fetch origin && git status -sb`. If the checkout is behind/diverged AND it is a throwaway orchestration tree with no un-pushed work, `git reset --hard origin/main`. **BAN `git pull --rebase` on the survey path** — it silently no-ops against a diverged local `main`, so merged files appear "missing" and the survey investigates already-merged work.
+
 ```bash
+git fetch origin && git status -sb              # survey guard — never `git pull --rebase` here
 mkdir -p .agents/evolve
 ao corpus inject --query "autonomous improvement cycle" --limit 5 2>/dev/null || true
 bash scripts/evolve-update-session-state.sh 2>/dev/null || true  # refresh derived idle_streak + mode_repeat_streak
@@ -362,6 +365,8 @@ fi
 ```
 
 **Drive to completion (orchestrator-merge model, soc-2drk).** Where the repo requires PRs (branch protection rejects direct `main` pushes), a productive cycle does not stop at "PR opened" — the loop is the orchestrator that drives each bead to *merged*. Ship the bead from its per-bead worktree as a PR (trailers `Closes-scenario` / `Bounded-context` / `Evidence`), wait for CI, and **squash-merge to main yourself once CI is green** (`gh pr merge <N> --squash --admin`), then `bd close` the bead and remove the worktree. **Green CI is the only merge gate** — on a quality/test red, fix-and-repush or revert; never merge red. The loop may dispatch sub-agents to implement and drives their PRs to merge too. The operator stays *on* the loop (intent + STOP marker), not *in* it (per-PR approval). This **supersedes "operator is the merge gate"** for the autonomous loop — see [ADR-0008](../../docs/adr/ADR-0008-evolve-intelligent-agile-operating-model.md).
+
+**Confirmed-MERGED gate before `bd close` (hard, not advisory).** Re-confirm `gh pr view <N> --json state -q .state` returns `MERGED` *before* `bd close` — never close on a `gh pr merge` exit code, a log line, or a batch `bd --json` query (those flake to null/0). **Close a parent epic ONLY after every child PR is independently confirmed `MERGED`**; re-query per child first, and one non-merged child aborts the epic close. (Caught two premature epic-closes in the 2026-05-31 crank session — this gate is the governance checkpoint, applied here too.)
 
 ### Teardown
 
