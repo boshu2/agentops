@@ -3970,6 +3970,24 @@ ao provenance list [flags]
       --relation string   Filter to edges with this relation
 ```
 
+#### `ao provenance trace`
+
+Audit a provenance trace-graph for orphans: engineered artifact nodes
+
+```
+ao provenance trace [flags]
+```
+
+**Flags:**
+
+```
+      --graph string   Path to the JSONL trace-graph to audit (required)
+  -h, --help           help for trace
+      --json           Emit each finding as one JSON object per line
+      --orphans        Audit for artifact nodes with no inbound provenance edge
+      --strict         Exit non-zero when any orphan exists
+```
+
 ---
 
 ### `ao registry`
