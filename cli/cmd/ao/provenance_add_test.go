@@ -45,7 +45,7 @@ func chdirRepoFixture(t *testing.T) string {
 
 // resetProvAddFlags sets the add flags to a known baseline for a test.
 func resetProvAddFlags() {
-	provAddRelation = "decision_produces_artifact"
+	provAddRelation = "wasGeneratedBy"
 	provAddFromType = "decision"
 	provAddToType = "artifact"
 	provAddTrustTier = "authored"
@@ -169,7 +169,7 @@ func TestProvenanceList_FiltersByFromIDAndRelation(t *testing.T) {
 	}
 	// Edge 2: a different decision, different relation.
 	resetProvAddFlags()
-	provAddRelation = "decision_authorizes"
+	provAddRelation = "wasAssociatedWith"
 	provAddToType = "bead"
 	c2, _ := provTestCmd()
 	if err := runProvenanceAdd(c2, []string{"soc-byl.3", "ag-x31t"}); err != nil {
@@ -195,7 +195,7 @@ func TestProvenanceList_FiltersByFromIDAndRelation(t *testing.T) {
 	// Filter by relation.
 	resetProvListFlags()
 	provListJSON = true
-	provListRelation = "decision_produces_artifact"
+	provListRelation = "wasGeneratedBy"
 	c4, out4 := provTestCmd()
 	if err := runProvenanceList(c4, nil); err != nil {
 		t.Fatalf("list rel: %v", err)
@@ -204,7 +204,7 @@ func TestProvenanceList_FiltersByFromIDAndRelation(t *testing.T) {
 	if err := json.Unmarshal(out4.Bytes(), &byRel); err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	if len(byRel) != 1 || byRel[0].Relation != "decision_produces_artifact" {
+	if len(byRel) != 1 || byRel[0].Relation != "wasGeneratedBy" {
 		t.Fatalf("relation filter wrong: %+v", byRel)
 	}
 }

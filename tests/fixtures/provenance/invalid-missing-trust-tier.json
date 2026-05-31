@@ -4,7 +4,7 @@
   "from_type": "decision",
   "to_id": "schemas/agentops-sdlc-provenance.v1.schema.json",
   "to_type": "artifact",
-  "relation": "decision_produces_artifact",
+  "relation": "wasGeneratedBy",
   "evidence_ref": ".agents/council/2026-05-30-debate-provenance-substrate.md",
   "ts": "2026-05-31T00:00:00Z",
   "prev_hash": "",

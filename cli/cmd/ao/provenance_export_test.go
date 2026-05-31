@@ -23,11 +23,11 @@ func seedLedger(t *testing.T) {
 	store := provenancegraph.NewStore(resolveLedgerPath())
 	edges := []provenancegraph.Edge{
 		{FromID: "ag-2", FromType: "decision", ToID: "b.go", ToType: "artifact",
-			Relation: "decision_produces_artifact", TrustTier: "authored", TS: "2026-05-31T02:00:00Z"},
+			Relation: "wasGeneratedBy", TrustTier: "authored", TS: "2026-05-31T02:00:00Z"},
 		{FromID: "ag-1", FromType: "decision", ToID: "a.go", ToType: "artifact",
-			Relation: "decision_produces_artifact", TrustTier: "authored", TS: "2026-05-31T01:00:00Z"},
+			Relation: "wasGeneratedBy", TrustTier: "authored", TS: "2026-05-31T01:00:00Z"},
 		{FromID: "ag-3", FromType: "decision", ToID: "c.go", ToType: "artifact",
-			Relation: "decision_produces_artifact", TrustTier: "authored", TS: "2026-05-31T03:00:00Z"},
+			Relation: "wasGeneratedBy", TrustTier: "authored", TS: "2026-05-31T03:00:00Z"},
 	}
 	for i, e := range edges {
 		if _, err := store.Append(e); err != nil {
