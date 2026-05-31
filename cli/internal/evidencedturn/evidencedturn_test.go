@@ -66,6 +66,8 @@ func wellFormedInput(t *testing.T) Input {
 		ProvenanceEdges: []provenancegraph.Edge{provEdge(t, "commit:abc123", bead)},
 		OrphanFindings:  nil,
 		OrphanChecked:   true,
+		AuthorID:        "session:author-abc",
+		JudgeID:         "session:judge-xyz",
 	}
 }
 
@@ -278,6 +280,91 @@ func TestEvaluate_MultipleGapsAllReported(t *testing.T) {
 	}
 	if len(v.Gaps) != 3 {
 		t.Errorf("len(Gaps) = %d, want 3 (gaps=%v)", len(v.Gaps), v.Gaps)
+	}
+}
+
+// TestEvaluate_SelfGradedVerdictRefused is the core no-self-grading invariant
+// (ag-lmdx.4): when the judge context equals the author context, the
+// author_neq_validator predicate must fail and the turn is not done.
+func TestEvaluate_SelfGradedVerdictRefused(t *testing.T) {
+	in := wellFormedInput(t)
+	in.AuthorID = "session:same"
+	in.JudgeID = "session:same"
+	v, err := Evaluate(in)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	if v.Done != false {
+		t.Errorf("Done = %v, want false (self-graded verdict must be refused)", v.Done)
+	}
+	p := predicate(t, v, PredicateAuthorNeqValidator)
+	if p.Passed != false {
+		t.Errorf("%s.Passed = %v, want false", PredicateAuthorNeqValidator, p.Passed)
+	}
+	if !contains(p.Reason, "self-graded") {
+		t.Errorf("reason = %q, want substring %q", p.Reason, "self-graded")
+	}
+}
+
+// TestEvaluate_IndependentVerdictAccepted: a distinct judge context passes.
+func TestEvaluate_IndependentVerdictAccepted(t *testing.T) {
+	in := wellFormedInput(t)
+	in.AuthorID = "session:author"
+	in.JudgeID = "session:blind-judge"
+	v, err := Evaluate(in)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	p := predicate(t, v, PredicateAuthorNeqValidator)
+	if p.Passed != true {
+		t.Errorf("%s.Passed = %v, want true (distinct judge=%q author=%q); reason=%q",
+			PredicateAuthorNeqValidator, p.Passed, in.JudgeID, in.AuthorID, p.Reason)
+	}
+	if v.Done != true {
+		t.Errorf("Done = %v, want true (gaps: %v)", v.Done, v.Gaps)
+	}
+}
+
+// TestEvaluate_AllowSelfWaivesGuard: --allow-self is the documented, default-off
+// escape that permits a self-graded verdict on the inline fallback path.
+func TestEvaluate_AllowSelfWaivesGuard(t *testing.T) {
+	in := wellFormedInput(t)
+	in.AuthorID = "session:same"
+	in.JudgeID = "session:same"
+	in.AllowSelf = true
+	v, err := Evaluate(in)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	p := predicate(t, v, PredicateAuthorNeqValidator)
+	if p.Passed != true {
+		t.Errorf("%s.Passed = %v, want true with --allow-self; reason=%q",
+			PredicateAuthorNeqValidator, p.Passed, p.Reason)
+	}
+	if !contains(p.Reason, "allow-self") {
+		t.Errorf("reason = %q, want substring %q", p.Reason, "allow-self")
+	}
+	if v.Done != true {
+		t.Errorf("Done = %v, want true with --allow-self (gaps: %v)", v.Done, v.Gaps)
+	}
+}
+
+// TestEvaluate_MissingJudgeRefused: an unrecorded judge identity cannot assert
+// independence, so the guard fails (use --allow-self to waive).
+func TestEvaluate_MissingJudgeRefused(t *testing.T) {
+	in := wellFormedInput(t)
+	in.AuthorID = "session:author"
+	in.JudgeID = ""
+	v, err := Evaluate(in)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	p := predicate(t, v, PredicateAuthorNeqValidator)
+	if p.Passed != false {
+		t.Errorf("%s.Passed = %v, want false when judge_id is empty", PredicateAuthorNeqValidator, p.Passed)
+	}
+	if !contains(p.Reason, "no judge_id") {
+		t.Errorf("reason = %q, want substring %q", p.Reason, "no judge_id")
 	}
 }
 

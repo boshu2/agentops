@@ -15,10 +15,11 @@ import (
 )
 
 var (
-	turnVerifyInput  string
-	turnVerifyLedger string
-	turnVerifyGraph  string
-	turnVerifyJSON   bool
+	turnVerifyInput     string
+	turnVerifyLedger    string
+	turnVerifyGraph     string
+	turnVerifyJSON      bool
+	turnVerifyAllowSelf bool
 )
 
 // turnCmd is the parent group for Evidenced-Turn operations (ag-lmdx). A "turn"
@@ -41,6 +42,14 @@ type turnInputFile struct {
 	BeadID      string                   `json:"bead_id"`
 	Transitions []turnstate.Transition   `json:"transitions"`
 	Scenarios   []evidencedturn.Scenario `json:"scenarios"`
+	// AuthorID and JudgeID carry the no-self-grading invariant (ag-lmdx.4):
+	// the identity of the context that AUTHORED the artifact vs. the context
+	// that PRODUCED the acceptance verdict. The author_neq_validator predicate
+	// fails when they are equal (a self-graded, autocorrelated verdict) unless
+	// --allow-self waives it. Empty judge_id also fails: independence that was
+	// never recorded cannot be asserted.
+	AuthorID string `json:"author_id,omitempty"`
+	JudgeID  string `json:"judge_id,omitempty"`
 }
 
 var turnVerifyCmd = &cobra.Command{
@@ -62,6 +71,12 @@ A turn is DONE iff every predicate passes (validated->closed is legal):
                      THAT scenario (presence->sufficiency)
   provenance_event   a provenance edge in the ledger references the bead
   no_orphan          no artifact the turn produced is a provenance orphan
+  author_neq_validator
+                     the acceptance verdict came from a judge context distinct
+                     from the author context (author_id != judge_id) — the
+                     no-self-grading invariant (ag-lmdx.4). A self-graded
+                     verdict is autocorrelated and fails; --allow-self waives it
+                     for the inline fallback (default OFF).
 
 Inputs:
   --input   turn-input JSON file: the bead's state_transition log + its
@@ -71,6 +86,11 @@ Inputs:
   --graph   an OPTIONAL provenance trace-graph projection (node/edge "record"
             JSONL, the shape ao provenance trace reads). Used for no_orphan.
             Without it, no_orphan is reported as not-yet-checked and fails.
+
+  --allow-self  waive the no-self-grading invariant (author_neq_validator),
+            permitting a self-graded verdict (judge_id == author_id) on the
+            inline fallback path. Default OFF: the default requires an
+            independent judge context.
 
 Exit is non-zero when the turn is NOT done, so this is usable as a
 validated->closed transition guard.
@@ -95,6 +115,7 @@ func init() {
 	turnVerifyCmd.Flags().StringVar(&turnVerifyLedger, "ledger", "", "Path to the provenance EDGE ledger JSONL (default: docs/provenance/ledger.jsonl)")
 	turnVerifyCmd.Flags().StringVar(&turnVerifyGraph, "graph", "", "Path to the provenance trace-graph JSONL (node/edge records) for orphan detection")
 	turnVerifyCmd.Flags().BoolVar(&turnVerifyJSON, "json", false, "Emit the full Verdict object as JSON")
+	turnVerifyCmd.Flags().BoolVar(&turnVerifyAllowSelf, "allow-self", false, "Waive the no-self-grading invariant (permit judge_id == author_id) for the inline fallback; default OFF")
 }
 
 func runTurnVerify(cmd *cobra.Command, args []string) error {
@@ -148,6 +169,9 @@ func runTurnVerify(cmd *cobra.Command, args []string) error {
 		ProvenanceEdges: edges,
 		OrphanFindings:  orphans,
 		OrphanChecked:   orphanChecked,
+		AuthorID:        tf.AuthorID,
+		JudgeID:         tf.JudgeID,
+		AllowSelf:       turnVerifyAllowSelf,
 	})
 	if err != nil {
 		return err

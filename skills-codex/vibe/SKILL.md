@@ -517,6 +517,18 @@ $council validate <target>
 
 All council flags pass through: `--quick` (inline), `--mixed` (cross-vendor), `--preset=<name>` (override perspectives), `--explorers=N`, `--debate` (adversarial 2-round). See Quick Start examples and `$council` docs.
 
+### Step 4.5: No-self-grading invariant (author ≠ validator)
+
+The acceptance verdict must NOT be graded by the artifact's own author. A verdict produced by the authoring context is autocorrelated — the same blind spots that shipped the bug pass it. This is the no-self-grading invariant (`ag-lmdx.4`): the independent-trust-domain check that guards the `evidenced->validated` transition.
+
+**Rule:** the judge context MUST be distinct from the author context. Validation MAY run inside the authoring session, but the judge MUST be a **blind sub-agent** — a fresh, context-isolated agent acting as if it has no authoring context. Record `judge_id` (the isolated sub-agent context) distinct from `author_id` (the authoring context). The council judges spawned in Step 4 satisfy this when they are context-isolated sub-agents; an inline self-review by the authoring agent does NOT.
+
+**Refuse** to emit a PASS verdict when the judge context equals the author context (`judge_id == author_id`) — re-run the verdict through a blind sub-agent judge instead.
+
+**Escape:** `--allow-self` (default OFF) waives the invariant for the inline fallback only (e.g. no sub-agent runtime available). Using it stamps the verdict as self-graded; downstream `ao turn verify` reports it as waived, not independently validated.
+
+**Enforcement:** `ao turn verify <bead>` evaluates the `author_neq_validator` predicate from the turn-input file's `author_id`/`judge_id` and fails the Evidenced-Turn DoD on a self-graded verdict unless `--allow-self` is passed. The `evidenced->validated` guard rejects a self-graded verdict.
+
 ### Step 5: Council Checks
 
 Each judge reviews for:

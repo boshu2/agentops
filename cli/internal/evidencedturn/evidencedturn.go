@@ -73,6 +73,13 @@ const (
 	PredicateProvenanceEvent = "provenance_event"
 	// PredicateNoOrphan: no artifact the turn produced is a provenance orphan.
 	PredicateNoOrphan = "no_orphan"
+	// PredicateAuthorNeqValidator: the no-self-grading invariant (ag-lmdx.4).
+	// The acceptance verdict was produced by a judge context distinct from the
+	// author context (author_id != judge_id). A verdict graded by its own
+	// author is autocorrelated; the independent-trust-domain check is the guard
+	// on the evidenced->validated transition. The documented, default-OFF
+	// --allow-self escape permits a self-graded verdict for the inline fallback.
+	PredicateAuthorNeqValidator = "author_neq_validator"
 )
 
 // orderedPredicates is the canonical report order so JSON/text output is stable
@@ -84,6 +91,7 @@ var orderedPredicates = []string{
 	PredicateEvidenceResolves,
 	PredicateProvenanceEvent,
 	PredicateNoOrphan,
+	PredicateAuthorNeqValidator,
 }
 
 // Scenario is one Closes-scenario claim a turn makes, with the two sufficiency
@@ -121,6 +129,19 @@ type Input struct {
 	// rather than passing vacuously — a turn is not provably done if its
 	// orphan status was never audited.
 	OrphanChecked bool
+	// AuthorID is the identity of the session/context that AUTHORED the
+	// artifact under verdict (the "who built it"). Empty means unknown.
+	AuthorID string
+	// JudgeID is the identity of the session/context that PRODUCED the
+	// acceptance verdict (the "who graded it"). For the no-self-grading
+	// invariant the judge must be a context distinct from the author — a
+	// blind sub-agent context, not the same session. Empty means no
+	// independent judge identity was recorded.
+	JudgeID string
+	// AllowSelf is the documented, default-OFF escape hatch that permits a
+	// self-graded verdict (JudgeID == AuthorID). It exists for the inline
+	// fallback path only; the default requires an independent judge.
+	AllowSelf bool
 }
 
 // PredicateResult is one row of the legible DoD checklist.
@@ -147,9 +168,10 @@ type Verdict struct {
 // iff EVERY predicate passes (validated->closed is legal). A missing input is a
 // failing predicate with a legible reason, never a silent pass.
 //
-// TODO(ag-lmdx.4): the author!=validator guard is a separate concern. When it
-// lands, add a PredicateAuthorNeqValidator row here (and a field on Input);
-// the verdict shape already accommodates an extra predicate without change.
+// The author!=validator guard (ag-lmdx.4) is one of those predicates: a verdict
+// graded by its own author is autocorrelated, so an Evidenced Turn is not done
+// unless an independent judge context produced the verdict (or --allow-self
+// explicitly waives it for the inline fallback).
 func Evaluate(in Input) (Verdict, error) {
 	if strings.TrimSpace(in.BeadID) == "" {
 		return Verdict{}, fmt.Errorf("bead_id is required")
@@ -160,8 +182,9 @@ func Evaluate(in Input) (Verdict, error) {
 		PredicateTerminalState:    evalTerminalState(in),
 		PredicateScenariosCovered: evalScenariosCovered(in),
 		PredicateEvidenceResolves: evalEvidenceResolves(in),
-		PredicateProvenanceEvent:  evalProvenanceEvent(in),
-		PredicateNoOrphan:         evalNoOrphan(in),
+		PredicateProvenanceEvent:    evalProvenanceEvent(in),
+		PredicateNoOrphan:           evalNoOrphan(in),
+		PredicateAuthorNeqValidator: evalAuthorNeqValidator(in),
 	}
 
 	v := Verdict{
@@ -298,5 +321,37 @@ func evalNoOrphan(in Input) PredicateResult {
 	}
 	r.Passed = true
 	r.Reason = "no provenance orphans"
+	return r
+}
+
+// evalAuthorNeqValidator enforces the no-self-grading invariant (ag-lmdx.4):
+// the acceptance verdict must come from a judge context distinct from the
+// author context. A self-graded verdict (author_id == judge_id) is
+// autocorrelated and fails unless --allow-self explicitly waives it. A missing
+// judge identity also fails: independence that was never recorded cannot be
+// asserted.
+func evalAuthorNeqValidator(in Input) PredicateResult {
+	r := PredicateResult{Name: PredicateAuthorNeqValidator}
+	author := strings.TrimSpace(in.AuthorID)
+	judge := strings.TrimSpace(in.JudgeID)
+	if in.AllowSelf {
+		r.Passed = true
+		r.Reason = "self-grading explicitly waived via --allow-self (inline fallback)"
+		return r
+	}
+	if author == "" {
+		r.Reason = "no author_id recorded (cannot prove the judge is independent of the author)"
+		return r
+	}
+	if judge == "" {
+		r.Reason = "no judge_id recorded (independent judge context required; use --allow-self to waive)"
+		return r
+	}
+	if judge == author {
+		r.Reason = fmt.Sprintf("verdict self-graded: judge_id == author_id (%q); an independent judge context is required (use --allow-self to waive)", author)
+		return r
+	}
+	r.Passed = true
+	r.Reason = fmt.Sprintf("independent judge: judge_id %q != author_id %q", judge, author)
 	return r
 }

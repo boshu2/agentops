@@ -4254,6 +4254,7 @@ ao turn verify <bead> [flags]
 **Flags:**
 
 ```
+      --allow-self      Waive the no-self-grading invariant (permit judge_id == author_id) for the inline fallback; default OFF
       --graph string    Path to the provenance trace-graph JSONL (node/edge records) for orphan detection
   -h, --help            help for verify
       --input string    Path to the turn-input JSON file (state log + scenario coverage) (required)
