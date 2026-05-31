@@ -1,0 +1,1 @@
+Decision: invert source of truth — append-only event log is canonical; Dolt is a rebuildable projection.
