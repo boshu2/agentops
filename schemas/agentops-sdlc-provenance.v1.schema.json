@@ -1,0 +1,120 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentops.dev/schemas/agentops-sdlc-provenance.v1.schema.json",
+  "title": "AgentOps SDLC Provenance Ledger Event (v1)",
+  "description": "One append-only event in the committed, per-record hash-chained provenance ledger at docs/provenance/ledger.jsonl (one JSON object per line). Each event records a single provenance edge — a typed, evidence-backed relation between two SDLC nodes (e.g. a decision and the artifact it produced) — plus the export-time hash-chain fields that make the ledger offline/CI/fresh-clone verifiable. Per CLAUDE.md the committed ledger is the AUDIT authority and wins on disagreement with the Dolt provenance_edges write model. Council architecture: .agents/council/2026-05-30-debate-provenance-substrate.md. Trust tiers are monotonic (authored > inferred > mined) per the in-toto (min,x) semiring. Hash fields reuse the hashing discipline in cli/internal/rpi/ledger.go: payload_hash = sha256 over the canonical edge payload (every field EXCEPT prev_hash/payload_hash/hash); hash = sha256(payload_hash + \"\\n\" + prev_hash); prev_hash links to the previous record's hash (empty string for the first record).",
+  "practices": ["adr", "in-toto-provenance", "dora-metrics"],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "from_id",
+    "from_type",
+    "to_id",
+    "to_type",
+    "relation",
+    "trust_tier",
+    "ts",
+    "prev_hash",
+    "payload_hash",
+    "hash"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "agentops-sdlc-provenance.v1",
+      "description": "Schema discriminator. Pins the event shape so consumers can branch on version."
+    },
+    "from_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identifier of the source node of the edge (e.g. a bead/decision id like 'ag-x31t.2' or a ledger event_id)."
+    },
+    "from_type": {
+      "$ref": "#/$defs/node_type",
+      "description": "Type of the source node."
+    },
+    "to_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Stable identifier of the target node of the edge (e.g. an artifact path or commit sha)."
+    },
+    "to_type": {
+      "$ref": "#/$defs/node_type",
+      "description": "Type of the target node."
+    },
+    "relation": {
+      "$ref": "#/$defs/relation",
+      "description": "The typed provenance relation from source to target (PROV-DM-aligned vocabulary)."
+    },
+    "evidence_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional pointer to the evidence backing this edge — a repo-relative path, a CI run URL, a commit sha, or a ledger event_id. Required in practice for inferred/mined edges to remain auditable, but optional at the schema level so authored edges asserted from a bead need not duplicate the bead id."
+    },
+    "trust_tier": {
+      "type": "string",
+      "enum": ["authored", "inferred", "mined"],
+      "description": "Monotonic trust tier of the edge assertion. 'authored' = a human/agent explicitly asserted it (highest); 'inferred' = derived deterministically from a tracked source (e.g. a commit trailer); 'mined' = recovered heuristically from chat/transcript history (lowest). Combine along a path with the (min,x) semiring: a path is only as trusted as its weakest edge."
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC3339/RFC3339Nano UTC timestamp when the edge was recorded."
+    },
+    "prev_hash": {
+      "$ref": "#/$defs/hash_or_empty",
+      "description": "Hash-chain link: the `hash` of the immediately previous ledger record, or the empty string for the first record. Reuses cli/internal/rpi/ledger.go chaining semantics."
+    },
+    "payload_hash": {
+      "$ref": "#/$defs/sha256_hex",
+      "description": "sha256 (lowercase hex) over the canonical JSON of the edge payload — every field of this record EXCEPT prev_hash, payload_hash, and hash."
+    },
+    "hash": {
+      "$ref": "#/$defs/sha256_hex",
+      "description": "sha256 (lowercase hex) of (payload_hash + \"\\n\" + prev_hash). The committed chain anchor for this record."
+    }
+  },
+  "$defs": {
+    "node_type": {
+      "type": "string",
+      "enum": [
+        "decision",
+        "artifact",
+        "bead",
+        "scenario",
+        "commit",
+        "pr",
+        "ci_run",
+        "verdict",
+        "learning",
+        "agent"
+      ],
+      "description": "Kind of SDLC node an edge endpoint refers to."
+    },
+    "relation": {
+      "type": "string",
+      "enum": [
+        "decision_produces_artifact",
+        "decision_authorizes",
+        "artifact_derived_from",
+        "scenario_covers_artifact",
+        "verdict_attests_artifact",
+        "bead_scopes_decision",
+        "commit_implements_decision",
+        "learning_revises_decision"
+      ],
+      "description": "Typed provenance relation. PROV-DM-aligned: produces≈wasGeneratedBy, authorizes≈wasAuthorizedBy, derived_from≈wasDerivedFrom, attests≈wasAttributedTo."
+    },
+    "sha256_hex": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Lowercase hex-encoded sha256 digest (64 chars)."
+    },
+    "hash_or_empty": {
+      "type": "string",
+      "pattern": "^([a-f0-9]{64})?$",
+      "description": "A lowercase hex sha256 digest, or the empty string (used by prev_hash for the genesis record)."
+    }
+  }
+}
