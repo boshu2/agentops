@@ -20,6 +20,13 @@ Feature: Discovery hands dense intent to planning
     Then it writes a JSON execution packet on disk for the next loop phase
     And the packet carries the goal, research, and design artifact references
 
+  # Gherkin acceptance is emitted by default — the operator never hand-specifies BDD (ag-9jle.2).
+  Scenario: Discovery requires every planned bead to carry Gherkin scenarios by default
+    Given Discovery crosses the plan_slices port to /plan
+    When /plan returns beads at STEP 4
+    Then every bead carries an embedded ## Scenarios (Given/When/Then) block
+    And Discovery sends any bead with free-text-only acceptance back to /plan before compiling the packet
+
   # Open-ended path — generate-winnow → operationalize → refine (ag-yw0).
   # Additive to the default flow above; strict delegation is preserved.
   # Documentation-only spec (this file is allowlisted in

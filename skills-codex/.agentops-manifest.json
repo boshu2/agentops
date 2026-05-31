@@ -775,8 +775,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "da99e855580351e6dc3155cf73b6e5669eb70d6774ca55f624cb7f84785f46fe",
-      "generated_hash": "6c307529f6519b93745a4f410641b4991c0676a5f564de7f2b53d8d9cffe6b48"
+      "source_hash": "b9db5932d003bfc3d015a5c9ccd01d62284c68f2e106850d5dc9a71c473386d9",
+      "generated_hash": "279fece7b28692dc9be477ea7adbaad390ad6c7e976959fc3c1a97de59882004"
     },
     {
       "name": "doc",
@@ -901,8 +901,8 @@
     {
       "name": "plan",
       "source_skill": "skills/plan",
-      "source_hash": "1bcc4c2f196a0b9257bb3a5a19bb3aaddef6c4e184000444e113ce28f4da1a99",
-      "generated_hash": "f6395785b5ce80bcfc621358a7f223632363d64387afcc76b3dcfeb8067e6f04"
+      "source_hash": "a5892f446e959fe8e08eea92432b99da6c2474986849dfab4a16c0b6c74e598c",
+      "generated_hash": "d988d0f966aaccacd94b0a0a9eb9dc5e3ecc27648a8805d1569059d4c2c1c063"
     },
     {
       "name": "post-mortem",

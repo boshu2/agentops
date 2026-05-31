@@ -167,16 +167,41 @@ Analyze the goal and break it into discrete, implementable issues. For each issu
 - **Title**: Clear action verb (e.g., "Add authentication middleware")
 - **Description**: What needs to be done
 - **Dependencies**: Which issues must complete first (if any)
+- **Scenarios**: A Gherkin `## Scenarios` block (Given/When/Then) — **mandatory by default** for every bead (see Scenarios contract below)
 - **Acceptance criteria**: How to verify it's done — emitted as a fenced YAML `acceptance_criteria` block (see contract below)
 - **Test levels**: Which pyramid levels (L0–L3) this issue's tests cover
 
+#### Gherkin Scenarios Contract (mandatory, default)
+
+**Every bead this skill creates MUST carry an embedded `## Scenarios` block in Gherkin (Given/When/Then) — by default, without being asked.** Free-text-only acceptance is invalid (AGENTS.md: "Free-text acceptance is invalid — promote it to scenarios before work begins"). The operator never hand-specifies BDD: planning emits behavior-based acceptance as scenarios automatically.
+
+Each bead body (and the parent epic body) carries a `## Scenarios` block of one or more scenarios:
+
+```markdown
+## Scenarios
+Scenario: <behavior named as an observable outcome>
+  Given <precondition / starting state>
+  When <action / event>
+  Then <expected observable result>
+  And <additional assertion>   # optional
+```
+
+Rules:
+- One scenario per distinct Given/When/Then behavior; a bead with N behaviors carries N scenarios.
+- Scenarios describe **observable behavior**, not implementation steps.
+- The `## Scenarios` block sits in the bead description ABOVE the `acceptance_criteria` YAML; the YAML is the machine-checkable layer, Gherkin is the behavior layer (they are complementary, not substitutes).
+- A bead emitted without a `## Scenarios` block is a contract violation — promote any free-text acceptance to scenarios before creating the bead.
+
+This is the same `## Scenarios` block the bead-embedded acceptance model expects (`scenario-hash-stability` CI gate) and that `/discovery` lifts into the execution packet.
+
 #### Acceptance Criteria Contract (mandatory)
 
-Every issue body MUST contain an `acceptance_criteria` fenced YAML block. The block lives BELOW the issue's textual description and ABOVE any "Reference" or "Notes" trailer. The parent epic body carries its own `acceptance_criteria` block (epic-level criteria); each child bead carries its own. `/discovery` STEP 6 lifts both into the execution packet under `epic_criteria` and `bead_criteria`. Canonical shape: [`schemas/execution-packet.schema.json`](../../schemas/execution-packet.schema.json) (`#/$defs/Criterion`).
+Every issue body MUST contain an `acceptance_criteria` fenced YAML block. The block lives BELOW the issue's `## Scenarios` block and ABOVE any "Reference" or "Notes" trailer. The parent epic body carries its own `acceptance_criteria` block (epic-level criteria); each child bead carries its own. `/discovery` STEP 6 lifts both into the execution packet under `epic_criteria` and `bead_criteria`. Canonical shape: [`schemas/execution-packet.schema.json`](../../schemas/execution-packet.schema.json) (`#/$defs/Criterion`).
 
-Every feature, bug, or product-facing behavior issue MUST also carry either a
-fenced `gherkin` block or a link to the upstream intent issue scenario it
-implements. Every non-trivial plan and bead body SHOULD include the `hexagon:`
+The `## Scenarios` Gherkin block above is the behavior layer and is mandatory by
+default for every bead; the `acceptance_criteria` YAML is the machine-checkable
+layer. They are complementary, never substitutes. Every non-trivial plan and
+bead body SHOULD also include the `hexagon:`
 boundary block from `docs/architecture/intent-to-loop-hexagon.md` so the next
 agent knows the inbound port, bounded context, adapters, context packet, and
 done state.

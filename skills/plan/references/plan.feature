@@ -33,3 +33,11 @@ Feature: Plan converts dense intent into executable slices
   Scenario: Plan produces a durable slice-validation artifact
     Then Plan writes a slice plan to .agents/plans/*.md and an execution-packet.json
     And a fresh agent can execute the slices from those artifacts alone
+
+  # Gherkin acceptance is emitted by default — the operator never hand-specifies BDD (ag-9jle.2).
+  Scenario: Every emitted bead carries a Gherkin Scenarios block by default
+    Given Plan decomposing a goal into beads
+    When a bead is created without the operator asking for BDD
+    Then the bead body carries an embedded ## Scenarios (Given/When/Then) block
+    And it never ships free-text-only acceptance
+    And the ## Scenarios block sits above the acceptance_criteria YAML as the behavior layer
