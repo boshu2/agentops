@@ -13,7 +13,7 @@ position is narrower and harder to copy than any of them: **a wiki for your
 agents, version-controlled in your repo, that compounds across sessions**.
 The corpus is the moat. The tool is replaceable.
 
-> Sibling doc: the [Convergence Ledger](convergence-ledger.md) tracks the
+> Sibling doc: the [Convergence Ledger](../convergence/ledger.md) tracks the
 > inverse of competition — external parties (labs, vendors, methodologies)
 > *independently arriving at* the AgentOps thesis over time.
 

@@ -231,8 +231,11 @@ nav:
       - vs Superpowers: comparisons/vs-superpowers.md
       - vs Claude-Flow: comparisons/vs-claude-flow.md
       - vs Compound Engineer: comparisons/vs-compound-engineer.md
-      - Convergence Ledger: comparisons/convergence-ledger.md
-      - Google SRE Convergence: comparisons/agentops-vs-google-sre-convergence.md
+  - Convergence:
+      - convergence/index.md
+      - The Reading: convergence/the-reading.md
+      - Ledger: convergence/ledger.md
+      - Google SRE: convergence/google-sre.md
   - Reference:
       - reference/index.md
       - Glossary: GLOSSARY.md

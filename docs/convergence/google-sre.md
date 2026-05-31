@@ -1,7 +1,7 @@
 ---
 title: "AgentOps 3.0 ⇄ Google SRE — encoding map"
 description: "Where each of the 11 structural conclusions in Google's 2026 SRE AI whitepaper is already encoded in AgentOps doctrine, and the genuine gaps it surfaced."
-permalink: /comparisons/google-sre-convergence
+permalink: /convergence/google-sre
 last_reviewed: 2026-05-29
 ---
 
@@ -9,7 +9,7 @@ last_reviewed: 2026-05-29
 
 > Google's 2026 SRE whitepaper *"AI in SRE: How Google is Engineering the Future of Reliable Operations"* (Papapanagiotou, Malesevic, Heiser & Meshenberg) independently arrives at AgentOps 3.0's core structural conclusions — from the **production-operations** end of the lifecycle. AgentOps runs the **dev-loop + context-compiler** end. Same waist, two ends of the SDLC.
 >
-> This doc is the receipt: it maps each convergent principle to **where it is already encoded in AgentOps**, so the convergence is verifiable against executable doctrine, not asserted. It is the in-repo companion to the chronological [convergence ledger](convergence-ledger.md). Tracking bead: `ag-4hf7`.
+> This doc is the receipt: it maps each convergent principle to **where it is already encoded in AgentOps**, so the convergence is verifiable against executable doctrine, not asserted. It is the in-repo companion to the chronological [convergence ledger](ledger.md). Tracking bead: `ag-4hf7`.
 
 ## Why this matters
 
