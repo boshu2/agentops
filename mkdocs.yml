@@ -176,6 +176,7 @@ nav:
       - Architecture Overview: ARCHITECTURE.md
       - Software Factory: software-factory.md
       - Intent-to-Loop Hexagon: architecture/intent-to-loop-hexagon.md
+      - Fungibility Charter: architecture/fungibility-charter.md
       - Behavior-Shaping Environment: architecture/behavior-shaping-environment.md
       - Codex Hookless Lifecycle: architecture/codex-hookless-lifecycle.md
       - Primitive Chains: architecture/primitive-chains.md

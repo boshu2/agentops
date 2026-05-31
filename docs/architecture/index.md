@@ -52,6 +52,12 @@ The rest are specialized references. Skim titles and jump in when a topic become
     Gas City is one opt-in, swappable adapter behind AgentOps ports — plus the
     managed-city guardrail and the "no cloud required" sovereignty promise.
 
+-   :material-swap-horizontal: **[Fungibility Charter](fungibility-charter.md)**
+
+    ---
+
+    AgentOps 3.0's six doctrinal commitments — fungible by default, specialized when you opt in.
+
 -   :material-school: **[Behavior-Shaping Environment](behavior-shaping-environment.md)**
 
     ---
