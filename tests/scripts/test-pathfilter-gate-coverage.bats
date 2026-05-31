@@ -22,6 +22,15 @@
 #    `goals` filter exists (GOALS.md + spec/scenarios/**) and the spec-link
 #    gates trigger on it.
 #
+#  ag-g9ex (repo-wide path-filter audit): scripts/validate-agents-split.sh reads
+#    AGENTS.md AND the four siblings AGENTS-{WORKFLOW,CI,CODEX,RUNTIME}.md, but
+#    the gate triggered only on docs/ci/shell and the siblings were covered by no
+#    filter -> a sibling-only edit skipped the split gate. INVARIANT: every
+#    AGENTS*.md file the split script reads is covered by the `contracts` filter
+#    AND the split gate triggers on `contracts`. Companion: wiring-closure greps
+#    GOALS.md/GOALS.yaml, so it must trigger on `goals`. Full findings:
+#    docs/contracts/ci-pathfilter-coverage-audit.md.
+#
 # Sibling pattern: tests/scripts/test-bats-path-filter-wiring.bats — grep/parse
 # the artifact-under-test and assert the expected wiring is present.
 
@@ -126,6 +135,65 @@ PY
 
 @test "scenario-test linkage gate triggers on needs.changes.outputs.goals" {
     run bash -c "awk '/name: Scenario.*linkage gate/{inblock=1} inblock && /^        if:/{print; exit}' '$WORKFLOW_PATH'"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"needs.changes.outputs.goals == 'true'"* ]]
+}
+
+# ── ag-g9ex: AGENTS tiered-split siblings covered + gate triggers on contracts ──
+
+@test "contracts filter covers every AGENTS*.md file the split script reads" {
+    SPLIT_SCRIPT="$REPO_ROOT/scripts/validate-agents-split.sh"
+    run python3 - "$WORKFLOW_PATH" "$SPLIT_SCRIPT" <<'PY'
+import sys, re, fnmatch, yaml
+
+workflow_path, split_path = sys.argv[1], sys.argv[2]
+
+# Extract the AGENTS*.md filenames the split script reads.
+with open(split_path) as f:
+    src = f.read()
+agents_files = sorted(set(re.findall(r'\bAGENTS(?:-[A-Z]+)?\.md\b', src)))
+if not agents_files:
+    print("FAIL: no AGENTS*.md references found in split script (refactored?)")
+    sys.exit(1)
+
+with open(workflow_path) as f:
+    doc = yaml.safe_load(f)
+filt_step = next(
+    s for s in doc["jobs"]["changes"]["steps"] if s.get("id") == "filter"
+)
+filters = yaml.safe_load(filt_step["with"]["filters"])
+contracts = filters["contracts"]
+
+def covered(target, patterns):
+    for p in patterns:
+        if p == target:
+            return True
+        if p.endswith("/**"):
+            base = p[:-3]
+            if target == base or target.startswith(base + "/"):
+                return True
+        if fnmatch.fnmatch(target, p):
+            return True
+    return False
+
+uncovered = sorted(t for t in agents_files if not covered(t, contracts))
+if uncovered:
+    print("UNCOVERED AGENTS split targets:", uncovered)
+    sys.exit(1)
+print("ok: all AGENTS split targets covered by contracts filter:", agents_files)
+PY
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ok: all AGENTS split targets covered"* ]]
+}
+
+@test "AGENTS tiered-split gate triggers on needs.changes.outputs.contracts" {
+    run bash -c "awk '/name: Validate AGENTS.md tiered-split contract/{inblock=1} inblock && /^        if:/{print; exit}' '$WORKFLOW_PATH'"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"needs.changes.outputs.contracts == 'true'"* ]]
+}
+
+@test "wiring-closure gate triggers on needs.changes.outputs.goals" {
+    run bash -c "awk '/name: Verify all scripts.skills.hooks are wired/{inblock=1} inblock && /^        if:/{print; exit}' '$WORKFLOW_PATH'"
     [ "$status" -eq 0 ]
     [[ "$output" == *"needs.changes.outputs.goals == 'true'"* ]]
 }

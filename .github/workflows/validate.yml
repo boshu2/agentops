@@ -109,6 +109,18 @@ jobs:
               - 'docs/standards/shell-script-standards.md'
               - 'skills/security/**'
               - 'skills/security-suite/**'
+              # AGENTS tiered-split siblings (ag-g9ex): scripts/validate-agents-split.sh
+              # validates AGENTS.md AND these four siblings (size cap, existence,
+              # bidirectional links). The gate triggers on contracts (added with
+              # this list), so a sibling-only edit re-runs the split gate that
+              # guards it — without these globs an AGENTS-WORKFLOW.md-only edit
+              # would skip its own gate (the #634 class). The guard test
+              # tests/scripts/test-pathfilter-gate-coverage.bats asserts every
+              # AGENTS*.md the split script reads is covered by the contracts filter.
+              - 'AGENTS-WORKFLOW.md'
+              - 'AGENTS-CI.md'
+              - 'AGENTS-CODEX.md'
+              - 'AGENTS-RUNTIME.md'
             goals:
               # correctness/doctrine gates that police GOALS.md + the executable
               # spec scenarios (ag-n4m7): a GOALS.md-only or scenario-only edit
@@ -1143,7 +1155,10 @@ jobs:
             || echo "ADVISORY-WARN: --strict-coverage non-blocking failure (soc-33bw)"
 
       - name: Verify all scripts/skills/hooks are wired (GOALS.md gate id wiring-closure, weight 7)
-        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+        # ag-g9ex: + goals — wiring-closure greps GOALS.md/GOALS.yaml to confirm
+        # every check-*.sh is referenced; a GOALS.md-only edit that de-wires a
+        # gate must re-run this check (GOALS.md is covered only by the goals filter).
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
         run: |
           chmod +x scripts/check-wiring-closure.sh
           timeout 60 bash scripts/check-wiring-closure.sh
@@ -1183,7 +1198,10 @@ jobs:
       - name: Validate AGENTS.md tiered-split contract
         # soc-vuu6.3 — AGENTS.md stays <=250 lines; AGENTS-{WORKFLOW,CI,CODEX,
         # RUNTIME}.md exist; links are bidirectional.
-        if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.shell == 'true'
+        # ag-g9ex: + contracts — AGENTS.md and the four siblings are covered by
+        # the contracts filter, so a sibling-only edit re-runs the split gate that
+        # guards it (the #634 path-filter-gap class).
+        if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.contracts == 'true'
         run: |
           chmod +x scripts/validate-agents-split.sh
           ./scripts/validate-agents-split.sh
