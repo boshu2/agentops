@@ -385,6 +385,32 @@ span.textContent = userInput;
 el.appendChild(span);
 ```
 
+## Security-Lint Suppressions (gosec + semgrep)
+
+When a security-lint finding is a false positive on intentional crypto (e.g. SHA-1 used for git object IDs, not as a security primitive), the suppression needs TWO independent annotations on the SAME line. gosec and semgrep run as separate scanners and each ignores the other's directives.
+
+| Scanner | What it ignores | What suppresses it |
+|---------|-----------------|--------------------|
+| gosec (standalone) | `//nolint:gosec` (golangci-lint-only) | `// #nosec G<NN>` directive, e.g. `// #nosec G401 G505` |
+| semgrep | qualified `nosemgrep: <rule-id>` (does NOT suppress) | a **bare** `// nosemgrep` |
+
+Combine both into one comment and place it on **both** the import line and the usage/call site — each is flagged independently:
+
+```go
+import (
+    "crypto/sha1" // #nosec G505 nosemgrep -- git object IDs are SHA-1 by definition; not a security primitive here.
+)
+
+func gitBlobID(content []byte) string {
+    h := sha1.New() // #nosec G401 nosemgrep -- git blob IDs are SHA-1; matching git.
+    // ...
+}
+```
+
+The `G<NN>` codes differ by site: G505 flags the `crypto/sha1` import (blocklisted import), G401 flags the `sha1.New()` call (weak crypto primitive). Pass every code that fires on a given line.
+
+Canonical example in this repo: `cli/internal/drrebuild/drrebuild.go`.
+
 ## Future Features (Go 1.24+)
 
 This section tracks features by first-supported Go version and can be used to plan future target upgrades.
