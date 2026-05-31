@@ -1,6 +1,6 @@
 # Operationalized: Google SRE AI Reliability Method
 
-> Google's 2026 SRE whitepaper *"AI Engineering Reliable Operations"* turned from a doc into **executable, auditable artifacts** — a kernel, an operator library, and validators — via the `operationalizing-expertise` skill (Track A: static distillation). This is the bridge that makes **"are we actually doing what Google says?"** a checkable artifact instead of a claim. Produced under bead `ag-4hf7`; companion to [`docs/convergence/`](../../../docs/convergence/).
+> Google's 2026 SRE whitepaper *"AI Engineering Reliable Operations"* turned from a doc into **executable, auditable artifacts** — a kernel, an operator library, and validators — via the `operationalizing-expertise` skill (Track A: static distillation). This is the bridge that makes **"are we actually doing what Google says?"** a checkable artifact instead of a claim. Produced under bead `ag-4hf7`; companion to the [convergence section](../index.md).
 
 ## What's here
 

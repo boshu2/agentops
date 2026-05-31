@@ -181,12 +181,6 @@ packs/
 !/.agents/
 !/.agents/evolve/
 !/.agents/evolve/preferences.yaml.template
-# Operationalized methodology corpora — compounding audit truth (ag-4hf7): an
-# external method (e.g. Google SRE AI reliability) distilled into kernel +
-# operator library + validators, with per-operator enforcement verdicts that
-# flip as gap beads close. Audit truth, not session state.
-!/.agents/operationalized/
-!/.agents/operationalized/**
 evals/workbench/scorecard-latest.json
 .doctor/
 

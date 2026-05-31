@@ -10,6 +10,13 @@ edit_uri: edit/main/docs/
 docs_dir: docs
 site_dir: _site
 
+# Operationalized methodology corpora are repo artifacts (kernel + operator library
+# + validators + a fair-use quote bank), not website content — kept tracked in the
+# repo but excluded from the published site (avoids re-hosting source material and
+# keeps internal scaffolding out of nav/search).
+exclude_docs: |
+  convergence/operationalized/
+
 # Keep building even when the knowledge graph links outside docs/ (e.g., ../skills/).
 # Strict link checking runs as a separate CI job via tests/docs/validate-links.sh + lychee.
 strict: false
