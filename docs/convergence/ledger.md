@@ -29,15 +29,17 @@ Plus the supporting shape: spec/BDD-as-plan, eval-data-as-moat, humans up the ab
 | Date | Who | What they released / said | Invariant(s) they converged on | Relative to us | Detail |
 |---|---|---|---|---|---|
 | **2026-05** | **Google SRE** (Papapanagiotou, Malesevic, Heiser, Meshenberg) | Whitepaper: *"AI in SRE: How Google is Engineering the Future of Reliable Operations"* | **All four** + abstraction-ladder, eval-as-moat, spec-as-plan, decoupled reasoning/execution, immutable CoT provenance | Even (8/11) — **ahead on fix-forward** (Intervening-PR Problem) | [Encoding map](google-sre.md) · `ag-4hf7` |
+| **2025-10** | **obra/superpowers** (Jesse Vincent) | Claude Code methodology plugin; [launch post](https://blog.fsck.com/2025/10/09/superpowers/), [v4](https://blog.fsck.com/2025/12/18/superpowers-4/) (2025-12) | **No self-grade** + spec/BDD-as-plan + abstraction-ladder | **Even** | Dispatches a *fresh subagent per task* with two-stage review (spec-compliance, then code-quality) — implementer ≠ validator by construction. v4 added a *separate* spec-compliance reviewer, hardening the split. "Design before code, tests before features." |
+| **2025-10** | **EveryInc/compound-engineering-plugin** (Every / Kieran Klaassen) | "Compounding engineering" plugin; [repo](https://github.com/EveryInc/compound-engineering-plugin), [concept (2025-06)](https://every.to/source-code/compound-engineering-the-definitive-guide) | Context-as-compounding-artifact + spec-as-plan | **Behind** on knowledge→constraint | Loop "brainstorm → plan → work → review → **compound**"; `/ce-compound` documents learnings so the next agent doesn't re-learn. Real convergence on *context compounding* — but learnings land as **prose notes, not executable gates**. We compile knowledge into a CI gate; they don't. The cleanest place we're ahead. |
+| **2025-09 / 10** | **Anthropic** | [Claude Agent SDK guidance](https://claude.com/blog/building-agents-with-the-claude-agent-sdk) (2025-09) + [Agent Skills](https://claude.com/blog/skills) (2025-10) | **Reasoning core + deterministic boundary** (SDK) + context-as-artifact (Skills) | **Even** (narrower) | SDK names the loop "gather context → act → **verify** → repeat" and *ranks* verification: **rules-based feedback best**, LLM-as-judge last & "less robust" — a probabilistic core wrapped by a deterministic check. Skills = portable, composable context folders ("build once, use across Claude apps, Code, API") — the primitive our corpus generalizes. Anthropic ships the primitives; we compose the compounding-corpus + knowledge-as-gate system. |
+
+> **Reading the dates.** The 2025-10 cluster (superpowers, compound-engineering) and Anthropic's 2025-09/10 primitives all *predate* the Google SRE paper (2026-05) but *postdate* the AgentOps CDLC doctrine they converge on. The pattern is independent rediscovery accelerating through late 2025 into 2026 — see [The Reading](the-reading.md) for the mechanism.
 
 ## Backfill candidates (verify before promoting)
 
 Tracked-but-not-yet-confirmed convergence moments. Each needs a dated source and a specific invariant before it becomes a ledger row — do not assert without the receipt:
 
-- **obra/superpowers** — TDD-discipline + autonomy patterns as a methodology. Candidate for invariant #2 (independent verification) and spec-as-plan. (Already in [Competitive Radar](../comparisons/competitive-radar.md) source set.)
-- **EveryInc/compound-engineering-plugin** — "ideate → compound" 7-phase loop. Candidate for the compounding-corpus / knowledge-flywheel thesis. (Competitive Radar source set.)
-- **Anthropic** (Claude Code skills/plugins, agent-SDK guidance) — candidate for pulled-context / skills-as-portable-runtime convergence; needs a specific dated artifact.
-- *(Add the earlier markers you've been carrying informally — the point of this ledger is to stop carrying them in your head.)*
+- *(The first wave — superpowers, compound-engineering, Anthropic — is now confirmed and promoted above. Add the next markers here as they surface; promote on a dated, citable receipt.)*
 
 ## How to add an entry
 
