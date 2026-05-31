@@ -19,8 +19,18 @@
 #   scripts/gc-stale-worktrees.sh --ref origin/develop # different upstream
 #   scripts/gc-stale-worktrees.sh --json               # machine-readable summary
 #   scripts/gc-stale-worktrees.sh --verbose            # per-worktree decision trace
+#   scripts/gc-stale-worktrees.sh --check-committed    # CI gate: fail if a tmp
+#                                                        worktree got committed
 #
-# Exit codes: 0 = success (may include removals); 1 = usage/internal error.
+# --check-committed is the CI-runnable disposition gate. Live linked worktrees
+# are invisible to a fresh CI checkout, but an *undisposed* tmp worktree that
+# was accidentally `git add`-ed (its nested `.git` gitdir pointer file plus its
+# checked-out tree) IS visible as tracked files. This mode scans `git ls-files`
+# for those artifacts and exits non-zero so the entropy can never land on main.
+# It never touches the working tree and never removes anything.
+#
+# Exit codes: 0 = success (may include removals / clean gate); 1 = usage,
+# internal error, OR (in --check-committed mode) committed tmp-worktree artifacts.
 
 set -euo pipefail
 
@@ -29,6 +39,7 @@ APPLY=0
 FORCE=0
 JSON=0
 VERBOSE=0
+CHECK_COMMITTED=0
 
 usage() {
   sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'
@@ -41,12 +52,43 @@ while [ $# -gt 0 ]; do
     --force) FORCE=1 ;;
     --json) JSON=1 ;;
     --verbose|-v) VERBOSE=1 ;;
+    --check-committed) CHECK_COMMITTED=1 ;;
     --ref) shift; REF="${1:-origin/main}" ;;
     -h|--help) usage 0 ;;
     *) echo "gc-stale-worktrees: unknown arg: $1" >&2; usage 1 ;;
   esac
   shift || true
 done
+
+# --check-committed mode: the CI-runnable disposition gate. Scan the tracked
+# file set (NOT the live worktree list, which is empty on a fresh checkout) for
+# committed tmp-worktree artifacts and fail if any are found. Runs before the
+# ref check below because CI shallow checkouts may lack origin/main, and this
+# gate does not need merged-ness — it only inspects tracked paths.
+if [ "$CHECK_COMMITTED" -eq 1 ]; then
+  # An undisposed tmp worktree leaks into the repo when its *checked-out tree*
+  # is `git add`-ed under a tmp-worktree-style directory. (Git itself refuses
+  # to track a literal `.git` path, so the only visible signature is the dir
+  # name carrying tracked content.)
+  #
+  # Patterns are anchored to the tmp-worktree naming this repo produces:
+  # `bd worktree create` siblings and the historical /tmp/agentops-* and *-wt
+  # checkouts called out in ag-4oj9.2 (e.g. agentops-pr290-merge,
+  # agentops-rpi-fix, *-wt, .codex/worktrees/).
+  offenders="$(git ls-files | grep -E \
+    '(^|/)agentops-[^/]*-(merge|rpi[^/]*|wt)(/|$)|(^|/)[^/]*-wt/|(^|/)\.codex/worktrees/' \
+    || true)"
+  if [ -n "$offenders" ]; then
+    echo "gc-stale-worktrees: FAIL — committed tmp-worktree artifacts detected (undisposed worktree)." >&2
+    echo "A worktree must end as merged / preserved / exported / deleted — never committed." >&2
+    echo "Offending tracked paths:" >&2
+    printf '  - %s\n' $offenders >&2
+    echo "Dispose with: scripts/gc-stale-worktrees.sh --apply  (and git rm the tracked copy)." >&2
+    exit 1
+  fi
+  echo "gc-stale-worktrees: PASS — no committed tmp-worktree artifacts tracked"
+  exit 0
+fi
 
 # Verify ref exists; without it we can't determine merged-ness.
 if ! git rev-parse --verify --quiet "$REF" >/dev/null; then

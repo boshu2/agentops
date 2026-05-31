@@ -206,3 +206,62 @@ run_script() {
   [ "$status" -eq 0 ]
   [[ "$output" != *"REMOVE: $TMP/main"* ]]
 }
+
+# ── --check-committed: the CI-runnable disposition gate (ag-4oj9.2). It must
+# detect tmp-worktree artifacts that landed as *tracked* files, pass on a clean
+# repo, and never touch the main checkout's working tree.
+
+@test "check-committed passes on a clean repo" {
+  run_script --check-committed
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"PASS"* ]]
+  [[ "$output" == *"no committed tmp-worktree artifacts"* ]]
+}
+
+@test "check-committed fails on a committed agentops tmp-worktree tree" {
+  cd "$TMP/main"
+  # The /tmp/agentops-pr290-merge family called out in the bead, committed.
+  mkdir -p agentops-pr290-merge
+  echo "leftover" > agentops-pr290-merge/file.txt
+  git add -f agentops-pr290-merge/file.txt
+  run_script --check-committed
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"FAIL"* ]]
+  [[ "$output" == *"agentops-pr290-merge/file.txt"* ]]
+}
+
+@test "check-committed fails on a committed *-wt sibling worktree tree" {
+  cd "$TMP/main"
+  mkdir -p ag-1234-wt
+  echo "leftover" > ag-1234-wt/scratch.txt
+  git add -f ag-1234-wt/scratch.txt
+  run_script --check-committed
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"FAIL"* ]]
+  [[ "$output" == *"ag-1234-wt/scratch.txt"* ]]
+}
+
+@test "check-committed does NOT flag ordinary tracked source files" {
+  cd "$TMP/main"
+  # A normal repo file (no .git basename, no tmp-worktree dir) must not trip.
+  mkdir -p scripts
+  echo "echo ok" > scripts/regular.sh
+  git add -f scripts/regular.sh
+  run_script --check-committed
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"PASS"* ]]
+}
+
+@test "check-committed never removes or mutates the main checkout" {
+  cd "$TMP/main"
+  mkdir -p agentops-pr290-merge
+  echo "leftover" > agentops-pr290-merge/file.txt
+  git add -f agentops-pr290-merge/file.txt
+  run_script --check-committed
+  [ "$status" -eq 1 ]
+  # The gate is read-only: the main checkout dir and its files survive intact.
+  [ -d "$TMP/main" ]
+  [ -f "$TMP/main/agentops-pr290-merge/file.txt" ]
+  # And it reported no removals.
+  [[ "$output" != *"REMOVE:"* ]]
+}
