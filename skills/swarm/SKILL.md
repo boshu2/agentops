@@ -38,6 +38,8 @@ Spawn isolated agents to execute tasks in parallel. Fresh context per agent (Ral
 
 Move **5 (wave execution)** of the [operating loop](../../docs/architecture/operating-loop.md), specifically the parallel-fork primitive `/crank` invokes. Refuses to spawn parallel agents on a wave that has not cleared the wave-validity check in the [slice validation plan](../../docs/templates/slice-validation.md): write scopes must be disjoint, no shared migration/contract/CLI surface, integration order declared when it matters, one owner per slice, discard path per slice. Parallelism is explicit ownership, not swarm chaos. Default to sequential when the wave-validity rows are not all green.
 
+**Coupled-chain rule (DERIVED-surface collision).** Two slices that both regenerate a shared *derived* surface — `cli-command-surface`, `registry.json`, `context-map`, or the codex manifest — **collide even if their source files are disjoint**. Such a coupled chain (`schema→write-model→export→gate→tests`) MUST run sequential: each link branches off the freshly-**MERGED** prior link's SHA, never a pre-fan snapshot. Reserve parallel waves for provably-disjoint surfaces, cap **4–6**.
+
 **Integration modes:**
 - **Direct** - Create TaskList tasks, invoke `/swarm`
 - **Via Crank** - `/crank` creates tasks from beads, invokes `/swarm` for each wave
@@ -252,6 +254,8 @@ Read [references/ol-wave-integration.md](references/ol-wave-integration.md) when
 Read [references/shared-checkout-discipline.md](references/shared-checkout-discipline.md) **first** when the target checkout (`~/dev/<repo>`) is shared with peer agents — it documents when worktrees are mandatory (vs. optional) and the three failure modes (branch-deletion data loss, swarm attribution confounded, destructive-recovery temptation) that motivate the discipline.
 
 Read [references/worktree-isolation.md](references/worktree-isolation.md) when you need to dispatch workers across multiple epics or run waves with overlapping files — covers isolation semantics per backend, effort levels, post-spawn verification, manual worktree creation/routing/merge-back, the Merge Arbiter Protocol, cleanup, and the `--worktrees` / `--no-worktrees` parameters.
+
+**Worktree reaping (teardown).** After a worker's PR is confirmed **MERGED** (`gh pr view --json state` = `MERGED`), reap its tree: `git worktree remove <path> --force` then `git worktree prune`. **Leave unmerged-PR worktrees intact.** Target zero orphaned worktrees — bound the live count to in-flight PRs. (The committed disposition gate scans the tracked file set, not live on-disk worktrees, so this teardown is the operational backstop.)
 
 ---
 
