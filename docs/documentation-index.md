@@ -218,6 +218,13 @@ Bridge / framing docs:
 - [vs everything-claude-code](comparisons/vs-everything-claude-code.md) — AgentOps vs `affaan-m/everything-claude-code` (cross-harness lane)
 - [Competitive Radar](comparisons/competitive-radar.md) — Current market read and improvement pressure
 
+## Convergence
+
+- [Convergence Overview](convergence/index.md) — The industry arriving at the structure AgentOps runs (vindication, not competition)
+- [The Reading](convergence/the-reading.md) — Living thesis: the industry is converging, and here's the mechanism why
+- [Convergence Ledger](convergence/ledger.md) — Dated receipts: external parties independently arriving at the AgentOps thesis
+- [Google SRE](convergence/google-sre.md) — Encoding map: where Google's 2026 SRE AI whitepaper aligns with AgentOps doctrine, point by point
+
 ## Positioning
 
 - [Positioning Overview](positioning/README.md) — Product and messaging foundations
