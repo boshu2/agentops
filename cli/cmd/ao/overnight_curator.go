@@ -367,7 +367,7 @@ func getJSON(client *http.Client, url string, dst any) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
 		return fmt.Errorf("%s returned %s: %s", url, resp.Status, strings.TrimSpace(string(body)))
@@ -587,9 +587,12 @@ func runCuratorEvent(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("open curator event ledger: %w", err)
 	}
-	defer f.Close()
 	if _, err := f.Write(append(line, '\n')); err != nil {
+		_ = f.Close()
 		return fmt.Errorf("write curator event ledger: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("close curator event ledger: %w", err)
 	}
 	return outputCuratorObject(map[string]any{"event_path": path, "event": event}, curatorStatusJSON || GetOutput() == "json")
 }

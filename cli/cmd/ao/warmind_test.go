@@ -600,7 +600,7 @@ func TestWarmindE2E_CloseLoopFlow(t *testing.T) {
 	os.Chdir(tmpDir)
 
 	cfg := warmind.DefaultConfig()
-	cfg.Promotion.GoldAutoPromoteHours = 0   // Immediate for testing
+	cfg.Promotion.GoldAutoPromoteHours = 0 // Immediate for testing
 	cfg.Promotion.SilverCitationThreshold = 1
 	cfg.Maturity.MinCorpusSize = 1
 

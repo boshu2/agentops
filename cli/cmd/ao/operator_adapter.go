@@ -60,9 +60,12 @@ func (a *productionOperator) Record(ctx context.Context, intent ports.OperatorIn
 	if err != nil {
 		return fmt.Errorf("productionOperator open %q: %w", a.path, err)
 	}
-	defer f.Close()
 	if _, err := f.Write(append(payload, '\n')); err != nil {
+		_ = f.Close()
 		return fmt.Errorf("productionOperator write: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("productionOperator close: %w", err)
 	}
 	return nil
 }
@@ -86,7 +89,7 @@ func (a *productionOperator) List(ctx context.Context) ([]ports.OperatorIntent, 
 		}
 		return nil, fmt.Errorf("productionOperator open %q: %w", a.path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
 	in := make([]ports.OperatorIntent, 0)

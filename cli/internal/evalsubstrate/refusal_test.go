@@ -45,7 +45,7 @@ func TestRefusal_FieldOrder_WhyEvidenceFix(t *testing.T) {
 	whyIdx := strings.Index(got, "Why:")
 	evIdx := strings.Index(got, "Evidence:")
 	fixIdx := strings.Index(got, "Fix:")
-	if !(whyIdx < evIdx && evIdx < fixIdx) {
+	if whyIdx >= evIdx || evIdx >= fixIdx {
 		t.Fatalf("field order should be Why<Evidence<Fix; got: %s", got)
 	}
 }

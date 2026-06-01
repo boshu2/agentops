@@ -14,15 +14,15 @@ import (
 )
 
 type SessionTemplate struct {
-	SchemaVersion int              `toml:"schema_version" json:"schema_version"`
-	Role          string           `toml:"role" json:"role"`
-	Description   string           `toml:"description" json:"description"`
-	Identity      SessionIdentity  `toml:"identity" json:"identity"`
-	Workspace     SessionWorkspace `toml:"workspace" json:"workspace"`
-	Init          SessionInit      `toml:"init" json:"init"`
-	Tmux          SessionTmux      `toml:"tmux" json:"tmux"`
-	Heartbeat     SessionHeartbeat `toml:"heartbeat" json:"heartbeat"`
-	OnExit        SessionOnExit    `toml:"on_exit" json:"on_exit"`
+	SchemaVersion int               `toml:"schema_version" json:"schema_version"`
+	Role          string            `toml:"role" json:"role"`
+	Description   string            `toml:"description" json:"description"`
+	Identity      SessionIdentity   `toml:"identity" json:"identity"`
+	Workspace     SessionWorkspace  `toml:"workspace" json:"workspace"`
+	Init          SessionInit       `toml:"init" json:"init"`
+	Tmux          SessionTmux       `toml:"tmux" json:"tmux"`
+	Heartbeat     SessionHeartbeat  `toml:"heartbeat" json:"heartbeat"`
+	OnExit        SessionOnExit     `toml:"on_exit" json:"on_exit"`
 	Invariants    map[string]string `toml:"invariants" json:"invariants,omitempty"`
 	References    map[string]string `toml:"references" json:"references,omitempty"`
 }

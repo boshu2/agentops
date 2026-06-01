@@ -417,12 +417,16 @@ func daemonSoakStringSet(values []string) map[string]struct{} {
 	return out
 }
 
-func writeDaemonSoakEvents(path string, events []daemonpkg.LedgerEvent) error {
+func writeDaemonSoakEvents(path string, events []daemonpkg.LedgerEvent) (err error) {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if cerr := file.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 	enc := json.NewEncoder(file)
 	for _, event := range events {
 		if err := enc.Encode(event); err != nil {

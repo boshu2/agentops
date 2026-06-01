@@ -522,7 +522,7 @@ func TestCtx_BuildPhaseContext_DeterministicVerdictOrder(t *testing.T) {
 	if aIdx < 0 || mIdx < 0 || pIdx < 0 || zIdx < 0 {
 		t.Fatalf("expected all verdicts in context, got: %q", first)
 	}
-	if !(aIdx < mIdx && mIdx < pIdx && pIdx < zIdx) {
+	if aIdx >= mIdx || mIdx >= pIdx || pIdx >= zIdx {
 		t.Errorf("verdicts not in sorted order: apple=%d mango=%d pre-mortem=%d zebra=%d\nctx=%q",
 			aIdx, mIdx, pIdx, zIdx, first)
 	}

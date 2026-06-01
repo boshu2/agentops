@@ -134,7 +134,7 @@ func (c *Client) openEventStream(
 		RequestID:  resp.Header.Get(RequestIDHeader),
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		return nil, meta, &APIError{
 			Method:     http.MethodGet,
 			Path:       requestPath,
@@ -381,7 +381,7 @@ func (d *SSEDecoder) readRawFrame() (rawSSEFrame, error) {
 	var data []string
 	for {
 		line, err := d.reader.ReadString('\n')
-		if err != nil && !(err == io.EOF && line != "") {
+		if err != nil && (err != io.EOF || line == "") {
 			if err == io.EOF && frame.id == "" && frame.event == "" && len(data) == 0 {
 				return rawSSEFrame{}, io.EOF
 			}

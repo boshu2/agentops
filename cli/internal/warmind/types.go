@@ -32,8 +32,8 @@ const (
 type Maturity string
 
 const (
-	MaturityProvisional Maturity = "provisional" // New, needs validation
-	MaturityEstablished Maturity = "established" // 3+ citations, proven useful
+	MaturityProvisional Maturity = "provisional"  // New, needs validation
+	MaturityEstablished Maturity = "established"  // 3+ citations, proven useful
 	MaturityAntiPattern Maturity = "anti-pattern" // Marked as bad practice
 )
 
@@ -326,10 +326,10 @@ type ScoringConfig struct {
 
 // PromotionConfig holds promotion rules.
 type PromotionConfig struct {
-	GoldAutoPromoteHours     int  `yaml:"gold_auto_promote_hours" json:"gold_auto_promote_hours"`
-	SilverCitationThreshold  int  `yaml:"silver_citation_threshold" json:"silver_citation_threshold"`
-	BronzeCitationThreshold  int  `yaml:"bronze_citation_threshold" json:"bronze_citation_threshold"`
-	SelfCitationAllowed      bool `yaml:"self_citation_allowed" json:"self_citation_allowed"`
+	GoldAutoPromoteHours    int  `yaml:"gold_auto_promote_hours" json:"gold_auto_promote_hours"`
+	SilverCitationThreshold int  `yaml:"silver_citation_threshold" json:"silver_citation_threshold"`
+	BronzeCitationThreshold int  `yaml:"bronze_citation_threshold" json:"bronze_citation_threshold"`
+	SelfCitationAllowed     bool `yaml:"self_citation_allowed" json:"self_citation_allowed"`
 }
 
 // MaturityConfig holds maturity lifecycle rules.

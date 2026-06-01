@@ -225,7 +225,7 @@ func (s *Store) AppendLedgerEvent(event LedgerEvent) (LedgerEvent, error) {
 	if err != nil {
 		return LedgerEvent{}, fmt.Errorf("open ledger: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	if _, err := file.Write(line); err != nil {
 		return LedgerEvent{}, fmt.Errorf("append ledger: %w", err)
 	}
@@ -302,7 +302,7 @@ func gzipFileInPlace(src string) error {
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer func() { _ = in.Close() }()
 
 	dst := src + ".gz"
 	tmp := dst + ".tmp"
@@ -387,7 +387,7 @@ func (s *Store) replayLedgerFile(path string, lineCounter *int, seen map[string]
 		}
 		return fmt.Errorf("open ledger %s: %w", filepath.Base(path), err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var reader io.Reader = file
 	if strings.HasSuffix(path, ".gz") {
@@ -395,7 +395,7 @@ func (s *Store) replayLedgerFile(path string, lineCounter *int, seen map[string]
 		if err != nil {
 			return fmt.Errorf("open gzip archive %s: %w", filepath.Base(path), err)
 		}
-		defer zr.Close()
+		defer func() { _ = zr.Close() }()
 		reader = zr
 	}
 

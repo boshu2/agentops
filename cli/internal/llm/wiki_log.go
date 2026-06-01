@@ -19,9 +19,11 @@ func AppendToLog(agentsDir, actor, verb, subject, wikilink string) error {
 	if err != nil {
 		return fmt.Errorf("open LOG.md: %w", err)
 	}
-	defer f.Close()
-	_, err = f.WriteString(entry)
-	return err
+	if _, err := f.WriteString(entry); err != nil {
+		_ = f.Close()
+		return err
+	}
+	return f.Close()
 }
 
 // AppendToIndex appends a single wikilink entry to .agents/INDEX.md under
@@ -36,7 +38,9 @@ func AppendToIndex(agentsDir, section, wikilink, description string) error {
 	if err != nil {
 		return fmt.Errorf("open INDEX.md: %w", err)
 	}
-	defer f.Close()
-	_, err = f.WriteString(entry)
-	return err
+	if _, err := f.WriteString(entry); err != nil {
+		_ = f.Close()
+		return err
+	}
+	return f.Close()
 }
