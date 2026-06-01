@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -134,7 +135,7 @@ func (c *Client) openEventStream(
 		RequestID:  resp.Header.Get(RequestIDHeader),
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		return nil, meta, &APIError{
 			Method:     http.MethodGet,
 			Path:       requestPath,
@@ -381,8 +382,8 @@ func (d *SSEDecoder) readRawFrame() (rawSSEFrame, error) {
 	var data []string
 	for {
 		line, err := d.reader.ReadString('\n')
-		if err != nil && !(err == io.EOF && line != "") {
-			if err == io.EOF && frame.id == "" && frame.event == "" && len(data) == 0 {
+		if err != nil && (!errors.Is(err, io.EOF) || line == "") {
+			if errors.Is(err, io.EOF) && frame.id == "" && frame.event == "" && len(data) == 0 {
 				return rawSSEFrame{}, io.EOF
 			}
 			return rawSSEFrame{}, err
@@ -391,7 +392,7 @@ func (d *SSEDecoder) readRawFrame() (rawSSEFrame, error) {
 		line = strings.TrimRight(line, "\r\n")
 		if line == "" {
 			if frame.id == "" && frame.event == "" && len(data) == 0 {
-				if err == io.EOF {
+				if errors.Is(err, io.EOF) {
 					return rawSSEFrame{}, io.EOF
 				}
 				continue
@@ -401,7 +402,7 @@ func (d *SSEDecoder) readRawFrame() (rawSSEFrame, error) {
 		}
 
 		if strings.HasPrefix(line, ":") {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return rawSSEFrame{}, io.EOF
 			}
 			continue
@@ -411,7 +412,7 @@ func (d *SSEDecoder) readRawFrame() (rawSSEFrame, error) {
 			return rawSSEFrame{}, perr
 		}
 
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			frame.data = []byte(strings.Join(data, "\n"))
 			return frame, nil
 		}

@@ -285,7 +285,7 @@ func (s *GasCitySession) Stream(ctx context.Context, opts StreamOptions) (<-chan
 	ch := make(chan Event)
 	go func() {
 		defer close(ch)
-		defer stream.Close()
+		defer func() { _ = stream.Close() }()
 		for {
 			frame, err := stream.NextEvent()
 			if err != nil {

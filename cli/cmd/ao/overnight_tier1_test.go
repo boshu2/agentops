@@ -72,7 +72,7 @@ func TestCollectRecentSessionJSONL_NoClaude(t *testing.T) {
 func TestRunPostLoopTier1Forge_SkipsWhenKillSwitchSet(t *testing.T) {
 	t.Setenv("AGENTOPS_FORGE_TIER1_DISABLE", "1")
 	summary := &overnightSummary{}
-	runPostLoopTier1Forge(nil, t.TempDir(), summary, overnightSettings{})
+	runPostLoopTier1Forge(context.TODO(), t.TempDir(), summary, overnightSettings{})
 	if len(summary.Degraded) != 0 {
 		t.Errorf("kill switch should skip silently, got degraded: %v", summary.Degraded)
 	}
@@ -84,7 +84,7 @@ func TestRunPostLoopTier1Forge_SkipsWhenNoModel(t *testing.T) {
 	t.Setenv("AGENTOPS_DREAM_CURATOR_WORKER_DIR", "")
 	t.Setenv("AGENTOPS_DREAM_CURATOR_MODEL", "")
 	summary := &overnightSummary{}
-	runPostLoopTier1Forge(nil, t.TempDir(), summary, overnightSettings{})
+	runPostLoopTier1Forge(context.TODO(), t.TempDir(), summary, overnightSettings{})
 	// No model configured = skip silently (opt-in feature).
 	if len(summary.Degraded) != 0 {
 		t.Errorf("no model should skip silently, got degraded: %v", summary.Degraded)
@@ -99,7 +99,7 @@ func TestRunPostLoopTier1Forge_SkipsModelWithoutLegacyEngine(t *testing.T) {
 	t.Setenv("AGENTOPS_DREAM_CURATOR_ENGINE", "")
 	t.Setenv(forgeLegacyLocalLLMEnv, "")
 	summary := &overnightSummary{}
-	runPostLoopTier1Forge(nil, t.TempDir(), summary, overnightSettings{})
+	runPostLoopTier1Forge(context.TODO(), t.TempDir(), summary, overnightSettings{})
 	if len(summary.Degraded) != 0 {
 		t.Errorf("model without legacy engine should skip silently, got degraded: %v", summary.Degraded)
 	}
@@ -131,7 +131,7 @@ func TestRunPostLoopTier1Forge_QueuesWhenWorkerConfigured(t *testing.T) {
 	t.Setenv("AGENTOPS_DREAM_CURATOR_WORKER_DIR", workerDir)
 
 	summary := &overnightSummary{}
-	runPostLoopTier1Forge(nil, filepath.Join(tmp, "repo"), summary, overnightSettings{})
+	runPostLoopTier1Forge(context.TODO(), filepath.Join(tmp, "repo"), summary, overnightSettings{})
 	if len(summary.Degraded) != 0 {
 		t.Fatalf("expected no degradation, got %v", summary.Degraded)
 	}

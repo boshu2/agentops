@@ -103,7 +103,7 @@ func postDaemonSubmitJob(ctx context.Context, baseURL, token string, request dae
 	if err != nil {
 		return response, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return response, fmt.Errorf("daemon submit returned HTTP %d", resp.StatusCode)
 	}

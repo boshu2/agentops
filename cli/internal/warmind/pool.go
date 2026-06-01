@@ -452,7 +452,7 @@ func (p *Pool) GetChain() ([]ChainEvent, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var events []ChainEvent
 	scanner := bufio.NewScanner(f)
@@ -566,10 +566,11 @@ func (p *Pool) recordEvent(event ChainEvent) {
 		fmt.Fprintf(os.Stderr, "Warning: failed to open chain log %s: %v\n", chainPath, err)
 		return
 	}
-	defer f.Close()
-
 	if _, err := f.Write(append(data, '\n')); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to append chain event to %s: %v\n", chainPath, err)
+	}
+	if err := f.Close(); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to close chain log %s: %v\n", chainPath, err)
 	}
 }
 

@@ -10,7 +10,7 @@ import (
 // AppendToLog appends a single entry to .agents/LOG.md. The log is
 // append-only per the Karpathy wiki pattern. Non-fatal: errors are
 // returned but should not abort the caller's main operation.
-func AppendToLog(agentsDir, actor, verb, subject, wikilink string) error {
+func AppendToLog(agentsDir, actor, verb, subject, wikilink string) (err error) {
 	logPath := filepath.Join(agentsDir, "LOG.md")
 	entry := fmt.Sprintf("%s | %s | %s | %s | [[%s]]\n",
 		time.Now().UTC().Format("2006-01-02 15:04"),
@@ -19,7 +19,11 @@ func AppendToLog(agentsDir, actor, verb, subject, wikilink string) error {
 	if err != nil {
 		return fmt.Errorf("open LOG.md: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 	_, err = f.WriteString(entry)
 	return err
 }
@@ -27,7 +31,7 @@ func AppendToLog(agentsDir, actor, verb, subject, wikilink string) error {
 // AppendToIndex appends a single wikilink entry to .agents/INDEX.md under
 // the appropriate section header. If the section doesn't exist, appends at
 // the end. Lightweight alternative to re-running generate-index.sh.
-func AppendToIndex(agentsDir, section, wikilink, description string) error {
+func AppendToIndex(agentsDir, section, wikilink, description string) (err error) {
 	indexPath := filepath.Join(agentsDir, "INDEX.md")
 	entry := fmt.Sprintf("- [[%s]] — %s\n", wikilink, description)
 
@@ -36,7 +40,11 @@ func AppendToIndex(agentsDir, section, wikilink, description string) error {
 	if err != nil {
 		return fmt.Errorf("open INDEX.md: %w", err)
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 	_, err = f.WriteString(entry)
 	return err
 }

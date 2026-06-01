@@ -152,7 +152,7 @@ func (lr *streamLineReader) readLine() ([]byte, error) {
 			return nil, fmt.Errorf("stream line exceeds max length (%d bytes)", maxStreamLineLength)
 		}
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				line := bytes.TrimSpace(lr.buf)
 				lr.buf = lr.buf[:0]
 				return line, io.EOF

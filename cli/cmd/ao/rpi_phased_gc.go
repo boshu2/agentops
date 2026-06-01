@@ -211,7 +211,7 @@ func (g *gcExecutor) waitAPIEventCompletion(
 		return fmt.Errorf("gc executor: api event stream for %q: %w", sessionID, err)
 	}
 	g.apiLastPhase.EventStreamRequestID = meta.RequestID
-	defer stream.Close()
+	defer func() { _ = stream.Close() }()
 
 	for {
 		frame, err := stream.NextEvent()

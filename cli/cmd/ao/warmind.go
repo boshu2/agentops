@@ -144,9 +144,9 @@ Examples:
 }
 
 var (
-	warmindPoolStaged   bool
-	warmindPoolPending  bool
-	warmindPromoteForce bool
+	warmindPoolStaged     bool
+	warmindPoolPending    bool
+	warmindPromoteForce   bool
 	warmindContradictList bool
 )
 
@@ -742,8 +742,9 @@ func parseLearningFrontmatter(content string) (title, category string, tags []st
 				}
 			}
 		case "confidence":
-			if f, err := fmt.Sscanf(value, "%f", &confidence); err == nil && f > 0 {
-				// parsed
+			var parsed float64
+			if n, err := fmt.Sscanf(value, "%f", &parsed); err == nil && n > 0 {
+				confidence = parsed
 			}
 		case "created_at":
 			if t, err := time.Parse(time.RFC3339, value); err == nil {
