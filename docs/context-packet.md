@@ -8,6 +8,14 @@ schema_version: 1
 
 **Compatibility policy:** v1 fields are immutable once shipped. Future versions (v2, v3) add new optional fields only. Consumers MUST ignore unknown fields. Producers MUST NOT remove or rename v1 fields.
 
+> **Command surface (verified against `cli/cmd/ao/`).** This spec was originally drafted around `ao lookup` as the assembler and described `ao inject` as deprecated. The shipped CLI is the opposite:
+>
+> - **`ao inject`** (`cli/cmd/ao/inject.go`) is current and **not** deprecated. It is the JIT/explicit knowledge-injection command — the broad assembler over learnings, patterns, and session summaries, with `--max-tokens`, `--apply-decay`, `--bead`, `--for`, and citation recording. `InjectCharsPerToken` is defined in `cli/cmd/ao/inject.go`. Wherever this document says "`ao lookup` assembles the packet" or "`ao inject` is deprecated," read **`ao inject`** as the assembler.
+> - **`ao lookup`** (`cli/cmd/ao/lookup.go`) is a narrower retrieve-by-ID-or-query command (`ao lookup <id>`, `--query`, `--limit`, `--bead`). It has **no `--max-tokens` flag** — examples below showing `ao lookup --max-tokens N` describe the *packet model*, not the literal `lookup` flag set; substitute `ao inject --max-tokens N`.
+> - **`ao context assemble` / `ao context packet`** (`cli/cmd/ao/context.go`, `context_assemble.go`, `context_packet.go`) is the dedicated packet-assembly surface for phase-scoped runtime context, paired with a [domain/practice packet](domain-practice-packets.md).
+>
+> Treat the section structure, budgets, redaction contract, and eviction order below as the durable specification; treat the specific command name as `ao inject` / `ao context` per this note.
+
 ---
 
 ## Overview
@@ -281,7 +289,7 @@ Commit your work with clear messages. Write a session summary to
 | PROTOCOL | 200 | 2,000 | 2,500 | ~500 |
 | **Total** | **1,000** | **28,000** | **35,500** | **~7,000** |
 
-Token estimates use `InjectCharsPerToken = 4` (conservative, from `cli/cmd/ao/lookup.go`).
+Token estimates use `InjectCharsPerToken = 4` (conservative, defined in `cli/cmd/ao/inject.go` as `search.InjectCharsPerToken`).
 
 ### Overflow Eviction Order
 
@@ -423,7 +431,9 @@ This provenance record enables:
 
 ## Evolution of `ao lookup`
 
-The deprecated `ao inject` output a flat knowledge dump: learnings, patterns, and sessions rendered as markdown or JSON. The context packet evolves this through an on-demand retrieval pattern:
+> **Correction (verified against `cli/cmd/ao/inject.go`):** `ao inject` is **not** deprecated — it is the current JIT/explicit injection command and the packet assembler. The historical "flat knowledge dump" rendering described below was an *earlier output shape* of `ao inject`, superseded by the structured five-section packet within the same command. `ao lookup` is a separate, narrower retrieve-by-ID/query command, not the assembler.
+
+The earlier flat-dump rendering output learnings, patterns, and sessions as undifferentiated markdown or JSON. The context packet evolves this through a structured, on-demand retrieval pattern:
 
 ### Phase 1: Structured Sections (non-breaking)
 
@@ -488,7 +498,9 @@ The context packet unifies and structures what multiple components already provi
 
 | Component | Current Role | Context Packet Role |
 |-----------|-------------|---------------------|
-| `ao lookup` (`lookup.go`) | On-demand knowledge retrieval | The packet assembler |
+| `ao inject` (`inject.go`) | JIT/explicit knowledge injection (current; not deprecated) | The packet assembler |
+| `ao lookup` (`lookup.go`) | Retrieve-by-ID/query knowledge artifacts (`--query`/`--limit`/`--bead`; no `--max-tokens`) | Narrow retrieval surface, distinct from the assembler |
+| `ao context assemble`/`packet` (`context.go`) | Phase-scoped runtime context assembly | Dedicated packet-assembly surface (pairs with domain/practice packet) |
 | `goals.LoadGoals()` | Fitness measurement | Feeds GOALS section |
 | `collectLearnings()` | MemRL retrieval | Feeds INTEL section (learnings) |
 | `collectPatterns()` | Pattern retrieval | Feeds INTEL section (patterns) |

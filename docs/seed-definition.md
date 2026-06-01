@@ -26,6 +26,22 @@ ao quick-start
 # alias: ao quickstart
 ```
 
+To plant just the seed elements below into any repo (auto-detecting a goal
+template from `go.mod` / `package.json` / `pyproject.toml` / `Cargo.toml`),
+use the focused command named after this document:
+
+```bash
+ao seed                    # seed current dir (auto-detect template)
+ao seed --template=go-cli  # force a template: go-cli, python-lib, web-app, rust-cli, generic
+ao seed --dry-run          # preview without writing
+```
+
+`ao seed` (`cli/cmd/ao/seed.go`) creates `.agents/`, GOALS.md, the bootstrap
+learning, and the CLAUDE.md flywheel section — elements 1, 2, 4, and 6 below.
+It deliberately does NOT install hooks or skills; `ao quick-start` is the
+fuller first-run wrapper that also offers beads init and prints the operator
+lane.
+
 Optional layers are deliberately separate: `/bootstrap` adds PRODUCT.md,
 README.md, and PROGRAM.md/AUTODEV.md; `bd init --prefix <prefix>` adds
 tracking; `ao init --hooks` activates hooks; `ao init --with-schedule` opts
@@ -57,13 +73,14 @@ A file in the repo root with 2-3 directives and 5-7 gates. Each gate has a shell
 An append-only ledger with cache-like semantics. Nothing gets overwritten. Every learning, council verdict, pattern, and decision is a new dated file. Freshness decay prunes what is stale. Git-ignored by default (local knowledge, not source code).
 
 ```
-.agents/
+.agents/         -- representative subset (full list: lifecycle.CoreAgentSubdirs)
   learnings/     -- extracted lessons (gold/silver/bronze tiers)
   patterns/      -- reusable solutions
-  retros/        -- retrospective summaries
+  retro/         -- retrospective summaries
   council/       -- validation verdicts
   research/      -- exploration findings
   plans/         -- decomposed epics
+  rpi/           -- per-phase RPI summaries
   ao/            -- session index, provenance, metrics
 ```
 
@@ -87,12 +104,20 @@ Hooks that fire on session lifecycle events when activated. The minimum viable s
 
 ### 4. CLAUDE.md Seed Section -- Flywheel Bootstrap Instructions
 
-Two lines added to the repo's CLAUDE.md:
+A short section appended to the repo's CLAUDE.md. `ao seed` and `ao quick-start`
+write the canonical block (source: `lifecycle.ClaudeMDSeedSection` in
+`cli/internal/lifecycle/seed.go`), detected on re-run via the
+`## AgentOps Knowledge Flywheel` marker so it is appended at most once:
 
-```markdown
-## Knowledge Flywheel
-See `.agents/AGENTS.md` for orientation. Run `ao lookup --query "topic"` when you need prior knowledge. Run `ao forge` at session end.
-```
+> ## AgentOps Knowledge Flywheel
+>
+> Knowledge compounds automatically across sessions:
+>
+> - **MEMORY.md** is auto-loaded by your AI coding tool every session
+> - **Session hooks** extract learnings, update MEMORY.md, and prune stale knowledge
+> - **Skills** invoke flywheel commands at the right moments (no manual ao commands needed)
+>
+> Verify the flywheel any time: `ao flywheel status` (escape velocity) and `ao status` (knowledge inventory).
 
 **Why it exists:** Hooks handle the automation, but CLAUDE.md provides the fallback for environments where hooks are not configured and the explanation for environments where they are. It bridges the gap between "hooks fire automatically" and "the agent understands why." This is belt-and-suspenders: structural enforcement (hooks) plus cognitive priming (instructions).
 
@@ -182,3 +207,4 @@ Remove any one element and the system degrades to a qualitatively different thin
 - [the-science.md](the-science.md) -- the dK/dt equation and escape velocity condition
 - [how-it-works.md](how-it-works.md) -- operational mechanics (hooks, ratchet, flywheel)
 - [ARCHITECTURE.md](ARCHITECTURE.md) -- the 5 architectural pillars
+- `cli/cmd/ao/seed.go` / `cli/cmd/ao/quickstart.go` -- the `ao seed` and `ao quick-start` commands that plant this seed

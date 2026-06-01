@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-04-12
+last_reviewed: 2026-05-31
 ---
 
 # AgentOps Philosophy
@@ -60,11 +60,11 @@ Not every knowledge operation needs a frontier model. AgentOps uses three tiers:
 
 | Tier | When | Why |
 |------|------|-----|
-| Local 8B (ollama, etc.) | Volume work — dedup, defrag, freshness scoring, overnight compounding | Fast, private, cheap. Runs while you sleep. |
-| Frontier (Claude, GPT-4o, etc.) | Quality work — council validation, pre-mortem review, pattern extraction | Accuracy matters more than throughput. |
+| Local small model (optional) | Volume work — dedup, defrag, freshness scoring, overnight compounding | Fast, private, cheap. Runs while you sleep. |
+| Frontier (Claude, GPT, etc.) | Quality work — council validation, pre-mortem review, pattern extraction | Accuracy matters more than throughput. |
 | Human | Curation and promotion decisions | Judgment calls that agents get wrong systematically. |
 
-`/dream` and `ao overnight` use the local tier for continuous compounding. `/council` and `/pre-mortem` use the frontier tier for high-stakes validation. The human reviews promotions from learning → finding → rule.
+`/dream` and `ao overnight` drive continuous compounding; `/council` and `/pre-mortem` use the frontier tier for high-stakes validation. The human reviews promotions from learning → finding → rule. The local tier is optional — overnight compounding runs against whatever model is configured, and falls back to the frontier tier when no local model is present.
 
 The ratio is intentional. Validation and curation cost 3-5x implementation time. This is not overhead — it is the ratchet. Without it, the flywheel runs backward.
 
@@ -86,13 +86,17 @@ It is not a SaaS product or a managed service. All state lives locally. All oper
 
 ## The Validated Thesis
 
-As of April 2026, the flywheel thesis is empirically confirmed on a single production repo (this one):
+The flywheel thesis is empirically confirmed on a single production repo (this one):
 
-- 163 learnings extracted, scored, and curated
-- 13 planning rules enforced at pre-mortem gates
-- 12 patterns promoted from repeated findings
-- 10/12 `ao doctor` checks passing with full 7/7 hook coverage
+- Hundreds of learnings extracted, scored, and curated
+- Planning rules enforced at pre-mortem gates
+- Patterns promoted from repeated findings into team canon (`.agents/learnings` → `.warmind/pool/staged` → `.warmind/learnings`)
+- `ao doctor` checks passing with full hook coverage
+
+For the live, never-stale numbers, run `ao status` (knowledge inventory) and `ao flywheel status` (escape-velocity check) — these counts grow every session, so this doc deliberately states the direction rather than a snapshot.
 
 The compound growth is measurable. Session 1 started cold. Session 100+ starts with a knowledge corpus that catches known failure modes before implementation begins.
+
+> The math behind compounding (the `dK/dt = I − δ·K + σ·ρ·K` knowledge-growth equation and the `R1 > B1 + B2` escape-velocity condition) lives in [the-science.md](the-science.md), the canonical home for those formulas.
 
 That is the point. Not a bigger prompt. A repo that remembers.

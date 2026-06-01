@@ -129,6 +129,87 @@ Top packages by file count (non-test source under `cli/internal/`):
 - **Imports from internal:** `cli/internal/{agentworker, gascity, openclaw, rpi, wikiworker}`.
 - **Imported by:** `cli/cmd/ao/daemon*.go` and `cli/internal/overnight` (Dream stage hands work to the daemon executor).
 
+## Daemon internals
+
+`cli/internal/daemon/` is the single biggest internal package (69 `*.go` files at
+write time, the file-count table above samples non-test source only). It is the
+persistent job queue and event store that the RPI runner, Dream cycle, factory
+admission, wiki, and plans executors all submit work to.
+
+### Ledger-based event store
+
+The daemon has **no database** — state is a single append-only JSONL event
+ledger, replayed into in-memory projections on startup.
+
+- **Path:** `~/<root>/.agents/daemon/ledger.jsonl` (`LedgerFileName = "ledger.jsonl"`,
+  see `cli/internal/daemon/store.go`). `NewStore(root)` resolves the directory.
+- **Append-only:** each mutation writes a `LedgerEvent` (`cli/internal/daemon/events.go`:
+  `NewLedgerEvent`, `NormalizeLedgerEvent`, `ValidateRequestID`). Events carry a
+  `RequestID` for idempotency.
+- **Replay on startup:** `replayLedger` walks rotated archives **oldest-first**,
+  then the live `ledger.jsonl`, reducing events into projections
+  (`cli/internal/daemon/projections.go`). Corrupt/over-cap lines are skipped and
+  logged (quarantined) rather than aborting the replay.
+- **Rotation:** when the live ledger crosses `DefaultLedgerMaxBytes`, `rotateLedger`
+  atomically renames it to a timestamped, gzip-compressed archive (archive prefix
+  in `store.go`); a fresh `ledger.jsonl` is created lazily on the next write.
+  `cli/internal/daemon/ledger_health.go` reports ledger health.
+
+### Job lifecycle
+
+The job queue (`cli/internal/daemon/jobs.go`, `Queue` type) drives every job
+through a uniform state machine:
+
+```
+SubmitJob ──► ClaimJob (lease) ──► Heartbeat (renew lease) ──► CompleteJob | FailJob
+                                                          └──► CancelJob
+```
+
+- `Queue.SubmitJob` enqueues a `JobSpec` payload.
+- `Queue.ClaimJob` hands a job to an executor under a **lease**; the executor must
+  renew with `Queue.Heartbeat` (`applyJobHeartbeat`) or the lease expires and the
+  job becomes re-claimable (the `reconcile.go` loop and `supervisor.go` enforce
+  lease/heartbeat liveness).
+- Terminal transitions: `Queue.CompleteJob` / `Queue.FailJob`; out-of-band
+  `Queue.CancelJob`.
+- The HTTP server (`cli/internal/daemon/server.go`) is read-only except for
+  token-gated mutation handlers (`handleSubmitJob`, `handleCancelJob`); auth lives
+  in `auth.go`.
+
+### JobSpec types
+
+Each job type has a typed payload spec serialized into the ledger event:
+
+| Spec | File | Drives |
+|------|------|--------|
+| `RPIRunJobSpec` | `cli/internal/daemon/rpi_jobs.go` | a multi-cycle RPI run (via `rpi_runner.go`, `rpi_run.go`, `rpi_registry.go`) |
+| `RPIPhaseJobSpec` | `cli/internal/daemon/rpi_jobs.go` | a single RPI phase (`rpi_executor.go`) |
+| `DreamRunJobSpec` | `cli/internal/daemon/dream_jobs.go` | a full overnight/Dream run (`dream_executor.go`) |
+| `DreamStageJobSpec` | `cli/internal/daemon/dream_jobs.go` | a single Dream stage |
+
+Specs carry a `SchemaVersion` (e.g. `DreamJobSpecSchemaVersion`) so older binaries
+replaying newer ledgers fail loudly on mismatch (`jobspec_compat_test.go`). Recurring/
+scheduled submission is handled by `RecurrenceSupervisor` (`cli/internal/daemon/recurrence.go`,
+`recurrence_payload.go`); the schedule file format is parsed by `cli/internal/schedule/parser.go`.
+Additional executors (`factory_admission_*`, `wiki_jobs.go`/`wiki_executor.go`,
+`plans_*`) follow the same submit→claim→complete contract.
+
+### CLI surface
+
+Wired in `cli/cmd/ao/daemon_jobs.go` (registration: `daemonJobsCmd.AddCommand(...)`):
+
+| Command | Purpose |
+|---------|---------|
+| `ao daemon jobs submit` | enqueue a job (`SubmitJob`) |
+| `ao daemon jobs list` | list queued/active/terminal jobs |
+| `ao daemon jobs show <job-id>` | inspect one job's state |
+| `ao daemon jobs wait <job-id>` | block until a job reaches a terminal state |
+| `ao daemon jobs cancel <job-id>` | request cancellation (`CancelJob`) |
+| `ao daemon events tail` | stream the ledger event feed |
+
+(`ao daemon jobs` / `ao daemon events` are the parent groups.) Soak/load testing
+lives separately in `cli/cmd/ao/daemon_soak.go` (`ao daemon soak`).
+
 ## Cross-references (internal package import graph)
 
 Edges sampled from `grep -h "agentops/cli/internal" cli/internal/<pkg>/*.go`:
@@ -163,7 +244,7 @@ Observations:
 | Knowledge flywheel | `.agents/{learnings,patterns,findings,research,retros,…}/` | Read-many surfaces for `cli/internal/{search,lifecycle,context}` |
 | Constraint index | `.agents/constraints/index.json` | `cli/internal/search/constraint.go` schema owner |
 | Beads | `.beads/` (bd CLI) | External to this repo's Go code; consumed by `cli/internal/search/bead_context.go` and `cli/cmd/ao` bead helpers |
-| Daemon state | TODO — confirm path; appears under `.agents/daemon/` and possibly `~/.agentops/` |
+| Daemon job ledger | `.agents/daemon/ledger.jsonl` | Append-only JSONL event log, replayed into projections on startup, rotated + gzipped at `DefaultLedgerMaxBytes`. Owner: `cli/internal/daemon/store.go`. See "Daemon internals" above. |
 | Ratchet chain | TODO — confirm path under `.agents/ratchet/` |
 | Goals | `GOALS.yaml`, `GOALS.md` (repo root) + history under `.agents/goals/` |
 
@@ -185,8 +266,9 @@ When debugging an overnight cycle:
 
 When debugging the daemon:
 
-1. `ao daemon status`, then tail daemon logs (TODO: confirm path).
-2. Inspect `cli/internal/daemon/reconcile.go` and `rpi_registry.go` for state transitions.
+1. `ao daemon status`, then `ao daemon jobs list` / `ao daemon jobs show <id>` to see queue state.
+2. Inspect the event ledger at `.agents/daemon/ledger.jsonl` (append-only; replayed on startup) — the source of truth for all job state.
+3. `ao daemon events tail` to stream the live event feed; cross-reference `cli/internal/daemon/reconcile.go` and `rpi_registry.go` for lease/state transitions.
 
 ## Scope Notes
 

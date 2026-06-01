@@ -161,7 +161,10 @@ metadata:
   author: "Gas Town"
   triggers: ["keyword"]     # Additional trigger phrases
   replaces: old-skill-name  # Supersedes another skill
+  stability: stable         # "stable" (default) or "experimental"
 ```
+
+`metadata.stability` defaults to `stable`. Set it to `experimental` to flag a skill whose contract may still change.
 
 #### Tier Values
 
@@ -191,6 +194,18 @@ Used by downstream skills to validate that upstream output matches the expected 
 
 **v1 status:** Declaration-only. No runtime enforcement. Consumed by skill chaining validation tooling.
 
+### `practices`
+
+Top-level array of practice slugs from `PRACTICE.md` that the skill embodies. Slugs must match `^[a-z0-9-]+$`.
+
+```yaml
+practices: [tdd, refactoring, code-complete]
+```
+
+Every skill declares this field; it ties the primitive back to the named engineering practice(s) it operationalizes (e.g., `continuous-delivery`, `dora-metrics`, `design-by-contract`).
+
+**v1 status:** Citations are validated against `PRACTICE.md` by `scripts/validate-practice-citations.sh` (CI). The slugs are not consumed at skill runtime.
+
 ### Other Fields
 
 | Field | Type | Description |
@@ -206,11 +221,11 @@ Core skills and their context policies:
 |-------|--------|----------|--------|-------------|
 | **Validation (tier: judgment)** | | | | |
 | council | isolated | exclude: HISTORY | task | full |
-| vibe | fork | exclude: HISTORY | task | — |
-| pre-mortem | fork | exclude: HISTORY | task | — |
-| post-mortem | fork | exclude: HISTORY | task | — |
+| vibe | fork | exclude: HISTORY | task | full |
+| pre-mortem | fork | exclude: HISTORY | task | full |
+| post-mortem | fork | exclude: HISTORY | task | full |
 | **Orchestration** | | | | |
-| rpi | fork | — | — | — |
+| rpi | fork | exclude: HISTORY | task | full |
 | crank | fork | exclude: HISTORY | task | full |
 | swarm | fork | exclude: HISTORY | task | full |
 | evolve | fork | exclude: HISTORY | task | full |
@@ -259,8 +274,8 @@ Core skills and their context policies:
 | using-agentops | isolated | exclude: HISTORY, INTEL, TASK | none | none |
 | converter | isolated | exclude: HISTORY, INTEL, TASK | none | none |
 | beads | fork | exclude: HISTORY | task | topic |
-| inject | fork | — | — | — |
-| provenance | fork | — | — | — |
+| inject | fork | exclude: TASK | none | full |
+| provenance | fork | exclude: TASK | task | full |
 | **Cross-Vendor** | | | | |
 | openai-docs | fork | exclude: HISTORY, TASK | questions | none |
 | codex-team | fork | — | — | — |

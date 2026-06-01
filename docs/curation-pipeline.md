@@ -287,15 +287,18 @@ Scoring result written to the pool entry:
 
 | Tier | Score Range | Auto-Promotion | Human Review |
 |------|-------------|----------------|--------------|
-| Gold | 0.85 - 1.00 | Auto-promoted to `.agents/learnings/` after staging | Not required |
-| Silver | 0.70 - 0.84 | Auto-promoted after 24h if no objection | Optional |
-| Bronze | 0.50 - 0.69 | Requires human review | Required |
-| Discard | < 0.50 | Not stored | N/A |
+| Gold | > 0.85 | Auto-promoted after 24h staging (no citation required) | Not required |
+| Silver | 0.70 - 0.85 | Promoted after 1 citation from another engineer | Optional |
+| Bronze | 0.50 - 0.70 | Promoted after 3 citations from other engineers | Required |
+| Discard | < 0.50 | Not stored (auto-reject) | N/A |
+
+> **Ground truth:** the score boundaries and promotion rules above are the live warmind tiers, not a separate curation rubric. The canonical constants live in `cli/internal/warmind/types.go` (`TierGold`/`TierSilver`/`TierBronze`/`TierDiscard` and `ScoreToTier()`): Gold `> 0.85`, Silver `[0.70, 0.85]`, Bronze `[0.50, 0.70)`, Discard `< 0.50`. The citation/age gates are config defaults in the same file: `GoldAutoPromoteHours = 24`, `SilverCitationThreshold = 1`, `BronzeCitationThreshold = 3`. The eligibility logic is `Pool.canAutoPromote()` in `cli/internal/warmind/pool.go`.
 
 ### Connection to Existing Infrastructure
 
 - **Pool:** Uses existing `pool.Add()` with `types.Scoring` struct. The scoring dimensions (`types.RubricScores`) already exist in `cli/internal/types/types.go` with the exact weights above.
 - **Pool flow:** Existing pool pipeline: pending -> staged -> promoted (or rejected). SCORE determines the entry point tier.
+- **Team-canon promotion (live today):** the verified promotion flow that this stage feeds is `.agents/learnings/` (local) -> `.warmind/pool/staged/` (team staging) -> `.warmind/learnings/` (team canon). `ao warmind sync` stages + scores local learnings into the pool; tier-gated promotion lands them in team canon. The directories are `Config.PoolDir` / `Config.LearningsDir` defaults (`.warmind/pool`, `.warmind/learnings`) in `cli/internal/warmind/types.go`. This is distinct from the `ao curate` pool under `.agents/pool/` described above: the curate pipeline structures local intake, while warmind promotes the survivors into shared canon.
 - **MemRL:** After promotion, artifacts enter the MemRL utility tracking system. Utility updates via `ao feedback` adjust the artifact's retrieval priority over time.
 - **Maturity:** Scored artifacts get initial maturity of `provisional`. Positive feedback via `ao feedback --helpful` advances maturity through `candidate` -> `established`. Negative feedback can demote to `anti-pattern`.
 
@@ -366,6 +369,7 @@ Rejected artifacts moved to `.agents/pool/rejected/` with rejection metadata:
 - **Supersession:** Uses existing `types.Supersede()` and `candidate.IsSuperseded()` from `cli/internal/types/types.go`.
 - **Expiry:** Uses existing `candidate.IsExpired()` and `candidate.UpdateExpiryStatus()`.
 - **CLI:** `ao curate reject --stale --threshold=0.30` -- scans pool for artifacts meeting rejection criteria.
+- **Live driver:** the warmind/flywheel side already runs the REJECT-equivalent today via `ao flywheel close-loop` / `ao warmind close-loop` -- it applies decay, runs contradiction detection (`cli/internal/warmind/contradict.go`), and emits `FlywheelMetrics`. The `ao curate reject` surface is the curation-pipeline-native counterpart that operates on the `.agents/pool/` intake; the close-loop command enforces the same `-delta*K` decay term on team canon. See `the-science.md` for the canonical `dK/dt` form.
 
 ### Failure Mode Analysis
 
@@ -579,3 +583,5 @@ When the schema evolves, the version increments. Readers check the version and a
 - `ao search` -- Search knowledge base (improved by INDEX)
 - `ao lookup` -- Query prior knowledge on demand (improved by INDEX + SCORE)
 - `ao flywheel status` -- Knowledge growth rate and escape velocity
+- `ao flywheel close-loop` / `ao warmind close-loop` -- One-shot full flywheel pass: auto-promote eligible pool entries (tier + citation gated), apply decay, run contradiction detection, and emit `FlywheelMetrics`. This is the live REJECT + promotion driver (`cli/cmd/ao/flywheel_close_loop.go`, `cli/cmd/ao/warmind.go`).
+- `ao warmind sync` -- Stage + score local `.agents/learnings/` into `.warmind/pool/staged/`

@@ -2,6 +2,11 @@
 
 Use this when you're not sure which skill to run.
 
+> **Derived copy.** The canonical router tree lives in the "Skill Router (Start
+> Here)" section of [`SKILLS.md`](SKILLS.md). This file is a standalone copy for
+> quick linking; when the two diverge, `SKILLS.md` wins — update it first, then
+> mirror the change here.
+
 ```text
 What are you trying to do?
 │
@@ -20,8 +25,8 @@ What are you trying to do?
 │   └─ Full flow in one command ───► /rpi "goal"
 │
 ├─ "Fix a bug"
-│   ├─ Know which file? ──────────► /implement <issue-id>
-│   └─ Need to investigate? ──────► /bug-hunt
+│   ├─ Already scoped? ────────────► /implement <issue-id>
+│   └─ Need to investigate? ───────► /bug-hunt
 │
 ├─ "Build a feature"
 │   ├─ Small (1-2 files) ─────────► /implement
@@ -29,9 +34,9 @@ What are you trying to do?
 │   └─ Large (7+ issues) ─────────► /rpi (full pipeline)
 │
 ├─ "Validate something"
-│   ├─ Code ready to ship? ───────► /vibe
+│   ├─ Work ready to close? ──────► /validation
+│   ├─ Code quality only? ───────► /vibe
 │   ├─ Plan ready to build? ──────► /pre-mortem
-│   ├─ Work ready to close? ──────► /post-mortem
 │   └─ Quick sanity check? ───────► /council --quick validate
 │
 ├─ "Explore or research"
@@ -40,10 +45,10 @@ What are you trying to do?
 │   └─ Generate ideas ────────────► /brainstorm
 │
 ├─ "Learn from past work"
+│   ├─ Turn the corpus into operator surfaces ─► /knowledge-activation
 │   ├─ What do we know about X? ──► ao lookup "<query>" / ao search
-│   ├─ Turn corpus into operator surfaces ─► /knowledge-activation
 │   ├─ Save this insight ─────────► /retro --quick "insight"
-│   └─ Run a retrospective ───────► /retro
+│   └─ Full retrospective ────────► /post-mortem
 │
 ├─ "Parallelize work"
 │   ├─ Multiple independent tasks ► /swarm
@@ -53,6 +58,7 @@ What are you trying to do?
 │   └─ Changelog + tag ──────────► /release <version>
 │
 ├─ "Session management"
+│   ├─ Prep or review Dream runs ─► /dream
 │   ├─ Where was I? ──────────────► /status
 │   ├─ Save for next session ─────► /handoff
 │   └─ Recover after compaction ──► /recover

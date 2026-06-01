@@ -427,6 +427,146 @@ contracts and control plane.
 
 ---
 
+## CLI Internal Architecture
+
+The system is two cooperating layers, not one program. **Skills** are the
+prose-and-orchestration layer (Markdown contracts read by the agent harness);
+**`ao`** is the Go control plane that the skills call into for anything
+stateful — scoring, persistence, retrieval, daemon work. Skills decide *what*
+to do; `ao` does the bookkeeping and makes it durable.
+
+### Two Layers: skills ↔ ao
+
+- **`skills/`** — the source of truth for behavior. Installed copies under
+  `~/.claude/skills/` are regenerated on install and must never be edited. Most
+  skills shell out to `ao <cmd>` for anything that needs to persist or be
+  scored; the rest are pure-prose orchestrators or thin wrappers around other
+  CLIs (`bd`, `git`, `gh`, `gemini`, `ntm`).
+- **[`cli/`](https://github.com/boshu2/agentops/tree/main/cli)** — the `ao`
+  binary (Go 1.26). Entry point is
+  [`cli/cmd/ao/root.go`](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/root.go);
+  roughly 85 top-level Cobra commands each register on `rootCmd` from their own
+  `cmd/ao/<command>.go` file.
+
+The integration surface is dense. Ranked by how many skills invoke them, the
+hottest `ao` commands are `goals`, `overnight`, `lookup`, `codex`, `ratchet`,
+`metrics`, `knowledge`, `autodev`, `inject`, and `search`. The RPI cluster
+(`/crank`, `/discovery`, `/implement`, `/plan`, `/pre-mortem`, `/vibe`,
+`/validation`) all share `lookup` + `metrics` + `ratchet`; `/flywheel` is the
+broadest consumer, touching the whole curation surface
+(`anti-patterns`, `badge`, `constraint`, `contradict`, `curate`, `dedup`,
+`harvest`, `lookup`, `maturity`, `metrics`, `retrieval-bench`, `status`).
+
+### Hexagonal Ports & Adapters
+
+`ao` follows a ports-and-adapters (hexagonal) shape so core logic stays free of
+I/O concerns.
+[`cli/internal/ports/`](https://github.com/boshu2/agentops/tree/main/cli/internal/ports)
+declares 14 port interfaces — among them `CorpusReaderPort`, `CorpusWriterPort`,
+`CitationPort`, `ClaimEvidencePort`, `EventBusPort`, `GateRunnerPort`,
+`HarnessPort`, `LoopReaderPort`, `LoopWriterPort`, `OperatorPort`,
+`FindingCompilerPort`, and `FactoryAdmissionPort`. The 29 concrete
+implementations live alongside the commands as
+[`cli/cmd/ao/*_adapter.go`](https://github.com/boshu2/agentops/tree/main/cli/cmd/ao)
+(e.g. `corpus_reader_adapter.go`, `citation_port_adapter.go`,
+`gate_runner_adapter.go`, `harness_adapter.go`). Wiring is **explicit
+dependency-passing** — adapters are constructed and handed to core logic by
+hand. There is no DI container.
+
+### Internal Packages
+
+The core lives in 47 packages under
+[`cli/internal/`](https://github.com/boshu2/agentops/tree/main/cli/internal),
+with the public surface exposed via `pkg/vault`. The largest packages by file
+count:
+
+| Package | Files | Role |
+|---------|-------|------|
+| `daemon` | 69 | Persistent job queue + ledger event store |
+| `overnight` | 48 | Dream / overnight loop engine |
+| `ports` | 43 | Port interfaces + shared port types |
+| `rpi` | 41 | RPI phased lifecycle |
+| `goals` | 27 | GOALS.md fitness + directives |
+| `lifecycle` | 22 | Session lifecycle hooks |
+| `search` | 21 | Knowledge retrieval |
+| `eval` | 21 | Evaluation harness |
+| `vibecheck` | 19 | Code-validation engine behind `/vibe` |
+| `ratchet` | 19 | Forward-progress recording |
+| `llm` | 18 | Model invocation |
+| `evalsubstrate` | 18 | Eval fixtures + substrate |
+| `agentworker` | 15 | Worker spawning |
+| `warmind` | 11 | Team pool → canon |
+| `quality` / `gascity` / `context` | 11 each | Scoring · Gas City bridge · context assembly |
+
+### Core Data Types
+
+The shared vocabulary is concentrated in one file —
+[`cli/internal/types/types.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/types/types.go):
+
+- **`Candidate`** — a knowledge item before promotion (tier, utility, maturity,
+  supersession).
+- **`PoolEntry`** — a `Candidate` plus scoring, review state, and status.
+- **`CitationEvent`** — the signal that drives the flywheel (feeds σ and ρ).
+- **`FlywheelMetrics`** — the compounding equation `dK/dt = I − δK + σ·ρ·K − B`
+  and the escape-velocity verdict.
+- **`GoldenSignals`** — compounding / accumulating / decaying classification.
+- Plus `RubricScores`, `Scoring`, `Source`, and `TranscriptMessage`.
+
+### File-Based Persistence
+
+`ao` ships **no database of its own** — state is plain files, which is what
+makes the Ralph Wiggum disk-backed-state model (Pillar 3) work end to end.
+
+- **`.agents/`** — per-repo working state: `learnings/`, `findings/`, `plans/`,
+  `citations.jsonl`, and the daemon ledger at `daemon/ledger.jsonl`.
+- **`.warmind/`** — team knowledge: `pool/staged/` → `learnings/` (team canon).
+- **`GOALS.md`** — the strategic-intent surface consumed by `/evolve` and
+  `/goals`.
+
+Config precedence is CLI flags > `AGENTOPS_*` env > project
+`.agentops/config.yaml` > `~/.agentops/config.yaml` > defaults
+([`cli/internal/config/`](https://github.com/boshu2/agentops/tree/main/cli/internal/config)).
+(The separate `bd`/beads CLI uses Dolt; that is a different tool, not part of
+`ao`.)
+
+### Daemon
+
+[`cli/internal/daemon/`](https://github.com/boshu2/agentops/tree/main/cli/internal/daemon)
+(69 files) is the persistent job queue. Its event store is a JSONL,
+append-only **ledger** (`.agents/daemon/ledger.jsonl`) — replayed on startup and
+rotated at a size cap. Jobs move `SubmitJob → ClaimJob` (lease) `→ Heartbeat →
+CompleteJob`/`FailJob`; job specs include `RPIRunJobSpec`, `RPIPhaseJobSpec`,
+`DreamJobSpec`, and `ScheduleConfig`. CLI surface: `ao daemon
+submit|jobs|list|show|wait|tail|events|cancel`.
+
+### Flagship Data Flows
+
+Three flows tie the packages together:
+
+1. **Knowledge Flywheel.** A query hits `CorpusReaderPort.Lookup()`, which reads
+   `.agents/learnings/` and returns ranked items; `ao inject` appends a
+   `CitationEvent` to `.agents/citations.jsonl`. Promotion runs
+   `.agents/learnings/` → `.warmind/pool/staged/` → `.warmind/learnings/`
+   (Gold ≥ 0.8 auto-promotes after 24h; Silver ≥ 0.5 needs one citation from
+   another engineer; Bronze needs three). `ao flywheel close-loop` promotes,
+   decays, detects contradictions, and emits `FlywheelMetrics`.
+2. **RPI phased** (`ao rpi phased`). Discovery → Implementation → Validation,
+   each with fresh context, each writing `.agents/rpi/phase-N-summary.md`.
+   Multi-cycle loops run through `internal/daemon` (`rpi_executor.go`) under
+   gate/landing/kill-switch policy; live sessions route through the Gas City
+   bridge ([`cli/cmd/ao/gc_bridge.go`](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/gc_bridge.go),
+   `gc_events.go`, `rpi_phased_gc.go`).
+3. **Overnight / Dream** (`ao overnight start` / `report`). Checkpoint → Measure
+   (fitness vs `GOALS.md`) → Reduce (mine findings) → Commit → optional
+   Long-haul → Report. Runs as a daemon `DreamJobSpec`, writing
+   `.agents/overnight/report.json` plus `FlywheelMetrics`.
+
+When these docs disagree with the code, precedence is executable
+(`cli/**`, `hooks/**`, generated `COMMANDS.md`) > contracts (`SKILL.md`,
+schemas) > narrative docs.
+
+---
+
 ## Session Hooks
 
 The runtime manifest currently declares seven hook event sections. Three lifecycle anchors form the compounding backbone, while the others enforce guardrails at prompt, tool, and task boundaries.

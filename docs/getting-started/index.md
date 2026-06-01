@@ -2,7 +2,9 @@
 
 New to AgentOps? You're in the right place. This section answers three questions in order: **what is it**, **how do I install it**, and **what's the first useful thing I can run**.
 
-If you're evaluating AgentOps for a team, start with the [Newcomer Guide](../newcomer-guide.md) — it frames the product in fifteen minutes. If you're ready to ship code with it, skip to [Install](#install) and then [Golden Paths](#golden-paths). If you want a structured curriculum, jump to the [Levels](../levels/index.md) path at the bottom. If you are upgrading from an older release, read [Upgrading](../UPGRADING.md) first.
+If you're evaluating AgentOps for a team, start with the [Newcomer Guide](../newcomer-guide.md) — the canonical orientation doc; it frames the product in fifteen minutes. If you're ready to ship code with it, skip to [Install](#install) and then [Golden Paths](#golden-paths). If you want a structured curriculum, jump to the [Levels](../levels/index.md) path at the bottom. If you are upgrading from an older release, read [Upgrading](../UPGRADING.md) first.
+
+When you need to find a specific page, the [Documentation Index](../documentation-index.md) is the full catalog of every doc in this repo.
 
 <div class="grid cards" markdown>
 

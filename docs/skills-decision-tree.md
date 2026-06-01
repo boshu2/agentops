@@ -1,9 +1,9 @@
 # Skills Decision Tree
 
 > Single source of truth for "which skill do I need next?"
-> Linked from `skills/harvest/SKILL.md`, `skills/compile/SKILL.md`,
-> `skills/knowledge-activation/SKILL.md`, `skills/quickstart/SKILL.md`,
-> and their `skills-codex/` mirrors.
+> Linked from `skills/harvest/SKILL.md` and
+> `skills/knowledge-activation/SKILL.md` (and their `skills-codex/`
+> mirrors), plus `docs/index.md` and `docs/documentation-index.md`.
 
 ## Decision-Tree Naming Convention
 
@@ -36,6 +36,8 @@ Rationale: groups by subject alphabetically in file listings; matches the existi
 | Synthesize the raw corpus into an interlinked wiki | `$compile` (writes `.agents/compiled/`) |
 | Overnight compounding + fitness-driven corpus improvement | `$dream` |
 | Turn compiled knowledge into playbooks + beliefs for future sessions | `$knowledge-activation` |
+| Check whether knowledge is actually compounding (velocity/friction) | `$flywheel` (reads `.agents/`, no writes) |
+| Promote local learnings into shared team canon | `ao flywheel close-loop` (`.warmind/learnings/`) |
 | Copy raw `.md` files verbatim without dedup | `rsync` (not AgentOps) |
 | New project / new repo / first-time AgentOps setup | `ao quick-start`, then `$quickstart` |
 | Full research → plan → implement → validate cycle | `$rpi` |
@@ -66,10 +68,39 @@ overnight and runs a compounding loop (harvest → compile → lint →
 defrag → repeat until fitness plateaus). If you're sitting at the
 terminal, use compile. If you're going to bed, use dream.
 
+## Where durable state lands (skill → `ao` surface)
+
+These skills carry the *judgment*; the `ao` binary carries the
+*durable state*. Knowing which file each step writes keeps the flow
+legible:
+
+| Step | `ao` surface it shells into | Durable artifact |
+|------|------------------------------|------------------|
+| `$harvest` | `ao harvest`, `ao dedup`, `ao inject` | `~/.agents/learnings/` (promotion hub) |
+| `$compile` | `ao compile` | `.agents/compiled/` (interlinked wiki) |
+| `$dream` | `ao overnight` (same engine) | `.agents/overnight/*/summary.{json,md}` |
+| `$knowledge-activation` | `ao knowledge`, `ao context` | playbooks + belief book + runtime briefings |
+
+Two cross-cutting surfaces sit under every step:
+
+- **Citations.** `ao inject` / `ao lookup` append a `CitationEvent`
+  to `.agents/ao/citations.jsonl` every time corpus knowledge is
+  read. Those citations feed confidence back into inject ranking —
+  the loop closes through this file, not through any skill.
+- **Promotion to team canon (`$flywheel`).** Local learnings flow
+  `.agents/learnings/` → `.warmind/pool/staged/` → `.warmind/learnings/`
+  (team canon). Tiers gate promotion: Gold (≥0.8) auto-promotes after
+  24h; Silver (≥0.5) needs one external citation; Bronze needs three.
+  Run `ao flywheel close-loop` (or `$flywheel` to inspect health)
+  to promote + decay + contradict in one pass. This is the broadest
+  single `ao` consumer — the RPI cluster, harvest, and compile all
+  read through it.
+
 ## See also
 
 - `skills/harvest/SKILL.md` — full harvest invocation
 - `skills/compile/SKILL.md` — compile flags and runtimes
 - `skills/knowledge-activation/SKILL.md` — activation surfaces
 - `skills/dream/SKILL.md` — overnight compounding
+- `skills/flywheel/SKILL.md` — knowledge-flywheel health + promotion
 - `skills/quickstart/SKILL.md` — first-time setup

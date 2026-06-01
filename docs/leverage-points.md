@@ -2,6 +2,8 @@
 
 > Donella Meadows ranked the places to intervene in a complex system from least to most powerful. AgentOps concentrates on the high-leverage end because changing the loop beats tuning the output.
 
+> **This is the canonical Meadows/leverage-points mapping.** [strategic-direction.md](strategic-direction.md) carries only a summary Meadows table as part of its consolidation digest — for the full point-by-point mapping, this document is authoritative. For the dK/dt equation itself, [the-science.md](the-science.md) is canonical (see the equation section below).
+
 **Reference:** Meadows, D. H. (1999). "Leverage Points: Places to Intervene in a System." *Sustainability Institute*.
 
 ---
@@ -371,6 +373,10 @@ What exists is the infrastructure for it: append-only logs that let a future met
 
 ## The dK/dt Equation Through the Lens of Leverage Points
 
+> **Canonical equation:** [the-science.md](the-science.md) is the source of truth for the dK/dt model, its symbol definitions (`I(t)`, `delta`, `sigma(K,t)`, `rho`, `phi`), the escape-velocity condition, and the limits-to-growth derivation. This document does not re-derive it; it reads the same scale-aware form through Meadows' leverage points. If the two ever diverge, trust [the-science.md](the-science.md). The implementation lives in `cli/cmd/ao/metrics_health.go`.
+
+The scale-aware form (reproduced from [the-science.md](the-science.md) for reference):
+
 ```
 dK/dt = I(t) - delta * K + sigma(K,t) * rho * K - phi * K^2
 ```
@@ -481,8 +487,8 @@ What is missing from the Meadows mapping and what would close each gap.
 
 ## See Also
 
-- [strategic-direction.md](strategic-direction.md) — Consolidation decision, summary Meadows table, 6 paradigm shifts
+- [strategic-direction.md](strategic-direction.md) — Consolidation digest: summary Meadows table + 6 paradigm shifts (this doc is the canonical full Meadows mapping; that one is the digest)
 - [seed-definition.md](seed-definition.md) — The 6 seed elements with Meadows mapping per element
-- [the-science.md](the-science.md) — The dK/dt equation, escape velocity, limits to growth
+- [the-science.md](the-science.md) — **Canonical** source for the dK/dt equation, escape velocity, and limits to growth (this doc cites it rather than re-deriving)
 - [how-it-works.md](how-it-works.md) — Hooks, ratchet, Ralph Wiggum, compaction resilience
 - [workflows/meta-observer-pattern.md](workflows/meta-observer-pattern.md) — Stigmergy coordination pattern

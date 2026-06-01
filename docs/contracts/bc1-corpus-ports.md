@@ -15,6 +15,15 @@ needs from outside. The interfaces themselves live at
 `cli/internal/ports/`; the per-port doc-comments are the
 authoritative semantics.
 
+> **Scope:** this doc is the BC1 deep-dive subset. BC1's 4 ports are
+> part of the wider hexagonal surface of **14 ports across 5 bounded
+> contexts** (Corpus, Validation, Loop, Factory, Runtime) — the roster
+> grew from 12 to 14 with `FactoryAdmissionPort` (cycle 139) and
+> `ClaimEvidencePort` (cycle 141). For the full catalog (every port →
+> its concrete `cli/cmd/ao` adapter, plus BC2–BC5) see
+> [bc-ports-inventory.md](bc-ports-inventory.md), the authoritative
+> ports catalog; this file only elaborates the BC1 corpus four.
+
 See also: [ubiquitous-language.md](ubiquitous-language.md) (BC1 row
 canonical naming), [finding-compiler.md](finding-compiler.md) (the
 compile-side contract `FindingCompilerPort` mirrors), bd epic
@@ -137,12 +146,16 @@ set, keep the in-memory adapter as the test double, land green.
 ## Drift-Blocking Surfaces
 
 - Compile-time port assertions in each `inmemory_<name>.go` file.
-- 22 Go tests in `cli/internal/ports/*_test.go` (98.8% statement
-  coverage as of cycle 81).
+- 21 Go tests across the 4 BC1 `cli/internal/ports/inmemory_*_test.go`
+  files (98.8% statement coverage as of cycle 81). The full port
+  package now carries 98 tests across all 14 ports.
 - This contract doc is linked in `docs/documentation-index.md`.
 
 ## See Also
 
+- [`bc-ports-inventory.md`](bc-ports-inventory.md) — the full
+  14-port roster across all 5 bounded contexts; this BC1 doc is a
+  deep-dive subset of it.
 - [`finding-compiler.md`](finding-compiler.md) — the prevention
   ladder the `FindingCompilerPort` formalizes.
 - [`finding-registry.md`](finding-registry.md) — the upstream

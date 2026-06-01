@@ -52,6 +52,8 @@ Named after Ralph Wiggum's cheerful cluelessness — each worker starts fresh wi
 
 **Knowledge flywheel.** What workers learn *does* persist — but through a curated pipeline. Session-end hooks mine the transcript for learnings, score them (specificity, actionability, novelty, confidence), and write them to the flywheel. The next wave gets those learnings injected at start. Cycle 50 knows what cycle 1 learned the hard way. But it knows it cleanly, scored by freshness, not as accumulated chat noise.
 
+**Fresh context per phase, not just per worker.** Isolation goes one level deeper than the worker boundary. A single issue runs as `ao rpi phased <goal>` — Discovery → Implementation → Validation, with each phase getting its own fresh context window. Each phase writes a `phase-N-summary.md` into `.agents/rpi/`; the next phase reads only that summary as bounded carry-forward, not the prior phase's full transcript (`cli/internal/rpi/phased.go`, `cli/internal/rpi/phased_context.go`). So even within one issue, the Implementation phase doesn't drown in Discovery's exploration noise — it gets a curated handoff. The Ralph Wiggum reset applies at the phase grain, then the worker grain, then the wave grain.
+
 ---
 
 ## Wave Execution
@@ -101,6 +103,8 @@ The gate mechanism:
 This is not advisory. The gate is hard. A regression that would have been caught at step 3 doesn't get buried under 5 more waves of changes. It's visible, isolated, and fixable before it becomes a multi-wave debugging exercise.
 
 `/evolve` extends this to cycle-level: every cycle's fitness score is written to `cycle-history.jsonl`. A cycle that regresses a previously-passing goal auto-reverts and halts. The floor can never drop.
+
+Multi-cycle loops don't run as one long-lived agent process holding context across cycles — that would re-introduce exactly the staleness the model exists to avoid. Instead, each cycle's RPI run is a daemon-submitted job executed by `cli/internal/daemon/rpi_executor.go`, which owns the claim/heartbeat/terminal-record loop while delegating the user-visible RPI work to a phase executor. Cycle state lives on disk — the append-only daemon ledger at `.agents/daemon/ledger.jsonl` (replayed on startup) plus the `.agents/rpi/` phase summaries — so the loop is recoverable across restarts and each cycle still claims fresh context. The daemon is the durable spine; the agent is the disposable worker.
 
 ---
 

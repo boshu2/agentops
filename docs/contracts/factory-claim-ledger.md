@@ -36,6 +36,9 @@ The strict checker scans at least:
 
 ## Machine-Readable Files
 
+This contract is the prose member of a canonical triad: prose contract +
+machine-readable schema + ledger fixture (plus a validator).
+
 - Schema: [`factory-claim-ledger.schema.json`](factory-claim-ledger.schema.json)
 - Current ledger fixture: [`factory-claim-ledger.example.json`](factory-claim-ledger.example.json)
 - Validator: `scripts/check-factory-claim-ledger.sh`

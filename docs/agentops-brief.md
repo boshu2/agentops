@@ -141,11 +141,21 @@ They will. Anthropic's Managed Agents is the first move; others will follow. Tha
 ┌──────────────────────────────────────────────────────────────────┐
 │                    AgentOps at a Glance                          │
 ├───────────────────┬──────────────────────┬───────────────────────┤
-│ 73 shared skills  │   `ao` Control Plane │   12 Hook Events      │
-│ plus runtime      │ repo-native retrieval│  runtime manifest     │
-│    artifacts      │ goals, and automation│                       │
+│  77 skills        │   `ao` Control Plane │   12 Hook Events      │
+│ plus runtime      │ ~85 commands:        │  runtime manifest     │
+│    artifacts      │ retrieval, goals,    │                       │
+│                   │ automation           │                       │
 └───────────────────┴──────────────────────┴───────────────────────┘
 ```
+
+**Two layers, one system.** `skills/` carries judgment — 77 `SKILL.md` prose
+orchestrators (68 user-facing + 9 internal) that decide *what* to do and *when*.
+The `ao` CLI (a Go binary, ~85 top-level commands) carries durable state — it
+reads and writes the `.agents/` and `.warmind/` files that outlive any session.
+The split is deliberate: roughly half the skills shell out to `ao` for state
+operations (retrieval, citations, ratchets, flywheel closure); the rest are pure
+prose or wrap other CLIs. A skill never persists state directly, and `ao` never
+makes a judgment call — the skill carries judgment, `ao` carries the record.
 
 ### The Pipeline — Primitive Chains in Motion
 

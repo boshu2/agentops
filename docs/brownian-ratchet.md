@@ -2,6 +2,10 @@
 
 > **Chaos + Filter + Ratchet = Progress**
 
+> **Architectural home:** This is the deep dive for **[Pillar 2: Brownian Ratchet](ARCHITECTURE.md#pillar-2-brownian-ratchet)** — the execution model in the AgentOps four-pillar architecture (Brownian Ratchet · Ralph Wiggum · Knowledge Flywheel · Fractal Composition). ARCHITECTURE.md carries the canonical short form; this page carries the full philosophy, economics, and FIRE-loop details.
+>
+> **Vocabulary note (2026-05):** Examples below that use `gt …` commands and "Gas Town / the Mayor / polecats" reflect an earlier orchestration surface. The current dispatch backend is **Gas City** (`gc …` commands; bridge at `cli/cmd/ao/gc_bridge.go`, `gc_events.go`, `rpi_phased_gc.go`). The *pattern* (parallel chaos → filter → ratchet) is unchanged; treat the specific `gt`/Mayor/polecat callsites as illustrative, not literal. See `skills/using-gc/SKILL.md` and the repo `CLAUDE.md` "Gas City Dispatch" section for the live command surface.
+
 ---
 
 ## The Metaphor
@@ -123,12 +127,12 @@ Monitor for completion. When polecats finish, validate their work:
 
 Valid completions get merged. **Merge is the ratchet**—once in main, it's permanent.
 
-<!-- FUTURE: gt convoy not yet implemented -->
-> **Not yet implemented:** `gt convoy` — convoy monitoring is planned but not yet available.
+<!-- STALE VOCAB: gt/convoy/polecat — superseded by Gas City (gc). See vocabulary note at top. -->
+> **Stale callsite (illustrative only):** the `gt convoy` / `gt done` / `polecat/...` commands below describe the retired Gas Town surface. On the current Gas City backend, monitoring and completion route through `gc` (e.g. `gc status`, `gc session list`, `gc beads list`) and the daemon ledger, not `gt convoy`. The REAP step — validate completion, confirm a commit exists, confirm CI passed, then merge — is unchanged.
 
 ```bash
-gt convoy status <id>         # Monitor
-# Polecat runs: gt done → push → merge queue
+gt convoy status <id>         # Monitor (retired — use `gc status` / `gc session list`)
+# Polecat runs: gt done → push → merge queue (now a Gas City agent + merge queue)
 git merge origin/polecat/...  # Ratchet
 ```
 
@@ -272,7 +276,7 @@ This is why token cost is front-loaded (more attempts early) but total cost is l
 
 ### During Execution
 
-The Mayor runs FIRE:
+The orchestrator runs FIRE (on the current Gas City backend this is the `gc` dispatch layer + the `ao` daemon; "the Mayor" was the Gas Town-era name for the same role):
 1. **FIND** - Check what's ready
 2. **IGNITE** - Sling to polecats
 3. **REAP** - Harvest completions
@@ -305,12 +309,14 @@ These feed the next `/research` cycle. The flywheel turns.
 
 ---
 
-## The Gas Town Connection
+## The Forge Connection (Gas City)
 
-Gas Town is a forge. FIRE is how the forge operates.
+> **Vocabulary note:** This was originally written for the **Gas Town** orchestration surface. The forge metaphor is unchanged, but the live backend is now **Gas City** — the names map one-to-one: Gas Town → Gas City, the Mayor → the `gc` dispatch/orchestrator role, polecats → fresh ephemeral Gas City worker agents. Commands are `gc …` (see `cli/cmd/ao/gc_bridge.go` and `skills/using-gc/SKILL.md`).
 
-- **Polecats** are the workers at the anvil—independent, ephemeral, expendable
-- **The Mayor** tends the FIRE loop—dispatching, monitoring, harvesting
+The forge is where chaos becomes product. FIRE is how the forge operates.
+
+- **Worker agents** are the hands at the anvil—independent, ephemeral, expendable (fresh context per attempt)
+- **The orchestrator** tends the FIRE loop—dispatching, monitoring, harvesting
 - **Beads** are the work orders—tracked, statused, closed
 - **Main branch** is the finished product—ratcheted, permanent, compounding
 
@@ -370,6 +376,8 @@ FIRE Loop (Ratchet)                    Knowledge Flywheel
 ```
 
 ### The Unified Math
+
+> For the formal Knowledge Flywheel differential equation (`dK/dt = I(t) - δ·K + σ·ρ·K`) and its parameters, see **[the-science.md](the-science.md#the-equation)** — the canonical home. The expressions below are intuition-level summaries, not the authoritative model.
 
 **Ratchet (single cycle):**
 ```
@@ -444,12 +452,20 @@ This is why `/post-mortem` is mandatory. Skipping it breaks the compounding.
 
 ## Validation Status
 
-**Epic:** `ol-rg3p` — Rigorous Flywheel Math Validation (run `bd show ol-rg3p`)
+> **Canonical equation lives elsewhere.** The authoritative Knowledge Flywheel equation and its term-by-term explanation are in **[the-science.md](the-science.md#the-equation)**. The canonical baseline form is:
+>
+> ```
+> dK/dt = I(t) - δ·K + σ·ρ·K
+> ```
+>
+> with a scale-aware correction `… - φ·K²` (limits-to-growth) documented in the-science.md. **Cite that page rather than the divergent form below.**
+>
+> **Internal-WIP note (stale):** the `- B(K, K_crit)` barrier term and the `ol-rg3p` validation epic below were an internal work-in-progress framing that never landed in the canonical model (the-science.md uses `- φ·K²` for the saturation/limit term, not a `B(K, K_crit)` barrier). The `ol-rg3p` bead IDs and wave statuses below are not a current tracker — treat this section as historical. The general point still holds: **the flywheel math is itself validated by running FIRE on it** (literature + measured parameters), and that validation is owned by the-science.md.
 
-The core Knowledge Flywheel equation:
+The (historical / WIP) framing tracked the equation with an added barrier term:
 
 ```
-dK/dt = I(t) - δ·K + σ·ρ·K - B(K, K_crit)
+dK/dt = I(t) - δ·K + σ·ρ·K - B(K, K_crit)    # WIP form — superseded by the-science.md
 ```
 
 ### What's Validated (Literature)

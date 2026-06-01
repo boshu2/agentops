@@ -22,6 +22,22 @@ The same split now applies to Dream:
 
 That matters most for overnight work. GitHub nightly is the public proof harness. `ao overnight` is the private local compounding engine.
 
+### Skills and the `ao` CLI
+
+Skills are prose playbooks an agent reads and executes step by step — the
+interactive operator surface. At key moments they shell out to the `ao` binary
+(`cli/`) for durable bookkeeping: recording attempts and citations, ranking
+context for injection, advancing the ratchet, and closing the flywheel loop.
+The skill carries the judgment; `ao` carries the state.
+
+Roughly 42 of the 77 skills invoke `ao` somewhere in their flow. The rest are
+pure-prose orchestrators or wrap other CLIs (`bd`, `git`, `gh`, and friends).
+The heaviest integration points are `ao goals`, `ao overnight`, `ao lookup`,
+`ao ratchet`, and `ao metrics` — the RPI cluster shares the
+`lookup`/`metrics`/`ratchet` trio, and the flywheel skill is the broadest
+single consumer. This keeps the prose layer portable across harnesses while the
+state layer stays in one auditable binary.
+
 ## The Proof Gaps
 
 AgentOps exists because most agent tooling leaves three gaps open after prompt

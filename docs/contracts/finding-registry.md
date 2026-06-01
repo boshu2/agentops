@@ -1,5 +1,10 @@
 # Finding Registry Contract
 
+> **Machine-readable mirror:** every registry line must validate against
+> [`finding-registry.schema.json`](finding-registry.schema.json). There is no
+> separate `*.example.json` fixture for this contract; the worked instance is
+> the inline [Example Entry](#example-entry) below.
+
 The canonical reusable-finding registry lives at `.agents/findings/registry.jsonl`.
 
 This file is the canonical intake ledger for reusable findings in the AgentOps flywheel. Planning and judgment load it before rediscovering a known failure, and judgment writes back only the reusable findings that deserve to affect future work.

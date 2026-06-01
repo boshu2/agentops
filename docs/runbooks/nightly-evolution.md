@@ -22,6 +22,29 @@ production scheduler is a host user timer or cron entry that calls the repo
 script. Mt. Olympus can later run the same contract through Gas City once
 provider readiness and replay are proven.
 
+### Dream daemon flow
+
+The `dream.run` daemon handoff is backed by typed job specs in
+`cli/internal/daemon/dream_jobs.go`:
+
+- `DreamRunJobSpec` (`JobTypeDreamRun = "dream.run"`) drives a full overnight
+  iteration.
+- `DreamStageJobSpec` (`JobTypeDreamStage = "dream.stage"`) drives a single
+  stage. The ordered `DreamStage` enum is `ingest → reduce → measure →
+  commit → report`, executed under a two-phase-commit checkpoint overlay
+  (`cli/internal/overnight/checkpoint.go`) so a stage failure rolls back the
+  staged `.agents/` subtree instead of corrupting live state.
+
+The non-daemon `ao overnight start` lane (legacy fallback) runs the same
+Checkpoint → Measure → Reduce → Commit → optional Long-haul → Report loop in a
+single subprocess; render a completed run's `summary.json` with
+`ao overnight report --from <dir>`.
+
+Recurring scheduling inside the daemon is owned by the `RecurrenceSupervisor`
+(`cli/internal/daemon/recurrence.go`) over the schedule parser in
+`cli/internal/schedule/parser.go`; the host systemd timer below is the
+out-of-daemon equivalent.
+
 ## First Safe Run
 
 Preview the plan and write digest artifacts:

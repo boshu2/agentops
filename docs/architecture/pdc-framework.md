@@ -4,6 +4,11 @@
 
 **Audience:** L2+ practitioners who need deeper understanding of defensive workflows.
 
+> **Vibe Coding theory trio.** This doc is one of three conceptual companions grounded in [Vibe Coding](https://itrevolution.com/product/vibe-coding-book/) by Gene Kim & Steve Yegge:
+> - [FAAFO Promise Framework](./faafo-alignment.md) — the value proposition (Fast, Ambitious, Autonomous, Fun, Optionality).
+> - [The 12 Failure Patterns](./failure-patterns.md) — the recurring ways AI-assisted development goes wrong.
+> - **PDC Framework** (this doc) — the Prevent/Detect/Correct discipline that secures the FAAFO gains and forecloses the failure patterns.
+
 ---
 
 ## Overview

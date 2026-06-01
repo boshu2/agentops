@@ -12,6 +12,13 @@ the daemon hands to the matching executor.
 
 The daemon is what actually runs the work. `ao schedule` only registers,
 lists, fires, and removes templates — it talks to a running daemon over HTTP.
+Inside the daemon, each registered template becomes a `RecurringJobTemplate`
+(`cli/internal/daemon/types.go`) ticked on cron cadence by the
+`RecurrenceSupervisor` (`cli/internal/daemon/recurrence.go`); when a tick
+fires, the supervisor submits a job to the same queue used by manual
+submissions. There is no separate `ScheduleConfig` type — the YAML file is
+parsed straight into `RecurringJobTemplate` values by
+`cli/internal/schedule/parser.go`.
 
 ```
 your shell  ──ao schedule add/list/run/remove──▶  ao daemon run  ──fires on cron──▶  job executor
@@ -205,6 +212,19 @@ what happened:
   per-run subdirectory with summaries and stage manifests.
 - **`.agents/wiki/forge/`** — wiki forge output. `wiki.forge` writes per-run
   output here.
+
+The daemon's own job surface gives a more structured view than `ao watch`:
+
+- **`ao daemon jobs list`** / **`ao daemon jobs show <job-id>`** — the lifecycle
+  state of each submitted job (submitted → claimed/leased → completed/failed/
+  cancelled). `ao daemon jobs wait <job-id>` blocks until a job settles, which
+  pairs well with the `job_id` printed by `ao schedule run`.
+- **`ao daemon events tail`** — the raw daemon event stream.
+- **`.agents/daemon/ledger.jsonl`** — the append-only JSONL event store every
+  job lifecycle event is written to. It is replayed on daemon startup (with
+  corrupt-line quarantine and gzip rotation), so it is the durable record
+  behind both `ao watch` and `ao daemon events tail`. Read it directly when you
+  need to audit a fire after the fact.
 
 For a one-shot debug fire that bypasses the cron, use:
 

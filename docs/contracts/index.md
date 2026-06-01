@@ -53,6 +53,22 @@ skills, the runtime, and external integrations.
     Schema-backed model/provider/runtime lane policy, authority levels, and
     milestone-1 GasCity / Mt. Olympus production-routing guardrails.
 
+-   :material-hexagon-multiple: **[BC Ports Inventory](bc-ports-inventory.md)**
+
+    ---
+
+    Authoritative roster of the **14 hexagonal BC ports** across 5 bounded
+    contexts (Corpus 4 + Validation 3 + Loop 2 + Factory 2 + Runtime 1), each
+    mapped to its `cli/cmd/ao` production adapter.
+
+-   :material-hexagon-outline: **[BC1 Corpus Ports](bc1-corpus-ports.md)**
+
+    ---
+
+    Deep-dive on the 4 Corpus ports (CorpusReaderPort, CorpusWriterPort,
+    FindingCompilerPort, CitationPort) and the adapter-triplet construction
+    pattern.
+
 -   :material-chart-timeline-variant: **[Factory Yield Ledger](factory-yield-ledger.md)**
 
     ---

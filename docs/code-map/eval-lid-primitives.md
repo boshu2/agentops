@@ -31,7 +31,7 @@ status: initial — Wave 1 (skill-on/off A/B) shipped; Wave 2 (finding-coverage)
 | Delta computation | `cli/internal/eval/baseline_ab.go::computeDelta, deltaSign` | pure function; table-driven tests |
 | Output writer | `cli/internal/eval/baseline_ab.go::WriteDeltaScorecard` | persists scorecard to `--delta-out` path |
 | Demo fixture | `evals/agentops-core/lid-primitives-demo.json` | smallest fixture proving the wiring works end-to-end |
-| SessionStart kill-switch | `hooks/session-start.sh:7` | honors `AGENTOPS_HOOKS_DISABLED=1`; pre-existed this epic |
+| SessionStart kill-switch | `hooks/session-start.sh` (`AGENTOPS_HOOKS_DISABLED` check, under `# Kill switches`) | honors `AGENTOPS_HOOKS_DISABLED=1`; pre-existed this epic |
 | Hook audit | (this code-map) | only `session-start.sh` auto-loads skills today; future skill-loading hooks MUST honor the env var |
 
 ## Wave 1 Test Surfaces

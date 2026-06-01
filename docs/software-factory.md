@@ -97,6 +97,61 @@ Both paths exist because people use Codex or they use Claude Code.
 | Hooks | Automatic enforcement, quality gates, and execution discipline | `hooks/hooks.json`, `hooks/*.sh`, kill switch |
 | Substrate | Retrieval, provenance, packetization, and promotion machinery | `.agents/packets/`, `.agents/topics/`, `.agents/briefings/`, `.agents/findings/`, builder logic |
 
+## The Phased Delivery Line
+
+The conveyor belt the operator lane drives is `ao rpi phased` (`cli/cmd/ao/rpi_phased.go`,
+`Use: "phased <goal>"`). It runs the RPI loop as three sequential phases, each
+with a **fresh context window** so accumulated transcript noise from one phase
+never contaminates the next:
+
+| Phase | Job | Artifact |
+|-------|-----|----------|
+| **Discovery** | Research the goal, locate the work, write a dense execution packet | `.agents/rpi/phase-1-summary.md` |
+| **Implementation** | Execute the packet against the codebase | `.agents/rpi/phase-2-summary.md` |
+| **Validation** | Run gates, tests, and verdicts against what was built | `.agents/rpi/phase-3-summary.md` |
+
+Each phase writes `.agents/rpi/phase-N-summary.md` (`cli/cmd/ao/rpi_phased_processing.go`)
+and the next phase reads only that summary as its bounded carry-forward — the
+file-backed equivalent of a handoff between fresh workers. Phase gates live in
+`cli/cmd/ao/rpi_phased_gates.go`; the summaries and other run artifacts are
+catalogued by `cli/cmd/ao/rpi_artifacts.go`.
+
+`ao factory start` (`cli/cmd/ao/factory.go`) is the higher-level operator entry
+that drives this delivery line; `/rpi` in Claude Code and
+`ao daemon submit --kind rpi` for hookless runtimes both land on the same phased
+machinery.
+
+### Multi-cycle loops (daemon-backed)
+
+A single phased run is one cycle. Long-running and multi-cycle work routes
+through the daemon executor (`cli/internal/daemon/rpi_executor.go`), which
+re-runs the phased line under a **gate / landing / kill-switch** policy:
+
+- **Gate** — each cycle must clear its validation phase before the loop advances.
+- **Landing** — a passing cycle's work is committed/landed before the next begins.
+- **Kill switch** — the loop halts on policy breach or operator abort (the same
+  `AGENTOPS_HOOKS_DISABLED=1` lineage of kill controls the hooks layer carries).
+
+Daemon-resident phases are submitted as `RPIRunJobSpec` / `RPIPhaseJobSpec`
+jobs through the persistent job queue (`cli/internal/daemon/`, ledger-backed at
+`.agents/daemon/ledger.jsonl`), so multi-cycle loops survive across sessions
+without a live operator window. Inspect them via
+`ao daemon submit` / `ao daemon jobs` / `ao daemon tail`.
+
+### Gas City bridge (live sessions)
+
+When the loop must drive **live** agent sessions rather than headless daemon
+jobs, the phased line routes through the Gas City bridge
+(`cli/cmd/ao/gc_bridge.go`, `cli/cmd/ao/gc_events.go`,
+`cli/cmd/ao/rpi_phased_gc.go`). This is the path that dispatches phases to
+running Gas City agents and streams their events back into the run.
+
+> **Deprecated — do not treat as current.** The older RPI orchestration files
+> `rpi_loop_supervisor.go`, `rpi_parallel.go`, `rpi_c2_events.go`, and
+> `rpi_phased_tmux.go` are superseded by the daemon executor + Gas City bridge
+> above. They remain in-tree for history but are not the current surface; do not
+> document, extend, or wire new work to them.
+
 ## Hooks — The Automation Layer
 
 Hooks (`hooks/hooks.json`) are shell scripts that fire automatically at lifecycle

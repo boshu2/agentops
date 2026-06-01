@@ -74,12 +74,14 @@ Adapter contracts:
   (next = max+1); honors explicit Number; rejects duplicates with
   error containing "duplicate".
 
-### BC4 Factory (2 ports)
+### BC4 Factory (4 ports)
 
 | Port | File | Responsibility |
 |---|---|---|
 | `OperatorPort` | `operator.go` | Record human-in-loop intents (Record, List most-recent-first) |
 | `EventBusPort` | `event_bus.go` | Pub/sub for factory events (Publish, Subscribe with cancel) |
+| `FactoryAdmissionPort` | `factory_admission.go` | Probe admission evidence (ProbeRepoState, ProbeOpenPRBlockers, …) |
+| `ClaimEvidencePort` | `claim_evidence.go` | Derive claim→evidence binding + verdict by running a gate |
 
 Adapter contracts:
 
@@ -89,6 +91,21 @@ Adapter contracts:
   Subscribe returns a cancel function that blocks until in-flight
   dispatch completes. Handler errors do not stop sibling
   subscribers. Empty Topic on Publish rejected.
+- `FactoryAdmissionPort` probes admission evidence (repo state, open-PR
+  blockers); the production adapter wraps
+  `daemon.FactoryAdmissionEvidenceProvider` with type translation.
+- `ClaimEvidencePort.Derive` runs the named gate and returns the
+  would-be binding + verdict; `existingLevel`/`targetLevel` seed the
+  upgrade-only check (PASS can promote past PG2). Production adapter
+  composes over `GateRunnerPort` with policy enforced via
+  `productionPromoteEvidenceLevel`.
+
+> **Accuracy note (cycle 142):** the header has counted 14 ports
+> since `ClaimEvidencePort` landed, but this BC4 roster table tracked
+> only `OperatorPort` + `EventBusPort`. The two newer BC4 ports
+> (`FactoryAdmissionPort`, cycle 139; `ClaimEvidencePort`, cycle 141)
+> were already in the scaffold + production-adapter tables below — they
+> are now reflected here so the roster sums to the 14-port header.
 
 ### BC5 Runtime (1 port)
 
@@ -155,10 +172,12 @@ caller-refactor work:
 ## Drift-Blocking Surfaces
 
 - Compile-time `var _ XPort = (*InMemoryX)(nil)` assertions in
-  every `inmemory_<name>.go` file (12 assertions total).
+  every `inmemory_<name>.go` file (14 assertions total — one per
+  port; was 12 before the cycle 139/141 BC4 additions).
 - Compile-time `var _ XPort = (*productionX)(nil)` assertions in
-  every `cli/cmd/ao/<x>_adapter.go` file (12 assertions total —
-  one per port, as of cycle 118).
+  every `cli/cmd/ao/<x>_adapter.go` file (14 assertions total —
+  one per port; was 12 at cycle 118, +`productionFactoryAdmission`
+  (cycle 140) and +`productionClaimEvidence` (cycle 142)).
 - 80+ Go tests in `cli/internal/ports/*_test.go` and 100+ Go tests
   across the production-adapter files in `cli/cmd/ao/*_adapter_test.go`.
 - This contract doc is linked in `docs/documentation-index.md`.
@@ -205,6 +224,32 @@ All adapters in `cli/cmd/ao/<x>_adapter.go` with paired
 `<x>_adapter_test.go`. Each carries a compile-time port assertion
 and follows the file-triplet pattern. Next-phase work is call-site
 migration through these adapters.
+
+### Port → concrete adapter file (verified against `cli/` source)
+
+Each port interface in `cli/internal/ports/<port>.go` has exactly one
+production adapter struct, asserted in `cli/cmd/ao/<adapter>.go` via
+`var _ ports.<Port> = (*production…)(nil)`:
+
+| Port | Port file | Adapter file | Production struct |
+|---|---|---|---|
+| `CorpusReaderPort` | `corpus_reader.go` | `cmd/ao/corpus_reader_adapter.go` | `productionCorpusReader` |
+| `CorpusWriterPort` | `corpus_writer.go` | `cmd/ao/corpus_writer_adapter.go` | `productionCorpusWriter` |
+| `FindingCompilerPort` | `finding_compiler.go` | `cmd/ao/finding_compiler_adapter.go` | `productionFindingCompiler` |
+| `CitationPort` | `citation.go` | `cmd/ao/citation_port_adapter.go` | `productionCitationAdapter` |
+| `GateRunnerPort` | `gate_runner.go` | `cmd/ao/gate_runner_adapter.go` | `productionGateRunner` |
+| `CIStatusPort` | `ci_status.go` | `cmd/ao/ci_status_adapter.go` | `productionCIStatus` |
+| `ClaimEvidenceBinderPort` | `claim_evidence_binder.go` | `cmd/ao/claim_evidence_binder_adapter.go` | `productionClaimEvidenceBinder` |
+| `LoopReaderPort` | `loop_reader.go` | `cmd/ao/loop_reader_adapter.go` | `productionLoopReader` |
+| `LoopWriterPort` | `loop_writer.go` | `cmd/ao/loop_writer_adapter.go` | `productionLoopWriter` |
+| `OperatorPort` | `operator.go` | `cmd/ao/operator_adapter.go` | `productionOperator` |
+| `EventBusPort` | `event_bus.go` | `cmd/ao/event_bus_adapter.go` | `productionEventBus` |
+| `HarnessPort` | `harness.go` | `cmd/ao/harness_adapter.go` | `productionHarness` |
+| `FactoryAdmissionPort` | `factory_admission.go` | `cmd/ao/factory_admission_adapter.go` | `productionFactoryAdmission` |
+| `ClaimEvidencePort` | `claim_evidence.go` | `cmd/ao/claim_evidence_adapter.go` | `productionClaimEvidence` |
+
+(All paths relative to `cli/`. `cmd/ao/llmwiki_adapter.go` also exists
+but is not a BC-port adapter — it carries no `ports.*Port` assertion.)
 
 ## See Also
 

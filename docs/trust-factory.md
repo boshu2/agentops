@@ -48,9 +48,14 @@ organization is willing to stand behind.
 
 **Identity.** Every agent run gets a discovery packet under `.agents/runs/<id>/`
 that records what was being changed, which corpus entries were injected, and
-which sources were cited. The `ao inject` retrieval that loaded the working
-context is logged so a later reviewer can ask *what did the agent actually
-know when it acted?* without guessing.
+which sources were cited. Retrieval is logged as a `CitationEvent` appended to
+`.agents/ao/citations.jsonl` — both the JIT `ao inject` that loaded the working
+context and any targeted `ao lookup` of a specific artifact emit these events
+([`cli/cmd/ao/inject.go`](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/inject.go),
+[`cli/cmd/ao/lookup.go`](https://github.com/boshu2/agentops/blob/main/cli/cmd/ao/lookup.go)).
+A later reviewer can therefore ask *what did the agent actually know when it
+acted?* without guessing. (The wiki companion describes the same `ao inject`
+retrieval from the consumer's side — decay-ranked, token-budgeted packets.)
 
 **Reproducibility.** The RPI workflow (Research → Plan → Implement → Validate)
 runs each phase against a written contract, and `ao crank` isolates parallel
@@ -103,7 +108,11 @@ explanation tax. Lead with this framing for buyers who already know that
 "validation is the moat"; lead with the wiki framing for buyers who want to
 see the artifact before the philosophy.
 
-Both framings describe the same product. They optimize for different listeners.
+Both framings describe the same product and the same mechanisms — `ao inject`
+retrieval, citation logging, ratchet records, council verdicts. They are a
+paired set, written for different audiences: [the wiki framing](./wiki-for-agents.md)
+shows the artifact to the skeptic; this one shows the discipline to the buyer who
+already values it. They optimize for different listeners, not different facts.
 
 ## See also
 
