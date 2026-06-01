@@ -125,6 +125,7 @@ memory
 mine
 nightly
 opencode-tests
+operator
 overnight
 packets
 patterns
