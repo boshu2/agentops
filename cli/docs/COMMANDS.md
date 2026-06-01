@@ -114,6 +114,77 @@ ao badge [flags]
 
 ---
 
+### `ao canon`
+
+The team-knowledge canon is the trusted set of learnings a team shares.
+
+```
+ao canon [command]
+```
+
+**Subcommands:**
+
+#### `ao canon cite`
+
+Record that you used a learning (the 'useful' signal)
+
+```
+ao canon cite <entry-id> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help             help for cite
+      --path string      path to the learning file (required)
+      --query string     search query that surfaced the learning
+      --session string   session ID
+```
+
+#### `ao canon promote`
+
+Promote an earned learning into the team canon
+
+```
+ao canon promote <entry-id> [flags]
+```
+
+**Flags:**
+
+```
+      --force         promote despite an unmet gate (records the override loudly)
+  -h, --help          help for promote
+      --path string   path to the learning file (required)
+```
+
+#### `ao canon status`
+
+Show promotion eligibility for one or all tracked entries
+
+```
+ao canon status [entry-id] [flags]
+```
+
+#### `ao canon verify`
+
+Record that you independently checked a learning and whether it holds.
+
+```
+ao canon verify <entry-id> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help             help for verify
+      --method string    how it was checked: manual|ao-verify|council|cross-model (default "manual")
+      --path string      path to the learning file (required)
+      --receipt string   evidence you independently gathered (gate log, file:line, hash)
+      --verdict string   confirmed|refuted (default "confirmed")
+```
+
+---
+
 ### `ao capabilities`
 
 Print the machine-readable contract for the whole ao CLI as JSON.
