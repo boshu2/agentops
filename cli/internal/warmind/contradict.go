@@ -121,7 +121,7 @@ func (cd *ContradictionDetector) LoadAll() ([]Contradiction, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var contradictions []Contradiction
 	scanner := bufio.NewScanner(f)

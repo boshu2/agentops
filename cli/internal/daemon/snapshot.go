@@ -77,12 +77,16 @@ func (s *Store) WriteProjectionSnapshot(set ProjectionSet) (string, error) {
 // syncDir fsyncs a directory so that a recently-renamed entry within it is
 // durably committed. POSIX requires fsync on the parent directory after
 // rename to guarantee the new name survives a crash.
-func syncDir(dir string) error {
+func syncDir(dir string) (err error) {
 	f, err := os.Open(dir)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 	return f.Sync()
 }
 

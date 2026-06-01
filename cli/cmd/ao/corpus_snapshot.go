@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -249,20 +250,22 @@ func expandHome(p string) (string, error) {
 	return filepath.Join(home, strings.TrimPrefix(p, "~")), nil
 }
 
-func writeSnapshot(tarPath, srcRoot string) (int, int64, string, error) {
+func writeSnapshot(tarPath, srcRoot string) (count int, total int64, sum string, err error) {
 	f, err := os.Create(tarPath)
 	if err != nil {
 		return 0, 0, "", err
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	hash := sha256.New()
 	mw := io.MultiWriter(f, hash)
 	gz := gzip.NewWriter(mw)
 	tw := tar.NewWriter(gz)
 
-	var count int
-	var total int64
 	srcRoot = filepath.Clean(srcRoot)
 	parent := filepath.Dir(srcRoot)
 	walkErr := filepath.Walk(srcRoot, func(path string, info os.FileInfo, err error) error {
@@ -317,12 +320,12 @@ func extractSnapshot(tarPath, destParent string) (int, int64, error) {
 	if err != nil {
 		return 0, 0, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	gz, err := gzip.NewReader(f)
 	if err != nil {
 		return 0, 0, err
 	}
-	defer gz.Close()
+	defer func() { _ = gz.Close() }()
 	tr := tar.NewReader(gz)
 
 	if err := os.MkdirAll(filepath.Dir(destParent), 0o755); err != nil {
@@ -337,7 +340,7 @@ func extractSnapshot(tarPath, destParent string) (int, int64, error) {
 	var total int64
 	for {
 		hdr, herr := tr.Next()
-		if herr == io.EOF {
+		if errors.Is(herr, io.EOF) {
 			break
 		}
 		if herr != nil {
@@ -402,12 +405,16 @@ func findLatestSnapshot(dir string) (string, error) {
 	return pairs[0].path, nil
 }
 
-func writeCorpusManifestFile(path string, v any) error {
+func writeCorpusManifestFile(path string, v any) (err error) {
 	f, err := os.Create(path)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 	enc := json.NewEncoder(f)
 	enc.SetIndent("", "  ")
 	return enc.Encode(v)

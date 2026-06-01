@@ -185,9 +185,7 @@ func stripCodeFence(s string) string {
 		s = s[nl+1:]
 	}
 	s = strings.TrimRight(s, " \n")
-	if strings.HasSuffix(s, "```") {
-		s = s[:len(s)-3]
-	}
+	s = strings.TrimSuffix(s, "```")
 	return strings.TrimSpace(s)
 }
 

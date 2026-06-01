@@ -500,7 +500,7 @@ func CheckCodexNativeHookCache(home string, meta *CodexInstallMeta, repoRoot str
 	if err != nil {
 		return &Check{Name: "Codex Sync", Status: "warn", Detail: "cannot create Codex hook smoke repo", Required: false}
 	}
-	defer os.RemoveAll(tmpRepo)
+	defer func() { _ = os.RemoveAll(tmpRepo) }()
 	if output, err := exec.Command("git", "-C", tmpRepo, "init", "-q").CombinedOutput(); err != nil {
 		return &Check{
 			Name:   "Codex Sync",

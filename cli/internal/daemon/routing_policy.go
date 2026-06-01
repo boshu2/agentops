@@ -3,6 +3,7 @@ package daemon
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -137,7 +138,7 @@ func ParseRoutingPolicyJSON(data []byte) (RoutingPolicy, error) {
 		return policy, err
 	}
 	var extra any
-	if err := decoder.Decode(&extra); err != io.EOF {
+	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
 		if err == nil {
 			err = fmt.Errorf("routing policy JSON must contain exactly one object")
 		}

@@ -45,7 +45,7 @@ func newProductionLoopWriter(path string) *productionLoopWriter {
 
 // Append writes the entry as one JSON line. Auto-assigns Number when
 // 0 by scanning the existing file for the current max.
-func (w *productionLoopWriter) Append(ctx context.Context, entry ports.CycleEntry) (ports.CycleEntry, error) {
+func (w *productionLoopWriter) Append(ctx context.Context, entry ports.CycleEntry) (_ ports.CycleEntry, err error) {
 	if err := ctx.Err(); err != nil {
 		return ports.CycleEntry{}, err
 	}
@@ -78,7 +78,11 @@ func (w *productionLoopWriter) Append(ctx context.Context, entry ports.CycleEntr
 	if err != nil {
 		return ports.CycleEntry{}, fmt.Errorf("productionLoopWriter open %q: %w", w.path, err)
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 	if _, err := f.Write(append(payload, '\n')); err != nil {
 		return ports.CycleEntry{}, fmt.Errorf("productionLoopWriter write: %w", err)
 	}
@@ -109,7 +113,7 @@ func (w *productionLoopWriter) scanMaxNumberLocked() (int, error) {
 		}
 		return 0, fmt.Errorf("productionLoopWriter scan-max open %q: %w", w.path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	maxN := 0
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
