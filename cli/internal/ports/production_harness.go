@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, ddd-bounded-context]
-package main
+package ports
 
 import (
 	"context"
@@ -9,11 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
-// productionHarness satisfies ports.HarnessPort by scanning the
+// ProductionHarness satisfies HarnessPort by scanning the
 // canonical skills/ tree and the skills-codex/ tree, computing SHA256
 // content hashes for each SKILL.md, and reporting per-(skill, harness)
 // sync state. A skill is "out of sync" when the codex copy's hash
@@ -23,30 +21,30 @@ import (
 // skills-codex/ subdirectories. The adapter is read-only — it does
 // not modify either tree (re-sync work belongs to
 // scripts/regen-codex-hashes.sh).
-type productionHarness struct {
+type ProductionHarness struct {
 	rootDir string
 }
 
-// newProductionHarness returns an adapter rooted at rootDir.
-func newProductionHarness(rootDir string) *productionHarness {
-	return &productionHarness{rootDir: rootDir}
+// NewProductionHarness returns an adapter rooted at rootDir.
+func NewProductionHarness(rootDir string) *ProductionHarness {
+	return &ProductionHarness{rootDir: rootDir}
 }
 
 // scanAll walks both trees and returns all (skill, harness) entries
 // it discovered, with OutOfSync computed by comparing the codex hash
 // against the canonical Claude hash for the same skill.
-func (h *productionHarness) scanAll(ctx context.Context) ([]ports.HarnessSkillSync, error) {
+func (h *ProductionHarness) scanAll(ctx context.Context) ([]HarnessSkillSync, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	if h.rootDir == "" {
-		return nil, fmt.Errorf("productionHarness: rootDir required")
+		return nil, fmt.Errorf("ProductionHarness: rootDir required")
 	}
-	claude, err := h.scanTree(filepath.Join(h.rootDir, "skills"), ports.HarnessClaude, "skills")
+	claude, err := h.scanTree(filepath.Join(h.rootDir, "skills"), HarnessClaude, "skills")
 	if err != nil {
 		return nil, err
 	}
-	codex, err := h.scanTree(filepath.Join(h.rootDir, "skills-codex"), ports.HarnessCodex, "skills-codex")
+	codex, err := h.scanTree(filepath.Join(h.rootDir, "skills-codex"), HarnessCodex, "skills-codex")
 	if err != nil {
 		return nil, err
 	}
@@ -70,14 +68,14 @@ func (h *productionHarness) scanAll(ctx context.Context) ([]ports.HarnessSkillSy
 
 // scanTree walks <root> looking for <skill>/SKILL.md files and hashes
 // each one. Missing root is not an error (returns empty slice).
-func (h *productionHarness) scanTree(root string, harness ports.HarnessName, rel string) ([]ports.HarnessSkillSync, error) {
-	out := make([]ports.HarnessSkillSync, 0)
+func (h *ProductionHarness) scanTree(root string, harness HarnessName, rel string) ([]HarnessSkillSync, error) {
+	out := make([]HarnessSkillSync, 0)
 	entries, err := os.ReadDir(root)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return out, nil
 		}
-		return nil, fmt.Errorf("productionHarness scan %q: %w", root, err)
+		return nil, fmt.Errorf("ProductionHarness scan %q: %w", root, err)
 	}
 	for _, e := range entries {
 		if !e.IsDir() {
@@ -90,10 +88,10 @@ func (h *productionHarness) scanTree(root string, harness ports.HarnessName, rel
 			if os.IsNotExist(err) {
 				continue
 			}
-			return nil, fmt.Errorf("productionHarness read %q: %w", skillPath, err)
+			return nil, fmt.Errorf("ProductionHarness read %q: %w", skillPath, err)
 		}
 		sum := sha256.Sum256(body)
-		out = append(out, ports.HarnessSkillSync{
+		out = append(out, HarnessSkillSync{
 			Harness:     harness,
 			Skill:       skillName,
 			Path:        filepath.Join(rel, skillName, "SKILL.md"),
@@ -105,20 +103,20 @@ func (h *productionHarness) scanTree(root string, harness ports.HarnessName, rel
 }
 
 // Status returns the full inventory across both harnesses.
-func (h *productionHarness) Status(ctx context.Context) ([]ports.HarnessSkillSync, error) {
+func (h *ProductionHarness) Status(ctx context.Context) ([]HarnessSkillSync, error) {
 	return h.scanAll(ctx)
 }
 
 // StatusForSkill returns entries for one skill across both harnesses.
-func (h *productionHarness) StatusForSkill(ctx context.Context, skill string) ([]ports.HarnessSkillSync, error) {
+func (h *ProductionHarness) StatusForSkill(ctx context.Context, skill string) ([]HarnessSkillSync, error) {
 	if skill == "" {
-		return nil, fmt.Errorf("productionHarness: skill required")
+		return nil, fmt.Errorf("ProductionHarness: skill required")
 	}
 	all, err := h.scanAll(ctx)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ports.HarnessSkillSync, 0)
+	out := make([]HarnessSkillSync, 0)
 	for _, e := range all {
 		if e.Skill == skill {
 			out = append(out, e)
@@ -127,5 +125,5 @@ func (h *productionHarness) StatusForSkill(ctx context.Context, skill string) ([
 	return out, nil
 }
 
-// Compile-time assertion: productionHarness satisfies the port.
-var _ ports.HarnessPort = (*productionHarness)(nil)
+// Compile-time assertion: ProductionHarness satisfies the port.
+var _ HarnessPort = (*ProductionHarness)(nil)

@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, tdd]
-package main
+package ports
 
 import (
 	"context"
@@ -32,7 +32,7 @@ func TestProductionLoopReader_LatestPicksHighestNumber(t *testing.T) {
 		`{"cycle":2,"mode":"b","result":"improved","commit":"sha2"}`,
 		`{"cycle":3,"mode":"c","result":"unchanged"}`,
 	)
-	r := newProductionLoopReader(path)
+	r := NewProductionLoopReader(path)
 	v, err := r.Latest(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -46,7 +46,7 @@ func TestProductionLoopReader_LatestPicksHighestNumber(t *testing.T) {
 }
 
 func TestProductionLoopReader_LatestMissingFileReturnsZeroValue(t *testing.T) {
-	r := newProductionLoopReader(filepath.Join(t.TempDir(), "does-not-exist.jsonl"))
+	r := NewProductionLoopReader(filepath.Join(t.TempDir(), "does-not-exist.jsonl"))
 	v, err := r.Latest(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -64,7 +64,7 @@ func TestProductionLoopReader_RangeFiltersInclusive(t *testing.T) {
 		`{"cycle":3,"mode":"c"}`,
 		`{"cycle":4,"mode":"d"}`,
 	)
-	r := newProductionLoopReader(path)
+	r := NewProductionLoopReader(path)
 	got, err := r.Range(context.Background(), 2, 3)
 	if err != nil {
 		t.Fatal(err)
@@ -85,7 +85,7 @@ func TestProductionLoopReader_IdleStreakCountsTrailing(t *testing.T) {
 		`{"cycle":3,"result":"idle"}`,
 		`{"cycle":4,"result":"unchanged"}`,
 	)
-	r := newProductionLoopReader(path)
+	r := NewProductionLoopReader(path)
 	got, err := r.IdleStreak(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -104,7 +104,7 @@ func TestProductionLoopReader_MalformedLinesSkipped(t *testing.T) {
 		`{"broken json:`,
 		`{"cycle":3,"result":"unchanged"}`,
 	)
-	r := newProductionLoopReader(path)
+	r := NewProductionLoopReader(path)
 	v, err := r.Latest(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -115,7 +115,7 @@ func TestProductionLoopReader_MalformedLinesSkipped(t *testing.T) {
 }
 
 func TestProductionLoopReader_EmptyPathSafe(t *testing.T) {
-	r := newProductionLoopReader("")
+	r := NewProductionLoopReader("")
 	v, err := r.Latest(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -149,7 +149,7 @@ func TestProductionLoopReader_ProjectsStartedAtAndTitle(t *testing.T) {
 	path := writeLoopFixture(t, dir,
 		`{"cycle":7,"mode":"cleanup","result":"improved","commit":"abc1234","milestone":"ms","started_at":"2026-05-13T07:00:00-04:00","title":"sweep dead code"}`,
 	)
-	r := newProductionLoopReader(path)
+	r := NewProductionLoopReader(path)
 	got, err := r.Latest(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -169,7 +169,7 @@ func TestProductionLoopReader_ProjectsStartedAtAndTitle(t *testing.T) {
 func TestProductionLoopReader_HonorsContextCancellation(t *testing.T) {
 	dir := t.TempDir()
 	path := writeLoopFixture(t, dir, `{"cycle":1,"result":"improved"}`)
-	r := newProductionLoopReader(path)
+	r := NewProductionLoopReader(path)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	for _, fn := range []struct {

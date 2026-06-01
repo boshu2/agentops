@@ -1,13 +1,11 @@
 // practices: [hexagonal-architecture, tdd]
-package main
+package ports
 
 import (
 	"context"
 	"errors"
 	"strings"
 	"testing"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
 // Sibling pattern: cycle 116 claim_evidence_binder_adapter_test.go.
@@ -15,7 +13,7 @@ import (
 // stub binary — cleaner than the subprocess pattern in cycle 115.
 
 func TestProductionCIStatus_LatestParsesJSON(t *testing.T) {
-	c := newProductionCIStatus()
+	c := NewProductionCIStatus()
 	c.runGH = func(_ context.Context, args []string) ([]byte, error) {
 		return []byte(`[{"headSha":"abc","workflowName":"validate.yml","status":"completed","conclusion":"success"}]`), nil
 	}
@@ -29,16 +27,16 @@ func TestProductionCIStatus_LatestParsesJSON(t *testing.T) {
 	if run.Workflow != "validate.yml" {
 		t.Fatalf("Workflow = %q", run.Workflow)
 	}
-	if run.Status != ports.CIRunStatusCompleted {
+	if run.Status != CIRunStatusCompleted {
 		t.Fatalf("Status = %s", run.Status)
 	}
-	if run.Conclusion != ports.CIRunConclusionSuccess {
+	if run.Conclusion != CIRunConclusionSuccess {
 		t.Fatalf("Conclusion = %s", run.Conclusion)
 	}
 }
 
 func TestProductionCIStatus_LatestEmptyArrayReturnsZero(t *testing.T) {
-	c := newProductionCIStatus()
+	c := NewProductionCIStatus()
 	c.runGH = func(_ context.Context, _ []string) ([]byte, error) {
 		return []byte(`[]`), nil
 	}
@@ -52,7 +50,7 @@ func TestProductionCIStatus_LatestEmptyArrayReturnsZero(t *testing.T) {
 }
 
 func TestProductionCIStatus_LatestPassesShaFlag(t *testing.T) {
-	c := newProductionCIStatus()
+	c := NewProductionCIStatus()
 	var capturedArgs []string
 	c.runGH = func(_ context.Context, args []string) ([]byte, error) {
 		capturedArgs = args
@@ -69,7 +67,7 @@ func TestProductionCIStatus_LatestPassesShaFlag(t *testing.T) {
 }
 
 func TestProductionCIStatus_LatestEmptyShaErrors(t *testing.T) {
-	c := newProductionCIStatus()
+	c := NewProductionCIStatus()
 	_, err := c.Latest(context.Background(), "")
 	if err == nil {
 		t.Fatal("expected error on empty sha, got nil")
@@ -77,7 +75,7 @@ func TestProductionCIStatus_LatestEmptyShaErrors(t *testing.T) {
 }
 
 func TestProductionCIStatus_RecentLimitedToCallerLimit(t *testing.T) {
-	c := newProductionCIStatus()
+	c := NewProductionCIStatus()
 	var capturedArgs []string
 	c.runGH = func(_ context.Context, args []string) ([]byte, error) {
 		capturedArgs = args
@@ -90,7 +88,7 @@ func TestProductionCIStatus_RecentLimitedToCallerLimit(t *testing.T) {
 }
 
 func TestProductionCIStatus_RecentZeroLimitCappedToMax(t *testing.T) {
-	c := newProductionCIStatus()
+	c := NewProductionCIStatus()
 	var capturedArgs []string
 	c.runGH = func(_ context.Context, args []string) ([]byte, error) {
 		capturedArgs = args
@@ -103,7 +101,7 @@ func TestProductionCIStatus_RecentZeroLimitCappedToMax(t *testing.T) {
 }
 
 func TestProductionCIStatus_RecentReturnsAllRuns(t *testing.T) {
-	c := newProductionCIStatus()
+	c := NewProductionCIStatus()
 	c.runGH = func(_ context.Context, _ []string) ([]byte, error) {
 		return []byte(`[
 			{"headSha":"a","workflowName":"validate.yml","status":"completed","conclusion":"success"},
@@ -118,16 +116,16 @@ func TestProductionCIStatus_RecentReturnsAllRuns(t *testing.T) {
 	if len(runs) != 3 {
 		t.Fatalf("len = %d, want 3", len(runs))
 	}
-	if runs[1].Status != ports.CIRunStatusInProgress || runs[1].Conclusion != ports.CIRunConclusionNone {
+	if runs[1].Status != CIRunStatusInProgress || runs[1].Conclusion != CIRunConclusionNone {
 		t.Fatalf("in_progress run wrong: %+v", runs[1])
 	}
-	if runs[2].Conclusion != ports.CIRunConclusionFailure {
+	if runs[2].Conclusion != CIRunConclusionFailure {
 		t.Fatalf("failure conclusion wrong: %+v", runs[2])
 	}
 }
 
 func TestProductionCIStatus_GHFailurePropagates(t *testing.T) {
-	c := newProductionCIStatus()
+	c := NewProductionCIStatus()
 	c.runGH = func(_ context.Context, _ []string) ([]byte, error) {
 		return nil, errors.New("gh: not authenticated")
 	}
@@ -141,7 +139,7 @@ func TestProductionCIStatus_GHFailurePropagates(t *testing.T) {
 }
 
 func TestProductionCIStatus_MalformedJSONErrors(t *testing.T) {
-	c := newProductionCIStatus()
+	c := NewProductionCIStatus()
 	c.runGH = func(_ context.Context, _ []string) ([]byte, error) {
 		return []byte(`{this is not array`), nil
 	}
@@ -155,7 +153,7 @@ func TestProductionCIStatus_MalformedJSONErrors(t *testing.T) {
 }
 
 func TestProductionCIStatus_HonorsContextCancellation(t *testing.T) {
-	c := newProductionCIStatus()
+	c := NewProductionCIStatus()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	if _, err := c.Latest(ctx, "abc"); err == nil {

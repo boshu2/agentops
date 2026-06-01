@@ -139,7 +139,7 @@ func loopVerifyViaPort(ctx context.Context, opts loopVerifyOptions) ([]string, e
 		return nil, err
 	}
 	historyPath := filepath.Join(cwd, ".agents", "evolve", "cycle-history.jsonl")
-	reader := newProductionLoopReader(historyPath)
+	reader := ports.NewProductionLoopReader(historyPath)
 
 	entries, err := reader.Range(ctx, 1, 1<<30)
 	if err != nil {
@@ -226,7 +226,7 @@ func loadCycleHistoryViaPort(ctx context.Context, opts loopHistoryOptions) ([]po
 		return nil, err
 	}
 	historyPath := filepath.Join(cwd, ".agents", "evolve", "cycle-history.jsonl")
-	reader := newProductionLoopReader(historyPath)
+	reader := ports.NewProductionLoopReader(historyPath)
 
 	if opts.latest {
 		entry, err := reader.Latest(ctx)

@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, ddd-bounded-context]
-package main
+package ports
 
 import (
 	"context"
@@ -7,11 +7,9 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
-// productionFindingCompiler satisfies ports.FindingCompilerPort by
+// ProductionFindingCompiler satisfies FindingCompilerPort by
 // rendering a FindingArtifact into the three compiler-target
 // artifacts named in docs/contracts/finding-compiler.md: planning
 // rules, pre-mortem checks, and constraints.
@@ -34,27 +32,27 @@ import (
 // This is a pure-Go transform — no subprocess, no filesystem. Callers
 // that need to persist the outputs feed them into a CorpusWriterPort
 // (cycle 113 productionCorpusWriter handles the on-disk side).
-type productionFindingCompiler struct{}
+type ProductionFindingCompiler struct{}
 
-func newProductionFindingCompiler() *productionFindingCompiler {
-	return &productionFindingCompiler{}
+func NewProductionFindingCompiler() *ProductionFindingCompiler {
+	return &ProductionFindingCompiler{}
 }
 
 // Compile renders one FindingArtifact into its compiled outputs.
-func (c *productionFindingCompiler) Compile(ctx context.Context, artifact ports.FindingArtifact) ([]ports.CompiledOutput, error) {
+func (c *ProductionFindingCompiler) Compile(ctx context.Context, artifact FindingArtifact) ([]CompiledOutput, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	if artifact.ID == "" {
-		return nil, errors.New("productionFindingCompiler: artifact.ID required")
+		return nil, errors.New("ProductionFindingCompiler: artifact.ID required")
 	}
 	kinds, err := resolveCompilerTargets(artifact.Frontmatter["compiler_targets"])
 	if err != nil {
-		return nil, fmt.Errorf("productionFindingCompiler %q: %w", artifact.ID, err)
+		return nil, fmt.Errorf("ProductionFindingCompiler %q: %w", artifact.ID, err)
 	}
-	out := make([]ports.CompiledOutput, 0, len(kinds))
+	out := make([]CompiledOutput, 0, len(kinds))
 	for _, kind := range kinds {
-		out = append(out, ports.CompiledOutput{
+		out = append(out, CompiledOutput{
 			Kind: kind,
 			Path: compiledPath(kind, artifact.ID),
 			Body: renderCompiledBody(kind, artifact),
@@ -66,16 +64,16 @@ func (c *productionFindingCompiler) Compile(ctx context.Context, artifact ports.
 // resolveCompilerTargets parses the comma-separated frontmatter value
 // into a deterministic, deduplicated ordered list of kinds. Empty
 // input returns the three defaults.
-func resolveCompilerTargets(raw string) ([]ports.CompiledOutputKind, error) {
+func resolveCompilerTargets(raw string) ([]CompiledOutputKind, error) {
 	if strings.TrimSpace(raw) == "" {
-		return []ports.CompiledOutputKind{
-			ports.CompiledOutputPlanningRule,
-			ports.CompiledOutputPreMortemCheck,
-			ports.CompiledOutputConstraint,
+		return []CompiledOutputKind{
+			CompiledOutputPlanningRule,
+			CompiledOutputPreMortemCheck,
+			CompiledOutputConstraint,
 		}, nil
 	}
-	seen := make(map[ports.CompiledOutputKind]struct{}, 3)
-	kinds := make([]ports.CompiledOutputKind, 0, 3)
+	seen := make(map[CompiledOutputKind]struct{}, 3)
+	kinds := make([]CompiledOutputKind, 0, 3)
 	for _, part := range strings.Split(raw, ",") {
 		name := strings.TrimSpace(part)
 		if name == "" {
@@ -94,26 +92,26 @@ func resolveCompilerTargets(raw string) ([]ports.CompiledOutputKind, error) {
 	return kinds, nil
 }
 
-func parseCompilerKind(name string) (ports.CompiledOutputKind, bool) {
+func parseCompilerKind(name string) (CompiledOutputKind, bool) {
 	switch name {
-	case string(ports.CompiledOutputPlanningRule):
-		return ports.CompiledOutputPlanningRule, true
-	case string(ports.CompiledOutputPreMortemCheck):
-		return ports.CompiledOutputPreMortemCheck, true
-	case string(ports.CompiledOutputConstraint):
-		return ports.CompiledOutputConstraint, true
+	case string(CompiledOutputPlanningRule):
+		return CompiledOutputPlanningRule, true
+	case string(CompiledOutputPreMortemCheck):
+		return CompiledOutputPreMortemCheck, true
+	case string(CompiledOutputConstraint):
+		return CompiledOutputConstraint, true
 	}
 	return "", false
 }
 
 // compiledPath returns the canonical relative path per finding-compiler.md.
-func compiledPath(kind ports.CompiledOutputKind, id string) string {
+func compiledPath(kind CompiledOutputKind, id string) string {
 	switch kind {
-	case ports.CompiledOutputPlanningRule:
+	case CompiledOutputPlanningRule:
 		return ".agents/planning-rules/" + id + ".md"
-	case ports.CompiledOutputPreMortemCheck:
+	case CompiledOutputPreMortemCheck:
 		return ".agents/pre-mortem-checks/" + id + ".md"
-	case ports.CompiledOutputConstraint:
+	case CompiledOutputConstraint:
 		return ".agents/constraints/" + id + ".md"
 	}
 	return ""
@@ -122,7 +120,7 @@ func compiledPath(kind ports.CompiledOutputKind, id string) string {
 // renderCompiledBody builds the output body for one compiled kind.
 // Shape: optional YAML frontmatter (deterministic key order) → kind-
 // specific header → original artifact body.
-func renderCompiledBody(kind ports.CompiledOutputKind, artifact ports.FindingArtifact) []byte {
+func renderCompiledBody(kind CompiledOutputKind, artifact FindingArtifact) []byte {
 	var out strings.Builder
 	if len(artifact.Frontmatter) > 0 {
 		keys := make([]string, 0, len(artifact.Frontmatter))
@@ -151,17 +149,17 @@ func renderCompiledBody(kind ports.CompiledOutputKind, artifact ports.FindingArt
 	return []byte(out.String())
 }
 
-func compiledHeading(kind ports.CompiledOutputKind) string {
+func compiledHeading(kind CompiledOutputKind) string {
 	switch kind {
-	case ports.CompiledOutputPlanningRule:
+	case CompiledOutputPlanningRule:
 		return "Planning Rule"
-	case ports.CompiledOutputPreMortemCheck:
+	case CompiledOutputPreMortemCheck:
 		return "Pre-Mortem Check"
-	case ports.CompiledOutputConstraint:
+	case CompiledOutputConstraint:
 		return "Constraint"
 	}
 	return "Compiled Finding"
 }
 
-// Compile-time assertion: productionFindingCompiler satisfies the port.
-var _ ports.FindingCompilerPort = (*productionFindingCompiler)(nil)
+// Compile-time assertion: ProductionFindingCompiler satisfies the port.
+var _ FindingCompilerPort = (*ProductionFindingCompiler)(nil)

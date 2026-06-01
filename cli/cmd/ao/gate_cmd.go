@@ -90,6 +90,6 @@ func gateRunViaPort(ctx context.Context, opts gateRunOptions) (ports.GateVerdict
 	if err != nil {
 		return ports.GateVerdict{}, err
 	}
-	g := newProductionGateRunner(cwd)
+	g := ports.NewProductionGateRunner(cwd)
 	return g.Run(ctx, ports.GateRunRequest{Name: ports.GateName(opts.name)})
 }

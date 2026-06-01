@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, ddd-bounded-context]
-package main
+package ports
 
 import (
 	"context"
@@ -8,11 +8,9 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
-// productionCorpusReader satisfies ports.CorpusReaderPort by walking
+// ProductionCorpusReader satisfies CorpusReaderPort by walking
 // a corpus root (typically .agents/learnings/, .agents/findings/, or
 // a combined directory) and ranking matches against the query.
 //
@@ -32,21 +30,21 @@ import (
 //     — matches the port contract for "return everything ranked".
 //   - DecayApplied is recorded but ignored by this reader (no decay
 //     signal source in this adapter — documented per port contract).
-type productionCorpusReader struct {
+type ProductionCorpusReader struct {
 	rootDir string
 }
 
-func newProductionCorpusReader(rootDir string) *productionCorpusReader {
-	return &productionCorpusReader{rootDir: rootDir}
+func NewProductionCorpusReader(rootDir string) *ProductionCorpusReader {
+	return &ProductionCorpusReader{rootDir: rootDir}
 }
 
 // Lookup walks rootDir and returns matching CorpusItems sorted by
 // Score descending. Missing rootDir is tolerated (returns empty).
-func (r *productionCorpusReader) Lookup(ctx context.Context, opts ports.LookupOptions) ([]ports.CorpusItem, error) {
+func (r *ProductionCorpusReader) Lookup(ctx context.Context, opts LookupOptions) ([]CorpusItem, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	out := make([]ports.CorpusItem, 0)
+	out := make([]CorpusItem, 0)
 	if r.rootDir == "" {
 		return out, nil
 	}
@@ -67,7 +65,7 @@ func (r *productionCorpusReader) Lookup(ctx context.Context, opts ports.LookupOp
 		}
 		body, err := os.ReadFile(path)
 		if err != nil {
-			return fmt.Errorf("productionCorpusReader read %q: %w", path, err)
+			return fmt.Errorf("ProductionCorpusReader read %q: %w", path, err)
 		}
 		bodyStr := string(body)
 		title := extractMarkdownTitle(bodyStr, d.Name())
@@ -75,7 +73,7 @@ func (r *productionCorpusReader) Lookup(ctx context.Context, opts ports.LookupOp
 		if opts.Query != "" && score == 0 {
 			return nil
 		}
-		out = append(out, ports.CorpusItem{
+		out = append(out, CorpusItem{
 			Path:  path,
 			Title: title,
 			Body:  bodyStr,
@@ -128,5 +126,5 @@ func scoreCorpusMatch(queryLower, titleLower, bodyLower string) float64 {
 	return s
 }
 
-// Compile-time assertion: productionCorpusReader satisfies the port.
-var _ ports.CorpusReaderPort = (*productionCorpusReader)(nil)
+// Compile-time assertion: ProductionCorpusReader satisfies the port.
+var _ CorpusReaderPort = (*ProductionCorpusReader)(nil)

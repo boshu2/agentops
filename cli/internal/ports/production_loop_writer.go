@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, ddd-bounded-context]
-package main
+package ports
 
 import (
 	"bufio"
@@ -8,11 +8,9 @@ import (
 	"fmt"
 	"os"
 	"sync"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
-// productionLoopWriter satisfies ports.LoopWriterPort by appending
+// ProductionLoopWriter satisfies LoopWriterPort by appending
 // CycleEntry records to the local .agents/evolve/cycle-history.jsonl
 // file (or any path the caller supplies). Sibling of cycle 108's
 // productionLoopReader — together they let evolve's Step 0/6
@@ -30,34 +28,34 @@ import (
 //   - Thread safety: a process-local mutex serializes appends from
 //     this adapter instance. Cross-process concurrent appends are
 //     NOT safe — adapters that need that should layer a flock.
-type productionLoopWriter struct {
+type ProductionLoopWriter struct {
 	mu   sync.Mutex
 	path string
 }
 
-// newProductionLoopWriter returns an adapter writing to path. Empty
+// NewProductionLoopWriter returns an adapter writing to path. Empty
 // path returns an adapter whose Append always errors — matches the
 // "fail loud" posture of the in-memory adapter's empty-claim
 // rejection.
-func newProductionLoopWriter(path string) *productionLoopWriter {
-	return &productionLoopWriter{path: path}
+func NewProductionLoopWriter(path string) *ProductionLoopWriter {
+	return &ProductionLoopWriter{path: path}
 }
 
 // Append writes the entry as one JSON line. Auto-assigns Number when
 // 0 by scanning the existing file for the current max.
-func (w *productionLoopWriter) Append(ctx context.Context, entry ports.CycleEntry) (_ ports.CycleEntry, err error) {
+func (w *ProductionLoopWriter) Append(ctx context.Context, entry CycleEntry) (_ CycleEntry, err error) {
 	if err := ctx.Err(); err != nil {
-		return ports.CycleEntry{}, err
+		return CycleEntry{}, err
 	}
 	if w.path == "" {
-		return ports.CycleEntry{}, fmt.Errorf("productionLoopWriter: path required")
+		return CycleEntry{}, fmt.Errorf("ProductionLoopWriter: path required")
 	}
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if entry.Number == 0 {
 		maxN, err := w.scanMaxNumberLocked()
 		if err != nil {
-			return ports.CycleEntry{}, err
+			return CycleEntry{}, err
 		}
 		entry.Number = maxN + 1
 	}
@@ -72,11 +70,11 @@ func (w *productionLoopWriter) Append(ctx context.Context, entry ports.CycleEntr
 	}
 	payload, err := json.Marshal(rec)
 	if err != nil {
-		return ports.CycleEntry{}, fmt.Errorf("productionLoopWriter marshal: %w", err)
+		return CycleEntry{}, fmt.Errorf("ProductionLoopWriter marshal: %w", err)
 	}
 	f, err := os.OpenFile(w.path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
-		return ports.CycleEntry{}, fmt.Errorf("productionLoopWriter open %q: %w", w.path, err)
+		return CycleEntry{}, fmt.Errorf("ProductionLoopWriter open %q: %w", w.path, err)
 	}
 	defer func() {
 		if cerr := f.Close(); cerr != nil && err == nil {
@@ -84,7 +82,7 @@ func (w *productionLoopWriter) Append(ctx context.Context, entry ports.CycleEntr
 		}
 	}()
 	if _, err := f.Write(append(payload, '\n')); err != nil {
-		return ports.CycleEntry{}, fmt.Errorf("productionLoopWriter write: %w", err)
+		return CycleEntry{}, fmt.Errorf("ProductionLoopWriter write: %w", err)
 	}
 	return entry, nil
 }
@@ -105,13 +103,13 @@ type loopWriterRecord struct {
 
 // scanMaxNumberLocked reads the file to find max(Cycle). Returns 0
 // for missing or empty files. Assumes the caller holds w.mu.
-func (w *productionLoopWriter) scanMaxNumberLocked() (int, error) {
+func (w *ProductionLoopWriter) scanMaxNumberLocked() (int, error) {
 	f, err := os.Open(w.path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return 0, nil
 		}
-		return 0, fmt.Errorf("productionLoopWriter scan-max open %q: %w", w.path, err)
+		return 0, fmt.Errorf("ProductionLoopWriter scan-max open %q: %w", w.path, err)
 	}
 	defer func() { _ = f.Close() }()
 	maxN := 0
@@ -129,5 +127,5 @@ func (w *productionLoopWriter) scanMaxNumberLocked() (int, error) {
 	return maxN, scanner.Err()
 }
 
-// Compile-time assertion: productionLoopWriter satisfies the port.
-var _ ports.LoopWriterPort = (*productionLoopWriter)(nil)
+// Compile-time assertion: ProductionLoopWriter satisfies the port.
+var _ LoopWriterPort = (*ProductionLoopWriter)(nil)

@@ -97,7 +97,7 @@ func harnessStatusViaPort(ctx context.Context, opts harnessStatusOptions) ([]por
 	if err != nil {
 		return nil, err
 	}
-	h := newProductionHarness(cwd)
+	h := ports.NewProductionHarness(cwd)
 	if opts.skill != "" {
 		return h.StatusForSkill(ctx, opts.skill)
 	}

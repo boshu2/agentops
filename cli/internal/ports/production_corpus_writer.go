@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, ddd-bounded-context]
-package main
+package ports
 
 import (
 	"context"
@@ -10,11 +10,9 @@ import (
 	"sort"
 	"strings"
 	"sync"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
-// productionCorpusWriter satisfies ports.CorpusWriterPort by writing
+// ProductionCorpusWriter satisfies CorpusWriterPort by writing
 // CorpusWriteRequest bodies to disk under a root directory. Pairs
 // with cycle 112's productionCorpusReader — together they let BC1
 // corpus persistence flow through typed Go entry points without
@@ -36,33 +34,33 @@ import (
 //   - Created=true on first materialization; Created=false on
 //     idempotent re-capture of an existing path (the file is
 //     overwritten in place — idempotent per port contract).
-type productionCorpusWriter struct {
+type ProductionCorpusWriter struct {
 	mu      sync.Mutex
 	rootDir string
 }
 
-func newProductionCorpusWriter(rootDir string) *productionCorpusWriter {
-	return &productionCorpusWriter{rootDir: rootDir}
+func NewProductionCorpusWriter(rootDir string) *ProductionCorpusWriter {
+	return &ProductionCorpusWriter{rootDir: rootDir}
 }
 
 // Capture writes req.Body (with optional rendered frontmatter) to
 // rootDir/req.Path. Idempotent.
-func (w *productionCorpusWriter) Capture(ctx context.Context, req ports.CorpusWriteRequest) (ports.CorpusWriteResult, error) {
+func (w *ProductionCorpusWriter) Capture(ctx context.Context, req CorpusWriteRequest) (CorpusWriteResult, error) {
 	if err := ctx.Err(); err != nil {
-		return ports.CorpusWriteResult{}, err
+		return CorpusWriteResult{}, err
 	}
 	if w.rootDir == "" {
-		return ports.CorpusWriteResult{}, errors.New("productionCorpusWriter: rootDir required")
+		return CorpusWriteResult{}, errors.New("ProductionCorpusWriter: rootDir required")
 	}
 	if req.Path == "" {
-		return ports.CorpusWriteResult{}, errors.New("productionCorpusWriter: req.Path required")
+		return CorpusWriteResult{}, errors.New("ProductionCorpusWriter: req.Path required")
 	}
 	if filepath.IsAbs(req.Path) {
-		return ports.CorpusWriteResult{}, fmt.Errorf("productionCorpusWriter: req.Path %q must be relative to rootDir", req.Path)
+		return CorpusWriteResult{}, fmt.Errorf("ProductionCorpusWriter: req.Path %q must be relative to rootDir", req.Path)
 	}
 	cleaned := filepath.Clean(req.Path)
 	if strings.HasPrefix(cleaned, "..") || cleaned == ".." {
-		return ports.CorpusWriteResult{}, fmt.Errorf("productionCorpusWriter: req.Path %q escapes rootDir", req.Path)
+		return CorpusWriteResult{}, fmt.Errorf("ProductionCorpusWriter: req.Path %q escapes rootDir", req.Path)
 	}
 
 	w.mu.Lock()
@@ -70,21 +68,21 @@ func (w *productionCorpusWriter) Capture(ctx context.Context, req ports.CorpusWr
 
 	full := filepath.Join(w.rootDir, cleaned)
 	if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
-		return ports.CorpusWriteResult{}, fmt.Errorf("productionCorpusWriter mkdir %q: %w", filepath.Dir(full), err)
+		return CorpusWriteResult{}, fmt.Errorf("ProductionCorpusWriter mkdir %q: %w", filepath.Dir(full), err)
 	}
 
 	created := true
 	if _, err := os.Stat(full); err == nil {
 		created = false
 	} else if !os.IsNotExist(err) {
-		return ports.CorpusWriteResult{}, fmt.Errorf("productionCorpusWriter stat %q: %w", full, err)
+		return CorpusWriteResult{}, fmt.Errorf("ProductionCorpusWriter stat %q: %w", full, err)
 	}
 
 	body := renderCorpusBody(req.Body, req.Metadata)
 	if err := os.WriteFile(full, body, 0o644); err != nil {
-		return ports.CorpusWriteResult{}, fmt.Errorf("productionCorpusWriter write %q: %w", full, err)
+		return CorpusWriteResult{}, fmt.Errorf("ProductionCorpusWriter write %q: %w", full, err)
 	}
-	return ports.CorpusWriteResult{ResolvedPath: full, Created: created}, nil
+	return CorpusWriteResult{ResolvedPath: full, Created: created}, nil
 }
 
 // renderCorpusBody injects YAML frontmatter from metadata unless body
@@ -115,5 +113,5 @@ func renderCorpusBody(body []byte, metadata map[string]string) []byte {
 	return []byte(out.String())
 }
 
-// Compile-time assertion: productionCorpusWriter satisfies the port.
-var _ ports.CorpusWriterPort = (*productionCorpusWriter)(nil)
+// Compile-time assertion: ProductionCorpusWriter satisfies the port.
+var _ CorpusWriterPort = (*ProductionCorpusWriter)(nil)

@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, tdd]
-package main
+package ports
 
 import (
 	"context"
@@ -7,8 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
 // Sibling pattern: cycle 110 operator_adapter_test.go.
@@ -28,7 +26,7 @@ func TestProductionHarness_StatusReportsBothTrees(t *testing.T) {
 	root := t.TempDir()
 	mustWriteSkill(t, root, "skills", "evolve", "claude evolve")
 	mustWriteSkill(t, root, "skills-codex", "evolve", "codex evolve")
-	h := newProductionHarness(root)
+	h := NewProductionHarness(root)
 	all, err := h.Status(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -37,7 +35,7 @@ func TestProductionHarness_StatusReportsBothTrees(t *testing.T) {
 		t.Fatalf("len = %d, want 2", len(all))
 	}
 	// Sorted by (skill, harness): claude < codex
-	if all[0].Harness != ports.HarnessClaude || all[1].Harness != ports.HarnessCodex {
+	if all[0].Harness != HarnessClaude || all[1].Harness != HarnessCodex {
 		t.Fatalf("sort order wrong: got %v, %v", all[0].Harness, all[1].Harness)
 	}
 }
@@ -46,7 +44,7 @@ func TestProductionHarness_OutOfSyncDetected(t *testing.T) {
 	root := t.TempDir()
 	mustWriteSkill(t, root, "skills", "evolve", "canonical body v1")
 	mustWriteSkill(t, root, "skills-codex", "evolve", "codex body DIFFERENT")
-	h := newProductionHarness(root)
+	h := NewProductionHarness(root)
 	codex, err := h.StatusForSkill(context.Background(), "evolve")
 	if err != nil {
 		t.Fatal(err)
@@ -54,12 +52,12 @@ func TestProductionHarness_OutOfSyncDetected(t *testing.T) {
 	if len(codex) != 2 {
 		t.Fatalf("len = %d, want 2", len(codex))
 	}
-	var codexEntry, claudeEntry ports.HarnessSkillSync
+	var codexEntry, claudeEntry HarnessSkillSync
 	for _, e := range codex {
 		switch e.Harness {
-		case ports.HarnessCodex:
+		case HarnessCodex:
 			codexEntry = e
-		case ports.HarnessClaude:
+		case HarnessClaude:
 			claudeEntry = e
 		}
 	}
@@ -76,7 +74,7 @@ func TestProductionHarness_InSyncWhenHashesMatch(t *testing.T) {
 	body := "same content for both"
 	mustWriteSkill(t, root, "skills", "evolve", body)
 	mustWriteSkill(t, root, "skills-codex", "evolve", body)
-	h := newProductionHarness(root)
+	h := NewProductionHarness(root)
 	codex, _ := h.StatusForSkill(context.Background(), "evolve")
 	for _, e := range codex {
 		if e.OutOfSync {
@@ -89,12 +87,12 @@ func TestProductionHarness_MissingTreeIsNotError(t *testing.T) {
 	root := t.TempDir()
 	mustWriteSkill(t, root, "skills", "evolve", "claude only")
 	// no skills-codex/ at all
-	h := newProductionHarness(root)
+	h := NewProductionHarness(root)
 	all, err := h.Status(context.Background())
 	if err != nil {
 		t.Fatalf("missing skills-codex/ should be tolerated, got: %v", err)
 	}
-	if len(all) != 1 || all[0].Harness != ports.HarnessClaude {
+	if len(all) != 1 || all[0].Harness != HarnessClaude {
 		t.Fatalf("got %+v, want single Claude entry", all)
 	}
 }
@@ -106,7 +104,7 @@ func TestProductionHarness_SkillWithoutSKILLMDIsSkipped(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustWriteSkill(t, root, "skills", "real", "body")
-	h := newProductionHarness(root)
+	h := NewProductionHarness(root)
 	all, _ := h.Status(context.Background())
 	if len(all) != 1 || all[0].Skill != "real" {
 		t.Fatalf("got %+v, want only 'real' skill", all)
@@ -114,21 +112,21 @@ func TestProductionHarness_SkillWithoutSKILLMDIsSkipped(t *testing.T) {
 }
 
 func TestProductionHarness_StatusForSkillEmptyNameErrors(t *testing.T) {
-	h := newProductionHarness(t.TempDir())
+	h := NewProductionHarness(t.TempDir())
 	if _, err := h.StatusForSkill(context.Background(), ""); err == nil {
 		t.Fatal("expected error on empty skill name, got nil")
 	}
 }
 
 func TestProductionHarness_EmptyRootErrors(t *testing.T) {
-	h := newProductionHarness("")
+	h := NewProductionHarness("")
 	if _, err := h.Status(context.Background()); err == nil {
 		t.Fatal("expected error on empty rootDir, got nil")
 	}
 }
 
 func TestProductionHarness_HonorsContextCancellation(t *testing.T) {
-	h := newProductionHarness(t.TempDir())
+	h := NewProductionHarness(t.TempDir())
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	if _, err := h.Status(ctx); err == nil {

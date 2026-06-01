@@ -104,7 +104,7 @@ func loopAppendViaPort(ctx context.Context, opts loopAppendOptions) (ports.Cycle
 	if err := os.MkdirAll(filepath.Dir(historyPath), 0o755); err != nil {
 		return ports.CycleEntry{}, fmt.Errorf("mkdir: %w", err)
 	}
-	w := newProductionLoopWriter(historyPath)
+	w := ports.NewProductionLoopWriter(historyPath)
 	return w.Append(ctx, ports.CycleEntry{
 		Number:    opts.cycle,
 		Mode:      opts.mode,

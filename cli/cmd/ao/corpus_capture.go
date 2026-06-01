@@ -186,7 +186,7 @@ func corpusCaptureViaPort(ctx context.Context, opts corpusCaptureOptions, body [
 		}
 		root = filepath.Join(cwd, ".agents", "learnings")
 	}
-	w := newProductionCorpusWriter(root)
+	w := ports.NewProductionCorpusWriter(root)
 	return w.Capture(ctx, ports.CorpusWriteRequest{
 		Path:     opts.path,
 		Body:     body,

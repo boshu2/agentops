@@ -163,7 +163,7 @@ func claimBindViaPort(ctx context.Context, opts claimOptions) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("mkdir: %w", err)
 	}
-	b := newProductionClaimEvidenceBinder(path)
+	b := ports.NewProductionClaimEvidenceBinder(path)
 	return b.Bind(ctx, ports.EvidenceBinding{
 		Claim:   ports.ClaimID(opts.claim),
 		Path:    opts.path,
@@ -177,6 +177,6 @@ func claimListViaPort(ctx context.Context, opts claimOptions) ([]ports.EvidenceB
 	if err != nil {
 		return nil, err
 	}
-	b := newProductionClaimEvidenceBinder(path)
+	b := ports.NewProductionClaimEvidenceBinder(path)
 	return b.List(ctx)
 }

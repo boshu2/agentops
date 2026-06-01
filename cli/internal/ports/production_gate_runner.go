@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, ddd-bounded-context]
-package main
+package ports
 
 import (
 	"bytes"
@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/boshu2/agentops/cli/internal/ports"
+	"github.com/boshu2/agentops/cli/internal/quality"
 )
 
-// productionGateRunner satisfies ports.GateRunnerPort by invoking
+// ProductionGateRunner satisfies GateRunnerPort by invoking
 // scripts/check-<name>.sh subprocesses and translating exit code +
 // stdout into a GateVerdict.
 //
@@ -28,32 +28,32 @@ import (
 //
 // LogTail is the last 4096 bytes of combined stdout+stderr (port
 // contract cap).
-type productionGateRunner struct {
+type ProductionGateRunner struct {
 	repoRoot string
 }
 
-func newProductionGateRunner(repoRoot string) *productionGateRunner {
-	return &productionGateRunner{repoRoot: repoRoot}
+func NewProductionGateRunner(repoRoot string) *ProductionGateRunner {
+	return &ProductionGateRunner{repoRoot: repoRoot}
 }
 
 // Run invokes scripts/check-<name>.sh and returns a GateVerdict.
-func (g *productionGateRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports.GateVerdict, error) {
+func (g *ProductionGateRunner) Run(ctx context.Context, req GateRunRequest) (GateVerdict, error) {
 	if err := ctx.Err(); err != nil {
-		return ports.GateVerdict{}, err
+		return GateVerdict{}, err
 	}
 	if req.Name == "" {
-		return ports.GateVerdict{
-			Status: ports.GateStatusUnknown,
+		return GateVerdict{
+			Status: GateStatusUnknown,
 			Reason: "empty GateName",
 		}, nil
 	}
 	if g.repoRoot == "" {
-		return ports.GateVerdict{}, fmt.Errorf("productionGateRunner: repoRoot required")
+		return GateVerdict{}, fmt.Errorf("ProductionGateRunner: repoRoot required")
 	}
 	scriptPath := filepath.Join(g.repoRoot, "scripts", "check-"+string(req.Name)+".sh")
-	if !fileExists(scriptPath) {
-		return ports.GateVerdict{
-			Status: ports.GateStatusUnknown,
+	if !quality.FileExists(scriptPath) {
+		return GateVerdict{
+			Status: GateStatusUnknown,
 			Reason: fmt.Sprintf("no script for gate %q at %s", req.Name, scriptPath),
 		}, nil
 	}
@@ -77,8 +77,8 @@ func (g *productionGateRunner) Run(ctx context.Context, req ports.GateRunRequest
 		exitCode = exitErr.ExitCode()
 	} else if runErr != nil {
 		// Non-exit error (e.g. binary missing, context cancelled mid-run)
-		return ports.GateVerdict{
-			Status:  ports.GateStatusUnknown,
+		return GateVerdict{
+			Status:  GateStatusUnknown,
 			Reason:  fmt.Sprintf("subprocess error: %v", runErr),
 			LogTail: tailBytes(out.Bytes(), 4096),
 		}, nil
@@ -91,16 +91,16 @@ func (g *productionGateRunner) Run(ctx context.Context, req ports.GateRunRequest
 
 // exitCodeToVerdict maps subprocess exit codes to GateVerdict per the
 // adapter's documented rules.
-func exitCodeToVerdict(code int) ports.GateVerdict {
+func exitCodeToVerdict(code int) GateVerdict {
 	switch code {
 	case 0:
-		return ports.GateVerdict{Status: ports.GateStatusPass, Reason: "exit 0"}
+		return GateVerdict{Status: GateStatusPass, Reason: "exit 0"}
 	case 2:
-		return ports.GateVerdict{Status: ports.GateStatusWarn, Reason: "exit 2 (advisory)"}
+		return GateVerdict{Status: GateStatusWarn, Reason: "exit 2 (advisory)"}
 	case 75:
-		return ports.GateVerdict{Status: ports.GateStatusSkip, Reason: "exit 75 (structural skip)"}
+		return GateVerdict{Status: GateStatusSkip, Reason: "exit 75 (structural skip)"}
 	}
-	return ports.GateVerdict{Status: ports.GateStatusFail, Reason: fmt.Sprintf("exit %d", code)}
+	return GateVerdict{Status: GateStatusFail, Reason: fmt.Sprintf("exit %d", code)}
 }
 
 // tailBytes returns at most n trailing bytes of b.
@@ -111,5 +111,5 @@ func tailBytes(b []byte, n int) string {
 	return strings.TrimSpace(string(b[len(b)-n:]))
 }
 
-// Compile-time assertion: productionGateRunner satisfies the port.
-var _ ports.GateRunnerPort = (*productionGateRunner)(nil)
+// Compile-time assertion: ProductionGateRunner satisfies the port.
+var _ GateRunnerPort = (*ProductionGateRunner)(nil)
