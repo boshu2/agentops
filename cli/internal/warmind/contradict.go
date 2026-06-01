@@ -100,8 +100,11 @@ func (cd *ContradictionDetector) Scan() (*ContradictionReport, error) {
 				report.Contradictions = append(report.Contradictions, *conflict)
 				report.NewDetected++
 
-				// Record the contradiction
-				cd.appendContradiction(*conflict)
+				// Record the contradiction; a persistence failure (disk/permissions)
+				// is surfaced rather than silently dropping the team-knowledge record.
+				if err := cd.appendContradiction(*conflict); err != nil {
+					return report, fmt.Errorf("recording contradiction: %w", err)
+				}
 			}
 		}
 	}
@@ -329,7 +332,7 @@ func (cd *ContradictionDetector) contradictionKey(pathA, pathB string) string {
 	return pathA + "|" + pathB
 }
 
-func (cd *ContradictionDetector) appendContradiction(c Contradiction) error {
+func (cd *ContradictionDetector) appendContradiction(c Contradiction) (err error) {
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(cd.ContradictionsFile), 0700); err != nil {
 		return err
@@ -344,13 +347,19 @@ func (cd *ContradictionDetector) appendContradiction(c Contradiction) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
-	_, err = f.Write(append(data, '\n'))
-	return err
+	if _, err := f.Write(append(data, '\n')); err != nil {
+		return fmt.Errorf("appending contradiction: %w", err)
+	}
+	return nil
 }
 
-func (cd *ContradictionDetector) rewriteAll(contradictions []Contradiction) error {
+func (cd *ContradictionDetector) rewriteAll(contradictions []Contradiction) (err error) {
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(cd.ContradictionsFile), 0700); err != nil {
 		return err
@@ -360,14 +369,20 @@ func (cd *ContradictionDetector) rewriteAll(contradictions []Contradiction) erro
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	for _, c := range contradictions {
-		data, err := json.Marshal(c)
-		if err != nil {
+		data, mErr := json.Marshal(c)
+		if mErr != nil {
 			continue
 		}
-		f.Write(append(data, '\n'))
+		if _, wErr := f.Write(append(data, '\n')); wErr != nil {
+			return fmt.Errorf("rewriting contradictions: %w", wErr)
+		}
 	}
 
 	return nil

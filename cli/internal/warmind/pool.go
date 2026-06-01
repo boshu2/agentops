@@ -557,16 +557,20 @@ func (p *Pool) recordEvent(event ChainEvent) {
 
 	data, err := json.Marshal(event)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to marshal chain event: %v\n", err)
 		return
 	}
 
 	f, err := os.OpenFile(chainPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to open chain log %s: %v\n", chainPath, err)
 		return
 	}
 	defer f.Close()
 
-	f.Write(append(data, '\n'))
+	if _, err := f.Write(append(data, '\n')); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to append chain event to %s: %v\n", chainPath, err)
+	}
 }
 
 func (p *Pool) writeLearningArtifact(path string, entry *PoolEntry, promotedAt time.Time) error {
