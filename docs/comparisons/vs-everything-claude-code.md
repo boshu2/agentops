@@ -27,7 +27,7 @@ last_reviewed: 2026-05-07
 |---|---|---|
 | **Category** | Cross-harness skill collection | Context library / wiki for agents |
 | **Multi-runtime claim** | DRY parity across 5 runtimes (Claude Code, Cursor, Codex, OpenCode, Gemini) | Skills run on 4 runtimes; *and* mix-and-match models per phase within one session |
-| **Inventory** | 182 skills, 48 subagents | 73 skills + your accumulated corpus |
+| **Inventory** | 182 skills, 48 subagents | 77 skills + your accumulated corpus |
 | **Persistence** | In-session | Cross-session via `.agents/` corpus |
 | **Discipline mechanism** | DRY parity tooling | Multi-model councils + RPI phase contracts |
 | **Off-API surface** | None (in-session only) | `ao daemon` runs dream / evolve / compile overnight |
@@ -111,7 +111,7 @@ parity-maintenance pipeline as the headline feature; the headline is the
 corpus that the skills produce.
 
 **Catalog size for a single-developer audience.** 182 skills + 48 subagents
-is a larger pre-built catalog than AgentOps's 73 skills, and a buyer whose
+is a larger pre-built catalog than AgentOps's 77 skills, and a buyer whose
 question is *"how many skills can I install today"* will see that number
 first.
 

@@ -20,7 +20,7 @@ last_reviewed: 2026-05-07
 | Aspect | Tons-of-Skills | AgentOps |
 |---|---|---|
 | **Category** | Skills marketplace | Context library / wiki for agents |
-| **Inventory claim** | 2,810 skills, 425 plugins, 200 agents | 73 skills + your accumulated corpus |
+| **Inventory claim** | 2,810 skills, 425 plugins, 200 agents | 77 skills + your accumulated corpus |
 | **Buyer pitch** | "We have the most stuff" | "You build the moat" |
 | **Validation** | 100-point CCPI grading rubric | Multi-model councils + validation gates |
 | **Distribution** | CCPI package manager | Native marketplace per runtime + `curl \| bash` install |
@@ -43,7 +43,7 @@ This is the cleanest framing: a marketplace and a context library are complement
 
 ## Where Tons-of-Skills wins
 
-**Inventory breadth.** 2,810 skills is the largest catalog in the Claude Code ecosystem. If your bottleneck is "I need a skill for X and don't want to write one," Tons-of-Skills has the highest probability of already having it. AgentOps ships 73 skills focused on the operational layer (research, plan, validate, harvest, council, etc.) — the inventories don't overlap heavily.
+**Inventory breadth.** 2,810 skills is the largest catalog in the Claude Code ecosystem. If your bottleneck is "I need a skill for X and don't want to write one," Tons-of-Skills has the highest probability of already having it. AgentOps ships 77 skills focused on the operational layer (research, plan, validate, harvest, council, etc.) — the inventories don't overlap heavily.
 
 **Validation grading rigor.** The 100-point CCPI grading rubric is a public scoring system applied per-skill. That is a real artifact: a published, comparable score across thousands of skills. AgentOps does not grade skills on a 100-point scale; its quality posture is multi-model council consensus and validation gates run *on the agent's output*, not on the skill definition itself. Different surface, different rigor.
 

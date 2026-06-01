@@ -170,7 +170,7 @@ result and a transparent audit are credibility assets.
 | Methodology lane is being eaten | Anthropic's Managed Agents (May 2026) and Superpowers' marketplace placement compress the methodology buyer's choice set. | Stay out of the methodology lane head-on; lead with the wiki framing and lane-segmentation argument. |
 | Compounding proof is still too implicit | Users have to trust the flywheel story before they feel it. | Put Dream reports, `ao demo`, and corpus-stats in the first-run path. |
 | Reviewer routing is less configurable than Compound Engineer | CE can feel more tailored to a stack. | Document per-project validation profile selection; expose council config more visibly. |
-| Volume-marketplace shoppers may bounce off "73 skills" framing | Inventory-comparison buyers will not see the corpus advantage. | Keep the volume comparison explicit (vs-tons-of-skills doc); reframe the question from "how many skills" to "what does the asset look like in 6 months". |
+| Volume-marketplace shoppers may bounce off "77 skills" framing | Inventory-comparison buyers will not see the corpus advantage. | Keep the volume comparison explicit (vs-tons-of-skills doc); reframe the question from "how many skills" to "what does the asset look like in 6 months". |
 
 ## Execution Bias
 

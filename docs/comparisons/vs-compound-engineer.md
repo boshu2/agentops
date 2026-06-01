@@ -21,7 +21,7 @@ last_reviewed: 2026-05-07
 | **Core strength** | Full ideate-to-compound loop, cross-runtime portability, configurable review agents | Git-tracked memory, validation gates, knowledge flywheel with scoring |
 | **GitHub** | EveryInc/compound-engineering-plugin | boshu2/agentops |
 | **Latest** | Active development (April 2026) | v2.39.0 (April 2026) |
-| **Scale** | 37 skills, 51 agents, 10 runtime targets | 73 skills, compiled CLI, hooks, schemas |
+| **Scale** | 37 skills, 51 agents, 10 runtime targets | 77 skills, compiled CLI, hooks, schemas |
 | **Primary use** | Standardized engineering workflow with knowledge capture | Ongoing codebase work with persistent memory and validation |
 
 ### Three-Layer Comparison
