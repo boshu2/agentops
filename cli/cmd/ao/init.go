@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
+	"github.com/boshu2/agentops/cli/internal/repo"
 	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
@@ -320,8 +321,7 @@ func printInitSummary(cwd string, isGitRepo bool) {
 
 // isGitRepository checks if cwd is inside a git repo.
 func isGitRepository(dir string) bool {
-	_, err := os.Stat(filepath.Join(dir, ".git"))
-	return err == nil
+	return repo.HasGit(dir)
 }
 
 // setupGitignore adds /.agents/ to .gitignore or .git/info/exclude.

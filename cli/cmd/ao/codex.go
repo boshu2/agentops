@@ -15,6 +15,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/bridge"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
+	"github.com/boshu2/agentops/cli/internal/repo"
 	"github.com/boshu2/agentops/cli/internal/storage"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
@@ -770,8 +771,7 @@ func codexShouldShowNewUserWelcome(cwd string) bool {
 	if _, err := os.Stat(filepath.Join(cwd, ".agents", "ao", ".new-user-welcome-needed")); err == nil {
 		return true
 	}
-	_, err := os.Stat(filepath.Join(cwd, ".agents"))
-	return os.IsNotExist(err)
+	return !repo.HasAgents(cwd)
 }
 
 func loadOrInitCodexLifecycleState(cwd string) (*codexLifecycleState, string, error) {

@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/repo"
 	"github.com/spf13/cobra"
 )
 
@@ -290,16 +291,8 @@ func assembleManagedFile(before, managed, after string) string {
 }
 
 // findGitRoot walks up from cwd to find .git directory.
+// Delegates to repo.FindRoot; retained as a thin wrapper for existing callers
+// and tests.
 func findGitRoot(cwd string) string {
-	dir := cwd
-	for {
-		if _, err := os.Stat(filepath.Join(dir, ".git")); err == nil {
-			return dir
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return ""
-		}
-		dir = parent
-	}
+	return repo.FindRoot(cwd)
 }
