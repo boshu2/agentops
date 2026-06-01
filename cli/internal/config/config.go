@@ -149,6 +149,18 @@ type PathsConfig struct {
 	// HarvestRoots is the list of directories to scan for cross-rig knowledge harvest.
 	// Default: [~/gt]
 	HarvestRoots []string `yaml:"harvest_roots" json:"harvest_roots"`
+
+	// WarmindLearningsDir is where team-shared learnings are stored.
+	// Default: .warmind/learnings (repo-tracked, shared via git)
+	WarmindLearningsDir string `yaml:"warmind_learnings_dir" json:"warmind_learnings_dir"`
+
+	// WarmindPatternsDir is where team-shared patterns are stored.
+	// Default: .warmind/patterns (repo-tracked, shared via git)
+	WarmindPatternsDir string `yaml:"warmind_patterns_dir" json:"warmind_patterns_dir"`
+
+	// WarmindWeight is the rank multiplier for warmind results (0.0-1.0).
+	// Applied AFTER composite scoring. Default: 0.9 (slightly prefer local over shared)
+	WarmindWeight float64 `yaml:"warmind_weight" json:"warmind_weight"`
 }
 
 // ModelsConfig holds model tier configuration.
@@ -346,10 +358,13 @@ func Default() *Config {
 			ClaudePlansDir:     filepath.Join(homeDir, ".claude", "plans"),
 			CitationsFile:      ".agents/ao/citations.jsonl",
 			TranscriptsDir:     filepath.Join(homeDir, ".claude", "projects"),
-			GlobalLearningsDir: filepath.Join(homeDir, ".agents", "learnings"),
-			GlobalPatternsDir:  filepath.Join(homeDir, ".agents", "patterns"),
-			GlobalWeight:       0.8,
-			HarvestRoots:       []string{filepath.Join(homeDir, "gt")},
+			GlobalLearningsDir:  filepath.Join(homeDir, ".agents", "learnings"),
+			GlobalPatternsDir:   filepath.Join(homeDir, ".agents", "patterns"),
+			GlobalWeight:        0.8,
+			HarvestRoots:        []string{filepath.Join(homeDir, "gt")},
+			WarmindLearningsDir: ".warmind/learnings",
+			WarmindPatternsDir:  ".warmind/patterns",
+			WarmindWeight:       0.9,
 		},
 	}
 }
@@ -637,6 +652,11 @@ func mergePaths(dst, src *PathsConfig) {
 	}
 	if len(src.HarvestRoots) > 0 {
 		dst.HarvestRoots = src.HarvestRoots
+	}
+	mergeStr(&dst.WarmindLearningsDir, src.WarmindLearningsDir)
+	mergeStr(&dst.WarmindPatternsDir, src.WarmindPatternsDir)
+	if src.WarmindWeight > 0 {
+		dst.WarmindWeight = src.WarmindWeight
 	}
 }
 
