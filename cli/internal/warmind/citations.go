@@ -102,7 +102,7 @@ func (ct *CitationTracker) LoadAll() ([]Citation, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var citations []Citation
 	scanner := bufio.NewScanner(f)
@@ -179,11 +179,11 @@ func (ct *CitationTracker) GetCitationStats() (*CitationStats, error) {
 	}
 
 	stats := &CitationStats{
-		Total:       len(all),
-		ByCiter:     make(map[string]int),
-		ByArtifact:  make(map[string]int),
-		SelfCount:   0,
-		OtherCount:  0,
+		Total:      len(all),
+		ByCiter:    make(map[string]int),
+		ByArtifact: make(map[string]int),
+		SelfCount:  0,
+		OtherCount: 0,
 	}
 
 	for _, c := range all {
@@ -210,7 +210,7 @@ type CitationStats struct {
 
 // --- Internal helpers ---
 
-func (ct *CitationTracker) appendCitation(c Citation) error {
+func (ct *CitationTracker) appendCitation(c Citation) (err error) {
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(ct.CitationsFile), 0700); err != nil {
 		return err
@@ -225,13 +225,19 @@ func (ct *CitationTracker) appendCitation(c Citation) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
-	_, err = f.Write(append(data, '\n'))
-	return err
+	if _, err := f.Write(append(data, '\n')); err != nil {
+		return fmt.Errorf("appending citation: %w", err)
+	}
+	return nil
 }
 
-func (ct *CitationTracker) rewriteAll(citations []Citation) error {
+func (ct *CitationTracker) rewriteAll(citations []Citation) (err error) {
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(ct.CitationsFile), 0700); err != nil {
 		return err
@@ -241,14 +247,20 @@ func (ct *CitationTracker) rewriteAll(citations []Citation) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	for _, c := range citations {
-		data, err := json.Marshal(c)
-		if err != nil {
+		data, mErr := json.Marshal(c)
+		if mErr != nil {
 			continue
 		}
-		f.Write(append(data, '\n'))
+		if _, wErr := f.Write(append(data, '\n')); wErr != nil {
+			return fmt.Errorf("rewriting citations: %w", wErr)
+		}
 	}
 
 	return nil
