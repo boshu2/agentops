@@ -502,7 +502,7 @@ mcp__memory__add_observations({
 - `autonomous-worker.md` - Worker template
 
 **.claude/workflows/**
-- `meta-observer-pattern.md` - This file (full pattern docs)
+- `meta-observer/pattern-guide.md` - This file (full pattern docs)
 
 ---
 

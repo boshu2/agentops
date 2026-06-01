@@ -1,7 +1,10 @@
 # AgentOps SDK Extraction Inventory
 
 > Reverse-engineered from this repo's source tree on 2026-05-07. Bucketed for the SDK split.
-> Status: **DRAFT** — for red-pen review, not yet a plan to execute.
+> Status: **DRAFT — superseded snapshot.** For red-pen review, not yet a plan to execute.
+> The counts and call inventories below reflect the 2026-05-07 tree and have since
+> drifted (e.g. the skill corpus is now 77); treat this as a point-in-time artifact,
+> not a current source of truth. Canonical surfaces: `cli/`, `skills/`, `docs/ARCHITECTURE.md`.
 >
 > Premise (from prior conversation): AgentOps is currently one repo carrying three concerns at once. The state machine and the doctrine are good; the rest is opinion. The unlock is to extract a thin SDK so a personal harness and the opinionated product become two *instances* of the same spec.
 

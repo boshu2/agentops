@@ -359,7 +359,7 @@ This is why the product is a small set of seed elements, not a pile of skills. T
 
 Two mechanisms approach this level:
 
-**Meta-observer pattern** — Autonomous workers coordinate through shared memory (stigmergy) without central orchestration. The meta-observer watches from outside the system, synthesizes findings across workers, and intervenes only when workers are blocked. The observer is not part of the work — it observes the work happening and learns from the pattern of coordination itself. See [meta-observer-pattern.md](workflows/meta-observer-pattern.md).
+**Meta-observer pattern** — Autonomous workers coordinate through shared memory (stigmergy) without central orchestration. The meta-observer watches from outside the system, synthesizes findings across workers, and intervenes only when workers are blocked. The observer is not part of the work — it observes the work happening and learns from the pattern of coordination itself. See [meta-observer/pattern-guide.md](workflows/meta-observer/pattern-guide.md).
 
 **Stigmergy coordination** — Workers leave traces in shared state (`.agents/`) that influence other workers' behavior without direct communication. No worker knows the full system state. No coordinator directs the full system. The system's behavior emerges from local interactions with shared artifacts — the same principle that governs ant colonies.
 
@@ -491,4 +491,4 @@ What is missing from the Meadows mapping and what would close each gap.
 - [seed-definition.md](seed-definition.md) — The 6 seed elements with Meadows mapping per element
 - [the-science.md](the-science.md) — **Canonical** source for the dK/dt equation, escape velocity, and limits to growth (this doc cites it rather than re-deriving)
 - [how-it-works.md](how-it-works.md) — Hooks, ratchet, Ralph Wiggum, compaction resilience
-- [workflows/meta-observer-pattern.md](workflows/meta-observer-pattern.md) — Stigmergy coordination pattern
+- [workflows/meta-observer/pattern-guide.md](workflows/meta-observer/pattern-guide.md) — Stigmergy coordination pattern
