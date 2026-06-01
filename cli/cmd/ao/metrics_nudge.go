@@ -135,7 +135,7 @@ func buildRPIState(chain *ratchet.Chain) RPIState {
 	}
 
 	// Get all step statuses
-	allStatus := chain.GetAllStatus()
+	allStatus := chain.AllStatus()
 
 	// Find last completed step
 	for _, step := range ratchet.AllSteps() {
@@ -143,7 +143,7 @@ func buildRPIState(chain *ratchet.Chain) RPIState {
 		if status == "locked" || status == "in_progress" {
 			state.LastStep = string(step)
 			// Get artifact from latest entry
-			if entry := chain.GetLatest(step); entry != nil {
+			if entry := chain.Latest(step); entry != nil {
 				state.Artifact = entry.Output
 			}
 		}

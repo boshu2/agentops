@@ -476,17 +476,17 @@ func (fs *FileStorage) GetBaseDir() string {
 	return fs.BaseDir
 }
 
-// GetSessionsDir returns the full path to the sessions directory.
-func (fs *FileStorage) GetSessionsDir() string {
+// SessionsPath returns the full path to the sessions directory.
+func (fs *FileStorage) SessionsPath() string {
 	return filepath.Join(fs.BaseDir, SessionsDir)
 }
 
-// GetIndexPath returns the full path to the index file.
-func (fs *FileStorage) GetIndexPath() string {
+// IndexPath returns the full path to the index file.
+func (fs *FileStorage) IndexPath() string {
 	return filepath.Join(fs.BaseDir, IndexDir, IndexFile)
 }
 
-// GetProvenancePath returns the full path to the provenance file.
-func (fs *FileStorage) GetProvenancePath() string {
+// ProvenancePath returns the full path to the provenance file.
+func (fs *FileStorage) ProvenancePath() string {
 	return filepath.Join(fs.BaseDir, ProvenanceDir, ProvenanceFile)
 }

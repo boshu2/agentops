@@ -356,7 +356,7 @@ func TestGetLatest(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := chain.GetLatest(tc.step)
+			got := chain.Latest(tc.step)
 			if tc.wantNil {
 				if got != nil {
 					t.Errorf("expected nil, got %+v", got)
@@ -422,7 +422,7 @@ func TestGetStatus(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := chain.GetStatus(tc.step); got != tc.want {
+			if got := chain.Status(tc.step); got != tc.want {
 				t.Errorf("GetStatus(%q) = %q, want %q", tc.step, got, tc.want)
 			}
 		})
@@ -436,7 +436,7 @@ func TestGetStatusSkippedTakesPriority(t *testing.T) {
 			{Step: StepResearch, Locked: true, Skipped: true},
 		},
 	}
-	if got := chain.GetStatus(StepResearch); got != StatusSkipped {
+	if got := chain.Status(StepResearch); got != StatusSkipped {
 		t.Errorf("expected StatusSkipped when both Skipped and Locked, got %q", got)
 	}
 }
@@ -449,7 +449,7 @@ func TestGetAllStatus(t *testing.T) {
 		},
 	}
 
-	status := chain.GetAllStatus()
+	status := chain.AllStatus()
 
 	// Should have entries for all steps
 	allSteps := AllSteps()
@@ -686,7 +686,7 @@ func TestGetLatestMultipleUpdates(t *testing.T) {
 		},
 	}
 
-	got := chain.GetLatest(StepResearch)
+	got := chain.Latest(StepResearch)
 	if got == nil {
 		t.Fatal("expected non-nil")
 	}
@@ -700,7 +700,7 @@ func TestGetLatestMultipleUpdates(t *testing.T) {
 
 func TestGetLatestEmptyChain(t *testing.T) {
 	chain := &Chain{Entries: []ChainEntry{}}
-	if got := chain.GetLatest(StepResearch); got != nil {
+	if got := chain.Latest(StepResearch); got != nil {
 		t.Errorf("expected nil for empty chain, got %+v", got)
 	}
 }

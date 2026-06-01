@@ -112,7 +112,7 @@ func TestRunRatchetSkip_ChainStatusAfterSkip(t *testing.T) {
 		t.Fatalf("LoadChain: %v", err)
 	}
 
-	status := chain2.GetStatus(ratchet.StepPreMortem)
+	status := chain2.Status(ratchet.StepPreMortem)
 	if status != ratchet.StatusSkipped {
 		t.Errorf("status = %q, want %q", status, ratchet.StatusSkipped)
 	}

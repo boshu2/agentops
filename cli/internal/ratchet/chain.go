@@ -292,8 +292,8 @@ func (c *Chain) writeEntries(f *os.File) error {
 	return nil
 }
 
-// GetLatest returns the most recent entry for a given step.
-func (c *Chain) GetLatest(step Step) *ChainEntry {
+// Latest returns the most recent entry for a given step.
+func (c *Chain) Latest(step Step) *ChainEntry {
 	for i := len(c.Entries) - 1; i >= 0; i-- {
 		if c.Entries[i].Step == step {
 			return &c.Entries[i]
@@ -304,7 +304,7 @@ func (c *Chain) GetLatest(step Step) *ChainEntry {
 
 // IsLocked returns true if the given step has been locked.
 func (c *Chain) IsLocked(step Step) bool {
-	entry := c.GetLatest(step)
+	entry := c.Latest(step)
 	return entry != nil && entry.Locked
 }
 
@@ -318,9 +318,9 @@ const (
 	StatusSkipped    StepStatus = "skipped"
 )
 
-// GetStatus returns the current status of a step.
-func (c *Chain) GetStatus(step Step) StepStatus {
-	entry := c.GetLatest(step)
+// Status returns the current status of a step.
+func (c *Chain) Status(step Step) StepStatus {
+	entry := c.Latest(step)
 	if entry == nil {
 		return StatusPending
 	}
@@ -333,11 +333,11 @@ func (c *Chain) GetStatus(step Step) StepStatus {
 	return StatusInProgress
 }
 
-// GetAllStatus returns status for all steps.
-func (c *Chain) GetAllStatus() map[Step]StepStatus {
+// AllStatus returns status for all steps.
+func (c *Chain) AllStatus() map[Step]StepStatus {
 	status := make(map[Step]StepStatus)
 	for _, step := range AllSteps() {
-		status[step] = c.GetStatus(step)
+		status[step] = c.Status(step)
 	}
 	return status
 }

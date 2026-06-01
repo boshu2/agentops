@@ -210,8 +210,8 @@ func (l *Locator) isRigRoot(dir string) bool {
 	return false
 }
 
-// GetLocationPaths returns the paths that would be searched for each location.
-func (l *Locator) GetLocationPaths() map[LocationType]string {
+// LocationPaths returns the paths that would be searched for each location.
+func (l *Locator) LocationPaths() map[LocationType]string {
 	paths := make(map[LocationType]string)
 
 	paths[LocationCrew] = filepath.Join(l.startDir, ".agents")
@@ -286,9 +286,9 @@ func (l *Locator) ArtifactExists(pattern string) bool {
 	return err == nil
 }
 
-// GetAgentsDir returns the .agents directory for the specified location.
-func (l *Locator) GetAgentsDir(loc LocationType) (string, error) {
-	paths := l.GetLocationPaths()
+// AgentsDir returns the .agents directory for the specified location.
+func (l *Locator) AgentsDir(loc LocationType) (string, error) {
+	paths := l.LocationPaths()
 	if path, ok := paths[loc]; ok {
 		return path, nil
 	}

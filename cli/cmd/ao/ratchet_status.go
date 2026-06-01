@@ -48,7 +48,7 @@ func runRatchetStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	// Get status for all steps
-	allStatus := chain.GetAllStatus()
+	allStatus := chain.AllStatus()
 
 	// Build output structure
 	output := ratchetStatusOutput{
@@ -66,7 +66,7 @@ func runRatchetStatus(cmd *cobra.Command, args []string) error {
 		}
 
 		// Get details from latest entry
-		if entry := chain.GetLatest(step); entry != nil {
+		if entry := chain.Latest(step); entry != nil {
 			info.Output = entry.Output
 			info.Input = entry.Input
 			info.Time = entry.Timestamp.Format(time.RFC3339)

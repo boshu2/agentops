@@ -235,7 +235,7 @@ func TestLocator_GetLocationPaths(t *testing.T) {
 		t.Fatalf("NewLocator failed: %v", err)
 	}
 
-	paths := loc.GetLocationPaths()
+	paths := loc.LocationPaths()
 
 	// Should have crew path
 	if _, ok := paths[LocationCrew]; !ok {
@@ -276,7 +276,7 @@ func TestGetAgentsDir(t *testing.T) {
 	}
 
 	// Valid location should return a path
-	crewDir, err := loc.GetAgentsDir(LocationCrew)
+	crewDir, err := loc.AgentsDir(LocationCrew)
 	if err != nil {
 		t.Fatalf("GetAgentsDir(crew) error: %v", err)
 	}
@@ -285,7 +285,7 @@ func TestGetAgentsDir(t *testing.T) {
 	}
 
 	// Invalid location should return error
-	_, err = loc.GetAgentsDir(LocationType("invalid"))
+	_, err = loc.AgentsDir(LocationType("invalid"))
 	if err == nil {
 		t.Error("expected error for invalid location type")
 	}
@@ -453,7 +453,7 @@ func TestGetLocationPaths_NoPluginsNoRig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	paths := loc.GetLocationPaths()
+	paths := loc.LocationPaths()
 	// Should always have crew and town
 	if _, ok := paths[LocationCrew]; !ok {
 		t.Error("expected crew path")
