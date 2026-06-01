@@ -14,14 +14,24 @@ validated work per wall-clock hour, not whether it ran more agents.
 
 ## Schema
 
+This contract is the prose member of a canonical triad: prose contract +
+machine-readable schema + worked example fixture. Keep all three aligned.
+
 Machine-readable schema:
 
-- `schemas/factory-yield.v1.schema.json`
-- `docs/contracts/factory-yield-ledger.schema.json`
+- `schemas/factory-yield.v1.schema.json` (canonical schema in the repo schema tree)
+- [`factory-yield-ledger.schema.json`](factory-yield-ledger.schema.json) (contract-local mirror)
 
 Example fixture:
 
-- `docs/contracts/factory-yield-ledger.example.json`
+- [`factory-yield-ledger.example.json`](factory-yield-ledger.example.json)
+
+> **Known label drift:** `factory-yield-ledger.schema.json` carries the JSON
+> Schema `title` `"AgentOps Factory Yield Ledger Example"`. That `Example`
+> suffix is a misnomer — the file is the schema, not the example fixture (the
+> fixture is `factory-yield-ledger.example.json`). Treat it as the yield-ledger
+> schema regardless of the title string; fix the title on the next schema
+> revision.
 
 ## Event Shape
 

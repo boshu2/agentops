@@ -116,6 +116,22 @@ SessionEnd would normally run.
 
 ---
 
+## Hook Event Lifecycle
+
+Three lifecycle hook events carry the bookkeeping in hook-capable runtimes (Claude/OpenCode, and Codex v0.115.0+ native hooks). Each maps to an explicit `ao` surface so the same work runs in hookless Codex via skill-driven `ao codex ensure-start` / `ao codex ensure-stop`:
+
+| Event | Responsibility | Backing `ao` surface |
+|-------|----------------|----------------------|
+| `SessionStart` | Quiet startup maintenance (safe close-loop), recover handoff / tracker goal, stage factory goal + briefing files silently, sync MEMORY.md, record retrieved citations | `ao codex start` / `ao factory start --goal "<goal>"` (skills: `ao codex ensure-start`) |
+| `UserPromptSubmit` | Silent factory intake — the first substantive prompt of a goal-less session can be captured for later explicit `/rpi` or `ao knowledge brief` use; no output is forced into the turn | Native event; intake feeds the factory admission lane (no manual command required) |
+| `SessionEnd` | Learning extraction (forge/queue learnings from the transcript), flywheel close-loop, sync MEMORY.md, persist lifecycle state for status/recovery | `ao codex stop` (skills: `ao codex ensure-stop`) |
+
+Codex v0.115.0+ exposes native `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, and `PermissionRequest` hooks, but **no native `SessionEnd` event** — so the transcript-driven closeout (forge + flywheel) is owned by explicit `ao codex stop` / `ao codex ensure-stop` rather than a hook. The native `Stop` hook only runs the turn-scope close-loop.
+
+`ao flywheel close-loop` is the closeout engine: it promotes matured candidates (`.agents/learnings/` → `.warmind/pool/staged/` → `.warmind/learnings/`), applies decay, runs contradiction checks, and emits `FlywheelMetrics`. Promotion tiers are Gold (≥0.8, auto after 24h), Silver (≥0.5 + 1 external citation), and Bronze (3 external citations). See `cli/cmd/ao/flywheel_close_loop.go` and the project `CLAUDE.md` Warmind section.
+
+---
+
 ## Hook-Capable Lifecycle
 
 ```
@@ -514,6 +530,11 @@ research + plan      validated code      learnings + next work
 | Session start cmd | `.claude/commands/session-start.md` | Manual session start |
 | Session end cmd | `.claude/commands/session-end.md` | Manual session end |
 | Progress update cmd | `.claude/commands/progress-update.md` | Manual progress update |
+| Codex lifecycle | `cli/cmd/ao/codex.go` | `ao codex start/stop/status/ensure-start/ensure-stop` |
+| Factory startup | `cli/cmd/ao/factory.go` | `ao factory start --goal "<goal>"` |
+| Flywheel closeout | `cli/cmd/ao/flywheel_close_loop.go` | `ao flywheel close-loop` (promote + decay + contradict + metrics) |
+
+> The `FlywheelMetrics` compounding model (`dK/dt`) is defined canonically in [`docs/the-science.md`](../the-science.md). Cite it there rather than restating the equation.
 
 ---
 

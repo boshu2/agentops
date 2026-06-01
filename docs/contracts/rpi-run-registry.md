@@ -142,6 +142,26 @@ Status classification is registry-first:
 
 Stale reasons include `worktree missing` when state references a removed worktree directory.
 
+## Daemon JobSpec Types
+
+When `ao rpi phased` runs under `agentopsd` rather than foreground, the run and
+its phases are submitted as typed daemon jobs from
+[`cli/internal/daemon/rpi_jobs.go`](../../cli/internal/daemon/rpi_jobs.go)
+(`RPIJobSpecSchemaVersion = 1`):
+
+| Type | `job_type` | Role |
+|------|-----------|------|
+| `RPIRunJobSpec` | `rpi.run` | whole-run submission; carries `run_id`, `goal`, `start_phase`, `max_phase`, `backend`, plus optional supervisor-policy fields (`max_cycles`, `gate_policy`, `landing_policy`, `failure_policy`, `kill_switch_path`, …) |
+| `RPIPhaseJobSpec` | `rpi.phase` | one phase of one run; adds `parent_run_job_id`, `phase`, `phase_name`, `attempt`, and GasCity correlation hints |
+
+Phase numbers are constrained to 1-3 and `phase_name` must match `RPIPhaseName`
+(`1=discovery`, `2=implementation`, `3=validation`) — the same mapping used by
+the `phase-{N}-result.json` artifacts above. `backend` is the `RPIBackend` enum
+(`gascity-api`, `gc-cli-fallback`, `foreground`, `daemon-degraded`). The default
+constructed via `NewRPIRunJobSpec` runs `start_phase=1`, `max_phase=3`,
+`test_first=true`, `backend=gascity-api`. The registry fields documented here are
+projections of the daemon ledger events emitted while these jobs execute.
+
 ## GasCity Session Correlation
 
 Daemon-backed RPI runs that use GasCity must persist the provider correlation

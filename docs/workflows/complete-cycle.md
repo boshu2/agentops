@@ -37,6 +37,61 @@ Phase 5: Learn (5-10% context)
 
 ---
 
+## How the cycle runs under `ao rpi`
+
+The five conceptual phases above map onto the three executable RPI phases
+the CLI actually drives: **Discovery → Implementation → Validation**. Run the
+full phased cycle with:
+
+```bash
+ao rpi phased <goal>      # Discovery → Implementation → Validation
+```
+
+(`cli/cmd/ao/rpi_phased.go`, `Use: "phased <goal>"`.)
+
+**Fresh context per phase is enforced, not aspirational.** Each phase runs in
+its own context window and, before finishing, writes a bounded summary to
+`.agents/rpi/phase-N-summary.md` (max ~500 tokens — the
+`PhaseSummaryInstruction` contract in `cli/internal/rpi/phased_context.go`).
+The next phase reads that file as its carry-forward, so Implementation never
+inherits Discovery's raw working set — only the distilled summary. This is the
+mechanism behind "fresh context per phase (prevents degradation)."
+
+**Multi-cycle loops and live sessions:**
+- Bounded multi-cycle execution (gate / landing / kill-switch) runs through
+  `cli/internal/daemon/rpi_executor.go`.
+- Recurring or scheduled runs submit `RPIRunJobSpec` / `RPIPhaseJobSpec`
+  (`cli/internal/daemon/rpi_jobs.go`) to the daemon; job lifecycle is
+  Submit → Claim → Heartbeat → Complete/Fail.
+- Live phased sessions surface through the Gas City bridge
+  (`cli/cmd/ao/gc_bridge.go`, `gc_events.go`, `rpi_phased_gc.go`).
+
+> Deprecated RPI files still exist on disk but are **not** the current path —
+> do not script against `rpi_loop_supervisor.go`, `rpi_parallel.go`,
+> `rpi_c2_events.go`, or `rpi_phased_tmux.go`.
+
+---
+
+## Closing the loop (Knowledge Flywheel)
+
+Phase 5 (Learn) is where the cycle feeds itself. Learnings written to
+`.agents/learnings/` are read back by `ao inject` / `ao lookup`, which append a
+`CitationEvent` to `.agents/ao/citations.jsonl`. Promotion flows
+`.agents/learnings/ → .warmind/pool/staged/ → .warmind/learnings/` (team canon)
+by tier: Gold (≥0.8, auto after 24h), Silver (≥0.5 + 1 external citation),
+Bronze (3 external citations).
+
+```bash
+ao flywheel close-loop    # promote + decay + contradict + emit FlywheelMetrics
+ao flywheel status        # escape-velocity check
+```
+
+The compounding equation (`dK/dt = I − δK + σ·ρ·K − B`) and the full
+`FlywheelMetrics` model are documented in `docs/the-science.md` — that is their
+canonical home; cite it rather than restating the form here.
+
+---
+
 ## Phase 1: Research
 
 **Goal:** Understand the system deeply before planning

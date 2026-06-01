@@ -96,6 +96,7 @@ Use when moving from a real repo task to a validated implementation path.
 
 ```bash
 ao quick-start
+ao inject --query "<task or issue title>" --apply-decay --max-tokens 400
 ao context packet --goal "<task or issue title>"
 ao context assemble --phase planning --task "<task or issue title>"
 ```
@@ -103,6 +104,12 @@ ao context assemble --phase planning --task "<task or issue title>"
 ```text
 /rpi "<small scoped objective>"
 ```
+
+`ao inject` (and `ao lookup <id>` / `ao lookup --query` for on-demand
+artifact retrieval) reads prior learnings through the read-side of the Corpus
+context (`CorpusReaderPort.Lookup`) and records a citation in
+`.agents/ao/citations.jsonl`, so the assembled context is decay-ranked and
+token-budgeted rather than a blind file dump.
 
 **Artifacts**
 
@@ -225,7 +232,12 @@ The launch path uses `product-council` first because it demonstrates the
 sharpest 3.0 idea:
 
 1. Show the domain/practice packet.
-2. Assemble or inspect the context that will feed the agents.
+2. Assemble or inspect the context that will feed the agents. `ao inject`,
+   `ao lookup`, and `ao knowledge` are the knowledge-activation surface here:
+   they pull decay-ranked prior learnings through the Corpus read port and
+   feed citations back into ranking, so the packet is the only hidden-free
+   layer and the activated knowledge is auditable in
+   `.agents/ao/citations.jsonl`.
 3. Run council against one product/design/engineering decision.
 4. Inspect the verdict artifact.
 5. Turn the verdict into tracked work or a public launch decision.

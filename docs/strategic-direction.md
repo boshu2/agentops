@@ -28,30 +28,30 @@ Industry parallels (Anthropic Managed Agents, factory-style mission systems, Cur
 
 ## The Organizing Equation
 
-Everything in AgentOps serves one inequality:
+Everything in AgentOps serves one inequality. This is a digest; [the-science.md](the-science.md#the-equation) is the canonical home for the equation and its symbols — cite it, do not restate divergent forms.
 
 ```
-dK/dt = I(t) - d*K + s*r*K - f*K^2
+dK/dt = I(t) - δ·K + σ·ρ·K - φ·K²
 ```
 
 | Symbol | Meaning | AgentOps mechanism |
 |--------|---------|-------------------|
-| `K` | Knowledge stock (validated learnings, patterns, decisions) | `.agents/` corpus |
+| `K` | Knowledge stock (validated learnings, patterns, decisions) | `.agents/` corpus; modeled by `FlywheelMetrics` in `cli/internal/types/types.go` |
 | `I(t)` | Input rate (new knowledge per cycle) | Automated bookkeeping in `.agents/`, `ao forge`, `/retro`, `/post-mortem` |
-| `d` | Decay rate (~17%/week without reinforcement, Darr 1995) | `ao maturity --expire` |
-| `s` | Retrieval effectiveness (do you find what you need?) | `ao lookup` freshness-weighted scoring, `ao search` |
-| `r` | Citation rate (do you use what you find?) | Knowledge reuse in research/plan phases |
-| `f` | Scale friction (indexing overhead, noise, governance cost) | Tiering, pruning, utility scoring (MemRL) |
+| `δ` | Decay rate (~17%/week without reinforcement, Darr 1995) | `ao maturity --expire` |
+| `σ` | Retrieval coverage (do you surface what you need?) | `ao lookup` freshness-weighted scoring, `ao search` |
+| `ρ` | Decision influence rate (do you use what you surface?) | Knowledge reuse in research/plan phases |
+| `φ` | Scale friction (indexing overhead, noise, governance cost) | Tiering, pruning, utility scoring (MemRL) |
 
-**Escape velocity:** When `s * r > d` (retrieval times usage exceeds decay), knowledge compounds. When it does not, growth stalls regardless of input volume.
+**Escape velocity:** When retrieval coverage times decision influence exceeds decay (the operational check is `σ × ρ > δ/100`; see [the-science.md](the-science.md#the-escape-velocity-condition)), knowledge compounds. When it does not, growth stalls regardless of input volume.
 
-Every feature, skill, hook, and CLI command exists to keep the system above that threshold. See [the-science.md](the-science.md) for the full formal model with limits-to-growth analysis.
+The baseline `+ σ·ρ·K` reinforcing term and the `- φ·K²` limits-to-growth term are derived in [the-science.md](the-science.md). Every feature, skill, hook, and CLI command exists to keep the system above that threshold; the live state is emitted as `FlywheelMetrics` by `ao flywheel close-loop`.
 
 ---
 
 ## Meadows' 12 Leverage Points Mapped to AgentOps
 
-Donella Meadows ranked intervention points in complex systems from least to most powerful. AgentOps concentrates on the high-leverage end (#6 through #1) because changing the loop beats tuning the output.
+Donella Meadows ranked intervention points in complex systems from least to most powerful. AgentOps concentrates on the high-leverage end (#6 through #1) because changing the loop beats tuning the output. The table below is a digest; [leverage-points.md](leverage-points.md) is the canonical per-point mapping with source paths.
 
 | # | Leverage Point (Meadows) | AgentOps Implementation | Effect on dK/dt |
 |---|--------------------------|------------------------|-----------------|
@@ -148,17 +148,20 @@ Each level treats the one below as a black box: spec in, validated result out. T
 This document synthesizes:
 
 - Strategic direction council (2026-02-21): 4-judge unanimous WARN, feature saturation reached
-- The science (formal knowledge model): dK/dt equation, escape velocity, limits to growth
-- Brownian ratchet philosophy: chaos + filter + ratchet execution model
-- Architecture (5 pillars): Three Ways, Ratchet, Ralph Wiggum, Flywheel, Fractal Composition
-- PRODUCT.md: mission, vision, design principles, Meadows foundation
+- [The science](the-science.md) (formal knowledge model): dK/dt equation, escape velocity, limits to growth
+- [Brownian ratchet](brownian-ratchet.md) philosophy: chaos + filter + ratchet execution model
+- [Architecture](ARCHITECTURE.md) (5 pillars): Three Ways, Ratchet, Ralph Wiggum, Flywheel, Fractal Composition
+- `PRODUCT.md` (repo root): mission, vision, design principles, Meadows foundation, internal lineage
+- [Leverage points](leverage-points.md): canonical Meadows-to-AgentOps per-point mapping
 - 2026 roadmap: 4 epics (multi-runtime, autonomous hardening, adoption, bridge)
 - Pre-mortem for The Seed (2026-02-24): 6 findings, all addressed
 
 ## See Also
 
 - [seed-definition.md](seed-definition.md) -- the minimal starting conditions
-- [the-science.md](the-science.md) -- formal knowledge model
+- [the-science.md](the-science.md) -- formal knowledge model (canonical home of the dK/dt equation)
+- [leverage-points.md](leverage-points.md) -- canonical Meadows-to-AgentOps per-point mapping
 - [brownian-ratchet.md](brownian-ratchet.md) -- execution philosophy
 - [ARCHITECTURE.md](ARCHITECTURE.md) -- system design
+- `PRODUCT.md` (repo root) -- mission, vision, internal lineage
 - [how-it-works.md](how-it-works.md) -- operational mechanics

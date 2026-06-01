@@ -3,6 +3,15 @@
 **Schema:** [`schemas/swarm-evidence.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/swarm-evidence.schema.json)
 **Validator:** [`scripts/validate-swarm-evidence.sh`](https://github.com/boshu2/agentops/blob/main/scripts/validate-swarm-evidence.sh)
 
+> **Triad note:** this prose contract pairs with two schemas.
+> `schemas/swarm-evidence.schema.json` (linked above) is the **permissive**
+> shape that every historical result file must still satisfy. The contract-local
+> [`swarm-worker-result.schema.json`](swarm-worker-result.schema.json) is the
+> **strict** completion contract for `.agents/swarm/results/<task>.json`. There
+> is no separate `*.example.json` fixture; the worked instances are the inline
+> [minimal](#example-minimal) and
+> [structured-evidence](#example-completion-with-structured-evidence) examples below.
+
 Swarm workers spawned via `/swarm` or `/crank` write one JSON result file per task to:
 
 ```

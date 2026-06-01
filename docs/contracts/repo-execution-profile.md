@@ -1,8 +1,16 @@
 # Repo Execution Profile
 
 > **Status:** Draft
-> **Schema:** `repo-execution-profile.schema.json`
+> **Schema:** [`repo-execution-profile.schema.json`](repo-execution-profile.schema.json)
+> **Example instance:** [`repo-execution-profile.json`](repo-execution-profile.json) (AgentOps' own populated profile)
 > **Consumers:** `/evolve`, `/rpi`, and future repo-native orchestration loaders
+
+This contract is the prose member of a canonical triad: prose contract +
+machine-readable schema + worked example instance. The inline
+[Minimal Example](#minimal-example) is a stripped pedagogical sample;
+`repo-execution-profile.json` is AgentOps' own fully populated profile (real
+Go build/vet/test lanes, skill-integrity and pre-push gates). Both are
+governed by `repo-execution-profile.schema.json`.
 
 This contract defines the repo-local operating policy that autonomous orchestration should load before it starts selecting work. It is intentionally repo-scoped rather than skill-scoped: skill metadata in [docs/SKILL-API.md](../SKILL-API.md) describes how a skill behaves, while the repo execution profile describes how a specific repository wants that behavior parameterized.
 

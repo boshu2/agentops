@@ -126,6 +126,33 @@ session start -> phased handoff -> handoff / recover -> session end -> next sess
 
 This is the stigmergic memory layer. No agent has to remember yesterday if the environment was updated correctly.
 
+## How the Chains Bind to `ao` Internals
+
+The chains above are skill-level stories. Underneath, `ao` (the Go binary at `cli/cmd/ao/`) implements them through a hexagonal architecture, not ad-hoc command code.
+
+- **Ports, not direct calls.** `cli/internal/ports/` declares ~14 port interfaces (`CorpusReaderPort`, `CorpusWriterPort`, `CitationPort`, `ClaimEvidencePort`, `EventBusPort`, `GateRunnerPort`, `FindingCompilerPort`, `FactoryAdmissionPort`, `LoopReaderPort`, `LoopWriterPort`, `HarnessPort`, `OperatorPort`, `CIStatusPort`, `ClaimEvidenceBinderPort`) across five bounded contexts (Corpus, Validation, Loop, Factory, Runtime). Concrete adapters live as `cli/cmd/ao/*_adapter.go` (~14 production adapters, each paired with an in-memory adapter for tests). Wiring is explicit dependency-passing — there is no DI container.
+- **Discovery / Learning** ride the Corpus context: `ao lookup` and `ao inject` read prior knowledge through `CorpusReaderPort` and append a `CitationEvent` to `.agents/ao/citations.jsonl`, which feeds decay-ranked retrieval on the next query.
+- **Validation** rides the Validation context (`GateRunnerPort`, `FindingCompilerPort`): `/vibe` and the compiled-prevention gates run through these ports rather than calling tools directly.
+- **Continuity / multi-cycle loops** ride the Loop and Runtime contexts. `ao rpi phased <goal>` runs Discovery → Implementation → Validation with fresh context per phase, each writing `.agents/rpi/phase-N-summary.md` as the bounded carry-forward for the next phase. Multi-cycle supervision lives in `cli/internal/daemon/rpi_executor.go` (gate / landing / kill-switch); live sessions bridge through Gas City (`cli/cmd/ao/gc_bridge.go`, `rpi_phased_gc.go`). Older `rpi_loop_supervisor.go`, `rpi_parallel.go`, `rpi_c2_events.go`, and `rpi_phased_tmux.go` still exist on disk but are deprecated — do not treat them as the current path.
+
+### Persistence: files, not a database
+
+`ao` keeps no database of its own. Every durable surface in the chains above is a plain file:
+
+| Surface | Path | Written by |
+|---------|------|------------|
+| Citations / retrieval feedback | `.agents/ao/citations.jsonl` | `ao inject`, `ao lookup` |
+| Ratchet / provenance chain | `.agents/ao/chain.jsonl` | `ao ratchet`, commits |
+| Daemon event store | `.agents/daemon/ledger.jsonl` | the daemon (append-only JSONL, replayed on startup, corrupt-line quarantine, gzip rotation) |
+| Findings registry | `.agents/findings/registry.jsonl` | `/post-mortem`, `/pre-mortem` |
+| Phase carry-forward | `.agents/rpi/phase-N-summary.md` | `ao rpi phased` |
+| Team pool → canon | `.warmind/pool/staged/` → `.warmind/learnings/` | `ao warmind` / `ao flywheel close-loop` |
+| Strategic intent | `GOALS.md` | `/goals`, `/evolve` |
+
+The daemon (`cli/internal/daemon/`, the largest internal package) drives out-of-session chains through `JobSpec`s — `RPIRunJobSpec` / `RPIPhaseJobSpec` (`rpi_jobs.go`) and `DreamRunJobSpec` / `DreamStageJobSpec` (`dream_jobs.go`) — with a job lifecycle of `SubmitJob → ClaimJob (lease) → Heartbeat → CompleteJob / FailJob`. Recurring jobs are scheduled by the `RecurrenceSupervisor` (`recurrence.go`). The compounding equation behind flywheel metrics (`dK/dt = I − ΔK + σρK − B`) is documented canonically in [The Science](../the-science.md); cite it there rather than restating it.
+
+Config precedence for all of the above: CLI flags > `AGENTOPS_*` env > project `.agentops/config.yaml` > `~/.agentops/config.yaml` > defaults. The separate `bd` (beads) CLI uses Dolt; `ao` itself does not.
+
 ## Terminology Drift Ledger
 
 | Term | Historical Meaning | Current Executable Meaning |
@@ -136,15 +163,19 @@ This is the stigmergic memory layer. No agent has to remember yesterday if the e
 | `three hooks` | session start/end/stop | The runtime currently declares 7 hook event sections, with three lifecycle anchors plus prompt/tool/task guardrails |
 | `Research-Plan-Implement` | product slogan | Still appears in names and legacy docs, but phased execution and validation are first-class now |
 | `orchestrators never fork` | architectural rule of thumb | Desired direction, but some live skill contracts still declare `context.window: fork`; trust `SKILL.md` until the contracts are fully harmonized |
+| `ao database` / `the store` | implied a backing DB inside `ao` | `ao` persists to plain files only (`.agents/**`, `.warmind/**`, `GOALS.md`); the only Dolt-backed tracker is the separate `bd` CLI |
+| `commands wrap tools` | one `ao <cmd>` per skill action | Skills carry judgment; only ~42 of 77 skills shell out to `ao` at all, and `ao` itself routes through ~14 ports + adapters rather than direct calls |
 
 ## Audit Snapshot
 
 The current repo state behind this document:
 
-- `54` source skills in `skills/`
-- `45` user-facing and `9` internal skills
-- `52` CLI commands and `7` runtime hook event sections recorded in the current CLI/skills map
+- `77` source skills in `skills/` (`68` user-facing and `9` internal)
+- roughly `85` top-level `ao` commands (one `cmd/ao/<command>.go` each, entry `cmd/ao/root.go`); only ~42 of the 77 skills shell out to `ao`, the rest are pure-prose orchestrators or wrap other CLIs (`bd`, `git`, `gh`, `gemini`, `ntm`)
+- `7` runtime hook event sections recorded in the current CLI/skills map
 - prevention is partly `ao`-mediated and partly file-native through the finding registry and compiled constraints
+
+The split is load-bearing: a `SKILL.md` carries judgment and orchestration; `ao` carries durable state. The single broadest `ao` consumer is the `flywheel` skill; the discovery/implementation/validation (RPI) cluster shares `lookup` + `metrics` + `ratchet`.
 
 For the current command-to-skill matrix, see [CLI ↔ Skills/Hooks Map](../cli-skills-map.md).
 
@@ -152,6 +183,7 @@ For the current command-to-skill matrix, see [CLI ↔ Skills/Hooks Map](../cli-s
 
 - [How It Works](../how-it-works.md)
 - [Knowledge Flywheel](../knowledge-flywheel.md)
+- [The Science](../the-science.md) — canonical home of the `dK/dt` compounding equation
 - [Context Lifecycle Contract](../context-lifecycle.md)
 - [Brownian Ratchet](../brownian-ratchet.md)
 - [CLI ↔ Skills/Hooks Map](../cli-skills-map.md)

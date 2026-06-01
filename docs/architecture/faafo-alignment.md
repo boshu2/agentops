@@ -139,7 +139,7 @@ All FAAFO dimensions require:
 | Middle (hours) | Fast, Fun |
 | Inner (seconds) | Fast, Autonomous |
 
-**Failure Pattern Prevention:**
+**Failure Pattern Prevention:** (full catalog in [The 12 Failure Patterns](failure-patterns.md); prevent/detect/correct mechanics in the [PDC Framework](pdc-framework.md))
 
 | Pattern | FAAFO Damage |
 |---------|--------------|
@@ -176,6 +176,13 @@ Conditional on: 40% Rule, Three Loops, failure prevention
 ---
 
 ## Further Reading
+
+**Vibe Coding theory trio (architecture docs):**
+
+- [PDC Framework](pdc-framework.md) - Prevent, Detect, Correct across workflow phases
+- [The 12 Failure Patterns](failure-patterns.md) - failure catalog FAAFO prevention guards against
+
+**External and command docs:**
 
 - [Vibe Coding](https://itrevolution.com/product/vibe-coding-book/) - Gene Kim & Steve Yegge
 - Command docs for FAAFO alignment tables: `/research`, `/plan`, `/implement`

@@ -6,12 +6,38 @@ Skills are the primitive layer of AgentOps. Higher-level entry points like
 `/implement`, `/validation`, `/rpi`, and `/evolve` compose those primitives
 into repeatable flows.
 
+### Two layers: skills carry judgment, `ao` carries durable state
+
+AgentOps is two cooperating layers, not one:
+
+- **`skills/` (this reference)** — `SKILL.md` prose orchestrators. The skill
+  holds the *judgment*: when to branch, what to validate, which agents to spawn,
+  how to phase the work. Roughly 42 of the skills shell out to the `ao` CLI; the
+  rest are pure-prose orchestrators or wrap sibling CLIs (`bd`, `git`, `gh`,
+  `gemini`, `ntm`).
+- **`ao` (the Go CLI, `cli/`)** — the durable substrate. `ao` holds the *state*:
+  learnings, findings, plans, citations, the daemon ledger, and the knowledge
+  flywheel. It has no database — persistence is plain files under `.agents/` and
+  `.warmind/` (the separate `bd` CLI is what uses Dolt, not `ao`).
+
+The split is deliberate: the skill decides *what* should happen and the CLI
+records *what did happen* so the next session can build on it. The
+**`ao` CLI Integration** table at the bottom of this doc maps each skill to the
+`ao` commands it invokes. The single broadest consumer is the internal
+`flywheel` skill; the RPI cluster (`/crank`, `/discovery`, `/implement`,
+`/plan`, `/pre-mortem`, `/vibe`, `/validation`) shares `ao lookup`, `ao metrics`,
+and `ao ratchet`.
+
 **Behavioral Contracts:** Most skills include `scripts/validate.sh` behavioral checks to verify key features remain documented. Run `skills/<name>/scripts/validate.sh` when present, or the GOALS.yaml `behavioral-skill-contracts` goal to validate the full covered set.
 
 ## Skill Router (Start Here)
 
 Use this when you're not sure which skill to run. For a full flow overview, run
 `/using-agentops`.
+
+> **Canonical router.** This tree is the source of truth for skill routing.
+> `docs/SKILL-ROUTER.md` is a standalone derived copy for quick linking; when the
+> two diverge, this section wins — update here first.
 
 ```text
 What are you trying to do?
@@ -566,3 +592,32 @@ Skills integrate with the ao CLI for orchestration:
 | `/post-mortem` | `ao forge`, `ao flywheel close-loop`, `ao constraint activate` |
 | `/implement` | `ao context assemble`, `ao lookup`, `ao ratchet record` |
 | `/crank` | `ao rpi phased`, `ao ratchet`, `ao flywheel status` |
+
+### Where the state lives
+
+The skills above are stateless prose; the durable record they read and write is
+owned by `ao` and lands as plain files:
+
+- **Knowledge flywheel** — `ao inject` / `ao lookup` read `.agents/learnings/`
+  (via the `CorpusReaderPort` in `cli/internal/ports/`) and append a
+  `CitationEvent` to `.agents/ao/citations.jsonl`. Promotion runs
+  `.agents/learnings/` → `.warmind/pool/staged/` → `.warmind/learnings/` (team
+  canon); `ao flywheel close-loop` promotes, decays, contradicts, and emits
+  `FlywheelMetrics`. The compounding equation that scores all of this is the
+  `dK/dt` model in [`the-science.md`](the-science.md) — that doc is canonical;
+  cite it rather than restating the equation.
+- **Phased RPI** — `ao rpi phased <goal>` runs Discovery → Implementation →
+  Validation with fresh context per phase; each phase writes
+  `.agents/rpi/phase-N-summary.md` as the bounded carry-forward the next phase
+  reads.
+- **Daemon ledger** — long-running and scheduled work submits JobSpecs to the
+  `ao` daemon, which records an append-only event log at
+  `.agents/daemon/ledger.jsonl` (replayed on startup). Inspect it with
+  `ao daemon jobs list` / `ao daemon events tail`.
+
+Internally `ao` is a hexagonal architecture: port interfaces in
+`cli/internal/ports/` (Corpus, Validation, Loop, Factory, Runtime contexts) with
+production adapters wired in `cli/cmd/ao/*_adapter.go` via explicit dependency
+passing (no DI container). Skills never touch ports directly — they go through
+the `ao` subcommands above, which keeps the judgment layer and the state layer
+decoupled.

@@ -2,7 +2,9 @@
 
 > Which `ao` commands are called by which skills and hooks — and vice versa.
 
-Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-28. 71 generated CLI command headings, 69 source skills, 12 runtime hook event sections.
+Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-28; integration-surface reconcile 2026-05-31. 71 generated CLI command headings, 77 source skills, 12 runtime hook event sections.
+
+> **Two-layer note.** This map wires two layers: `skills/` (77 `SKILL.md` files; source of truth — never edit installed copies in `~/.claude/skills/`) and `cli/` (the `ao` Go binary; ~85 top-level cobra commands registered on `rootCmd` from `cli/cmd/ao/<command>.go`). Of the 77 skills, **~42 shell out to `ao <cmd>`**; the **~35 remainder** are pure-prose orchestrators or wrap other CLIs (`bd`, `git`, `gh`, `gemini`, `ntm`). The tables below cover only the `ao`-invoking layer.
 
 Source-of-truth note: `hooks/hooks.json` currently declares the full Claude runtime event surface. `hooks/codex-hooks.json` declares the Codex-native subset that runtime can support.
 
@@ -22,6 +24,30 @@ Registry-first note: `/plan`, `/pre-mortem`, `/research`, `/vibe`, and `/post-mo
 ## CLI Commands → Callers
 
 Every `ao` command that is actively called by at least one skill or hook.
+
+### Heaviest-hit commands
+
+Ranked by how many skills invoke each command (verified against `cli/cmd/ao/` source). The top of the curve is the RPI + flywheel backbone:
+
+| Rank | Command | Skills invoking |
+|------|---------|-----------------|
+| 1 | `ao goals` | 50 |
+| 2 | `ao overnight` | 29 |
+| 3 | `ao lookup` | 26 |
+| 3 | `ao codex` | 26 |
+| 5 | `ao ratchet` | 24 |
+| 6 | `ao metrics` | 23 |
+| 7 | `ao knowledge` | 22 |
+| 8 | `ao autodev` | 11 |
+| 9 | `ao inject` | 10 |
+| 10 | `ao search` | 8 |
+| 10 | `ao forge` | 8 |
+| 10 | `ao flywheel` | 8 |
+
+Long tail: `rpi`(7), `quick-start`(7), `evolve`(7), `maturity`(6), `beads`(5), `pool`(4), `harvest`(4), `context`(4), `compile`(4), `badge`(4).
+
+- **RPI cluster** (`crank`/`discovery`/`implement`/`plan`/`pre-mortem`/`vibe`/`validation`) all share `lookup` + `metrics` + `ratchet`, which is why those three sit high in the ranking.
+- **`flywheel` is the single broadest consumer** — it touches `anti-patterns`, `badge`, `constraint`, `contradict`, `curate`, `dedup`, `flywheel`, `harvest`, `lookup`, `maturity`, `metrics`, `retrieval-bench`, and `status`.
 
 | Command | Skill Callers | Hook Callers |
 |---------|--------------|--------------|

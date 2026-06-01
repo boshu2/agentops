@@ -20,6 +20,8 @@ The translation is direct. Each piece of the software-engineering stack has a co
 | Markdown / Git / Linux (open primitives) | LLM Wiki of Markdown |
 | Open-source corpus | Your private corpus (`.agents/` in your repo) |
 
+Two layers carry that counterpart across every phase. **Skills** (the `skills/` SKILL.md files — 77 of them) carry the *judgment*: when to research, how to validate, what good context looks like. The **`ao` binary** carries the *durable state*: corpus, citations, learnings, and the daemon ledger that survive across sessions. Roughly half the skills shell out to `ao` (`/research`, `/inject`, `/forge`, `/flywheel`, the RPI cluster); the rest orchestrate other CLIs (`bd`, `git`, `gh`) or run as pure-prose context. The skill decides; `ao` remembers. Every phase below names both layers.
+
 We call this the **Context Development Lifecycle (CDLC)** — the body of this doc explains how each SDLC phase has a CDLC counterpart.
 
 ### Companion docs
@@ -128,7 +130,7 @@ Package and share context across projects, teams, and runtimes.
 
 **AgentOps implementation:**
 
-- Skills registry — 170+ skills as distributable context packages
+- Skills registry — 77 skills (68 user-facing + 9 internal) as distributable context packages
 - `/converter` — export skills to Cursor rules, Codex format, OpenCode config
 - `ao compile` — package the knowledge wiki for distribution
 - Cross-runtime compatibility — same skills target Claude Code, Codex CLI, Cursor, and OpenCode
@@ -152,6 +154,7 @@ Inject the right context into the right session at the right time.
 - `ao lookup` — on-demand knowledge search during a session
 - SkillLoadEvent — track which skills were loaded (citation pipeline)
 - Phase-scoped delivery — `/research` gets different context than `/implement`
+- `ao rpi phased <goal>` — runs Discovery → Implementation → Validation each in a *fresh* context window; each phase writes `.agents/rpi/phase-N-summary.md`, which the next phase reads as bounded carry-forward instead of inheriting a full transcript
 
 Delivery is the moment where compilation meets the session. Right context, right window, right time. Phase-specific. Role-scoped. Freshness-weighted.
 

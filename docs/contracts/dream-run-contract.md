@@ -113,6 +113,31 @@ The one-shot path remains the compatibility baseline for local runs, tests,
 and fallback operation. Daemon mode must not silently delete or rewrite
 one-shot artifacts.
 
+### Daemon JobSpec Types
+
+The daemon job shapes above are not free-form: they are typed structs in
+[`cli/internal/daemon/dream_jobs.go`](../../cli/internal/daemon/dream_jobs.go),
+all carrying `schema_version` (`DreamJobSpecSchemaVersion = 1`).
+
+| Type | `job_type` | Role |
+|------|-----------|------|
+| `DreamRunJobSpec` | `dream.run` | whole-run submission; carries `dream_run_id`, `goal`, `mode`, `output_dir`, optional `max_iterations`, `execution_timeout` |
+| `DreamStageJobSpec` | `dream.stage` | one stage of one iteration; adds `iteration_id`, `iteration`, `stage`, `checkpoint_dir`, `parent_job_id` |
+| `DreamStageManifest` | (not a job) | ordered, validated list of `DreamStageEntry` describing the stages a run expects to execute |
+
+`mode` is the `DreamMode` enum (`daemon` or `one-shot`), and `stage` is the
+`DreamStage` enum. The canonical stage order is fixed by `dreamStageOrder` and
+`DefaultDreamStageManifest`:
+
+```
+ingest → reduce → measure → commit → report
+```
+
+`DreamStageManifest.Validate` rejects stages that appear out of order or more
+than once. There is no `DreamJobSpec` or `ScheduleConfig` type; recurring Dream
+submissions are scheduled by the daemon's `RecurrenceSupervisor`
+(`cli/internal/daemon/recurrence.go`), not encoded in the JobSpec itself.
+
 ## Locking
 
 Dream must prevent overlapping local runs.

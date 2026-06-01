@@ -112,6 +112,27 @@ CI validates not just builds/tests but also docs parity, hook safety, skill inte
 - Treat Codex as a first-class runtime: when a skill change affects Codex UX or execution style, inspect `skills-codex-overrides/`, update `skills-codex-overrides/catalog.json` if treatment changes, update the checked-in `skills-codex/` copy when needed, and run the Codex validation scripts.
 - If you touch command surfaces or hook contracts, expect related parity checks to fail until updated.
 
+## Where to look (quick-index)
+
+When you have a change in hand, jump straight to the owning surface:
+
+| I want to change... | Look here |
+|---|---|
+| An `ao` command (add/change behavior) | `cli/cmd/ao/<command>.go` (each command registers itself on `rootCmd` from its own file — see `cli/cmd/ao/root.go`) |
+| Domain logic behind a command | `cli/internal/<package>/` (e.g. `internal/daemon/`, `internal/overnight/`, `internal/rpi/`, `internal/goals/`, `internal/search/`, `internal/warmind/`) |
+| A port contract (interface boundary) | `cli/internal/ports/` (hexagonal ports; concrete adapters live in `cli/cmd/ao/*_adapter.go`) |
+| A core data type | `cli/internal/types/types.go` (`Candidate`, `PoolEntry`, `CitationEvent`, `FlywheelMetrics`, `GoldenSignals`, etc.) |
+| Skill behavior | `skills/<name>/SKILL.md` (source of truth — never edit `~/.claude/skills/`, those are installed copies) |
+| The generated CLI reference | `cli/docs/COMMANDS.md` (generated; regenerate via `scripts/generate-cli-reference.sh`, never hand-edit) |
+
+After a CLI change, run the build loop from `cli/`:
+
+```bash
+cd cli && make build && make test && make sync-hooks
+```
+
+`make sync-hooks` re-embeds hooks/skills into the binary; skipping it after touching `hooks/` or `lib/hook-helpers.sh` fails the embedded-sync CI check.
+
 ## Where to go next
 
 - [Documentation Index](documentation-index.md)

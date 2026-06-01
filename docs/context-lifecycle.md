@@ -67,6 +67,7 @@ actually closes these gaps.
 | `.agents/` ledger | [Knowledge Ledger](#the-knowledge-ledger-session-to-session-flow) | Stores plans, learnings, patterns, council outputs, and next-work artifacts on disk |
 | Finding registry | [docs/contracts/finding-registry.md](contracts/finding-registry.md) | Stores reusable structured findings that planning and validation can load before rediscovering the same failure |
 | `ao lookup` / injection | [Knowledge Ledger](#the-knowledge-ledger-session-to-session-flow) and `ao` CLI | Retrieves repo-specific context at session start and task boundaries |
+| `ao context assemble` | `ao` CLI (`cli/cmd/ao/context_assemble.go`) | Builds the 5-section task briefing (GOALS, HISTORY, INTEL, TASK, PROTOCOL) so retrieval lands as a bounded packet, not a dump |
 | `/retro` and `/post-mortem` extraction | [skills/post-mortem/SKILL.md](skills/post-mortem.md) | Turns completed work into reusable learnings and patterns |
 | Freshness / maturity controls | `ao maturity`, `ao dedup`, `ao contradict` | Keeps retrieval focused on useful, current knowledge |
 | Compile cycle | [GOALS.md](https://github.com/boshu2/agentops/blob/main/GOALS.md) directive 5 | Mines missed signal, defrags stale knowledge, and flags oscillation |
@@ -149,6 +150,8 @@ Session N+1 starts
 ```
 
 Three tiers, descending priority: local `.agents/` → global `~/.agents/` → legacy `~/.claude/patterns/`. Each session starts with a small, curated packet — not a data dump. If the task needs deeper context, the agent searches `.agents/` on demand.
+
+Under the hood, `ao inject` and `ao lookup` read durable knowledge through the `CorpusReaderPort` (`cli/internal/ports/corpus_reader.go`, single method `Lookup(ctx, LookupOptions) ([]CorpusItem, error)`) — the Corpus-context read boundary that keeps retrieval testable against an in-memory adapter. When a task needs a full briefing rather than a token-trimmed injection, `ao context assemble` (`cli/cmd/ao/context_assemble.go`) gathers the same corpus into a five-section packet (GOALS, HISTORY, INTEL, TASK, PROTOCOL) so the agent opens with bounded, structured context instead of an unscoped read.
 
 ## See Also
 

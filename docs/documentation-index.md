@@ -14,7 +14,7 @@
 - [AgentOps 3.0 YouTube Starter Series](agentops-3-youtube-starter-series.md) — Launch video plan, scripts, clip hooks, CTAs, and PMF measurement fields
 - [AgentOps 3.0 PMF Evidence Loop](agentops-3-pmf-evidence-loop.md) — Content-led discovery loop and claim-gated evidence plan
 - [Behavioral Discipline](behavioral-discipline.md) — Before/after examples of good coding-agent behavior
-- [Newcomer Guide](newcomer-guide.md) — Fast orientation to repo structure, architecture, and contribution path
+- [Newcomer Guide](newcomer-guide.md) — Fast orientation to repo structure, architecture, and contribution path; includes a **"Where to look" quick-index** that routes you to the right canonical surface (CLI, skills, hooks, contracts) by task. Canonical orientation doc — the [Getting Started landing](getting-started/index.md) and [Reference landing](reference/index.md) are thin nav wrappers over this and the catalog you're reading
 - [FAQ](FAQ.md) — Comparisons, limitations, subagent nesting, uninstall
 - [CONTRIBUTING](CONTRIBUTING.md) — How to contribute
 - [Create Your First Skill](create-your-first-skill.md) — Fast path for authoring a first skill without tripping CI
@@ -36,26 +36,32 @@ Deep dives: [CDLC](cdlc.md) (tier-to-layer mapping), [Knowledge Flywheel](knowle
 
 Bridge / framing docs:
 
-- [A wiki for your agents](wiki-for-agents.md) — `.agents/` as a markdown wiki agents read, traverse, and contribute to (deflationary framing for the busy buyer)
-- [AgentOps as a Trust Factory](trust-factory.md) — Mapping AgentOps to the five-step trust-factory primitive (identity, reproducibility, evaluation, evidence, recovery)
+- [A wiki for your agents](wiki-for-agents.md) — `.agents/` as a markdown wiki agents read, traverse, and contribute to (deflationary framing for the busy buyer). Paired audience-variant of [Trust Factory](trust-factory.md) — same product, different framing
+- [AgentOps as a Trust Factory](trust-factory.md) — Mapping AgentOps to the five-step trust-factory primitive (identity, reproducibility, evaluation, evidence, recovery). Paired audience-variant of [A wiki for your agents](wiki-for-agents.md)
 
 ## Architecture
 
-- [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, agent backends, hooks, context windowing
-- [Software Factory Surface](software-factory.md) — Explicit automation surface for briefings, RPI flows, and operator-controlled closeout
+> **Two-layer model.** AgentOps is two cooperating layers: the `skills/` corpus (prose `SKILL.md` orchestrators, source of truth) and the `ao` Go CLI (a hexagonal ports-and-adapters binary the skills shell out to). The architecture docs below describe the CLI internals; the [Skills](#skills) section catalogs the corpus. The verified wiring between them lives in [CLI ↔ Skills/Hooks Map](cli-skills-map.md).
+
+- [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, agent backends, hooks, context windowing; the **Skills and the `ao` CLI** section explains the two-layer skills↔ao split
+- [Software Factory Surface](software-factory.md) — Explicit automation surface for briefings, RPI flows, the phased delivery line (phase table, daemon-backed multi-cycle loops, Gas City bridge), and operator-controlled closeout
 - [Assurance Profile](assurance-profile.md) — High-assurance operating posture, authority boundaries, and evidence artifact expectations for constrained environments
-- [Architecture](ARCHITECTURE.md) — System design and component overview
-- [Architecture Folder Index](architecture/index.md) — Architecture subdocs overview
+- [Architecture](ARCHITECTURE.md) — System design and component overview, plus **CLI Internal Architecture**: the two layers (skills↔ao), hexagonal ports & adapters, internal packages, core data types, file-based persistence, the daemon, and the flagship data flows
+- [Architecture Folder Index](architecture/index.md) — Architecture subdocs overview, including the **[Ports & Adapters (Hexagonal)](architecture/index.md#ports-adapters-hexagonal)** in-page summary (14 typed ports, their `cmd/ao` adapters, 5 bounded contexts)
+- [AgentOps System Map](agentops-system-map.md) — Companion visual map: CLI command families (~85 top-level commands), the ranked skill→ao integration surface, the hexagonal internals, file-based config & persistence, the daemon job queue, and the three flagship data flows (flywheel, phased RPI, overnight)
 - [Codex Hookless Lifecycle](architecture/codex-hookless-lifecycle.md) — Runtime-aware lifecycle fallback for Codex when hooks are unavailable
 - [Primitive Chains](architecture/primitive-chains.md) — Audited primitive set, lifecycle chains, and terminology drift ledger
-- [PDC Framework](architecture/pdc-framework.md) — Prevent, Detect, Correct quality control approach
-- [FAAFO Alignment](architecture/faafo-alignment.md) — FAAFO promise framework for vibe coding value
-- [Failure Patterns](architecture/failure-patterns.md) — The 12 failure patterns reference guide
+- [PDC Framework](architecture/pdc-framework.md) — Prevent, Detect, Correct quality control approach (Vibe-Coding theory set; its "Integration with Failure Patterns" table restates [Failure Patterns](architecture/failure-patterns.md))
+- [FAAFO Alignment](architecture/faafo-alignment.md) — FAAFO promise framework for vibe coding value (Vibe-Coding theory set, with [PDC Framework](architecture/pdc-framework.md) and [Failure Patterns](architecture/failure-patterns.md))
+- [Failure Patterns](architecture/failure-patterns.md) — The 12 failure patterns reference guide (anchor of the Vibe-Coding theory set: [PDC Framework](architecture/pdc-framework.md), [FAAFO Alignment](architecture/faafo-alignment.md))
 
 ## Skills
 
-- [Skills Reference](SKILLS.md) — Complete reference for all AgentOps skills
+> **Skills are layer one; the `ao` CLI is layer two.** The `skills/**/SKILL.md` corpus is the source of truth — never edit the installed copies under `~/.claude/skills/`. Roughly half the skills shell out to `ao <cmd>` (the Go CLI); the remainder are pure-prose orchestrators or wrap other CLIs (`bd`, `git`, `gh`, `gemini`, `ntm`). For the verified command-by-command wiring between the two layers, see [CLI ↔ Skills/Hooks Map](cli-skills-map.md); for the routing decision tree, [Skills Reference](SKILLS.md) is canonical.
+
+- [Skills Reference](SKILLS.md) — Complete reference for all AgentOps skills; **canonical source of the skill-router decision tree** (the standalone [Skill Router](SKILL-ROUTER.md) is a derived/condensed view)
 - [Skills Decision Tree](skills-decision-tree.md) — "Which skill do I need next?" — single source of truth linked from harvest, compile, knowledge-activation, and quickstart SKILL.md
+- [CLI ↔ Skills/Hooks Map](cli-skills-map.md) — Verified two-layer wiring (skills↔`ao`↔hooks) with a heaviest-hit-commands ranking
 - [Skill API](SKILL-API.md) — Frontmatter fields, context declarations, enforcement status
 - [JSM Skill Absorption Matrix](reference/jsm-skill-absorption.md) — Disposition table for the 2026-05-05 Bushido standalone JSM skill set
 - [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph
@@ -77,31 +83,33 @@ Bridge / framing docs:
 - [Multi-Domain](workflows/multi-domain.md) — Coordinate work spanning multiple domains
 - [Continuous Improvement](workflows/continuous-improvement.md) — Ongoing system optimization and pattern refinement
 - [Infrastructure Deployment](workflows/infrastructure-deployment.md) — Orchestrate deployment with validation gates
-- [Meta-Observer Pattern](workflows/meta-observer-pattern.md) — Autonomous multi-session coordination
+- [Meta-Observer Pattern](workflows/meta-observer-pattern.md) — Autonomous multi-session coordination (near-identical to the canonical [Meta-Observer Pattern Guide](workflows/meta-observer/pattern-guide.md) — prefer the guide)
 
 ### Meta-Observer
 
-- [Meta-Observer README](workflows/meta-observer/README.md) — Complete workflow package overview
-- [Pattern Guide](workflows/meta-observer/pattern-guide.md) — Autonomous multi-session coordination guide
-- [Example Session](workflows/meta-observer/example-today.md) — Real example from 2025-11-09
-- [Showcase](workflows/meta-observer/SHOWCASE.md) — Distributed intelligence for multi-session work
+> **[Pattern Guide](workflows/meta-observer/pattern-guide.md) is the canonical doc** for this pattern. The package overview, example session, and showcase below are overlapping 2025-11-09 historical narrative (and the top-level [Meta-Observer Pattern](workflows/meta-observer-pattern.md) entry is a near-identical copy of the Pattern Guide) — start with the Pattern Guide.
+
+- [Pattern Guide](workflows/meta-observer/pattern-guide.md) — Autonomous multi-session coordination guide (**canonical**)
+- [Meta-Observer README](workflows/meta-observer/README.md) — Complete workflow package overview (historical; see [Pattern Guide](workflows/meta-observer/pattern-guide.md))
+- [Example Session](workflows/meta-observer/example-today.md) — Real example from 2025-11-09 (historical)
+- [Showcase](workflows/meta-observer/SHOWCASE.md) — Distributed intelligence for multi-session work (historical)
 
 ## Concepts
 
 - [Philosophy](philosophy.md) — Five validated principles for building with coding agents, with evidence from five months of production use
 - [Assurance Profile](assurance-profile.md) — High-assurance operating posture for local, auditable, constrained-environment agent work
 - [Context Lifecycle Contract](context-lifecycle.md) — Internal proof contract behind the compounding product loop
-- [Knowledge Flywheel](knowledge-flywheel.md) — How every session makes the next one smarter
-- [The Science](the-science.md) — Research behind knowledge decay and compounding
-- [Brownian Ratchet](brownian-ratchet.md) — AI-native development philosophy
+- [Knowledge Flywheel](knowledge-flywheel.md) — How every session makes the next one smarter, including the **verified end-to-end data flow** through the corpus
+- [The Science](the-science.md) — Research behind knowledge decay and compounding. **Canonical source for the `dK/dt` compounding equation** — the restatements in [Knowledge Flywheel](knowledge-flywheel.md), [Leverage Points](leverage-points.md), [Strategic Direction](strategic-direction.md), and [Brownian Ratchet](brownian-ratchet.md) defer to this form
+- [Brownian Ratchet](brownian-ratchet.md) — AI-native development philosophy; deep-dive companion to [ARCHITECTURE](ARCHITECTURE.md) Pillar 2 and [The Science](the-science.md) Part 6 (cite the-science.md for the equation)
 - [Evolve Setup](evolve-setup.md) — GOALS.md, fitness loop, overnight runs
 - [Seed Definition](seed-definition.md) — What `ao seed` creates and why
 - [Scale Without Swarms](scale-without-swarms.md) — Single-agent scaling patterns
 - [Curation Pipeline](curation-pipeline.md) — Six-stage knowledge curation lifecycle
 - [Context Packet](context-packet.md) — Agent context assembly specification
 - [Domain and Practice Packets](domain-practice-packets.md) — Product-facing contract for the shared engineering domain agents judge work against
-- [Strategic Direction](strategic-direction.md) — Product strategy and roadmap
-- [Leverage Points](leverage-points.md) — Meadows-inspired system intervention points
+- [Strategic Direction](strategic-direction.md) — Product strategy and roadmap; a condensed digest of [Leverage Points](leverage-points.md), [The Science](the-science.md), [ARCHITECTURE](ARCHITECTURE.md), and [PRODUCT](https://github.com/boshu2/agentops/blob/main/PRODUCT.md) — see those for canonical framing
+- [Leverage Points](leverage-points.md) — Meadows-inspired system intervention points (canonical source that [Strategic Direction](strategic-direction.md) digests)
 
 ## Patterns
 
@@ -110,7 +118,9 @@ Bridge / framing docs:
 
 ## Standards
 
-- [Standards Overview](standards/README.md) — Coding standards index
+> These `standards/*` docs are externally-synced copies that parallel the in-repo canonical corpus at [`skills/standards/references/`](https://github.com/boshu2/agentops/tree/main/skills/standards/references). When the two diverge, the `skills/standards/references/` files are authoritative — prefer them and regenerate the synced copies rather than hand-editing.
+
+- [Standards Overview](standards/README.md) — Coding standards index (synced view; canonical corpus lives in [`skills/standards/references/`](https://github.com/boshu2/agentops/tree/main/skills/standards/references))
 - [Go Style Guide](standards/golang-style-guide.md) — Go coding conventions
 - [TypeScript Standards](standards/typescript-standards.md) — TypeScript coding conventions
 - [Python Style Guide](standards/python-style-guide.md) — Python coding conventions
@@ -170,9 +180,9 @@ Bridge / framing docs:
 ## Profiles
 
 - [Activation Profiles](activation-profiles.md) — 3.0 first-value workflow recipes with explicit inputs, commands, artifacts, and fallbacks
-- [Profiles Overview](profiles/README.md) — Role-based profile organization
-- [Profile Comparison](profiles/COMPARISON.md) — Workspace profiles vs 12-Factor examples
-- [Meta-Patterns](profiles/META_PATTERNS.md) — Patterns extracted from role-based taxonomy
+- [Profiles Overview](profiles/README.md) — Role-based profile organization (**canonical** — the current 3-profile model)
+- [Profile Comparison](profiles/COMPARISON.md) — Workspace profiles vs 12-Factor examples (describes an earlier 5-role taxonomy; superseded by the 3-profile model in [Profiles Overview](profiles/README.md))
+- [Meta-Patterns](profiles/META_PATTERNS.md) — Patterns extracted from role-based taxonomy (describes the earlier 5-role taxonomy; see [Profiles Overview](profiles/README.md) for the current model)
 - [Example: Software Dev](profiles/examples/software-dev-session.md) — Software development session
 - [Example: Platform Ops](profiles/examples/platform-ops-session.md) — Platform operations session
 - [Example: Content Creation](profiles/examples/content-creation-session.md) — Content creation session
@@ -221,7 +231,9 @@ Bridge / framing docs:
 
 - [Agent Footguns](agent-footguns.md) — Common agent failure modes and mitigations
 - [AgentOps Brief](agentops-brief.md) — Executive summary
-- [AgentOps System Map](agentops-system-map.md) — Visual system map
+- [AgentOps System Map](agentops-system-map.md) — Visual system map (CLI command families, ranked skill→ao surface, hexagonal internals, file-based persistence, daemon queue, three flagship data flows)
+- [Daemon Codebase Map](code-map/agentopsd-codebase-map.md) — `agentopsd` daemon internals: the ledger-based event store, job lifecycle, JobSpec types, and CLI surface (companion to the [AgentOps Daemon Contract](contracts/agentops-daemon.md))
+- [Eval LID Primitives Code Map](code-map/eval-lid-primitives.md) — Code map for the evaluation loop-invariant-driven (LID) primitives
 - [Working with `.agents/`](agents-operator-guide.md) — Operator guide for `.agents/` state, write surfaces, and contributor flow
 - [Glossary](GLOSSARY.md) — Definitions of domain-specific terms (Beads, Brownian Ratchet, RPI, etc.)
 - [CLI Reference](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md) — Complete `ao` command reference (generated from source)
@@ -229,22 +241,22 @@ Bridge / framing docs:
 - [Hooks Reference](HOOKS.md) — Lifecycle events, what each hook does, how to customize
 - [CLI ↔ Skills/Hooks Map](cli-skills-map.md) — Which commands are called by which skills and hooks
 - [Reference](reference.md) — Pipeline stages, execution-model table, and skill-selection matrix (deep-dive companion to SKILLS.md)
-- [Releasing](RELEASING.md) — Release process for ao CLI and plugin
+- [Releasing](RELEASING.md) — Release process for ao CLI and plugin (**canonical**; the [Release Process Runbook](runbooks/release-process.md) is an olympus-ported step-by-step that overlaps this and [Release E2E Checklist](release-e2e-checklist.md))
 - [Environment Variables](ENV-VARS.md) — All configuration variables with defaults and precedence
 - [Schemas](SCHEMAS.md) — JSON Schemas for manifests, runtime artifacts, and internal runtime contracts
-- [Skill Router](SKILL-ROUTER.md) — Which skill to use for which task
+- [Skill Router](SKILL-ROUTER.md) — Which skill to use for which task (condensed view of the router tree; **[Skills Reference](SKILLS.md) is canonical** — prefer it when the two disagree)
 - [Troubleshooting](troubleshooting.md) — Common issues and quick fixes
 - [Incident Runbook](INCIDENT-RUNBOOK.md) — Operational runbook for incidents and recovery
 - [Autonomy Runtime Cycle-1 Runbook](runbooks/autonomy-runtime-cycle-1.md) — Safe activation/rollback/evidence checks for cycle-1 autonomy runtime work (ported from olympus)
 - [bd Server-Mode Tracker Closeout](runbooks/bd-server-mode-closeout.md) — Distinguish Git push, local bd durability, and conditional Dolt remote push for server-mode trackers
-- [Release Process Runbook](runbooks/release-process.md) — Step-by-step release runbook (gates, version bump, goreleaser, post-release; ported from olympus and complements `RELEASING.md`)
+- [Release Process Runbook](runbooks/release-process.md) — Step-by-step release runbook (gates, version bump, goreleaser, post-release; ported from olympus and complements the canonical [`RELEASING.md`](RELEASING.md) and [Release E2E Checklist](release-e2e-checklist.md))
 - [Factory Manual Merge Runbook](runbooks/factory-manual-merge.md) — Operator recovery and manual merge procedure for factory worktrees and validation evidence
 - [Daemon Factory Admission Runbook](runbooks/daemon-factory-admission.md) — Rehearsal procedure for daemon-native factory admission, blocked decisions, RPI handoff, and schedule payloads
 - [Cloud-Frontier Factory Pilot Runbook](runbooks/cloud-frontier-pilot.md) — Bounded one-versus-two worker pilot procedure using cloud/frontier coding lanes and manual merge
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
-- [Repo Execution Profile](contracts/repo-execution-profile.md) — Repo-local bootstrap, validation, tracker, and done-criteria contract for autonomous orchestration
-- [Repo Execution Profile Example](contracts/repo-execution-profile.json) — Concrete repository execution profile used by local autonomous orchestration
+- [Repo Execution Profile](contracts/repo-execution-profile.md) — Repo-local bootstrap, validation, tracker, and done-criteria contract for autonomous orchestration. **Canonical prose**; pairs with the [schema](contracts/repo-execution-profile.schema.json) and the [example instance](contracts/repo-execution-profile.json)
+- [Repo Execution Profile Example](contracts/repo-execution-profile.json) — Concrete repository execution profile used by local autonomous orchestration (instance of the [Repo Execution Profile](contracts/repo-execution-profile.md) contract / [schema](contracts/repo-execution-profile.schema.json))
 - [Autodev Program Contract](contracts/autodev-program.md) — Repo-local operational contract for bounded autonomous development
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
 - [AgentOps Daemon Contract](contracts/agentops-daemon.md) — Always-on daemon ledger, job lifecycle, activation, readiness, projection, and threat model contract
@@ -254,16 +266,16 @@ Bridge / framing docs:
 - [Factory Admission Decision Schema](https://github.com/boshu2/agentops/blob/main/schemas/factory-admission.v1.schema.json) — JSON Schema for daemon-native admission decisions
 - [Routing Policy Contract](contracts/routing-policy.md) — Schema-backed model/provider/runtime lane policy, authority levels, and milestone-1 production-routing guardrails
 - [Routing Policy Schema](https://github.com/boshu2/agentops/blob/main/schemas/routing-policy.v1.schema.json) — JSON Schema for `agentopsd` routing policy lane contracts
-- [Factory Yield Ledger Contract](contracts/factory-yield-ledger.md) — Schema-backed baseline/treatment yield observations for routing, validation, merge, and artifact correlation
-- [Factory Yield Ledger Schema](contracts/factory-yield-ledger.schema.json) — Contract-local JSON Schema used to validate the yield ledger fixture
-- [Factory Yield Ledger Example](contracts/factory-yield-ledger.example.json) — Valid fixture for a `factory.yield_observation` event
-- [Factory Claim Ledger Contract](contracts/factory-claim-ledger.md) — Public claim posture ledger mapping software-factory claims to evidence level, owner issue, closure gate, and safe wording
-- [Factory Claim Ledger Schema](contracts/factory-claim-ledger.schema.json) — Contract-local JSON Schema for claim-ledger rows and posture enums
-- [Factory Claim Ledger Example](contracts/factory-claim-ledger.example.json) — Current claim ledger fixture covering README, PRODUCT, GOALS, docs index, assurance, contracts, and comparison claims
+- [Factory Yield Ledger Contract](contracts/factory-yield-ledger.md) — Schema-backed baseline/treatment yield observations for routing, validation, merge, and artifact correlation. **Canonical prose of the triad**: pairs with the [schema](contracts/factory-yield-ledger.schema.json) + [example](contracts/factory-yield-ledger.example.json) below
+- [Factory Yield Ledger Schema](contracts/factory-yield-ledger.schema.json) — Contract-local JSON Schema used to validate the yield ledger fixture (backs [Factory Yield Ledger Contract](contracts/factory-yield-ledger.md))
+- [Factory Yield Ledger Example](contracts/factory-yield-ledger.example.json) — Valid fixture for a `factory.yield_observation` event (validates against the [schema](contracts/factory-yield-ledger.schema.json))
+- [Factory Claim Ledger Contract](contracts/factory-claim-ledger.md) — Public claim posture ledger mapping software-factory claims to evidence level, owner issue, closure gate, and safe wording. **Canonical prose of the triad**: pairs with the [schema](contracts/factory-claim-ledger.schema.json) + [example](contracts/factory-claim-ledger.example.json) below
+- [Factory Claim Ledger Schema](contracts/factory-claim-ledger.schema.json) — Contract-local JSON Schema for claim-ledger rows and posture enums (backs [Factory Claim Ledger Contract](contracts/factory-claim-ledger.md))
+- [Factory Claim Ledger Example](contracts/factory-claim-ledger.example.json) — Current claim ledger fixture covering README, PRODUCT, GOALS, docs index, assurance, contracts, and comparison claims (validates against the [schema](contracts/factory-claim-ledger.schema.json))
 - [Update Principles Contract](contracts/update-principles.md) — Five operator-exemplar properties every commit must demonstrate (single concern, drift-blocking test, sibling citation, fitness delta, clean branch point); sourced from commit 1b9d139c
 - [Ubiquitous Language Contract](contracts/ubiquitous-language.md) — Canonical names per bounded context (BC1 Corpus, BC2 Validation, BC3 Loop, BC4 Factory, BC5 Runtime) for the 5 ranked drifts (Gate/Check, Cycle/Loop, Claim/Evidence, Skill/Pattern/Practice, Session); rename schedule bound to soc-5yuy children
-- [BC1 Corpus Ports Contract](contracts/bc1-corpus-ports.md) — The 4 BC1 ports (CorpusReaderPort, CorpusWriterPort, FindingCompilerPort, CitationPort) scaffolded under cli/internal/ports/; semantics cheat-sheet, adapter triplet pattern, soc-pm5t wire-up order
-- [BC Ports Inventory](contracts/bc-ports-inventory.md) — Roster of all 12 BC ports (BC1 Corpus 4 + BC2 Validation 3 + BC3 Loop 2 + BC4 Factory 2 + BC5 Runtime 1) with per-port adapter contracts, the universal triplet construction pattern, and per-BC wire-up order. Surface complete as of cycle 106.
+- [BC1 Corpus Ports Contract](contracts/bc1-corpus-ports.md) — The 4 BC1 ports (CorpusReaderPort, CorpusWriterPort, FindingCompilerPort, CitationPort) scaffolded under cli/internal/ports/; semantics cheat-sheet, adapter triplet pattern, soc-pm5t wire-up order. **BC1 deep-dive subset of** [BC Ports Inventory](contracts/bc-ports-inventory.md) — cross-link to that for the full roster
+- [BC Ports Inventory](contracts/bc-ports-inventory.md) — Roster of all **14 BC ports** (BC1 Corpus 4 + BC2 Validation 3 + BC3 Loop 2 + BC4 Factory 2 incl. FactoryAdmissionPort + ClaimEvidencePort + BC5 Runtime 1) with per-port adapter contracts (verified port → concrete `cli/cmd/ao` adapter file), the universal triplet construction pattern, and per-BC wire-up order. 14/14 adapters delivered as of cycle 142. **The authoritative ports catalog**, surfaced in [ARCHITECTURE → Hexagonal Ports & Adapters](ARCHITECTURE.md#hexagonal-ports--adapters) and [architecture/index.md](architecture/index.md#ports-adapters-hexagonal)
 - [Daemon Idempotency Contract](contracts/daemon-idempotency.md) — Submit retry contract defining `idempotency_key` as the dedup key and `request_id` as trace-only
 - [AgentOps Daemon Scheduling Contract](contracts/agentopsd-schedule.md) — `.agents/schedule.yaml` schema, cron syntax, backpressure, mutation auth, ledger event vocabulary, executor idempotency, and migration recipe for native daemon scheduling
 - [JobSpec OpenAPI v0](contracts/jobspec-openapi-v0.yaml) — Machine-readable current-behavior OpenAPI contract for `agentopsd` job submission, queue state, ledger replay, projections, and OpenClaw consumer routes
@@ -275,7 +287,7 @@ Bridge / framing docs:
 - [Rubric Schema](https://github.com/boshu2/agentops/blob/main/schemas/rubric.v1.schema.json) — JSON Schema for `ao outcomes run` rubric files
 - [Worker Spec Schema](https://github.com/boshu2/agentops/blob/main/schemas/worker-spec.v1.schema.json) — JSON Schema for per-worker model/tool/prompt isolation specs
 - [OpenClaw Consumer API Contract](contracts/openclaw-consumer-api.md) — Read-only consumer snapshot API and authorized local trigger contract
-- [Repo Execution Profile Schema](contracts/repo-execution-profile.schema.json) — Machine-readable schema for repo execution profiles
+- [Repo Execution Profile Schema](contracts/repo-execution-profile.schema.json) — Machine-readable schema for repo execution profiles (backs [Repo Execution Profile](contracts/repo-execution-profile.md); validates the [example instance](contracts/repo-execution-profile.json))
 - [RPI Run Registry](contracts/rpi-run-registry.md) — RPI run registry specification
 - [Eval Environment Contract](contracts/eval-environment.md) — Evaluation suite, run, scorecard, baseline, canary, and holdout contract
 - [Eval Baseline-A/B Contract](contracts/eval-baseline-ab.md) — `ao eval run --baseline-mode` semantics, `DeltaScorecard` schema, hook-suppression scope
@@ -283,8 +295,8 @@ Bridge / framing docs:
 - [Eval Verdict Pipeline Contract](contracts/eval-verdict-pipeline.md) — Verdict compiler pipeline from eval run manifests to learning utility and retirement signals
 - [Retrieval Comparison Contract](contracts/retrieval-comparison.md) — Deterministic search-eval backend comparison, promotion thresholds, optional rerank behavior, and deferred vector/graph-store policy
 - [Release Readiness Contract](contracts/release-readiness.md) — 8/10 release readiness score, SIL/VIL/HIL evidence, artifact manifest requirements, and HIL waiver policy
-- [MemRL Policy Schema](contracts/memrl-policy.schema.json) — Machine-readable retry/escalation policy profile for memory-reinforcement feedback loops
-- [MemRL Policy Profile Example](contracts/memrl-policy.profile.example.json) — Example deterministic MemRL retry/escalation policy profile
+- [MemRL Policy Schema](contracts/memrl-policy.schema.json) — Machine-readable retry/escalation policy profile for memory-reinforcement feedback loops. **Canonical schema**; pairs with the [example profile](contracts/memrl-policy.profile.example.json)
+- [MemRL Policy Profile Example](contracts/memrl-policy.profile.example.json) — Example deterministic MemRL retry/escalation policy profile (validates against the [schema](contracts/memrl-policy.schema.json))
 - [Eval Workbench](https://github.com/boshu2/agentops/tree/main/evals/workbench) — Known-good fixture project (Go CLI, Python FastAPI, DevOps scripts) with 12 behavioral eval tasks and scoring scripts
 - [Eval Suite Schema](https://github.com/boshu2/agentops/blob/main/schemas/eval-suite.v1.schema.json) — JSON Schema for public canary and private holdout evaluation suites
 - [Eval Run Schema](https://github.com/boshu2/agentops/blob/main/schemas/eval-run.v1.schema.json) — JSON Schema for evaluation run records and scorecards
@@ -294,8 +306,8 @@ Bridge / framing docs:
 - [RPI Phase Result Schema](contracts/rpi-phase-result.schema.json) — Machine-readable schema for RPI phase results
 - [RPI C2 Events Schema](contracts/rpi-c2-events.schema.json) — Machine-readable schema for per-run `.agents/rpi/runs/<run-id>/events.jsonl`
 - [RPI C2 Commands Schema](contracts/rpi-c2-commands.schema.json) — Machine-readable schema for per-run `.agents/rpi/runs/<run-id>/commands.jsonl`
-- [Swarm Worker Result Schema](contracts/swarm-worker-result.schema.json) — Machine-readable schema for `.agents/swarm/results/<task-id>.json` worker artifacts (strict completion contract)
-- [Swarm Evidence Contract](contracts/swarm-evidence.md) — Permissive shape covering all historical swarm result files; enforced by `scripts/validate-swarm-evidence.sh`
+- [Swarm Worker Result Schema](contracts/swarm-worker-result.schema.json) — Machine-readable schema for `.agents/swarm/results/<task-id>.json` worker artifacts (strict completion contract); the strict backing schema for the [Swarm Evidence Contract](contracts/swarm-evidence.md)
+- [Swarm Evidence Contract](contracts/swarm-evidence.md) — Permissive shape covering all historical swarm result files; enforced by `scripts/validate-swarm-evidence.sh`. Prose contract paired with the strict [Swarm Worker Result Schema](contracts/swarm-worker-result.schema.json)
 - [Swarm Evidence Schema](https://github.com/boshu2/agentops/blob/main/schemas/swarm-evidence.schema.json) — JSON Schema for the permissive swarm evidence shape
 - [Hook Runtime Contract](contracts/hook-runtime-contract.md) — Canonical event mapping across Claude, Codex, and manual runtimes
 - [Multi-Runtime Tier Charter](contracts/multi-runtime-tier-charter.md) — Explicit Tier S/I/E declaration: Tier S structural blocks CI; Tier E live execution is opt-in (Directive D1)
@@ -309,9 +321,9 @@ Bridge / framing docs:
 - [Codex Skill API Contract](contracts/codex-skill-api.md) — Source of truth for Codex runtime skill structure, frontmatter, discovery paths, and multi-agent primitives
 - [Context Assembly Interface](contracts/context-assembly-interface.md) — Interface contract for adaptive context assembly and mechanical token budgeting
 - [Session Intelligence Trust Model](contracts/session-intelligence-trust-model.md) — Artifact eligibility contract for runtime context assembly, explainability, and startup suppression rules
-- [Finding Registry Contract](contracts/finding-registry.md) — Canonical intake-ledger contract for reusable findings in `.agents/findings/registry.jsonl`
-- [Finding Registry Schema](contracts/finding-registry.schema.json) — Machine-readable schema for the finding intake ledger
-- [Finding Artifact Schema](contracts/finding-artifact.schema.json) — Machine-readable schema for promoted finding artifacts under `.agents/findings/*.md`
+- [Finding Registry Contract](contracts/finding-registry.md) — Canonical intake-ledger contract for reusable findings in `.agents/findings/registry.jsonl`. **Canonical prose**; backed by the [registry schema](contracts/finding-registry.schema.json) + [artifact schema](contracts/finding-artifact.schema.json) below
+- [Finding Registry Schema](contracts/finding-registry.schema.json) — Machine-readable schema for the finding intake ledger (backs [Finding Registry Contract](contracts/finding-registry.md))
+- [Finding Artifact Schema](contracts/finding-artifact.schema.json) — Machine-readable schema for promoted finding artifacts under `.agents/findings/*.md` (companion to [Finding Registry Contract](contracts/finding-registry.md))
 - [Finding Item Schema](https://github.com/boshu2/agentops/blob/main/schemas/finding.json) — Canonical finding-item schema for validation skill outputs (compatible subset of finding-artifact)
 - [Finding Compiler Contract](contracts/finding-compiler.md) — V2 promotion ladder, executable constraint index contract, and lifecycle rules for turning findings into prevention artifacts
 

@@ -211,6 +211,66 @@ Queue workers must use leases and heartbeats rather than in-memory ownership.
 The queue must tolerate daemon restart and worker crash without losing accepted
 jobs.
 
+### Job Lifecycle
+
+A job moves through a fixed lease-based state machine. The methods live on the
+`Queue` type (`cli/internal/daemon/jobs.go`); each transition appends a ledger
+event before it is observable through any projection.
+
+| Step | `Queue` method | Effect |
+|---|---|---|
+| Submit | `SubmitJob` | Accepts the request, allocates `job_id`, appends `job.accepted`. Idempotent on `idempotency_key` (see [Daemon Idempotency](daemon-idempotency.md)). |
+| Claim | `ClaimJob` | A worker takes a time-bounded **lease** on a queued job and appends `job.claimed`. The lease — not in-memory ownership — is what survives daemon restart and worker crash. |
+| Heartbeat | `Heartbeat` | The lease-holder renews its lease while work is in flight. A lease that is not renewed expires; an expired lease returns the job to `retry_waiting` (subject to retry budget) so another worker can re-claim it. |
+| Complete | `CompleteJob` | Terminal success: appends `job.completed` with artifact references. |
+| Fail | `FailJob` | Terminal failure: appends `job.failed` with the failure report. |
+| Cancel | `CancelJob` | Terminal cancellation: appends `job.cancelled`. Reachable from the queued or running state via the cancel HTTP routes above. |
+
+The lease/heartbeat/terminal precedence here is what the [Job Status
+Projection](#job-status-projection) truth table reads back: a fresh lease
+projects `running`, an expired lease projects `retry_waiting`, and any terminal
+ledger event wins over both.
+
+### Job and Event CLI Surface
+
+Operators and scripts drive the queue through `ao daemon jobs`
+(`cli/cmd/ao/daemon_jobs.go`):
+
+| Command | Action |
+|---|---|
+| `ao daemon jobs submit` | Submit a job (`POST /v1/jobs`); auto-fills an idempotency key for low-level submits via `postDaemonSubmitJob`. |
+| `ao daemon jobs list` | List queued/running/terminal jobs from the daemon's queue projection (`--json` for machine output). |
+| `ao daemon jobs show <job-id>` | Show a single job's state and artifacts. |
+| `ao daemon jobs wait <job-id>` | Block until the job reaches a terminal state. |
+| `ao daemon jobs cancel <job-id>` | Request cancellation (token required). |
+| `ao daemon jobs events tail` | Tail the ledger event stream for live lifecycle observability. |
+
+These are thin clients over the ledger; they never read a separate job table.
+
+### Ledger Replay, Quarantine, and Rotation
+
+The ledger at `.agents/daemon/ledger.jsonl` is append-only JSONL and is the only
+durable record of queue state. The `Store`
+(`cli/internal/daemon/store.go`) governs its mechanics:
+
+- **Append.** `AppendLedgerEvent` is the single write path; every accepted
+  mutation flows through it before returning success (see [Mutation Ack
+  Order](#mutation-ack-order)).
+- **Replay.** On startup the daemon rebuilds in-memory queue and schedule state
+  by replaying the ledger (`ReplayLedger`), deduplicating on `event_id` so a
+  crash-retried append never double-applies. Read-only inspection uses
+  `ReplayLedgerReadOnly`, which never mutates the quarantine directory.
+- **Quarantine.** A corrupt or unparseable ledger line does not abort startup.
+  The offending record is moved to `.agents/daemon/quarantine/`
+  (`QuarantineDir`) and the affected projection is reported `degraded` rather
+  than silently dropped — matching the [Snapshot Projection](#snapshot-projection)
+  truth table.
+- **Rotation.** When the active ledger crosses its size threshold,
+  `maybeRotate`/`rotateLedger` seals it into a timestamped gzip archive
+  (`ledger.<RFC3339-no-colons>.jsonl.gz`) and starts a fresh active file. Replay reads
+  archives in chronological order before the live file, so rotation is
+  transparent to state reconstruction.
+
 ### Foreground Supervisor
 
 `ao daemon run` may start foreground worker loops with `--workers`.

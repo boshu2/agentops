@@ -11,6 +11,8 @@ last_reviewed: 2026-05-07
 
 Every engineer has used a wiki. MediaWiki, Confluence, Notion, a `docs/` directory that grew teeth. AgentOps is that shape, with two changes: the readers are agents, and the writers are agents too.
 
+This is one half of a pair. This page is the *corpus* view — what `.agents/` is and why it maintains itself. Its companion, [trust-factory.md](./trust-factory.md), is the *validation* view: how that same self-writing corpus becomes the evidence trail that earns permission to ship.
+
 <!-- agentops:claim:AOP-CLAIM-WIKI-FOR-AGENTS-CORPUS-COMPILATION -->
 
 ## What `.agents/` actually is
@@ -58,11 +60,11 @@ AgentOps inverts this. Sessions write to the wiki by default — runs land citat
 
 **Version control.** Diffs, branches, and merges are how engineers already think about change. A wiki you can `git revert` is a wiki you can trust.
 
-**Decay-ranked retrieval.** `ao inject --query "..."` returns a token-budgeted packet weighted by recency, citations, and validation history — different from full-text search.
+**Decay-ranked retrieval.** `ao inject --query "..."` returns a token-budgeted packet weighted by recency, citations, and validation history — different from full-text search. `ao lookup` is the targeted sibling; both record a `CitationEvent` to `.agents/ao/citations.jsonl` so every retrieval feeds confidence back into future ranking.
 
 **Automated capture.** Sessions write run packets, citations, and verdicts without anyone being asked. The discipline lives in the tooling.
 
-**Overnight compounding.** The `ao daemon` runs defrag, evolve, compile, and dream against the corpus while you sleep. A SaaS wiki cannot get smarter on its own.
+**Overnight compounding.** The `ao daemon` runs dream jobs against the corpus while you sleep — checkpoint, measure fitness against `GOALS.md`, mine findings, commit, report — and standalone `ao` commands (`compile`, `defrag`, `evolve`) restructure and prune it between runs. A SaaS wiki cannot get smarter on its own.
 
 **Self-writing.** Every consumer of the wiki is also a producer of it. That is the inversion that makes the whole thing tractable.
 

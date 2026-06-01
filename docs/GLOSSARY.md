@@ -26,10 +26,16 @@ Git-native issue tracking system accessed via the `bd` CLI. Issues live in `.bea
 ### Bookkeeping
 AgentOps' public term for repo-native capture, retrieval, promotion, decay, and resurfacing of what sessions learn. `.agents/`, `/retro`, `/forge`, `/compile`, `ao inject`, and `ao lookup` are all bookkeeping surfaces. [Full documentation](https://github.com/boshu2/agentops/blob/main/README.md#how-bookkeeping-compounds)
 
+### Bounded Context
+A self-contained slice of the `ao` domain with its own port interfaces and adapters. The CLI defines five: **Corpus** (read/write knowledge), **Validation** (gates and CI status), **Loop** (RPI/run state), **Factory** (admission and event bus), and **Runtime** (harness). Each context's contracts live in [`cli/internal/ports/`](https://github.com/boshu2/agentops/blob/main/cli/internal/ports/doc.go); see also [Ports & Adapters](#ports-adapters-hexagonal).
+
 ### Brownian Ratchet
 The core execution model: spawn parallel agents (chaos), validate their output with a multi-model council (filter), and merge passing results to main (ratchet). Progress locks forward — failed agents are discarded cheaply because fresh context means no contamination. [Full documentation](how-it-works.md#the-brownian-ratchet)
 
 ## C
+
+### CitationEvent
+The record appended to `.agents/ao/citations.jsonl` each time a knowledge artifact is surfaced or used — emitted by `ao inject` and `ao lookup`. Each event captures which learning was retrieved and whether it was referenced or applied. Citations feed confidence back into inject ranking and gate flywheel promotion (Silver/Bronze tiers require citations from other engineers). Defined as `CitationEvent` in [`cli/internal/types/types.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/types/types.go).
 
 ### Codex Team
 A skill (`/codex-team`) that spawns parallel Codex (OpenAI) execution agents orchestrated by Claude, enabling cross-vendor parallel task execution. [Full documentation](skills/codex-team.md)
@@ -54,6 +60,9 @@ A skill (`/crank`) that executes an epic by spawning parallel worker agents in d
 
 ## D
 
+### Daemon Ledger
+The append-only event store backing the `ao` daemon, written to `.agents/daemon/ledger.jsonl`. Every job lifecycle transition (submit, claim, heartbeat, complete, fail, cancel) is appended as a JSONL line and replayed on startup to rebuild state. Corrupt lines are quarantined rather than fatal, and the file gzip-rotates as it grows. Inspect with `ao daemon events tail`. Lives in [`cli/internal/daemon/`](https://github.com/boshu2/agentops/blob/main/cli/internal/daemon/), the largest internal package.
+
 ### Discovery
 The first phase of the current RPI lifecycle (Discovery → Implementation → Validation). Replaces the older "Research" framing when used at the orchestrator level; `/research` is still the underlying sub-skill.
 
@@ -64,6 +73,9 @@ A long-haul autonomous run that executes while you are away, emitting morning wo
 
 ### Epic
 A group of related issues that together accomplish a goal. Created by `/plan`, executed by `/crank`. Each epic has a dependency graph that determines which issues can run in parallel (same wave) and which must wait (later waves). [Full documentation](SKILLS.md#plan)
+
+### Escape Velocity
+The condition under which the knowledge flywheel compounds instead of plateauing: gains from retrieval and reuse (`σ·ρ·K`) must outpace decay (`δ·K`). The CLI normalizes this to the check `σ × ρ > δ/100` in `metrics_health.go`. Surfaced by `ao flywheel status`. Defined canonically — with the full `dK/dt` equation — in [`the-science.md`](the-science.md); mirrored by `FlywheelMetrics.EscapeVelocityStatus()` in [`cli/internal/types/types.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/types/types.go).
 
 ### Extract
 An internal process that pulls learnings, patterns, and decisions from session transcripts and artifacts into structured knowledge files. Now handled by `/forge --promote`. [Full documentation](skills/forge.md)
@@ -78,6 +90,9 @@ The automated loop that extracts learnings from completed work, scores them for 
 
 ### Flywheel Health
 A composite measure of whether the knowledge flywheel is actually compounding: retrieval rate, promotion rate, decay rate, and injection hit rate. Surfaced by `ao flywheel` commands and used by `/evolve` to steer improvements.
+
+### FlywheelMetrics
+The Go type that quantifies whether knowledge is compounding. It annotates the scale-aware equation `dK/dt = I(t) - δ·K + σ·ρ·K - B(K, K_crit)` and exposes derived signals (including `EscapeVelocityStatus()`). Emitted by `ao flywheel close-loop` and `ao flywheel status`. Defined in [`cli/internal/types/types.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/types/types.go); the equation's canonical home is [`the-science.md`](the-science.md).
 
 ### Forge
 An internal skill that mines session transcripts for knowledge artifacts — decisions, patterns, failures, and fixes — and stores them in `.agents/`. [Full documentation](skills/forge.md)
@@ -111,6 +126,9 @@ A discrete unit of trackable work, stored as a bead. Created by `/plan`, execute
 
 ## J
 
+### JobSpec
+The typed payload describing a unit of work submitted to the `ao` daemon. Concrete specs include `RPIRunJobSpec` / `RPIPhaseJobSpec` ([`rpi_jobs.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/daemon/rpi_jobs.go)) and `DreamRunJobSpec` / `DreamStageJobSpec` ([`dream_jobs.go`](https://github.com/boshu2/agentops/blob/main/cli/internal/daemon/dream_jobs.go)). Submitted via `ao daemon jobs submit`, claimed under lease, then heartbeated to completion — every transition recorded in the [Daemon Ledger](#daemon-ledger). Recurring specs are scheduled by the `RecurrenceSupervisor`.
+
 ### Judge
 An agent in a council that evaluates work from a specific perspective (security, architecture, correctness, etc.). Judges deliberate asynchronously, then the lead consolidates verdicts. [Full documentation](skills/council.md)
 
@@ -129,6 +147,9 @@ A cross-cutting rule enforced by hooks that applies to all skills and agents. Ex
 ### Pool
 A knowledge quality tier — pending, tempered, or promoted. Artifacts start in pending, get tempered through repeated validation and use, and can be promoted to the permanent knowledge base. [Full documentation](ARCHITECTURE.md#knowledge-artifacts)
 
+### Ports & Adapters (Hexagonal)
+The architecture of the `ao` CLI. Each [bounded context](#bounded-context) declares port interfaces (14 total, e.g. `CorpusReaderPort`, `GateRunnerPort`, `EventBusPort`) in [`cli/internal/ports/`](https://github.com/boshu2/agentops/blob/main/cli/internal/ports/); concrete production adapters live as `cli/cmd/ao/*_adapter.go` alongside in-memory adapters used for tests. Wiring is explicit dependency-passing — there is no DI container. This keeps domain logic independent of the filesystem, git, and external CLIs.
+
 ### Post-mortem
 A skill (`/post-mortem`) that runs after work is complete. Convenes a council to validate the implementation, runs a retro to extract learnings, and suggests the next `/rpi` command to continue the improvement loop. [Full documentation](skills/post-mortem.md)
 
@@ -137,6 +158,9 @@ A skill (`/pre-mortem`) that runs before implementation begins. Judges simulate 
 
 ### Profile
 A documentation grouping for domain-specific workflows and standards. Profiles organize coding standards and validation rules by language or domain. [Full documentation](skills/standards.md)
+
+### Promotion Tiers (Gold / Silver / Bronze)
+The thresholds that govern whether a staged learning advances from `.warmind/pool/staged/` into team canon at `.warmind/learnings/`. **Gold** (score ≥0.8) auto-promotes after 24h; **Silver** (≥0.5) needs one citation from another engineer; **Bronze** (<0.5) needs three. Applied by `ao warmind close-loop` (also called `ao flywheel close-loop`). See [Pool](#pool) and [CitationEvent](#citationevent).
 
 ### Provenance
 An internal skill that traces the lineage and sources of knowledge artifacts — where a learning came from, which sessions produced it, and how it was validated. [Full documentation](skills/provenance.md)

@@ -81,6 +81,8 @@ Memory Strength
 
 ## Part 2: The Math (Plain English)
 
+> **Canonical source.** This document is the single source of truth for the `dK/dt` compounding equation — its full scale-aware form, symbol definitions (`I(t)`, `δ`, `σ(K,t)`, `ρ`, and the balancing term), the escape-velocity condition, and the limits-to-growth derivation. The implementation mirror lives in `cli/internal/types/types.go` (`FlywheelMetrics`, which annotates `dK/dt = I(t) - δ·K + σ·ρ·K - B(K, K_crit)`) and `cli/cmd/ao/metrics_health.go`. Other docs — [knowledge-flywheel.md](knowledge-flywheel.md), [leverage-points.md](leverage-points.md) — cite this equation; they should point here rather than restate a divergent form. If any doc or comment diverges from the form below, trust this document and reconcile.
+
 ### The Equation
 
 ```
@@ -142,6 +144,8 @@ Interpretation:
 - `Kσ` is the knowledge scale where retrieval starts degrading materially.
 
 This adds the missing **Limits to Growth** balancing loop from System Dynamics.
+
+> **Notation note (`φ·K²` ≡ `B(K, K_crit)`).** The `FlywheelMetrics` type in `cli/internal/types/types.go` writes the balancing term as `- B(K, K_crit)` rather than `- φ·K²`. These are the same limits-to-growth loop: `B(K, K_crit)` is the general balancing function, and `φ·K²` is the specific quadratic-friction form used here for the dimensional check and derivation. `K_crit` plays the role of the scale at which friction dominates. Treat the named form as the contract and the quadratic as the worked example.
 
 ### The Escape Velocity Condition
 

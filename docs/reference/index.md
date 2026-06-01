@@ -2,6 +2,8 @@
 
 Deep documentation, runbooks, and lookup tables. These are the pages you open when something breaks, when you need the exact name of an environment variable, or when you want to understand why a specific failure mode exists and how to avoid it.
 
+New here? The [Newcomer Guide](../newcomer-guide.md) is the canonical orientation doc, and the [Documentation Index](../documentation-index.md) is the full catalog of every doc in this repo — start there if you're not sure which reference page you need.
+
 Three groups worth knowing:
 
 - **Lookup** — [Glossary](../GLOSSARY.md), [Environment Variables](../ENV-VARS.md), [CLI ↔ Skills Map](../cli-skills-map.md). Skim once, then search-on-demand.

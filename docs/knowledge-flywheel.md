@@ -156,6 +156,71 @@ ao flywheel status
 | `.agents/ao/codex/startup-context.md` | Explicit startup context assembled for hookless Codex sessions | `ao codex start` |
 | `.agents/ao/codex/state.json` | Last Codex start/stop lifecycle state | `ao codex start`, `ao codex stop` |
 
+## End-to-End Data Flow (Verified)
+
+The six stages above are the conceptual model. Underneath, the flywheel is wired
+through the CLI's hexagonal architecture (ports & adapters) — the same shape the
+rest of `ao` uses. No DI container; wiring is explicit dependency-passing. The
+load-bearing path, traced through the `cli/` source:
+
+```
+query
+  │
+  ▼
+CorpusReaderPort.Lookup(ctx, opts)            cli/internal/ports/corpus_reader.go
+  │   reads .agents/learnings/, returns ranked []CorpusItem (Score desc)
+  │   concrete adapter: cli/cmd/ao/corpus_reader_adapter.go
+  ▼
+ao inject  /  ao lookup                       surfaces the top matches
+  │   appends a CitationEvent for each surfaced artifact
+  ▼
+.agents/ao/citations.jsonl                    append-only citation trail
+  │   (CitationPort: cli/internal/ports/citation.go,
+  │    adapter cli/cmd/ao/citation_port_adapter.go)
+  ▼
+ao flywheel close-loop  /  ao warmind close-loop
+  │   promote + decay + contradiction-detect, emits FlywheelMetrics
+  ▼
+promotion across tiers (local → team staging → team canon)
+  .agents/learnings/ → .warmind/pool/staged/ → .warmind/learnings/
+```
+
+### Promotion path and tiers
+
+Local learnings graduate toward team canon through `.warmind/`. The tier gate is
+enforced by `cli/internal/warmind/` (`pool.go`, `scoring.go`, `citations.go`):
+
+| Tier | Score | Requirement |
+|------|-------|-------------|
+| Gold | ≥ 0.8 | Auto-promote after 24h |
+| Silver | ≥ 0.5 | 1 citation from another engineer |
+| Bronze | < 0.5 | 3 citations from other engineers |
+
+`ao flywheel close-loop` (and the team-scoped `ao warmind close-loop`) runs the
+full pass: auto-promote candidates that clear their tier gate, decay aging
+knowledge, and detect contradictions. Each citation recorded in
+`.agents/ao/citations.jsonl` is what lets a Silver/Bronze candidate clear its
+citation requirement — closing the loop the promotion gate depends on.
+
+### Core types
+
+The contract between these stages lives in `cli/internal/types/types.go`. The
+data flow moves these structs end to end:
+
+| Type | Role in the flow |
+|------|------------------|
+| `CitationEvent` | Records when an artifact is referenced in a session; drives the flywheel's σ (coverage) and ρ (influence). Written to `.agents/ao/citations.jsonl`. |
+| `Candidate` | A knowledge item pre-promotion — carries tier, utility, maturity, and supersession. The unit the pool scores. |
+| `PoolEntry` | `Candidate` plus scoring, review state, and status — the staged form awaiting a promotion decision. |
+| `FlywheelMetrics` | The compounding-equation state (`dK/dt = I − δ·K + σ·ρ·K`); exposes the escape-velocity verdict via `EscapeVelocityStatus()` / `HealthCompounding()`. Emitted by close-loop. |
+| `GoldenSignals` | The compounding / accumulating / decaying breakdown surfaced by `ao flywheel status`. |
+
+Persistence is plain files throughout — there is no database inside `ao` itself.
+The flywheel's durable state is `.agents/` (learnings, citations.jsonl) and
+`.warmind/` (team pool → canon); `GOALS.md` is the strategic-intent surface that
+the fitness measures in close-loop and `/evolve` read against. (Contrast: the
+separate `bd`/beads CLI is Dolt-backed.)
+
 ## The Compounding Effect
 
 | Gap | Without the flywheel | With AgentOps flywheel |

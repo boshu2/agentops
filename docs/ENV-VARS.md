@@ -2,6 +2,18 @@
 
 All optional. AgentOps works out of the box with no configuration.
 
+## Config Precedence
+
+The `ao` CLI loads configuration from five layers, highest priority wins. This is the authoritative chain (implemented in `cli/internal/config/config.go`, `Load()`):
+
+1. **Command-line flags** — explicit `--flag` overrides on the invoked command.
+2. **`AGENTOPS_*` environment variables** — applied over file config (see `applyEnv` in `config.go`).
+3. **Project config** — `.agentops/config.yaml` in the current working directory (or the path set by `AGENTOPS_CONFIG`).
+4. **Home config** — `~/.agentops/config.yaml`.
+5. **Built-in defaults** — `config.Default()`.
+
+Each layer merges over the one below it (non-empty values win), so you can set a stable baseline in `~/.agentops/config.yaml`, override per-repo in `.agentops/config.yaml`, override per-shell with an `AGENTOPS_*` env var, and override per-invocation with a flag. The env-var rows in the sections below name the specific keys that participate in layer 2; any `AGENTOPS_*` value left empty is ignored (the lower layer shows through).
+
 ## Council / Validation
 
 These control `/council`, `/vibe`, `/pre-mortem`, and `/post-mortem` behavior.
@@ -41,7 +53,7 @@ These control AO CLI configuration loading and RPI control-plane command customi
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `AGENTOPS_CONFIG` | unset | Explicit config file path for AO CLI. When set, this path is used instead of the default project config location (`.agentops/config.yaml`). |
+| `AGENTOPS_CONFIG` | unset | Explicit path for the **project** config layer (layer 3 in [Config Precedence](#config-precedence)). When set, this path replaces the default `<cwd>/.agentops/config.yaml`; the home config (`~/.agentops/config.yaml`), `AGENTOPS_*` env vars, and flags still layer over it. |
 | `AGENTOPS_RPI_WORKTREE_MODE` | `auto` | Worktree policy for phased runs: `auto`, `always`, `never`. |
 | `AGENTOPS_RPI_RUNTIME` | `auto` | Legacy alias for runtime mode (`auto`, `direct`, `stream`). |
 | `AGENTOPS_RPI_RUNTIME_MODE` | `auto` | Preferred runtime mode variable (`auto`, `direct`, `stream`). Overrides `AGENTOPS_RPI_RUNTIME` when both are set. |
@@ -93,6 +105,8 @@ AGENTOPS_HOOKS_DISABLED=1 claude
 ```
 
 ### Precedence
+
+These are refinements **within** the overall [Config Precedence](#config-precedence) chain (flags > `AGENTOPS_*` env > project config > home config > defaults) — they describe how options resolve inside a single layer for two subsystems.
 
 For council model selection:
 1. `COUNCIL_CLAUDE_MODEL` env var (highest priority)
