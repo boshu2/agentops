@@ -56,9 +56,10 @@ func (i Identity) SameAs(other Identity) bool {
 	return strings.EqualFold(in, on)
 }
 
-// CurrentIdentity resolves the acting engineer from git config, falling back to
-// the OS user for the name when git is unconfigured.
-func CurrentIdentity() Identity {
+// gitIdentity resolves an identity from git config, falling back to the OS user
+// for the name when git is unconfigured. It is the lowest-precedence tier of
+// ResolveIdentity — the human fallback.
+func gitIdentity() Identity {
 	id := Identity{}
 	if out, err := exec.Command("git", "config", "user.name").Output(); err == nil {
 		id.Name = strings.TrimSpace(string(out))

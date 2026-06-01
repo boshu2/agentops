@@ -135,6 +135,7 @@ ao canon cite <entry-id> [flags]
 **Flags:**
 
 ```
+      --as string        acting actor override ("Name" or "Name <email>"); else AGENTOPS_ACTOR / git
   -h, --help             help for cite
       --path string      path to the learning file (required)
       --query string     search query that surfaced the learning
@@ -176,6 +177,7 @@ ao canon verify <entry-id> [flags]
 **Flags:**
 
 ```
+      --as string        acting actor override ("Name" or "Name <email>"); else AGENTOPS_ACTOR / git
   -h, --help             help for verify
       --method string    how it was checked: manual|ao-verify|council|cross-model (default "manual")
       --path string      path to the learning file (required)

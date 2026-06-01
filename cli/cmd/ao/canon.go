@@ -93,6 +93,7 @@ func init() {
 	canonCiteCmd.Flags().String("path", "", "path to the learning file (required)")
 	canonCiteCmd.Flags().String("query", "", "search query that surfaced the learning")
 	canonCiteCmd.Flags().String("session", "", "session ID")
+	canonCiteCmd.Flags().String("as", "", "acting actor override (\"Name\" or \"Name <email>\"); else AGENTOPS_ACTOR / git")
 	_ = canonCiteCmd.MarkFlagRequired("path")
 	canonCmd.AddCommand(canonCiteCmd)
 
@@ -100,6 +101,7 @@ func init() {
 	canonVerifyCmd.Flags().String("verdict", "confirmed", "confirmed|refuted")
 	canonVerifyCmd.Flags().String("method", "manual", "how it was checked: manual|ao-verify|council|cross-model")
 	canonVerifyCmd.Flags().String("receipt", "", "evidence you independently gathered (gate log, file:line, hash)")
+	canonVerifyCmd.Flags().String("as", "", "acting actor override (\"Name\" or \"Name <email>\"); else AGENTOPS_ACTOR / git")
 	_ = canonVerifyCmd.MarkFlagRequired("path")
 	canonCmd.AddCommand(canonVerifyCmd)
 
@@ -119,13 +121,15 @@ func runCanonCite(cmd *cobra.Command, args []string) error {
 	path, _ := cmd.Flags().GetString("path")
 	query, _ := cmd.Flags().GetString("query")
 	session, _ := cmd.Flags().GetString("session")
+	as, _ := cmd.Flags().GetString("as")
 	cl, _ := canonLedgers(cwd)
 
-	c, err := cl.Record(args[0], path, query, session, canon.CurrentIdentity(), time.Now())
+	by, src := canon.ResolveIdentity(as)
+	c, err := cl.Record(args[0], path, query, session, by, time.Now())
 	if err != nil {
 		return fmt.Errorf("record citation: %w", err)
 	}
-	return emitCanonAttestation(cmd.OutOrStdout(), "cite", args[0], c.By, c.Self)
+	return emitCanonAttestation(cmd.OutOrStdout(), "cite", args[0], c.By, src, c.Self)
 }
 
 func runCanonVerify(cmd *cobra.Command, args []string) error {
@@ -137,17 +141,19 @@ func runCanonVerify(cmd *cobra.Command, args []string) error {
 	method, _ := cmd.Flags().GetString("method")
 	receipt, _ := cmd.Flags().GetString("receipt")
 	verdictStr, _ := cmd.Flags().GetString("verdict")
+	as, _ := cmd.Flags().GetString("as")
 	verdict := canon.Verdict(verdictStr)
 	if verdict != canon.VerdictConfirmed && verdict != canon.VerdictRefuted {
 		return fmt.Errorf("invalid --verdict %q: want confirmed|refuted", verdictStr)
 	}
 	_, vl := canonLedgers(cwd)
 
-	v, err := vl.Record(args[0], path, method, receipt, verdict, canon.CurrentIdentity(), time.Now())
+	by, src := canon.ResolveIdentity(as)
+	v, err := vl.Record(args[0], path, method, receipt, verdict, by, time.Now())
 	if err != nil {
 		return fmt.Errorf("record verification: %w", err)
 	}
-	if err := emitCanonAttestation(cmd.OutOrStdout(), "verify("+verdictStr+")", args[0], v.By, v.Self); err != nil {
+	if err := emitCanonAttestation(cmd.OutOrStdout(), "verify("+verdictStr+")", args[0], v.By, src, v.Self); err != nil {
 		return err
 	}
 	if v.Receipt == "" && GetOutput() != "json" {
@@ -156,17 +162,17 @@ func runCanonVerify(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func emitCanonAttestation(w io.Writer, kind, entryID string, by canon.Identity, self bool) error {
+func emitCanonAttestation(w io.Writer, kind, entryID string, by canon.Identity, src canon.IdentitySource, self bool) error {
 	if GetOutput() == "json" {
 		return json.NewEncoder(w).Encode(map[string]any{
-			"kind": kind, "entry_id": entryID, "by": by, "self": self,
+			"kind": kind, "entry_id": entryID, "by": by, "source": src, "self": self,
 		})
 	}
 	flag := ""
 	if self {
 		flag = "  [self — does not count toward promotion]"
 	}
-	fmt.Fprintf(w, "recorded %s for %s by %s%s\n", kind, entryID, by.Name, flag)
+	fmt.Fprintf(w, "recorded %s for %s by %s (%s)%s\n", kind, entryID, by.Name, src, flag)
 	return nil
 }
 
