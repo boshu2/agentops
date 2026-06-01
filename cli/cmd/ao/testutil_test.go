@@ -509,7 +509,12 @@ func chdirTemp(t *testing.T) string {
 		t.Fatalf("chdir: %v", err)
 	}
 	t.Cleanup(func() { _ = os.Chdir(prev) })
-	return tmp
+	// Match os.Getwd() canonicalization (macOS /var → /private/var symlinks).
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd after chdir: %v", err)
+	}
+	return cwd
 }
 
 // chdirTo changes to the specified directory, registers a cleanup to restore
