@@ -61,6 +61,12 @@ run_maintenance() {
         if [ "${AGENTOPS_MEMORY_SYNC:-0}" = "1" ]; then
             run_ao_quick 10 memory sync --quiet || true
         fi
+
+        # Sync learnings to team warmind (opt-out via AGENTOPS_WARMIND_SYNC=0)
+        # Copies .agents/learnings/* to .warmind/pool/ for git-tracked team sharing
+        if [ "${AGENTOPS_WARMIND_SYNC:-1}" = "1" ]; then
+            run_ao_quick 10 warmind sync --auto --quiet || true
+        fi
     else
         FORGE_STATUS=1
     fi
