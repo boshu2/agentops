@@ -166,6 +166,36 @@ jobs:
           fi
           echo "ok: stale_suite_hashes=0 (info: policy_mismatch_count=$mismatch)"
 
+  go-lint:
+    needs: [changes]
+    if: needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
+    name: go-lint (required)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: gofmt (fail on unformatted Go)
+        run: |
+          set -euo pipefail
+          unformatted="$(cd cli && gofmt -l .)"
+          if [[ -n "$unformatted" ]]; then
+            echo "FAIL: gofmt found unformatted files (run: cd cli && gofmt -w .):" >&2
+            echo "$unformatted" >&2
+            exit 1
+          fi
+          echo "ok: gofmt clean"
+
+      - name: golangci-lint (pinned v2)
+        run: |
+          set -euo pipefail
+          (cd cli && bash ../scripts/golangci-lint-v2.sh run ./...)
+
   standards-injector-completeness:
     needs: [changes]
     if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
@@ -1323,26 +1353,6 @@ jobs:
           cd cli
           go build -o /tmp/ao-test ./cmd/ao
           echo "✅ ao CLI builds successfully"
-
-      # ag-ykf1: lint + format gate. golangci-lint was previously installed
-      # for the security toolchain but never run against the CLI, and gofmt
-      # was unenforced — letting errcheck/staticcheck/gofmt drift accumulate.
-      # This step makes both blocking.
-      - name: Lint and format gate (gofmt + golangci-lint)
-        run: |
-          echo "=== gofmt ==="
-          cd cli
-          unformatted="$(gofmt -l $(find . -name '*.go' -not -path './embedded/*'))"
-          if [[ -n "$unformatted" ]]; then
-            echo "❌ Unformatted Go files — run: cd cli && gofmt -w <files>"
-            echo "$unformatted"
-            exit 1
-          fi
-          echo "✅ gofmt clean"
-          echo "=== golangci-lint ==="
-          GOBIN=/usr/local/bin go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
-          golangci-lint run ./...
-          echo "✅ golangci-lint clean"
 
       # Micro-epic 9 (C8): content-hash snapshot bracket. Captures the
       # pre-test state of ~/.agents/ and then diffs after the Go test

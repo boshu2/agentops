@@ -116,7 +116,7 @@ one-shot artifacts.
 ### Daemon JobSpec Types
 
 The daemon job shapes above are not free-form: they are typed structs in
-[`cli/internal/daemon/dream_jobs.go`](../../cli/internal/daemon/dream_jobs.go),
+`cli/internal/daemon/dream_jobs.go`,
 all carrying `schema_version` (`DreamJobSpecSchemaVersion = 1`).
 
 | Type | `job_type` | Role |
