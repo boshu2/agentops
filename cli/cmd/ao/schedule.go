@@ -12,6 +12,7 @@ import (
 	"time"
 
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/schedule"
 	"github.com/spf13/cobra"
 )
@@ -156,9 +157,7 @@ func runScheduleListCommand(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	if scheduleListJSON {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(resp)
+		return format.EncodeJSON(cmd.OutOrStdout(), resp)
 	}
 	if len(resp.Schedules) == 0 {
 		fmt.Fprintln(cmd.OutOrStdout(), "no schedules")

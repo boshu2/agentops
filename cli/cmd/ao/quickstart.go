@@ -3,13 +3,13 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/spf13/cobra"
 )
@@ -227,9 +227,7 @@ func finalizeQuickstartFull(cwd, claudePath string, claudeAlreadyExisted bool, r
 
 func outputQuickstartResult(result quickstartResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 	if result.DryRun {
 		fmt.Println("Dry run complete. No files were created.")

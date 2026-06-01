@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/config"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/storage"
@@ -142,9 +143,7 @@ func outputSearchResults(query string, results []searchResult) error {
 		if results == nil {
 			results = []searchResult{}
 		}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(results)
+		return format.EncodeJSON(os.Stdout, results)
 	}
 	displaySearchResults(query, results)
 	return nil

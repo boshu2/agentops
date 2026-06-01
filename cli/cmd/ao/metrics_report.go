@@ -2,12 +2,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -26,9 +26,7 @@ func runMetricsReport(cmd *cobra.Command, args []string) error {
 
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(metrics)
+		return format.EncodeJSON(os.Stdout, metrics)
 
 	case "yaml":
 		enc := yaml.NewEncoder(os.Stdout)

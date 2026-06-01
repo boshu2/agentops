@@ -4,7 +4,6 @@ package main
 import (
 	"bufio"
 	"cmp"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -174,9 +174,7 @@ func runIndex(cmd *cobra.Command, args []string) error {
 	results, stale := processAllIndexDirs(cwd, dirs, checkMode, quiet)
 
 	if jsonMode {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(results); err != nil {
+		if err := format.EncodeJSON(os.Stdout, results); err != nil {
 			return fmt.Errorf("encode index results: %w", err)
 		}
 	}

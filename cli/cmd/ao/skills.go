@@ -2,13 +2,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/skillshealth"
 )
 
@@ -64,9 +64,7 @@ func runSkillsCheck(cmd *cobra.Command, args []string) error {
 
 	out := cmd.OutOrStdout()
 	if skillsCheckJSON {
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(report); err != nil {
+		if err := format.EncodeJSON(out, report); err != nil {
 			return err
 		}
 	} else {

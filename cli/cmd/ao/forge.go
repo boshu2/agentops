@@ -17,6 +17,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/config"
 	"github.com/boshu2/agentops/cli/internal/forge"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/formatter"
 	"github.com/boshu2/agentops/cli/internal/llm"
 	"github.com/boshu2/agentops/cli/internal/parser"
@@ -274,9 +275,7 @@ func writeForgeReviewResult(w io.Writer, result *llm.ReviewResult) error {
 		for _, err := range result.Errors {
 			out.ErrorMessages = append(out.ErrorMessages, err.Error())
 		}
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(out)
+		return format.EncodeJSON(w, out)
 	}
 
 	fmt.Fprintf(w, "Reviewed: %d, Skipped: %d, Errors: %d\n",
@@ -286,9 +285,7 @@ func writeForgeReviewResult(w io.Writer, result *llm.ReviewResult) error {
 
 func writeForgeReviewEvalReport(w io.Writer, report *llm.ReviewEvalReport) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(report)
+		return format.EncodeJSON(w, report)
 	}
 
 	fmt.Fprintln(w, "AO Forge Review Eval")

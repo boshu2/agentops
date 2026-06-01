@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/resolver"
@@ -86,9 +86,7 @@ func printFeedbackJSON(learningID, learningPath, feedbackType string, oldUtility
 		"alpha":         alpha,
 		"updated_at":    time.Now().Format(time.RFC3339),
 	}
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-	return enc.Encode(result)
+	return format.EncodeJSON(os.Stdout, result)
 }
 
 func runFeedback(cmd *cobra.Command, args []string) error {

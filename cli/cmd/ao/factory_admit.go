@@ -10,6 +10,7 @@ import (
 	"time"
 
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -137,9 +138,7 @@ func submitFactoryAdmissionJob(ctx context.Context, baseURL, token string, jobTy
 
 func renderFactoryAdmitResponse(cmd *cobra.Command, response submitDaemonJobResponse) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(response)
+		return format.EncodeJSON(cmd.OutOrStdout(), response)
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", response.JobID, response.JobType, response.Status)
 	return nil

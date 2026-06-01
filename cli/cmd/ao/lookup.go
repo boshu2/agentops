@@ -2,13 +2,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/config"
@@ -417,12 +417,7 @@ func outputResults(cwd string, learnings []learning, patterns []pattern, finding
 
 // outputJSON marshals any value to indented JSON and prints it.
 func outputJSON(v any) error {
-	data, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshal json: %w", err)
-	}
-	fmt.Println(string(data))
-	return nil
+	return format.EncodeJSON(os.Stdout, v)
 }
 
 // relPath returns a relative path from cwd, or the original if it fails.

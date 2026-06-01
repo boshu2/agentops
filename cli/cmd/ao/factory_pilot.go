@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -349,9 +349,7 @@ func factoryPilotExcludedLanes(policy daemonpkg.RoutingPolicy) []factoryPilotExc
 
 func outputFactoryPilotResult(cmd *cobra.Command, result factoryPilotResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(cmd.OutOrStdout(), result)
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "Factory Pilot Plan\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "==================\n")

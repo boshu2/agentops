@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -149,9 +150,7 @@ func printRegistryJSON(cmd *cobra.Command, reg *registryFile) error {
 	default:
 		output = reg
 	}
-	enc := json.NewEncoder(cmd.OutOrStdout())
-	enc.SetIndent("", "  ")
-	return enc.Encode(output)
+	return format.EncodeJSON(cmd.OutOrStdout(), output)
 }
 
 func printRegistryTable(cmd *cobra.Command, reg *registryFile) error {

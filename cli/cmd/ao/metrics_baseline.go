@@ -9,6 +9,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
 )
@@ -40,9 +41,7 @@ func runMetricsBaseline(cmd *cobra.Command, args []string) error {
 	// Output
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(metrics)
+		return format.EncodeJSON(os.Stdout, metrics)
 
 	case "yaml":
 		enc := yaml.NewEncoder(os.Stdout)

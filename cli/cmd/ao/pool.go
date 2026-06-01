@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/formatter"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/types"
@@ -99,9 +99,7 @@ Examples:
 func outputPoolList(entries []pool.PoolEntry, offset, limit, total int) error {
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(entries)
+		return format.EncodeJSON(os.Stdout, entries)
 
 	case "yaml":
 		enc := yaml.NewEncoder(os.Stdout)
@@ -198,9 +196,7 @@ Examples:
 func outputPoolShow(entry *pool.PoolEntry) error {
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(entry)
+		return format.EncodeJSON(os.Stdout, entry)
 
 	case "yaml":
 		enc := yaml.NewEncoder(os.Stdout)
@@ -455,9 +451,7 @@ type poolAutoPromotePromoteResult struct {
 func outputPoolAutoPromoteResult(result poolAutoPromotePromoteResult) error {
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	default:
 		if GetDryRun() {
 			fmt.Printf("[dry-run] Would promote %d candidate(s) (threshold=%s)\n", result.Promoted, result.Threshold)

@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/paths"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
@@ -127,9 +128,7 @@ func checkOrApplyMaturity(learningPath string) (*ratchet.MaturityTransitionResul
 
 func outputSingleMaturityResult(result *ratchet.MaturityTransitionResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 	displayMaturityResult(result, maturityApply)
 	return nil
@@ -303,9 +302,7 @@ func displayMaturityDistribution(dist *ratchet.MaturityDistribution) {
 func displayPendingTransitions(results []*ratchet.MaturityTransitionResult) error {
 	fmt.Printf("=== Pending Transitions (%d) ===\n", len(results))
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(results)
+		return format.EncodeJSON(os.Stdout, results)
 	}
 	for _, r := range results {
 		displayMaturityResult(r, false)
@@ -754,9 +751,7 @@ func reportCurationCandidates(files []string, normalized int, candidates []curat
 	}
 
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return false, enc.Encode(candidates)
+		return false, format.EncodeJSON(os.Stdout, candidates)
 	}
 
 	fmt.Printf("Candidates (low-signal body or uncited for %d days):\n", maturityUncitedDays)
@@ -1045,9 +1040,7 @@ func reportEvictionCandidates(files []string, candidates []evictionCandidate) (b
 	}
 
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return false, enc.Encode(candidates)
+		return false, format.EncodeJSON(os.Stdout, candidates)
 	}
 
 	fmt.Println("Candidates (utility < 0.3, confidence < 0.3, not cited in 90d, not established):")

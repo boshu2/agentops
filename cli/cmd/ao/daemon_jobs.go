@@ -15,6 +15,7 @@ import (
 	"time"
 
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -138,9 +139,7 @@ func runAgentOpsDaemonJobsListCommand(cmd *cobra.Command, args []string) error {
 	}
 	response := daemonJobsListResponse{Jobs: status.Queue.Jobs, LastEventID: status.Queue.LastEventID}
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(response)
+		return format.EncodeJSON(cmd.OutOrStdout(), response)
 	}
 	for _, job := range response.Jobs {
 		fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\t%s\n", job.JobID, job.JobType, job.Status, job.UpdatedAt)
@@ -306,9 +305,7 @@ func runAgentOpsDaemonJobsSubmitCommand(cmd *cobra.Command, args []string) error
 		return err
 	}
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(response)
+		return format.EncodeJSON(cmd.OutOrStdout(), response)
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", response.JobID, response.JobType, response.Status)
 	return nil
@@ -365,9 +362,7 @@ func runAgentOpsDaemonJobsCancelCommand(cmd *cobra.Command, args []string) error
 		return err
 	}
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(response)
+		return format.EncodeJSON(cmd.OutOrStdout(), response)
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\n", response.Job.JobID, response.Job.Status, response.Outcome)
 	return nil
@@ -383,9 +378,7 @@ func runAgentOpsDaemonEventsTailCommand(cmd *cobra.Command, args []string) error
 		events.LastEventID = events.Events[len(events.Events)-1].EventID
 	}
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(events)
+		return format.EncodeJSON(cmd.OutOrStdout(), events)
 	}
 	for _, event := range events.Events {
 		fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\t%s\t%s\n", event.EventID, event.EventType, event.JobID, event.OccurredAt)
@@ -423,9 +416,7 @@ func loadDaemonEventsForCommand(cmd *cobra.Command) (daemonpkg.ReadOnlyEventsRes
 
 func renderDaemonJob(cmd *cobra.Command, job daemonpkg.QueueJobState) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(job)
+		return format.EncodeJSON(cmd.OutOrStdout(), job)
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "job: %s\n", job.JobID)
 	fmt.Fprintf(cmd.OutOrStdout(), "type: %s\n", job.JobType)

@@ -3,7 +3,6 @@ package goals
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
@@ -14,6 +13,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/paths"
 	"github.com/boshu2/agentops/cli/internal/shellutil"
 )
@@ -88,9 +88,7 @@ func RunHistory(opts HistoryOptions) error {
 	}
 
 	if opts.JSON {
-		enc := json.NewEncoder(opts.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(entries)
+		return format.EncodeJSON(opts.Stdout, entries)
 	}
 
 	fmt.Fprintf(opts.Stdout, "%-20s  %4s  %5s  %7s  %s\n", "TIMESTAMP", "PASS", "TOTAL", "SCORE", "GIT SHA")
@@ -182,9 +180,7 @@ func RunMeasure(opts MeasureOptions) error {
 		if gf.Format != "md" {
 			return fmt.Errorf("--directives requires GOALS.md format. Run 'ao goals migrate --to-md' to convert")
 		}
-		enc := json.NewEncoder(opts.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(gf.Directives)
+		return format.EncodeJSON(opts.Stdout, gf.Directives)
 	}
 
 	if errs := ValidateGoals(gf); len(errs) > 0 {
@@ -208,9 +204,7 @@ func RunMeasure(opts MeasureOptions) error {
 	}
 
 	if opts.JSON {
-		enc := json.NewEncoder(opts.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(snap)
+		return format.EncodeJSON(opts.Stdout, snap)
 	}
 
 	fmt.Fprintf(opts.Stdout, "%-30s  %-8s  %8s  %6s\n", "GOAL", "RESULT", "DURATION", "WEIGHT")
@@ -337,9 +331,7 @@ func goalScriptPath(check string) (string, bool) {
 // OutputValidateResult formats and writes a ValidateResult.
 func OutputValidateResult(w io.Writer, asJSON bool, result ValidateResult) error {
 	if asJSON {
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(w, result)
 	}
 
 	if result.Valid {
@@ -397,9 +389,7 @@ func RunExport(opts ExportOptions) error {
 		}
 	}
 
-	enc := json.NewEncoder(opts.Stdout)
-	enc.SetIndent("", "  ")
-	return enc.Encode(snap)
+	return format.EncodeJSON(opts.Stdout, snap)
 }
 
 // MigrateOptions configures the goals migrate command.
@@ -550,9 +540,7 @@ func RunMeta(opts MetaOptions) error {
 	snap := Measure(metaGF, opts.Timeout)
 
 	if opts.JSON {
-		enc := json.NewEncoder(opts.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(snap)
+		return format.EncodeJSON(opts.Stdout, snap)
 	}
 
 	fmt.Fprintf(opts.Stdout, "Meta-Goals: %d total\n\n", len(metaGoals))
@@ -617,9 +605,7 @@ func RunDrift(opts DriftOptions) error {
 	drifts := ComputeDrift(latest, current)
 
 	if opts.JSON {
-		enc := json.NewEncoder(opts.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(drifts)
+		return format.EncodeJSON(opts.Stdout, drifts)
 	}
 
 	regressions := 0
@@ -695,9 +681,7 @@ func RunSteerAdd(opts SteerAddOptions) error {
 	gf.Directives = append(gf.Directives, newDirective)
 
 	if opts.JSON {
-		enc := json.NewEncoder(opts.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(newDirective)
+		return format.EncodeJSON(opts.Stdout, newDirective)
 	}
 	if opts.DryRun {
 		fmt.Fprintf(opts.Stdout, "Would add directive #%d: %s\n", newDirective.Number, newDirective.Title)
@@ -747,9 +731,7 @@ func RunSteerRemove(opts SteerRemoveOptions) error {
 	gf.Directives = remaining
 
 	if opts.JSON {
-		enc := json.NewEncoder(opts.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(gf.Directives)
+		return format.EncodeJSON(opts.Stdout, gf.Directives)
 	}
 	if opts.DryRun {
 		fmt.Fprintf(opts.Stdout, "Would remove directive #%d and renumber %d remaining\n", opts.Number, len(remaining))
@@ -818,9 +800,7 @@ func RunSteerPrioritize(opts SteerPrioritizeOptions) error {
 	gf.Directives = result
 
 	if opts.JSON {
-		enc := json.NewEncoder(opts.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(gf.Directives)
+		return format.EncodeJSON(opts.Stdout, gf.Directives)
 	}
 	if opts.DryRun {
 		fmt.Fprintf(opts.Stdout, "Would move directive %q to position %d\n", moving.Title, opts.NewPosition)
@@ -1189,9 +1169,7 @@ func RunPrune(opts PruneOptions) error {
 
 	if opts.DryRun || len(stale) == 0 {
 		if opts.JSON {
-			enc := json.NewEncoder(opts.Stdout)
-			enc.SetIndent("", "  ")
-			return enc.Encode(result)
+			return format.EncodeJSON(opts.Stdout, result)
 		}
 		if len(stale) == 0 {
 			fmt.Fprintln(opts.Stdout, "No stale goals found.")
@@ -1229,9 +1207,7 @@ func RunPrune(opts PruneOptions) error {
 	}
 
 	if opts.JSON {
-		enc := json.NewEncoder(opts.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(opts.Stdout, result)
 	}
 
 	fmt.Fprintf(opts.Stdout, "Pruned %d stale goal(s) from %s\n", result.Removed, resolvedPath)
@@ -1294,9 +1270,7 @@ func RunInit(opts InitOptions) error {
 	}
 
 	if opts.JSON {
-		enc := json.NewEncoder(opts.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(gf)
+		return format.EncodeJSON(opts.Stdout, gf)
 	}
 
 	content := RenderGoalsMD(gf)

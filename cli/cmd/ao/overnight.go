@@ -19,6 +19,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/boshu2/agentops/cli/internal/config"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	ovn "github.com/boshu2/agentops/cli/internal/overnight"
 	"github.com/boshu2/agentops/cli/internal/pool"
@@ -1140,9 +1141,7 @@ func outputOvernightSummary(summary overnightSummary) error {
 	summary.NextAction = deriveDreamNextAction(summary)
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(summary)
+		return format.EncodeJSON(os.Stdout, summary)
 	case "yaml":
 		enc := yaml.NewEncoder(os.Stdout)
 		if err := enc.Encode(summary); err != nil {

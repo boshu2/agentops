@@ -2,13 +2,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/bridge"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -125,9 +125,7 @@ func performFactoryStart(cwd, goal string, limit int, noMaintenance bool) (facto
 
 func outputFactoryStartResult(result factoryStartResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 
 	fmt.Println("Software Factory Start")

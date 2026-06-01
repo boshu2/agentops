@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
@@ -85,9 +86,7 @@ func runSearchEval(k int, asJSON bool, repoRoot, manifestPath, backend, compareB
 			return err
 		}
 		if asJSON {
-			enc := json.NewEncoder(os.Stdout)
-			enc.SetIndent("", "  ")
-			return enc.Encode(report)
+			return format.EncodeJSON(os.Stdout, report)
 		}
 		printSearchEvalComparisonReport(report)
 		return nil
@@ -99,9 +98,7 @@ func runSearchEval(k int, asJSON bool, repoRoot, manifestPath, backend, compareB
 	}
 
 	if asJSON {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(report)
+		return format.EncodeJSON(os.Stdout, report)
 	}
 
 	fmt.Println("AO Search Retrieval Eval")

@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	aocontext "github.com/boshu2/agentops/cli/internal/context"
+	"github.com/boshu2/agentops/cli/internal/format"
 )
 
 var contextExplainFlags struct {
@@ -69,9 +69,7 @@ func runContextExplain(cmd *cobra.Command, args []string) error {
 	result := buildContextExplainResult(cwd, repo, query, phase, bundle)
 
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(cmd.OutOrStdout(), result)
 	}
 
 	printContextExplainHuman(cmd, result)

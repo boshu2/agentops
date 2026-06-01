@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/bench"
+	"github.com/boshu2/agentops/cli/internal/format"
 )
 
 var (
@@ -554,9 +555,7 @@ func runLiveBench(k int, asJSON, global bool, corpusDir string) error {
 	}
 
 	if asJSON {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(report)
+		return format.EncodeJSON(os.Stdout, report)
 	}
 
 	fmt.Printf("Retrieval Quality Report (%s)\n", modeLabel)
@@ -646,9 +645,7 @@ detection.`,
 		}
 
 		if benchJSON {
-			enc := json.NewEncoder(os.Stdout)
-			enc.SetIndent("", "  ")
-			return enc.Encode(report)
+			return format.EncodeJSON(os.Stdout, report)
 		}
 
 		// Human-readable output

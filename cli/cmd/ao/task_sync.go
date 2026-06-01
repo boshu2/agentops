@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/types"
@@ -196,9 +197,7 @@ func printTaskSyncSummary(transcriptPath string, tasks []TaskEvent, promoted int
 			"tasks":      tasks,
 			"promoted":   promoted,
 		}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 
 	fmt.Printf("Task Sync Complete\n")
@@ -678,9 +677,7 @@ func outputTaskStatusJSON(tasks []TaskEvent, statusCounts map[string]int, maturi
 		"with_learnings":  withLearnings,
 		"tasks":           tasks,
 	}
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-	return enc.Encode(result)
+	return format.EncodeJSON(os.Stdout, result)
 }
 
 // printTaskStatusText renders task status as a human-readable table.

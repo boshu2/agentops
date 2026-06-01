@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/bridge"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/repo"
@@ -1172,9 +1173,7 @@ func collectCodexCitationHealth(cwd string, days int) codexCitationHealth {
 
 func outputCodexStartResult(result codexStartResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 
 	fmt.Println("Codex Start")
@@ -1203,9 +1202,7 @@ func outputCodexStartResult(result codexStartResult) error {
 
 func outputCodexEnsureStartResult(result codexEnsureStartResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 
 	fmt.Println("Codex Ensure Start")
@@ -1232,9 +1229,7 @@ func outputCodexEnsureStartResult(result codexEnsureStartResult) error {
 
 func outputCodexStopResult(result codexStopResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 
 	fmt.Println("Codex Stop")
@@ -1259,9 +1254,7 @@ func outputCodexStopResult(result codexStopResult) error {
 
 func outputCodexEnsureStopResult(result codexEnsureStopResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 
 	fmt.Println("Codex Ensure Stop")
@@ -1297,9 +1290,7 @@ func outputCodexEnsureStopResult(result codexEnsureStopResult) error {
 
 func outputCodexStatusResult(result codexStatusResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 
 	fmt.Println("Codex Lifecycle Status")

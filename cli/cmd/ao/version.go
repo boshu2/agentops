@@ -2,10 +2,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"runtime"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -32,9 +32,7 @@ func init() {
 func runVersion(cmd *cobra.Command, args []string) error {
 	info := currentVersionInfo()
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(info)
+		return format.EncodeJSON(cmd.OutOrStdout(), info)
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "ao version %s\n", info.Version)
 	fmt.Fprintf(cmd.OutOrStdout(), "  Go version: %s\n", info.GoVersion)

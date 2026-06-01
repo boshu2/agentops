@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/paths"
 )
 
@@ -149,9 +150,7 @@ func WriteBudget(repoRoot string, state WarnOnlyBudgetState) error {
 	tmpName := tmp.Name()
 	// Best-effort cleanup if we leave before the rename.
 	defer func() { _ = os.Remove(tmpName) }()
-	enc := json.NewEncoder(tmp)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(state); err != nil {
+	if err := format.EncodeJSON(tmp, state); err != nil {
 		_ = tmp.Close()
 		return fmt.Errorf("warn-only budget: encode: %w", err)
 	}

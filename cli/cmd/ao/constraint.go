@@ -2,11 +2,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/formatter"
 	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/spf13/cobra"
@@ -99,9 +99,7 @@ var constraintActivateCmd = &cobra.Command{
 			return err
 		}
 		if GetOutput() == "json" {
-			enc := json.NewEncoder(os.Stdout)
-			enc.SetIndent("", "  ")
-			return enc.Encode(activated)
+			return format.EncodeJSON(os.Stdout, activated)
 		}
 		fmt.Printf("Constraint %q activated\n", id)
 		return nil
@@ -137,9 +135,7 @@ var constraintRetireCmd = &cobra.Command{
 			return err
 		}
 		if GetOutput() == "json" {
-			enc := json.NewEncoder(os.Stdout)
-			enc.SetIndent("", "  ")
-			return enc.Encode(retired)
+			return format.EncodeJSON(os.Stdout, retired)
 		}
 		fmt.Printf("Constraint %q retired\n", id)
 		return nil
@@ -161,9 +157,7 @@ var constraintReviewCmd = &cobra.Command{
 		stale := search.FilterStaleConstraints(idx.Constraints, cutoff)
 
 		if GetOutput() == "json" {
-			enc := json.NewEncoder(os.Stdout)
-			enc.SetIndent("", "  ")
-			return enc.Encode(stale)
+			return format.EncodeJSON(os.Stdout, stale)
 		}
 
 		if len(stale) == 0 {
@@ -189,9 +183,7 @@ var constraintListCmd = &cobra.Command{
 		}
 
 		if GetOutput() == "json" {
-			enc := json.NewEncoder(os.Stdout)
-			enc.SetIndent("", "  ")
-			return enc.Encode(idx.Constraints)
+			return format.EncodeJSON(os.Stdout, idx.Constraints)
 		}
 
 		if len(idx.Constraints) == 0 {

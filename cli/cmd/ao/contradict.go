@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -254,9 +254,7 @@ func writeContradictHuman(w io.Writer, result ContradictResult) {
 }
 
 func writeContradictJSON(w io.Writer, result ContradictResult) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	return enc.Encode(result)
+	return format.EncodeJSON(w, result)
 }
 
 // dirExists returns true if the path exists and is a directory.

@@ -3,7 +3,6 @@ package main
 
 import (
 	"cmp"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
@@ -90,9 +90,7 @@ func runMetricsCiteReport(cmd *cobra.Command, args []string) error {
 	if len(allCitations) == 0 {
 		report := buildCiteReport(baseDir, nil, nil, days, periodStart, now)
 		if jsonOutput {
-			enc := json.NewEncoder(cmd.OutOrStdout())
-			enc.SetIndent("", "  ")
-			return enc.Encode(report)
+			return format.EncodeJSON(cmd.OutOrStdout(), report)
 		}
 		fmt.Fprintln(cmd.OutOrStdout(), "No citation data found.")
 		return nil
@@ -104,9 +102,7 @@ func runMetricsCiteReport(cmd *cobra.Command, args []string) error {
 	report := buildCiteReport(baseDir, filtered, allCitations, days, periodStart, now)
 
 	if jsonOutput {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(report)
+		return format.EncodeJSON(cmd.OutOrStdout(), report)
 	}
 
 	printCiteReport(cmd.OutOrStdout(), report)

@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -16,6 +15,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/boshu2/agentops/cli/internal/config"
+	"github.com/boshu2/agentops/cli/internal/format"
 )
 
 var (
@@ -626,9 +626,7 @@ func deriveDreamSetupNextAction(summary dreamSetupSummary) string {
 func outputDreamSetupSummary(summary dreamSetupSummary) error {
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(summary)
+		return format.EncodeJSON(os.Stdout, summary)
 	case "yaml":
 		enc := yaml.NewEncoder(os.Stdout)
 		if err := enc.Encode(summary); err != nil {

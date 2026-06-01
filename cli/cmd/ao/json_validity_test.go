@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/goals"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
@@ -173,9 +174,7 @@ func TestJSONValidity_GoalsMeasure(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(snap); err != nil {
+		if err := format.EncodeJSON(os.Stdout, snap); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -199,9 +198,7 @@ func TestJSONValidity_GoalsExport(t *testing.T) {
 	snap := goals.Measure(gf, 10*time.Second)
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(snap); err != nil {
+		if err := format.EncodeJSON(os.Stdout, snap); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -223,9 +220,7 @@ func TestJSONValidity_GoalsMeta(t *testing.T) {
 	snap := goals.Measure(gf, 5*time.Second)
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(snap); err != nil {
+		if err := format.EncodeJSON(os.Stdout, snap); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -243,9 +238,7 @@ func TestJSONValidity_GoalsHistory(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(entries); err != nil {
+		if err := format.EncodeJSON(os.Stdout, entries); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -263,9 +256,7 @@ func TestJSONValidity_GoalsDrift(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(drifts); err != nil {
+		if err := format.EncodeJSON(os.Stdout, drifts); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -283,9 +274,7 @@ func TestJSONValidity_GoalsPrune(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
+		if err := format.EncodeJSON(os.Stdout, result); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -310,9 +299,7 @@ func TestJSONValidity_GoalsInit(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(gf); err != nil {
+		if err := format.EncodeJSON(os.Stdout, gf); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -331,9 +318,7 @@ func TestJSONValidity_GoalsSteerAdd(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(d); err != nil {
+		if err := format.EncodeJSON(os.Stdout, d); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -349,9 +334,7 @@ func TestJSONValidity_GoalsMeasureDirectives(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(directives); err != nil {
+		if err := format.EncodeJSON(os.Stdout, directives); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -397,9 +380,7 @@ func TestJSONValidity_RatchetNext(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
+		if err := format.EncodeJSON(os.Stdout, result); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -415,9 +396,7 @@ func TestJSONValidity_RatchetNextComplete(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
+		if err := format.EncodeJSON(os.Stdout, result); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -440,9 +419,7 @@ func TestJSONValidity_PoolListEmpty(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(entries); err != nil {
+		if err := format.EncodeJSON(os.Stdout, entries); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -461,9 +438,7 @@ func TestJSONValidity_PoolListWithEntries(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(entries); err != nil {
+		if err := format.EncodeJSON(os.Stdout, entries); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -482,9 +457,7 @@ func TestJSONValidity_PoolShow(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(entry); err != nil {
+		if err := format.EncodeJSON(os.Stdout, entry); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -505,9 +478,7 @@ func TestJSONValidity_PoolAutoPromoteResult(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
+		if err := format.EncodeJSON(os.Stdout, result); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -530,9 +501,7 @@ func TestJSONValidity_GatePending(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(entries); err != nil {
+		if err := format.EncodeJSON(os.Stdout, entries); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -561,9 +530,7 @@ func TestJSONValidity_FlywheelStatus(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(payload); err != nil {
+		if err := format.EncodeJSON(os.Stdout, payload); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -586,9 +553,7 @@ func TestJSONValidity_FlywheelNudge(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
+		if err := format.EncodeJSON(os.Stdout, result); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -614,9 +579,7 @@ func TestJSONValidity_FlywheelCloseLoop(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
+		if err := format.EncodeJSON(os.Stdout, result); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -822,9 +785,7 @@ func TestJSONValidity_SessionClose(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
+		if err := format.EncodeJSON(os.Stdout, result); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -869,9 +830,7 @@ func TestJSONValidity_Index(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(results); err != nil {
+		if err := format.EncodeJSON(os.Stdout, results); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -895,9 +854,7 @@ func TestJSONValidity_RPIVerify(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(payload); err != nil {
+		if err := format.EncodeJSON(os.Stdout, payload); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -919,9 +876,7 @@ func TestJSONValidity_RPIVerifyFail(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(payload); err != nil {
+		if err := format.EncodeJSON(os.Stdout, payload); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -950,9 +905,7 @@ func TestJSONValidity_RatchetTrace(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(entries); err != nil {
+		if err := format.EncodeJSON(os.Stdout, entries); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -979,9 +932,7 @@ func TestJSONValidity_TemperStatus(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
+		if err := format.EncodeJSON(os.Stdout, result); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -1015,9 +966,7 @@ func TestJSONValidity_MetricsCiteReport(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(report); err != nil {
+		if err := format.EncodeJSON(os.Stdout, report); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -1045,9 +994,7 @@ func TestJSONValidity_StoreSearchIndex(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(entries); err != nil {
+		if err := format.EncodeJSON(os.Stdout, entries); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -1068,9 +1015,7 @@ func TestJSONValidity_StoreStats(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(stats); err != nil {
+		if err := format.EncodeJSON(os.Stdout, stats); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -1094,9 +1039,7 @@ func TestJSONValidity_PoolIngest(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
+		if err := format.EncodeJSON(os.Stdout, result); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -1120,9 +1063,7 @@ func TestJSONValidity_PoolMigrateLegacy(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
+		if err := format.EncodeJSON(os.Stdout, result); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -1148,9 +1089,7 @@ func TestJSONValidity_SessionOutcome(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(outcome); err != nil {
+		if err := format.EncodeJSON(os.Stdout, outcome); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -1175,9 +1114,7 @@ func TestJSONValidity_TaskSync(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(events); err != nil {
+		if err := format.EncodeJSON(os.Stdout, events); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -1202,9 +1139,7 @@ func TestJSONValidity_BatchPromote(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
+		if err := format.EncodeJSON(os.Stdout, result); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -1231,9 +1166,7 @@ func TestJSONValidity_ContextStatus(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(payload); err != nil {
+		if err := format.EncodeJSON(os.Stdout, payload); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -1265,9 +1198,7 @@ func TestJSONValidity_MaturityScan(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(results); err != nil {
+		if err := format.EncodeJSON(os.Stdout, results); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})
@@ -1294,9 +1225,7 @@ func TestJSONValidity_Feedback(t *testing.T) {
 	}
 
 	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
+		if err := format.EncodeJSON(os.Stdout, result); err != nil {
 			t.Fatalf("encode: %v", err)
 		}
 	})

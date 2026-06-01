@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/pool"
 )
 
@@ -194,9 +195,7 @@ func extractPromotedArtifactBody(path string) (string, bool) {
 // writePoolReindexResult prints the result either as JSON or human-readable.
 func writePoolReindexResult(w io.Writer, res poolReindexResult, asJSON bool) error {
 	if asJSON {
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(res)
+		return format.EncodeJSON(w, res)
 	}
 	mode := "live"
 	if res.DryRun {

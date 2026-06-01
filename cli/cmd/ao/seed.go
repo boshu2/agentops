@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/fs"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/embedded"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/goals"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/spf13/cobra"
@@ -153,9 +153,7 @@ func executeSeedSteps(absPath, template string, result *seedResult) error {
 
 func outputSeedResult(result seedResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 
 	if GetDryRun() {

@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/storage"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
@@ -88,9 +88,7 @@ func runBadgeWithOptions(opts badgeOptions) error {
 	sessionsMined := countSessions(opts.Cwd)
 
 	if opts.Output == "json" {
-		enc := json.NewEncoder(opts.Writer)
-		enc.SetIndent("", "  ")
-		return enc.Encode(buildBadgeResult(sessionsMined, metrics))
+		return format.EncodeJSON(opts.Writer, buildBadgeResult(sessionsMined, metrics))
 	}
 
 	// Draw the badge

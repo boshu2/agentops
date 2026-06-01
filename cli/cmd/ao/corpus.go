@@ -2,13 +2,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/corpus"
+	"github.com/boshu2/agentops/cli/internal/format"
 )
 
 var corpusFitnessJSON bool
@@ -52,9 +52,7 @@ func runCorpusFitness(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("corpus fitness: %w", err)
 	}
 	if corpusFitnessJSON {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(struct {
+		return format.EncodeJSON(os.Stdout, struct {
 			Fitness  *corpus.FitnessVector `json:"fitness"`
 			Degraded []string              `json:"degraded,omitempty"`
 		}{vec, degraded})

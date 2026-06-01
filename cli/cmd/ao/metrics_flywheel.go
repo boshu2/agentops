@@ -2,13 +2,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
 )
@@ -129,9 +129,7 @@ func runFlywheelCompare(cmd *cobra.Command, args []string) error {
 	w := cmd.OutOrStdout()
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(comp)
+		return format.EncodeJSON(w, comp)
 	default:
 		printNamespaceComparison(w, comp)
 	}
@@ -222,9 +220,7 @@ func runFlywheelStatus(cmd *cobra.Command, args []string) error {
 	w := cmd.OutOrStdout()
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(map[string]any{
+		return format.EncodeJSON(w, map[string]any{
 			"metric_namespace":            metricNamespace,
 			"status":                      metrics.HealthStatus(),
 			"delta":                       metrics.Delta,

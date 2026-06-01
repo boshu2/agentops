@@ -2,13 +2,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/provenance"
 	"github.com/boshu2/agentops/cli/internal/storage"
 )
@@ -47,9 +47,7 @@ func traceOneArtifact(graph *provenance.Graph, artifactPath string) error {
 	}
 
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 
 	if len(result.Chain) == 0 {

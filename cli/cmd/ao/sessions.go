@@ -2,13 +2,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -180,9 +180,7 @@ func resolveSessionSourcePath(repoRoot, source string) string {
 
 func writeSessionsPruneResult(w io.Writer, result sessionsPruneOrphansResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(w, result)
 	}
 	action := "Deleted"
 	count := result.Deleted

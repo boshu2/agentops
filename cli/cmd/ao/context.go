@@ -16,6 +16,7 @@ import (
 	"time"
 
 	contextbudget "github.com/boshu2/agentops/cli/internal/context"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -182,9 +183,7 @@ func runContextStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(statuses)
+		return format.EncodeJSON(os.Stdout, statuses)
 	}
 
 	if len(statuses) == 0 {
@@ -260,9 +259,7 @@ func persistGuardState(cwd string, status contextSessionStatus) error {
 
 func outputGuardResult(result contextGuardResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 	fmt.Printf("Session: %s\n", result.Session.SessionID)
 	fmt.Printf("Status: %s (%.1f%%)\n", result.Session.Status, result.Session.UsagePercent*100)
