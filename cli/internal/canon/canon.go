@@ -20,6 +20,11 @@
 // An attestation made by the entry's own author never counts toward promotion.
 // This generalizes the self-citation guard to every promotion signal: the
 // factory may not grade its own homework.
+//
+// Lineage: adapted from the warmind prototype by Douglas J. Dan (PR #671). The
+// team-knowledge-sharing pipeline, citation-gated promotion, and the
+// self-citation guard originate there; canon re-aims promotion to be earned by
+// independent verification and folds retrieval into the existing inject path.
 package canon
 
 import (
