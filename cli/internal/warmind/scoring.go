@@ -290,14 +290,14 @@ func jaccardSimilarity(a, b map[string]bool) float64 {
 // hasSpecificValues checks for specific numbers, configs, etc.
 func hasSpecificValues(content string) bool {
 	patterns := []*regexp.Regexp{
-		regexp.MustCompile(`\d+\.\d+`),                 // Version numbers
-		regexp.MustCompile(`\d{2,}`),                   // Numbers with 2+ digits
-		regexp.MustCompile(`[A-Z_]{3,}=`),              // Environment variables
-		regexp.MustCompile(`"[^"]+": `),                // JSON keys
-		regexp.MustCompile(`\w+:\s*\d+`),               // Config values
-		regexp.MustCompile(`--\w+`),                    // CLI flags
-		regexp.MustCompile(`[a-z]+_[a-z]+`),            // Snake_case identifiers
-		regexp.MustCompile(`[a-z]+[A-Z][a-z]+`),        // camelCase identifiers
+		regexp.MustCompile(`\d+\.\d+`),          // Version numbers
+		regexp.MustCompile(`\d{2,}`),            // Numbers with 2+ digits
+		regexp.MustCompile(`[A-Z_]{3,}=`),       // Environment variables
+		regexp.MustCompile(`"[^"]+": `),         // JSON keys
+		regexp.MustCompile(`\w+:\s*\d+`),        // Config values
+		regexp.MustCompile(`--\w+`),             // CLI flags
+		regexp.MustCompile(`[a-z]+_[a-z]+`),     // Snake_case identifiers
+		regexp.MustCompile(`[a-z]+[A-Z][a-z]+`), // camelCase identifiers
 	}
 
 	for _, p := range patterns {

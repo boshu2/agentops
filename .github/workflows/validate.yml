@@ -1324,6 +1324,26 @@ jobs:
           go build -o /tmp/ao-test ./cmd/ao
           echo "✅ ao CLI builds successfully"
 
+      # ag-ykf1: lint + format gate. golangci-lint was previously installed
+      # for the security toolchain but never run against the CLI, and gofmt
+      # was unenforced — letting errcheck/staticcheck/gofmt drift accumulate.
+      # This step makes both blocking.
+      - name: Lint and format gate (gofmt + golangci-lint)
+        run: |
+          echo "=== gofmt ==="
+          cd cli
+          unformatted="$(gofmt -l $(find . -name '*.go' -not -path './embedded/*'))"
+          if [[ -n "$unformatted" ]]; then
+            echo "❌ Unformatted Go files — run: cd cli && gofmt -w <files>"
+            echo "$unformatted"
+            exit 1
+          fi
+          echo "✅ gofmt clean"
+          echo "=== golangci-lint ==="
+          GOBIN=/usr/local/bin go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.11.4
+          golangci-lint run ./...
+          echo "✅ golangci-lint clean"
+
       # Micro-epic 9 (C8): content-hash snapshot bracket. Captures the
       # pre-test state of ~/.agents/ and then diffs after the Go test
       # phase, catching any test that accidentally mutates the global
