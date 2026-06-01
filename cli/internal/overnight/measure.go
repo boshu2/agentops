@@ -172,7 +172,12 @@ func EvaluateMeasureHalt(input MeasureHaltInput) MeasureHaltOutput {
 	if !regressed || out.EffectiveWarnOnly {
 		plateau := input.Plateau
 		if plateau == nil && input.PlateauWindowK >= 2 && input.PlateauEpsilon > 0 {
-			plateau = NewPlateauState(input.PlateauWindowK, input.PlateauEpsilon)
+			// Guarded by PlateauWindowK >= 2 above, so the error path is
+			// unreachable; if it ever fires we simply skip plateau detection
+			// rather than halt the loop.
+			if ps, err := NewPlateauState(input.PlateauWindowK, input.PlateauEpsilon); err == nil {
+				plateau = ps
+			}
 		}
 		if plateau != nil && plateau.Observe(composite) {
 			out.PlateauReached = true

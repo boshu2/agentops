@@ -58,9 +58,13 @@ func RunSuite(opts RunOptions) (*RunRecord, error) {
 
 	suiteDir := filepath.Dir(opts.SuitePath)
 	runEnv := cloneStringMap(opts.Env)
+	ctx := opts.Context
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	caseResults := make([]CaseResult, 0, len(suite.Cases))
 	for _, evalCase := range suite.Cases {
-		caseResults = append(caseResults, runCase(*suite, suiteDir, evalCase, runEnv))
+		caseResults = append(caseResults, runCase(ctx, *suite, suiteDir, evalCase, runEnv))
 	}
 	aggregate, dimensions := scoreRun(*suite, caseResults)
 	status := runStatus(*suite, caseResults, aggregate, dimensions)
@@ -115,7 +119,7 @@ func RunSuite(opts RunOptions) (*RunRecord, error) {
 	return record, nil
 }
 
-func runCase(suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) CaseResult {
+func runCase(runCtx context.Context, suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) CaseResult {
 	start := time.Now()
 	ctx := caseContext{
 		suite:    &suite,
@@ -124,7 +128,7 @@ func runCase(suite Suite, suiteDir string, evalCase Case, runEnv map[string]stri
 		exitCode: 0,
 	}
 	if evalCase.Kind == "command" {
-		output, err := executeCaseCommand(suite, suiteDir, evalCase, runEnv)
+		output, err := executeCaseCommand(runCtx, suite, suiteDir, evalCase, runEnv)
 		ctx.stdout = output.stdout
 		ctx.stderr = output.stderr
 		ctx.exitCode = output.exitCode
@@ -188,7 +192,7 @@ type commandOutput struct {
 	infrastructureError bool
 }
 
-func executeCaseCommand(suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) (commandOutput, error) {
+func executeCaseCommand(parent context.Context, suite Suite, suiteDir string, evalCase Case, runEnv map[string]string) (commandOutput, error) {
 	spec, err := commandSpecFromInputs(evalCase.Inputs)
 	if err != nil {
 		return commandOutput{exitCode: -1, infrastructureError: true}, err
@@ -200,7 +204,10 @@ func executeCaseCommand(suite Suite, suiteDir string, evalCase Case, runEnv map[
 	if timeout == 0 {
 		timeout = defaultTimeoutSeconds
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	if parent == nil {
+		parent = context.Background()
+	}
+	ctx, cancel := context.WithTimeout(parent, time.Duration(timeout)*time.Second)
 	defer cancel()
 
 	name := spec.name

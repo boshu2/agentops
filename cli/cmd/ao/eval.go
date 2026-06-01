@@ -69,6 +69,7 @@ var evalRunCmd = &cobra.Command{
 			return fmt.Errorf("invalid --context-mode %q (allowed: %s)", evalRunContextMode, strings.Join(aoeval.AllContextModes(), ", "))
 		}
 		baseOpts := aoeval.RunOptions{
+			Context:      cmd.Context(),
 			SuitePath:    args[0],
 			RunID:        evalRunID,
 			Runtime:      runtimeName,
