@@ -184,8 +184,9 @@ func ParseLearningFile(path string) (Learning, error) {
 	}
 
 	l := Learning{
-		ID:     filepath.Base(path),
-		Source: path,
+		ID:       filepath.Base(path),
+		Source:   path,
+		FilePath: path,
 	}
 
 	content, err := os.ReadFile(path)
@@ -257,9 +258,10 @@ func PopulateLearningFromJSON(data map[string]any, l *Learning) {
 // ParseLearningJSONL extracts learning from JSONL file.
 func ParseLearningJSONL(path string) (Learning, error) {
 	l := Learning{
-		ID:      filepath.Base(path),
-		Source:  path,
-		Utility: types.InitialUtility,
+		ID:       filepath.Base(path),
+		Source:   path,
+		FilePath: path,
+		Utility:  types.InitialUtility,
 	}
 
 	f, err := os.Open(path)

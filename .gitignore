@@ -46,6 +46,9 @@ wiki/
 /.agents/
 tests/claude-code/.agents/
 
+# Warmind local runtime state (team learnings are tracked in .warmind/ at team repo level)
+/.warmind/
+
 # Allow test fixtures under .agents/ paths
 !cli/cmd/ao/testdata/**/.agents/
 !cli/cmd/ao/testdata/**/.agents/**
@@ -157,3 +160,4 @@ packs/
 # AgentOps session artifacts
 .agents/
 evals/workbench/scorecard-latest.json
+.doctor/

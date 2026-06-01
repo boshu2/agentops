@@ -139,6 +139,43 @@ Research → Plan → Implement → Validate
     └──── Knowledge Flywheel ────┘
 ```
 
+## Warmind (Team Knowledge Sharing)
+
+Warmind is the team knowledge sharing system. Key files:
+
+| File | Purpose |
+|------|---------|
+| `cli/cmd/ao/warmind.go` | CLI commands |
+| `cli/internal/warmind/` | Core modules (pool, scoring, citations, maturity, contradict) |
+| `cli/docs/warmind/POST-MORTEM-2026-05-27.md` | Gas City integration test findings |
+| `cli/docs/warmind/RESEARCH-2026-05-27.md` | Cutting-edge research for V3 |
+
+### Warmind Pipeline
+
+```
+.agents/learnings/  →  .warmind/pool/staged/  →  .warmind/learnings/
+     (local)              (team staging)           (team canon)
+```
+
+### Key Commands
+
+```bash
+ao warmind sync              # Local → Pool (stages + scores)
+ao warmind pool list         # Show staged candidates
+ao warmind status            # Health metrics
+ao warmind promote <id>      # Manual promotion (--force bypasses cites)
+ao warmind close-loop        # Full flywheel: auto-promote + decay + contradict
+ao inject "query"            # Uses learnings, records citations
+```
+
+### Promotion Tiers
+
+| Tier | Score | Requirement |
+|------|-------|-------------|
+| Gold | ≥0.8 | Auto-promote after 24h |
+| Silver | ≥0.5 | 1 citation from OTHER engineer |
+| Bronze | <0.5 | 3 citations from OTHER engineers |
+
 ## Session Constraints
 
 - **Multi-phase work:** Route through `ao rpi` (enforces timeouts and stall detection).
@@ -146,9 +183,101 @@ Research → Plan → Implement → Validate
 - **Before proposing new capability:** Check `ao rpi serve --help`, `hooks/hooks.json`, and `GOALS.md` first.
 - **Gas City (gc) bridge:** `cli/cmd/ao/gc_bridge.go`, `gc_events.go`, `rpi_phased_gc.go`. Do not write new tests or features for deprecated files (`rpi_loop_supervisor.go`, `rpi_c2_events.go`, `rpi_phased_tmux.go`, `rpi_workers.go`, `rpi_parallel.go`, `fire.go`).
 
+## Gas City Dispatch (CRITICAL)
+
+**NEVER manually perform work that should be dispatched to Gas City agents.** Use `gc` commands to dispatch work:
+
+### Dispatching Work to Agents
+
+```bash
+# Send work to an agent (creates mail bead, agent picks up on next cycle)
+gc mail send <agent> "<subject>" -m "<body>"
+gc mail send mayor "Build is green"
+gc mail send witness "Need investigation" -m "Check logs from last failed run"
+
+# Nudge a live session directly (immediate delivery)
+gc session nudge <agent> "<message>"
+gc session nudge mayor "PR #42 needs review"
+
+# Route work via sling (respects routing rules)
+gc sling <agent> "<work description>"
+
+# Handoff with session restart
+gc handoff <agent> "<message>"
+```
+
+### Checking Agent Status
+
+```bash
+gc status                    # City-wide overview
+gc session list              # All sessions
+gc session peek <agent>      # View agent's recent transcript
+gc mail check                # Check for pending mail
+gc beads list                # List work items
+```
+
+### Common Patterns
+
+| Task | Command | Notes |
+|------|---------|-------|
+| Request code review | `gc mail send witness "Review PR #X"` | Witness handles reviews |
+| Trigger build/test | `gc mail send polecat "Run tests"` | Polecat handles CI tasks |
+| Escalate to human | `gc mail send human "Decision needed"` | Routes to human inbox |
+| Wake sleeping agent | `gc session wake <agent>` | Resume from sleep |
+| Check agent health | `gc doctor` | Diagnose issues |
+
+### Anti-Patterns (DO NOT DO)
+
+```bash
+# WRONG: Manually running tests that polecat should run
+cd /path/to/repo && go test ./...
+
+# RIGHT: Dispatch to polecat
+gc mail send polecat "Run test suite for cli/"
+
+# WRONG: Manually reviewing code
+# [reading files and giving feedback inline]
+
+# RIGHT: Dispatch to witness
+gc mail send witness "Review changes in cli/cmd/ao/warmind.go"
+
+# WRONG: Manually doing multi-step work
+# [implementing feature step by step]
+
+# RIGHT: Create a bead and let agents handle phases
+gc sling mayor "Implement warmind embedding index"
+```
+
+### When to Dispatch vs Do Directly
+
+| Scenario | Action |
+|----------|--------|
+| Quick file read/edit | Do directly |
+| Single command | Do directly |
+| Multi-phase implementation | Dispatch via `gc sling` or `ao rpi` |
+| Code review | Dispatch to witness |
+| Test suite run | Dispatch to polecat |
+| Research task | Dispatch to researcher or do directly if simple |
+| Build/deploy | Dispatch to appropriate agent |
+
 ### Execution Discipline
 
 - **Verify before committing.** Go: `go test ./...` and `go vet ./...`. Python: run relevant tests. Never commit unverified code.
 - **First-Edit Rule.** First Edit/Write/Bash must happen within your first 3 responses. Execute first, research second.
 - **Intent Echo.** Before non-trivial tasks, state in ONE sentence what you understand. Wait for confirmation on multi-file changes.
 - **Two-Correction Rule.** If corrected twice on the same task: STOP, re-read, state what you now understand differently, and confirm before trying again.
+
+## AgentOps Knowledge Flywheel
+
+Knowledge compounds automatically across sessions:
+
+- **MEMORY.md** is auto-loaded by your AI coding tool every session
+- **Session hooks** extract learnings, update MEMORY.md, and prune stale knowledge
+- **Skills** invoke flywheel commands at the right moments (no manual ao commands needed)
+
+Verify the flywheel any time:
+
+```bash
+ao flywheel status    # escape velocity check
+ao status             # current knowledge inventory
+```

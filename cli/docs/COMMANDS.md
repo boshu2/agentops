@@ -3737,6 +3737,112 @@ ao trace <artifact-path> [flags]
 
 ---
 
+### `ao warmind`
+
+Warmind enables team-wide knowledge sharing by syncing learnings to a
+
+```
+ao warmind [command]
+```
+
+**Subcommands:**
+
+#### `ao warmind close-loop`
+
+Run the complete warmind flywheel closure:
+
+```
+ao warmind close-loop [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help    help for close-loop
+      --quiet   Suppress output
+```
+
+#### `ao warmind contradict`
+
+Scan team learnings for potential contradictions.
+
+```
+ao warmind contradict [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for contradict
+      --list   List pending contradictions
+```
+
+#### `ao warmind pool`
+
+Manage the warmind pool
+
+```
+ao warmind pool [command]
+```
+
+##### `ao warmind pool list`
+
+List candidates in the warmind pool.
+
+```
+ao warmind pool list [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help      help for list
+      --pending   Show only pending entries
+      --staged    Show only staged entries
+```
+
+#### `ao warmind promote`
+
+Manually promote a staged candidate to team learnings.
+
+```
+ao warmind promote <candidate-id> [flags]
+```
+
+**Flags:**
+
+```
+      --force   Force promotion (bypass citation requirements)
+  -h, --help    help for promote
+```
+
+#### `ao warmind status`
+
+Display warmind knowledge health metrics:
+
+```
+ao warmind status [flags]
+```
+
+#### `ao warmind sync`
+
+Copy learnings from .agents/learnings/ to .warmind/pool/.
+
+```
+ao warmind sync [flags]
+```
+
+**Flags:**
+
+```
+      --auto     Auto mode for hooks (quiet, skips if nothing new)
+  -h, --help     help for sync
+      --quiet    Suppress output
+      --simple   Use simple V1 sync (direct copy)
+```
+
+---
+
 ### `ao agents`
 
 Tooling for the .agents/ knowledge surface that backs the

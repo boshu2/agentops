@@ -25,6 +25,8 @@ type Learning struct {
 	Stability       string  `json:"-"` // "experimental" | "stable", default "stable"
 	Superseded      bool    `json:"-"` // Internal flag - not serialized
 	Global          bool    `json:"-"` // Internal flag: from global dir
+	Warmind         bool    `json:"-"` // Internal flag: from warmind (team-shared) dir
+	FilePath        string  `json:"-"` // Internal: source file path for citation tracking
 }
 
 // Scorable interface implementation for Learning.
