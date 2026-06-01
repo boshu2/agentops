@@ -23,10 +23,10 @@ const (
 	JobTypePlansProjection   JobType = "plans.projection"
 	// JobTypeLLMWikiLoop is the Karpathy-pattern external-knowledge loop job type.
 	// Operates on raw/ + wiki/ trees, distinct from internal .agents/ work.
-	JobTypeLLMWikiLoop      JobType = "llmwiki.loop"
-	JobTypeEvalSuite        JobType = "eval.suite"
-	JobTypeEvalSkillDelta   JobType = "eval.skill-delta"
-	JobTypeSkillInvoke      JobType = "skill.invoke"
+	JobTypeLLMWikiLoop    JobType = "llmwiki.loop"
+	JobTypeEvalSuite      JobType = "eval.suite"
+	JobTypeEvalSkillDelta JobType = "eval.skill-delta"
+	JobTypeSkillInvoke    JobType = "skill.invoke"
 )
 
 // RecurringJobTemplate is a schedule entry that materializes a Job on each cron tick.

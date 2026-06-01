@@ -78,9 +78,12 @@ func (w *productionLoopWriter) Append(ctx context.Context, entry ports.CycleEntr
 	if err != nil {
 		return ports.CycleEntry{}, fmt.Errorf("productionLoopWriter open %q: %w", w.path, err)
 	}
-	defer f.Close()
 	if _, err := f.Write(append(payload, '\n')); err != nil {
+		_ = f.Close()
 		return ports.CycleEntry{}, fmt.Errorf("productionLoopWriter write: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		return ports.CycleEntry{}, fmt.Errorf("productionLoopWriter close: %w", err)
 	}
 	return entry, nil
 }
@@ -109,7 +112,7 @@ func (w *productionLoopWriter) scanMaxNumberLocked() (int, error) {
 		}
 		return 0, fmt.Errorf("productionLoopWriter scan-max open %q: %w", w.path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	maxN := 0
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)

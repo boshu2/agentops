@@ -529,7 +529,7 @@ func (e GasCityRPIPhaseExecutor) ExecuteRPIPhase(ctx context.Context, req RPIPha
 		}
 	}
 	addRequestID(result.RequestIDs, "stream", streamMeta.RequestID)
-	defer stream.Close()
+	defer func() { _ = stream.Close() }()
 
 	result, err = processGasCityEventStreamFrames(ctx, streamCtx, stream, sessionID, sessionAlias, req, e, result)
 	if err == nil {

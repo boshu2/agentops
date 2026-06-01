@@ -550,6 +550,32 @@ else
     skip "go build + vet"
 fi
 
+# --- 1b. Go lint: gofmt + golangci-lint (pinned v2) ---
+if needs_check go; then
+    if command -v go >/dev/null 2>&1 && [[ -f cli/go.mod ]]; then
+        go_changed="$(collect_go_changed)"
+        if [[ -n "$go_changed" ]]; then
+            unformatted="$(cd cli && gofmt -l . 2>/dev/null)"
+            if [[ -z "$unformatted" ]]; then
+                pass "gofmt"
+            else
+                fail "gofmt — run: (cd cli && gofmt -w .)"
+                indent_output "$unformatted"
+            fi
+            if gci_out="$(cd cli && "$REPO_ROOT/scripts/golangci-lint-v2.sh" run ./... 2>&1)"; then
+                pass "golangci-lint (v2)"
+            else
+                fail "golangci-lint (v2)"
+                indent_output "$gci_out"
+            fi
+        else
+            pass "go lint (no Go changes)"
+        fi
+    fi
+else
+    skip "go lint (gofmt + golangci-lint)"
+fi
+
 # --- 2. Go race tests on changed scope ---
 if needs_check go; then
     if [[ -x scripts/validate-go-fast.sh ]]; then

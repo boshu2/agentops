@@ -551,7 +551,7 @@ func processQualitySignalFeedback(cwd, sessionID string, mutateArtifacts bool) (
 		}
 		return 0, fmt.Errorf("open quality signals: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	// Count correction signals for this session.
 	var correctionCount int

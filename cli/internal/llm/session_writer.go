@@ -196,12 +196,12 @@ func WriteSessionPage(path string, page SessionPage) error {
 	cleanup := func() { _ = os.Remove(tmpPath) }
 
 	if _, err := tmp.WriteString(page.Render()); err != nil {
-		tmp.Close()
+		_ = tmp.Close()
 		cleanup()
 		return fmt.Errorf("write tempfile: %w", err)
 	}
 	if err := tmp.Sync(); err != nil {
-		tmp.Close()
+		_ = tmp.Close()
 		cleanup()
 		return fmt.Errorf("sync tempfile: %w", err)
 	}

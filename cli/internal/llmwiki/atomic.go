@@ -41,7 +41,7 @@ func AtomicWriteFile(path string, contents []byte, mode os.FileMode) error {
 	tmpName := tmp.Name()
 	// Cleanup on error path; if rename succeeds, this Remove is a no-op
 	// because the path no longer exists under tmpName.
-	defer os.Remove(tmpName)
+	defer func() { _ = os.Remove(tmpName) }()
 
 	if _, err := tmp.Write(contents); err != nil {
 		_ = tmp.Close()
@@ -80,7 +80,7 @@ func AtomicWriteFromReader(path string, r io.Reader, mode os.FileMode) error {
 		return fmt.Errorf("llmwiki: create temp file in %s: %w", dir, err)
 	}
 	tmpName := tmp.Name()
-	defer os.Remove(tmpName)
+	defer func() { _ = os.Remove(tmpName) }()
 
 	if _, err := io.Copy(tmp, r); err != nil {
 		_ = tmp.Close()

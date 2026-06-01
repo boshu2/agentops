@@ -188,17 +188,18 @@ func (m *MaturityManager) RunMaintenance() (*MaturityReport, error) {
 		}
 
 		transition := MaturityTransition{
-			LearningID:  meta.ID,
-			FilePath:    meta.FilePath,
-			FromStatus:  string(meta.Maturity),
-			ToStatus:    string(newMaturity),
-			Reason:      reason,
+			LearningID: meta.ID,
+			FilePath:   meta.FilePath,
+			FromStatus: string(meta.Maturity),
+			ToStatus:   string(newMaturity),
+			Reason:     reason,
 		}
 		report.Transitions = append(report.Transitions, transition)
 
-		if newMaturity == MaturityEstablished {
+		switch newMaturity {
+		case MaturityEstablished:
 			report.Promoted++
-		} else if newMaturity == "archive" {
+		case "archive":
 			report.Archived++
 		}
 	}
@@ -343,7 +344,6 @@ func (m *MaturityManager) updateArchiveMetadata(path, reason string) error {
 	lines := strings.Split(string(content), "\n")
 	var result []string
 	inFrontmatter := false
-	maturityUpdated := false
 	archivedAtAdded := false
 
 	for i, line := range lines {
@@ -370,7 +370,6 @@ func (m *MaturityManager) updateArchiveMetadata(path, reason string) error {
 		if inFrontmatter {
 			if strings.HasPrefix(trimmed, "maturity:") {
 				result = append(result, "maturity: archived")
-				maturityUpdated = true
 				continue
 			}
 		}
@@ -378,9 +377,7 @@ func (m *MaturityManager) updateArchiveMetadata(path, reason string) error {
 		result = append(result, line)
 	}
 
-	if !maturityUpdated {
-		// No maturity line found, just proceed
-	}
-
+	// If no maturity line was found, we simply proceed and write the file back
+	// with the archived_at metadata appended.
 	return os.WriteFile(path, []byte(strings.Join(result, "\n")), 0600)
 }
