@@ -130,7 +130,7 @@ func TestCheckTransition(t *testing.T) {
 
 		meta := LearningMetadata{
 			Maturity:      MaturityProvisional,
-			CitationCount: 1, // Some citations but not enough to promote
+			CitationCount: 1,                                   // Some citations but not enough to promote
 			PromotedAt:    time.Now().Add(-7 * 24 * time.Hour), // 1 week ago
 		}
 

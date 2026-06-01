@@ -7,6 +7,7 @@
 #
 # Checks:
 #   1. Go build + vet (if cli/ changed)
+#  1b. gofmt + golangci-lint (if cli/ changed)
 #   2. Go race tests on changed packages (via validate-go-fast.sh)
 #  3d. .agents/ write-surface contract (catalogued top-level subdirs)
 #   3. Command/test pairing for cli/cmd/ao Go changes
@@ -548,6 +549,31 @@ if needs_check go; then
     fi
 else
     skip "go build + vet"
+fi
+
+# --- 1b. gofmt + golangci-lint (ag-ykf1) ---
+if needs_check go; then
+    if command -v go >/dev/null 2>&1 && [[ -f cli/go.mod ]]; then
+        unformatted="$(cd cli && gofmt -l $(find . -name '*.go' -not -path './embedded/*') 2>/dev/null)"
+        if [[ -z "$unformatted" ]]; then
+            pass "gofmt"
+        else
+            fail "gofmt (unformatted files — run: cd cli && gofmt -w <files>)"
+            indent_output "$unformatted"
+        fi
+        if command -v golangci-lint >/dev/null 2>&1; then
+            if lint_output="$(cd cli && golangci-lint run ./... 2>&1)"; then
+                pass "golangci-lint"
+            else
+                fail "golangci-lint"
+                indent_output "$lint_output"
+            fi
+        else
+            skip "golangci-lint (not installed locally — CI enforces)"
+        fi
+    fi
+else
+    skip "gofmt + golangci-lint"
 fi
 
 # --- 2. Go race tests on changed scope ---
