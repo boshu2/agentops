@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestIsContainedPath(t *testing.T) {
@@ -512,8 +512,8 @@ func validateTemperArtifactFieldsPopulated(t *testing.T, tmp string) {
 	content := "# Test\n\n**ID**: L1\n**Maturity**: candidate\n**Utility**: 0.7\n**Confidence**: 0.85\n"
 	path := writeTemperArtifact(t, tmp, "fields.md", content)
 	result := validateArtifact(path, "provisional", 0.5, 0)
-	if result.Maturity != types.MaturityCandidate {
-		t.Errorf("Maturity = %q, want %q", result.Maturity, types.MaturityCandidate)
+	if result.Maturity != domain.MaturityCandidate {
+		t.Errorf("Maturity = %q, want %q", result.Maturity, domain.MaturityCandidate)
 	}
 	if result.Utility < 0.69 || result.Utility > 0.71 {
 		t.Errorf("Utility = %v, want ~0.7", result.Utility)
@@ -596,8 +596,8 @@ func TestTemperCoverage_ApplyMarkdownLine(t *testing.T) {
 			name: "sets Maturity",
 			line: "**Maturity**: established",
 			check: func(t *testing.T, meta *artifactMetadata) {
-				if meta.Maturity != types.MaturityEstablished {
-					t.Errorf("Maturity = %q, want %q", meta.Maturity, types.MaturityEstablished)
+				if meta.Maturity != domain.MaturityEstablished {
+					t.Errorf("Maturity = %q, want %q", meta.Maturity, domain.MaturityEstablished)
 				}
 			},
 		},

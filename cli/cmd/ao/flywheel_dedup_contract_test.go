@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/harvest"
 	"github.com/boshu2/agentops/cli/internal/pool"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // TestPromote_DedupsAcrossWriters is the cross-writer dedup contract from
@@ -117,16 +117,16 @@ func assertPoolPromoteDedups(t *testing.T, body string) {
 	// Two candidates with identical body but different IDs. pool.Promote
 	// must dedup by content hash.
 	for _, id := range []string{"pool-cand-a", "pool-cand-b"} {
-		candidate := types.Candidate{
+		candidate := domain.Candidate{
 			ID:      id,
-			Tier:    types.TierSilver,
-			Type:    types.KnowledgeTypeLearning,
+			Tier:    domain.TierSilver,
+			Type:    domain.KnowledgeTypeLearning,
 			Content: body,
 		}
-		if err := p.Add(candidate, types.Scoring{}); err != nil {
+		if err := p.Add(candidate, domain.Scoring{}); err != nil {
 			t.Fatalf("pool.Add(%s) failed: %v", id, err)
 		}
-		if err := p.Stage(id, types.TierBronze); err != nil {
+		if err := p.Stage(id, domain.TierBronze); err != nil {
 			t.Fatalf("pool.Stage(%s) failed: %v", id, err)
 		}
 	}

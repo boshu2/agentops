@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // TestFeedbackLoopDrain_SeedDrainAssert is the canonical L2 integration test for
@@ -28,7 +28,7 @@ import (
 func TestFeedbackLoopDrain_SeedDrainAssert(t *testing.T) {
 	tmp := t.TempDir()
 
-	// Seed: a real learning file with utility=0.5 (matches types.InitialUtility).
+	// Seed: a real learning file with utility=0.5 (matches domain.InitialUtility).
 	learningsDir := filepath.Join(tmp, ".agents", "learnings")
 	if err := os.MkdirAll(learningsDir, 0o755); err != nil {
 		t.Fatalf("mkdir learnings: %v", err)
@@ -48,7 +48,7 @@ func TestFeedbackLoopDrain_SeedDrainAssert(t *testing.T) {
 
 	// Seed: a citation with FeedbackAt zero (the sentinel that drain targets).
 	sessionID := "session-drain-test"
-	citation := types.CitationEvent{
+	citation := domain.CitationEvent{
 		ArtifactPath:    learningPath,
 		SessionID:       sessionID,
 		CitedAt:         time.Now().Add(-1 * time.Hour),
@@ -110,7 +110,7 @@ func TestFeedbackLoopDrain_SeedDrainAssert(t *testing.T) {
 	if err := os.WriteFile(learningPath2, append(jb2, '\n'), 0o644); err != nil {
 		t.Fatalf("write learning2: %v", err)
 	}
-	cit2 := types.CitationEvent{
+	cit2 := domain.CitationEvent{
 		ArtifactPath:    learningPath2,
 		SessionID:       "session-drain-2",
 		CitedAt:         time.Now().Add(-30 * time.Minute),
@@ -175,7 +175,7 @@ func TestFeedbackLoopDrain_Idempotent(t *testing.T) {
 		t.Fatalf("write learning: %v", err)
 	}
 
-	cit := types.CitationEvent{
+	cit := domain.CitationEvent{
 		ArtifactPath:    learningPath,
 		SessionID:       "session-idem",
 		CitedAt:         time.Now(),
@@ -222,7 +222,7 @@ func TestFeedbackLoopDrain_DryRunNoMutation(t *testing.T) {
 		t.Fatalf("write learning: %v", err)
 	}
 
-	cit := types.CitationEvent{
+	cit := domain.CitationEvent{
 		ArtifactPath:    learningPath,
 		SessionID:       "session-dry",
 		CitedAt:         time.Now(),
@@ -282,7 +282,7 @@ func TestFeedbackLoopDrain_SkipsAlreadyFed(t *testing.T) {
 	}
 
 	// Citation that's already been fed — non-zero feedback_at, FeedbackGiven=true.
-	already := types.CitationEvent{
+	already := domain.CitationEvent{
 		ArtifactPath:    fedPath,
 		SessionID:       "session-already",
 		CitedAt:         time.Now().Add(-2 * time.Hour),

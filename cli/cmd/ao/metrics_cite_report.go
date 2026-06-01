@@ -12,9 +12,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 func init() {
@@ -109,7 +109,7 @@ func runMetricsCiteReport(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func buildCiteReport(baseDir string, filtered []types.CitationEvent, all []types.CitationEvent, days int, start, end time.Time) citeReportData {
+func buildCiteReport(baseDir string, filtered []domain.CitationEvent, all []domain.CitationEvent, days int, start, end time.Time) citeReportData {
 	report := citeReportData{
 		TotalCitations: len(filtered),
 		Days:           days,
@@ -147,7 +147,7 @@ func buildCiteReport(baseDir string, filtered []types.CitationEvent, all []types
 }
 
 // buildCiteArtifactStats counts per-artifact citations, sessions, and feedback from filtered events.
-func buildCiteArtifactStats(filtered []types.CitationEvent, baseDir string) (
+func buildCiteArtifactStats(filtered []domain.CitationEvent, baseDir string) (
 	artifactCounts map[string]int,
 	sessions map[string]bool,
 	workspaces map[string]bool,
@@ -203,7 +203,7 @@ func buildTopCiteArtifacts(artifactCounts map[string]int) []artifactCount {
 }
 
 // collectUncitedLearnings returns learning files that have never been cited.
-func collectUncitedLearnings(baseDir string, all []types.CitationEvent) []string {
+func collectUncitedLearnings(baseDir string, all []domain.CitationEvent) []string {
 	learningsDir := filepath.Join(baseDir, ".agents", "learnings")
 	if _, err := os.Stat(learningsDir); err != nil {
 		return nil
@@ -223,7 +223,7 @@ func collectUncitedLearnings(baseDir string, all []types.CitationEvent) []string
 }
 
 // computeCiteStaleness returns counts of artifacts not cited within 30/60/90 days.
-func computeCiteStaleness(baseDir string, all []types.CitationEvent) map[string]int {
+func computeCiteStaleness(baseDir string, all []domain.CitationEvent) map[string]int {
 	lastCited := make(map[string]time.Time)
 	for _, c := range all {
 		canonicalPath := canonicalArtifactPath(baseDir, c.ArtifactPath)

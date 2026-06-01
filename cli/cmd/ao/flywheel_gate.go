@@ -9,8 +9,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
-	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -109,7 +109,7 @@ func runFlywheelGate(cmd *cobra.Command, args []string) error {
 	return fmt.Errorf("flywheel gate failed: %s", strings.Join(result.Reasons, "; "))
 }
 
-func evaluateFlywheelGate(metrics *types.FlywheelMetrics, report benchReport, corpus string) flywheelGateResult {
+func evaluateFlywheelGate(metrics *domain.FlywheelMetrics, report benchReport, corpus string) flywheelGateResult {
 	result := flywheelGateResult{
 		RhoThreshold: flywheelGateMinRho,
 		Benchmark: flywheelGateBenchmarkSummary{

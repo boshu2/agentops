@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 // TestExtractSingleEntry tests default behavior (process most recent only).
 func TestExtractSingleEntry(t *testing.T) {
 	tempDir := t.TempDir()
-	pendingPath := filepath.Join(tempDir, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(tempDir, sessionstore.DefaultBaseDir, "pending.jsonl")
 
 	// Create test entries
 	entries := []PendingExtraction{
@@ -75,7 +75,7 @@ func TestExtractSingleEntry(t *testing.T) {
 // TestExtractAllSuccess tests --all flag with all entries succeeding.
 func TestExtractAllSuccess(t *testing.T) {
 	tempDir := t.TempDir()
-	pendingPath := filepath.Join(tempDir, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(tempDir, sessionstore.DefaultBaseDir, "pending.jsonl")
 
 	entries := []PendingExtraction{
 		{SessionID: "session-1", Summary: "Session 1", QueuedAt: time.Now()},
@@ -109,7 +109,7 @@ func TestExtractAllSuccess(t *testing.T) {
 // TestExtractAllEmpty tests --all with empty pending file.
 func TestExtractAllEmpty(t *testing.T) {
 	tempDir := t.TempDir()
-	pendingPath := filepath.Join(tempDir, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(tempDir, sessionstore.DefaultBaseDir, "pending.jsonl")
 
 	// Create empty pending file
 	if err := writePendingFile(pendingPath, []PendingExtraction{}); err != nil {
@@ -127,7 +127,7 @@ func TestExtractAllEmpty(t *testing.T) {
 // TestExtractAllDryRun tests --all --dry-run.
 func TestExtractAllDryRun(t *testing.T) {
 	tempDir := t.TempDir()
-	pendingPath := filepath.Join(tempDir, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(tempDir, sessionstore.DefaultBaseDir, "pending.jsonl")
 
 	entries := []PendingExtraction{
 		{SessionID: "session-1", Summary: "Session 1", QueuedAt: time.Now()},
@@ -163,7 +163,7 @@ func TestExtractAllDryRun(t *testing.T) {
 // TestExtractAllJSON tests --all with --json output.
 func TestExtractAllJSON(t *testing.T) {
 	tempDir := t.TempDir()
-	pendingPath := filepath.Join(tempDir, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(tempDir, sessionstore.DefaultBaseDir, "pending.jsonl")
 
 	entries := []PendingExtraction{
 		{SessionID: "session-1", Summary: "Session 1", QueuedAt: time.Now()},
@@ -211,7 +211,7 @@ func TestExtractNoFile(t *testing.T) {
 // TestExtractClear tests --clear flag.
 func TestExtractClear(t *testing.T) {
 	tempDir := t.TempDir()
-	pendingPath := filepath.Join(tempDir, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(tempDir, sessionstore.DefaultBaseDir, "pending.jsonl")
 
 	entries := []PendingExtraction{
 		{SessionID: "session-1", Summary: "Session 1", QueuedAt: time.Now()},
@@ -274,7 +274,7 @@ func TestReadPendingExtractions(t *testing.T) {
 // TestRewritePendingFile tests concurrent-safe file rewriting.
 func TestRewritePendingFile(t *testing.T) {
 	tempDir := t.TempDir()
-	pendingPath := filepath.Join(tempDir, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(tempDir, sessionstore.DefaultBaseDir, "pending.jsonl")
 
 	entries := []PendingExtraction{
 		{SessionID: "s1", Summary: "Summary 1", QueuedAt: time.Now()},

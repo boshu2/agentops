@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/rpi"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // maxGateRetryDepth is the hard ceiling for gate retry attempts.
@@ -335,23 +335,23 @@ func processValidationPhase(cwd string, state *phasedState, phaseNum int, logPat
 	return nil
 }
 
-func legacyGateAction(attempt, maxRetries int) types.MemRLAction {
+func legacyGateAction(attempt, maxRetries int) domain.MemRLAction {
 	return rpi.LegacyGateAction(attempt, maxRetries)
 }
 
-func classifyGateFailureClass(phaseNum int, gateErr *gateFailError) types.MemRLFailureClass {
+func classifyGateFailureClass(phaseNum int, gateErr *gateFailError) domain.MemRLFailureClass {
 	if gateErr == nil {
 		return ""
 	}
 	return rpi.ClassifyGateFailureClass(phaseNum, gateErr.Verdict)
 }
 
-func resolveGateRetryAction(state *phasedState, phaseNum int, gateErr *gateFailError, attempt int) (types.MemRLAction, types.MemRLPolicyDecision) {
-	mode := types.GetMemRLMode()
+func resolveGateRetryAction(state *phasedState, phaseNum int, gateErr *gateFailError, attempt int) (domain.MemRLAction, domain.MemRLPolicyDecision) {
+	mode := domain.GetMemRLMode()
 	failureClass := classifyGateFailureClass(phaseNum, gateErr)
 	metadataPresent := gateErr != nil && strings.TrimSpace(gateErr.Verdict) != ""
 
-	decision := types.EvaluateDefaultMemRLPolicy(types.MemRLPolicyInput{
+	decision := domain.EvaluateDefaultMemRLPolicy(domain.MemRLPolicyInput{
 		Mode:            mode,
 		FailureClass:    failureClass,
 		Attempt:         attempt,
@@ -360,7 +360,7 @@ func resolveGateRetryAction(state *phasedState, phaseNum int, gateErr *gateFailE
 	})
 
 	legacy := rpi.LegacyGateAction(attempt, state.Opts.MaxRetries)
-	if mode == types.MemRLModeEnforce {
+	if mode == domain.MemRLModeEnforce {
 		return decision.Action, decision
 	}
 	return legacy, decision
@@ -378,7 +378,7 @@ func handleGateRetry(ctx context.Context, cwd string, state *phasedState, phaseN
 	// Hard ceiling: force escalation regardless of MemRL policy
 	if shouldForceEscalation(attempt) {
 		return performGateEscalation(state, phaseNum, attempt, gateErr,
-			types.MemRLPolicyDecision{}, types.MemRLActionEscalate,
+			domain.MemRLPolicyDecision{}, domain.MemRLActionEscalate,
 			phaseName, logPath, statusPath, allPhases)
 	}
 
@@ -387,7 +387,7 @@ func handleGateRetry(ctx context.Context, cwd string, state *phasedState, phaseN
 	action, decision := resolveGateRetryAction(state, phaseNum, gateErr, attempt)
 	logGateRetryMemRL(logPath, state.RunID, phaseName, decision, action)
 
-	if action == types.MemRLActionEscalate {
+	if action == domain.MemRLActionEscalate {
 		return performGateEscalation(state, phaseNum, attempt, gateErr, decision, action, phaseName, logPath, statusPath, allPhases)
 	}
 
@@ -450,8 +450,8 @@ func executeWithStatus(ctx context.Context, executor PhaseExecutor, state *phase
 }
 
 // logGateRetryMemRL logs the MemRL policy decision for a gate retry, if mode is not off.
-func logGateRetryMemRL(logPath, runID, phaseName string, decision types.MemRLPolicyDecision, action types.MemRLAction) {
-	if decision.Mode == types.MemRLModeOff {
+func logGateRetryMemRL(logPath, runID, phaseName string, decision domain.MemRLPolicyDecision, action domain.MemRLAction) {
+	if decision.Mode == domain.MemRLModeOff {
 		return
 	}
 	logPhaseTransition(
@@ -472,7 +472,7 @@ func logGateRetryMemRL(logPath, runID, phaseName string, decision types.MemRLPol
 
 // performGateEscalation handles the escalation path when the retry action is escalate.
 // Returns (false, nil) to signal escalation without error (caller will handle reporting).
-func performGateEscalation(state *phasedState, phaseNum, attempt int, gateErr *gateFailError, decision types.MemRLPolicyDecision, action types.MemRLAction, phaseName, logPath, statusPath string, allPhases []PhaseProgress) (bool, error) {
+func performGateEscalation(state *phasedState, phaseNum, attempt int, gateErr *gateFailError, decision domain.MemRLPolicyDecision, action domain.MemRLAction, phaseName, logPath, statusPath string, allPhases []PhaseProgress) (bool, error) {
 	msg := fmt.Sprintf(
 		"%s escalated (mode=%s, action=%s, rule=%s, attempt=%d/%d). Last report: %s. Manual intervention needed.",
 		phaseName,

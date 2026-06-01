@@ -17,7 +17,7 @@ import (
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
 	"github.com/boshu2/agentops/cli/internal/openclaw"
 	"github.com/boshu2/agentops/cli/internal/quality"
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 var (
@@ -470,7 +470,7 @@ func checkKnowledgeBase() doctorCheck {
 	if err != nil {
 		return doctorCheck{Name: "Knowledge Base", Status: "fail", Detail: "cannot determine working directory", Required: true}
 	}
-	return quality.CheckKnowledgeBase(filepath.Join(cwd, storage.DefaultBaseDir))
+	return quality.CheckKnowledgeBase(filepath.Join(cwd, sessionstore.DefaultBaseDir))
 }
 
 func checkKnowledgeFreshness() doctorCheck {
@@ -478,7 +478,7 @@ func checkKnowledgeFreshness() doctorCheck {
 	if err != nil {
 		return doctorCheck{Name: "Knowledge Freshness", Status: "warn", Detail: "cannot determine working directory", Required: false}
 	}
-	return quality.CheckKnowledgeFreshness(filepath.Join(cwd, storage.DefaultBaseDir, "sessions"))
+	return quality.CheckKnowledgeFreshness(filepath.Join(cwd, sessionstore.DefaultBaseDir, "sessions"))
 }
 
 // Thin wrappers for pure functions — delegate to quality package.
@@ -506,7 +506,7 @@ func checkFlywheelHealth(baseDir ...string) doctorCheck {
 			return doctorCheck{Name: "Flywheel Health", Status: "warn", Detail: "cannot determine working directory", Required: false}
 		}
 	}
-	return quality.CheckFlywheelHealth(filepath.Join(dir, storage.DefaultBaseDir))
+	return quality.CheckFlywheelHealth(filepath.Join(dir, sessionstore.DefaultBaseDir))
 }
 
 // Thin wrappers — delegate Codex/skill checks to internal/quality.

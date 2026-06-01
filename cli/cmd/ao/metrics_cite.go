@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
 )
 
@@ -46,7 +46,7 @@ func runMetricsCite(cmd *cobra.Command, args []string) error {
 		citeVendor = detectModelVendor()
 	}
 
-	event := types.CitationEvent{
+	event := domain.CitationEvent{
 		ArtifactPath:    artifactPath,
 		SessionID:       citeSession,
 		CitedAt:         time.Now(),

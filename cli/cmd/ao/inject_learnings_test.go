@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // ---------------------------------------------------------------------------
@@ -608,7 +608,7 @@ func TestInjectLearnings_computeDecayedConfidence(t *testing.T) {
 	t.Run("mathematical correctness", func(t *testing.T) {
 		// 0.8 * exp(-2 * 0.1) = 0.8 * exp(-0.2)
 		got := computeDecayedConfidence(0.8, 2)
-		expected := 0.8 * math.Exp(-2.0*types.ConfidenceDecayRate)
+		expected := 0.8 * math.Exp(-2.0*domain.ConfidenceDecayRate)
 		if math.Abs(got-expected) > 0.001 {
 			t.Errorf("got %f, want %f", got, expected)
 		}
@@ -936,8 +936,8 @@ func TestInjectLearnings_processLearningFile_SetsDefaultUtility(t *testing.T) {
 	if !ok {
 		t.Fatal("expected ok=true")
 	}
-	if l.Utility != types.InitialUtility {
-		t.Errorf("Utility = %f, want %f (InitialUtility)", l.Utility, types.InitialUtility)
+	if l.Utility != domain.InitialUtility {
+		t.Errorf("Utility = %f, want %f (InitialUtility)", l.Utility, domain.InitialUtility)
 	}
 }
 

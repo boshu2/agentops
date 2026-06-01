@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	aocontext "github.com/boshu2/agentops/cli/internal/context"
+	aocontext "github.com/boshu2/agentops/cli/internal/contextpacket"
 	"github.com/boshu2/agentops/cli/internal/format"
 )
 

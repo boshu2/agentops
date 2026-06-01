@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/search"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 func collectFindings(cwd, query string, limit int, globalDir string, globalWeight float64) ([]knowledgeFinding, error) {
@@ -41,7 +41,7 @@ func collectFindingsWithOptions(cwd, query string, limit int, globalDir string, 
 	for i := range findings {
 		items[i] = &findings[i]
 	}
-	applyCompositeScoringTo(items, types.DefaultLambda)
+	applyCompositeScoringTo(items, domain.DefaultLambda)
 
 	applyGlobalFindingWeight(findings, globalWeight)
 

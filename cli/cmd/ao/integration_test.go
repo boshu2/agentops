@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 // =============================================================================
@@ -307,7 +307,7 @@ func setupForgeBatchPipelineFixture(t *testing.T) forgeBatchPipelineFixture {
 
 	tmpDir := t.TempDir()
 
-	aoDir := filepath.Join(tmpDir, storage.DefaultBaseDir)
+	aoDir := filepath.Join(tmpDir, sessionstore.DefaultBaseDir)
 	if err := os.MkdirAll(aoDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -452,7 +452,7 @@ func assertForgeBatchAllForged(t *testing.T, forgedSet map[string]bool, transcri
 // the number of transcripts processed from the unforged set.
 func TestIntegration_ForgeBatchMaxLimit(t *testing.T) {
 	tmpDir := t.TempDir()
-	aoDir := filepath.Join(tmpDir, storage.DefaultBaseDir)
+	aoDir := filepath.Join(tmpDir, sessionstore.DefaultBaseDir)
 	if err := os.MkdirAll(aoDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -716,7 +716,7 @@ func TestIntegration_SessionCloseOutput(t *testing.T) {
 // all entries via runExtractAll.
 func TestIntegration_SessionCloseExtractPipeline(t *testing.T) {
 	tmpDir := t.TempDir()
-	pendingPath := filepath.Join(tmpDir, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(tmpDir, sessionstore.DefaultBaseDir, "pending.jsonl")
 
 	// Simulate what session close does: queue multiple extractions
 	entries := []PendingExtraction{

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestAllSteps(t *testing.T) {
@@ -773,8 +773,8 @@ func TestCandidateTransition_ImplicitHelpfulSignal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CheckMaturityTransition: %v", err)
 	}
-	if result.NewMaturity != types.MaturityEstablished {
-		t.Errorf("NewMaturity = %q, want %q", result.NewMaturity, types.MaturityEstablished)
+	if result.NewMaturity != domain.MaturityEstablished {
+		t.Errorf("NewMaturity = %q, want %q", result.NewMaturity, domain.MaturityEstablished)
 	}
 	if !result.Transitioned {
 		t.Error("expected Transitioned = true")
@@ -1006,8 +1006,8 @@ func TestApplyMaturityTransition_JSONLPath(t *testing.T) {
 	if !result.Transitioned {
 		t.Error("expected transition to occur")
 	}
-	if result.NewMaturity != types.MaturityCandidate {
-		t.Errorf("NewMaturity = %q, want %q", result.NewMaturity, types.MaturityCandidate)
+	if result.NewMaturity != domain.MaturityCandidate {
+		t.Errorf("NewMaturity = %q, want %q", result.NewMaturity, domain.MaturityCandidate)
 	}
 
 	// Verify file was updated
@@ -1358,7 +1358,7 @@ func TestCheckTierRequirements_ObservationTier(t *testing.T) {
 // -- validate.go: RecordCitation mkdir error --
 func TestRecordCitation_ReadOnlyDirectory(t *testing.T) {
 	// Use a path that can't be created
-	err := RecordCitation("/dev/null/impossible", types.CitationEvent{
+	err := RecordCitation("/dev/null/impossible", domain.CitationEvent{
 		ArtifactPath: "/some/artifact.md",
 		SessionID:    "s1",
 	})
@@ -1604,7 +1604,7 @@ func TestGetUniqueCitedArtifacts_WithCitations(t *testing.T) {
 	tmpDir := t.TempDir()
 	// Record some citations with different times
 	now := time.Now()
-	for _, event := range []types.CitationEvent{
+	for _, event := range []domain.CitationEvent{
 		{ArtifactPath: "/a/file1.md", SessionID: "s1", CitedAt: now.Add(-time.Hour)},
 		{ArtifactPath: "/a/file1.md", SessionID: "s2", CitedAt: now.Add(-30 * time.Minute)},
 		{ArtifactPath: "/a/file2.md", SessionID: "s3", CitedAt: now.Add(-15 * time.Minute)},
@@ -1995,16 +1995,16 @@ func TestExtra_parseYAMLFrontMatter_NoClosing(t *testing.T) {
 
 func TestExtra_applyCandidateTransition_ImplicitHelpful(t *testing.T) {
 	result := &MaturityTransitionResult{
-		OldMaturity:  types.MaturityCandidate,
-		NewMaturity:  types.MaturityCandidate,
+		OldMaturity:  domain.MaturityCandidate,
+		NewMaturity:  domain.MaturityCandidate,
 		Utility:      0.8,
 		RewardCount:  12,
 		HelpfulCount: 2,
 		HarmfulCount: 5, // harmful > helpful, but reward >= 10
 	}
 	applyCandidateTransition(result)
-	if result.NewMaturity != types.MaturityEstablished {
-		t.Errorf("NewMaturity = %q, want %q (implicit helpful)", result.NewMaturity, types.MaturityEstablished)
+	if result.NewMaturity != domain.MaturityEstablished {
+		t.Errorf("NewMaturity = %q, want %q (implicit helpful)", result.NewMaturity, domain.MaturityEstablished)
 	}
 	if !result.Transitioned {
 		t.Error("Transitioned should be true")
@@ -2016,14 +2016,14 @@ func TestExtra_applyCandidateTransition_ImplicitHelpful(t *testing.T) {
 
 func TestExtra_applyCandidateTransition_Demotion(t *testing.T) {
 	result := &MaturityTransitionResult{
-		OldMaturity: types.MaturityCandidate,
-		NewMaturity: types.MaturityCandidate,
+		OldMaturity: domain.MaturityCandidate,
+		NewMaturity: domain.MaturityCandidate,
 		Utility:     0.1,
 		RewardCount: 1,
 	}
 	applyCandidateTransition(result)
-	if result.NewMaturity != types.MaturityProvisional {
-		t.Errorf("NewMaturity = %q, want %q (demotion)", result.NewMaturity, types.MaturityProvisional)
+	if result.NewMaturity != domain.MaturityProvisional {
+		t.Errorf("NewMaturity = %q, want %q (demotion)", result.NewMaturity, domain.MaturityProvisional)
 	}
 }
 
@@ -2278,7 +2278,7 @@ func TestExtra_filterLearningsByMaturity_FiltersCorrectly(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "c.jsonl"),
 		[]byte(`{"id":"c","maturity":"candidate"}`+"\n"), 0o600)
 
-	files, err := filterLearningsByMaturity(dir, types.MaturityCandidate)
+	files, err := filterLearningsByMaturity(dir, domain.MaturityCandidate)
 	if err != nil {
 		t.Fatalf("filterLearningsByMaturity: %v", err)
 	}
@@ -2482,7 +2482,7 @@ func TestExtra_ValidateCloseReason_TildePattern(t *testing.T) {
 func TestExtra_RecordCitation_WritesAndLoads(t *testing.T) {
 	dir := t.TempDir()
 
-	event := types.CitationEvent{
+	event := domain.CitationEvent{
 		ArtifactPath: "learnings/test.md",
 		SessionID:    "sess-001",
 		CitationType: "reference",
@@ -2505,7 +2505,7 @@ func TestExtra_RecordCitation_WritesAndLoads(t *testing.T) {
 }
 
 func TestExtra_RecordCitation_BadDir(t *testing.T) {
-	event := types.CitationEvent{ArtifactPath: "test.md"}
+	event := domain.CitationEvent{ArtifactPath: "test.md"}
 	err := RecordCitation("/dev/null/impossible", event)
 	if err == nil {
 		t.Fatal("expected error for impossible base dir")
@@ -2517,12 +2517,12 @@ func TestExtra_RecordCitation_BadDir(t *testing.T) {
 func TestExtra_GetCitationsSince_FiltersCorrectly(t *testing.T) {
 	dir := t.TempDir()
 
-	old := types.CitationEvent{
+	old := domain.CitationEvent{
 		ArtifactPath: "old.md",
 		SessionID:    "s1",
 		CitedAt:      time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
 	}
-	recent := types.CitationEvent{
+	recent := domain.CitationEvent{
 		ArtifactPath: "recent.md",
 		SessionID:    "s2",
 		CitedAt:      time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC),
@@ -2546,12 +2546,12 @@ func TestExtra_GetCitationsSince_FiltersCorrectly(t *testing.T) {
 func TestExtra_GetUniqueCitedArtifacts_DeduplicatesAndFilters(t *testing.T) {
 	dir := t.TempDir()
 
-	e1 := types.CitationEvent{ArtifactPath: "a.md", SessionID: "s1", CitedAt: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)}
-	e2 := types.CitationEvent{ArtifactPath: "a.md", SessionID: "s2", CitedAt: time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)}
-	e3 := types.CitationEvent{ArtifactPath: "b.md", SessionID: "s3", CitedAt: time.Date(2025, 8, 1, 0, 0, 0, 0, time.UTC)}
-	e4 := types.CitationEvent{ArtifactPath: "c.md", SessionID: "s4", CitedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)} // outside range
+	e1 := domain.CitationEvent{ArtifactPath: "a.md", SessionID: "s1", CitedAt: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC)}
+	e2 := domain.CitationEvent{ArtifactPath: "a.md", SessionID: "s2", CitedAt: time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)}
+	e3 := domain.CitationEvent{ArtifactPath: "b.md", SessionID: "s3", CitedAt: time.Date(2025, 8, 1, 0, 0, 0, 0, time.UTC)}
+	e4 := domain.CitationEvent{ArtifactPath: "c.md", SessionID: "s4", CitedAt: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)} // outside range
 
-	for _, e := range []types.CitationEvent{e1, e2, e3, e4} {
+	for _, e := range []domain.CitationEvent{e1, e2, e3, e4} {
 		RecordCitation(dir, e)
 	}
 
@@ -2571,9 +2571,9 @@ func TestExtra_GetUniqueCitedArtifacts_DeduplicatesAndFilters(t *testing.T) {
 func TestExtra_GetCitationsForSession_FiltersCorrectly(t *testing.T) {
 	dir := t.TempDir()
 
-	RecordCitation(dir, types.CitationEvent{ArtifactPath: "a.md", SessionID: "target-sess", CitedAt: time.Now()})
-	RecordCitation(dir, types.CitationEvent{ArtifactPath: "b.md", SessionID: "other-sess", CitedAt: time.Now()})
-	RecordCitation(dir, types.CitationEvent{ArtifactPath: "c.md", SessionID: "target-sess", CitedAt: time.Now()})
+	RecordCitation(dir, domain.CitationEvent{ArtifactPath: "a.md", SessionID: "target-sess", CitedAt: time.Now()})
+	RecordCitation(dir, domain.CitationEvent{ArtifactPath: "b.md", SessionID: "other-sess", CitedAt: time.Now()})
+	RecordCitation(dir, domain.CitationEvent{ArtifactPath: "c.md", SessionID: "target-sess", CitedAt: time.Now()})
 
 	filtered, err := GetCitationsForSession(dir, "target-sess")
 	if err != nil {

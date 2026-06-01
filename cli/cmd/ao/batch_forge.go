@@ -16,9 +16,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/boshu2/agentops/cli/internal/formatter"
-	"github.com/boshu2/agentops/cli/internal/parser"
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/extraction"
+	"github.com/boshu2/agentops/cli/internal/render"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 var forgeBatchCmd = &cobra.Command{
@@ -61,7 +61,7 @@ func loadAndFilterTranscripts(cwd, specificDir string, maxCount int) ([]transcri
 		return nil, 0, "", nil
 	}
 
-	forgedIndexPath := filepath.Join(cwd, storage.DefaultBaseDir, "forged.jsonl")
+	forgedIndexPath := filepath.Join(cwd, sessionstore.DefaultBaseDir, "forged.jsonl")
 	forgedSet, err := loadForgedIndex(forgedIndexPath)
 	if err != nil {
 		return nil, 0, "", fmt.Errorf("load forged index: %w", err)
@@ -124,18 +124,18 @@ func runForgeBatch(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Found %d transcript(s) to process (skipped %d already forged).\n", len(unforged), skippedCount)
 
-	baseDir := filepath.Join(cwd, storage.DefaultBaseDir)
-	fs := storage.NewFileStorage(
-		storage.WithBaseDir(baseDir),
-		storage.WithFormatters(formatter.NewMarkdownFormatter(), formatter.NewJSONLFormatter()),
+	baseDir := filepath.Join(cwd, sessionstore.DefaultBaseDir)
+	fs := sessionstore.NewFileStorage(
+		sessionstore.WithBaseDir(baseDir),
+		sessionstore.WithFormatters(render.NewMarkdownFormatter(), render.NewJSONLFormatter()),
 	)
 	if err := fs.Init(); err != nil {
 		return fmt.Errorf("initialize storage: %w", err)
 	}
 
-	p := parser.NewParser()
+	p := extraction.NewParser()
 	p.MaxContentLength = 0
-	extractor := parser.NewExtractor()
+	extractor := extraction.NewExtractor()
 
 	var acc batchForgeAccumulator
 	for i, t := range unforged {
@@ -169,7 +169,7 @@ func filterUnforgedTranscripts(transcripts []transcriptCandidate, forgedSet map[
 
 // forgeSingleTranscript processes one transcript through the forge pipeline.
 // Returns (ok, decisions, knowledge, path).
-func forgeSingleTranscript(i, total int, t transcriptCandidate, fs *storage.FileStorage, p *parser.Parser, extractor *parser.Extractor, forgedIndexPath string) (bool, []string, []string, string) {
+func forgeSingleTranscript(i, total int, t transcriptCandidate, fs *sessionstore.FileStorage, p *extraction.Parser, extractor *extraction.Extractor, forgedIndexPath string) (bool, []string, []string, string) {
 	fmt.Printf("[%d/%d] Processing %s...\n", i+1, total, filepath.Base(t.path))
 
 	session, err := processTranscript(t.path, p, extractor, false, os.Stdout)
@@ -184,7 +184,7 @@ func forgeSingleTranscript(i, total int, t transcriptCandidate, fs *storage.File
 		return false, nil, nil, ""
 	}
 
-	indexEntry := &storage.IndexEntry{
+	indexEntry := &sessionstore.IndexEntry{
 		SessionID:   session.ID,
 		Date:        session.Date,
 		SessionPath: sessionPath,
@@ -194,7 +194,7 @@ func forgeSingleTranscript(i, total int, t transcriptCandidate, fs *storage.File
 		fmt.Fprintf(os.Stderr, "  Warning: failed to index session: %v\n", err)
 	}
 
-	provRecord := &storage.ProvenanceRecord{
+	provRecord := &sessionstore.ProvenanceRecord{
 		ID:            fmt.Sprintf("prov-%s", session.ID[:7]),
 		ArtifactPath:  sessionPath,
 		WorkspacePath: workspacePathFromAgentArtifactPath(sessionPath),
@@ -472,7 +472,7 @@ func appendForgedRecord(path string, record ForgedRecord) error {
 
 // triggerExtraction runs extraction for all pending sessions.
 func triggerExtraction(cwd string) (int, error) {
-	pendingPath := filepath.Join(cwd, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(cwd, sessionstore.DefaultBaseDir, "pending.jsonl")
 
 	// Check if pending file exists
 	if _, err := os.Stat(pendingPath); os.IsNotExist(err) {

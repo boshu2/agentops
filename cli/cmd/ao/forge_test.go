@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/parser"
-	"github.com/boshu2/agentops/cli/internal/storage"
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
+	"github.com/boshu2/agentops/cli/internal/extraction"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 // ---------------------------------------------------------------------------
@@ -366,7 +366,7 @@ func TestForge_noFilesError_NotQuiet(t *testing.T) {
 
 func TestForge_forgeTotals_addSession(t *testing.T) {
 	totals := forgeTotals{}
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		Decisions: []string{"decision1", "decision2"},
 		Knowledge: []string{"knowledge1"},
 	}
@@ -383,7 +383,7 @@ func TestForge_forgeTotals_addSession(t *testing.T) {
 	}
 
 	// Add another session
-	totals.addSession(&storage.Session{
+	totals.addSession(&sessionstore.Session{
 		Decisions: []string{"d3"},
 		Knowledge: []string{"k2", "k3"},
 	})
@@ -534,8 +534,8 @@ func TestForge_inferSessionIDFromPath(t *testing.T) {
 
 func TestForge_updateSessionMeta(t *testing.T) {
 	t.Run("sets ID from first message", func(t *testing.T) {
-		session := &storage.Session{}
-		msg := types.TranscriptMessage{SessionID: "sess-123"}
+		session := &sessionstore.Session{}
+		msg := domain.TranscriptMessage{SessionID: "sess-123"}
 		updateSessionMeta(session, msg)
 		if session.ID != "sess-123" {
 			t.Errorf("ID = %q, want %q", session.ID, "sess-123")
@@ -543,8 +543,8 @@ func TestForge_updateSessionMeta(t *testing.T) {
 	})
 
 	t.Run("does not overwrite existing ID", func(t *testing.T) {
-		session := &storage.Session{ID: "first-id"}
-		msg := types.TranscriptMessage{SessionID: "second-id"}
+		session := &sessionstore.Session{ID: "first-id"}
+		msg := domain.TranscriptMessage{SessionID: "second-id"}
 		updateSessionMeta(session, msg)
 		if session.ID != "first-id" {
 			t.Errorf("ID = %q, want %q (should not overwrite)", session.ID, "first-id")
@@ -554,9 +554,9 @@ func TestForge_updateSessionMeta(t *testing.T) {
 	t.Run("picks earliest timestamp", func(t *testing.T) {
 		t1 := time.Date(2026, 2, 1, 10, 0, 0, 0, time.UTC)
 		t2 := time.Date(2026, 1, 15, 10, 0, 0, 0, time.UTC)
-		session := &storage.Session{Date: t1}
+		session := &sessionstore.Session{Date: t1}
 
-		msg := types.TranscriptMessage{Timestamp: t2}
+		msg := domain.TranscriptMessage{Timestamp: t2}
 		updateSessionMeta(session, msg)
 		if !session.Date.Equal(t2) {
 			t.Errorf("Date = %v, want %v (earlier)", session.Date, t2)
@@ -565,9 +565,9 @@ func TestForge_updateSessionMeta(t *testing.T) {
 
 	t.Run("ignores zero timestamp", func(t *testing.T) {
 		t1 := time.Date(2026, 2, 1, 10, 0, 0, 0, time.UTC)
-		session := &storage.Session{Date: t1}
+		session := &sessionstore.Session{Date: t1}
 
-		msg := types.TranscriptMessage{}
+		msg := domain.TranscriptMessage{}
 		updateSessionMeta(session, msg)
 		if !session.Date.Equal(t1) {
 			t.Errorf("Date should remain unchanged, got %v", session.Date)
@@ -584,7 +584,7 @@ func TestForge_extractFilePathsFromTool(t *testing.T) {
 		state := &transcriptState{
 			SeenFiles: make(map[string]bool),
 		}
-		tool := types.ToolCall{
+		tool := domain.ToolCall{
 			Name:  "Read",
 			Input: map[string]any{"file_path": "/src/main.go"},
 		}
@@ -598,7 +598,7 @@ func TestForge_extractFilePathsFromTool(t *testing.T) {
 		state := &transcriptState{
 			SeenFiles: make(map[string]bool),
 		}
-		tool := types.ToolCall{
+		tool := domain.ToolCall{
 			Name:  "Glob",
 			Input: map[string]any{"path": "/src/"},
 		}
@@ -612,7 +612,7 @@ func TestForge_extractFilePathsFromTool(t *testing.T) {
 		state := &transcriptState{
 			SeenFiles: make(map[string]bool),
 		}
-		tool := types.ToolCall{
+		tool := domain.ToolCall{
 			Name:  "Edit",
 			Input: map[string]any{"filePath": "/src/camel.go"},
 		}
@@ -626,7 +626,7 @@ func TestForge_extractFilePathsFromTool(t *testing.T) {
 		state := &transcriptState{
 			SeenFiles: make(map[string]bool),
 		}
-		tool := types.ToolCall{
+		tool := domain.ToolCall{
 			Name:  "Read",
 			Input: map[string]any{"file_path": "/src/main.go"},
 		}
@@ -639,7 +639,7 @@ func TestForge_extractFilePathsFromTool(t *testing.T) {
 
 	t.Run("nil input is safe", func(t *testing.T) {
 		state := &transcriptState{SeenFiles: make(map[string]bool)}
-		tool := types.ToolCall{Name: "test", Input: nil}
+		tool := domain.ToolCall{Name: "test", Input: nil}
 		extractFilePathsFromTool(tool, state) // should not panic
 	})
 }
@@ -864,7 +864,7 @@ func TestForge_truncateString(t *testing.T) {
 func TestForge_queueForExtraction(t *testing.T) {
 	tmp := t.TempDir()
 
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:        "test-session-1234567890",
 		Summary:   "Test summary",
 		Decisions: []string{"decision1"},
@@ -876,7 +876,7 @@ func TestForge_queueForExtraction(t *testing.T) {
 		t.Fatalf("queueForExtraction failed: %v", err)
 	}
 
-	pendingPath := filepath.Join(tmp, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(tmp, sessionstore.DefaultBaseDir, "pending.jsonl")
 	content, err := os.ReadFile(pendingPath)
 	if err != nil {
 		t.Fatalf("read pending file: %v", err)
@@ -948,7 +948,7 @@ func TestRunForgeTier1_EnqueuesDreamCuratorJobWhenWorkerConfigured(t *testing.T)
 // ---------------------------------------------------------------------------
 
 func TestForge_finalizeTranscriptSession(t *testing.T) {
-	session := &storage.Session{}
+	session := &sessionstore.Session{}
 	state := &transcriptState{
 		Decisions:    []string{"d1", "d2", "d1"}, // contains duplicate
 		Knowledge:    []string{"k1"},
@@ -1122,14 +1122,14 @@ func TestForge_forgeWarnf_QuietSuppressesOutput(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestForge_extractToolRefs(t *testing.T) {
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ToolCalls: make(map[string]int),
 	}
 	state := &transcriptState{
 		SeenFiles: make(map[string]bool),
 	}
 
-	tools := []types.ToolCall{
+	tools := []domain.ToolCall{
 		{Name: "Read", Input: map[string]any{"file_path": "/a.go"}},
 		{Name: "Write", Input: map[string]any{"file_path": "/b.go"}},
 		{Name: "Read", Input: map[string]any{"file_path": "/a.go"}}, // duplicate
@@ -1451,11 +1451,11 @@ func TestForgeCoverage_initSession(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestForgeCoverage_updateSessionMeta(t *testing.T) {
-	session := &storage.Session{}
+	session := &sessionstore.Session{}
 	now := time.Now()
 
 	// First message sets ID and date
-	msg1 := types.TranscriptMessage{
+	msg1 := domain.TranscriptMessage{
 		SessionID: "sess-123",
 		Timestamp: now,
 	}
@@ -1469,7 +1469,7 @@ func TestForgeCoverage_updateSessionMeta(t *testing.T) {
 
 	// Second message with earlier timestamp should update date
 	earlier := now.Add(-time.Hour)
-	msg2 := types.TranscriptMessage{
+	msg2 := domain.TranscriptMessage{
 		SessionID: "sess-456",
 		Timestamp: earlier,
 	}
@@ -1482,7 +1482,7 @@ func TestForgeCoverage_updateSessionMeta(t *testing.T) {
 	}
 
 	// Message with zero timestamp should not update date
-	msg3 := types.TranscriptMessage{
+	msg3 := domain.TranscriptMessage{
 		SessionID: "",
 	}
 	updateSessionMeta(session, msg3)
@@ -1492,8 +1492,8 @@ func TestForgeCoverage_updateSessionMeta(t *testing.T) {
 }
 
 func TestForgeCoverage_updateSessionMeta_EmptySessionID(t *testing.T) {
-	session := &storage.Session{}
-	msg := types.TranscriptMessage{
+	session := &sessionstore.Session{}
+	msg := domain.TranscriptMessage{
 		SessionID: "",
 		Timestamp: time.Now(),
 	}
@@ -1508,12 +1508,12 @@ func TestForgeCoverage_updateSessionMeta_EmptySessionID(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestForgeCoverage_extractMessageKnowledge_EmptyContent(t *testing.T) {
-	extractor := parser.NewExtractor()
+	extractor := extraction.NewExtractor()
 	state := &transcriptState{
 		SeenFiles:  make(map[string]bool),
 		SeenIssues: make(map[string]bool),
 	}
-	msg := types.TranscriptMessage{Content: ""}
+	msg := domain.TranscriptMessage{Content: ""}
 	extractMessageKnowledge(msg, extractor, state)
 	// Should be a no-op
 	if len(state.Decisions) != 0 || len(state.Knowledge) != 0 {
@@ -1522,12 +1522,12 @@ func TestForgeCoverage_extractMessageKnowledge_EmptyContent(t *testing.T) {
 }
 
 func TestForgeCoverage_extractMessageKnowledge_WithContent(t *testing.T) {
-	extractor := parser.NewExtractor()
+	extractor := extraction.NewExtractor()
 	state := &transcriptState{
 		SeenFiles:  make(map[string]bool),
 		SeenIssues: make(map[string]bool),
 	}
-	msg := types.TranscriptMessage{
+	msg := domain.TranscriptMessage{
 		Content: "We decided to use PostgreSQL because it supports JSON indexing. The solution was to add a retry loop around the API calls.",
 	}
 	extractMessageKnowledge(msg, extractor, state)
@@ -1546,14 +1546,14 @@ func TestForgeCoverage_extractMessageKnowledge_WithContent(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestForgeCoverage_extractMessageRefs(t *testing.T) {
-	session := &storage.Session{ToolCalls: make(map[string]int)}
+	session := &sessionstore.Session{ToolCalls: make(map[string]int)}
 	state := &transcriptState{
 		SeenFiles:  make(map[string]bool),
 		SeenIssues: make(map[string]bool),
 	}
-	msg := types.TranscriptMessage{
+	msg := domain.TranscriptMessage{
 		Content: "working on ag-abc and ol-def",
-		Tools: []types.ToolCall{
+		Tools: []domain.ToolCall{
 			{
 				Name:  "Write",
 				Input: map[string]any{"file_path": "/test/file.go"},
@@ -1574,12 +1574,12 @@ func TestForgeCoverage_extractMessageRefs(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestForgeCoverage_extractToolRefs(t *testing.T) {
-	session := &storage.Session{ToolCalls: make(map[string]int)}
+	session := &sessionstore.Session{ToolCalls: make(map[string]int)}
 	state := &transcriptState{
 		SeenFiles:  make(map[string]bool),
 		SeenIssues: make(map[string]bool),
 	}
-	tools := []types.ToolCall{
+	tools := []domain.ToolCall{
 		{Name: "Write", Input: map[string]any{"file_path": "/a.go"}},
 		{Name: "Read", Input: map[string]any{"path": "/b.go"}},
 		{Name: "Write", Input: map[string]any{"file_path": "/c.go"}},
@@ -1608,52 +1608,52 @@ func TestForgeCoverage_extractToolRefs(t *testing.T) {
 func TestForgeCoverage_extractFilePathsFromTool(t *testing.T) {
 	tests := []struct {
 		name      string
-		tool      types.ToolCall
+		tool      domain.ToolCall
 		wantFiles int
 	}{
 		{
 			name:      "nil input",
-			tool:      types.ToolCall{Input: nil},
+			tool:      domain.ToolCall{Input: nil},
 			wantFiles: 0,
 		},
 		{
 			name: "file_path key",
-			tool: types.ToolCall{
+			tool: domain.ToolCall{
 				Input: map[string]any{"file_path": "/test.go"},
 			},
 			wantFiles: 1,
 		},
 		{
 			name: "path key",
-			tool: types.ToolCall{
+			tool: domain.ToolCall{
 				Input: map[string]any{"path": "/test.go"},
 			},
 			wantFiles: 1,
 		},
 		{
 			name: "filePath key",
-			tool: types.ToolCall{
+			tool: domain.ToolCall{
 				Input: map[string]any{"filePath": "/camel.go"},
 			},
 			wantFiles: 1,
 		},
 		{
 			name: "both keys same file",
-			tool: types.ToolCall{
+			tool: domain.ToolCall{
 				Input: map[string]any{"file_path": "/same.go", "path": "/same.go"},
 			},
 			wantFiles: 1, // deduped by SeenFiles
 		},
 		{
 			name: "both keys different files",
-			tool: types.ToolCall{
+			tool: domain.ToolCall{
 				Input: map[string]any{"file_path": "/a.go", "path": "/b.go"},
 			},
 			wantFiles: 2,
 		},
 		{
 			name: "non-string file_path",
-			tool: types.ToolCall{
+			tool: domain.ToolCall{
 				Input: map[string]any{"file_path": 123},
 			},
 			wantFiles: 0,
@@ -1679,7 +1679,7 @@ func TestForgeCoverage_extractFilePathsFromTool_Dedup(t *testing.T) {
 		SeenFiles:  make(map[string]bool),
 		SeenIssues: make(map[string]bool),
 	}
-	tool := types.ToolCall{
+	tool := domain.ToolCall{
 		Input: map[string]any{"file_path": "/same.go"},
 	}
 	extractFilePathsFromTool(tool, state)
@@ -1831,7 +1831,7 @@ func TestForgeCoverage_forgeWarnf_NotQuiet(t *testing.T) {
 
 func TestForgeCoverage_forgeTotals_addSession(t *testing.T) {
 	totals := forgeTotals{}
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		Decisions: []string{"d1", "d2"},
 		Knowledge: []string{"k1"},
 	}
@@ -1847,7 +1847,7 @@ func TestForgeCoverage_forgeTotals_addSession(t *testing.T) {
 	}
 
 	// Add another session
-	session2 := &storage.Session{
+	session2 := &sessionstore.Session{
 		Decisions: []string{"d3"},
 		Knowledge: []string{"k2", "k3"},
 	}
@@ -2012,7 +2012,7 @@ func TestForgeCoverage_drainParseErrors(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestForgeCoverage_finalizeTranscriptSession(t *testing.T) {
-	session := &storage.Session{}
+	session := &sessionstore.Session{}
 	state := &transcriptState{
 		Decisions:    []string{"d1", "d1", "d2"}, // has duplicates
 		Knowledge:    []string{"k1", "k2", "k1"}, // has duplicates
@@ -2322,7 +2322,7 @@ func TestForgeCoverage_fileWithTime(t *testing.T) {
 
 func TestForgeCoverage_queueForExtraction(t *testing.T) {
 	tmp := t.TempDir()
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:        "test-session-123",
 		Summary:   "test summary",
 		Decisions: []string{"d1"},
@@ -2335,7 +2335,7 @@ func TestForgeCoverage_queueForExtraction(t *testing.T) {
 	}
 
 	// Verify pending.jsonl was created
-	pendingPath := filepath.Join(tmp, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(tmp, sessionstore.DefaultBaseDir, "pending.jsonl")
 	data, err := os.ReadFile(pendingPath)
 	if err != nil {
 		t.Fatalf("pending file not created: %v", err)
@@ -2353,13 +2353,13 @@ func TestForgeCoverage_queueForExtraction(t *testing.T) {
 
 func TestForgeCoverage_queueForExtraction_Append(t *testing.T) {
 	tmp := t.TempDir()
-	session1 := &storage.Session{ID: "sess-001", Summary: "first"}
-	session2 := &storage.Session{ID: "sess-002", Summary: "second"}
+	session1 := &sessionstore.Session{ID: "sess-001", Summary: "first"}
+	session2 := &sessionstore.Session{ID: "sess-002", Summary: "second"}
 
 	_ = queueForExtraction(session1, "path1", "trans1", tmp)
 	_ = queueForExtraction(session2, "path2", "trans2", tmp)
 
-	pendingPath := filepath.Join(tmp, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(tmp, sessionstore.DefaultBaseDir, "pending.jsonl")
 	data, err := os.ReadFile(pendingPath)
 	if err != nil {
 		t.Fatal(err)
@@ -2378,12 +2378,12 @@ func TestForgeCoverage_queueForExtraction_Append(t *testing.T) {
 func TestForgeCoverage_writeSessionIndex(t *testing.T) {
 	tmp := t.TempDir()
 	baseDir := filepath.Join(tmp, ".agents", "ao")
-	fs := storage.NewFileStorage(storage.WithBaseDir(baseDir))
+	fs := sessionstore.NewFileStorage(sessionstore.WithBaseDir(baseDir))
 	if err := fs.Init(); err != nil {
 		t.Fatal(err)
 	}
 
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:      "test-123",
 		Date:    time.Now(),
 		Summary: "test session",
@@ -2401,7 +2401,7 @@ func TestForgeCoverage_writeSessionIndex(t *testing.T) {
 func TestForgeCoverage_writeSessionProvenance(t *testing.T) {
 	tmp := t.TempDir()
 	baseDir := filepath.Join(tmp, ".agents", "ao")
-	fs := storage.NewFileStorage(storage.WithBaseDir(baseDir))
+	fs := sessionstore.NewFileStorage(sessionstore.WithBaseDir(baseDir))
 	if err := fs.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -2415,7 +2415,7 @@ func TestForgeCoverage_writeSessionProvenance(t *testing.T) {
 func TestForgeCoverage_writeSessionProvenance_NoSessionID(t *testing.T) {
 	tmp := t.TempDir()
 	baseDir := filepath.Join(tmp, ".agents", "ao")
-	fs := storage.NewFileStorage(storage.WithBaseDir(baseDir))
+	fs := sessionstore.NewFileStorage(sessionstore.WithBaseDir(baseDir))
 	if err := fs.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -2448,25 +2448,25 @@ func TestForgeCoverage_updateSearchIndexForFile_NoIndex(t *testing.T) {
 
 func TestForgeCoverage_consumeTranscriptMessages(t *testing.T) {
 	session := initSession("/test.jsonl")
-	extractor := parser.NewExtractor()
+	extractor := extraction.NewExtractor()
 	state := &transcriptState{
 		SeenFiles:  make(map[string]bool),
 		SeenIssues: make(map[string]bool),
 	}
 
-	msgCh := make(chan types.TranscriptMessage, 3)
-	msgCh <- types.TranscriptMessage{
+	msgCh := make(chan domain.TranscriptMessage, 3)
+	msgCh <- domain.TranscriptMessage{
 		SessionID: "s1",
 		Content:   "hello world",
 		Timestamp: time.Now(),
 	}
-	msgCh <- types.TranscriptMessage{
+	msgCh <- domain.TranscriptMessage{
 		Content: "working on ag-abc",
-		Tools: []types.ToolCall{
+		Tools: []domain.ToolCall{
 			{Name: "Write", Input: map[string]any{"file_path": "/test.go"}},
 		},
 	}
-	msgCh <- types.TranscriptMessage{
+	msgCh <- domain.TranscriptMessage{
 		Content: "another message",
 	}
 	close(msgCh)
@@ -2488,7 +2488,7 @@ func TestForgeCoverage_processMarkdown_ValidFile(t *testing.T) {
 	content := "# Title\n\nSome content here.\n\n## Section 2\n\nMore content about ag-xyz."
 	os.WriteFile(path, []byte(content), 0644)
 
-	extractor := parser.NewExtractor()
+	extractor := extraction.NewExtractor()
 	session, err := processMarkdown(path, extractor, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -2513,7 +2513,7 @@ func TestForgeCoverage_processMarkdown_DeterministicID(t *testing.T) {
 	path := filepath.Join(tmp, "test.md")
 	os.WriteFile(path, []byte("# Test\ncontent"), 0644)
 
-	extractor := parser.NewExtractor()
+	extractor := extraction.NewExtractor()
 	s1, _ := processMarkdown(path, extractor, true)
 	s2, _ := processMarkdown(path, extractor, true)
 

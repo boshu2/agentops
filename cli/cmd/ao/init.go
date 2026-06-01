@@ -13,12 +13,12 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/repo"
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 // agentsDirs are all .agents/ subdirectories ao init creates.
 // Mirrors session-start.sh AGENTS_DIRS — keep in sync.
-// Note: .agents/ao/{sessions,index,provenance} are created separately via storage.Init().
+// Note: .agents/ao/{sessions,index,provenance} are created separately via sessionstore.Init().
 var agentsDirs = lifecycle.CoreAgentDirPaths()
 
 var (
@@ -215,12 +215,12 @@ func createAgentsDirs(cwd string) error {
 
 // initStorage initializes the .agents/ao/ storage subsystem.
 func initStorage(cwd string) error {
-	baseDir := filepath.Join(cwd, storage.DefaultBaseDir)
+	baseDir := filepath.Join(cwd, sessionstore.DefaultBaseDir)
 	if dryRun {
 		fmt.Println("[dry-run] Would create .agents/ao/{sessions,index,provenance}")
 		return nil
 	}
-	fs := storage.NewFileStorage(storage.WithBaseDir(baseDir))
+	fs := sessionstore.NewFileStorage(sessionstore.WithBaseDir(baseDir))
 	if err := fs.Init(); err != nil {
 		return fmt.Errorf("initialize storage: %w", err)
 	}
@@ -296,7 +296,7 @@ func printInitSummary(cwd string, isGitRepo bool) {
 	for _, dir := range agentsDirs {
 		fmt.Printf("  %s/\n", dir)
 	}
-	fmt.Printf("  %s/{sessions,index,provenance}/\n", storage.DefaultBaseDir)
+	fmt.Printf("  %s/{sessions,index,provenance}/\n", sessionstore.DefaultBaseDir)
 	if isGitRepo {
 		if initStealth {
 			fmt.Println("  .git/info/exclude (stealth)")

@@ -3,24 +3,24 @@ package taxonomy
 import (
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestAssignTier(t *testing.T) {
 	tests := []struct {
 		name     string
 		score    float64
-		expected types.Tier
+		expected domain.Tier
 	}{
-		{"Gold high", 0.95, types.TierGold},
-		{"Gold boundary", 0.85, types.TierGold},
-		{"Silver high", 0.84, types.TierSilver},
-		{"Silver boundary", 0.70, types.TierSilver},
-		{"Bronze high", 0.69, types.TierBronze},
-		{"Bronze boundary", 0.50, types.TierBronze},
-		{"Discard high", 0.49, types.TierDiscard},
-		{"Discard zero", 0.0, types.TierDiscard},
-		{"Perfect score", 1.0, types.TierGold},
+		{"Gold high", 0.95, domain.TierGold},
+		{"Gold boundary", 0.85, domain.TierGold},
+		{"Silver high", 0.84, domain.TierSilver},
+		{"Silver boundary", 0.70, domain.TierSilver},
+		{"Bronze high", 0.69, domain.TierBronze},
+		{"Bronze boundary", 0.50, domain.TierBronze},
+		{"Discard high", 0.49, domain.TierDiscard},
+		{"Discard zero", 0.0, domain.TierDiscard},
+		{"Perfect score", 1.0, domain.TierGold},
 	}
 
 	for _, tt := range tests {
@@ -101,15 +101,15 @@ func TestValidateWeights(t *testing.T) {
 
 func TestGetBaseScore(t *testing.T) {
 	tests := []struct {
-		kt       types.KnowledgeType
+		kt       domain.KnowledgeType
 		expected float64
 	}{
-		{types.KnowledgeTypeDecision, 0.8},
-		{types.KnowledgeTypeSolution, 0.9},
-		{types.KnowledgeTypeLearning, 0.7},
-		{types.KnowledgeTypeFailure, 0.75},
-		{types.KnowledgeTypeReference, 0.5},
-		{types.KnowledgeType("unknown"), 0.5}, // Default for unknown
+		{domain.KnowledgeTypeDecision, 0.8},
+		{domain.KnowledgeTypeSolution, 0.9},
+		{domain.KnowledgeTypeLearning, 0.7},
+		{domain.KnowledgeTypeFailure, 0.75},
+		{domain.KnowledgeTypeReference, 0.5},
+		{domain.KnowledgeType("unknown"), 0.5}, // Default for unknown
 	}
 
 	for _, tt := range tests {
@@ -123,14 +123,14 @@ func TestGetBaseScore(t *testing.T) {
 
 func TestGetConfidence(t *testing.T) {
 	tests := []struct {
-		tier     types.Tier
+		tier     domain.Tier
 		expected float64
 	}{
-		{types.TierGold, 0.95},
-		{types.TierSilver, 0.80},
-		{types.TierBronze, 0.60},
-		{types.TierDiscard, 0.0},
-		{types.Tier("unknown"), 0.0}, // Default for unknown
+		{domain.TierGold, 0.95},
+		{domain.TierSilver, 0.80},
+		{domain.TierBronze, 0.60},
+		{domain.TierDiscard, 0.0},
+		{domain.Tier("unknown"), 0.0}, // Default for unknown
 	}
 
 	for _, tt := range tests {
@@ -144,13 +144,13 @@ func TestGetConfidence(t *testing.T) {
 
 func TestRequiresHumanGate(t *testing.T) {
 	tests := []struct {
-		tier     types.Tier
+		tier     domain.Tier
 		expected bool
 	}{
-		{types.TierGold, false},
-		{types.TierSilver, false},
-		{types.TierBronze, true},
-		{types.TierDiscard, false},
+		{domain.TierGold, false},
+		{domain.TierSilver, false},
+		{domain.TierBronze, true},
+		{domain.TierDiscard, false},
 	}
 
 	for _, tt := range tests {
@@ -163,12 +163,12 @@ func TestRequiresHumanGate(t *testing.T) {
 }
 
 func TestKnowledgeTypesCompleteness(t *testing.T) {
-	expectedTypes := []types.KnowledgeType{
-		types.KnowledgeTypeDecision,
-		types.KnowledgeTypeSolution,
-		types.KnowledgeTypeLearning,
-		types.KnowledgeTypeFailure,
-		types.KnowledgeTypeReference,
+	expectedTypes := []domain.KnowledgeType{
+		domain.KnowledgeTypeDecision,
+		domain.KnowledgeTypeSolution,
+		domain.KnowledgeTypeLearning,
+		domain.KnowledgeTypeFailure,
+		domain.KnowledgeTypeReference,
 	}
 
 	for _, kt := range expectedTypes {
@@ -183,11 +183,11 @@ func TestKnowledgeTypesCompleteness(t *testing.T) {
 }
 
 func TestTierConfigsCompleteness(t *testing.T) {
-	expectedTiers := []types.Tier{
-		types.TierGold,
-		types.TierSilver,
-		types.TierBronze,
-		types.TierDiscard,
+	expectedTiers := []domain.Tier{
+		domain.TierGold,
+		domain.TierSilver,
+		domain.TierBronze,
+		domain.TierDiscard,
 	}
 
 	for _, tier := range expectedTiers {
@@ -203,30 +203,30 @@ func TestTierConfigsCompleteness(t *testing.T) {
 
 func TestAssignTier_EmptyConfigs(t *testing.T) {
 	// Empty config map: should return Discard for any score
-	emptyConfigs := map[types.Tier]TierConfig{}
+	emptyConfigs := map[domain.Tier]TierConfig{}
 	got := AssignTier(0.95, emptyConfigs)
-	if got != types.TierDiscard {
-		t.Errorf("AssignTier(0.95, empty) = %q, want %q", got, types.TierDiscard)
+	if got != domain.TierDiscard {
+		t.Errorf("AssignTier(0.95, empty) = %q, want %q", got, domain.TierDiscard)
 	}
 }
 
 func TestAssignTier_PartialConfigs(t *testing.T) {
 	// Config with only Gold tier
-	partial := map[types.Tier]TierConfig{
-		types.TierGold: DefaultTierConfigs[types.TierGold],
+	partial := map[domain.Tier]TierConfig{
+		domain.TierGold: DefaultTierConfigs[domain.TierGold],
 	}
 	// Score that would be Gold
-	if got := AssignTier(0.90, partial); got != types.TierGold {
-		t.Errorf("AssignTier(0.90, gold-only) = %q, want %q", got, types.TierGold)
+	if got := AssignTier(0.90, partial); got != domain.TierGold {
+		t.Errorf("AssignTier(0.90, gold-only) = %q, want %q", got, domain.TierGold)
 	}
 	// Score that would be Silver (not in config) — should fall through to Discard
-	if got := AssignTier(0.75, partial); got != types.TierDiscard {
-		t.Errorf("AssignTier(0.75, gold-only) = %q, want %q", got, types.TierDiscard)
+	if got := AssignTier(0.75, partial); got != domain.TierDiscard {
+		t.Errorf("AssignTier(0.75, gold-only) = %q, want %q", got, domain.TierDiscard)
 	}
 }
 
 func TestRequiresHumanGate_UnknownTier(t *testing.T) {
-	if got := RequiresHumanGate(types.Tier("unknown"), DefaultTierConfigs); got != false {
+	if got := RequiresHumanGate(domain.Tier("unknown"), DefaultTierConfigs); got != false {
 		t.Errorf("RequiresHumanGate(unknown) = %v, want false", got)
 	}
 }
@@ -257,10 +257,10 @@ func BenchmarkAssignTier(b *testing.B) {
 }
 
 func BenchmarkGetBaseScore(b *testing.B) {
-	knTypes := []types.KnowledgeType{
-		types.KnowledgeTypeLearning,
-		types.KnowledgeTypeDecision,
-		types.KnowledgeTypeSolution,
+	knTypes := []domain.KnowledgeType{
+		domain.KnowledgeTypeLearning,
+		domain.KnowledgeTypeDecision,
+		domain.KnowledgeTypeSolution,
 	}
 	b.ResetTimer()
 	for i := range b.N {

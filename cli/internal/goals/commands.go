@@ -15,7 +15,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/paths"
-	"github.com/boshu2/agentops/cli/internal/shellutil"
+	"github.com/boshu2/agentops/cli/internal/shell"
 )
 
 // withGoalFileCwd anchors the current process working directory to the git
@@ -915,7 +915,7 @@ func RunAdd(ctx context.Context, opts AddOptions) error {
 		defer cancel()
 		// SanitizedBashCommand bypasses ~/.bashrc and BASH_ENV so user shell
 		// aliases cannot silently change the meaning of new goal check strings.
-		testCmd := shellutil.SanitizedBashCommand(checkCtx, opts.Check)
+		testCmd := shell.SanitizedBashCommand(checkCtx, opts.Check)
 		if out, err := testCmd.CombinedOutput(); err != nil {
 			return fmt.Errorf("check command failed (exit non-zero):\n%s", string(out))
 		}

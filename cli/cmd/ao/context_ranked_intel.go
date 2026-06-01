@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	aocontext "github.com/boshu2/agentops/cli/internal/context"
+	aocontext "github.com/boshu2/agentops/cli/internal/contextpacket"
 )
 
 type rankedContextBundle struct {

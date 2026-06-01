@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestDeduplicateCitations(t *testing.T) {
@@ -15,17 +15,17 @@ func TestDeduplicateCitations(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		citations []types.CitationEvent
+		citations []domain.CitationEvent
 		wantCount int
 	}{
 		{
 			name:      "empty",
-			citations: []types.CitationEvent{},
+			citations: []domain.CitationEvent{},
 			wantCount: 0,
 		},
 		{
 			name: "no duplicates",
-			citations: []types.CitationEvent{
+			citations: []domain.CitationEvent{
 				{ArtifactPath: "/a.md", SessionID: "s1", CitedAt: now},
 				{ArtifactPath: "/b.md", SessionID: "s1", CitedAt: now},
 			},
@@ -33,7 +33,7 @@ func TestDeduplicateCitations(t *testing.T) {
 		},
 		{
 			name: "with duplicates",
-			citations: []types.CitationEvent{
+			citations: []domain.CitationEvent{
 				{ArtifactPath: "/a.md", SessionID: "s1", CitedAt: now},
 				{ArtifactPath: "/a.md", SessionID: "s2", CitedAt: now},
 				{ArtifactPath: "/b.md", SessionID: "s1", CitedAt: now},
@@ -42,7 +42,7 @@ func TestDeduplicateCitations(t *testing.T) {
 		},
 		{
 			name: "all duplicates",
-			citations: []types.CitationEvent{
+			citations: []domain.CitationEvent{
 				{ArtifactPath: "/a.md", SessionID: "s1", CitedAt: now},
 				{ArtifactPath: "/a.md", SessionID: "s2", CitedAt: now},
 				{ArtifactPath: "/a.md", SessionID: "s3", CitedAt: now},
@@ -51,7 +51,7 @@ func TestDeduplicateCitations(t *testing.T) {
 		},
 		{
 			name: "mixed relative and absolute path aliases",
-			citations: []types.CitationEvent{
+			citations: []domain.CitationEvent{
 				{ArtifactPath: ".agents/learnings/L1.md", SessionID: "s1", CitedAt: now},
 				{ArtifactPath: "/tmp/repo/.agents/learnings/L1.md", SessionID: "s2", CitedAt: now},
 			},
@@ -74,7 +74,7 @@ func TestWriteCitations(t *testing.T) {
 
 	t.Run("writes citations to file", func(t *testing.T) {
 		dir := t.TempDir()
-		citations := []types.CitationEvent{
+		citations := []domain.CitationEvent{
 			{ArtifactPath: "/a.md", SessionID: "s1", CitedAt: now, CitationType: "retrieved"},
 			{ArtifactPath: "/b.md", SessionID: "s1", CitedAt: now, CitationType: "applied"},
 		}
@@ -97,7 +97,7 @@ func TestWriteCitations(t *testing.T) {
 
 	t.Run("empty citations creates empty file", func(t *testing.T) {
 		dir := t.TempDir()
-		if err := writeCitations(dir, []types.CitationEvent{}); err != nil {
+		if err := writeCitations(dir, []domain.CitationEvent{}); err != nil {
 			t.Fatalf("writeCitations: %v", err)
 		}
 		citationsPath := filepath.Join(dir, ".agents", "ao", "citations.jsonl")
@@ -109,7 +109,7 @@ func TestWriteCitations(t *testing.T) {
 	t.Run("overwrites existing file", func(t *testing.T) {
 		dir := t.TempDir()
 		// Write 2 citations first
-		initial := []types.CitationEvent{
+		initial := []domain.CitationEvent{
 			{ArtifactPath: "/a.md", SessionID: "s1", CitedAt: now},
 			{ArtifactPath: "/b.md", SessionID: "s1", CitedAt: now},
 		}
@@ -118,7 +118,7 @@ func TestWriteCitations(t *testing.T) {
 		}
 
 		// Overwrite with just 1 citation
-		updated := []types.CitationEvent{
+		updated := []domain.CitationEvent{
 			{ArtifactPath: "/c.md", SessionID: "s2", CitedAt: now},
 		}
 		if err := writeCitations(dir, updated); err != nil {

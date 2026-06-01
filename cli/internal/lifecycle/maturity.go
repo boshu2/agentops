@@ -13,14 +13,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // DefaultLearningMetadataFields returns the default frontmatter values used
 // when normalizing learning files that lack metadata.
 func DefaultLearningMetadataFields() map[string]string {
 	return map[string]string{
-		"utility":       fmt.Sprintf("%.4f", types.InitialUtility),
+		"utility":       fmt.Sprintf("%.4f", domain.InitialUtility),
 		"maturity":      "provisional",
 		"confidence":    "0.0000",
 		"reward_count":  "0",
@@ -243,7 +243,7 @@ func ParseFrontmatterFloats(fields map[string]string) map[string]any {
 // learning files when normalizing metadata.
 func DefaultLearningJSONLDefaults() map[string]any {
 	return map[string]any{
-		"utility":       types.InitialUtility,
+		"utility":       domain.InitialUtility,
 		"maturity":      "provisional",
 		"confidence":    0.0,
 		"reward_count":  0,

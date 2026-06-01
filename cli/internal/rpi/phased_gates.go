@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // MaxGateRetryDepth is the hard ceiling for gate retry attempts.
@@ -30,15 +30,15 @@ func (e *GateFailError) Error() string {
 }
 
 // LegacyGateAction returns the pre-MemRL retry/escalate decision based on attempt count.
-func LegacyGateAction(attempt, maxRetries int) types.MemRLAction {
+func LegacyGateAction(attempt, maxRetries int) domain.MemRLAction {
 	if attempt >= maxRetries {
-		return types.MemRLActionEscalate
+		return domain.MemRLActionEscalate
 	}
-	return types.MemRLActionRetry
+	return domain.MemRLActionRetry
 }
 
 // ClassifyGateFailureClass maps a phase number and gate error to a MemRL failure class.
-func ClassifyGateFailureClass(phaseNum int, verdict string) types.MemRLFailureClass {
+func ClassifyGateFailureClass(phaseNum int, verdict string) domain.MemRLFailureClass {
 	verdict = strings.ToUpper(strings.TrimSpace(verdict))
 	if fc := ClassifyByPhase(phaseNum, verdict); fc != "" {
 		return fc
@@ -47,22 +47,22 @@ func ClassifyGateFailureClass(phaseNum int, verdict string) types.MemRLFailureCl
 }
 
 // ClassifyByPhase returns a failure class based on phase-specific verdict rules.
-func ClassifyByPhase(phaseNum int, verdict string) types.MemRLFailureClass {
+func ClassifyByPhase(phaseNum int, verdict string) domain.MemRLFailureClass {
 	switch phaseNum {
 	case 1:
 		if verdict == "FAIL" {
-			return types.MemRLFailureClassPreMortemFail
+			return domain.MemRLFailureClassPreMortemFail
 		}
 	case 2:
 		switch verdict {
 		case "BLOCKED":
-			return types.MemRLFailureClassCrankBlocked
+			return domain.MemRLFailureClassCrankBlocked
 		case "PARTIAL":
-			return types.MemRLFailureClassCrankPartial
+			return domain.MemRLFailureClassCrankPartial
 		}
 	case 3:
 		if verdict == "FAIL" {
-			return types.MemRLFailureClassVibeFail
+			return domain.MemRLFailureClassVibeFail
 		}
 	}
 	return ""
@@ -72,15 +72,15 @@ func ClassifyByPhase(phaseNum int, verdict string) types.MemRLFailureClass {
 // The failReason constants ("timeout", "stall", "exit_error") are lowercase,
 // but the verdict passed here is already uppercased by ClassifyGateFailureClass.
 // This means the case branches only match when the caller passes lowercase values.
-func ClassifyByVerdict(verdict string) types.MemRLFailureClass {
+func ClassifyByVerdict(verdict string) domain.MemRLFailureClass {
 	switch verdict {
 	case "timeout":
-		return types.MemRLFailureClassPhaseTimeout
+		return domain.MemRLFailureClassPhaseTimeout
 	case "stall":
-		return types.MemRLFailureClassPhaseStall
+		return domain.MemRLFailureClassPhaseStall
 	case "exit_error":
-		return types.MemRLFailureClassPhaseExitError
+		return domain.MemRLFailureClassPhaseExitError
 	default:
-		return types.MemRLFailureClass(strings.ToLower(verdict))
+		return domain.MemRLFailureClass(strings.ToLower(verdict))
 	}
 }

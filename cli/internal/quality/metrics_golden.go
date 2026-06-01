@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // CanonicalCitationType normalises citation type strings to "applied" or "retrieved".
@@ -31,7 +31,7 @@ func CanonicalCitationType(ct string) string {
 var researchRefPattern = regexp.MustCompile(`(?:/[^ \n\t"'\\]]*\.agents/research/[A-Za-z0-9._/-]+\.md|\.agents/research/[A-Za-z0-9._/-]+\.md)`)
 
 // PopulateGoldenSignals fills metrics with the derived health verdicts.
-func PopulateGoldenSignals(baseDir string, days int, findingsSection string, metrics *types.FlywheelMetrics) {
+func PopulateGoldenSignals(baseDir string, days int, findingsSection string, metrics *domain.FlywheelMetrics) {
 	if metrics == nil || metrics.GoldenSignals != nil {
 		return
 	}
@@ -41,8 +41,8 @@ func PopulateGoldenSignals(baseDir string, days int, findingsSection string, met
 }
 
 // ComputeGoldenSignals calculates the four golden signals.
-func ComputeGoldenSignals(baseDir string, days int, findingsSection string) (*types.GoldenSignals, error) {
-	gs := &types.GoldenSignals{}
+func ComputeGoldenSignals(baseDir string, days int, findingsSection string) (*domain.GoldenSignals, error) {
+	gs := &domain.GoldenSignals{}
 
 	trend7d, trend30d, trendVerdict, err := ComputeVelocityTrend(baseDir)
 	if err == nil {
@@ -98,7 +98,7 @@ func ComputeVelocityTrend(baseDir string) (trend7d, trend30d float64, verdict st
 		if err != nil {
 			continue
 		}
-		var m types.FlywheelMetrics
+		var m domain.FlywheelMetrics
 		if err := json.Unmarshal(data, &m); err != nil {
 			continue
 		}
@@ -428,7 +428,7 @@ func ComputeReuseConcentration(baseDir string, days int) (gini, activePct, topBo
 }
 
 // ComputeOverallVerdict combines the four signal verdicts into one.
-func ComputeOverallVerdict(gs *types.GoldenSignals) string {
+func ComputeOverallVerdict(gs *domain.GoldenSignals) string {
 	positive := 0
 	negative := 0
 
@@ -517,7 +517,7 @@ func GiniCoefficient(values []float64) float64 {
 }
 
 // FprintGoldenSignals displays golden signals in a formatted table.
-func FprintGoldenSignals(w io.Writer, gs *types.GoldenSignals) {
+func FprintGoldenSignals(w io.Writer, gs *domain.GoldenSignals) {
 	if gs == nil {
 		fmt.Fprintln(w, "\nGolden Signals: insufficient data")
 		return

@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/goals"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // ---------------------------------------------------------------------------
@@ -93,16 +93,16 @@ goals:
 func setupPoolWithCandidate(t *testing.T, dir string) *pool.Pool {
 	t.Helper()
 	p := pool.NewPool(dir)
-	cand := types.Candidate{
+	cand := domain.Candidate{
 		ID:         "json-test-001",
 		Type:       "learning",
-		Tier:       types.TierSilver,
+		Tier:       domain.TierSilver,
 		Content:    "Test learning for JSON validity",
 		Utility:    0.8,
 		Confidence: 0.9,
 		Maturity:   "established",
 	}
-	if err := p.Add(cand, types.Scoring{RawScore: 0.8, TierAssignment: types.TierSilver}); err != nil {
+	if err := p.Add(cand, domain.Scoring{RawScore: 0.8, TierAssignment: domain.TierSilver}); err != nil {
 		t.Fatalf("pool add: %v", err)
 	}
 	return p

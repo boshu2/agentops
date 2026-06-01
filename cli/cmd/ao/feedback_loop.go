@@ -12,10 +12,10 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // FeedbackEvent records a feedback loop closure event.
@@ -72,7 +72,7 @@ func init() {
 	feedbackLoopCmd.Flags().StringVar(&feedbackLoopSessionID, "session", "", "Session ID to process")
 	feedbackLoopCmd.Flags().Float64Var(&feedbackLoopReward, "reward", -1, "Override reward value (0.0-1.0); -1 = compute from transcript")
 	feedbackLoopCmd.Flags().StringVar(&feedbackLoopTranscript, "transcript", "", "Path to transcript for reward computation")
-	feedbackLoopCmd.Flags().Float64Var(&feedbackLoopAlpha, "alpha", types.DefaultAlpha, "EMA learning rate")
+	feedbackLoopCmd.Flags().Float64Var(&feedbackLoopAlpha, "alpha", domain.DefaultAlpha, "EMA learning rate")
 	feedbackLoopCmd.Flags().StringVar(&feedbackLoopCitationType, "citation-type", "retrieved", "Filter citations by type (retrieved, applied, all)")
 	_ = feedbackLoopCmd.RegisterFlagCompletionFunc("citation-type", staticCompletionFunc("retrieved", "applied", "all"))
 	feedbackLoopCmd.Flags().BoolVar(&feedbackLoopDrain, "drain", false, "Walk citations.jsonl and feed entries with zero feedback_at sentinel (idempotent)")
@@ -108,7 +108,7 @@ func getLearningRewardCount(path string) int {
 }
 
 // loadSessionCitations loads and filters citations for a session.
-func loadSessionCitations(cwd, sessionID, citationType string) ([]types.CitationEvent, error) {
+func loadSessionCitations(cwd, sessionID, citationType string) ([]domain.CitationEvent, error) {
 	allCitations, err := ratchet.LoadCitations(cwd)
 	if err != nil {
 		return nil, fmt.Errorf("load citations: %w", err)
@@ -119,7 +119,7 @@ func loadSessionCitations(cwd, sessionID, citationType string) ([]types.Citation
 		targetAliases[alias] = true
 	}
 
-	sessionCitations := make([]types.CitationEvent, 0, len(allCitations))
+	sessionCitations := make([]domain.CitationEvent, 0, len(allCitations))
 	for _, c := range allCitations {
 		c.SessionID = canonicalSessionID(c.SessionID)
 		c.ArtifactPath = canonicalArtifactPath(cwd, c.ArtifactPath)
@@ -158,9 +158,9 @@ func computeRewardFromTranscript(transcriptPath, sessionID string) (float64, err
 }
 
 // deduplicateCitations returns unique citations by artifact path.
-func deduplicateCitations(baseDir string, citations []types.CitationEvent) []types.CitationEvent {
+func deduplicateCitations(baseDir string, citations []domain.CitationEvent) []domain.CitationEvent {
 	seen := make(map[string]bool)
-	var unique []types.CitationEvent
+	var unique []domain.CitationEvent
 	for _, c := range citations {
 		c.ArtifactPath = canonicalArtifactPath(baseDir, c.ArtifactPath)
 		c.MetricNamespace = canonicalMetricNamespace(c.MetricNamespace)
@@ -174,7 +174,7 @@ func deduplicateCitations(baseDir string, citations []types.CitationEvent) []typ
 }
 
 // processUniqueCitations updates learning utilities and returns feedback events.
-func processUniqueCitations(cwd, sessionID, transcriptPath string, citations []types.CitationEvent, reward, alpha float64) ([]FeedbackEvent, int, int) {
+func processUniqueCitations(cwd, sessionID, transcriptPath string, citations []domain.CitationEvent, reward, alpha float64) ([]FeedbackEvent, int, int) {
 	events := make([]FeedbackEvent, 0, len(citations))
 	updatedCount, failedCount := 0, 0
 
@@ -365,7 +365,7 @@ func markCitationFeedback(baseDir, sessionID string, reward float64, events []Fe
 	return writeCitations(baseDir, citations)
 }
 
-func writeCitations(baseDir string, citations []types.CitationEvent) error {
+func writeCitations(baseDir string, citations []domain.CitationEvent) error {
 	citationsPath := filepath.Join(baseDir, ratchet.CitationsFilePath)
 	if err := os.MkdirAll(filepath.Dir(citationsPath), 0750); err != nil {
 		return fmt.Errorf("create citations directory: %w", err)
@@ -497,7 +497,7 @@ func validateBatchFeedbackFlags() error {
 }
 
 // discoverUnprocessedSessions finds sessions with citations but no feedback.
-func discoverUnprocessedSessions(cwd string) (map[string][]types.CitationEvent, map[string]time.Time, error) {
+func discoverUnprocessedSessions(cwd string) (map[string][]domain.CitationEvent, map[string]time.Time, error) {
 	citations, err := ratchet.LoadCitations(cwd)
 	if err != nil {
 		return nil, nil, fmt.Errorf("load citations: %w", err)
@@ -506,7 +506,7 @@ func discoverUnprocessedSessions(cwd string) (map[string][]types.CitationEvent, 
 	processedSessions := buildProcessedSessionSet(cwd)
 	since := time.Now().AddDate(0, 0, -batchFeedbackDays)
 
-	sessionCitations := make(map[string][]types.CitationEvent)
+	sessionCitations := make(map[string][]domain.CitationEvent)
 	sessionLatestCitation := make(map[string]time.Time)
 
 	for _, c := range citations {
@@ -543,12 +543,12 @@ func buildProcessedSessionSet(cwd string) map[string]bool {
 
 // sortAndCapSessions sorts session IDs by latest citation (newest first) and
 // caps the list by batchFeedbackMaxSessions.
-func sortAndCapSessions(sessionCitations map[string][]types.CitationEvent, sessionLatestCitation map[string]time.Time) []string {
+func sortAndCapSessions(sessionCitations map[string][]domain.CitationEvent, sessionLatestCitation map[string]time.Time) []string {
 	return lifecycle.SortAndCapSessions(sessionCitations, sessionLatestCitation, batchFeedbackMaxSessions)
 }
 
 // reportBatchFeedbackDryRun prints what would be processed without making changes.
-func reportBatchFeedbackDryRun(sessionIDs []string, candidateCount int, sessionCitations map[string][]types.CitationEvent) {
+func reportBatchFeedbackDryRun(sessionIDs []string, candidateCount int, sessionCitations map[string][]domain.CitationEvent) {
 	fmt.Printf("[dry-run] Would process %d/%d sessions:\n", len(sessionIDs), candidateCount)
 	for _, sessionID := range sessionIDs {
 		citations := sessionCitations[sessionID]
@@ -605,7 +605,7 @@ type drainStats struct {
 // isUnfedCitation reports whether a citation is still carrying the
 // zero-time feedback_at sentinel (the substrate audit's 1,508/3,735
 // stuck rows are exactly this shape).
-func isUnfedCitation(c types.CitationEvent) bool {
+func isUnfedCitation(c domain.CitationEvent) bool {
 	return c.FeedbackAt.IsZero() && !c.FeedbackGiven
 }
 
@@ -647,8 +647,8 @@ func drainUnfedCitations(baseDir string, opts drainOptions) (drainStats, error) 
 
 // collectUnfedCitations returns the subset of citations carrying the
 // zero-time feedback_at sentinel.
-func collectUnfedCitations(citations []types.CitationEvent) []types.CitationEvent {
-	unfed := make([]types.CitationEvent, 0, len(citations))
+func collectUnfedCitations(citations []domain.CitationEvent) []domain.CitationEvent {
+	unfed := make([]domain.CitationEvent, 0, len(citations))
 	for _, c := range citations {
 		if !isUnfedCitation(c) {
 			continue
@@ -661,7 +661,7 @@ func collectUnfedCitations(citations []types.CitationEvent) []types.CitationEven
 // applyDrainUpdates calls updateLearningUtility for each unique unfed
 // citation, returning the set of (artifact|namespace) keys that were
 // successfully updated and the updated/failed counts.
-func applyDrainUpdates(baseDir string, unique []types.CitationEvent, opts drainOptions) (map[string]bool, int, int) {
+func applyDrainUpdates(baseDir string, unique []domain.CitationEvent, opts drainOptions) (map[string]bool, int, int) {
 	updatedKeys := make(map[string]bool, len(unique))
 	updated, failed := 0, 0
 
@@ -701,7 +701,7 @@ func applyDrainUpdates(baseDir string, unique []types.CitationEvent, opts drainO
 // markDrainedCitations rewrites citations.jsonl, stamping every unfed row
 // whose (artifact|namespace) key was drained with FeedbackGiven=true and
 // the current time, so a re-run of drain skips it.
-func markDrainedCitations(baseDir string, citations []types.CitationEvent, updatedKeys map[string]bool, reward float64) (int, error) {
+func markDrainedCitations(baseDir string, citations []domain.CitationEvent, updatedKeys map[string]bool, reward float64) (int, error) {
 	if len(updatedKeys) == 0 {
 		return 0, nil
 	}

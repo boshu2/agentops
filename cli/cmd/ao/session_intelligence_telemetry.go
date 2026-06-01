@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 type artifactUsageSignal struct {
@@ -38,7 +38,7 @@ func canonicalWorkspacePath(baseDir, workspacePath string) string {
 	return ratchet.CanonicalWorkspacePath(baseDir, workspacePath)
 }
 
-func normalizeCitationEventForRuntime(baseDir string, event types.CitationEvent) types.CitationEvent {
+func normalizeCitationEventForRuntime(baseDir string, event domain.CitationEvent) domain.CitationEvent {
 	event.ArtifactPath = canonicalArtifactPath(baseDir, event.ArtifactPath)
 	event.WorkspacePath = canonicalWorkspacePath(baseDir, event.WorkspacePath)
 	event.SessionID = canonicalSessionID(event.SessionID)
@@ -57,7 +57,7 @@ func loadCitationAggregate(baseDir string) citationAggregate {
 
 type dedupedCitationEvent struct {
 	artifactKey string
-	event       types.CitationEvent
+	event       domain.CitationEvent
 }
 
 type citationAggregateBuilder struct {
@@ -85,7 +85,7 @@ func newCitationAggregateBuilder(totalEvents int) *citationAggregateBuilder {
 	}
 }
 
-func buildCitationAggregate(baseDir string, citations []types.CitationEvent) citationAggregate {
+func buildCitationAggregate(baseDir string, citations []domain.CitationEvent) citationAggregate {
 	builder := newCitationAggregateBuilder(len(citations))
 	for _, raw := range citations {
 		builder.ingest(baseDir, raw)
@@ -94,7 +94,7 @@ func buildCitationAggregate(baseDir string, citations []types.CitationEvent) cit
 	return builder.finish()
 }
 
-func (b *citationAggregateBuilder) ingest(baseDir string, raw types.CitationEvent) {
+func (b *citationAggregateBuilder) ingest(baseDir string, raw domain.CitationEvent) {
 	event := normalizeCitationEventForRuntime(baseDir, raw)
 	artifactKey := canonicalArtifactKey(baseDir, event.ArtifactPath)
 	if artifactKey == "" {
@@ -105,7 +105,7 @@ func (b *citationAggregateBuilder) ingest(baseDir string, raw types.CitationEven
 	b.recordDedupedEvent(artifactKey, event)
 }
 
-func (b *citationAggregateBuilder) recordUniqueSignals(event types.CitationEvent) {
+func (b *citationAggregateBuilder) recordUniqueSignals(event domain.CitationEvent) {
 	if event.SessionID != "" {
 		b.uniqueSessions[event.SessionID] = struct{}{}
 	}
@@ -114,7 +114,7 @@ func (b *citationAggregateBuilder) recordUniqueSignals(event types.CitationEvent
 	}
 }
 
-func (b *citationAggregateBuilder) recordDedupedEvent(artifactKey string, event types.CitationEvent) {
+func (b *citationAggregateBuilder) recordDedupedEvent(artifactKey string, event domain.CitationEvent) {
 	dedupeKey := artifactKey + "|" + event.SessionID + "|" + filepath.ToSlash(event.WorkspacePath) + "|" + event.CitationType
 	current, ok := b.deduped[dedupeKey]
 	if !ok || event.CitedAt.After(current.event.CitedAt) {
@@ -144,7 +144,7 @@ func (b *citationAggregateBuilder) finish() citationAggregate {
 	return b.agg
 }
 
-func (b *artifactSignalBuilder) accumulate(event types.CitationEvent) {
+func (b *artifactSignalBuilder) accumulate(event domain.CitationEvent) {
 	b.signal.Citations++
 	if event.CitedAt.After(b.signal.LastCited) {
 		b.signal.LastCited = event.CitedAt
@@ -204,7 +204,7 @@ func workspacePathFromAgentArtifactPath(path string) string {
 	return filepath.Clean(parts[0])
 }
 
-func annotateCitationMatch(event types.CitationEvent, confidence float64, provenance string) types.CitationEvent {
+func annotateCitationMatch(event domain.CitationEvent, confidence float64, provenance string) domain.CitationEvent {
 	event.MatchConfidence = normalizeCitationMatchConfidence(confidence)
 	event.MatchProvenance = strings.TrimSpace(provenance)
 	return event

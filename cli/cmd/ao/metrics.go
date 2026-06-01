@@ -8,10 +8,10 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/storage"
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 var (
@@ -118,7 +118,7 @@ Examples:
 
 // periodCitationStats holds citation statistics for a period
 type periodCitationStats struct {
-	citations   []types.CitationEvent
+	citations   []domain.CitationEvent
 	uniqueCited map[string]bool
 }
 
@@ -141,7 +141,7 @@ func isFindingArtifactPath(baseDir, artifactPath string) bool {
 	return strings.HasPrefix(p, findingsRoot)
 }
 
-func retrievableCitationStats(baseDir string, citations []types.CitationEvent) (uniqueCount, evidenceCount int) {
+func retrievableCitationStats(baseDir string, citations []domain.CitationEvent) (uniqueCount, evidenceCount int) {
 	unique := make(map[string]bool)
 	evidence := make(map[string]bool)
 	for _, c := range citations {
@@ -158,7 +158,7 @@ func retrievableCitationStats(baseDir string, citations []types.CitationEvent) (
 }
 
 // filterCitationsForPeriod filters citations to a time period
-func filterCitationsForPeriod(citations []types.CitationEvent, start, end time.Time) periodCitationStats {
+func filterCitationsForPeriod(citations []domain.CitationEvent, start, end time.Time) periodCitationStats {
 	stats := periodCitationStats{
 		uniqueCited: make(map[string]bool),
 	}
@@ -186,7 +186,7 @@ func escapeVelocityThreshold(delta float64) float64 {
 }
 
 // countLoopMetrics counts learnings created vs found for loop closure
-func countLoopMetrics(baseDir string, periodStart time.Time, periodCitations []types.CitationEvent) (created, found int) {
+func countLoopMetrics(baseDir string, periodStart time.Time, periodCitations []domain.CitationEvent) (created, found int) {
 	created, _ = countNewArtifactsInDir(filepath.Join(baseDir, ".agents", "learnings"), periodStart)
 	for _, c := range periodCitations {
 		if strings.Contains(filepath.ToSlash(canonicalArtifactPath(baseDir, c.ArtifactPath)), "/learnings/") {
@@ -197,7 +197,7 @@ func countLoopMetrics(baseDir string, periodStart time.Time, periodCitations []t
 }
 
 // countBypassCitations counts prior art bypass citations
-func countBypassCitations(citations []types.CitationEvent) int {
+func countBypassCitations(citations []domain.CitationEvent) int {
 	count := 0
 	for _, c := range citations {
 		if c.CitationType == "bypass" || strings.HasPrefix(c.ArtifactPath, "bypass:") {
@@ -208,15 +208,15 @@ func countBypassCitations(citations []types.CitationEvent) int {
 }
 
 // computeMetrics calculates flywheel metrics for a period.
-func computeMetrics(baseDir string, days int) (*types.FlywheelMetrics, error) {
+func computeMetrics(baseDir string, days int) (*domain.FlywheelMetrics, error) {
 	return computeMetricsForNamespace(baseDir, days, primaryMetricNamespace)
 }
 
-func computeMetricsForNamespace(baseDir string, days int, namespace string) (*types.FlywheelMetrics, error) {
+func computeMetricsForNamespace(baseDir string, days int, namespace string) (*domain.FlywheelMetrics, error) {
 	now := time.Now()
 	periodStart := now.AddDate(0, 0, -days)
 
-	metrics := &types.FlywheelMetrics{
+	metrics := &domain.FlywheelMetrics{
 		Timestamp:   now,
 		PeriodStart: periodStart,
 		PeriodEnd:   now,
@@ -294,7 +294,7 @@ func computeMetricsForNamespace(baseDir string, days int, namespace string) (*ty
 
 // countArtifacts counts knowledge artifacts by tier.
 func countArtifacts(baseDir string) (int, map[string]int, error) {
-	sessionsDir := filepath.Join(baseDir, storage.DefaultBaseDir, storage.SessionsDir)
+	sessionsDir := filepath.Join(baseDir, sessionstore.DefaultBaseDir, sessionstore.SessionsDir)
 	return quality.CountArtifactsByTier(baseDir, sessionsDir)
 }
 
@@ -304,7 +304,7 @@ func countNewArtifacts(baseDir string, since time.Time) (int, error) {
 }
 
 // buildLastCitedMap builds a map of normalized artifact path → last citation time.
-func buildLastCitedMap(baseDir string, citations []types.CitationEvent) map[string]time.Time {
+func buildLastCitedMap(baseDir string, citations []domain.CitationEvent) map[string]time.Time {
 	return quality.BuildLastCitedMap(citations, func(p string) string {
 		return normalizeArtifactPath(baseDir, p)
 	})
@@ -331,22 +331,22 @@ func countStaleInDir(baseDir, dir string, staleThreshold time.Time, lastCited ma
 }
 
 // countStaleArtifacts counts artifacts not cited in N days.
-func countStaleArtifacts(baseDir string, citations []types.CitationEvent, staleDays int) (int, error) {
+func countStaleArtifacts(baseDir string, citations []domain.CitationEvent, staleDays int) (int, error) {
 	return quality.CountStaleArtifacts(baseDir, citations, staleDays, func(p string) string {
 		return normalizeArtifactPath(baseDir, p)
 	})
 }
 
-func printMetricsParameters(m *types.FlywheelMetrics) { quality.PrintMetricsParameters(m) }
-func printMetricsDerived(m *types.FlywheelMetrics)    { quality.PrintMetricsDerived(m) }
-func printMetricsCounts(m *types.FlywheelMetrics)     { quality.PrintMetricsCounts(m) }
-func printMetricsLoopClosure(m *types.FlywheelMetrics) {
+func printMetricsParameters(m *domain.FlywheelMetrics) { quality.PrintMetricsParameters(m) }
+func printMetricsDerived(m *domain.FlywheelMetrics)    { quality.PrintMetricsDerived(m) }
+func printMetricsCounts(m *domain.FlywheelMetrics)     { quality.PrintMetricsCounts(m) }
+func printMetricsLoopClosure(m *domain.FlywheelMetrics) {
 	quality.PrintMetricsLoopClosure(m)
 }
-func printMetricsUtility(m *types.FlywheelMetrics) { quality.PrintMetricsUtility(m) }
+func printMetricsUtility(m *domain.FlywheelMetrics) { quality.PrintMetricsUtility(m) }
 
 // printMetricsTable prints a formatted metrics table.
-func printMetricsTable(m *types.FlywheelMetrics) { quality.PrintMetricsTable(m) }
+func printMetricsTable(m *domain.FlywheelMetrics) { quality.PrintMetricsTable(m) }
 
 // countNewArtifactsInDir counts artifacts created after a time in a specific directory.
 func countNewArtifactsInDir(dir string, since time.Time) (int, error) {

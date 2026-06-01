@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // Tests for pure helper functions in rpi_phased.go
@@ -15,7 +15,7 @@ func TestClassifyGateFailureClass(t *testing.T) {
 		name     string
 		phaseNum int
 		gateErr  *gateFailError
-		want     types.MemRLFailureClass
+		want     domain.MemRLFailureClass
 	}{
 		{
 			name:     "nil error returns empty",
@@ -27,37 +27,37 @@ func TestClassifyGateFailureClass(t *testing.T) {
 			name:     "phase 1 FAIL → pre_mortem_fail",
 			phaseNum: 1,
 			gateErr:  &gateFailError{Phase: 1, Verdict: "FAIL"},
-			want:     types.MemRLFailureClassPreMortemFail,
+			want:     domain.MemRLFailureClassPreMortemFail,
 		},
 		{
 			name:     "phase 1 other verdict → not pre_mortem_fail",
 			phaseNum: 1,
 			gateErr:  &gateFailError{Phase: 1, Verdict: "BLOCKED"},
-			want:     types.MemRLFailureClass("blocked"),
+			want:     domain.MemRLFailureClass("blocked"),
 		},
 		{
 			name:     "phase 2 BLOCKED → crank_blocked",
 			phaseNum: 2,
 			gateErr:  &gateFailError{Phase: 2, Verdict: "BLOCKED"},
-			want:     types.MemRLFailureClassCrankBlocked,
+			want:     domain.MemRLFailureClassCrankBlocked,
 		},
 		{
 			name:     "phase 2 PARTIAL → crank_partial",
 			phaseNum: 2,
 			gateErr:  &gateFailError{Phase: 2, Verdict: "PARTIAL"},
-			want:     types.MemRLFailureClassCrankPartial,
+			want:     domain.MemRLFailureClassCrankPartial,
 		},
 		{
 			name:     "phase 2 other verdict → lowercase",
 			phaseNum: 2,
 			gateErr:  &gateFailError{Phase: 2, Verdict: "CUSTOM"},
-			want:     types.MemRLFailureClass("custom"),
+			want:     domain.MemRLFailureClass("custom"),
 		},
 		{
 			name:     "phase 3 FAIL → vibe_fail",
 			phaseNum: 3,
 			gateErr:  &gateFailError{Phase: 3, Verdict: "FAIL"},
-			want:     types.MemRLFailureClassVibeFail,
+			want:     domain.MemRLFailureClassVibeFail,
 		},
 		{
 			// Note: verdict is ToUpper'd before switch comparison; failReason constants are lowercase
@@ -65,19 +65,19 @@ func TestClassifyGateFailureClass(t *testing.T) {
 			name:     "lowercase timeout verdict falls to default lowercase",
 			phaseNum: 1,
 			gateErr:  &gateFailError{Phase: 1, Verdict: string(failReasonTimeout)},
-			want:     types.MemRLFailureClass("timeout"),
+			want:     domain.MemRLFailureClass("timeout"),
 		},
 		{
 			name:     "lowercase stall verdict falls to default lowercase",
 			phaseNum: 1,
 			gateErr:  &gateFailError{Phase: 1, Verdict: string(failReasonStall)},
-			want:     types.MemRLFailureClass("stall"),
+			want:     domain.MemRLFailureClass("stall"),
 		},
 		{
 			name:     "lowercase exit_error verdict falls to default lowercase",
 			phaseNum: 1,
 			gateErr:  &gateFailError{Phase: 1, Verdict: string(failReasonExit)},
-			want:     types.MemRLFailureClass("exit_error"),
+			want:     domain.MemRLFailureClass("exit_error"),
 		},
 		{
 			// Note: failReason constants are lowercase ("timeout", "stall", "exit_error").
@@ -87,31 +87,31 @@ func TestClassifyGateFailureClass(t *testing.T) {
 			name:     "TIMEOUT verdict falls to default (lowercase mismatch with constant)",
 			phaseNum: 4,
 			gateErr:  &gateFailError{Phase: 4, Verdict: "TIMEOUT"},
-			want:     types.MemRLFailureClass("timeout"),
+			want:     domain.MemRLFailureClass("timeout"),
 		},
 		{
 			name:     "STALL verdict falls to default",
 			phaseNum: 4,
 			gateErr:  &gateFailError{Phase: 4, Verdict: "STALL"},
-			want:     types.MemRLFailureClass("stall"),
+			want:     domain.MemRLFailureClass("stall"),
 		},
 		{
 			name:     "EXIT_ERROR verdict falls to default",
 			phaseNum: 4,
 			gateErr:  &gateFailError{Phase: 4, Verdict: "EXIT_ERROR"},
-			want:     types.MemRLFailureClass("exit_error"),
+			want:     domain.MemRLFailureClass("exit_error"),
 		},
 		{
 			name:     "verdict with leading/trailing whitespace trimmed",
 			phaseNum: 3,
 			gateErr:  &gateFailError{Phase: 3, Verdict: "  FAIL  "},
-			want:     types.MemRLFailureClassVibeFail,
+			want:     domain.MemRLFailureClassVibeFail,
 		},
 		{
 			name:     "lowercase verdict normalized to lowercase",
 			phaseNum: 4,
 			gateErr:  &gateFailError{Phase: 4, Verdict: "UNKNOWN_VERDICT"},
-			want:     types.MemRLFailureClass("unknown_verdict"),
+			want:     domain.MemRLFailureClass("unknown_verdict"),
 		},
 	}
 
@@ -129,14 +129,14 @@ func TestLegacyGateAction(t *testing.T) {
 	tests := []struct {
 		attempt    int
 		maxRetries int
-		want       types.MemRLAction
+		want       domain.MemRLAction
 	}{
-		{attempt: 0, maxRetries: 3, want: types.MemRLActionRetry},
-		{attempt: 1, maxRetries: 3, want: types.MemRLActionRetry},
-		{attempt: 2, maxRetries: 3, want: types.MemRLActionRetry},
-		{attempt: 3, maxRetries: 3, want: types.MemRLActionEscalate},
-		{attempt: 5, maxRetries: 3, want: types.MemRLActionEscalate},
-		{attempt: 0, maxRetries: 0, want: types.MemRLActionEscalate},
+		{attempt: 0, maxRetries: 3, want: domain.MemRLActionRetry},
+		{attempt: 1, maxRetries: 3, want: domain.MemRLActionRetry},
+		{attempt: 2, maxRetries: 3, want: domain.MemRLActionRetry},
+		{attempt: 3, maxRetries: 3, want: domain.MemRLActionEscalate},
+		{attempt: 5, maxRetries: 3, want: domain.MemRLActionEscalate},
+		{attempt: 0, maxRetries: 0, want: domain.MemRLActionEscalate},
 	}
 
 	for _, tt := range tests {

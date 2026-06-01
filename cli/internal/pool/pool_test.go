@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestNewPool(t *testing.T) {
@@ -52,23 +52,23 @@ func TestPoolAddAndGet(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:         "test-candidate-1",
-		Type:       types.KnowledgeTypeLearning,
-		Tier:       types.TierSilver,
+		Type:       domain.KnowledgeTypeLearning,
+		Tier:       domain.TierSilver,
 		Content:    "Test learning content",
 		Utility:    0.75,
 		Confidence: 0.8,
-		Maturity:   types.MaturityCandidate,
-		Source: types.Source{
+		Maturity:   domain.MaturityCandidate,
+		Source: domain.Source{
 			SessionID:      "session-123",
 			TranscriptPath: "/path/to/transcript.jsonl",
 		},
 	}
 
-	scoring := types.Scoring{
+	scoring := domain.Scoring{
 		RawScore: 0.72,
-		Rubric: types.RubricScores{
+		Rubric: domain.RubricScores{
 			Specificity:   0.8,
 			Actionability: 0.7,
 			Novelty:       0.6,
@@ -91,7 +91,7 @@ func TestPoolAddAndGet(t *testing.T) {
 	if entry.Candidate.ID != "test-candidate-1" {
 		t.Errorf("expected ID test-candidate-1, got %s", entry.Candidate.ID)
 	}
-	if entry.Candidate.Tier != types.TierSilver {
+	if entry.Candidate.Tier != domain.TierSilver {
 		t.Errorf("expected tier silver, got %s", entry.Candidate.Tier)
 	}
 }
@@ -101,14 +101,14 @@ func TestPoolList(t *testing.T) {
 	p := NewPool(tmpDir)
 
 	// Add test candidates
-	candidates := []types.Candidate{
-		{ID: "gold-1", Tier: types.TierGold, Content: "Gold content"},
-		{ID: "silver-1", Tier: types.TierSilver, Content: "Silver content"},
-		{ID: "bronze-1", Tier: types.TierBronze, Content: "Bronze content"},
+	candidates := []domain.Candidate{
+		{ID: "gold-1", Tier: domain.TierGold, Content: "Gold content"},
+		{ID: "silver-1", Tier: domain.TierSilver, Content: "Silver content"},
+		{ID: "bronze-1", Tier: domain.TierBronze, Content: "Bronze content"},
 	}
 
 	for _, c := range candidates {
-		if err := p.Add(c, types.Scoring{}); err != nil {
+		if err := p.Add(c, domain.Scoring{}); err != nil {
 			t.Fatalf("Add failed: %v", err)
 		}
 	}
@@ -123,7 +123,7 @@ func TestPoolList(t *testing.T) {
 	}
 
 	// List by tier
-	goldEntries, err := p.List(ListOptions{Tier: types.TierGold})
+	goldEntries, err := p.List(ListOptions{Tier: domain.TierGold})
 	if err != nil {
 		t.Fatalf("List gold failed: %v", err)
 	}
@@ -136,20 +136,20 @@ func TestPoolStageAndPromote(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:       "promote-test",
-		Tier:     types.TierSilver,
-		Type:     types.KnowledgeTypeLearning,
+		Tier:     domain.TierSilver,
+		Type:     domain.KnowledgeTypeLearning,
 		Content:  "Promotable learning",
-		Maturity: types.MaturityCandidate,
+		Maturity: domain.MaturityCandidate,
 	}
 
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
 	// Stage
-	if err := p.Stage("promote-test", types.TierBronze); err != nil {
+	if err := p.Stage("promote-test", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -158,7 +158,7 @@ func TestPoolStageAndPromote(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get after stage failed: %v", err)
 	}
-	if entry.Status != types.PoolStatusStaged {
+	if entry.Status != domain.PoolStatusStaged {
 		t.Errorf("expected status staged, got %s", entry.Status)
 	}
 
@@ -181,13 +181,13 @@ func TestPoolReject(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "reject-test",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Rejectable content",
 	}
 
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -201,7 +201,7 @@ func TestPoolReject(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get after reject failed: %v", err)
 	}
-	if entry.Status != types.PoolStatusRejected {
+	if entry.Status != domain.PoolStatusRejected {
 		t.Errorf("expected status rejected, got %s", entry.Status)
 	}
 	if entry.HumanReview == nil || entry.HumanReview.Notes != "Too vague" {
@@ -213,14 +213,14 @@ func TestPoolRejectPreventsPromotion(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "reject-promote-test",
-		Tier:    types.TierSilver,
-		Type:    types.KnowledgeTypeLearning,
+		Tier:    domain.TierSilver,
+		Type:    domain.KnowledgeTypeLearning,
 		Content: "Rejectable content",
 	}
 
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -239,7 +239,7 @@ func TestPoolRejectPreventsPromotion(t *testing.T) {
 	}
 
 	// Attempt to stage rejected candidate should also fail
-	err = p.Stage("reject-promote-test", types.TierBronze)
+	err = p.Stage("reject-promote-test", domain.TierBronze)
 	if err == nil {
 		t.Error("expected error when staging rejected candidate")
 	}
@@ -252,14 +252,14 @@ func TestPoolPromoteRequiresStagedStatus(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "pending-promote-test",
-		Tier:    types.TierSilver,
-		Type:    types.KnowledgeTypeLearning,
+		Tier:    domain.TierSilver,
+		Type:    domain.KnowledgeTypeLearning,
 		Content: "Should require staging first",
 	}
 
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -278,12 +278,12 @@ func TestPoolBulkApprove(t *testing.T) {
 
 	// Add old silver candidates
 	for i := range 3 {
-		candidate := types.Candidate{
+		candidate := domain.Candidate{
 			ID:      string(rune('a'+i)) + "-silver",
-			Tier:    types.TierSilver,
+			Tier:    domain.TierSilver,
 			Content: "Silver content",
 		}
-		if err := p.Add(candidate, types.Scoring{}); err != nil {
+		if err := p.Add(candidate, domain.Scoring{}); err != nil {
 			t.Fatalf("Add failed: %v", err)
 		}
 	}
@@ -338,14 +338,14 @@ func TestFormatDuration(t *testing.T) {
 
 func TestIsAboveThreshold(t *testing.T) {
 	tests := []struct {
-		tier     types.Tier
-		minTier  types.Tier
+		tier     domain.Tier
+		minTier  domain.Tier
 		expected bool
 	}{
-		{types.TierGold, types.TierBronze, true},
-		{types.TierSilver, types.TierSilver, true},
-		{types.TierBronze, types.TierSilver, false},
-		{types.TierGold, types.TierGold, true},
+		{domain.TierGold, domain.TierBronze, true},
+		{domain.TierSilver, domain.TierSilver, true},
+		{domain.TierBronze, domain.TierSilver, false},
+		{domain.TierGold, domain.TierGold, true},
 	}
 
 	for _, tt := range tests {
@@ -361,13 +361,13 @@ func TestPoolApprove(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "approve-test",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Content to approve",
 	}
 
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -393,13 +393,13 @@ func TestPoolApproveAlreadyReviewed(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "already-reviewed",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Already reviewed content",
 	}
 
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -425,21 +425,21 @@ func TestPoolListPendingReview(t *testing.T) {
 	p := NewPool(tmpDir)
 
 	// Add bronze candidates (only bronze should appear in pending review)
-	bronzeCandidate := types.Candidate{
+	bronzeCandidate := domain.Candidate{
 		ID:      "bronze-pending",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Bronze content",
 	}
-	silverCandidate := types.Candidate{
+	silverCandidate := domain.Candidate{
 		ID:      "silver-no-review",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Content: "Silver content",
 	}
 
-	if err := p.Add(bronzeCandidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(bronzeCandidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatalf("Add bronze failed: %v", err)
 	}
-	if err := p.Add(silverCandidate, types.Scoring{GateRequired: false}); err != nil {
+	if err := p.Add(silverCandidate, domain.Scoring{GateRequired: false}); err != nil {
 		t.Fatalf("Add silver failed: %v", err)
 	}
 
@@ -462,13 +462,13 @@ func TestPoolRejectReasonTooLong(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "reason-length-test",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Content to reject with long reason",
 	}
 
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -498,13 +498,13 @@ func TestPoolApproveNoteTooLong(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "note-length-test",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Content to approve with long note",
 	}
 
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -649,12 +649,12 @@ func assertGetChainRecordsAddAndStageEvents(t *testing.T) {
 	t.Helper()
 	p := newChainTestPool(t)
 
-	mustAddChainCandidate(t, p, types.Candidate{
+	mustAddChainCandidate(t, p, domain.Candidate{
 		ID:      "chain-test",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Content: "Chain test content",
 	})
-	if err := p.Stage("chain-test", types.TierBronze); err != nil {
+	if err := p.Stage("chain-test", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -666,9 +666,9 @@ func assertGetChainRecordsRejectEvent(t *testing.T) {
 	t.Helper()
 	p := newChainTestPool(t)
 
-	mustAddChainCandidate(t, p, types.Candidate{
+	mustAddChainCandidate(t, p, domain.Candidate{
 		ID:      "chain-reject",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Chain reject content",
 	})
 	if err := p.Reject("chain-reject", "bad", "reviewer"); err != nil {
@@ -704,9 +704,9 @@ func newInitializedChainTestPool(t *testing.T) *Pool {
 	return p
 }
 
-func mustAddChainCandidate(t *testing.T, p *Pool, candidate types.Candidate) {
+func mustAddChainCandidate(t *testing.T, p *Pool, candidate domain.Candidate) {
 	t.Helper()
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 }
@@ -782,7 +782,7 @@ func TestPoolAddInvalidID(t *testing.T) {
 			tmpDir := t.TempDir()
 			p := NewPool(tmpDir)
 
-			err := p.Add(types.Candidate{ID: tt.id, Content: "test"}, types.Scoring{})
+			err := p.Add(domain.Candidate{ID: tt.id, Content: "test"}, domain.Scoring{})
 			if err == nil {
 				t.Error("expected error for invalid candidate ID")
 			}
@@ -839,17 +839,17 @@ func TestPoolStageTierBelowThreshold(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "low-tier",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Bronze content",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
 	// Require silver but candidate is bronze
-	err := p.Stage("low-tier", types.TierSilver)
+	err := p.Stage("low-tier", domain.TierSilver)
 	if err == nil {
 		t.Error("expected error when tier below threshold")
 	}
@@ -863,13 +863,13 @@ func TestPoolAddAt(t *testing.T) {
 	p := NewPool(tmpDir)
 
 	pastTime := time.Now().Add(-48 * time.Hour)
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "historical",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Content: "Historical content",
 	}
 
-	if err := p.AddAt(candidate, types.Scoring{}, pastTime); err != nil {
+	if err := p.AddAt(candidate, domain.Scoring{}, pastTime); err != nil {
 		t.Fatalf("AddAt failed: %v", err)
 	}
 
@@ -888,12 +888,12 @@ func TestPoolAddWithGateRequired(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "gated",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Gated content",
 	}
-	scoring := types.Scoring{GateRequired: true}
+	scoring := domain.Scoring{GateRequired: true}
 
 	if err := p.Add(candidate, scoring); err != nil {
 		t.Fatalf("Add failed: %v", err)
@@ -916,18 +916,18 @@ func TestPoolPromoteDecisionType(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "decision-promote",
-		Tier:    types.TierSilver,
-		Type:    types.KnowledgeTypeDecision,
+		Tier:    domain.TierSilver,
+		Type:    domain.KnowledgeTypeDecision,
 		Content: "Use PostgreSQL over MySQL for JSONB support",
 		Context: "Evaluated during database selection phase",
 	}
 
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
-	if err := p.Stage("decision-promote", types.TierBronze); err != nil {
+	if err := p.Stage("decision-promote", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -959,17 +959,17 @@ func TestPoolPromoteSolutionType(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "solution-promote",
-		Tier:    types.TierGold,
-		Type:    types.KnowledgeTypeSolution,
+		Tier:    domain.TierGold,
+		Type:    domain.KnowledgeTypeSolution,
 		Content: "Fix deadlock by acquiring locks in consistent order",
 	}
 
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
-	if err := p.Stage("solution-promote", types.TierBronze); err != nil {
+	if err := p.Stage("solution-promote", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -996,17 +996,17 @@ func TestPoolPromoteDefaultType(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "default-type",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Type:    "",
 		Content: "Some knowledge without explicit type",
 	}
 
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
-	if err := p.Stage("default-type", types.TierBronze); err != nil {
+	if err := p.Stage("default-type", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -1048,17 +1048,17 @@ func TestPoolListByStatus(t *testing.T) {
 
 	// Add candidates
 	for _, id := range []string{"a1", "a2", "a3"} {
-		if err := p.Add(types.Candidate{ID: id, Tier: types.TierSilver, Content: "c"}, types.Scoring{}); err != nil {
+		if err := p.Add(domain.Candidate{ID: id, Tier: domain.TierSilver, Content: "c"}, domain.Scoring{}); err != nil {
 			t.Fatalf("Add failed: %v", err)
 		}
 	}
 	// Stage one
-	if err := p.Stage("a1", types.TierBronze); err != nil {
+	if err := p.Stage("a1", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
 	// List only pending
-	pending, err := p.List(ListOptions{Status: types.PoolStatusPending})
+	pending, err := p.List(ListOptions{Status: domain.PoolStatusPending})
 	if err != nil {
 		t.Fatalf("List pending failed: %v", err)
 	}
@@ -1067,7 +1067,7 @@ func TestPoolListByStatus(t *testing.T) {
 	}
 
 	// List only staged
-	staged, err := p.List(ListOptions{Status: types.PoolStatusStaged})
+	staged, err := p.List(ListOptions{Status: domain.PoolStatusStaged})
 	if err != nil {
 		t.Fatalf("List staged failed: %v", err)
 	}
@@ -1082,7 +1082,7 @@ func TestPoolListWithLimit(t *testing.T) {
 
 	for i := range 5 {
 		id := strings.Repeat(string(rune('a'+i)), 3)
-		if err := p.Add(types.Candidate{ID: id, Tier: types.TierSilver, Content: "c"}, types.Scoring{}); err != nil {
+		if err := p.Add(domain.Candidate{ID: id, Tier: domain.TierSilver, Content: "c"}, domain.Scoring{}); err != nil {
 			t.Fatalf("Add failed: %v", err)
 		}
 	}
@@ -1102,13 +1102,13 @@ func TestPoolBulkApproveDryRun(t *testing.T) {
 
 	// Add silver candidates with old timestamps
 	for _, id := range []string{"old-silver-1", "old-silver-2"} {
-		candidate := types.Candidate{
+		candidate := domain.Candidate{
 			ID:      id,
-			Tier:    types.TierSilver,
+			Tier:    domain.TierSilver,
 			Content: "Old silver content",
 		}
 		pastTime := time.Now().Add(-25 * time.Hour)
-		if err := p.AddAt(candidate, types.Scoring{}, pastTime); err != nil {
+		if err := p.AddAt(candidate, domain.Scoring{}, pastTime); err != nil {
 			t.Fatalf("AddAt failed: %v", err)
 		}
 	}
@@ -1138,13 +1138,13 @@ func TestPoolBulkApproveActual(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "bulk-actual",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Content: "Old silver content",
 	}
 	pastTime := time.Now().Add(-3 * time.Hour)
-	if err := p.AddAt(candidate, types.Scoring{}, pastTime); err != nil {
+	if err := p.AddAt(candidate, domain.Scoring{}, pastTime); err != nil {
 		t.Fatalf("AddAt failed: %v", err)
 	}
 
@@ -1174,8 +1174,8 @@ func TestPoolScanDirectorySkipsNonJSON(t *testing.T) {
 	}
 
 	// Add a valid entry
-	candidate := types.Candidate{ID: "valid-entry", Tier: types.TierSilver, Content: "valid"}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	candidate := domain.Candidate{ID: "valid-entry", Tier: domain.TierSilver, Content: "valid"}
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -1188,7 +1188,7 @@ func TestPoolScanDirectorySkipsNonJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	entries, err := p.List(ListOptions{Status: types.PoolStatusPending})
+	entries, err := p.List(ListOptions{Status: domain.PoolStatusPending})
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -1211,12 +1211,12 @@ func TestPoolScanDirectorySkipsMalformedJSON(t *testing.T) {
 	}
 
 	// Add a valid entry
-	candidate := types.Candidate{ID: "good-entry", Tier: types.TierSilver, Content: "good"}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	candidate := domain.Candidate{ID: "good-entry", Tier: domain.TierSilver, Content: "good"}
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
-	entries, err := p.List(ListOptions{Status: types.PoolStatusPending})
+	entries, err := p.List(ListOptions{Status: domain.PoolStatusPending})
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -1231,23 +1231,23 @@ func TestPoolWriteArtifactLongTitle(t *testing.T) {
 
 	// Content longer than 80 chars on first line triggers truncation
 	longContent := "This is a very long first line that exceeds eighty characters to test the word boundary truncation logic in artifact writing"
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:       "long-title",
-		Tier:     types.TierSilver,
-		Type:     types.KnowledgeTypeLearning,
+		Tier:     domain.TierSilver,
+		Type:     domain.KnowledgeTypeLearning,
 		Content:  longContent,
-		Maturity: types.MaturityCandidate,
-		Source: types.Source{
+		Maturity: domain.MaturityCandidate,
+		Source: domain.Source{
 			SessionID:      "sess-1",
 			TranscriptPath: "/path/to/transcript.jsonl",
 			MessageIndex:   5,
 		},
 	}
 
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
-	if err := p.Stage("long-title", types.TierBronze); err != nil {
+	if err := p.Stage("long-title", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -1280,15 +1280,15 @@ func TestPoolWriteArtifactLongTitle(t *testing.T) {
 func TestKnowledgeTypeHeading(t *testing.T) {
 	tests := []struct {
 		name string
-		kt   types.KnowledgeType
+		kt   domain.KnowledgeType
 		want string
 	}{
-		{name: "learning", kt: types.KnowledgeTypeLearning, want: "# Learning: "},
-		{name: "decision", kt: types.KnowledgeTypeDecision, want: "# Decision: "},
-		{name: "solution", kt: types.KnowledgeTypeSolution, want: "# Solution: "},
-		{name: "failure", kt: types.KnowledgeTypeFailure, want: "# Failure: "},
-		{name: "reference", kt: types.KnowledgeTypeReference, want: "# Reference: "},
-		{name: "default", kt: types.KnowledgeType("custom"), want: "# Knowledge: "},
+		{name: "learning", kt: domain.KnowledgeTypeLearning, want: "# Learning: "},
+		{name: "decision", kt: domain.KnowledgeTypeDecision, want: "# Decision: "},
+		{name: "solution", kt: domain.KnowledgeTypeSolution, want: "# Solution: "},
+		{name: "failure", kt: domain.KnowledgeTypeFailure, want: "# Failure: "},
+		{name: "reference", kt: domain.KnowledgeTypeReference, want: "# Reference: "},
+		{name: "default", kt: domain.KnowledgeType("custom"), want: "# Knowledge: "},
 	}
 
 	for _, tt := range tests {
@@ -1304,21 +1304,21 @@ func TestPoolWriteArtifactMultilineContent(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "multiline",
-		Tier:    types.TierSilver,
-		Type:    types.KnowledgeTypeLearning,
+		Tier:    domain.TierSilver,
+		Type:    domain.KnowledgeTypeLearning,
 		Content: "First line title\nSecond line detail\nThird line",
-		Source: types.Source{
+		Source: domain.Source{
 			SessionID:      "sess-1",
 			TranscriptPath: "/path/to/transcript.jsonl",
 		},
 	}
 
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
-	if err := p.Stage("multiline", types.TierBronze); err != nil {
+	if err := p.Stage("multiline", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -1358,14 +1358,14 @@ func TestPoolWriteArtifactMultilineContent(t *testing.T) {
 func TestIsAboveThresholdDiscard(t *testing.T) {
 	tests := []struct {
 		name     string
-		tier     types.Tier
-		minTier  types.Tier
+		tier     domain.Tier
+		minTier  domain.Tier
 		expected bool
 	}{
-		{"discard below bronze", types.TierDiscard, types.TierBronze, false},
-		{"discard meets discard", types.TierDiscard, types.TierDiscard, true},
-		{"gold above discard", types.TierGold, types.TierDiscard, true},
-		{"unknown tier", types.Tier("unknown"), types.TierBronze, false},
+		{"discard below bronze", domain.TierDiscard, domain.TierBronze, false},
+		{"discard meets discard", domain.TierDiscard, domain.TierDiscard, true},
+		{"gold above discard", domain.TierGold, domain.TierDiscard, true},
+		{"unknown tier", domain.Tier("unknown"), domain.TierBronze, false},
 	}
 
 	for _, tt := range tests {
@@ -1447,7 +1447,7 @@ func TestPoolListPaginatedOffset(t *testing.T) {
 	// Add 5 candidates
 	for i := range 5 {
 		id := fmt.Sprintf("page-%d", i)
-		if err := p.Add(types.Candidate{ID: id, Tier: types.TierSilver, Content: "c"}, types.Scoring{}); err != nil {
+		if err := p.Add(domain.Candidate{ID: id, Tier: domain.TierSilver, Content: "c"}, domain.Scoring{}); err != nil {
 			t.Fatalf("Add failed: %v", err)
 		}
 	}
@@ -1505,22 +1505,22 @@ func TestPoolPromoteCollisionGuard(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:       "collision-test",
-		Tier:     types.TierSilver,
-		Type:     types.KnowledgeTypeLearning,
+		Tier:     domain.TierSilver,
+		Type:     domain.KnowledgeTypeLearning,
 		Content:  "Content for collision test",
-		Maturity: types.MaturityCandidate,
-		Source: types.Source{
+		Maturity: domain.MaturityCandidate,
+		Source: domain.Source{
 			SessionID:      "sess-1",
 			TranscriptPath: "/path/to/t.jsonl",
 		},
 	}
 
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
-	if err := p.Stage("collision-test", types.TierBronze); err != nil {
+	if err := p.Stage("collision-test", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -1558,7 +1558,7 @@ func TestPoolStageNotFound(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := p.Stage("nonexistent", types.TierBronze)
+	err := p.Stage("nonexistent", domain.TierBronze)
 	if err == nil {
 		t.Error("expected error when staging nonexistent candidate")
 	}
@@ -1625,7 +1625,7 @@ func TestPoolListError(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chmod(pendingDir, 0700) })
 
-	_, err := p.List(ListOptions{Status: types.PoolStatusPending})
+	_, err := p.List(ListOptions{Status: domain.PoolStatusPending})
 	if err == nil {
 		t.Error("expected error when listing unreadable directory")
 	}
@@ -1717,7 +1717,7 @@ func TestPoolAddAtInitError(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chmod(readOnly, 0700) })
 
 	p := NewPool(readOnly)
-	err := p.AddAt(types.Candidate{ID: "test", Content: "c"}, types.Scoring{}, time.Now())
+	err := p.AddAt(domain.Candidate{ID: "test", Content: "c"}, domain.Scoring{}, time.Now())
 	if err == nil {
 		t.Error("expected error when Init fails in AddAt")
 	}
@@ -1750,17 +1750,17 @@ func TestPoolApproachingAutoPromote(t *testing.T) {
 	p := NewPool(tmpDir)
 
 	// Add a silver candidate with a timestamp more than 22 hours ago
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "old-silver",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Content: "Old silver content",
 	}
 	pastTime := time.Now().Add(-23 * time.Hour)
-	if err := p.AddAt(candidate, types.Scoring{}, pastTime); err != nil {
+	if err := p.AddAt(candidate, domain.Scoring{}, pastTime); err != nil {
 		t.Fatalf("AddAt failed: %v", err)
 	}
 
-	entries, err := p.List(ListOptions{Status: types.PoolStatusPending})
+	entries, err := p.List(ListOptions{Status: domain.PoolStatusPending})
 	if err != nil {
 		t.Fatalf("List failed: %v", err)
 	}
@@ -1785,8 +1785,8 @@ func TestPoolListPendingReviewFiltersReviewed(t *testing.T) {
 
 	// Add two bronze candidates
 	for _, id := range []string{"review-pending", "review-done"} {
-		candidate := types.Candidate{ID: id, Tier: types.TierBronze, Content: "content"}
-		if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+		candidate := domain.Candidate{ID: id, Tier: domain.TierBronze, Content: "content"}
+		if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 			t.Fatalf("Add failed: %v", err)
 		}
 	}
@@ -1851,7 +1851,7 @@ func TestWriteEntryPermissionError(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chmod(pendingDir, 0700) })
 
 	entry := &PoolEntry{}
-	entry.Candidate = types.Candidate{ID: "write-test", Content: "test"}
+	entry.Candidate = domain.Candidate{ID: "write-test", Content: "test"}
 	err := p.writeEntry(filepath.Join(pendingDir, "write-test.json"), entry)
 	if err == nil {
 		t.Error("expected error when writing to read-only directory")
@@ -1865,12 +1865,12 @@ func TestStageAtomicMoveError(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "stage-move-err",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Content: "Content to stage",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -1881,7 +1881,7 @@ func TestStageAtomicMoveError(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chmod(stagedDir, 0700) })
 
-	err := p.Stage("stage-move-err", types.TierBronze)
+	err := p.Stage("stage-move-err", domain.TierBronze)
 	if err == nil {
 		t.Error("expected error when staged directory is read-only")
 	}
@@ -1897,12 +1897,12 @@ func TestRejectAtomicMoveError(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "reject-move-err",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Content to reject",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -1929,16 +1929,16 @@ func TestPromoteMkdirAllError(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "promote-mkdir-err",
-		Tier:    types.TierSilver,
-		Type:    types.KnowledgeTypeLearning,
+		Tier:    domain.TierSilver,
+		Type:    domain.KnowledgeTypeLearning,
 		Content: "Content",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
-	if err := p.Stage("promote-mkdir-err", types.TierBronze); err != nil {
+	if err := p.Stage("promote-mkdir-err", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -1975,8 +1975,8 @@ func TestAddAtWriteEntryError(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chmod(pendingDir, 0700) })
 
-	candidate := types.Candidate{ID: "write-err", Content: "test"}
-	err := p.AddAt(candidate, types.Scoring{}, time.Now())
+	candidate := domain.Candidate{ID: "write-err", Content: "test"}
+	err := p.AddAt(candidate, domain.Scoring{}, time.Now())
 	if err == nil {
 		t.Error("expected error when writeEntry fails in AddAt")
 	}
@@ -1992,16 +1992,16 @@ func TestPromoteWriteArtifactError(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "promote-write-err",
-		Tier:    types.TierSilver,
-		Type:    types.KnowledgeTypeLearning,
+		Tier:    domain.TierSilver,
+		Type:    domain.KnowledgeTypeLearning,
 		Content: "Content",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
-	if err := p.Stage("promote-write-err", types.TierBronze); err != nil {
+	if err := p.Stage("promote-write-err", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -2031,12 +2031,12 @@ func TestApproveWriteEntryError(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "approve-write-err",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Content",
 	}
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -2077,7 +2077,7 @@ func TestStageInvalidID(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := p.Stage("", types.TierBronze)
+	err := p.Stage("", domain.TierBronze)
 	if err == nil {
 		t.Error("expected error for empty candidate ID in Stage")
 	}
@@ -2115,13 +2115,13 @@ func TestBulkApproveSkipsAlreadyReviewed(t *testing.T) {
 
 	// Add two silver candidates with old timestamps
 	for _, id := range []string{"already-approved", "should-approve"} {
-		candidate := types.Candidate{
+		candidate := domain.Candidate{
 			ID:      id,
-			Tier:    types.TierSilver,
+			Tier:    domain.TierSilver,
 			Content: "Old silver content",
 		}
 		pastTime := time.Now().Add(-3 * time.Hour)
-		if err := p.AddAt(candidate, types.Scoring{}, pastTime); err != nil {
+		if err := p.AddAt(candidate, domain.Scoring{}, pastTime); err != nil {
 			t.Fatalf("AddAt failed: %v", err)
 		}
 	}
@@ -2151,17 +2151,17 @@ func TestStageWriteEntryError(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "stage-write-err",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Content: "Content to stage",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
 	// Stage successfully first
-	if err := p.Stage("stage-write-err", types.TierBronze); err != nil {
+	if err := p.Stage("stage-write-err", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -2176,12 +2176,12 @@ func TestRejectWriteEntryError(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "reject-write-test",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Content",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -2214,13 +2214,13 @@ func TestListPendingReviewSortByAge(t *testing.T) {
 	ages := []time.Duration{-1 * time.Hour, -10 * time.Hour, -5 * time.Hour}
 
 	for i, id := range ids {
-		candidate := types.Candidate{
+		candidate := domain.Candidate{
 			ID:      id,
-			Tier:    types.TierBronze,
+			Tier:    domain.TierBronze,
 			Content: "Bronze content " + id,
 		}
 		addedAt := time.Now().Add(ages[i])
-		if err := p.AddAt(candidate, types.Scoring{GateRequired: true}, addedAt); err != nil {
+		if err := p.AddAt(candidate, domain.Scoring{GateRequired: true}, addedAt); err != nil {
 			t.Fatalf("AddAt failed: %v", err)
 		}
 	}
@@ -2343,12 +2343,12 @@ func TestPoolAddAtGateRequired(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "gated-at",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Gated content via AddAt",
 	}
-	scoring := types.Scoring{GateRequired: true}
+	scoring := domain.Scoring{GateRequired: true}
 	pastTime := time.Now().Add(-2 * time.Hour)
 
 	if err := p.AddAt(candidate, scoring, pastTime); err != nil {
@@ -2371,7 +2371,7 @@ func TestPoolAddAtInvalidID(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	err := p.AddAt(types.Candidate{ID: "../evil", Content: "test"}, types.Scoring{}, time.Now())
+	err := p.AddAt(domain.Candidate{ID: "../evil", Content: "test"}, domain.Scoring{}, time.Now())
 	if err == nil {
 		t.Error("expected error for path traversal ID in AddAt")
 	}
@@ -2404,12 +2404,12 @@ func TestStage_RecordEventFailure(t *testing.T) {
 	}
 
 	// Add a candidate
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "stage-event-fail",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Content: "test content for stage event failure",
 	}
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2417,7 +2417,7 @@ func TestStage_RecordEventFailure(t *testing.T) {
 	blockChainFile(t, p)
 
 	// Stage should succeed (recordEvent failure is non-fatal)
-	err := p.Stage("stage-event-fail", types.TierBronze)
+	err := p.Stage("stage-event-fail", domain.TierBronze)
 	if err != nil {
 		t.Fatalf("Stage should succeed despite recordEvent failure: %v", err)
 	}
@@ -2430,12 +2430,12 @@ func TestReject_RecordEventFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "reject-event-fail",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "test content for reject event failure",
 	}
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2456,12 +2456,12 @@ func TestApprove_RecordEventFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "approve-event-fail",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "test content for approve event failure",
 	}
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2483,16 +2483,16 @@ func TestPromote_RecordEventFailure(t *testing.T) {
 	}
 
 	// Add and stage a candidate first
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "promote-event-fail",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Content: "test content for promote event failure",
-		Type:    types.KnowledgeTypeLearning,
+		Type:    domain.KnowledgeTypeLearning,
 	}
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatal(err)
 	}
-	if err := p.Stage("promote-event-fail", types.TierBronze); err != nil {
+	if err := p.Stage("promote-event-fail", domain.TierBronze); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2657,11 +2657,11 @@ func TestAddAt_RecordEventFailure(t *testing.T) {
 	// Block chain file to trigger recordEvent failure
 	blockChainFile(t, p)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "test-add-at",
 		Content: "Test content",
 	}
-	scoring := types.Scoring{
+	scoring := domain.Scoring{
 		RawScore: 0.8,
 	}
 
@@ -2697,9 +2697,9 @@ func TestWriteEntry_DirectoryAsPath(t *testing.T) {
 	}
 
 	entry := &PoolEntry{
-		PoolEntry: types.PoolEntry{
-			Candidate: types.Candidate{ID: "test-write", Content: "test"},
-			Status:    types.PoolStatusPending,
+		PoolEntry: domain.PoolEntry{
+			Candidate: domain.Candidate{ID: "test-write", Content: "test"},
+			Status:    domain.PoolStatusPending,
 		},
 	}
 
@@ -2801,7 +2801,7 @@ func TestFindByPrefix_SkipsNonJSONDirsAndMalformed(t *testing.T) {
 	}
 
 	// Add a valid candidate with a known prefix
-	if err := p.Add(types.Candidate{ID: "pfx-valid", Tier: types.TierSilver, Content: "valid"}, types.Scoring{}); err != nil {
+	if err := p.Add(domain.Candidate{ID: "pfx-valid", Tier: domain.TierSilver, Content: "valid"}, domain.Scoring{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2857,16 +2857,16 @@ func TestPromoteEntryRemoveWarning(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "promote-rm-warn",
-		Tier:    types.TierSilver,
-		Type:    types.KnowledgeTypeLearning,
+		Tier:    domain.TierSilver,
+		Type:    domain.KnowledgeTypeLearning,
 		Content: "Content for removal warning test",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatal(err)
 	}
-	if err := p.Stage("promote-rm-warn", types.TierBronze); err != nil {
+	if err := p.Stage("promote-rm-warn", domain.TierBronze); err != nil {
 		t.Fatal(err)
 	}
 
@@ -2947,14 +2947,14 @@ func TestWriteArtifactNoSourceSession(t *testing.T) {
 	p := NewPool(tmpDir)
 
 	entry := &PoolEntry{
-		PoolEntry: types.PoolEntry{
-			Candidate: types.Candidate{
+		PoolEntry: domain.PoolEntry{
+			Candidate: domain.Candidate{
 				ID:      "no-source",
-				Type:    types.KnowledgeTypeLearning,
+				Type:    domain.KnowledgeTypeLearning,
 				Content: "Content without source info",
-				Source:  types.Source{}, // empty SessionID
+				Source:  domain.Source{}, // empty SessionID
 			},
-			Status: types.PoolStatusStaged,
+			Status: domain.PoolStatusStaged,
 		},
 	}
 
@@ -2979,22 +2979,22 @@ func TestWriteArtifactNoSourceSession(t *testing.T) {
 
 // --- Benchmarks ---
 
-func benchCandidate(id string) (types.Candidate, types.Scoring) {
-	return types.Candidate{
+func benchCandidate(id string) (domain.Candidate, domain.Scoring) {
+	return domain.Candidate{
 			ID:         id,
-			Type:       types.KnowledgeTypeLearning,
-			Tier:       types.TierSilver,
+			Type:       domain.KnowledgeTypeLearning,
+			Tier:       domain.TierSilver,
 			Content:    "Benchmark learning content for performance testing",
 			Utility:    0.75,
 			Confidence: 0.8,
-			Maturity:   types.MaturityCandidate,
-			Source: types.Source{
+			Maturity:   domain.MaturityCandidate,
+			Source: domain.Source{
 				SessionID:      "bench-session",
 				TranscriptPath: "/path/to/transcript.jsonl",
 			},
-		}, types.Scoring{
+		}, domain.Scoring{
 			RawScore: 0.72,
-			Rubric: types.RubricScores{
+			Rubric: domain.RubricScores{
 				Specificity:   0.8,
 				Actionability: 0.7,
 				Novelty:       0.6,
@@ -3129,7 +3129,7 @@ func TestFindByPrefix_ExactMatch(t *testing.T) {
 
 	// Add several candidates with different IDs
 	for _, id := range []string{"alpha-one", "alpha-two", "beta-one"} {
-		if err := p.Add(types.Candidate{ID: id, Tier: types.TierSilver, Content: "content for " + id}, types.Scoring{}); err != nil {
+		if err := p.Add(domain.Candidate{ID: id, Tier: domain.TierSilver, Content: "content for " + id}, domain.Scoring{}); err != nil {
 			t.Fatalf("Add(%s) failed: %v", id, err)
 		}
 	}
@@ -3153,7 +3153,7 @@ func TestFindByPrefix_NoMatch(t *testing.T) {
 
 	// Add candidates
 	for _, id := range []string{"alpha-one", "alpha-two"} {
-		if err := p.Add(types.Candidate{ID: id, Tier: types.TierSilver, Content: "c"}, types.Scoring{}); err != nil {
+		if err := p.Add(domain.Candidate{ID: id, Tier: domain.TierSilver, Content: "c"}, domain.Scoring{}); err != nil {
 			t.Fatalf("Add(%s) failed: %v", id, err)
 		}
 	}
@@ -3174,7 +3174,7 @@ func TestFindByPrefix_AmbiguousMatch(t *testing.T) {
 
 	// Add candidates with shared prefix
 	for _, id := range []string{"alpha-one", "alpha-two", "alpha-three", "beta-one"} {
-		if err := p.Add(types.Candidate{ID: id, Tier: types.TierSilver, Content: "c"}, types.Scoring{}); err != nil {
+		if err := p.Add(domain.Candidate{ID: id, Tier: domain.TierSilver, Content: "c"}, domain.Scoring{}); err != nil {
 			t.Fatalf("Add(%s) failed: %v", id, err)
 		}
 	}
@@ -3214,14 +3214,14 @@ func TestFindByPrefix_AcrossDirectories(t *testing.T) {
 	p := NewPool(tmpDir)
 
 	// Add candidate to pending
-	if err := p.Add(types.Candidate{ID: "cross-pending", Tier: types.TierSilver, Content: "c"}, types.Scoring{}); err != nil {
+	if err := p.Add(domain.Candidate{ID: "cross-pending", Tier: domain.TierSilver, Content: "c"}, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 	// Stage another to staged
-	if err := p.Add(types.Candidate{ID: "cross-staged", Tier: types.TierSilver, Content: "c"}, types.Scoring{}); err != nil {
+	if err := p.Add(domain.Candidate{ID: "cross-staged", Tier: domain.TierSilver, Content: "c"}, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
-	if err := p.Stage("cross-staged", types.TierBronze); err != nil {
+	if err := p.Stage("cross-staged", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -3241,12 +3241,12 @@ func TestReject_ChainEventFromStatus(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "from-status-test",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Test from-status tracking",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -3273,10 +3273,10 @@ func TestReject_ChainEventFromStatus(t *testing.T) {
 	}
 
 	// FromStatus must be pending (before mutation), NOT rejected (after mutation)
-	if rejectEvent.FromStatus != types.PoolStatusPending {
+	if rejectEvent.FromStatus != domain.PoolStatusPending {
 		t.Errorf("expected FromStatus=pending, got %s", rejectEvent.FromStatus)
 	}
-	if rejectEvent.ToStatus != types.PoolStatusRejected {
+	if rejectEvent.ToStatus != domain.PoolStatusRejected {
 		t.Errorf("expected ToStatus=rejected, got %s", rejectEvent.ToStatus)
 	}
 	if rejectEvent.FromStatus == rejectEvent.ToStatus {
@@ -3288,20 +3288,20 @@ func TestPromote_ChainEventFromStatus(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "promote-chain-test",
-		Tier:    types.TierSilver,
-		Type:    types.KnowledgeTypeLearning,
+		Tier:    domain.TierSilver,
+		Type:    domain.KnowledgeTypeLearning,
 		Content: "Promotable learning",
-		Source: types.Source{
+		Source: domain.Source{
 			SessionID:      "sess-1",
 			TranscriptPath: "/tmp/t.jsonl",
 		},
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
-	if err := p.Stage("promote-chain-test", types.TierBronze); err != nil {
+	if err := p.Stage("promote-chain-test", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -3325,10 +3325,10 @@ func TestPromote_ChainEventFromStatus(t *testing.T) {
 		t.Fatal("promote chain event not found")
 	}
 
-	if promoteEvent.FromStatus != types.PoolStatusStaged {
+	if promoteEvent.FromStatus != domain.PoolStatusStaged {
 		t.Errorf("expected FromStatus=staged, got %s", promoteEvent.FromStatus)
 	}
-	if promoteEvent.ToStatus != types.PoolStatusArchived {
+	if promoteEvent.ToStatus != domain.PoolStatusArchived {
 		t.Errorf("expected ToStatus=archived, got %s", promoteEvent.ToStatus)
 	}
 }
@@ -3346,7 +3346,7 @@ func TestRecordEvent_SyncsFile(t *testing.T) {
 		Timestamp:   time.Now(),
 		Operation:   "test-sync",
 		CandidateID: "sync-test",
-		ToStatus:    types.PoolStatusPending,
+		ToStatus:    domain.PoolStatusPending,
 	}
 
 	if err := p.recordEvent(event); err != nil {
@@ -3377,11 +3377,11 @@ func TestRecordEvent_SyncsFile(t *testing.T) {
 
 func TestPaginate_OffsetBeyondLength(t *testing.T) {
 	entries := []PoolEntry{
-		{PoolEntry: types.PoolEntry{Candidate: types.Candidate{ID: "a"}}},
-		{PoolEntry: types.PoolEntry{Candidate: types.Candidate{ID: "b"}}},
-		{PoolEntry: types.PoolEntry{Candidate: types.Candidate{ID: "c"}}},
-		{PoolEntry: types.PoolEntry{Candidate: types.Candidate{ID: "d"}}},
-		{PoolEntry: types.PoolEntry{Candidate: types.Candidate{ID: "e"}}},
+		{PoolEntry: domain.PoolEntry{Candidate: domain.Candidate{ID: "a"}}},
+		{PoolEntry: domain.PoolEntry{Candidate: domain.Candidate{ID: "b"}}},
+		{PoolEntry: domain.PoolEntry{Candidate: domain.Candidate{ID: "c"}}},
+		{PoolEntry: domain.PoolEntry{Candidate: domain.Candidate{ID: "d"}}},
+		{PoolEntry: domain.PoolEntry{Candidate: domain.Candidate{ID: "e"}}},
 	}
 
 	result := paginate(entries, 100, 0)
@@ -3411,15 +3411,15 @@ func TestWriteArtifact_NilSource(t *testing.T) {
 
 	// Entry with zero-value Source (no SessionID, no TranscriptPath)
 	entry := &PoolEntry{
-		PoolEntry: types.PoolEntry{
-			Candidate: types.Candidate{
+		PoolEntry: domain.PoolEntry{
+			Candidate: domain.Candidate{
 				ID:      "nil-source-test",
-				Type:    types.KnowledgeTypeLearning,
-				Tier:    types.TierSilver,
+				Type:    domain.KnowledgeTypeLearning,
+				Tier:    domain.TierSilver,
 				Content: "Learning without source info",
 				// Source is zero-value (empty struct) — no SessionID, no TranscriptPath
 			},
-			Status: types.PoolStatusStaged,
+			Status: domain.PoolStatusStaged,
 		},
 	}
 
@@ -3457,19 +3457,19 @@ func TestWriteArtifact_WithSource(t *testing.T) {
 	p := NewPool(tmpDir)
 
 	entry := &PoolEntry{
-		PoolEntry: types.PoolEntry{
-			Candidate: types.Candidate{
+		PoolEntry: domain.PoolEntry{
+			Candidate: domain.Candidate{
 				ID:      "with-source-test",
-				Type:    types.KnowledgeTypeLearning,
-				Tier:    types.TierSilver,
+				Type:    domain.KnowledgeTypeLearning,
+				Tier:    domain.TierSilver,
 				Content: "Learning with source",
-				Source: types.Source{
+				Source: domain.Source{
 					SessionID:      "sess-abc",
 					TranscriptPath: "/path/to/t.jsonl",
 					MessageIndex:   42,
 				},
 			},
-			Status: types.PoolStatusStaged,
+			Status: domain.PoolStatusStaged,
 		},
 	}
 
@@ -3506,7 +3506,7 @@ func TestWriteEntry_MarshalError(t *testing.T) {
 
 	// NaN in a float64 field causes json.MarshalIndent to return an error
 	entry := &PoolEntry{}
-	entry.Candidate = types.Candidate{
+	entry.Candidate = domain.Candidate{
 		ID:      "nan-test",
 		Content: "test",
 		Utility: math.NaN(),
@@ -3634,17 +3634,17 @@ func TestStage_WriteEntryErrorAfterMove(t *testing.T) {
 	//
 	// Instead: test the error message format by calling writeEntry directly
 	// on a read-only path and verify the "write staged entry" wrapping.
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "stage-write-err-2",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Content: "Content",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatal(err)
 	}
 
 	// Verify Stage succeeds normally (exercises the full path)
-	if err := p.Stage("stage-write-err-2", types.TierBronze); err != nil {
+	if err := p.Stage("stage-write-err-2", domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -3653,8 +3653,8 @@ func TestStage_WriteEntryErrorAfterMove(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get after stage failed: %v", err)
 	}
-	if entry.Status != types.PoolStatusStaged {
-		t.Errorf("expected status %s, got %s", types.PoolStatusStaged, entry.Status)
+	if entry.Status != domain.PoolStatusStaged {
+		t.Errorf("expected status %s, got %s", domain.PoolStatusStaged, entry.Status)
 	}
 }
 
@@ -3664,12 +3664,12 @@ func TestReject_RecordEventChainError(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "reject-chain-err",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Content",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3691,7 +3691,7 @@ func TestReject_RecordEventChainError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get failed: %v", err)
 	}
-	if entry.Status != types.PoolStatusRejected {
+	if entry.Status != domain.PoolStatusRejected {
 		t.Errorf("expected status rejected, got %s", entry.Status)
 	}
 	if entry.HumanReview == nil || entry.HumanReview.Reviewer != "reviewer" {
@@ -3714,7 +3714,7 @@ func TestGetChain_SkipsMalformedLines(t *testing.T) {
 		Timestamp:   time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
 		Operation:   "add",
 		CandidateID: "valid-1",
-		ToStatus:    types.PoolStatusPending,
+		ToStatus:    domain.PoolStatusPending,
 	}
 	validJSON, _ := json.Marshal(validEvent)
 
@@ -3751,15 +3751,15 @@ func TestAdd_WriteEntryMarshalError(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "nan-add",
-		Type:    types.KnowledgeTypeLearning,
-		Tier:    types.TierSilver,
+		Type:    domain.KnowledgeTypeLearning,
+		Tier:    domain.TierSilver,
 		Content: "Test content",
 		Utility: math.NaN(),
 	}
 
-	err := p.Add(candidate, types.Scoring{})
+	err := p.Add(candidate, domain.Scoring{})
 	if err == nil {
 		t.Fatal("expected error from Add with NaN utility, got nil")
 	}
@@ -3791,13 +3791,13 @@ func TestApprove_WriteEntryMarshalError(t *testing.T) {
 	//
 	// Instead, test that Approve correctly wraps writeEntry permission errors.
 	pendingDir := filepath.Join(p.PoolPath, PendingDir)
-	entryData := types.PoolEntry{
-		Candidate: types.Candidate{
+	entryData := domain.PoolEntry{
+		Candidate: domain.Candidate{
 			ID:      "approve-write-err",
-			Tier:    types.TierBronze,
+			Tier:    domain.TierBronze,
 			Content: "Content",
 		},
-		Status:  types.PoolStatusPending,
+		Status:  domain.PoolStatusPending,
 		AddedAt: time.Now(),
 	}
 	data, _ := json.MarshalIndent(&PoolEntry{PoolEntry: entryData}, "", "  ")
@@ -3830,12 +3830,12 @@ func TestReject_WriteEntryPermissionError(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "reject-perm-err",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Content",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -3875,19 +3875,19 @@ func TestStage_RejectedCandidate(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "stage-rejected",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Content: "Content",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatal(err)
 	}
 	if err := p.Reject("stage-rejected", "reason", "rev"); err != nil {
 		t.Fatal(err)
 	}
 
-	err := p.Stage("stage-rejected", types.TierBronze)
+	err := p.Stage("stage-rejected", domain.TierBronze)
 	if !errors.Is(err, ErrStageRejected) {
 		t.Errorf("expected ErrStageRejected, got: %v", err)
 	}
@@ -3971,20 +3971,20 @@ func TestWriteArtifact_WithContext(t *testing.T) {
 	p := NewPool(tmpDir)
 
 	entry := &PoolEntry{
-		PoolEntry: types.PoolEntry{
-			Candidate: types.Candidate{
+		PoolEntry: domain.PoolEntry{
+			Candidate: domain.Candidate{
 				ID:      "context-test",
-				Type:    types.KnowledgeTypeDecision,
-				Tier:    types.TierGold,
+				Type:    domain.KnowledgeTypeDecision,
+				Tier:    domain.TierGold,
 				Content: "We decided to use Go modules",
 				Context: "During the architecture review session, we evaluated multiple options",
-				Source: types.Source{
+				Source: domain.Source{
 					SessionID:      "sess-ctx",
 					TranscriptPath: "/path/to/ctx.jsonl",
 					MessageIndex:   7,
 				},
 			},
-			Status: types.PoolStatusStaged,
+			Status: domain.PoolStatusStaged,
 		},
 	}
 
@@ -4034,12 +4034,12 @@ func TestStageWriteEntryFailure(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "stage-write-fail",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Content: "Test content for stage write failure",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -4048,7 +4048,7 @@ func TestStageWriteEntryFailure(t *testing.T) {
 	writeEntryFunc = func(_ string, _ []byte) error { return injectedErr }
 	defer func() { writeEntryFunc = defaultWriteEntry }()
 
-	err := p.Stage("stage-write-fail", types.TierBronze)
+	err := p.Stage("stage-write-fail", domain.TierBronze)
 	if err == nil {
 		t.Fatal("expected Stage to fail when writeEntry fails")
 	}
@@ -4064,12 +4064,12 @@ func TestRejectWriteEntryFailure(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "reject-write-fail",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Test content for reject write failure",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -4483,8 +4483,8 @@ func TestRecordEventMarshalJSON(t *testing.T) {
 		Timestamp:    time.Now(),
 		Operation:    "promote",
 		CandidateID:  "marshal-test",
-		FromStatus:   types.PoolStatusStaged,
-		ToStatus:     types.PoolStatus("promoted"),
+		FromStatus:   domain.PoolStatusStaged,
+		ToStatus:     domain.PoolStatus("promoted"),
 		Reason:       "high quality",
 		Reviewer:     "automated",
 		ArtifactPath: "/path/to/artifact.md",
@@ -4510,10 +4510,10 @@ func TestRecordEventMarshalJSON(t *testing.T) {
 	if decoded.ArtifactPath != "/path/to/artifact.md" {
 		t.Errorf("expected artifact path '/path/to/artifact.md', got %q", decoded.ArtifactPath)
 	}
-	if decoded.FromStatus != types.PoolStatusStaged {
+	if decoded.FromStatus != domain.PoolStatusStaged {
 		t.Errorf("expected from_status 'staged', got %q", decoded.FromStatus)
 	}
-	if decoded.ToStatus != types.PoolStatus("promoted") {
+	if decoded.ToStatus != domain.PoolStatus("promoted") {
 		t.Errorf("expected to_status 'promoted', got %q", decoded.ToStatus)
 	}
 }
@@ -4525,12 +4525,12 @@ func TestStageWriteEntryFailureViaFullIntegration(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "stage-int-err",
-		Tier:    types.TierGold,
+		Tier:    domain.TierGold,
 		Content: "Integration test content",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -4540,7 +4540,7 @@ func TestStageWriteEntryFailureViaFullIntegration(t *testing.T) {
 	}
 	defer os.Chmod(stagedDir, 0700) //nolint:errcheck
 
-	err := p.Stage("stage-int-err", types.TierBronze)
+	err := p.Stage("stage-int-err", domain.TierBronze)
 	if err == nil {
 		t.Fatal("expected Stage to fail when staged directory is read-only")
 	}
@@ -4556,12 +4556,12 @@ func TestRejectWriteEntryFailureViaFullIntegration(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "reject-int-err",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Integration test content",
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 
@@ -4697,12 +4697,12 @@ func TestPoolNaNScore(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "nan-score",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Content: "NaN score test",
 	}
-	scoring := types.Scoring{
+	scoring := domain.Scoring{
 		RawScore: math.NaN(),
 	}
 
@@ -4742,14 +4742,14 @@ func TestPromoteRejectedCandidate_SentinelError(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "sentinel-reject-test",
-		Tier:    types.TierSilver,
-		Type:    types.KnowledgeTypeLearning,
+		Tier:    domain.TierSilver,
+		Type:    domain.KnowledgeTypeLearning,
 		Content: "Content to reject then promote",
 	}
 
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
 	if err := p.Reject("sentinel-reject-test", "Not useful", "tester"); err != nil {
@@ -4781,16 +4781,16 @@ func TestPoolPromote_DedupsByContentHash(t *testing.T) {
 	// is the only collapse key.
 	body := "Always wrap fmt.Errorf with %w to preserve the underlying chain"
 	for _, id := range []string{"dedup-cand-a", "dedup-cand-b"} {
-		candidate := types.Candidate{
+		candidate := domain.Candidate{
 			ID:      id,
-			Tier:    types.TierSilver,
-			Type:    types.KnowledgeTypeLearning,
+			Tier:    domain.TierSilver,
+			Type:    domain.KnowledgeTypeLearning,
 			Content: body,
 		}
-		if err := p.Add(candidate, types.Scoring{}); err != nil {
+		if err := p.Add(candidate, domain.Scoring{}); err != nil {
 			t.Fatalf("Add(%s) failed: %v", id, err)
 		}
-		if err := p.Stage(id, types.TierBronze); err != nil {
+		if err := p.Stage(id, domain.TierBronze); err != nil {
 			t.Fatalf("Stage(%s) failed: %v", id, err)
 		}
 	}
@@ -4851,16 +4851,16 @@ func TestPoolPromote_DistinctContentDoesNotDedup(t *testing.T) {
 	}
 	paths := make(map[string]string, len(cases))
 	for _, c := range cases {
-		candidate := types.Candidate{
+		candidate := domain.Candidate{
 			ID:      c.id,
-			Tier:    types.TierSilver,
-			Type:    types.KnowledgeTypeLearning,
+			Tier:    domain.TierSilver,
+			Type:    domain.KnowledgeTypeLearning,
 			Content: c.body,
 		}
-		if err := p.Add(candidate, types.Scoring{}); err != nil {
+		if err := p.Add(candidate, domain.Scoring{}); err != nil {
 			t.Fatalf("Add(%s) failed: %v", c.id, err)
 		}
-		if err := p.Stage(c.id, types.TierBronze); err != nil {
+		if err := p.Stage(c.id, domain.TierBronze); err != nil {
 			t.Fatalf("Stage(%s) failed: %v", c.id, err)
 		}
 		path, err := p.Promote(c.id)

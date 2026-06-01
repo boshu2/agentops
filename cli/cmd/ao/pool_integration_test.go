@@ -10,29 +10,29 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/pool"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // createTestPoolCandidate writes a pool candidate JSON file into the correct
 // pool directory (.agents/pool/<status>/).  The pool package constant
 // pool.PoolDir == ".agents/pool" is the source of truth.
-func createTestPoolCandidate(t *testing.T, dir string, id string, tier types.Tier, utility float64) {
+func createTestPoolCandidate(t *testing.T, dir string, id string, tier domain.Tier, utility float64) {
 	t.Helper()
-	createTestPoolCandidateWithStatus(t, dir, id, tier, utility, types.PoolStatusPending)
+	createTestPoolCandidateWithStatus(t, dir, id, tier, utility, domain.PoolStatusPending)
 }
 
 // createTestPoolCandidateWithStatus writes a candidate into the given status directory.
-func createTestPoolCandidateWithStatus(t *testing.T, dir string, id string, tier types.Tier, utility float64, status types.PoolStatus) {
+func createTestPoolCandidateWithStatus(t *testing.T, dir string, id string, tier domain.Tier, utility float64, status domain.PoolStatus) {
 	t.Helper()
 
-	entry := types.PoolEntry{
-		Candidate: types.Candidate{
+	entry := domain.PoolEntry{
+		Candidate: domain.Candidate{
 			ID:      id,
 			Type:    "learning",
 			Content: "Test learning content for " + id,
 			Tier:    tier,
-			Source: types.Source{
+			Source: domain.Source{
 				SessionID:      "test-session-001",
 				TranscriptPath: "transcripts/test.md",
 				MessageIndex:   1,
@@ -41,10 +41,10 @@ func createTestPoolCandidateWithStatus(t *testing.T, dir string, id string, tier
 			Confidence: 0.8,
 			Maturity:   "validated",
 		},
-		ScoringResult: types.Scoring{
+		ScoringResult: domain.Scoring{
 			RawScore:       utility,
 			TierAssignment: tier,
-			Rubric: types.RubricScores{
+			Rubric: domain.RubricScores{
 				Specificity:   0.7,
 				Actionability: 0.8,
 				Novelty:       0.6,
@@ -72,13 +72,13 @@ func createTestPoolCandidateWithStatus(t *testing.T, dir string, id string, tier
 }
 
 // statusToDir maps a PoolStatus to its directory name inside .agents/pool/.
-func statusToDir(s types.PoolStatus) string {
+func statusToDir(s domain.PoolStatus) string {
 	switch s {
-	case types.PoolStatusPending:
+	case domain.PoolStatusPending:
 		return pool.PendingDir
-	case types.PoolStatusStaged:
+	case domain.PoolStatusStaged:
 		return pool.StagedDir
-	case types.PoolStatusRejected:
+	case domain.PoolStatusRejected:
 		return pool.RejectedDir
 	default:
 		return pool.PendingDir
@@ -145,7 +145,7 @@ func TestPoolList_Integration_WithCandidates(t *testing.T) {
 	ids := make([]string, 3)
 	for i := 0; i < 3; i++ {
 		ids[i] = fmt.Sprintf("pend-2026-01-15-test%03d", i)
-		createTestPoolCandidate(t, dir, ids[i], types.TierSilver, 0.7+float64(i)*0.05)
+		createTestPoolCandidate(t, dir, ids[i], domain.TierSilver, 0.7+float64(i)*0.05)
 	}
 
 	out, err := captureStdout(t, func() error {
@@ -182,8 +182,8 @@ func TestPoolList_Integration_TierFilter(t *testing.T) {
 	ensurePoolDirs(t, dir)
 	resetPoolFlags(t)
 
-	createTestPoolCandidate(t, dir, "pend-gold-001", types.TierGold, 0.95)
-	createTestPoolCandidate(t, dir, "pend-bronze-001", types.TierBronze, 0.55)
+	createTestPoolCandidate(t, dir, "pend-gold-001", domain.TierGold, 0.95)
+	createTestPoolCandidate(t, dir, "pend-bronze-001", domain.TierBronze, 0.55)
 
 	out, err := captureStdout(t, func() error {
 		rootCmd.SetArgs([]string{"pool", "list", "--tier=gold"})
@@ -212,7 +212,7 @@ func TestPoolStage_Integration(t *testing.T) {
 	resetPoolFlags(t)
 
 	candidateID := "pend-2026-01-15-stage001"
-	createTestPoolCandidate(t, dir, candidateID, types.TierSilver, 0.85)
+	createTestPoolCandidate(t, dir, candidateID, domain.TierSilver, 0.85)
 
 	// Verify candidate exists in pending before staging
 	pendingFile := filepath.Join(dir, pool.PoolDir, pool.PendingDir, candidateID+".json")
@@ -253,7 +253,7 @@ func TestPoolPromote_Integration(t *testing.T) {
 
 	candidateID := "staged-2026-01-15-promote001"
 	// Create directly as staged so promote can work
-	createTestPoolCandidateWithStatus(t, dir, candidateID, types.TierGold, 0.95, types.PoolStatusStaged)
+	createTestPoolCandidateWithStatus(t, dir, candidateID, domain.TierGold, 0.95, domain.PoolStatusStaged)
 
 	out, err := captureStdout(t, func() error {
 		rootCmd.SetArgs([]string{"pool", "promote", candidateID})
@@ -298,7 +298,7 @@ func TestPoolReject_Integration(t *testing.T) {
 	resetPoolFlags(t)
 
 	candidateID := "pend-2026-01-15-reject001"
-	createTestPoolCandidate(t, dir, candidateID, types.TierBronze, 0.3)
+	createTestPoolCandidate(t, dir, candidateID, domain.TierBronze, 0.3)
 
 	out, err := captureStdout(t, func() error {
 		rootCmd.SetArgs([]string{"pool", "reject", candidateID, "--reason", "Too vague for production use"})
@@ -333,7 +333,7 @@ func TestPoolPromote_Integration_RejectsNonStaged(t *testing.T) {
 	resetPoolFlags(t)
 
 	candidateID := "pend-2026-01-15-notstaged"
-	createTestPoolCandidate(t, dir, candidateID, types.TierGold, 0.95)
+	createTestPoolCandidate(t, dir, candidateID, domain.TierGold, 0.95)
 
 	_, err := captureStdout(t, func() error {
 		rootCmd.SetArgs([]string{"pool", "promote", candidateID})
@@ -358,7 +358,7 @@ func TestPoolStageAndPromote_Integration_Lifecycle(t *testing.T) {
 	resetPoolFlags(t)
 
 	candidateID := "pend-2026-01-15-lifecycle"
-	createTestPoolCandidate(t, dir, candidateID, types.TierSilver, 0.80)
+	createTestPoolCandidate(t, dir, candidateID, domain.TierSilver, 0.80)
 
 	// Stage
 	_, err := captureStdout(t, func() error {

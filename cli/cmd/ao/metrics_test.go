@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/storage"
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 func TestFilterCitationsForPeriod(t *testing.T) {
@@ -20,7 +20,7 @@ func TestFilterCitationsForPeriod(t *testing.T) {
 	oneWeekAgo := now.AddDate(0, 0, -7)
 	twoWeeksAgo := now.AddDate(0, 0, -14)
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: "/path/a.md", CitedAt: oneDayAgo},
 		{ArtifactPath: "/path/b.md", CitedAt: twoDaysAgo},
 		{ArtifactPath: "/path/c.md", CitedAt: oneWeekAgo},
@@ -145,7 +145,7 @@ func TestCountLoopMetrics(t *testing.T) {
 	now := time.Now()
 	oneDayAgo := now.AddDate(0, 0, -1)
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: "/path/to/.agents/learnings/L1.md", CitedAt: oneDayAgo},
 		{ArtifactPath: "/path/to/.agents/learnings/L2.md", CitedAt: oneDayAgo},
 		{ArtifactPath: "/path/to/.agents/patterns/P1.md", CitedAt: oneDayAgo},
@@ -167,7 +167,7 @@ func TestCountLoopMetrics(t *testing.T) {
 }
 
 func TestCountBypassCitations(t *testing.T) {
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: "/normal/path.md", CitationType: "recall"},
 		{ArtifactPath: "/bypass/path.md", CitationType: "bypass"},
 		{ArtifactPath: "bypass:/skipped", CitationType: ""},
@@ -233,7 +233,7 @@ func TestCountStaleArtifacts(t *testing.T) {
 	writeFileWithTime(oldRecentlyCited, oldTime)
 	writeFileWithTime(oldCitedLongAgo, oldTime)
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{
 			ArtifactPath: ".agents/learnings/old-recently-cited.md",
 			CitedAt:      time.Now().AddDate(0, 0, -5),
@@ -278,7 +278,7 @@ func TestComputeMetricsSigmaBounded(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{
 			ArtifactPath: ".agents/learnings/L1.md",
 			SessionID:    "s1",
@@ -452,7 +452,7 @@ func floatApprox(a, b, epsilon float64) bool {
 
 func TestFilterCitationsForPeriod_uniqueCited(t *testing.T) {
 	now := time.Now()
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: "a.md", CitedAt: now.AddDate(0, 0, -1)},
 		{ArtifactPath: "a.md", CitedAt: now.AddDate(0, 0, -2)},
 		{ArtifactPath: "b.md", CitedAt: now.AddDate(0, 0, -3)},
@@ -497,7 +497,7 @@ func TestIsRetrievableArtifactPath(t *testing.T) {
 
 func TestRetrievableCitationStats(t *testing.T) {
 	baseDir := "/tmp/repo"
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: filepath.Join(baseDir, ".agents", "learnings", "a.md")},
 		{ArtifactPath: filepath.Join(baseDir, ".agents", "learnings", "a.md")},
 		{ArtifactPath: filepath.Join(baseDir, ".agents", "learnings", "b.md")},
@@ -524,7 +524,7 @@ func TestRetrievableCitationStats_empty(t *testing.T) {
 // TestCountBypassCitations — canonical version earlier in this file
 
 func TestCountBypassCitations_none(t *testing.T) {
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{CitationType: "reference"},
 		{CitationType: "applied"},
 	}
@@ -543,12 +543,12 @@ func TestCountBypassCitations_none(t *testing.T) {
 func TestCountArtifacts(t *testing.T) {
 	baseDir := t.TempDir()
 	dirs := map[string][]string{
-		filepath.Join(baseDir, ".agents", "learnings"):                      {"l1.md", "l2.jsonl"},
-		filepath.Join(baseDir, ".agents", "patterns"):                       {"p1.md"},
-		filepath.Join(baseDir, ".agents", "candidates"):                     {"c1.md", "c2.md"},
-		filepath.Join(baseDir, ".agents", "research"):                       {"r1.md"},
-		filepath.Join(baseDir, ".agents", "retro"):                          {"retro1.md"},
-		filepath.Join(baseDir, storage.DefaultBaseDir, storage.SessionsDir): {"s1.jsonl"},
+		filepath.Join(baseDir, ".agents", "learnings"):                                {"l1.md", "l2.jsonl"},
+		filepath.Join(baseDir, ".agents", "patterns"):                                 {"p1.md"},
+		filepath.Join(baseDir, ".agents", "candidates"):                               {"c1.md", "c2.md"},
+		filepath.Join(baseDir, ".agents", "research"):                                 {"r1.md"},
+		filepath.Join(baseDir, ".agents", "retro"):                                    {"retro1.md"},
+		filepath.Join(baseDir, sessionstore.DefaultBaseDir, sessionstore.SessionsDir): {"s1.jsonl"},
 	}
 	for dir, files := range dirs {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -667,7 +667,7 @@ func TestCountNewArtifactsInDir(t *testing.T) {
 func TestBuildLastCitedMap(t *testing.T) {
 	baseDir := "/tmp/test"
 	now := time.Now()
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: "/tmp/test/.agents/learnings/a.md", CitedAt: now.AddDate(0, 0, -10)},
 		{ArtifactPath: "/tmp/test/.agents/learnings/a.md", CitedAt: now.AddDate(0, 0, -5)}, // later
 		{ArtifactPath: "/tmp/test/.agents/learnings/b.md", CitedAt: now.AddDate(0, 0, -1)},
@@ -1004,7 +1004,7 @@ func TestParseUtilityFromFile_dispatch(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPrintMetricsParameters(t *testing.T) {
-	m := &types.FlywheelMetrics{Delta: 17.0, Sigma: 0.5, Rho: 1.0}
+	m := &domain.FlywheelMetrics{Delta: 17.0, Sigma: 0.5, Rho: 1.0}
 	out, err := captureStdout(t, func() error { printMetricsParameters(m); return nil })
 	if err != nil {
 		t.Fatal(err)
@@ -1019,11 +1019,11 @@ func TestPrintMetricsParameters(t *testing.T) {
 func TestPrintMetricsDerived(t *testing.T) {
 	tests := []struct {
 		name string
-		m    *types.FlywheelMetrics
+		m    *domain.FlywheelMetrics
 		want []string
 	}{
-		{"positive velocity", &types.FlywheelMetrics{SigmaRho: 0.5, Delta: 17.0, Velocity: 0.33, AboveEscapeVelocity: true}, []string{"DERIVED:", "+0.33", "✓", "δ/100 = 0.170"}},
-		{"negative velocity", &types.FlywheelMetrics{SigmaRho: 0.05, Delta: 17.0, Velocity: -0.12, AboveEscapeVelocity: false}, []string{"DERIVED:", "-0.12", "✗", "δ/100 = 0.170"}},
+		{"positive velocity", &domain.FlywheelMetrics{SigmaRho: 0.5, Delta: 17.0, Velocity: 0.33, AboveEscapeVelocity: true}, []string{"DERIVED:", "+0.33", "✓", "δ/100 = 0.170"}},
+		{"negative velocity", &domain.FlywheelMetrics{SigmaRho: 0.05, Delta: 17.0, Velocity: -0.12, AboveEscapeVelocity: false}, []string{"DERIVED:", "-0.12", "✗", "δ/100 = 0.170"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1041,7 +1041,7 @@ func TestPrintMetricsDerived(t *testing.T) {
 }
 
 func TestPrintMetricsCounts(t *testing.T) {
-	m := &types.FlywheelMetrics{
+	m := &domain.FlywheelMetrics{
 		TotalArtifacts:       10,
 		CitationsThisPeriod:  5,
 		UniqueCitedArtifacts: 3,
@@ -1061,7 +1061,7 @@ func TestPrintMetricsCounts(t *testing.T) {
 }
 
 func TestPrintMetricsCounts_emptyTiers(t *testing.T) {
-	m := &types.FlywheelMetrics{TierCounts: map[string]int{}}
+	m := &domain.FlywheelMetrics{TierCounts: map[string]int{}}
 	out, err := captureStdout(t, func() error { printMetricsCounts(m); return nil })
 	if err != nil {
 		t.Fatal(err)
@@ -1077,16 +1077,16 @@ func TestPrintMetricsCounts_emptyTiers(t *testing.T) {
 func TestPrintMetricsLoopClosure(t *testing.T) {
 	tests := []struct {
 		name    string
-		m       *types.FlywheelMetrics
+		m       *domain.FlywheelMetrics
 		want    []string
 		notWant []string
 	}{
-		{"no loop data", &types.FlywheelMetrics{}, nil, []string{"LOOP CLOSURE"}},
-		{"open loop", &types.FlywheelMetrics{LearningsCreated: 5, LearningsFound: 0, LoopClosureRatio: 0}, []string{"LOOP CLOSURE", "OPEN"}, nil},
-		{"partial loop", &types.FlywheelMetrics{LearningsCreated: 5, LearningsFound: 3, LoopClosureRatio: 0.6}, []string{"PARTIAL", "0.60"}, nil},
-		{"closed loop", &types.FlywheelMetrics{LearningsCreated: 5, LearningsFound: 5, LoopClosureRatio: 1.0}, []string{"CLOSED", "1.00"}, nil},
-		{"with retros", &types.FlywheelMetrics{LearningsCreated: 1, TotalRetros: 3, RetrosWithLearnings: 2}, []string{"Retros:", "3", "2"}, nil},
-		{"with bypasses", &types.FlywheelMetrics{LearningsCreated: 1, PriorArtBypasses: 2}, []string{"bypasses:", "2"}, nil},
+		{"no loop data", &domain.FlywheelMetrics{}, nil, []string{"LOOP CLOSURE"}},
+		{"open loop", &domain.FlywheelMetrics{LearningsCreated: 5, LearningsFound: 0, LoopClosureRatio: 0}, []string{"LOOP CLOSURE", "OPEN"}, nil},
+		{"partial loop", &domain.FlywheelMetrics{LearningsCreated: 5, LearningsFound: 3, LoopClosureRatio: 0.6}, []string{"PARTIAL", "0.60"}, nil},
+		{"closed loop", &domain.FlywheelMetrics{LearningsCreated: 5, LearningsFound: 5, LoopClosureRatio: 1.0}, []string{"CLOSED", "1.00"}, nil},
+		{"with retros", &domain.FlywheelMetrics{LearningsCreated: 1, TotalRetros: 3, RetrosWithLearnings: 2}, []string{"Retros:", "3", "2"}, nil},
+		{"with bypasses", &domain.FlywheelMetrics{LearningsCreated: 1, PriorArtBypasses: 2}, []string{"bypasses:", "2"}, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1111,14 +1111,14 @@ func TestPrintMetricsLoopClosure(t *testing.T) {
 func TestPrintMetricsUtility(t *testing.T) {
 	tests := []struct {
 		name    string
-		m       *types.FlywheelMetrics
+		m       *domain.FlywheelMetrics
 		want    []string
 		notWant []string
 	}{
-		{"no utility data", &types.FlywheelMetrics{}, nil, []string{"UTILITY"}},
-		{"healthy", &types.FlywheelMetrics{MeanUtility: 0.7, UtilityStdDev: 0.1, HighUtilityCount: 5, LowUtilityCount: 1}, []string{"UTILITY", "HEALTHY", "0.700"}, nil},
-		{"neutral", &types.FlywheelMetrics{MeanUtility: 0.45, HighUtilityCount: 1}, []string{"NEUTRAL", "0.450"}, nil},
-		{"needs review", &types.FlywheelMetrics{MeanUtility: 0.2, LowUtilityCount: 5}, []string{"REVIEW", "0.200"}, nil},
+		{"no utility data", &domain.FlywheelMetrics{}, nil, []string{"UTILITY"}},
+		{"healthy", &domain.FlywheelMetrics{MeanUtility: 0.7, UtilityStdDev: 0.1, HighUtilityCount: 5, LowUtilityCount: 1}, []string{"UTILITY", "HEALTHY", "0.700"}, nil},
+		{"neutral", &domain.FlywheelMetrics{MeanUtility: 0.45, HighUtilityCount: 1}, []string{"NEUTRAL", "0.450"}, nil},
+		{"needs review", &domain.FlywheelMetrics{MeanUtility: 0.2, LowUtilityCount: 5}, []string{"REVIEW", "0.200"}, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1142,7 +1142,7 @@ func TestPrintMetricsUtility(t *testing.T) {
 
 func TestPrintMetricsTable(t *testing.T) {
 	now := time.Now()
-	m := &types.FlywheelMetrics{
+	m := &domain.FlywheelMetrics{
 		Timestamp:            now,
 		PeriodStart:          now.AddDate(0, 0, -7),
 		PeriodEnd:            now,

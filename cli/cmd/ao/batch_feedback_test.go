@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // ===========================================================================
@@ -664,8 +664,8 @@ func TestFeedback_updateJSONLUtility(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if oldU != types.InitialUtility {
-			t.Errorf("oldUtility = %f, want InitialUtility %f", oldU, types.InitialUtility)
+		if oldU != domain.InitialUtility {
+			t.Errorf("oldUtility = %f, want InitialUtility %f", oldU, domain.InitialUtility)
 		}
 	})
 }
@@ -713,10 +713,10 @@ func TestFeedback_updateMarkdownUtility(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if oldU != types.InitialUtility {
+		if oldU != domain.InitialUtility {
 			t.Errorf("oldUtility = %f, want InitialUtility", oldU)
 		}
-		expected := (1-0.1)*types.InitialUtility + 0.1*0.8
+		expected := (1-0.1)*domain.InitialUtility + 0.1*0.8
 		if math.Abs(newU-expected) > 0.001 {
 			t.Errorf("newUtility = %f, want ~%f", newU, expected)
 		}
@@ -840,8 +840,8 @@ func TestFeedback_addUtilityField(t *testing.T) {
 		if err := json.Unmarshal([]byte(lines[0]), &data); err != nil {
 			t.Fatalf("parse: %v", err)
 		}
-		if data["utility"] != types.InitialUtility {
-			t.Errorf("utility = %v, want %f", data["utility"], types.InitialUtility)
+		if data["utility"] != domain.InitialUtility {
+			t.Errorf("utility = %v, want %f", data["utility"], domain.InitialUtility)
 		}
 	})
 
@@ -941,7 +941,7 @@ func TestFeedback_findLearningFile(t *testing.T) {
 
 func TestFeedbackLoop_deduplicateCitations(t *testing.T) {
 	baseDir := t.TempDir()
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: "learnings/L001.md"},
 		{ArtifactPath: "learnings/L001.md"}, // duplicate
 		{ArtifactPath: "learnings/L002.md"},
@@ -1086,7 +1086,7 @@ func TestFeedbackLoop_sortAndCapSessions(t *testing.T) {
 	defer func() { batchFeedbackMaxSessions = origMax }()
 
 	now := time.Now()
-	sessionCitations := map[string][]types.CitationEvent{
+	sessionCitations := map[string][]domain.CitationEvent{
 		"s1": {{ArtifactPath: "a.md"}},
 		"s2": {{ArtifactPath: "b.md"}},
 		"s3": {{ArtifactPath: "c.md"}},

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestExtractLearningID_RelativePath(t *testing.T) {
@@ -72,7 +72,7 @@ func TestCitationConfidenceBuckets(t *testing.T) {
 }
 
 func TestCitationEventConfidence_PrefersRecordedMatchConfidence(t *testing.T) {
-	citation := types.CitationEvent{
+	citation := domain.CitationEvent{
 		CitationType:    "reference",
 		MatchConfidence: 0.5,
 	}
@@ -93,7 +93,7 @@ func TestMarkCitationsFeedbackGiven_WritesAllTrue(t *testing.T) {
 	tmp := t.TempDir()
 	citationsPath := filepath.Join(tmp, "citations.jsonl")
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: ".agents/learnings/a.md", FeedbackGiven: false},
 		{ArtifactPath: ".agents/learnings/b.md", FeedbackGiven: false},
 		{ArtifactPath: ".agents/learnings/c.md", FeedbackGiven: true}, // already processed
@@ -112,7 +112,7 @@ func TestMarkCitationsFeedbackGiven_WritesAllTrue(t *testing.T) {
 	}
 
 	for i, line := range lines {
-		var c types.CitationEvent
+		var c domain.CitationEvent
 		if err := json.Unmarshal([]byte(line), &c); err != nil {
 			t.Fatalf("line %d: unmarshal error: %v", i, err)
 		}
@@ -154,7 +154,7 @@ func TestProcessCitationFeedback_AllAlreadyProcessed(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: ".agents/learnings/a.md", FeedbackGiven: true},
 		{ArtifactPath: ".agents/learnings/b.md", FeedbackGiven: true},
 	}
@@ -208,7 +208,7 @@ func TestProcessCitationFeedback_UsesAdaptiveReward(t *testing.T) {
 	}
 
 	// Write an unprocessed citation pointing at the learning
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: ".agents/learnings/test-learning.jsonl", FeedbackGiven: false},
 	}
 	var citationLines []string
@@ -258,7 +258,7 @@ func TestProcessCitationFeedback_UsesAdaptiveReward(t *testing.T) {
 
 func TestDeduplicateCitationFeedbackTargets_SeparatesMetricNamespaces(t *testing.T) {
 	tmp := t.TempDir()
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: ".agents/learnings/test-learning.jsonl", CitationType: "reference", MetricNamespace: "primary"},
 		{ArtifactPath: ".agents/learnings/test-learning.jsonl", CitationType: "reference", MetricNamespace: "shadow"},
 	}
@@ -292,7 +292,7 @@ func TestProcessCitationFeedback_ShadowNamespaceAuditOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{
 			ArtifactPath:    ".agents/learnings/shadow-learning.jsonl",
 			CitationType:    "reference",
@@ -413,7 +413,7 @@ func writeCitationFeedbackLearning(t *testing.T, learningsDir string) {
 func writeCitationFeedbackCitation(t *testing.T, aoDir string) {
 	t.Helper()
 
-	citation := types.CitationEvent{
+	citation := domain.CitationEvent{
 		ArtifactPath:  ".agents/learnings/fb-test.jsonl",
 		CitationType:  "applied",
 		FeedbackGiven: false,
@@ -475,7 +475,7 @@ func assertCitationFeedbackEvent(t *testing.T, event FeedbackEvent) {
 		t.Errorf("FeedbackEvent.UtilityBefore = %f, expected non-zero", event.UtilityBefore)
 	}
 	// For a new learning (0 reward_count), annealed alpha = DefaultAlpha * 3.0
-	expectedAlpha := annealedAlpha(types.DefaultAlpha, 0)
+	expectedAlpha := annealedAlpha(domain.DefaultAlpha, 0)
 	if event.Alpha != expectedAlpha {
 		t.Errorf("FeedbackEvent.Alpha = %f, want %f (annealed)", event.Alpha, expectedAlpha)
 	}
@@ -504,7 +504,7 @@ func TestProcessCitationFeedback_RetrievedCitationIsSkipped(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	citation := types.CitationEvent{
+	citation := domain.CitationEvent{
 		ArtifactPath:  ".agents/learnings/retrieved-only.jsonl",
 		CitationType:  "retrieved",
 		FeedbackGiven: false,
@@ -565,7 +565,7 @@ func TestProcessCitationFeedback_PrefersAppliedEvidenceOverRetrieved(t *testing.
 		t.Fatal(err)
 	}
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: ".agents/learnings/mixed-evidence.jsonl", CitationType: "retrieved", FeedbackGiven: false, CitedAt: time.Now().Add(-time.Minute)},
 		{ArtifactPath: ".agents/learnings/mixed-evidence.jsonl", CitationType: "applied", FeedbackGiven: false, CitedAt: time.Now()},
 	}
@@ -631,7 +631,7 @@ Summary.
 		t.Fatal(err)
 	}
 
-	citation := types.CitationEvent{
+	citation := domain.CitationEvent{
 		ArtifactPath: filepath.Join(".agents", SectionFindings, "f-cited.md"),
 		SessionID:    "session-1",
 		CitedAt:      time.Date(2026, 3, 10, 1, 0, 0, 0, time.UTC),
@@ -705,7 +705,7 @@ Summary.
 		t.Fatal(err)
 	}
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{
 			ArtifactPath: filepath.Join(".agents", "learnings", "sidecar-learning.md"),
 			SessionID:    "session-1",
@@ -810,7 +810,7 @@ Dry-run close-loop must not update finding citation metadata.
 		t.Fatal(err)
 	}
 
-	citationsText := writeCitationFeedbackCitations(t, aoDir, []types.CitationEvent{
+	citationsText := writeCitationFeedbackCitations(t, aoDir, []domain.CitationEvent{
 		{
 			ArtifactPath: filepath.Join(".agents", "learnings", "dry-run-learning.md"),
 			SessionID:    "session-1",
@@ -841,7 +841,7 @@ Dry-run close-loop must not update finding citation metadata.
 	}
 }
 
-func writeCitationFeedbackCitations(t *testing.T, aoDir string, citations []types.CitationEvent) string {
+func writeCitationFeedbackCitations(t *testing.T, aoDir string, citations []domain.CitationEvent) string {
 	t.Helper()
 	var lines []string
 	for _, citation := range citations {
@@ -941,7 +941,7 @@ func TestPromoteCitedLearnings_MalformedJSON(t *testing.T) {
 
 // TestProcessQualitySignalFeedback_CountsCorrections verifies that
 // processQualitySignalFeedback correctly counts correction signals for the
-// given session and ignores other signal types.
+// given session and ignores other signal domain.
 func TestProcessQualitySignalFeedback_CountsCorrections(t *testing.T) {
 	tmp := t.TempDir()
 

@@ -11,10 +11,10 @@ import (
 
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/taxonomy"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 func TestParseLearningBlocks(t *testing.T) {
@@ -202,7 +202,7 @@ func assertIngestPendingAdded(t *testing.T, tmp string, pendingFile string) {
 func listIngestPendingEntries(t *testing.T, p *pool.Pool) []pool.PoolEntry {
 	t.Helper()
 
-	entries, err := p.List(pool.ListOptions{Status: types.PoolStatusPending})
+	entries, err := p.List(pool.ListOptions{Status: domain.PoolStatusPending})
 	if err != nil {
 		t.Fatalf("list pool: %v", err)
 	}
@@ -215,7 +215,7 @@ func listIngestPendingEntries(t *testing.T, p *pool.Pool) []pool.PoolEntry {
 func recordIngestCitation(t *testing.T, tmp string, artifactPath string) {
 	t.Helper()
 
-	if err := ratchet.RecordCitation(tmp, types.CitationEvent{
+	if err := ratchet.RecordCitation(tmp, domain.CitationEvent{
 		ArtifactPath: artifactPath,
 		SessionID:    "session-ingest-test",
 		CitedAt:      time.Now(),
@@ -531,7 +531,7 @@ func TestPoolIngestCoverage_ComputeContextScore(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestPoolIngestCoverage_RubricWeightedSum(t *testing.T) {
-	rubric := types.RubricScores{
+	rubric := domain.RubricScores{
 		Specificity:   1.0,
 		Actionability: 1.0,
 		Novelty:       1.0,
@@ -547,7 +547,7 @@ func TestPoolIngestCoverage_RubricWeightedSum(t *testing.T) {
 	}
 
 	// All zeros
-	zero := types.RubricScores{}
+	zero := domain.RubricScores{}
 	if rubricWeightedSum(zero, w) != 0.0 {
 		t.Error("expected 0 for zero rubric")
 	}
@@ -602,7 +602,7 @@ func TestPoolIngestCoverage_BuildCandidateFromLearningBlock(t *testing.T) {
 			Body:       "We decided to always use conventional commits for consistency.",
 		}
 		cand, _ := fixture.mustBuildCandidate(t, block)
-		assertCandidateType(t, cand, types.KnowledgeTypeDecision)
+		assertCandidateType(t, cand, domain.KnowledgeTypeDecision)
 	})
 
 	t.Run("high confidence boosts raw score", func(t *testing.T) {
@@ -728,11 +728,11 @@ func newPoolIngestCandidateFixture() poolIngestCandidateFixture {
 	}
 }
 
-func (f poolIngestCandidateFixture) build(block learningBlock) (types.Candidate, types.Scoring, bool) {
+func (f poolIngestCandidateFixture) build(block learningBlock) (domain.Candidate, domain.Scoring, bool) {
 	return buildCandidateFromLearningBlock(block, f.srcPath, f.fileDate, f.sessionHint)
 }
 
-func (f poolIngestCandidateFixture) mustBuildCandidate(t *testing.T, block learningBlock) (types.Candidate, types.Scoring) {
+func (f poolIngestCandidateFixture) mustBuildCandidate(t *testing.T, block learningBlock) (domain.Candidate, domain.Scoring) {
 	t.Helper()
 
 	cand, scoring, ok := f.build(block)
@@ -751,13 +751,13 @@ func (f poolIngestCandidateFixture) assertRejected(t *testing.T, block learningB
 	}
 }
 
-func (f poolIngestCandidateFixture) assertValidLearningCandidate(t *testing.T, cand types.Candidate, scoring types.Scoring) {
+func (f poolIngestCandidateFixture) assertValidLearningCandidate(t *testing.T, cand domain.Candidate, scoring domain.Scoring) {
 	t.Helper()
 
 	if cand.ID == "" {
 		t.Error("expected non-empty ID")
 	}
-	assertCandidateType(t, cand, types.KnowledgeTypeLearning)
+	assertCandidateType(t, cand, domain.KnowledgeTypeLearning)
 	if cand.RawScore <= 0 || cand.RawScore > 1.0 {
 		t.Errorf("RawScore = %v, want (0, 1]", cand.RawScore)
 	}
@@ -767,15 +767,15 @@ func (f poolIngestCandidateFixture) assertValidLearningCandidate(t *testing.T, c
 	if scoring.GateRequired && cand.Tier == "" {
 		t.Error("if gate required, tier should be set")
 	}
-	if cand.Maturity != types.MaturityProvisional {
-		t.Errorf("Maturity = %q, want %q", cand.Maturity, types.MaturityProvisional)
+	if cand.Maturity != domain.MaturityProvisional {
+		t.Errorf("Maturity = %q, want %q", cand.Maturity, domain.MaturityProvisional)
 	}
 	if cand.ExtractedAt != f.fileDate {
 		t.Errorf("ExtractedAt = %v, want %v", cand.ExtractedAt, f.fileDate)
 	}
 }
 
-func assertCandidateType(t *testing.T, cand types.Candidate, want types.KnowledgeType) {
+func assertCandidateType(t *testing.T, cand domain.Candidate, want domain.KnowledgeType) {
 	t.Helper()
 
 	if cand.Type != want {
@@ -783,7 +783,7 @@ func assertCandidateType(t *testing.T, cand types.Candidate, want types.Knowledg
 	}
 }
 
-func assertRawScoreGreater(t *testing.T, high types.Candidate, low types.Candidate) {
+func assertRawScoreGreater(t *testing.T, high domain.Candidate, low domain.Candidate) {
 	t.Helper()
 
 	if high.RawScore <= low.RawScore {
@@ -791,7 +791,7 @@ func assertRawScoreGreater(t *testing.T, high types.Candidate, low types.Candida
 	}
 }
 
-func assertCandidateIDMaxLength(t *testing.T, cand types.Candidate, maxLen int) {
+func assertCandidateIDMaxLength(t *testing.T, cand domain.Candidate, maxLen int) {
 	t.Helper()
 
 	if len(cand.ID) > maxLen {
@@ -799,7 +799,7 @@ func assertCandidateIDMaxLength(t *testing.T, cand types.Candidate, maxLen int) 
 	}
 }
 
-func assertCandidateMetadata(t *testing.T, cand types.Candidate, want map[string]string) {
+func assertCandidateMetadata(t *testing.T, cand domain.Candidate, want map[string]string) {
 	t.Helper()
 
 	if cand.Metadata == nil {
@@ -1285,38 +1285,38 @@ func TestInferKnowledgeType(t *testing.T) {
 	tests := []struct {
 		name     string
 		block    learningBlock
-		wantType types.KnowledgeType
+		wantType domain.KnowledgeType
 	}{
 		// Category exact-match cases
-		{name: "category decision", block: learningBlock{Category: "decision", Body: "some text"}, wantType: types.KnowledgeTypeDecision},
-		{name: "category pattern", block: learningBlock{Category: "pattern", Body: "some text"}, wantType: types.KnowledgeTypeDecision},
-		{name: "category architectural-decision", block: learningBlock{Category: "architectural-decision", Body: "x"}, wantType: types.KnowledgeTypeDecision},
-		{name: "category convention", block: learningBlock{Category: "convention", Body: "x"}, wantType: types.KnowledgeTypeDecision},
-		{name: "category failure", block: learningBlock{Category: "failure", Body: "x"}, wantType: types.KnowledgeTypeFailure},
-		{name: "category anti-pattern", block: learningBlock{Category: "anti-pattern", Body: "x"}, wantType: types.KnowledgeTypeFailure},
-		{name: "category antipattern", block: learningBlock{Category: "antipattern", Body: "x"}, wantType: types.KnowledgeTypeFailure},
-		{name: "category postmortem", block: learningBlock{Category: "postmortem", Body: "x"}, wantType: types.KnowledgeTypeFailure},
-		{name: "category solution", block: learningBlock{Category: "solution", Body: "x"}, wantType: types.KnowledgeTypeSolution},
-		{name: "category fix", block: learningBlock{Category: "fix", Body: "x"}, wantType: types.KnowledgeTypeSolution},
-		{name: "category workaround", block: learningBlock{Category: "workaround", Body: "x"}, wantType: types.KnowledgeTypeSolution},
-		{name: "category reference", block: learningBlock{Category: "reference", Body: "x"}, wantType: types.KnowledgeTypeReference},
-		{name: "category doc", block: learningBlock{Category: "doc", Body: "x"}, wantType: types.KnowledgeTypeReference},
-		{name: "category documentation", block: learningBlock{Category: "documentation", Body: "x"}, wantType: types.KnowledgeTypeReference},
+		{name: "category decision", block: learningBlock{Category: "decision", Body: "some text"}, wantType: domain.KnowledgeTypeDecision},
+		{name: "category pattern", block: learningBlock{Category: "pattern", Body: "some text"}, wantType: domain.KnowledgeTypeDecision},
+		{name: "category architectural-decision", block: learningBlock{Category: "architectural-decision", Body: "x"}, wantType: domain.KnowledgeTypeDecision},
+		{name: "category convention", block: learningBlock{Category: "convention", Body: "x"}, wantType: domain.KnowledgeTypeDecision},
+		{name: "category failure", block: learningBlock{Category: "failure", Body: "x"}, wantType: domain.KnowledgeTypeFailure},
+		{name: "category anti-pattern", block: learningBlock{Category: "anti-pattern", Body: "x"}, wantType: domain.KnowledgeTypeFailure},
+		{name: "category antipattern", block: learningBlock{Category: "antipattern", Body: "x"}, wantType: domain.KnowledgeTypeFailure},
+		{name: "category postmortem", block: learningBlock{Category: "postmortem", Body: "x"}, wantType: domain.KnowledgeTypeFailure},
+		{name: "category solution", block: learningBlock{Category: "solution", Body: "x"}, wantType: domain.KnowledgeTypeSolution},
+		{name: "category fix", block: learningBlock{Category: "fix", Body: "x"}, wantType: domain.KnowledgeTypeSolution},
+		{name: "category workaround", block: learningBlock{Category: "workaround", Body: "x"}, wantType: domain.KnowledgeTypeSolution},
+		{name: "category reference", block: learningBlock{Category: "reference", Body: "x"}, wantType: domain.KnowledgeTypeReference},
+		{name: "category doc", block: learningBlock{Category: "doc", Body: "x"}, wantType: domain.KnowledgeTypeReference},
+		{name: "category documentation", block: learningBlock{Category: "documentation", Body: "x"}, wantType: domain.KnowledgeTypeReference},
 		// Category case-insensitive
-		{name: "category Decision uppercase", block: learningBlock{Category: "Decision", Body: "x"}, wantType: types.KnowledgeTypeDecision},
-		{name: "category FAILURE uppercase", block: learningBlock{Category: "FAILURE", Body: "x"}, wantType: types.KnowledgeTypeFailure},
+		{name: "category Decision uppercase", block: learningBlock{Category: "Decision", Body: "x"}, wantType: domain.KnowledgeTypeDecision},
+		{name: "category FAILURE uppercase", block: learningBlock{Category: "FAILURE", Body: "x"}, wantType: domain.KnowledgeTypeFailure},
 		// Signal-based: decision (needs >= 2 signals)
-		{name: "decision signals 2", block: learningBlock{Category: "", Body: "we always prefer convention over configuration"}, wantType: types.KnowledgeTypeDecision},
-		{name: "decision signals 1 not enough", block: learningBlock{Category: "", Body: "we always use X"}, wantType: types.KnowledgeTypeLearning},
+		{name: "decision signals 2", block: learningBlock{Category: "", Body: "we always prefer convention over configuration"}, wantType: domain.KnowledgeTypeDecision},
+		{name: "decision signals 1 not enough", block: learningBlock{Category: "", Body: "we always use X"}, wantType: domain.KnowledgeTypeLearning},
 		// Signal-based: failure (needs >= 2 signals)
-		{name: "failure signals 2", block: learningBlock{Category: "", Body: "the deploy failed and we found the root cause"}, wantType: types.KnowledgeTypeFailure},
-		{name: "failure signals 1 not enough", block: learningBlock{Category: "", Body: "the deploy failed"}, wantType: types.KnowledgeTypeLearning},
+		{name: "failure signals 2", block: learningBlock{Category: "", Body: "the deploy failed and we found the root cause"}, wantType: domain.KnowledgeTypeFailure},
+		{name: "failure signals 1 not enough", block: learningBlock{Category: "", Body: "the deploy failed"}, wantType: domain.KnowledgeTypeLearning},
 		// Fallback to learning
-		{name: "empty category and body", block: learningBlock{Category: "", Body: ""}, wantType: types.KnowledgeTypeLearning},
-		{name: "unknown category", block: learningBlock{Category: "process", Body: "run tests first"}, wantType: types.KnowledgeTypeLearning},
-		{name: "generic content", block: learningBlock{Category: "", Body: "use go test before commit"}, wantType: types.KnowledgeTypeLearning},
+		{name: "empty category and body", block: learningBlock{Category: "", Body: ""}, wantType: domain.KnowledgeTypeLearning},
+		{name: "unknown category", block: learningBlock{Category: "process", Body: "run tests first"}, wantType: domain.KnowledgeTypeLearning},
+		{name: "generic content", block: learningBlock{Category: "", Body: "use go test before commit"}, wantType: domain.KnowledgeTypeLearning},
 		// Category takes priority over signals
-		{name: "category overrides signals", block: learningBlock{Category: "reference", Body: "we always prefer this convention"}, wantType: types.KnowledgeTypeReference},
+		{name: "category overrides signals", block: learningBlock{Category: "reference", Body: "we always prefer this convention"}, wantType: domain.KnowledgeTypeReference},
 	}
 
 	for _, tt := range tests {

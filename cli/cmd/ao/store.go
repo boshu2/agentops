@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/boshu2/agentops/cli/internal/format"
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 var (
@@ -20,13 +20,13 @@ var (
 )
 
 const (
-	IndexFileName = storage.SearchIndexFileName
-	IndexDir      = storage.SearchIndexDir
+	IndexFileName = sessionstore.SearchIndexFileName
+	IndexDir      = sessionstore.SearchIndexDir
 )
 
 type (
-	IndexEntry   = storage.SearchIndexEntry
-	SearchResult = storage.SearchResult
+	IndexEntry   = sessionstore.SearchIndexEntry
+	SearchResult = sessionstore.SearchResult
 )
 
 var storeCmd = &cobra.Command{
@@ -230,7 +230,7 @@ func runStoreRebuild(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-var artifactSubdirs = storage.ArtifactSubdirs
+var artifactSubdirs = sessionstore.ArtifactSubdirs
 
 // collectArtifactFiles walks all artifact subdirectories and returns indexable file paths.
 func collectArtifactFiles(cwd string) []string {
@@ -250,7 +250,7 @@ func collectArtifactFiles(cwd string) []string {
 }
 
 func walkIndexableFiles(dir string) ([]string, error) {
-	return storage.WalkIndexableFiles(dir)
+	return sessionstore.WalkIndexableFiles(dir)
 }
 
 // indexFiles creates index entries for each path and appends them to the index.
@@ -298,74 +298,74 @@ func runStoreStats(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-type IndexStats = storage.SearchIndexStats
+type IndexStats = sessionstore.SearchIndexStats
 
 func artifactTypeFromPath(path string) string {
-	return storage.ArtifactTypeFromPath(path)
+	return sessionstore.ArtifactTypeFromPath(path)
 }
 
 func appendCategoryKeywords(keywords []string, category string, tags []string) []string {
-	return storage.AppendCategoryKeywords(keywords, category, tags)
+	return sessionstore.AppendCategoryKeywords(keywords, category, tags)
 }
 
 func createIndexEntry(path string, categorize bool) (*IndexEntry, error) {
-	return storage.CreateSearchIndexEntry(path, categorize)
+	return sessionstore.CreateSearchIndexEntry(path, categorize)
 }
 
 func appendToIndex(baseDir string, entry *IndexEntry) error {
-	return storage.AppendToSearchIndex(baseDir, entry)
+	return sessionstore.AppendToSearchIndex(baseDir, entry)
 }
 
 func searchIndex(baseDir, query string, limit int) ([]SearchResult, error) {
-	return storage.SearchIndex(baseDir, query, limit)
+	return sessionstore.SearchIndex(baseDir, query, limit)
 }
 
 func computeSearchScore(entry IndexEntry, queryTerms []string) float64 {
-	return storage.ComputeSearchScore(entry, queryTerms)
+	return sessionstore.ComputeSearchScore(entry, queryTerms)
 }
 
 func extractTitle(content string) string {
-	return storage.ExtractTitle(content)
+	return sessionstore.ExtractTitle(content)
 }
 
 func extractKeywords(content string) []string {
-	return storage.ExtractKeywords(content)
+	return sessionstore.ExtractKeywords(content)
 }
 
 func extractCategoryAndTags(content string) (category string, tags []string) {
-	return storage.ExtractCategoryAndTags(content)
+	return sessionstore.ExtractCategoryAndTags(content)
 }
 
 func extractFrontmatterMeta(lines []string) (category string, tags []string) {
-	return storage.ExtractFrontmatterMeta(lines)
+	return sessionstore.ExtractFrontmatterMeta(lines)
 }
 
 func extractMarkdownMeta(lines []string) (category string, tags []string) {
-	return storage.ExtractMarkdownMeta(lines)
+	return sessionstore.ExtractMarkdownMeta(lines)
 }
 
 func parseBracketedList(s string) []string {
-	return storage.ParseBracketedList(s)
+	return sessionstore.ParseBracketedList(s)
 }
 
 func splitCSV(s string) []string {
-	return storage.SplitCSV(s)
+	return sessionstore.SplitCSV(s)
 }
 
 func parseMemRLMetadata(content string) (utility float64, maturity string) {
-	return storage.ParseMemRLMetadata(content)
+	return sessionstore.ParseMemRLMetadata(content)
 }
 
 func createSearchSnippet(content, query string, maxLen int) string {
-	return storage.CreateSearchSnippet(content, query, maxLen)
+	return sessionstore.CreateSearchSnippet(content, query, maxLen)
 }
 
 func accumulateEntryStats(stats *IndexStats, entry IndexEntry, totalUtility *float64, utilityCount *int) {
-	storage.AccumulateEntryStats(stats, entry, totalUtility, utilityCount)
+	sessionstore.AccumulateEntryStats(stats, entry, totalUtility, utilityCount)
 }
 
 func computeIndexStats(baseDir string) (*IndexStats, error) {
-	return storage.ComputeSearchIndexStats(baseDir)
+	return sessionstore.ComputeSearchIndexStats(baseDir)
 }
 
 // printSearchResults prints search results in table format.

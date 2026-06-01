@@ -14,8 +14,8 @@ import (
 	"github.com/spf13/cobra"
 
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
+	"github.com/boshu2/agentops/cli/internal/domain"
 	plansPkg "github.com/boshu2/agentops/cli/internal/plans"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 const (
@@ -155,12 +155,12 @@ func init() {
 func computePlanChecksum(path string) (string, error) { return plansPkg.ComputePlanChecksum(path) }
 
 // createPlanEntry builds a manifest entry from path and metadata
-func createPlanEntry(absPath string, modTime time.Time, projectPath, name, beadsID, checksum string) types.PlanManifestEntry {
+func createPlanEntry(absPath string, modTime time.Time, projectPath, name, beadsID, checksum string) domain.PlanManifestEntry {
 	return plansPkg.CreatePlanEntry(absPath, modTime, projectPath, name, beadsID, checksum)
 }
 
 // appendManifestEntry appends an entry to the manifest file
-func appendManifestEntry(manifestPath string, entry types.PlanManifestEntry) error {
+func appendManifestEntry(manifestPath string, entry domain.PlanManifestEntry) error {
 	return plansPkg.AppendManifestEntry(manifestPath, entry)
 }
 
@@ -179,12 +179,12 @@ func resolvePlanName(explicit, planPath string) string {
 
 // upsertManifestEntry updates an existing entry or appends a new one.
 // Returns true if an existing entry was updated.
-func upsertManifestEntry(manifestPath string, existing []types.PlanManifestEntry, entry types.PlanManifestEntry) (bool, error) {
+func upsertManifestEntry(manifestPath string, existing []domain.PlanManifestEntry, entry domain.PlanManifestEntry) (bool, error) {
 	return plansPkg.UpsertEntry(manifestPath, existing, entry)
 }
 
 // printRegistrationSummary prints details after a new plan registration.
-func printRegistrationSummary(entry types.PlanManifestEntry) {
+func printRegistrationSummary(entry domain.PlanManifestEntry) {
 	fmt.Printf("✓ Registered plan: %s\n", entry.PlanName)
 	if entry.BeadsID != "" {
 		fmt.Printf("  Beads ID: %s\n", entry.BeadsID)
@@ -196,7 +196,7 @@ func printRegistrationSummary(entry types.PlanManifestEntry) {
 
 // loadOrCreateManifest returns the manifest path and its current entries,
 // creating the directory if needed.
-func loadOrCreateManifest() (string, []types.PlanManifestEntry, error) {
+func loadOrCreateManifest() (string, []domain.PlanManifestEntry, error) {
 	manifestPath, err := getManifestPath()
 	if err != nil {
 		return "", nil, fmt.Errorf("get manifest path: %w", err)
@@ -212,14 +212,14 @@ func loadOrCreateManifest() (string, []types.PlanManifestEntry, error) {
 }
 
 // buildRegisterEntry validates the plan path, computes checksum, and builds the entry.
-func buildRegisterEntry(planPath, projectFlag, nameFlag, beadsID string) (types.PlanManifestEntry, error) {
+func buildRegisterEntry(planPath, projectFlag, nameFlag, beadsID string) (domain.PlanManifestEntry, error) {
 	info, err := os.Stat(planPath)
 	if err != nil {
-		return types.PlanManifestEntry{}, fmt.Errorf("plan not found: %w", err)
+		return domain.PlanManifestEntry{}, fmt.Errorf("plan not found: %w", err)
 	}
 	checksum, err := computePlanChecksum(planPath)
 	if err != nil {
-		return types.PlanManifestEntry{}, fmt.Errorf("checksum: %w", err)
+		return domain.PlanManifestEntry{}, fmt.Errorf("checksum: %w", err)
 	}
 	return createPlanEntry(
 		planPath, info.ModTime(),
@@ -267,18 +267,18 @@ func runPlansRegister(cmd *cobra.Command, args []string) error {
 }
 
 // planStatusSymbols maps plan status to a display symbol; unknown statuses fall through to string form.
-var planStatusSymbols = map[types.PlanStatus]string{
-	types.PlanStatusActive:    "○",
-	types.PlanStatusCompleted: "✓",
+var planStatusSymbols = map[domain.PlanStatus]string{
+	domain.PlanStatusActive:    "○",
+	domain.PlanStatusCompleted: "✓",
 }
 
 // filterPlans returns entries matching the project and status filters.
-func filterPlans(entries []types.PlanManifestEntry, project, status string) []types.PlanManifestEntry {
+func filterPlans(entries []domain.PlanManifestEntry, project, status string) []domain.PlanManifestEntry {
 	return plansPkg.FilterPlans(entries, project, status)
 }
 
 // printPlanEntry prints a single plan entry with optional verbose detail.
-func printPlanEntry(e types.PlanManifestEntry, verbose bool) {
+func printPlanEntry(e domain.PlanManifestEntry, verbose bool) {
 	sym, ok := planStatusSymbols[e.Status]
 	if !ok {
 		sym = string(e.Status)
@@ -362,7 +362,7 @@ func runPlansSearch(cmd *cobra.Command, args []string) error {
 }
 
 // applyPlanUpdates applies status and beadsID updates to the manifest entry matching absPath.
-func applyPlanUpdates(entries []types.PlanManifestEntry, absPath, status, beadsID string) bool {
+func applyPlanUpdates(entries []domain.PlanManifestEntry, absPath, status, beadsID string) bool {
 	return plansPkg.ApplyPlanUpdates(entries, absPath, status, beadsID)
 }
 
@@ -424,12 +424,12 @@ func getManifestPath() (string, error) {
 func findAgentsDir(startDir string) string { return plansPkg.FindAgentsDir(startDir) }
 
 // loadManifest reads all entries from the manifest file.
-func loadManifest(path string) ([]types.PlanManifestEntry, error) {
+func loadManifest(path string) ([]domain.PlanManifestEntry, error) {
 	return plansPkg.LoadManifest(path)
 }
 
 // saveManifest writes all entries to the manifest file.
-func saveManifest(path string, entries []types.PlanManifestEntry) error {
+func saveManifest(path string, entries []domain.PlanManifestEntry) error {
 	return plansPkg.SaveManifest(path, entries)
 }
 
@@ -437,17 +437,17 @@ func saveManifest(path string, entries []types.PlanManifestEntry) error {
 func detectProjectPath(planPath string) string { return plansPkg.DetectProjectPath(planPath) }
 
 // buildBeadsIDIndex creates a map of beadsID -> slice index
-func buildBeadsIDIndex(entries []types.PlanManifestEntry) map[string]int {
+func buildBeadsIDIndex(entries []domain.PlanManifestEntry) map[string]int {
 	return plansPkg.BuildBeadsIDIndex(entries)
 }
 
 // syncEpicStatus syncs a single epic status and returns true if changed
-func syncEpicStatus(entries []types.PlanManifestEntry, idx int, beadsStatus string) bool {
+func syncEpicStatus(entries []domain.PlanManifestEntry, idx int, beadsStatus string) bool {
 	return plansPkg.SyncEpicStatus(entries, idx, beadsStatus)
 }
 
 // countUnlinkedEntries counts entries without beads linkage
-func countUnlinkedEntries(entries []types.PlanManifestEntry) int {
+func countUnlinkedEntries(entries []domain.PlanManifestEntry) int {
 	count, names := plansPkg.CountUnlinkedEntries(entries)
 	for _, name := range names {
 		VerbosePrintf("Drift: %s has no beads linkage\n", name)
@@ -457,7 +457,7 @@ func countUnlinkedEntries(entries []types.PlanManifestEntry) int {
 
 // syncEpicsToManifest syncs beads epic statuses into the manifest entries.
 // Returns the count of entries that were updated.
-func syncEpicsToManifest(entries []types.PlanManifestEntry, epics []beadsEpic, byBeadsID map[string]int) int {
+func syncEpicsToManifest(entries []domain.PlanManifestEntry, epics []beadsEpic, byBeadsID map[string]int) int {
 	synced := 0
 	for _, epic := range epics {
 		if idx, ok := byBeadsID[epic.ID]; ok {
@@ -703,13 +703,13 @@ func buildBeadsStatusIndex(epics []beadsEpic) map[string]string {
 }
 
 // detectStatusDrifts finds status mismatches between manifest and beads
-func detectStatusDrifts(byBeadsID map[string]*types.PlanManifestEntry, beadsIndex map[string]string) []driftEntry {
+func detectStatusDrifts(byBeadsID map[string]*domain.PlanManifestEntry, beadsIndex map[string]string) []driftEntry {
 	raw := plansPkg.DetectStatusDrifts(byBeadsID, beadsIndex)
 	return convertDriftEntries(raw)
 }
 
 // detectOrphanedEntries finds manifest entries without beads linkage
-func detectOrphanedEntries(entries []types.PlanManifestEntry) []driftEntry {
+func detectOrphanedEntries(entries []domain.PlanManifestEntry) []driftEntry {
 	raw := plansPkg.DetectOrphanedEntries(entries)
 	return convertDriftEntries(raw)
 }
@@ -758,7 +758,7 @@ func runPlansDiff(cmd *cobra.Command, args []string) error {
 	}
 
 	// Build manifest index by beads ID
-	byBeadsID := make(map[string]*types.PlanManifestEntry)
+	byBeadsID := make(map[string]*domain.PlanManifestEntry)
 	for i := range entries {
 		if entries[i].BeadsID != "" {
 			byBeadsID[entries[i].BeadsID] = &entries[i]

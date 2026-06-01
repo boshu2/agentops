@@ -11,11 +11,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
+	"github.com/boshu2/agentops/cli/internal/extraction"
 	"github.com/boshu2/agentops/cli/internal/format"
-	"github.com/boshu2/agentops/cli/internal/formatter"
-	"github.com/boshu2/agentops/cli/internal/parser"
-	"github.com/boshu2/agentops/cli/internal/storage"
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/render"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 // sessionCmd is the parent command for session operations.
@@ -226,7 +226,7 @@ func forgeExtractReportWithOptions(transcriptPath, cwd string, autoExtract, proc
 
 // computeVelocityDelta returns the velocity change between pre and post metrics.
 // Returns 0.0 if either measurement is nil.
-func computeVelocityDelta(pre, post *types.FlywheelMetrics) float64 {
+func computeVelocityDelta(pre, post *domain.FlywheelMetrics) float64 {
 	if pre == nil || post == nil {
 		return 0.0
 	}
@@ -234,7 +234,7 @@ func computeVelocityDelta(pre, post *types.FlywheelMetrics) float64 {
 }
 
 // classifyFlywheelStatus returns a human-readable flywheel status label.
-func classifyFlywheelStatus(post *types.FlywheelMetrics) string {
+func classifyFlywheelStatus(post *domain.FlywheelMetrics) string {
 	if post == nil {
 		return "unknown"
 	}
@@ -261,13 +261,13 @@ func resolveTranscript(sessionID string) (string, bool, error) {
 }
 
 // forgeTranscriptForClose runs the forge pipeline on a transcript.
-func forgeTranscriptForClose(transcriptPath, cwd string) (*storage.Session, error) {
-	baseDir := filepath.Join(cwd, storage.DefaultBaseDir)
-	fs := storage.NewFileStorage(
-		storage.WithBaseDir(baseDir),
-		storage.WithFormatters(
-			formatter.NewMarkdownFormatter(),
-			formatter.NewJSONLFormatter(),
+func forgeTranscriptForClose(transcriptPath, cwd string) (*sessionstore.Session, error) {
+	baseDir := filepath.Join(cwd, sessionstore.DefaultBaseDir)
+	fs := sessionstore.NewFileStorage(
+		sessionstore.WithBaseDir(baseDir),
+		sessionstore.WithFormatters(
+			render.NewMarkdownFormatter(),
+			render.NewJSONLFormatter(),
 		),
 	)
 
@@ -275,10 +275,10 @@ func forgeTranscriptForClose(transcriptPath, cwd string) (*storage.Session, erro
 		return nil, fmt.Errorf("initialize storage: %w", err)
 	}
 
-	p := parser.NewParser()
+	p := extraction.NewParser()
 	p.MaxContentLength = 0
 
-	extractor := parser.NewExtractor()
+	extractor := extraction.NewExtractor()
 
 	session, err := processTranscript(transcriptPath, p, extractor, true, os.Stdout)
 	if err != nil {
@@ -291,7 +291,7 @@ func forgeTranscriptForClose(transcriptPath, cwd string) (*storage.Session, erro
 	}
 
 	// Write index
-	indexEntry := &storage.IndexEntry{
+	indexEntry := &sessionstore.IndexEntry{
 		SessionID:   session.ID,
 		Date:        session.Date,
 		SessionPath: sessionPath,
@@ -302,7 +302,7 @@ func forgeTranscriptForClose(transcriptPath, cwd string) (*storage.Session, erro
 	}
 
 	// Write provenance
-	provRecord := &storage.ProvenanceRecord{
+	provRecord := &sessionstore.ProvenanceRecord{
 		ID:            fmt.Sprintf("prov-%s", session.ID[:7]),
 		ArtifactPath:  sessionPath,
 		WorkspacePath: canonicalWorkspacePath(cwd, cwd),
@@ -320,7 +320,7 @@ func forgeTranscriptForClose(transcriptPath, cwd string) (*storage.Session, erro
 }
 
 // extractForClose queues the session for extraction and processes it.
-func extractForClose(session *storage.Session, transcriptPath, cwd string, processPending bool) (int, error) {
+func extractForClose(session *sessionstore.Session, transcriptPath, cwd string, processPending bool) (int, error) {
 	// Queue session for extraction
 	if err := queueForExtraction(session, "", transcriptPath, cwd); err != nil {
 		return 0, fmt.Errorf("queue for extraction: %w", err)
@@ -331,7 +331,7 @@ func extractForClose(session *storage.Session, transcriptPath, cwd string, proce
 	}
 
 	// Read and process pending extractions
-	pendingPath := filepath.Join(cwd, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(cwd, sessionstore.DefaultBaseDir, "pending.jsonl")
 	pending, err := readPendingExtractions(pendingPath)
 	if err != nil {
 		return 0, fmt.Errorf("read pending: %w", err)

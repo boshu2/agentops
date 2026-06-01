@@ -13,7 +13,7 @@ import (
 	"time"
 	"unicode"
 
-	quest "github.com/boshu2/agentops/cli/internal/types/quest"
+	quest "github.com/boshu2/agentops/cli/internal/domain/quest"
 	"gopkg.in/yaml.v3"
 )
 

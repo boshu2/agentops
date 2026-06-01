@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // writeLearning is a test helper that writes a JSONL learning file.
@@ -32,7 +32,7 @@ func TestCheckMaturityTransition_ProvisionalToCandidate(t *testing.T) {
 		name         string
 		data         map[string]any
 		wantTransit  bool
-		wantNew      types.Maturity
+		wantNew      domain.Maturity
 		wantReasonSS string // substring expected in reason
 	}{
 		{
@@ -44,7 +44,7 @@ func TestCheckMaturityTransition_ProvisionalToCandidate(t *testing.T) {
 				"reward_count": 4.0,
 			},
 			wantTransit: true,
-			wantNew:     types.MaturityCandidate,
+			wantNew:     domain.MaturityCandidate,
 		},
 		{
 			name: "promotes at exact thresholds",
@@ -55,7 +55,7 @@ func TestCheckMaturityTransition_ProvisionalToCandidate(t *testing.T) {
 				"reward_count": 3.0,
 			},
 			wantTransit: true,
-			wantNew:     types.MaturityCandidate,
+			wantNew:     domain.MaturityCandidate,
 		},
 		{
 			name: "no promotion when utility too low",
@@ -66,7 +66,7 @@ func TestCheckMaturityTransition_ProvisionalToCandidate(t *testing.T) {
 				"reward_count": 5.0,
 			},
 			wantTransit:  false,
-			wantNew:      types.MaturityProvisional,
+			wantNew:      domain.MaturityProvisional,
 			wantReasonSS: "not enough positive feedback",
 		},
 		{
@@ -78,7 +78,7 @@ func TestCheckMaturityTransition_ProvisionalToCandidate(t *testing.T) {
 				"reward_count": 2.0,
 			},
 			wantTransit:  false,
-			wantNew:      types.MaturityProvisional,
+			wantNew:      domain.MaturityProvisional,
 			wantReasonSS: "not enough positive feedback",
 		},
 	}
@@ -110,7 +110,7 @@ func TestCheckMaturityTransition_CandidateToEstablished(t *testing.T) {
 		name        string
 		data        map[string]any
 		wantTransit bool
-		wantNew     types.Maturity
+		wantNew     domain.Maturity
 	}{
 		{
 			name: "promotes when all conditions met",
@@ -122,7 +122,7 @@ func TestCheckMaturityTransition_CandidateToEstablished(t *testing.T) {
 				"harmful_count": 1.0,
 			},
 			wantTransit: true,
-			wantNew:     types.MaturityEstablished,
+			wantNew:     domain.MaturityEstablished,
 		},
 		{
 			name: "no promotion when helpful not greater than harmful",
@@ -134,7 +134,7 @@ func TestCheckMaturityTransition_CandidateToEstablished(t *testing.T) {
 				"harmful_count": 2.0,
 			},
 			wantTransit: false,
-			wantNew:     types.MaturityCandidate,
+			wantNew:     domain.MaturityCandidate,
 		},
 		{
 			name: "no promotion when reward_count less than 5",
@@ -146,7 +146,7 @@ func TestCheckMaturityTransition_CandidateToEstablished(t *testing.T) {
 				"harmful_count": 1.0,
 			},
 			wantTransit: false,
-			wantNew:     types.MaturityCandidate,
+			wantNew:     domain.MaturityCandidate,
 		},
 	}
 
@@ -183,11 +183,11 @@ func TestCheckMaturityTransition_CandidateToProvisionalDemotion(t *testing.T) {
 	if !result.Transitioned {
 		t.Error("expected transition (demotion)")
 	}
-	if result.NewMaturity != types.MaturityProvisional {
-		t.Errorf("NewMaturity = %q, want %q", result.NewMaturity, types.MaturityProvisional)
+	if result.NewMaturity != domain.MaturityProvisional {
+		t.Errorf("NewMaturity = %q, want %q", result.NewMaturity, domain.MaturityProvisional)
 	}
-	if result.OldMaturity != types.MaturityCandidate {
-		t.Errorf("OldMaturity = %q, want %q", result.OldMaturity, types.MaturityCandidate)
+	if result.OldMaturity != domain.MaturityCandidate {
+		t.Errorf("OldMaturity = %q, want %q", result.OldMaturity, domain.MaturityCandidate)
 	}
 }
 
@@ -196,11 +196,11 @@ func TestCheckMaturityTransition_EstablishedToCandidateDemotion(t *testing.T) {
 		name        string
 		utility     float64
 		wantTransit bool
-		wantNew     types.Maturity
+		wantNew     domain.Maturity
 	}{
-		{"demotes when utility below 0.5", 0.4, true, types.MaturityCandidate},
-		{"stays established at exactly 0.5", 0.5, false, types.MaturityEstablished},
-		{"stays established when utility high", 0.8, false, types.MaturityEstablished},
+		{"demotes when utility below 0.5", 0.4, true, domain.MaturityCandidate},
+		{"stays established at exactly 0.5", 0.5, false, domain.MaturityEstablished},
+		{"stays established when utility high", 0.8, false, domain.MaturityEstablished},
 	}
 
 	for _, tt := range tests {
@@ -231,7 +231,7 @@ func TestCheckMaturityTransition_AntiPatternPriority(t *testing.T) {
 		name        string
 		data        map[string]any
 		wantTransit bool
-		wantNew     types.Maturity
+		wantNew     domain.Maturity
 	}{
 		{
 			name: "provisional becomes anti-pattern",
@@ -241,7 +241,7 @@ func TestCheckMaturityTransition_AntiPatternPriority(t *testing.T) {
 				"harmful_count": 6.0,
 			},
 			wantTransit: true,
-			wantNew:     types.MaturityAntiPattern,
+			wantNew:     domain.MaturityAntiPattern,
 		},
 		{
 			name: "candidate becomes anti-pattern",
@@ -251,7 +251,7 @@ func TestCheckMaturityTransition_AntiPatternPriority(t *testing.T) {
 				"harmful_count": 5.0,
 			},
 			wantTransit: true,
-			wantNew:     types.MaturityAntiPattern,
+			wantNew:     domain.MaturityAntiPattern,
 		},
 		{
 			name: "established becomes anti-pattern",
@@ -261,7 +261,7 @@ func TestCheckMaturityTransition_AntiPatternPriority(t *testing.T) {
 				"harmful_count": 7.0,
 			},
 			wantTransit: true,
-			wantNew:     types.MaturityAntiPattern,
+			wantNew:     domain.MaturityAntiPattern,
 		},
 		{
 			name: "already anti-pattern stays anti-pattern (no transition)",
@@ -271,7 +271,7 @@ func TestCheckMaturityTransition_AntiPatternPriority(t *testing.T) {
 				"harmful_count": 10.0,
 			},
 			wantTransit: false,
-			wantNew:     types.MaturityAntiPattern,
+			wantNew:     domain.MaturityAntiPattern,
 		},
 		{
 			name: "not anti-pattern when harmful_count below threshold",
@@ -281,7 +281,7 @@ func TestCheckMaturityTransition_AntiPatternPriority(t *testing.T) {
 				"harmful_count": 2.0,
 			},
 			wantTransit: false,
-			wantNew:     types.MaturityProvisional,
+			wantNew:     domain.MaturityProvisional,
 		},
 	}
 
@@ -309,7 +309,7 @@ func TestCheckMaturityTransition_AntiPatternRehabilitation(t *testing.T) {
 		name        string
 		data        map[string]any
 		wantTransit bool
-		wantNew     types.Maturity
+		wantNew     domain.Maturity
 	}{
 		{
 			name: "rehabilitates when utility high and helpful dominant",
@@ -320,7 +320,7 @@ func TestCheckMaturityTransition_AntiPatternRehabilitation(t *testing.T) {
 				"harmful_count": 5.0,
 			},
 			wantTransit: true,
-			wantNew:     types.MaturityProvisional,
+			wantNew:     domain.MaturityProvisional,
 		},
 		{
 			name: "no rehab when helpful not greater than 2x harmful",
@@ -331,7 +331,7 @@ func TestCheckMaturityTransition_AntiPatternRehabilitation(t *testing.T) {
 				"harmful_count": 5.0,
 			},
 			wantTransit: false,
-			wantNew:     types.MaturityAntiPattern,
+			wantNew:     domain.MaturityAntiPattern,
 		},
 		{
 			name: "no rehab when utility below 0.6",
@@ -342,7 +342,7 @@ func TestCheckMaturityTransition_AntiPatternRehabilitation(t *testing.T) {
 				"harmful_count": 5.0,
 			},
 			wantTransit: false,
-			wantNew:     types.MaturityAntiPattern,
+			wantNew:     domain.MaturityAntiPattern,
 		},
 	}
 
@@ -379,11 +379,11 @@ func TestCheckMaturityTransition_DefaultValues(t *testing.T) {
 	if result.LearningID != "bare-learning" {
 		t.Errorf("LearningID = %q, want %q", result.LearningID, "bare-learning")
 	}
-	if result.OldMaturity != types.MaturityProvisional {
-		t.Errorf("OldMaturity = %q, want %q (default)", result.OldMaturity, types.MaturityProvisional)
+	if result.OldMaturity != domain.MaturityProvisional {
+		t.Errorf("OldMaturity = %q, want %q (default)", result.OldMaturity, domain.MaturityProvisional)
 	}
-	if result.Utility != types.InitialUtility {
-		t.Errorf("Utility = %f, want %f (InitialUtility)", result.Utility, types.InitialUtility)
+	if result.Utility != domain.InitialUtility {
+		t.Errorf("Utility = %f, want %f (InitialUtility)", result.Utility, domain.InitialUtility)
 	}
 	if result.Confidence != 0.5 {
 		t.Errorf("Confidence = %f, want 0.5 (default)", result.Confidence)
@@ -504,8 +504,8 @@ func TestApplyMaturityTransition_WritesFile(t *testing.T) {
 	if !result.Transitioned {
 		t.Fatal("expected transition")
 	}
-	if result.NewMaturity != types.MaturityCandidate {
-		t.Errorf("NewMaturity = %q, want %q", result.NewMaturity, types.MaturityCandidate)
+	if result.NewMaturity != domain.MaturityCandidate {
+		t.Errorf("NewMaturity = %q, want %q", result.NewMaturity, domain.MaturityCandidate)
 	}
 
 	// Verify the file was updated.
@@ -944,7 +944,7 @@ func TestApplyMaturityTransition_PromoteProvisionalToCandidate(t *testing.T) {
 	if !result.Transitioned {
 		t.Error("expected transition from provisional to candidate")
 	}
-	if result.NewMaturity != types.MaturityCandidate {
+	if result.NewMaturity != domain.MaturityCandidate {
 		t.Errorf("NewMaturity = %s, want candidate", result.NewMaturity)
 	}
 
@@ -1332,11 +1332,11 @@ func TestCheckMaturityTransition_MDFile(t *testing.T) {
 	if !result.Transitioned {
 		t.Error("expected transition from provisional to candidate")
 	}
-	if result.NewMaturity != types.MaturityCandidate {
-		t.Errorf("NewMaturity = %q, want %q", result.NewMaturity, types.MaturityCandidate)
+	if result.NewMaturity != domain.MaturityCandidate {
+		t.Errorf("NewMaturity = %q, want %q", result.NewMaturity, domain.MaturityCandidate)
 	}
-	if result.OldMaturity != types.MaturityProvisional {
-		t.Errorf("OldMaturity = %q, want %q", result.OldMaturity, types.MaturityProvisional)
+	if result.OldMaturity != domain.MaturityProvisional {
+		t.Errorf("OldMaturity = %q, want %q", result.OldMaturity, domain.MaturityProvisional)
 	}
 }
 
@@ -1414,8 +1414,8 @@ func TestApplyMaturityTransition_MDFile(t *testing.T) {
 	if !result.Transitioned {
 		t.Fatal("expected transition")
 	}
-	if result.NewMaturity != types.MaturityCandidate {
-		t.Errorf("NewMaturity = %q, want %q", result.NewMaturity, types.MaturityCandidate)
+	if result.NewMaturity != domain.MaturityCandidate {
+		t.Errorf("NewMaturity = %q, want %q", result.NewMaturity, domain.MaturityCandidate)
 	}
 
 	// Verify the file was updated with new frontmatter
@@ -1543,7 +1543,7 @@ func TestFilterLearningsByMaturity_IncludesMD(t *testing.T) {
 		"maturity": "candidate",
 	}, "")
 
-	results, err := filterLearningsByMaturity(dir, types.MaturityEstablished)
+	results, err := filterLearningsByMaturity(dir, domain.MaturityEstablished)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1621,7 +1621,7 @@ func TestFilterLearningsByMaturity_GlobError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	results, err := filterLearningsByMaturity(badDir, types.MaturityProvisional)
+	results, err := filterLearningsByMaturity(badDir, domain.MaturityProvisional)
 	if err == nil {
 		t.Fatal("expected error from filterLearningsByMaturity with bad dir")
 	}

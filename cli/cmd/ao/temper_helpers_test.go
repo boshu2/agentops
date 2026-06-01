@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestParseMarkdownMetadata(t *testing.T) {
@@ -28,8 +28,8 @@ Content here.
 		if meta.ID != "L42" {
 			t.Errorf("ID = %q, want %q", meta.ID, "L42")
 		}
-		if meta.Maturity != types.MaturityEstablished {
-			t.Errorf("Maturity = %q, want %q", meta.Maturity, types.MaturityEstablished)
+		if meta.Maturity != domain.MaturityEstablished {
+			t.Errorf("Maturity = %q, want %q", meta.Maturity, domain.MaturityEstablished)
 		}
 		if meta.Utility < 0.84 || meta.Utility > 0.86 {
 			t.Errorf("Utility = %f, want ~0.85", meta.Utility)
@@ -85,7 +85,7 @@ status: locked
 	}
 
 	meta := &artifactMetadata{
-		Maturity:   types.MaturityProvisional,
+		Maturity:   domain.MaturityProvisional,
 		Utility:    0.5,
 		Confidence: 0.5,
 	}
@@ -94,8 +94,8 @@ status: locked
 	if meta.ID != "learning-frontmatter" {
 		t.Errorf("ID = %q, want %q", meta.ID, "learning-frontmatter")
 	}
-	if meta.Maturity != types.MaturityCandidate {
-		t.Errorf("Maturity = %q, want %q", meta.Maturity, types.MaturityCandidate)
+	if meta.Maturity != domain.MaturityCandidate {
+		t.Errorf("Maturity = %q, want %q", meta.Maturity, domain.MaturityCandidate)
 	}
 	if meta.Utility < 0.71 || meta.Utility > 0.73 {
 		t.Errorf("Utility = %f, want ~0.72", meta.Utility)
@@ -182,8 +182,8 @@ func TestParseJSONLMetadata(t *testing.T) {
 		if meta.ID != "L42" {
 			t.Errorf("ID = %q, want %q", meta.ID, "L42")
 		}
-		if meta.Maturity != types.MaturityEstablished {
-			t.Errorf("Maturity = %q, want %q", meta.Maturity, types.MaturityEstablished)
+		if meta.Maturity != domain.MaturityEstablished {
+			t.Errorf("Maturity = %q, want %q", meta.Maturity, domain.MaturityEstablished)
 		}
 		if meta.FeedbackCount != 5 {
 			t.Errorf("FeedbackCount = %d, want 5", meta.FeedbackCount)

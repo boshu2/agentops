@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // ===========================================================================
@@ -982,7 +982,7 @@ func TestPlans_createPlanEntry(t *testing.T) {
 	if entry.PlanName != "my-plan" {
 		t.Errorf("PlanName = %q", entry.PlanName)
 	}
-	if entry.Status != types.PlanStatusActive {
+	if entry.Status != domain.PlanStatusActive {
 		t.Errorf("Status = %q, want 'active'", entry.Status)
 	}
 	if entry.BeadsID != "ol-123" {
@@ -1003,42 +1003,42 @@ func TestPlans_createPlanEntry(t *testing.T) {
 func TestPlans_applyPlanUpdates(t *testing.T) {
 	tests := []struct {
 		name       string
-		entries    []types.PlanManifestEntry
+		entries    []domain.PlanManifestEntry
 		absPath    string
 		status     string
 		beadsID    string
 		wantFound  bool
-		wantStatus types.PlanStatus
+		wantStatus domain.PlanStatus
 		wantBeads  string
 	}{
 		{
 			name: "updates status",
-			entries: []types.PlanManifestEntry{
-				{Path: "/a.md", Status: types.PlanStatusActive, BeadsID: ""},
+			entries: []domain.PlanManifestEntry{
+				{Path: "/a.md", Status: domain.PlanStatusActive, BeadsID: ""},
 			},
 			absPath:    "/a.md",
 			status:     "completed",
 			beadsID:    "",
 			wantFound:  true,
-			wantStatus: types.PlanStatusCompleted,
+			wantStatus: domain.PlanStatusCompleted,
 			wantBeads:  "",
 		},
 		{
 			name: "updates beads ID",
-			entries: []types.PlanManifestEntry{
-				{Path: "/a.md", Status: types.PlanStatusActive, BeadsID: ""},
+			entries: []domain.PlanManifestEntry{
+				{Path: "/a.md", Status: domain.PlanStatusActive, BeadsID: ""},
 			},
 			absPath:    "/a.md",
 			status:     "",
 			beadsID:    "ol-999",
 			wantFound:  true,
-			wantStatus: types.PlanStatusActive,
+			wantStatus: domain.PlanStatusActive,
 			wantBeads:  "ol-999",
 		},
 		{
 			name: "updates both",
-			entries: []types.PlanManifestEntry{
-				{Path: "/a.md", Status: types.PlanStatusActive, BeadsID: ""},
+			entries: []domain.PlanManifestEntry{
+				{Path: "/a.md", Status: domain.PlanStatusActive, BeadsID: ""},
 			},
 			absPath:    "/a.md",
 			status:     "abandoned",
@@ -1049,8 +1049,8 @@ func TestPlans_applyPlanUpdates(t *testing.T) {
 		},
 		{
 			name: "path not found",
-			entries: []types.PlanManifestEntry{
-				{Path: "/a.md", Status: types.PlanStatusActive},
+			entries: []domain.PlanManifestEntry{
+				{Path: "/a.md", Status: domain.PlanStatusActive},
 			},
 			absPath:   "/b.md",
 			status:    "completed",
@@ -1068,7 +1068,7 @@ func TestPlans_applyPlanUpdates(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Make a copy to avoid mutating across tests
-			entries := make([]types.PlanManifestEntry, len(tt.entries))
+			entries := make([]domain.PlanManifestEntry, len(tt.entries))
 			copy(entries, tt.entries)
 
 			got := applyPlanUpdates(entries, tt.absPath, tt.status, tt.beadsID)
@@ -1112,8 +1112,8 @@ func TestPlans_loadManifest(t *testing.T) {
 		dir := t.TempDir()
 		path := filepath.Join(dir, "manifest.jsonl")
 
-		e1 := types.PlanManifestEntry{Path: "/a.md", PlanName: "plan-a", Status: types.PlanStatusActive}
-		e2 := types.PlanManifestEntry{Path: "/b.md", PlanName: "plan-b", Status: types.PlanStatusCompleted}
+		e1 := domain.PlanManifestEntry{Path: "/a.md", PlanName: "plan-a", Status: domain.PlanStatusActive}
+		e2 := domain.PlanManifestEntry{Path: "/b.md", PlanName: "plan-b", Status: domain.PlanStatusCompleted}
 		d1, _ := json.Marshal(e1)
 		d2, _ := json.Marshal(e2)
 		writeFile(t, path, string(d1)+"\n"+string(d2)+"\n")
@@ -1137,7 +1137,7 @@ func TestPlans_loadManifest(t *testing.T) {
 		dir := t.TempDir()
 		path := filepath.Join(dir, "manifest.jsonl")
 
-		e1 := types.PlanManifestEntry{Path: "/ok.md", PlanName: "ok"}
+		e1 := domain.PlanManifestEntry{Path: "/ok.md", PlanName: "ok"}
 		d1, _ := json.Marshal(e1)
 		writeFile(t, path, string(d1)+"\n\nnot json\n")
 
@@ -1155,9 +1155,9 @@ func TestPlans_saveManifest(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "manifest.jsonl")
 
-	entries := []types.PlanManifestEntry{
-		{Path: "/x.md", PlanName: "x", Status: types.PlanStatusActive},
-		{Path: "/y.md", PlanName: "y", Status: types.PlanStatusCompleted},
+	entries := []domain.PlanManifestEntry{
+		{Path: "/x.md", PlanName: "x", Status: domain.PlanStatusActive},
+		{Path: "/y.md", PlanName: "y", Status: domain.PlanStatusCompleted},
 	}
 
 	if err := saveManifest(path, entries); err != nil {
@@ -1184,13 +1184,13 @@ func TestPlans_appendManifestEntry(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "manifest.jsonl")
 
-	entry := types.PlanManifestEntry{Path: "/new.md", PlanName: "new-plan", Status: types.PlanStatusActive}
+	entry := domain.PlanManifestEntry{Path: "/new.md", PlanName: "new-plan", Status: domain.PlanStatusActive}
 	if err := appendManifestEntry(path, entry); err != nil {
 		t.Fatalf("appendManifestEntry error: %v", err)
 	}
 
 	// Append another
-	entry2 := types.PlanManifestEntry{Path: "/second.md", PlanName: "second", Status: types.PlanStatusActive}
+	entry2 := domain.PlanManifestEntry{Path: "/second.md", PlanName: "second", Status: domain.PlanStatusActive}
 	if err := appendManifestEntry(path, entry2); err != nil {
 		t.Fatalf("appendManifestEntry error: %v", err)
 	}
@@ -1213,10 +1213,10 @@ func TestPlans_upsertManifestEntry(t *testing.T) {
 		dir := t.TempDir()
 		path := filepath.Join(dir, "manifest.jsonl")
 
-		existing := []types.PlanManifestEntry{
-			{Path: "/a.md", PlanName: "old-name", Status: types.PlanStatusActive},
+		existing := []domain.PlanManifestEntry{
+			{Path: "/a.md", PlanName: "old-name", Status: domain.PlanStatusActive},
 		}
-		newEntry := types.PlanManifestEntry{Path: "/a.md", PlanName: "new-name", Status: types.PlanStatusCompleted}
+		newEntry := domain.PlanManifestEntry{Path: "/a.md", PlanName: "new-name", Status: domain.PlanStatusCompleted}
 
 		updated, err := upsertManifestEntry(path, existing, newEntry)
 		if err != nil {
@@ -1243,10 +1243,10 @@ func TestPlans_upsertManifestEntry(t *testing.T) {
 		dir := t.TempDir()
 		path := filepath.Join(dir, "manifest.jsonl")
 
-		existing := []types.PlanManifestEntry{
+		existing := []domain.PlanManifestEntry{
 			{Path: "/a.md", PlanName: "existing"},
 		}
-		newEntry := types.PlanManifestEntry{Path: "/b.md", PlanName: "new-entry"}
+		newEntry := domain.PlanManifestEntry{Path: "/b.md", PlanName: "new-entry"}
 
 		updated, err := upsertManifestEntry(path, existing, newEntry)
 		if err != nil {
@@ -1276,38 +1276,38 @@ func TestPlans_upsertManifestEntry(t *testing.T) {
 func TestPlans_syncEpicsToManifest(t *testing.T) {
 	tests := []struct {
 		name     string
-		entries  []types.PlanManifestEntry
+		entries  []domain.PlanManifestEntry
 		epics    []beadsEpic
 		wantSync int
 	}{
 		{
 			name: "syncs closed epic",
-			entries: []types.PlanManifestEntry{
-				{PlanName: "plan-a", BeadsID: "e1", Status: types.PlanStatusActive},
+			entries: []domain.PlanManifestEntry{
+				{PlanName: "plan-a", BeadsID: "e1", Status: domain.PlanStatusActive},
 			},
 			epics:    []beadsEpic{{ID: "e1", Status: "closed"}},
 			wantSync: 1,
 		},
 		{
 			name: "no change when already synced",
-			entries: []types.PlanManifestEntry{
-				{PlanName: "plan-a", BeadsID: "e1", Status: types.PlanStatusCompleted},
+			entries: []domain.PlanManifestEntry{
+				{PlanName: "plan-a", BeadsID: "e1", Status: domain.PlanStatusCompleted},
 			},
 			epics:    []beadsEpic{{ID: "e1", Status: "closed"}},
 			wantSync: 0,
 		},
 		{
 			name: "unlinked entry ignored",
-			entries: []types.PlanManifestEntry{
-				{PlanName: "plan-a", BeadsID: "", Status: types.PlanStatusActive},
+			entries: []domain.PlanManifestEntry{
+				{PlanName: "plan-a", BeadsID: "", Status: domain.PlanStatusActive},
 			},
 			epics:    []beadsEpic{{ID: "e1", Status: "closed"}},
 			wantSync: 0,
 		},
 		{
 			name: "epic not in manifest",
-			entries: []types.PlanManifestEntry{
-				{PlanName: "plan-a", BeadsID: "e2", Status: types.PlanStatusActive},
+			entries: []domain.PlanManifestEntry{
+				{PlanName: "plan-a", BeadsID: "e2", Status: domain.PlanStatusActive},
 			},
 			epics:    []beadsEpic{{ID: "e1", Status: "closed"}},
 			wantSync: 0,
@@ -1338,34 +1338,34 @@ func TestPlans_syncEpicsToManifest(t *testing.T) {
 func TestPlans_detectStatusDrifts(t *testing.T) {
 	tests := []struct {
 		name       string
-		byBeadsID  map[string]*types.PlanManifestEntry
+		byBeadsID  map[string]*domain.PlanManifestEntry
 		beadsIndex map[string]string
 		wantLen    int
 		wantTypes  []string
 	}{
 		{
 			name:       "no drift",
-			byBeadsID:  map[string]*types.PlanManifestEntry{"e1": {Status: types.PlanStatusActive}},
+			byBeadsID:  map[string]*domain.PlanManifestEntry{"e1": {Status: domain.PlanStatusActive}},
 			beadsIndex: map[string]string{"e1": "open"},
 			wantLen:    0,
 		},
 		{
 			name:       "status mismatch",
-			byBeadsID:  map[string]*types.PlanManifestEntry{"e1": {Status: types.PlanStatusActive, PlanName: "test"}},
+			byBeadsID:  map[string]*domain.PlanManifestEntry{"e1": {Status: domain.PlanStatusActive, PlanName: "test"}},
 			beadsIndex: map[string]string{"e1": "closed"},
 			wantLen:    1,
 			wantTypes:  []string{"status_mismatch"},
 		},
 		{
 			name:       "missing in beads",
-			byBeadsID:  map[string]*types.PlanManifestEntry{"e1": {Status: types.PlanStatusActive, PlanName: "test"}},
+			byBeadsID:  map[string]*domain.PlanManifestEntry{"e1": {Status: domain.PlanStatusActive, PlanName: "test"}},
 			beadsIndex: map[string]string{},
 			wantLen:    1,
 			wantTypes:  []string{"missing_beads"},
 		},
 		{
 			name:       "both completed and closed matches",
-			byBeadsID:  map[string]*types.PlanManifestEntry{"e1": {Status: types.PlanStatusCompleted}},
+			byBeadsID:  map[string]*domain.PlanManifestEntry{"e1": {Status: domain.PlanStatusCompleted}},
 			beadsIndex: map[string]string{"e1": "closed"},
 			wantLen:    0,
 		},
@@ -1467,13 +1467,13 @@ func TestPlans_findAgentsDir(t *testing.T) {
 
 func TestPlans_planStatusSymbols(t *testing.T) {
 	tests := []struct {
-		status types.PlanStatus
+		status domain.PlanStatus
 		want   string
 		exists bool
 	}{
-		{types.PlanStatusActive, "○", true},
-		{types.PlanStatusCompleted, "✓", true},
-		{types.PlanStatusAbandoned, "", false},
+		{domain.PlanStatusActive, "○", true},
+		{domain.PlanStatusCompleted, "✓", true},
+		{domain.PlanStatusAbandoned, "", false},
 	}
 
 	for _, tt := range tests {

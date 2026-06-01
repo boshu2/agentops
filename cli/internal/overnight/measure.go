@@ -11,7 +11,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/corpus"
 	"github.com/boshu2/agentops/cli/internal/daemon"
-	quest "github.com/boshu2/agentops/cli/internal/types/quest"
+	quest "github.com/boshu2/agentops/cli/internal/domain/quest"
 )
 
 // MeasureResult is the output of a single MEASURE stage.

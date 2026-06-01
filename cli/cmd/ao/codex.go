@@ -13,12 +13,12 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/bridge"
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/repo"
-	"github.com/boshu2/agentops/cli/internal/storage"
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 var (
@@ -1096,7 +1096,7 @@ func countGlobMatches(pattern string) int {
 
 func collectCodexCaptureHealth(cwd string) codexCaptureHealth {
 	result := codexCaptureHealth{
-		SessionsIndexed:   countGlobMatches(filepath.Join(cwd, storage.DefaultBaseDir, storage.SessionsDir, "*.jsonl")),
+		SessionsIndexed:   countGlobMatches(filepath.Join(cwd, sessionstore.DefaultBaseDir, sessionstore.SessionsDir, "*.jsonl")),
 		PendingKnowledge:  countGlobMatches(filepath.Join(cwd, ".agents", "knowledge", "pending", "*.md")),
 		PendingQuarantine: countGlobMatches(filepath.Join(cwd, ".agents", "knowledge", "pending", ".quarantine", "*.md")),
 	}
@@ -1125,9 +1125,9 @@ func collectCodexRetrievalHealth(cwd string) codexRetrievalHealth {
 
 func collectCodexPromotionHealth(cwd string) codexPromotionHealth {
 	p := pool.NewPool(cwd)
-	pending, _ := p.List(pool.ListOptions{Status: types.PoolStatusPending})
-	staged, _ := p.List(pool.ListOptions{Status: types.PoolStatusStaged})
-	rejected, _ := p.List(pool.ListOptions{Status: types.PoolStatusRejected})
+	pending, _ := p.List(pool.ListOptions{Status: domain.PoolStatusPending})
+	staged, _ := p.List(pool.ListOptions{Status: domain.PoolStatusStaged})
+	rejected, _ := p.List(pool.ListOptions{Status: domain.PoolStatusRejected})
 	return codexPromotionHealth{
 		PendingPool:  len(pending),
 		StagedPool:   len(staged),
@@ -1143,7 +1143,7 @@ func collectCodexCitationHealth(cwd string, days int) codexCitationHealth {
 	}
 	end := time.Now()
 	start := end.AddDate(0, 0, -days)
-	var filtered []types.CitationEvent
+	var filtered []domain.CitationEvent
 	for _, citation := range citations {
 		citation = normalizeCitationEventForRuntime(cwd, citation)
 		if citation.CitedAt.Before(start) || citation.CitedAt.After(end) {

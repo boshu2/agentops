@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/spf13/cobra"
 )
 
 func TestPrintFlywheelStatus_Compounding(t *testing.T) {
 	var buf bytes.Buffer
-	m := &types.FlywheelMetrics{
+	m := &domain.FlywheelMetrics{
 		Timestamp:           time.Now(),
 		PeriodStart:         time.Now().AddDate(0, 0, -7),
 		PeriodEnd:           time.Now(),
@@ -62,7 +62,7 @@ func TestComputeMetricsForNamespace_FiltersCitations(t *testing.T) {
 		}
 	}
 
-	writeHealthCitations(t, dir, []types.CitationEvent{
+	writeHealthCitations(t, dir, []domain.CitationEvent{
 		{
 			ArtifactPath:    filepath.Join(dir, ".agents", "learnings", "primary.md"),
 			SessionID:       "session-primary",
@@ -104,7 +104,7 @@ func TestComputeMetricsForNamespace_FiltersCitations(t *testing.T) {
 
 func TestPrintFlywheelStatus_NearEscape(t *testing.T) {
 	var buf bytes.Buffer
-	m := &types.FlywheelMetrics{
+	m := &domain.FlywheelMetrics{
 		Timestamp:           time.Now(),
 		PeriodStart:         time.Now().AddDate(0, 0, -7),
 		PeriodEnd:           time.Now(),
@@ -137,7 +137,7 @@ func TestPrintFlywheelStatus_NearEscape(t *testing.T) {
 
 func TestPrintFlywheelStatus_Decaying(t *testing.T) {
 	var buf bytes.Buffer
-	m := &types.FlywheelMetrics{
+	m := &domain.FlywheelMetrics{
 		Timestamp:           time.Now(),
 		PeriodStart:         time.Now().AddDate(0, 0, -7),
 		PeriodEnd:           time.Now(),
@@ -171,7 +171,7 @@ func TestPrintFlywheelStatus_Decaying(t *testing.T) {
 
 func TestPrintFlywheelStatus_SeparatesHealthFromEscapeVelocity(t *testing.T) {
 	var buf bytes.Buffer
-	m := &types.FlywheelMetrics{
+	m := &domain.FlywheelMetrics{
 		Timestamp:           time.Now(),
 		PeriodStart:         time.Now().AddDate(0, 0, -7),
 		PeriodEnd:           time.Now(),
@@ -181,7 +181,7 @@ func TestPrintFlywheelStatus_SeparatesHealthFromEscapeVelocity(t *testing.T) {
 		SigmaRho:            1.2,
 		Velocity:            1.03,
 		AboveEscapeVelocity: true,
-		GoldenSignals: &types.GoldenSignals{
+		GoldenSignals: &domain.GoldenSignals{
 			OverallVerdict: "accumulating",
 		},
 		TierCounts: map[string]int{},
@@ -223,7 +223,7 @@ func TestPrintFlywheelStatus_Recommendations(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var buf bytes.Buffer
 			sigmaRho := tt.sigma * tt.rho
-			m := &types.FlywheelMetrics{
+			m := &domain.FlywheelMetrics{
 				Timestamp:           time.Now(),
 				PeriodStart:         time.Now().AddDate(0, 0, -7),
 				PeriodEnd:           time.Now(),
@@ -399,12 +399,12 @@ func TestRunFlywheelStatus_JSONOutput(t *testing.T) {
 
 func TestPrintFlywheelStatus_IncludesScorecard(t *testing.T) {
 	var buf bytes.Buffer
-	m := &types.FlywheelMetrics{
+	m := &domain.FlywheelMetrics{
 		Timestamp:   time.Now(),
 		PeriodStart: time.Now().AddDate(0, 0, -7),
 		PeriodEnd:   time.Now(),
 		TierCounts:  map[string]int{},
-		StigmergicScorecard: &types.StigmergicScorecard{
+		StigmergicScorecard: &domain.StigmergicScorecard{
 			PromotedFindings:       3,
 			PlanningRules:          3,
 			PreMortemChecks:        2,
@@ -495,7 +495,7 @@ func TestRunFlywheelStatus_TableOutput(t *testing.T) {
 
 func TestPrintFlywheelStatus_ContainsEquation(t *testing.T) {
 	var buf bytes.Buffer
-	m := &types.FlywheelMetrics{
+	m := &domain.FlywheelMetrics{
 		Timestamp:   time.Now(),
 		PeriodStart: time.Now().AddDate(0, 0, -7),
 		PeriodEnd:   time.Now(),
@@ -518,7 +518,7 @@ func TestPrintFlywheelStatus_ShowsPeriod(t *testing.T) {
 	var buf bytes.Buffer
 	now := time.Now()
 	start := now.AddDate(0, 0, -14)
-	m := &types.FlywheelMetrics{
+	m := &domain.FlywheelMetrics{
 		Timestamp:   now,
 		PeriodStart: start,
 		PeriodEnd:   now,
@@ -544,14 +544,14 @@ func TestPrintFlywheelStatus_ShowsPeriod(t *testing.T) {
 }
 
 func TestBuildNamespaceComparison_PromotionReady(t *testing.T) {
-	primary := &types.FlywheelMetrics{
+	primary := &domain.FlywheelMetrics{
 		Sigma:    0.25,
 		Rho:      0.60,
 		SigmaRho: 0.15,
 		Velocity: -0.02,
 		Delta:    17.0,
 	}
-	shadow := &types.FlywheelMetrics{
+	shadow := &domain.FlywheelMetrics{
 		Sigma:    0.35,
 		Rho:      0.65,
 		SigmaRho: 0.2275,
@@ -569,8 +569,8 @@ func TestBuildNamespaceComparison_PromotionReady(t *testing.T) {
 }
 
 func TestBuildNamespaceComparison_NotReady_SigmaWorse(t *testing.T) {
-	primary := &types.FlywheelMetrics{Sigma: 0.40, Rho: 0.60}
-	shadow := &types.FlywheelMetrics{Sigma: 0.30, Rho: 0.70}
+	primary := &domain.FlywheelMetrics{Sigma: 0.40, Rho: 0.60}
+	shadow := &domain.FlywheelMetrics{Sigma: 0.30, Rho: 0.70}
 	comp := buildNamespaceComparison(primary, shadow, "shadow")
 	if comp.PromotionReady {
 		t.Error("expected promotion not ready when shadow sigma < primary sigma")
@@ -581,8 +581,8 @@ func TestBuildNamespaceComparison_NotReady_SigmaWorse(t *testing.T) {
 }
 
 func TestBuildNamespaceComparison_NotReady_RhoRegressed(t *testing.T) {
-	primary := &types.FlywheelMetrics{Sigma: 0.30, Rho: 0.70}
-	shadow := &types.FlywheelMetrics{Sigma: 0.35, Rho: 0.50}
+	primary := &domain.FlywheelMetrics{Sigma: 0.30, Rho: 0.70}
+	shadow := &domain.FlywheelMetrics{Sigma: 0.35, Rho: 0.50}
 	comp := buildNamespaceComparison(primary, shadow, "shadow")
 	if comp.PromotionReady {
 		t.Error("expected promotion not ready when shadow rho regressed")
@@ -593,8 +593,8 @@ func TestBuildNamespaceComparison_NotReady_RhoRegressed(t *testing.T) {
 }
 
 func TestBuildNamespaceComparison_RollbackContract(t *testing.T) {
-	primary := &types.FlywheelMetrics{}
-	shadow := &types.FlywheelMetrics{}
+	primary := &domain.FlywheelMetrics{}
+	shadow := &domain.FlywheelMetrics{}
 	comp := buildNamespaceComparison(primary, shadow, "shadow")
 	if comp.RollbackContract == "" {
 		t.Error("expected non-empty rollback contract")
@@ -606,8 +606,8 @@ func TestBuildNamespaceComparison_RollbackContract(t *testing.T) {
 
 func TestPrintNamespaceComparison_ContainsMetrics(t *testing.T) {
 	comp := &namespaceComparison{
-		Primary:          &types.FlywheelMetrics{Sigma: 0.25, Rho: 0.60, SigmaRho: 0.15, Velocity: -0.02, Delta: 17.0},
-		Shadow:           &types.FlywheelMetrics{Sigma: 0.35, Rho: 0.65, SigmaRho: 0.23, Velocity: 0.06, Delta: 17.0},
+		Primary:          &domain.FlywheelMetrics{Sigma: 0.25, Rho: 0.60, SigmaRho: 0.15, Velocity: -0.02, Delta: 17.0},
+		Shadow:           &domain.FlywheelMetrics{Sigma: 0.35, Rho: 0.65, SigmaRho: 0.23, Velocity: 0.06, Delta: 17.0},
 		ShadowName:       "experimental",
 		SigmaDelta:       0.10,
 		RhoDelta:         0.05,

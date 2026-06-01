@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/daemon"
+	quest "github.com/boshu2/agentops/cli/internal/domain/quest"
 	"github.com/boshu2/agentops/cli/internal/harvest"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
-	quest "github.com/boshu2/agentops/cli/internal/types/quest"
 )
 
 // reduceStageRecorder is an optional test hook called at the start of

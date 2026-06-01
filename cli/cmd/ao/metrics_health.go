@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
 )
 
@@ -170,8 +170,8 @@ func countRetrievableArtifacts(baseDir string) int {
 }
 
 // computeVendorMetrics computes sigma/rho per model vendor from attributed citations.
-func computeVendorMetrics(baseDir string, citations []types.CitationEvent) map[string]vendorMetrics {
-	vendors := make(map[string][]types.CitationEvent)
+func computeVendorMetrics(baseDir string, citations []domain.CitationEvent) map[string]vendorMetrics {
+	vendors := make(map[string][]domain.CitationEvent)
 	for _, c := range citations {
 		v := c.ModelVendor
 		if v == "" {
@@ -266,7 +266,7 @@ func VerifyEscapeVelocity(hm *healthMetrics, targets EscapeVelocityTargets) *Esc
 
 // computeHealthSigmaRho computes sigma (retrieval coverage) and rho (decision influence)
 // from citation data restricted to the last 10 unique sessions.
-func computeHealthSigmaRho(baseDir string, citations []types.CitationEvent) (sigma, rho float64) {
+func computeHealthSigmaRho(baseDir string, citations []domain.CitationEvent) (sigma, rho float64) {
 	if len(citations) == 0 {
 		return 0, 0
 	}
@@ -282,7 +282,7 @@ func computeHealthSigmaRho(baseDir string, citations []types.CitationEvent) (sig
 	}
 
 	// Filter citations to only those sessions
-	var filtered []types.CitationEvent
+	var filtered []domain.CitationEvent
 	for _, c := range citations {
 		if sessionSet[c.SessionID] {
 			filtered = append(filtered, c)
@@ -310,7 +310,7 @@ func computeHealthSigmaRho(baseDir string, citations []types.CitationEvent) (sig
 	return computeOperationalSigmaRho(totalRetrievable, len(citedUnique), len(evidenceUnique))
 }
 
-func lastNSessions(citations []types.CitationEvent, n int) []string {
+func lastNSessions(citations []domain.CitationEvent, n int) []string {
 	return quality.LastNSessions(citations, n)
 }
 
@@ -333,7 +333,7 @@ func computeKnowledgeStock(baseDir string) knowledgeStock {
 func countConstraints(baseDir string) int { return quality.CountConstraints(baseDir) }
 
 // computeLoopDominance computes R1 (new learnings per session) and B1 (decayed per session).
-func computeLoopDominance(baseDir string, citations []types.CitationEvent) loopDominance {
+func computeLoopDominance(baseDir string, citations []domain.CitationEvent) loopDominance {
 	ld := loopDominance{Dominant: "none"}
 
 	// Count sessions from cycle history or citations
@@ -366,7 +366,7 @@ func computeLoopDominance(baseDir string, citations []types.CitationEvent) loopD
 	return ld
 }
 
-func countUniqueSessions(citations []types.CitationEvent) int {
+func countUniqueSessions(citations []domain.CitationEvent) int {
 	return quality.CountUniqueSessions(citations)
 }
 

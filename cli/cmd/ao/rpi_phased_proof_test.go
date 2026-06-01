@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // ---------------------------------------------------------------------------
@@ -188,7 +188,7 @@ func TestFlywheelProof_DecayReducesScore(t *testing.T) {
 	if !okNU {
 		t.Fatal("processLearningFile returned ok=false for no-utility file")
 	}
-	if noUtil.Utility != types.InitialUtility {
-		t.Errorf("Utility = %f, want %f (InitialUtility default)", noUtil.Utility, types.InitialUtility)
+	if noUtil.Utility != domain.InitialUtility {
+		t.Errorf("Utility = %f, want %f (InitialUtility default)", noUtil.Utility, domain.InitialUtility)
 	}
 }

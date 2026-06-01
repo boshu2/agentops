@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // ValidPhases is the set of canonical RPI phase values for source_phase.
@@ -261,7 +261,7 @@ func ParseLearningJSONL(path string) (Learning, error) {
 		ID:       filepath.Base(path),
 		Source:   path,
 		FilePath: path,
-		Utility:  types.InitialUtility,
+		Utility:  domain.InitialUtility,
 	}
 
 	f, err := os.Open(path)
@@ -296,12 +296,12 @@ func ParseLearningJSONL(path string) (Learning, error) {
 
 // PassesQualityGate returns true if a learning meets minimum injection standards.
 func PassesQualityGate(l Learning) bool {
-	mat := types.Maturity(l.Maturity)
+	mat := domain.Maturity(l.Maturity)
 	if mat == "" {
-		mat = types.MaturityProvisional
+		mat = domain.MaturityProvisional
 	}
 	switch mat {
-	case types.MaturityProvisional, types.MaturityCandidate, types.MaturityEstablished:
+	case domain.MaturityProvisional, domain.MaturityCandidate, domain.MaturityEstablished:
 		// maturity OK
 	default:
 		return false
@@ -333,12 +333,12 @@ func RankLearnings(learnings []Learning) {
 	for i := range learnings {
 		items[i] = &learnings[i]
 	}
-	ApplyCompositeScoringTo(items, types.DefaultLambda)
+	ApplyCompositeScoringTo(items, domain.DefaultLambda)
 }
 
 // ComputeDecayedConfidence applies exponential decay and clamps to a minimum of 0.1.
 func ComputeDecayedConfidence(confidence, weeks float64) float64 {
-	decayFactor := math.Exp(-weeks * types.ConfidenceDecayRate)
+	decayFactor := math.Exp(-weeks * domain.ConfidenceDecayRate)
 	result := confidence * decayFactor
 	if result < 0.1 {
 		return 0.1

@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/harvest"
 	"github.com/boshu2/agentops/cli/internal/pool"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // TestFlywheelE2E_CreateHarvestPromoteRetrieveInject validates the full flywheel loop:
@@ -428,8 +428,8 @@ func TestFlywheelE2E_CitationPromotionPipeline(t *testing.T) {
 		{
 			name: "full pipeline pass — 3 citations, utility 0.7",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "pipeline-pass",
 						Content: "learning with strong signal from multiple sessions",
 						Utility: 0.7,
@@ -444,8 +444,8 @@ func TestFlywheelE2E_CitationPromotionPipeline(t *testing.T) {
 		{
 			name: "rejected — 1 citation below minimum 2",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "pipeline-low-cite",
 						Content: "learning with only one citation",
 						Utility: 0.8,
@@ -461,8 +461,8 @@ func TestFlywheelE2E_CitationPromotionPipeline(t *testing.T) {
 		{
 			name: "rejected — utility 0.3 below 0.5 threshold",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "pipeline-low-util",
 						Content: "learning with low utility despite citations",
 						Utility: 0.3,
@@ -478,8 +478,8 @@ func TestFlywheelE2E_CitationPromotionPipeline(t *testing.T) {
 		{
 			name: "rejected — both citations and utility insufficient",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "pipeline-both-low",
 						Content: "learning with no signal at all",
 						Utility: 0.2,
@@ -495,8 +495,8 @@ func TestFlywheelE2E_CitationPromotionPipeline(t *testing.T) {
 		{
 			name: "boundary — exactly 2 citations and utility 0.5",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "pipeline-boundary",
 						Content: "learning at exact promotion boundary",
 						Utility: 0.5,
@@ -511,8 +511,8 @@ func TestFlywheelE2E_CitationPromotionPipeline(t *testing.T) {
 		{
 			name: "boundary — utility 0.49 just below threshold",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "pipeline-just-under",
 						Content: "learning just below utility threshold",
 						Utility: 0.49,

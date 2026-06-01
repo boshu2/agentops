@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // FeedbackLoopEvent records a feedback loop closure event.
@@ -106,7 +106,7 @@ func ValidateBatchFeedbackFlags(maxSessions int, reward float64, maxRuntime time
 
 // SortAndCapSessions sorts session IDs by latest citation (newest first) and
 // caps the list by maxSessions. Pass 0 for maxSessions to disable the cap.
-func SortAndCapSessions(sessionCitations map[string][]types.CitationEvent, sessionLatestCitation map[string]time.Time, maxSessions int) []string {
+func SortAndCapSessions(sessionCitations map[string][]domain.CitationEvent, sessionLatestCitation map[string]time.Time, maxSessions int) []string {
 	sessionIDs := make([]string, 0, len(sessionCitations))
 	for sessionID := range sessionCitations {
 		sessionIDs = append(sessionIDs, sessionID)

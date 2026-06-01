@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 const primaryMetricNamespace = "primary"
@@ -26,9 +26,9 @@ func isPrimaryMetricNamespace(raw string) bool {
 	return canonicalMetricNamespace(raw) == primaryMetricNamespace
 }
 
-func filterCitationsByMetricNamespace(citations []types.CitationEvent, namespace string) []types.CitationEvent {
+func filterCitationsByMetricNamespace(citations []domain.CitationEvent, namespace string) []domain.CitationEvent {
 	canonicalNamespace := canonicalMetricNamespace(namespace)
-	filtered := make([]types.CitationEvent, 0, len(citations))
+	filtered := make([]domain.CitationEvent, 0, len(citations))
 	for _, citation := range citations {
 		citation.MetricNamespace = canonicalMetricNamespace(citation.MetricNamespace)
 		if citation.MetricNamespace != canonicalNamespace {

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // Validator performs quality validation on artifacts before locking.
@@ -817,7 +817,7 @@ func CanonicalWorkspacePath(baseDir, workspacePath string) string {
 
 // RecordCitation appends a citation event to the citations log.
 // Creates the file and parent directories if they don't exist.
-func RecordCitation(baseDir string, event types.CitationEvent) error {
+func RecordCitation(baseDir string, event domain.CitationEvent) error {
 	// Ensure citation has timestamp
 	if event.CitedAt.IsZero() {
 		event.CitedAt = time.Now()
@@ -859,15 +859,15 @@ func RecordCitation(baseDir string, event types.CitationEvent) error {
 // LoadCitations reads all citation events from the citations log.
 // parseCitationLine parses a single JSONL line into a CitationEvent.
 // Returns the event and true on success, or zero value and false for empty/malformed lines.
-func parseCitationLine(line []byte, baseDir string) (types.CitationEvent, bool) {
+func parseCitationLine(line []byte, baseDir string) (domain.CitationEvent, bool) {
 	if len(line) == 0 {
-		return types.CitationEvent{}, false
+		return domain.CitationEvent{}, false
 	}
 	var raw map[string]any
 	if err := json.Unmarshal(line, &raw); err != nil {
-		return types.CitationEvent{}, false
+		return domain.CitationEvent{}, false
 	}
-	event := types.CitationEvent{
+	event := domain.CitationEvent{
 		ArtifactPath:    firstCitationString(raw, "artifact_path", "learning_file"),
 		WorkspacePath:   firstCitationString(raw, "workspace_path", "workspace"),
 		SessionID:       firstCitationString(raw, "session_id", "session", "cited_by"),
@@ -947,7 +947,7 @@ func citationTime(raw map[string]any, keys ...string) (time.Time, bool) {
 }
 
 // LoadCitations reads all citation events from the citations JSONL log.
-func LoadCitations(baseDir string) ([]types.CitationEvent, error) {
+func LoadCitations(baseDir string) ([]domain.CitationEvent, error) {
 	citationsPath := filepath.Join(baseDir, CitationsFilePath)
 
 	f, err := os.Open(citationsPath)
@@ -961,7 +961,7 @@ func LoadCitations(baseDir string) ([]types.CitationEvent, error) {
 		_ = f.Close() //nolint:errcheck // read-only, close error non-fatal
 	}()
 
-	var citations []types.CitationEvent
+	var citations []domain.CitationEvent
 	scanner := bufio.NewScanner(f)
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 1024*1024)
@@ -997,13 +997,13 @@ func CountCitationsForArtifact(baseDir, artifactPath string) (int, error) {
 }
 
 // GetCitationsSince returns citations after a given time.
-func GetCitationsSince(baseDir string, since time.Time) ([]types.CitationEvent, error) {
+func GetCitationsSince(baseDir string, since time.Time) ([]domain.CitationEvent, error) {
 	allCitations, err := LoadCitations(baseDir)
 	if err != nil {
 		return nil, err
 	}
 
-	var filtered []types.CitationEvent
+	var filtered []domain.CitationEvent
 	for _, c := range allCitations {
 		if c.CitedAt.After(since) {
 			filtered = append(filtered, c)
@@ -1102,13 +1102,13 @@ func TierFromValidation(result *ValidationResult) Tier {
 }
 
 // GetCitationsForSession returns citations for a specific session.
-func GetCitationsForSession(baseDir, sessionID string) ([]types.CitationEvent, error) {
+func GetCitationsForSession(baseDir, sessionID string) ([]domain.CitationEvent, error) {
 	allCitations, err := LoadCitations(baseDir)
 	if err != nil {
 		return nil, err
 	}
 
-	var filtered []types.CitationEvent
+	var filtered []domain.CitationEvent
 	for _, c := range allCitations {
 		if c.SessionID == sessionID {
 			filtered = append(filtered, c)

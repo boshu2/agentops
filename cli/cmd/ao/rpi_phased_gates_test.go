@@ -8,29 +8,29 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // --- legacyGateAction ---
 
 func TestLegacyGateAction_RetryWhenBelowMax(t *testing.T) {
 	got := legacyGateAction(1, 3)
-	if got != types.MemRLActionRetry {
-		t.Errorf("legacyGateAction(1,3) = %q, want %q", got, types.MemRLActionRetry)
+	if got != domain.MemRLActionRetry {
+		t.Errorf("legacyGateAction(1,3) = %q, want %q", got, domain.MemRLActionRetry)
 	}
 }
 
 func TestLegacyGateAction_EscalateWhenAtMax(t *testing.T) {
 	got := legacyGateAction(3, 3)
-	if got != types.MemRLActionEscalate {
-		t.Errorf("legacyGateAction(3,3) = %q, want %q", got, types.MemRLActionEscalate)
+	if got != domain.MemRLActionEscalate {
+		t.Errorf("legacyGateAction(3,3) = %q, want %q", got, domain.MemRLActionEscalate)
 	}
 }
 
 func TestLegacyGateAction_EscalateWhenAboveMax(t *testing.T) {
 	got := legacyGateAction(5, 3)
-	if got != types.MemRLActionEscalate {
-		t.Errorf("legacyGateAction(5,3) = %q, want %q", got, types.MemRLActionEscalate)
+	if got != domain.MemRLActionEscalate {
+		t.Errorf("legacyGateAction(5,3) = %q, want %q", got, domain.MemRLActionEscalate)
 	}
 }
 
@@ -46,40 +46,40 @@ func TestClassifyGateFailureClass_NilError(t *testing.T) {
 func TestClassifyGateFailureClass_PreMortemFail(t *testing.T) {
 	gateErr := &gateFailError{Phase: 1, Verdict: "FAIL"}
 	got := classifyGateFailureClass(1, gateErr)
-	if got != types.MemRLFailureClassPreMortemFail {
-		t.Errorf("got %q, want %q", got, types.MemRLFailureClassPreMortemFail)
+	if got != domain.MemRLFailureClassPreMortemFail {
+		t.Errorf("got %q, want %q", got, domain.MemRLFailureClassPreMortemFail)
 	}
 }
 
 func TestClassifyGateFailureClass_CrankBlocked(t *testing.T) {
 	gateErr := &gateFailError{Phase: 2, Verdict: "BLOCKED"}
 	got := classifyGateFailureClass(2, gateErr)
-	if got != types.MemRLFailureClassCrankBlocked {
-		t.Errorf("got %q, want %q", got, types.MemRLFailureClassCrankBlocked)
+	if got != domain.MemRLFailureClassCrankBlocked {
+		t.Errorf("got %q, want %q", got, domain.MemRLFailureClassCrankBlocked)
 	}
 }
 
 func TestClassifyGateFailureClass_CrankPartial(t *testing.T) {
 	gateErr := &gateFailError{Phase: 2, Verdict: "PARTIAL"}
 	got := classifyGateFailureClass(2, gateErr)
-	if got != types.MemRLFailureClassCrankPartial {
-		t.Errorf("got %q, want %q", got, types.MemRLFailureClassCrankPartial)
+	if got != domain.MemRLFailureClassCrankPartial {
+		t.Errorf("got %q, want %q", got, domain.MemRLFailureClassCrankPartial)
 	}
 }
 
 func TestClassifyGateFailureClass_VibeFail(t *testing.T) {
 	gateErr := &gateFailError{Phase: 3, Verdict: "FAIL"}
 	got := classifyGateFailureClass(3, gateErr)
-	if got != types.MemRLFailureClassVibeFail {
-		t.Errorf("got %q, want %q", got, types.MemRLFailureClassVibeFail)
+	if got != domain.MemRLFailureClassVibeFail {
+		t.Errorf("got %q, want %q", got, domain.MemRLFailureClassVibeFail)
 	}
 }
 
 func TestClassifyGateFailureClass_WhitespaceHandling(t *testing.T) {
 	gateErr := &gateFailError{Phase: 1, Verdict: "  FAIL  "}
 	got := classifyGateFailureClass(1, gateErr)
-	if got != types.MemRLFailureClassPreMortemFail {
-		t.Errorf("got %q (whitespace should be trimmed), want %q", got, types.MemRLFailureClassPreMortemFail)
+	if got != domain.MemRLFailureClassPreMortemFail {
+		t.Errorf("got %q (whitespace should be trimmed), want %q", got, domain.MemRLFailureClassPreMortemFail)
 	}
 }
 
@@ -93,8 +93,8 @@ func TestResolveGateRetryAction_ModeOffUsesLegacy(t *testing.T) {
 
 	action, _ := resolveGateRetryAction(state, 1, gateErr, 1)
 	// Legacy: attempt 1 < maxRetries 3 => retry
-	if action != types.MemRLActionRetry {
-		t.Errorf("action = %q, want %q", action, types.MemRLActionRetry)
+	if action != domain.MemRLActionRetry {
+		t.Errorf("action = %q, want %q", action, domain.MemRLActionRetry)
 	}
 }
 
@@ -105,8 +105,8 @@ func TestResolveGateRetryAction_ModeOffEscalatesAtMax(t *testing.T) {
 
 	action, _ := resolveGateRetryAction(state, 1, gateErr, 2)
 	// Legacy: attempt 2 >= maxRetries 2 => escalate
-	if action != types.MemRLActionEscalate {
-		t.Errorf("action = %q, want %q", action, types.MemRLActionEscalate)
+	if action != domain.MemRLActionEscalate {
+		t.Errorf("action = %q, want %q", action, domain.MemRLActionEscalate)
 	}
 }
 
@@ -115,8 +115,8 @@ func TestResolveGateRetryAction_ModeOffEscalatesAtMax(t *testing.T) {
 func TestLogGateRetryMemRL_OffModeSkipsLog(t *testing.T) {
 	tmp := t.TempDir()
 	logPath := filepath.Join(tmp, "memrl.log")
-	decision := types.MemRLPolicyDecision{Mode: types.MemRLModeOff}
-	logGateRetryMemRL(tmp, logPath, "test", decision, types.MemRLActionRetry)
+	decision := domain.MemRLPolicyDecision{Mode: domain.MemRLModeOff}
+	logGateRetryMemRL(tmp, logPath, "test", decision, domain.MemRLActionRetry)
 	// Off mode should not create any log file
 	if _, err := os.Stat(logPath); err == nil {
 		t.Error("off mode should not create log file")
@@ -344,7 +344,7 @@ func TestGateEscalationC2Event(t *testing.T) {
 	allPhases := buildAllPhases(phases)
 
 	performGateEscalation(state, 1, 3, gateErr,
-		types.MemRLPolicyDecision{}, types.MemRLActionEscalate,
+		domain.MemRLPolicyDecision{}, domain.MemRLActionEscalate,
 		"discovery", logPath, statusPath, allPhases)
 
 	// escalationRoot = filepath.Dir(filepath.Dir(filepath.Dir(logPath))) = root

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/agentworker"
-	"github.com/boshu2/agentops/cli/internal/parser"
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
+	"github.com/boshu2/agentops/cli/internal/extraction"
 )
 
 // KillSwitchEnv is the environment variable name that short-circuits the
@@ -108,7 +108,7 @@ func RunForgeTier1(opts Tier1Options) (*Tier1Result, error) {
 	}
 	summarizer := NewSummarizer(gen)
 
-	p := parser.NewParser()
+	p := extraction.NewParser()
 	p.MaxContentLength = 0
 
 	result := &Tier1Result{}
@@ -172,7 +172,7 @@ func validateAndDefaultTier1Options(opts *Tier1Options) error {
 	return nil
 }
 
-func processOneSession(path string, opts Tier1Options, p *parser.Parser, s *Summarizer, gen Generator) (string, error) {
+func processOneSession(path string, opts Tier1Options, p *extraction.Parser, s *Summarizer, gen Generator) (string, error) {
 	parsed, err := p.ParseFile(path)
 	if err != nil {
 		return "", fmt.Errorf("parse: %w", err)
@@ -182,7 +182,7 @@ func processOneSession(path string, opts Tier1Options, p *parser.Parser, s *Summ
 	}
 
 	// Step 1 — REDACT BEFORE CHUNKING (pre-mortem F3 critical).
-	redacted := make([]types.TranscriptMessage, len(parsed.Messages))
+	redacted := make([]domain.TranscriptMessage, len(parsed.Messages))
 	for i, m := range parsed.Messages {
 		m.Content = Redact(m.Content)
 		redacted[i] = m
@@ -232,7 +232,7 @@ func processOneSession(path string, opts Tier1Options, p *parser.Parser, s *Summ
 	return outPath, nil
 }
 
-func deriveSessionMeta(path string, parsed *parser.ParseResult, opts Tier1Options, gen Generator) SessionMeta {
+func deriveSessionMeta(path string, parsed *extraction.ParseResult, opts Tier1Options, gen Generator) SessionMeta {
 	var started, ended time.Time
 	if len(parsed.Messages) > 0 {
 		started = parsed.Messages[0].Timestamp

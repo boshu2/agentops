@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/taxonomy"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // ===========================================================================
@@ -534,13 +534,13 @@ func TestPoolIngest_computeRubricScores(t *testing.T) {
 func TestPoolIngest_rubricWeightedSum(t *testing.T) {
 	tests := []struct {
 		name    string
-		rubric  types.RubricScores
+		rubric  domain.RubricScores
 		weights taxonomy.RubricWeights
 		want    float64
 	}{
 		{
 			name: "all zeros",
-			rubric: types.RubricScores{
+			rubric: domain.RubricScores{
 				Specificity: 0, Actionability: 0, Novelty: 0, Context: 0, Confidence: 0,
 			},
 			weights: taxonomy.DefaultRubricWeights,
@@ -548,7 +548,7 @@ func TestPoolIngest_rubricWeightedSum(t *testing.T) {
 		},
 		{
 			name: "all ones with equal weights",
-			rubric: types.RubricScores{
+			rubric: domain.RubricScores{
 				Specificity: 1.0, Actionability: 1.0, Novelty: 1.0, Context: 1.0, Confidence: 1.0,
 			},
 			weights: taxonomy.RubricWeights{
@@ -558,7 +558,7 @@ func TestPoolIngest_rubricWeightedSum(t *testing.T) {
 		},
 		{
 			name: "uses default weights correctly",
-			rubric: types.RubricScores{
+			rubric: domain.RubricScores{
 				Specificity: 1.0, Actionability: 1.0, Novelty: 1.0, Context: 1.0, Confidence: 1.0,
 			},
 			weights: taxonomy.DefaultRubricWeights,
@@ -851,8 +851,8 @@ func TestPoolIngest_buildCandidateFromLearningBlock(t *testing.T) {
 		if cand.ID == "" {
 			t.Error("expected non-empty ID")
 		}
-		if cand.Type != types.KnowledgeTypeLearning {
-			t.Errorf("Type = %q, want %q", cand.Type, types.KnowledgeTypeLearning)
+		if cand.Type != domain.KnowledgeTypeLearning {
+			t.Errorf("Type = %q, want %q", cand.Type, domain.KnowledgeTypeLearning)
 		}
 		if cand.RawScore <= 0 || cand.RawScore > 1.0 {
 			t.Errorf("RawScore = %f, want 0 < score <= 1.0", cand.RawScore)
@@ -1296,7 +1296,7 @@ func TestPoolMetrics_computeSigmaRho(t *testing.T) {
 
 func TestPoolMetrics_filterCitationsForPeriod(t *testing.T) {
 	baseTime := time.Date(2026, 1, 15, 12, 0, 0, 0, time.UTC)
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: "/a.md", CitedAt: baseTime.Add(-48 * time.Hour)},
 		{ArtifactPath: "/b.md", CitedAt: baseTime.Add(-12 * time.Hour)},
 		{ArtifactPath: "/c.md", CitedAt: baseTime.Add(12 * time.Hour)},
@@ -1321,7 +1321,7 @@ func TestPoolMetrics_filterCitationsForPeriod(t *testing.T) {
 // ===========================================================================
 
 func TestPoolMetrics_countBypassCitations(t *testing.T) {
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{CitationType: "reference", ArtifactPath: "/a.md"},
 		{CitationType: "bypass", ArtifactPath: "/b.md"},
 		{CitationType: "recall", ArtifactPath: "bypass:something"},
@@ -1419,7 +1419,7 @@ func TestPoolMetrics_buildLastCitedMap(t *testing.T) {
 	t2 := time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)
 	t3 := time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: ".agents/learnings/a.md", CitedAt: t1},
 		{ArtifactPath: ".agents/learnings/a.md", CitedAt: t3},
 		{ArtifactPath: ".agents/learnings/b.md", CitedAt: t2},
@@ -1693,7 +1693,7 @@ func TestPoolMetrics_isRetrievableArtifactPath(t *testing.T) {
 
 func TestMetrics_retrievableCitationStats(t *testing.T) {
 	baseDir := "/project"
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: ".agents/learnings/a.md"},
 		{ArtifactPath: ".agents/learnings/a.md"},
 		{ArtifactPath: ".agents/patterns/b.md"},
@@ -1841,12 +1841,12 @@ func TestMetrics_countArtifacts(t *testing.T) {
 func TestMetricsFlywheel_printFlywheelStatus(t *testing.T) {
 	tests := []struct {
 		name    string
-		metrics *types.FlywheelMetrics
+		metrics *domain.FlywheelMetrics
 		wantStr string
 	}{
 		{
 			name: "compounding",
-			metrics: &types.FlywheelMetrics{
+			metrics: &domain.FlywheelMetrics{
 				AboveEscapeVelocity: true,
 				Velocity:            0.05,
 				Sigma:               0.5,
@@ -1860,7 +1860,7 @@ func TestMetricsFlywheel_printFlywheelStatus(t *testing.T) {
 		},
 		{
 			name: "near escape",
-			metrics: &types.FlywheelMetrics{
+			metrics: &domain.FlywheelMetrics{
 				AboveEscapeVelocity: false,
 				Velocity:            -0.02,
 				PeriodStart:         time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -1870,7 +1870,7 @@ func TestMetricsFlywheel_printFlywheelStatus(t *testing.T) {
 		},
 		{
 			name: "decaying with recommendations",
-			metrics: &types.FlywheelMetrics{
+			metrics: &domain.FlywheelMetrics{
 				AboveEscapeVelocity: false,
 				Velocity:            -0.15,
 				Sigma:               0.1,

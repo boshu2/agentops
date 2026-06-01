@@ -16,14 +16,14 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/config"
+	"github.com/boshu2/agentops/cli/internal/domain"
+	"github.com/boshu2/agentops/cli/internal/extraction"
 	"github.com/boshu2/agentops/cli/internal/forge"
 	"github.com/boshu2/agentops/cli/internal/format"
-	"github.com/boshu2/agentops/cli/internal/formatter"
 	"github.com/boshu2/agentops/cli/internal/llm"
-	"github.com/boshu2/agentops/cli/internal/parser"
+	"github.com/boshu2/agentops/cli/internal/render"
 	"github.com/boshu2/agentops/cli/internal/search"
-	"github.com/boshu2/agentops/cli/internal/storage"
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 var (
@@ -359,18 +359,18 @@ func noFilesError(quiet bool, msg string) error {
 	return errors.New(msg)
 }
 
-func initForgeStorage() (cwd, baseDir string, fs *storage.FileStorage, err error) {
+func initForgeStorage() (cwd, baseDir string, fs *sessionstore.FileStorage, err error) {
 	cwd, err = os.Getwd()
 	if err != nil {
 		return "", "", nil, fmt.Errorf("get working directory: %w", err)
 	}
 
-	baseDir = filepath.Join(cwd, storage.DefaultBaseDir)
-	fs = storage.NewFileStorage(
-		storage.WithBaseDir(baseDir),
-		storage.WithFormatters(
-			formatter.NewMarkdownFormatter(),
-			formatter.NewJSONLFormatter(),
+	baseDir = filepath.Join(cwd, sessionstore.DefaultBaseDir)
+	fs = sessionstore.NewFileStorage(
+		sessionstore.WithBaseDir(baseDir),
+		sessionstore.WithFormatters(
+			render.NewMarkdownFormatter(),
+			render.NewJSONLFormatter(),
 		),
 	)
 
@@ -394,14 +394,14 @@ type forgeTotals struct {
 	knowledge int
 }
 
-func (t *forgeTotals) addSession(session *storage.Session) {
+func (t *forgeTotals) addSession(session *sessionstore.Session) {
 	t.sessions++
 	t.decisions += len(session.Decisions)
 	t.knowledge += len(session.Knowledge)
 }
 
-func writeSessionIndex(fs *storage.FileStorage, session *storage.Session, sessionPath string) error {
-	indexEntry := &storage.IndexEntry{
+func writeSessionIndex(fs *sessionstore.FileStorage, session *sessionstore.Session, sessionPath string) error {
+	indexEntry := &sessionstore.IndexEntry{
 		SessionID:   session.ID,
 		Date:        session.Date,
 		SessionPath: sessionPath,
@@ -410,8 +410,8 @@ func writeSessionIndex(fs *storage.FileStorage, session *storage.Session, sessio
 	return fs.WriteIndex(indexEntry)
 }
 
-func writeSessionProvenance(fs *storage.FileStorage, sessionID, sessionPath, sourcePath, sourceType string, includeSessionID bool) error {
-	provRecord := &storage.ProvenanceRecord{
+func writeSessionProvenance(fs *sessionstore.FileStorage, sessionID, sessionPath, sourcePath, sourceType string, includeSessionID bool) error {
+	provRecord := &sessionstore.ProvenanceRecord{
 		ID:            fmt.Sprintf("prov-%s", sessionID[:7]),
 		ArtifactPath:  sessionPath,
 		WorkspacePath: workspacePathFromAgentArtifactPath(sessionPath),
@@ -462,10 +462,10 @@ func runForgeTranscript(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	p := parser.NewParser()
+	p := extraction.NewParser()
 	p.MaxContentLength = 0
 
-	extractor := parser.NewExtractor()
+	extractor := extraction.NewExtractor()
 
 	totals := forgeTotals{}
 
@@ -490,7 +490,7 @@ func runForgeTranscript(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func forgeTranscriptFile(fs *storage.FileStorage, session *storage.Session, filePath, baseDir, cwd string, totals *forgeTotals) {
+func forgeTranscriptFile(fs *sessionstore.FileStorage, session *sessionstore.Session, filePath, baseDir, cwd string, totals *forgeTotals) {
 	sessionPath, err := fs.WriteSession(session)
 	if err != nil {
 		forgeWarnf(forgeQuiet, "Warning: failed to write session for %s: %v\n", filePath, err)
@@ -527,7 +527,7 @@ func forgeTranscriptFile(fs *storage.FileStorage, session *storage.Session, file
 }
 
 // processTranscript parses a transcript and extracts session data.
-func processTranscript(filePath string, p *parser.Parser, extractor *parser.Extractor, quiet bool, w io.Writer) (session *storage.Session, err error) {
+func processTranscript(filePath string, p *extraction.Parser, extractor *extraction.Extractor, quiet bool, w io.Writer) (session *sessionstore.Session, err error) {
 	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("open file: %w", err)
@@ -570,7 +570,7 @@ func processTranscript(filePath string, p *parser.Parser, extractor *parser.Extr
 	return session, nil
 }
 
-func consumeTranscriptMessages(msgCh <-chan types.TranscriptMessage, session *storage.Session, extractor *parser.Extractor, state *transcriptState, quiet bool, w io.Writer, totalLines int) {
+func consumeTranscriptMessages(msgCh <-chan domain.TranscriptMessage, session *sessionstore.Session, extractor *extraction.Extractor, state *transcriptState, quiet bool, w io.Writer, totalLines int) {
 	lineCount := 0
 	lastProgress := 0
 
@@ -611,7 +611,7 @@ func drainParseErrors(errCh <-chan error) error {
 	}
 }
 
-func finalizeTranscriptSession(session *storage.Session, state *transcriptState, fileSize int64) {
+func finalizeTranscriptSession(session *sessionstore.Session, state *transcriptState, fileSize int64) {
 	forge.FinalizeTranscriptSession(
 		&session.Summary,
 		&session.Decisions,
@@ -636,8 +636,8 @@ func detectSessionTypeFromContent(summary string, knowledge, decisions []string)
 type transcriptState = forge.TranscriptState
 
 // initSession creates a new session with default values.
-func initSession(filePath string) *storage.Session {
-	return &storage.Session{
+func initSession(filePath string) *sessionstore.Session {
+	return &sessionstore.Session{
 		ID:             inferSessionIDFromPath(filePath),
 		TranscriptPath: filePath,
 		ToolCalls:      make(map[string]int),
@@ -645,7 +645,7 @@ func initSession(filePath string) *storage.Session {
 }
 
 // updateSessionMeta updates session ID and date from a message.
-func updateSessionMeta(session *storage.Session, msg types.TranscriptMessage) {
+func updateSessionMeta(session *sessionstore.Session, msg domain.TranscriptMessage) {
 	if session.ID == "" && msg.SessionID != "" {
 		session.ID = msg.SessionID
 	}
@@ -655,7 +655,7 @@ func updateSessionMeta(session *storage.Session, msg types.TranscriptMessage) {
 }
 
 // extractMessageKnowledge extracts decisions and knowledge from message content.
-func extractMessageKnowledge(msg types.TranscriptMessage, extractor *parser.Extractor, state *transcriptState) {
+func extractMessageKnowledge(msg domain.TranscriptMessage, extractor *extraction.Extractor, state *transcriptState) {
 	if msg.Content == "" {
 		return
 	}
@@ -663,17 +663,17 @@ func extractMessageKnowledge(msg types.TranscriptMessage, extractor *parser.Extr
 	for _, result := range results {
 		text := extractSnippet(msg.Content, result.StartIndex, SnippetMaxLength)
 		switch result.Type {
-		case types.KnowledgeTypeDecision:
+		case domain.KnowledgeTypeDecision:
 			state.Decisions = append(state.Decisions, text)
-		case types.KnowledgeTypeSolution, types.KnowledgeTypeLearning,
-			types.KnowledgeTypeFailure, types.KnowledgeTypeReference:
+		case domain.KnowledgeTypeSolution, domain.KnowledgeTypeLearning,
+			domain.KnowledgeTypeFailure, domain.KnowledgeTypeReference:
 			state.Knowledge = append(state.Knowledge, text)
 		}
 	}
 }
 
 // extractMessageRefs extracts file paths and issue IDs from a message.
-func extractMessageRefs(msg types.TranscriptMessage, session *storage.Session, state *transcriptState) {
+func extractMessageRefs(msg domain.TranscriptMessage, session *sessionstore.Session, state *transcriptState) {
 	for _, tool := range msg.Tools {
 		if tool.Name != "" && tool.Name != "tool_result" {
 			session.ToolCalls[tool.Name]++
@@ -683,7 +683,7 @@ func extractMessageRefs(msg types.TranscriptMessage, session *storage.Session, s
 	forge.ExtractIssueRefs(msg.Content, state)
 }
 
-func extractToolRefs(tools []types.ToolCall, session *storage.Session, state *transcriptState) {
+func extractToolRefs(tools []domain.ToolCall, session *sessionstore.Session, state *transcriptState) {
 	for _, tool := range tools {
 		if tool.Name != "" && tool.Name != "tool_result" {
 			session.ToolCalls[tool.Name]++
@@ -692,11 +692,11 @@ func extractToolRefs(tools []types.ToolCall, session *storage.Session, state *tr
 	}
 }
 
-func extractFilePathsFromTool(tool types.ToolCall, state *transcriptState) {
+func extractFilePathsFromTool(tool domain.ToolCall, state *transcriptState) {
 	forge.ExtractFilePathsFromTool(tool.Input, state)
 }
 
-func isConversationMessage(msg types.TranscriptMessage) bool {
+func isConversationMessage(msg domain.TranscriptMessage) bool {
 	return forge.IsConversationMessage(msg.Type, msg.Role)
 }
 
@@ -733,8 +733,8 @@ func truncateString(s string, maxLen int) string { return forge.TruncateString(s
 func dedup(items []string) []string { return forge.Dedup(items) }
 
 // queueForExtraction adds a session to the pending extraction queue.
-func queueForExtraction(session *storage.Session, sessionPath, transcriptPath, cwd string) error {
-	pendingDir := filepath.Join(cwd, storage.DefaultBaseDir)
+func queueForExtraction(session *sessionstore.Session, sessionPath, transcriptPath, cwd string) error {
+	pendingDir := filepath.Join(cwd, sessionstore.DefaultBaseDir)
 	if err := os.MkdirAll(pendingDir, 0750); err != nil {
 		return fmt.Errorf("create pending dir: %w", err)
 	}
@@ -805,7 +805,7 @@ func runForgeMarkdown(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	extractor := parser.NewExtractor()
+	extractor := extraction.NewExtractor()
 
 	totals := forgeTotals{}
 
@@ -826,7 +826,7 @@ func runForgeMarkdown(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func forgeMarkdownFile(fs *storage.FileStorage, session *storage.Session, filePath, baseDir, cwd string, totals *forgeTotals) {
+func forgeMarkdownFile(fs *sessionstore.FileStorage, session *sessionstore.Session, filePath, baseDir, cwd string, totals *forgeTotals) {
 	sessionPath, err := fs.WriteSession(session)
 	if err != nil {
 		forgeWarnf(forgeMdQuiet, "Warning: failed to write session for %s: %v\n", filePath, err)
@@ -863,7 +863,7 @@ func forgeMarkdownFile(fs *storage.FileStorage, session *storage.Session, filePa
 }
 
 // processMarkdown parses a markdown file and extracts session data.
-func processMarkdown(filePath string, extractor *parser.Extractor, quiet bool) (*storage.Session, error) {
+func processMarkdown(filePath string, extractor *extraction.Extractor, quiet bool) (*sessionstore.Session, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("read file: %w", err)
@@ -883,12 +883,12 @@ func processMarkdown(filePath string, extractor *parser.Extractor, quiet bool) (
 	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(filePath)))
 	sessionID := fmt.Sprintf("md-%s", hash[:12])
 
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:             sessionID,
 		Date:           info.ModTime(),
 		TranscriptPath: filePath,
 		ToolCalls:      make(map[string]int),
-		Tokens: storage.TokenUsage{
+		Tokens: sessionstore.TokenUsage{
 			Total:     len(content) / CharsPerToken,
 			Estimated: true,
 		},
@@ -905,7 +905,7 @@ func processMarkdown(filePath string, extractor *parser.Extractor, quiet bool) (
 		}
 
 		// Create a synthetic message for the extractor
-		msg := types.TranscriptMessage{
+		msg := domain.TranscriptMessage{
 			Content:      section,
 			Role:         "assistant",
 			SessionID:    sessionID,

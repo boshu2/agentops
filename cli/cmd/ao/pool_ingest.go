@@ -14,10 +14,10 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/taxonomy"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 var (
@@ -319,13 +319,13 @@ func extractSessionHint(md, path string) string {
 	return strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
 }
 
-func buildCandidateFromLearningBlock(b learningBlock, srcPath string, fileDate time.Time, sessionHint string) (types.Candidate, types.Scoring, bool) {
+func buildCandidateFromLearningBlock(b learningBlock, srcPath string, fileDate time.Time, sessionHint string) (domain.Candidate, domain.Scoring, bool) {
 	if strings.TrimSpace(b.Title) == "" || strings.TrimSpace(b.Body) == "" {
-		return types.Candidate{}, types.Scoring{}, false
+		return domain.Candidate{}, domain.Scoring{}, false
 	}
 	// Reject stub learnings that slipped through with no real content.
 	if strings.Contains(strings.ToLower(b.Body), "no significant learnings") {
-		return types.Candidate{}, types.Scoring{}, false
+		return domain.Candidate{}, domain.Scoring{}, false
 	}
 
 	// Stable ID: prefer (file base + learning ID). Otherwise fall back to a content hash.
@@ -379,11 +379,11 @@ func buildCandidateFromLearningBlock(b learningBlock, srcPath string, fileDate t
 	tier := taxonomy.AssignTier(raw, taxonomy.DefaultTierConfigs)
 	gateRequired := taxonomy.RequiresHumanGate(tier, taxonomy.DefaultTierConfigs)
 
-	cand := types.Candidate{
+	cand := domain.Candidate{
 		ID:          id,
 		Type:        candType,
 		Content:     strings.TrimSpace(b.Body),
-		Source:      types.Source{TranscriptPath: srcPath, Timestamp: fileDate, SessionID: sessionHint, MessageIndex: 0},
+		Source:      domain.Source{TranscriptPath: srcPath, Timestamp: fileDate, SessionID: sessionHint, MessageIndex: 0},
 		RawScore:    raw,
 		Tier:        tier,
 		ExtractedAt: fileDate,
@@ -393,9 +393,9 @@ func buildCandidateFromLearningBlock(b learningBlock, srcPath string, fileDate t
 			"pending_title":      b.Title,
 		},
 		IsCurrent:    true,
-		ExpiryStatus: types.ExpiryStatusActive,
-		Utility:      types.InitialUtility,
-		Maturity:     types.MaturityProvisional,
+		ExpiryStatus: domain.ExpiryStatusActive,
+		Utility:      domain.InitialUtility,
+		Maturity:     domain.MaturityProvisional,
 		Confidence:   taxonomy.GetConfidence(tier, taxonomy.DefaultTierConfigs),
 		LastDecayAt:  fileDate,
 		DecayCount:   0,
@@ -409,7 +409,7 @@ func buildCandidateFromLearningBlock(b learningBlock, srcPath string, fileDate t
 		LocationPath: "",
 	}
 
-	scoring := types.Scoring{
+	scoring := domain.Scoring{
 		RawScore:       raw,
 		TierAssignment: tier,
 		Rubric:         rubric,
@@ -432,19 +432,19 @@ func stablePendingCandidateID(parts []string) string {
 }
 
 // inferKnowledgeType classifies a learning block by its category and content signals.
-func inferKnowledgeType(b learningBlock) types.KnowledgeType {
+func inferKnowledgeType(b learningBlock) domain.KnowledgeType {
 	cat := strings.ToLower(strings.TrimSpace(b.Category))
 	lower := strings.ToLower(b.Body)
 
 	switch cat {
 	case "decision", "pattern", "architectural-decision", "convention":
-		return types.KnowledgeTypeDecision
+		return domain.KnowledgeTypeDecision
 	case "failure", "anti-pattern", "antipattern", "postmortem":
-		return types.KnowledgeTypeFailure
+		return domain.KnowledgeTypeFailure
 	case "solution", "fix", "workaround":
-		return types.KnowledgeTypeSolution
+		return domain.KnowledgeTypeSolution
 	case "reference", "doc", "documentation":
-		return types.KnowledgeTypeReference
+		return domain.KnowledgeTypeReference
 	}
 
 	decisionSignals := 0
@@ -454,7 +454,7 @@ func inferKnowledgeType(b learningBlock) types.KnowledgeType {
 		}
 	}
 	if decisionSignals >= 2 {
-		return types.KnowledgeTypeDecision
+		return domain.KnowledgeTypeDecision
 	}
 
 	failureSignals := 0
@@ -464,10 +464,10 @@ func inferKnowledgeType(b learningBlock) types.KnowledgeType {
 		}
 	}
 	if failureSignals >= 2 {
-		return types.KnowledgeTypeFailure
+		return domain.KnowledgeTypeFailure
 	}
 
-	return types.KnowledgeTypeLearning
+	return domain.KnowledgeTypeLearning
 }
 
 func confidenceToScore(s string) float64            { return pool.ConfidenceToScore(s) }
@@ -476,9 +476,9 @@ func computeActionabilityScore(body string) float64 { return pool.ComputeActiona
 func computeNoveltyScore(body string) float64       { return pool.ComputeNoveltyScore(body) }
 func computeContextScore(lower string) float64      { return pool.ComputeContextScore(lower) }
 
-func computeRubricScores(body string, confidence float64) types.RubricScores {
+func computeRubricScores(body string, confidence float64) domain.RubricScores {
 	lower := strings.ToLower(body)
-	return types.RubricScores{
+	return domain.RubricScores{
 		Specificity:   pool.ComputeSpecificityScore(body, lower),
 		Actionability: pool.ComputeActionabilityScore(body),
 		Novelty:       pool.ComputeNoveltyScore(body),
@@ -487,7 +487,7 @@ func computeRubricScores(body string, confidence float64) types.RubricScores {
 	}
 }
 
-func rubricWeightedSum(r types.RubricScores, w taxonomy.RubricWeights) float64 {
+func rubricWeightedSum(r domain.RubricScores, w taxonomy.RubricWeights) float64 {
 	return r.Specificity*w.Specificity +
 		r.Actionability*w.Actionability +
 		r.Novelty*w.Novelty +

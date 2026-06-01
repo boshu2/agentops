@@ -12,7 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 // PendingExtraction represents a session queued for learning extraction.
@@ -83,7 +83,7 @@ func runExtract(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	pendingPath := filepath.Join(cwd, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(cwd, sessionstore.DefaultBaseDir, "pending.jsonl")
 
 	pending, err := loadPendingOrNil(pendingPath)
 	if err != nil {

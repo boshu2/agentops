@@ -11,8 +11,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // ---------------------------------------------------------------------------
@@ -396,8 +396,8 @@ func TestMaturity_runMaturityRecalibrate_ResetsUtility(t *testing.T) {
 	if !ok {
 		t.Fatal("utility not found in result")
 	}
-	if utility < types.InitialUtility-0.01 || utility > types.InitialUtility+0.01 {
-		t.Errorf("utility = %.4f, want ~%.4f", utility, types.InitialUtility)
+	if utility < domain.InitialUtility-0.01 || utility > domain.InitialUtility+0.01 {
+		t.Errorf("utility = %.4f, want ~%.4f", utility, domain.InitialUtility)
 	}
 }
 
@@ -987,8 +987,8 @@ func TestNormalizeLearningJSONLMetadata_AddsDefaults(t *testing.T) {
 	if !ok {
 		t.Fatal("expected normalized JSONL data to be readable")
 	}
-	if got := floatValueFromData(data, "utility", 0); got != types.InitialUtility {
-		t.Errorf("utility = %.2f, want %.2f", got, types.InitialUtility)
+	if got := floatValueFromData(data, "utility", 0); got != domain.InitialUtility {
+		t.Errorf("utility = %.2f, want %.2f", got, domain.InitialUtility)
 	}
 	if got := nonEmptyStringFromData(data, "maturity", ""); got != "provisional" {
 		t.Errorf("maturity = %q, want provisional", got)

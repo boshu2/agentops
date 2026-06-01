@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // ─── gateFailError ────────────────────────────────────────────────────────────
@@ -661,7 +661,7 @@ func TestHandleGateRetry_ExhaustsRetries(t *testing.T) {
 }
 
 func TestResolveGateRetryAction_ModeOffParity(t *testing.T) {
-	t.Setenv(types.MemRLModeEnvVar, string(types.MemRLModeOff))
+	t.Setenv(domain.MemRLModeEnvVar, string(domain.MemRLModeOff))
 
 	state := newTestPhasedState().WithMaxRetries(3)
 	gateErr := &gateFailError{
@@ -671,21 +671,21 @@ func TestResolveGateRetryAction_ModeOffParity(t *testing.T) {
 	}
 
 	action1, decision1 := resolveGateRetryAction(state, 3, gateErr, 1)
-	if action1 != types.MemRLActionRetry {
+	if action1 != domain.MemRLActionRetry {
 		t.Fatalf("mode=off attempt=1 action=%q, want retry", action1)
 	}
-	if decision1.Mode != types.MemRLModeOff {
+	if decision1.Mode != domain.MemRLModeOff {
 		t.Fatalf("mode=off decision mode=%q, want off", decision1.Mode)
 	}
 
 	action3, _ := resolveGateRetryAction(state, 3, gateErr, 3)
-	if action3 != types.MemRLActionEscalate {
+	if action3 != domain.MemRLActionEscalate {
 		t.Fatalf("mode=off attempt=max action=%q, want escalate", action3)
 	}
 }
 
 func TestResolveGateRetryAction_EnforceCrankBlockedEscalatesEarly(t *testing.T) {
-	t.Setenv(types.MemRLModeEnvVar, string(types.MemRLModeEnforce))
+	t.Setenv(domain.MemRLModeEnvVar, string(domain.MemRLModeEnforce))
 
 	state := newTestPhasedState().WithMaxRetries(3)
 	gateErr := &gateFailError{
@@ -695,7 +695,7 @@ func TestResolveGateRetryAction_EnforceCrankBlockedEscalatesEarly(t *testing.T) 
 	}
 
 	action, decision := resolveGateRetryAction(state, 2, gateErr, 1)
-	if action != types.MemRLActionEscalate {
+	if action != domain.MemRLActionEscalate {
 		t.Fatalf("mode=enforce crank BLOCKED attempt=1 action=%q, want escalate", action)
 	}
 	if decision.RuleID == "" {

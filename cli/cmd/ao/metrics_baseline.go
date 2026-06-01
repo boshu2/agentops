@@ -9,8 +9,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
-	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
 )
 
@@ -56,7 +56,7 @@ func runMetricsBaseline(cmd *cobra.Command, args []string) error {
 }
 
 // saveBaseline saves metrics to a baseline file.
-func saveBaseline(baseDir string, metrics *types.FlywheelMetrics) (string, error) {
+func saveBaseline(baseDir string, metrics *domain.FlywheelMetrics) (string, error) {
 	metricsDir := filepath.Join(baseDir, ".agents", "ao", "metrics")
 	if err := os.MkdirAll(metricsDir, 0700); err != nil {
 		return "", err

@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 func TestLegacyCaptureToInjectAndFeedbackE2E(t *testing.T) {
@@ -82,7 +82,7 @@ func migrateAndIngestLegacyCapture(t *testing.T, fixture legacyCaptureKnowledgeL
 	}
 
 	p := pool.NewPool(fixture.tmp)
-	entries, err := p.List(pool.ListOptions{Status: types.PoolStatusPending})
+	entries, err := p.List(pool.ListOptions{Status: domain.PoolStatusPending})
 	if err != nil {
 		t.Fatalf("list pending: %v", err)
 	}
@@ -97,7 +97,7 @@ func recordLegacyCapturePromotionCitation(t *testing.T, tmp, pendingPath string)
 	t.Helper()
 
 	// Promotion gates require citation evidence.
-	if err := ratchet.RecordCitation(tmp, types.CitationEvent{
+	if err := ratchet.RecordCitation(tmp, domain.CitationEvent{
 		ArtifactPath: pendingPath,
 		SessionID:    "session-capture-promotion",
 		CitedAt:      time.Now(),
@@ -137,7 +137,7 @@ func assertLegacyCaptureLearningRetrievable(t *testing.T, tmp string) {
 func processLegacyCaptureFeedback(t *testing.T, tmp, artifactPath string) {
 	t.Helper()
 
-	citation := types.CitationEvent{
+	citation := domain.CitationEvent{
 		ArtifactPath: artifactPath,
 		SessionID:    "session-capture-feedback",
 		CitedAt:      time.Now(),
@@ -149,9 +149,9 @@ func processLegacyCaptureFeedback(t *testing.T, tmp, artifactPath string) {
 		tmp,
 		"session-capture-feedback",
 		"",
-		[]types.CitationEvent{citation},
+		[]domain.CitationEvent{citation},
 		1.0,
-		types.DefaultAlpha,
+		domain.DefaultAlpha,
 	)
 	if updatedCount != 1 || failedCount != 0 || len(events) != 1 {
 		t.Fatalf("unexpected feedback processing outcome: updated=%d failed=%d events=%d", updatedCount, failedCount, len(events))
@@ -168,7 +168,7 @@ func assertLegacyCaptureUtilityUpdated(t *testing.T, artifactPath string) {
 	if err != nil {
 		t.Fatalf("parse updated artifact: %v", err)
 	}
-	if updatedLearning.Utility <= types.InitialUtility {
-		t.Fatalf("expected utility to be above baseline %.2f, got %.3f", types.InitialUtility, updatedLearning.Utility)
+	if updatedLearning.Utility <= domain.InitialUtility {
+		t.Fatalf("expected utility to be above baseline %.2f, got %.3f", domain.InitialUtility, updatedLearning.Utility)
 	}
 }

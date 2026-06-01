@@ -10,10 +10,10 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 var (
@@ -121,7 +121,7 @@ func runBatchPromote(cmd *cobra.Command, args []string) error {
 
 	p := pool.NewPool(cwd)
 
-	entries, err := p.List(pool.ListOptions{Status: types.PoolStatusPending})
+	entries, err := p.List(pool.ListOptions{Status: domain.PoolStatusPending})
 	if err != nil {
 		return fmt.Errorf("list pending: %w", err)
 	}
@@ -222,7 +222,7 @@ func promoteEntry(p *pool.Pool, entry pool.PoolEntry, result *batchPromoteResult
 	}
 
 	// Normalize state transitions: pending -> staged -> promoted.
-	if err := p.Stage(entry.Candidate.ID, types.TierBronze); err != nil {
+	if err := p.Stage(entry.Candidate.ID, domain.TierBronze); err != nil {
 		return fmt.Errorf("stage: %w", err)
 	}
 
@@ -237,7 +237,7 @@ func promoteEntry(p *pool.Pool, entry pool.PoolEntry, result *batchPromoteResult
 }
 
 // buildCitationCounts builds a map of candidate ID -> citation count.
-func buildCitationCounts(citations []types.CitationEvent, baseDir string) map[string]int {
+func buildCitationCounts(citations []domain.CitationEvent, baseDir string) map[string]int {
 	counts := make(map[string]int)
 	for _, c := range citations {
 		// Count by artifact path

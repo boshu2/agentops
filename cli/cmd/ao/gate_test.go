@@ -9,8 +9,8 @@ import (
 
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/pool"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // TestGatePendingReturnsBronzeCandidates verifies that gate pending
@@ -20,27 +20,27 @@ func TestGatePendingReturnsBronzeCandidates(t *testing.T) {
 	p := pool.NewPool(tmpDir)
 
 	// Add candidates of different tiers
-	bronzeCandidate := types.Candidate{
+	bronzeCandidate := domain.Candidate{
 		ID:       "bronze-pending-1",
-		Tier:     types.TierBronze,
+		Tier:     domain.TierBronze,
 		Content:  "Bronze content awaiting review",
-		Maturity: types.MaturityProvisional,
+		Maturity: domain.MaturityProvisional,
 	}
-	silverCandidate := types.Candidate{
+	silverCandidate := domain.Candidate{
 		ID:      "silver-1",
-		Tier:    types.TierSilver,
+		Tier:    domain.TierSilver,
 		Content: "Silver content",
 	}
-	goldCandidate := types.Candidate{
+	goldCandidate := domain.Candidate{
 		ID:      "gold-1",
-		Tier:    types.TierGold,
+		Tier:    domain.TierGold,
 		Content: "Gold content",
 	}
 
 	// Bronze requires human review
-	bronzeScoring := types.Scoring{GateRequired: true}
-	silverScoring := types.Scoring{GateRequired: false}
-	goldScoring := types.Scoring{GateRequired: false}
+	bronzeScoring := domain.Scoring{GateRequired: true}
+	silverScoring := domain.Scoring{GateRequired: false}
+	goldScoring := domain.Scoring{GateRequired: false}
 
 	if err := p.Add(bronzeCandidate, bronzeScoring); err != nil {
 		t.Fatalf("failed to add bronze candidate: %v", err)
@@ -74,13 +74,13 @@ func TestGateApproveRecordsReview(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := pool.NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "approve-test-1",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Content to approve",
 	}
 
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatalf("failed to add candidate: %v", err)
 	}
 
@@ -128,13 +128,13 @@ func TestGateRejectRecordsReason(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := pool.NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "reject-test-1",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Content to reject",
 	}
 
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatalf("failed to add candidate: %v", err)
 	}
 
@@ -151,7 +151,7 @@ func TestGateRejectRecordsReason(t *testing.T) {
 		t.Fatalf("Get failed: %v", err)
 	}
 
-	if entry.Status != types.PoolStatusRejected {
+	if entry.Status != domain.PoolStatusRejected {
 		t.Errorf("expected status rejected, got %s", entry.Status)
 	}
 
@@ -178,13 +178,13 @@ func TestGateApproveAlreadyReviewedReturnsError(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := pool.NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "already-reviewed-1",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Content already reviewed",
 	}
 
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatalf("failed to add candidate: %v", err)
 	}
 
@@ -213,21 +213,21 @@ func TestGateStateMachine(t *testing.T) {
 	p := pool.NewPool(tmpDir)
 
 	t.Run("pending to approved to promoted", func(t *testing.T) {
-		candidate := types.Candidate{
+		candidate := domain.Candidate{
 			ID:       "state-promote-1",
-			Tier:     types.TierBronze,
-			Type:     types.KnowledgeTypeLearning,
+			Tier:     domain.TierBronze,
+			Type:     domain.KnowledgeTypeLearning,
 			Content:  "Learning content for promotion",
-			Maturity: types.MaturityCandidate,
+			Maturity: domain.MaturityCandidate,
 		}
 
-		if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+		if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 			t.Fatalf("failed to add candidate: %v", err)
 		}
 
 		// Verify initial state is pending
 		entry, _ := p.Get("state-promote-1")
-		if entry.Status != types.PoolStatusPending {
+		if entry.Status != domain.PoolStatusPending {
 			t.Errorf("expected initial status pending, got %s", entry.Status)
 		}
 
@@ -237,13 +237,13 @@ func TestGateStateMachine(t *testing.T) {
 		}
 
 		// Stage for promotion
-		if err := p.Stage("state-promote-1", types.TierBronze); err != nil {
+		if err := p.Stage("state-promote-1", domain.TierBronze); err != nil {
 			t.Fatalf("Stage failed: %v", err)
 		}
 
 		// Verify staged
 		entry, _ = p.Get("state-promote-1")
-		if entry.Status != types.PoolStatusStaged {
+		if entry.Status != domain.PoolStatusStaged {
 			t.Errorf("expected status staged, got %s", entry.Status)
 		}
 
@@ -264,13 +264,13 @@ func TestGateStateMachine(t *testing.T) {
 	})
 
 	t.Run("pending to rejected is terminal", func(t *testing.T) {
-		candidate := types.Candidate{
+		candidate := domain.Candidate{
 			ID:      "state-reject-1",
-			Tier:    types.TierBronze,
+			Tier:    domain.TierBronze,
 			Content: "Content to be rejected",
 		}
 
-		if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+		if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 			t.Fatalf("failed to add candidate: %v", err)
 		}
 
@@ -281,12 +281,12 @@ func TestGateStateMachine(t *testing.T) {
 
 		// Verify rejected status
 		entry, _ := p.Get("state-reject-1")
-		if entry.Status != types.PoolStatusRejected {
+		if entry.Status != domain.PoolStatusRejected {
 			t.Errorf("expected status rejected, got %s", entry.Status)
 		}
 
 		// Verify rejected candidates cannot be staged
-		err := p.Stage("state-reject-1", types.TierBronze)
+		err := p.Stage("state-reject-1", domain.TierBronze)
 		if err == nil {
 			t.Error("Expected error when staging rejected candidate")
 		}
@@ -301,14 +301,14 @@ func TestGatePendingOldestFirst(t *testing.T) {
 
 	// Add candidates - note: we can't easily control AddedAt time,
 	// but we verify the sorting logic by checking returned order
-	candidates := []types.Candidate{
-		{ID: "bronze-a", Tier: types.TierBronze, Content: "First"},
-		{ID: "bronze-b", Tier: types.TierBronze, Content: "Second"},
-		{ID: "bronze-c", Tier: types.TierBronze, Content: "Third"},
+	candidates := []domain.Candidate{
+		{ID: "bronze-a", Tier: domain.TierBronze, Content: "First"},
+		{ID: "bronze-b", Tier: domain.TierBronze, Content: "Second"},
+		{ID: "bronze-c", Tier: domain.TierBronze, Content: "Third"},
 	}
 
 	for _, c := range candidates {
-		if err := p.Add(c, types.Scoring{GateRequired: true}); err != nil {
+		if err := p.Add(c, domain.Scoring{GateRequired: true}); err != nil {
 			t.Fatalf("failed to add candidate %s: %v", c.ID, err)
 		}
 		// Small delay to ensure different timestamps
@@ -336,13 +336,13 @@ func TestGateChainEventRecording(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := pool.NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "chain-test-1",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Content for chain test",
 	}
 
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatalf("failed to add candidate: %v", err)
 	}
 
@@ -423,13 +423,13 @@ func TestGateRejectReasonTooLong(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := pool.NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "reject-long-reason",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Content to reject with long reason",
 	}
 
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatalf("failed to add candidate: %v", err)
 	}
 
@@ -456,13 +456,13 @@ func TestGateApproveNoteTooLong(t *testing.T) {
 	tmpDir := t.TempDir()
 	p := pool.NewPool(tmpDir)
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "approve-long-note",
-		Tier:    types.TierBronze,
+		Tier:    domain.TierBronze,
 		Content: "Content to approve with long note",
 	}
 
-	if err := p.Add(candidate, types.Scoring{GateRequired: true}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{GateRequired: true}); err != nil {
 		t.Fatalf("failed to add candidate: %v", err)
 	}
 
@@ -573,10 +573,10 @@ func TestGate_outputGatePending_table(t *testing.T) {
 	t.Run("with entries", func(t *testing.T) {
 		entries := []pool.PoolEntry{
 			{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "gate-entry-1",
-						Tier:    types.TierBronze,
+						Tier:    domain.TierBronze,
 						Utility: 0.55,
 					},
 				},
@@ -585,10 +585,10 @@ func TestGate_outputGatePending_table(t *testing.T) {
 				ApproachingAutoPromote: false,
 			},
 			{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "gate-entry-2",
-						Tier:    types.TierBronze,
+						Tier:    domain.TierBronze,
 						Utility: 0.60,
 					},
 				},
@@ -636,12 +636,12 @@ func TestGate_outputGatePending_json(t *testing.T) {
 
 	entries := []pool.PoolEntry{
 		{
-			PoolEntry: types.PoolEntry{
-				Candidate: types.Candidate{
+			PoolEntry: domain.PoolEntry{
+				Candidate: domain.Candidate{
 					ID:   "gate-json-1",
-					Tier: types.TierBronze,
+					Tier: domain.TierBronze,
 				},
-				Status: types.PoolStatusPending,
+				Status: domain.PoolStatusPending,
 			},
 			AgeString: "5h",
 		},

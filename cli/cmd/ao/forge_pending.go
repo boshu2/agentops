@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 // writePendingLearnings writes forge-extracted knowledge as markdown files
 // to .agents/knowledge/pending/ for pool ingestion by close-loop.
 // This bridges the gap between forge output and pool ingest input.
-func writePendingLearnings(session *storage.Session, baseDir string) (int, error) {
+func writePendingLearnings(session *sessionstore.Session, baseDir string) (int, error) {
 	if session == nil {
 		return 0, nil
 	}

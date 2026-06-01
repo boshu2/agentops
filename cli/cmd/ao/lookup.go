@@ -12,8 +12,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/config"
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 var (
@@ -244,7 +244,7 @@ func outputLearning(cwd string, l learning) error {
 	// Record citation for single lookup
 	if !lookupNoCite && l.Source != "" {
 		sessionID := resolveSessionID(lookupSessionID)
-		event := types.CitationEvent{
+		event := domain.CitationEvent{
 			ArtifactPath:    canonicalArtifactPath(cwd, l.Source),
 			SessionID:       sessionID,
 			CitedAt:         time.Now(),
@@ -291,7 +291,7 @@ func outputPattern(cwd string, p pattern) error {
 
 	if !lookupNoCite && p.FilePath != "" {
 		sessionID := resolveSessionID(lookupSessionID)
-		event := types.CitationEvent{
+		event := domain.CitationEvent{
 			ArtifactPath: canonicalArtifactPath(cwd, p.FilePath),
 			SessionID:    sessionID,
 			CitedAt:      time.Now(),
@@ -338,7 +338,7 @@ func outputFinding(cwd string, f knowledgeFinding) error {
 
 	if !lookupNoCite && f.Source != "" {
 		sessionID := resolveSessionID(lookupSessionID)
-		event := types.CitationEvent{
+		event := domain.CitationEvent{
 			ArtifactPath: canonicalArtifactPath(cwd, f.Source),
 			SessionID:    sessionID,
 			CitedAt:      time.Now(),
@@ -458,7 +458,7 @@ func recordLookupCitationsInNamespace(cwd string, learnings []learning, patterns
 		if l.Source == "" {
 			continue
 		}
-		event := types.CitationEvent{
+		event := domain.CitationEvent{
 			ArtifactPath:    canonicalArtifactPath(cwd, l.Source),
 			SessionID:       sessionID,
 			CitedAt:         time.Now(),
@@ -478,7 +478,7 @@ func recordLookupCitationsInNamespace(cwd string, learnings []learning, patterns
 		if p.FilePath == "" {
 			continue
 		}
-		event := types.CitationEvent{
+		event := domain.CitationEvent{
 			ArtifactPath:    canonicalArtifactPath(cwd, p.FilePath),
 			SessionID:       sessionID,
 			CitedAt:         time.Now(),
@@ -494,7 +494,7 @@ func recordLookupCitationsInNamespace(cwd string, learnings []learning, patterns
 		if f.Source == "" {
 			continue
 		}
-		event := types.CitationEvent{
+		event := domain.CitationEvent{
 			ArtifactPath:    canonicalArtifactPath(cwd, f.Source),
 			SessionID:       sessionID,
 			CitedAt:         time.Now(),

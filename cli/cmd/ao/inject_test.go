@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestFreshnessScore(t *testing.T) {
@@ -297,8 +297,8 @@ func TestApplyCompositeScoring(t *testing.T) {
 		{
 			name: "default utility (all 0.5)",
 			learnings: []learning{
-				{ID: "newer", FreshnessScore: 0.9, Utility: types.InitialUtility},
-				{ID: "older", FreshnessScore: 0.3, Utility: types.InitialUtility},
+				{ID: "newer", FreshnessScore: 0.9, Utility: domain.InitialUtility},
+				{ID: "older", FreshnessScore: 0.3, Utility: domain.InitialUtility},
 			},
 			lambda:    0.5,
 			wantFirst: "newer", // When utility is equal, freshness wins
@@ -415,7 +415,7 @@ func TestOlderItemScoresLowerThanNewerItem(t *testing.T) {
 		for i := range learnings {
 			items[i] = &learnings[i]
 		}
-		applyCompositeScoringTo(items, types.DefaultLambda)
+		applyCompositeScoringTo(items, domain.DefaultLambda)
 
 		// Find the scores
 		var newerScore, olderScore float64
@@ -514,7 +514,7 @@ func TestConfidenceDecayRate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Apply decay formula: newConf = oldConf * exp(-weeks * 0.1)
-			decayFactor := math.Exp(-tt.weeksSinceDecay * types.ConfidenceDecayRate)
+			decayFactor := math.Exp(-tt.weeksSinceDecay * domain.ConfidenceDecayRate)
 			newConfidence := tt.oldConfidence * decayFactor
 
 			if newConfidence < tt.wantMin || newConfidence > tt.wantMax {
@@ -811,7 +811,7 @@ func TestConfidenceDecayFloor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			decayFactor := math.Exp(-tt.weeksSinceDecay * types.ConfidenceDecayRate)
+			decayFactor := math.Exp(-tt.weeksSinceDecay * domain.ConfidenceDecayRate)
 			newConfidence := tt.oldConfidence * decayFactor
 
 			// Apply floor
@@ -1526,7 +1526,7 @@ Test skill.
 		if line == "" {
 			continue
 		}
-		var evt types.CitationEvent
+		var evt domain.CitationEvent
 		if err := json.Unmarshal([]byte(line), &evt); err != nil {
 			continue
 		}

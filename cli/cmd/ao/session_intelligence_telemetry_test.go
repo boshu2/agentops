@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestBuildCitationAggregate_DedupesRepeatedSignals(t *testing.T) {
 	baseDir := t.TempDir()
 	now := time.Now()
-	aggregate := buildCitationAggregate(baseDir, []types.CitationEvent{
+	aggregate := buildCitationAggregate(baseDir, []domain.CitationEvent{
 		{ArtifactPath: ".agents/learnings/a.md", WorkspacePath: ".", SessionID: "s1", CitedAt: now.Add(-2 * time.Hour), CitationType: "retrieved"},
 		{ArtifactPath: ".agents/learnings/a.md", WorkspacePath: ".", SessionID: "s1", CitedAt: now.Add(-1 * time.Hour), CitationType: "retrieved"},
 		{ArtifactPath: ".agents/learnings/a.md", WorkspacePath: ".", SessionID: "s2", CitedAt: now, CitationType: "applied", FeedbackGiven: true, FeedbackReward: 1},
@@ -47,7 +47,7 @@ func TestWorkspacePathFromAgentArtifactPath(t *testing.T) {
 }
 
 func TestAnnotateCitationMatch_BucketsConfidenceAndPreservesProvenance(t *testing.T) {
-	event := annotateCitationMatch(types.CitationEvent{}, 0.72, "lookup:query")
+	event := annotateCitationMatch(domain.CitationEvent{}, 0.72, "lookup:query")
 	if event.MatchConfidence != 0.9 {
 		t.Fatalf("MatchConfidence = %v, want 0.9", event.MatchConfidence)
 	}
@@ -55,7 +55,7 @@ func TestAnnotateCitationMatch_BucketsConfidenceAndPreservesProvenance(t *testin
 		t.Fatalf("MatchProvenance = %q, want %q", event.MatchProvenance, "lookup:query")
 	}
 
-	low := annotateCitationMatch(types.CitationEvent{}, 0.3, "search:session")
+	low := annotateCitationMatch(domain.CitationEvent{}, 0.3, "search:session")
 	if low.MatchConfidence != 0.5 {
 		t.Fatalf("low MatchConfidence = %v, want 0.5", low.MatchConfidence)
 	}

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/search"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // ===========================================================================
@@ -297,7 +297,7 @@ func TestHelper_parseFrontMatterUtility(t *testing.T) {
 			name:     "valid front matter without utility uses default",
 			lines:    []string{"---", "title: test", "---", "body"},
 			wantIdx:  2,
-			wantUtil: types.InitialUtility,
+			wantUtil: domain.InitialUtility,
 		},
 		{
 			name:    "no closing delimiter",
@@ -533,7 +533,7 @@ func TestHelper_classifyGateFailureClass(t *testing.T) {
 		name     string
 		phaseNum int
 		gateErr  *gateFailError
-		want     types.MemRLFailureClass
+		want     domain.MemRLFailureClass
 	}{
 		{
 			name:     "nil gate error",
@@ -545,25 +545,25 @@ func TestHelper_classifyGateFailureClass(t *testing.T) {
 			name:     "phase 1 FAIL",
 			phaseNum: 1,
 			gateErr:  &gateFailError{Phase: 1, Verdict: "FAIL"},
-			want:     types.MemRLFailureClassPreMortemFail,
+			want:     domain.MemRLFailureClassPreMortemFail,
 		},
 		{
 			name:     "phase 2 BLOCKED",
 			phaseNum: 2,
 			gateErr:  &gateFailError{Phase: 2, Verdict: "BLOCKED"},
-			want:     types.MemRLFailureClassCrankBlocked,
+			want:     domain.MemRLFailureClassCrankBlocked,
 		},
 		{
 			name:     "phase 2 PARTIAL",
 			phaseNum: 2,
 			gateErr:  &gateFailError{Phase: 2, Verdict: "PARTIAL"},
-			want:     types.MemRLFailureClassCrankPartial,
+			want:     domain.MemRLFailureClassCrankPartial,
 		},
 		{
 			name:     "phase 3 FAIL",
 			phaseNum: 3,
 			gateErr:  &gateFailError{Phase: 3, Verdict: "FAIL"},
-			want:     types.MemRLFailureClassVibeFail,
+			want:     domain.MemRLFailureClassVibeFail,
 		},
 		{
 			// Note: failReason constants are lowercase; classifyGateFailureClass uppercases
@@ -572,37 +572,37 @@ func TestHelper_classifyGateFailureClass(t *testing.T) {
 			name:     "timeout verdict falls to default lowercase",
 			phaseNum: 1,
 			gateErr:  &gateFailError{Phase: 1, Verdict: string(failReasonTimeout)},
-			want:     types.MemRLFailureClass("timeout"),
+			want:     domain.MemRLFailureClass("timeout"),
 		},
 		{
 			name:     "stall verdict falls to default lowercase",
 			phaseNum: 1,
 			gateErr:  &gateFailError{Phase: 1, Verdict: string(failReasonStall)},
-			want:     types.MemRLFailureClass("stall"),
+			want:     domain.MemRLFailureClass("stall"),
 		},
 		{
 			name:     "exit_error verdict falls to default lowercase",
 			phaseNum: 1,
 			gateErr:  &gateFailError{Phase: 1, Verdict: string(failReasonExit)},
-			want:     types.MemRLFailureClass("exit_error"),
+			want:     domain.MemRLFailureClass("exit_error"),
 		},
 		{
 			name:     "unknown verdict lowercased",
 			phaseNum: 4,
 			gateErr:  &gateFailError{Phase: 4, Verdict: "CUSTOM_ERROR"},
-			want:     types.MemRLFailureClass("custom_error"),
+			want:     domain.MemRLFailureClass("custom_error"),
 		},
 		{
 			name:     "phase 1 non-FAIL passes to classifyByVerdict",
 			phaseNum: 1,
 			gateErr:  &gateFailError{Phase: 1, Verdict: "WARN"},
-			want:     types.MemRLFailureClass("warn"),
+			want:     domain.MemRLFailureClass("warn"),
 		},
 		{
 			name:     "verdict with whitespace is trimmed",
 			phaseNum: 3,
 			gateErr:  &gateFailError{Phase: 3, Verdict: "  FAIL  "},
-			want:     types.MemRLFailureClassVibeFail,
+			want:     domain.MemRLFailureClassVibeFail,
 		},
 	}
 	for _, tc := range tests {
@@ -1099,8 +1099,8 @@ func TestHelper_roundTripJSON_empty(t *testing.T) {
 func TestHelper_classifyGateFailureClass_lowercaseVerdict(t *testing.T) {
 	// Verify that lowercase "fail" still matches (verdict is uppercased internally)
 	got := classifyGateFailureClass(1, &gateFailError{Phase: 1, Verdict: "fail"})
-	if got != types.MemRLFailureClassPreMortemFail {
-		t.Errorf("classifyGateFailureClass(1, 'fail') = %q, want %q", got, types.MemRLFailureClassPreMortemFail)
+	if got != domain.MemRLFailureClassPreMortemFail {
+		t.Errorf("classifyGateFailureClass(1, 'fail') = %q, want %q", got, domain.MemRLFailureClassPreMortemFail)
 	}
 }
 

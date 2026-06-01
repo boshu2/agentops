@@ -11,10 +11,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/config"
+	"github.com/boshu2/agentops/cli/internal/domain"
+	"github.com/boshu2/agentops/cli/internal/domain/quest"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/search"
-	"github.com/boshu2/agentops/cli/internal/types"
-	"github.com/boshu2/agentops/cli/internal/types/quest"
 )
 
 const (
@@ -58,7 +58,7 @@ var (
 	injectProfile           bool
 )
 
-// Type aliases — canonical definitions live in internal/search/types.go.
+// Type aliases — canonical definitions live in internal/search/domain.go.
 type injectedKnowledge = search.InjectedKnowledge
 type learning = search.Learning
 type pattern = search.Pattern
@@ -260,7 +260,7 @@ func applyInjectModifiers(cwd string, opts *search.InjectOptions, knowledge *inj
 	}
 
 	if opts.ForSkill != "" && decl != nil {
-		evt := types.CitationEvent{
+		evt := domain.CitationEvent{
 			ArtifactPath: fmt.Sprintf("skills/%s/SKILL.md", opts.ForSkill),
 			SessionID:    resolveSessionID(opts.SessionID),
 			CitedAt:      time.Now(),

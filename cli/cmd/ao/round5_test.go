@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/storage"
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 // ---------------------------------------------------------------------------
@@ -30,7 +30,7 @@ func TestCountSessions(t *testing.T) {
 	})
 	t.Run("empty sessions dir", func(t *testing.T) {
 		dir := t.TempDir()
-		sessDir := filepath.Join(dir, storage.DefaultBaseDir, storage.SessionsDir)
+		sessDir := filepath.Join(dir, sessionstore.DefaultBaseDir, sessionstore.SessionsDir)
 		if err := os.MkdirAll(sessDir, 0755); err != nil {
 			t.Fatal(err)
 		}
@@ -40,7 +40,7 @@ func TestCountSessions(t *testing.T) {
 	})
 	t.Run("with session files", func(t *testing.T) {
 		dir := t.TempDir()
-		sessDir := filepath.Join(dir, storage.DefaultBaseDir, storage.SessionsDir)
+		sessDir := filepath.Join(dir, sessionstore.DefaultBaseDir, sessionstore.SessionsDir)
 		if err := os.MkdirAll(sessDir, 0755); err != nil {
 			t.Fatal(err)
 		}
@@ -114,7 +114,7 @@ func TestPrintBadge(t *testing.T) {
 	})
 	t.Run("zero metrics", func(t *testing.T) {
 		printBadge(io.Discard, 5, &FlywheelMetrics{
-			Delta:      types.DefaultDelta * 100,
+			Delta:      domain.DefaultDelta * 100,
 			TierCounts: map[string]int{"learning": 3, "pattern": 1},
 		})
 	})
@@ -401,13 +401,13 @@ func TestRecordPromoteSkip(t *testing.T) {
 func TestClassifyByVerdict(t *testing.T) {
 	tests := []struct {
 		verdict string
-		want    types.MemRLFailureClass
+		want    domain.MemRLFailureClass
 	}{
-		{string(failReasonTimeout), types.MemRLFailureClassPhaseTimeout},
-		{string(failReasonStall), types.MemRLFailureClassPhaseStall},
-		{string(failReasonExit), types.MemRLFailureClassPhaseExitError},
-		{"CUSTOM", types.MemRLFailureClass("custom")},
-		{"", types.MemRLFailureClass("")},
+		{string(failReasonTimeout), domain.MemRLFailureClassPhaseTimeout},
+		{string(failReasonStall), domain.MemRLFailureClassPhaseStall},
+		{string(failReasonExit), domain.MemRLFailureClassPhaseExitError},
+		{"CUSTOM", domain.MemRLFailureClass("custom")},
+		{"", domain.MemRLFailureClass("")},
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("verdict_%s", tt.verdict), func(t *testing.T) {
@@ -424,14 +424,14 @@ func TestClassifyByPhase(t *testing.T) {
 		name     string
 		phaseNum int
 		verdict  string
-		want     types.MemRLFailureClass
+		want     domain.MemRLFailureClass
 	}{
-		{"phase1 FAIL", 1, "FAIL", types.MemRLFailureClassPreMortemFail},
+		{"phase1 FAIL", 1, "FAIL", domain.MemRLFailureClassPreMortemFail},
 		{"phase1 other", 1, "PASS", ""},
-		{"phase2 BLOCKED", 2, "BLOCKED", types.MemRLFailureClassCrankBlocked},
-		{"phase2 PARTIAL", 2, "PARTIAL", types.MemRLFailureClassCrankPartial},
+		{"phase2 BLOCKED", 2, "BLOCKED", domain.MemRLFailureClassCrankBlocked},
+		{"phase2 PARTIAL", 2, "PARTIAL", domain.MemRLFailureClassCrankPartial},
 		{"phase2 other", 2, "FAIL", ""},
-		{"phase3 FAIL", 3, "FAIL", types.MemRLFailureClassVibeFail},
+		{"phase3 FAIL", 3, "FAIL", domain.MemRLFailureClassVibeFail},
 		{"phase3 other", 3, "PASS", ""},
 		{"phase4 any", 4, "FAIL", ""},
 	}
