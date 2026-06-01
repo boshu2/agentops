@@ -402,7 +402,7 @@
         "path": "skills/domain/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 16
+        "reference_count": 17
       },
       {
         "name": "harvest",
@@ -1975,7 +1975,7 @@
         "ao rpi phased"
       ],
       "path": "skills/domain/",
-      "references": 16
+      "references": 17
     },
     {
       "sku": "skill:dream",
