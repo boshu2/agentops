@@ -178,6 +178,7 @@ ao canon verify <entry-id> [flags]
 
 ```
       --as string        acting actor override ("Name" or "Name <email>"); else AGENTOPS_ACTOR / git
+      --council          obtain the verdict from an independent cross-vendor judge (cmd: AGENTOPS_CANON_VERIFIER_CMD) instead of asserting it
   -h, --help             help for verify
       --method string    how it was checked: manual|ao-verify|council|cross-model (default "manual")
       --path string      path to the learning file (required)
