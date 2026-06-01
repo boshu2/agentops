@@ -7,7 +7,6 @@
 #
 # Checks:
 #   1. Go build + vet (if cli/ changed)
-#  1b. gofmt + golangci-lint (if cli/ changed)
 #   2. Go race tests on changed packages (via validate-go-fast.sh)
 #  3d. .agents/ write-surface contract (catalogued top-level subdirs)
 #   3. Command/test pairing for cli/cmd/ao Go changes
@@ -551,29 +550,30 @@ else
     skip "go build + vet"
 fi
 
-# --- 1b. gofmt + golangci-lint (ag-ykf1) ---
+# --- 1b. Go lint: gofmt + golangci-lint (pinned v2) ---
 if needs_check go; then
     if command -v go >/dev/null 2>&1 && [[ -f cli/go.mod ]]; then
-        unformatted="$(cd cli && gofmt -l $(find . -name '*.go' -not -path './embedded/*') 2>/dev/null)"
-        if [[ -z "$unformatted" ]]; then
-            pass "gofmt"
-        else
-            fail "gofmt (unformatted files — run: cd cli && gofmt -w <files>)"
-            indent_output "$unformatted"
-        fi
-        if command -v golangci-lint >/dev/null 2>&1; then
-            if lint_output="$(cd cli && golangci-lint run ./... 2>&1)"; then
-                pass "golangci-lint"
+        go_changed="$(collect_go_changed)"
+        if [[ -n "$go_changed" ]]; then
+            unformatted="$(cd cli && gofmt -l . 2>/dev/null)"
+            if [[ -z "$unformatted" ]]; then
+                pass "gofmt"
             else
-                fail "golangci-lint"
-                indent_output "$lint_output"
+                fail "gofmt — run: (cd cli && gofmt -w .)"
+                indent_output "$unformatted"
+            fi
+            if gci_out="$(cd cli && "$REPO_ROOT/scripts/golangci-lint-v2.sh" run ./... 2>&1)"; then
+                pass "golangci-lint (v2)"
+            else
+                fail "golangci-lint (v2)"
+                indent_output "$gci_out"
             fi
         else
-            skip "golangci-lint (not installed locally — CI enforces)"
+            pass "go lint (no Go changes)"
         fi
     fi
 else
-    skip "gofmt + golangci-lint"
+    skip "go lint (gofmt + golangci-lint)"
 fi
 
 # --- 2. Go race tests on changed scope ---
