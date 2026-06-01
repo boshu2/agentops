@@ -13,6 +13,7 @@ import (
 	"time"
 
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/openclaw"
 	"github.com/spf13/cobra"
 )
@@ -93,9 +94,7 @@ func runAgentOpsDaemonSoakCommand(cmd *cobra.Command, args []string) error {
 		RequireTerminal: daemonSoakRequireTerminal,
 	})
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		if encodeErr := enc.Encode(report); encodeErr != nil && err == nil {
+		if encodeErr := format.EncodeJSON(cmd.OutOrStdout(), report); encodeErr != nil && err == nil {
 			err = encodeErr
 		}
 	} else {

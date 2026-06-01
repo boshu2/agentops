@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 )
 
@@ -90,9 +90,7 @@ func buildTrace(artifact string, chain *ratchet.Chain) traceResult {
 // outputTrace renders the trace as JSON or a text diagram.
 func outputTrace(trace traceResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(trace)
+		return format.EncodeJSON(os.Stdout, trace)
 	}
 	return outputTraceText(trace)
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
@@ -180,9 +181,7 @@ func runTemperValidate(cmd *cobra.Command, args []string) error {
 
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(results)
+		return format.EncodeJSON(w, results)
 	case "yaml":
 		enc := yaml.NewEncoder(w)
 		return enc.Encode(results)
@@ -274,9 +273,7 @@ func runTemperStatus(cmd *cobra.Command, args []string) error {
 
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(status)
+		return format.EncodeJSON(os.Stdout, status)
 
 	case "yaml":
 		enc := yaml.NewEncoder(os.Stdout)

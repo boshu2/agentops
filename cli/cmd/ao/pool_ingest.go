@@ -5,7 +5,6 @@ import (
 	"cmp"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/taxonomy"
 	"github.com/boshu2/agentops/cli/internal/types"
@@ -158,9 +158,7 @@ func runPoolIngest(cmd *cobra.Command, args []string) error {
 func outputPoolIngestResult(res poolIngestResult) error {
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(res)
+		return format.EncodeJSON(os.Stdout, res)
 	default:
 		fmt.Printf("Ingested %d candidate(s) from %d file(s)\n", res.Added, res.FilesScanned)
 		if res.SkippedExisting > 0 {

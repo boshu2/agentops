@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 )
 
@@ -90,9 +90,7 @@ func validateFiles(w io.Writer, validator *ratchet.Validator, step ratchet.Step,
 // outputValidationResult writes a single result as JSON or text.
 func outputValidationResult(w io.Writer, file string, result *ratchet.ValidationResult, allValid *bool) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(w, result)
 	}
 	formatValidationResult(w, file, result, allValid)
 	return nil

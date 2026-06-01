@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	knowledgepkg "github.com/boshu2/agentops/cli/internal/knowledge"
 	"github.com/spf13/cobra"
 )
@@ -409,9 +409,7 @@ func parseKnowledgeBuilderMetadata(output string) map[string]string {
 
 func outputKnowledgeActivateResult(result knowledgeActivateResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 
 	fmt.Printf("Knowledge activation target: %s\n", result.Workspace)
@@ -435,9 +433,7 @@ func outputKnowledgeActivateResult(result knowledgeActivateResult) error {
 
 func outputKnowledgeBuilderResult(result knowledgeBuilderResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 
 	fmt.Printf("Knowledge builder: %s\n", result.Step.Step)
@@ -456,9 +452,7 @@ func outputKnowledgeBuilderResult(result knowledgeBuilderResult) error {
 
 func outputKnowledgeGapSummary(summary knowledgeGapSummary) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(summary)
+		return format.EncodeJSON(os.Stdout, summary)
 	}
 
 	fmt.Printf("Knowledge gaps for %s\n", summary.Workspace)

@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/embedded"
 	"github.com/boshu2/agentops/cli/internal/config"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	minePkg "github.com/boshu2/agentops/cli/internal/mine"
 	"github.com/spf13/cobra"
@@ -674,9 +674,7 @@ Or invoke /compile interactively inside a Claude Code session`)
 
 func printCompileReport(w io.Writer, report compileReport) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(report)
+		return format.EncodeJSON(w, report)
 	}
 
 	if report.DryRun {

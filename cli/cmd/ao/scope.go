@@ -4,7 +4,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/scope"
 )
 
@@ -104,9 +104,7 @@ func printStatus(w interface{ Write([]byte) (int, error) }, l *scope.Lock, asJSO
 		return errors.New("scope: nil lock")
 	}
 	if asJSON {
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(l)
+		return format.EncodeJSON(w, l)
 	}
 	if len(l.FrozenDirs) == 0 {
 		_, err := fmt.Fprintln(w, "scope: no frozen directories (enforcement off)")

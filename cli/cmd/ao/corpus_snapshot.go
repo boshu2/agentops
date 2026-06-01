@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -415,7 +416,5 @@ func writeCorpusManifestFile(path string, v any) (err error) {
 			err = cerr
 		}
 	}()
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", "  ")
-	return enc.Encode(v)
+	return format.EncodeJSON(f, v)
 }

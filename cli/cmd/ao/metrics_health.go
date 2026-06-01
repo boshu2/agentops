@@ -2,13 +2,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/types"
@@ -112,9 +112,7 @@ func runMetricsHealth(cmd *cobra.Command, args []string) error {
 	w := cmd.OutOrStdout()
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(hm)
+		return format.EncodeJSON(w, hm)
 	default:
 		printHealthTable(w, hm)
 	}

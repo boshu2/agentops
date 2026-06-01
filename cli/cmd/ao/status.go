@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/provenance"
 	"github.com/boshu2/agentops/cli/internal/storage"
 )
@@ -275,9 +276,7 @@ func printFlywheelHealth(fw *flywheelBrief) {
 
 func outputStatus(status *statusOutput) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(status)
+		return format.EncodeJSON(os.Stdout, status)
 	}
 
 	fmt.Println("AgentOps Status")

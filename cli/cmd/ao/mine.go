@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	minePkg "github.com/boshu2/agentops/cli/internal/mine"
 )
 
@@ -127,9 +128,7 @@ func runMine(cmd *cobra.Command, args []string) error {
 	}
 
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(report)
+		return format.EncodeJSON(cmd.OutOrStdout(), report)
 	}
 
 	if !mineQuiet {
@@ -185,9 +184,7 @@ func encodeMineDryRunJSON(w io.Writer, sources []string, window time.Duration) e
 		OutputDir:    mineOutputDir,
 		Note:         "No files will be written.",
 	}
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	return enc.Encode(payload)
+	return format.EncodeJSON(w, payload)
 }
 
 // collectMineWorkItems builds work items from a mine report.

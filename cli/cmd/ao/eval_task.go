@@ -13,6 +13,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	evalsub "github.com/boshu2/agentops/cli/internal/evalsubstrate"
+	"github.com/boshu2/agentops/cli/internal/format"
 )
 
 // AGENTOPS_EVALS_ROOT lets callers (and tests) override the substrate
@@ -120,9 +121,7 @@ var evalTaskListCmd = &cobra.Command{
 		}
 		sort.Strings(ids)
 		if GetOutput() == "json" {
-			enc := json.NewEncoder(cmd.OutOrStdout())
-			enc.SetIndent("", "  ")
-			return enc.Encode(map[string]interface{}{"tasks": ids, "root": root})
+			return format.EncodeJSON(cmd.OutOrStdout(), map[string]interface{}{"tasks": ids, "root": root})
 		}
 		if len(ids) == 0 {
 			fmt.Fprintln(cmd.OutOrStdout(), "No tasks registered")
@@ -152,9 +151,7 @@ var evalTaskShowCmd = &cobra.Command{
 			return err
 		}
 		if GetOutput() == "json" {
-			enc := json.NewEncoder(cmd.OutOrStdout())
-			enc.SetIndent("", "  ")
-			return enc.Encode(task)
+			return format.EncodeJSON(cmd.OutOrStdout(), task)
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "Task: %s\n", task.ID)
 		fmt.Fprintf(cmd.OutOrStdout(), "  schema_version: %d\n", task.SchemaVersion)
@@ -329,9 +326,7 @@ func buildTaskRunManifest(task *evalsub.Task, suite *evalsub.Suite, seeds []int,
 func writeTaskRunOutput(cmd *cobra.Command, w *evalsub.RunWriter) error {
 	out := w.Manifest()
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(out)
+		return format.EncodeJSON(cmd.OutOrStdout(), out)
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "Run opened: %s\n  status:    %s\n  manifest:  %s\n  rig_id:    %s\n  task_ref:  %s\n  suite_ref: %s\n",
 		out.ID, out.Status, w.Path(), out.RigID, out.TaskRef, out.SuiteRef)

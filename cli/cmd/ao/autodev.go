@@ -2,13 +2,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/autodev"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -119,9 +119,7 @@ var autodevShowCmd = &cobra.Command{
 			return err
 		}
 		if GetOutput() == "json" {
-			enc := json.NewEncoder(os.Stdout)
-			enc.SetIndent("", "  ")
-			return enc.Encode(prog)
+			return format.EncodeJSON(os.Stdout, prog)
 		}
 		fmt.Printf("Objective: %s\n", prog.Objective)
 		fmt.Printf("Mutable Scope: %d\n", len(prog.MutableScope))
@@ -166,9 +164,7 @@ func loadAutodevProgramForCommand() (*autodev.Program, string, error) {
 
 func outputAutodevValidateResult(result autodevValidateResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 
 	if result.Valid {

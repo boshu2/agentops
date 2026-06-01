@@ -2,12 +2,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -81,9 +81,7 @@ func runContextPacketStatus(cmd *cobra.Command, args []string) error {
 	result := buildPacketStatusResult(cwd, query, phase, bundle)
 
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(cmd.OutOrStdout(), result)
 	}
 
 	printPacketStatusHuman(cmd, result)

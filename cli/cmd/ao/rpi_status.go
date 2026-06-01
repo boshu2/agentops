@@ -15,6 +15,7 @@ import (
 	"time"
 
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
+	"github.com/boshu2/agentops/cli/internal/format"
 	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 	"github.com/spf13/cobra"
 )
@@ -275,9 +276,7 @@ func daemonRPIJobTerminal(status daemonpkg.JobStatus) bool {
 }
 
 func writeRPIStatusJSON(output rpiStatusOutput) error {
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-	return enc.Encode(output)
+	return format.EncodeJSON(os.Stdout, output)
 }
 
 func renderRPIStatusTable(cwd string, output rpiStatusOutput) error {

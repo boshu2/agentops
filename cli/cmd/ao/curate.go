@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/goals"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/spf13/cobra"
@@ -174,9 +175,7 @@ func runCurateCatalog(cmd *cobra.Command, args []string) error {
 
 	// Output
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(curateOutWriter(cmd))
-		enc.SetIndent("", "  ")
-		return enc.Encode(artifact)
+		return format.EncodeJSON(curateOutWriter(cmd), artifact)
 	}
 
 	fmt.Printf("Cataloged %s artifact: %s\n", artifactType, id)
@@ -196,9 +195,7 @@ func runCurateVerify(cmd *cobra.Command, args []string) error {
 		// If no goals file, report zero gates
 		if GetOutput() == "json" {
 			result.Verified = true
-			enc := json.NewEncoder(curateOutWriter(cmd))
-			enc.SetIndent("", "  ")
-			return enc.Encode(result)
+			return format.EncodeJSON(curateOutWriter(cmd), result)
 		}
 		fmt.Println("No GOALS file found — nothing to verify")
 		return nil
@@ -208,9 +205,7 @@ func runCurateVerify(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		if GetOutput() == "json" {
 			result.Verified = false
-			enc := json.NewEncoder(curateOutWriter(cmd))
-			enc.SetIndent("", "  ")
-			return enc.Encode(result)
+			return format.EncodeJSON(curateOutWriter(cmd), result)
 		}
 		fmt.Printf("Could not load goals from %s — nothing to verify\n", goalsPath)
 		return nil
@@ -253,9 +248,7 @@ func runCurateVerify(cmd *cobra.Command, args []string) error {
 
 	// Output
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(curateOutWriter(cmd))
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(curateOutWriter(cmd), result)
 	}
 
 	if result.Verified {
@@ -390,9 +383,7 @@ func curateStatusPendingVerify(total int, lastVerifyAt, lastCatalogAt string, le
 
 func emitCurateStatus(cmd *cobra.Command, result curateStatusResult) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(curateOutWriter(cmd))
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(curateOutWriter(cmd), result)
 	}
 
 	fmt.Println("Curation Pipeline Status")

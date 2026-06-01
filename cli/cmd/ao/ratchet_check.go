@@ -2,12 +2,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 )
 
@@ -62,9 +62,7 @@ func runRatchetCheck(cmd *cobra.Command, args []string) error {
 	w := cmd.OutOrStdout()
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(w, result)
 
 	default:
 		if result.Passed {

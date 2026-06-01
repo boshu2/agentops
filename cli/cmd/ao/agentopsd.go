@@ -17,6 +17,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/agentworker"
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/gascity"
 	"github.com/boshu2/agentops/cli/internal/llmwiki"
 	ovn "github.com/boshu2/agentops/cli/internal/overnight"
@@ -222,9 +223,7 @@ func runAgentOpsDaemonStatusCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(status)
+		return format.EncodeJSON(cmd.OutOrStdout(), status)
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "agentopsd status\n")
 	fmt.Fprintf(cmd.OutOrStdout(), "ready: %v\n", status.Ready)
@@ -245,9 +244,7 @@ func runAgentOpsDaemonServiceInstallCommand(cmd *cobra.Command, args []string) e
 	if !GetDryRun() {
 		return errors.New("daemon service install is dry-run only in this slice")
 	}
-	enc := json.NewEncoder(cmd.OutOrStdout())
-	enc.SetIndent("", "  ")
-	return enc.Encode(plan)
+	return format.EncodeJSON(cmd.OutOrStdout(), plan)
 }
 
 func serveAgentOpsDaemon(ctx context.Context, cwd string, opts agentopsDaemonRunOptions, out anyWriter) error {

@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	aoeval "github.com/boshu2/agentops/cli/internal/eval"
+	"github.com/boshu2/agentops/cli/internal/format"
 )
 
 var (
@@ -464,7 +464,5 @@ func parseScorecardKind(value string) (aoeval.ScorecardKind, error) {
 }
 
 func writeEvalJSON(cmd *cobra.Command, value any) error {
-	enc := json.NewEncoder(cmd.OutOrStdout())
-	enc.SetIndent("", "  ")
-	return enc.Encode(value)
+	return format.EncodeJSON(cmd.OutOrStdout(), value)
 }

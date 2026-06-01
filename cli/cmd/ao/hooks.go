@@ -13,6 +13,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/embedded"
 	"github.com/boshu2/agentops/cli/internal/bridge"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -860,9 +861,7 @@ func runHooksShow(cmd *cobra.Command, args []string) error {
 	}
 	status := buildHooksShowStatus(settingsPath, loadResult)
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(status)
+		return format.EncodeJSON(cmd.OutOrStdout(), status)
 	}
 
 	hooksMap := loadResult.Hooks

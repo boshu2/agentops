@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -10,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	aocontext "github.com/boshu2/agentops/cli/internal/context"
+	"github.com/boshu2/agentops/cli/internal/format"
 )
 
 // contextPacketFlags holds the CLI flags for the context packet command.
@@ -76,9 +76,7 @@ func runContextPacket(cmd *cobra.Command, args []string) error {
 
 // printPacketJSON renders the packet as indented JSON to stdout.
 func printPacketJSON(cmd *cobra.Command, packet StigmergicPacket) error {
-	enc := json.NewEncoder(cmd.OutOrStdout())
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(packet); err != nil {
+	if err := format.EncodeJSON(cmd.OutOrStdout(), packet); err != nil {
 		return fmt.Errorf("encoding packet JSON: %w", err)
 	}
 	return nil

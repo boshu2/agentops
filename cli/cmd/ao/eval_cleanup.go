@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	evalsub "github.com/boshu2/agentops/cli/internal/evalsubstrate"
+	"github.com/boshu2/agentops/cli/internal/format"
 )
 
 var (
@@ -181,9 +182,7 @@ func cleanupSweepTmpFiles(root string, report *CleanupReport) error {
 
 func writeCleanupReport(cmd *cobra.Command, report *CleanupReport) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(report)
+		return format.EncodeJSON(cmd.OutOrStdout(), report)
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "Eval cleanup:\n  transitions->aborted: %d\n  transitions->failed:  %d\n  runs deleted:         %d\n  tmp files swept:      %d\n",
 		report.TransitionsAborted, report.TransitionsFailed, report.RunsDeleted, report.TmpFilesSwept)

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -102,9 +103,7 @@ func runScenarioAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(scenario)
+		return format.EncodeJSON(cmd.OutOrStdout(), scenario)
 	}
 	fmt.Fprintf(cmd.OutOrStdout(), "Created scenario %s at %s\n", id, path)
 	return nil

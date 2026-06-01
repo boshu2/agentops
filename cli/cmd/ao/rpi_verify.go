@@ -3,11 +3,11 @@ package main
 
 import (
 	"cmp"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -54,9 +54,7 @@ func runRPIVerify(cmd *cobra.Command, args []string) error {
 
 	if GetOutput() == "json" {
 		payload := rpiVerifyOutput{Status: status, rpiLedgerVerifyResult: result}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(payload); err != nil {
+		if err := format.EncodeJSON(os.Stdout, payload); err != nil {
 			return fmt.Errorf("encode JSON output: %w", err)
 		}
 	} else {

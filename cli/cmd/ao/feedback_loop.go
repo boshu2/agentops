@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/types"
@@ -406,9 +407,7 @@ func outputFeedbackSummary(sessionID string, reward float64, totalCitations, uni
 			"failed":     failedCount,
 			"feedback":   events,
 		}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 
 	default:
 		fmt.Print(lifecycle.FormatFeedbackLoopSummaryText(lifecycle.FeedbackLoopSummary{
@@ -758,9 +757,7 @@ func runFeedbackLoopDrain() error {
 // reportDrainStats prints the drain summary in the active output format.
 func reportDrainStats(stats drainStats, opts drainOptions) error {
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(map[string]any{
+		return format.EncodeJSON(os.Stdout, map[string]any{
 			"total_citations": stats.Total,
 			"unfed_found":     stats.UnfedFound,
 			"updated":         stats.Updated,

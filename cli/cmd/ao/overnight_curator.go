@@ -23,6 +23,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/boshu2/agentops/cli/internal/config"
+	"github.com/boshu2/agentops/cli/internal/format"
 )
 
 const (
@@ -604,9 +605,7 @@ func outputCuratorStatus(status dreamLocalCuratorStatus, asJSON bool) error {
 
 func outputCuratorObject(value any, asJSON bool) error {
 	if asJSON {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(value)
+		return format.EncodeJSON(os.Stdout, value)
 	}
 	if GetOutput() == "yaml" {
 		enc := yaml.NewEncoder(os.Stdout)

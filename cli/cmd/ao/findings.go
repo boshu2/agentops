@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -14,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/config"
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/search"
 )
 
@@ -125,9 +125,7 @@ func runFindingsList(cmd *cobra.Command, args []string) error {
 	}
 
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(findings)
+		return format.EncodeJSON(os.Stdout, findings)
 	}
 
 	if len(findings) == 0 {
@@ -254,9 +252,7 @@ func runFindingsRetire(cmd *cobra.Command, args []string) error {
 			"retired_by": retiredBy,
 			"source":     finding.Source,
 		}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 
 	fmt.Printf("Retired finding %s (%s)\n", finding.ID, retiredBy)
@@ -276,9 +272,7 @@ func runFindingsStats(cmd *cobra.Command, args []string) error {
 	stats := buildFindingStats(findings)
 
 	if GetOutput() == "json" {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(stats)
+		return format.EncodeJSON(os.Stdout, stats)
 	}
 
 	fmt.Printf("Total findings: %d\n", stats.Total)
@@ -335,9 +329,7 @@ func printFindingTransferResult(action string, paths []string) error {
 			"action": action,
 			"files":  paths,
 		}
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(result)
+		return format.EncodeJSON(os.Stdout, result)
 	}
 	if len(paths) == 0 {
 		fmt.Printf("No findings %s.\n", action)

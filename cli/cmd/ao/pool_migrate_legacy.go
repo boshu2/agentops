@@ -3,13 +3,13 @@ package main
 
 import (
 	"cmp"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -158,9 +158,7 @@ func nextLegacyDestination(pendingDir, baseName string) (string, error) {
 func outputPoolMigrateLegacyResult(res poolMigrateLegacyResult) error {
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(res)
+		return format.EncodeJSON(os.Stdout, res)
 	default:
 		fmt.Printf("Legacy migration: moved=%d eligible=%d scanned=%d skipped=%d errors=%d\n",
 			res.Moved, res.Eligible, res.Scanned, res.Skipped, res.Errors)

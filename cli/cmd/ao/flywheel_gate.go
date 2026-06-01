@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -87,9 +87,7 @@ func runFlywheelGate(cmd *cobra.Command, args []string) error {
 
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
+		if err := format.EncodeJSON(cmd.OutOrStdout(), result); err != nil {
 			return err
 		}
 	case "yaml":

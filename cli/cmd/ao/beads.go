@@ -21,7 +21,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -32,6 +31,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -844,9 +844,7 @@ func beadSlugify(title string, maxLen int) string {
 // ------------------------------------------------------------------------
 
 func emitJSON(w *os.File, v any) error {
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	return enc.Encode(v)
+	return format.EncodeJSON(w, v)
 }
 
 func beadTruncate(s string, n int) string {

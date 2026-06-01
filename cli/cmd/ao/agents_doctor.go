@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -106,9 +106,7 @@ func runAgentsDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	if agentsDoctorJSON {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		if encErr := enc.Encode(report); encErr != nil {
+		if encErr := format.EncodeJSON(cmd.OutOrStdout(), report); encErr != nil {
 			return encErr
 		}
 	} else {

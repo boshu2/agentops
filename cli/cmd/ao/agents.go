@@ -2,13 +2,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )
 
@@ -76,9 +76,7 @@ func runAgentsInspect(cmd *cobra.Command, args []string) error {
 	}
 
 	if agentsInspectJSON {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(inv)
+		return format.EncodeJSON(cmd.OutOrStdout(), inv)
 	}
 
 	out := cmd.OutOrStdout()

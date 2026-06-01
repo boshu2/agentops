@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 )
 
@@ -85,9 +85,7 @@ func runRatchetStatus(cmd *cobra.Command, args []string) error {
 func outputRatchetStatus(w io.Writer, data *ratchetStatusOutput) error {
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(w)
-		enc.SetIndent("", "  ")
-		return enc.Encode(data)
+		return format.EncodeJSON(w, data)
 
 	case "yaml":
 		enc := yaml.NewEncoder(w)

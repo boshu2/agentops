@@ -14,6 +14,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
@@ -254,9 +255,7 @@ func applyAllMaturityTransitions(cwd string) (maturityTransitionSummary, error) 
 func outputFlywheelCloseLoopResult(res flywheelCloseLoopResult) error {
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(res)
+		return format.EncodeJSON(os.Stdout, res)
 	default:
 		if flywheelCloseLoopQuiet {
 			return nil

@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
+	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
@@ -193,9 +193,7 @@ func runStoreSearch(cmd *cobra.Command, args []string) error {
 
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(results)
+		return format.EncodeJSON(os.Stdout, results)
 
 	case "yaml":
 		enc := yaml.NewEncoder(os.Stdout)
@@ -287,9 +285,7 @@ func runStoreStats(cmd *cobra.Command, args []string) error {
 
 	switch GetOutput() {
 	case "json":
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		return enc.Encode(stats)
+		return format.EncodeJSON(os.Stdout, stats)
 
 	case "yaml":
 		enc := yaml.NewEncoder(os.Stdout)
