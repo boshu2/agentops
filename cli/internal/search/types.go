@@ -25,6 +25,7 @@ type Learning struct {
 	Stability       string  `json:"-"` // "experimental" | "stable", default "stable"
 	Superseded      bool    `json:"-"` // Internal flag - not serialized
 	Global          bool    `json:"-"` // Internal flag: from global dir
+	Canon           bool    `json:"-"` // Internal flag: from the verification-earned team canon
 }
 
 // Scorable interface implementation for Learning.
