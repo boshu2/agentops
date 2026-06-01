@@ -146,7 +146,7 @@ Stale reasons include `worktree missing` when state references a removed worktre
 
 When `ao rpi phased` runs under `agentopsd` rather than foreground, the run and
 its phases are submitted as typed daemon jobs from
-[`cli/internal/daemon/rpi_jobs.go`](../../cli/internal/daemon/rpi_jobs.go)
+`cli/internal/daemon/rpi_jobs.go`
 (`RPIJobSpecSchemaVersion = 1`):
 
 | Type | `job_type` | Role |

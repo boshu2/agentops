@@ -1,7 +1,7 @@
 # Release Notes Archive
 
 > Historical AgentOps release notes and audits. The canonical release history is the
-> git tag series and [CHANGELOG.md](../../CHANGELOG.md); these per-version notes are
+> git tag series and [CHANGELOG.md](../CHANGELOG.md); these per-version notes are
 > retained for provenance. Current line: **v3.x**.
 
 ## v3.x
