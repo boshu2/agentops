@@ -32,6 +32,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `archive` | persistent | cli | retention-archive | Archived/superseded artifacts with retention metadata |
 | `briefings` | regenerated | scripts | generated-output | Compiled session-start briefings |
 | `candidates` | rolling | cli | candidate-cache | Pre-promotion candidate observations |
+| `canon` | persistent | cli | earned-knowledge | Team-knowledge canon: earned learnings plus the citation/verification attestation ledgers gating promotion |
 | `compiled` | regenerated | cli | generated-output | Compiled wiki output (subset; see `wiki/`) |
 | `config` | persistent | cli, operators | operator-config | Rig identity (project/crew) - read by harvest path-prefix fallback |
 | `constraints` | persistent | cli | generated-policy | Compiled constraint manifests |
@@ -102,6 +103,7 @@ ao
 archive
 briefings
 candidates
+canon
 compiled
 config
 constraints
