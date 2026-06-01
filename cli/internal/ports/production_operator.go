@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, ddd-bounded-context]
-package main
+package ports
 
 import (
 	"bufio"
@@ -9,11 +9,9 @@ import (
 	"fmt"
 	"os"
 	"sync"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
-// productionOperator satisfies ports.OperatorPort by appending
+// ProductionOperator satisfies OperatorPort by appending
 // OperatorIntent records to a local JSONL file (default path is
 // supplied at construction; .agents/operator/intents.jsonl is the
 // expected convention).
@@ -23,20 +21,20 @@ import (
 // append-only on write. Process-local mutex serializes Append; cross-
 // process concurrent writes are NOT safe (callers needing that
 // should layer a flock).
-type productionOperator struct {
+type ProductionOperator struct {
 	mu   sync.Mutex
 	path string
 }
 
-// newProductionOperator returns an adapter at path. Empty path makes
+// NewProductionOperator returns an adapter at path. Empty path makes
 // the adapter fail-loud on every method call — matches the cycle 109
 // loop writer's empty-path posture.
-func newProductionOperator(path string) *productionOperator {
-	return &productionOperator{path: path}
+func NewProductionOperator(path string) *ProductionOperator {
+	return &ProductionOperator{path: path}
 }
 
 // Record appends the intent. Empty Kind is rejected (port contract).
-func (a *productionOperator) Record(ctx context.Context, intent ports.OperatorIntent) (err error) {
+func (a *ProductionOperator) Record(ctx context.Context, intent OperatorIntent) (err error) {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -44,21 +42,17 @@ func (a *productionOperator) Record(ctx context.Context, intent ports.OperatorIn
 		return errors.New("ports: OperatorIntent.Kind required")
 	}
 	if a.path == "" {
-		return errors.New("productionOperator: path required")
+		return errors.New("ProductionOperator: path required")
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	payload, err := json.Marshal(operatorIntentRecord{
-		Kind:    intent.Kind,
-		Subject: intent.Subject,
-		Note:    intent.Note,
-	})
+	payload, err := json.Marshal(operatorIntentRecord(intent))
 	if err != nil {
-		return fmt.Errorf("productionOperator marshal: %w", err)
+		return fmt.Errorf("ProductionOperator marshal: %w", err)
 	}
 	f, err := os.OpenFile(a.path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
-		return fmt.Errorf("productionOperator open %q: %w", a.path, err)
+		return fmt.Errorf("ProductionOperator open %q: %w", a.path, err)
 	}
 	defer func() {
 		if cerr := f.Close(); cerr != nil && err == nil {
@@ -66,20 +60,20 @@ func (a *productionOperator) Record(ctx context.Context, intent ports.OperatorIn
 		}
 	}()
 	if _, err := f.Write(append(payload, '\n')); err != nil {
-		return fmt.Errorf("productionOperator write: %w", err)
+		return fmt.Errorf("ProductionOperator write: %w", err)
 	}
 	return nil
 }
 
 // List returns all recorded intents, most-recent first. Missing file
 // → empty (non-nil) slice. Malformed lines are tolerated (skipped).
-func (a *productionOperator) List(ctx context.Context) ([]ports.OperatorIntent, error) {
+func (a *ProductionOperator) List(ctx context.Context) ([]OperatorIntent, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	out := make([]ports.OperatorIntent, 0)
+	out := make([]OperatorIntent, 0)
 	if a.path == "" {
 		return out, nil
 	}
@@ -88,25 +82,21 @@ func (a *productionOperator) List(ctx context.Context) ([]ports.OperatorIntent, 
 		if os.IsNotExist(err) {
 			return out, nil
 		}
-		return nil, fmt.Errorf("productionOperator open %q: %w", a.path, err)
+		return nil, fmt.Errorf("ProductionOperator open %q: %w", a.path, err)
 	}
 	defer func() { _ = f.Close() }()
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
-	in := make([]ports.OperatorIntent, 0)
+	in := make([]OperatorIntent, 0)
 	for scanner.Scan() {
 		var rec operatorIntentRecord
 		if err := json.Unmarshal(scanner.Bytes(), &rec); err != nil {
 			continue
 		}
-		in = append(in, ports.OperatorIntent{
-			Kind:    rec.Kind,
-			Subject: rec.Subject,
-			Note:    rec.Note,
-		})
+		in = append(in, OperatorIntent(rec))
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("productionOperator scan: %w", err)
+		return nil, fmt.Errorf("ProductionOperator scan: %w", err)
 	}
 	// Reverse to most-recent first (file is append-order).
 	for i := len(in) - 1; i >= 0; i-- {
@@ -123,5 +113,5 @@ type operatorIntentRecord struct {
 	Note    string `json:"note,omitempty"`
 }
 
-// Compile-time assertion: productionOperator satisfies the port.
-var _ ports.OperatorPort = (*productionOperator)(nil)
+// Compile-time assertion: ProductionOperator satisfies the port.
+var _ OperatorPort = (*ProductionOperator)(nil)

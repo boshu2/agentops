@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, ddd-bounded-context]
-package main
+package ports
 
 import (
 	"bufio"
@@ -7,11 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
-// productionLoopReader satisfies ports.LoopReaderPort by reading the
+// ProductionLoopReader satisfies LoopReaderPort by reading the
 // local .agents/evolve/cycle-history.jsonl file. The path is supplied
 // at construction time so tests can plant a fixture in t.TempDir()
 // and operator code can construct with the real .agents/evolve/...
@@ -26,15 +24,15 @@ import (
 // Per docs/contracts/bc-ports-inventory.md "Per-BC Wire-Up Order"
 // section, this is the first BC3 production adapter. Sibling shape:
 // cycle 83 productionCitationAdapter (cli/cmd/ao/citation_port_adapter.go).
-type productionLoopReader struct {
+type ProductionLoopReader struct {
 	path string
 }
 
-// newProductionLoopReader returns an adapter reading from path. Empty
+// NewProductionLoopReader returns an adapter reading from path. Empty
 // path is allowed (the adapter just returns empty slices and zero
 // values — matching the in-memory adapter's nil-runs-is-safe shape).
-func newProductionLoopReader(path string) *productionLoopReader {
-	return &productionLoopReader{path: path}
+func NewProductionLoopReader(path string) *ProductionLoopReader {
+	return &ProductionLoopReader{path: path}
 }
 
 // rawCycleRecord is the on-disk superset of CycleEntry. Fields beyond
@@ -54,7 +52,7 @@ type rawCycleRecord struct {
 
 // readEntries parses the on-disk file into []CycleEntry. Returns
 // nil + nil error when the file does not exist.
-func (r *productionLoopReader) readEntries(ctx context.Context) ([]ports.CycleEntry, error) {
+func (r *ProductionLoopReader) readEntries(ctx context.Context) ([]CycleEntry, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -66,10 +64,10 @@ func (r *productionLoopReader) readEntries(ctx context.Context) ([]ports.CycleEn
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("productionLoopReader open %q: %w", r.path, err)
+		return nil, fmt.Errorf("ProductionLoopReader open %q: %w", r.path, err)
 	}
 	defer func() { _ = f.Close() }()
-	out := make([]ports.CycleEntry, 0)
+	out := make([]CycleEntry, 0)
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024) // tolerate large lines
 	for scanner.Scan() {
@@ -83,7 +81,7 @@ func (r *productionLoopReader) readEntries(ctx context.Context) ([]ports.CycleEn
 			// skip rather than fail the whole read.
 			continue
 		}
-		out = append(out, ports.CycleEntry{
+		out = append(out, CycleEntry{
 			Number:    rec.Cycle,
 			Mode:      rec.Mode,
 			Result:    rec.Result,
@@ -94,19 +92,19 @@ func (r *productionLoopReader) readEntries(ctx context.Context) ([]ports.CycleEn
 		})
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("productionLoopReader scan %q: %w", r.path, err)
+		return nil, fmt.Errorf("ProductionLoopReader scan %q: %w", r.path, err)
 	}
 	return out, nil
 }
 
 // Latest returns the entry with the highest Number.
-func (r *productionLoopReader) Latest(ctx context.Context) (ports.CycleEntry, error) {
+func (r *ProductionLoopReader) Latest(ctx context.Context) (CycleEntry, error) {
 	entries, err := r.readEntries(ctx)
 	if err != nil {
-		return ports.CycleEntry{}, err
+		return CycleEntry{}, err
 	}
 	if len(entries) == 0 {
-		return ports.CycleEntry{}, nil
+		return CycleEntry{}, nil
 	}
 	best := entries[0]
 	for _, e := range entries[1:] {
@@ -118,12 +116,12 @@ func (r *productionLoopReader) Latest(ctx context.Context) (ports.CycleEntry, er
 }
 
 // Range returns entries whose Number is in [start, end] (inclusive).
-func (r *productionLoopReader) Range(ctx context.Context, start, end int) ([]ports.CycleEntry, error) {
+func (r *ProductionLoopReader) Range(ctx context.Context, start, end int) ([]CycleEntry, error) {
 	entries, err := r.readEntries(ctx)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ports.CycleEntry, 0)
+	out := make([]CycleEntry, 0)
 	for _, e := range entries {
 		if e.Number >= start && e.Number <= end {
 			out = append(out, e)
@@ -135,7 +133,7 @@ func (r *productionLoopReader) Range(ctx context.Context, start, end int) ([]por
 // IdleStreak returns the trailing count of entries whose Result is
 // "idle" or "unchanged". File-order is assumed to be Number-ascending
 // (matching how the evolve loop appends).
-func (r *productionLoopReader) IdleStreak(ctx context.Context) (int, error) {
+func (r *ProductionLoopReader) IdleStreak(ctx context.Context) (int, error) {
 	entries, err := r.readEntries(ctx)
 	if err != nil {
 		return 0, err
@@ -152,5 +150,5 @@ func (r *productionLoopReader) IdleStreak(ctx context.Context) (int, error) {
 	return streak, nil
 }
 
-// Compile-time assertion: productionLoopReader satisfies the port.
-var _ ports.LoopReaderPort = (*productionLoopReader)(nil)
+// Compile-time assertion: ProductionLoopReader satisfies the port.
+var _ LoopReaderPort = (*ProductionLoopReader)(nil)

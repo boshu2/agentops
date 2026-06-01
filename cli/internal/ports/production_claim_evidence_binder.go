@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, ddd-bounded-context]
-package main
+package ports
 
 import (
 	"bufio"
@@ -9,11 +9,9 @@ import (
 	"fmt"
 	"os"
 	"sync"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
-// productionClaimEvidenceBinder satisfies ports.ClaimEvidenceBinderPort
+// ProductionClaimEvidenceBinder satisfies ClaimEvidenceBinderPort
 // by appending EvidenceBinding records to a JSONL file (typically
 // .agents/findings/evidence-bindings.jsonl).
 //
@@ -31,28 +29,28 @@ import (
 //     reversed).
 //
 // Shape: same JSONL pattern proven across cycles 108-110.
-type productionClaimEvidenceBinder struct {
+type ProductionClaimEvidenceBinder struct {
 	mu   sync.Mutex
 	path string
 }
 
-func newProductionClaimEvidenceBinder(path string) *productionClaimEvidenceBinder {
-	return &productionClaimEvidenceBinder{path: path}
+func NewProductionClaimEvidenceBinder(path string) *ProductionClaimEvidenceBinder {
+	return &ProductionClaimEvidenceBinder{path: path}
 }
 
 // Bind appends a binding after the upgrade-only check.
-func (b *productionClaimEvidenceBinder) Bind(ctx context.Context, binding ports.EvidenceBinding) (err error) {
+func (b *ProductionClaimEvidenceBinder) Bind(ctx context.Context, binding EvidenceBinding) (err error) {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if binding.Claim == "" {
-		return errors.New("productionClaimEvidenceBinder: Claim required")
+		return errors.New("ProductionClaimEvidenceBinder: Claim required")
 	}
 	if binding.Path == "" {
-		return errors.New("productionClaimEvidenceBinder: Path required")
+		return errors.New("ProductionClaimEvidenceBinder: Path required")
 	}
 	if b.path == "" {
-		return errors.New("productionClaimEvidenceBinder: file path required")
+		return errors.New("ProductionClaimEvidenceBinder: file path required")
 	}
 
 	b.mu.Lock()
@@ -64,7 +62,7 @@ func (b *productionClaimEvidenceBinder) Bind(ctx context.Context, binding ports.
 	}
 	if existing != nil {
 		if evidenceLevelRank(binding.Level) < evidenceLevelRank(existing.Level) {
-			return fmt.Errorf("productionClaimEvidenceBinder: refusing downgrade %s → %s for claim %q path %q",
+			return fmt.Errorf("ProductionClaimEvidenceBinder: refusing downgrade %s → %s for claim %q path %q",
 				existing.Level, binding.Level, binding.Claim, binding.Path)
 		}
 		if binding.Level == existing.Level && anchorsEqual(binding.Anchors, existing.Anchors) {
@@ -79,11 +77,11 @@ func (b *productionClaimEvidenceBinder) Bind(ctx context.Context, binding ports.
 		Anchors: binding.Anchors,
 	})
 	if err != nil {
-		return fmt.Errorf("productionClaimEvidenceBinder marshal: %w", err)
+		return fmt.Errorf("ProductionClaimEvidenceBinder marshal: %w", err)
 	}
 	f, err := os.OpenFile(b.path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
-		return fmt.Errorf("productionClaimEvidenceBinder open %q: %w", b.path, err)
+		return fmt.Errorf("ProductionClaimEvidenceBinder open %q: %w", b.path, err)
 	}
 	defer func() {
 		if cerr := f.Close(); cerr != nil && err == nil {
@@ -91,13 +89,13 @@ func (b *productionClaimEvidenceBinder) Bind(ctx context.Context, binding ports.
 		}
 	}()
 	if _, err := f.Write(append(payload, '\n')); err != nil {
-		return fmt.Errorf("productionClaimEvidenceBinder write: %w", err)
+		return fmt.Errorf("ProductionClaimEvidenceBinder write: %w", err)
 	}
 	return nil
 }
 
 // List returns all bindings, most-recent first.
-func (b *productionClaimEvidenceBinder) List(ctx context.Context) ([]ports.EvidenceBinding, error) {
+func (b *ProductionClaimEvidenceBinder) List(ctx context.Context) ([]EvidenceBinding, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -107,7 +105,7 @@ func (b *productionClaimEvidenceBinder) List(ctx context.Context) ([]ports.Evide
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ports.EvidenceBinding, 0, len(all))
+	out := make([]EvidenceBinding, 0, len(all))
 	for i := len(all) - 1; i >= 0; i-- {
 		out = append(out, all[i])
 	}
@@ -117,12 +115,12 @@ func (b *productionClaimEvidenceBinder) List(ctx context.Context) ([]ports.Evide
 // scanLatestFor walks the file and returns the most recent binding
 // for the given (claim, path), or nil if none. Assumes caller holds
 // b.mu.
-func (b *productionClaimEvidenceBinder) scanLatestFor(claim ports.ClaimID, path string) (*ports.EvidenceBinding, error) {
+func (b *ProductionClaimEvidenceBinder) scanLatestFor(claim ClaimID, path string) (*EvidenceBinding, error) {
 	all, err := b.scanAllLocked()
 	if err != nil {
 		return nil, err
 	}
-	var found *ports.EvidenceBinding
+	var found *EvidenceBinding
 	for i := range all {
 		if all[i].Claim == claim && all[i].Path == path {
 			cp := all[i]
@@ -133,14 +131,14 @@ func (b *productionClaimEvidenceBinder) scanLatestFor(claim ports.ClaimID, path 
 }
 
 // scanAllLocked reads the file in order. Missing file → empty slice.
-func (b *productionClaimEvidenceBinder) scanAllLocked() ([]ports.EvidenceBinding, error) {
-	out := make([]ports.EvidenceBinding, 0)
+func (b *ProductionClaimEvidenceBinder) scanAllLocked() ([]EvidenceBinding, error) {
+	out := make([]EvidenceBinding, 0)
 	f, err := os.Open(b.path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return out, nil
 		}
-		return nil, fmt.Errorf("productionClaimEvidenceBinder open %q: %w", b.path, err)
+		return nil, fmt.Errorf("ProductionClaimEvidenceBinder open %q: %w", b.path, err)
 	}
 	defer func() { _ = f.Close() }()
 	scanner := bufio.NewScanner(f)
@@ -150,15 +148,15 @@ func (b *productionClaimEvidenceBinder) scanAllLocked() ([]ports.EvidenceBinding
 		if err := json.Unmarshal(scanner.Bytes(), &rec); err != nil {
 			continue
 		}
-		out = append(out, ports.EvidenceBinding{
-			Claim:   ports.ClaimID(rec.Claim),
+		out = append(out, EvidenceBinding{
+			Claim:   ClaimID(rec.Claim),
 			Path:    rec.Path,
-			Level:   ports.EvidenceLevel(rec.Level),
+			Level:   EvidenceLevel(rec.Level),
 			Anchors: rec.Anchors,
 		})
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("productionClaimEvidenceBinder scan: %w", err)
+		return nil, fmt.Errorf("ProductionClaimEvidenceBinder scan: %w", err)
 	}
 	return out, nil
 }
@@ -169,22 +167,6 @@ type evidenceBindingRecord struct {
 	Path    string   `json:"path"`
 	Level   string   `json:"level,omitempty"`
 	Anchors []string `json:"anchors,omitempty"`
-}
-
-// evidenceLevelRank gives EvidenceLevel an integer ordering for the
-// upgrade-only check. None < PG1 < PG2 < PG3 < PG4.
-func evidenceLevelRank(l ports.EvidenceLevel) int {
-	switch l {
-	case ports.EvidenceLevelPG1:
-		return 1
-	case ports.EvidenceLevelPG2:
-		return 2
-	case ports.EvidenceLevelPG3:
-		return 3
-	case ports.EvidenceLevelPG4:
-		return 4
-	}
-	return 0
 }
 
 func anchorsEqual(a, b []string) bool {
@@ -199,5 +181,5 @@ func anchorsEqual(a, b []string) bool {
 	return true
 }
 
-// Compile-time assertion: productionClaimEvidenceBinder satisfies the port.
-var _ ports.ClaimEvidenceBinderPort = (*productionClaimEvidenceBinder)(nil)
+// Compile-time assertion: ProductionClaimEvidenceBinder satisfies the port.
+var _ ClaimEvidenceBinderPort = (*ProductionClaimEvidenceBinder)(nil)

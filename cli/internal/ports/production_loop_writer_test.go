@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, tdd]
-package main
+package ports
 
 import (
 	"context"
@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
 // Sibling pattern: cycle 108 loop_reader_adapter_test.go.
@@ -17,8 +15,8 @@ import (
 func TestProductionLoopWriter_AppendCreatesFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "cycle-history.jsonl")
-	w := newProductionLoopWriter(path)
-	got, err := w.Append(context.Background(), ports.CycleEntry{
+	w := NewProductionLoopWriter(path)
+	got, err := w.Append(context.Background(), CycleEntry{
 		Mode: "test", Result: "improved", Commit: "abc123",
 	})
 	if err != nil {
@@ -46,8 +44,8 @@ func TestProductionLoopWriter_AppendAutoAssignsMaxPlusOne(t *testing.T) {
 	if err := os.WriteFile(path, []byte(`{"cycle":5,"mode":"seed"}`+"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	w := newProductionLoopWriter(path)
-	got, err := w.Append(context.Background(), ports.CycleEntry{Mode: "next"})
+	w := NewProductionLoopWriter(path)
+	got, err := w.Append(context.Background(), CycleEntry{Mode: "next"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,8 +57,8 @@ func TestProductionLoopWriter_AppendAutoAssignsMaxPlusOne(t *testing.T) {
 func TestProductionLoopWriter_AppendHonorsExplicitNumber(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "cycle-history.jsonl")
-	w := newProductionLoopWriter(path)
-	got, err := w.Append(context.Background(), ports.CycleEntry{Number: 42, Mode: "x"})
+	w := NewProductionLoopWriter(path)
+	got, err := w.Append(context.Background(), CycleEntry{Number: 42, Mode: "x"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,9 +70,9 @@ func TestProductionLoopWriter_AppendHonorsExplicitNumber(t *testing.T) {
 func TestProductionLoopWriter_RoundTripWithReader(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "cycle-history.jsonl")
-	w := newProductionLoopWriter(path)
+	w := NewProductionLoopWriter(path)
 	for i := 1; i <= 3; i++ {
-		if _, err := w.Append(context.Background(), ports.CycleEntry{
+		if _, err := w.Append(context.Background(), CycleEntry{
 			Mode:   "test",
 			Result: "improved",
 		}); err != nil {
@@ -82,7 +80,7 @@ func TestProductionLoopWriter_RoundTripWithReader(t *testing.T) {
 		}
 	}
 	// Reader sees the same file
-	r := newProductionLoopReader(path)
+	r := NewProductionLoopReader(path)
 	latest, err := r.Latest(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -93,8 +91,8 @@ func TestProductionLoopWriter_RoundTripWithReader(t *testing.T) {
 }
 
 func TestProductionLoopWriter_EmptyPathErrors(t *testing.T) {
-	w := newProductionLoopWriter("")
-	_, err := w.Append(context.Background(), ports.CycleEntry{Mode: "x"})
+	w := NewProductionLoopWriter("")
+	_, err := w.Append(context.Background(), CycleEntry{Mode: "x"})
 	if err == nil {
 		t.Fatal("expected error on empty path, got nil")
 	}
@@ -103,9 +101,9 @@ func TestProductionLoopWriter_EmptyPathErrors(t *testing.T) {
 func TestProductionLoopWriter_AppendIsLineSeparated(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "cycle-history.jsonl")
-	w := newProductionLoopWriter(path)
-	_, _ = w.Append(context.Background(), ports.CycleEntry{Mode: "one"})
-	_, _ = w.Append(context.Background(), ports.CycleEntry{Mode: "two"})
+	w := NewProductionLoopWriter(path)
+	_, _ = w.Append(context.Background(), CycleEntry{Mode: "one"})
+	_, _ = w.Append(context.Background(), CycleEntry{Mode: "two"})
 	body, _ := os.ReadFile(path)
 	lineCount := strings.Count(string(body), "\n")
 	if lineCount != 2 {
@@ -118,8 +116,8 @@ func TestProductionLoopWriter_AppendIsLineSeparated(t *testing.T) {
 func TestProductionLoopWriter_RoundTripsStartedAtAndTitle(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "cycle-history.jsonl")
-	w := newProductionLoopWriter(path)
-	written, err := w.Append(context.Background(), ports.CycleEntry{
+	w := NewProductionLoopWriter(path)
+	written, err := w.Append(context.Background(), CycleEntry{
 		Mode:      "phase2-widen",
 		Result:    "improved",
 		Commit:    "deadbee",
@@ -133,7 +131,7 @@ func TestProductionLoopWriter_RoundTripsStartedAtAndTitle(t *testing.T) {
 	if written.StartedAt != "2026-05-13T08:00:00-04:00" || written.Title != "soc-ckc4 widening regression" {
 		t.Fatalf("Append returned-entry dropped new fields: %+v", written)
 	}
-	r := newProductionLoopReader(path)
+	r := NewProductionLoopReader(path)
 	got, err := r.Latest(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -149,10 +147,10 @@ func TestProductionLoopWriter_RoundTripsStartedAtAndTitle(t *testing.T) {
 func TestProductionLoopWriter_HonorsContextCancellation(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "cycle-history.jsonl")
-	w := newProductionLoopWriter(path)
+	w := NewProductionLoopWriter(path)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err := w.Append(ctx, ports.CycleEntry{Mode: "x"})
+	_, err := w.Append(ctx, CycleEntry{Mode: "x"})
 	if err == nil {
 		t.Fatal("expected cancellation error, got nil")
 	}

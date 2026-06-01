@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, tdd]
-package main
+package ports
 
 import (
 	"context"
@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
 // Sibling pattern: cycle 114 finding_compiler_adapter_test.go.
@@ -32,12 +30,12 @@ func newTempRepoWithGate(t *testing.T, name string, script string) string {
 
 func TestProductionGateRunner_Exit0IsPass(t *testing.T) {
 	root := newTempRepoWithGate(t, "ok", `echo all-good; exit 0`)
-	g := newProductionGateRunner(root)
-	v, err := g.Run(context.Background(), ports.GateRunRequest{Name: "ok"})
+	g := NewProductionGateRunner(root)
+	v, err := g.Run(context.Background(), GateRunRequest{Name: "ok"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v.Status != ports.GateStatusPass {
+	if v.Status != GateStatusPass {
 		t.Fatalf("Status = %s, want PASS", v.Status)
 	}
 	if v.Reason == "" {
@@ -47,44 +45,44 @@ func TestProductionGateRunner_Exit0IsPass(t *testing.T) {
 
 func TestProductionGateRunner_Exit1IsFail(t *testing.T) {
 	root := newTempRepoWithGate(t, "broken", `echo bad; exit 1`)
-	g := newProductionGateRunner(root)
-	v, _ := g.Run(context.Background(), ports.GateRunRequest{Name: "broken"})
-	if v.Status != ports.GateStatusFail {
+	g := NewProductionGateRunner(root)
+	v, _ := g.Run(context.Background(), GateRunRequest{Name: "broken"})
+	if v.Status != GateStatusFail {
 		t.Fatalf("Status = %s, want FAIL", v.Status)
 	}
 }
 
 func TestProductionGateRunner_Exit2IsWarn(t *testing.T) {
 	root := newTempRepoWithGate(t, "advisory", `echo warn; exit 2`)
-	g := newProductionGateRunner(root)
-	v, _ := g.Run(context.Background(), ports.GateRunRequest{Name: "advisory"})
-	if v.Status != ports.GateStatusWarn {
+	g := NewProductionGateRunner(root)
+	v, _ := g.Run(context.Background(), GateRunRequest{Name: "advisory"})
+	if v.Status != GateStatusWarn {
 		t.Fatalf("Status = %s, want WARN", v.Status)
 	}
 }
 
 func TestProductionGateRunner_Exit75IsSkip(t *testing.T) {
 	root := newTempRepoWithGate(t, "structural", `echo skip; exit 75`)
-	g := newProductionGateRunner(root)
-	v, _ := g.Run(context.Background(), ports.GateRunRequest{Name: "structural"})
-	if v.Status != ports.GateStatusSkip {
+	g := NewProductionGateRunner(root)
+	v, _ := g.Run(context.Background(), GateRunRequest{Name: "structural"})
+	if v.Status != GateStatusSkip {
 		t.Fatalf("Status = %s, want SKIP", v.Status)
 	}
 }
 
 func TestProductionGateRunner_MissingScriptIsUnknown(t *testing.T) {
 	root := t.TempDir()
-	g := newProductionGateRunner(root)
-	v, _ := g.Run(context.Background(), ports.GateRunRequest{Name: "does-not-exist"})
-	if v.Status != ports.GateStatusUnknown {
+	g := NewProductionGateRunner(root)
+	v, _ := g.Run(context.Background(), GateRunRequest{Name: "does-not-exist"})
+	if v.Status != GateStatusUnknown {
 		t.Fatalf("Status = %s, want UNKNOWN", v.Status)
 	}
 }
 
 func TestProductionGateRunner_EmptyNameIsUnknown(t *testing.T) {
-	g := newProductionGateRunner(t.TempDir())
-	v, _ := g.Run(context.Background(), ports.GateRunRequest{Name: ""})
-	if v.Status != ports.GateStatusUnknown {
+	g := NewProductionGateRunner(t.TempDir())
+	v, _ := g.Run(context.Background(), GateRunRequest{Name: ""})
+	if v.Status != GateStatusUnknown {
 		t.Fatalf("Status = %s, want UNKNOWN", v.Status)
 	}
 	if v.Reason != "empty GateName" {
@@ -94,8 +92,8 @@ func TestProductionGateRunner_EmptyNameIsUnknown(t *testing.T) {
 
 func TestProductionGateRunner_LogTailCaptured(t *testing.T) {
 	root := newTempRepoWithGate(t, "noisy", `echo first; echo second; exit 0`)
-	g := newProductionGateRunner(root)
-	v, _ := g.Run(context.Background(), ports.GateRunRequest{Name: "noisy"})
+	g := NewProductionGateRunner(root)
+	v, _ := g.Run(context.Background(), GateRunRequest{Name: "noisy"})
 	if v.LogTail == "" {
 		t.Fatal("LogTail empty")
 	}
@@ -108,8 +106,8 @@ func TestProductionGateRunner_LogTailCaptured(t *testing.T) {
 
 func TestProductionGateRunner_EnvPassedThrough(t *testing.T) {
 	root := newTempRepoWithGate(t, "envcheck", `echo "GATE_TEST_VAR=$GATE_TEST_VAR"; exit 0`)
-	g := newProductionGateRunner(root)
-	v, _ := g.Run(context.Background(), ports.GateRunRequest{
+	g := NewProductionGateRunner(root)
+	v, _ := g.Run(context.Background(), GateRunRequest{
 		Name: "envcheck",
 		Env:  map[string]string{"GATE_TEST_VAR": "honored"},
 	})
@@ -119,18 +117,18 @@ func TestProductionGateRunner_EnvPassedThrough(t *testing.T) {
 }
 
 func TestProductionGateRunner_EmptyRepoRootErrors(t *testing.T) {
-	g := newProductionGateRunner("")
-	_, err := g.Run(context.Background(), ports.GateRunRequest{Name: "x"})
+	g := NewProductionGateRunner("")
+	_, err := g.Run(context.Background(), GateRunRequest{Name: "x"})
 	if err == nil {
 		t.Fatal("expected error on empty repoRoot, got nil")
 	}
 }
 
 func TestProductionGateRunner_HonorsContextCancellation(t *testing.T) {
-	g := newProductionGateRunner(t.TempDir())
+	g := NewProductionGateRunner(t.TempDir())
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err := g.Run(ctx, ports.GateRunRequest{Name: "x"})
+	_, err := g.Run(ctx, GateRunRequest{Name: "x"})
 	if err == nil {
 		t.Fatal("expected cancellation error, got nil")
 	}

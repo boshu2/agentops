@@ -145,7 +145,7 @@ func operatorRecordViaPort(ctx context.Context, opts operatorOptions) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("mkdir: %w", err)
 	}
-	op := newProductionOperator(path)
+	op := ports.NewProductionOperator(path)
 	return op.Record(ctx, ports.OperatorIntent{
 		Kind:    opts.kind,
 		Subject: opts.subject,
@@ -158,6 +158,6 @@ func operatorListViaPort(ctx context.Context, opts operatorOptions) ([]ports.Ope
 	if err != nil {
 		return nil, err
 	}
-	op := newProductionOperator(path)
+	op := ports.NewProductionOperator(path)
 	return op.List(ctx)
 }

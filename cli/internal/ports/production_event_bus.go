@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, ddd-bounded-context]
-package main
+package ports
 
 import (
 	"context"
@@ -8,11 +8,9 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
-// productionEventBus satisfies ports.EventBusPort with a sync,
+// ProductionEventBus satisfies EventBusPort with a sync,
 // in-memory dispatch loop. Publish-acknowledge is synchronous;
 // dispatch to subscribers is also synchronous in the publishing
 // goroutine, matching the InMemoryEventBus contract used by tests.
@@ -37,7 +35,7 @@ import (
 //   - Errors returned from handlers are NOT retried; the bus simply
 //     advances to the next handler. Adapters MAY log them; this
 //     adapter intentionally does not.
-type productionEventBus struct {
+type ProductionEventBus struct {
 	mu     sync.RWMutex
 	nextID atomic.Uint64
 	subs   map[string][]*eventBusSubscription
@@ -48,25 +46,25 @@ type productionEventBus struct {
 // dispatch finishes before unregistering.
 type eventBusSubscription struct {
 	id       uint64
-	handler  ports.EventHandler
+	handler  EventHandler
 	inFlight sync.WaitGroup
 	canceled atomic.Bool
 }
 
-func newProductionEventBus() *productionEventBus {
-	return &productionEventBus{
+func NewProductionEventBus() *ProductionEventBus {
+	return &ProductionEventBus{
 		subs: make(map[string][]*eventBusSubscription),
 	}
 }
 
 // Publish enqueues + dispatches the event synchronously to all
 // subscribers of event.Topic. Returns the event with ID populated.
-func (b *productionEventBus) Publish(ctx context.Context, event ports.Event) (ports.Event, error) {
+func (b *ProductionEventBus) Publish(ctx context.Context, event Event) (Event, error) {
 	if err := ctx.Err(); err != nil {
-		return ports.Event{}, err
+		return Event{}, err
 	}
 	if event.Topic == "" {
-		return ports.Event{}, errors.New("productionEventBus: Topic required")
+		return Event{}, errors.New("ProductionEventBus: Topic required")
 	}
 	if event.ID == "" {
 		event.ID = strconv.FormatUint(b.nextID.Add(1), 10)
@@ -93,15 +91,15 @@ func (b *productionEventBus) Publish(ctx context.Context, event ports.Event) (po
 }
 
 // Subscribe registers handler for topic. Returns a cancel function.
-func (b *productionEventBus) Subscribe(ctx context.Context, topic string, handler ports.EventHandler) (func(), error) {
+func (b *ProductionEventBus) Subscribe(ctx context.Context, topic string, handler EventHandler) (func(), error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	if topic == "" {
-		return nil, errors.New("productionEventBus: topic required")
+		return nil, errors.New("ProductionEventBus: topic required")
 	}
 	if handler == nil {
-		return nil, errors.New("productionEventBus: handler required")
+		return nil, errors.New("ProductionEventBus: handler required")
 	}
 	sub := &eventBusSubscription{
 		id:      b.nextID.Add(1),
@@ -134,7 +132,7 @@ func (b *productionEventBus) Subscribe(ctx context.Context, topic string, handle
 
 // activeSubscribers returns the number of registered handlers for a
 // topic. Used by tests as a structural probe.
-func (b *productionEventBus) activeSubscribers(topic string) int {
+func (b *ProductionEventBus) activeSubscribers(topic string) int {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return len(b.subs[topic])
@@ -142,15 +140,15 @@ func (b *productionEventBus) activeSubscribers(topic string) int {
 
 // String is used by debug callsites that want to inspect the
 // adapter's identity.
-func (b *productionEventBus) String() string {
-	return fmt.Sprintf("productionEventBus(inProcess; topics=%d)", b.topicCount())
+func (b *ProductionEventBus) String() string {
+	return fmt.Sprintf("ProductionEventBus(inProcess; topics=%d)", b.topicCount())
 }
 
-func (b *productionEventBus) topicCount() int {
+func (b *ProductionEventBus) topicCount() int {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	return len(b.subs)
 }
 
-// Compile-time assertion: productionEventBus satisfies the port.
-var _ ports.EventBusPort = (*productionEventBus)(nil)
+// Compile-time assertion: ProductionEventBus satisfies the port.
+var _ EventBusPort = (*ProductionEventBus)(nil)

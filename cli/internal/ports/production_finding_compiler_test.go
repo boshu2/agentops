@@ -1,20 +1,18 @@
 // practices: [hexagonal-architecture, tdd]
-package main
+package ports
 
 import (
 	"context"
 	"errors"
 	"strings"
 	"testing"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
 // Sibling pattern: cycle 113 corpus_writer_adapter_test.go.
 
 func TestProductionFindingCompiler_DefaultsToAllThreeKinds(t *testing.T) {
-	c := newProductionFindingCompiler()
-	out, err := c.Compile(context.Background(), ports.FindingArtifact{
+	c := NewProductionFindingCompiler()
+	out, err := c.Compile(context.Background(), FindingArtifact{
 		ID:   "soc-test",
 		Body: "rationale",
 	})
@@ -24,11 +22,11 @@ func TestProductionFindingCompiler_DefaultsToAllThreeKinds(t *testing.T) {
 	if len(out) != 3 {
 		t.Fatalf("len = %d, want 3 (defaults)", len(out))
 	}
-	gotKinds := []ports.CompiledOutputKind{out[0].Kind, out[1].Kind, out[2].Kind}
-	wantKinds := []ports.CompiledOutputKind{
-		ports.CompiledOutputPlanningRule,
-		ports.CompiledOutputPreMortemCheck,
-		ports.CompiledOutputConstraint,
+	gotKinds := []CompiledOutputKind{out[0].Kind, out[1].Kind, out[2].Kind}
+	wantKinds := []CompiledOutputKind{
+		CompiledOutputPlanningRule,
+		CompiledOutputPreMortemCheck,
+		CompiledOutputConstraint,
 	}
 	for i, k := range wantKinds {
 		if gotKinds[i] != k {
@@ -38,8 +36,8 @@ func TestProductionFindingCompiler_DefaultsToAllThreeKinds(t *testing.T) {
 }
 
 func TestProductionFindingCompiler_HonorsCompilerTargets(t *testing.T) {
-	c := newProductionFindingCompiler()
-	out, err := c.Compile(context.Background(), ports.FindingArtifact{
+	c := NewProductionFindingCompiler()
+	out, err := c.Compile(context.Background(), FindingArtifact{
 		ID:          "soc-test",
 		Frontmatter: map[string]string{"compiler_targets": "plan, constraint"},
 		Body:        "rationale",
@@ -50,17 +48,17 @@ func TestProductionFindingCompiler_HonorsCompilerTargets(t *testing.T) {
 	if len(out) != 2 {
 		t.Fatalf("len = %d, want 2 (per compiler_targets)", len(out))
 	}
-	if out[0].Kind != ports.CompiledOutputPlanningRule {
+	if out[0].Kind != CompiledOutputPlanningRule {
 		t.Fatalf("out[0].Kind = %s, want plan", out[0].Kind)
 	}
-	if out[1].Kind != ports.CompiledOutputConstraint {
+	if out[1].Kind != CompiledOutputConstraint {
 		t.Fatalf("out[1].Kind = %s, want constraint", out[1].Kind)
 	}
 }
 
 func TestProductionFindingCompiler_DeduplicatesTargets(t *testing.T) {
-	c := newProductionFindingCompiler()
-	out, _ := c.Compile(context.Background(), ports.FindingArtifact{
+	c := NewProductionFindingCompiler()
+	out, _ := c.Compile(context.Background(), FindingArtifact{
 		ID:          "soc-test",
 		Frontmatter: map[string]string{"compiler_targets": "plan,plan,constraint,plan"},
 		Body:        "x",
@@ -71,8 +69,8 @@ func TestProductionFindingCompiler_DeduplicatesTargets(t *testing.T) {
 }
 
 func TestProductionFindingCompiler_UnknownTargetErrors(t *testing.T) {
-	c := newProductionFindingCompiler()
-	_, err := c.Compile(context.Background(), ports.FindingArtifact{
+	c := NewProductionFindingCompiler()
+	_, err := c.Compile(context.Background(), FindingArtifact{
 		ID:          "soc-test",
 		Frontmatter: map[string]string{"compiler_targets": "plan,bogus"},
 	})
@@ -82,16 +80,16 @@ func TestProductionFindingCompiler_UnknownTargetErrors(t *testing.T) {
 }
 
 func TestProductionFindingCompiler_PathsFollowContract(t *testing.T) {
-	c := newProductionFindingCompiler()
-	out, _ := c.Compile(context.Background(), ports.FindingArtifact{ID: "soc-y5vh"})
-	pathByKind := map[ports.CompiledOutputKind]string{}
+	c := NewProductionFindingCompiler()
+	out, _ := c.Compile(context.Background(), FindingArtifact{ID: "soc-y5vh"})
+	pathByKind := map[CompiledOutputKind]string{}
 	for _, o := range out {
 		pathByKind[o.Kind] = o.Path
 	}
-	want := map[ports.CompiledOutputKind]string{
-		ports.CompiledOutputPlanningRule:   ".agents/planning-rules/soc-y5vh.md",
-		ports.CompiledOutputPreMortemCheck: ".agents/pre-mortem-checks/soc-y5vh.md",
-		ports.CompiledOutputConstraint:     ".agents/constraints/soc-y5vh.md",
+	want := map[CompiledOutputKind]string{
+		CompiledOutputPlanningRule:   ".agents/planning-rules/soc-y5vh.md",
+		CompiledOutputPreMortemCheck: ".agents/pre-mortem-checks/soc-y5vh.md",
+		CompiledOutputConstraint:     ".agents/constraints/soc-y5vh.md",
 	}
 	for kind, wantPath := range want {
 		if pathByKind[kind] != wantPath {
@@ -101,8 +99,8 @@ func TestProductionFindingCompiler_PathsFollowContract(t *testing.T) {
 }
 
 func TestProductionFindingCompiler_NoDuplicatePaths(t *testing.T) {
-	c := newProductionFindingCompiler()
-	out, _ := c.Compile(context.Background(), ports.FindingArtifact{ID: "soc-x"})
+	c := NewProductionFindingCompiler()
+	out, _ := c.Compile(context.Background(), FindingArtifact{ID: "soc-x"})
 	seen := make(map[string]struct{}, len(out))
 	for _, o := range out {
 		if _, dup := seen[o.Path]; dup {
@@ -113,8 +111,8 @@ func TestProductionFindingCompiler_NoDuplicatePaths(t *testing.T) {
 }
 
 func TestProductionFindingCompiler_BodyIncludesKindHeader(t *testing.T) {
-	c := newProductionFindingCompiler()
-	out, _ := c.Compile(context.Background(), ports.FindingArtifact{
+	c := NewProductionFindingCompiler()
+	out, _ := c.Compile(context.Background(), FindingArtifact{
 		ID:   "soc-x",
 		Body: "rationale text",
 	})
@@ -130,8 +128,8 @@ func TestProductionFindingCompiler_BodyIncludesKindHeader(t *testing.T) {
 }
 
 func TestProductionFindingCompiler_FrontmatterRenderedSorted(t *testing.T) {
-	c := newProductionFindingCompiler()
-	out, _ := c.Compile(context.Background(), ports.FindingArtifact{
+	c := NewProductionFindingCompiler()
+	out, _ := c.Compile(context.Background(), FindingArtifact{
 		ID:          "soc-x",
 		Frontmatter: map[string]string{"tag": "evolve", "date": "2026-05-12"},
 		Body:        "body",
@@ -143,18 +141,18 @@ func TestProductionFindingCompiler_FrontmatterRenderedSorted(t *testing.T) {
 }
 
 func TestProductionFindingCompiler_EmptyIDErrors(t *testing.T) {
-	c := newProductionFindingCompiler()
-	_, err := c.Compile(context.Background(), ports.FindingArtifact{Body: "x"})
+	c := NewProductionFindingCompiler()
+	_, err := c.Compile(context.Background(), FindingArtifact{Body: "x"})
 	if err == nil {
 		t.Fatal("expected error on empty ID, got nil")
 	}
 }
 
 func TestProductionFindingCompiler_HonorsContextCancellation(t *testing.T) {
-	c := newProductionFindingCompiler()
+	c := NewProductionFindingCompiler()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err := c.Compile(ctx, ports.FindingArtifact{ID: "soc-x"})
+	_, err := c.Compile(ctx, FindingArtifact{ID: "soc-x"})
 	if err == nil {
 		t.Fatal("expected cancellation error, got nil")
 	}

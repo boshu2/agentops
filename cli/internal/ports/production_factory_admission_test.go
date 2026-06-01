@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, tdd]
-package main
+package ports
 
 import (
 	"context"
@@ -32,7 +32,7 @@ func (f fakeDaemonEvidenceProvider) MainCIBaseline(ctx context.Context) (daemon.
 }
 
 func TestProductionFactoryAdmission_RepoStateTranslation(t *testing.T) {
-	a := newProductionFactoryAdmission(fakeDaemonEvidenceProvider{
+	a := NewProductionFactoryAdmission(fakeDaemonEvidenceProvider{
 		repoState: daemon.FactoryRepoState{HeadSHA: "abc", Dirty: true, TrackedAgents: []string{"x/y"}},
 	})
 	got, err := a.ProbeRepoState(context.Background())
@@ -45,7 +45,7 @@ func TestProductionFactoryAdmission_RepoStateTranslation(t *testing.T) {
 }
 
 func TestProductionFactoryAdmission_OpenPRBlockersReduceStructToString(t *testing.T) {
-	a := newProductionFactoryAdmission(fakeDaemonEvidenceProvider{
+	a := NewProductionFactoryAdmission(fakeDaemonEvidenceProvider{
 		prMatrix: daemon.FactoryPRBlockerMatrix{
 			Known: true,
 			Blockers: []daemon.FactoryOpenPRBlocker{
@@ -67,7 +67,7 @@ func TestProductionFactoryAdmission_OpenPRBlockersReduceStructToString(t *testin
 }
 
 func TestProductionFactoryAdmission_MainCIGreenTranslated(t *testing.T) {
-	a := newProductionFactoryAdmission(fakeDaemonEvidenceProvider{
+	a := NewProductionFactoryAdmission(fakeDaemonEvidenceProvider{
 		ciBaseline: daemon.FactoryCIBaselineEvidence{
 			Known:    true,
 			Baseline: daemon.FactoryMainCIBaseline{Status: daemon.FactoryCIStatusGreen},
@@ -83,7 +83,7 @@ func TestProductionFactoryAdmission_MainCIGreenTranslated(t *testing.T) {
 }
 
 func TestProductionFactoryAdmission_MainCIRedTranslatesToNotGreen(t *testing.T) {
-	a := newProductionFactoryAdmission(fakeDaemonEvidenceProvider{
+	a := NewProductionFactoryAdmission(fakeDaemonEvidenceProvider{
 		ciBaseline: daemon.FactoryCIBaselineEvidence{
 			Known:    true,
 			Baseline: daemon.FactoryMainCIBaseline{Status: daemon.FactoryCIStatusRed},
@@ -99,7 +99,7 @@ func TestProductionFactoryAdmission_MainCIRedTranslatesToNotGreen(t *testing.T) 
 }
 
 func TestProductionFactoryAdmission_NilProviderErrorsClearly(t *testing.T) {
-	a := newProductionFactoryAdmission(nil)
+	a := NewProductionFactoryAdmission(nil)
 	if _, err := a.ProbeRepoState(context.Background()); err == nil {
 		t.Fatal("nil provider on RepoState should error")
 	}
@@ -112,7 +112,7 @@ func TestProductionFactoryAdmission_NilProviderErrorsClearly(t *testing.T) {
 }
 
 func TestProductionFactoryAdmission_ErrorsWrapped(t *testing.T) {
-	a := newProductionFactoryAdmission(fakeDaemonEvidenceProvider{
+	a := NewProductionFactoryAdmission(fakeDaemonEvidenceProvider{
 		repoErr: errors.New("repo bad"),
 	})
 	_, err := a.ProbeRepoState(context.Background())
@@ -125,7 +125,7 @@ func TestProductionFactoryAdmission_ErrorsWrapped(t *testing.T) {
 }
 
 func TestProductionFactoryAdmission_HonorsContextCancellation(t *testing.T) {
-	a := newProductionFactoryAdmission(fakeDaemonEvidenceProvider{})
+	a := NewProductionFactoryAdmission(fakeDaemonEvidenceProvider{})
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	for _, name := range []string{"RepoState", "OpenPRBlockers", "MainCIBaseline"} {

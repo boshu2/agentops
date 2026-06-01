@@ -104,7 +104,7 @@ func corpusInjectViaPort(ctx context.Context, opts corpusInjectOptions) ([]ports
 		}
 		root = filepath.Join(cwd, ".agents", "learnings")
 	}
-	reader := newProductionCorpusReader(root)
+	reader := ports.NewProductionCorpusReader(root)
 	return reader.Lookup(ctx, ports.LookupOptions{
 		Query: opts.query,
 		Limit: opts.limit,

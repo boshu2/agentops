@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, tdd]
-package main
+package ports
 
 import (
 	"context"
@@ -8,16 +8,14 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
 // Sibling pattern: cycle 112 corpus_reader_adapter_test.go.
 
 func TestProductionCorpusWriter_CaptureCreatesFile(t *testing.T) {
 	root := t.TempDir()
-	w := newProductionCorpusWriter(root)
-	res, err := w.Capture(context.Background(), ports.CorpusWriteRequest{
+	w := NewProductionCorpusWriter(root)
+	res, err := w.Capture(context.Background(), CorpusWriteRequest{
 		Path: "learnings/a.md",
 		Body: []byte("hello world"),
 	})
@@ -39,8 +37,8 @@ func TestProductionCorpusWriter_CaptureCreatesFile(t *testing.T) {
 
 func TestProductionCorpusWriter_CaptureIsIdempotent(t *testing.T) {
 	root := t.TempDir()
-	w := newProductionCorpusWriter(root)
-	req := ports.CorpusWriteRequest{Path: "x.md", Body: []byte("v1")}
+	w := NewProductionCorpusWriter(root)
+	req := CorpusWriteRequest{Path: "x.md", Body: []byte("v1")}
 	r1, _ := w.Capture(context.Background(), req)
 	if !r1.Created {
 		t.Fatal("first call should Created=true")
@@ -56,9 +54,9 @@ func TestProductionCorpusWriter_CaptureIsIdempotent(t *testing.T) {
 
 func TestProductionCorpusWriter_CaptureUpdatesInPlace(t *testing.T) {
 	root := t.TempDir()
-	w := newProductionCorpusWriter(root)
-	_, _ = w.Capture(context.Background(), ports.CorpusWriteRequest{Path: "x.md", Body: []byte("v1")})
-	_, _ = w.Capture(context.Background(), ports.CorpusWriteRequest{Path: "x.md", Body: []byte("v2")})
+	w := NewProductionCorpusWriter(root)
+	_, _ = w.Capture(context.Background(), CorpusWriteRequest{Path: "x.md", Body: []byte("v1")})
+	_, _ = w.Capture(context.Background(), CorpusWriteRequest{Path: "x.md", Body: []byte("v2")})
 	body, _ := os.ReadFile(filepath.Join(root, "x.md"))
 	if string(body) != "v2" {
 		t.Fatalf("update did not overwrite: got %q", body)
@@ -67,8 +65,8 @@ func TestProductionCorpusWriter_CaptureUpdatesInPlace(t *testing.T) {
 
 func TestProductionCorpusWriter_MetadataRenderedAsFrontmatter(t *testing.T) {
 	root := t.TempDir()
-	w := newProductionCorpusWriter(root)
-	_, err := w.Capture(context.Background(), ports.CorpusWriteRequest{
+	w := NewProductionCorpusWriter(root)
+	_, err := w.Capture(context.Background(), CorpusWriteRequest{
 		Path:     "x.md",
 		Body:     []byte("body content"),
 		Metadata: map[string]string{"tag": "evolve", "date": "2026-05-12"},
@@ -90,9 +88,9 @@ func TestProductionCorpusWriter_MetadataRenderedAsFrontmatter(t *testing.T) {
 
 func TestProductionCorpusWriter_PreExistingFrontmatterPreserved(t *testing.T) {
 	root := t.TempDir()
-	w := newProductionCorpusWriter(root)
+	w := NewProductionCorpusWriter(root)
 	bodyWithFM := []byte("---\nexisting: yes\n---\ncontent")
-	_, err := w.Capture(context.Background(), ports.CorpusWriteRequest{
+	_, err := w.Capture(context.Background(), CorpusWriteRequest{
 		Path:     "x.md",
 		Body:     bodyWithFM,
 		Metadata: map[string]string{"injected": "no"},
@@ -111,13 +109,13 @@ func TestProductionCorpusWriter_PreExistingFrontmatterPreserved(t *testing.T) {
 
 func TestProductionCorpusWriter_RoundTripWithReader(t *testing.T) {
 	root := t.TempDir()
-	w := newProductionCorpusWriter(root)
-	_, _ = w.Capture(context.Background(), ports.CorpusWriteRequest{
+	w := NewProductionCorpusWriter(root)
+	_, _ = w.Capture(context.Background(), CorpusWriteRequest{
 		Path: "deep/nested/foo.md",
 		Body: []byte("# foo title\n\nmatches query"),
 	})
-	r := newProductionCorpusReader(root)
-	items, err := r.Lookup(context.Background(), ports.LookupOptions{Query: "matches"})
+	r := NewProductionCorpusReader(root)
+	items, err := r.Lookup(context.Background(), LookupOptions{Query: "matches"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,8 +129,8 @@ func TestProductionCorpusWriter_RoundTripWithReader(t *testing.T) {
 
 func TestProductionCorpusWriter_AbsolutePathRejected(t *testing.T) {
 	root := t.TempDir()
-	w := newProductionCorpusWriter(root)
-	_, err := w.Capture(context.Background(), ports.CorpusWriteRequest{
+	w := NewProductionCorpusWriter(root)
+	_, err := w.Capture(context.Background(), CorpusWriteRequest{
 		Path: "/etc/passwd",
 		Body: []byte("nope"),
 	})
@@ -143,8 +141,8 @@ func TestProductionCorpusWriter_AbsolutePathRejected(t *testing.T) {
 
 func TestProductionCorpusWriter_ParentTraversalRejected(t *testing.T) {
 	root := t.TempDir()
-	w := newProductionCorpusWriter(root)
-	_, err := w.Capture(context.Background(), ports.CorpusWriteRequest{
+	w := NewProductionCorpusWriter(root)
+	_, err := w.Capture(context.Background(), CorpusWriteRequest{
 		Path: "../escape.md",
 		Body: []byte("nope"),
 	})
@@ -155,16 +153,16 @@ func TestProductionCorpusWriter_ParentTraversalRejected(t *testing.T) {
 
 func TestProductionCorpusWriter_EmptyPathErrors(t *testing.T) {
 	root := t.TempDir()
-	w := newProductionCorpusWriter(root)
-	_, err := w.Capture(context.Background(), ports.CorpusWriteRequest{Body: []byte("x")})
+	w := NewProductionCorpusWriter(root)
+	_, err := w.Capture(context.Background(), CorpusWriteRequest{Body: []byte("x")})
 	if err == nil {
 		t.Fatal("expected error on empty Path, got nil")
 	}
 }
 
 func TestProductionCorpusWriter_EmptyRootErrors(t *testing.T) {
-	w := newProductionCorpusWriter("")
-	_, err := w.Capture(context.Background(), ports.CorpusWriteRequest{Path: "x.md", Body: []byte("x")})
+	w := NewProductionCorpusWriter("")
+	_, err := w.Capture(context.Background(), CorpusWriteRequest{Path: "x.md", Body: []byte("x")})
 	if err == nil {
 		t.Fatal("expected error on empty rootDir, got nil")
 	}
@@ -172,10 +170,10 @@ func TestProductionCorpusWriter_EmptyRootErrors(t *testing.T) {
 
 func TestProductionCorpusWriter_HonorsContextCancellation(t *testing.T) {
 	root := t.TempDir()
-	w := newProductionCorpusWriter(root)
+	w := NewProductionCorpusWriter(root)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	_, err := w.Capture(ctx, ports.CorpusWriteRequest{Path: "x.md", Body: []byte("x")})
+	_, err := w.Capture(ctx, CorpusWriteRequest{Path: "x.md", Body: []byte("x")})
 	if err == nil {
 		t.Fatal("expected cancellation error, got nil")
 	}
