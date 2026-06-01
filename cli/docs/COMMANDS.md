@@ -3875,6 +3875,121 @@ ao mcp serve [flags]
 
 ---
 
+### `ao next-work`
+
+Commands that act on the carry-forward next-work queue that /post-mortem
+
+```
+ao next-work [command]
+```
+
+**Subcommands:**
+
+#### `ao next-work materialize`
+
+Read .agents/rpi/next-work.jsonl and create one durable bead per
+
+```
+ao next-work materialize [flags]
+```
+
+**Flags:**
+
+```
+      --dry-run                  Show what would be created without creating beads or mutating the queue
+      --file string              Path to next-work.jsonl (default: <cwd>/.agents/rpi/next-work.jsonl)
+  -h, --help                     help for materialize
+      --json                     Emit a machine-readable JSON summary
+      --materialized-by string   Actor recorded in provenance metadata (default "next-work-materialize")
+      --source-epic string       Only materialize items whose batch source_epic equals this value
+```
+
+---
+
+### `ao provenance`
+
+Append-only write model for the SDLC provenance/intent graph
+
+```
+ao provenance [command]
+```
+
+**Subcommands:**
+
+#### `ao provenance add`
+
+Append one schema-valid, hash-chained provenance edge linking a source
+
+```
+ao provenance add <from-id> <to-id> [flags]
+```
+
+**Flags:**
+
+```
+      --evidence string     Optional evidence pointer (path, commit, CI run URL, event id)
+      --from-type string    Source node type (decision|artifact|bead|...) (default "decision")
+  -h, --help                help for add
+      --json                Emit the sealed edge as JSON
+      --relation string     Typed PROV-O relation (required), e.g. wasGeneratedBy
+      --to-type string      Target node type (decision|artifact|bead|...) (default "artifact")
+      --trust-tier string   Trust tier (authored|inferred|mined) (default "authored")
+      --ts string           Override the UTC RFC3339 timestamp (defaults to now)
+```
+
+#### `ao provenance export`
+
+Read docs/provenance/ledger.jsonl, canonically sort its edges by
+
+```
+ao provenance export [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help     help for export
+      --json     Emit a single indented JSON array instead of JSONL
+      --verify   Verify the re-chained export and print only a one-line summary
+```
+
+#### `ao provenance list`
+
+Read the provenance edges recorded in docs/provenance/ledger.jsonl, in
+
+```
+ao provenance list [flags]
+```
+
+**Flags:**
+
+```
+      --from-id string    Filter to edges whose from_id matches
+  -h, --help              help for list
+      --json              Emit machine-readable JSON
+      --relation string   Filter to edges with this relation
+```
+
+#### `ao provenance trace`
+
+Audit a provenance trace-graph for orphans: engineered artifact nodes
+
+```
+ao provenance trace [flags]
+```
+
+**Flags:**
+
+```
+      --graph string   Path to the JSONL trace-graph to audit (required)
+  -h, --help           help for trace
+      --json           Emit each finding as one JSON object per line
+      --orphans        Audit for artifact nodes with no inbound provenance edge
+      --strict         Exit non-zero when any orphan exists
+```
+
+---
+
 ### `ao registry`
 
 Query the unified registry
@@ -4035,6 +4150,21 @@ ao skills check [flags]
       --strict         Exit non-zero on any finding (CI mode)
 ```
 
+#### `ao skills consumers`
+
+Print the skills whose consumes[] list includes <skill> — i.e. who
+
+```
+ao skills consumers <skill> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for consumers
+      --json   Emit machine-readable JSON
+```
+
 #### `ao skills find`
 
 Score every skills/<name>/SKILL.md against a free-text intent and
@@ -4049,6 +4179,87 @@ ao skills find <intent> [flags]
   -h, --help        help for find
       --json        Emit machine-readable JSON on stdout
       --limit int   Maximum number of results to return (default 5)
+```
+
+#### `ao skills graph`
+
+Render the skill dependency graph (A --> B means A consumes B) from
+
+```
+ao skills graph [flags]
+```
+
+**Flags:**
+
+```
+      --format string   Graph output format (mermaid) (default "mermaid")
+  -h, --help            help for graph
+```
+
+#### `ao skills list`
+
+Filter the generated skill catalog by hexagonal role, produced or
+
+```
+ao skills list [flags]
+```
+
+**Flags:**
+
+```
+      --consumes string         Filter to skills that consume this port/sibling
+  -h, --help                    help for list
+      --json                    Emit machine-readable JSON
+      --practice string         Filter to skills that apply this practice
+      --produces string         Filter to skills that produce this port/artifact
+      --role string             Filter by hexagonal_role (domain, driving-adapter, ...)
+      --user-invocable string   Filter by user-invocability (true|false)
+```
+
+#### `ao skills producers`
+
+Print the skills whose produces[] list includes <output> — i.e. who
+
+```
+ao skills producers <output> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for producers
+      --json   Emit machine-readable JSON
+```
+
+---
+
+### `ao turn`
+
+The 'turn' command group operates on Evidenced Turns — the ag-lmdx
+
+```
+ao turn [command]
+```
+
+**Subcommands:**
+
+#### `ao turn verify`
+
+Evaluate the legible Definition-of-Done predicate for one bead's
+
+```
+ao turn verify <bead> [flags]
+```
+
+**Flags:**
+
+```
+      --allow-self      Waive the no-self-grading invariant (permit judge_id == author_id) for the inline fallback; default OFF
+      --graph string    Path to the provenance trace-graph JSONL (node/edge records) for orphan detection
+  -h, --help            help for verify
+      --input string    Path to the turn-input JSON file (state log + scenario coverage) (required)
+      --json            Emit the full Verdict object as JSON
+      --ledger string   Path to the provenance EDGE ledger JSONL (default: docs/provenance/ledger.jsonl)
 ```
 
 ---

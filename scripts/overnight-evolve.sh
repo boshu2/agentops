@@ -48,6 +48,24 @@ if [ -n "$DIRTY" ]; then
     exit 1
 fi
 
+# Sync local `main` to origin/main BEFORE the loop's discovery phase (ag-6jt).
+# The rpi worktree's local main lags origin/main, so phase-1 discovery diffs
+# candidate slices against a stale base and re-seeds already-merged work as
+# "open". Fetch + fast-forward so discovery's diff base is origin/main. A
+# divergence is reported but non-fatal — the loop proceeds with origin/main as
+# the authoritative base either way (the script never force-moves local main).
+SYNC_SCRIPT="$HOME/dev/agentops/skills/evolve/scripts/sync-main-to-origin.sh"
+if [ -x "$SYNC_SCRIPT" ]; then
+    if SYNC_OUT="$("$SYNC_SCRIPT" 2>&1)"; then
+        echo "origin/main sync: $SYNC_OUT"
+    else
+        echo "WARN: origin/main sync reported an issue (proceeding):" >&2
+        printf '%s\n' "$SYNC_OUT" >&2
+    fi
+else
+    echo "WARN: $SYNC_SCRIPT missing or not executable; discovery may diff stale local main" >&2
+fi
+
 START_SHA="$(git rev-parse HEAD)"
 START_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 START_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"

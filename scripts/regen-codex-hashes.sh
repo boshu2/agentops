@@ -5,27 +5,42 @@ set -euo pipefail
 # Run after any change to skills-codex/ files to fix artifact metadata drift.
 #
 # Usage:
-#   scripts/regen-codex-hashes.sh              # update all drifted hashes
-#   scripts/regen-codex-hashes.sh --check      # dry-run: report drift without fixing
+#   scripts/regen-codex-hashes.sh                    # update all drifted hashes
+#   scripts/regen-codex-hashes.sh --check            # dry-run: report drift without fixing
+#   scripts/regen-codex-hashes.sh --only foo,bar     # only touch skills foo and bar
+#
+# --only scopes the per-skill loop to the named skills (comma- and/or
+# repeat-separated). Skills outside the set are skipped entirely, so a PR that
+# changes one skill no longer sweeps unrelated pre-existing hash drift into its
+# diff. Combine with --check to scope the drift report the same way.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SKILLS_ROOT="$REPO_ROOT/skills-codex"
+SKILLS_ROOT="${SKILLS_ROOT:-$REPO_ROOT/skills-codex}"
 CHECK_ONLY=false
+ONLY_SKILLS=""
 
-for arg in "$@"; do
-  case "$arg" in
+while [[ $# -gt 0 ]]; do
+  case "$1" in
     --check) CHECK_ONLY=true ;;
+    --only)
+      shift
+      [[ $# -gt 0 ]] || { echo "--only requires a skill list" >&2; exit 2; }
+      ONLY_SKILLS="${ONLY_SKILLS:+$ONLY_SKILLS,}$1"
+      ;;
+    --only=*) ONLY_SKILLS="${ONLY_SKILLS:+$ONLY_SKILLS,}${1#--only=}" ;;
     -h|--help)
-      echo "Usage: scripts/regen-codex-hashes.sh [--check]"
-      echo "  --check  Report drift without fixing"
+      echo "Usage: scripts/regen-codex-hashes.sh [--check] [--only <skill[,skill,...]>]"
+      echo "  --check               Report drift without fixing"
+      echo "  --only <skill,...>    Limit to the named skills (scope a single-skill PR)"
       exit 0
       ;;
     *)
-      echo "Unknown arg: $arg" >&2
+      echo "Unknown arg: $1" >&2
       exit 2
       ;;
   esac
+  shift
 done
 
 [[ -d "$SKILLS_ROOT" ]] || {
@@ -33,7 +48,7 @@ done
   exit 1
 }
 
-export SKILLS_ROOT CHECK_ONLY
+export SKILLS_ROOT CHECK_ONLY ONLY_SKILLS
 python3 - <<'PY'
 import hashlib
 import json
@@ -43,6 +58,7 @@ import sys
 
 skills_root = pathlib.Path(os.environ["SKILLS_ROOT"]).resolve()
 check_only = os.environ.get("CHECK_ONLY") == "true"
+scope = {s for s in os.environ.get("ONLY_SKILLS", "").split(",") if s.strip()}
 manifest_path = skills_root / ".agentops-manifest.json"
 marker_name = ".agentops-generated.json"
 
@@ -86,6 +102,8 @@ for skill_dir in sorted(p for p in skills_root.iterdir() if p.is_dir()):
         continue
 
     name = skill_dir.name
+    if scope and name not in scope:
+        continue
     new_hash = hash_tree(skill_dir)
 
     # Source-side hash: tree-hash skills/<name>/ if it exists. A codex skill

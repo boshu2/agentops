@@ -41,6 +41,24 @@ Or equivalently: `cd cli && make build && make test`
 - When adding a field, grep all `StructName{` literals and verify each sets the new field.
 - Check factory functions and synthesized/summary instances.
 
+## Security-Lint Suppressions (gosec + semgrep)
+
+Suppressing a security-lint finding on intentional crypto (e.g. SHA-1 for git object IDs) needs TWO independent annotations on the SAME line — the two scanners run separately and ignore each other's directives:
+
+- **gosec** ignores `//nolint:gosec`. Use a `// #nosec G<NN>` directive (e.g. `// #nosec G401 G505`).
+- **semgrep** is suppressed only by a **bare** `// nosemgrep`. A qualified `nosemgrep: <rule-id>` does **NOT** suppress.
+- Put the combined comment on **both** the import line and the usage/call site — they are flagged independently.
+
+```go
+import (
+    "crypto/sha1" // #nosec G505 nosemgrep -- git object IDs are SHA-1 by definition; not a security primitive here.
+)
+// ...
+h := sha1.New() // #nosec G401 nosemgrep -- git blob IDs are SHA-1; matching git.
+```
+
+Canonical example: `cli/internal/drrebuild/drrebuild.go`.
+
 ## Style
 
 - `gofmt` is automatic. All exported symbols must have godoc comments.

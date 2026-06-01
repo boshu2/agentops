@@ -59,6 +59,7 @@ Bridge / framing docs:
 - [The Canonical Loop Model](architecture/canonical-loop-model.md) — "One loop body, two drivers, one inner tick, one config": how rpi/evolve/factory/crank/swarm/autodev relate; the in-session loop is AgentOps-shipped, the out-of-session Factory driver is substrate-owned (Gas City reference)
 - [GC Posture](architecture/gc-posture.md) — Canonical boundary doc: Gas City is one opt-in, swappable adapter behind AgentOps ports (not the runtime AgentOps runs inside); the never-make-AgentOps-a-managed-city-resource guardrail with its flap rationale; and the "no cloud required" sovereignty promise
 - [Intent-to-Loop Hexagon](architecture/intent-to-loop-hexagon.md) — Process-level ports/adapters from BDD intent through beads, slices, validation, ratchet evidence, and loop steering
+- [Fungibility Charter](architecture/fungibility-charter.md) — AgentOps 3.0's six doctrinal commitments (single-model RPI default, role-free claiming, stateless agents, universal init, automatic death recovery, opt-in specialization); fungible by default, specialized when you opt in
 - [Behavior-Shaping Environment](architecture/behavior-shaping-environment.md) — The *why* beneath the loop: AgentOps as an operant-conditioning system (Antecedent → Behavior → Consequence); arrange the environment + reinforce/stop the behaviors you agree on
 - [ADR-0001: Adopt DDD + Hexagonal Architecture](adr/ADR-0001-ddd-hexagonal-adoption.md) — Decision record for encoding DDD + Hexagonal with `ExecutionPacket` as the tracer-bullet aggregate
 - [ADR-0002: AgentOps 3.0 Hookless-First CDLC Rearchitecture](adr/ADR-0002-agentops-3-hookless-cdlc-rearchitecture.md) — Proposed 3.0 direction: demote hooks to optional runtime adapters and center CDLC bounded contexts
@@ -217,6 +218,13 @@ Bridge / framing docs:
 - [vs everything-claude-code](comparisons/vs-everything-claude-code.md) — AgentOps vs `affaan-m/everything-claude-code` (cross-harness lane)
 - [Competitive Radar](comparisons/competitive-radar.md) — Current market read and improvement pressure
 
+## Convergence
+
+- [Convergence Overview](convergence/index.md) — The industry arriving at the structure AgentOps runs (vindication, not competition)
+- [The Reading](convergence/the-reading.md) — Living thesis: the industry is converging, and here's the mechanism why
+- [Convergence Ledger](convergence/ledger.md) — Dated receipts: external parties independently arriving at the AgentOps thesis
+- [Google SRE](convergence/google-sre.md) — Encoding map: where Google's 2026 SRE AI whitepaper aligns with AgentOps doctrine, point by point
+
 ## Positioning
 
 - [Positioning Overview](positioning/README.md) — Product and messaging foundations
@@ -288,6 +296,7 @@ Bridge / framing docs:
 - [Repo Execution Profile Example](contracts/repo-execution-profile.json) — Concrete repository execution profile used by local autonomous orchestration
 - [Autodev Program Contract](contracts/autodev-program.md) — Repo-local operational contract for bounded autonomous development
 - [`.agents/` Write Surfaces](contracts/agents-write-surfaces.md) — Catalogued top-level subdirs that production code writes under `.agents/`, gated by `scripts/check-agents-write-surfaces.sh`
+- [CI Path-Filter / Gate-Target Coverage Audit](contracts/ci-pathfilter-coverage-audit.md) — Repo-wide audit (ag-g9ex) of the invariant "a CI gate that reads a file must be triggered by a path-filter covering that file" (the #634/#638 class). Findings table for every file-reading gate in `validate.yml`, the two gaps fixed (AGENTS tiered-split siblings; wiring-closure GOALS.md de-wire), and the `--admin` self-merge governance policy. Guarded by `tests/scripts/test-pathfilter-gate-coverage.bats`.
 - [Update Principles Contract](contracts/update-principles.md) — Five operator-exemplar properties every commit must demonstrate (single concern, drift-blocking test, sibling citation, fitness delta, clean branch point); sourced from commit 1b9d139c
 - [Ubiquitous Language Contract](contracts/ubiquitous-language.md) — Canonical names per bounded context (BC1 Corpus, BC2 Validation, BC3 Loop, BC4 Factory, BC5 Runtime) for the 5 ranked drifts (Gate/Check, Cycle/Loop, Claim/Evidence, Skill/Pattern/Practice, Session); rename schedule bound to soc-5yuy children
 - [BC1 Corpus Ports Contract](contracts/bc1-corpus-ports.md) — Core BC1 corpus ports scaffolded under `cli/internal/ports/`; semantics cheat-sheet, adapter triplet pattern, soc-pm5t wire-up order
@@ -305,6 +314,7 @@ Bridge / framing docs:
 - [Context Usefulness Eval Contract](contracts/context-usefulness-eval.md) — Wave 0 deterministic `context_off` versus `context_on` evaluation, scorecard fields, hook-preservation boundaries
 - [Eval Verdict Pipeline Contract](contracts/eval-verdict-pipeline.md) — Verdict compiler pipeline from eval run manifests to learning utility and retirement signals
 - [Outcomes Rubric Projection Contract](contracts/outcomes-rubric-projection.md) — Holdout-safe projection of the locked eval substrate into an Outcomes-style grading payload (`schemas/outcomes-rubric.v1.schema.json`); `additionalProperties:false` at every level forbids target/ground_truth/expected_output (Managed Agents are not ZDR); validator `scripts/validate-outcomes-rubric.sh` + Go schema↔struct drift guard (ag-hguuf)
+- [Agent-Native Mechanism Contract](contracts/agent-native-mechanism.md) — Decision doc mapping each old-hook *intent* (orientation, standards, scope guard, commit-review, holdout-isolation) to its hookless equivalent (skill + `ao` subcommand + CI job) across both runtimes (Claude Managed Agents/SDK/MCP-`ao` and Codex/NTM shell-`ao`); Managed-Agents Agent shape + bushido self-hosted sandbox (MCP + Dolt over tailnet); SDK hooks as the OPTIONAL adapter and why CI is the default gate; holdout excluded from hosted bundles (ag-uphk9)
 - [Retrieval Comparison Contract](contracts/retrieval-comparison.md) — Deterministic search-eval backend comparison, promotion thresholds, optional rerank behavior, and deferred vector/graph-store policy
 - [Release Readiness Contract](contracts/release-readiness.md) — 8/10 release readiness score, SIL/VIL/HIL evidence, artifact manifest requirements, and HIL waiver policy
 - [MemRL Policy Schema](contracts/memrl-policy.schema.json) — Machine-readable retry/escalation policy profile for memory-reinforcement feedback loops
@@ -326,6 +336,7 @@ Bridge / framing docs:
 - [AgentOps 3.0 PMF Scenario — evidence bundle](releases/v3.0/pmf-scenario.md) — Single-day autonomous /evolve drain record: 11 P1 closures, 11 commits, friction modes, durable artifacts (PG2)
 - [Scope Escape Report](contracts/scope-escape-report.md) — Structured template for agent scope-escape reporting
 - [Dream Report Contract](contracts/dream-report.md) — Canonical `summary.json` and `summary.md` schema for Dream outputs
+- [Dreaming/Memory Writers Characterization](contracts/dreaming-writers-characterization.md) — Spike (ag-cj8mk): the three foreign Dreaming/memory writers (Anthropic Managed-Agents Dreaming `/v1/dreams`→memory store, OpenClaw memory-wiki indexer, local gc-dream/T3 synthesis), their output shapes/destinations, the normalized `.agents/learnings/*.md` target via `ao corpus capture`, the NOT-ZDR holdout/PII constraint enforced by the ag-onf37 leak guard, and GO on the Claude-side REST pull feeder
 - [dispatch-checklist.md](contracts/dispatch-checklist.md) — Standard references for agent dispatch prompts
 - [Headless Invocation Standards](contracts/headless-invocation-standards.md) — Required flags, tool allowlists, and timeout strategy for non-interactive Claude/Codex execution
 - [Codex Skill API Contract](contracts/codex-skill-api.md) — Source of truth for Codex runtime skill structure, frontmatter, discovery paths, and multi-agent primitives
