@@ -10,9 +10,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
-	"github.com/boshu2/agentops/cli/internal/storage"
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 type badgeResult struct {
@@ -98,7 +98,7 @@ func runBadgeWithOptions(opts badgeOptions) error {
 
 // countSessions counts mined transcript sessions.
 func countSessions(baseDir string) int {
-	sessionsDir := filepath.Join(baseDir, storage.DefaultBaseDir, storage.SessionsDir)
+	sessionsDir := filepath.Join(baseDir, sessionstore.DefaultBaseDir, sessionstore.SessionsDir)
 	if _, err := os.Stat(sessionsDir); os.IsNotExist(err) {
 		return 0
 	}
@@ -109,7 +109,7 @@ func countSessions(baseDir string) int {
 // printBadge prints the visual badge.
 func printBadge(w io.Writer, sessions int, m *FlywheelMetrics) {
 	if m == nil {
-		m = &FlywheelMetrics{Delta: types.DefaultDelta * 100}
+		m = &FlywheelMetrics{Delta: domain.DefaultDelta * 100}
 	}
 
 	// Calculate status
@@ -153,7 +153,7 @@ func printBadge(w io.Writer, sessions int, m *FlywheelMetrics) {
 
 func buildBadgeResult(sessions int, m *FlywheelMetrics) badgeResult {
 	if m == nil {
-		m = &FlywheelMetrics{Delta: types.DefaultDelta * 100}
+		m = &FlywheelMetrics{Delta: domain.DefaultDelta * 100}
 	}
 	status, _ := getEscapeStatus(m.SigmaRho, m.Delta)
 	threshold := escapeVelocityThreshold(m.Delta)
@@ -217,4 +217,4 @@ func makeProgressBar(value float64, width int) string {
 }
 
 // FlywheelMetrics is imported from types but we use a local alias for brevity
-type FlywheelMetrics = types.FlywheelMetrics
+type FlywheelMetrics = domain.FlywheelMetrics

@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // ---------------------------------------------------------------------------
@@ -19,13 +19,13 @@ import (
 func TestTaskSync_statusToMaturity(t *testing.T) {
 	tests := []struct {
 		status string
-		want   types.Maturity
+		want   domain.Maturity
 	}{
-		{"completed", types.MaturityEstablished},
-		{"in_progress", types.MaturityCandidate},
-		{"pending", types.MaturityProvisional},
-		{"", types.MaturityProvisional},
-		{"unknown", types.MaturityProvisional},
+		{"completed", domain.MaturityEstablished},
+		{"in_progress", domain.MaturityCandidate},
+		{"pending", domain.MaturityProvisional},
+		{"", domain.MaturityProvisional},
+		{"unknown", domain.MaturityProvisional},
 	}
 	for _, tt := range tests {
 		t.Run(tt.status, func(t *testing.T) {
@@ -63,19 +63,19 @@ func TestTaskSync_assignMaturityAndUtility(t *testing.T) {
 	}
 	assignMaturityAndUtility(tasks)
 
-	if tasks[0].Maturity != types.MaturityProvisional {
+	if tasks[0].Maturity != domain.MaturityProvisional {
 		t.Errorf("pending task maturity = %q, want provisional", tasks[0].Maturity)
 	}
-	if tasks[0].Utility != types.InitialUtility {
-		t.Errorf("pending task utility = %f, want %f", tasks[0].Utility, types.InitialUtility)
+	if tasks[0].Utility != domain.InitialUtility {
+		t.Errorf("pending task utility = %f, want %f", tasks[0].Utility, domain.InitialUtility)
 	}
-	if tasks[1].Maturity != types.MaturityCandidate {
+	if tasks[1].Maturity != domain.MaturityCandidate {
 		t.Errorf("in_progress task maturity = %q, want candidate", tasks[1].Maturity)
 	}
-	if tasks[1].Utility != types.InitialUtility {
-		t.Errorf("in_progress task utility = %f, want %f", tasks[1].Utility, types.InitialUtility)
+	if tasks[1].Utility != domain.InitialUtility {
+		t.Errorf("in_progress task utility = %f, want %f", tasks[1].Utility, domain.InitialUtility)
 	}
-	if tasks[2].Maturity != types.MaturityEstablished {
+	if tasks[2].Maturity != domain.MaturityEstablished {
 		t.Errorf("completed task maturity = %q, want established", tasks[2].Maturity)
 	}
 	// Utility already > 0, should not be overwritten
@@ -163,12 +163,12 @@ func TestTaskSync_filterProcessableTasks(t *testing.T) {
 
 func TestTaskSync_computeTaskDistributions(t *testing.T) {
 	tasks := []TaskEvent{
-		{Status: "pending", Maturity: types.MaturityProvisional},
-		{Status: "pending", Maturity: types.MaturityProvisional},
-		{Status: "in_progress", Maturity: types.MaturityCandidate},
-		{Status: "completed", Maturity: types.MaturityEstablished, LearningID: "L-1"},
-		{Status: "completed", Maturity: types.MaturityEstablished, LearningID: "L-2"},
-		{Status: "completed", Maturity: types.MaturityEstablished},
+		{Status: "pending", Maturity: domain.MaturityProvisional},
+		{Status: "pending", Maturity: domain.MaturityProvisional},
+		{Status: "in_progress", Maturity: domain.MaturityCandidate},
+		{Status: "completed", Maturity: domain.MaturityEstablished, LearningID: "L-1"},
+		{Status: "completed", Maturity: domain.MaturityEstablished, LearningID: "L-2"},
+		{Status: "completed", Maturity: domain.MaturityEstablished},
 	}
 
 	statusCounts, maturityCounts, withLearnings := computeTaskDistributions(tasks)
@@ -182,14 +182,14 @@ func TestTaskSync_computeTaskDistributions(t *testing.T) {
 	if statusCounts["completed"] != 3 {
 		t.Errorf("completed count = %d, want 3", statusCounts["completed"])
 	}
-	if maturityCounts[types.MaturityProvisional] != 2 {
-		t.Errorf("provisional count = %d, want 2", maturityCounts[types.MaturityProvisional])
+	if maturityCounts[domain.MaturityProvisional] != 2 {
+		t.Errorf("provisional count = %d, want 2", maturityCounts[domain.MaturityProvisional])
 	}
-	if maturityCounts[types.MaturityCandidate] != 1 {
-		t.Errorf("candidate count = %d, want 1", maturityCounts[types.MaturityCandidate])
+	if maturityCounts[domain.MaturityCandidate] != 1 {
+		t.Errorf("candidate count = %d, want 1", maturityCounts[domain.MaturityCandidate])
 	}
-	if maturityCounts[types.MaturityEstablished] != 3 {
-		t.Errorf("established count = %d, want 3", maturityCounts[types.MaturityEstablished])
+	if maturityCounts[domain.MaturityEstablished] != 3 {
+		t.Errorf("established count = %d, want 3", maturityCounts[domain.MaturityEstablished])
 	}
 	if withLearnings != 2 {
 		t.Errorf("withLearnings = %d, want 2", withLearnings)
@@ -535,8 +535,8 @@ func TestTaskSync_parseTaskCreate(t *testing.T) {
 			if got.Status != "pending" {
 				t.Errorf("Status = %q, want 'pending'", got.Status)
 			}
-			if got.Utility != types.InitialUtility {
-				t.Errorf("Utility = %f, want %f", got.Utility, types.InitialUtility)
+			if got.Utility != domain.InitialUtility {
+				t.Errorf("Utility = %f, want %f", got.Utility, domain.InitialUtility)
 			}
 			if tt.wantDesc != "" && got.Description != tt.wantDesc {
 				t.Errorf("Description = %q, want %q", got.Description, tt.wantDesc)
@@ -586,7 +586,7 @@ func TestTaskSync_updateTask(t *testing.T) {
 	if task.Owner != "agent-1" {
 		t.Errorf("Owner = %q, want 'agent-1'", task.Owner)
 	}
-	if task.Maturity != types.MaturityEstablished {
+	if task.Maturity != domain.MaturityEstablished {
 		t.Errorf("Maturity = %q, want established", task.Maturity)
 	}
 	if task.CompletedAt.IsZero() {
@@ -822,9 +822,9 @@ func TestTaskSync_printTaskSyncSummary_text(t *testing.T) {
 
 func TestTaskSync_printTaskStatusText(t *testing.T) {
 	statusCounts := map[string]int{"pending": 2, "completed": 1}
-	maturityCounts := map[types.Maturity]int{
-		types.MaturityProvisional: 2,
-		types.MaturityEstablished: 1,
+	maturityCounts := map[domain.Maturity]int{
+		domain.MaturityProvisional: 2,
+		domain.MaturityEstablished: 1,
 	}
 	out, _ := captureStdout(t, func() error {
 		printTaskStatusText([]TaskEvent{{}, {}, {}}, statusCounts, maturityCounts, 1)
@@ -851,7 +851,7 @@ func TestTaskSync_TaskEventJSONRoundTrip(t *testing.T) {
 		UpdatedAt:   now,
 		CompletedAt: now,
 		LearningID:  "L-1",
-		Maturity:    types.MaturityEstablished,
+		Maturity:    domain.MaturityEstablished,
 		Utility:     0.75,
 		Owner:       "agent-1",
 		BlockedBy:   []string{"t0"},

@@ -9,11 +9,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/resolver"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 var (
@@ -60,7 +60,7 @@ func init() {
 	feedbackCmd.GroupID = "knowledge"
 	rootCmd.AddCommand(feedbackCmd)
 	feedbackCmd.Flags().Float64Var(&feedbackReward, "reward", -1, "Reward value (0.0 to 1.0)")
-	feedbackCmd.Flags().Float64Var(&feedbackAlpha, "alpha", types.DefaultAlpha, "EMA learning rate")
+	feedbackCmd.Flags().Float64Var(&feedbackAlpha, "alpha", domain.DefaultAlpha, "EMA learning rate")
 	feedbackCmd.Flags().BoolVar(&feedbackHelpful, "helpful", false, "Mark as helpful (shortcut for --reward 1.0)")
 	feedbackCmd.Flags().BoolVar(&feedbackHarmful, "harmful", false, "Mark as harmful (shortcut for --reward 0.0)")
 	// Note: reward is no longer required since --helpful/--harmful can be used instead

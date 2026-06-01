@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/pool"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 func TestPoolListEmpty(t *testing.T) {
@@ -34,38 +34,38 @@ func TestPoolStagePromoteWorkflow(t *testing.T) {
 
 	p := pool.NewPool(tmp)
 
-	cand := types.Candidate{
+	cand := domain.Candidate{
 		ID:         "cand-test-001",
 		Type:       "learning",
-		Tier:       types.TierSilver,
+		Tier:       domain.TierSilver,
 		Content:    "Test learning content",
 		Utility:    0.8,
 		Confidence: 0.9,
 		Maturity:   "established",
-		Source: types.Source{
+		Source: domain.Source{
 			SessionID:      "session-abc",
 			TranscriptPath: "/tmp/t.md",
 			MessageIndex:   5,
 		},
 	}
 
-	if err := p.Add(cand, types.Scoring{RawScore: 0.85, TierAssignment: types.TierSilver}); err != nil {
+	if err := p.Add(cand, domain.Scoring{RawScore: 0.85, TierAssignment: domain.TierSilver}); err != nil {
 		t.Fatalf("add: %v", err)
 	}
 
 	// Verify candidate is pending
-	entries, _ := p.List(pool.ListOptions{Status: types.PoolStatusPending})
+	entries, _ := p.List(pool.ListOptions{Status: domain.PoolStatusPending})
 	if len(entries) != 1 {
 		t.Fatalf("pending=%d, want 1", len(entries))
 	}
 
 	// Stage
-	if err := p.Stage(cand.ID, types.TierBronze); err != nil {
+	if err := p.Stage(cand.ID, domain.TierBronze); err != nil {
 		t.Fatalf("stage: %v", err)
 	}
 
 	// Verify staged
-	entries, _ = p.List(pool.ListOptions{Status: types.PoolStatusStaged})
+	entries, _ = p.List(pool.ListOptions{Status: domain.PoolStatusStaged})
 	if len(entries) != 1 {
 		t.Fatalf("staged=%d, want 1", len(entries))
 	}
@@ -96,10 +96,10 @@ func TestPoolBulkApproveThreshold(t *testing.T) {
 	tmp := t.TempDir()
 	p := pool.NewPool(tmp)
 
-	cand := types.Candidate{
+	cand := domain.Candidate{
 		ID:         "cand-bulk-001",
 		Type:       "learning",
-		Tier:       types.TierSilver,
+		Tier:       domain.TierSilver,
 		Content:    "Bulk test content",
 		Utility:    0.7,
 		Confidence: 0.8,
@@ -108,7 +108,7 @@ func TestPoolBulkApproveThreshold(t *testing.T) {
 
 	// Add with a past timestamp so the candidate qualifies for the 1h threshold
 	pastTime := time.Now().Add(-2 * time.Hour)
-	if err := p.AddAt(cand, types.Scoring{RawScore: 0.75, TierAssignment: types.TierSilver}, pastTime); err != nil {
+	if err := p.AddAt(cand, domain.Scoring{RawScore: 0.75, TierAssignment: domain.TierSilver}, pastTime); err != nil {
 		t.Fatalf("add: %v", err)
 	}
 
@@ -205,14 +205,14 @@ func TestPool_outputPoolList_jsonMode(t *testing.T) {
 
 	entries := []pool.PoolEntry{
 		{
-			PoolEntry: types.PoolEntry{
-				Candidate: types.Candidate{
+			PoolEntry: domain.PoolEntry{
+				Candidate: domain.Candidate{
 					ID:         "cand-test-001",
-					Tier:       types.TierSilver,
+					Tier:       domain.TierSilver,
 					Utility:    0.75,
 					Confidence: 0.90,
 				},
-				Status: types.PoolStatusPending,
+				Status: domain.PoolStatusPending,
 			},
 			AgeString: "2h",
 		},
@@ -253,14 +253,14 @@ func TestPool_outputPoolList_paginationMessage(t *testing.T) {
 
 	entries := []pool.PoolEntry{
 		{
-			PoolEntry: types.PoolEntry{
-				Candidate: types.Candidate{
+			PoolEntry: domain.PoolEntry{
+				Candidate: domain.Candidate{
 					ID:         "cand-page-001",
-					Tier:       types.TierBronze,
+					Tier:       domain.TierBronze,
 					Utility:    0.60,
 					Confidence: 0.55,
 				},
-				Status: types.PoolStatusPending,
+				Status: domain.PoolStatusPending,
 			},
 			AgeString: "1h",
 		},
@@ -300,25 +300,25 @@ func TestPool_outputPoolShow_textMode(t *testing.T) {
 	defer func() { output = oldOutput }()
 
 	entry := &pool.PoolEntry{
-		PoolEntry: types.PoolEntry{
-			Candidate: types.Candidate{
+		PoolEntry: domain.PoolEntry{
+			Candidate: domain.Candidate{
 				ID:          "show-test-001",
-				Type:        types.KnowledgeTypeLearning,
-				Tier:        types.TierGold,
+				Type:        domain.KnowledgeTypeLearning,
+				Tier:        domain.TierGold,
 				Content:     "Test learning content for show",
 				Utility:     0.85,
 				Confidence:  0.92,
-				Maturity:    types.MaturityEstablished,
+				Maturity:    domain.MaturityEstablished,
 				RewardCount: 5,
-				Source: types.Source{
+				Source: domain.Source{
 					SessionID:      "session-show-test",
 					TranscriptPath: "/tmp/show.jsonl",
 					MessageIndex:   10,
 				},
 			},
-			ScoringResult: types.Scoring{
+			ScoringResult: domain.Scoring{
 				RawScore: 0.87,
-				Rubric: types.RubricScores{
+				Rubric: domain.RubricScores{
 					Specificity:   0.90,
 					Actionability: 0.85,
 					Novelty:       0.80,
@@ -326,7 +326,7 @@ func TestPool_outputPoolShow_textMode(t *testing.T) {
 					Confidence:    0.91,
 				},
 			},
-			Status: types.PoolStatusStaged,
+			Status: domain.PoolStatusStaged,
 		},
 		AgeString: "3d",
 	}
@@ -371,22 +371,22 @@ func TestPool_outputPoolShow_withHumanReview(t *testing.T) {
 
 	reviewedAt := time.Now()
 	entry := &pool.PoolEntry{
-		PoolEntry: types.PoolEntry{
-			Candidate: types.Candidate{
+		PoolEntry: domain.PoolEntry{
+			Candidate: domain.Candidate{
 				ID:      "review-show-001",
-				Tier:    types.TierBronze,
+				Tier:    domain.TierBronze,
 				Content: "Reviewed content",
-				Source:  types.Source{SessionID: "s1", TranscriptPath: "/t.jsonl"},
+				Source:  domain.Source{SessionID: "s1", TranscriptPath: "/t.jsonl"},
 			},
-			Status: types.PoolStatusPending,
-			HumanReview: &types.HumanReview{
+			Status: domain.PoolStatusPending,
+			HumanReview: &domain.HumanReview{
 				Reviewed:   true,
 				Approved:   true,
 				Reviewer:   "test-user",
 				Notes:      "Looks good",
 				ReviewedAt: reviewedAt,
 			},
-			ScoringResult: types.Scoring{},
+			ScoringResult: domain.Scoring{},
 		},
 		AgeString: "1h",
 	}

@@ -10,7 +10,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/provenance"
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 var (
@@ -74,7 +74,7 @@ func runTrace(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	provPath := filepath.Join(cwd, storage.DefaultBaseDir, storage.ProvenanceDir, storage.ProvenanceFile)
+	provPath := filepath.Join(cwd, sessionstore.DefaultBaseDir, sessionstore.ProvenanceDir, sessionstore.ProvenanceFile)
 
 	graph, err := provenance.NewGraph(provPath)
 	if err != nil {

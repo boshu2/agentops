@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/format"
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 const (
@@ -168,7 +168,7 @@ func buildSearchEvalReportForBackend(repoRoot, manifestPath string, k int, backe
 		Results:      make([]searchEvalResult, 0, len(manifest.Queries)),
 	}
 
-	sessionsDir := filepath.Join(root, storage.DefaultBaseDir, storage.SessionsDir)
+	sessionsDir := filepath.Join(root, sessionstore.DefaultBaseDir, sessionstore.SessionsDir)
 	for _, evalCase := range manifest.Queries {
 		result, err := runSearchEvalCase(root, sessionsDir, evalCase, k, backend)
 		if err != nil {

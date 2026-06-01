@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 func TestNudgeResult_JSONMarshaling(t *testing.T) {
@@ -113,7 +113,7 @@ func TestStepToSkill(t *testing.T) {
 func TestBuildSuggestion(t *testing.T) {
 	tests := []struct {
 		name            string
-		metrics         *types.FlywheelMetrics
+		metrics         *domain.FlywheelMetrics
 		rpiState        RPIState
 		poolPending     int
 		poolApproaching int
@@ -121,7 +121,7 @@ func TestBuildSuggestion(t *testing.T) {
 	}{
 		{
 			name:            "pool approaching threshold",
-			metrics:         &types.FlywheelMetrics{AboveEscapeVelocity: true},
+			metrics:         &domain.FlywheelMetrics{AboveEscapeVelocity: true},
 			rpiState:        RPIState{},
 			poolPending:     3,
 			poolApproaching: 2,
@@ -129,7 +129,7 @@ func TestBuildSuggestion(t *testing.T) {
 		},
 		{
 			name:            "many pending candidates",
-			metrics:         &types.FlywheelMetrics{AboveEscapeVelocity: true},
+			metrics:         &domain.FlywheelMetrics{AboveEscapeVelocity: true},
 			rpiState:        RPIState{},
 			poolPending:     10,
 			poolApproaching: 0,
@@ -137,7 +137,7 @@ func TestBuildSuggestion(t *testing.T) {
 		},
 		{
 			name:            "resume workflow",
-			metrics:         &types.FlywheelMetrics{AboveEscapeVelocity: true},
+			metrics:         &domain.FlywheelMetrics{AboveEscapeVelocity: true},
 			rpiState:        RPIState{LastStep: "research", NextStep: "plan", Skill: "/plan"},
 			poolPending:     2,
 			poolApproaching: 0,
@@ -145,7 +145,7 @@ func TestBuildSuggestion(t *testing.T) {
 		},
 		{
 			name: "low sigma",
-			metrics: &types.FlywheelMetrics{
+			metrics: &domain.FlywheelMetrics{
 				AboveEscapeVelocity: false,
 				Sigma:               0.2,
 				Rho:                 0.6,
@@ -157,7 +157,7 @@ func TestBuildSuggestion(t *testing.T) {
 		},
 		{
 			name: "low rho",
-			metrics: &types.FlywheelMetrics{
+			metrics: &domain.FlywheelMetrics{
 				AboveEscapeVelocity: false,
 				Sigma:               0.5,
 				Rho:                 0.3,
@@ -169,7 +169,7 @@ func TestBuildSuggestion(t *testing.T) {
 		},
 		{
 			name: "healthy flywheel",
-			metrics: &types.FlywheelMetrics{
+			metrics: &domain.FlywheelMetrics{
 				AboveEscapeVelocity: true,
 			},
 			rpiState:        RPIState{},

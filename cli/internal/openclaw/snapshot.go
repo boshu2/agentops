@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	quest "github.com/boshu2/agentops/cli/internal/types/quest"
+	quest "github.com/boshu2/agentops/cli/internal/domain/quest"
 )
 
 const SnapshotDirRel = ".agents/daemon/projections/openclaw"

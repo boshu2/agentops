@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/provenance"
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 // ---------------------------------------------------------------------------
@@ -174,7 +174,7 @@ func TestTrace_printTraceGraph_EmptySessionID(t *testing.T) {
 
 func TestTrace_traceOneArtifact_Found(t *testing.T) {
 	tmp := t.TempDir()
-	provDir := filepath.Join(tmp, storage.DefaultBaseDir, storage.ProvenanceDir)
+	provDir := filepath.Join(tmp, sessionstore.DefaultBaseDir, sessionstore.ProvenanceDir)
 	if err := os.MkdirAll(provDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -190,7 +190,7 @@ func TestTrace_traceOneArtifact_Found(t *testing.T) {
 		CreatedAt:    time.Date(2026, 2, 10, 12, 0, 0, 0, time.UTC),
 	}
 	data, _ := json.Marshal(record)
-	provPath := filepath.Join(provDir, storage.ProvenanceFile)
+	provPath := filepath.Join(provDir, sessionstore.ProvenanceFile)
 	if err := os.WriteFile(provPath, append(data, '\n'), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -213,13 +213,13 @@ func TestTrace_traceOneArtifact_Found(t *testing.T) {
 
 func TestTrace_traceOneArtifact_NotFound(t *testing.T) {
 	tmp := t.TempDir()
-	provDir := filepath.Join(tmp, storage.DefaultBaseDir, storage.ProvenanceDir)
+	provDir := filepath.Join(tmp, sessionstore.DefaultBaseDir, sessionstore.ProvenanceDir)
 	if err := os.MkdirAll(provDir, 0755); err != nil {
 		t.Fatal(err)
 	}
 
 	// Empty provenance file
-	provPath := filepath.Join(provDir, storage.ProvenanceFile)
+	provPath := filepath.Join(provDir, sessionstore.ProvenanceFile)
 	if err := os.WriteFile(provPath, []byte{}, 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -242,7 +242,7 @@ func TestTrace_traceOneArtifact_NotFound(t *testing.T) {
 
 func TestTrace_traceOneArtifact_JSONOutput(t *testing.T) {
 	tmp := t.TempDir()
-	provDir := filepath.Join(tmp, storage.DefaultBaseDir, storage.ProvenanceDir)
+	provDir := filepath.Join(tmp, sessionstore.DefaultBaseDir, sessionstore.ProvenanceDir)
 	if err := os.MkdirAll(provDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -256,7 +256,7 @@ func TestTrace_traceOneArtifact_JSONOutput(t *testing.T) {
 		CreatedAt:    time.Now(),
 	}
 	data, _ := json.Marshal(record)
-	provPath := filepath.Join(provDir, storage.ProvenanceFile)
+	provPath := filepath.Join(provDir, sessionstore.ProvenanceFile)
 	if err := os.WriteFile(provPath, append(data, '\n'), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -279,7 +279,7 @@ func TestTrace_traceOneArtifact_JSONOutput(t *testing.T) {
 
 func TestTrace_traceOneArtifact_GraphMode(t *testing.T) {
 	tmp := t.TempDir()
-	provDir := filepath.Join(tmp, storage.DefaultBaseDir, storage.ProvenanceDir)
+	provDir := filepath.Join(tmp, sessionstore.DefaultBaseDir, sessionstore.ProvenanceDir)
 	if err := os.MkdirAll(provDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -294,7 +294,7 @@ func TestTrace_traceOneArtifact_GraphMode(t *testing.T) {
 		CreatedAt:    time.Now(),
 	}
 	data, _ := json.Marshal(record)
-	provPath := filepath.Join(provDir, storage.ProvenanceFile)
+	provPath := filepath.Join(provDir, sessionstore.ProvenanceFile)
 	if err := os.WriteFile(provPath, append(data, '\n'), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -350,7 +350,7 @@ func TestTrace_runTrace_NoProvenanceFile(t *testing.T) {
 	defer func() { dryRun = oldDryRun }()
 
 	// Create the directory structure but no provenance file
-	provDir := filepath.Join(tmp, storage.DefaultBaseDir, storage.ProvenanceDir)
+	provDir := filepath.Join(tmp, sessionstore.DefaultBaseDir, sessionstore.ProvenanceDir)
 	if err := os.MkdirAll(provDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -372,7 +372,7 @@ func TestTrace_runTrace_NoProvenanceFile(t *testing.T) {
 func TestTrace_traceOneArtifact_jsonOutput(t *testing.T) {
 	// Set up a temp dir with a provenance graph file
 	tmpDir := t.TempDir()
-	provDir := filepath.Join(tmpDir, storage.DefaultBaseDir, storage.ProvenanceDir)
+	provDir := filepath.Join(tmpDir, sessionstore.DefaultBaseDir, sessionstore.ProvenanceDir)
 	if err := os.MkdirAll(provDir, 0755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
@@ -388,7 +388,7 @@ func TestTrace_traceOneArtifact_jsonOutput(t *testing.T) {
 	}
 	data, _ := json.Marshal(record)
 
-	provFile := filepath.Join(provDir, storage.ProvenanceFile)
+	provFile := filepath.Join(provDir, sessionstore.ProvenanceFile)
 	if err := os.WriteFile(provFile, append(data, '\n'), 0644); err != nil {
 		t.Fatalf("write prov: %v", err)
 	}
@@ -429,12 +429,12 @@ func TestTrace_traceOneArtifact_jsonOutput(t *testing.T) {
 func TestTrace_traceOneArtifact_noProvenance(t *testing.T) {
 	// Create an empty provenance graph
 	tmpDir := t.TempDir()
-	provDir := filepath.Join(tmpDir, storage.DefaultBaseDir, storage.ProvenanceDir)
+	provDir := filepath.Join(tmpDir, sessionstore.DefaultBaseDir, sessionstore.ProvenanceDir)
 	if err := os.MkdirAll(provDir, 0755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
 
-	provFile := filepath.Join(provDir, storage.ProvenanceFile)
+	provFile := filepath.Join(provDir, sessionstore.ProvenanceFile)
 	if err := os.WriteFile(provFile, []byte{}, 0644); err != nil {
 		t.Fatalf("write prov: %v", err)
 	}

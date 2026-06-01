@@ -9,24 +9,24 @@ import (
 
 	"pgregory.net/rapid"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // maturityOrder maps each maturity level to a numeric rank for comparison.
 // Higher rank = more mature (except anti-pattern which is a lateral state).
-var maturityOrder = map[types.Maturity]int{
-	types.MaturityProvisional: 0,
-	types.MaturityCandidate:   1,
-	types.MaturityEstablished: 2,
-	types.MaturityAntiPattern: -1, // lateral, not in the linear progression
+var maturityOrder = map[domain.Maturity]int{
+	domain.MaturityProvisional: 0,
+	domain.MaturityCandidate:   1,
+	domain.MaturityEstablished: 2,
+	domain.MaturityAntiPattern: -1, // lateral, not in the linear progression
 }
 
 // allNormalMaturities are the three maturity levels in the normal progression.
-var allNormalMaturities = []types.Maturity{
-	types.MaturityProvisional,
-	types.MaturityCandidate,
-	types.MaturityEstablished,
+var allNormalMaturities = []domain.Maturity{
+	domain.MaturityProvisional,
+	domain.MaturityCandidate,
+	domain.MaturityEstablished,
 }
 
 // writeLearningJSONL creates a JSONL learning file in a temp directory
@@ -78,7 +78,7 @@ func TestPropertyMaturity_MonotonicPromotionTransitions(t *testing.T) {
 		startMaturity := allNormalMaturities[startIdx]
 
 		// Generate conditions sufficient for promotion.
-		utility := rapid.Float64Range(types.MaturityPromotionThreshold, 1.0).Draw(t, "utility")
+		utility := rapid.Float64Range(domain.MaturityPromotionThreshold, 1.0).Draw(t, "utility")
 		rewardCount := rapid.IntRange(5, 20).Draw(t, "reward-count")
 		helpfulCount := rapid.IntRange(3, rewardCount).Draw(t, "helpful-count")
 		harmfulCount := rapid.IntRange(0, helpfulCount-1).Draw(t, "harmful-count")
@@ -126,17 +126,17 @@ func TestPropertyMaturity_AntiPatternDetection(t *testing.T) {
 
 	rapid.Check(t, func(t *rapid.T) {
 		// Pick any starting maturity.
-		allMaturities := []types.Maturity{
-			types.MaturityProvisional,
-			types.MaturityCandidate,
-			types.MaturityEstablished,
+		allMaturities := []domain.Maturity{
+			domain.MaturityProvisional,
+			domain.MaturityCandidate,
+			domain.MaturityEstablished,
 		}
 		startIdx := rapid.IntRange(0, len(allMaturities)-1).Draw(t, "start-maturity-idx")
 		startMaturity := allMaturities[startIdx]
 
 		// Generate conditions that should trigger anti-pattern.
-		utility := rapid.Float64Range(0.0, types.MaturityAntiPatternThreshold).Draw(t, "utility")
-		harmfulCount := rapid.IntRange(types.MinFeedbackForAntiPattern, 20).Draw(t, "harmful-count")
+		utility := rapid.Float64Range(0.0, domain.MaturityAntiPatternThreshold).Draw(t, "utility")
+		harmfulCount := rapid.IntRange(domain.MinFeedbackForAntiPattern, 20).Draw(t, "harmful-count")
 
 		data := map[string]any{
 			"id":            "test-learning",
@@ -155,7 +155,7 @@ func TestPropertyMaturity_AntiPatternDetection(t *testing.T) {
 		}
 
 		// Must transition to anti-pattern (or already be anti-pattern).
-		if result.NewMaturity != types.MaturityAntiPattern {
+		if result.NewMaturity != domain.MaturityAntiPattern {
 			t.Fatalf("expected anti-pattern for utility=%.2f, harmful=%d, start=%s; got %s",
 				utility, harmfulCount, startMaturity, result.NewMaturity)
 		}
@@ -172,13 +172,13 @@ func TestPropertyMaturity_DemotionOnLowUtility(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		// Test established -> candidate demotion (utility < 0.5).
 		// Ensure utility is above anti-pattern threshold to avoid anti-pattern path.
-		utility := rapid.Float64Range(types.MaturityAntiPatternThreshold+0.01, 0.49).Draw(t, "utility")
+		utility := rapid.Float64Range(domain.MaturityAntiPatternThreshold+0.01, 0.49).Draw(t, "utility")
 		// Ensure harmful count < MinFeedbackForAntiPattern to avoid anti-pattern path.
-		harmfulCount := rapid.IntRange(0, types.MinFeedbackForAntiPattern-1).Draw(t, "harmful-count")
+		harmfulCount := rapid.IntRange(0, domain.MinFeedbackForAntiPattern-1).Draw(t, "harmful-count")
 
 		data := map[string]any{
 			"id":            "test-learning",
-			"maturity":      string(types.MaturityEstablished),
+			"maturity":      string(domain.MaturityEstablished),
 			"utility":       utility,
 			"confidence":    0.5,
 			"reward_count":  5,
@@ -195,7 +195,7 @@ func TestPropertyMaturity_DemotionOnLowUtility(t *testing.T) {
 		if !result.Transitioned {
 			t.Fatalf("expected demotion for established with utility=%.2f, got no transition", utility)
 		}
-		if result.NewMaturity != types.MaturityCandidate {
+		if result.NewMaturity != domain.MaturityCandidate {
 			t.Fatalf("expected demotion to candidate, got %s", result.NewMaturity)
 		}
 	})
@@ -210,13 +210,13 @@ func TestPropertyMaturity_CandidateDemotionOnLowUtility(t *testing.T) {
 
 	rapid.Check(t, func(t *rapid.T) {
 		// Utility below demotion threshold but above anti-pattern threshold.
-		utility := rapid.Float64Range(types.MaturityAntiPatternThreshold+0.01, types.MaturityDemotionThreshold-0.01).Draw(t, "utility")
+		utility := rapid.Float64Range(domain.MaturityAntiPatternThreshold+0.01, domain.MaturityDemotionThreshold-0.01).Draw(t, "utility")
 		// Ensure harmful count < MinFeedbackForAntiPattern to avoid anti-pattern path.
-		harmfulCount := rapid.IntRange(0, types.MinFeedbackForAntiPattern-1).Draw(t, "harmful-count")
+		harmfulCount := rapid.IntRange(0, domain.MinFeedbackForAntiPattern-1).Draw(t, "harmful-count")
 
 		data := map[string]any{
 			"id":            "test-learning",
-			"maturity":      string(types.MaturityCandidate),
+			"maturity":      string(domain.MaturityCandidate),
 			"utility":       utility,
 			"confidence":    0.5,
 			"reward_count":  5,
@@ -233,7 +233,7 @@ func TestPropertyMaturity_CandidateDemotionOnLowUtility(t *testing.T) {
 		if !result.Transitioned {
 			t.Fatalf("expected demotion for candidate with utility=%.2f, got no transition", utility)
 		}
-		if result.NewMaturity != types.MaturityProvisional {
+		if result.NewMaturity != domain.MaturityProvisional {
 			t.Fatalf("expected demotion to provisional, got %s", result.NewMaturity)
 		}
 	})
@@ -251,7 +251,7 @@ func TestPropertyMaturity_AllLevelsReachable(t *testing.T) {
 	t.Run("provisional_to_candidate", func(t *testing.T) {
 		data := map[string]any{
 			"id":            "test-learning",
-			"maturity":      string(types.MaturityProvisional),
+			"maturity":      string(domain.MaturityProvisional),
 			"utility":       0.7,
 			"confidence":    0.6,
 			"reward_count":  5,
@@ -264,7 +264,7 @@ func TestPropertyMaturity_AllLevelsReachable(t *testing.T) {
 		if err != nil {
 			t.Fatalf("CheckMaturityTransition: %v", err)
 		}
-		if !result.Transitioned || result.NewMaturity != types.MaturityCandidate {
+		if !result.Transitioned || result.NewMaturity != domain.MaturityCandidate {
 			t.Fatalf("expected transition to candidate, got transitioned=%v new=%s",
 				result.Transitioned, result.NewMaturity)
 		}
@@ -274,7 +274,7 @@ func TestPropertyMaturity_AllLevelsReachable(t *testing.T) {
 	t.Run("candidate_to_established", func(t *testing.T) {
 		data := map[string]any{
 			"id":            "test-learning",
-			"maturity":      string(types.MaturityCandidate),
+			"maturity":      string(domain.MaturityCandidate),
 			"utility":       0.8,
 			"confidence":    0.7,
 			"reward_count":  10,
@@ -287,7 +287,7 @@ func TestPropertyMaturity_AllLevelsReachable(t *testing.T) {
 		if err != nil {
 			t.Fatalf("CheckMaturityTransition: %v", err)
 		}
-		if !result.Transitioned || result.NewMaturity != types.MaturityEstablished {
+		if !result.Transitioned || result.NewMaturity != domain.MaturityEstablished {
 			t.Fatalf("expected transition to established, got transitioned=%v new=%s",
 				result.Transitioned, result.NewMaturity)
 		}
@@ -312,7 +312,7 @@ func TestPropertyMaturity_AllLevelsReachable(t *testing.T) {
 				if err != nil {
 					t.Fatalf("CheckMaturityTransition: %v", err)
 				}
-				if !result.Transitioned || result.NewMaturity != types.MaturityAntiPattern {
+				if !result.Transitioned || result.NewMaturity != domain.MaturityAntiPattern {
 					t.Fatalf("expected transition to anti-pattern from %s, got transitioned=%v new=%s",
 						start, result.Transitioned, result.NewMaturity)
 				}
@@ -324,7 +324,7 @@ func TestPropertyMaturity_AllLevelsReachable(t *testing.T) {
 	t.Run("anti_pattern_to_provisional", func(t *testing.T) {
 		data := map[string]any{
 			"id":            "test-learning",
-			"maturity":      string(types.MaturityAntiPattern),
+			"maturity":      string(domain.MaturityAntiPattern),
 			"utility":       0.7,
 			"confidence":    0.6,
 			"reward_count":  10,
@@ -337,7 +337,7 @@ func TestPropertyMaturity_AllLevelsReachable(t *testing.T) {
 		if err != nil {
 			t.Fatalf("CheckMaturityTransition: %v", err)
 		}
-		if !result.Transitioned || result.NewMaturity != types.MaturityProvisional {
+		if !result.Transitioned || result.NewMaturity != domain.MaturityProvisional {
 			t.Fatalf("expected rehabilitation to provisional, got transitioned=%v new=%s",
 				result.Transitioned, result.NewMaturity)
 		}
@@ -353,13 +353,13 @@ func TestPropertyMaturity_StableWhenNoTransition(t *testing.T) {
 
 	rapid.Check(t, func(t *rapid.T) {
 		// Provisional with low feedback: should stay provisional.
-		utility := rapid.Float64Range(types.MaturityDemotionThreshold, types.MaturityPromotionThreshold-0.01).Draw(t, "utility")
-		rewardCount := rapid.IntRange(0, types.MinFeedbackForPromotion-1).Draw(t, "reward-count")
-		harmfulCount := rapid.IntRange(0, types.MinFeedbackForAntiPattern-1).Draw(t, "harmful-count")
+		utility := rapid.Float64Range(domain.MaturityDemotionThreshold, domain.MaturityPromotionThreshold-0.01).Draw(t, "utility")
+		rewardCount := rapid.IntRange(0, domain.MinFeedbackForPromotion-1).Draw(t, "reward-count")
+		harmfulCount := rapid.IntRange(0, domain.MinFeedbackForAntiPattern-1).Draw(t, "harmful-count")
 
 		data := map[string]any{
 			"id":            "test-learning",
-			"maturity":      string(types.MaturityProvisional),
+			"maturity":      string(domain.MaturityProvisional),
 			"utility":       utility,
 			"confidence":    0.5,
 			"reward_count":  rewardCount,

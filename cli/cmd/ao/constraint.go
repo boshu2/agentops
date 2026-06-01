@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/format"
-	"github.com/boshu2/agentops/cli/internal/formatter"
+	"github.com/boshu2/agentops/cli/internal/render"
 	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/spf13/cobra"
 )
@@ -58,9 +58,9 @@ func findConstraint(idx *constraintIndex, id string) *constraintEntry {
 }
 
 // printConstraintTable renders a slice of constraintEntry as a formatted table
-// using formatter.Table with columns ID, STATUS, COMPILED, TITLE.
+// using render.Table with columns ID, STATUS, COMPILED, TITLE.
 func printConstraintTable(entries []constraintEntry) {
-	tbl := formatter.NewTable(os.Stdout, "ID", "STATUS", "COMPILED", "TITLE")
+	tbl := render.NewTable(os.Stdout, "ID", "STATUS", "COMPILED", "TITLE")
 	tbl.SetMaxWidth(0, 30) // ID
 	tbl.SetMaxWidth(2, 20) // COMPILED
 	tbl.SetMaxWidth(3, 50) // TITLE

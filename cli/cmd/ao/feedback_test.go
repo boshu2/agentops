@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestUpdateJSONLUtility(t *testing.T) {
@@ -264,7 +264,7 @@ func TestUpdateMarkdownUtility(t *testing.T) {
 This is the content.`,
 			reward:         1.0,
 			alpha:          0.1,
-			wantOldUtility: types.InitialUtility,
+			wantOldUtility: domain.InitialUtility,
 			wantNewUtility: 0.55,
 		},
 		{
@@ -275,7 +275,7 @@ id: L001
 # Test Learning`,
 			reward:         0.0,
 			alpha:          0.1,
-			wantOldUtility: types.InitialUtility,
+			wantOldUtility: domain.InitialUtility,
 			wantNewUtility: 0.45,
 		},
 		{
@@ -675,8 +675,8 @@ func TestAddUtilityField(t *testing.T) {
 	if !ok {
 		t.Fatal("utility field not added")
 	}
-	if abs(utility-types.InitialUtility) > 0.001 {
-		t.Errorf("utility = %v, want %v", utility, types.InitialUtility)
+	if abs(utility-domain.InitialUtility) > 0.001 {
+		t.Errorf("utility = %v, want %v", utility, domain.InitialUtility)
 	}
 }
 

@@ -12,10 +12,10 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 func cloneMap(input map[string]any) map[string]any {
@@ -52,7 +52,7 @@ type TaskEvent struct {
 	LearningID string `json:"learning_id,omitempty"`
 
 	// Maturity is the CASS maturity level derived from task status.
-	Maturity types.Maturity `json:"maturity,omitempty"`
+	Maturity domain.Maturity `json:"maturity,omitempty"`
 
 	// Utility is the learned value from feedback signals.
 	Utility float64 `json:"utility,omitempty"`
@@ -164,7 +164,7 @@ func assignMaturityAndUtility(tasks []TaskEvent) {
 	for i := range tasks {
 		tasks[i].Maturity = statusToMaturity(tasks[i].Status)
 		if tasks[i].Utility == 0 {
-			tasks[i].Utility = types.InitialUtility
+			tasks[i].Utility = domain.InitialUtility
 		}
 	}
 }
@@ -303,7 +303,7 @@ func parseTaskCreate(input map[string]any, sessionID string) *TaskEvent {
 		SessionID:   sessionID,
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
-		Utility:     types.InitialUtility,
+		Utility:     domain.InitialUtility,
 		Metadata:    metadata,
 	}
 
@@ -341,7 +341,7 @@ func updateTask(task *TaskEvent, input map[string]any) {
 }
 
 // statusToMaturity maps Task status to CASS maturity.
-func statusToMaturity(status string) types.Maturity {
+func statusToMaturity(status string) domain.Maturity {
 	return lifecycle.StatusToMaturity(status)
 }
 
@@ -440,7 +440,7 @@ func promoteTaskToLearning(baseDir string, task *TaskEvent) error {
 		"type":         "learning",
 		"content":      fmt.Sprintf("Task completed: %s", task.Subject),
 		"context":      task.Description,
-		"maturity":     string(types.MaturityEstablished),
+		"maturity":     string(domain.MaturityEstablished),
 		"utility":      task.Utility,
 		"confidence":   0.7, // Initial confidence for promoted tasks
 		"extracted_at": time.Now().Format(time.RFC3339),
@@ -562,7 +562,7 @@ func processSingleTaskFeedback(cwd string, task TaskEvent) bool {
 		return false
 	}
 
-	oldUtility, newUtility, err := updateLearningUtility(learningPath, completionReward, types.DefaultAlpha)
+	oldUtility, newUtility, err := updateLearningUtility(learningPath, completionReward, domain.DefaultAlpha)
 	if err != nil {
 		VerbosePrintf("Warning: failed to update %s: %v\n", learningPath, err)
 		return false
@@ -655,9 +655,9 @@ func filterTasksBySession(tasks []TaskEvent, sessionID string) []TaskEvent {
 }
 
 // computeTaskDistributions tallies status, maturity, and learning counts.
-func computeTaskDistributions(tasks []TaskEvent) (map[string]int, map[types.Maturity]int, int) {
+func computeTaskDistributions(tasks []TaskEvent) (map[string]int, map[domain.Maturity]int, int) {
 	statuses := make([]string, len(tasks))
-	maturities := make([]types.Maturity, len(tasks))
+	maturities := make([]domain.Maturity, len(tasks))
 	learningIDs := make([]string, len(tasks))
 	for i, t := range tasks {
 		statuses[i] = t.Status
@@ -669,7 +669,7 @@ func computeTaskDistributions(tasks []TaskEvent) (map[string]int, map[types.Matu
 }
 
 // outputTaskStatusJSON writes task status as structured JSON.
-func outputTaskStatusJSON(tasks []TaskEvent, statusCounts map[string]int, maturityCounts map[types.Maturity]int, withLearnings int) error {
+func outputTaskStatusJSON(tasks []TaskEvent, statusCounts map[string]int, maturityCounts map[domain.Maturity]int, withLearnings int) error {
 	result := map[string]any{
 		"total":           len(tasks),
 		"status_counts":   statusCounts,
@@ -681,7 +681,7 @@ func outputTaskStatusJSON(tasks []TaskEvent, statusCounts map[string]int, maturi
 }
 
 // printTaskStatusText renders task status as a human-readable table.
-func printTaskStatusText(tasks []TaskEvent, statusCounts map[string]int, maturityCounts map[types.Maturity]int, withLearnings int) {
+func printTaskStatusText(tasks []TaskEvent, statusCounts map[string]int, maturityCounts map[domain.Maturity]int, withLearnings int) {
 	fmt.Printf("Task Status\n")
 	fmt.Printf("===========\n")
 	fmt.Printf("Total tasks: %d\n\n", len(tasks))
@@ -692,7 +692,7 @@ func printTaskStatusText(tasks []TaskEvent, statusCounts map[string]int, maturit
 	}
 
 	fmt.Printf("\nBy CASS Maturity:\n")
-	for _, m := range []types.Maturity{types.MaturityProvisional, types.MaturityCandidate, types.MaturityEstablished, types.MaturityAntiPattern} {
+	for _, m := range []domain.Maturity{domain.MaturityProvisional, domain.MaturityCandidate, domain.MaturityEstablished, domain.MaturityAntiPattern} {
 		if count, ok := maturityCounts[m]; ok {
 			fmt.Printf("  %-12s: %d\n", m, count)
 		}

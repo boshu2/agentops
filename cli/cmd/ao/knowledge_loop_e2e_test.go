@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/storage"
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 type knowledgeLoopFixture struct {
@@ -83,7 +83,7 @@ This ensures all goroutines clean up properly on shutdown.
 
 func (f knowledgeLoopFixture) runForgePhase(t *testing.T) {
 	sessionID := "test-session-001"
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:      sessionID,
 		Date:    time.Now(),
 		Summary: "Test session for e2e validation",
@@ -156,7 +156,7 @@ func (f knowledgeLoopFixture) runInjectPhase(t *testing.T) {
 
 func (f knowledgeLoopFixture) runCitationPhase(t *testing.T) {
 	sessionID := "session-20260125-120000"
-	event := types.CitationEvent{
+	event := domain.CitationEvent{
 		ArtifactPath: f.learningPath,
 		SessionID:    sessionID,
 		CitedAt:      time.Now(),
@@ -188,7 +188,7 @@ func (f knowledgeLoopFixture) runFeedbackPhase(t *testing.T) {
 	}
 
 	originalUtility := originalLearning.Utility
-	newUtility := updateUtility(originalUtility, 1.0, types.DefaultAlpha)
+	newUtility := updateUtility(originalUtility, 1.0, domain.DefaultAlpha)
 	if newUtility <= originalUtility {
 		t.Errorf("Utility should increase after positive feedback: original=%.3f, new=%.3f",
 			originalUtility, newUtility)
@@ -228,7 +228,7 @@ func (f knowledgeLoopFixture) runMetricsPhase(t *testing.T) {
 }
 
 func (f knowledgeLoopFixture) runSecondCyclePhase(t *testing.T) {
-	session2 := &storage.Session{
+	session2 := &sessionstore.Session{
 		ID:      "test-session-002",
 		Date:    time.Now(),
 		Summary: "Second test session",
@@ -254,7 +254,7 @@ func (f knowledgeLoopFixture) runSecondCyclePhase(t *testing.T) {
 		t.Errorf("Expected 2 sessions, got %d", sessionCount)
 	}
 
-	event := types.CitationEvent{
+	event := domain.CitationEvent{
 		ArtifactPath: f.learningPath,
 		SessionID:    "session-20260125-130000",
 		CitedAt:      time.Now(),
@@ -337,7 +337,7 @@ func TestKnowledgeLoopCompositeScoring(t *testing.T) {
 	for i := range learnings {
 		items[i] = &learnings[i]
 	}
-	applyCompositeScoringTo(items, types.DefaultLambda)
+	applyCompositeScoringTo(items, domain.DefaultLambda)
 
 	// With λ=0.5, utility matters but freshness too
 	// L2 should rank higher due to high utility
@@ -402,7 +402,7 @@ func TestKnowledgeLoopUtilityUpdate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			newUtility := updateUtility(tt.oldUtility, tt.reward, types.DefaultAlpha)
+			newUtility := updateUtility(tt.oldUtility, tt.reward, domain.DefaultAlpha)
 
 			if tt.expectHigher && newUtility <= tt.oldUtility {
 				t.Errorf("Expected utility to increase: old=%.3f, new=%.3f", tt.oldUtility, newUtility)

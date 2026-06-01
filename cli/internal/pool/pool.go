@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // validIDPattern matches safe candidate IDs (alphanumeric, hyphens, underscores).
@@ -69,9 +69,9 @@ const (
 	ChainFile = "chain.jsonl"
 )
 
-// PoolEntry extends types.PoolEntry with operational fields.
+// PoolEntry extends domain.PoolEntry with operational fields.
 type PoolEntry struct {
-	types.PoolEntry
+	domain.PoolEntry
 
 	// FilePath is where this entry is stored.
 	FilePath string `json:"file_path,omitempty"`
@@ -98,10 +98,10 @@ type ChainEvent struct {
 	CandidateID string `json:"candidate_id"`
 
 	// FromStatus is the previous status.
-	FromStatus types.PoolStatus `json:"from_status,omitempty"`
+	FromStatus domain.PoolStatus `json:"from_status,omitempty"`
 
 	// ToStatus is the new status.
-	ToStatus types.PoolStatus `json:"to_status,omitempty"`
+	ToStatus domain.PoolStatus `json:"to_status,omitempty"`
 
 	// Reason explains why the operation occurred.
 	Reason string `json:"reason,omitempty"`
@@ -151,10 +151,10 @@ func (p *Pool) Init() error {
 // ListOptions configures pool listing.
 type ListOptions struct {
 	// Tier filters by quality tier.
-	Tier types.Tier
+	Tier domain.Tier
 
 	// Status filters by pool status.
-	Status types.PoolStatus
+	Status domain.PoolStatus
 
 	// Offset skips the first N results (for pagination).
 	Offset int
@@ -205,12 +205,12 @@ func (p *Pool) ListPaginated(opts ListOptions) (*ListResult, error) {
 }
 
 // collectEntries scans all pool directories, optionally filtering by status.
-func (p *Pool) collectEntries(statusFilter types.PoolStatus) ([]PoolEntry, error) {
-	dirs := map[types.PoolStatus]string{
-		types.PoolStatusPending:  filepath.Join(p.PoolPath, PendingDir),
-		types.PoolStatusStaged:   filepath.Join(p.PoolPath, StagedDir),
-		types.PoolStatusArchived: filepath.Join(p.PoolPath, ValidatedDir),
-		types.PoolStatusRejected: filepath.Join(p.PoolPath, RejectedDir),
+func (p *Pool) collectEntries(statusFilter domain.PoolStatus) ([]PoolEntry, error) {
+	dirs := map[domain.PoolStatus]string{
+		domain.PoolStatusPending:  filepath.Join(p.PoolPath, PendingDir),
+		domain.PoolStatusStaged:   filepath.Join(p.PoolPath, StagedDir),
+		domain.PoolStatusArchived: filepath.Join(p.PoolPath, ValidatedDir),
+		domain.PoolStatusRejected: filepath.Join(p.PoolPath, RejectedDir),
 	}
 
 	var entries []PoolEntry
@@ -231,7 +231,7 @@ func (p *Pool) collectEntries(statusFilter types.PoolStatus) ([]PoolEntry, error
 }
 
 // filterByTier returns only entries matching the given tier; returns all if tier is empty.
-func filterByTier(entries []PoolEntry, tier types.Tier) []PoolEntry {
+func filterByTier(entries []PoolEntry, tier domain.Tier) []PoolEntry {
 	if tier == "" {
 		return entries
 	}
@@ -259,7 +259,7 @@ func paginate(entries []PoolEntry, offset, limit int) []PoolEntry {
 }
 
 // scanDirectory reads all entries from a pool directory.
-func (p *Pool) scanDirectory(dir string, status types.PoolStatus) ([]PoolEntry, error) {
+func (p *Pool) scanDirectory(dir string, status domain.PoolStatus) ([]PoolEntry, error) {
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -285,14 +285,14 @@ func (p *Pool) scanDirectory(dir string, status types.PoolStatus) ([]PoolEntry, 
 }
 
 // enrichEntry populates computed fields on a pool entry after loading from disk.
-func enrichEntry(entry *PoolEntry, path string, status types.PoolStatus) {
+func enrichEntry(entry *PoolEntry, path string, status domain.PoolStatus) {
 	entry.FilePath = path
 	entry.Status = status
 	entry.Age = time.Since(entry.AddedAt)
 	entry.AgeString = formatDuration(entry.Age)
 
 	// Check if approaching 24h auto-promote threshold (warn at 22h, 2h buffer)
-	if entry.Candidate.Tier == types.TierSilver && entry.Age > 22*time.Hour {
+	if entry.Candidate.Tier == domain.TierSilver && entry.Age > 22*time.Hour {
 		entry.ApproachingAutoPromote = true
 	}
 }
@@ -388,14 +388,14 @@ func (p *Pool) FindByPrefix(prefix string) ([]*PoolEntry, error) {
 }
 
 // Stage moves a candidate from pending to staged.
-func (p *Pool) Stage(candidateID string, minTier types.Tier) error {
+func (p *Pool) Stage(candidateID string, minTier domain.Tier) error {
 	entry, err := p.Get(candidateID)
 	if err != nil {
 		return err
 	}
 
 	// Prevent staging rejected candidates
-	if entry.Status == types.PoolStatusRejected {
+	if entry.Status == domain.PoolStatusRejected {
 		return ErrStageRejected
 	}
 
@@ -411,7 +411,7 @@ func (p *Pool) Stage(candidateID string, minTier types.Tier) error {
 	}
 
 	// Update status
-	entry.Status = types.PoolStatusStaged
+	entry.Status = domain.PoolStatusStaged
 	entry.UpdatedAt = time.Now()
 
 	// Write updated entry
@@ -424,8 +424,8 @@ func (p *Pool) Stage(candidateID string, minTier types.Tier) error {
 		Timestamp:   time.Now(),
 		Operation:   "stage",
 		CandidateID: candidateID,
-		FromStatus:  types.PoolStatusPending,
-		ToStatus:    types.PoolStatusStaged,
+		FromStatus:  domain.PoolStatusPending,
+		ToStatus:    domain.PoolStatusStaged,
 	})
 
 	return nil
@@ -505,7 +505,7 @@ func (p *Pool) Promote(candidateID string) (string, error) {
 		Operation:    "promote",
 		CandidateID:  candidateID,
 		FromStatus:   entry.Status,
-		ToStatus:     types.PoolStatusArchived,
+		ToStatus:     domain.PoolStatusArchived,
 		ArtifactPath: artifactPath,
 	})
 
@@ -524,7 +524,7 @@ func (p *Pool) finishDedupPromotion(entry *PoolEntry, candidateID, existing, rea
 		Operation:    "promote",
 		CandidateID:  candidateID,
 		FromStatus:   entry.Status,
-		ToStatus:     types.PoolStatusArchived,
+		ToStatus:     domain.PoolStatusArchived,
 		ArtifactPath: existing,
 		Reason:       reason,
 	})
@@ -533,14 +533,14 @@ func (p *Pool) finishDedupPromotion(entry *PoolEntry, candidateID, existing, rea
 // candidateContentHash is the dedup key for pool.Promote. It hashes the
 // canonical candidate Content body so two candidates with different IDs but
 // identical semantic bodies collapse to the same artifact.
-func candidateContentHash(c types.Candidate) string {
+func candidateContentHash(c domain.Candidate) string {
 	return ContentHash(c.Content)
 }
 
 // ContentHash computes the dedup key used by Promote for a given candidate
 // content body. Exported so reindex/backfill paths can compute the same hash
 // from on-disk artifact bodies without constructing a synthetic Candidate.
-// Identical to candidateContentHash(types.Candidate{Content: body}).
+// Identical to candidateContentHash(domain.Candidate{Content: body}).
 func ContentHash(body string) string {
 	canonicalBody := CanonicalContentBody(body)
 	normalized := strings.ToLower(strings.Join(strings.Fields(canonicalBody), " "))
@@ -669,22 +669,22 @@ func (p *Pool) RecordSkip(candidateID, reason, reviewer string) error {
 
 // validatePromotable checks that a pool entry is eligible for promotion.
 func validatePromotable(entry *PoolEntry) error {
-	if entry.Status == types.PoolStatusRejected {
+	if entry.Status == domain.PoolStatusRejected {
 		return ErrPromoteRejected
 	}
-	if entry.Status != types.PoolStatusStaged {
+	if entry.Status != domain.PoolStatusStaged {
 		return fmt.Errorf("%w (current: %s)", ErrNotStaged, entry.Status)
 	}
 	return nil
 }
 
 // promotionDir returns the destination directory for a given knowledge type.
-func promotionDir(baseDir string, knowledgeType types.KnowledgeType) string {
+func promotionDir(baseDir string, knowledgeType domain.KnowledgeType) string {
 	switch knowledgeType {
-	case types.KnowledgeTypeDecision:
+	case domain.KnowledgeTypeDecision:
 		return filepath.Join(baseDir, ".agents", "patterns")
-	case types.KnowledgeTypeSolution, types.KnowledgeTypeLearning,
-		types.KnowledgeTypeFailure, types.KnowledgeTypeReference:
+	case domain.KnowledgeTypeSolution, domain.KnowledgeTypeLearning,
+		domain.KnowledgeTypeFailure, domain.KnowledgeTypeReference:
 		return filepath.Join(baseDir, ".agents", "learnings")
 	default:
 		return filepath.Join(baseDir, ".agents", "learnings")
@@ -728,9 +728,9 @@ func (p *Pool) Reject(candidateID, reason, reviewer string) error {
 	}
 
 	// Update entry
-	entry.Status = types.PoolStatusRejected
+	entry.Status = domain.PoolStatusRejected
 	entry.UpdatedAt = time.Now()
-	entry.HumanReview = &types.HumanReview{
+	entry.HumanReview = &domain.HumanReview{
 		Reviewed:   true,
 		Approved:   false,
 		Reviewer:   reviewer,
@@ -748,7 +748,7 @@ func (p *Pool) Reject(candidateID, reason, reviewer string) error {
 		Operation:   "reject",
 		CandidateID: candidateID,
 		FromStatus:  priorStatus,
-		ToStatus:    types.PoolStatusRejected,
+		ToStatus:    domain.PoolStatusRejected,
 		Reason:      reason,
 		Reviewer:    reviewer,
 	}); err != nil {
@@ -776,7 +776,7 @@ func (p *Pool) Approve(candidateID, note, reviewer string) error {
 	}
 
 	// Update entry with review
-	entry.HumanReview = &types.HumanReview{
+	entry.HumanReview = &domain.HumanReview{
 		Reviewed:   true,
 		Approved:   true,
 		Reviewer:   reviewer,
@@ -804,8 +804,8 @@ func (p *Pool) Approve(candidateID, note, reviewer string) error {
 // ListPendingReview returns bronze candidates awaiting human review.
 func (p *Pool) ListPendingReview() ([]PoolEntry, error) {
 	entries, err := p.List(ListOptions{
-		Tier:   types.TierBronze,
-		Status: types.PoolStatusPending,
+		Tier:   domain.TierBronze,
+		Status: domain.PoolStatusPending,
 	})
 	if err != nil {
 		return nil, err
@@ -843,8 +843,8 @@ func (p *Pool) BulkApprove(olderThan time.Duration, reviewer string, dryRun bool
 	}
 
 	entries, err := p.List(ListOptions{
-		Tier:   types.TierSilver,
-		Status: types.PoolStatusPending,
+		Tier:   domain.TierSilver,
+		Status: domain.PoolStatusPending,
 	})
 	if err != nil {
 		return nil, err
@@ -863,14 +863,14 @@ func (p *Pool) BulkApprove(olderThan time.Duration, reviewer string, dryRun bool
 }
 
 // Add adds a new candidate to the pending pool.
-func (p *Pool) Add(candidate types.Candidate, scoring types.Scoring) error {
+func (p *Pool) Add(candidate domain.Candidate, scoring domain.Scoring) error {
 	return p.AddAt(candidate, scoring, time.Now())
 }
 
 // AddAt adds a new candidate to the pending pool with a caller-supplied AddedAt timestamp.
 // This is useful when ingesting historical artifacts where "age" should reflect the original
 // creation/modification time, not the ingestion time.
-func (p *Pool) AddAt(candidate types.Candidate, scoring types.Scoring, addedAt time.Time) error {
+func (p *Pool) AddAt(candidate domain.Candidate, scoring domain.Scoring, addedAt time.Time) error {
 	// Validate ID to prevent path traversal
 	if err := validateCandidateID(candidate.ID); err != nil {
 		return fmt.Errorf("invalid candidate ID: %w", err)
@@ -880,17 +880,17 @@ func (p *Pool) AddAt(candidate types.Candidate, scoring types.Scoring, addedAt t
 		return fmt.Errorf("init pool: %w", err)
 	}
 
-	entry := types.PoolEntry{
+	entry := domain.PoolEntry{
 		Candidate:     candidate,
 		ScoringResult: scoring,
-		Status:        types.PoolStatusPending,
+		Status:        domain.PoolStatusPending,
 		AddedAt:       addedAt,
 		UpdatedAt:     time.Now(),
 	}
 
 	// Mark if gate required
 	if scoring.GateRequired {
-		entry.HumanReview = &types.HumanReview{
+		entry.HumanReview = &domain.HumanReview{
 			Reviewed: false,
 		}
 	}
@@ -908,7 +908,7 @@ func (p *Pool) AddAt(candidate types.Candidate, scoring types.Scoring, addedAt t
 		Timestamp:   time.Now(),
 		Operation:   "add",
 		CandidateID: candidate.ID,
-		ToStatus:    types.PoolStatusPending,
+		ToStatus:    domain.PoolStatusPending,
 	}); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: failed to record event: %v\n", err)
 	}
@@ -926,17 +926,17 @@ func (p *Pool) writeEntry(path string, entry *PoolEntry) error {
 }
 
 // knowledgeTypeHeading returns the markdown heading prefix for a knowledge type.
-func knowledgeTypeHeading(kt types.KnowledgeType) string {
+func knowledgeTypeHeading(kt domain.KnowledgeType) string {
 	switch kt {
-	case types.KnowledgeTypeLearning:
+	case domain.KnowledgeTypeLearning:
 		return "# Learning: "
-	case types.KnowledgeTypeDecision:
+	case domain.KnowledgeTypeDecision:
 		return "# Decision: "
-	case types.KnowledgeTypeSolution:
+	case domain.KnowledgeTypeSolution:
 		return "# Solution: "
-	case types.KnowledgeTypeFailure:
+	case domain.KnowledgeTypeFailure:
 		return "# Failure: "
-	case types.KnowledgeTypeReference:
+	case domain.KnowledgeTypeReference:
 		return "# Reference: "
 	default:
 		return "# Knowledge: "
@@ -1102,12 +1102,12 @@ func scanChainEvents(r io.Reader) ([]ChainEvent, error) {
 }
 
 // isAboveThreshold checks if a tier meets the minimum.
-func isAboveThreshold(tier, minTier types.Tier) bool {
-	tierOrder := map[types.Tier]int{
-		types.TierGold:    3,
-		types.TierSilver:  2,
-		types.TierBronze:  1,
-		types.TierDiscard: 0,
+func isAboveThreshold(tier, minTier domain.Tier) bool {
+	tierOrder := map[domain.Tier]int{
+		domain.TierGold:    3,
+		domain.TierSilver:  2,
+		domain.TierBronze:  1,
+		domain.TierDiscard: 0,
 	}
 
 	return tierOrder[tier] >= tierOrder[minTier]

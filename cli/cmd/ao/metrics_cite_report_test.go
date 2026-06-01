@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/spf13/cobra"
 )
 
-func writeCitationsJSONL(t *testing.T, dir string, events []types.CitationEvent) {
+func writeCitationsJSONL(t *testing.T, dir string, events []domain.CitationEvent) {
 	t.Helper()
 	citPath := filepath.Join(dir, ".agents", "ao")
 	if err := os.MkdirAll(citPath, 0o755); err != nil {
@@ -32,8 +32,8 @@ func writeCitationsJSONL(t *testing.T, dir string, events []types.CitationEvent)
 	}
 }
 
-func sampleCitations(now time.Time) []types.CitationEvent {
-	return []types.CitationEvent{
+func sampleCitations(now time.Time) []domain.CitationEvent {
+	return []domain.CitationEvent{
 		{ArtifactPath: "/tmp/test/.agents/learnings/a.md", WorkspacePath: "/tmp/test", SessionID: "s1", CitedAt: now.AddDate(0, 0, -5), FeedbackGiven: true},
 		{ArtifactPath: "/tmp/test/.agents/learnings/a.md", WorkspacePath: "/tmp/test", SessionID: "s2", CitedAt: now.AddDate(0, 0, -3), FeedbackGiven: false},
 		{ArtifactPath: "/tmp/test/.agents/learnings/b.md", WorkspacePath: "/tmp/other", SessionID: "s1", CitedAt: now.AddDate(0, 0, -2), FeedbackGiven: true},
@@ -120,7 +120,7 @@ func TestCiteReportEmpty(t *testing.T) {
 	start := now.AddDate(0, 0, -30)
 
 	// No citations at all
-	var empty []types.CitationEvent
+	var empty []domain.CitationEvent
 	report := buildCiteReport(dir, empty, empty, 30, start, now)
 
 	if report.TotalCitations != 0 {
@@ -136,7 +136,7 @@ func TestCiteReportEmpty(t *testing.T) {
 
 func TestCiteReportDaysFilter(t *testing.T) {
 	now := time.Now()
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: "recent.md", SessionID: "s1", CitedAt: now.AddDate(0, 0, -3)},
 		{ArtifactPath: "old.md", SessionID: "s2", CitedAt: now.AddDate(0, 0, -20)},
 		{ArtifactPath: "ancient.md", SessionID: "s3", CitedAt: now.AddDate(0, 0, -45)},

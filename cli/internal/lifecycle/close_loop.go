@@ -19,10 +19,10 @@ import (
 	"sort"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/storage"
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 // CloseLoopIngestResult mirrors the pool-ingest output shape.
@@ -319,7 +319,7 @@ func applyAllMaturityTransitionsInternal(cwd string, dryRun bool, findLearningFi
 
 // indexEntryAlias is the lifecycle-local alias for the shared storage index
 // entry type, mirroring cmd/ao.IndexEntry.
-type indexEntryAlias = storage.SearchIndexEntry
+type indexEntryAlias = sessionstore.SearchIndexEntry
 
 // loadExistingIndexEntries reads existing entries from a JSONL index file
 // (best-effort). Mirrors cmd/ao.loadExistingIndexEntries.
@@ -355,7 +355,7 @@ func upsertIndexPaths(existing map[string]indexEntryAlias, paths []string, categ
 		if _, err := os.Stat(p); err != nil {
 			continue
 		}
-		entry, err := storage.CreateSearchIndexEntry(p, categorize)
+		entry, err := sessionstore.CreateSearchIndexEntry(p, categorize)
 		if err != nil {
 			continue
 		}
@@ -399,7 +399,7 @@ func writeIndexFile(indexPath string, existing map[string]indexEntryAlias) error
 // dryRun skips the write step but still computes the in-memory upsert count so
 // callers get the same numbers they would see from the cobra command.
 func storeIndexUpsertLifecycle(baseDir string, paths []string, categorize bool, dryRun bool) (int, string, error) {
-	indexPath := filepath.Join(baseDir, storage.SearchIndexDir, storage.SearchIndexFileName)
+	indexPath := filepath.Join(baseDir, sessionstore.SearchIndexDir, sessionstore.SearchIndexFileName)
 	if len(paths) == 0 {
 		return 0, indexPath, nil
 	}
@@ -419,4 +419,4 @@ func storeIndexUpsertLifecycle(baseDir string, paths []string, categorize bool, 
 }
 
 // Ensure unused imports don't fail builds if types shifts occur.
-var _ = types.TierSilver
+var _ = domain.TierSilver

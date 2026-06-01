@@ -3,16 +3,16 @@ package lifecycle
 import (
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestStatusToMaturity(t *testing.T) {
-	cases := map[string]types.Maturity{
-		"completed":   types.MaturityEstablished,
-		"in_progress": types.MaturityCandidate,
-		"pending":     types.MaturityProvisional,
-		"unknown":     types.MaturityProvisional,
-		"":            types.MaturityProvisional,
+	cases := map[string]domain.Maturity{
+		"completed":   domain.MaturityEstablished,
+		"in_progress": domain.MaturityCandidate,
+		"pending":     domain.MaturityProvisional,
+		"unknown":     domain.MaturityProvisional,
+		"":            domain.MaturityProvisional,
 	}
 	for status, want := range cases {
 		if got := StatusToMaturity(status); got != want {
@@ -143,7 +143,7 @@ func TestProcessTranscriptLine(t *testing.T) {
 
 func TestComputeTaskDistributions(t *testing.T) {
 	statuses := []string{"pending", "pending", "completed"}
-	maturities := []types.Maturity{types.MaturityProvisional, types.MaturityEstablished, types.MaturityEstablished}
+	maturities := []domain.Maturity{domain.MaturityProvisional, domain.MaturityEstablished, domain.MaturityEstablished}
 	learningIDs := []string{"l1", "", "l2"}
 
 	d := ComputeTaskDistributions(statuses, maturities, learningIDs)
@@ -153,8 +153,8 @@ func TestComputeTaskDistributions(t *testing.T) {
 	if d.StatusCounts["completed"] != 1 {
 		t.Errorf("completed count = %d", d.StatusCounts["completed"])
 	}
-	if d.MaturityCounts[types.MaturityEstablished] != 2 {
-		t.Errorf("established count = %d", d.MaturityCounts[types.MaturityEstablished])
+	if d.MaturityCounts[domain.MaturityEstablished] != 2 {
+		t.Errorf("established count = %d", d.MaturityCounts[domain.MaturityEstablished])
 	}
 	if d.WithLearnings != 2 {
 		t.Errorf("WithLearnings = %d (expected 2; empty string excluded)", d.WithLearnings)

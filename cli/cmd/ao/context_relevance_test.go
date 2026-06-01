@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestRerankContextBundleForPhase_PrefersWidelyReusedLearning(t *testing.T) {
 	tmp := t.TempDir()
-	if err := writeCitations(tmp, []types.CitationEvent{
+	if err := writeCitations(tmp, []domain.CitationEvent{
 		{ArtifactPath: tmp + "/.agents/learnings/reused.md", WorkspacePath: tmp, SessionID: "s1", CitedAt: time.Now().Add(-2 * time.Hour), CitationType: "applied", FeedbackGiven: true, FeedbackReward: 1},
 		{ArtifactPath: tmp + "/.agents/learnings/reused.md", WorkspacePath: tmp, SessionID: "s2", CitedAt: time.Now().Add(-1 * time.Hour), CitationType: "reference"},
 	}); err != nil {

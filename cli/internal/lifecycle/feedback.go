@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 const (
@@ -127,7 +127,7 @@ func UpdateJSONLUtility(path string, reward, alpha float64, explicitHelpful, exp
 	if err != nil {
 		return 0, 0, err
 	}
-	oldUtility = types.InitialUtility
+	oldUtility = domain.InitialUtility
 	if u, ok := data["utility"].(float64); ok && u > 0 {
 		oldUtility = u
 	}
@@ -143,7 +143,7 @@ func UpdateJSONLUtility(path string, reward, alpha float64, explicitHelpful, exp
 
 // ParseFrontMatterUtility scans front matter lines for the utility value.
 func ParseFrontMatterUtility(lines []string) (endIdx int, utility float64, err error) {
-	utility = types.InitialUtility
+	utility = domain.InitialUtility
 	for i := 1; i < len(lines); i++ {
 		if strings.TrimSpace(lines[i]) == "---" {
 			return i, utility, nil
@@ -273,7 +273,7 @@ func UpdateMarkdownUtility(path string, reward, alpha float64, explicitHelpful, 
 		return oldUtility, newUtility, os.WriteFile(path, []byte(rebuilt), 0600)
 	}
 
-	oldUtility = types.InitialUtility
+	oldUtility = domain.InitialUtility
 	newUtility = (1-alpha)*oldUtility + alpha*reward
 
 	var sb strings.Builder
@@ -331,7 +331,7 @@ func AddUtilityField(path string) error {
 	if err := json.Unmarshal([]byte(lines[0]), &data); err != nil {
 		return err
 	}
-	data["utility"] = types.InitialUtility
+	data["utility"] = domain.InitialUtility
 	newJSON, err := json.Marshal(data)
 	if err != nil {
 		return err

@@ -7,10 +7,10 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 func init() {
@@ -82,7 +82,7 @@ func runNudge(cmd *cobra.Command, args []string) error {
 	// Get pool counts
 	p := pool.NewPool(cwd)
 	pendingEntries, err := p.List(pool.ListOptions{
-		Status: types.PoolStatusPending,
+		Status: domain.PoolStatusPending,
 	})
 	if err != nil {
 		VerbosePrintf("Warning: list pool: %v\n", err)
@@ -203,7 +203,7 @@ func stepToSkill(step string) string {
 }
 
 // buildSuggestion generates a contextual suggestion based on current state.
-func buildSuggestion(metrics *types.FlywheelMetrics, rpiState RPIState, poolPending, poolApproaching int) string {
+func buildSuggestion(metrics *domain.FlywheelMetrics, rpiState RPIState, poolPending, poolApproaching int) string {
 	// Priority 1: Pool candidates approaching threshold
 	if poolApproaching > 0 {
 		return fmt.Sprintf("Review %d candidates approaching auto-promote threshold", poolApproaching)

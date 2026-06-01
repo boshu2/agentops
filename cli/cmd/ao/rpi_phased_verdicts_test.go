@@ -4,7 +4,7 @@ package main
 import (
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // --- classifyByPhase ---
@@ -27,28 +27,28 @@ func TestClassifyByPhase_Phase2NonBlockedOrPartial(t *testing.T) {
 
 func TestClassifyByVerdict_Timeout(t *testing.T) {
 	got := classifyByVerdict(string(failReasonTimeout))
-	if got != types.MemRLFailureClassPhaseTimeout {
-		t.Errorf("got %q, want %q", got, types.MemRLFailureClassPhaseTimeout)
+	if got != domain.MemRLFailureClassPhaseTimeout {
+		t.Errorf("got %q, want %q", got, domain.MemRLFailureClassPhaseTimeout)
 	}
 }
 
 func TestClassifyByVerdict_Stall(t *testing.T) {
 	got := classifyByVerdict(string(failReasonStall))
-	if got != types.MemRLFailureClassPhaseStall {
-		t.Errorf("got %q, want %q", got, types.MemRLFailureClassPhaseStall)
+	if got != domain.MemRLFailureClassPhaseStall {
+		t.Errorf("got %q, want %q", got, domain.MemRLFailureClassPhaseStall)
 	}
 }
 
 func TestClassifyByVerdict_ExitError(t *testing.T) {
 	got := classifyByVerdict(string(failReasonExit))
-	if got != types.MemRLFailureClassPhaseExitError {
-		t.Errorf("got %q, want %q", got, types.MemRLFailureClassPhaseExitError)
+	if got != domain.MemRLFailureClassPhaseExitError {
+		t.Errorf("got %q, want %q", got, domain.MemRLFailureClassPhaseExitError)
 	}
 }
 
 func TestClassifyByVerdict_UnknownVerdict(t *testing.T) {
 	got := classifyByVerdict("SOMETHING_ELSE")
-	if got != types.MemRLFailureClass("something_else") {
+	if got != domain.MemRLFailureClass("something_else") {
 		t.Errorf("got %q, want lowercase version", got)
 	}
 }

@@ -4,12 +4,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // msg is a compact test helper for building TranscriptMessage fixtures.
-func msg(idx int, msgType, content string) types.TranscriptMessage {
-	return types.TranscriptMessage{
+func msg(idx int, msgType, content string) domain.TranscriptMessage {
+	return domain.TranscriptMessage{
 		Type:         msgType,
 		Role:         msgType,
 		Content:      content,
@@ -22,14 +22,14 @@ func TestChunkTurns_EmptyInput(t *testing.T) {
 	if len(got) != 0 {
 		t.Fatalf("nil input: want 0 chunks, got %d", len(got))
 	}
-	got = ChunkTurns([]types.TranscriptMessage{}, 2000)
+	got = ChunkTurns([]domain.TranscriptMessage{}, 2000)
 	if len(got) != 0 {
 		t.Fatalf("empty slice: want 0 chunks, got %d", len(got))
 	}
 }
 
 func TestChunkTurns_SingleUserAssistantPair(t *testing.T) {
-	msgs := []types.TranscriptMessage{
+	msgs := []domain.TranscriptMessage{
 		msg(0, "user", "hello can you read main.go"),
 		msg(1, "assistant", "sure, reading main.go now and looking at the entry point"),
 	}
@@ -56,7 +56,7 @@ func TestChunkTurns_SingleUserAssistantPair(t *testing.T) {
 }
 
 func TestChunkTurns_MultiplePairs(t *testing.T) {
-	msgs := []types.TranscriptMessage{
+	msgs := []domain.TranscriptMessage{
 		msg(0, "user", "first user message with enough content to pass the minimum length filter"),
 		msg(1, "assistant", "first assistant reply body that is substantial enough to survive filtering"),
 		msg(2, "user", "second user message with enough content to pass the minimum length filter"),
@@ -77,7 +77,7 @@ func TestChunkTurns_MultiplePairs(t *testing.T) {
 
 func TestChunkTurns_BudgetTruncatesOversized(t *testing.T) {
 	long := strings.Repeat("x", 6000)
-	msgs := []types.TranscriptMessage{
+	msgs := []domain.TranscriptMessage{
 		msg(0, "user", long),
 		msg(1, "assistant", long),
 	}
@@ -96,7 +96,7 @@ func TestChunkTurns_BudgetTruncatesOversized(t *testing.T) {
 
 func TestChunkTurns_BudgetBoundaries(t *testing.T) {
 	// Same pair, three budgets; each should honor the budget.
-	pair := []types.TranscriptMessage{
+	pair := []domain.TranscriptMessage{
 		msg(0, "user", strings.Repeat("u", 5000)),
 		msg(1, "assistant", strings.Repeat("a", 5000)),
 	}
@@ -116,7 +116,7 @@ func TestChunkTurns_BudgetBoundaries(t *testing.T) {
 
 func TestChunkTurns_DropsShortMessages(t *testing.T) {
 	// <20-char messages should be dropped per the tool-noise filter spec.
-	msgs := []types.TranscriptMessage{
+	msgs := []domain.TranscriptMessage{
 		msg(0, "user", "hi"), // too short
 		msg(1, "assistant", "short"),
 		msg(2, "user", "a proper user question about the codebase"),
@@ -133,7 +133,7 @@ func TestChunkTurns_DropsShortMessages(t *testing.T) {
 
 func TestChunkTurns_OrphanUserDropped(t *testing.T) {
 	// A user message with no following assistant should not produce a chunk.
-	msgs := []types.TranscriptMessage{
+	msgs := []domain.TranscriptMessage{
 		msg(0, "user", "this user never got an answer before session ended"),
 	}
 	chunks := ChunkTurns(msgs, 2000)
@@ -143,7 +143,7 @@ func TestChunkTurns_OrphanUserDropped(t *testing.T) {
 }
 
 func TestChunkTurns_OrphanAssistantDropped(t *testing.T) {
-	msgs := []types.TranscriptMessage{
+	msgs := []domain.TranscriptMessage{
 		msg(0, "assistant", "assistant message with no prior user turn should also be dropped"),
 	}
 	chunks := ChunkTurns(msgs, 2000)
@@ -154,7 +154,7 @@ func TestChunkTurns_OrphanAssistantDropped(t *testing.T) {
 
 func TestChunkTurns_SkipsToolUseMessages(t *testing.T) {
 	// Only user+assistant messages contribute text; tool_use/tool_result are filtered.
-	msgs := []types.TranscriptMessage{
+	msgs := []domain.TranscriptMessage{
 		msg(0, "user", "please run the tests for me in the cli directory"),
 		msg(1, "tool_use", "bash command invocation metadata that should not appear"),
 		msg(2, "tool_result", "tool output with raw shell data that should not leak"),
@@ -186,7 +186,7 @@ func TestChunkTurns_ZeroBudgetFallsBackToDefault(t *testing.T) {
 	// maxChars <= 0 should not hang or produce empty chunks; it falls back
 	// to the default budget so the chunker is safe for callers that forget
 	// to pass a value.
-	msgs := []types.TranscriptMessage{
+	msgs := []domain.TranscriptMessage{
 		msg(0, "user", "hello i have a question about the codebase please"),
 		msg(1, "assistant", "sure, happy to help you with the codebase question"),
 	}

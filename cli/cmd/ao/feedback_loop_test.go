@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 func TestResolveFeedbackLoopSessionID(t *testing.T) {
@@ -71,7 +71,7 @@ func TestLoadSessionCitationsSupportsSessionAliases(t *testing.T) {
 	timestampSession := "session-20260221-123456"
 	uuidSession := "2d608ace-e8e4-4649-8ac0-70aeba0dcfee"
 
-	entries := []types.CitationEvent{
+	entries := []domain.CitationEvent{
 		{
 			ArtifactPath: filepath.Join(tempDir, ".agents", "learnings", "L-timestamp.jsonl"),
 			SessionID:    timestampSession,
@@ -285,7 +285,7 @@ func TestIntegrationFeedbackLoop(t *testing.T) {
 
 	// Create a citation for the learning
 	sessionID := "session-20260125-120000"
-	citation := types.CitationEvent{
+	citation := domain.CitationEvent{
 		ArtifactPath: learningPath,
 		SessionID:    sessionID,
 		CitedAt:      time.Now(),
@@ -324,7 +324,7 @@ func TestMarkCitationFeedback(t *testing.T) {
 	artifact1 := filepath.Join(tempDir, ".agents", "learnings", "L1.jsonl")
 	artifact2 := filepath.Join(tempDir, ".agents", "patterns", "P1.md")
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: artifact1, SessionID: sessionID, CitedAt: time.Now(), CitationType: "retrieved"},
 		{ArtifactPath: artifact2, SessionID: sessionID, CitedAt: time.Now(), CitationType: "retrieved"},
 		{ArtifactPath: artifact1, SessionID: "other-session", CitedAt: time.Now(), CitationType: "retrieved"},
@@ -425,7 +425,7 @@ func TestFeedbackLoop_loadSessionCitations_filterByType(t *testing.T) {
 	sessionID := "session-20260201-120000"
 
 	// Write citations with different types
-	for _, entry := range []types.CitationEvent{
+	for _, entry := range []domain.CitationEvent{
 		{ArtifactPath: filepath.Join(tmp, "L1.md"), SessionID: sessionID, CitedAt: time.Now(), CitationType: "retrieved"},
 		{ArtifactPath: filepath.Join(tmp, "L2.md"), SessionID: sessionID, CitedAt: time.Now(), CitationType: "applied"},
 		{ArtifactPath: filepath.Join(tmp, "L3.md"), SessionID: sessionID, CitedAt: time.Now(), CitationType: "retrieved"},
@@ -457,7 +457,7 @@ func TestFeedbackLoop_loadSessionCitations_filterByType(t *testing.T) {
 func TestFeedbackLoop_loadSessionCitations_wrongSession(t *testing.T) {
 	tmp := t.TempDir()
 
-	entry := types.CitationEvent{
+	entry := domain.CitationEvent{
 		ArtifactPath: filepath.Join(tmp, "L1.md"),
 		SessionID:    "session-other",
 		CitedAt:      time.Now(),
@@ -506,7 +506,7 @@ func TestFeedbackLoop_computeRewardFromTranscript_explicitPath(t *testing.T) {
 func TestFeedbackLoop_processUniqueCitations_noFiles(t *testing.T) {
 	tmp := t.TempDir()
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: filepath.Join(tmp, "nonexistent.md"), SessionID: "s1", CitedAt: time.Now()},
 	}
 
@@ -547,7 +547,7 @@ func TestFeedbackLoop_processUniqueCitations_withLearning(t *testing.T) {
 	feedbackHelpful = false
 	feedbackHarmful = false
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: learningPath, SessionID: "s1", CitedAt: time.Now()},
 	}
 
@@ -637,7 +637,7 @@ func TestFeedbackLoop_discoverUnprocessedSessions_withCitations(t *testing.T) {
 	batchFeedbackDays = 7
 
 	// Create some citations
-	for _, entry := range []types.CitationEvent{
+	for _, entry := range []domain.CitationEvent{
 		{ArtifactPath: "/a.md", SessionID: "session-1", CitedAt: time.Now(), CitationType: "retrieved"},
 		{ArtifactPath: "/b.md", SessionID: "session-1", CitedAt: time.Now(), CitationType: "retrieved"},
 		{ArtifactPath: "/c.md", SessionID: "session-2", CitedAt: time.Now(), CitationType: "retrieved"},
@@ -667,7 +667,7 @@ func TestFeedbackLoop_discoverUnprocessedSessions_excludesProcessed(t *testing.T
 	batchFeedbackDays = 7
 
 	// Create a citation
-	entry := types.CitationEvent{
+	entry := domain.CitationEvent{
 		ArtifactPath: "/a.md",
 		SessionID:    "session-processed",
 		CitedAt:      time.Now(),
@@ -704,7 +704,7 @@ func TestFeedbackLoop_discoverUnprocessedSessions_excludesProcessed(t *testing.T
 
 func TestFeedbackLoop_reportBatchFeedbackDryRun(t *testing.T) {
 	sessionIDs := []string{"s1", "s2"}
-	sessionCitations := map[string][]types.CitationEvent{
+	sessionCitations := map[string][]domain.CitationEvent{
 		"s1": {{ArtifactPath: "/a.md"}},
 		"s2": {{ArtifactPath: "/b.md"}, {ArtifactPath: "/c.md"}},
 	}

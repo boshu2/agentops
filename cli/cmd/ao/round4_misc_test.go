@@ -4,7 +4,7 @@ package main
 import (
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // estimateTokens, truncateDisplay, hookMessageForStatus tests are in context_test.go
@@ -32,8 +32,8 @@ func TestApplyMarkdownLine(t *testing.T) {
 			name: "sets Maturity lowercase",
 			line: "**Maturity**: Candidate",
 			checkFn: func(t *testing.T, meta *artifactMetadata) {
-				if meta.Maturity != types.MaturityCandidate {
-					t.Errorf("Maturity = %q, want %q", meta.Maturity, types.MaturityCandidate)
+				if meta.Maturity != domain.MaturityCandidate {
+					t.Errorf("Maturity = %q, want %q", meta.Maturity, domain.MaturityCandidate)
 				}
 			},
 		},
@@ -153,13 +153,13 @@ func TestStatusToMaturity(t *testing.T) {
 	tests := []struct {
 		name   string
 		status string
-		want   types.Maturity
+		want   domain.Maturity
 	}{
-		{name: "completed maps to established", status: "completed", want: types.MaturityEstablished},
-		{name: "in_progress maps to candidate", status: "in_progress", want: types.MaturityCandidate},
-		{name: "pending maps to provisional", status: "pending", want: types.MaturityProvisional},
-		{name: "empty string defaults to provisional", status: "", want: types.MaturityProvisional},
-		{name: "unknown status defaults to provisional", status: "cancelled", want: types.MaturityProvisional},
+		{name: "completed maps to established", status: "completed", want: domain.MaturityEstablished},
+		{name: "in_progress maps to candidate", status: "in_progress", want: domain.MaturityCandidate},
+		{name: "pending maps to provisional", status: "pending", want: domain.MaturityProvisional},
+		{name: "empty string defaults to provisional", status: "", want: domain.MaturityProvisional},
+		{name: "unknown status defaults to provisional", status: "cancelled", want: domain.MaturityProvisional},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -250,14 +250,14 @@ func TestAssignMaturityAndUtility(t *testing.T) {
 		}
 		assignMaturityAndUtility(tasks)
 
-		if tasks[0].Maturity != types.MaturityEstablished {
-			t.Errorf("tasks[0].Maturity = %q, want %q", tasks[0].Maturity, types.MaturityEstablished)
+		if tasks[0].Maturity != domain.MaturityEstablished {
+			t.Errorf("tasks[0].Maturity = %q, want %q", tasks[0].Maturity, domain.MaturityEstablished)
 		}
-		if tasks[1].Maturity != types.MaturityCandidate {
-			t.Errorf("tasks[1].Maturity = %q, want %q", tasks[1].Maturity, types.MaturityCandidate)
+		if tasks[1].Maturity != domain.MaturityCandidate {
+			t.Errorf("tasks[1].Maturity = %q, want %q", tasks[1].Maturity, domain.MaturityCandidate)
 		}
-		if tasks[2].Maturity != types.MaturityProvisional {
-			t.Errorf("tasks[2].Maturity = %q, want %q", tasks[2].Maturity, types.MaturityProvisional)
+		if tasks[2].Maturity != domain.MaturityProvisional {
+			t.Errorf("tasks[2].Maturity = %q, want %q", tasks[2].Maturity, domain.MaturityProvisional)
 		}
 	})
 
@@ -267,8 +267,8 @@ func TestAssignMaturityAndUtility(t *testing.T) {
 		}
 		assignMaturityAndUtility(tasks)
 
-		if tasks[0].Utility != types.InitialUtility {
-			t.Errorf("tasks[0].Utility = %f, want %f", tasks[0].Utility, types.InitialUtility)
+		if tasks[0].Utility != domain.InitialUtility {
+			t.Errorf("tasks[0].Utility = %f, want %f", tasks[0].Utility, domain.InitialUtility)
 		}
 	})
 

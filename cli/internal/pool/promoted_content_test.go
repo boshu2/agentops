@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func promotedMarkdownForBody(id, body string) string {
@@ -53,16 +53,16 @@ func TestPoolPromote_LiveScansArtifactsWhenPromotedIndexMissing(t *testing.T) {
 		t.Fatalf("write existing artifact: %v", err)
 	}
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "stale-pool-candidate",
-		Tier:    types.TierSilver,
-		Type:    types.KnowledgeTypeLearning,
+		Tier:    domain.TierSilver,
+		Type:    domain.KnowledgeTypeLearning,
 		Content: body,
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
-	if err := p.Stage(candidate.ID, types.TierBronze); err != nil {
+	if err := p.Stage(candidate.ID, domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 
@@ -123,16 +123,16 @@ func TestPoolPromote_LiveScansArchivedArtifactsWhenPromotedIndexMissing(t *testi
 		t.Fatalf("write archived artifact: %v", err)
 	}
 
-	candidate := types.Candidate{
+	candidate := domain.Candidate{
 		ID:      "archived-pool-candidate",
-		Tier:    types.TierSilver,
-		Type:    types.KnowledgeTypeLearning,
+		Tier:    domain.TierSilver,
+		Type:    domain.KnowledgeTypeLearning,
 		Content: body,
 	}
-	if err := p.Add(candidate, types.Scoring{}); err != nil {
+	if err := p.Add(candidate, domain.Scoring{}); err != nil {
 		t.Fatalf("Add failed: %v", err)
 	}
-	if err := p.Stage(candidate.ID, types.TierBronze); err != nil {
+	if err := p.Stage(candidate.ID, domain.TierBronze); err != nil {
 		t.Fatalf("Stage failed: %v", err)
 	}
 

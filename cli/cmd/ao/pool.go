@@ -9,10 +9,10 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
-	"github.com/boshu2/agentops/cli/internal/formatter"
 	"github.com/boshu2/agentops/cli/internal/pool"
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/render"
 )
 
 var (
@@ -81,10 +81,10 @@ Examples:
 		}
 
 		if poolTier != "" {
-			opts.Tier = types.Tier(poolTier)
+			opts.Tier = domain.Tier(poolTier)
 		}
 		if poolStatus != "" {
-			opts.Status = types.PoolStatus(poolStatus)
+			opts.Status = domain.PoolStatus(poolStatus)
 		}
 
 		result, err := p.ListPaginated(opts)
@@ -111,7 +111,7 @@ func outputPoolList(entries []pool.PoolEntry, offset, limit, total int) error {
 			return nil
 		}
 
-		tbl := formatter.NewTable(os.Stdout, "ID", "TIER", "STATUS", "AGE", "UTILITY", "CONFIDENCE")
+		tbl := render.NewTable(os.Stdout, "ID", "TIER", "STATUS", "AGE", "UTILITY", "CONFIDENCE")
 		if !poolWide {
 			tbl.SetMaxWidth(0, 12)
 		}
@@ -280,9 +280,9 @@ Examples:
 
 		p := pool.NewPool(cwd)
 
-		minTier := types.TierBronze
+		minTier := domain.TierBronze
 		if poolTier != "" {
-			minTier = types.Tier(poolTier)
+			minTier = domain.Tier(poolTier)
 		}
 
 		if err := p.Stage(candidateID, minTier); err != nil {

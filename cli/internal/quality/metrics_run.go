@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // ParseUtilityFromMarkdown extracts utility from markdown front matter.
@@ -245,7 +245,7 @@ func CountNewArtifacts(baseDir string, since time.Time) (int, error) {
 
 // BuildLastCitedMap builds a map of normalized artifact path → last citation time.
 // normalize is a function that resolves a citation path to a stable absolute form.
-func BuildLastCitedMap(citations []types.CitationEvent, normalize func(string) string) map[string]time.Time {
+func BuildLastCitedMap(citations []domain.CitationEvent, normalize func(string) string) map[string]time.Time {
 	lastCited := make(map[string]time.Time)
 	for _, c := range citations {
 		norm := normalize(c.ArtifactPath)
@@ -290,7 +290,7 @@ func CountStaleInDir(dir string, staleThreshold time.Time, lastCited map[string]
 }
 
 // CountStaleArtifacts counts artifacts not cited in staleDays days under .agents/learnings and .agents/patterns.
-func CountStaleArtifacts(baseDir string, citations []types.CitationEvent, staleDays int, normalize func(string) string) (int, error) {
+func CountStaleArtifacts(baseDir string, citations []domain.CitationEvent, staleDays int, normalize func(string) string) (int, error) {
 	staleThreshold := time.Now().AddDate(0, 0, -staleDays)
 	lastCited := BuildLastCitedMap(citations, normalize)
 
@@ -306,7 +306,7 @@ func CountStaleArtifacts(baseDir string, citations []types.CitationEvent, staleD
 }
 
 // PrintMetricsParameters prints the σ/ρ/δ parameter section.
-func PrintMetricsParameters(m *types.FlywheelMetrics) {
+func PrintMetricsParameters(m *domain.FlywheelMetrics) {
 	fmt.Println("PARAMETERS:")
 	fmt.Printf("  δ (avg age):        %.1f days active knowledge age\n", m.Delta)
 	fmt.Printf("  σ (retrieval):      %.2f (%d%% retrievable artifacts surfaced)\n",
@@ -316,7 +316,7 @@ func PrintMetricsParameters(m *types.FlywheelMetrics) {
 }
 
 // PrintMetricsDerived prints the derived velocity/health section.
-func PrintMetricsDerived(m *types.FlywheelMetrics) {
+func PrintMetricsDerived(m *domain.FlywheelMetrics) {
 	velocitySign := "+"
 	if m.Velocity < 0 {
 		velocitySign = ""
@@ -336,7 +336,7 @@ func PrintMetricsDerived(m *types.FlywheelMetrics) {
 }
 
 // PrintMetricsCounts prints the COUNTS / TIER DISTRIBUTION sections.
-func PrintMetricsCounts(m *types.FlywheelMetrics) {
+func PrintMetricsCounts(m *domain.FlywheelMetrics) {
 	fmt.Println("COUNTS:")
 	fmt.Printf("  Knowledge items:    %d\n", m.TotalArtifacts)
 	fmt.Printf("  Citation events:    %d this period\n", m.CitationsThisPeriod)
@@ -357,7 +357,7 @@ func PrintMetricsCounts(m *types.FlywheelMetrics) {
 }
 
 // PrintMetricsLoopClosure prints the R1 loop closure section if non-empty.
-func PrintMetricsLoopClosure(m *types.FlywheelMetrics) {
+func PrintMetricsLoopClosure(m *domain.FlywheelMetrics) {
 	if m.LearningsCreated == 0 && m.LearningsFound == 0 && m.TotalRetros == 0 {
 		return
 	}
@@ -381,7 +381,7 @@ func PrintMetricsLoopClosure(m *types.FlywheelMetrics) {
 }
 
 // PrintMetricsUtility prints the MemRL utility statistics section if non-empty.
-func PrintMetricsUtility(m *types.FlywheelMetrics) {
+func PrintMetricsUtility(m *domain.FlywheelMetrics) {
 	if m.MeanUtility == 0 && m.HighUtilityCount == 0 && m.LowUtilityCount == 0 {
 		return
 	}
@@ -402,7 +402,7 @@ func PrintMetricsUtility(m *types.FlywheelMetrics) {
 }
 
 // PrintMetricsTable prints a fully formatted flywheel metrics report.
-func PrintMetricsTable(m *types.FlywheelMetrics) {
+func PrintMetricsTable(m *domain.FlywheelMetrics) {
 	fmt.Println()
 	fmt.Println("Knowledge Flywheel Metrics")
 	fmt.Println("==========================")

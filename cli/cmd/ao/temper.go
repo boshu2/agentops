@@ -14,11 +14,11 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 var (
@@ -50,16 +50,16 @@ Commands:
 
 // TemperResult holds validation results for an artifact.
 type TemperResult struct {
-	Path          string         `json:"path"`
-	Valid         bool           `json:"valid"`
-	Tempered      bool           `json:"tempered,omitempty"`
-	Issues        []string       `json:"issues,omitempty"`
-	Warnings      []string       `json:"warnings,omitempty"`
-	Maturity      types.Maturity `json:"maturity,omitempty"`
-	Utility       float64        `json:"utility,omitempty"`
-	Confidence    float64        `json:"confidence,omitempty"`
-	FeedbackCount int            `json:"feedback_count,omitempty"`
-	ValidatedAt   time.Time      `json:"validated_at,omitempty"`
+	Path          string          `json:"path"`
+	Valid         bool            `json:"valid"`
+	Tempered      bool            `json:"tempered,omitempty"`
+	Issues        []string        `json:"issues,omitempty"`
+	Warnings      []string        `json:"warnings,omitempty"`
+	Maturity      domain.Maturity `json:"maturity,omitempty"`
+	Utility       float64         `json:"utility,omitempty"`
+	Confidence    float64         `json:"confidence,omitempty"`
+	FeedbackCount int             `json:"feedback_count,omitempty"`
+	ValidatedAt   time.Time       `json:"validated_at,omitempty"`
 }
 
 // TemperStatus holds overall status of tempered artifacts.
@@ -334,7 +334,7 @@ func validateArtifact(path, minMaturity string, minUtility float64, minFeedback 
 // artifactMetadata holds parsed metadata from an artifact.
 type artifactMetadata struct {
 	ID            string
-	Maturity      types.Maturity
+	Maturity      domain.Maturity
 	Utility       float64
 	Confidence    float64
 	FeedbackCount int
@@ -362,7 +362,7 @@ func parseFrontmatterMetadata(path string, meta *artifactMetadata) {
 		meta.ID = fields["id"]
 	}
 	if fields["maturity"] != "" {
-		meta.Maturity = types.Maturity(strings.ToLower(fields["maturity"]))
+		meta.Maturity = domain.Maturity(strings.ToLower(fields["maturity"]))
 	}
 	if fields["utility"] != "" {
 		//nolint:errcheck // parsing optional metadata, zero value is acceptable default
@@ -397,7 +397,7 @@ func parseJSONLMetadata(path string, meta *artifactMetadata) error {
 
 	scanner := bufio.NewScanner(f)
 	if scanner.Scan() {
-		var data types.Candidate
+		var data domain.Candidate
 		if err := json.Unmarshal(scanner.Bytes(), &data); err == nil {
 			meta.ID = data.ID
 			meta.Maturity = data.Maturity
@@ -422,7 +422,7 @@ func applyMarkdownLine(line string, meta *artifactMetadata) {
 	}
 	lifecycle.ApplyMarkdownLine(line, &lm)
 	meta.ID = lm.ID
-	meta.Maturity = types.Maturity(lm.Maturity)
+	meta.Maturity = domain.Maturity(lm.Maturity)
 	meta.Utility = lm.Utility
 	meta.Confidence = lm.Confidence
 	meta.SchemaVersion = lm.SchemaVersion
@@ -436,7 +436,7 @@ func parseMarkdownMetadata(content string, meta *artifactMetadata) {
 		meta.ID = lm.ID
 	}
 	if lm.Maturity != "" {
-		meta.Maturity = types.Maturity(lm.Maturity)
+		meta.Maturity = domain.Maturity(lm.Maturity)
 	}
 	if lm.Utility != 0 {
 		meta.Utility = lm.Utility
@@ -455,8 +455,8 @@ func parseMarkdownMetadata(content string, meta *artifactMetadata) {
 // parseArtifactMetadata extracts metadata from an artifact file.
 func parseArtifactMetadata(path string) (*artifactMetadata, error) {
 	meta := &artifactMetadata{
-		Maturity:   types.MaturityProvisional,
-		Utility:    types.InitialUtility,
+		Maturity:   domain.MaturityProvisional,
+		Utility:    domain.InitialUtility,
 		Confidence: 0.5,
 	}
 
@@ -509,7 +509,7 @@ func countPoolPending(baseDir string, status *TemperStatus) {
 		return
 	}
 	for _, e := range entries {
-		if e.Status == types.PoolStatusPending || e.Status == types.PoolStatusStaged {
+		if e.Status == domain.PoolStatusPending || e.Status == domain.PoolStatusStaged {
 			status.Pending++
 			status.ByMaturity[string(e.Candidate.Maturity)]++
 		}

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // FindingMatchesQuery returns true if the finding matches the query (case-insensitive).
@@ -110,7 +110,7 @@ func ApplyFindingFreshness(f *KnowledgeFinding, file string, now time.Time) {
 	if err != nil || info == nil {
 		f.FreshnessScore = 0.5
 		if f.Utility == 0 {
-			f.Utility = types.InitialUtility
+			f.Utility = domain.InitialUtility
 		}
 		return
 	}
@@ -121,7 +121,7 @@ func ApplyFindingFreshness(f *KnowledgeFinding, file string, now time.Time) {
 	f.AgeWeeks = now.Sub(anchorTime).Hours() / (24 * 7)
 	f.FreshnessScore = FreshnessScore(f.AgeWeeks)
 	if f.Utility == 0 {
-		f.Utility = types.InitialUtility
+		f.Utility = domain.InitialUtility
 	}
 }
 

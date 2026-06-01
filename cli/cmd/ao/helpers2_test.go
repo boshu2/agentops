@@ -11,8 +11,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/pool"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // ---------------------------------------------------------------------------
@@ -1116,16 +1116,16 @@ func TestHelper2_nonEmptyStringFromData(t *testing.T) {
 func TestHelper2_isEligibleTier(t *testing.T) {
 	tests := []struct {
 		name        string
-		tier        types.Tier
+		tier        domain.Tier
 		includeGold bool
 		want        bool
 	}{
-		{"silver always eligible", types.TierSilver, false, true},
-		{"silver with gold enabled", types.TierSilver, true, true},
-		{"gold eligible when included", types.TierGold, true, true},
-		{"gold not eligible when excluded", types.TierGold, false, false},
-		{"bronze never eligible", types.TierBronze, true, false},
-		{"discard never eligible", types.TierDiscard, true, false},
+		{"silver always eligible", domain.TierSilver, false, true},
+		{"silver with gold enabled", domain.TierSilver, true, true},
+		{"gold eligible when included", domain.TierGold, true, true},
+		{"gold not eligible when excluded", domain.TierGold, false, false},
+		{"bronze never eligible", domain.TierBronze, true, false},
+		{"discard never eligible", domain.TierDiscard, true, false},
 	}
 
 	for _, tt := range tests {

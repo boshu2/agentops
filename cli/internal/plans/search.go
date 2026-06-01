@@ -3,13 +3,13 @@ package plans
 import (
 	"strings"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // SearchPlans returns entries whose name, project, or beads ID contain the query (case-insensitive).
-func SearchPlans(entries []types.PlanManifestEntry, query string) []types.PlanManifestEntry {
+func SearchPlans(entries []domain.PlanManifestEntry, query string) []domain.PlanManifestEntry {
 	q := strings.ToLower(query)
-	var matches []types.PlanManifestEntry
+	var matches []domain.PlanManifestEntry
 	for _, e := range entries {
 		searchText := strings.ToLower(e.PlanName + " " + e.ProjectPath + " " + e.BeadsID)
 		if strings.Contains(searchText, q) {
@@ -29,7 +29,7 @@ type DriftEntry struct {
 }
 
 // DetectStatusDrifts finds status mismatches between manifest entries and beads.
-func DetectStatusDrifts(byBeadsID map[string]*types.PlanManifestEntry, beadsIndex map[string]string) []DriftEntry {
+func DetectStatusDrifts(byBeadsID map[string]*domain.PlanManifestEntry, beadsIndex map[string]string) []DriftEntry {
 	var drifts []DriftEntry
 	for beadsID, entry := range byBeadsID {
 		beadsStatus, exists := beadsIndex[beadsID]
@@ -40,7 +40,7 @@ func DetectStatusDrifts(byBeadsID map[string]*types.PlanManifestEntry, beadsInde
 			})
 			continue
 		}
-		manifestClosed := entry.Status == types.PlanStatusCompleted
+		manifestClosed := entry.Status == domain.PlanStatusCompleted
 		beadsClosed := beadsStatus == "closed"
 		if manifestClosed != beadsClosed {
 			drifts = append(drifts, DriftEntry{
@@ -53,7 +53,7 @@ func DetectStatusDrifts(byBeadsID map[string]*types.PlanManifestEntry, beadsInde
 }
 
 // DetectOrphanedEntries finds manifest entries without beads linkage.
-func DetectOrphanedEntries(entries []types.PlanManifestEntry) []DriftEntry {
+func DetectOrphanedEntries(entries []domain.PlanManifestEntry) []DriftEntry {
 	var drifts []DriftEntry
 	for _, e := range entries {
 		if e.BeadsID == "" {
@@ -68,7 +68,7 @@ func DetectOrphanedEntries(entries []types.PlanManifestEntry) []DriftEntry {
 
 // CountUnlinkedEntries counts entries without beads linkage.
 // Returns the count and a slice of plan names that are unlinked.
-func CountUnlinkedEntries(entries []types.PlanManifestEntry) (int, []string) {
+func CountUnlinkedEntries(entries []domain.PlanManifestEntry) (int, []string) {
 	count := 0
 	var names []string
 	for _, e := range entries {
@@ -82,7 +82,7 @@ func CountUnlinkedEntries(entries []types.PlanManifestEntry) (int, []string) {
 
 // UpsertEntry updates an existing entry or appends a new one.
 // Returns true if an existing entry was updated.
-func UpsertEntry(manifestPath string, existing []types.PlanManifestEntry, entry types.PlanManifestEntry) (bool, error) {
+func UpsertEntry(manifestPath string, existing []domain.PlanManifestEntry, entry domain.PlanManifestEntry) (bool, error) {
 	for i, e := range existing {
 		if e.Path == entry.Path {
 			existing[i] = entry

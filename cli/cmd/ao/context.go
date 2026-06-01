@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	contextbudget "github.com/boshu2/agentops/cli/internal/context"
+	contextbudget "github.com/boshu2/agentops/cli/internal/contextpacket"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/spf13/cobra"
 )

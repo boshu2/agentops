@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestValidateArtifactPath(t *testing.T) {
@@ -357,7 +357,7 @@ func TestTierFromValidation(t *testing.T) {
 func TestRecordAndLoadCitations(t *testing.T) {
 	baseDir := t.TempDir()
 
-	event := types.CitationEvent{
+	event := domain.CitationEvent{
 		ArtifactPath:    "/path/to/artifact.md",
 		SessionID:       "sess-001",
 		CitedAt:         time.Date(2026, 1, 15, 10, 0, 0, 0, time.UTC),
@@ -372,7 +372,7 @@ func TestRecordAndLoadCitations(t *testing.T) {
 	}
 
 	// Record another citation for the same artifact
-	event2 := types.CitationEvent{
+	event2 := domain.CitationEvent{
 		ArtifactPath: "/path/to/artifact.md",
 		SessionID:    "sess-002",
 		CitedAt:      time.Date(2026, 1, 16, 10, 0, 0, 0, time.UTC),
@@ -383,7 +383,7 @@ func TestRecordAndLoadCitations(t *testing.T) {
 	}
 
 	// Record a different artifact
-	event3 := types.CitationEvent{
+	event3 := domain.CitationEvent{
 		ArtifactPath: "/path/to/other.md",
 		SessionID:    "sess-001",
 		CitedAt:      time.Date(2026, 1, 17, 10, 0, 0, 0, time.UTC),
@@ -479,7 +479,7 @@ func TestLoadCitations_MalformedLines(t *testing.T) {
 	}
 
 	// Write a file with a valid line and a malformed line
-	validEvent := types.CitationEvent{
+	validEvent := domain.CitationEvent{
 		ArtifactPath: "/path/valid.md",
 		SessionID:    "sess-001",
 		CitedAt:      time.Now(),
@@ -506,7 +506,7 @@ func TestRecordCitation_DefaultTimestamp(t *testing.T) {
 	baseDir := t.TempDir()
 
 	// Zero timestamp should be filled in
-	event := types.CitationEvent{
+	event := domain.CitationEvent{
 		ArtifactPath: "/path/auto-ts.md",
 		SessionID:    "sess-auto",
 	}
@@ -533,7 +533,7 @@ func TestCitationPathCanonicalization_MixedRelativeAndAbsolute(t *testing.T) {
 	rel := ".agents/learnings/L1.md"
 	abs := filepath.Join(baseDir, ".agents", "learnings", "L1.md")
 
-	events := []types.CitationEvent{
+	events := []domain.CitationEvent{
 		{ArtifactPath: rel, SessionID: "s1", CitedAt: time.Now()},
 		{ArtifactPath: abs, SessionID: "s2", CitedAt: time.Now().Add(1 * time.Minute)},
 	}
@@ -572,7 +572,7 @@ func TestGetCitationsSince(t *testing.T) {
 	t3 := time.Date(2026, 1, 30, 0, 0, 0, 0, time.UTC)
 
 	for _, ts := range []time.Time{t1, t2, t3} {
-		if err := RecordCitation(baseDir, types.CitationEvent{
+		if err := RecordCitation(baseDir, domain.CitationEvent{
 			ArtifactPath: "/path/file.md",
 			SessionID:    "s1",
 			CitedAt:      ts,
@@ -600,7 +600,7 @@ func TestGetUniqueCitedArtifacts(t *testing.T) {
 	t2 := time.Date(2026, 1, 20, 0, 0, 0, 0, time.UTC)
 	t3 := time.Date(2026, 1, 25, 0, 0, 0, 0, time.UTC)
 
-	events := []types.CitationEvent{
+	events := []domain.CitationEvent{
 		{ArtifactPath: "/a.md", SessionID: "s1", CitedAt: t1},
 		{ArtifactPath: "/b.md", SessionID: "s1", CitedAt: t2},
 		{ArtifactPath: "/a.md", SessionID: "s2", CitedAt: t3}, // duplicate artifact
@@ -640,7 +640,7 @@ func TestGetUniqueCitedArtifacts_NoFile(t *testing.T) {
 func TestGetCitationsForSession(t *testing.T) {
 	baseDir := t.TempDir()
 
-	events := []types.CitationEvent{
+	events := []domain.CitationEvent{
 		{ArtifactPath: "/a.md", SessionID: "sess-001", CitedAt: time.Now()},
 		{ArtifactPath: "/b.md", SessionID: "sess-002", CitedAt: time.Now()},
 		{ArtifactPath: "/c.md", SessionID: "sess-001", CitedAt: time.Now()},
@@ -1674,7 +1674,7 @@ func TestRecordCitation_ZeroTimestamp(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Citation with zero timestamp should get current time
-	event := types.CitationEvent{
+	event := domain.CitationEvent{
 		ArtifactPath: "test.md",
 		SessionID:    "sess-1",
 	}
@@ -1706,7 +1706,7 @@ func TestRecordCitation_ReadOnlyDir(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chmod(readOnly, 0700) })
 
-	event := types.CitationEvent{
+	event := domain.CitationEvent{
 		ArtifactPath: "test.md",
 		SessionID:    "sess-1",
 	}
@@ -2097,7 +2097,7 @@ func TestRecordCitation_ReadOnlyBaseDir(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = os.Chmod(readOnly, 0700) })
 
-	event := types.CitationEvent{
+	event := domain.CitationEvent{
 		ArtifactPath: "/some/artifact.md",
 		SessionID:    "test-session",
 		CitationType: "reference",
@@ -2118,7 +2118,7 @@ func TestRecordCitation_BlockedCitationsFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	event := types.CitationEvent{
+	event := domain.CitationEvent{
 		ArtifactPath: "/some/artifact.md",
 		SessionID:    "test-session",
 		CitationType: "reference",
@@ -2149,7 +2149,7 @@ func TestGetCitationsForSession_ReadOnlyFile(t *testing.T) {
 	tmp := t.TempDir()
 
 	// Record a citation first
-	event := types.CitationEvent{
+	event := domain.CitationEvent{
 		ArtifactPath: "/test/artifact.md",
 		SessionID:    "target-session",
 		CitationType: "reference",

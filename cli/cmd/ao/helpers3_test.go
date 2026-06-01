@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // ---------------------------------------------------------------------------
@@ -23,7 +23,7 @@ func TestHelper3_parseMarkdownMetadata(t *testing.T) {
 		name     string
 		content  string
 		wantID   string
-		wantMat  types.Maturity
+		wantMat  domain.Maturity
 		wantUtil float64
 		wantConf float64
 		wantSV   int
@@ -40,7 +40,7 @@ func TestHelper3_parseMarkdownMetadata(t *testing.T) {
 **Status**: tempered
 `,
 			wantID:   "ART-001",
-			wantMat:  types.MaturityCandidate,
+			wantMat:  domain.MaturityCandidate,
 			wantUtil: 0.75,
 			wantConf: 0.88,
 			wantSV:   3,
@@ -72,7 +72,7 @@ func TestHelper3_parseMarkdownMetadata(t *testing.T) {
 - **Maturity**: established
 `,
 			wantID:  "B-99",
-			wantMat: types.MaturityEstablished,
+			wantMat: domain.MaturityEstablished,
 		},
 		{
 			name:    "colon in field prefix format",
@@ -459,7 +459,7 @@ func TestHelper3_parseMemRLMetadata(t *testing.T) {
 		{
 			name:     "defaults on empty",
 			content:  "No metadata here",
-			wantUtil: types.InitialUtility,
+			wantUtil: domain.InitialUtility,
 			wantMat:  "provisional",
 		},
 	}
@@ -882,10 +882,10 @@ func TestHelper3_formatStringList(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestHelper3_filterPlans(t *testing.T) {
-	entries := []types.PlanManifestEntry{
-		{PlanName: "plan-a", ProjectPath: "/proj/alpha", Status: types.PlanStatusActive},
-		{PlanName: "plan-b", ProjectPath: "/proj/beta", Status: types.PlanStatusCompleted},
-		{PlanName: "plan-c", ProjectPath: "/proj/alpha", Status: types.PlanStatusCompleted},
+	entries := []domain.PlanManifestEntry{
+		{PlanName: "plan-a", ProjectPath: "/proj/alpha", Status: domain.PlanStatusActive},
+		{PlanName: "plan-b", ProjectPath: "/proj/beta", Status: domain.PlanStatusCompleted},
+		{PlanName: "plan-c", ProjectPath: "/proj/alpha", Status: domain.PlanStatusCompleted},
 	}
 
 	t.Run("no filter", func(t *testing.T) {
@@ -930,7 +930,7 @@ func TestHelper3_resolvePlanName(t *testing.T) {
 }
 
 func TestHelper3_buildBeadsIDIndex(t *testing.T) {
-	entries := []types.PlanManifestEntry{
+	entries := []domain.PlanManifestEntry{
 		{PlanName: "a", BeadsID: "ol-001"},
 		{PlanName: "b", BeadsID: ""},
 		{PlanName: "c", BeadsID: "ol-003"},
@@ -948,8 +948,8 @@ func TestHelper3_buildBeadsIDIndex(t *testing.T) {
 }
 
 func TestHelper3_syncEpicStatus(t *testing.T) {
-	entries := []types.PlanManifestEntry{
-		{PlanName: "plan", Status: types.PlanStatusActive},
+	entries := []domain.PlanManifestEntry{
+		{PlanName: "plan", Status: domain.PlanStatusActive},
 	}
 
 	// Active -> closed => should change
@@ -957,7 +957,7 @@ func TestHelper3_syncEpicStatus(t *testing.T) {
 	if !changed {
 		t.Error("expected change from active -> completed")
 	}
-	if entries[0].Status != types.PlanStatusCompleted {
+	if entries[0].Status != domain.PlanStatusCompleted {
 		t.Errorf("status = %q, want 'completed'", entries[0].Status)
 	}
 
@@ -972,13 +972,13 @@ func TestHelper3_syncEpicStatus(t *testing.T) {
 	if !changed3 {
 		t.Error("expected change from completed -> active")
 	}
-	if entries[0].Status != types.PlanStatusActive {
+	if entries[0].Status != domain.PlanStatusActive {
 		t.Errorf("status = %q, want 'active'", entries[0].Status)
 	}
 }
 
 func TestHelper3_countUnlinkedEntries(t *testing.T) {
-	entries := []types.PlanManifestEntry{
+	entries := []domain.PlanManifestEntry{
 		{PlanName: "a", BeadsID: "ol-1"},
 		{PlanName: "b", BeadsID: ""},
 		{PlanName: "c", BeadsID: ""},
@@ -1003,7 +1003,7 @@ func TestHelper3_buildBeadsStatusIndex(t *testing.T) {
 }
 
 func TestHelper3_detectOrphanedEntries(t *testing.T) {
-	entries := []types.PlanManifestEntry{
+	entries := []domain.PlanManifestEntry{
 		{PlanName: "linked", BeadsID: "x"},
 		{PlanName: "orphan1", BeadsID: ""},
 		{PlanName: "orphan2", BeadsID: ""},
@@ -1253,25 +1253,25 @@ func TestHelper3_nextLegacyDestination(t *testing.T) {
 func TestHelper3_computeVelocityDelta(t *testing.T) {
 	tests := []struct {
 		name string
-		pre  *types.FlywheelMetrics
-		post *types.FlywheelMetrics
+		pre  *domain.FlywheelMetrics
+		post *domain.FlywheelMetrics
 		want float64
 	}{
 		{
 			name: "both present",
-			pre:  &types.FlywheelMetrics{Velocity: 0.1},
-			post: &types.FlywheelMetrics{Velocity: 0.3},
+			pre:  &domain.FlywheelMetrics{Velocity: 0.1},
+			post: &domain.FlywheelMetrics{Velocity: 0.3},
 			want: 0.2,
 		},
 		{
 			name: "pre nil",
 			pre:  nil,
-			post: &types.FlywheelMetrics{Velocity: 0.5},
+			post: &domain.FlywheelMetrics{Velocity: 0.5},
 			want: 0.0,
 		},
 		{
 			name: "post nil",
-			pre:  &types.FlywheelMetrics{Velocity: 0.5},
+			pre:  &domain.FlywheelMetrics{Velocity: 0.5},
 			post: nil,
 			want: 0.0,
 		},
@@ -1295,14 +1295,14 @@ func TestHelper3_computeVelocityDelta(t *testing.T) {
 func TestHelper3_classifyFlywheelStatus(t *testing.T) {
 	tests := []struct {
 		name string
-		post *types.FlywheelMetrics
+		post *domain.FlywheelMetrics
 		want string
 	}{
 		{"nil returns unknown", nil, "unknown"},
-		{"above escape velocity", &types.FlywheelMetrics{AboveEscapeVelocity: true}, "compounding"},
-		{"near escape", &types.FlywheelMetrics{Velocity: -0.01}, "accumulating"},
-		{"decaying", &types.FlywheelMetrics{Velocity: -0.1}, "decaying"},
-		{"exactly threshold", &types.FlywheelMetrics{Velocity: -0.05}, "decaying"},
+		{"above escape velocity", &domain.FlywheelMetrics{AboveEscapeVelocity: true}, "compounding"},
+		{"near escape", &domain.FlywheelMetrics{Velocity: -0.01}, "accumulating"},
+		{"decaying", &domain.FlywheelMetrics{Velocity: -0.1}, "decaying"},
+		{"exactly threshold", &domain.FlywheelMetrics{Velocity: -0.05}, "decaying"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1324,12 +1324,12 @@ func TestHelper3_classifyFlywheelStatus(t *testing.T) {
 func TestHelper3_statusToMaturity(t *testing.T) {
 	tests := []struct {
 		status string
-		want   types.Maturity
+		want   domain.Maturity
 	}{
-		{"completed", types.MaturityEstablished},
-		{"in_progress", types.MaturityCandidate},
-		{"pending", types.MaturityProvisional},
-		{"unknown", types.MaturityProvisional},
+		{"completed", domain.MaturityEstablished},
+		{"in_progress", domain.MaturityCandidate},
+		{"pending", domain.MaturityProvisional},
+		{"unknown", domain.MaturityProvisional},
 	}
 	for _, tt := range tests {
 		t.Run(tt.status, func(t *testing.T) {
@@ -1425,10 +1425,10 @@ func TestHelper3_filterTasksBySession(t *testing.T) {
 
 func TestHelper3_computeTaskDistributions(t *testing.T) {
 	tasks := []TaskEvent{
-		{Status: "pending", Maturity: types.MaturityProvisional, LearningID: ""},
-		{Status: "completed", Maturity: types.MaturityEstablished, LearningID: "L-1"},
-		{Status: "completed", Maturity: types.MaturityEstablished, LearningID: "L-2"},
-		{Status: "in_progress", Maturity: types.MaturityCandidate, LearningID: ""},
+		{Status: "pending", Maturity: domain.MaturityProvisional, LearningID: ""},
+		{Status: "completed", Maturity: domain.MaturityEstablished, LearningID: "L-1"},
+		{Status: "completed", Maturity: domain.MaturityEstablished, LearningID: "L-2"},
+		{Status: "in_progress", Maturity: domain.MaturityCandidate, LearningID: ""},
 	}
 
 	statusCounts, maturityCounts, withLearnings := computeTaskDistributions(tasks)
@@ -1439,8 +1439,8 @@ func TestHelper3_computeTaskDistributions(t *testing.T) {
 	if statusCounts["completed"] != 2 {
 		t.Errorf("completed = %d, want 2", statusCounts["completed"])
 	}
-	if maturityCounts[types.MaturityEstablished] != 2 {
-		t.Errorf("established = %d, want 2", maturityCounts[types.MaturityEstablished])
+	if maturityCounts[domain.MaturityEstablished] != 2 {
+		t.Errorf("established = %d, want 2", maturityCounts[domain.MaturityEstablished])
 	}
 	if withLearnings != 2 {
 		t.Errorf("withLearnings = %d, want 2", withLearnings)
@@ -1455,11 +1455,11 @@ func TestHelper3_assignMaturityAndUtility(t *testing.T) {
 
 	assignMaturityAndUtility(tasks)
 
-	if tasks[0].Maturity != types.MaturityEstablished {
+	if tasks[0].Maturity != domain.MaturityEstablished {
 		t.Errorf("tasks[0].Maturity = %q, want established", tasks[0].Maturity)
 	}
-	if tasks[0].Utility != types.InitialUtility {
-		t.Errorf("tasks[0].Utility = %f, want %f", tasks[0].Utility, types.InitialUtility)
+	if tasks[0].Utility != domain.InitialUtility {
+		t.Errorf("tasks[0].Utility = %f, want %f", tasks[0].Utility, domain.InitialUtility)
 	}
 	// Second task already had utility
 	if tasks[1].Utility != 0.9 {
@@ -1534,7 +1534,7 @@ func TestHelper3_updateTask(t *testing.T) {
 	if task.Owner != "agent-1" {
 		t.Errorf("Owner = %q, want 'agent-1'", task.Owner)
 	}
-	if task.Maturity != types.MaturityEstablished {
+	if task.Maturity != domain.MaturityEstablished {
 		t.Errorf("Maturity = %q, want 'established'", task.Maturity)
 	}
 	if task.CompletedAt.IsZero() {

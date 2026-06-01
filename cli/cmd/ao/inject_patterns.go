@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/search"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // Thin wrappers — canonical definitions in internal/search/patterns.go.
@@ -127,7 +127,7 @@ func scoreAndWeighPatterns(patterns []pattern, globalWeight float64) {
 	for i := range patterns {
 		items[i] = &patterns[i]
 	}
-	applyCompositeScoringTo(items, types.DefaultLambda)
+	applyCompositeScoringTo(items, domain.DefaultLambda)
 
 	if globalWeight > 0 && globalWeight < 1.0 {
 		for i := range patterns {

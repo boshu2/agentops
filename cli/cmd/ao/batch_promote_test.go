@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/pool"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 func TestNormalizeContent(t *testing.T) {
@@ -76,8 +76,8 @@ func TestCheckPromotionCriteria(t *testing.T) {
 		{
 			name: "qualifies — old enough, cited, sufficient utility, not duplicate",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "cand-abc",
 						Content: "unique learning content",
 						Utility: 0.6,
@@ -93,8 +93,8 @@ func TestCheckPromotionCriteria(t *testing.T) {
 		{
 			name: "too young",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "cand-young",
 						Content: "fresh learning",
 					},
@@ -109,8 +109,8 @@ func TestCheckPromotionCriteria(t *testing.T) {
 		{
 			name: "no citations",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "cand-uncited",
 						Content: "uncited learning",
 						Utility: 0.6,
@@ -126,8 +126,8 @@ func TestCheckPromotionCriteria(t *testing.T) {
 		{
 			name: "cited by file path with sufficient citations and utility",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "cand-filepath",
 						Content: "cited via file path",
 						Utility: 0.7,
@@ -144,8 +144,8 @@ func TestCheckPromotionCriteria(t *testing.T) {
 		{
 			name: "cited by file path but insufficient citations",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "cand-filepath-low",
 						Content: "cited via file path low",
 						Utility: 0.7,
@@ -162,8 +162,8 @@ func TestCheckPromotionCriteria(t *testing.T) {
 		{
 			name: "utility too low",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "cand-lowutil",
 						Content: "low utility learning",
 						Utility: 0.3,
@@ -179,8 +179,8 @@ func TestCheckPromotionCriteria(t *testing.T) {
 		{
 			name: "duplicate of promoted content",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "cand-dup",
 						Content: "Already Promoted Learning",
 						Utility: 0.8,
@@ -229,8 +229,8 @@ func TestCheckPromotionCriteria_RequireCitationsFalse(t *testing.T) {
 		{
 			name: "uncited fresh candidate qualifies without citations",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "cand-fresh",
 						Content: "new high-scoring learning",
 						Utility: 0.6,
@@ -245,8 +245,8 @@ func TestCheckPromotionCriteria_RequireCitationsFalse(t *testing.T) {
 		{
 			name: "age gate still enforced",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "cand-young",
 						Content: "too fresh",
 						Utility: 0.8,
@@ -261,8 +261,8 @@ func TestCheckPromotionCriteria_RequireCitationsFalse(t *testing.T) {
 		{
 			name: "utility gate still enforced",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "cand-lowutil",
 						Content: "weak signal",
 						Utility: 0.2,
@@ -277,8 +277,8 @@ func TestCheckPromotionCriteria_RequireCitationsFalse(t *testing.T) {
 		{
 			name: "duplicate gate still enforced",
 			entry: pool.PoolEntry{
-				PoolEntry: types.PoolEntry{
-					Candidate: types.Candidate{
+				PoolEntry: domain.PoolEntry{
+					Candidate: domain.Candidate{
 						ID:      "cand-dup",
 						Content: "Already Promoted",
 						Utility: 0.8,
@@ -311,7 +311,7 @@ func TestCheckPromotionCriteria_RequireCitationsFalse(t *testing.T) {
 }
 
 func TestBuildCitationCounts(t *testing.T) {
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: ".agents/pool/pending/cand-abc123.json"},
 		{ArtifactPath: ".agents/pool/pending/cand-abc123.json"},
 		{ArtifactPath: ".agents/learnings/pattern.md"},
@@ -427,8 +427,8 @@ func TestTryPromoteEntry_RecordsSkipOnError(t *testing.T) {
 	p := pool.NewPool(tmpDir)
 	result := &batchPromoteResult{}
 	entry := pool.PoolEntry{
-		PoolEntry: types.PoolEntry{
-			Candidate: types.Candidate{ID: "missing-candidate"},
+		PoolEntry: domain.PoolEntry{
+			Candidate: domain.Candidate{ID: "missing-candidate"},
 		},
 	}
 
@@ -450,10 +450,10 @@ func TestPromoteEntry_DryRun(t *testing.T) {
 	t.Cleanup(func() { dryRun = oldDryRun })
 
 	entry := pool.PoolEntry{
-		PoolEntry: types.PoolEntry{
-			Candidate: types.Candidate{
+		PoolEntry: domain.PoolEntry{
+			Candidate: domain.Candidate{
 				ID:   "cand-dry-run",
-				Tier: types.TierSilver,
+				Tier: domain.TierSilver,
 			},
 		},
 		AgeString: "48h",
@@ -481,8 +481,8 @@ func TestProcessPromotionCandidate_TooYoungSkips(t *testing.T) {
 
 	result := &batchPromoteResult{}
 	entry := pool.PoolEntry{
-		PoolEntry: types.PoolEntry{
-			Candidate: types.Candidate{
+		PoolEntry: domain.PoolEntry{
+			Candidate: domain.Candidate{
 				ID:      "cand-too-young",
 				Content: "some content",
 			},

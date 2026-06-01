@@ -27,12 +27,12 @@
 //   - Confidence (10%): Assertion strength
 package taxonomy
 
-import "github.com/boshu2/agentops/cli/internal/types"
+import "github.com/boshu2/agentops/cli/internal/domain"
 
 // KnowledgeTypeInfo describes a knowledge type and its base scoring.
 type KnowledgeTypeInfo struct {
 	// Type is the knowledge type constant.
-	Type types.KnowledgeType
+	Type domain.KnowledgeType
 
 	// Description explains what this type represents.
 	Description string
@@ -42,29 +42,29 @@ type KnowledgeTypeInfo struct {
 }
 
 // KnowledgeTypes maps type identifiers to their info.
-var KnowledgeTypes = map[types.KnowledgeType]KnowledgeTypeInfo{
-	types.KnowledgeTypeDecision: {
-		Type:        types.KnowledgeTypeDecision,
+var KnowledgeTypes = map[domain.KnowledgeType]KnowledgeTypeInfo{
+	domain.KnowledgeTypeDecision: {
+		Type:        domain.KnowledgeTypeDecision,
 		Description: "Architectural choice with rationale",
 		BaseScore:   0.8,
 	},
-	types.KnowledgeTypeSolution: {
-		Type:        types.KnowledgeTypeSolution,
+	domain.KnowledgeTypeSolution: {
+		Type:        domain.KnowledgeTypeSolution,
 		Description: "Working fix for a problem",
 		BaseScore:   0.9,
 	},
-	types.KnowledgeTypeLearning: {
-		Type:        types.KnowledgeTypeLearning,
+	domain.KnowledgeTypeLearning: {
+		Type:        domain.KnowledgeTypeLearning,
 		Description: "Insight gained from experience",
 		BaseScore:   0.7,
 	},
-	types.KnowledgeTypeFailure: {
-		Type:        types.KnowledgeTypeFailure,
+	domain.KnowledgeTypeFailure: {
+		Type:        domain.KnowledgeTypeFailure,
 		Description: "What didn't work and why",
 		BaseScore:   0.75,
 	},
-	types.KnowledgeTypeReference: {
-		Type:        types.KnowledgeTypeReference,
+	domain.KnowledgeTypeReference: {
+		Type:        domain.KnowledgeTypeReference,
 		Description: "Pointer to useful resource",
 		BaseScore:   0.5,
 	},
@@ -73,7 +73,7 @@ var KnowledgeTypes = map[types.KnowledgeType]KnowledgeTypeInfo{
 // TierConfig defines the configuration for a quality tier.
 type TierConfig struct {
 	// Tier is the tier constant.
-	Tier types.Tier
+	Tier domain.Tier
 
 	// MinScore is the minimum score to qualify for this tier.
 	MinScore float64
@@ -93,33 +93,33 @@ type TierConfig struct {
 
 // DefaultTierConfigs provides the default tier thresholds.
 // These can be overridden via configuration.
-var DefaultTierConfigs = map[types.Tier]TierConfig{
-	types.TierGold: {
-		Tier:                types.TierGold,
+var DefaultTierConfigs = map[domain.Tier]TierConfig{
+	domain.TierGold: {
+		Tier:                domain.TierGold,
 		MinScore:            0.85,
 		MaxScore:            1.01, // Exclusive upper bound
 		Confidence:          0.95,
 		HumanGateRequired:   false,
 		HumanGateSampleRate: 0.0,
 	},
-	types.TierSilver: {
-		Tier:                types.TierSilver,
+	domain.TierSilver: {
+		Tier:                domain.TierSilver,
 		MinScore:            0.70,
 		MaxScore:            0.85,
 		Confidence:          0.80,
 		HumanGateRequired:   false,
 		HumanGateSampleRate: 0.0,
 	},
-	types.TierBronze: {
-		Tier:                types.TierBronze,
+	domain.TierBronze: {
+		Tier:                domain.TierBronze,
 		MinScore:            0.50,
 		MaxScore:            0.70,
 		Confidence:          0.60,
 		HumanGateRequired:   true,
 		HumanGateSampleRate: 0.05, // 5% sample
 	},
-	types.TierDiscard: {
-		Tier:                types.TierDiscard,
+	domain.TierDiscard: {
+		Tier:                domain.TierDiscard,
 		MinScore:            0.0,
 		MaxScore:            0.50,
 		Confidence:          0.0, // Not stored
@@ -169,15 +169,15 @@ func (w RubricWeights) ValidateWeights() bool {
 }
 
 // TierOrder provides the tier ordering from highest to lowest quality.
-var TierOrder = []types.Tier{
-	types.TierGold,
-	types.TierSilver,
-	types.TierBronze,
-	types.TierDiscard,
+var TierOrder = []domain.Tier{
+	domain.TierGold,
+	domain.TierSilver,
+	domain.TierBronze,
+	domain.TierDiscard,
 }
 
 // AssignTier returns the appropriate tier for a given score.
-func AssignTier(score float64, configs map[types.Tier]TierConfig) types.Tier {
+func AssignTier(score float64, configs map[domain.Tier]TierConfig) domain.Tier {
 	for _, tier := range TierOrder {
 		config, ok := configs[tier]
 		if !ok {
@@ -187,11 +187,11 @@ func AssignTier(score float64, configs map[types.Tier]TierConfig) types.Tier {
 			return tier
 		}
 	}
-	return types.TierDiscard
+	return domain.TierDiscard
 }
 
 // GetBaseScore returns the base score for a knowledge type.
-func GetBaseScore(kt types.KnowledgeType) float64 {
+func GetBaseScore(kt domain.KnowledgeType) float64 {
 	if info, ok := KnowledgeTypes[kt]; ok {
 		return info.BaseScore
 	}
@@ -199,7 +199,7 @@ func GetBaseScore(kt types.KnowledgeType) float64 {
 }
 
 // GetConfidence returns the confidence level for a tier.
-func GetConfidence(tier types.Tier, configs map[types.Tier]TierConfig) float64 {
+func GetConfidence(tier domain.Tier, configs map[domain.Tier]TierConfig) float64 {
 	if config, ok := configs[tier]; ok {
 		return config.Confidence
 	}
@@ -207,7 +207,7 @@ func GetConfidence(tier types.Tier, configs map[types.Tier]TierConfig) float64 {
 }
 
 // RequiresHumanGate checks if a tier requires human review.
-func RequiresHumanGate(tier types.Tier, configs map[types.Tier]TierConfig) bool {
+func RequiresHumanGate(tier domain.Tier, configs map[domain.Tier]TierConfig) bool {
 	if config, ok := configs[tier]; ok {
 		return config.HumanGateRequired
 	}

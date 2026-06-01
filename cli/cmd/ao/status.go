@@ -15,7 +15,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/provenance"
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 var statusCmd = &cobra.Command{
@@ -93,7 +93,7 @@ type qualitySignalInfo struct {
 
 // loadRecentSessions populates status with session count and recent sessions.
 func loadRecentSessions(baseDir string, status *statusOutput) {
-	fs := storage.NewFileStorage(storage.WithBaseDir(baseDir))
+	fs := sessionstore.NewFileStorage(sessionstore.WithBaseDir(baseDir))
 	sessions, err := fs.ListSessions()
 	if err != nil {
 		return
@@ -103,7 +103,7 @@ func loadRecentSessions(baseDir string, status *statusOutput) {
 		return
 	}
 
-	slices.SortFunc(sessions, func(a, b storage.IndexEntry) int {
+	slices.SortFunc(sessions, func(a, b sessionstore.IndexEntry) int {
 		return b.Date.Compare(a.Date)
 	})
 
@@ -219,7 +219,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	baseDir := filepath.Join(cwd, storage.DefaultBaseDir)
+	baseDir := filepath.Join(cwd, sessionstore.DefaultBaseDir)
 	status := &statusOutput{
 		BaseDir: baseDir,
 	}
@@ -232,7 +232,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 
 	loadRecentSessions(baseDir, status)
 
-	provPath := filepath.Join(baseDir, storage.ProvenanceDir, storage.ProvenanceFile)
+	provPath := filepath.Join(baseDir, sessionstore.ProvenanceDir, sessionstore.ProvenanceFile)
 	graph, err := provenance.NewGraph(provPath)
 	if err == nil {
 		stats := graph.GetStats()

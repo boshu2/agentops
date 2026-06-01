@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestLinearRegressionSlope_Positive(t *testing.T) {
@@ -95,7 +95,7 @@ func TestComputeVelocityTrend_Compounding(t *testing.T) {
 	// Write 5 baselines with increasing velocity
 	for i := 0; i < 5; i++ {
 		ts := time.Now().AddDate(0, 0, -i)
-		m := types.FlywheelMetrics{
+		m := domain.FlywheelMetrics{
 			Timestamp: ts,
 			Velocity:  0.1 + float64(i)*0.05, // older = higher velocity when sorted by dayOffset
 		}
@@ -129,7 +129,7 @@ func TestComputeVelocityTrend_Decaying(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		ts := time.Now().AddDate(0, 0, -i)
-		m := types.FlywheelMetrics{
+		m := domain.FlywheelMetrics{
 			Timestamp: ts,
 			Velocity:  0.1 + float64(i)*0.05, // recent=low, old=high → decaying
 		}
@@ -158,7 +158,7 @@ func TestComputeVelocityTrend_InsufficientBaselines(t *testing.T) {
 	// Only 2 baselines — insufficient
 	for i := 0; i < 2; i++ {
 		ts := time.Now().AddDate(0, 0, -i)
-		m := types.FlywheelMetrics{Timestamp: ts, Velocity: 0.1}
+		m := domain.FlywheelMetrics{Timestamp: ts, Velocity: 0.1}
 		data, _ := json.Marshal(m)
 		os.WriteFile(filepath.Join(metricsDir, "baseline-"+ts.Format("2006-01-02")+".json"), data, 0644)
 	}
@@ -410,7 +410,7 @@ func TestComputeReuseConcentration_Concentrated(t *testing.T) {
 }
 
 func TestOverallVerdict_Compounding(t *testing.T) {
-	gs := &types.GoldenSignals{
+	gs := &domain.GoldenSignals{
 		TrendVerdict:         "compounding",
 		PipelineVerdict:      "reinforcing",
 		ClosureVerdict:       "mining",
@@ -423,7 +423,7 @@ func TestOverallVerdict_Compounding(t *testing.T) {
 }
 
 func TestOverallVerdict_Decaying(t *testing.T) {
-	gs := &types.GoldenSignals{
+	gs := &domain.GoldenSignals{
 		TrendVerdict:         "decaying",
 		PipelineVerdict:      "degrading",
 		ClosureVerdict:       "hoarding",
@@ -436,7 +436,7 @@ func TestOverallVerdict_Decaying(t *testing.T) {
 }
 
 func TestOverallVerdict_Accumulating(t *testing.T) {
-	gs := &types.GoldenSignals{
+	gs := &domain.GoldenSignals{
 		TrendVerdict:         "compounding",
 		PipelineVerdict:      "degrading",
 		ClosureVerdict:       "mining",

@@ -10,8 +10,8 @@ import (
 
 	"pgregory.net/rapid"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/pool"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // rapidTempDir creates a temporary directory and registers cleanup on the rapid.T.
@@ -34,46 +34,46 @@ func genCandidateID() *rapid.Generator[string] {
 }
 
 // genTier picks a random valid tier.
-func genTier() *rapid.Generator[types.Tier] {
-	return rapid.Custom(func(t *rapid.T) types.Tier {
-		tiers := []types.Tier{types.TierGold, types.TierSilver, types.TierBronze, types.TierDiscard}
+func genTier() *rapid.Generator[domain.Tier] {
+	return rapid.Custom(func(t *rapid.T) domain.Tier {
+		tiers := []domain.Tier{domain.TierGold, domain.TierSilver, domain.TierBronze, domain.TierDiscard}
 		idx := rapid.IntRange(0, len(tiers)-1).Draw(t, "tier-idx")
 		return tiers[idx]
 	})
 }
 
 // genCandidate generates a minimal valid Candidate suitable for pool.Add.
-func genCandidate() *rapid.Generator[types.Candidate] {
-	return rapid.Custom(func(t *rapid.T) types.Candidate {
+func genCandidate() *rapid.Generator[domain.Candidate] {
+	return rapid.Custom(func(t *rapid.T) domain.Candidate {
 		id := genCandidateID().Draw(t, "id")
 		tier := genTier().Draw(t, "tier")
 		rawScore := rapid.Float64Range(0.0, 1.0).Draw(t, "raw-score")
 		content := rapid.StringMatching(`[A-Za-z0-9 ]{10,80}`).Draw(t, "content")
 
-		return types.Candidate{
+		return domain.Candidate{
 			ID:           id,
-			Type:         types.KnowledgeTypeLearning,
+			Type:         domain.KnowledgeTypeLearning,
 			Content:      content,
 			RawScore:     rawScore,
 			Tier:         tier,
 			ExtractedAt:  time.Now(),
 			IsCurrent:    true,
-			ExpiryStatus: types.ExpiryStatusActive,
-			Utility:      types.InitialUtility,
-			Maturity:     types.MaturityProvisional,
+			ExpiryStatus: domain.ExpiryStatusActive,
+			Utility:      domain.InitialUtility,
+			Maturity:     domain.MaturityProvisional,
 		}
 	})
 }
 
 // genScoring generates a minimal valid Scoring struct.
-func genScoring() *rapid.Generator[types.Scoring] {
-	return rapid.Custom(func(t *rapid.T) types.Scoring {
+func genScoring() *rapid.Generator[domain.Scoring] {
+	return rapid.Custom(func(t *rapid.T) domain.Scoring {
 		raw := rapid.Float64Range(0.0, 1.0).Draw(t, "raw-score")
 		tier := genTier().Draw(t, "tier")
-		return types.Scoring{
+		return domain.Scoring{
 			RawScore:       raw,
 			TierAssignment: tier,
-			Rubric: types.RubricScores{
+			Rubric: domain.RubricScores{
 				Specificity:   rapid.Float64Range(0.0, 1.0).Draw(t, "specificity"),
 				Actionability: rapid.Float64Range(0.0, 1.0).Draw(t, "actionability"),
 				Novelty:       rapid.Float64Range(0.0, 1.0).Draw(t, "novelty"),
@@ -179,7 +179,7 @@ func TestPropertyPoolIngest_MonotonicGrowth(t *testing.T) {
 
 		for i := 0; i < n; i++ {
 			// Generate unique candidates by ensuring no duplicate IDs.
-			var cand types.Candidate
+			var cand domain.Candidate
 			for {
 				cand = genCandidate().Draw(t, fmt.Sprintf("candidate-%d", i))
 				if !ids[cand.ID] {
@@ -258,8 +258,8 @@ func TestPropertyPoolIngest_GetRoundTrip(t *testing.T) {
 		if entry.Candidate.Tier != cand.Tier {
 			t.Fatalf("Tier mismatch: got %q, want %q", entry.Candidate.Tier, cand.Tier)
 		}
-		if entry.Status != types.PoolStatusPending {
-			t.Fatalf("Status mismatch: got %q, want %q", entry.Status, types.PoolStatusPending)
+		if entry.Status != domain.PoolStatusPending {
+			t.Fatalf("Status mismatch: got %q, want %q", entry.Status, domain.PoolStatusPending)
 		}
 	})
 }

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // writeTestMDLearning creates a markdown learning file with YAML front matter.
@@ -283,7 +283,7 @@ func TestCloseLoop_IntegrationEndToEnd(t *testing.T) {
 	}, "# E2E Test Learning\nThis is an end-to-end test learning to verify the feedback loop.\n")
 
 	// 2. Write a citation for this learning
-	citation := types.CitationEvent{
+	citation := domain.CitationEvent{
 		SessionID:     "e2e-test-session",
 		ArtifactPath:  ".agents/learnings/e2e-test-learning.md",
 		CitationType:  "applied",
@@ -332,7 +332,7 @@ func TestCloseLoop_IntegrationEndToEnd(t *testing.T) {
 	// With annealed alpha (reward_count=3): alpha = 0.1 * 3.0 * exp(-0.3) ≈ 0.2222
 	// new = 0.6 + 0.2222 * (0.5 - 0.6) ≈ 0.5778
 	utilityVal := parseFrontMatterFloat(content, "utility")
-	expectedAlpha := annealedAlpha(types.DefaultAlpha, 3)
+	expectedAlpha := annealedAlpha(domain.DefaultAlpha, 3)
 	expectedUtility := 0.6 + expectedAlpha*(0.5-0.6)
 	if math.Abs(utilityVal-expectedUtility) > 0.01 {
 		t.Errorf("utility = %.4f, want approximately %.4f (tolerance 0.01)", utilityVal, expectedUtility)
@@ -400,7 +400,7 @@ func TestCloseLoop_CitationFeedbackWithMaturityTransition(t *testing.T) {
 	}, "# Transition Test Learning\nThis learning will be manually pushed to candidate threshold.\n")
 
 	// 2. Write a citation for it
-	citation := types.CitationEvent{
+	citation := domain.CitationEvent{
 		SessionID:     "transition-test-session",
 		ArtifactPath:  ".agents/learnings/transition-test-learning.md",
 		CitationType:  "applied",
@@ -431,7 +431,7 @@ func TestCloseLoop_CitationFeedbackWithMaturityTransition(t *testing.T) {
 	}
 
 	// Verify utility moved with annealed alpha (still below 0.55 threshold for promotion)
-	expectedAlphaT := annealedAlpha(types.DefaultAlpha, 2)
+	expectedAlphaT := annealedAlpha(domain.DefaultAlpha, 2)
 	expectedUtilityT := 0.68 + expectedAlphaT*(0.5-0.68)
 	data, err := os.ReadFile(learningPath)
 	if err != nil {
@@ -496,7 +496,7 @@ func TestCloseLoop_CitationFeedbackBeforeMaturity(t *testing.T) {
 	}, "# Order Test Learning\nVerifies citation feedback runs before maturity transitions.\n")
 
 	// Write a citation event for this learning
-	citation := types.CitationEvent{
+	citation := domain.CitationEvent{
 		SessionID:     "order-test-session",
 		ArtifactPath:  ".agents/learnings/order-test.md",
 		CitationType:  "applied",

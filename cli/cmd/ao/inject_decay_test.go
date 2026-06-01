@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestApplyConfidenceDecay_WritesBack(t *testing.T) {
@@ -62,7 +62,7 @@ func TestApplyConfidenceDecay_WritesBack(t *testing.T) {
 	}
 
 	// Expected: 0.8 * exp(-2 * 0.1) = 0.8 * exp(-0.2) ≈ 0.654
-	expectedConf := 0.8 * math.Exp(-2.0*types.ConfidenceDecayRate)
+	expectedConf := 0.8 * math.Exp(-2.0*domain.ConfidenceDecayRate)
 	if math.Abs(newConf-expectedConf) > 0.01 {
 		t.Errorf("confidence = %f, want ~%f", newConf, expectedConf)
 	}

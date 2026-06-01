@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestResolveTranscript(t *testing.T) {
@@ -256,8 +256,8 @@ func TestSessionCloseResultJSON(t *testing.T) {
 func TestSessionClose_computeVelocityDelta(t *testing.T) {
 	tests := []struct {
 		name string
-		pre  *types.FlywheelMetrics
-		post *types.FlywheelMetrics
+		pre  *domain.FlywheelMetrics
+		post *domain.FlywheelMetrics
 		want float64
 	}{
 		{
@@ -269,25 +269,25 @@ func TestSessionClose_computeVelocityDelta(t *testing.T) {
 		{
 			name: "pre nil returns 0",
 			pre:  nil,
-			post: &types.FlywheelMetrics{Velocity: 0.5},
+			post: &domain.FlywheelMetrics{Velocity: 0.5},
 			want: 0.0,
 		},
 		{
 			name: "post nil returns 0",
-			pre:  &types.FlywheelMetrics{Velocity: 0.3},
+			pre:  &domain.FlywheelMetrics{Velocity: 0.3},
 			post: nil,
 			want: 0.0,
 		},
 		{
 			name: "positive delta",
-			pre:  &types.FlywheelMetrics{Velocity: 0.1},
-			post: &types.FlywheelMetrics{Velocity: 0.3},
+			pre:  &domain.FlywheelMetrics{Velocity: 0.1},
+			post: &domain.FlywheelMetrics{Velocity: 0.3},
 			want: 0.2,
 		},
 		{
 			name: "negative delta",
-			pre:  &types.FlywheelMetrics{Velocity: 0.5},
-			post: &types.FlywheelMetrics{Velocity: 0.2},
+			pre:  &domain.FlywheelMetrics{Velocity: 0.5},
+			post: &domain.FlywheelMetrics{Velocity: 0.2},
 			want: -0.3,
 		},
 	}
@@ -305,8 +305,8 @@ func TestSessionClose_computeVelocityDelta(t *testing.T) {
 
 	// Also verify zero-velocity case explicitly
 	got := computeVelocityDelta(
-		&types.FlywheelMetrics{Velocity: 0.5},
-		&types.FlywheelMetrics{Velocity: 0.5},
+		&domain.FlywheelMetrics{Velocity: 0.5},
+		&domain.FlywheelMetrics{Velocity: 0.5},
 	)
 	if got != 0.0 {
 		t.Errorf("expected 0 delta for equal velocities, got %f", got)
@@ -320,7 +320,7 @@ func TestSessionClose_computeVelocityDelta(t *testing.T) {
 func TestSessionClose_classifyFlywheelStatus(t *testing.T) {
 	tests := []struct {
 		name string
-		post *types.FlywheelMetrics
+		post *domain.FlywheelMetrics
 		want string
 	}{
 		{
@@ -330,15 +330,15 @@ func TestSessionClose_classifyFlywheelStatus(t *testing.T) {
 		},
 		{
 			name: "above escape velocity returns compounding",
-			post: &types.FlywheelMetrics{AboveEscapeVelocity: true, Velocity: 0.5},
+			post: &domain.FlywheelMetrics{AboveEscapeVelocity: true, Velocity: 0.5},
 			want: "compounding",
 		},
 		{
 			name: "golden signals override escape velocity",
-			post: &types.FlywheelMetrics{
+			post: &domain.FlywheelMetrics{
 				AboveEscapeVelocity: true,
 				Velocity:            0.5,
-				GoldenSignals: &types.GoldenSignals{
+				GoldenSignals: &domain.GoldenSignals{
 					OverallVerdict: "accumulating",
 				},
 			},
@@ -346,17 +346,17 @@ func TestSessionClose_classifyFlywheelStatus(t *testing.T) {
 		},
 		{
 			name: "near zero velocity returns accumulating",
-			post: &types.FlywheelMetrics{AboveEscapeVelocity: false, Velocity: -0.04},
+			post: &domain.FlywheelMetrics{AboveEscapeVelocity: false, Velocity: -0.04},
 			want: "accumulating",
 		},
 		{
 			name: "zero velocity returns accumulating",
-			post: &types.FlywheelMetrics{AboveEscapeVelocity: false, Velocity: 0.0},
+			post: &domain.FlywheelMetrics{AboveEscapeVelocity: false, Velocity: 0.0},
 			want: "accumulating",
 		},
 		{
 			name: "deeply negative velocity returns decaying",
-			post: &types.FlywheelMetrics{AboveEscapeVelocity: false, Velocity: -0.2},
+			post: &domain.FlywheelMetrics{AboveEscapeVelocity: false, Velocity: -0.2},
 			want: "decaying",
 		},
 	}
@@ -521,7 +521,7 @@ func TestQualifyAutoExtract(t *testing.T) {
 		},
 		{
 			name:    "single sentence with enough words passes",
-			content: "Our parser handles JSONL format natively and can extract decisions from multi-turn conversations reliably across different session types. It enables automated knowledge extraction at scale for large distributed projects.",
+			content: "Our parser handles JSONL format natively and can extract decisions from multi-turn conversations reliably across different session domain. It enables automated knowledge extraction at scale for large distributed projects.",
 			want:    true,
 		},
 		{
@@ -569,7 +569,7 @@ func TestSessionClose_AutoExtract_ProducesLearnings(t *testing.T) {
 		"Prefer table-driven tests for multi-case functions to reduce boilerplate and improve coverage across the entire test suite. Each row should test one specific behavior with clear expected values.",
 	}
 	knowledge := []string{
-		"Our parser handles JSONL format natively and can extract decisions from multi-turn conversations reliably across different session types. It enables automated knowledge extraction at scale for large distributed projects.",
+		"Our parser handles JSONL format natively and can extract decisions from multi-turn conversations reliably across different session domain. It enables automated knowledge extraction at scale for large distributed projects.",
 	}
 
 	result, err := writeAutoExtractedLearnings(tmpDir, decisions, knowledge)

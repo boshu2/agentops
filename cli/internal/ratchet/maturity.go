@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"gopkg.in/yaml.v3"
 )
 
@@ -20,10 +20,10 @@ type MaturityTransitionResult struct {
 	LearningID string `json:"learning_id"`
 
 	// OldMaturity is the maturity before transition.
-	OldMaturity types.Maturity `json:"old_maturity"`
+	OldMaturity domain.Maturity `json:"old_maturity"`
 
 	// NewMaturity is the maturity after transition.
-	NewMaturity types.Maturity `json:"new_maturity"`
+	NewMaturity domain.Maturity `json:"new_maturity"`
 
 	// Transitioned indicates if a transition occurred.
 	Transitioned bool `json:"transitioned"`
@@ -114,14 +114,14 @@ func parseYAMLFrontMatter(lines []string) (map[string]any, error) {
 
 func buildMaturityTransitionResult(learningPath string, data map[string]any) *MaturityTransitionResult {
 	learningID := stringFromData(data, "id", filepath.Base(learningPath), false)
-	currentMaturity := types.Maturity(stringFromData(data, "maturity", string(types.MaturityProvisional), true))
+	currentMaturity := domain.Maturity(stringFromData(data, "maturity", string(domain.MaturityProvisional), true))
 
 	return &MaturityTransitionResult{
 		LearningID:   learningID,
 		OldMaturity:  currentMaturity,
 		NewMaturity:  currentMaturity,
 		Transitioned: false,
-		Utility:      floatFromData(data, "utility", types.InitialUtility),
+		Utility:      floatFromData(data, "utility", domain.InitialUtility),
 		Confidence:   floatFromData(data, "confidence", 0.5),
 		HelpfulCount: intFromData(data, "helpful_count"),
 		HarmfulCount: intFromData(data, "harmful_count"),
@@ -130,36 +130,36 @@ func buildMaturityTransitionResult(learningPath string, data map[string]any) *Ma
 }
 
 func applyAntiPatternTransition(result *MaturityTransitionResult) bool {
-	if result.Utility > types.MaturityAntiPatternThreshold || result.HarmfulCount < types.MinFeedbackForAntiPattern {
+	if result.Utility > domain.MaturityAntiPatternThreshold || result.HarmfulCount < domain.MinFeedbackForAntiPattern {
 		return false
 	}
 
-	result.NewMaturity = types.MaturityAntiPattern
-	result.Transitioned = result.OldMaturity != types.MaturityAntiPattern
+	result.NewMaturity = domain.MaturityAntiPattern
+	result.Transitioned = result.OldMaturity != domain.MaturityAntiPattern
 	result.Reason = fmt.Sprintf("utility %.2f <= %.2f and harmful_count %d >= %d",
-		result.Utility, types.MaturityAntiPatternThreshold, result.HarmfulCount, types.MinFeedbackForAntiPattern)
+		result.Utility, domain.MaturityAntiPatternThreshold, result.HarmfulCount, domain.MinFeedbackForAntiPattern)
 	return true
 }
 
 func applyMaturitySpecificTransition(result *MaturityTransitionResult) {
 	switch result.OldMaturity {
-	case types.MaturityProvisional:
+	case domain.MaturityProvisional:
 		applyProvisionalTransition(result)
-	case types.MaturityCandidate:
+	case domain.MaturityCandidate:
 		applyCandidateTransition(result)
-	case types.MaturityEstablished:
+	case domain.MaturityEstablished:
 		applyEstablishedTransition(result)
-	case types.MaturityAntiPattern:
+	case domain.MaturityAntiPattern:
 		applyAntiPatternRehabilitationTransition(result)
 	}
 }
 
 func applyProvisionalTransition(result *MaturityTransitionResult) {
-	if result.Utility >= types.MaturityPromotionThreshold && result.RewardCount >= types.MinFeedbackForPromotion {
-		result.NewMaturity = types.MaturityCandidate
+	if result.Utility >= domain.MaturityPromotionThreshold && result.RewardCount >= domain.MinFeedbackForPromotion {
+		result.NewMaturity = domain.MaturityCandidate
 		result.Transitioned = true
 		result.Reason = fmt.Sprintf("utility %.2f >= %.2f and reward_count %d >= %d",
-			result.Utility, types.MaturityPromotionThreshold, result.RewardCount, types.MinFeedbackForPromotion)
+			result.Utility, domain.MaturityPromotionThreshold, result.RewardCount, domain.MinFeedbackForPromotion)
 		return
 	}
 
@@ -169,24 +169,24 @@ func applyProvisionalTransition(result *MaturityTransitionResult) {
 func applyCandidateTransition(result *MaturityTransitionResult) {
 	helpfulSignal := result.HelpfulCount > result.HarmfulCount
 	implicitHelpful := result.RewardCount >= 10
-	if result.Utility >= types.MaturityPromotionThreshold && result.RewardCount >= 5 && (helpfulSignal || implicitHelpful) {
-		result.NewMaturity = types.MaturityEstablished
+	if result.Utility >= domain.MaturityPromotionThreshold && result.RewardCount >= 5 && (helpfulSignal || implicitHelpful) {
+		result.NewMaturity = domain.MaturityEstablished
 		result.Transitioned = true
 		if implicitHelpful && !helpfulSignal {
 			result.Reason = fmt.Sprintf("utility %.2f >= %.2f, reward_count %d >= 10 (implicit helpful signal)",
-				result.Utility, types.MaturityPromotionThreshold, result.RewardCount)
+				result.Utility, domain.MaturityPromotionThreshold, result.RewardCount)
 		} else {
 			result.Reason = fmt.Sprintf("utility %.2f >= %.2f, reward_count %d >= 5, helpful > harmful (%d > %d)",
-				result.Utility, types.MaturityPromotionThreshold, result.RewardCount, result.HelpfulCount, result.HarmfulCount)
+				result.Utility, domain.MaturityPromotionThreshold, result.RewardCount, result.HelpfulCount, result.HarmfulCount)
 		}
 		return
 	}
 
-	if result.Utility < types.MaturityDemotionThreshold {
-		result.NewMaturity = types.MaturityProvisional
+	if result.Utility < domain.MaturityDemotionThreshold {
+		result.NewMaturity = domain.MaturityProvisional
 		result.Transitioned = true
 		result.Reason = fmt.Sprintf("utility %.2f < %.2f (demotion)",
-			result.Utility, types.MaturityDemotionThreshold)
+			result.Utility, domain.MaturityDemotionThreshold)
 		return
 	}
 
@@ -195,7 +195,7 @@ func applyCandidateTransition(result *MaturityTransitionResult) {
 
 func applyEstablishedTransition(result *MaturityTransitionResult) {
 	if result.Utility < 0.5 {
-		result.NewMaturity = types.MaturityCandidate
+		result.NewMaturity = domain.MaturityCandidate
 		result.Transitioned = true
 		result.Reason = fmt.Sprintf("utility %.2f < 0.5 (demotion from established)",
 			result.Utility)
@@ -207,7 +207,7 @@ func applyEstablishedTransition(result *MaturityTransitionResult) {
 
 func applyAntiPatternRehabilitationTransition(result *MaturityTransitionResult) {
 	if result.Utility >= 0.6 && result.HelpfulCount > result.HarmfulCount*2 {
-		result.NewMaturity = types.MaturityProvisional
+		result.NewMaturity = domain.MaturityProvisional
 		result.Transitioned = true
 		result.Reason = fmt.Sprintf("utility %.2f >= 0.6 and helpful > 2*harmful (%d > %d) - rehabilitation",
 			result.Utility, result.HelpfulCount, result.HarmfulCount*2)
@@ -432,7 +432,7 @@ func ScanForMaturityTransitions(learningsDir string) ([]*MaturityTransitionResul
 
 // filterLearningsByMaturity returns learning file paths (JSONL or MD) whose
 // metadata has the specified maturity value.
-func filterLearningsByMaturity(learningsDir string, target types.Maturity) ([]string, error) {
+func filterLearningsByMaturity(learningsDir string, target domain.Maturity) ([]string, error) {
 	files, err := GlobLearningFiles(learningsDir)
 	if err != nil {
 		return nil, fmt.Errorf("glob learnings: %w", err)
@@ -460,12 +460,12 @@ func readFirstLineMaturity(path string) string {
 
 // GetAntiPatterns returns all learnings marked as anti-patterns.
 func GetAntiPatterns(learningsDir string) ([]string, error) {
-	return filterLearningsByMaturity(learningsDir, types.MaturityAntiPattern)
+	return filterLearningsByMaturity(learningsDir, domain.MaturityAntiPattern)
 }
 
 // GetEstablishedLearnings returns all learnings with established maturity.
 func GetEstablishedLearnings(learningsDir string) ([]string, error) {
-	return filterLearningsByMaturity(learningsDir, types.MaturityEstablished)
+	return filterLearningsByMaturity(learningsDir, domain.MaturityEstablished)
 }
 
 // MaturityDistribution represents the count of learnings at each maturity level.
@@ -507,23 +507,23 @@ func classifyLearningFile(file string, dist *MaturityDistribution) {
 
 	maturity, ok := data["maturity"].(string)
 	if !ok || maturity == "" {
-		maturity = string(types.MaturityProvisional)
+		maturity = string(domain.MaturityProvisional)
 	}
 
-	incrementMaturity(dist, types.Maturity(maturity))
+	incrementMaturity(dist, domain.Maturity(maturity))
 	dist.Total++
 }
 
 // incrementMaturity increments the appropriate maturity counter in the distribution.
-func incrementMaturity(dist *MaturityDistribution, m types.Maturity) {
+func incrementMaturity(dist *MaturityDistribution, m domain.Maturity) {
 	switch m {
-	case types.MaturityProvisional:
+	case domain.MaturityProvisional:
 		dist.Provisional++
-	case types.MaturityCandidate:
+	case domain.MaturityCandidate:
 		dist.Candidate++
-	case types.MaturityEstablished:
+	case domain.MaturityEstablished:
 		dist.Established++
-	case types.MaturityAntiPattern:
+	case domain.MaturityAntiPattern:
 		dist.AntiPattern++
 	default:
 		dist.Unknown++

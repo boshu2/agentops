@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // CountFilesInDir counts .md, .jsonl, and .json files in a directory (non-recursive).
@@ -75,7 +75,7 @@ func CountConstraints(baseDir string) int {
 }
 
 // LastNSessions returns the last N unique session IDs from citations, ordered by recency.
-func LastNSessions(citations []types.CitationEvent, n int) []string {
+func LastNSessions(citations []domain.CitationEvent, n int) []string {
 	sessionLatest := make(map[string]time.Time)
 	for _, c := range citations {
 		if c.SessionID == "" {
@@ -114,7 +114,7 @@ func LastNSessions(citations []types.CitationEvent, n int) []string {
 }
 
 // CountUniqueSessions counts unique session IDs from citations.
-func CountUniqueSessions(citations []types.CitationEvent) int {
+func CountUniqueSessions(citations []domain.CitationEvent) int {
 	seen := make(map[string]bool)
 	for _, c := range citations {
 		if c.SessionID != "" {

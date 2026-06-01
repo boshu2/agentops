@@ -8,18 +8,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestSaveBaseline_CreatesFile(t *testing.T) {
 	baseDir := t.TempDir()
 
 	now := time.Now()
-	metrics := &types.FlywheelMetrics{
+	metrics := &domain.FlywheelMetrics{
 		Timestamp:   now,
 		PeriodStart: now.AddDate(0, 0, -7),
 		PeriodEnd:   now,
-		Delta:       types.DefaultDelta,
+		Delta:       domain.DefaultDelta,
 		Sigma:       0.5,
 		Rho:         1.0,
 		SigmaRho:    0.5,
@@ -54,11 +54,11 @@ func TestSaveBaseline_ValidJSON(t *testing.T) {
 	baseDir := t.TempDir()
 
 	now := time.Now()
-	metrics := &types.FlywheelMetrics{
+	metrics := &domain.FlywheelMetrics{
 		Timestamp:           now,
 		PeriodStart:         now.AddDate(0, 0, -7),
 		PeriodEnd:           now,
-		Delta:               types.DefaultDelta,
+		Delta:               domain.DefaultDelta,
 		Sigma:               0.75,
 		Rho:                 2.0,
 		SigmaRho:            1.5,
@@ -78,7 +78,7 @@ func TestSaveBaseline_ValidJSON(t *testing.T) {
 		t.Fatalf("read baseline: %v", err)
 	}
 
-	var parsed types.FlywheelMetrics
+	var parsed domain.FlywheelMetrics
 	if err := json.Unmarshal(data, &parsed); err != nil {
 		t.Fatalf("baseline JSON parse failed: %v", err)
 	}
@@ -97,7 +97,7 @@ func TestSaveBaseline_ValidJSON(t *testing.T) {
 func TestSaveBaseline_FilePermissions(t *testing.T) {
 	baseDir := t.TempDir()
 
-	metrics := &types.FlywheelMetrics{
+	metrics := &domain.FlywheelMetrics{
 		Timestamp:  time.Now(),
 		TierCounts: map[string]int{},
 	}
@@ -126,7 +126,7 @@ func TestSaveBaseline_CreatesDirectories(t *testing.T) {
 		t.Fatal("expected metrics dir to not exist yet")
 	}
 
-	metrics := &types.FlywheelMetrics{
+	metrics := &domain.FlywheelMetrics{
 		Timestamp:  time.Now(),
 		TierCounts: map[string]int{},
 	}

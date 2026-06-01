@@ -10,15 +10,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/rpi"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
-func classifyByPhase(phaseNum int, verdict string) types.MemRLFailureClass {
+func classifyByPhase(phaseNum int, verdict string) domain.MemRLFailureClass {
 	return rpi.ClassifyByPhase(phaseNum, verdict)
 }
 
-func classifyByVerdict(verdict string) types.MemRLFailureClass {
+func classifyByVerdict(verdict string) domain.MemRLFailureClass {
 	return rpi.ClassifyByVerdict(verdict)
 }
 

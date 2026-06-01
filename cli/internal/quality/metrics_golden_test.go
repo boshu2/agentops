@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestCanonicalCitationType(t *testing.T) {
@@ -167,7 +167,7 @@ func TestLearningCitationCounts(t *testing.T) {
 
 func TestComputeOverallVerdict(t *testing.T) {
 	// 3+ positives -> compounding
-	gs := &types.GoldenSignals{
+	gs := &domain.GoldenSignals{
 		TrendVerdict:         "compounding",
 		PipelineVerdict:      "reinforcing",
 		ClosureVerdict:       "mining",
@@ -178,7 +178,7 @@ func TestComputeOverallVerdict(t *testing.T) {
 	}
 
 	// 3+ negatives -> decaying
-	gs2 := &types.GoldenSignals{
+	gs2 := &domain.GoldenSignals{
 		TrendVerdict:         "decaying",
 		PipelineVerdict:      "degrading",
 		ClosureVerdict:       "hoarding",
@@ -189,7 +189,7 @@ func TestComputeOverallVerdict(t *testing.T) {
 	}
 
 	// Neutral -> accumulating
-	gs3 := &types.GoldenSignals{
+	gs3 := &domain.GoldenSignals{
 		TrendVerdict:         "stable",
 		PipelineVerdict:      "stable",
 		ClosureVerdict:       "stable",
@@ -210,7 +210,7 @@ func TestFprintGoldenSignals_Nil(t *testing.T) {
 
 func TestFprintGoldenSignals_Populated(t *testing.T) {
 	var buf bytes.Buffer
-	gs := &types.GoldenSignals{
+	gs := &domain.GoldenSignals{
 		TrendVerdict:         "compounding",
 		PipelineVerdict:      "reinforcing",
 		ClosureVerdict:       "mining",

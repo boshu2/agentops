@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // ArtifactCanonicalizer converts a raw source path into the form stored in citation events.
@@ -15,7 +15,7 @@ type ArtifactCanonicalizer func(baseDir, source string) string
 // canonicalSession and canonicalNamespace must already be canonicalized by the caller.
 func RecordLearningCitations(baseDir string, learnings []Learning, canonicalSession, query, canonicalNamespace string, canonicalizeArtifact ArtifactCanonicalizer) error {
 	for _, l := range learnings {
-		event := types.CitationEvent{
+		event := domain.CitationEvent{
 			ArtifactPath:    canonicalizeArtifact(baseDir, l.Source),
 			SessionID:       canonicalSession,
 			CitedAt:         time.Now(),
@@ -40,7 +40,7 @@ func RecordPatternCitations(baseDir string, patterns []Pattern, canonicalSession
 		if p.FilePath == "" {
 			continue
 		}
-		event := types.CitationEvent{
+		event := domain.CitationEvent{
 			ArtifactPath:    canonicalizeArtifact(baseDir, p.FilePath),
 			SessionID:       canonicalSession,
 			CitedAt:         time.Now(),

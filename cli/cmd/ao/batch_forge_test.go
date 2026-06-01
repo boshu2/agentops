@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/parser"
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/extraction"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 func TestNormalizeForDedup(t *testing.T) {
@@ -637,7 +637,7 @@ func TestRunForgeBatch_ProcessesTranscript(t *testing.T) {
 		}
 	}
 
-	forgedIndexPath := filepath.Join(tmpDir, storage.DefaultBaseDir, "forged.jsonl")
+	forgedIndexPath := filepath.Join(tmpDir, sessionstore.DefaultBaseDir, "forged.jsonl")
 	if _, err := os.Stat(forgedIndexPath); err != nil {
 		t.Fatalf("expected forged index to be created: %v", err)
 	}
@@ -645,7 +645,7 @@ func TestRunForgeBatch_ProcessesTranscript(t *testing.T) {
 
 func TestRunBatchExtractionStep_DryRunPendingExtractions(t *testing.T) {
 	tmpDir := t.TempDir()
-	pendingPath := filepath.Join(tmpDir, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(tmpDir, sessionstore.DefaultBaseDir, "pending.jsonl")
 	entries := []PendingExtraction{
 		{
 			SessionID:      "session-1",
@@ -1058,12 +1058,12 @@ func TestBatchForge_accumulator(t *testing.T) {
 
 func TestForgeSingleTranscript_nonexistentFile(t *testing.T) {
 	tmp := t.TempDir()
-	fs := storage.NewFileStorage(storage.WithBaseDir(filepath.Join(tmp, ".agents", "ao")))
+	fs := sessionstore.NewFileStorage(sessionstore.WithBaseDir(filepath.Join(tmp, ".agents", "ao")))
 	if err := fs.Init(); err != nil {
 		t.Fatalf("fs.Init: %v", err)
 	}
-	p := parser.NewParser()
-	extractor := parser.NewExtractor()
+	p := extraction.NewParser()
+	extractor := extraction.NewExtractor()
 
 	candidate := transcriptCandidate{path: filepath.Join(tmp, "nonexistent.jsonl")}
 	ok, decisions, knowledge, _ := forgeSingleTranscript(0, 1, candidate, fs, p, extractor, "")
@@ -1081,13 +1081,13 @@ func TestForgeSingleTranscript_nonexistentFile(t *testing.T) {
 func TestForgeSingleTranscript_happyPath(t *testing.T) {
 	tmp := t.TempDir()
 	baseDir := filepath.Join(tmp, ".agents", "ao")
-	fs := storage.NewFileStorage(storage.WithBaseDir(baseDir))
+	fs := sessionstore.NewFileStorage(sessionstore.WithBaseDir(baseDir))
 	if err := fs.Init(); err != nil {
 		t.Fatalf("fs.Init: %v", err)
 	}
-	p := parser.NewParser()
+	p := extraction.NewParser()
 	p.MaxContentLength = 0
-	extractor := parser.NewExtractor()
+	extractor := extraction.NewExtractor()
 
 	// Minimal valid JSONL transcript (two newline-separated JSON objects)
 	transcriptPath := filepath.Join(tmp, "session.jsonl")
@@ -1109,7 +1109,7 @@ func TestForgeSingleTranscript_happyPath(t *testing.T) {
 
 func TestTriggerExtraction_emptyPendingFile(t *testing.T) {
 	tmp := t.TempDir()
-	pendingDir := filepath.Join(tmp, storage.DefaultBaseDir)
+	pendingDir := filepath.Join(tmp, sessionstore.DefaultBaseDir)
 	if err := os.MkdirAll(pendingDir, 0755); err != nil {
 		t.Fatal(err)
 	}

@@ -13,10 +13,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/boshu2/agentops/cli/internal/formatter"
-	"github.com/boshu2/agentops/cli/internal/parser"
-	"github.com/boshu2/agentops/cli/internal/storage"
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
+	"github.com/boshu2/agentops/cli/internal/extraction"
+	"github.com/boshu2/agentops/cli/internal/render"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 // ---------------------------------------------------------------------------
@@ -522,7 +522,7 @@ func TestCloneHooksMap(t *testing.T) {
 
 func TestExtractFilePathsFromTool(t *testing.T) {
 	t.Run("extracts file_path from tool input", func(t *testing.T) {
-		tool := types.ToolCall{
+		tool := domain.ToolCall{
 			Name: "Read",
 			Input: map[string]any{
 				"file_path": "/some/path/file.go",
@@ -536,7 +536,7 @@ func TestExtractFilePathsFromTool(t *testing.T) {
 	})
 
 	t.Run("extracts path from tool input", func(t *testing.T) {
-		tool := types.ToolCall{
+		tool := domain.ToolCall{
 			Name: "Bash",
 			Input: map[string]any{
 				"path": "/another/path.sh",
@@ -551,7 +551,7 @@ func TestExtractFilePathsFromTool(t *testing.T) {
 
 	t.Run("deduplicates seen files", func(t *testing.T) {
 		state := &transcriptState{SeenFiles: make(map[string]bool)}
-		tool := types.ToolCall{
+		tool := domain.ToolCall{
 			Name:  "Read",
 			Input: map[string]any{"file_path": "/dup.go"},
 		}
@@ -563,7 +563,7 @@ func TestExtractFilePathsFromTool(t *testing.T) {
 	})
 
 	t.Run("nil input is skipped", func(t *testing.T) {
-		tool := types.ToolCall{Name: "Bash", Input: nil}
+		tool := domain.ToolCall{Name: "Bash", Input: nil}
 		state := &transcriptState{SeenFiles: make(map[string]bool)}
 		extractFilePathsFromTool(tool, state)
 		if len(state.FilesChanged) != 0 {
@@ -608,9 +608,9 @@ func TestExtractIssueRefs(t *testing.T) {
 
 func TestExtractToolRefs(t *testing.T) {
 	t.Run("counts tool calls in session", func(t *testing.T) {
-		session := &storage.Session{ToolCalls: make(map[string]int)}
+		session := &sessionstore.Session{ToolCalls: make(map[string]int)}
 		state := &transcriptState{SeenFiles: make(map[string]bool)}
-		tools := []types.ToolCall{
+		tools := []domain.ToolCall{
 			{Name: "Read", Input: map[string]any{"file_path": "/a.go"}},
 			{Name: "Bash", Input: nil},
 			{Name: "Read", Input: map[string]any{"file_path": "/b.go"}},
@@ -628,9 +628,9 @@ func TestExtractToolRefs(t *testing.T) {
 	})
 
 	t.Run("tool_result name is not counted", func(t *testing.T) {
-		session := &storage.Session{ToolCalls: make(map[string]int)}
+		session := &sessionstore.Session{ToolCalls: make(map[string]int)}
 		state := &transcriptState{SeenFiles: make(map[string]bool)}
-		tools := []types.ToolCall{{Name: "tool_result"}}
+		tools := []domain.ToolCall{{Name: "tool_result"}}
 		extractToolRefs(tools, session, state)
 		if _, ok := session.ToolCalls["tool_result"]; ok {
 			t.Error("tool_result should not be counted")
@@ -644,8 +644,8 @@ func TestExtractToolRefs(t *testing.T) {
 
 func TestUpdateSessionMeta(t *testing.T) {
 	t.Run("sets session ID from first message with ID", func(t *testing.T) {
-		session := &storage.Session{}
-		msg := types.TranscriptMessage{SessionID: "abc-123"}
+		session := &sessionstore.Session{}
+		msg := domain.TranscriptMessage{SessionID: "abc-123"}
 		updateSessionMeta(session, msg)
 		if session.ID != "abc-123" {
 			t.Errorf("expected ID=abc-123, got %q", session.ID)
@@ -653,8 +653,8 @@ func TestUpdateSessionMeta(t *testing.T) {
 	})
 
 	t.Run("does not overwrite existing session ID", func(t *testing.T) {
-		session := &storage.Session{ID: "original-id"}
-		msg := types.TranscriptMessage{SessionID: "new-id"}
+		session := &sessionstore.Session{ID: "original-id"}
+		msg := domain.TranscriptMessage{SessionID: "new-id"}
 		updateSessionMeta(session, msg)
 		if session.ID != "original-id" {
 			t.Errorf("expected ID=original-id, got %q", session.ID)
@@ -662,9 +662,9 @@ func TestUpdateSessionMeta(t *testing.T) {
 	})
 
 	t.Run("sets date from first message timestamp", func(t *testing.T) {
-		session := &storage.Session{}
+		session := &sessionstore.Session{}
 		ts := time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC)
-		msg := types.TranscriptMessage{Timestamp: ts}
+		msg := domain.TranscriptMessage{Timestamp: ts}
 		updateSessionMeta(session, msg)
 		if !session.Date.Equal(ts) {
 			t.Errorf("expected date=%v, got %v", ts, session.Date)
@@ -674,8 +674,8 @@ func TestUpdateSessionMeta(t *testing.T) {
 	t.Run("updates date to earlier timestamp", func(t *testing.T) {
 		later := time.Date(2024, 1, 15, 12, 0, 0, 0, time.UTC)
 		earlier := time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC)
-		session := &storage.Session{Date: later}
-		msg := types.TranscriptMessage{Timestamp: earlier}
+		session := &sessionstore.Session{Date: later}
+		msg := domain.TranscriptMessage{Timestamp: earlier}
 		updateSessionMeta(session, msg)
 		if !session.Date.Equal(earlier) {
 			t.Errorf("expected date updated to earlier=%v, got %v", earlier, session.Date)
@@ -694,21 +694,21 @@ func TestUpdateSessionMeta(t *testing.T) {
 func TestForge_AddSession(t *testing.T) {
 	tests := []struct {
 		name          string
-		sessions      []*storage.Session
+		sessions      []*sessionstore.Session
 		wantSessions  int
 		wantDecisions int
 		wantKnowledge int
 	}{
 		{
 			name:          "empty session",
-			sessions:      []*storage.Session{{}},
+			sessions:      []*sessionstore.Session{{}},
 			wantSessions:  1,
 			wantDecisions: 0,
 			wantKnowledge: 0,
 		},
 		{
 			name: "session with decisions and knowledge",
-			sessions: []*storage.Session{{
+			sessions: []*sessionstore.Session{{
 				Decisions: []string{"d1", "d2"},
 				Knowledge: []string{"k1"},
 			}},
@@ -718,7 +718,7 @@ func TestForge_AddSession(t *testing.T) {
 		},
 		{
 			name: "multiple sessions accumulate",
-			sessions: []*storage.Session{
+			sessions: []*sessionstore.Session{
 				{Decisions: []string{"d1"}, Knowledge: []string{"k1", "k2"}},
 				{Decisions: []string{"d2", "d3"}, Knowledge: []string{"k3"}},
 			},
@@ -728,7 +728,7 @@ func TestForge_AddSession(t *testing.T) {
 		},
 		{
 			name:          "nil slices count as zero",
-			sessions:      []*storage.Session{{Decisions: nil, Knowledge: nil}},
+			sessions:      []*sessionstore.Session{{Decisions: nil, Knowledge: nil}},
 			wantSessions:  1,
 			wantDecisions: 0,
 			wantKnowledge: 0,
@@ -1018,7 +1018,7 @@ func TestForge_DrainParseErrors(t *testing.T) {
 
 func TestForge_FinalizeTranscriptSession(t *testing.T) {
 	t.Run("populates all session fields", func(t *testing.T) {
-		session := &storage.Session{
+		session := &sessionstore.Session{
 			Date: time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
 		}
 		state := &transcriptState{
@@ -1056,7 +1056,7 @@ func TestForge_FinalizeTranscriptSession(t *testing.T) {
 
 	t.Run("summary falls back to date when no decisions or knowledge", func(t *testing.T) {
 		refDate := time.Date(2025, 12, 25, 0, 0, 0, 0, time.UTC)
-		session := &storage.Session{Date: refDate}
+		session := &sessionstore.Session{Date: refDate}
 		state := &transcriptState{}
 
 		finalizeTranscriptSession(session, state, 0)
@@ -1067,7 +1067,7 @@ func TestForge_FinalizeTranscriptSession(t *testing.T) {
 	})
 
 	t.Run("empty state produces empty slices", func(t *testing.T) {
-		session := &storage.Session{}
+		session := &sessionstore.Session{}
 		state := &transcriptState{}
 
 		finalizeTranscriptSession(session, state, 100)
@@ -1283,27 +1283,27 @@ func TestForge_CollectTranscriptCandidates(t *testing.T) {
 
 func TestForge_ConsumeTranscriptMessages(t *testing.T) {
 	t.Run("processes messages from channel", func(t *testing.T) {
-		msgCh := make(chan types.TranscriptMessage, 3)
+		msgCh := make(chan domain.TranscriptMessage, 3)
 		ts := time.Date(2024, 6, 1, 12, 0, 0, 0, time.UTC)
 
-		msgCh <- types.TranscriptMessage{
+		msgCh <- domain.TranscriptMessage{
 			SessionID: "sess-001",
 			Timestamp: ts,
 			Role:      "assistant",
 			Content:   "No knowledge markers here",
 		}
-		msgCh <- types.TranscriptMessage{
+		msgCh <- domain.TranscriptMessage{
 			SessionID: "sess-001",
 			Timestamp: ts.Add(time.Minute),
 			Content:   "Fixed ol-0001 in this commit",
-			Tools: []types.ToolCall{
+			Tools: []domain.ToolCall{
 				{Name: "Bash", Input: map[string]any{"path": "/app/main.go"}},
 			},
 		}
 		close(msgCh)
 
 		session := initSession("test.jsonl")
-		extractor := parser.NewExtractor()
+		extractor := extraction.NewExtractor()
 		state := &transcriptState{
 			SeenFiles:  make(map[string]bool),
 			SeenIssues: make(map[string]bool),
@@ -1335,11 +1335,11 @@ func TestForge_ConsumeTranscriptMessages(t *testing.T) {
 	})
 
 	t.Run("empty channel produces no changes", func(t *testing.T) {
-		msgCh := make(chan types.TranscriptMessage)
+		msgCh := make(chan domain.TranscriptMessage)
 		close(msgCh)
 
 		session := initSession("empty.jsonl")
-		extractor := parser.NewExtractor()
+		extractor := extraction.NewExtractor()
 		state := &transcriptState{
 			SeenFiles:  make(map[string]bool),
 			SeenIssues: make(map[string]bool),
@@ -1359,10 +1359,10 @@ func TestForge_ConsumeTranscriptMessages(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestForge_ExtractMessageKnowledge(t *testing.T) {
-	extractor := parser.NewExtractor()
+	extractor := extraction.NewExtractor()
 
 	t.Run("empty content produces no extractions", func(t *testing.T) {
-		msg := types.TranscriptMessage{Content: ""}
+		msg := domain.TranscriptMessage{Content: ""}
 		state := &transcriptState{}
 		extractMessageKnowledge(msg, extractor, state)
 		if len(state.Decisions) != 0 || len(state.Knowledge) != 0 {
@@ -1372,7 +1372,7 @@ func TestForge_ExtractMessageKnowledge(t *testing.T) {
 
 	t.Run("content with decision keyword produces decision", func(t *testing.T) {
 		// The extractor looks for keywords like "decided to", "decision:", etc.
-		msg := types.TranscriptMessage{
+		msg := domain.TranscriptMessage{
 			Content: "We decided to use PostgreSQL instead of MySQL for better JSON support",
 		}
 		state := &transcriptState{}
@@ -1390,15 +1390,15 @@ func TestForge_ExtractMessageKnowledge(t *testing.T) {
 
 func TestForge_ExtractMessageRefs(t *testing.T) {
 	t.Run("extracts both tools and issues", func(t *testing.T) {
-		session := &storage.Session{ToolCalls: make(map[string]int)}
+		session := &sessionstore.Session{ToolCalls: make(map[string]int)}
 		state := &transcriptState{
 			SeenFiles:  make(map[string]bool),
 			SeenIssues: make(map[string]bool),
 		}
 
-		msg := types.TranscriptMessage{
+		msg := domain.TranscriptMessage{
 			Content: "Fixing ag-m0r by editing the config",
-			Tools: []types.ToolCall{
+			Tools: []domain.ToolCall{
 				{Name: "Edit", Input: map[string]any{"file_path": "/config.yaml"}},
 			},
 		}
@@ -1417,13 +1417,13 @@ func TestForge_ExtractMessageRefs(t *testing.T) {
 	})
 
 	t.Run("no tools and no issues leaves state empty", func(t *testing.T) {
-		session := &storage.Session{ToolCalls: make(map[string]int)}
+		session := &sessionstore.Session{ToolCalls: make(map[string]int)}
 		state := &transcriptState{
 			SeenFiles:  make(map[string]bool),
 			SeenIssues: make(map[string]bool),
 		}
 
-		msg := types.TranscriptMessage{Content: "Just some text with no refs"}
+		msg := domain.TranscriptMessage{Content: "Just some text with no refs"}
 		extractMessageRefs(msg, session, state)
 
 		if len(session.ToolCalls) != 0 {
@@ -1483,7 +1483,7 @@ func TestForge_QueueForExtraction(t *testing.T) {
 	t.Run("creates pending.jsonl with session data", func(t *testing.T) {
 		dir := t.TempDir()
 
-		session := &storage.Session{
+		session := &sessionstore.Session{
 			ID:        "test-session-123",
 			Summary:   "Test session",
 			Decisions: []string{"d1"},
@@ -1495,7 +1495,7 @@ func TestForge_QueueForExtraction(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		pendingPath := filepath.Join(dir, storage.DefaultBaseDir, "pending.jsonl")
+		pendingPath := filepath.Join(dir, sessionstore.DefaultBaseDir, "pending.jsonl")
 		data, err := os.ReadFile(pendingPath)
 		if err != nil {
 			t.Fatalf("failed to read pending file: %v", err)
@@ -1518,7 +1518,7 @@ func TestForge_QueueForExtraction(t *testing.T) {
 		dir := t.TempDir()
 
 		for i := 0; i < 3; i++ {
-			session := &storage.Session{
+			session := &sessionstore.Session{
 				ID:      fmt.Sprintf("sess-%d", i),
 				Summary: fmt.Sprintf("Session %d", i),
 			}
@@ -1528,7 +1528,7 @@ func TestForge_QueueForExtraction(t *testing.T) {
 			}
 		}
 
-		pendingPath := filepath.Join(dir, storage.DefaultBaseDir, "pending.jsonl")
+		pendingPath := filepath.Join(dir, sessionstore.DefaultBaseDir, "pending.jsonl")
 		data, err := os.ReadFile(pendingPath)
 		if err != nil {
 			t.Fatalf("failed to read pending file: %v", err)
@@ -1546,7 +1546,7 @@ func TestForge_QueueForExtraction(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestForge_ProcessMarkdown(t *testing.T) {
-	extractor := parser.NewExtractor()
+	extractor := extraction.NewExtractor()
 
 	t.Run("parses markdown file into session", func(t *testing.T) {
 		dir := t.TempDir()
@@ -1631,9 +1631,9 @@ func TestForge_ProcessMarkdown(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestForge_ProcessTranscript(t *testing.T) {
-	p := parser.NewParser()
+	p := extraction.NewParser()
 	p.MaxContentLength = 0
-	extractor := parser.NewExtractor()
+	extractor := extraction.NewExtractor()
 
 	t.Run("parses valid jsonl transcript", func(t *testing.T) {
 		dir := t.TempDir()
@@ -1763,18 +1763,18 @@ func TestForge_WriteSessionIndex(t *testing.T) {
 	dir := t.TempDir()
 	baseDir := filepath.Join(dir, ".agents", "ao")
 
-	fs := storage.NewFileStorage(
-		storage.WithBaseDir(baseDir),
-		storage.WithFormatters(
-			formatter.NewMarkdownFormatter(),
-			formatter.NewJSONLFormatter(),
+	fs := sessionstore.NewFileStorage(
+		sessionstore.WithBaseDir(baseDir),
+		sessionstore.WithFormatters(
+			render.NewMarkdownFormatter(),
+			render.NewJSONLFormatter(),
 		),
 	)
 	if err := fs.Init(); err != nil {
 		t.Fatalf("failed to init storage: %v", err)
 	}
 
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:      "idx-test-001",
 		Date:    time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
 		Summary: "Index test session",
@@ -1800,11 +1800,11 @@ func TestForge_WriteSessionProvenance(t *testing.T) {
 	dir := t.TempDir()
 	baseDir := filepath.Join(dir, ".agents", "ao")
 
-	fs := storage.NewFileStorage(
-		storage.WithBaseDir(baseDir),
-		storage.WithFormatters(
-			formatter.NewMarkdownFormatter(),
-			formatter.NewJSONLFormatter(),
+	fs := sessionstore.NewFileStorage(
+		sessionstore.WithBaseDir(baseDir),
+		sessionstore.WithFormatters(
+			render.NewMarkdownFormatter(),
+			render.NewJSONLFormatter(),
 		),
 	)
 	if err := fs.Init(); err != nil {
@@ -1849,8 +1849,8 @@ func TestForge_InitForgeStorage(t *testing.T) {
 		if fs == nil {
 			t.Error("FileStorage should not be nil")
 		}
-		if !strings.Contains(baseDir, storage.DefaultBaseDir) {
-			t.Errorf("baseDir should contain %q, got %q", storage.DefaultBaseDir, baseDir)
+		if !strings.Contains(baseDir, sessionstore.DefaultBaseDir) {
+			t.Errorf("baseDir should contain %q, got %q", sessionstore.DefaultBaseDir, baseDir)
 		}
 	})
 }
@@ -1873,18 +1873,18 @@ func TestForge_ForgeTranscriptFile(t *testing.T) {
 	dir := t.TempDir()
 	baseDir := filepath.Join(dir, ".agents", "ao")
 
-	fs := storage.NewFileStorage(
-		storage.WithBaseDir(baseDir),
-		storage.WithFormatters(
-			formatter.NewMarkdownFormatter(),
-			formatter.NewJSONLFormatter(),
+	fs := sessionstore.NewFileStorage(
+		sessionstore.WithBaseDir(baseDir),
+		sessionstore.WithFormatters(
+			render.NewMarkdownFormatter(),
+			render.NewJSONLFormatter(),
 		),
 	)
 	if err := fs.Init(); err != nil {
 		t.Fatalf("failed to init storage: %v", err)
 	}
 
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:        "forge-tx-001",
 		Date:      time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
 		Summary:   "Test forge transcript",
@@ -1925,18 +1925,18 @@ func TestForge_ForgeMarkdownFile(t *testing.T) {
 	dir := t.TempDir()
 	baseDir := filepath.Join(dir, ".agents", "ao")
 
-	fs := storage.NewFileStorage(
-		storage.WithBaseDir(baseDir),
-		storage.WithFormatters(
-			formatter.NewMarkdownFormatter(),
-			formatter.NewJSONLFormatter(),
+	fs := sessionstore.NewFileStorage(
+		sessionstore.WithBaseDir(baseDir),
+		sessionstore.WithFormatters(
+			render.NewMarkdownFormatter(),
+			render.NewJSONLFormatter(),
 		),
 	)
 	if err := fs.Init(); err != nil {
 		t.Fatalf("failed to init storage: %v", err)
 	}
 
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:        "forge-md-001",
 		Date:      time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
 		Summary:   "Test forge markdown",
@@ -2032,18 +2032,18 @@ func TestForge_ForgeTranscriptFileWithQueue(t *testing.T) {
 	dir := t.TempDir()
 	baseDir := filepath.Join(dir, ".agents", "ao")
 
-	fs := storage.NewFileStorage(
-		storage.WithBaseDir(baseDir),
-		storage.WithFormatters(
-			formatter.NewMarkdownFormatter(),
-			formatter.NewJSONLFormatter(),
+	fs := sessionstore.NewFileStorage(
+		sessionstore.WithBaseDir(baseDir),
+		sessionstore.WithFormatters(
+			render.NewMarkdownFormatter(),
+			render.NewJSONLFormatter(),
 		),
 	)
 	if err := fs.Init(); err != nil {
 		t.Fatalf("failed to init storage: %v", err)
 	}
 
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:        "queue-test-001",
 		Date:      time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
 		Summary:   "Queue test session",
@@ -2055,7 +2055,7 @@ func TestForge_ForgeTranscriptFileWithQueue(t *testing.T) {
 	forgeTranscriptFile(fs, session, "/in/session.jsonl", baseDir, dir, &totals)
 
 	// Verify pending.jsonl was created
-	pendingPath := filepath.Join(dir, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(dir, sessionstore.DefaultBaseDir, "pending.jsonl")
 	if _, err := os.Stat(pendingPath); os.IsNotExist(err) {
 		t.Error("pending.jsonl should be created when queue=true")
 	}
@@ -2078,18 +2078,18 @@ func TestForge_ForgeMarkdownFileWithQueue(t *testing.T) {
 	dir := t.TempDir()
 	baseDir := filepath.Join(dir, ".agents", "ao")
 
-	fs := storage.NewFileStorage(
-		storage.WithBaseDir(baseDir),
-		storage.WithFormatters(
-			formatter.NewMarkdownFormatter(),
-			formatter.NewJSONLFormatter(),
+	fs := sessionstore.NewFileStorage(
+		sessionstore.WithBaseDir(baseDir),
+		sessionstore.WithFormatters(
+			render.NewMarkdownFormatter(),
+			render.NewJSONLFormatter(),
 		),
 	)
 	if err := fs.Init(); err != nil {
 		t.Fatalf("failed to init storage: %v", err)
 	}
 
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:        "md-queue-test-001",
 		Date:      time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC),
 		Summary:   "MD Queue test",
@@ -2100,7 +2100,7 @@ func TestForge_ForgeMarkdownFileWithQueue(t *testing.T) {
 	totals := forgeTotals{}
 	forgeMarkdownFile(fs, session, "/in/notes.md", baseDir, dir, &totals)
 
-	pendingPath := filepath.Join(dir, storage.DefaultBaseDir, "pending.jsonl")
+	pendingPath := filepath.Join(dir, sessionstore.DefaultBaseDir, "pending.jsonl")
 	if _, err := os.Stat(pendingPath); os.IsNotExist(err) {
 		t.Error("pending.jsonl should be created when queue=true")
 	}

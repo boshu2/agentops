@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/resolver"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // processCitationFeedback reads unprocessed citations from .agents/ao/citations.jsonl,
@@ -42,7 +42,7 @@ func processCitationFeedbackWithOptions(cwd string, opts citationFeedbackOptions
 
 	reward, err := computeSessionRewardForCloseLoop(cwd)
 	if err != nil {
-		reward = types.InitialUtility
+		reward = domain.InitialUtility
 	}
 
 	res := resolver.NewFileResolver(cwd)
@@ -80,7 +80,7 @@ type citationFeedbackResult struct {
 
 func evaluateCitationFeedback(
 	cwd string,
-	c types.CitationEvent,
+	c domain.CitationEvent,
 	sessionID string,
 	reward float64,
 	mutateArtifacts bool,
@@ -101,7 +101,7 @@ func evaluateCitationFeedback(
 
 func nonPrimaryNamespaceCitationFeedback(
 	cwd string,
-	c types.CitationEvent,
+	c domain.CitationEvent,
 	citationType, metricNamespace, sessionID string,
 	res *resolver.FileResolver,
 ) citationFeedbackResult {
@@ -132,7 +132,7 @@ func nonPrimaryNamespaceCitationFeedback(
 
 func findingArtifactCitationFeedback(
 	cwd string,
-	c types.CitationEvent,
+	c domain.CitationEvent,
 	citationType, metricNamespace, decision, reason string,
 	rewardable bool,
 	sessionID string,
@@ -170,7 +170,7 @@ func findingArtifactCitationFeedback(
 
 func learningArtifactCitationFeedback(
 	cwd string,
-	c types.CitationEvent,
+	c domain.CitationEvent,
 	citationType, metricNamespace, decision, reason string,
 	rewardable bool,
 	sessionID string,
@@ -212,7 +212,7 @@ func learningArtifactCitationFeedback(
 	}
 
 	rewardCount := getLearningRewardCount(path)
-	alpha := annealedAlpha(types.DefaultAlpha, rewardCount)
+	alpha := annealedAlpha(domain.DefaultAlpha, rewardCount)
 	if !mutateArtifacts {
 		currentUtility := parseUtilityFromFile(path)
 		event := FeedbackEvent{
@@ -266,10 +266,10 @@ func learningArtifactCitationFeedback(
 	return citationFeedbackResult{event: &event, rewarded: 1}
 }
 
-func deduplicateCitationFeedbackTargets(cwd string, citations []types.CitationEvent) []types.CitationEvent {
+func deduplicateCitationFeedbackTargets(cwd string, citations []domain.CitationEvent) []domain.CitationEvent {
 	type indexedCitation struct {
 		order int
-		event types.CitationEvent
+		event domain.CitationEvent
 	}
 
 	byKey := make(map[string]indexedCitation)
@@ -293,14 +293,14 @@ func deduplicateCitationFeedbackTargets(cwd string, citations []types.CitationEv
 		}
 	}
 
-	unique := make([]types.CitationEvent, 0, len(byKey))
+	unique := make([]domain.CitationEvent, 0, len(byKey))
 	for _, key := range order {
 		unique = append(unique, byKey[key].event)
 	}
 	return unique
 }
 
-func preferCitationFeedbackEvidence(current, candidate types.CitationEvent) bool {
+func preferCitationFeedbackEvidence(current, candidate domain.CitationEvent) bool {
 	currentRank := citationFeedbackEvidenceRank(effectiveCitationFeedbackType(current.CitationType))
 	candidateRank := citationFeedbackEvidenceRank(effectiveCitationFeedbackType(candidate.CitationType))
 	if candidateRank != currentRank {
@@ -351,7 +351,7 @@ func citationConfidenceScore(citationType string) float64 {
 	}
 }
 
-func citationEventConfidence(citation types.CitationEvent) float64 {
+func citationEventConfidence(citation domain.CitationEvent) float64 {
 	if citation.MatchConfidence > 0 {
 		return normalizeCitationMatchConfidence(citation.MatchConfidence)
 	}
@@ -362,7 +362,7 @@ func citationIsHighConfidence(citationType string) bool {
 	return citationConfidenceScore(citationType) >= highConfidenceCitationThreshold
 }
 
-func citationEventIsHighConfidence(citation types.CitationEvent) bool {
+func citationEventIsHighConfidence(citation domain.CitationEvent) bool {
 	return citationEventConfidence(citation) >= highConfidenceCitationThreshold
 }
 
@@ -404,7 +404,7 @@ func extractLearningID(artifactPath string) string {
 }
 
 // markCitationsFeedbackGiven rewrites citations.jsonl with FeedbackGiven=true for all entries.
-func markCitationsFeedbackGiven(cwd, citationsPath string, citations []types.CitationEvent, feedbackEvents []FeedbackEvent) {
+func markCitationsFeedbackGiven(cwd, citationsPath string, citations []domain.CitationEvent, feedbackEvents []FeedbackEvent) {
 	if GetDryRun() {
 		return
 	}
@@ -461,16 +461,16 @@ func computeSessionRewardForCloseLoop(cwd string) (float64, error) {
 
 	homeDir, _ := os.UserHomeDir()
 	if homeDir == "" {
-		return types.InitialUtility, nil
+		return domain.InitialUtility, nil
 	}
 	transcriptsDir := filepath.Join(homeDir, ".claude", "projects")
 	transcriptPath := findMostRecentTranscript(transcriptsDir)
 	if transcriptPath == "" {
-		return types.InitialUtility, nil
+		return domain.InitialUtility, nil
 	}
 	outcome, err := analyzeTranscript(transcriptPath, "")
 	if err != nil {
-		return types.InitialUtility, nil
+		return domain.InitialUtility, nil
 	}
 	return outcome.Reward, nil
 }
@@ -624,7 +624,7 @@ func processQualitySignalFeedback(cwd, sessionID string, mutateArtifacts bool) (
 		}
 
 		rewardCount := getLearningRewardCount(path)
-		alpha := annealedAlpha(types.DefaultAlpha, rewardCount)
+		alpha := annealedAlpha(domain.DefaultAlpha, rewardCount)
 		oldUtility, newUtility, updateErr := updateLearningUtility(path, penalty, alpha)
 		if updateErr != nil {
 			continue

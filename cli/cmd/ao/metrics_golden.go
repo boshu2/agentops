@@ -4,13 +4,13 @@ package main
 import (
 	"io"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/quality"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 func canonicalCitationType(ct string) string { return quality.CanonicalCitationType(ct) }
 
-func populateGoldenSignals(baseDir string, days int, metrics *types.FlywheelMetrics) {
+func populateGoldenSignals(baseDir string, days int, metrics *domain.FlywheelMetrics) {
 	quality.PopulateGoldenSignals(baseDir, days, SectionFindings, metrics)
 }
 
@@ -34,7 +34,7 @@ func computeReuseConcentration(baseDir string, days int) (gini, activePct, topBo
 	return quality.ComputeReuseConcentration(baseDir, days)
 }
 
-func computeOverallVerdict(gs *types.GoldenSignals) string {
+func computeOverallVerdict(gs *domain.GoldenSignals) string {
 	return quality.ComputeOverallVerdict(gs)
 }
 
@@ -44,6 +44,6 @@ func linearRegressionSlope(xs, ys []float64) float64 {
 
 func giniCoefficient(values []float64) float64 { return quality.GiniCoefficient(values) }
 
-func fprintGoldenSignals(w io.Writer, gs *types.GoldenSignals) {
+func fprintGoldenSignals(w io.Writer, gs *domain.GoldenSignals) {
 	quality.FprintGoldenSignals(w, gs)
 }

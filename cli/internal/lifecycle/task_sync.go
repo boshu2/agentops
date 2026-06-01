@@ -3,18 +3,18 @@ package lifecycle
 import (
 	"encoding/json"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // StatusToMaturity maps a task status string to a CASS maturity level.
-func StatusToMaturity(status string) types.Maturity {
+func StatusToMaturity(status string) domain.Maturity {
 	switch status {
 	case "completed":
-		return types.MaturityEstablished
+		return domain.MaturityEstablished
 	case "in_progress":
-		return types.MaturityCandidate
+		return domain.MaturityCandidate
 	default: // "pending"
-		return types.MaturityProvisional
+		return domain.MaturityProvisional
 	}
 }
 
@@ -103,15 +103,15 @@ func ProcessTranscriptLine(line, filterSession, currentSessionID string) (newSes
 // TaskDistribution holds tallied status and maturity counts from a task list.
 type TaskDistribution struct {
 	StatusCounts   map[string]int
-	MaturityCounts map[types.Maturity]int
+	MaturityCounts map[domain.Maturity]int
 	WithLearnings  int
 }
 
 // ComputeTaskDistributions tallies status, maturity, and learning counts.
-func ComputeTaskDistributions(statuses []string, maturities []types.Maturity, learningIDs []string) TaskDistribution {
+func ComputeTaskDistributions(statuses []string, maturities []domain.Maturity, learningIDs []string) TaskDistribution {
 	d := TaskDistribution{
 		StatusCounts:   make(map[string]int),
-		MaturityCounts: make(map[types.Maturity]int),
+		MaturityCounts: make(map[domain.Maturity]int),
 	}
 	for _, s := range statuses {
 		d.StatusCounts[s]++

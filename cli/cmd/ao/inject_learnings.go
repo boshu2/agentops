@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/resolver"
 	"github.com/boshu2/agentops/cli/internal/search"
-	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/boshu2/agentops/cli/internal/warmind"
 )
 
@@ -567,7 +567,7 @@ func processLearningFile(file string, queryTokensList []string, now time.Time) (
 	}
 
 	if l.Utility == 0 {
-		l.Utility = types.InitialUtility
+		l.Utility = domain.InitialUtility
 	}
 	if injectApplyDecay {
 		l = applyConfidenceDecay(l, file, now)

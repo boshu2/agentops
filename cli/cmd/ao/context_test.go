@@ -13,7 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	contextbudget "github.com/boshu2/agentops/cli/internal/context"
+	contextbudget "github.com/boshu2/agentops/cli/internal/contextpacket"
 )
 
 func TestReadSessionTailParsesUsageAndTask(t *testing.T) {

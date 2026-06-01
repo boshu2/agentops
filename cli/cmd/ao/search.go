@@ -20,11 +20,11 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/config"
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/search"
-	"github.com/boshu2/agentops/cli/internal/storage"
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 	"github.com/boshu2/agentops/cli/pkg/vault"
 )
 
@@ -92,8 +92,8 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("get working directory: %w", err)
 	}
 
-	baseDir := filepath.Join(cwd, storage.DefaultBaseDir)
-	sessionsDir := filepath.Join(baseDir, storage.SessionsDir)
+	baseDir := filepath.Join(cwd, sessionstore.DefaultBaseDir)
+	sessionsDir := filepath.Join(baseDir, sessionstore.SessionsDir)
 
 	if searchUseCASS && searchUseLocal {
 		return fmt.Errorf("--cass and --local are mutually exclusive")
@@ -154,7 +154,7 @@ func recordSearchCitations(cwd string, results []searchResult, sessionID, query,
 		if !isRetrievableArtifactPath(cwd, result.Path) {
 			continue
 		}
-		event := types.CitationEvent{
+		event := domain.CitationEvent{
 			ArtifactPath:    canonicalArtifactPath(cwd, result.Path),
 			SessionID:       sessionID,
 			CitedAt:         time.Now(),

@@ -3,7 +3,7 @@ package llm
 import (
 	"strings"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // DefaultMaxChars is the fallback chunk budget when callers pass maxChars <= 0.
@@ -31,13 +31,13 @@ const minMessageChars = 20
 // Orphan messages (a user with no following assistant, or vice versa) are
 // silently dropped. The returned slice is empty (not nil) when no valid
 // turns exist.
-func ChunkTurns(msgs []types.TranscriptMessage, maxChars int) []TurnChunk {
+func ChunkTurns(msgs []domain.TranscriptMessage, maxChars int) []TurnChunk {
 	if maxChars <= 0 {
 		maxChars = DefaultMaxChars
 	}
 
 	// Step 1: filter to substantive user/assistant messages only.
-	filtered := make([]types.TranscriptMessage, 0, len(msgs))
+	filtered := make([]domain.TranscriptMessage, 0, len(msgs))
 	for _, m := range msgs {
 		role := strings.ToLower(m.Type)
 		if role != "user" && role != "assistant" {
@@ -75,7 +75,7 @@ func ChunkTurns(msgs []types.TranscriptMessage, maxChars int) []TurnChunk {
 
 // buildChunk assembles one TurnChunk from a user/assistant pair, honoring the
 // budget via proportional truncation.
-func buildChunk(index int, u, a types.TranscriptMessage, maxChars int) TurnChunk {
+func buildChunk(index int, u, a domain.TranscriptMessage, maxChars int) TurnChunk {
 	userText := u.Content
 	assistantText := a.Content
 

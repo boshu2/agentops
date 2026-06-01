@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 func TestBadge_GetEscapeStatus_Boundaries(t *testing.T) {
@@ -84,7 +84,7 @@ func TestBadge_PrintBadge_WithMetrics(t *testing.T) {
 	m := &FlywheelMetrics{
 		Sigma:               0.8,
 		Rho:                 1.5,
-		Delta:               types.DefaultDelta * 100,
+		Delta:               domain.DefaultDelta * 100,
 		SigmaRho:            1.2,
 		CitationsThisPeriod: 10,
 		TierCounts:          map[string]int{"learning": 5, "pattern": 3},
@@ -104,7 +104,7 @@ func TestBadge_PrintBadge_WithMetrics(t *testing.T) {
 
 func TestBadge_PrintBadge_BoxDrawingChars(t *testing.T) {
 	m := &FlywheelMetrics{
-		Delta:      types.DefaultDelta * 100,
+		Delta:      domain.DefaultDelta * 100,
 		TierCounts: map[string]int{},
 	}
 

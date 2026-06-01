@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/goals"
 	"github.com/boshu2/agentops/cli/internal/pool"
-	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/boshu2/agentops/cli/internal/vibecheck"
 )
 
@@ -72,14 +72,14 @@ func TestPoolFindByPrefixRoundTrip(t *testing.T) {
 	tmp := t.TempDir()
 	p := pool.NewPool(tmp)
 
-	candidates := []types.Candidate{
-		{ID: "cand-alpha-001", Type: "learning", Tier: types.TierSilver, Content: "Alpha content", Utility: 0.8, Confidence: 0.9, Maturity: "emerging"},
-		{ID: "cand-alpha-002", Type: "learning", Tier: types.TierBronze, Content: "Alpha two content", Utility: 0.6, Confidence: 0.7, Maturity: "emerging"},
-		{ID: "cand-beta-001", Type: "learning", Tier: types.TierGold, Content: "Beta content", Utility: 0.95, Confidence: 0.99, Maturity: "established"},
+	candidates := []domain.Candidate{
+		{ID: "cand-alpha-001", Type: "learning", Tier: domain.TierSilver, Content: "Alpha content", Utility: 0.8, Confidence: 0.9, Maturity: "emerging"},
+		{ID: "cand-alpha-002", Type: "learning", Tier: domain.TierBronze, Content: "Alpha two content", Utility: 0.6, Confidence: 0.7, Maturity: "emerging"},
+		{ID: "cand-beta-001", Type: "learning", Tier: domain.TierGold, Content: "Beta content", Utility: 0.95, Confidence: 0.99, Maturity: "established"},
 	}
 
 	for _, c := range candidates {
-		if err := p.Add(c, types.Scoring{RawScore: c.Utility, TierAssignment: c.Tier}); err != nil {
+		if err := p.Add(c, domain.Scoring{RawScore: c.Utility, TierAssignment: c.Tier}); err != nil {
 			t.Fatalf("add %s: %v", c.ID, err)
 		}
 	}

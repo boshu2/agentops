@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 // EnrichPatternFreshness sets age, freshness, and default utility on a pattern.
@@ -20,7 +20,7 @@ func EnrichPatternFreshness(p *Pattern, file string, now time.Time) {
 		p.FreshnessScore = 0.5
 	}
 	if p.Utility == 0 {
-		p.Utility = types.InitialUtility
+		p.Utility = domain.InitialUtility
 	}
 }
 

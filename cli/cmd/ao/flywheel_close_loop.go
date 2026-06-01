@@ -14,11 +14,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 var (
@@ -327,8 +327,8 @@ type promotionContext struct {
 	promotedContent map[string]bool
 }
 
-func (c *promotionContext) isEligibleTier(tier types.Tier) bool {
-	return tier == types.TierSilver || (c.includeGold && tier == types.TierGold)
+func (c *promotionContext) isEligibleTier(tier domain.Tier) bool {
+	return tier == domain.TierSilver || (c.includeGold && tier == domain.TierGold)
 }
 
 func (c *promotionContext) processCandidate(e pool.PoolEntry, result *poolAutoPromotePromoteResult) {
@@ -360,7 +360,7 @@ func (c *promotionContext) processCandidate(e pool.PoolEntry, result *poolAutoPr
 }
 
 func stageAndPromoteEntry(p *pool.Pool, e pool.PoolEntry, result *poolAutoPromotePromoteResult, promotedContent map[string]bool) {
-	if err := p.Stage(e.Candidate.ID, types.TierSilver); err != nil {
+	if err := p.Stage(e.Candidate.ID, domain.TierSilver); err != nil {
 		result.Skipped++
 		result.SkippedIDs = append(result.SkippedIDs, e.Candidate.ID)
 		return
@@ -378,7 +378,7 @@ func stageAndPromoteEntry(p *pool.Pool, e pool.PoolEntry, result *poolAutoPromot
 
 func autoPromoteAndPromoteToArtifacts(p *pool.Pool, threshold time.Duration, includeGold bool) (poolAutoPromotePromoteResult, error) {
 	entries, err := p.List(pool.ListOptions{
-		Status: types.PoolStatusPending,
+		Status: domain.PoolStatusPending,
 	})
 	if err != nil {
 		return poolAutoPromotePromoteResult{}, fmt.Errorf("list pending: %w", err)

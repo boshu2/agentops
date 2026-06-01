@@ -8,8 +8,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
-	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
 )
 
@@ -97,15 +97,15 @@ var flywheelCompareNamespace string
 
 // namespaceComparison holds side-by-side metrics for two namespaces.
 type namespaceComparison struct {
-	Primary          *types.FlywheelMetrics `json:"primary"`
-	Shadow           *types.FlywheelMetrics `json:"shadow"`
-	ShadowName       string                 `json:"shadow_name"`
-	SigmaDelta       float64                `json:"sigma_delta"`
-	RhoDelta         float64                `json:"rho_delta"`
-	VelocityDelta    float64                `json:"velocity_delta"`
-	PromotionReady   bool                   `json:"promotion_ready"`
-	PromotionReason  string                 `json:"promotion_reason"`
-	RollbackContract string                 `json:"rollback_contract"`
+	Primary          *domain.FlywheelMetrics `json:"primary"`
+	Shadow           *domain.FlywheelMetrics `json:"shadow"`
+	ShadowName       string                  `json:"shadow_name"`
+	SigmaDelta       float64                 `json:"sigma_delta"`
+	RhoDelta         float64                 `json:"rho_delta"`
+	VelocityDelta    float64                 `json:"velocity_delta"`
+	PromotionReady   bool                    `json:"promotion_ready"`
+	PromotionReason  string                  `json:"promotion_reason"`
+	RollbackContract string                  `json:"rollback_contract"`
 }
 
 func runFlywheelCompare(cmd *cobra.Command, args []string) error {
@@ -136,7 +136,7 @@ func runFlywheelCompare(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func buildNamespaceComparison(primary, shadow *types.FlywheelMetrics, shadowName string) *namespaceComparison {
+func buildNamespaceComparison(primary, shadow *domain.FlywheelMetrics, shadowName string) *namespaceComparison {
 	comp := &namespaceComparison{
 		Primary:          primary,
 		Shadow:           shadow,
@@ -203,7 +203,7 @@ func runFlywheelStatus(cmd *cobra.Command, args []string) error {
 	}
 	metricNamespace := canonicalMetricNamespace(flywheelStatusNamespace)
 	if scorecard, err := loadStigmergicScorecard(cwd); err == nil {
-		metrics.StigmergicScorecard = &types.StigmergicScorecard{
+		metrics.StigmergicScorecard = &domain.StigmergicScorecard{
 			PromotedFindings:       scorecard.PromotedFindings,
 			PlanningRules:          scorecard.PlanningRules,
 			PreMortemChecks:        scorecard.PreMortemChecks,
@@ -266,7 +266,7 @@ func runFlywheelStatus(cmd *cobra.Command, args []string) error {
 }
 
 // printFlywheelStatus prints a focused flywheel status display.
-func printFlywheelStatus(w io.Writer, m *types.FlywheelMetrics) {
+func printFlywheelStatus(w io.Writer, m *domain.FlywheelMetrics) {
 	status := m.HealthStatus()
 	escapeStatus := m.EscapeVelocityStatus()
 

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // --- Glob patch tests (Issue 1) ---
@@ -99,8 +99,8 @@ func TestReadLearningData_MarkdownNoFrontmatter(t *testing.T) {
 
 func TestAnnealedAlpha_FirstCitation(t *testing.T) {
 	// citationCount=0: alpha = 0.1 * 3.0 * exp(0) = 0.3
-	alpha := annealedAlpha(types.DefaultAlpha, 0)
-	expected := types.DefaultAlpha * 3.0
+	alpha := annealedAlpha(domain.DefaultAlpha, 0)
+	expected := domain.DefaultAlpha * 3.0
 	if math.Abs(alpha-expected) > 0.001 {
 		t.Errorf("annealedAlpha(0.1, 0) = %f, want %f", alpha, expected)
 	}
@@ -108,8 +108,8 @@ func TestAnnealedAlpha_FirstCitation(t *testing.T) {
 
 func TestAnnealedAlpha_TenCitations(t *testing.T) {
 	// citationCount=10: alpha = 0.1 * 3.0 * exp(-1.0) ≈ 0.1104
-	alpha := annealedAlpha(types.DefaultAlpha, 10)
-	expected := types.DefaultAlpha * 3.0 * math.Exp(-1.0)
+	alpha := annealedAlpha(domain.DefaultAlpha, 10)
+	expected := domain.DefaultAlpha * 3.0 * math.Exp(-1.0)
 	if math.Abs(alpha-expected) > 0.001 {
 		t.Errorf("annealedAlpha(0.1, 10) = %f, want %f", alpha, expected)
 	}
@@ -118,8 +118,8 @@ func TestAnnealedAlpha_TenCitations(t *testing.T) {
 func TestAnnealedAlpha_ThirtyCitations(t *testing.T) {
 	// citationCount=30: alpha = 0.1 * 3.0 * exp(-3.0) ≈ 0.0149
 	// Still above floor (0.01) but converging toward it
-	alpha := annealedAlpha(types.DefaultAlpha, 30)
-	floor := types.DefaultAlpha / 10.0
+	alpha := annealedAlpha(domain.DefaultAlpha, 30)
+	floor := domain.DefaultAlpha / 10.0
 	if alpha < floor {
 		t.Errorf("annealedAlpha(0.1, 30) = %f, should be >= floor %f", alpha, floor)
 	}
@@ -128,7 +128,7 @@ func TestAnnealedAlpha_ThirtyCitations(t *testing.T) {
 	}
 
 	// At very high counts, should hit the floor
-	alphaHigh := annealedAlpha(types.DefaultAlpha, 100)
+	alphaHigh := annealedAlpha(domain.DefaultAlpha, 100)
 	if alphaHigh != floor {
 		t.Errorf("annealedAlpha(0.1, 100) = %f, want floor %f", alphaHigh, floor)
 	}
@@ -178,8 +178,8 @@ func TestBinaryOutcomeReward_FallbackToTranscript(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// Should fall back to InitialUtility (0.5) when no outcome file and no transcript
-	if reward != types.InitialUtility {
-		t.Errorf("reward = %f, want %f (InitialUtility fallback)", reward, types.InitialUtility)
+	if reward != domain.InitialUtility {
+		t.Errorf("reward = %f, want %f (InitialUtility fallback)", reward, domain.InitialUtility)
 	}
 }
 
@@ -260,7 +260,7 @@ func TestMaturityPromotion_LoweredThreshold(t *testing.T) {
 	if !result.Transitioned {
 		t.Errorf("expected Transitioned=true, got false (reason: %s)", result.Reason)
 	}
-	if result.NewMaturity != types.MaturityCandidate {
+	if result.NewMaturity != domain.MaturityCandidate {
 		t.Errorf("expected NewMaturity=candidate, got %s", result.NewMaturity)
 	}
 }
@@ -279,7 +279,7 @@ func TestMaturityPromotion_OldThresholdNoLongerRequired(t *testing.T) {
 	if !result.Transitioned {
 		t.Errorf("expected Transitioned=true for utility=0.60 (above 0.55), got false (reason: %s)", result.Reason)
 	}
-	if result.NewMaturity != types.MaturityCandidate {
+	if result.NewMaturity != domain.MaturityCandidate {
 		t.Errorf("expected NewMaturity=candidate, got %s", result.NewMaturity)
 	}
 }
@@ -298,7 +298,7 @@ func TestMaturityPromotion_ImplicitHelpfulSignal(t *testing.T) {
 	if !result.Transitioned {
 		t.Errorf("expected Transitioned=true (implicit helpful via reward_count>=10), got false (reason: %s)", result.Reason)
 	}
-	if result.NewMaturity != types.MaturityEstablished {
+	if result.NewMaturity != domain.MaturityEstablished {
 		t.Errorf("expected NewMaturity=established, got %s", result.NewMaturity)
 	}
 	// Verify the reason mentions implicit helpful signal
@@ -378,15 +378,15 @@ func TestRecalibrate_ResetsUtility(t *testing.T) {
 	path := filepath.Join(dir, "inflated.jsonl")
 	os.WriteFile(path, []byte(`{"utility":0.85,"reward_count":10,"maturity":"established","confidence":0.8}`+"\n"), 0644)
 
-	oldUtility, newUtility, err := updateLearningUtility(path, types.InitialUtility, 1.0)
+	oldUtility, newUtility, err := updateLearningUtility(path, domain.InitialUtility, 1.0)
 	if err != nil {
 		t.Fatalf("updateLearningUtility: %v", err)
 	}
 	if math.Abs(oldUtility-0.85) > 0.001 {
 		t.Errorf("oldUtility = %f, want 0.85", oldUtility)
 	}
-	if math.Abs(newUtility-types.InitialUtility) > 0.001 {
-		t.Errorf("newUtility = %f, want %f (InitialUtility)", newUtility, types.InitialUtility)
+	if math.Abs(newUtility-domain.InitialUtility) > 0.001 {
+		t.Errorf("newUtility = %f, want %f (InitialUtility)", newUtility, domain.InitialUtility)
 	}
 
 	// Verify by reading back the file

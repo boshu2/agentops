@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 )
 
 const (
@@ -32,13 +32,13 @@ func ComputePlanChecksum(path string) (string, error) {
 }
 
 // CreatePlanEntry builds a manifest entry from path and metadata.
-func CreatePlanEntry(absPath string, modTime time.Time, projectPath, name, beadsID, checksum string) types.PlanManifestEntry {
-	return types.PlanManifestEntry{
+func CreatePlanEntry(absPath string, modTime time.Time, projectPath, name, beadsID, checksum string) domain.PlanManifestEntry {
+	return domain.PlanManifestEntry{
 		Path:        absPath,
 		CreatedAt:   modTime,
 		ProjectPath: projectPath,
 		PlanName:    name,
-		Status:      types.PlanStatusActive,
+		Status:      domain.PlanStatusActive,
 		BeadsID:     beadsID,
 		UpdatedAt:   time.Now(),
 		Checksum:    checksum,
@@ -46,7 +46,7 @@ func CreatePlanEntry(absPath string, modTime time.Time, projectPath, name, beads
 }
 
 // AppendManifestEntry appends an entry to the manifest file.
-func AppendManifestEntry(manifestPath string, entry types.PlanManifestEntry) error {
+func AppendManifestEntry(manifestPath string, entry domain.PlanManifestEntry) error {
 	f, err := os.OpenFile(manifestPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		return err
@@ -106,20 +106,20 @@ func FindAgentsDir(startDir string) string {
 }
 
 // LoadManifest reads all entries from the manifest file.
-func LoadManifest(path string) ([]types.PlanManifestEntry, error) {
+func LoadManifest(path string) ([]domain.PlanManifestEntry, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = f.Close() }()
-	var entries []types.PlanManifestEntry
+	var entries []domain.PlanManifestEntry
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
 		}
-		var entry types.PlanManifestEntry
+		var entry domain.PlanManifestEntry
 		if err := json.Unmarshal([]byte(line), &entry); err != nil {
 			continue
 		}
@@ -129,7 +129,7 @@ func LoadManifest(path string) ([]types.PlanManifestEntry, error) {
 }
 
 // SaveManifest writes all entries to the manifest file.
-func SaveManifest(path string, entries []types.PlanManifestEntry) error {
+func SaveManifest(path string, entries []domain.PlanManifestEntry) error {
 	f, err := os.Create(path)
 	if err != nil {
 		return err
@@ -169,8 +169,8 @@ func DetectProjectPath(planPath string) string {
 }
 
 // FilterPlans returns entries matching the project and status filters.
-func FilterPlans(entries []types.PlanManifestEntry, project, status string) []types.PlanManifestEntry {
-	var out []types.PlanManifestEntry
+func FilterPlans(entries []domain.PlanManifestEntry, project, status string) []domain.PlanManifestEntry {
+	var out []domain.PlanManifestEntry
 	for _, e := range entries {
 		if project != "" && !strings.Contains(e.ProjectPath, project) {
 			continue
@@ -184,11 +184,11 @@ func FilterPlans(entries []types.PlanManifestEntry, project, status string) []ty
 }
 
 // ApplyPlanUpdates applies status and beadsID updates to the matching entry.
-func ApplyPlanUpdates(entries []types.PlanManifestEntry, absPath, status, beadsID string) bool {
+func ApplyPlanUpdates(entries []domain.PlanManifestEntry, absPath, status, beadsID string) bool {
 	for i, e := range entries {
 		if e.Path == absPath {
 			if status != "" {
-				entries[i].Status = types.PlanStatus(status)
+				entries[i].Status = domain.PlanStatus(status)
 			}
 			if beadsID != "" {
 				entries[i].BeadsID = beadsID
@@ -201,7 +201,7 @@ func ApplyPlanUpdates(entries []types.PlanManifestEntry, absPath, status, beadsI
 }
 
 // BuildBeadsIDIndex creates a map of beadsID -> slice index.
-func BuildBeadsIDIndex(entries []types.PlanManifestEntry) map[string]int {
+func BuildBeadsIDIndex(entries []domain.PlanManifestEntry) map[string]int {
 	index := make(map[string]int)
 	for i, e := range entries {
 		if e.BeadsID != "" {
@@ -212,10 +212,10 @@ func BuildBeadsIDIndex(entries []types.PlanManifestEntry) map[string]int {
 }
 
 // SyncEpicStatus syncs a single epic status and returns true if changed.
-func SyncEpicStatus(entries []types.PlanManifestEntry, idx int, beadsStatus string) bool {
-	newStatus := types.PlanStatusActive
+func SyncEpicStatus(entries []domain.PlanManifestEntry, idx int, beadsStatus string) bool {
+	newStatus := domain.PlanStatusActive
 	if beadsStatus == "closed" {
-		newStatus = types.PlanStatusCompleted
+		newStatus = domain.PlanStatusCompleted
 	}
 	if entries[idx].Status != newStatus {
 		entries[idx].Status = newStatus

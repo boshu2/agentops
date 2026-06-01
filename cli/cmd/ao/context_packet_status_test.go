@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +28,7 @@ func TestBuildPacketStatusResult_ExperimentalByDefault(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(tmp, ".agents", "packets", "promoted", "alpha.md"), []byte("# Alpha"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := writeCitations(tmp, []types.CitationEvent{
+	if err := writeCitations(tmp, []domain.CitationEvent{
 		{ArtifactPath: filepath.Join(tmp, ".agents", "packets", "promoted", "alpha.md"), WorkspacePath: tmp, SessionID: "s1", CitedAt: time.Now()},
 	}); err != nil {
 		t.Fatal(err)

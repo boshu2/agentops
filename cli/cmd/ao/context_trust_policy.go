@@ -1,7 +1,7 @@
 // practices: [ai-assisted-dev, distributed-tracing]
 package main
 
-import aocontext "github.com/boshu2/agentops/cli/internal/context"
+import aocontext "github.com/boshu2/agentops/cli/internal/contextpacket"
 
 // Type alias — canonical type lives in internal/context.
 type sessionIntelligenceArtifactPolicy = aocontext.SessionIntelligenceArtifactPolicy

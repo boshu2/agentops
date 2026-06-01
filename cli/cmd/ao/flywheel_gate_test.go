@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
 )
 
@@ -26,9 +26,9 @@ func TestEvaluateFlywheelGate(t *testing.T) {
 			},
 		},
 	}
-	metrics := &types.FlywheelMetrics{
+	metrics := &domain.FlywheelMetrics{
 		Rho: 0.60,
-		GoldenSignals: &types.GoldenSignals{
+		GoldenSignals: &domain.GoldenSignals{
 			ClosureVerdict: "mining",
 		},
 	}
@@ -57,9 +57,9 @@ func TestEvaluateFlywheelGate_FailsOnThresholds(t *testing.T) {
 			},
 		},
 	}
-	metrics := &types.FlywheelMetrics{
+	metrics := &domain.FlywheelMetrics{
 		Rho: 0.40,
-		GoldenSignals: &types.GoldenSignals{
+		GoldenSignals: &domain.GoldenSignals{
 			ClosureVerdict: "unmined",
 		},
 	}
@@ -114,7 +114,7 @@ func TestRunFlywheelGateCommand_PassesWithHealthyWorkspace(t *testing.T) {
 		t.Fatalf("write learning b: %v", err)
 	}
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: learningA, SessionID: "s1", CitedAt: time.Now().Add(-time.Minute), CitationType: "reference", MatchConfidence: 0.9, MatchProvenance: "lookup:query"},
 		{ArtifactPath: learningB, SessionID: "s2", CitedAt: time.Now(), CitationType: "applied", MatchConfidence: 0.9, MatchProvenance: "lookup:query"},
 	}

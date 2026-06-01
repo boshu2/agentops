@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/storage"
+	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
 
 func TestWritePendingLearnings_WritesMarkdown(t *testing.T) {
 	dir := t.TempDir()
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:   "test-session-abc123",
 		Date: time.Date(2026, 3, 20, 0, 0, 0, 0, time.UTC),
 		Knowledge: []string{
@@ -62,7 +62,7 @@ func TestWritePendingLearnings_WritesMarkdown(t *testing.T) {
 
 func TestWritePendingLearnings_IncludesDecisions(t *testing.T) {
 	dir := t.TempDir()
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:   "test-decisions-def456",
 		Date: time.Date(2026, 3, 20, 0, 0, 0, 0, time.UTC),
 		Decisions: []string{
@@ -90,7 +90,7 @@ func TestWritePendingLearnings_IncludesDecisions(t *testing.T) {
 
 func TestWritePendingLearnings_EmptySession(t *testing.T) {
 	dir := t.TempDir()
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:   "empty-session",
 		Date: time.Now(),
 	}
@@ -116,7 +116,7 @@ func TestWritePendingLearnings_NilSession(t *testing.T) {
 
 func TestWritePendingLearnings_FrontmatterFormat(t *testing.T) {
 	dir := t.TempDir()
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:        "frontmatter-test-789",
 		Date:      time.Date(2026, 3, 20, 0, 0, 0, 0, time.UTC),
 		Knowledge: []string{"Test frontmatter is correct"},
@@ -145,7 +145,7 @@ func TestWritePendingLearnings_FrontmatterFormat(t *testing.T) {
 
 func TestWritePendingLearnings_PoolIngestCompatible(t *testing.T) {
 	dir := t.TempDir()
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:   "compat-test-abc",
 		Date: time.Date(2026, 3, 20, 0, 0, 0, 0, time.UTC),
 		Knowledge: []string{
@@ -178,7 +178,7 @@ func TestWritePendingLearnings_PoolIngestCompatible(t *testing.T) {
 
 func TestWritePendingLearnings_ResearchProvenance(t *testing.T) {
 	dir := t.TempDir()
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:   "provenance-test-123",
 		Date: time.Date(2026, 3, 22, 0, 0, 0, 0, time.UTC),
 		Knowledge: []string{
@@ -209,7 +209,7 @@ func TestWritePendingLearnings_ResearchProvenance(t *testing.T) {
 
 func TestWritePendingLearnings_NoResearchProvenance(t *testing.T) {
 	dir := t.TempDir()
-	session := &storage.Session{
+	session := &sessionstore.Session{
 		ID:   "no-provenance-456",
 		Date: time.Date(2026, 3, 22, 0, 0, 0, 0, time.UTC),
 		Knowledge: []string{

@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/search"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // ---------------------------------------------------------------------------
@@ -894,9 +894,9 @@ func TestInject_populateLearningFromJSON(t *testing.T) {
 		data := map[string]any{
 			"utility": 0.0,
 		}
-		l := &learning{Utility: types.InitialUtility}
+		l := &learning{Utility: domain.InitialUtility}
 		populateLearningFromJSON(data, l)
-		if l.Utility != types.InitialUtility {
+		if l.Utility != domain.InitialUtility {
 			t.Errorf("Utility = %f, expected unchanged default", l.Utility)
 		}
 	})
@@ -918,8 +918,8 @@ func TestInject_enrichPatternFreshness(t *testing.T) {
 		if p.FreshnessScore <= 0 || p.FreshnessScore > 1.0 {
 			t.Errorf("FreshnessScore = %f, expected (0, 1]", p.FreshnessScore)
 		}
-		if p.Utility != types.InitialUtility {
-			t.Errorf("Utility = %f, expected default %f", p.Utility, types.InitialUtility)
+		if p.Utility != domain.InitialUtility {
+			t.Errorf("Utility = %f, expected default %f", p.Utility, domain.InitialUtility)
 		}
 	})
 

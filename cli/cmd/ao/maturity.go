@@ -11,11 +11,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/boshu2/agentops/cli/internal/format"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	"github.com/boshu2/agentops/cli/internal/paths"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
-	"github.com/boshu2/agentops/cli/internal/types"
 )
 
 // agentsDirIn returns the AgentsDir resolved relative to the given base
@@ -269,7 +269,7 @@ func runMaturityRecalibrate(learningsDir string) error {
 	}
 
 	if GetDryRun() {
-		fmt.Printf("[dry-run] Would recalibrate %d learnings (utility reset to %.1f)\n", len(files), types.InitialUtility)
+		fmt.Printf("[dry-run] Would recalibrate %d learnings (utility reset to %.1f)\n", len(files), domain.InitialUtility)
 		return nil
 	}
 
@@ -277,7 +277,7 @@ func runMaturityRecalibrate(learningsDir string) error {
 	for _, file := range files {
 		// updateLearningUtility with alpha=1.0 and reward=InitialUtility
 		// yields: new = (1-1.0)*old + 1.0*0.5 = 0.5
-		_, _, err := updateLearningUtility(file, types.InitialUtility, 1.0)
+		_, _, err := updateLearningUtility(file, domain.InitialUtility, 1.0)
 		if err != nil {
 			VerbosePrintf("Warning: could not recalibrate %s: %v\n", filepath.Base(file), err)
 			continue
@@ -285,7 +285,7 @@ func runMaturityRecalibrate(learningsDir string) error {
 		recalibrated++
 	}
 
-	fmt.Printf("Recalibrated %d learnings (utility reset to %.1f)\n", recalibrated, types.InitialUtility)
+	fmt.Printf("Recalibrated %d learnings (utility reset to %.1f)\n", recalibrated, domain.InitialUtility)
 	return nil
 }
 
@@ -714,7 +714,7 @@ func buildCurationCandidate(baseDir, file string, lastCited map[string]time.Time
 	return curationCandidate{
 		Path:          file,
 		Name:          filepath.Base(file),
-		Utility:       floatValueFromData(data, "utility", types.InitialUtility),
+		Utility:       floatValueFromData(data, "utility", domain.InitialUtility),
 		Confidence:    floatValueFromData(data, "confidence", 0.0),
 		Maturity:      maturity,
 		LastCited:     lastCitedStr,

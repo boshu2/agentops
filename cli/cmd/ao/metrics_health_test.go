@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/types"
+	"github.com/boshu2/agentops/cli/internal/domain"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +31,7 @@ func setupHealthTestDir(t *testing.T) string {
 	return dir
 }
 
-func writeHealthCitations(t *testing.T, dir string, events []types.CitationEvent) {
+func writeHealthCitations(t *testing.T, dir string, events []domain.CitationEvent) {
 	t.Helper()
 	citDir := filepath.Join(dir, ".agents", "ao")
 	if err := os.MkdirAll(citDir, 0o755); err != nil {
@@ -94,7 +94,7 @@ func TestMetricsHealth_DirtyArtifactPaths(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	writeHealthCitations(t, dir, []types.CitationEvent{
+	writeHealthCitations(t, dir, []domain.CitationEvent{
 		{
 			ArtifactPath: filepath.Join(dir, ".agents", "learnings", "kept.md"),
 			SessionID:    "session-1",
@@ -179,7 +179,7 @@ func TestMetricsHealth_WithCitations(t *testing.T) {
 	}
 
 	// Create citations: 2 of 4 learnings cited across 2 sessions
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{
 			ArtifactPath: filepath.Join(dir, ".agents", "learnings", "a.md"),
 			SessionID:    "session-1",
@@ -233,7 +233,7 @@ func TestMetricsHealth_FiltersByMetricNamespace(t *testing.T) {
 		}
 	}
 
-	writeHealthCitations(t, dir, []types.CitationEvent{
+	writeHealthCitations(t, dir, []domain.CitationEvent{
 		{
 			ArtifactPath:    filepath.Join(learningsDir, "primary.md"),
 			SessionID:       "session-primary",
@@ -295,7 +295,7 @@ func TestMetricsHealth_FindingsParticipateInStockAndRetrieval(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	writeHealthCitations(t, dir, []types.CitationEvent{
+	writeHealthCitations(t, dir, []domain.CitationEvent{
 		{
 			ArtifactPath: filepath.Join(dir, ".agents", SectionFindings, "finding.md"),
 			SessionID:    "s1",
@@ -380,7 +380,7 @@ func TestMetricsHealth_ExactContractMath(t *testing.T) {
 		}
 	}
 
-	writeHealthCitations(t, dir, []types.CitationEvent{
+	writeHealthCitations(t, dir, []domain.CitationEvent{
 		{
 			ArtifactPath: filepath.Join(learningsDir, "a.md"),
 			SessionID:    "s1",
@@ -432,14 +432,14 @@ func TestMetricsHealth_EscapeVelocity_Positive(t *testing.T) {
 	}
 
 	// Cite both heavily across multiple sessions => high sigma, high rho
-	var citations []types.CitationEvent
+	var citations []domain.CitationEvent
 	for i := 0; i < 5; i++ {
-		citations = append(citations, types.CitationEvent{
+		citations = append(citations, domain.CitationEvent{
 			ArtifactPath: filepath.Join(dir, ".agents", "learnings", "x.md"),
 			SessionID:    "s" + string(rune('1'+i)),
 			CitedAt:      now.Add(-time.Duration(i) * time.Hour),
 		})
-		citations = append(citations, types.CitationEvent{
+		citations = append(citations, domain.CitationEvent{
 			ArtifactPath: filepath.Join(dir, ".agents", "learnings", "y.md"),
 			SessionID:    "s" + string(rune('1'+i)),
 			CitedAt:      now.Add(-time.Duration(i) * time.Hour),
@@ -516,7 +516,7 @@ func TestMetricsHealth_JSONOutput(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(learningsDir, "test.md"), []byte("# Test"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	writeHealthCitations(t, dir, []types.CitationEvent{
+	writeHealthCitations(t, dir, []domain.CitationEvent{
 		{
 			ArtifactPath: filepath.Join(dir, ".agents", "learnings", "test.md"),
 			SessionID:    "s1",
@@ -580,7 +580,7 @@ func TestMetricsHealth_PrintPath(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(learningsDir, "print.md"), []byte("# Print"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	writeHealthCitations(t, dir, []types.CitationEvent{
+	writeHealthCitations(t, dir, []domain.CitationEvent{
 		{
 			ArtifactPath: filepath.Join(learningsDir, "print.md"),
 			SessionID:    "s1",
@@ -683,7 +683,7 @@ func TestComputeLoopDominance_StaleUsesNinetyDayWindow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{
 			ArtifactPath: filepath.Join(dir, ".agents", "learnings", "recent.md"),
 			SessionID:    "session-1",
@@ -722,7 +722,7 @@ func TestComputeLoopDominance_StaleAndNewBoundaries(t *testing.T) {
 		}
 	}
 
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{
 			ArtifactPath: recent1,
 			SessionID:    "session-1",
@@ -791,7 +791,7 @@ func TestComputeHealthSigmaRho_AllEmptySessionIDs(t *testing.T) {
 	// When all citations have empty session IDs, lastNSessions returns empty,
 	// so computeHealthSigmaRho should return (0, 0).
 	dir := t.TempDir()
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{ArtifactPath: "learnings/foo.md", SessionID: "", CitedAt: time.Now()},
 		{ArtifactPath: "learnings/bar.md", SessionID: "", CitedAt: time.Now()},
 	}
@@ -805,7 +805,7 @@ func TestComputeHealthSigmaRho_AllEmptySessionIDs(t *testing.T) {
 }
 
 func TestLastNSessions_AllEmptySessionIDs(t *testing.T) {
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{SessionID: "", CitedAt: time.Now()},
 		{SessionID: "", CitedAt: time.Now()},
 	}
@@ -817,7 +817,7 @@ func TestLastNSessions_AllEmptySessionIDs(t *testing.T) {
 
 func TestLastNSessions_MoreSessionsThanN(t *testing.T) {
 	now := time.Now()
-	citations := []types.CitationEvent{
+	citations := []domain.CitationEvent{
 		{SessionID: "s1", CitedAt: now.Add(-3 * time.Hour)},
 		{SessionID: "s2", CitedAt: now.Add(-2 * time.Hour)},
 		{SessionID: "s3", CitedAt: now.Add(-1 * time.Hour)},
