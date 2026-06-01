@@ -23,7 +23,8 @@ type PlateauState struct {
 	// empty.
 	window []float64
 	// k is the number of consecutive sub-epsilon deltas required to
-	// fire. Always >= 2; enforced by NewPlateauState.
+	// fire. Always >= 2; enforced by NewPlateauState (which returns an
+	// error otherwise).
 	k int
 	// epsilon is the absolute-value threshold below which a delta is
 	// considered "no progress".
@@ -39,20 +40,20 @@ type PlateauState struct {
 // NewPlateauState constructs a plateau tracker configured with the
 // given window size k and absolute-value threshold epsilon.
 //
-// Panics if k < 2. A window of 1 would mean a single noisy sample
-// could halt the loop, which is the exact failure mode the plateau
-// state machine is designed to absorb. RunLoopOptions.normalize()
+// Returns an error if k < 2. A window of 1 would mean a single noisy
+// sample could halt the loop, which is the exact failure mode the
+// plateau state machine is designed to absorb. RunLoopOptions.normalize()
 // enforces the same invariant on the flag surface, so only programmer
-// error in direct callers should ever trigger the panic.
-func NewPlateauState(k int, epsilon float64) *PlateauState {
+// error in direct callers should ever trigger the error path.
+func NewPlateauState(k int, epsilon float64) (*PlateauState, error) {
 	if k < 2 {
-		panic(fmt.Sprintf("overnight.NewPlateauState: k must be >= 2, got %d", k))
+		return nil, fmt.Errorf("overnight.NewPlateauState: k must be >= 2, got %d", k)
 	}
 	return &PlateauState{
 		window:  make([]float64, 0, k),
 		k:       k,
 		epsilon: epsilon,
-	}
+	}, nil
 }
 
 // Observe feeds the latest iteration delta into the state machine and

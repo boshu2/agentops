@@ -381,9 +381,10 @@ var gitLogFixRe = regexp.MustCompile(`(?i)^[0-9a-f]+ (fix|bugfix|hotfix)`)
 
 // MineGitLog extracts signal from git log within the given time window.
 // Shells out to `git log`; callers with no git repo should exclude the
-// git source from opts.Sources.
-func MineGitLog(cwd string, window time.Duration) (*GitFindings, error) {
-	return MineGitLogContext(context.Background(), cwd, window)
+// git source from opts.Sources. Callers supply their own context so
+// cancellation propagates from the top of the stack.
+func MineGitLog(ctx context.Context, cwd string, window time.Duration) (*GitFindings, error) {
+	return MineGitLogContext(ctx, cwd, window)
 }
 
 // MineGitLogContext extracts signal from git log with context cancellation.
@@ -494,9 +495,10 @@ var gocycloLineRe = regexp.MustCompile(`^(\d+)\s+(\S+)\s+(\S+)\s+(\S+):(\d+):\d+
 
 // MineCodeComplexity runs gocyclo on the cli/ subtree and correlates
 // hotspots with recent git edits. If gocyclo is not installed or fails,
-// returns a skipped finding without error.
-func MineCodeComplexity(cwd string, window time.Duration) (*CodeFindings, error) {
-	return MineCodeComplexityContext(context.Background(), cwd, window)
+// returns a skipped finding without error. Callers supply their own
+// context so cancellation propagates from the top of the stack.
+func MineCodeComplexity(ctx context.Context, cwd string, window time.Duration) (*CodeFindings, error) {
+	return MineCodeComplexityContext(ctx, cwd, window)
 }
 
 // MineCodeComplexityContext runs gocyclo with context cancellation.

@@ -1,6 +1,9 @@
 package eval
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type Tier string
 
@@ -50,8 +53,8 @@ const (
 	DimensionRuntimeCompatibility Dimension = "runtime_compatibility"
 	DimensionEfficiency           Dimension = "efficiency"
 	DimensionSafety               Dimension = "safety"
-	DimensionLearningClosure        Dimension = "learning_closure"
-	DimensionContextComprehension   Dimension = "context_comprehension"
+	DimensionLearningClosure      Dimension = "learning_closure"
+	DimensionContextComprehension Dimension = "context_comprehension"
 )
 
 type Status string
@@ -354,6 +357,11 @@ type RunRecord struct {
 }
 
 type RunOptions struct {
+	// Context is the base context from which per-case command timeouts are
+	// derived. When nil, RunSuite falls back to context.Background() (the
+	// genuine top-of-stack default). CLI entry points should set this from
+	// cmd.Context() so cancellation propagates.
+	Context      context.Context
 	SuitePath    string
 	RunID        string
 	Runtime      Runtime

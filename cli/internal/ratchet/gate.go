@@ -53,15 +53,41 @@ var expectedOutputs = map[Step]string{
 // GateChecker validates that prerequisites are met before a step can proceed.
 type GateChecker struct {
 	locator *Locator
+	// ctx is the base context from which per-command timeouts are derived.
+	// Set once at the CLI entry via WithContext; never nil after
+	// construction (NewGateChecker seeds it with context.Background()).
+	ctx context.Context
 }
 
-// NewGateChecker creates a new gate checker.
+// NewGateChecker creates a new gate checker. The base context defaults to
+// context.Background(); callers at the CLI entry should override it via
+// WithContext so cancellation propagates from the top of the stack.
 func NewGateChecker(startDir string) (*GateChecker, error) {
 	locator, err := NewLocator(startDir)
 	if err != nil {
 		return nil, err
 	}
-	return &GateChecker{locator: locator}, nil
+	return &GateChecker{locator: locator, ctx: context.Background()}, nil
+}
+
+// WithContext sets the base context used to derive per-command timeouts and
+// returns the receiver for chaining. A nil ctx is ignored. Intended to be
+// called once at the CLI entry layer (e.g. with cmd.Context()).
+func (g *GateChecker) WithContext(ctx context.Context) *GateChecker {
+	if ctx != nil {
+		g.ctx = ctx
+	}
+	return g
+}
+
+// baseContext returns the configured base context, falling back to
+// context.Background() if the checker was constructed without one (e.g. via
+// a struct literal in tests).
+func (g *GateChecker) baseContext() context.Context {
+	if g.ctx == nil {
+		return context.Background()
+	}
+	return g.ctx
 }
 
 // Check validates that the gate for a step is satisfied.
@@ -239,8 +265,9 @@ func parseFirstEpicID(out []byte) string {
 
 // findEpic uses bd CLI to find an epic with the given status.
 func (g *GateChecker) findEpic(status string) (string, error) {
-	// Create context with 5s timeout
-	ctx, cancel := context.WithTimeout(context.Background(), BdCLITimeout)
+	// Derive a 5s timeout from the checker's base context so cancellation
+	// propagates from the CLI entry rather than minting a fresh root here.
+	ctx, cancel := context.WithTimeout(g.baseContext(), BdCLITimeout)
 	defer cancel()
 
 	// Call bd list --type epic --status <status>

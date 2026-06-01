@@ -137,7 +137,10 @@ func RunLoop(ctx context.Context, opts RunLoopOptions) (*RunLoopResult, error) {
 	defer cancel()
 
 	startedAt := time.Now()
-	state := newRunLoopState(opts, log, result, priorIterations)
+	state, err := newRunLoopState(opts, log, result, priorIterations)
+	if err != nil {
+		return result, err
+	}
 	iterIndex := len(priorIterations) // Resume from N+1 (incremented at top of loop)
 
 	for {
@@ -243,16 +246,20 @@ func newRunLoopState(
 	log io.Writer,
 	result *RunLoopResult,
 	priorIterations []IterationSummary,
-) *runLoopState {
+) (*runLoopState, error) {
+	plateau, err := NewPlateauState(opts.PlateauWindowK, opts.PlateauEpsilon)
+	if err != nil {
+		return nil, fmt.Errorf("overnight: newRunLoopState: %w", err)
+	}
 	state := &runLoopState{
 		opts:         opts,
 		log:          log,
 		result:       result,
-		plateau:      NewPlateauState(opts.PlateauWindowK, opts.PlateauEpsilon),
+		plateau:      plateau,
 		prevSnapshot: lastCompoundedSnapshot(priorIterations),
 	}
 	replayPriorDeltas(state.plateau, priorIterations, opts.PlateauWindowK)
-	return state
+	return state, nil
 }
 
 func lastCompoundedSnapshot(priorIterations []IterationSummary) *FitnessSnapshot {

@@ -5,17 +5,29 @@ import (
 	"testing"
 )
 
-func TestPlateauState_NewPanicsOnKLessThan2(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatal("expected panic on k=1, got none")
-		}
-	}()
-	_ = NewPlateauState(1, 0.01)
+// mustPlateau constructs a PlateauState for tests, failing the test if
+// NewPlateauState returns an error.
+func mustPlateau(t *testing.T, k int, epsilon float64) *PlateauState {
+	t.Helper()
+	p, err := NewPlateauState(k, epsilon)
+	if err != nil {
+		t.Fatalf("NewPlateauState(%d, %g) unexpected error: %v", k, epsilon, err)
+	}
+	return p
+}
+
+func TestPlateauState_NewErrorsOnKLessThan2(t *testing.T) {
+	p, err := NewPlateauState(1, 0.01)
+	if err == nil {
+		t.Fatal("expected error on k=1, got none")
+	}
+	if p != nil {
+		t.Fatalf("expected nil PlateauState on error, got %v", p)
+	}
 }
 
 func TestPlateauState_ObserveK2_FiresOnConsecutivePair(t *testing.T) {
-	p := NewPlateauState(2, 0.01)
+	p := mustPlateau(t, 2, 0.01)
 
 	if fired := p.Observe(0.005); fired {
 		t.Fatal("first sub-epsilon observation must not fire")
@@ -26,7 +38,7 @@ func TestPlateauState_ObserveK2_FiresOnConsecutivePair(t *testing.T) {
 }
 
 func TestPlateauState_ObserveK2_NoisySampleAbsorbed(t *testing.T) {
-	p := NewPlateauState(2, 0.01)
+	p := mustPlateau(t, 2, 0.01)
 
 	if fired := p.Observe(0.005); fired {
 		t.Fatal("observation 1 should not fire")
@@ -43,7 +55,7 @@ func TestPlateauState_ObserveK2_NoisySampleAbsorbed(t *testing.T) {
 }
 
 func TestPlateauState_ObserveK3_FiresOnThreeInARow(t *testing.T) {
-	p := NewPlateauState(3, 0.01)
+	p := mustPlateau(t, 3, 0.01)
 
 	if fired := p.Observe(0.001); fired {
 		t.Fatal("observation 1 should not fire")
@@ -57,7 +69,7 @@ func TestPlateauState_ObserveK3_FiresOnThreeInARow(t *testing.T) {
 }
 
 func TestPlateauState_ObserveAfterHaltIsIdempotent(t *testing.T) {
-	p := NewPlateauState(2, 0.01)
+	p := mustPlateau(t, 2, 0.01)
 	_ = p.Observe(0.005)
 	if fired := p.Observe(0.005); !fired {
 		t.Fatal("expected second call to fire")
@@ -70,7 +82,7 @@ func TestPlateauState_ObserveAfterHaltIsIdempotent(t *testing.T) {
 }
 
 func TestPlateauState_ReasonBeforeHaltIsEmpty(t *testing.T) {
-	p := NewPlateauState(2, 0.01)
+	p := mustPlateau(t, 2, 0.01)
 	if got := p.Reason(); got != "" {
 		t.Errorf("Reason before halt = %q, want empty", got)
 	}
@@ -81,7 +93,7 @@ func TestPlateauState_ReasonBeforeHaltIsEmpty(t *testing.T) {
 }
 
 func TestPlateauState_ReasonAfterHaltDescribesConfig(t *testing.T) {
-	p := NewPlateauState(2, 0.01)
+	p := mustPlateau(t, 2, 0.01)
 	_ = p.Observe(0.005)
 	_ = p.Observe(0.005)
 
@@ -98,7 +110,7 @@ func TestPlateauState_ReasonAfterHaltDescribesConfig(t *testing.T) {
 }
 
 func TestPlateauState_AbsoluteValueUsed(t *testing.T) {
-	p := NewPlateauState(2, 0.01)
+	p := mustPlateau(t, 2, 0.01)
 
 	// Both deltas negative but |delta| < epsilon -> should still fire.
 	if fired := p.Observe(-0.005); fired {
@@ -110,7 +122,7 @@ func TestPlateauState_AbsoluteValueUsed(t *testing.T) {
 }
 
 func TestPlateauState_Reset(t *testing.T) {
-	p := NewPlateauState(2, 0.01)
+	p := mustPlateau(t, 2, 0.01)
 	_ = p.Observe(0.005)
 	_ = p.Observe(0.005)
 	if p.Reason() == "" {

@@ -51,6 +51,7 @@ func runRatchetCheck(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("create gate checker: %w", err)
 	}
+	checker.WithContext(cmd.Context())
 
 	result, err := checker.Check(step)
 	if err != nil {
