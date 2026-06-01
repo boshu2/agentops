@@ -366,9 +366,9 @@ func TestFileStorage_GetPaths(t *testing.T) {
 		want string
 	}{
 		{"GetBaseDir", fs.GetBaseDir(), baseDir},
-		{"GetSessionsDir", fs.GetSessionsDir(), filepath.Join(baseDir, SessionsDir)},
-		{"GetIndexPath", fs.GetIndexPath(), filepath.Join(baseDir, IndexDir, IndexFile)},
-		{"GetProvenancePath", fs.GetProvenancePath(), filepath.Join(baseDir, ProvenanceDir, ProvenanceFile)},
+		{"SessionsPath", fs.SessionsPath(), filepath.Join(baseDir, SessionsDir)},
+		{"IndexPath", fs.IndexPath(), filepath.Join(baseDir, IndexDir, IndexFile)},
+		{"ProvenancePath", fs.ProvenancePath(), filepath.Join(baseDir, ProvenanceDir, ProvenanceFile)},
 	}
 
 	for _, tt := range tests {
@@ -705,7 +705,7 @@ func TestFileStorage_ListSessions_MalformedLines(t *testing.T) {
 	}
 
 	// Append malformed line directly
-	indexPath := fs.GetIndexPath()
+	indexPath := fs.IndexPath()
 	f, err := os.OpenFile(indexPath, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -762,7 +762,7 @@ func TestFileStorage_QueryProvenance_MalformedLines(t *testing.T) {
 	}
 
 	// Append malformed line
-	provPath := fs.GetProvenancePath()
+	provPath := fs.ProvenancePath()
 	f, err := os.OpenFile(provPath, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -1070,7 +1070,7 @@ func TestFileStorage_HasIndexEntry_MalformedJSON(t *testing.T) {
 	}
 
 	// Append malformed line
-	indexPath := fs.GetIndexPath()
+	indexPath := fs.IndexPath()
 	f, err := os.OpenFile(indexPath, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -1127,7 +1127,7 @@ func TestFileStorage_ListSessions_PermissionError(t *testing.T) {
 	}
 
 	// Make index file unreadable (not-IsNotExist error path)
-	indexPath := fs.GetIndexPath()
+	indexPath := fs.IndexPath()
 	if err := os.Chmod(indexPath, 0000); err != nil {
 		t.Fatal(err)
 	}
@@ -1160,7 +1160,7 @@ func TestFileStorage_QueryProvenance_PermissionError(t *testing.T) {
 	}
 
 	// Make provenance file unreadable
-	provPath := fs.GetProvenancePath()
+	provPath := fs.ProvenancePath()
 	if err := os.Chmod(provPath, 0000); err != nil {
 		t.Fatal(err)
 	}
@@ -1437,7 +1437,7 @@ func TestFileStorage_WriteIndex_HasIndexEntryError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	indexPath := fs.GetIndexPath()
+	indexPath := fs.IndexPath()
 	longLine := strings.Repeat("x", 70*1024) + "\n"
 	if err := os.WriteFile(indexPath, []byte(longLine), 0600); err != nil {
 		t.Fatal(err)

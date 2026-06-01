@@ -1180,7 +1180,7 @@ func TestGetLocationPaths_PluginsFallbackToRig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	paths := loc.GetLocationPaths()
+	paths := loc.LocationPaths()
 	pluginsPath, ok := paths[LocationPlugins]
 	if !ok {
 		t.Fatal("expected plugins path in result")
@@ -1930,7 +1930,7 @@ func TestExtra_glob_RelativePattern(t *testing.T) {
 func TestExtra_GetLocationPaths_ContainsCrewAndTown(t *testing.T) {
 	dir := t.TempDir()
 	loc, _ := NewLocator(dir)
-	paths := loc.GetLocationPaths()
+	paths := loc.LocationPaths()
 
 	if _, ok := paths[LocationCrew]; !ok {
 		t.Error("missing LocationCrew in paths")
@@ -1949,7 +1949,7 @@ func TestExtra_GetLocationPaths_PluginsFromRig(t *testing.T) {
 	os.MkdirAll(subDir, 0o700)
 
 	loc, _ := NewLocator(subDir)
-	paths := loc.GetLocationPaths()
+	paths := loc.LocationPaths()
 
 	if p, ok := paths[LocationPlugins]; ok {
 		if !strings.Contains(p, "plugins") {

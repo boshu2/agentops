@@ -291,7 +291,7 @@ func TestRatchetRecord_DuplicatePhase(t *testing.T) {
 	}
 
 	// GetLatest should return the most recent entry
-	latest := chain.GetLatest(ratchet.StepResearch)
+	latest := chain.Latest(ratchet.StepResearch)
 	if latest == nil {
 		t.Fatal("GetLatest returned nil")
 	}
@@ -378,7 +378,7 @@ func TestRatchetValidate_SkippedPhase(t *testing.T) {
 		},
 	}
 
-	status := chain.GetStatus(ratchet.StepPreMortem)
+	status := chain.Status(ratchet.StepPreMortem)
 	if status != ratchet.StatusSkipped {
 		t.Errorf("Status = %q, want skipped", status)
 	}
@@ -389,7 +389,7 @@ func TestRatchetValidate_SkippedPhase(t *testing.T) {
 	}
 
 	// Steps that were never recorded should be pending
-	status = chain.GetStatus(ratchet.StepResearch)
+	status = chain.Status(ratchet.StepResearch)
 	if status != ratchet.StatusPending {
 		t.Errorf("unrecorded step status = %q, want pending", status)
 	}
@@ -494,7 +494,7 @@ func TestRatchetChain_GetAllStatus(t *testing.T) {
 		},
 	}
 
-	allStatus := chain.GetAllStatus()
+	allStatus := chain.AllStatus()
 
 	if allStatus[ratchet.StepResearch] != ratchet.StatusLocked {
 		t.Errorf("research status = %q, want locked", allStatus[ratchet.StepResearch])
