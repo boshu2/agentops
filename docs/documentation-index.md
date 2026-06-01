@@ -21,6 +21,7 @@
 - [Upgrading](UPGRADING.md) — Version-to-version migration notes and breaking changes
 - [AGENTS.md](https://github.com/boshu2/agentops/blob/main/AGENTS.md) — Local agent instructions for this repo
 - [Changelog](CHANGELOG.md) — Release history
+- [Release Notes Archive](releases/README.md) — Per-version release notes + audits (v2.x → v3.x), retained for provenance
 - [Security](SECURITY.md) — Vulnerability reporting
 
 ## Four Product Layers
@@ -59,7 +60,7 @@ Bridge / framing docs:
 
 > **Skills are layer one; the `ao` CLI is layer two.** The `skills/**/SKILL.md` corpus is the source of truth — never edit the installed copies under `~/.claude/skills/`. Roughly half the skills shell out to `ao <cmd>` (the Go CLI); the remainder are pure-prose orchestrators or wrap other CLIs (`bd`, `git`, `gh`, `gemini`, `ntm`). For the verified command-by-command wiring between the two layers, see [CLI ↔ Skills/Hooks Map](cli-skills-map.md); for the routing decision tree, [Skills Reference](SKILLS.md) is canonical.
 
-- [Skills Reference](SKILLS.md) — Complete reference for all AgentOps skills; **canonical source of the skill-router decision tree** (the standalone [Skill Router](SKILL-ROUTER.md) is a derived/condensed view)
+- [Skills Reference](SKILLS.md) — Complete reference for all AgentOps skills; **canonical source of the skill-router decision tree**
 - [Skills Decision Tree](skills-decision-tree.md) — "Which skill do I need next?" — single source of truth linked from harvest, compile, knowledge-activation, and quickstart SKILL.md
 - [CLI ↔ Skills/Hooks Map](cli-skills-map.md) — Verified two-layer wiring (skills↔`ao`↔hooks) with a heaviest-hit-commands ranking
 - [Skill API](SKILL-API.md) — Frontmatter fields, context declarations, enforcement status
@@ -83,16 +84,13 @@ Bridge / framing docs:
 - [Multi-Domain](workflows/multi-domain.md) — Coordinate work spanning multiple domains
 - [Continuous Improvement](workflows/continuous-improvement.md) — Ongoing system optimization and pattern refinement
 - [Infrastructure Deployment](workflows/infrastructure-deployment.md) — Orchestrate deployment with validation gates
-- [Meta-Observer Pattern](workflows/meta-observer-pattern.md) — Autonomous multi-session coordination (near-identical to the canonical [Meta-Observer Pattern Guide](workflows/meta-observer/pattern-guide.md) — prefer the guide)
+- [Meta-Observer Pattern Guide](workflows/meta-observer/pattern-guide.md) — Autonomous multi-session coordination via stigmergic worker coordination
 
 ### Meta-Observer
 
-> **[Pattern Guide](workflows/meta-observer/pattern-guide.md) is the canonical doc** for this pattern. The package overview, example session, and showcase below are overlapping 2025-11-09 historical narrative (and the top-level [Meta-Observer Pattern](workflows/meta-observer-pattern.md) entry is a near-identical copy of the Pattern Guide) — start with the Pattern Guide.
+> **[Pattern Guide](workflows/meta-observer/pattern-guide.md) is the canonical doc** for this pattern. (The earlier top-level duplicate and the 2025-11-09 package narrative — README, example session, showcase — were removed 2026-06-01 as redundant historical content.)
 
 - [Pattern Guide](workflows/meta-observer/pattern-guide.md) — Autonomous multi-session coordination guide (**canonical**)
-- [Meta-Observer README](workflows/meta-observer/README.md) — Complete workflow package overview (historical; see [Pattern Guide](workflows/meta-observer/pattern-guide.md))
-- [Example Session](workflows/meta-observer/example-today.md) — Real example from 2025-11-09 (historical)
-- [Showcase](workflows/meta-observer/SHOWCASE.md) — Distributed intelligence for multi-session work (historical)
 
 ## Concepts
 
@@ -181,8 +179,6 @@ Bridge / framing docs:
 
 - [Activation Profiles](activation-profiles.md) — 3.0 first-value workflow recipes with explicit inputs, commands, artifacts, and fallbacks
 - [Profiles Overview](profiles/README.md) — Role-based profile organization (**canonical** — the current 3-profile model)
-- [Profile Comparison](profiles/COMPARISON.md) — Workspace profiles vs 12-Factor examples (describes an earlier 5-role taxonomy; superseded by the 3-profile model in [Profiles Overview](profiles/README.md))
-- [Meta-Patterns](profiles/META_PATTERNS.md) — Patterns extracted from role-based taxonomy (describes the earlier 5-role taxonomy; see [Profiles Overview](profiles/README.md) for the current model)
 - [Example: Software Dev](profiles/examples/software-dev-session.md) — Software development session
 - [Example: Platform Ops](profiles/examples/platform-ops-session.md) — Platform operations session
 - [Example: Content Creation](profiles/examples/content-creation-session.md) — Content creation session
@@ -244,7 +240,6 @@ Bridge / framing docs:
 - [Releasing](RELEASING.md) — Release process for ao CLI and plugin (**canonical**; the [Release Process Runbook](runbooks/release-process.md) is an olympus-ported step-by-step that overlaps this and [Release E2E Checklist](release-e2e-checklist.md))
 - [Environment Variables](ENV-VARS.md) — All configuration variables with defaults and precedence
 - [Schemas](SCHEMAS.md) — JSON Schemas for manifests, runtime artifacts, and internal runtime contracts
-- [Skill Router](SKILL-ROUTER.md) — Which skill to use for which task (condensed view of the router tree; **[Skills Reference](SKILLS.md) is canonical** — prefer it when the two disagree)
 - [Troubleshooting](troubleshooting.md) — Common issues and quick fixes
 - [Incident Runbook](INCIDENT-RUNBOOK.md) — Operational runbook for incidents and recovery
 - [Autonomy Runtime Cycle-1 Runbook](runbooks/autonomy-runtime-cycle-1.md) — Safe activation/rollback/evidence checks for cycle-1 autonomy runtime work (ported from olympus)

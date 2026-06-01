@@ -36,8 +36,8 @@ Use this when you're not sure which skill to run. For a full flow overview, run
 `/using-agentops`.
 
 > **Canonical router.** This tree is the source of truth for skill routing.
-> `docs/SKILL-ROUTER.md` is a standalone derived copy for quick linking; when the
-> two diverge, this section wins — update here first.
+> This section wins on any divergence — update routing here first. (The former
+> standalone Skill Router page was folded into this tree on 2026-06-01.)
 
 ```text
 What are you trying to do?

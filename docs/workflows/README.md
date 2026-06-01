@@ -30,7 +30,7 @@ tree.
 | Run a retrospective after completing work | [Post-Work Retro](post-work-retro.md) | Low | /retro, /post-mortem |
 | Improve system quality over time | [Continuous Improvement](continuous-improvement.md) | Medium | /retro, /vibe |
 | Manage a session from start to finish | [Session Lifecycle](session-lifecycle.md) | Low | (natural language) |
-| Coordinate N autonomous workers without a leader | [Meta-Observer Pattern](meta-observer-pattern.md) | High | /swarm |
+| Coordinate N autonomous workers without a leader | [Meta-Observer Pattern](meta-observer/pattern-guide.md) | High | /swarm |
 
 ## Workflows
 
@@ -84,7 +84,7 @@ tree.
 **Complexity:** Low (use natural language)
 **Key skills:** Just talk naturally; commands are optional.
 
-### [Meta-Observer Pattern](meta-observer-pattern.md)
+### [Meta-Observer Pattern](meta-observer/pattern-guide.md)
 **When to use:** Coordinating N autonomous workers through shared memory (stigmergy) without central orchestration.
 **Complexity:** High (advanced, multi-session)
 **Key skills:** /swarm

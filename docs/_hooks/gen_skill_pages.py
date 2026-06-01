@@ -229,7 +229,7 @@ def emit_skills_index(skills: list[dict[str, str]]) -> None:
     lines.extend([
         "",
         "!!! tip \"Which skill do I need next?\"",
-        "    See the [Decision Tree](../skills-decision-tree.md) for a visual walkthrough, or [SKILL-ROUTER](../SKILL-ROUTER.md) for rule-based routing.",
+        "    See the [Decision Tree](../skills-decision-tree.md) for a visual walkthrough, or the [Skill Router](../SKILLS.md#skill-router-start-here) for rule-based routing.",
         "",
         "---",
         "",
@@ -277,7 +277,7 @@ def emit_skills_index(skills: list[dict[str, str]]) -> None:
         "- :material-api: **[Skill API](../SKILL-API.md)**",
         "  Frontmatter fields, context declarations, enforcement status.",
         "",
-        "- :material-sitemap: **[Skill Router](../SKILL-ROUTER.md)**",
+        "- :material-sitemap: **[Skill Router](../SKILLS.md#skill-router-start-here)**",
         "  Routing rules: which skill to use for which task.",
         "",
         "</div>",

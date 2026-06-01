@@ -161,7 +161,6 @@ nav:
       - Skills Reference: SKILLS.md
       - Decision Tree: skills-decision-tree.md
       - Skill API: SKILL-API.md
-      - Skill Router: SKILL-ROUTER.md
       - Catalog: skills/catalog.md
   - CLI:
       - cli/index.md
@@ -192,7 +191,7 @@ nav:
       - Multi-Domain: workflows/multi-domain.md
       - Continuous Improvement: workflows/continuous-improvement.md
       - Infrastructure Deployment: workflows/infrastructure-deployment.md
-      - Meta-Observer: workflows/meta-observer-pattern.md
+      - Meta-Observer: workflows/meta-observer/pattern-guide.md
   - Concepts:
       - Philosophy: philosophy.md
       - Assurance Profile: assurance-profile.md

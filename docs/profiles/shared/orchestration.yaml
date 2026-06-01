@@ -86,7 +86,7 @@ artifacts:
 
   # Meta-observation
   meta:
-    - path: .claude/workflows/meta-observer-pattern.md
+    - path: .claude/workflows/meta-observer/pattern-guide.md
       description: Meta-observer for self-improvement
       token_cost: 700
 
