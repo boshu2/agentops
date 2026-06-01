@@ -87,14 +87,77 @@ func collectLearnings(cwd, query string, limit int, globalDir string, globalWeig
 		learnings = appendGlobalLearnings(learnings, globalDir, localPaths, localTitles, localContentHashes, tokens, now)
 	}
 
+	// Team canon: the verification-earned trusted tier (.agents/canon/learnings/).
+	// Appended after global so its entries dedupe against everything already
+	// collected, then boosted at ranking time (see applyCanonLearningWeight) —
+	// canon is earned/trusted knowledge, not penalized like the global mirror.
+	if canonPath := filepath.Join(cwd, canonLearningsDir); dirExists(canonPath) {
+		localPaths, localTitles, localContentHashes := localLearningDedupeSets(files, learnings)
+		learnings = appendCanonLearnings(learnings, canonPath, localPaths, localTitles, localContentHashes, tokens, now)
+	}
+
 	if len(learnings) == 0 {
 		return nil, nil
 	}
 
 	rankLearnings(learnings)
 	applyGlobalLearningWeight(learnings, globalWeight)
+	applyCanonLearningWeight(learnings, canonInjectWeight)
 
 	return limitCollectedLearnings(learnings, limit), nil
+}
+
+// canonLearningsDir is the repo-relative path to the team canon tier, derived
+// from the canon.go constants so the two never drift.
+var canonLearningsDir = filepath.Join(canonDir, canonLearnings)
+
+// canonInjectWeight boosts canon (verification-earned) learnings at ranking
+// time. >1.0 because the team canon is the trusted tier; a local TIL should not
+// outrank knowledge an engineer independently verified.
+const canonInjectWeight = 1.15
+
+// appendCanonLearnings adds team-canon learnings, deduped against everything
+// already collected (path, title, content-hash) exactly like the global tier.
+func appendCanonLearnings(learnings []learning, canonDir string, localPaths, localTitles, localContentHashes map[string]bool, tokens []string, now time.Time) []learning {
+	for _, file := range globLearningFiles(canonDir) {
+		if globalLearningDuplicate(file, localPaths) {
+			continue
+		}
+		l, ok := processLearningFile(file, tokens, now)
+		if !ok {
+			continue
+		}
+		if l.Title != "" && localTitles[strings.ToLower(l.Title)] {
+			continue
+		}
+		contentHash := learningDedupContentHash(l)
+		if contentHash != "" && localContentHashes[contentHash] {
+			continue
+		}
+		if contentHash != "" {
+			localContentHashes[contentHash] = true
+		}
+		l.Canon = true
+		learnings = append(learnings, l)
+	}
+	return learnings
+}
+
+// applyCanonLearningWeight scales the composite score of canon learnings by
+// canonWeight and re-sorts. Unlike the global weight (a <1 penalty), this is a
+// boost (>1): canon is the verification-earned trusted tier.
+func applyCanonLearningWeight(learnings []learning, canonWeight float64) {
+	if canonWeight == 1.0 || canonWeight <= 0 {
+		return
+	}
+	for i := range learnings {
+		if learnings[i].Canon {
+			learnings[i].CompositeScore *= canonWeight
+		}
+	}
+	slices.SortFunc(learnings, func(a, b learning) int {
+		return cmp.Compare(b.CompositeScore, a.CompositeScore)
+	})
 }
 
 func collectLocalLearnings(files []string, tokens []string, now time.Time) []learning {
