@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/boshu2/agentops/cli/internal/background"
 )
 
 // agentCmd is the `ao agent` noun: produce runtime-specific Agent/session
@@ -39,6 +41,9 @@ var (
 	agentNTMSpawnCodex   int
 	agentNTMSpawnDir     string
 	agentNTMSpawnExecute bool
+
+	agentEligibleFile         string
+	agentEligibleEligibleOnly bool
 )
 
 var agentBundleCmd = &cobra.Command{
@@ -79,11 +84,24 @@ assignment, reservations, check-ins, and handoff.`,
 	RunE: runAgentNTMSpawn,
 }
 
+var agentEligibleCmd = &cobra.Command{
+	Use:   "eligible",
+	Short: "Filter ready beads for background-agent eligibility",
+	Long: `Filter candidate beads for safe NTM background-agent execution.
+By default the command reads 'bd ready --limit 0 --json'. Use --file to test
+against a fixture. A candidate must opt in with background-agent-safe /
+background_eligible / managed_eligible label or background_eligible metadata,
+and holdout/evaluator/PII/human/operator-gated work is excluded.`,
+	Args: cobra.NoArgs,
+	RunE: runAgentEligible,
+}
+
 func init() {
 	rootCmd.AddCommand(agentCmd)
 	agentCmd.AddCommand(agentBundleCmd)
 	agentCmd.AddCommand(agentRosterCmd)
 	agentCmd.AddCommand(agentNTMSpawnCmd)
+	agentCmd.AddCommand(agentEligibleCmd)
 	agentBundleCmd.Flags().StringVar(&agentBundleRuntime, "runtime", "", "Target runtime: managed | codex-ntm | claude-ntm (required)")
 	agentBundleCmd.Flags().StringVar(&agentBundleSkills, "skills", "", "Comma-separated skill names (default: session-bootstrap,standards,validation,provenance)")
 	agentBundleCmd.Flags().StringVar(&agentBundleSandbox, "sandbox", "", "Sandbox placement: self-hosted | cloud")
@@ -96,6 +114,9 @@ func init() {
 	agentNTMSpawnCmd.Flags().IntVar(&agentNTMSpawnCodex, "codex", 1, "Number of Codex background agents")
 	agentNTMSpawnCmd.Flags().StringVar(&agentNTMSpawnDir, "dir", ".", "Working directory for the NTM session")
 	agentNTMSpawnCmd.Flags().BoolVar(&agentNTMSpawnExecute, "execute", false, "Execute ntm instead of printing a dry-run command")
+
+	agentEligibleCmd.Flags().StringVar(&agentEligibleFile, "file", "", "Read candidate bead JSON from this file instead of running bd ready")
+	agentEligibleCmd.Flags().BoolVar(&agentEligibleEligibleOnly, "eligible-only", false, "Emit only eligible candidates")
 }
 
 func runAgentBundle(cmd *cobra.Command, _ []string) error {
@@ -192,4 +213,97 @@ func buildNTMSpawnArgs(session string, claudeCount, codexCount int, dir string, 
 		out = append(out, "--dry-run")
 	}
 	return out, nil
+}
+
+func runAgentEligible(cmd *cobra.Command, _ []string) error {
+	cmd.SilenceUsage = true
+	candidates, err := loadBackgroundCandidates(cmd, agentEligibleFile)
+	if err != nil {
+		return err
+	}
+	decisions := background.FilterEligible(candidates)
+	if agentEligibleEligibleOnly {
+		filtered := decisions[:0]
+		for _, d := range decisions {
+			if d.Eligible {
+				filtered = append(filtered, d)
+			}
+		}
+		decisions = filtered
+	}
+	enc := json.NewEncoder(cmd.OutOrStdout())
+	enc.SetIndent("", "  ")
+	return enc.Encode(decisions)
+}
+
+func loadBackgroundCandidates(cmd *cobra.Command, file string) ([]background.Candidate, error) {
+	var raw []byte
+	var err error
+	if strings.TrimSpace(file) != "" {
+		raw, err = os.ReadFile(file)
+		if err != nil {
+			return nil, fmt.Errorf("read candidate file: %w", err)
+		}
+	} else {
+		c := exec.CommandContext(cmd.Context(), "bd", "ready", "--limit", "0", "--json")
+		raw, err = c.Output()
+		if err != nil {
+			return loadBackgroundCandidatesViaSQL(cmd)
+		}
+	}
+	var candidates []background.Candidate
+	if err := json.Unmarshal(raw, &candidates); err != nil {
+		return nil, fmt.Errorf("parse candidate JSON: %w", err)
+	}
+	return candidates, nil
+}
+
+type bdSQLCandidate struct {
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	Priority  int    `json:"priority"`
+	IssueType string `json:"issue_type"`
+	LabelsCSV string `json:"labels_csv"`
+}
+
+func loadBackgroundCandidatesViaSQL(cmd *cobra.Command) ([]background.Candidate, error) {
+	query := "select i.id, i.title, i.priority, i.issue_type, " +
+		"group_concat(l.label) as labels_csv from issues i " +
+		"left join labels l on l.issue_id=i.id " +
+		"where i.status='open' and i.is_blocked=0 " +
+		"group by i.id, i.title, i.priority, i.issue_type"
+	c := exec.CommandContext(cmd.Context(), "bd", "sql", "--json", query)
+	raw, err := c.Output()
+	if err != nil {
+		return nil, fmt.Errorf("bd ready and sql fallback failed: %w", err)
+	}
+	var rows []bdSQLCandidate
+	if err := json.Unmarshal(raw, &rows); err != nil {
+		return nil, fmt.Errorf("parse bd sql candidate JSON: %w", err)
+	}
+	candidates := make([]background.Candidate, 0, len(rows))
+	for _, row := range rows {
+		candidates = append(candidates, background.Candidate{
+			ID:       row.ID,
+			Title:    row.Title,
+			Priority: row.Priority,
+			Type:     row.IssueType,
+			Labels:   splitLabelsCSV(row.LabelsCSV),
+		})
+	}
+	return candidates, nil
+}
+
+func splitLabelsCSV(s string) []string {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
