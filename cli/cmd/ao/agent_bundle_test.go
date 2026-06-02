@@ -217,3 +217,26 @@ func TestBuildAgentRoster_DefaultsToClaudeAndCodexNTM(t *testing.T) {
 		t.Fatalf("missing roster runtime(s): %v", want)
 	}
 }
+
+func TestBuildNTMSpawnArgs_DefaultDryRun(t *testing.T) {
+	args, err := buildNTMSpawnArgs("agentops-bg", 1, 1, "/repo", true)
+	if err != nil {
+		t.Fatalf("build args: %v", err)
+	}
+	want := []string{
+		"--robot-spawn=agentops-bg",
+		"--spawn-cc=1",
+		"--spawn-cod=1",
+		"--spawn-dir=/repo",
+		"--dry-run",
+	}
+	if strings.Join(args, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("args = %v, want %v", args, want)
+	}
+}
+
+func TestBuildNTMSpawnArgs_RequiresAtLeastOneAgent(t *testing.T) {
+	if _, err := buildNTMSpawnArgs("agentops-bg", 0, 0, ".", true); err == nil {
+		t.Fatal("expected error when both agent counts are zero")
+	}
+}
