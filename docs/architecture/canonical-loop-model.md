@@ -15,7 +15,7 @@ AgentOps once had roughly twenty surfaces that read like a loop (evolve, rpi, au
 
 Everything else is a step of the loop, a config source, a runtime adapter, an execution profile, or a read projection. None of them is a peer loop.
 
-AgentOps ships the **Evolve** driver as its product: it runs in a plain session with zero AgentOps-managed daemon. The **Factory** driver is the *substrate's* job — AgentOps deleted its own daemon and delegates out-of-session execution to a substrate (Gas City is the reference). See [3.0.md](../3.0.md) and [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md).
+AgentOps ships the **Evolve** driver as its product: it runs in a plain session with zero AgentOps-managed daemon. The **Factory** driver is the *substrate's* job — AgentOps deleted its own daemon and delegates out-of-session execution to an adopted substrate (reference: NTM + MCP + managed-agents). See [3.0.md](../3.0.md) and [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md).
 
 ## The picture
 
@@ -30,7 +30,7 @@ AUTODEV-CONFIG  (PROGRAM.md / AUTODEV.md + GOALS.md + ADRs)   ← NOT a loop; th
 │     an agent runs the loop                 a SUBSTRATE runs the SAME loop
 │     self-paced, self-tunable,              unattended over the bead queue;
 │     ends with the session                  operator-only stop
-│     SHIPPED by AgentOps                     SUBSTRATE-owned (Gas City reference)
+│     SHIPPED by AgentOps                     SUBSTRATE-owned (NTM / MCP / managed-agents)
 │        │                                          │
 │        └──────────── both run ────────────────────┘
 │                          │
@@ -68,18 +68,18 @@ Context never flows through loop plumbing return values; it flows through the co
 
 ## The DDD seam: what owns the loop versus what orchestrates it
 
-AgentOps owns the in-session loop and the context. An orchestration substrate (Gas City is the reference) owns out-of-session execution. The boundary is sharp:
+AgentOps owns the in-session loop and the context. An orchestration substrate (reference: NTM + MCP + managed-agents) owns out-of-session execution. The boundary is sharp:
 
 | Domain | Owner | Primitives |
 |---|---|---|
-| **Orchestration**: when / where / who-supervises / coordination | **Substrate (Gas City)** | agents (skills via overlay), Orders (cron/event, including evolve cadence), the bead queue, mayor and convoys, human on the loop and merge, runtime providers |
+| **Orchestration**: when / where / who-supervises / coordination | **Substrate (NTM / MCP / managed-agents)** | a tmux agent swarm (NTM), the MCP tool surface (`ao mcp serve`), managed/agent-SDK drivers (`ao agent`), cron/event triggers (including evolve cadence), the bead queue, human on the loop and merge, runtime providers |
 | **The in-session loop + the context**: what the agent does, how context compounds | **AgentOps** | rpi (one invocable unit), evolve (work-selection + N rpi), crank/swarm, the ratchet rules, skills, `ao inject` / `compile` / `maturity`, the `.agents/` corpus |
 
 The governing test: is it about *when, where, who supervises, or coordination*? That is the substrate. Is it about *what the loop does or how context compounds*? That is AgentOps.
 
-By that test: rpi's internal steps, the ratchet, `inject`, and `compile` belong to AgentOps; the agent calls them. Evolve's *cadence*, when run unattended, is a substrate cron Order; evolve's *logic* (which bead next, N cycles toward a goal) stays in AgentOps. The queue, the agents, and the mayor belong to the substrate.
+By that test: rpi's internal steps, the ratchet, `inject`, and `compile` belong to AgentOps; the agent calls them. Evolve's *cadence*, when run unattended, is a substrate cron/trigger; evolve's *logic* (which bead next, N cycles toward a goal) stays in AgentOps. The queue, the agents, and their supervision belong to the substrate.
 
-**The Factory driver is the substrate's job, not an AgentOps-shipped daemon.** AgentOps 3.0 ships no always-on daemon, scheduler, or overnight runner — they were deleted in the rearchitecture. When you want the loop to run unattended over a queue, a substrate drives it. On the reference Gas City City, that dispatch is **mayor-driven** today: a long-lived mayor agent runs `bd ready` then `gc sling`s the next bead to a refinery worker; cron `exec` Orders handle scheduled maintenance. Order-level autonomous dispatch (a cooldown Order binding the next ready bead to a formula on its own) is a known **Gas City maturity gap** — GC Orders have no per-fire var-binding — tracked as an upstream contribution (`soc-5jwah`), not a turnkey AgentOps feature. AgentOps stays zero-dependency in a plain session through the Evolve driver.
+**The Factory driver is the substrate's job, not an AgentOps-shipped daemon.** AgentOps 3.0 ships no always-on daemon, scheduler, or overnight runner — they were deleted in the rearchitecture. When you want the loop to run unattended over a queue, a substrate drives it. On the reference substrate that dispatch is **swarm-driven**: an NTM tmux swarm (or a lead agent) runs `bd ready` then dispatches the next bead to a worker that runs `ao rpi <bead>`; a managed-agent driver (`ao agent`) or cron handles scheduled cadence, and `ao mcp serve` exposes the tool surface across the seam. AgentOps stays zero-dependency in a plain session through the Evolve driver.
 
 **rpi is never re-expressed in the substrate.** Decomposing the rpi tick into substrate-side workflow steps would duplicate the loop shape (re-introducing the surface-sprawl disease across the seam) and pit the substrate's retry machinery against the ratchet (substrate `max_attempts` retry versus fresh-agent-on-failure; substrate per-step agent assignment versus no-self-grade). The substrate dispatches a whole loop as one invocable unit; it never drives the loop's insides.
 

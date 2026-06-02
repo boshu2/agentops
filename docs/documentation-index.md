@@ -23,7 +23,7 @@
 - [Create Your First Skill](create-your-first-skill.md) — Fast path for authoring a first skill without tripping CI
 - [Dependencies](dependencies.md) — Complete tool-dependency declaration (ao, git, bd+Dolt, gc, gh, go, and utilities) with purpose, required-vs-optional, and fallback-if-absent
 - [Upgrading](UPGRADING.md) — Version-to-version migration notes and breaking changes
-- [Migrating to AgentOps 3.0](MIGRATION-3.0.md) — What was removed in 3.0 (hooks, daemon, scheduler, factory) and what to use instead (in-session loop + Gas City substrate)
+- [Migrating to AgentOps 3.0](MIGRATION-3.0.md) — What was removed in 3.0 (hooks, daemon, scheduler, factory) and what to use instead (in-session loop + an adopted substrate: NTM / MCP / managed-agents)
 - [AGENTS.md](https://github.com/boshu2/agentops/blob/main/AGENTS.md) — Local agent instructions for this repo
 - [Changelog](CHANGELOG.md) — Release history
 - [Security](SECURITY.md) — Vulnerability reporting
@@ -56,8 +56,7 @@ Bridge / framing docs:
 - [Ports and Adapters](architecture/ports-and-adapters.md) — Hexagonal seam: inner-hexagon domain, driving/driven adapters, ports, and how to add a new adapter
 - [Hexagon Port-Realness Audit](architecture/hexagon-port-realness-audit.md) — Empirical 2026-05-23 inventory of all 26 declared ports (real vs in-memory vs bypassed), direct-coupling hotspots (git/bd/loop/corpus) with file:line, and the recommended adapter build order for epic soc-zvhsl
 - [Operating Loop](architecture/operating-loop.md) — Operational discipline every process skill executes: BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence (cleanroom companion to ports-and-adapters)
-- [The Canonical Loop Model](architecture/canonical-loop-model.md) — "One loop body, two drivers, one inner tick, one config": how rpi/evolve/factory/crank/swarm/autodev relate; the in-session loop is AgentOps-shipped, the out-of-session Factory driver is substrate-owned (Gas City reference)
-- [GC Posture](architecture/gc-posture.md) — Canonical boundary doc: Gas City is one opt-in, swappable adapter behind AgentOps ports (not the runtime AgentOps runs inside); the never-make-AgentOps-a-managed-city-resource guardrail with its flap rationale; and the "no cloud required" sovereignty promise
+- [The Canonical Loop Model](architecture/canonical-loop-model.md) — "One loop body, two drivers, one inner tick, one config": how rpi/evolve/factory/crank/swarm/autodev relate; the in-session loop is AgentOps-shipped, the out-of-session Factory driver is substrate-owned (reference: NTM / MCP / managed-agents)
 - [Intent-to-Loop Hexagon](architecture/intent-to-loop-hexagon.md) — Process-level ports/adapters from BDD intent through beads, slices, validation, ratchet evidence, and loop steering
 - [Fungibility Charter](architecture/fungibility-charter.md) — AgentOps 3.0's six doctrinal commitments (single-model RPI default, role-free claiming, stateless agents, universal init, automatic death recovery, opt-in specialization); fungible by default, specialized when you opt in
 - [Behavior-Shaping Environment](architecture/behavior-shaping-environment.md) — The *why* beneath the loop: AgentOps as an operant-conditioning system (Antecedent → Behavior → Consequence); arrange the environment + reinforce/stop the behaviors you agree on
