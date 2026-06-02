@@ -9,7 +9,7 @@ func TestBuildProvenanceLinksIncludesEventJobRunAndArtifacts(t *testing.T) {
 		LastEventID: "evt-rpi-1",
 		Artifacts: map[string]string{
 			"summary": ".agents/rpi/runs/run-rpi-1/summary.md",
-			"remote":  "gascity://city/session/artifact",
+			"remote":  "managed://session/artifact",
 		},
 	})
 

@@ -24,7 +24,7 @@ func TestQuarantineWriterWritesRecordWithSessionRefs(t *testing.T) {
 		RequestID: "req-1",
 		Session: SessionRef{
 			WorkerKind: WorkerKind("codex"),
-			Provider:   ProviderGasCity,
+			Provider:   ProviderManaged,
 			JobID:      "wiki.forge:1",
 			AttemptID:  "attempt-1",
 			RequestID:  "req-1",
@@ -67,7 +67,7 @@ func TestValidateQuarantineRecord(t *testing.T) {
 		Attempts:      1,
 		Session: SessionRef{
 			WorkerKind: WorkerKind("codex"),
-			Provider:   ProviderGasCity,
+			Provider:   ProviderManaged,
 			SessionID:  "sess-1",
 		},
 	}
@@ -240,7 +240,7 @@ func TestQuarantineWriterSetsDefaults(t *testing.T) {
 		Attempts:  1,
 		Session: SessionRef{
 			WorkerKind: "codex",
-			Provider:   ProviderGasCity,
+			Provider:   ProviderManaged,
 			SessionID:  "s1",
 		},
 	})

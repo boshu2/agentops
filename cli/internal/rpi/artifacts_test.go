@@ -61,7 +61,7 @@ func TestClassifyRPIArtifact(t *testing.T) {
 		{".agents/rpi/runs/x/phase-1-handoff.json", "phase_handoff", 1},
 		{".agents/rpi/runs/x/phase-3-summary.md", "phase_summary", 3},
 		{".agents/rpi/runs/x/phase-2-evaluator.json", "phase_evaluator", 2},
-		{".agents/rpi/runs/x/phase-2-gascity-evidence.json", "phase_gascity_evidence", 2},
+		{".agents/rpi/runs/x/phase-2-evidence.json", "phase_evidence", 2},
 		{".agents/rpi/plans/foo.md", "plan", 0},
 		{".agents/rpi/research/x.md", "research", 0},
 		{".agents/rpi/council/pre-mortem-x.md", "council_pre_mortem", 0},
@@ -79,9 +79,9 @@ func TestClassifyRPIArtifact(t *testing.T) {
 	}
 }
 
-func TestWriteGasCityPhaseEvidence(t *testing.T) {
+func TestWritePhaseEvidence(t *testing.T) {
 	cwd := t.TempDir()
-	path, err := WriteGasCityPhaseEvidence(cwd, GasCityPhaseEvidence{
+	path, err := WritePhaseEvidence(cwd, PhaseEvidence{
 		RunID:        "run-123",
 		Phase:        2,
 		PhaseName:    "implementation",
@@ -97,12 +97,12 @@ func TestWriteGasCityPhaseEvidence(t *testing.T) {
 		TranscriptID:        "sess-123",
 		TranscriptFormat:    "conversation",
 		TranscriptTurnCount: 2,
-		TranscriptArtifacts: []GasCityTranscriptArtifact{{Path: ".agents/rpi/phase-2-summary.md", Kind: "summary"}},
+		TranscriptArtifacts: []TranscriptArtifact{{Path: ".agents/rpi/phase-2-summary.md", Kind: "summary"}},
 	})
 	if err != nil {
-		t.Fatalf("WriteGasCityPhaseEvidence: %v", err)
+		t.Fatalf("WritePhaseEvidence: %v", err)
 	}
-	wantPath := filepath.Join(cwd, ".agents", "rpi", "runs", "run-123", "phase-2-gascity-evidence.json")
+	wantPath := filepath.Join(cwd, ".agents", "rpi", "runs", "run-123", "phase-2-evidence.json")
 	if path != wantPath {
 		t.Fatalf("path = %q, want %q", path, wantPath)
 	}
@@ -110,7 +110,7 @@ func TestWriteGasCityPhaseEvidence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read evidence: %v", err)
 	}
-	var got GasCityPhaseEvidence
+	var got PhaseEvidence
 	if err := json.Unmarshal(data, &got); err != nil {
 		t.Fatalf("unmarshal evidence: %v", err)
 	}

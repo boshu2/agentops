@@ -16,7 +16,7 @@ import (
 //     hookless model (AgentOps no longer ships read-observing
 //     interception).
 //   - unavailable: the runtime cannot observe agent file reads at all (e.g.
-//     opaque Gas City sessions), so no enforcement claim is made.
+//     opaque out-of-session substrate sessions), so no enforcement claim is made.
 //
 // The cardinal rule: never report an enforcement claim stronger than the
 // substrate can back. Under the hookless model no runtime hard-intercepts
@@ -57,7 +57,7 @@ type domainEnforcementDecision struct {
 // resolveDomainEnforcement decides the enforcement posture for a domain-scoped
 // run. Under the hookless model the decision is honest by construction:
 //
-//   - An opaque runtime (Gas City) is `unavailable`: there is no substrate to
+//   - An opaque runtime (an out-of-session substrate) is `unavailable`: there is no substrate to
 //     observe reads, full stop.
 //   - Any observable runtime is `audited`: AgentOps ships no read-observing
 //     interception substrate, so the fence is checked against visible evidence
