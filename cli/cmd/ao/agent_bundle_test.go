@@ -184,3 +184,36 @@ func TestBuildAgentBundle_ManagedJSONShape(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildAgentRoster_DefaultsToClaudeAndCodexNTM(t *testing.T) {
+	roster, err := buildAgentRoster(bundleOptions{SkillsDir: fixtureSkills(t)})
+	if err != nil {
+		t.Fatalf("build roster: %v", err)
+	}
+	if roster.SchemaVersion != 1 {
+		t.Errorf("SchemaVersion = %d, want 1", roster.SchemaVersion)
+	}
+	if len(roster.Agents) != 2 {
+		t.Fatalf("Agents length = %d, want 2", len(roster.Agents))
+	}
+	want := map[string]string{
+		"claude-ntm": "agentops-claude-ntm-worker",
+		"codex-ntm":  "agentops-codex-ntm-worker",
+	}
+	for _, agent := range roster.Agents {
+		mailbox, ok := want[agent.Runtime]
+		if !ok {
+			t.Fatalf("unexpected runtime in roster: %q", agent.Runtime)
+		}
+		if agent.Mailbox != mailbox {
+			t.Errorf("%s Mailbox = %q, want %q", agent.Runtime, agent.Mailbox, mailbox)
+		}
+		if agent.WorktreePolicy != "one-worktree-per-bead" {
+			t.Errorf("%s WorktreePolicy = %q", agent.Runtime, agent.WorktreePolicy)
+		}
+		delete(want, agent.Runtime)
+	}
+	if len(want) != 0 {
+		t.Fatalf("missing roster runtime(s): %v", want)
+	}
+}

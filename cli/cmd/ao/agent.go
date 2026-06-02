@@ -30,6 +30,8 @@ var (
 	agentBundleSandbox string
 	agentBundleOut     string
 	agentBundleJSON    bool
+
+	agentRosterJSON bool
 )
 
 var agentBundleCmd = &cobra.Command{
@@ -47,14 +49,29 @@ Refuses (non-zero) if any selected skill would inline holdout/eval content.`,
 	RunE: runAgentBundle,
 }
 
+var agentRosterCmd = &cobra.Command{
+	Use:   "roster",
+	Short: "Emit the default NTM background-agent roster",
+	Long: `Emit the default AgentOps background-agent roster: one Claude NTM
+session profile and one Codex NTM session profile. NTM owns pane lifecycle;
+mcp-agent-mail owns assignment, reservations, check-ins, and handoff; workers
+load skills and use ao/MCP tools. This command renders the roster only — it
+does not start or stop live NTM sessions.`,
+	Args: cobra.NoArgs,
+	RunE: runAgentRoster,
+}
+
 func init() {
 	rootCmd.AddCommand(agentCmd)
 	agentCmd.AddCommand(agentBundleCmd)
+	agentCmd.AddCommand(agentRosterCmd)
 	agentBundleCmd.Flags().StringVar(&agentBundleRuntime, "runtime", "", "Target runtime: managed | codex-ntm | claude-ntm (required)")
 	agentBundleCmd.Flags().StringVar(&agentBundleSkills, "skills", "", "Comma-separated skill names (default: session-bootstrap,standards,validation,provenance)")
 	agentBundleCmd.Flags().StringVar(&agentBundleSandbox, "sandbox", "", "Sandbox placement: self-hosted | cloud")
 	agentBundleCmd.Flags().StringVar(&agentBundleOut, "out", "", "Write the bundle to this path instead of stdout")
 	agentBundleCmd.Flags().BoolVar(&agentBundleJSON, "json", false, "Emit machine-readable JSON (always JSON for now; reserved for parity)")
+
+	agentRosterCmd.Flags().BoolVar(&agentRosterJSON, "json", false, "Emit machine-readable JSON")
 }
 
 func runAgentBundle(cmd *cobra.Command, _ []string) error {
@@ -89,5 +106,25 @@ func runAgentBundle(cmd *cobra.Command, _ []string) error {
 		return nil
 	}
 	fmt.Fprintln(cmd.OutOrStdout(), string(raw))
+	return nil
+}
+
+func runAgentRoster(cmd *cobra.Command, _ []string) error {
+	roster, err := buildAgentRoster(bundleOptions{})
+	if err != nil {
+		return err
+	}
+	if agentRosterJSON {
+		raw, err := json.MarshalIndent(roster, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshaling agent roster: %w", err)
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), string(raw))
+		return nil
+	}
+	for _, b := range roster.Agents {
+		fmt.Fprintf(cmd.OutOrStdout(), "%s\tmailbox=%s\tpolicy=%s\tskills=%s\n",
+			b.Runtime, b.Mailbox, b.WorktreePolicy, strings.Join(b.Skills, ","))
+	}
 	return nil
 }

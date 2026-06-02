@@ -57,6 +57,14 @@ type agentBundle struct {
 	Coordination   []string      `json:"coordination,omitempty"`    // reservation/handoff contract
 }
 
+// agentRoster is the render-only list of background sessions AgentOps expects
+// NTM to keep warm. It is deliberately declarative: starting/stopping live tmux
+// panes remains an explicit NTM operation outside this command.
+type agentRoster struct {
+	SchemaVersion int           `json:"schema_version"`
+	Agents        []agentBundle `json:"agents"`
+}
+
 // buildAgentBundle resolves the skill set, enforces the NOT-ZDR holdout
 // refusal, and dispatches to the runtime-specific builder.
 func buildAgentBundle(opts bundleOptions) (agentBundle, error) {
@@ -83,6 +91,29 @@ func buildAgentBundle(opts bundleOptions) (agentBundle, error) {
 		return buildNTMBundle("claude-ntm", skills, "skills/agent-native"), nil
 	}
 	return buildManagedBundle(skills, opts.Sandbox), nil
+}
+
+func buildAgentRoster(opts bundleOptions) (agentRoster, error) {
+	codex, err := buildAgentBundle(bundleOptions{
+		Runtime:   "codex-ntm",
+		Skills:    opts.Skills,
+		SkillsDir: opts.SkillsDir,
+	})
+	if err != nil {
+		return agentRoster{}, err
+	}
+	claude, err := buildAgentBundle(bundleOptions{
+		Runtime:   "claude-ntm",
+		Skills:    opts.Skills,
+		SkillsDir: opts.SkillsDir,
+	})
+	if err != nil {
+		return agentRoster{}, err
+	}
+	return agentRoster{
+		SchemaVersion: 1,
+		Agents:        []agentBundle{claude, codex},
+	}, nil
 }
 
 // buildManagedBundle emits a Managed Agents Agent-definition payload.

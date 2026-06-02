@@ -3825,6 +3825,21 @@ ao agent bundle [flags]
       --skills string    Comma-separated skill names (default: session-bootstrap,standards,validation,provenance)
 ```
 
+#### `ao agent roster`
+
+Emit the default AgentOps background-agent roster: one Claude NTM
+
+```
+ao agent roster [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for roster
+      --json   Emit machine-readable JSON
+```
+
 ---
 
 ### `ao agents`
