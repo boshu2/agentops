@@ -115,7 +115,12 @@ def scan_claude_memory(home: Path, sample_cap: int) -> LayerReport:
     files: list[Path] = []
     for d in mem_dirs:
         files.extend(_iter_files(d))
-    total_bytes = sum((f.stat().st_size for f in files if f.exists()), 0)
+    total_bytes = 0
+    for f in files:
+        try:
+            total_bytes += f.stat().st_size
+        except OSError:
+            continue
     dup_groups, dup_files = _dup_stats(files, sample_cap)
     rep = LayerReport(
         name="claude_memory",
@@ -177,13 +182,17 @@ def scan_ao(home: Path) -> LayerReport:
     return rep
 
 
-def scan_bd() -> LayerReport:
-    """Count canonical bd memories (the migration target)."""
+def scan_bd(home: Path) -> LayerReport:
+    """Count canonical bd memories (the migration target).
+    
+    ``bd`` resolves its memory store relative to CWD, so the scan is run with
+    ``cwd=home`` to inventory the *target* box's store, not the caller's.
+    """
     if shutil.which("bd") is None:
         return LayerReport(name="bd", present=False, notes=["bd CLI not on PATH"])
     try:
         proc = subprocess.run(
-            ["bd", "memories"], capture_output=True, text=True, timeout=60, check=False
+            ["bd", "memories"], capture_output=True, text=True, timeout=60, check=False, cwd=str(home)
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         return LayerReport(name="bd", present=True, notes=[f"bd memories failed: {exc}"])
@@ -207,7 +216,7 @@ def run_scan(home: Path, sample_cap: int) -> dict[str, object]:
         scan_dir_layer("agents_learnings", agents / "learnings", sample_cap),
         scan_ao(home),
         scan_dir_layer("openclaw", home / ".openclaw" / "wiki", sample_cap),
-        scan_bd(),
+        scan_bd(home),
     ]
     total_bytes = sum(layer.bytes for layer in layers)
     return {
