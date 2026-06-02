@@ -144,6 +144,10 @@ def build_manifest(home: Path, sample_cap: int) -> Manifest:
     ao_keep = sum(ao.maturity.get(k, 0) for k in ("established", "candidate", "anti-pattern"))
     ao_drop = ao.maturity.get("provisional", 0)
 
+    # bd: get existing count to correctly estimate post-migration total.
+    bd = audit_scan.scan_bd()
+    bd_existing = bd.file_count
+
     drop_bytes = sum(i.bytes for i in man.drop)
     man.summary = {
         "keep_files": len(man.keep),
@@ -151,7 +155,7 @@ def build_manifest(home: Path, sample_cap: int) -> Manifest:
         "ao_keep_nodes": ao_keep,
         "ao_drop_nodes": ao_drop,
         "est_disk_reclaimed_mib": round(drop_bytes / (1024 * 1024), 1),
-        "est_memories_after": len(man.keep) + ao_keep,
+        "est_memories_after": bd_existing + len(man.keep) + ao_keep,
         "sampled": sample_cap,
         "dry_run": True,
     }
