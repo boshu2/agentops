@@ -64,6 +64,7 @@ Full per-phase contract: [references/PHASES.md](references/PHASES.md).
 Memory data model + type taxonomy: [references/DATA-MODEL.md](references/DATA-MODEL.md).
 Reversibility/rollback contract: [references/ROLLBACK.md](references/ROLLBACK.md).
 Worked examples: [references/EXAMPLES.md](references/EXAMPLES.md).
+Acceptance scenarios: [references/audit.feature](references/audit.feature) (Phase 1) · [references/migrate.feature](references/migrate.feature) (Phase 2).
 
 ## Anti-patterns
 

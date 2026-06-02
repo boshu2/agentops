@@ -58,7 +58,7 @@ def _iter_files(root: Path) -> list[Path]:
 
 
 def _dup_stats(files: list[Path], sample_cap: int) -> tuple[int, int]:
-    """Count duplicate content groups via sha1 of file bytes.
+    """Count duplicate content groups via sha256 of file bytes.
 
     To stay cheap on huge piles, hash at most ``sample_cap`` files; if the pile
     is larger, the result is a lower bound and a note is added by the caller.
@@ -67,8 +67,8 @@ def _dup_stats(files: list[Path], sample_cap: int) -> tuple[int, int]:
     hashes: Counter[str] = Counter()
     for p in files[:sample_cap]:
         try:
-            # sha1 is a content identifier here, not a security primitive.
-            digest = hashlib.sha1(p.read_bytes()).hexdigest()  # noqa: S324
+            # sha256 used purely as a content identifier, not a security primitive.
+            digest = hashlib.sha256(p.read_bytes()).hexdigest()  # content id, not crypto
         except OSError:
             continue
         hashes[digest] += 1
