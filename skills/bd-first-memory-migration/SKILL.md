@@ -1,6 +1,7 @@
 ---
 name: bd-first-memory-migration
-description: 'Consolidate fragmented agent-memory layers into one bd-canonical store, then GC/retire the rest. Use when: "memory migration", "consolidate agent memory", "beads-first memory", "too many memory stores", "clean up ao/.agents pile", or migrating Claude MEMORY.md + ao flywheel + .agents/learnings into bd.'
+description: 'Consolidate fragmented agent-memory layers into one bd-canonical store, then GC/retire the rest. Triggers: "memory migration", "consolidate agent memory", "beads-first memory".'
+skill_api_version: 1
 practices:
 - wiki-knowledge-surface
 - pragmatic-programmer
@@ -10,6 +11,8 @@ consumes:
 produces:
 - migration-report
 - bd-memories
+metadata:
+  tier: knowledge
 ---
 
 # bd-first-memory-migration
