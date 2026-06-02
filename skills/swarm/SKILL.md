@@ -55,25 +55,25 @@ Mayor (this session)
     |
     +-> Identify wave: tasks with no blockers
     |
-    +-> Select spawn backend (gc if available; runtime-native: Claude teams in Claude runtime, Codex sub-agents in Codex runtime; fallback tasks if unavailable)
+    +-> Select spawn backend (NTM background sessions if available; runtime-native Claude/Codex teams; fallback inline)
     |
     +-> Assign: TaskUpdate(taskId, owner="worker-<id>", status="in_progress")
     |
-    +-> Spawn workers via selected backend
-    |       Workers receive pre-assigned task, execute atomically
+    +-> Spawn/resume workers via selected backend
+    |       Workers receive pre-assigned task, reserve files, load skills, execute atomically
     |
     +-> Wait for completion (wait() | SendMessage | TaskOutput)
     |
     +-> Validate: Review changes when complete
     |
-    +-> Cleanup backend resources (close_agent | TeamDelete | none)
+    +-> Cleanup backend resources (NTM stop/detach | close_agent | TeamDelete | none)
     |
     +-> Repeat: New team + new plan if more work needed
 ```
 
 ## Execution
 
-Read [references/execution-steps.md](references/execution-steps.md) when you need the full procedural detail (Steps 0–6): backend detection, gc dispatch, task typing + file manifests, context briefing, manifest auto-population, advisory bead clustering, wave identification, pre-spawn conflict check, test-file naming validation, multi-wave base-SHA refresh, and worker dispatch.
+Read [references/execution-steps.md](references/execution-steps.md) when you need the full procedural detail (Steps 0–6): backend detection, NTM dispatch, mcp-agent-mail reservations, task typing + file manifests, context briefing, manifest auto-population, advisory bead clustering, wave identification, pre-spawn conflict check, test-file naming validation, multi-wave base-SHA refresh, and worker dispatch.
 
 Every TaskCreate **must** include `metadata.issue_type` plus a `metadata.files` array.
 Do not spawn workers with overlapping file manifests into the same shared-worktree wave.
@@ -116,14 +116,15 @@ The lead reviews scope escapes after each wave and creates follow-up tasks as ne
 
 ## Key Points
 
-- **Runtime-native local mode** - Auto-selects the native backend for the current runtime (gc pool, Claude teams, or Codex sub-agents)
+- **NTM-first background mode** - Prefer NTM-supervised Claude/Codex skill sessions when available; mcp-agent-mail coordinates assignments, file reservations, check-ins, and handoff
+- **Runtime-native local mode** - If NTM is unavailable, auto-select the native backend for the current runtime (Claude teams or Codex sub-agents)
 - **Universal orchestration contract** - Same swarm behavior across Claude and Codex sessions
 - **Pre-assigned tasks** - Mayor assigns tasks before spawning; workers never race-claim
 - **Fresh worker contexts** - New sub-agents/teammates per wave preserve Ralph isolation
 - **Wave execution** - Only unblocked tasks spawn
 - **Mayor orchestrates** - You control the flow, workers write results to disk
 - **Thin results** - Workers write `.agents/swarm/results/<id>.json`, orchestrator reads files (NOT Task returns or SendMessage content)
-- **Retry via message/input** - Use `send_input` (Codex) or `SendMessage` (Claude) for coordination only
+- **Retry via message/input** - Use mcp-agent-mail for NTM workers, or `send_input` (Codex) / `SendMessage` (Claude) for runtime-native coordination only
 - **Atomic execution** - Each worker works until task done
 - **Graceful degradation** - If multi-agent unavailable, work executes sequentially in current session
 
@@ -270,7 +271,7 @@ Read [references/troubleshooting.md](references/troubleshooting.md) for full dia
 | Team creation fails | [references/troubleshooting.md](references/troubleshooting.md) |
 | Codex agents unavailable | [references/troubleshooting.md](references/troubleshooting.md) |
 | Workers timeout or hang | [references/troubleshooting.md](references/troubleshooting.md) |
-| gc backend detected but workers unresponsive | [references/troubleshooting.md](references/troubleshooting.md) |
+| NTM backend detected but workers unresponsive | [references/troubleshooting.md](references/troubleshooting.md) |
 | Tasks assigned but workers never spawn | [references/troubleshooting.md](references/troubleshooting.md) |
 
 ## Reference Documents
