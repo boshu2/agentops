@@ -5,26 +5,30 @@ description: 'Consolidate fragmented agent-memory layers into one bd-canonical s
 
 # bd-first-memory-migration (Codex twin)
 
-> Codex-runtime twin of `skills/bd-first-memory-migration`. Make `bd` the single
-> source of truth for agent memory: salvage keepers, derive caches, GC/retire the
-> rest. Three phases, gated between destructive steps.
+Make `bd` the single source of truth for agent memory: salvage the keepers,
+derive the caches, garbage-collect and retire the rest. Three phases, gated
+between destructive steps.
 
 ## Phases
 
-1. **Audit** (read-only) — `scripts/audit_scan.py`, `scripts/classify.py`,
-   `scripts/audit_report.py` inventory every layer and produce the Gate A
-   keep/drop manifest + reversibility plan. ⛔ Gate A before any write.
-2. **Migrate** (writes to bd only) — `scripts/import_memories.py`,
-   `scripts/mem.py` (typed wrapper), `scripts/recall.py` (decay-ranked),
-   `scripts/remember.py` (unified write), `scripts/gen_memory_md.py`.
-3. **GC / Retire** (destructive) — utility scoring, scheduled GC/dedup, retire
-   dead stores, reclaim disk. ⛔ Gate B (rollback test) + ⛔ Gate C (human go/no-go).
+1. **Audit** (read-only) — inventory every memory layer, classify keepers vs
+   junk, and produce the Gate A manifest + reversibility plan. Nothing is
+   written. ⛔ Gate A before any mutation.
+2. **Migrate** (writes to bd only) — import keepers into bd as typed memories
+   with provenance, stand up decay-ranked recall, unify the write path so every
+   runtime routes to bd, and regenerate the thin read-only memory-index cache.
+3. **GC / Retire** (destructive) — utility scoring, scheduled GC + dedup to a
+   cold archive, contradiction/supersede detection, and the hard-retire of dead
+   stores with disk reclaim. ⛔ Gate B (rollback test green) + ⛔ Gate C (human
+   go/no-go on a live box).
 
 ## Guardrails
 
-- Idempotent, reversible, backup-aware; every destructive step has `--dry-run`.
-- **Pace bd/Dolt writes** — bulk salvage unpaced can OOM a memory-capped server.
-- bd-canonical (not br); never hard-delete authored content — archive instead.
+- Idempotent, reversible, backup-aware; every destructive step offers a dry run.
+- Pace bd writes — bulk salvage unpaced can overwhelm a memory-capped server.
+- bd-canonical (not br); authored content is archived, never hard-deleted.
 
-See the Claude source skill (`skills/bd-first-memory-migration/`) for the full
-SKILL.md, DATA-MODEL, ROLLBACK contract, and worked examples.
+## Instructions
+
+Load and follow the skill instructions from the sibling `SKILL.md` file for this skill.
+Then read local files in `references/` when needed.
