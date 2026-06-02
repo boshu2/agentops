@@ -7,7 +7,7 @@ last_reviewed: 2026-05-07
 
 # AgentOps vs Superpowers
 
-> **Superpowers** is a popular coding agent plugin known for disciplined TDD workflows and autonomous operation (29K+ GitHub stars). It now ships via the official Anthropic marketplace (`claude-plugins-official`), and supports Kimi Code CLI, OpenClaw, and Mistral Vibe. The plugin is a lightweight shim that auto-updates skills on session start; skills live in a dedicated repo (obra/superpowers-skills).
+> **Superpowers** is a popular coding agent plugin known for disciplined TDD workflows and autonomous operation (29K+ GitHub stars). It now ships via the official Anthropic marketplace (`claude-plugins-official`), and supports Kimi Code CLI and Mistral Vibe. The plugin is a lightweight shim that auto-updates skills on session start; skills live in a dedicated repo (obra/superpowers-skills).
 >
 > *Comparison updated 2026-05-07. See [Superpowers repo](https://github.com/obra/superpowers) for current features.*
 

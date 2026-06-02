@@ -61,7 +61,6 @@ The Bun/TypeScript CLI converts the Claude Code plugin to 10 other formats:
 | Gemini CLI | Skills from agents, commands as .toml |
 | GitHub Copilot | .agent.md with Copilot frontmatter |
 | Kiro | JSON configs + prompt .md |
-| OpenClaw | TypeScript skill file |
 | Windsurf | Global or workspace scope |
 | Qwen Code | Agents as .yaml |
 

@@ -47,7 +47,7 @@ This is the cleanest framing: a marketplace and a context library are complement
 
 **Validation grading rigor.** The 100-point CCPI grading rubric is a public scoring system applied per-skill. That is a real artifact: a published, comparable score across thousands of skills. AgentOps does not grade skills on a 100-point scale; its quality posture is multi-model council consensus and validation gates run *on the agent's output*, not on the skill definition itself. Different surface, different rigor.
 
-**Package management.** CCPI is a dedicated package manager for skills. AgentOps installs via the Claude Code, Codex, OpenClaw, and Cursor native marketplaces plus a `curl | bash` script — there is no AgentOps-specific package manager because AgentOps treats the runtime's marketplace as the distribution layer.
+**Package management.** CCPI is a dedicated package manager for skills. AgentOps installs via the Claude Code, Codex, and Cursor native marketplaces plus a `curl | bash` script — there is no AgentOps-specific package manager because AgentOps treats the runtime's marketplace as the distribution layer.
 
 ---
 

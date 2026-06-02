@@ -106,7 +106,7 @@ for tool surfaces, file locations, and execution model — is real engineering
 work. If you genuinely live across multiple harnesses and value the same
 skill being available the same way in each one, that is a concrete win
 AgentOps does not directly compete with. AgentOps ships skills for four
-runtimes (Claude Code, Codex, OpenClaw, Cursor) but does not market its
+runtimes (Claude Code, Codex, Cursor) but does not market its
 parity-maintenance pipeline as the headline feature; the headline is the
 corpus that the skills produce.
 
