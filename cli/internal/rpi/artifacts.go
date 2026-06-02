@@ -159,7 +159,7 @@ func ClassifyRPIArtifact(rel, phasedStateFile, c2EventsFileName string) (kind, l
 		return "phase_summary", fmt.Sprintf("Phase %d summary", phase), phase
 	case strings.Contains(base, "-evaluator.json"):
 		return "phase_evaluator", fmt.Sprintf("Phase %d evaluator", phase), phase
-	case strings.Contains(base, "-evidence.json"):
+	case strings.HasPrefix(base, "phase-") && strings.HasSuffix(base, "-evidence.json"):
 		return "phase_evidence", fmt.Sprintf("Phase %d evidence", phase), phase
 	case strings.Contains(rel, "/plans/"):
 		return "plan", "Plan", 0
