@@ -3825,6 +3825,22 @@ ao agent bundle [flags]
       --skills string    Comma-separated skill names (default: session-bootstrap,standards,validation,provenance)
 ```
 
+#### `ao agent eligible`
+
+Filter candidate beads for safe NTM background-agent execution.
+
+```
+ao agent eligible [flags]
+```
+
+**Flags:**
+
+```
+      --eligible-only   Emit only eligible candidates
+      --file string     Read candidate bead JSON from this file instead of running bd ready
+  -h, --help            help for eligible
+```
+
 #### `ao agent ntm-spawn`
 
 Render the NTM command that starts an AgentOps background-agent

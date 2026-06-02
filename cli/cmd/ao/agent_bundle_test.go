@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 // fixtureSkills writes a minimal skills/ tree: the default set as clean stubs
@@ -239,4 +242,89 @@ func TestBuildNTMSpawnArgs_RequiresAtLeastOneAgent(t *testing.T) {
 	if _, err := buildNTMSpawnArgs("agentops-bg", 0, 0, ".", true); err == nil {
 		t.Fatal("expected error when both agent counts are zero")
 	}
+}
+
+func TestRunAgentEligible_FileFiltersCandidates(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "ready.json")
+	raw := `[
+  {"id":"ag-ok","title":"ok","labels":["background-agent-safe"]},
+  {"id":"ag-holdout","title":"no","labels":["background-agent-safe","holdout"]},
+  {"id":"ag-missing","title":"missing","labels":["docs"]}
+]`
+	if err := os.WriteFile(path, []byte(raw), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	prevFile, prevOnly := agentEligibleFile, agentEligibleEligibleOnly
+	t.Cleanup(func() {
+		agentEligibleFile = prevFile
+		agentEligibleEligibleOnly = prevOnly
+	})
+	agentEligibleFile = path
+	agentEligibleEligibleOnly = false
+
+	cmd, out := agentTestCmd()
+	if err := runAgentEligible(cmd, nil); err != nil {
+		t.Fatalf("eligible: %v", err)
+	}
+	var decisions []struct {
+		Eligible  bool     `json:"eligible"`
+		Reasons   []string `json:"reasons"`
+		Candidate struct {
+			ID string `json:"id"`
+		} `json:"candidate"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &decisions); err != nil {
+		t.Fatalf("parse decisions: %v\n%s", err, out.String())
+	}
+	if len(decisions) != 3 {
+		t.Fatalf("len = %d, want 3", len(decisions))
+	}
+	if !decisions[0].Eligible || decisions[1].Eligible || decisions[2].Eligible {
+		t.Fatalf("decisions = %+v, want only first eligible", decisions)
+	}
+}
+
+func TestRunAgentEligible_EligibleOnly(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "ready.json")
+	raw := `[{"id":"ag-ok","labels":["background-agent-safe"]},{"id":"ag-no","labels":["human"]}]`
+	if err := os.WriteFile(path, []byte(raw), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	prevFile, prevOnly := agentEligibleFile, agentEligibleEligibleOnly
+	t.Cleanup(func() {
+		agentEligibleFile = prevFile
+		agentEligibleEligibleOnly = prevOnly
+	})
+	agentEligibleFile = path
+	agentEligibleEligibleOnly = true
+
+	cmd, out := agentTestCmd()
+	if err := runAgentEligible(cmd, nil); err != nil {
+		t.Fatalf("eligible: %v", err)
+	}
+	if strings.Contains(out.String(), "ag-no") {
+		t.Fatalf("eligible-only output contains ineligible bead: %s", out.String())
+	}
+	if !strings.Contains(out.String(), "ag-ok") {
+		t.Fatalf("eligible-only output missing eligible bead: %s", out.String())
+	}
+}
+
+func TestSplitLabelsCSV(t *testing.T) {
+	got := splitLabelsCSV("alpha, beta,,gamma ")
+	want := []string{"alpha", "beta", "gamma"}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("splitCSV = %v, want %v", got, want)
+	}
+	if got := splitLabelsCSV(""); len(got) != 0 {
+		t.Fatalf("empty splitCSV = %v, want empty", got)
+	}
+}
+
+func agentTestCmd() (*cobra.Command, *bytes.Buffer) {
+	var out bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	return cmd, &out
 }
