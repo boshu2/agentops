@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-02T12:40:24Z",
-  "skill_count": 80,
+  "generated_at": "2026-06-02T19:41:20Z",
+  "skill_count": 81,
   "skills": [
     {
       "name": "agent-native",
@@ -67,6 +67,26 @@
       ],
       "references_count": 0,
       "codex_override_present": true
+    },
+    {
+      "name": "bd-first-memory-migration",
+      "description": "Consolidate fragmented agent-memory layers into one bd-canonical store, then GC/retire the rest. Triggers: \"memory migration\", \"consolidate agent memory\", \"beads-first memory\".",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "repo-context"
+      ],
+      "produces": [
+        "migration-report",
+        "bd-memories"
+      ],
+      "practices": [
+        "wiki-knowledge-surface",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 4,
+      "codex_override_present": false
     },
     {
       "name": "beads",
