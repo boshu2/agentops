@@ -154,8 +154,8 @@ foundation. Future work must not collapse the two: a phase-executor mode
 is *not* a phase-executor mode.
 
 > **`gc` is NOT a selectable tier.** The Gas City (`gc`) CLI bridge was removed
-> (soc-2rtm0); `runtime=gc` is rejected by the CLI. Any `gc`-based dispatch
-> prose in the swarm/crank references is historical and is never selected.
+> in the 3.0 GC teardown; `runtime=gc` is rejected by the CLI. The reference
+> out-of-session substrate is now NTM + MCP + managed-agents, not Gas City.
 
 ## Paired schemas
 

@@ -142,35 +142,44 @@ Status classification is registry-first:
 
 Stale reasons include `worktree missing` when state references a removed worktree directory.
 
-## GasCity Session Correlation
+## Provider Session Correlation (Historical)
 
-Daemon-backed RPI runs that use GasCity must persist the provider correlation
-fields as soon as they are known:
+> **Note:** This section describes the historical GasCity session correlation
+> fields. GasCity was removed in the 3.0 GC teardown; the reference out-of-session
+> substrate is now NTM + MCP + managed-agents. The correlation pattern below may
+> apply to future managed-agents integration.
+
+Substrate-backed RPI runs that use a session provider must persist the provider
+correlation fields as soon as they are known:
 
 | Field | Required When | Description |
 |-------|---------------|-------------|
-| `request_id` | every GasCity API response that provides `X-GC-Request-Id` | Correlates AgentOps registry state with GasCity server logs |
-| `city_name` | a GasCity city is selected | Runtime city that owns the session |
-| `session_id` | GasCity returns a session identity | Provider session ID used for polling, transcript fetch, cancellation, and event matching |
+| `request_id` | every provider API response that provides a request ID header | Correlates AgentOps registry state with provider server logs |
+| `session_id` | provider returns a session identity | Provider session ID used for polling, transcript fetch, cancellation, and event matching |
 | `session_alias` | AgentOps creates a friendly alias | Stable human-readable phase/session alias when available |
-| `event_cursor` | event stream/list APIs are consumed | Last consumed GasCity cursor for replay after reconnect |
+| `event_cursor` | event stream/list APIs are consumed | Last consumed cursor for replay after reconnect |
 
 These fields are projections of daemon ledger events when RPI runs in daemon
 mode. Foreground legacy runs may still write them directly into the registry.
 
-## Lost Session Semantics
+## Lost Session Semantics (Historical)
 
-Missing GasCity session state is never success by itself. A lost session is a
+> **Note:** This section describes historical GasCity session semantics. GasCity
+> was removed in the 3.0 GC teardown; the reference out-of-session substrate is
+> now NTM + MCP + managed-agents. The principles below may apply to future
+> managed-agents integration.
+
+Missing provider session state is never success by itself. A lost session is a
 failure/degraded state with evidence, not a successful phase.
 
 RPI must use these terminal or degraded statuses:
 
 | Status | Meaning | Retry/Recovery |
 |--------|---------|----------------|
-| `lost` | AgentOps accepted or observed a `session_id`, but GasCity later cannot find it and no terminal event/result exists | fail the phase with evidence and preserve request/session IDs |
-| `provider_unreachable` | GasCity supervisor, city, or provider readiness cannot be reached before terminal state is known | mark degraded/fail depending on phase policy; retry only when policy allows |
+| `lost` | AgentOps accepted or observed a `session_id`, but the provider later cannot find it and no terminal event/result exists | fail the phase with evidence and preserve request/session IDs |
+| `provider_unreachable` | provider cannot be reached before terminal state is known | mark degraded/fail depending on phase policy; retry only when policy allows |
 | `event_stream_unavailable` | SSE/list replay is unavailable but REST status is still reachable | reconcile through REST before deciding terminal state |
-| `terminal_without_transcript` | GasCity reports terminal state but transcript/result evidence cannot be fetched | preserve terminal state and mark evidence degraded |
+| `terminal_without_transcript` | provider reports terminal state but transcript/result evidence cannot be fetched | preserve terminal state and mark evidence degraded |
 
 Precedence rules:
 
@@ -181,7 +190,7 @@ Precedence rules:
    absent.
 4. `provider_unreachable` wins over optimistic local status when readiness is
    unknown.
-5. Legacy tmux or foreground liveness never upgrades a missing GasCity session
+5. Legacy tmux or foreground liveness never upgrades a missing provider session
    to success.
 
 ## Stale Cleanup Workflow

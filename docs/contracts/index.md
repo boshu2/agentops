@@ -30,7 +30,7 @@ skills, the runtime, and external integrations.
     ---
 
     Product-neutral RemoteTarget, RemoteSession, command ledger, recovery, and
-    GasCity-first remote execution contract.
+    substrate-agnostic remote execution contract.
 
 -   :material-clipboard-pulse: **[Eval Environment](eval-environment.md)**
 

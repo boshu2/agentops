@@ -303,7 +303,7 @@ If you see an error for a command that is documented as planned, it does not exi
 
 | Check | What it verifies | How to fix |
 |-------|-----------------|------------|
-| **CLI Dependencies** | `gt` and `bd` are on your PATH (nice-to-have for multi-repo ops + beads issue tracking). | Install missing tools (e.g., `brew install gastown`, `brew install beads`). |
+| **CLI Dependencies** | `ntm` and `bd` are on your PATH (nice-to-have for multi-agent swarm ops + beads issue tracking). | Install missing tools (NTM for swarm coordination, beads for issue tracking). |
 | **Knowledge Freshness** | At least one recent session exists under `.agents/ao/sessions/`. | After a session, run `ao forge transcript <path>` to ingest it. |
 | **Search Index** | A non-empty `.agents/ao/index.jsonl` exists for faster repo-local searches. | Run `ao store rebuild`. |
 | **Flywheel Health** | At least one learning exists under `.agents/ao/learnings/` (or legacy `.agents/learnings/`). | Run `/retro` or `/forge` to extract learnings; empty is normal early on. |

@@ -7,8 +7,8 @@ Companion spec: `docs/contracts/jobspec-openapi-v0.yaml` (removed with the daemo
 > **Superseded.** This RFC proposed a conformance contract for the standalone
 > `agentopsd` daemon. The daemon, its job queue, and this companion spec were
 > *deleted* in the 3.0 in-session-only rearchitecture. AgentOps runs the loop in
-> session; out-of-session orchestration is delegated to a substrate (Gas City is
-> the reference). Kept as a historical decision record only.
+> session; out-of-session orchestration is delegated to a substrate (NTM + MCP +
+> managed-agents is the reference). Kept as a historical decision record only.
 
 ## Decision Ask
 

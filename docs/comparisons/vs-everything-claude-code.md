@@ -30,7 +30,7 @@ last_reviewed: 2026-05-07
 | **Inventory** | 182 skills, 48 subagents | 73 skills + your accumulated corpus |
 | **Persistence** | In-session | Cross-session via `.agents/` corpus |
 | **Discipline mechanism** | DRY parity tooling | Multi-model councils + RPI phase contracts |
-| **Off-API surface** | None (in-session only) | In-session loop runs off-vendor on your hardware; out-of-session dispatch via the Gas City reference City |
+| **Off-API surface** | None (in-session only) | In-session loop runs off-vendor on your hardware; out-of-session dispatch via the reference substrate (NTM + MCP + managed-agents) |
 | **Open source** | Yes | Yes (forever) |
 
 The two products optimize for different axes. everything-claude-code optimizes
@@ -139,8 +139,9 @@ orthogonal to (and does not depend on) cross-harness parity.
 **Off-API, off-vendor operation on your hardware.** The whole loop —
 dream / evolve / compile / defrag / forge — runs in session against your
 subscription, off any vendor's API. To run it unattended, dispatch it on the
-Gas City reference City (a mayor agent slings beads to refinery workers that
-run `ao rpi`); AgentOps ships no daemon or scheduler of its own (see
+reference substrate (an NTM tmux swarm that runs `ao rpi` per bead, MCP
+coordination via `ao mcp serve`, or managed-agents via `ao agent`); AgentOps
+ships no daemon or scheduler of its own (see
 [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)). The corpus
 compounds while you sleep. everything-claude-code is in-session by design with
 no off-vendor out-of-session story.
