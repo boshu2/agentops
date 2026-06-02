@@ -27,6 +27,11 @@ dispositions:
     hexagonal_role: driven-adapter
     disposition:    update
     rationale:      "Tracker adapter is core; add BDD/slice acceptance self-test"
+  - skill:          bd-first-memory-migration
+    domain:         "BC1 Corpus"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "New: consolidate fragmented memory layers onto bd-canonical store"
   - skill:          bootstrap
     domain:         "BC4 Factory"
     hexagonal_role: driving-adapter

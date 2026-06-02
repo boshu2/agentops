@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (71)
+### User-Facing Skills (72)
 
 **Judgment:**
 
@@ -302,6 +302,7 @@ These are how skills chain in practice:
 | **status** | session | Single-screen dashboard |
 | **quickstart** | session | Interactive onboarding |
 | **dream** | session | Private overnight operator surface — setup, bedtime run, and morning report |
+| **bd-first-memory-migration** | knowledge | Consolidate fragmented memory layers onto a bd-canonical store |
 | **bootstrap** | session | One-command full AgentOps setup — fills gaps only |
 | **session-bootstrap** | session | Universal init prompt — every agent runs this first (soc-vuu6.25) |
 
