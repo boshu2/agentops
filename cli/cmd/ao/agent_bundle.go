@@ -16,13 +16,14 @@ var defaultBundleSkills = []string{"session-bootstrap", "standards", "validation
 const defaultAgentModel = "claude-opus-4-8"
 
 // holdoutMarkers are substrings whose presence in a selected skill's body means
-// bundling it to a (non-ZDR) cloud agent would leak the locked eval substrate.
-// Managed Agents are NOT ZDR — see ~/.agents/evals/SCHEMA.md (LOCKED).
+// bundling it to any background/cloud profile would leak the locked eval
+// substrate. Hosted Managed Agents are NOT ZDR, and local NTM background
+// sessions should also avoid inlining holdout payloads into reusable profiles.
 var holdoutMarkers = []string{"private_holdout", "ground_truth", "holdout target"}
 
 // bundleOptions is the resolved input to buildAgentBundle.
 type bundleOptions struct {
-	Runtime   string   // "managed" | "codex-ntm"
+	Runtime   string   // "managed" | "codex-ntm" | "claude-ntm"
 	Skills    []string // nil => defaultBundleSkills
 	Sandbox   string   // "self-hosted" | "cloud" | ""
 	SkillsDir string   // root to resolve+scan skills (default: "skills")
@@ -43,21 +44,24 @@ type sandboxBlock struct {
 
 // agentBundle is the runtime-specific Agent definition emitted by `ao agent bundle`.
 type agentBundle struct {
-	Runtime      string        `json:"runtime"`
-	Model        string        `json:"model,omitempty"`
-	Instructions string        `json:"instructions"`
-	Skills       []string      `json:"skills"`
-	Tools        []bundleTool  `json:"tools,omitempty"`
-	Sandbox      *sandboxBlock `json:"sandbox,omitempty"`
-	Bootstrap    string        `json:"bootstrap,omitempty"` // codex-ntm pane snippet
-	Reference    string        `json:"reference,omitempty"` // codex-ntm skill reference
+	Runtime        string        `json:"runtime"`
+	Model          string        `json:"model,omitempty"`
+	Instructions   string        `json:"instructions"`
+	Skills         []string      `json:"skills"`
+	Tools          []bundleTool  `json:"tools,omitempty"`
+	Sandbox        *sandboxBlock `json:"sandbox,omitempty"`
+	Bootstrap      string        `json:"bootstrap,omitempty"`       // NTM pane/session snippet
+	Reference      string        `json:"reference,omitempty"`       // runtime skill reference
+	Mailbox        string        `json:"mailbox,omitempty"`         // mcp-agent-mail identity
+	WorktreePolicy string        `json:"worktree_policy,omitempty"` // isolation contract
+	Coordination   []string      `json:"coordination,omitempty"`    // reservation/handoff contract
 }
 
 // buildAgentBundle resolves the skill set, enforces the NOT-ZDR holdout
 // refusal, and dispatches to the runtime-specific builder.
 func buildAgentBundle(opts bundleOptions) (agentBundle, error) {
-	if opts.Runtime != "managed" && opts.Runtime != "codex-ntm" {
-		return agentBundle{}, fmt.Errorf("unknown --runtime %q (want managed|codex-ntm)", opts.Runtime)
+	if opts.Runtime != "managed" && opts.Runtime != "codex-ntm" && opts.Runtime != "claude-ntm" {
+		return agentBundle{}, fmt.Errorf("unknown --runtime %q (want managed|codex-ntm|claude-ntm)", opts.Runtime)
 	}
 	skills := opts.Skills
 	if len(skills) == 0 {
@@ -69,11 +73,14 @@ func buildAgentBundle(opts bundleOptions) (agentBundle, error) {
 	}
 	if leak, why := selectionInlinesHoldout(skills, skillsDir); leak {
 		return agentBundle{}, fmt.Errorf(
-			"refusing to bundle %s — Managed Agents are NOT ZDR; %s would inline holdout/eval content (the eval substrate is LOCKED). "+
-				"AGENTOPS_HOLDOUT_EVALUATOR does not authorize leaking holdout data to a cloud agent", opts.Runtime, why)
+			"refusing to bundle %s — %s would inline holdout/eval content (the eval substrate is LOCKED). "+
+				"AGENTOPS_HOLDOUT_EVALUATOR does not authorize leaking holdout data into a reusable agent profile", opts.Runtime, why)
 	}
 	if opts.Runtime == "codex-ntm" {
-		return buildCodexNTMBundle(skills), nil
+		return buildNTMBundle("codex-ntm", skills, "skills-codex/agent-native"), nil
+	}
+	if opts.Runtime == "claude-ntm" {
+		return buildNTMBundle("claude-ntm", skills, "skills/agent-native"), nil
 	}
 	return buildManagedBundle(skills, opts.Sandbox), nil
 }
@@ -100,14 +107,24 @@ func buildManagedBundle(skills []string, sandbox string) agentBundle {
 	return b
 }
 
-// buildCodexNTMBundle emits an NTM-consumable bundle (Codex shells ao directly).
-func buildCodexNTMBundle(skills []string) agentBundle {
+// buildNTMBundle emits an NTM-consumable background-session profile. NTM owns
+// pane lifecycle; mcp-agent-mail owns assignment, reservations, and handoff;
+// the Claude/Codex worker runs a skill-guided session with ao support commands.
+func buildNTMBundle(runtime string, skills []string, reference string) agentBundle {
 	return agentBundle{
-		Runtime:      "codex-ntm",
-		Instructions: stitchInstructions(skills),
-		Skills:       skills,
-		Bootstrap:    "ao session bootstrap && ao inject --query \"$BEAD\"",
-		Reference:    "skills-codex/agent-native",
+		Runtime:        runtime,
+		Instructions:   stitchInstructions(skills),
+		Skills:         skills,
+		Bootstrap:      "ao session bootstrap && ao inject --query \"$BEAD\"",
+		Reference:      reference,
+		Mailbox:        "agentops-" + runtime + "-worker",
+		WorktreePolicy: "one-worktree-per-bead",
+		Coordination: []string{
+			"mcp-agent-mail: fetch assignment thread before work",
+			"mcp-agent-mail: reserve file paths before edits",
+			"bd: claim/update/close the bead with evidence",
+			"git: commit and push from the assigned worktree",
+		},
 	}
 }
 

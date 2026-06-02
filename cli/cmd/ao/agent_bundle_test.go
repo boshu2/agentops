@@ -97,9 +97,40 @@ func TestBuildAgentBundle_CodexNTM(t *testing.T) {
 	if b.Reference != "skills-codex/agent-native" {
 		t.Errorf("Reference = %q, want skills-codex/agent-native", b.Reference)
 	}
+	if b.Mailbox != "agentops-codex-ntm-worker" {
+		t.Errorf("Mailbox = %q, want agentops-codex-ntm-worker", b.Mailbox)
+	}
+	if b.WorktreePolicy != "one-worktree-per-bead" {
+		t.Errorf("WorktreePolicy = %q, want one-worktree-per-bead", b.WorktreePolicy)
+	}
+	if !agentBundleContainsString(b.Coordination, "mcp-agent-mail: reserve file paths before edits") {
+		t.Errorf("Coordination missing file reservation contract: %v", b.Coordination)
+	}
 	// codex shells ao directly — no MCP descriptor needed.
 	if len(b.Tools) != 0 {
 		t.Errorf("codex-ntm must not carry MCP tool descriptors, got %d", len(b.Tools))
+	}
+}
+
+func TestBuildAgentBundle_ClaudeNTM(t *testing.T) {
+	b, err := buildAgentBundle(bundleOptions{Runtime: "claude-ntm", SkillsDir: fixtureSkills(t)})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if b.Runtime != "claude-ntm" {
+		t.Errorf("Runtime = %q, want claude-ntm", b.Runtime)
+	}
+	if b.Reference != "skills/agent-native" {
+		t.Errorf("Reference = %q, want skills/agent-native", b.Reference)
+	}
+	if b.Mailbox != "agentops-claude-ntm-worker" {
+		t.Errorf("Mailbox = %q, want agentops-claude-ntm-worker", b.Mailbox)
+	}
+	if !strings.Contains(b.Bootstrap, "ao session bootstrap") {
+		t.Errorf("claude-ntm Bootstrap must run `ao session bootstrap`, got %q", b.Bootstrap)
+	}
+	if len(b.Tools) != 0 {
+		t.Errorf("claude-ntm must not carry hosted MCP tool descriptors, got %d", len(b.Tools))
 	}
 }
 
@@ -123,6 +154,15 @@ func TestBuildAgentBundle_UnknownRuntime(t *testing.T) {
 	if err == nil {
 		t.Fatal("unknown --runtime must error")
 	}
+}
+
+func agentBundleContainsString(values []string, want string) bool {
+	for _, v := range values {
+		if v == want {
+			return true
+		}
+	}
+	return false
 }
 
 func TestBuildAgentBundle_ManagedJSONShape(t *testing.T) {
