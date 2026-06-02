@@ -134,6 +134,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/llm-wiki` | External reading wiki proposal — raw sources to compiled wiki |
 | `/harvest` | Cross-rig knowledge consolidation — sweep, dedup, promote to global hub |
 | `/knowledge-activation` | Operationalize a mature `.agents` corpus into beliefs, playbooks, briefings, and gap surfaces |
+| `/bd-first-memory-migration` | Consolidate fragmented agent-memory layers onto a bd-canonical store, then GC/retire the rest |
 | `/brainstorm` | Structured idea exploration before planning |
 | `/discovery` | Full discovery phase orchestrator (brainstorm → search → research → plan → pre-mortem) |
 | `/plan` | Epic decomposition into issues |
