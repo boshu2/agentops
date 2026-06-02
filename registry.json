@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-02T19:41:20Z",
+  "generated_at": "2026-06-02T21:11:02Z",
   "summary": {
     "skills": 81,
     "hooks": 0,
@@ -381,6 +381,14 @@
         "reference_count": 22
       },
       {
+        "name": "bd-first-memory-migration",
+        "tier": "knowledge",
+        "path": "skills/bd-first-memory-migration/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 4
+      },
+      {
         "name": "compile",
         "tier": "knowledge",
         "path": "skills/compile/",
@@ -645,14 +653,6 @@
         "reference_count": 0
       },
       {
-        "name": "bd-first-memory-migration",
-        "tier": "unknown",
-        "path": "skills/bd-first-memory-migration/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 4
-      },
-      {
         "name": "system-tuning",
         "tier": "utility",
         "path": "skills/system-tuning/",
@@ -778,6 +778,7 @@
         "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
         "bounded_context": "",
         "driven_by_skills": [
+          "domain",
           "shared",
           "using-agentops"
         ]
@@ -1601,7 +1602,7 @@
       "type": "skill",
       "bounded_context": "BC1",
       "hex_role": "driving-adapter",
-      "tier": "unknown",
+      "tier": "knowledge",
       "purpose": "Consolidate fragmented agent-memory layers into one bd-canonical store, then GC/retire the rest. Triggers: \"memory migration\", \"consolidate agent memory\", \"beads-first memory\".",
       "status": "active",
       "disposition": "keep",
@@ -1995,10 +1996,12 @@
         "stdout"
       ],
       "drives_commands": [
+        "ao agent",
         "ao compile",
         "ao eval run",
         "ao inject",
         "ao maturity",
+        "ao mcp serve",
         "ao rpi",
         "ao rpi phased"
       ],
@@ -3392,6 +3395,7 @@
       "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
       "status": "active",
       "driven_by_skills": [
+        "domain",
         "shared",
         "using-agentops"
       ],
