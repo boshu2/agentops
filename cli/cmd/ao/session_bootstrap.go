@@ -217,15 +217,26 @@ func sessionBootstrapReadyBeads(ctx context.Context, cwd string) (int, bool) {
 	return len(issues), true
 }
 
-// sessionBootstrapMailUnread is a soft probe for mcp-agent-mail. The current
-// implementation returns (0, false) — wiring to the MCP transport lives in a
-// follow-up bead so this primitive can ship now. The schema field stays
-// nullable so callers handle both states.
-func sessionBootstrapMailUnread(_ context.Context) (int, bool) {
+// sessionBootstrapMailUnread is a soft probe for mcp-agent-mail. Agent Mail is
+// an MCP server, not a shell CLI, so the local bootstrap probe only checks the
+// user service that makes the MCP tools available. When active, unread count is
+// reported as zero until the MCP transport exposes a count query through this
+// command; absence remains null/fail-open per the v1 schema.
+func sessionBootstrapMailUnread(ctx context.Context) (int, bool) {
 	if os.Getenv("MCP_AGENT_MAIL_DISABLED") == "1" {
 		return 0, false
 	}
-	return 0, false
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	out, err := exec.CommandContext(ctx, "systemctl", "--user", "is-active", "mcp-agent-mail.service").Output()
+	if err != nil {
+		return 0, false
+	}
+	if strings.TrimSpace(string(out)) != "active" {
+		return 0, false
+	}
+	return 0, true
 }
 
 // printBootstrapSummary writes the 1-line human form. Used when neither
