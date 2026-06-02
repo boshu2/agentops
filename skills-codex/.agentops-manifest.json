@@ -685,8 +685,8 @@
     {
       "name": "bd-first-memory-migration",
       "source_skill": "skills/bd-first-memory-migration",
-      "source_hash": "d0d4609ff859f7287ac692c894575952cd66702efe695afefd5197a32e27b5b6",
-      "generated_hash": "706219549a90ddff6202f69a25866ab3bf4d66fd96aa43dabb29f29c71d6ebcd"
+      "source_hash": "d197166e0417115a76b42832203817a9b36f3b1b388d2d353f3658a99ed89a85",
+      "generated_hash": "4a5b627ca9df88b99a74178c414e5a65f85c83b0576aa213bb500315958104fe"
     },
     {
       "name": "beads",
@@ -1123,7 +1123,7 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "bc0d61f7fa8ce5a9d53ab77948fa7dffd3fe3ba970cd4edfb32f0240662cd930",
+      "source_hash": "f9ed647dd29a9a0d7b4fb3af1644f6619ebb833bb237dcca66437ad175b3285c",
       "generated_hash": "93c23a804e321d4dbdf86a31fe7d2165632d159b426395c5040f0a1fdb84fe0c"
     },
     {
