@@ -67,6 +67,22 @@ def test_rank_does_not_exceed_budget_for_oversized_first_item() -> None:
     assert mem.rank([oversized], NOW, max_tokens=2) == []
 
 
+def test_rank_skips_oversized_items_and_keeps_scanning_budget() -> None:
+    oversized = mem.Memory(
+        "feedback:huge",
+        mem.MemHeader(type="feedback", created_at=NOW.isoformat(), access_count=10),
+        "one two three four five six seven eight nine ten",
+    )
+    small = mem.Memory(
+        "fact:small",
+        mem.MemHeader(type="fact", created_at="2026-01-01T00:00:00+00:00"),
+        "tiny",
+    )
+    assert [m.key for m in mem.rank([oversized, small], NOW, max_tokens=2)] == [
+        "fact:small"
+    ]
+
+
 def test_episodic_decays_faster_than_feedback() -> None:
     ts = (NOW - timedelta(days=30)).isoformat()
     epi = mem.Memory("episodic:x", mem.MemHeader(type="episodic", created_at=ts))
@@ -224,3 +240,18 @@ def test_parse_listing_keeps_markdown_headings_in_body() -> None:
     parsed = mem.parse_listing(listing)
     assert [m.key for m in parsed] == ["fact:a", "feedback:b"]
     assert parsed[0].text == "intro\n### Background\nbody"
+
+
+def test_parse_listing_keeps_legacy_untyped_keys() -> None:
+    listing = "\n".join(
+        [
+            "### my-insight",
+            "a legacy plain memory with no header",
+            "### fact:a",
+            mem.render(mem.MemHeader(type="fact"), "typed"),
+        ]
+    )
+    parsed = mem.parse_listing(listing)
+    assert [m.key for m in parsed] == ["my-insight", "fact:a"]
+    assert parsed[0].header.type == "fact"
+    assert parsed[0].text == "a legacy plain memory with no header"

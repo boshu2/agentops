@@ -39,8 +39,10 @@ TYPE_WEIGHT: dict[str, float] = {
 
 _HEADER_OPEN = "<!--mem"
 _HEADER_CLOSE = "-->"
+_TYPED_KEY_PATTERN = rf"(?:{'|'.join(re.escape(t) for t in VALID_TYPES)}):\S+"
+_LEGACY_KEY_PATTERN = r"[a-z0-9]+(?:(?::|[._/-])[a-z0-9]+)+"
 _LISTING_HEADING_RE = re.compile(
-    rf"^### (?:{'|'.join(re.escape(t) for t in VALID_TYPES)}):\S+\s*$"
+    rf"^### (?:{_TYPED_KEY_PATTERN}|{_LEGACY_KEY_PATTERN})\s*$"
 )
 
 
@@ -175,7 +177,7 @@ def rank(memories: list[Memory], now: datetime, max_tokens: int | None = None) -
     for m in ordered:
         cost = _estimate_tokens(m.text)
         if spent + cost > max_tokens:
-            break
+            continue
         out.append(m)
         spent += cost
     return out
