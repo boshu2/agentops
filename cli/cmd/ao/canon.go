@@ -102,6 +102,7 @@ func init() {
 	canonVerifyCmd.Flags().String("method", "manual", "how it was checked: manual|ao-verify|council|cross-model")
 	canonVerifyCmd.Flags().String("receipt", "", "evidence you independently gathered (gate log, file:line, hash)")
 	canonVerifyCmd.Flags().String("as", "", "acting actor override (\"Name\" or \"Name <email>\"); else AGENTOPS_ACTOR / git")
+	canonVerifyCmd.Flags().Bool("council", false, "obtain the verdict from an independent cross-vendor judge (cmd: AGENTOPS_CANON_VERIFIER_CMD) instead of asserting it")
 	_ = canonVerifyCmd.MarkFlagRequired("path")
 	canonCmd.AddCommand(canonVerifyCmd)
 
@@ -142,11 +143,17 @@ func runCanonVerify(cmd *cobra.Command, args []string) error {
 	receipt, _ := cmd.Flags().GetString("receipt")
 	verdictStr, _ := cmd.Flags().GetString("verdict")
 	as, _ := cmd.Flags().GetString("as")
+	council, _ := cmd.Flags().GetBool("council")
+	_, vl := canonLedgers(cwd)
+
+	if council {
+		return runCanonCouncilVerify(cmd, args[0], path, vl)
+	}
+
 	verdict := canon.Verdict(verdictStr)
 	if verdict != canon.VerdictConfirmed && verdict != canon.VerdictRefuted {
 		return fmt.Errorf("invalid --verdict %q: want confirmed|refuted", verdictStr)
 	}
-	_, vl := canonLedgers(cwd)
 
 	by, src := canon.ResolveIdentity(as)
 	v, err := vl.Record(args[0], path, method, receipt, verdict, by, time.Now())
@@ -160,6 +167,50 @@ func runCanonVerify(cmd *cobra.Command, args []string) error {
 		fmt.Fprintln(cmd.OutOrStdout(), "  note: no --receipt recorded; this is a weak (unreceipted) verification")
 	}
 	return nil
+}
+
+// runCanonCouncilVerify obtains the verdict from an independent cross-vendor
+// judge instead of an operator assertion. The verdict is attributed to the
+// judge (not whoever ran the command), so it counts toward promotion even when
+// the operator authored the learning — independence by construction.
+func runCanonCouncilVerify(cmd *cobra.Command, entryID, path string, vl *canon.VerificationLedger) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read learning %s: %w", path, err)
+	}
+	judgeName := os.Getenv("AGENTOPS_CANON_JUDGE")
+	if judgeName == "" {
+		judgeName = "codex" // the cross-vendor lane in this fleet
+	}
+	verifier := canon.CommandVerifier{
+		Command: os.Getenv("AGENTOPS_CANON_VERIFIER_CMD"),
+		JudgeID: canon.Identity{Name: judgeName},
+	}
+	verdict, judge, evidence, err := verifier.Judge(canon.Claim{EntryID: entryID, Path: path, Content: string(content)})
+	if err != nil {
+		return fmt.Errorf("council verify: %w", err)
+	}
+
+	v, err := vl.Record(entryID, path, "council", truncateReceipt(evidence, 4000), verdict, judge, time.Now())
+	if err != nil {
+		return fmt.Errorf("record verification: %w", err)
+	}
+
+	if GetOutput() == "json" {
+		return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string]any{
+			"kind": "verify", "method": "council", "entry_id": entryID,
+			"verdict": verdict, "judge": judge, "self": v.Self,
+		})
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "recorded council verify(%s) for %s by judge %s [independent cross-vendor]\n", verdict, entryID, judge.Name)
+	return nil
+}
+
+func truncateReceipt(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max] + "\n…[truncated]"
 }
 
 func emitCanonAttestation(w io.Writer, kind, entryID string, by canon.Identity, src canon.IdentitySource, self bool) error {
