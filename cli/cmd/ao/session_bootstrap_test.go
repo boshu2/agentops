@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -82,6 +83,36 @@ func TestSessionBootstrap_NoMailFlagSkipsProbe(t *testing.T) {
 	got := computeBootstrapStatus(context.Background(), dir, true)
 	if got.MailUnreadCount != nil {
 		t.Fatalf("MailUnreadCount: want nil with noMail=true, got %v", *got.MailUnreadCount)
+	}
+}
+
+func TestSessionBootstrap_MailProbeReportsActiveService(t *testing.T) {
+	dir := t.TempDir()
+	writeFakeExecutable(t, dir, "systemctl", "#!/usr/bin/env bash\nprintf 'active\\n'\n")
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("MCP_AGENT_MAIL_DISABLED", "")
+
+	got, ok := sessionBootstrapMailUnread(context.Background())
+	if !ok {
+		t.Fatal("mail probe should report available when service is active")
+	}
+	if got != 0 {
+		t.Fatalf("mail unread = %d, want 0 placeholder until MCP count is wired", got)
+	}
+}
+
+func TestSessionBootstrap_MailProbeDisabled(t *testing.T) {
+	t.Setenv("MCP_AGENT_MAIL_DISABLED", "1")
+	if _, ok := sessionBootstrapMailUnread(context.Background()); ok {
+		t.Fatal("mail probe should be disabled by MCP_AGENT_MAIL_DISABLED=1")
+	}
+}
+
+func writeFakeExecutable(t *testing.T, dir, name, body string) {
+	t.Helper()
+	path := filepath.Join(dir, name)
+	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
+		t.Fatalf("write fake executable %s: %v", name, err)
 	}
 }
 
