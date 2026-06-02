@@ -273,7 +273,7 @@ Bridge / framing docs:
 - [BC Ports Inventory](contracts/bc-ports-inventory.md) — Roster of all **14 BC ports** (BC1 Corpus 4 + BC2 Validation 3 + BC3 Loop 2 + BC4 Factory 2 incl. FactoryAdmissionPort + ClaimEvidencePort + BC5 Runtime 1) with per-port adapter contracts (verified port → concrete `cli/cmd/ao` adapter file), the universal triplet construction pattern, and per-BC wire-up order. 14/14 adapters delivered as of cycle 142. **The authoritative ports catalog**, surfaced in [ARCHITECTURE → Hexagonal Ports & Adapters](ARCHITECTURE.md#hexagonal-ports-adapters) and [architecture/index.md](architecture/index.md#ports-adapters-hexagonal)
 - [Daemon Idempotency Contract](contracts/daemon-idempotency.md) — Submit retry contract defining `idempotency_key` as the dedup key and `request_id` as trace-only
 - [AgentOps Daemon Scheduling Contract](contracts/agentopsd-schedule.md) — `.agents/schedule.yaml` schema, cron syntax, backpressure, mutation auth, ledger event vocabulary, executor idempotency, and migration recipe for native daemon scheduling
-- [JobSpec OpenAPI v0](contracts/jobspec-openapi-v0.yaml) — Machine-readable current-behavior OpenAPI contract for `agentopsd` job submission, queue state, ledger replay, projections, and OpenClaw consumer routes
+- [JobSpec OpenAPI v0](contracts/jobspec-openapi-v0.yaml) — Machine-readable current-behavior OpenAPI contract for `agentopsd` job submission, queue state, ledger replay, projections, and consumer routes
 - [GasCity Integration Contract](contracts/gascity-integration.md) — Narrow handwritten GasCity adapter, fake/live split, compatibility matrix, and API/SSE expectations
 - [Remote Compute Contract](contracts/remote-compute.md) — Product-neutral RemoteTarget, RemoteSession, command ledger, recovery, and GasCity-first remote execution contract
 - [AgentWorker Runtime Contract](contracts/agent-worker.md) — Generic headless Codex/Claude worker and AgentSession lifecycle contract for daemon jobs
@@ -281,7 +281,7 @@ Bridge / framing docs:
 - [`ao watch` Contract](contracts/ao-watch.md) — Live worker-event stream spec for `ao watch --follow`; off-API analog of Anthropic Managed Agents Console trace
 - [Rubric Schema](https://github.com/boshu2/agentops/blob/main/schemas/rubric.v1.schema.json) — JSON Schema for `ao outcomes run` rubric files
 - [Worker Spec Schema](https://github.com/boshu2/agentops/blob/main/schemas/worker-spec.v1.schema.json) — JSON Schema for per-worker model/tool/prompt isolation specs
-- [OpenClaw Consumer API Contract](contracts/openclaw-consumer-api.md) — Read-only consumer snapshot API and authorized local trigger contract
+- [Consumer API Contract](contracts/consumer-api.md) — Read-only consumer snapshot API and authorized local trigger contract
 - [Repo Execution Profile Schema](contracts/repo-execution-profile.schema.json) — Machine-readable schema for repo execution profiles (backs [Repo Execution Profile](contracts/repo-execution-profile.md); validates the [example instance](contracts/repo-execution-profile.json))
 - [RPI Run Registry](contracts/rpi-run-registry.md) — RPI run registry specification
 - [Eval Environment Contract](contracts/eval-environment.md) — Evaluation suite, run, scorecard, baseline, canary, and holdout contract

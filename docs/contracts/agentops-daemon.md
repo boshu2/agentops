@@ -19,14 +19,14 @@ The daemon owns:
 - a local HTTP API for health, readiness, status, events, and authorized
   mutations
 - projection files derived from the ledger for existing readers such as the RPI
-  registry, Dream reports, wiki outputs, and OpenClaw snapshots
+  registry, Dream reports, wiki outputs, and consumer snapshots
 - local trust enforcement for all mutation endpoints
 
 The daemon does not own:
 
 - the source `.agents` knowledge corpus as an opaque database
 - GasCity internals or session provider internals
-- OpenClaw UI state
+- consumer UI state
 - direct source-code edits outside explicit AgentOps jobs
 - legacy one-shot CLI fallbacks until the migration contract retires them
 
@@ -50,7 +50,7 @@ Derived projections:
 - RPI run registry status
 - Dream daemon-mode run summaries
 - wiki/forge job summaries
-- OpenClaw consumer snapshots
+- consumer snapshots
 - status/watch read models
 
 Any implementation that writes a projection must be able to rebuild that
@@ -173,7 +173,7 @@ Initial job families:
   RPI handoff. Admission artifacts are daemon-owned under
   `.agents/daemon/factory/runs/<run-id>/`; a blocked admission completes as a
   control-plane stop, not as an implementation failure.
-- OpenClaw-safe trigger jobs
+- consumer-safe trigger jobs
 - `plans.projection` — read-side bd-subscription job that rebuilds the plans
   manifest projection from the shared bushido Dolt source. Read-only HTTP
   surface: `GET /v1/plans/manifest` and `GET /v1/plans/diff?since=<cursor>`.
@@ -319,8 +319,8 @@ Trust rules:
 - keep read-only health/status routes separate from mutation routes
 - surface degraded reasons instead of silently falling back
 
-`local trust` is part of the contract because OpenClaw and future local tools
-will consume the daemon without owning `.agents` directly.
+`local trust` is part of the contract because the consumer and future local
+tools will consume the daemon without owning `.agents` directly.
 
 ## Local HTTP Threat Model
 
@@ -333,7 +333,7 @@ caller is safe. The primary local HTTP risks are:
 - leaked or world-readable mutation tokens under `.agents/daemon`
 - mutation routes accepting paths or methods outside the explicit daemon job
   scope
-- confused consumers such as OpenClaw attempting to write `.agents` directly
+- confused consumers attempting to write `.agents` directly
   instead of enqueueing daemon-owned jobs
 
 The required controls are:
@@ -396,9 +396,9 @@ GasCity is the preferred session and event substrate for headless workers. The
 daemon consumes GasCity through the AgentOps GasCity adapter; it must not import
 GasCity internal packages.
 
-OpenClaw is a consumer of daemon-owned projections. It may read snapshots and
-call authorized trigger endpoints, but it does not mutate `.agents` directly and
-does not own daemon storage.
+The consumer client is a consumer of daemon-owned projections. It may read
+snapshots and call authorized trigger endpoints, but it does not mutate
+`.agents` directly and does not own daemon storage.
 
 Claude and Codex worker sessions are represented through the future
 `AgentWorker` / `AgentSession` contract. Wiki/forge is the first consumer of
@@ -415,13 +415,13 @@ Migration phases:
 2. daemon can run in foreground and report ready
 3. RPI and Dream can submit daemon jobs when ready
 4. wiki/forge can use daemon-owned worker jobs
-5. OpenClaw can consume snapshots and safe triggers
+5. the consumer can consume snapshots and safe triggers
 6. doctor, docs, compatibility matrix, and proof gates decide default changes
 
 ## Non-Goals
 
 - replacing GasCity
-- embedding OpenClaw
+- embedding the consumer client
 - requiring a live external service for normal tests
 - routing daemon wiki/forge through Gemma/Ollama except explicit legacy mode
 - promising launchd/systemd install before foreground daemon readiness works

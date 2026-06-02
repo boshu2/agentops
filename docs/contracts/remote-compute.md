@@ -129,7 +129,7 @@ ledger events and provider replay.
 | `.agents/remote/targets.json` | Optional local target registry for CLI use. |
 | `.agents/daemon/ledger.jsonl` | Durable job, session, command, and projection facts for daemon-owned work. |
 | GasCity API/SSE | Provider source of truth for provider session status, events, transcripts, and artifacts. |
-| OpenClaw | Read-only projection consumer; it does not own remote session mutation. |
+| The consumer client | Read-only projection consumer; it does not own remote session mutation. |
 
 Foreground `ao compute` commands may write local command/session proof records,
 but daemon-submitted work must not report accepted or running until the daemon

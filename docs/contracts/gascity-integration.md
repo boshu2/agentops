@@ -74,8 +74,8 @@ state into "GasCity works" or "GasCity missing".
 | no-GasCity | no `gc` binary, no API endpoint | foreground non-GasCity commands continue; `ao doctor` reports a non-required GasCity warning; fake-server CI still runs | claiming headless Codex/Claude worker readiness |
 | CLI fallback | compatible `gc` binary and `gc status --json`, API/SSE unavailable | legacy bridge commands may run where explicitly selected; diagnostics must say fallback is active | treating CLI polling as equivalent to API/SSE replay |
 | API/SSE | GasCity readiness endpoints, mutation headers, sessions, transcripts, event list, and SSE stream | preferred path for RPI phase execution, daemon jobs, AgentWorker sessions, event replay, lost-session classification | importing GasCity `internal/` packages or skipping `X-GC-Request` |
-| daemon mode | API/SSE plus `agentopsd` readiness and daemon mutation token | daemon owns accepted RPI, Dream, wiki/forge, and OpenClaw-triggered jobs; session IDs and cursors are persisted through the ledger | returning accepted daemon work before durable ledger append |
-| OpenClaw consumer | daemon OpenClaw read endpoints and authorized trigger endpoint | OpenClaw reads projections and asks AgentOps to enqueue work through mutation gates | direct `.agents` writes from OpenClaw |
+| daemon mode | API/SSE plus `agentopsd` readiness and daemon mutation token | daemon owns accepted RPI, Dream, wiki/forge, and consumer-triggered jobs; session IDs and cursors are persisted through the ledger | returning accepted daemon work before durable ledger append |
+| consumer client | daemon consumer read endpoints and authorized trigger endpoint | the consumer reads projections and asks AgentOps to enqueue work through mutation gates | direct `.agents` writes from the consumer |
 
 Normal CI covers no-GasCity, CLI fallback, API/SSE, and daemon mode through
 fixtures. Live GasCity checks remain opt-in with `AGENTOPS_LIVE_GASCITY=1`.

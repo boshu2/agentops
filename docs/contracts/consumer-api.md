@@ -1,7 +1,7 @@
-# OpenClaw Consumer API Contract
+# Consumer API Contract
 
-OpenClaw is a consumer of AgentOps daemon projections. It does not own `.agents`
-storage and must not mutate `.agents` directly.
+The consumer client is a consumer of AgentOps daemon projections. It does not
+own `.agents` storage and must not mutate `.agents` directly.
 
 ## Ownership Boundary
 
@@ -13,13 +13,13 @@ AgentOps owns:
 - read-only resources
 - mutation gates for safe trigger endpoints
 
-OpenClaw owns:
+The consumer owns:
 
 - UI presentation
 - user interaction state outside `.agents`
 - client-side caching
 
-OpenClaw may read AgentOps projections and may call authorized trigger
+The consumer may read AgentOps projections and may call authorized trigger
 endpoints. All trigger endpoints enqueue daemon jobs through the ledger-backed
 mutation path.
 
@@ -89,14 +89,14 @@ Golden fixture: `cli/internal/openclaw/testdata/consumer_snapshot_v1.json`.
 ## Product Proof
 
 `ao daemon soak --scenario fake-executor --require-terminal --json` is the
-repeatable local proof that OpenClaw can consume terminal daemon state. The soak
+repeatable local proof that the consumer can consume terminal daemon state. The soak
 writes its scenario, filtered ledger events, JSON report, and markdown summary
 under `.agents/daemon/soaks/<run-id>/`; the report includes both daemon queue
 jobs and the matching `/openclaw/v1/jobs` resources.
 
 ## Mutation Gate
 
-OpenClaw-safe trigger endpoints are optional and must be gated:
+Consumer-safe trigger endpoints are optional and must be gated:
 
 - daemon must be ready
 - local trust token/header must pass
@@ -108,7 +108,7 @@ Unauthorized mutation must have no enqueue side effect.
 
 ## Non-Ownership Of `.agents`
 
-OpenClaw must not write:
+The consumer must not write:
 
 - `.agents/daemon`
 - `.agents/rpi`
@@ -116,5 +116,5 @@ OpenClaw must not write:
 - `.agents/wiki`
 - `.agents/findings`
 
-If OpenClaw needs to request work, it calls a mutation endpoint and lets
+If the consumer needs to request work, it calls a mutation endpoint and lets
 AgentOps own the resulting ledger event, job, and projections.

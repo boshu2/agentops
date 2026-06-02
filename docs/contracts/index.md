@@ -95,7 +95,7 @@ skills, the runtime, and external integrations.
     ---
 
     Machine-readable OpenAPI contract for the current `agentopsd` job,
-    readiness, ledger replay, projection, and OpenClaw consumer HTTP surface.
+    readiness, ledger replay, projection, and consumer HTTP surface.
 
 -   :material-api: **[GasCity Integration](gascity-integration.md)**
 
@@ -118,12 +118,12 @@ skills, the runtime, and external integrations.
     Headless Claude/Codex worker session lifecycle contract consumed by
     wiki/forge and future daemon jobs.
 
--   :material-application-braces-outline: **[OpenClaw Consumer API](openclaw-consumer-api.md)**
+-   :material-application-braces-outline: **[Consumer API](consumer-api.md)**
 
     ---
 
     Read-only projection resources, snapshot versions, mutation gates, and
-    `.agents` non-ownership rules for OpenClaw clients.
+    `.agents` non-ownership rules for consumer clients.
 
 -   :material-clipboard-pulse: **[Eval Environment](eval-environment.md)**
 

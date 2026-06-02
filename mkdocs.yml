@@ -252,7 +252,7 @@ nav:
       - AgentOps Daemon: contracts/agentops-daemon.md
       - GasCity Integration: contracts/gascity-integration.md
       - AgentWorker Runtime: contracts/agent-worker.md
-      - OpenClaw Consumer API: contracts/openclaw-consumer-api.md
+      - Consumer API: contracts/consumer-api.md
       - Dream Run: contracts/dream-run-contract.md
       - Dream Report: contracts/dream-report.md
       - Swarm Evidence: contracts/swarm-evidence.md

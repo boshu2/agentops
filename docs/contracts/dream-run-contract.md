@@ -59,7 +59,7 @@ Required flags for `setup`:
 Required surfaces for `curator`:
 
 - `status --json` reports configured local curator state, Ollama health, model availability, worker queue depth, status.json content, and Tier 2 runner discovery.
-- `diagnose` explains missing worker directories, missing vaults, wrong Ollama endpoint, absent models, stale worker PID when detectable, and unsupported OpenClaw/Morai bridge state.
+- `diagnose` explains missing worker directories, missing vaults, wrong Ollama endpoint, absent models, stale worker PID when detectable, and unsupported consumer/Morai bridge state.
 - `enqueue --kind <lint-wiki|dream-seed|ingest-claude-session>` writes only allowlisted knowledge jobs into the configured worker queue.
 - `compact --dry-run|--apply` wraps the existing pending-log compaction contract.
 - `event` writes a bounded needs-review event record with source, severity, desired action, escalation target, and event budget.
@@ -254,8 +254,8 @@ are absent.
 
 The local curator is separate from Dream Council. Gemma can draft, lint, seed,
 compact audit logs, and emit needs-review events. Tier 2 runners such as Codex
-and Claude can review or synthesize those events. OpenClaw/Morai must remain
-unsupported on Windows until a real bridge command such as `openclaw` or
+and Claude can review or synthesize those events. The consumer/Morai bridge must
+remain unsupported on Windows until a real bridge command such as `openclaw` or
 `oc-ask` is discoverable from the AgentOps runtime.
 
 No trigger mesh may be unbounded. Every escalation record needs source, severity,
