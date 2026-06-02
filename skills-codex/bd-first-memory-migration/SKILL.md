@@ -11,12 +11,11 @@ description: 'Consolidate fragmented agent-memory layers into one bd-canonical s
 
 ## Phases
 
-1. **Audit** (read-only) — `scripts/audit_scan.py`, `scripts/classify.py`,
-   `scripts/audit_report.py` inventory every layer and produce the Gate A
+1. **Audit** (read-only) — use the source skill's audit scan, classify, and
+   audit report helpers to inventory every layer and produce the Gate A
    keep/drop manifest + reversibility plan. ⛔ Gate A before any write.
-2. **Migrate** (writes to bd only) — `scripts/import_memories.py`,
-   `scripts/mem.py` (typed wrapper), `scripts/recall.py` (decay-ranked),
-   `scripts/remember.py` (unified write), `scripts/gen_memory_md.py`.
+2. **Migrate** (writes to bd only) — use the source skill's import, typed memory,
+   decay-ranked recall, unified remember, and generated MEMORY.md helpers.
 3. **GC / Retire** (destructive) — utility scoring, scheduled GC/dedup, retire
    dead stores, reclaim disk. ⛔ Gate B (rollback test) + ⛔ Gate C (human go/no-go).
 
@@ -26,5 +25,5 @@ description: 'Consolidate fragmented agent-memory layers into one bd-canonical s
 - **Pace bd/Dolt writes** — bulk salvage unpaced can OOM a memory-capped server.
 - bd-canonical (not br); never hard-delete authored content — archive instead.
 
-See the Claude source skill (`skills/bd-first-memory-migration/`) for the full
-SKILL.md, DATA-MODEL, ROLLBACK contract, and worked examples.
+See the canonical source skill (`skills/bd-first-memory-migration/`) for the
+full SKILL.md, DATA-MODEL, ROLLBACK contract, and worked examples.

@@ -26,6 +26,8 @@ var (
 	provListJSON     bool
 	provListFromID   string
 	provListRelation string
+
+	provVerifyJSON bool
 )
 
 var provenanceCmd = &cobra.Command{
@@ -77,10 +79,26 @@ Examples:
 	RunE: runProvenanceList,
 }
 
+var provenanceVerifyCmd = &cobra.Command{
+	Use:   "verify",
+	Short: "Verify the provenance ledger hash chain",
+	Long: `Read docs/provenance/ledger.jsonl and verify every record is
+schema-valid, linked to the prior record via prev_hash, and carries the
+expected payload_hash/hash values. A missing or empty ledger is valid and
+reports zero records.
+
+Examples:
+  ao provenance verify
+  ao provenance verify --json`,
+	Args: cobra.NoArgs,
+	RunE: runProvenanceVerify,
+}
+
 func init() {
 	rootCmd.AddCommand(provenanceCmd)
 	provenanceCmd.AddCommand(provenanceAddCmd)
 	provenanceCmd.AddCommand(provenanceListCmd)
+	provenanceCmd.AddCommand(provenanceVerifyCmd)
 
 	provenanceAddCmd.Flags().StringVar(&provAddRelation, "relation", "", "Typed PROV-O relation (required), e.g. wasGeneratedBy")
 	provenanceAddCmd.Flags().StringVar(&provAddFromType, "from-type", "decision", "Source node type (decision|artifact|bead|...)")
@@ -93,6 +111,8 @@ func init() {
 	provenanceListCmd.Flags().BoolVar(&provListJSON, "json", false, "Emit machine-readable JSON")
 	provenanceListCmd.Flags().StringVar(&provListFromID, "from-id", "", "Filter to edges whose from_id matches")
 	provenanceListCmd.Flags().StringVar(&provListRelation, "relation", "", "Filter to edges with this relation")
+
+	provenanceVerifyCmd.Flags().BoolVar(&provVerifyJSON, "json", false, "Emit machine-readable JSON")
 }
 
 // resolveLedgerPath locates docs/provenance/ledger.jsonl relative to the
@@ -193,6 +213,44 @@ func runProvenanceList(cmd *cobra.Command, _ []string) error {
 	for _, e := range filtered {
 		fmt.Fprintf(out, "%s --%s--> %s [%s] %s\n",
 			e.FromID, e.Relation, e.ToID, e.TrustTier, shortHash(e.Hash))
+	}
+	return nil
+}
+
+type provenanceVerifyReport struct {
+	OK      bool   `json:"ok"`
+	Records int    `json:"records"`
+	Index   int    `json:"index,omitempty"`
+	Error   string `json:"error,omitempty"`
+}
+
+func runProvenanceVerify(cmd *cobra.Command, _ []string) error {
+	cmd.SilenceUsage = true
+	store := provenancegraph.NewStore(resolveLedgerPath())
+	edges, err := store.Read()
+	if err != nil {
+		return fmt.Errorf("read provenance ledger: %w", err)
+	}
+	idx, verifyErr := provenancegraph.VerifyChain(edges)
+	report := provenanceVerifyReport{OK: verifyErr == nil, Records: len(edges), Index: idx}
+	if verifyErr != nil {
+		report.Error = verifyErr.Error()
+	}
+
+	out := cmd.OutOrStdout()
+	if provVerifyJSON {
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(report); err != nil {
+			return fmt.Errorf("encode verify report: %w", err)
+		}
+	} else if verifyErr == nil {
+		fmt.Fprintf(out, "provenance ledger verified (%d records)\n", len(edges))
+	} else {
+		fmt.Fprintf(out, "provenance ledger verification failed at record %d: %s\n", idx, verifyErr)
+	}
+	if verifyErr != nil {
+		return fmt.Errorf("provenance ledger verification failed at record %d: %w", idx, verifyErr)
 	}
 	return nil
 }

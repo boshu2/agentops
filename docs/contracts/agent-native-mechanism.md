@@ -3,7 +3,7 @@
 > **Status: decision doc (ag-uphk9 spike).** Nails the mechanism by which an
 > out-of-session Claude/Codex loop stays under AgentOps guardrails **without
 > hooks**, before the managed-dispatch lane is built. Companion to the
-> [`/agent-native`](../../skills/agent-native/SKILL.md) skill (the how-to) and
+> `/agent-native` skill (`skills/agent-native/SKILL.md`, the how-to) and
 > the [Eval Verdict Pipeline](eval-verdict-pipeline.md) / [Outcomes Rubric
 > Projection](outcomes-rubric-projection.md) contracts.
 
@@ -70,7 +70,7 @@ definition for this runtime is `ao agent bundle --codex-ntm`.
 
 The Agent SDK exposes `PreToolUse` / `PostToolUse` / `Stop` / `SessionStart`
 surfaces. AgentOps treats these strictly as an **optional adapter** — the wiring
-lives in [`skills/agent-native/references/sdk-hook-adapter.md`](../../skills/agent-native/references/sdk-hook-adapter.md),
+lives in `skills/agent-native/references/sdk-hook-adapter.md`,
 never as the primary guardrail.
 
 **Why CI is the default gate, not these hooks:** a hook runs *inside* the agent's
@@ -92,7 +92,7 @@ loop); the CI gate is the contract.
 
 ## See also
 
-- [`/agent-native` skill](../../skills/agent-native/SKILL.md) — the how-to (this doc is the why/mechanism).
+- `/agent-native` skill (`skills/agent-native/SKILL.md`) — the how-to (this doc is the why/mechanism).
 - `cli/cmd/ao/agent.go` (`ao agent bundle`), `cli/cmd/ao/mcp_serve.go` (`ao mcp serve`).
 - `.github/workflows/agent-output-validate.yml` — the authoritative output gate.
 - Fleet topology (bushido sandbox, tailnet `100.109.17.108`, Dolt 3306): operator hub.

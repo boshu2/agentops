@@ -194,6 +194,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/trace` | Trace design decisions through history |
 | `/provenance` | Trace artifact lineage to sources |
 | `/beads` | Issue tracking operations |
+| `/bd-first-memory-migration` | Consolidate fragmented agent memory into bd-canonical recall |
 | `/heal-skill` | Detect and fix skill hygiene issues |
 | `/converter` | Convert skills to Codex/Cursor formats |
 
