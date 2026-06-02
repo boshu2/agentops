@@ -27,7 +27,7 @@ AgentOps is designed to degrade gracefully. Almost everything is optional: skill
 
 ## Notes
 
-- **Health check.** `ao doctor` probes the tools it depends on (`ao`, `awk`, `bash`, `bd`, `cass`, `gc`, `git`, `tmux`) and reports what is missing without failing the workflow.
+- **Health check.** `ao doctor` probes the tools it depends on (`ao`, `awk`, `bash`, `bd`, `cass`, `git`, `tmux`) and reports what is missing without failing the workflow.
 - **Install helpers.** `scripts/install.sh` and `scripts/install-bd.sh` detect package managers (`brew`, `apt`/`apt-get`, `dnf`/`yum`, `pacman`, `zypper`) and runtimes (`claude`, `codex`, `opencode`) and adapt; nothing here is hard-required beyond `curl` for the curl-pipe path.
 - **Out-of-session vs in-session.** The only orchestration dependency is an out-of-session substrate (NTM / managed-agents / MCP), and it is strictly out-of-session and optional. In-session, an agent runtime + `git` (+ `ao`/`bd` recommended) is the whole stack. See [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md).
 - **Graceful degradation is a contract, not a courtesy.** Every skill that shells out to an optional tool must check availability first and inform the user what was skipped — see the [shared fallback table](https://github.com/boshu2/agentops/blob/main/skills/shared/SKILL.md).
