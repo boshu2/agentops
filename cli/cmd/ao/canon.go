@@ -233,7 +233,6 @@ func runCanonStatus(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	cl, vl := canonLedgers(cwd)
-	gate := canon.DefaultGate()
 
 	var ids []string
 	if len(args) == 1 {
@@ -247,7 +246,7 @@ func runCanonStatus(cmd *cobra.Command, args []string) error {
 
 	decisions := make([]canon.Decision, 0, len(ids))
 	for _, id := range ids {
-		d, err := gate.Evaluate(id, cl, vl)
+		d, err := canon.EvaluateEntry(id, canon.EntryPath(id, cl, vl), cl, vl)
 		if err != nil {
 			return err
 		}
@@ -268,7 +267,7 @@ func runCanonStatus(cmd *cobra.Command, args []string) error {
 		if d.Eligible {
 			status = "EARNED "
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "%s %-24s cites=%d verifs=%d\n", status, d.EntryID, d.Citations, d.Verifications)
+		fmt.Fprintf(cmd.OutOrStdout(), "%s %-24s [%s] cites=%d verifs=%d\n", status, d.EntryID, d.Tier, d.Citations, d.Verifications)
 		for _, u := range d.Unmet {
 			fmt.Fprintf(cmd.OutOrStdout(), "          - %s\n", u)
 		}
@@ -286,7 +285,7 @@ func runCanonPromote(cmd *cobra.Command, args []string) error {
 	force, _ := cmd.Flags().GetBool("force")
 
 	cl, vl := canonLedgers(cwd)
-	d, err := canon.DefaultGate().Evaluate(entryID, cl, vl)
+	d, err := canon.EvaluateEntry(entryID, path, cl, vl)
 	if err != nil {
 		return err
 	}
