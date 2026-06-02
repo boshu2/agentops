@@ -951,7 +951,7 @@ jobs:
       # ── agentops-contract-canaries (heavy bespoke setup: bd, gocyclo, bats) ──
       - name: Cache pinned Go tool binaries
         if: needs.changes.outputs.contracts == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/go/bin
