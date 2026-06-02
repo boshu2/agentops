@@ -18,7 +18,7 @@ CI ensures code quality, security, and release integrity for the AgentOps reposi
 AgentOps has two different overnight surfaces:
 
 - **GitHub nightly** validates AgentOps the product. It runs in GitHub Actions against the checked-out repository and proves the CI, flywheel, and Dream report contracts still work.
-- **The Dream loop** is the private local compounding engine. AgentOps runs it **in session** via the `/dream` skill against the real repo-local `.agents` corpus, writing the morning report defined in [Dream Report Contract](contracts/dream-report.md). To run it *unattended*, hand it to an orchestration substrate (Gas City is the reference) as a scheduled `exec` Order — AgentOps ships no daemon or scheduler of its own.
+- **The Dream loop** is the private local compounding engine. AgentOps runs it **in session** via the `/dream` skill against the real repo-local `.agents` corpus, writing the morning report defined in [Dream Report Contract](contracts/dream-report.md). To run it *unattended*, hand it to an orchestration substrate (the reference is NTM + MCP + managed-agents) as a scheduled dispatch — AgentOps ships no daemon or scheduler of its own.
 
 They share primitive steps and report shapes, but they are not the same pipeline.
 
@@ -35,8 +35,8 @@ selection grounded in observed Nightly drift and current CI blockers while
 avoiding hidden source-code mutation from GitHub Actions.
 
 If you want scheduled private Dream runs, delegate them to an orchestration
-substrate. Point the AgentOps reference Gas City (`city.toml` + `packs/agentops`)
-at the repo and wire a cron `exec` Order that runs the Dream loop on a schedule;
+substrate (the reference is NTM + MCP + managed-agents) and wire a scheduled
+dispatch (a managed-agent driver or cron) that runs the Dream loop on a schedule;
 the substrate owns the wake, scheduling, and supervision semantics. For the
 cross-vendor private local chain that combines Dream, Claude/Codex runners,
 RPI/evolve, and PR digest output, see
