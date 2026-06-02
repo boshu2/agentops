@@ -2,12 +2,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -245,10 +247,12 @@ func loadBackgroundCandidates(cmd *cobra.Command, file string) ([]background.Can
 			return nil, fmt.Errorf("read candidate file: %w", err)
 		}
 	} else {
-		c := exec.CommandContext(cmd.Context(), "bd", "ready", "--limit", "0", "--json")
+		ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
+		defer cancel()
+		c := exec.CommandContext(ctx, "bd", "ready", "--limit", "0", "--json")
 		raw, err = c.Output()
 		if err != nil {
-			return loadBackgroundCandidatesViaSQL(cmd)
+			return loadBackgroundCandidatesViaSQL(ctx)
 		}
 	}
 	var candidates []background.Candidate
@@ -266,15 +270,19 @@ type bdSQLCandidate struct {
 	LabelsCSV string `json:"labels_csv"`
 }
 
-func loadBackgroundCandidatesViaSQL(cmd *cobra.Command) ([]background.Candidate, error) {
+func loadBackgroundCandidatesViaSQL(ctx context.Context) ([]background.Candidate, error) {
 	query := "select i.id, i.title, i.priority, i.issue_type, " +
 		"group_concat(l.label) as labels_csv from issues i " +
 		"left join labels l on l.issue_id=i.id " +
 		"where i.status='open' and i.is_blocked=0 " +
 		"group by i.id, i.title, i.priority, i.issue_type"
-	c := exec.CommandContext(cmd.Context(), "bd", "sql", "--json", query)
-	raw, err := c.Output()
+	c := exec.CommandContext(ctx, "bd", "sql", "--json", query)
+	raw, err := c.CombinedOutput()
 	if err != nil {
+		msg := strings.TrimSpace(string(raw))
+		if msg != "" {
+			return nil, fmt.Errorf("bd ready and sql fallback failed: %s: %w", msg, err)
+		}
 		return nil, fmt.Errorf("bd ready and sql fallback failed: %w", err)
 	}
 	var rows []bdSQLCandidate
