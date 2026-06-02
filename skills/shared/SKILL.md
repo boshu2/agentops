@@ -67,7 +67,7 @@ fi
 |------------|-------------|-------------------|
 | `bd` | Issue tracking unavailable | Use TaskList for tracking. Note "install bd for persistent issue tracking" |
 | `ao` | Knowledge flywheel unavailable | Write learnings to `.agents/learnings/` directly. Skip flywheel metrics |
-| `gc` | Out-of-session orchestration unavailable | Run the loop in-session (`/rpi`, `/evolve`). gc only adds out-of-session dispatch of whole `ao rpi`/`ao evolve` loops — see the `using-gc` skill |
+| out-of-session substrate (`ntm` / `ao agent`) | Always-on orchestration unavailable | Run the loop in-session (`/rpi`, `/evolve`). A substrate (an NTM tmux swarm or managed-agents via `ao agent`) only adds always-on dispatch of whole `ao rpi`/`ao evolve` loops — see [agent-native](../agent-native/SKILL.md) and [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md) |
 | `gt` | Workspace management unavailable | Work in current directory. Skip convoy/sling operations |
 | `gh` | PR/CI automation unavailable | Open PRs via the web UI; skip automated PR status/merge steps |
 | `go` | Build-from-source unavailable | Install a prebuilt `ao` (Homebrew / install script / release binary); no Go needed |
@@ -115,7 +115,7 @@ Global opt-out first: if `AGENTOPS_ORCHESTRATION=off` is set, skip all spawn bac
 2. **Runtime-native.** If NTM is unavailable: in a Claude session with `TeamCreate`/`SendMessage`, use **Claude Native Teams**; in a Codex session with `spawn_agent`, use **Codex sub-agents**. If both are technically available, pick the backend native to the current runtime unless the user explicitly requests mixed/cross-vendor execution. Only use background tasks when neither native backend is available.
 3. **Beads floor.** If no multi-agent capability is detected, degrade to single-agent inline mode (`--quick`).
 
-> **`gc` is NOT a selectable tier.** The Gas City (`gc`) CLI bridge was removed (soc-2rtm0); `runtime=gc` is rejected by the CLI (see `agentops/CLAUDE.md`, "Gas City (gc) bridge — REMOVED"). Any `gc`-based dispatch prose in the swarm/crank references is retained for historical reference only and is never selected.
+> **`gc` is NOT a selectable tier.** AgentOps no longer references Gas City; out-of-session orchestration is delegated to a swappable substrate (NTM + MCP + managed-agents — see [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md)). Any residual `gc`-based dispatch prose in older swarm/crank reference files is historical only and is never selected.
 
 **Output-contract parity is unchanged across all tiers:** workers write results to `.agents/swarm/results/*.json`, and the lead verifies-then-trusts those artifacts. This invariant holds whether the backend is NTM, a runtime-native team, or the beads floor.
 

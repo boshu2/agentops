@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-01T04:16:58Z",
+  "generated_at": "2026-06-02T12:40:24Z",
   "summary": {
-    "skills": 81,
+    "skills": 80,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 74,
-    "capabilities": 169
+    "capabilities": 165
   },
   "surfaces": {
     "skills": [
@@ -533,14 +533,6 @@
         "reference_count": 0
       },
       {
-        "name": "using-gc",
-        "tier": "meta",
-        "path": "skills/using-gc/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 2
-      },
-      {
         "name": "validation",
         "tier": "meta",
         "path": "skills/validation/",
@@ -777,7 +769,10 @@
         "path": "cli/cmd/ao/",
         "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
         "bounded_context": "",
-        "driven_by_skills": []
+        "driven_by_skills": [
+          "shared",
+          "using-agentops"
+        ]
       },
       {
         "name": "ao agents",
@@ -872,8 +867,7 @@
         "bounded_context": "BC1",
         "driven_by_skills": [
           "compile",
-          "domain",
-          "using-gc"
+          "domain"
         ]
       },
       {
@@ -977,8 +971,7 @@
           "autodev",
           "evolve",
           "shared",
-          "using-agentops",
-          "using-gc"
+          "using-agentops"
         ]
       },
       {
@@ -1090,8 +1083,7 @@
           "domain",
           "harvest",
           "inject",
-          "using-agentops",
-          "using-gc"
+          "using-agentops"
         ]
       },
       {
@@ -1144,8 +1136,7 @@
         "bounded_context": "BC1",
         "driven_by_skills": [
           "domain",
-          "flywheel",
-          "using-gc"
+          "flywheel"
         ]
       },
       {
@@ -1314,13 +1305,13 @@
         "purpose": "RPI lifecycle automation",
         "bounded_context": "BC3",
         "driven_by_skills": [
+          "agent-native",
           "autodev",
           "domain",
           "shared",
           "standards",
           "swarm",
-          "using-agentops",
-          "using-gc"
+          "using-agentops"
         ]
       },
       {
@@ -1411,8 +1402,7 @@
         "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
         "bounded_context": "BC2",
         "driven_by_skills": [
-          "agent-native",
-          "using-gc"
+          "agent-native"
         ]
       },
       {
@@ -1442,11 +1432,11 @@
     ]
   },
   "capability_summary": {
-    "total": 169,
-    "skills": 81,
+    "total": 165,
+    "skills": 80,
     "cli_commands": 74,
     "gates": 11,
-    "reference_impls": 3
+    "reference_impls": 0
   },
   "cli_top_level_commands": [
     "agent",
@@ -1549,6 +1539,7 @@
         "ao goals",
         "ao inject",
         "ao mcp serve",
+        "ao rpi",
         "ao session bootstrap",
         "ao validate"
       ],
@@ -1992,7 +1983,7 @@
       "bounded_context": "BC1",
       "hex_role": "supporting",
       "tier": "session",
-      "purpose": "Retired pointer — out-of-session compounding moved to Gas City.",
+      "purpose": "Retired pointer — out-of-session compounding moved to the substrate (NTM + MCP + managed-agents).",
       "status": "active",
       "disposition": "refactor",
       "consumes": [],
@@ -3024,6 +3015,7 @@
         "stdout"
       ],
       "drives_commands": [
+        "ao agent",
         "ao beads verify",
         "ao evolve",
         "ao rpi",
@@ -3241,6 +3233,7 @@
         "documentation"
       ],
       "drives_commands": [
+        "ao agent",
         "ao agents inspect",
         "ao codex start",
         "ao codex stop",
@@ -3249,37 +3242,12 @@
         "ao forge transcript",
         "ao inject",
         "ao lookup",
+        "ao mcp serve",
         "ao rpi",
         "ao search"
       ],
       "path": "skills/using-agentops/",
       "references": 0
-    },
-    {
-      "sku": "skill:using-gc",
-      "name": "using-gc",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "generic",
-      "tier": "meta",
-      "purpose": "Explain how to run AgentOps on the Gas City (gc) substrate.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [],
-      "produces": [
-        "documentation"
-      ],
-      "drives_commands": [
-        "ao compile",
-        "ao corpus inject",
-        "ao evolve",
-        "ao inject",
-        "ao maturity",
-        "ao rpi",
-        "ao validate"
-      ],
-      "path": "skills/using-gc/",
-      "references": 2
     },
     {
       "sku": "skill:validate",
@@ -3394,7 +3362,10 @@
       "bounded_context": "",
       "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
       "status": "active",
-      "driven_by_skills": [],
+      "driven_by_skills": [
+        "shared",
+        "using-agentops"
+      ],
       "flags": [
         "--config",
         "--dry-run",
@@ -3612,8 +3583,7 @@
       "status": "active",
       "driven_by_skills": [
         "compile",
-        "domain",
-        "using-gc"
+        "domain"
       ],
       "flags": [
         "--batch-size",
@@ -3879,8 +3849,7 @@
         "autodev",
         "evolve",
         "shared",
-        "using-agentops",
-        "using-gc"
+        "using-agentops"
       ],
       "flags": [
         "--auto-clean",
@@ -4175,8 +4144,7 @@
         "domain",
         "harvest",
         "inject",
-        "using-agentops",
-        "using-gc"
+        "using-agentops"
       ],
       "flags": [
         "--apply-decay",
@@ -4289,8 +4257,7 @@
       "status": "active",
       "driven_by_skills": [
         "domain",
-        "flywheel",
-        "using-gc"
+        "flywheel"
       ],
       "flags": [
         "--apply",
@@ -4682,13 +4649,13 @@
       "purpose": "RPI lifecycle automation",
       "status": "active",
       "driven_by_skills": [
+        "agent-native",
         "autodev",
         "domain",
         "shared",
         "standards",
         "swarm",
-        "using-agentops",
-        "using-gc"
+        "using-agentops"
       ],
       "flags": [
         "--config",
@@ -4903,8 +4870,7 @@
       "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
       "status": "active",
       "driven_by_skills": [
-        "agent-native",
-        "using-gc"
+        "agent-native"
       ],
       "flags": [
         "--bead",
@@ -5078,33 +5044,6 @@
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
       "status": "active",
       "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "ref-impl:agentops-pack",
-      "name": "agentops reference City pack",
-      "type": "reference-impl",
-      "bounded_context": "BC5",
-      "purpose": "Reference Gas City pack: mayor + refinery agents drive ao rpi/evolve loops.",
-      "status": "active",
-      "path": "packs/agentops/"
-    },
-    {
-      "sku": "ref-impl:agentops-agent.mayor",
-      "name": "agentops mayor agent",
-      "type": "reference-impl",
-      "bounded_context": "BC5",
-      "purpose": "Reference City mayor agent role.",
-      "status": "active",
-      "path": "packs/agentops/agents/mayor/"
-    },
-    {
-      "sku": "ref-impl:agentops-agent.refinery",
-      "name": "agentops refinery agent",
-      "type": "reference-impl",
-      "bounded_context": "BC5",
-      "purpose": "Reference City refinery agent role.",
-      "status": "active",
-      "path": "packs/agentops/agents/refinery/"
     }
   ],
   "cadence_recommendations": [
