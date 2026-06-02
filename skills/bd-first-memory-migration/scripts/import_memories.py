@@ -17,6 +17,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -41,10 +42,12 @@ _SLUG_RE = re.compile(r"[^a-z0-9]+")
 
 
 def slug_for(path: str) -> str:
-    """Deterministic kebab slug from a file path stem."""
+    """Deterministic kebab slug from a source path."""
+    source = Path(path).as_posix()
     stem = Path(path).stem.lower()
+    digest = hashlib.sha256(source.encode()).hexdigest()[:8]
     slug = _SLUG_RE.sub("-", stem).strip("-")
-    return slug or "untitled"
+    return f"{slug or 'untitled'}-{digest}"
 
 
 def memory_for(item: dict[str, object], now_iso: str) -> mem.Memory:

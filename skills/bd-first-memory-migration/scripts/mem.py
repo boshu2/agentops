@@ -11,6 +11,7 @@ generator (.14) — share one implementation, and tests run without the bd CLI.
 from __future__ import annotations
 
 import math
+import re
 import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -38,6 +39,9 @@ TYPE_WEIGHT: dict[str, float] = {
 
 _HEADER_OPEN = "<!--mem"
 _HEADER_CLOSE = "-->"
+_LISTING_HEADING_RE = re.compile(
+    rf"^### (?:{'|'.join(re.escape(t) for t in VALID_TYPES)}):\S+\s*$"
+)
 
 
 @dataclass
@@ -218,7 +222,7 @@ def parse_listing(text: str) -> list[Memory]:
             out.append(Memory(key=key, header=header, text=body_text))
 
     for line in text.splitlines():
-        if line.startswith("### "):
+        if _LISTING_HEADING_RE.match(line):
             flush()
             key = line[4:].strip()
             buf = []

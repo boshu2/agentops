@@ -39,13 +39,22 @@ def write_memory(
     """Upsert a typed memory and return its key."""
     key = mem.make_key(mem_type, slug)
     now_iso = now.isoformat()
-    header = mem.MemHeader(
-        type=mem_type,
-        source=source,
-        created_at=now_iso,
-        last_accessed=now_iso,
-        maturity=maturity,
-    )
+    existing = next((m for m in store.list_memories() if m.key == key), None)
+    if existing is None:
+        header = mem.MemHeader(
+            type=mem_type,
+            source=source,
+            created_at=now_iso,
+            last_accessed=now_iso,
+            maturity=maturity,
+        )
+    else:
+        header = existing.header
+        header.type = mem_type
+        header.source = source
+        header.created_at = header.created_at or now_iso
+        header.last_accessed = header.last_accessed or now_iso
+        header.maturity = maturity
     store.remember(key, mem.render(header, body.strip()))
     return key
 

@@ -98,6 +98,33 @@ def test_importer_is_idempotent(tmp_path: Path) -> None:
     assert led2["entries"][0]["source"] == f"file:{src}"
 
 
+def test_importer_keys_are_stable_for_duplicate_basenames(tmp_path: Path) -> None:
+    src_a = tmp_path / "a" / "notes.md"
+    src_b = tmp_path / "b" / "notes.md"
+    src_a.parent.mkdir()
+    src_b.parent.mkdir()
+    src_a.write_text("a content")
+    src_b.write_text("b content")
+    item_a = {"layer": "agents_knowledge", "path": str(src_a)}
+    item_b = {"layer": "agents_knowledge", "path": str(src_b)}
+    store = mem.FakeStore()
+
+    led1 = import_memories.run_import(
+        {"keep": [item_a, item_b]}, store, dry_run=False, sleep_s=0, now=NOW
+    )
+    led2 = import_memories.run_import(
+        {"keep": [item_b, item_a]}, store, dry_run=False, sleep_s=0, now=NOW
+    )
+    by_source1 = {entry["source"]: entry["key"] for entry in led1["entries"]}
+    by_source2 = {entry["source"]: entry["key"] for entry in led2["entries"]}
+    assert by_source1 == by_source2
+    assert by_source1[f"file:{src_a}"] != by_source1[f"file:{src_b}"]
+
+    import_memories.run_import({"keep": [item_b]}, store, dry_run=False, sleep_s=0, now=NOW)
+    assert "a content" in store.data[by_source1[f"file:{src_a}"]]
+    assert "b content" in store.data[by_source1[f"file:{src_b}"]]
+
+
 def test_importer_dry_run_writes_nothing(tmp_path: Path) -> None:
     src = tmp_path / "k.md"
     src.write_text("x")
@@ -121,8 +148,53 @@ def test_write_path_stamps_provenance() -> None:
     assert text == "body"
 
 
+def test_write_path_preserves_recall_metadata_on_upsert() -> None:
+    store = mem.FakeStore()
+    created = "2026-01-01T00:00:00+00:00"
+    accessed = "2026-05-01T00:00:00+00:00"
+    store.remember(
+        "feedback:x",
+        mem.render(
+            mem.MemHeader(
+                type="feedback",
+                source="session:old",
+                utility=0.8,
+                access_count=4,
+                created_at=created,
+                last_accessed=accessed,
+                maturity="established",
+            ),
+            "old body",
+        ),
+    )
+
+    remember.write_memory(store, "feedback", "x", "new body", "session:new", "candidate", NOW)
+    header, text = mem.parse(store.data["feedback:x"])
+    assert header.utility == 0.8
+    assert header.access_count == 4
+    assert header.created_at == created
+    assert header.last_accessed == accessed
+    assert header.source == "session:new"
+    assert header.maturity == "candidate"
+    assert text == "new body"
+
+
 def test_recall_round_trips_through_listing() -> None:
     store = mem.FakeStore()
     store.remember("fact:a", mem.render(mem.MemHeader(type="fact"), "alpha"))
     listing = json.dumps({m.key: m.text for m in store.list_memories()})
     assert "alpha" in listing
+
+
+def test_parse_listing_keeps_markdown_headings_in_body() -> None:
+    listing = "\n".join(
+        [
+            "### fact:a",
+            mem.render(mem.MemHeader(type="fact"), "intro\n### Background\nbody"),
+            "### feedback:b",
+            mem.render(mem.MemHeader(type="feedback"), "second"),
+        ]
+    )
+    parsed = mem.parse_listing(listing)
+    assert [m.key for m in parsed] == ["fact:a", "feedback:b"]
+    assert parsed[0].text == "intro\n### Background\nbody"
