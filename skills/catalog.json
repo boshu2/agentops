@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-02T19:41:20Z",
+  "generated_at": "2026-06-02T19:47:40Z",
   "skill_count": 81,
   "skills": [
     {
@@ -86,7 +86,7 @@
       ],
       "context_rel": [],
       "references_count": 4,
-      "codex_override_present": false
+      "codex_override_present": true
     },
     {
       "name": "beads",
