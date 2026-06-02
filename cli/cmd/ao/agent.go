@@ -10,18 +10,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// agentCmd is the `ao agent` noun: produce runtime-specific Agent definitions
-// that make an out-of-session loop (Managed Agent / Codex-NTM swarm)
-// AgentOps-native. Distinct from `ao agents` (which manages AGENTS.md surfaces).
+// agentCmd is the `ao agent` noun: produce runtime-specific Agent/session
+// definitions that make out-of-session background agents AgentOps-native.
+// Distinct from `ao agents` (which manages AGENTS.md surfaces).
 var agentCmd = &cobra.Command{
 	Use:   "agent",
-	Short: "Produce AgentOps-native Agent definitions for out-of-session loops",
-	Long: `Emit a runtime-specific Agent definition (Managed Agents payload or
-NTM bundle) that carries the AgentOps skill set plus the ao tool surface, so an
-out-of-session agent runs under the same guardrails as interactive work.
+	Short: "Produce AgentOps-native session profiles for background agents",
+	Long: `Emit a runtime-specific Agent/session profile that carries the
+AgentOps skill set plus the ao tool surface, so an out-of-session background
+agent runs under the same guardrails as interactive work.
 
-Managed Agents are NOT ZDR: the bundle builder refuses to inline any holdout /
-eval content (the eval substrate is LOCKED).`,
+Holdout/eval content is never inlined into a profile (the eval substrate is
+LOCKED).`,
 }
 
 var (
@@ -34,13 +34,13 @@ var (
 
 var agentBundleCmd = &cobra.Command{
 	Use:   "bundle",
-	Short: "Emit a runtime-specific Agent definition (managed | codex-ntm)",
+	Short: "Emit a runtime-specific Agent/session profile",
 	Long: `Stitch the selected AgentOps skills + the ao tool surface into an
-Agent definition for the chosen runtime.
+AgentOps-native profile for the chosen runtime.
 
   ao agent bundle --runtime managed              # Managed Agents JSON payload
   ao agent bundle --runtime codex-ntm --json     # NTM-consumable bundle
-  ao agent bundle --runtime managed --sandbox self-hosted
+  ao agent bundle --runtime claude-ntm --json    # Claude NTM session profile
 
 Default skills: session-bootstrap, standards, validation, provenance.
 Refuses (non-zero) if any selected skill would inline holdout/eval content.`,
@@ -50,7 +50,7 @@ Refuses (non-zero) if any selected skill would inline holdout/eval content.`,
 func init() {
 	rootCmd.AddCommand(agentCmd)
 	agentCmd.AddCommand(agentBundleCmd)
-	agentBundleCmd.Flags().StringVar(&agentBundleRuntime, "runtime", "", "Target runtime: managed | codex-ntm (required)")
+	agentBundleCmd.Flags().StringVar(&agentBundleRuntime, "runtime", "", "Target runtime: managed | codex-ntm | claude-ntm (required)")
 	agentBundleCmd.Flags().StringVar(&agentBundleSkills, "skills", "", "Comma-separated skill names (default: session-bootstrap,standards,validation,provenance)")
 	agentBundleCmd.Flags().StringVar(&agentBundleSandbox, "sandbox", "", "Sandbox placement: self-hosted | cloud")
 	agentBundleCmd.Flags().StringVar(&agentBundleOut, "out", "", "Write the bundle to this path instead of stdout")
@@ -59,7 +59,7 @@ func init() {
 
 func runAgentBundle(cmd *cobra.Command, _ []string) error {
 	if agentBundleRuntime == "" {
-		return fmt.Errorf("--runtime is required (managed | codex-ntm)")
+		return fmt.Errorf("--runtime is required (managed | codex-ntm | claude-ntm)")
 	}
 	var skills []string
 	if s := strings.TrimSpace(agentBundleSkills); s != "" {

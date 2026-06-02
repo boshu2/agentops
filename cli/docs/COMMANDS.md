@@ -3798,7 +3798,7 @@ ao wiki search <query> [flags]
 
 ### `ao agent`
 
-Emit a runtime-specific Agent definition (Managed Agents payload or
+Emit a runtime-specific Agent/session profile that carries the
 
 ```
 ao agent [command]
@@ -3820,7 +3820,7 @@ ao agent bundle [flags]
   -h, --help             help for bundle
       --json             Emit machine-readable JSON (always JSON for now; reserved for parity)
       --out string       Write the bundle to this path instead of stdout
-      --runtime string   Target runtime: managed | codex-ntm (required)
+      --runtime string   Target runtime: managed | codex-ntm | claude-ntm (required)
       --sandbox string   Sandbox placement: self-hosted | cloud
       --skills string    Comma-separated skill names (default: session-bootstrap,standards,validation,provenance)
 ```
