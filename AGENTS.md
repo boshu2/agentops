@@ -50,6 +50,10 @@ bd close <id>         # Complete work
 cd cli && make build  # Build ao binary
 cd cli && make test   # Run tests
 cd cli && make lint   # Run linter
+
+# Tracker closeout
+bd dolt remote list
+bd dolt push          # only if a real Dolt remote is configured
 ```
 
 Push, let CI validate (it is the authoritative gate — no local omnibus gate). Per-tool sanity checks + the full release gate live in [`docs/agent-workflow-reference.md`](docs/agent-workflow-reference.md).

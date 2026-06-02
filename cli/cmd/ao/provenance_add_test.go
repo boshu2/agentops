@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -58,6 +59,10 @@ func resetProvListFlags() {
 	provListJSON = false
 	provListFromID = ""
 	provListRelation = ""
+}
+
+func resetProvVerifyFlags() {
+	provVerifyJSON = false
 }
 
 func TestProvenanceAdd_ProducesSchemaValidEdgeAndReadsBack(t *testing.T) {
@@ -206,5 +211,66 @@ func TestProvenanceList_FiltersByFromIDAndRelation(t *testing.T) {
 	}
 	if len(byRel) != 1 || byRel[0].Relation != "wasGeneratedBy" {
 		t.Fatalf("relation filter wrong: %+v", byRel)
+	}
+}
+
+func TestProvenanceVerify_EmptyLedgerPasses(t *testing.T) {
+	chdirRepoFixture(t)
+	resetProvVerifyFlags()
+	provVerifyJSON = true
+
+	c, out := provTestCmd()
+	if err := runProvenanceVerify(c, nil); err != nil {
+		t.Fatalf("verify empty ledger: %v", err)
+	}
+	var report provenanceVerifyReport
+	if err := json.Unmarshal(out.Bytes(), &report); err != nil {
+		t.Fatalf("verify output not JSON: %v\n%s", err, out.String())
+	}
+	if !report.OK || report.Records != 0 {
+		t.Fatalf("empty ledger report = %+v, want ok with zero records", report)
+	}
+}
+
+func TestProvenanceVerify_DetectsTamperedHashChain(t *testing.T) {
+	ledger := chdirRepoFixture(t)
+
+	resetProvAddFlags()
+	c1, _ := provTestCmd()
+	if err := runProvenanceAdd(c1, []string{"ag-1", "a.go"}); err != nil {
+		t.Fatalf("add 1: %v", err)
+	}
+	resetProvAddFlags()
+	provAddTS = "2026-05-31T00:01:00Z"
+	c2, _ := provTestCmd()
+	if err := runProvenanceAdd(c2, []string{"ag-2", "b.go"}); err != nil {
+		t.Fatalf("add 2: %v", err)
+	}
+
+	raw, err := os.ReadFile(ledger)
+	if err != nil {
+		t.Fatalf("read ledger: %v", err)
+	}
+	tampered := strings.Replace(string(raw), `"to_id":"b.go"`, `"to_id":"tampered.go"`, 1)
+	if tampered == string(raw) {
+		t.Fatalf("test setup failed: did not tamper second edge\n%s", raw)
+	}
+	if err := os.WriteFile(ledger, []byte(tampered), 0o644); err != nil {
+		t.Fatalf("write tampered ledger: %v", err)
+	}
+
+	resetProvVerifyFlags()
+	provVerifyJSON = true
+	c3, out := provTestCmd()
+	err = runProvenanceVerify(c3, nil)
+	if err == nil {
+		t.Fatal("verify should fail on tampered ledger")
+	}
+	var report provenanceVerifyReport
+	if jerr := json.Unmarshal(out.Bytes(), &report); jerr != nil {
+		t.Fatalf("verify output not JSON: %v\n%s", jerr, out.String())
+	}
+	if report.OK || report.Index != 2 || !strings.Contains(report.Error, "payload_hash mismatch") {
+		t.Fatalf("tamper report = %+v, want failed record 2 payload mismatch", report)
 	}
 }

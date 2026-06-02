@@ -4062,6 +4062,21 @@ ao provenance trace [flags]
       --strict         Exit non-zero when any orphan exists
 ```
 
+#### `ao provenance verify`
+
+Read docs/provenance/ledger.jsonl and verify every record is
+
+```
+ao provenance verify [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for verify
+      --json   Emit machine-readable JSON
+```
+
 ---
 
 ### `ao registry`
