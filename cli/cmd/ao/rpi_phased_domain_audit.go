@@ -55,7 +55,7 @@ type domainScopeAudit struct {
 	// Enforcement is the runtime-resolved enforcement mode: one of
 	// "enforced" (a read-observing PreToolUse hook intercepts denied-glob
 	// reads), "audited" (visible-evidence scan only), or "unavailable" (the
-	// runtime cannot observe reads — e.g. opaque Gas City sessions). The
+	// runtime cannot observe reads — e.g. opaque out-of-session substrate sessions). The
 	// three modes are honest by construction: `enforced` is only claimed when
 	// a real interception substrate exists. See bead soc-58nt.3.9.
 	Enforcement string `json:"enforcement"`
@@ -304,7 +304,7 @@ func domainEnforcementNote(mode domainEnforcementMode) string {
 			"in this run's evidence hard-fails the slice gate (gate_failed=true)."
 	case domainEnforcementUnavailable:
 		return "Unavailable: the runtime cannot observe agent file reads (e.g. " +
-			"opaque Gas City sessions), so the read fence is recorded but NOT " +
+			"opaque out-of-session substrate sessions), so the read fence is recorded but NOT " +
 			"enforced. No enforcement claim is made for this run."
 	default:
 		return "Audit only: no read-interception substrate is installed, so this " +

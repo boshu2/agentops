@@ -10,7 +10,7 @@ import (
 var ErrQueueClaimConflict = errors.New("next-work item no longer available for this consumer")
 
 const (
-	// ProviderSessionLost is the normalized RPI/GasCity status when a session
+	// ProviderSessionLost is the normalized RPI worker status when a session
 	// was accepted or expected but is no longer present in provider state.
 	ProviderSessionLost = "lost"
 	// ProviderUnreachable is the normalized status when provider state cannot

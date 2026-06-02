@@ -129,7 +129,7 @@ func TestStartRequestValidate(t *testing.T) {
 	}
 	err := (StartRequest{
 		WorkerKind: WorkerKind("claude"),
-		Provider:   ProviderGasCity,
+		Provider:   ProviderManaged,
 		Prompt:     "build wiki page",
 	}).Validate()
 	if err != nil {

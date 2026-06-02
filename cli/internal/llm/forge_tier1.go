@@ -59,7 +59,7 @@ type Tier1Options struct {
 	clientFactory func(opts OllamaOptions) (Generator, error)
 
 	// Worker routes Tier 1 generation through the shared AgentWorker runtime.
-	// This is the daemon/GasCity-compatible path; Ollama remains the legacy
+	// This is the daemon/managed-worker path; Ollama remains the legacy
 	// fallback when Worker is nil.
 	Worker         agentworker.AgentWorker
 	WorkerKind     agentworker.WorkerKind

@@ -192,7 +192,7 @@ type LoopDeclaration struct {
 // loop. AgentOps owns all five beats — it IS the in-session operating
 // loop (the 3.0 thesis). The Factory driver (out-of-session, substrate-
 // owned) is a separate concern; its phases are still these five, but
-// driven by Gas City rather than the in-session agent. Source:
+// driven by an out-of-session substrate rather than the in-session agent. Source:
 // skills/domain/references/loop.md ("two drivers, one inner tick").
 var AgentOpsLoop = LoopDeclaration{
 	OwnedPhases: NewPhaseSet(PhaseResearch, PhasePlan, PhaseImplement, PhaseValidate, PhaseRatchet),

@@ -1,5 +1,5 @@
 // Package agentworker defines the shared runtime contract for headless agent
-// providers such as GasCity-backed worker sessions.
+// providers such as managed-agent worker sessions.
 package agentworker
 
 import (
@@ -21,7 +21,7 @@ const (
 type Provider string
 
 const (
-	ProviderGasCity     Provider = "gascity"
+	ProviderManaged     Provider = "managed"
 	ProviderCLIFallback Provider = "cli-fallback"
 )
 

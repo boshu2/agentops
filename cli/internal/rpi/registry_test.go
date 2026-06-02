@@ -21,7 +21,7 @@ func TestRegistryWriterWritesRunRegistryProjection(t *testing.T) {
 		Attempts:        map[string]int{},
 		StartedAt:       "2026-04-28T12:00:00Z",
 		RunID:           "run-123",
-		Backend:         "gascity-api",
+		Backend:         "managed-api",
 		DaemonJobID:     "job-rpi",
 		DaemonRequestID: "req-rpi",
 	}

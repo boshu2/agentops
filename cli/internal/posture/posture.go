@@ -1,6 +1,6 @@
 // Package posture types a project's stance toward the six canonical layers
 // of the agent stack. It answers ONE question: how does this project relate
-// to the substrate (Gas City) and to the cross-project layer ownership map?
+// to the substrate (NTM + MCP + managed-agents) and to the cross-project layer ownership map?
 //
 // It deliberately does NOT model the operational flow of context through a
 // loop tick — that is the context-compiler thesis (the AgentOps 3.0 core),
@@ -11,7 +11,7 @@
 //
 // Domain vocabulary: a project's "posture" is its declared ownership stance
 // over the six layers (Role, Bead, Skill, Ledger, Loop, Distribution). Three
-// kinds of stance are recognized: Substrate (gascity), Distribution
+// kinds of stance are recognized: Substrate (NTM+MCP+managed-agents), Distribution
 // (agentops), Sovereign (mt-olympus). Source:
 // .agents/research/2026-05-26-three-project-stack-pattern.md §1, §3.
 //
@@ -64,13 +64,13 @@ func (s LayerSet) Union(other LayerSet) LayerSet { return s | other }
 var AllLayers = NewLayerSet(LayerRole, LayerBead, LayerSkill, LayerLedger, LayerLoop, LayerDistribution)
 
 // ExternalLayers names layers realized by projects outside the
-// agentops/gascity/mt-olympus trio. Layer 2 (Bead) is provided by the `bd`
+// agentops (Distribution) + the substrate + mt-olympus (Sovereign) trio. Layer 2 (Bead) is provided by the `bd`
 // (beads_rust) project, on which all three postures depend. Synthesis §5
 // notes this as "Bead is universal."
 var ExternalLayers = NewLayerSet(LayerBead)
 
 // Kind names the family a posture belongs to. Synthesis §3 derives these
-// from observed practice in agentops (Distribution), gascity (Substrate),
+// from observed practice in agentops (Distribution), the substrate (Substrate),
 // and mt-olympus (Sovereign).
 type Kind uint8
 
@@ -100,7 +100,7 @@ type Stance struct {
 
 // AgentOps is what this repo claims about itself. Anything that contradicts
 // this claim must either update this value or fail the integration test in
-// cli/internal/gascity/bridge_test.go. Source: synthesis §3.
+// the posture synthesis. Source: synthesis §3.
 var AgentOps = Stance{
 	Kind:        KindDistribution,
 	OwnedLayers: NewLayerSet(LayerRole, LayerSkill, LayerLedger, LayerDistribution),
