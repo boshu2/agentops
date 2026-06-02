@@ -26,7 +26,7 @@ func (f *fakeRunner) Run(_ context.Context, name string, args ...string) ([]byte
 func TestNTMProbe_PresentReportsCapabilities(t *testing.T) {
 	// ntm present and reports all hard deps as capabilities.
 	runner := &fakeRunner{
-		out: []byte(`{"capabilities":["agent-CLIs","git","mcp-agent-mail","persistent-host","tmux"]}`),
+		out: []byte(`{"capabilities":["activity","dashboard","mail","send","spawn"]}`),
 	}
 
 	got, err := ProbeNTM(context.Background(), runner)
@@ -37,7 +37,7 @@ func TestNTMProbe_PresentReportsCapabilities(t *testing.T) {
 		t.Fatalf("Available = false, want true")
 	}
 
-	wantCaps := []string{"agent-CLIs", "git", "mcp-agent-mail", "persistent-host", "tmux"}
+	wantCaps := []string{"activity", "dashboard", "mail", "send", "spawn"}
 	if !reflect.DeepEqual(got.Capabilities, wantCaps) {
 		t.Fatalf("Capabilities = %v, want %v", got.Capabilities, wantCaps)
 	}
@@ -58,7 +58,7 @@ func TestNTMProbe_PresentReportsCapabilities(t *testing.T) {
 func TestNTMProbe_PresentWithMissingHardDeps(t *testing.T) {
 	// ntm present but only reports a subset of hard deps.
 	runner := &fakeRunner{
-		out: []byte(`{"capabilities":["tmux","git"]}`),
+		out: []byte(`{"capabilities":["activity","dashboard"]}`),
 	}
 
 	got, err := ProbeNTM(context.Background(), runner)
@@ -69,9 +69,30 @@ func TestNTMProbe_PresentWithMissingHardDeps(t *testing.T) {
 		t.Fatalf("Available = false, want true")
 	}
 
-	wantMissing := []string{"persistent-host", "agent-CLIs", "mcp-agent-mail"}
+	wantMissing := []string{"mail", "send", "spawn"}
 	if !reflect.DeepEqual(got.MissingDeps, wantMissing) {
 		t.Fatalf("MissingDeps = %v, want %v", got.MissingDeps, wantMissing)
+	}
+}
+
+func TestNTMProbe_CurrentRobotCommandsPayload(t *testing.T) {
+	runner := &fakeRunner{
+		out: []byte(`{"success":true,"commands":[{"name":"spawn"},{"name":"send"},{"name":"mail"},{"name":"dashboard"},{"name":"activity"}]}`),
+	}
+
+	got, err := ProbeNTM(context.Background(), runner)
+	if err != nil {
+		t.Fatalf("ProbeNTM returned error: %v", err)
+	}
+	if !got.Available {
+		t.Fatalf("Available = false, want true")
+	}
+	wantCaps := []string{"activity", "dashboard", "mail", "send", "spawn"}
+	if !reflect.DeepEqual(got.Capabilities, wantCaps) {
+		t.Fatalf("Capabilities = %v, want %v", got.Capabilities, wantCaps)
+	}
+	if len(got.MissingDeps) != 0 {
+		t.Fatalf("MissingDeps = %v, want empty", got.MissingDeps)
 	}
 }
 
