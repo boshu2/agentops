@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 81 |
+| Skills audited | 80 |
 | Domains classified | 5 of 5 (BC1-BC5) |
-| Dispositions assigned | 81 / 81 |
+| Dispositions assigned | 80 / 80 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -135,7 +135,6 @@ Disposition meanings:
 | `test` | BC2 Validation | supporting | update | Test generator; central to first-failing-test loop. |
 | `trace` | BC1 Corpus | supporting | update | Decision trace builder; align to provenance and cycle trace. |
 | `using-agentops` | BC4 Factory | generic | update | Operator education; align to 3.0 first-value path. |
-| `using-gc` | BC5 Runtime | generic | update | Operator guide for running AgentOps on the Gas City substrate. |
 | `validate` | BC2 Validation | driving-adapter | keep | Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24). |
 | `validation` | BC2 Validation | domain | update | Canonical post-implementation validation; strengthen self-test first. |
 | `vibe` | BC2 Validation | domain | update | Code-readiness validator; add self-test and tighten result contract. |
