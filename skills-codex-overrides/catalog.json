@@ -682,6 +682,12 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for agent-native"
+    },
+    {
+      "name": "bd-first-memory-migration",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for bd-first-memory-migration"
     }
   ]
 }
