@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-02T12:40:24Z",
+  "generated_at": "2026-06-02T15:48:26Z",
   "summary": {
     "skills": 80,
     "hooks": 0,
@@ -770,6 +770,7 @@
         "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
         "bounded_context": "",
         "driven_by_skills": [
+          "domain",
           "shared",
           "using-agentops"
         ]
@@ -1966,6 +1967,7 @@
         "stdout"
       ],
       "drives_commands": [
+        "ao agent",
         "ao compile",
         "ao eval run",
         "ao inject",
@@ -3363,6 +3365,7 @@
       "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
       "status": "active",
       "driven_by_skills": [
+        "domain",
         "shared",
         "using-agentops"
       ],
