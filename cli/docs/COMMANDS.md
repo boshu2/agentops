@@ -3825,6 +3825,24 @@ ao agent bundle [flags]
       --skills string    Comma-separated skill names (default: session-bootstrap,standards,validation,provenance)
 ```
 
+#### `ao agent ntm-spawn`
+
+Render the NTM command that starts an AgentOps background-agent
+
+```
+ao agent ntm-spawn <session> [flags]
+```
+
+**Flags:**
+
+```
+      --claude int   Number of Claude background agents (default 1)
+      --codex int    Number of Codex background agents (default 1)
+      --dir string   Working directory for the NTM session (default ".")
+      --execute      Execute ntm instead of printing a dry-run command
+  -h, --help         help for ntm-spawn
+```
+
 #### `ao agent roster`
 
 Emit the default AgentOps background-agent roster: one Claude NTM
