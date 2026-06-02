@@ -2,31 +2,30 @@
 name: Factory
 kind: concept
 status: draft
-see-also: [loop, evolve, rpi, context-compiler]
+see-also: [loop, context-compiler]
 ---
 # Factory
 
-The **out-of-session driver** of the [Loop](loop.md): the loop run unattended over a bead queue, with operator-only stop. Factory is one of the two drivers of the same loop body; it runs the identical [RPI](rpi.md) tick that an in-session [Evolve](evolve.md) run does. The difference is the driver (a substrate, not a person) and the stop policy (only an operator marker halts it).
+The **out-of-session placement** for AgentOps work: a set of NTM-supervised Claude/Codex background sessions that can take work from a bead queue, coordinate through mcp-agent-mail, load skills, and hand results back for operator review. Factory is not an AgentOps daemon and no longer means running `ao rpi`/`ao evolve` unattended.
 
 ## The substrate owns it, not AgentOps
 
-AgentOps 3.0 ships **no** always-on daemon, scheduler, or overnight runner — those surfaces were **deleted** in the 3.0 rearchitecture (see [`docs/adr/ADR-0009-daemon-deletion-in-session-only.md`](../../../docs/adr/ADR-0009-daemon-deletion-in-session-only.md)). The Factory driver is the orchestration substrate's job. The reference substrate is the trio AgentOps actually runs on — **NTM** (a tmux agent swarm), **MCP** (`ao mcp serve`), and **managed-agents** (`ao agent`) — none of it AgentOps-owned: it holds the queue, supervises the agents, and they inherit the AgentOps skills via overlay. AgentOps stays zero-dependency in a plain session through the Evolve driver.
+AgentOps 3.0 ships **no** always-on daemon, scheduler, or overnight runner — those surfaces were **deleted** in the 3.0 rearchitecture (see [`docs/adr/ADR-0009-daemon-deletion-in-session-only.md`](../../../docs/adr/ADR-0009-daemon-deletion-in-session-only.md)). The Factory driver is the NTM substrate's job. NTM holds the long-lived tmux sessions; mcp-agent-mail holds coordination, reservations, and handoff; MCP (`ao mcp serve`) exposes tools. AgentOps supplies the skills, session profiles, context, validation, and provenance.
 
-## Swarm-driven dispatch (honest current state)
+## Skill-session dispatch (current target)
 
-On the reference substrate, dispatch is **swarm-driven**: an NTM tmux swarm (or a lead agent) runs `bd ready`, then dispatches the next bead to a worker that runs `ao rpi <bead>`; a managed-agent driver (`ao agent`) or cron handles scheduled maintenance, and `ao mcp serve` exposes the `ao` tool surface across the seam. The substrate dispatches a whole loop as one invocable unit — it never re-expresses the rpi tick as substrate-side steps.
+On the reference substrate, dispatch is **NTM-driven**: a lead agent or operator runs `bd ready`, assigns the next bead through mcp-agent-mail, reserves files, and starts/resumes a Claude or Codex worker session with the right skills loaded. The worker session calls `ao session bootstrap`, pulls context with `ao inject`, follows the relevant skills, validates, and records provenance. The substrate never re-expresses AgentOps practice as substrate workflow steps.
 
 ## When to use
 
-- Use **Factory** for the unattended, queue-driven driver. Do not use it for an AgentOps-shipped daemon; that surface was deleted when out-of-session orchestration moved to the substrate.
-- The substrate dispatches a whole loop as one invocable unit. The Factory driver never drives the loop's insides; rpi is never re-expressed as substrate workflow steps.
+- Use **Factory** for unattended, queue-driven background agents. Do not use it for an AgentOps-shipped daemon; that surface was deleted when out-of-session orchestration moved to NTM.
+- The substrate starts and supervises skill sessions. It never drives the session's internal practice steps.
 
 ## Bounded context
 
-The Factory *driver* is **substrate-owned (orchestration)**. The *loop it runs* is **BC3 Loop (AgentOps)**. The seam between them is the load-bearing DDD boundary: orchestration (when/where/who-supervises) versus the loop and its context (what the agent does, how context compounds).
+The Factory *driver* is **substrate-owned (orchestration)**. The *skill session and context* are **AgentOps-owned**. The seam between them is the load-bearing DDD boundary: orchestration (when/where/who-supervises) versus practice/context (what the agent does, how context compounds).
 
 ## See also
 
-- `loop.md` — the umbrella; Factory is one of its two drivers
-- `evolve.md` — the in-session driver running the same tick
-- `rpi.md` — the tick the Factory driver runs unattended
+- `loop.md` — the historical umbrella and vocabulary
+- `context-compiler.md` — the context surface background sessions pull from

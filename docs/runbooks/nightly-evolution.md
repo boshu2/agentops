@@ -2,14 +2,12 @@
 
 > **3.0 note:** the daemon-backed handoff this runbook originally described
 > (`ao daemon jobs submit`, `agentopsd`, `ao overnight`) was **removed** in the
-> AgentOps 3.0 rearchitecture — AgentOps is in-session only and ships no daemon,
+> AgentOps 3.0 rearchitecture — AgentOps ships no daemon,
 > scheduler, or overnight runner of its own (see
-> [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)). The loop
-> (`ao rpi` / `ao evolve`, the `/dream` skill) runs in session; to run it
-> unattended out of session, dispatch it on the **reference substrate**
-> (NTM + MCP + managed-agents): an NTM swarm (or a lead agent) slings ready beads
-> to workers that run `ao rpi`; scheduled maintenance runs via a managed-agent
-> driver or cron. This runbook is retained for the repo-owned run-contract and
+> [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)). Work runs as
+> skill sessions; to run it unattended out of session, use **NTM background
+> agents**: Claude/Codex tmux sessions coordinated through mcp-agent-mail and
+> equipped with MCP/`ao` tools. This runbook is retained for the repo-owned run-contract and
 > digest mechanics; treat the orchestration surface as the substrate, not an
 > AgentOps daemon.
 
@@ -22,16 +20,16 @@ from GitHub Actions.
 |---------|------|
 | GitHub Nightly | Public proof harness over repo-visible state |
 | Nightly RPI Brief | Evidence packet and prompt issue |
-| Reference substrate (NTM + MCP + managed-agents) | Out-of-session orchestration (swarm + worker agents) for unattended runs |
+| NTM background-agent substrate | Out-of-session orchestration (Claude/Codex sessions + mcp-agent-mail) for unattended runs |
 | `scripts/nightly-evolution.sh` | Repo-owned run contract and digest writer |
 | `/dream` skill | Private Dream/wiki knowledge compounding (in session; dispatched out of session via the substrate) |
-| `ao rpi` / `ao evolve` | Code-mutating implementation cycles, dispatched as one invocable unit |
+| Skill sessions | Code-mutating implementation sessions with explicit validation and provenance |
 | Claude Code | Headless worker/reviewer via local CLI or GitHub companion action |
 | Codex | Headless worker/reviewer via `codex exec` or local AgentOps runtime |
 | Mt. Olympus | Sovereign full-custom runtime (keeps its own Rust daemon) — alternate out-of-session driver |
 
 Bushido is a private dogfood target, not a public AgentOps namespace. Out-of-
-session runs are dispatched on the reference substrate (NTM + MCP + managed-agents); AgentOps ships no
+session runs are dispatched on NTM background agents; AgentOps ships no
 scheduler of its own. Mt. Olympus can run the same contract through its sovereign
 Rust core once provider readiness and replay are proven.
 
@@ -50,7 +48,7 @@ scripts/nightly-evolution.sh --execute --run-dream
 ```
 
 In 3.0 the Dream lane runs the `/dream` skill in session; to run it unattended,
-dispatch it on the substrate (an NTM swarm pane or managed-agent driver). The daemon-backed `dream.run` job submission
+assign it to an NTM background skill session coordinated through mcp-agent-mail. The daemon-backed `dream.run` job submission
 this flag historically used was removed with the daemon
 ([ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)); the run
 contract and digest mechanics below are unaffected.
@@ -75,8 +73,8 @@ scripts/nightly-evolution.sh --execute --run-dream --run-evolve --max-cycles 1
 ## Host-OS timing (not an AgentOps scheduler)
 
 AgentOps ships no scheduler; recurring runs are driven by host-OS timing (a
-systemd user timer or cron) calling the repo script, or by a substrate-side
-dispatch (a managed-agent driver or cron). The helper below installs a **host systemd user timer** — operator
+systemd user timer or cron) calling the repo script, or by an NTM background
+session assignment. The helper below installs a **host systemd user timer** — operator
 infrastructure, not an AgentOps-managed surface.
 
 ### Automated Install
@@ -149,8 +147,8 @@ Use Claude and Codex differently until eval evidence says mixed mode is stable:
   burden.
 - CI/GitHub companion: use Claude Code GitHub Actions for repo-visible reviews
   or reports, not private `.agents` mutation.
-- Substrate: dispatch whole `ao rpi` / `ao evolve` loops as one invocable unit
-  only after provider readiness and replay are proven.
+- Substrate: use NTM background skill sessions only after provider readiness,
+  replay, and mcp-agent-mail coordination are proven.
 
 ## Safety Controls
 

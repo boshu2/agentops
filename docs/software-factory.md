@@ -53,12 +53,12 @@ What used to be hook responsibilities are now explicit, pulled surfaces:
 | Flywheel closure | `ao flywheel close-loop` / `/retro` / `/forge` at session close |
 | Execution discipline | Execution-packet `next_action` + skill instructions |
 
-Both lanes run **in session** because people use Codex or they use Claude
-Code — neither relies on hooks. Running the same loop **out of session**
-(always-on, scheduled, unattended) is a separate concern AgentOps delegates to
-an orchestration substrate; the reference is NTM + MCP + managed-agents. AgentOps 3.0 ships
-no daemon, scheduler, or overnight runner of its own — those surfaces were
-deleted (see [AgentOps 3.0 north star](3.0.md)).
+Both lanes run as **skill sessions** because people use Codex or they use Claude
+Code — neither relies on hooks. Running work **out of session** (always-on,
+scheduled, unattended) is a separate concern handled by NTM background agents:
+Claude/Codex tmux sessions coordinated through mcp-agent-mail and equipped with
+MCP/`ao` tools. AgentOps 3.0 ships no daemon, scheduler, or overnight runner of
+its own — those surfaces were deleted (see [AgentOps 3.0 north star](3.0.md)).
 
 ## Surface Map
 
@@ -66,7 +66,7 @@ deleted (see [AgentOps 3.0 north star](3.0.md)).
 |------|---------|------------------|
 | Operator | What the human or lead agent should touch first | `ao factory start`, `/rpi`, `ao rpi phased`, `ao rpi status` |
 | Briefing + runtime | Bounded startup context and thread-time state | `ao knowledge brief`, `ao context assemble` |
-| Out-of-session | Running the loop unattended (always-on, scheduled) | Delegated to an orchestration substrate (the reference is NTM + MCP + managed-agents) — not an AgentOps surface |
+| Out-of-session | Running skill sessions unattended (always-on, scheduled) | NTM background agents coordinated through mcp-agent-mail — not an AgentOps daemon |
 | Delivery line | Research, planning, execution, validation | `/discovery`, `/plan`, `/crank`, `/validation`, `/rpi` |
 | Learning loop | Convert completed work into future advantage | `ao knowledge activate`, `ao flywheel close-loop`, `/retro`, `/forge` |
 | Enforcement | Automatic quality gates and execution discipline | CI (`.github/workflows/validate.yml`), skill-level checks, `cd cli && make test` |

@@ -195,29 +195,30 @@ gate and mark the release gate blocked until final go/no-go.
 ### `always-on-substrate`
 
 Use after first trust exists and the operator wants out-of-session compounding.
-AgentOps runs the loop **in session**; always-on, scheduled work is delegated to
-an orchestration substrate. The reference is the trio NTM + MCP + managed-agents
-(Olympus is the full-custom alternative). AgentOps ships no daemon or scheduler
-of its own.
+AgentOps runs work as skill sessions; always-on work is delegated to NTM
+background agents. The reference stack is NTM + mcp-agent-mail + MCP (Olympus
+is the full-custom alternative). AgentOps ships no daemon or scheduler of its
+own.
 
 **Inputs**
 
 - Existing `.agents/` corpus
-- A substrate of your choice: an NTM tmux swarm, `ao mcp serve` (MCP), or
-  managed-agents via `ao agent`
+- The NTM background-agent substrate: Claude/Codex tmux sessions, mcp-agent-mail
+  coordination, and `ao mcp serve` (MCP) when a tool surface is needed
 - Cron / managed triggers for corpus maintenance (`ao compile`, `ao maturity --scan`)
 - Runtime credentials or local subscriptions selected by the operator
 
 **Commands**
 
 ```bash
-# Drive the loop yourself in session (zero out-of-session dependency):
-ao rpi <bead>          # one cycle
-ao evolve              # many cycles toward a goal
+# Run a skill session yourself (zero out-of-session dependency):
+ao session bootstrap
+ao inject --query "<bead or topic>"
 
-# To run it unattended, point a substrate at the repo: an NTM swarm slings
-# ready beads to workers that run `ao rpi`, or `ao agent` hands the loop to a
-# managed-agents driver. `ao mcp serve` exposes the ao tool surface either way.
+# To run it unattended, keep Claude/Codex sessions warm under NTM. A lead
+# agent assigns ready beads through mcp-agent-mail, workers reserve files,
+# load the right skills, and write evidence/provenance back to bd/git.
+# `ao mcp serve` exposes the ao tool surface when a worker needs MCP.
 ```
 
 **Artifacts**

@@ -68,14 +68,14 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### supporting
 
-- `agent-native` — Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native — via skills + the ao CLI + CI, not hooks.
+- `agent-native` — Make an out-of-session Claude/Codex background session AgentOps-native — via skills + the ao CLI + CI, not hooks.
 - `autodev` — Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.
 - `automation-shape-routing` — Front door for agent automation — decide the SHAPE (Workflow vs NTM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".
 - `codex-team` — Coordinate multiple Codex agents.
 - `compile` — Compile .agents knowledge wiki.
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.
 - `doc` — Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss).
-- `dream` — Retired pointer — out-of-session compounding moved to the substrate (NTM + MCP + managed-agents).
+- `dream` — Retired pointer — out-of-session compounding moved to NTM background skill sessions.
 - `eval-outcomes` — Grade against Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes.
 - `evolve` — Run autonomous improvement loops.
 - `handoff` — Write compact session handoffs.

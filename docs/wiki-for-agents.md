@@ -62,7 +62,7 @@ AgentOps inverts this. Sessions write to the wiki by default — runs land citat
 
 **Automated capture.** Sessions write run packets, citations, and verdicts without anyone being asked. The discipline lives in the tooling.
 
-**Always-on compounding.** Run defrag, evolve, compile, and dream against the corpus out of session by handing the loop to an orchestration substrate — the reference is NTM + MCP + managed-agents — and the corpus compounds while you sleep. A SaaS wiki cannot get smarter on its own.
+**Always-on compounding.** Run defrag, compile, dream-style maintenance, and other corpus skills out of session by handing the work to NTM background agents — Claude/Codex sessions coordinated by mcp-agent-mail — and the corpus compounds while you sleep. A SaaS wiki cannot get smarter on its own.
 
 **Self-writing.** Every consumer of the wiki is also a producer of it. That is the inversion that makes the whole thing tractable.
 

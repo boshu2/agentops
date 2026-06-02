@@ -18,7 +18,7 @@ CI ensures code quality, security, and release integrity for the AgentOps reposi
 AgentOps has two different overnight surfaces:
 
 - **GitHub nightly** validates AgentOps the product. It runs in GitHub Actions against the checked-out repository and proves the CI, flywheel, and Dream report contracts still work.
-- **The Dream loop** is the private local compounding engine. AgentOps runs it **in session** via the `/dream` skill against the real repo-local `.agents` corpus, writing the morning report defined in [Dream Report Contract](contracts/dream-report.md). To run it *unattended*, hand it to an orchestration substrate (the reference is NTM + MCP + managed-agents) as a scheduled dispatch — AgentOps ships no daemon or scheduler of its own.
+- **The Dream loop** is the private local compounding engine. AgentOps runs it **in session** via the `/dream` skill against the real repo-local `.agents` corpus, writing the morning report defined in [Dream Report Contract](contracts/dream-report.md). To run it *unattended*, assign it to an NTM background session coordinated through mcp-agent-mail — AgentOps ships no daemon or scheduler of its own.
 
 They share primitive steps and report shapes, but they are not the same pipeline.
 
@@ -34,12 +34,12 @@ issue with a ready `$agentops:rpi --auto` command. This keeps autonomous RPI
 selection grounded in observed Nightly drift and current CI blockers while
 avoiding hidden source-code mutation from GitHub Actions.
 
-If you want scheduled private Dream runs, delegate them to an orchestration
-substrate (the reference is NTM + MCP + managed-agents) and wire a scheduled
-dispatch (a managed-agent driver or cron) that runs the Dream loop on a schedule;
-the substrate owns the wake, scheduling, and supervision semantics. For the
+If you want scheduled private Dream runs, delegate them to NTM background agents
+and wire a scheduled assignment (host cron/systemd plus mcp-agent-mail, or an
+NTM lead agent) that runs the Dream skill/session on a schedule; the substrate
+owns the wake, scheduling, and supervision semantics. For the
 cross-vendor private local chain that combines Dream, Claude/Codex runners,
-RPI/evolve, and PR digest output, see
+skill sessions, and PR digest output, see
 [`docs/runbooks/nightly-evolution.md`](runbooks/nightly-evolution.md).
 
 ## validate.yml Architecture

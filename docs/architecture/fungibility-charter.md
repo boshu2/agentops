@@ -91,6 +91,6 @@ The charter governs *agent fungibility*, not *runtime fungibility* — the latte
 
 - [Operating Loop](operating-loop.md) — the discipline every fungible agent executes; commitments 1–3 are doctrinal reads of its moves.
 - [Ports and Adapters](ports-and-adapters.md) — runtime swappability, the structural complement to agent fungibility.
-- An NTM tmux swarm (`ao mcp serve` + `ao agent`) — the out-of-session industrial version of an unattended fungible swarm.
+- An NTM tmux swarm coordinated through mcp-agent-mail and equipped with `ao mcp serve` — the out-of-session industrial version of ready Claude/Codex skill sessions.
 - Skill: `agent-fungibility-philosophy` — the operating playbook (spawn, init, recover) the charter codifies into doctrine.
 - Skill: `session-bootstrap` — the universal init prompt named in commitment 4.

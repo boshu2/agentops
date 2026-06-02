@@ -1,19 +1,19 @@
 # Autonomy Runtime Cycle-1 Runbook
 
 **Date:** 2026-05-20
-**Scope:** Safe activation of AgentOps cycle-1 in-session autonomy surfaces: RPI
-phased runs and `ao evolve` supervisor loops.
+**Scope:** Historical safe activation of AgentOps cycle-1 in-session autonomy
+surfaces: RPI phased runs and `ao evolve` supervisor loops. These are
+compatibility surfaces; the current background-agent direction is
+NTM-supervised Claude/Codex skill sessions.
 
 > **3.0 note:** the daemon-backed job-execution lane this runbook originally
 > covered (`ao daemon jobs submit`, the `agentopsd` control plane) was **removed**
-> in the AgentOps 3.0 rearchitecture — AgentOps is in-session only and ships no
+> in the AgentOps 3.0 rearchitecture — AgentOps ships no
 > daemon of its own (see
-> [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)). The in-session
-> loop (`ao rpi`, `ao evolve`) runs end-to-end in a plain session; to run it
-> unattended out of session, dispatch it on the **reference substrate**
-> (NTM + MCP + managed-agents) — an NTM swarm (or a lead agent) slings ready
-> beads to workers that run `ao rpi`. This
-> runbook now covers the in-session surfaces only.
+> [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)). These legacy
+> loop commands run only as compatibility surfaces. New unattended work runs as
+> **NTM background skill sessions** coordinated through mcp-agent-mail. This
+> runbook now covers the historical cycle-1 surfaces only.
 
 ## Activation
 
@@ -42,7 +42,7 @@ Cycle-1 runtime controls are in-session command flags:
 Activation rule:
 
 - Start with `--dry-run` and `--max-cycles 1`.
-- For unattended out-of-session runs, dispatch the loop on the reference substrate (NTM + MCP + managed-agents) only after the local RPI and evolve dry runs are clean.
+- For new unattended out-of-session work, prefer NTM background skill sessions; use this RPI/evolve path only when deliberately validating legacy compatibility.
 - Keep manual merge/review in the loop until the release-readiness contract says otherwise.
 
 ## Rollback Trigger
@@ -75,7 +75,7 @@ Verify lifecycle and orchestration evidence via:
 
 ## Operator Notes
 
-- This runbook covers the in-session loop only; out-of-session/fleet orchestration is delegated to the reference substrate (NTM + MCP + managed-agents), not an AgentOps daemon.
+- This runbook covers the legacy in-session loop only; out-of-session/fleet orchestration is delegated to NTM background agents, not an AgentOps daemon.
 - This runbook does not relax validation boundaries (`/vibe`, `/council`, `ao goals validate`, gate scripts all still apply).
 - This runbook is cycle-1 only; fleet/autopilot runtime expansion is a follow-on cycle.
 

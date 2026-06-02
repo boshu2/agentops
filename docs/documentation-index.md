@@ -21,9 +21,9 @@
 - [FAQ](FAQ.md) — Comparisons, limitations, subagent nesting, uninstall
 - [CONTRIBUTING](CONTRIBUTING.md) — How to contribute
 - [Create Your First Skill](create-your-first-skill.md) — Fast path for authoring a first skill without tripping CI
-- [Dependencies](dependencies.md) — Complete tool-dependency declaration (ao, git, bd+Dolt, gc, gh, go, and utilities) with purpose, required-vs-optional, and fallback-if-absent
+- [Dependencies](dependencies.md) — Complete tool-dependency declaration (ao, git, bd+Dolt, NTM background agents, gh, go, and utilities) with purpose, required-vs-optional, and fallback-if-absent
 - [Upgrading](UPGRADING.md) — Version-to-version migration notes and breaking changes
-- [Migrating to AgentOps 3.0](MIGRATION-3.0.md) — What was removed in 3.0 (hooks, daemon, scheduler, factory) and what to use instead (in-session loop + an adopted substrate: NTM / MCP / managed-agents)
+- [Migrating to AgentOps 3.0](MIGRATION-3.0.md) — What was removed in 3.0 (hooks, daemon, scheduler, factory) and what to use instead (skill sessions + NTM background agents)
 - [AGENTS.md](https://github.com/boshu2/agentops/blob/main/AGENTS.md) — Local agent instructions for this repo
 - [Changelog](CHANGELOG.md) — Release history
 - [Security](SECURITY.md) — Vulnerability reporting
@@ -56,7 +56,7 @@ Bridge / framing docs:
 - [Ports and Adapters](architecture/ports-and-adapters.md) — Hexagonal seam: inner-hexagon domain, driving/driven adapters, ports, and how to add a new adapter
 - [Hexagon Port-Realness Audit](architecture/hexagon-port-realness-audit.md) — Empirical 2026-05-23 inventory of all 26 declared ports (real vs in-memory vs bypassed), direct-coupling hotspots (git/bd/loop/corpus) with file:line, and the recommended adapter build order for epic soc-zvhsl
 - [Operating Loop](architecture/operating-loop.md) — Operational discipline every process skill executes: BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence (cleanroom companion to ports-and-adapters)
-- [The Canonical Loop Model](architecture/canonical-loop-model.md) — "One loop body, two drivers, one inner tick, one config": how rpi/evolve/factory/crank/swarm/autodev relate; the in-session loop is AgentOps-shipped, the out-of-session Factory driver is substrate-owned (reference: NTM / MCP / managed-agents)
+- [The Canonical Loop Model](architecture/canonical-loop-model.md) — Current model: skills run the work; NTM keeps Claude/Codex background sessions ready; mcp-agent-mail coordinates reservations and handoff
 - [Intent-to-Loop Hexagon](architecture/intent-to-loop-hexagon.md) — Process-level ports/adapters from BDD intent through beads, slices, validation, ratchet evidence, and loop steering
 - [Fungibility Charter](architecture/fungibility-charter.md) — AgentOps 3.0's six doctrinal commitments (single-model RPI default, role-free claiming, stateless agents, universal init, automatic death recovery, opt-in specialization); fungible by default, specialized when you opt in
 - [Behavior-Shaping Environment](architecture/behavior-shaping-environment.md) — The *why* beneath the loop: AgentOps as an operant-conditioning system (Antecedent → Behavior → Consequence); arrange the environment + reinforce/stop the behaviors you agree on
@@ -313,7 +313,7 @@ Bridge / framing docs:
 - [Context Usefulness Eval Contract](contracts/context-usefulness-eval.md) — Wave 0 deterministic `context_off` versus `context_on` evaluation, scorecard fields, hook-preservation boundaries
 - [Eval Verdict Pipeline Contract](contracts/eval-verdict-pipeline.md) — Verdict compiler pipeline from eval run manifests to learning utility and retirement signals
 - [Outcomes Rubric Projection Contract](contracts/outcomes-rubric-projection.md) — Holdout-safe projection of the locked eval substrate into an Outcomes-style grading payload (`schemas/outcomes-rubric.v1.schema.json`); `additionalProperties:false` at every level forbids target/ground_truth/expected_output (Managed Agents are not ZDR); validator `scripts/validate-outcomes-rubric.sh` + Go schema↔struct drift guard (ag-hguuf)
-- [Agent-Native Mechanism Contract](contracts/agent-native-mechanism.md) — Decision doc mapping each old-hook *intent* (orientation, standards, scope guard, commit-review, holdout-isolation) to its hookless equivalent (skill + `ao` subcommand + CI job) across both runtimes (Claude Managed Agents/SDK/MCP-`ao` and Codex/NTM shell-`ao`); Managed-Agents Agent shape + bushido self-hosted sandbox (MCP + Dolt over tailnet); SDK hooks as the OPTIONAL adapter and why CI is the default gate; holdout excluded from hosted bundles (ag-uphk9)
+- [Agent-Native Mechanism Contract](contracts/agent-native-mechanism.md) — Decision doc mapping each old-hook *intent* (orientation, standards, scope guard, commit-review, holdout-isolation) to its hookless equivalent (skill + `ao` subcommand + CI job); current direction is Claude/Codex NTM background sessions coordinated by mcp-agent-mail, with SDK/cloud hooks only optional adapters
 - [Retrieval Comparison Contract](contracts/retrieval-comparison.md) — Deterministic search-eval backend comparison, promotion thresholds, optional rerank behavior, and deferred vector/graph-store policy
 - [Release Readiness Contract](contracts/release-readiness.md) — 8/10 release readiness score, SIL/VIL/HIL evidence, artifact manifest requirements, and HIL waiver policy
 - [MemRL Policy Schema](contracts/memrl-policy.schema.json) — Machine-readable retry/escalation policy profile for memory-reinforcement feedback loops

@@ -29,7 +29,7 @@ Source research: `.agents/research/2026-05-07-rpi-lifecycle-sharpening.md` §Obj
 |---|---|---|---|
 | 1 | Compression of strict delegation (inline phase work) | `.agents/learnings/2026-04-19-orchestrator-compression-anti-pattern.md` | rpi, discovery, validation |
 | 2 | Massive uncoordinated swarms (60+ unbounded) | `docs/scale-without-swarms.md` | crank, swarm |
-| 3 | Magic-claimed compounding (without a real mechanism — the in-session loop, or the out-of-session substrate: NTM + MCP + managed-agents) | `PRODUCT.md` mission section | dream, evolve |
+| 3 | Magic-claimed compounding (without a real mechanism — skill sessions, or NTM background agents coordinated by mcp-agent-mail) | `PRODUCT.md` mission section | dream, evolve |
 | 4 | Vibe-based gates without rubric / separate-context grader | `PRODUCT.md` Gap 1 | validation, vibe |
 | 5 | Vendor memory follows the chat (context must reload from disk) | `PRODUCT.md` mission | rpi (orchestrator persists; phase workers DO NOT carry chat memory) |
 | 6 | Coverage-padding tests | `.claude/rules/go.md`, `.claude/rules/python.md`, `skills/standards/` | crank, test |

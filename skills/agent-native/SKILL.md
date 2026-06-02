@@ -1,6 +1,6 @@
 ---
 name: agent-native
-description: Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native — via skills + the ao CLI + CI, not hooks.
+description: Make an out-of-session Claude/Codex background session AgentOps-native — via skills + the ao CLI + CI, not hooks.
 skill_api_version: 1
 practices:
 - continuous-delivery
@@ -26,9 +26,9 @@ metadata:
 output_contract: "An AgentOps-native Agent definition (skills + ao tool surface) graded by the same CI gate as interactive work"
 ---
 
-# /agent-native — Make Out-of-Session Agents AgentOps-Native (Hookless)
+# /agent-native — Make NTM Background Agents AgentOps-Native (Hookless)
 
-Run a Claude loop *outside* an interactive Claude Code / Codex session — an Anthropic **Managed Agent**, an **Agent SDK** loop, or a self-hosted sandbox job — and keep it under the same AgentOps guardrails. The old reflex ("port the ~50 marketplace hooks into the new runtime") is **wrong for AgentOps 3.0**. This skill is the hookless reframe.
+Run Claude and Codex agents in the background under **NTM** — long-lived tmux sessions coordinated by mcp-agent-mail — and keep them under the same AgentOps guardrails as an interactive session. The old reflex ("port the ~50 marketplace hooks into the new runtime" or "ship work through Anthropic Managed Agents first") is **wrong for AgentOps 3.0**. This skill is the hookless, NTM-first reframe.
 
 ## Overview
 
@@ -38,9 +38,9 @@ Run a Claude loop *outside* an interactive Claude Code / Codex session — an An
 2. **The `ao` CLI** — the deterministic tool surface (`ao session bootstrap`, `ao inject`, `ao corpus inject --query`, `ao validate`, `ao goals measure`) plus the `standards` skill loaded into the agent's instructions.
 3. **CI as the authoritative gate** — `.github/workflows/validate.yml` runs the standards/scenario checks as CI jobs, NOT as a PreToolUse hook.
 
-So an out-of-session agent becomes AgentOps-native by: **(a)** loading AgentOps skills into the Agent definition, **(b)** exposing the `ao` CLI as a callable tool (MCP or shell-tool) so the agent can `ao session bootstrap` / `ao inject` / `ao validate` itself, and **(c)** running the same CI-style validation gate on its outputs before the work is accepted. The Agent SDK's own hooks become an **optional thin adapter** for teams wanting in-loop interception — never the primary mechanism.
+So an out-of-session agent becomes AgentOps-native by: **(a)** starting a Claude/Codex session profile with the right AgentOps skills loaded, **(b)** giving that session `ao` and MCP tools so it can `ao session bootstrap` / `ao inject` / `ao validate` itself, **(c)** coordinating claims, file reservations, and handoff through mcp-agent-mail, and **(d)** running the same CI-style validation gate on its outputs before the work is accepted. The Agent SDK's own hooks remain an optional thin adapter for teams wanting in-loop interception — never the primary mechanism.
 
-> **Mechanism status (planned, not yet shipped).** This skill is the **doctrine layer** and lands first; the two concrete commands it names — `ao agent bundle` (ag-jspr) and `ao mcp serve` (ag-higd) — are open, ready beads under epic ag-7s9fo, not yet in the live CLI. The `ao session bootstrap` / `ao inject` / `ao corpus inject` / `ao validate` / `ao goals measure` commands the bundled agent calls are real today. When ag-jspr and ag-higd land, remove this skill's entry from `scripts/skill-body-refs-allowlist.txt`.
+> **Mechanism status.** `ao agent bundle` and `ao mcp serve` exist, but the active direction is NTM background-agent profiles/rosters rather than hosted Managed Agents. The background session starts with `ao session bootstrap`, pulls context with `ao inject` / `ao corpus inject`, follows skills, coordinates through mcp-agent-mail, and validates through `ao validate` / CI.
 
 This is an **extension of two existing skills**, not a rewrite:
 - [standards](../standards/SKILL.md) — gains an Agent-runtime profile: how the standards/behavioral-discipline checklists get loaded by a non-interactive Claude and enforced via CI rather than `/vibe`.
@@ -49,25 +49,27 @@ This is an **extension of two existing skills**, not a rewrite:
 ## ⚠️ Critical Constraints
 
 - **This is a reframe of the retired "port hooks" idea, NOT a hook revival.** **Why:** hooks are runtime-coupled and fork the guardrail surface; skills + `ao` + CI are the portable 3.0 waist that works in any runtime.
-- **Single source of truth — no skill fork.** The cloud/SDK agent loads the *same* `skills/` files an interactive session uses. **Why:** a forked guardrail set drifts and defeats the corpus moat.
-- **Managed Agents are NOT ZDR.** Never bundle holdout `target`/`ground_truth`/PII into an Agent definition or its MCP tool responses. **Why:** anything sent to the cloud agent leaves the boundary permanently. For holdout-touching work see [eval-outcomes](../eval-outcomes/SKILL.md).
+- **Single source of truth — no skill fork.** The NTM background session loads the *same* `skills/` files an interactive session uses. **Why:** a forked guardrail set drifts and defeats the corpus moat.
+- **Cloud Managed Agents are out of scope for the default path.** Never bundle holdout `target`/`ground_truth`/PII into any hosted/cloud agent definition or MCP tool response. **Why:** anything sent to a non-ZDR cloud agent leaves the boundary permanently. For holdout-touching work see [eval-outcomes](../eval-outcomes/SKILL.md).
 - **CI is the gate, not the adapter.** The optional SDK hook adapter is convenience, never the enforcement boundary. **Why:** a bypassed in-loop hook must not mean unvalidated work merges; CI is unconditional.
 
 ## Workflow
 
-### Phase 1: Bundle skills into an Agent definition
+### Phase 1: Bundle skills into a background-session profile
 
 ```bash
-ao agent bundle --runtime managed > agent-def.json
+ao agent bundle --runtime codex-ntm > codex-background-agent.json
+# Claude NTM profiles use the same contract; the dedicated --runtime value
+# lands with the background-agent roster work.
 ```
 
-Stitches the selected AgentOps skills (default: `session-bootstrap`, `standards`, `behavioral-discipline`, `validation`, `provenance`) into a Managed Agents API payload — model + instructions + `skills` array + an MCP descriptor for the `ao` tool surface. POST-able with the `managed-agents-2026-04-01` beta header.
+Stitches the selected AgentOps skills (default: `session-bootstrap`, `standards`, `behavioral-discipline`, `validation`, `provenance`) into an NTM session profile — runtime, instructions, skill list, mailbox identity, working-directory policy, and an MCP/`ao` tool descriptor. `codex-ntm` is the checked-in runtime today; a Claude NTM profile is the same shape and is part of the background-agent roster work.
 
-**Checkpoint:** the payload carries the skills + the `ao` MCP descriptor, and contains no holdout values.
+**Checkpoint:** the profile carries the skills + the `ao`/MCP tool descriptor, names its mcp-agent-mail identity, and contains no holdout values.
 
 ### Phase 2: Expose `ao` as a tool
 
-Run a thin MCP server (`ao mcp serve`) — or a documented shell-tool spec — exposing `session_bootstrap`, `inject`, `corpus_inject`, `validate`, `goals_measure` so the hosted loop can orient and self-check. For self-hosted sandboxes (bushido), the MCP server runs **inside** the sandbox boundary with tailnet access to Dolt.
+Run a thin MCP server (`ao mcp serve`) — or use the local shell-tool spec — exposing `session_bootstrap`, `inject`, `corpus_inject`, `validate`, and provenance helpers so the NTM background session can orient and self-check.
 
 **Checkpoint:** the agent can call `ao session bootstrap` + `ao inject` itself before doing work.
 
@@ -83,22 +85,23 @@ For Agent SDK users who *want* in-loop interception, a documented `PreToolUse`/`
 
 ## Output Specification
 
-**Format:** a JSON Agent definition plus a validated PR/artifact. **Path:** the Agent definition is written to `agent-def.json` at the repo root; the runtime profile is written to `docs/contracts/agent-runtime-profile.md` (the frontmatter `produces` path). **Structure:** model, instructions (stitched skills), `skills` array, `ao` MCP descriptor; the output is accepted only on a green CI run.
+**Format:** a JSON background-session profile plus a validated PR/artifact. **Path:** profiles are written outside tracked runtime state unless explicitly committed as fixtures/contracts; the runtime profile contract is written to `docs/contracts/agent-runtime-profile.md` (the frontmatter `produces` path). **Structure:** runtime, model/CLI invocation, instructions (stitched skills), `skills` array, mailbox identity, worktree policy, and `ao`/MCP descriptor; the output is accepted only on a green CI run.
 
 ## Quality Rubric
 
-- [ ] Agent definition loads the *same* `skills/` files as interactive sessions (no fork).
+- [ ] Background-session profile loads the *same* `skills/` files as interactive sessions (no fork).
 - [ ] `ao` is callable by the agent (MCP/shell-tool); it can self-bootstrap + self-validate.
+- [ ] mcp-agent-mail identity is declared so reservations and handoff are traceable.
 - [ ] Outputs pass the same CI gate as interactive work (CI is the boundary, not a hook).
 - [ ] No holdout `target`/`ground_truth`/PII in the Agent definition or tool responses.
 
 ## Examples
 
 ```bash
-# Bundle, serve the ao tool surface, and let CI gate the output
-ao agent bundle --runtime managed > agent-def.json
-ao mcp serve &   # exposes session_bootstrap/inject/validate/goals_measure as MCP tools
-# (submit agent-def.json to the Managed Agents API; its PR is gated by agent-output-validate.yml)
+# Bundle profiles, serve the ao tool surface, and let CI gate the output
+ao agent bundle --runtime codex-ntm > codex-background-agent.json
+ao mcp serve &   # exposes session_bootstrap/inject/validate/provenance helpers as MCP tools
+# NTM starts the Claude/Codex sessions; mcp-agent-mail coordinates assignments.
 ```
 
 ## Troubleshooting
@@ -106,7 +109,8 @@ ao mcp serve &   # exposes session_bootstrap/inject/validate/goals_measure as MC
 | Problem | Cause | Solution |
 |---------|-------|----------|
 | Tempted to port the hooks | Old runtime-coupled reflex | Don't — bundle skills + expose `ao` + gate via CI. Hooks are the optional adapter only |
-| Agent can't orient | `ao` not exposed as a tool | Run `ao mcp serve` (or the shell-tool spec) so the loop can `ao session bootstrap` |
+| Agent can't orient | `ao` not exposed as a tool | Run `ao mcp serve` (or the shell-tool spec) so the session can `ao session bootstrap` |
+| Agent collides with another worker | No mcp-agent-mail reservation | Reserve files/threads through mcp-agent-mail before editing |
 | Unvalidated work merged | Relied on the optional in-loop adapter | CI (`agent-output-validate.yml`) is the gate — never the adapter |
 
 ## See Also
@@ -114,5 +118,5 @@ ao mcp serve &   # exposes session_bootstrap/inject/validate/goals_measure as MC
 - [standards](../standards/SKILL.md) — the checklists the agent loads + CI enforces
 - [converter](../converter/SKILL.md) — keeps the bundle dual-runtime (skills ↔ skills-codex)
 - [eval-outcomes](../eval-outcomes/SKILL.md) — holdout-safe grading for cloud/out-of-session agents
-- [swarm](../swarm/SKILL.md) — the in-session/NTM multi-agent backends that dispatch whole `ao rpi` loops (`ao agent bundle` produces the definition a managed-agents substrate runs)
+- [swarm](../swarm/SKILL.md) — the in-session/NTM multi-agent backends that start Claude/Codex skill sessions (`ao agent bundle` produces the profile an NTM background session uses)
 - [skill-auditor](../skill-auditor/SKILL.md) — audit this skill before declaring stable

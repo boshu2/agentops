@@ -1,6 +1,6 @@
 ---
 name: dream
-description: Retired pointer — out-of-session compounding moved to the substrate (NTM + MCP + managed-agents).
+description: Retired pointer — out-of-session compounding moved to NTM background skill sessions.
 practices:
 - lean-startup
 - wiki-knowledge-surface
@@ -23,7 +23,7 @@ context:
 metadata:
   tier: session
   stability: experimental
-output_contract: Retired. The in-tree out-of-session compounding CLI engine was removed in soc-2rtm0; between-session knowledge compounding now runs on a substrate (NTM + MCP + managed-agents). This skill is a retirement pointer only.
+output_contract: Retired. The in-tree out-of-session compounding CLI engine was removed in soc-2rtm0; between-session knowledge compounding now runs as NTM background skill sessions coordinated by mcp-agent-mail. This skill is a retirement pointer only.
 ---
 # Dream - Retired (out-of-session compounding moved to the substrate)
 
@@ -31,21 +31,21 @@ output_contract: Retired. The in-tree out-of-session compounding CLI engine was 
 > engine and its whole CLI surface (the former always-on lane) were removed,
 > along with the always-on background process that carried it. AgentOps no
 > longer ships an out-of-session orchestration substrate — scheduled,
-> between-session knowledge compounding now runs on a substrate AgentOps
-> adopts but does not own (**NTM + MCP + managed-agents**). This skill remains
+> between-session knowledge compounding now runs as NTM background skill
+> sessions coordinated by mcp-agent-mail. This skill remains
 > only as a pointer; it no longer drives an in-repo command.
 
 > **Cross-vendor analog:** Anthropic Managed Agents Dreaming (research preview,
 > May 2026) — scheduled session review, pattern extraction, memory curation
-> between runs. AgentOps now delegates that lane to a managed-agents substrate
+> between runs. AgentOps now delegates that lane to NTM background sessions
 > rather than owning it.
 
 ## What moved
 
 The "dream cycle" (bounded `INGEST -> REDUCE -> MEASURE` knowledge compounding
 between sessions) is no longer an `ao` command. Drive it through the substrate's
-out-of-session scheduling surfaces instead (an NTM cron dispatch or a
-managed-agents schedule). Do not invent a replacement `ao` workflow.
+out-of-session scheduling surfaces instead (an NTM background session assigned
+through mcp-agent-mail). Do not invent a replacement `ao` workflow.
 
 ## What stays in AgentOps
 
@@ -56,19 +56,19 @@ on-demand:
 - `/forge` — mine transcripts into learnings
 - `/compile` — Mine → Grow → Defrag → Lint the wiki corpus
 - `/inject` — JIT decay-ranked context assembly
-- `/evolve` — daytime, operator-driven code compounding via `/rpi`
+- skill sessions — daytime, operator-driven code compounding with explicit validation
 
 The nightly-CI dream-cycle proof job in `.github/workflows/nightly.yml`
 (`harvest -> forge -> close-loop -> defrag -> metrics health`) still runs against
 the checked-in corpus; it is built on those KEEP primitives, not on the retired
 CLI engine.
 
-## Delineation vs /evolve
+## Delineation vs implementation sessions
 
-`/evolve` owns the daytime code-compounding layer (operator-driven, via `/rpi`).
-The knowledge-compounding layer that `/dream` used to own now lives outside
-AgentOps, on the adopted substrate (NTM + MCP + managed-agents). Both still
-share the fitness-measurement substrate via `corpus.Compute` / `ao goals measure`.
+Implementation skills own the daytime code-compounding layer (operator-driven,
+with explicit validation). The knowledge-compounding layer that `/dream` used to
+own now lives outside AgentOps, on NTM background sessions. Both still share the
+fitness-measurement substrate via `corpus.Compute` / `ao goals measure`.
 
 ## Reference Documents
 
@@ -79,5 +79,5 @@ share the fitness-measurement substrate via `corpus.Compute` / `ao goals measure
 ## See Also
 
 - `/harvest`, `/forge`, `/compile`, `/inject` - the KEEP knowledge primitives
-- `/evolve` - daytime code-compounding loop
+- implementation/validation skills - daytime code-compounding sessions
 - `/handoff` - capture explicit session closeout

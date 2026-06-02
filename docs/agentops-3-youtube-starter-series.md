@@ -158,12 +158,12 @@ with clearer context.
 **Demo beats**
 
 1. Recap the packet and verdict artifact.
-2. Run the loop in session: `ao rpi <bead>` (one cycle), `ao evolve` (many).
-3. To run it out of session, hand the loop to the reference substrate
-   (NTM + MCP + managed-agents); e.g. an NTM tmux swarm (or a lead agent) runs
-   `bd ready` and dispatches ready beads to workers that run `ao rpi`.
-4. Schedule corpus maintenance via the substrate (a managed-agent driver or cron
-   running `ao compile`, `ao maturity --scan`).
+2. Run the work in session with the relevant skills, then validate and record evidence.
+3. To run it out of session, keep Claude/Codex sessions warm under NTM; a lead
+   agent runs `bd ready`, assigns work through mcp-agent-mail, and workers load
+   the right skills.
+4. Schedule corpus maintenance via NTM background sessions (or host cron
+   assigning a worker to run `ao compile`, `ao maturity --scan`).
 5. Explain Dream/wiki/forge as compounding jobs, not unattended source mutation.
 
 **CTA**

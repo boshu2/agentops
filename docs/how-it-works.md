@@ -19,7 +19,7 @@ The same split applies to Dream's in-session surface:
 - skills (`/dream`) are the interactive operator surface for a compounding session
 - the `ao` CLI primitives (`ao compile`, `ao maturity`, `ao flywheel close-loop`) are the headless work the loop performs
 
-Running that compounding *out of session* — always-on, scheduled, unattended — is delegated to an orchestration substrate (the reference is NTM + MCP + managed-agents), not an AgentOps daemon or scheduler; those surfaces were deleted in 3.0. GitHub nightly remains the public CI proof harness for the report contract; the private always-on compounding engine is the substrate driving the in-session loop.
+Running that compounding *out of session* — always-on, scheduled, unattended — is delegated to NTM background agents, not an AgentOps daemon or scheduler; those surfaces were deleted in 3.0. NTM keeps Claude/Codex sessions warm, mcp-agent-mail coordinates the work, and MCP/`ao` expose tools. GitHub nightly remains the public CI proof harness for the report contract; the private always-on compounding engine is the background-agent substrate driving skill sessions.
 
 ## The Proof Gaps
 
@@ -221,7 +221,7 @@ Dream is the compounding expression of the same loop model:
 
 A foreground `/dream` session keeps runtime behavior honest: no tracked source-code edits by default, optional bounded Dream Council synthesis through independent runner reports, and a shared report contract.
 
-Running Dream **unattended** — always-on, scheduled, queue-driven — is out-of-session orchestration, which AgentOps delegates to a substrate (the reference is NTM + MCP + managed-agents) rather than shipping its own daemon or scheduler. The pattern is a long-lived agent — an NTM swarm pane or a managed-agent driver — running `/dream`-equivalent maintenance (`ao compile`, `ao maturity --scan`) on a cron schedule. There are no fake scheduler guarantees on a sleeping laptop; the substrate owns when and where.
+Running Dream **unattended** — always-on, scheduled, queue-driven — is out-of-session orchestration, which AgentOps delegates to NTM background agents rather than shipping its own daemon or scheduler. The pattern is a long-lived Claude/Codex session in an NTM pane, coordinated through mcp-agent-mail, running `/dream`-equivalent maintenance (`ao compile`, `ao maturity --scan`) when assigned. There are no fake scheduler guarantees on a sleeping laptop; NTM owns when and where.
 
 GitHub nightly remains useful for a different job: it proves that Dream's report contract and flywheel primitives still work in CI. It does not replace a substrate-driven unattended run.
 
