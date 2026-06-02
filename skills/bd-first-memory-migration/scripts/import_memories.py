@@ -82,6 +82,7 @@ def run_import(
     now_iso = now.isoformat()
     ledger: list[dict[str, str]] = []
     seen_keys: set[str] = set()
+    existing_by_key = {m.key: m for m in store.list_memories()} if not dry_run else {}
     for item in manifest.get("keep", []):  # type: ignore[union-attr]
         m = memory_for(item, now_iso)
         # collision-safe: disambiguate identical slugs from different paths
@@ -92,6 +93,13 @@ def run_import(
             n += 1
         seen_keys.add(key)
         if not dry_run:
+            existing = existing_by_key.get(key)
+            if existing is not None:
+                m.header.utility = existing.header.utility
+                m.header.access_count = existing.header.access_count
+                m.header.created_at = existing.header.created_at or now_iso
+                m.header.last_accessed = existing.header.last_accessed or now_iso
+                m.header.superseded_by = existing.header.superseded_by
             store.remember(key, mem.render(m.header, m.text))
             if sleep_s:
                 time.sleep(sleep_s)

@@ -58,6 +58,15 @@ def test_rank_excludes_superseded() -> None:
     assert [m.key for m in ranked] == ["fact:a"]
 
 
+def test_rank_does_not_exceed_budget_for_oversized_first_item() -> None:
+    oversized = mem.Memory(
+        "fact:huge",
+        mem.MemHeader(type="fact", created_at=NOW.isoformat()),
+        "one two three four five six seven eight nine ten",
+    )
+    assert mem.rank([oversized], NOW, max_tokens=2) == []
+
+
 def test_episodic_decays_faster_than_feedback() -> None:
     ts = (NOW - timedelta(days=30)).isoformat()
     epi = mem.Memory("episodic:x", mem.MemHeader(type="episodic", created_at=ts))
@@ -92,10 +101,27 @@ def test_importer_is_idempotent(tmp_path: Path) -> None:
     manifest = {"keep": [{"layer": "agents_knowledge", "path": str(src)}]}
     store = mem.FakeStore()
     led1 = import_memories.run_import(manifest, store, dry_run=False, sleep_s=0, now=NOW)
-    led2 = import_memories.run_import(manifest, store, dry_run=False, sleep_s=0, now=NOW)
+    key = led1["entries"][0]["key"]
+    created = "2026-01-01T00:00:00+00:00"
+    accessed = "2026-05-01T00:00:00+00:00"
+    header, text = mem.parse(store.data[key])
+    header.utility = 0.8
+    header.access_count = 4
+    header.created_at = created
+    header.last_accessed = accessed
+    store.remember(key, mem.render(header, text))
+
+    led2 = import_memories.run_import(
+        manifest, store, dry_run=False, sleep_s=0, now=NOW + timedelta(days=1)
+    )
+    header, _ = mem.parse(store.data[key])
     assert led1["imported"] == 1
     assert len(store.data) == 1  # second run updates in place, no duplicate
     assert led2["entries"][0]["source"] == f"file:{src}"
+    assert header.utility == 0.8
+    assert header.access_count == 4
+    assert header.created_at == created
+    assert header.last_accessed == accessed
 
 
 def test_importer_keys_are_stable_for_duplicate_basenames(tmp_path: Path) -> None:

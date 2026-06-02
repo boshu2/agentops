@@ -174,7 +174,7 @@ def rank(memories: list[Memory], now: datetime, max_tokens: int | None = None) -
     spent = 0
     for m in ordered:
         cost = _estimate_tokens(m.text)
-        if spent + cost > max_tokens and out:
+        if spent + cost > max_tokens:
             break
         out.append(m)
         spent += cost
