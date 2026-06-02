@@ -9,23 +9,20 @@ import (
 	"strings"
 )
 
-// NTMHardDeps are the dependencies an AgentOps NTM background-agent swarm
-// cannot run without.
-// These are the spike-identified HARD deps: a missing entry means the
-// host cannot drive background Claude/Codex skill sessions even if the ntm
-// binary is on PATH, which is exactly why detection is capability-based rather
-// than `command -v`.
+// NTMHardDeps are the robot-command capabilities an AgentOps NTM
+// background-agent swarm cannot run without.
 //
-// Deliberately NOT in this list: cursors and pipeline-state. Those are
-// host-bound, non-portable runtime artifacts — they describe a specific
-// host's live session, not a portable capability — so their absence is
-// not a missing dependency and must not be reported as one.
+// A missing entry means the host cannot drive background Claude/Codex skill
+// sessions even if the ntm binary is on PATH, which is exactly why detection is
+// capability-based rather than `command -v`. `mail` is load-bearing: it is the
+// NTM robot surface backed by mcp-agent-mail for assignment, reservation,
+// check-in, and handoff coordination.
 var NTMHardDeps = []string{
-	"tmux",
-	"git",
-	"persistent-host",
-	"agent-CLIs",
-	"mcp-agent-mail",
+	"activity",
+	"dashboard",
+	"mail",
+	"send",
+	"spawn",
 }
 
 // NTMCapabilities is the result of probing the NTM runtime. Available
@@ -55,6 +52,9 @@ type CommandRunner interface {
 // declared; unknown fields are ignored by encoding/json.
 type robotCapabilitiesPayload struct {
 	Capabilities []string `json:"capabilities"`
+	Commands     []struct {
+		Name string `json:"name"`
+	} `json:"commands"`
 }
 
 // ProbeNTM detects the NTM runtime by capability. It invokes
@@ -80,6 +80,13 @@ func ProbeNTM(ctx context.Context, runner CommandRunner) (NTMCapabilities, error
 	}
 
 	caps := normalizeCapabilities(payload.Capabilities)
+	if len(caps) == 0 && len(payload.Commands) > 0 {
+		names := make([]string, 0, len(payload.Commands))
+		for _, cmd := range payload.Commands {
+			names = append(names, cmd.Name)
+		}
+		caps = normalizeCapabilities(names)
+	}
 	return NTMCapabilities{
 		Available:    true,
 		Capabilities: caps,
