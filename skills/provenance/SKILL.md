@@ -60,6 +60,35 @@ grep -i "source\|session\|from\|extracted" <artifact-path>
 ao search "<artifact-name>" 2>/dev/null
 ```
 
+### Step 2.5: Trace Background-Agent Runs
+
+When the artifact is a bead, branch, or worktree touched by an NTM background
+agent, treat the worker's coordination trail as first-class provenance:
+
+1. Read bead comments/notes for `session_id`, worker name, branch, worktree, and
+   evidence paths.
+2. Check mcp-agent-mail threads for assignment, file-reservation, check-in, and
+   handoff messages.
+3. Check local runtime artifacts linked from the bead (for example
+   `.agents/swarm/results/*.json` or a background-session event JSONL). Do not
+   commit repo-root `.agents/`; cite paths as runtime evidence only.
+4. Resolve the worker profile (`ao agent bundle --runtime codex-ntm` or
+   `claude-ntm`) to list the skills and guardrails the session loaded.
+
+The lineage shape is:
+
+```
+Bead assignment
+    ↓
+mcp-agent-mail reservation / thread
+    ↓
+NTM Claude/Codex skill session
+    ↓
+git branch / PR / artifact
+    ↓
+validation + provenance ledger
+```
+
 ### Step 3: Search Session Transcripts with CASS
 
 **Use CASS to find when this artifact was discussed:**

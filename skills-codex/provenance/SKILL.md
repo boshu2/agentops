@@ -34,6 +34,21 @@ grep -i "source\|session\|from\|extracted" <artifact-path>
 ao search "<artifact-name>" 2>/dev/null
 ```
 
+### Step 2.5: Trace NTM Background-Agent Runs
+
+When the artifact is a bead, branch, or worktree touched by a background agent,
+trace the local coordination trail:
+
+1. Read bead comments/notes for `session_id`, worker name, branch, worktree, and
+   evidence paths.
+2. Check mcp-agent-mail threads for assignment, file reservation, check-in, and
+   handoff messages.
+3. Check linked runtime artifacts such as `.agents/swarm/results/*.json` or a
+   background-session event JSONL. Do not commit repo-root `.agents/`; cite paths
+   as runtime evidence only.
+4. Resolve the worker profile (`ao agent bundle --runtime codex-ntm`, or the
+   Claude NTM profile when present) to list the skills and guardrails loaded.
+
 ### Step 3: Search Session Transcripts with CASS
 
 **Use CASS to find when this artifact was discussed:**

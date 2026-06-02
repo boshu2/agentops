@@ -4,13 +4,16 @@ description: 'Dispatch parallel agents.'
 ---
 # $swarm
 
-Spawn isolated agents to execute tasks in parallel with Codex session agents. Fresh context per agent.
+Spawn isolated agents to execute tasks in parallel. Prefer NTM-supervised Codex
+background sessions coordinated through mcp-agent-mail; fall back to Codex
+session agents or sequential execution when NTM is unavailable. Fresh context
+per agent.
 
 **Integration modes:**
 - **Via `$crank`** - crank creates waves from beads and invokes `$swarm` for each wave
 - **Standalone** - direct invocation for ad-hoc parallel work
 
-> **Requires a multi-agent runtime.** Prefer runtime-native Codex session agents. If spawning is unavailable, fall back to sequential execution in the current session.
+> **Requires a multi-agent runtime.** Prefer NTM background sessions when available. If NTM is unavailable, use runtime-native Codex session agents. If spawning is unavailable, fall back to sequential execution in the current session.
 
 ## Architecture
 
@@ -20,16 +23,18 @@ Lead (this session)
   +-> Identify the wave: tasks with no blockers
   +-> Build explicit file manifests
   +-> Pre-spawn conflict check (file ownership)
-  +-> Spawn one worker per task
+  +-> Reserve file manifests through mcp-agent-mail when using NTM
+  +-> Spawn/resume one worker per task
   +-> Wait for completion
   +-> Validate changes and close or retry tasks
   +-> Repeat if more work remains
 ```
 
 **Runtime preference:**
-1. If `spawn_agent` is available, use Codex session agents.
-2. If your runtime exposes `agent_type` roles, use `worker` for execution and `explorer` for file discovery.
-3. If spawning is unavailable, execute sequentially and keep the same file-manifest contract.
+1. If `ntm --robot-capabilities` reports a usable swarm, use NTM tmux pane sessions and mcp-agent-mail reservations.
+2. If `spawn_agent` is available, use Codex session agents.
+3. If your runtime exposes `agent_type` roles, use `worker` for execution and `explorer` for file discovery.
+4. If spawning is unavailable, execute sequentially and keep the same file-manifest contract.
 
 ## Execution
 
