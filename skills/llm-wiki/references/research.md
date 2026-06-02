@@ -90,7 +90,7 @@ The scheduled-agent model lets the system run **continuously** instead of only o
 
 ## Existing tools in the ecosystem
 
-- **openclawai — Second Brain Builder** (on Apify): automates the Karpathy pattern as a hosted service
+- **consumerai — Second Brain Builder** (on Apify): automates the Karpathy pattern as a hosted service
 - Multiple Medium / Substack articles in April 2026 describing variations of the same three-layer-plus-schema approach
 
 The common thread across all of them: **the LLM does the bookkeeping; the human decides what enters the system**.
@@ -182,7 +182,7 @@ Tier 1 writes only `wiki/sources/`, `wiki/entities/`, `wiki/concepts/` with `sta
 - [Why Andrej Karpathy's "LLM Wiki" is the Future of Personal Knowledge (Medium, evoailabs)](https://evoailabs.medium.com/why-andrej-karpathys-llm-wiki-is-the-future-of-personal-knowledge-7ac398383772)
 - [Karpathy shares "LLM Knowledge Base" architecture that bypasses RAG (VentureBeat)](https://venturebeat.com/data/karpathy-shares-llm-knowledge-base-architecture-that-bypasses-rag-with-an)
 - [Karpathy's LLM Knowledge Base: Build an AI Second Brain (codersera)](https://ghost.codersera.com/blog/karpathy-llm-knowledge-base-second-brain/)
-- [Second Brain Builder — Karpathy's LLM Wiki, Automated (Apify, openclawai)](https://apify.com/openclawai/second-brain-builder)
+- [Second Brain Builder — Karpathy's LLM Wiki, Automated (Apify, consumerai)](https://apify.com/consumerai/second-brain-builder)
 - [Karpathy's Instructions for Building an AI-Driven Second Brain (Techstrong.ai)](https://techstrong.ai/features/karpathys-instructions-for-building-an-ai-driven-second-brain/)
 - [LLM Wiki Revolution (Analytics Vidhya, April 2026)](https://www.analyticsvidhya.com/blog/2026/04/llm-wiki-by-andrej-karpathy/)
 - [Karpathy's LLM Wiki: Bye Bye RAG (Medium, Mehul Gupta)](https://medium.com/data-science-in-your-pocket/andrej-karpathys-llm-wiki-bye-bye-rag-ee27730251f7)

@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// Mirrors openclaw/snapshot_test.go's TestSnapshot_PermsPreservedAt0o600 by
+// Mirrors consumer/snapshot_test.go's TestSnapshot_PermsPreservedAt0o600 by
 // asserting that the four production callers in this package land their
 // outputs at 0o644 — not whatever the runtime umask happens to produce. The
 // underlying writer (quest.AtomicWriteFileWithPerm) has its own perm test;

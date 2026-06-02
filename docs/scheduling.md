@@ -186,7 +186,7 @@ Loader rules to be aware of (enforced by `cli/internal/schedule/parser.go`):
   registered daemon job type (`dream.run`, `dream.stage`, `wiki.forge`,
   `wiki.build`, `rpi.run`, `rpi.phase`, `skill.invoke`, `eval.suite`,
   `eval.skill-delta`, `factory.admission`, `factory.local-pilot`,
-  `openclaw.snapshot`, `plans.projection`, `llmwiki.loop`).
+  `consumer.snapshot`, `plans.projection`, `llmwiki.loop`).
 - `skill.invoke` executes the current `ao` binary with `skill_name` as the
   subcommand and `args` split into argv tokens. Use it for existing CLI-backed
   skill surfaces such as `compile`, `forge`, and `feedback-loop`; do not put

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/openclaw"
+	"github.com/boshu2/agentops/cli/internal/consumer"
 )
 
 func TestJobSpecV0GoldenSubmitIsDurableAndIdempotent(t *testing.T) {
@@ -254,26 +254,26 @@ func TestJobSpecV0LeaseExpiryRetryWaitingAndRetryExhaustion(t *testing.T) {
 	}
 }
 
-func TestJobSpecV0OpenClawTriggerIsAllowlistedMutationSurface(t *testing.T) {
+func TestJobSpecV0ConsumerTriggerIsAllowlistedMutationSurface(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
 	router := jobSpecV0MutationRouter(store, &now)
 
-	allowed := []byte(`{"request_id":"req-oc","job_id":"job-oc","job_type":"openclaw.snapshot","idempotency_key":"oc-refresh","payload":{"reason":"refresh"}}`)
-	resp := postJobSpecV0(t, router, openclaw.TriggerJobsPath, allowed, "secret-token")
+	allowed := []byte(`{"request_id":"req-oc","job_id":"job-oc","job_type":"consumer.snapshot","idempotency_key":"oc-refresh","payload":{"reason":"refresh"}}`)
+	resp := postJobSpecV0(t, router, consumer.TriggerJobsPath, allowed, "secret-token")
 	if resp.Code != http.StatusAccepted {
 		t.Fatalf("allowlisted trigger status = %d body=%s, want 202", resp.Code, resp.Body.String())
 	}
-	var accepted openclaw.TriggerJobResponse
+	var accepted consumer.TriggerJobResponse
 	if err := json.Unmarshal(resp.Body.Bytes(), &accepted); err != nil {
 		t.Fatalf("decode trigger response: %v", err)
 	}
-	if !accepted.Accepted || accepted.JobType != string(JobTypeOpenClawSnapshot) || accepted.Status != string(JobStatusQueued) {
+	if !accepted.Accepted || accepted.JobType != string(JobTypeConsumerSnapshot) || accepted.Status != string(JobStatusQueued) {
 		t.Fatalf("trigger response = %#v", accepted)
 	}
 
 	blocked := []byte(`{"request_id":"req-rpi-phase","job_id":"job-rpi-phase","job_type":"rpi.phase"}`)
-	resp = postJobSpecV0(t, router, openclaw.TriggerJobsPath, blocked, "secret-token")
+	resp = postJobSpecV0(t, router, consumer.TriggerJobsPath, blocked, "secret-token")
 	if resp.Code != http.StatusBadRequest {
 		t.Fatalf("non-allowlisted trigger status = %d body=%s, want 400", resp.Code, resp.Body.String())
 	}

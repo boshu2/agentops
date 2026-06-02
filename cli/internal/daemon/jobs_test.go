@@ -206,18 +206,18 @@ func TestQueue_ClaimNextMatchingSkipsUnsupported(t *testing.T) {
 	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-dream", JobID: "job-dream", JobType: JobTypeDreamRun}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("submit dream job: %v", err)
 	}
-	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-openclaw", JobID: "job-openclaw", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
-		t.Fatalf("submit openclaw job: %v", err)
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-consumer", JobID: "job-consumer", JobType: JobTypeConsumerSnapshot}, QueueMutationOptions{}); err != nil {
+		t.Fatalf("submit consumer job: %v", err)
 	}
 
-	claim, err := queue.ClaimNextMatching("openclaw-worker", func(job QueueJobState) bool {
-		return job.JobType == JobTypeOpenClawSnapshot
+	claim, err := queue.ClaimNextMatching("consumer-worker", func(job QueueJobState) bool {
+		return job.JobType == JobTypeConsumerSnapshot
 	}, QueueMutationOptions{})
 	if err != nil {
 		t.Fatalf("claim matching job: %v", err)
 	}
-	if claim.Job.JobID != "job-openclaw" || claim.Job.Status != JobStatusRunning {
-		t.Fatalf("claim = %#v, want running job-openclaw", claim.Job)
+	if claim.Job.JobID != "job-consumer" || claim.Job.Status != JobStatusRunning {
+		t.Fatalf("claim = %#v, want running job-consumer", claim.Job)
 	}
 
 	snapshot, err := queue.Snapshot()

@@ -19,7 +19,7 @@ const (
 	JobTypeWikiForge         JobType = "wiki.forge"
 	JobTypeFactoryAdmission  JobType = "factory.admission"
 	JobTypeFactoryLocalPilot JobType = "factory.local-pilot"
-	JobTypeOpenClawSnapshot  JobType = "openclaw.snapshot"
+	JobTypeConsumerSnapshot  JobType = "consumer.snapshot"
 	JobTypePlansProjection   JobType = "plans.projection"
 	// JobTypeLLMWikiLoop is the Karpathy-pattern external-knowledge loop job type.
 	// Operates on raw/ + wiki/ trees, distinct from internal .agents/ work.
@@ -382,7 +382,7 @@ var jobTypeSet = map[string]struct{}{
 	string(JobTypeWikiForge):         {},
 	string(JobTypeFactoryAdmission):  {},
 	string(JobTypeFactoryLocalPilot): {},
-	string(JobTypeOpenClawSnapshot):  {},
+	string(JobTypeConsumerSnapshot):  {},
 	string(JobTypePlansProjection):   {},
 	string(JobTypeLLMWikiLoop):       {},
 	string(JobTypeEvalSuite):         {},

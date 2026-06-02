@@ -42,7 +42,7 @@ var knownDaemonJobTypes = []daemonpkg.JobType{
 	daemonpkg.JobTypeWikiForge,
 	daemonpkg.JobTypeFactoryAdmission,
 	daemonpkg.JobTypeFactoryLocalPilot,
-	daemonpkg.JobTypeOpenClawSnapshot,
+	daemonpkg.JobTypeConsumerSnapshot,
 	daemonpkg.JobTypePlansProjection,
 	daemonpkg.JobTypeLLMWikiLoop,
 	daemonpkg.JobTypeEvalSuite,
@@ -92,7 +92,7 @@ The payload is sent verbatim under the JSON 'payload' key. --type must be one
 of the known JobType values (cli/internal/daemon/types.go).
 
 Examples:
-  ao daemon jobs submit --type openclaw.snapshot --payload '{}' --json
+  ao daemon jobs submit --type consumer.snapshot --payload '{}' --json
   ao daemon jobs submit --type wiki.forge --payload @./payload.json
   ao daemon jobs submit --type rpi.phase --payload '{"phase":"discovery"}' --token-file ~/.agents/daemon/.token`,
 	Args: cobra.NoArgs,

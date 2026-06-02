@@ -1,6 +1,6 @@
-package openclaw
+package consumer
 
-const TriggerJobsPath = "/openclaw/v1/triggers/jobs"
+const TriggerJobsPath = "/consumer/v1/triggers/jobs"
 
 type HealthResponse struct {
 	Status          string         `json:"status"`

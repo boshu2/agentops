@@ -13,7 +13,7 @@ Usage: scripts/validate-daemon-product-e2e.sh [--fixture] [--json] [--verbose] [
 
 Runs the daemon product end-to-end fixture gate:
   fake GasCity worker flow, daemon RPI/Dream/wiki smoke paths, ledger replay,
-  projection rebuild, state-machine invariants, boundary failpoints, OpenClaw,
+  projection rebuild, state-machine invariants, boundary failpoints, Consumer,
   and product runtime doctor checks.
 
 Options:
@@ -38,7 +38,7 @@ all_sections=(
   projection-rebuild
   state-machine-invariants
   boundary-failpoints
-  openclaw-consumer
+  consumer-consumer
   doctor-runtime
 )
 
@@ -48,11 +48,11 @@ section_description() {
     daemon-product-smoke) echo "daemon-backed RPI and Dream CLI smoke fixtures" ;;
     dream-wiki-smoke) echo "Dream job schema plus daemon wiki/forge runner smoke fixtures" ;;
     ledger-replay) echo "authoritative ledger append, idempotence, replay, and quarantine invariants" ;;
-    projection-rebuild) echo "RPI, Dream, wiki, and OpenClaw projection rebuild fixtures" ;;
+    projection-rebuild) echo "RPI, Dream, wiki, and Consumer projection rebuild fixtures" ;;
     state-machine-invariants) echo "daemon job transition and Dream stage-manifest invariants" ;;
     boundary-failpoints) echo "mutation, ack, projection, and trigger failpoint boundaries" ;;
-    openclaw-consumer) echo "read-only OpenClaw API, trigger policy, and external consumer fixtures" ;;
-    doctor-runtime) echo "ao doctor daemon, GasCity bridge, and OpenClaw runtime checks" ;;
+    consumer-consumer) echo "read-only Consumer API, trigger policy, and external consumer fixtures" ;;
+    doctor-runtime) echo "ao doctor daemon, GasCity bridge, and Consumer runtime checks" ;;
     *) echo "" ;;
   esac
 }
@@ -76,8 +76,8 @@ section_args() {
         -run 'Test(LedgerAppendRead|LedgerAppendRejectsInvalidWithoutPartialWrite|LedgerIdempotentAppend|ReplayLedgerDeduplicatesDuplicateEventID|CorruptLedgerRecordsAreQuarantined)'
       ;;
     projection-rebuild)
-      printf '%s\0' ./internal/daemon ./internal/openclaw \
-        -run 'Test(ProjectionRebuildsRpiDreamWikiAndOpenClawFromLedger|ProjectionReplayFromStoreCarriesRequestIDsAndDegradesOnCorruptLedger|SnapshotProjectionRebuildsFromInput|ExternalStyleOpenClawClientReadsSnapshot)'
+      printf '%s\0' ./internal/daemon ./internal/consumer \
+        -run 'Test(ProjectionRebuildsRpiDreamWikiAndConsumerFromLedger|ProjectionReplayFromStoreCarriesRequestIDsAndDegradesOnCorruptLedger|SnapshotProjectionRebuildsFromInput|ExternalStyleConsumerClientReadsSnapshot)'
       ;;
     state-machine-invariants)
       printf '%s\0' ./internal/daemon \
@@ -85,15 +85,15 @@ section_args() {
       ;;
     boundary-failpoints)
       printf '%s\0' ./internal/daemon \
-        -run 'Test(MutationAckFailpointBeforeAppendNoSideEffect|MutationAckFailpointAfterAppendBeforeAckRecoverable|MutationProjectionFailpointStillAcknowledgesAcceptedJob|AckFailpointAfterAppendBeforeAckIsRecoverableByIdempotency|FailpointBeforeAppendDoesNotAcceptQueueMutation|OpenClawTriggerRequiresAuthAndHasNoSideEffect|OpenClawTriggerAcceptsAllowlistedJobAfterLedgerAck)'
+        -run 'Test(MutationAckFailpointBeforeAppendNoSideEffect|MutationAckFailpointAfterAppendBeforeAckRecoverable|MutationProjectionFailpointStillAcknowledgesAcceptedJob|AckFailpointAfterAppendBeforeAckIsRecoverableByIdempotency|FailpointBeforeAppendDoesNotAcceptQueueMutation|ConsumerTriggerRequiresAuthAndHasNoSideEffect|ConsumerTriggerAcceptsAllowlistedJobAfterLedgerAck)'
       ;;
-    openclaw-consumer)
-      printf '%s\0' ./internal/daemon ./internal/openclaw \
-        -run 'Test(OpenClawReadOnlyEndpoints|OpenClawReadOnlyEndpointsRejectMutationMethods|OpenClawTriggerRequiresReadyDaemon|OpenClawTriggerRejectsNonAllowlistedJobType|ExternalStyleOpenClawClientReadsSnapshot)'
+    consumer-consumer)
+      printf '%s\0' ./internal/daemon ./internal/consumer \
+        -run 'Test(ConsumerReadOnlyEndpoints|ConsumerReadOnlyEndpointsRejectMutationMethods|ConsumerTriggerRequiresReadyDaemon|ConsumerTriggerRejectsNonAllowlistedJobType|ExternalStyleConsumerClientReadsSnapshot)'
       ;;
     doctor-runtime)
       printf '%s\0' ./cmd/ao \
-        -run 'TestDoctor(DaemonRuntimeCheckPassesWithReadyServer|OpenClawConsumerCheckPassesWithReadyServer|GasCityBridgeCheckUsesDiagnostics)'
+        -run 'TestDoctor(DaemonRuntimeCheckPassesWithReadyServer|ConsumerCheckPassesWithReadyServer|GasCityBridgeCheckUsesDiagnostics)'
       ;;
     *)
       return 1

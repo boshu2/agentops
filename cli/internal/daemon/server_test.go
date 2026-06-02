@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/openclaw"
+	"github.com/boshu2/agentops/cli/internal/consumer"
 )
 
 func TestReadOnlyHealthReadyStatusEvents(t *testing.T) {
@@ -228,21 +228,21 @@ func TestEventsReadOnlyRejectsPost(t *testing.T) {
 	}
 }
 
-func TestOpenClawReadOnlyEndpoints(t *testing.T) {
-	fixture := setupOpenClawReadOnlyFixture(t)
+func TestConsumerReadOnlyEndpoints(t *testing.T) {
+	fixture := setupConsumerReadOnlyFixture(t)
 
-	var snapshot openclaw.ConsumerSnapshot
-	getJSON(t, fixture.router, "/openclaw/v1/snapshot/latest", &snapshot)
-	assertOpenClawSnapshot(t, snapshot, fixture.refsArtifact)
-	assertOpenClawCollectionEndpoints(t, fixture.router)
+	var snapshot consumer.ConsumerSnapshot
+	getJSON(t, fixture.router, "/consumer/v1/snapshot/latest", &snapshot)
+	assertConsumerSnapshot(t, snapshot, fixture.refsArtifact)
+	assertConsumerCollectionEndpoints(t, fixture.router)
 }
 
-type openClawReadOnlyFixture struct {
+type consumerReadOnlyFixture struct {
 	router       http.Handler
 	refsArtifact ArtifactRef
 }
 
-func setupOpenClawReadOnlyFixture(t *testing.T) openClawReadOnlyFixture {
+func setupConsumerReadOnlyFixture(t *testing.T) consumerReadOnlyFixture {
 	t.Helper()
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
@@ -276,15 +276,15 @@ func setupOpenClawReadOnlyFixture(t *testing.T) openClawReadOnlyFixture {
 	}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("complete wiki job: %v", err)
 	}
-	return openClawReadOnlyFixture{
+	return consumerReadOnlyFixture{
 		router:       NewReadOnlyRouter(store, ServerOptions{Now: func() time.Time { return now }}),
 		refsArtifact: refsArtifact,
 	}
 }
 
-func assertOpenClawSnapshot(t *testing.T, snapshot openclaw.ConsumerSnapshot, refsArtifact ArtifactRef) {
+func assertConsumerSnapshot(t *testing.T, snapshot consumer.ConsumerSnapshot, refsArtifact ArtifactRef) {
 	t.Helper()
-	if snapshot.SchemaVersion != openclaw.ConsumerSnapshotSchemaVersion {
+	if snapshot.SchemaVersion != consumer.ConsumerSnapshotSchemaVersion {
 		t.Fatalf("snapshot schema = %d", snapshot.SchemaVersion)
 	}
 	if snapshot.SnapshotID == "snap_empty" || snapshot.Source.LastEventID == "" {
@@ -296,7 +296,7 @@ func assertOpenClawSnapshot(t *testing.T, snapshot openclaw.ConsumerSnapshot, re
 	if len(snapshot.Resources.Jobs) != 3 {
 		t.Fatalf("snapshot jobs = %d, want all jobs", len(snapshot.Resources.Jobs))
 	}
-	if len(snapshot.Resources.Wiki) != 1 || snapshot.Resources.Wiki[0].ResourceKind != openclaw.ResourceKindWiki {
+	if len(snapshot.Resources.Wiki) != 1 || snapshot.Resources.Wiki[0].ResourceKind != consumer.ResourceKindWiki {
 		t.Fatalf("snapshot wiki = %#v", snapshot.Resources.Wiki)
 	}
 	if got := snapshot.Resources.Wiki[0].ArtifactRefs["worker_session_refs"].SHA256; got != refsArtifact.SHA256 {
@@ -305,80 +305,80 @@ func assertOpenClawSnapshot(t *testing.T, snapshot openclaw.ConsumerSnapshot, re
 	if got := snapshot.Resources.Wiki[0].Artifacts["worker_session_refs"]; got != refsArtifact.Path {
 		t.Fatalf("snapshot compat artifact path = %q, want %q", got, refsArtifact.Path)
 	}
-	if !hasOpenClawProvenance(snapshot.Resources.Wiki[0].Provenance, "source-event", "daemon-ledger-event", "") {
+	if !hasConsumerProvenance(snapshot.Resources.Wiki[0].Provenance, "source-event", "daemon-ledger-event", "") {
 		t.Fatalf("wiki missing source-event provenance: %#v", snapshot.Resources.Wiki[0].Provenance)
 	}
-	if !hasOpenClawProvenance(snapshot.Resources.Wiki[0].Provenance, "artifact", "artifact", "worker_session_refs") {
+	if !hasConsumerProvenance(snapshot.Resources.Wiki[0].Provenance, "artifact", "artifact", "worker_session_refs") {
 		t.Fatalf("wiki missing artifact provenance: %#v", snapshot.Resources.Wiki[0].Provenance)
 	}
 }
 
-func assertOpenClawCollectionEndpoints(t *testing.T, router http.Handler) {
+func assertConsumerCollectionEndpoints(t *testing.T, router http.Handler) {
 	t.Helper()
-	var runs openclaw.RunsResponse
-	getJSON(t, router, "/openclaw/v1/runs", &runs)
-	if len(runs.Runs) != 2 || runs.Runs[0].ResourceKind != openclaw.ResourceKindRun {
+	var runs consumer.RunsResponse
+	getJSON(t, router, "/consumer/v1/runs", &runs)
+	if len(runs.Runs) != 2 || runs.Runs[0].ResourceKind != consumer.ResourceKindRun {
 		t.Fatalf("runs response = %#v", runs)
 	}
-	var jobs openclaw.JobsResponse
-	getJSON(t, router, "/openclaw/v1/jobs", &jobs)
-	if len(jobs.Jobs) != 3 || jobs.Jobs[0].ResourceKind != openclaw.ResourceKindJob {
+	var jobs consumer.JobsResponse
+	getJSON(t, router, "/consumer/v1/jobs", &jobs)
+	if len(jobs.Jobs) != 3 || jobs.Jobs[0].ResourceKind != consumer.ResourceKindJob {
 		t.Fatalf("jobs response = %#v", jobs)
 	}
-	var wiki openclaw.WikiResponse
-	getJSON(t, router, "/openclaw/v1/wiki", &wiki)
+	var wiki consumer.WikiResponse
+	getJSON(t, router, "/consumer/v1/wiki", &wiki)
 	if len(wiki.Wiki) != 1 || wiki.Wiki[0].JobID != "job-wiki" {
 		t.Fatalf("wiki response = %#v", wiki)
 	}
-	var health openclaw.HealthResponse
-	getJSON(t, router, "/openclaw/v1/health", &health)
+	var health consumer.HealthResponse
+	getJSON(t, router, "/consumer/v1/health", &health)
 	if health.Status != "ok" || !health.Ready || health.ResourceCounts.Jobs != 3 {
 		t.Fatalf("health response = %#v", health)
 	}
 }
 
-func TestOpenClawJobsReflectTerminalStatus(t *testing.T) {
+func TestConsumerJobsReflectTerminalStatus(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
 	queue := NewQueue(store, QueueOptions{Now: func() time.Time { return now }, LeaseDuration: time.Minute})
 	if _, err := queue.SubmitJob(SubmitJobInput{
-		RequestID: "req-openclaw-terminal",
-		JobID:     "job-openclaw-terminal",
-		JobType:   JobTypeOpenClawSnapshot,
+		RequestID: "req-consumer-terminal",
+		JobID:     "job-consumer-terminal",
+		JobType:   JobTypeConsumerSnapshot,
 	}, QueueMutationOptions{}); err != nil {
-		t.Fatalf("submit openclaw job: %v", err)
+		t.Fatalf("submit consumer job: %v", err)
 	}
-	claim, err := queue.ClaimJob("job-openclaw-terminal", "worker", QueueMutationOptions{})
+	claim, err := queue.ClaimJob("job-consumer-terminal", "worker", QueueMutationOptions{})
 	if err != nil {
-		t.Fatalf("claim openclaw job: %v", err)
+		t.Fatalf("claim consumer job: %v", err)
 	}
 	completed, err := queue.CompleteJob(CompleteJobInput{
 		JobID:      claim.Job.JobID,
-		RequestID:  "req-openclaw-terminal-complete",
+		RequestID:  "req-consumer-terminal-complete",
 		ClaimToken: claim.ClaimToken,
 		LeaseEpoch: claim.LeaseEpoch,
 		Actor:      "worker",
 		Artifacts:  map[string]string{"snapshot_status": "validated"},
 	}, QueueMutationOptions{})
 	if err != nil {
-		t.Fatalf("complete openclaw job: %v", err)
+		t.Fatalf("complete consumer job: %v", err)
 	}
 	router := NewReadOnlyRouter(store, ServerOptions{Now: func() time.Time { return now }})
 
-	var jobs openclaw.JobsResponse
-	getJSON(t, router, "/openclaw/v1/jobs", &jobs)
+	var jobs consumer.JobsResponse
+	getJSON(t, router, "/consumer/v1/jobs", &jobs)
 	if len(jobs.Jobs) != 1 {
-		t.Fatalf("OpenClaw jobs = %#v, want one job", jobs.Jobs)
+		t.Fatalf("Consumer jobs = %#v, want one job", jobs.Jobs)
 	}
 	if jobs.Jobs[0].JobID != completed.JobID || jobs.Jobs[0].Status != string(completed.Status) {
-		t.Fatalf("OpenClaw job = %#v, want status %s for %s", jobs.Jobs[0], completed.Status, completed.JobID)
+		t.Fatalf("Consumer job = %#v, want status %s for %s", jobs.Jobs[0], completed.Status, completed.JobID)
 	}
 	if jobs.Jobs[0].Artifacts["snapshot_status"] != "validated" {
-		t.Fatalf("OpenClaw artifacts = %#v, want terminal artifacts", jobs.Jobs[0].Artifacts)
+		t.Fatalf("Consumer artifacts = %#v, want terminal artifacts", jobs.Jobs[0].Artifacts)
 	}
 }
 
-func hasOpenClawProvenance(links []openclaw.ProvenanceLink, rel, kind, artifact string) bool {
+func hasConsumerProvenance(links []consumer.ProvenanceLink, rel, kind, artifact string) bool {
 	for _, link := range links {
 		if link.Rel != rel || link.Kind != kind {
 			continue
@@ -391,31 +391,31 @@ func hasOpenClawProvenance(links []openclaw.ProvenanceLink, rel, kind, artifact 
 	return false
 }
 
-func TestOpenClawReadOnlyEndpointsRejectMutationMethods(t *testing.T) {
+func TestConsumerReadOnlyEndpointsRejectMutationMethods(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
 	router := NewReadOnlyRouter(store, ServerOptions{Now: func() time.Time { return now }})
-	req := httptest.NewRequest(http.MethodPost, "/openclaw/v1/jobs", strings.NewReader(`{"job_type":"rpi.run"}`))
+	req := httptest.NewRequest(http.MethodPost, "/consumer/v1/jobs", strings.NewReader(`{"job_type":"rpi.run"}`))
 	req.Header.Set(DefaultMutationTokenHeader, "secret-token")
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
 	if resp.Code != http.StatusMethodNotAllowed {
-		t.Fatalf("POST /openclaw/v1/jobs status = %d, want 405", resp.Code)
+		t.Fatalf("POST /consumer/v1/jobs status = %d, want 405", resp.Code)
 	}
 	events, err := store.ReadLedger()
 	if err != nil {
 		t.Fatalf("read ledger: %v", err)
 	}
 	if len(events) != 0 {
-		t.Fatalf("OpenClaw read endpoint wrote %d ledger events, want 0", len(events))
+		t.Fatalf("Consumer read endpoint wrote %d ledger events, want 0", len(events))
 	}
 }
 
-func TestOpenClawTriggerRequiresAuthAndHasNoSideEffect(t *testing.T) {
+func TestConsumerTriggerRequiresAuthAndHasNoSideEffect(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
-	router := openClawTriggerRouter(t, store, &now)
-	resp := postOpenClawTrigger(t, router, `{"request_id":"req-oc","job_id":"job-oc","job_type":"openclaw.snapshot"}`, "", "")
+	router := consumerTriggerRouter(t, store, &now)
+	resp := postConsumerTrigger(t, router, `{"request_id":"req-oc","job_id":"job-oc","job_type":"consumer.snapshot"}`, "", "")
 	if resp.Code != http.StatusForbidden {
 		t.Fatalf("unauthorized trigger status = %d, want 403", resp.Code)
 	}
@@ -428,7 +428,7 @@ func TestOpenClawTriggerRequiresAuthAndHasNoSideEffect(t *testing.T) {
 	}
 }
 
-func TestOpenClawTriggerRequiresReadyDaemon(t *testing.T) {
+func TestConsumerTriggerRequiresReadyDaemon(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
 	if err := os.MkdirAll(store.Dir(), 0700); err != nil {
@@ -437,8 +437,8 @@ func TestOpenClawTriggerRequiresReadyDaemon(t *testing.T) {
 	if err := os.WriteFile(store.LedgerPath(), []byte("{not-json\n"), 0600); err != nil {
 		t.Fatalf("write corrupt ledger: %v", err)
 	}
-	router := openClawTriggerRouter(t, store, &now)
-	resp := postOpenClawTrigger(t, router, `{"request_id":"req-oc","job_id":"job-oc","job_type":"openclaw.snapshot"}`, "secret-token", "")
+	router := consumerTriggerRouter(t, store, &now)
+	resp := postConsumerTrigger(t, router, `{"request_id":"req-oc","job_id":"job-oc","job_type":"consumer.snapshot"}`, "secret-token", "")
 	if resp.Code != http.StatusServiceUnavailable {
 		t.Fatalf("unready trigger status = %d body=%s, want 503", resp.Code, resp.Body.String())
 	}
@@ -451,19 +451,19 @@ func TestOpenClawTriggerRequiresReadyDaemon(t *testing.T) {
 	}
 }
 
-func TestOpenClawTriggerAcceptsAllowlistedJobAfterLedgerAck(t *testing.T) {
+func TestConsumerTriggerAcceptsAllowlistedJobAfterLedgerAck(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
-	router := openClawTriggerRouter(t, store, &now)
-	resp := postOpenClawTrigger(t, router, `{"request_id":"req-oc","job_id":"job-oc","job_type":"openclaw.snapshot","idempotency_key":"oc-1","payload":{"reason":"refresh"}}`, "secret-token", "")
+	router := consumerTriggerRouter(t, store, &now)
+	resp := postConsumerTrigger(t, router, `{"request_id":"req-oc","job_id":"job-oc","job_type":"consumer.snapshot","idempotency_key":"oc-1","payload":{"reason":"refresh"}}`, "secret-token", "")
 	if resp.Code != http.StatusAccepted {
 		t.Fatalf("authorized trigger status = %d body=%s, want 202", resp.Code, resp.Body.String())
 	}
-	var body openclaw.TriggerJobResponse
+	var body consumer.TriggerJobResponse
 	if err := json.Unmarshal(resp.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode trigger response: %v", err)
 	}
-	if !body.Accepted || body.JobID != "job-oc" || body.JobType != string(JobTypeOpenClawSnapshot) || body.LastEventID == "" {
+	if !body.Accepted || body.JobID != "job-oc" || body.JobType != string(JobTypeConsumerSnapshot) || body.LastEventID == "" {
 		t.Fatalf("trigger response = %#v", body)
 	}
 	events, err := store.ReadLedger()
@@ -475,11 +475,11 @@ func TestOpenClawTriggerAcceptsAllowlistedJobAfterLedgerAck(t *testing.T) {
 	}
 }
 
-func TestOpenClawTriggerRejectsNonAllowlistedJobType(t *testing.T) {
+func TestConsumerTriggerRejectsNonAllowlistedJobType(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	store := NewStore(t.TempDir())
-	router := openClawTriggerRouter(t, store, &now)
-	resp := postOpenClawTrigger(t, router, `{"request_id":"req-stage","job_id":"job-stage","job_type":"dream.stage"}`, "secret-token", "")
+	router := consumerTriggerRouter(t, store, &now)
+	resp := postConsumerTrigger(t, router, `{"request_id":"req-stage","job_id":"job-stage","job_type":"dream.stage"}`, "secret-token", "")
 	if resp.Code != http.StatusBadRequest {
 		t.Fatalf("non-allowlisted trigger status = %d body=%s, want 400", resp.Code, resp.Body.String())
 	}
@@ -559,12 +559,12 @@ func TestDaemonJobsCancelStaticRouteUsesMutationPolicy(t *testing.T) {
 	}
 }
 
-func openClawTriggerRouter(t *testing.T, store *Store, now *time.Time) http.Handler {
+func consumerTriggerRouter(t *testing.T, store *Store, now *time.Time) http.Handler {
 	t.Helper()
 	return NewDaemonRouter(store, ServerOptions{
 		Now: func() time.Time { return *now },
 		MutationPolicy: DefaultMutationPolicy("secret-token", []string{
-			openclaw.TriggerJobsPath,
+			consumer.TriggerJobsPath,
 		}),
 	})
 }
@@ -679,9 +679,9 @@ func TestPlansDiff_AppliesEventsLimit(t *testing.T) {
 	}
 }
 
-func postOpenClawTrigger(t *testing.T, handler http.Handler, payload, token, failpoint string) *httptest.ResponseRecorder {
+func postConsumerTrigger(t *testing.T, handler http.Handler, payload, token, failpoint string) *httptest.ResponseRecorder {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodPost, openclaw.TriggerJobsPath, strings.NewReader(payload))
+	req := httptest.NewRequest(http.MethodPost, consumer.TriggerJobsPath, strings.NewReader(payload))
 	req.RemoteAddr = "127.0.0.1:51111"
 	req.Header.Set("Content-Type", "application/json")
 	if token != "" {

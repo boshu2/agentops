@@ -59,14 +59,14 @@ func TestDaemonSoakFakeExecutorWritesProof(t *testing.T) {
 	if err != nil {
 		t.Fatalf("runDaemonSoak: %v", err)
 	}
-	if report.Status != "pass" || len(report.Jobs) != 1 || len(report.OpenClawJobs) != 1 {
-		t.Fatalf("report = %#v, want one daemon and OpenClaw job", report)
+	if report.Status != "pass" || len(report.Jobs) != 1 || len(report.ConsumerJobs) != 1 {
+		t.Fatalf("report = %#v, want one daemon and Consumer job", report)
 	}
 	if report.Jobs[0].Status != daemonpkg.JobStatusCompleted {
 		t.Fatalf("daemon job status = %q, want completed", report.Jobs[0].Status)
 	}
-	if report.OpenClawJobs[0].Status != string(daemonpkg.JobStatusCompleted) {
-		t.Fatalf("OpenClaw job status = %q, want completed", report.OpenClawJobs[0].Status)
+	if report.ConsumerJobs[0].Status != string(daemonpkg.JobStatusCompleted) {
+		t.Fatalf("Consumer job status = %q, want completed", report.ConsumerJobs[0].Status)
 	}
 	if report.Jobs[0].Artifacts["soak_report"] != report.Proof.ReportJSON {
 		t.Fatalf("job artifacts = %#v, want soak_report proof path", report.Jobs[0].Artifacts)

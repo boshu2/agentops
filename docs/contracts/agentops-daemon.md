@@ -278,7 +278,7 @@ durable record of queue state. The `Store`
 which keeps local validation deterministic while exercising the same queue
 claim, heartbeat, and terminal event path as the long-running worker loop.
 
-The fake policy supports `openclaw.snapshot`, `wiki.forge`, and `dream.run`.
+The fake policy supports `consumer.snapshot`, `wiki.forge`, and `dream.run`.
 `wiki.forge` uses the shared `AgentWorker` contract with an in-memory worker.
 `dream.run` executes the existing Dream loop, writes terminal artifacts
 (`summary_json`, `summary_markdown`, `overnight_log`, and `failure_report` on
@@ -300,7 +300,7 @@ from the legacy `gc` CLI bridge.
 
 The `queue-only` scenario proves durable ingestion without claiming terminal
 success. `fake-executor --require-terminal` proves the executor path reaches a
-terminal ledger event and that `/openclaw/v1/jobs` reports the same terminal
+terminal ledger event and that `/consumer/v1/jobs` reports the same terminal
 status and artifacts as the daemon queue projection. `dream --require-terminal`
 uses the Dream executor path and may complete or fail, but it must produce a
 terminal daemon job with artifacts rather than remaining silently queued.
@@ -358,12 +358,12 @@ The required controls are:
       {
         "name": "phone-readonly-submit",
         "token": "<secret>",
-        "capabilities": ["submit_job", "openclaw_trigger"]
+        "capabilities": ["submit_job", "consumer_trigger"]
       },
       {
         "name": "mac-executor",
         "token": "<secret>",
-        "capabilities": ["submit_job", "cancel_job", "openclaw_trigger"]
+        "capabilities": ["submit_job", "cancel_job", "consumer_trigger"]
       },
       {
         "name": "bushido-admin",
@@ -377,7 +377,7 @@ The required controls are:
 
   `submit_job` covers `/jobs` and `/v1/jobs`, `cancel_job` covers
   `/jobs/cancel`, `/v1/jobs/cancel`, and `/v1/jobs/{id}/cancel`,
-  `openclaw_trigger` covers `/openclaw/v1/triggers/jobs`, and `admin` covers
+  `consumer_trigger` covers `/consumer/v1/triggers/jobs`, and `admin` covers
   schedule mutations such as `POST /v1/schedules` and
   `DELETE /v1/schedules/{name}`. `admin` satisfies all currently allowlisted
   daemon mutation capabilities but does not bypass the path allowlist.

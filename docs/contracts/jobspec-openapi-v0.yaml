@@ -25,8 +25,8 @@ tags:
     description: Local-token-protected job mutation and queue state.
   - name: Events
     description: Read-only daemon ledger replay.
-  - name: OpenClaw
-    description: OpenClaw consumer projection and safe trigger surface.
+  - name: Consumer
+    description: Consumer consumer projection and safe trigger surface.
 paths:
   /v1/health:
     get:
@@ -180,43 +180,43 @@ paths:
           $ref: "#/components/responses/Error"
         "500":
           $ref: "#/components/responses/Error"
-  /openclaw/v1/health:
+  /consumer/v1/health:
     get:
-      tags: [OpenClaw]
-      operationId: getOpenClawHealth
-      summary: Return OpenClaw consumer projection health.
+      tags: [Consumer]
+      operationId: getConsumerHealth
+      summary: Return Consumer consumer projection health.
       responses:
         "200":
-          description: OpenClaw snapshot health summary.
+          description: Consumer snapshot health summary.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OpenClawHealthResponse"
+                $ref: "#/components/schemas/ConsumerHealthResponse"
         "405":
           $ref: "#/components/responses/MethodNotAllowed"
         "500":
           $ref: "#/components/responses/Error"
-  /openclaw/v1/snapshot/latest:
+  /consumer/v1/snapshot/latest:
     get:
-      tags: [OpenClaw]
-      operationId: getOpenClawSnapshotLatest
-      summary: Return the latest OpenClaw consumer snapshot.
+      tags: [Consumer]
+      operationId: getConsumerSnapshotLatest
+      summary: Return the latest Consumer consumer snapshot.
       responses:
         "200":
           description: Versioned read-only consumer snapshot.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OpenClawConsumerSnapshot"
+                $ref: "#/components/schemas/ConsumerSnapshot"
         "405":
           $ref: "#/components/responses/MethodNotAllowed"
         "500":
           $ref: "#/components/responses/Error"
-  /openclaw/v1/runs:
+  /consumer/v1/runs:
     get:
-      tags: [OpenClaw]
-      operationId: listOpenClawRuns
-      summary: Return OpenClaw run resources.
+      tags: [Consumer]
+      operationId: listConsumerRuns
+      summary: Return Consumer run resources.
       responses:
         "200":
           description: Run resources derived from daemon projections.
@@ -229,16 +229,16 @@ paths:
                   runs:
                     type: array
                     items:
-                      $ref: "#/components/schemas/OpenClawResourceSummary"
+                      $ref: "#/components/schemas/ConsumerResourceSummary"
         "405":
           $ref: "#/components/responses/MethodNotAllowed"
         "500":
           $ref: "#/components/responses/Error"
-  /openclaw/v1/jobs:
+  /consumer/v1/jobs:
     get:
-      tags: [OpenClaw]
-      operationId: listOpenClawJobs
-      summary: Return OpenClaw job resources.
+      tags: [Consumer]
+      operationId: listConsumerJobs
+      summary: Return Consumer job resources.
       responses:
         "200":
           description: Job resources derived from daemon projections.
@@ -251,16 +251,16 @@ paths:
                   jobs:
                     type: array
                     items:
-                      $ref: "#/components/schemas/OpenClawResourceSummary"
+                      $ref: "#/components/schemas/ConsumerResourceSummary"
         "405":
           $ref: "#/components/responses/MethodNotAllowed"
         "500":
           $ref: "#/components/responses/Error"
-  /openclaw/v1/wiki:
+  /consumer/v1/wiki:
     get:
-      tags: [OpenClaw]
-      operationId: listOpenClawWiki
-      summary: Return OpenClaw wiki resources.
+      tags: [Consumer]
+      operationId: listConsumerWiki
+      summary: Return Consumer wiki resources.
       responses:
         "200":
           description: Wiki resources derived from daemon projections.
@@ -273,22 +273,22 @@ paths:
                   wiki:
                     type: array
                     items:
-                      $ref: "#/components/schemas/OpenClawResourceSummary"
+                      $ref: "#/components/schemas/ConsumerResourceSummary"
         "405":
           $ref: "#/components/responses/MethodNotAllowed"
         "500":
           $ref: "#/components/responses/Error"
-  /openclaw/v1/triggers/jobs:
+  /consumer/v1/triggers/jobs:
     post:
-      tags: [OpenClaw]
-      operationId: triggerOpenClawJob
-      summary: Submit an OpenClaw-allowlisted daemon job.
+      tags: [Consumer]
+      operationId: triggerConsumerJob
+      summary: Submit an Consumer-allowlisted daemon job.
       description: |
         Requires daemon readiness before submission. Only
-        `openclaw.snapshot`, `rpi.run`, `dream.run`, and `wiki.forge` are
+        `consumer.snapshot`, `rpi.run`, `dream.run`, and `wiki.forge` are
         allowlisted through this endpoint. Factory, schedule, plans, and eval
         job families remain available only through the general `/v1/jobs`
-        mutation surface; OpenClaw is a constrained consumer trigger, not a
+        mutation surface; Consumer is a constrained consumer trigger, not a
         factory admission authority.
       security:
         - DaemonMutationToken: []
@@ -298,14 +298,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/OpenClawTriggerJobRequest"
+              $ref: "#/components/schemas/ConsumerTriggerJobRequest"
       responses:
         "202":
-          description: Job accepted through the OpenClaw-safe trigger gate.
+          description: Job accepted through the Consumer-safe trigger gate.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/OpenClawTriggerJobResponse"
+                $ref: "#/components/schemas/ConsumerTriggerJobResponse"
         "400":
           description: Invalid JSON or non-allowlisted job type.
           content:
@@ -323,7 +323,7 @@ paths:
               schema:
                 oneOf:
                   - $ref: "#/components/schemas/ErrorResponse"
-                  - $ref: "#/components/schemas/OpenClawDaemonNotReady"
+                  - $ref: "#/components/schemas/ConsumerDaemonNotReady"
         "500":
           $ref: "#/components/responses/Error"
 components:
@@ -621,7 +621,7 @@ components:
           type: boolean
     ProjectionSet:
       type: object
-      required: [schema_version, rebuilt_at, source_ledger, manifests, jobs, rpi, dream, wiki, openclaw]
+      required: [schema_version, rebuilt_at, source_ledger, manifests, jobs, rpi, dream, wiki, consumer]
       properties:
         schema_version:
           type: integer
@@ -665,8 +665,8 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/JobProjection"
-        openclaw:
-          $ref: "#/components/schemas/OpenClawSnapshotProjection"
+        consumer:
+          $ref: "#/components/schemas/ConsumerSnapshotProjection"
         degraded_reasons:
           type: array
           items:
@@ -733,7 +733,7 @@ components:
           format: date-time
         last_event_id:
           type: string
-    OpenClawSnapshotProjection:
+    ConsumerSnapshotProjection:
       type: object
       required: [schema_version, snapshot_id, generated_at, source, resources, status]
       properties:
@@ -746,7 +746,7 @@ components:
           type: string
           format: date-time
         source:
-          $ref: "#/components/schemas/OpenClawSnapshotSource"
+          $ref: "#/components/schemas/ConsumerSnapshotSource"
         resources:
           type: object
           required: [runs, jobs, wiki]
@@ -765,7 +765,7 @@ components:
                 $ref: "#/components/schemas/JobProjection"
         status:
           $ref: "#/components/schemas/ProjectionStatus"
-    OpenClawHealthResponse:
+    ConsumerHealthResponse:
       type: object
       required: [status, ready, snapshot_id, generated_at, source, snapshot_status, resource_counts]
       properties:
@@ -780,9 +780,9 @@ components:
           type: string
           format: date-time
         source:
-          $ref: "#/components/schemas/OpenClawSnapshotSource"
+          $ref: "#/components/schemas/ConsumerSnapshotSource"
         snapshot_status:
-          $ref: "#/components/schemas/OpenClawSnapshotStatus"
+          $ref: "#/components/schemas/ConsumerSnapshotStatus"
         resource_counts:
           type: object
           required: [runs, jobs, wiki]
@@ -800,7 +800,7 @@ components:
           type: array
           items:
             type: string
-    OpenClawConsumerSnapshot:
+    ConsumerSnapshot:
       type: object
       required: [schema_version, snapshot_id, generated_at, source, status, resources]
       properties:
@@ -813,9 +813,9 @@ components:
           type: string
           format: date-time
         source:
-          $ref: "#/components/schemas/OpenClawSnapshotSource"
+          $ref: "#/components/schemas/ConsumerSnapshotSource"
         status:
-          $ref: "#/components/schemas/OpenClawSnapshotStatus"
+          $ref: "#/components/schemas/ConsumerSnapshotStatus"
         resources:
           type: object
           required: [runs, jobs, wiki]
@@ -823,16 +823,16 @@ components:
             runs:
               type: array
               items:
-                $ref: "#/components/schemas/OpenClawResourceSummary"
+                $ref: "#/components/schemas/ConsumerResourceSummary"
             jobs:
               type: array
               items:
-                $ref: "#/components/schemas/OpenClawResourceSummary"
+                $ref: "#/components/schemas/ConsumerResourceSummary"
             wiki:
               type: array
               items:
-                $ref: "#/components/schemas/OpenClawResourceSummary"
-    OpenClawSnapshotSource:
+                $ref: "#/components/schemas/ConsumerResourceSummary"
+    ConsumerSnapshotSource:
       type: object
       required: [ledger]
       properties:
@@ -840,7 +840,7 @@ components:
           type: string
         last_event_id:
           type: string
-    OpenClawResourceSummary:
+    ConsumerResourceSummary:
       type: object
       required: [resource_id, resource_kind, status]
       properties:
@@ -894,8 +894,8 @@ components:
         provenance:
           type: array
           items:
-            $ref: "#/components/schemas/OpenClawProvenanceLink"
-    OpenClawProvenanceLink:
+            $ref: "#/components/schemas/ConsumerProvenanceLink"
+    ConsumerProvenanceLink:
       type: object
       required: [rel, kind]
       properties:
@@ -915,15 +915,15 @@ components:
           type: string
         artifact:
           type: string
-    OpenClawTriggerJobRequest:
+    ConsumerTriggerJobRequest:
       allOf:
         - $ref: "#/components/schemas/SubmitJobRequest"
         - type: object
           properties:
             job_type:
               type: string
-              enum: [openclaw.snapshot, rpi.run, dream.run, wiki.forge]
-    OpenClawTriggerJobResponse:
+              enum: [consumer.snapshot, rpi.run, dream.run, wiki.forge]
+    ConsumerTriggerJobResponse:
       type: object
       required: [accepted, request_id, job_id, job_type, status, snapshot_status]
       properties:
@@ -941,10 +941,10 @@ components:
         last_event_id:
           type: string
         snapshot_status:
-          $ref: "#/components/schemas/OpenClawSnapshotStatus"
+          $ref: "#/components/schemas/ConsumerSnapshotStatus"
         idempotency_key:
           type: string
-    OpenClawDaemonNotReady:
+    ConsumerDaemonNotReady:
       type: object
       required: [error, projection_lag]
       properties:
@@ -978,7 +978,7 @@ components:
         - wiki.forge
         - factory.admission
         - factory.local-pilot
-        - openclaw.snapshot
+        - consumer.snapshot
         - plans.projection
         - llmwiki.loop
         - eval.suite
@@ -1045,7 +1045,7 @@ components:
         - rpi-registry
         - dream-runs
         - wiki-jobs
-        - openclaw-snapshot
+        - consumer-snapshot
         - daemon-status
         - daemon-job-status
     ProjectionStatus:
@@ -1054,6 +1054,6 @@ components:
     SnapshotReplayStatus:
       type: string
       enum: [complete, corrupt]
-    OpenClawSnapshotStatus:
+    ConsumerSnapshotStatus:
       type: string
       enum: [current, stale, degraded]

@@ -1,4 +1,4 @@
-package openclaw
+package consumer
 
 import (
 	"bytes"
@@ -13,8 +13,8 @@ import (
 const ConsumerSnapshotSchemaVersion = 1
 
 var (
-	ErrUnsupportedSnapshotVersion = errors.New("unsupported OpenClaw snapshot schema_version")
-	ErrInvalidSnapshotSchema      = errors.New("invalid OpenClaw snapshot schema")
+	ErrUnsupportedSnapshotVersion = errors.New("unsupported Consumer snapshot schema_version")
+	ErrInvalidSnapshotSchema      = errors.New("invalid Consumer snapshot schema")
 )
 
 type SnapshotStatus string
@@ -34,7 +34,7 @@ const (
 )
 
 // ConsumerSnapshot is the versioned, read-only projection consumed by
-// OpenClaw-style clients. It deliberately uses public string shapes instead of
+// Consumer-style clients. It deliberately uses public string shapes instead of
 // daemon package types so clients do not depend on AgentOps internals.
 type ConsumerSnapshot struct {
 	SchemaVersion int               `json:"schema_version"`

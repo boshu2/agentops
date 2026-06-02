@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/openclaw"
+	"github.com/boshu2/agentops/cli/internal/consumer"
 )
 
 type ServerOptions struct {
@@ -131,7 +131,7 @@ func NewDaemonRouter(store *Store, opts ServerOptions) http.Handler {
 		registerMutationRoute(mux, prefix+"/jobs/cancel", policy, server.handleCancelJob)
 	}
 	registerMutationRoute(mux, "POST /v1/jobs/{id}/cancel", policy, server.handleCancelJobByPath)
-	registerMutationRoute(mux, openclaw.TriggerJobsPath, policy, server.handleOpenClawTriggerJob)
+	registerMutationRoute(mux, consumer.TriggerJobsPath, policy, server.handleConsumerTriggerJob)
 	// Schedule routes (soc-8inr.5).
 	registerMutationRoute(mux, "POST /v1/schedules", policy, server.handlePostSchedule)
 	registerMutationRoute(mux, "DELETE /v1/schedules/{name}", policy, server.handleDeleteSchedule)
@@ -147,11 +147,11 @@ func (s *ReadOnlyServer) registerReadOnlyRoutes(mux *http.ServeMux) {
 		registerReadOnlyRoute(mux, prefix+"/status", s.handleStatus)
 		registerReadOnlyRoute(mux, prefix+"/events", s.handleEvents)
 	}
-	registerReadOnlyRoute(mux, "/openclaw/v1/health", s.handleOpenClawHealth)
-	registerReadOnlyRoute(mux, "/openclaw/v1/snapshot/latest", s.handleOpenClawSnapshotLatest)
-	registerReadOnlyRoute(mux, "/openclaw/v1/runs", s.handleOpenClawRuns)
-	registerReadOnlyRoute(mux, "/openclaw/v1/jobs", s.handleOpenClawJobs)
-	registerReadOnlyRoute(mux, "/openclaw/v1/wiki", s.handleOpenClawWiki)
+	registerReadOnlyRoute(mux, "/consumer/v1/health", s.handleConsumerHealth)
+	registerReadOnlyRoute(mux, "/consumer/v1/snapshot/latest", s.handleConsumerSnapshotLatest)
+	registerReadOnlyRoute(mux, "/consumer/v1/runs", s.handleConsumerRuns)
+	registerReadOnlyRoute(mux, "/consumer/v1/jobs", s.handleConsumerJobs)
+	registerReadOnlyRoute(mux, "/consumer/v1/wiki", s.handleConsumerWiki)
 
 	// Plans projection (atom-1 registers the read-side routes; atom-2 fills the
 	// projection body). Read-side absorption per foundation §6 site 3 (alt) —
@@ -337,23 +337,23 @@ func applyReadOnlyEventsLimit(events []LedgerEvent, rawLimit string) ([]LedgerEv
 	return events, nil
 }
 
-func (s *ReadOnlyServer) handleOpenClawHealth(w http.ResponseWriter, r *http.Request) {
+func (s *ReadOnlyServer) handleConsumerHealth(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
-	snapshot, state, err := s.readOpenClawSnapshot()
+	snapshot, state, err := s.readConsumerSnapshot()
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	writeJSON(w, http.StatusOK, openclaw.HealthResponse{
+	writeJSON(w, http.StatusOK, consumer.HealthResponse{
 		Status:         "ok",
 		Ready:          state.Ready,
 		SnapshotID:     snapshot.SnapshotID,
 		GeneratedAt:    snapshot.GeneratedAt,
 		Source:         snapshot.Source,
 		SnapshotStatus: snapshot.Status,
-		ResourceCounts: openclaw.ResourceCounts{
+		ResourceCounts: consumer.ResourceCounts{
 			Runs: len(snapshot.Resources.Runs),
 			Jobs: len(snapshot.Resources.Jobs),
 			Wiki: len(snapshot.Resources.Wiki),
@@ -362,11 +362,11 @@ func (s *ReadOnlyServer) handleOpenClawHealth(w http.ResponseWriter, r *http.Req
 	})
 }
 
-func (s *ReadOnlyServer) handleOpenClawSnapshotLatest(w http.ResponseWriter, r *http.Request) {
+func (s *ReadOnlyServer) handleConsumerSnapshotLatest(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
-	snapshot, _, err := s.readOpenClawSnapshot()
+	snapshot, _, err := s.readConsumerSnapshot()
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -374,43 +374,43 @@ func (s *ReadOnlyServer) handleOpenClawSnapshotLatest(w http.ResponseWriter, r *
 	writeJSON(w, http.StatusOK, snapshot)
 }
 
-func (s *ReadOnlyServer) handleOpenClawRuns(w http.ResponseWriter, r *http.Request) {
+func (s *ReadOnlyServer) handleConsumerRuns(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
-	snapshot, _, err := s.readOpenClawSnapshot()
+	snapshot, _, err := s.readConsumerSnapshot()
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	writeJSON(w, http.StatusOK, openclaw.RunsResponse{Runs: snapshot.Resources.Runs})
+	writeJSON(w, http.StatusOK, consumer.RunsResponse{Runs: snapshot.Resources.Runs})
 }
 
-func (s *ReadOnlyServer) handleOpenClawJobs(w http.ResponseWriter, r *http.Request) {
+func (s *ReadOnlyServer) handleConsumerJobs(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
-	snapshot, _, err := s.readOpenClawSnapshot()
+	snapshot, _, err := s.readConsumerSnapshot()
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	writeJSON(w, http.StatusOK, openclaw.JobsResponse{Jobs: snapshot.Resources.Jobs})
+	writeJSON(w, http.StatusOK, consumer.JobsResponse{Jobs: snapshot.Resources.Jobs})
 }
 
-func (s *ReadOnlyServer) handleOpenClawWiki(w http.ResponseWriter, r *http.Request) {
+func (s *ReadOnlyServer) handleConsumerWiki(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
-	snapshot, _, err := s.readOpenClawSnapshot()
+	snapshot, _, err := s.readConsumerSnapshot()
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	writeJSON(w, http.StatusOK, openclaw.WikiResponse{Wiki: snapshot.Resources.Wiki})
+	writeJSON(w, http.StatusOK, consumer.WikiResponse{Wiki: snapshot.Resources.Wiki})
 }
 
-func (s *ReadOnlyServer) handleOpenClawTriggerJob(w http.ResponseWriter, r *http.Request) {
+func (s *ReadOnlyServer) handleConsumerTriggerJob(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodPost) {
 		return
 	}
@@ -429,7 +429,7 @@ func (s *ReadOnlyServer) handleOpenClawTriggerJob(w http.ResponseWriter, r *http
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, MaxJobSubmissionBytes)
-	var req openclaw.TriggerJobRequest
+	var req consumer.TriggerJobRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		var maxErr *http.MaxBytesError
 		if errors.As(err, &maxErr) {
@@ -443,8 +443,8 @@ func (s *ReadOnlyServer) handleOpenClawTriggerJob(w http.ResponseWriter, r *http
 		return
 	}
 	jobType := JobType(req.JobType)
-	if !openClawTriggerAllowedJobType(jobType) {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_type is not allowlisted for OpenClaw trigger"})
+	if !consumerTriggerAllowedJobType(jobType) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "job_type is not allowlisted for Consumer trigger"})
 		return
 	}
 	queue := NewQueue(s.store, s.queueOptions())
@@ -453,7 +453,7 @@ func (s *ReadOnlyServer) handleOpenClawTriggerJob(w http.ResponseWriter, r *http
 		JobID:          req.JobID,
 		JobType:        jobType,
 		IdempotencyKey: req.IdempotencyKey,
-		Actor:          mutationActor("openclaw-trigger", decision),
+		Actor:          mutationActor("consumer-trigger", decision),
 		Payload:        req.Payload,
 	}, QueueMutationOptions{Failpoint: queueFailpointFromRequest(r)})
 	if err != nil {
@@ -461,11 +461,11 @@ func (s *ReadOnlyServer) handleOpenClawTriggerJob(w http.ResponseWriter, r *http
 		return
 	}
 	state, err = s.readState()
-	snapshotStatus := openclaw.SnapshotStatusDegraded
+	snapshotStatus := consumer.SnapshotStatusDegraded
 	if err == nil {
-		snapshotStatus = mapOpenClawSnapshotStatus(state)
+		snapshotStatus = mapConsumerSnapshotStatus(state)
 	}
-	writeJSON(w, http.StatusAccepted, openclaw.TriggerJobResponse{
+	writeJSON(w, http.StatusAccepted, consumer.TriggerJobResponse{
 		Accepted:       true,
 		RequestID:      job.RequestID,
 		JobID:          job.JobID,
@@ -833,54 +833,54 @@ func (s *ReadOnlyServer) readState() (readOnlyState, error) {
 	}, nil
 }
 
-func (s *ReadOnlyServer) readOpenClawSnapshot() (openclaw.ConsumerSnapshot, readOnlyState, error) {
+func (s *ReadOnlyServer) readConsumerSnapshot() (consumer.ConsumerSnapshot, readOnlyState, error) {
 	state, err := s.readState()
 	if err != nil {
-		return openclaw.ConsumerSnapshot{}, readOnlyState{}, err
+		return consumer.ConsumerSnapshot{}, readOnlyState{}, err
 	}
 	generatedAt, err := time.Parse(time.RFC3339Nano, state.Projections.RebuiltAt)
 	if err != nil {
 		generatedAt = s.now()
 	}
-	snapshot, err := openclaw.BuildConsumerSnapshot(openclaw.ProjectionInput{
+	snapshot, err := consumer.BuildConsumerSnapshot(consumer.ProjectionInput{
 		GeneratedAt: generatedAt,
-		Source: openclaw.SnapshotSource{
+		Source: consumer.SnapshotSource{
 			Ledger:      state.Projections.SourceLedger,
 			LastEventID: state.Projections.LastEventID,
 		},
-		Status: mapOpenClawSnapshotStatus(state),
-		Runs:   openClawResourcesFromJobs(state.Projections.OpenClaw.Resources.Runs, openclaw.ResourceKindRun),
-		Jobs:   openClawResourcesFromJobs(state.Projections.OpenClaw.Resources.Jobs, openclaw.ResourceKindJob),
-		Wiki:   openClawResourcesFromJobs(state.Projections.OpenClaw.Resources.Wiki, openclaw.ResourceKindWiki),
+		Status: mapConsumerSnapshotStatus(state),
+		Runs:   consumerResourcesFromJobs(state.Projections.Consumer.Resources.Runs, consumer.ResourceKindRun),
+		Jobs:   consumerResourcesFromJobs(state.Projections.Consumer.Resources.Jobs, consumer.ResourceKindJob),
+		Wiki:   consumerResourcesFromJobs(state.Projections.Consumer.Resources.Wiki, consumer.ResourceKindWiki),
 	})
 	if err != nil {
-		return openclaw.ConsumerSnapshot{}, readOnlyState{}, err
+		return consumer.ConsumerSnapshot{}, readOnlyState{}, err
 	}
 	return snapshot, state, nil
 }
 
-func mapOpenClawSnapshotStatus(state readOnlyState) openclaw.SnapshotStatus {
+func mapConsumerSnapshotStatus(state readOnlyState) consumer.SnapshotStatus {
 	if state.Lag.Degraded {
-		return openclaw.SnapshotStatusDegraded
+		return consumer.SnapshotStatusDegraded
 	}
-	switch state.Projections.Manifests[ProjectionOpenClaw].Status {
+	switch state.Projections.Manifests[ProjectionConsumer].Status {
 	case ProjectionStatusStale:
-		return openclaw.SnapshotStatusStale
+		return consumer.SnapshotStatusStale
 	case ProjectionStatusDegraded:
-		return openclaw.SnapshotStatusDegraded
+		return consumer.SnapshotStatusDegraded
 	default:
-		return openclaw.SnapshotStatusCurrent
+		return consumer.SnapshotStatusCurrent
 	}
 }
 
-func openClawResourcesFromJobs(jobs []JobProjection, kind openclaw.ResourceKind) []openclaw.ResourceSummary {
-	out := make([]openclaw.ResourceSummary, 0, len(jobs))
+func consumerResourcesFromJobs(jobs []JobProjection, kind consumer.ResourceKind) []consumer.ResourceSummary {
+	out := make([]consumer.ResourceSummary, 0, len(jobs))
 	for _, job := range jobs {
 		resourceID := job.JobID
-		if kind == openclaw.ResourceKindWiki {
+		if kind == consumer.ResourceKindWiki {
 			resourceID = "wiki-" + job.JobID
 		}
-		resource := openclaw.ResourceSummary{
+		resource := consumer.ResourceSummary{
 			ResourceID:        resourceID,
 			ResourceKind:      kind,
 			JobID:             job.JobID,
@@ -890,29 +890,29 @@ func openClawResourcesFromJobs(jobs []JobProjection, kind openclaw.ResourceKind)
 			RequestIDs:        append([]string{}, job.RequestIDs...),
 			Status:            string(job.Status),
 			ResultStatus:      string(job.ResultStatus),
-			Failure:           openClawFailure(job.Failure),
+			Failure:           consumerFailure(job.Failure),
 			Artifacts:         cloneStringMap(job.Artifacts),
-			ArtifactRefs:      openClawArtifactRefs(job.ArtifactRefs),
+			ArtifactRefs:      consumerArtifactRefs(job.ArtifactRefs),
 			ProjectionTargets: projectionTargetStrings(job.ProjectionTargets),
 			CreatedAt:         job.CreatedAt,
 			UpdatedAt:         job.UpdatedAt,
 			LastEventID:       job.LastEventID,
 		}
-		out = append(out, openclaw.WithProvenance(resource))
+		out = append(out, consumer.WithProvenance(resource))
 	}
 	if out == nil {
-		return []openclaw.ResourceSummary{}
+		return []consumer.ResourceSummary{}
 	}
 	return out
 }
 
-func openClawArtifactRefs(in map[string]ArtifactRef) map[string]openclaw.ArtifactRef {
+func consumerArtifactRefs(in map[string]ArtifactRef) map[string]consumer.ArtifactRef {
 	if len(in) == 0 {
 		return nil
 	}
-	out := make(map[string]openclaw.ArtifactRef, len(in))
+	out := make(map[string]consumer.ArtifactRef, len(in))
 	for key, ref := range in {
-		out[key] = openclaw.ArtifactRef{
+		out[key] = consumer.ArtifactRef{
 			Path:      ref.Path,
 			SHA256:    ref.SHA256,
 			Size:      ref.Size,
@@ -931,11 +931,11 @@ func resourceRunID(job JobProjection) string {
 	}
 }
 
-func openClawFailure(failure *JobFailure) *openclaw.FailureSummary {
+func consumerFailure(failure *JobFailure) *consumer.FailureSummary {
 	if failure == nil {
 		return nil
 	}
-	return &openclaw.FailureSummary{
+	return &consumer.FailureSummary{
 		Code:      string(failure.Code),
 		Message:   failure.Message,
 		Retryable: failure.Retryable,
@@ -975,7 +975,7 @@ func (s *ReadOnlyServer) mutationPolicy() MutationPolicy {
 		policy.AllowedPaths = []string{
 			"/jobs", "/v1/jobs",
 			"/jobs/cancel", "/v1/jobs/cancel", "/v1/jobs/*/cancel",
-			openclaw.TriggerJobsPath,
+			consumer.TriggerJobsPath,
 			"/v1/schedules",   // POST + GET (GET bypasses auth via registerReadOnlyRoute)
 			"/v1/schedules/*", // DELETE /v1/schedules/{name}
 		}
@@ -997,9 +997,9 @@ func mutationActor(base string, decision MutationDecision) string {
 	return base + ":" + sanitizeIDPart(decision.TokenName)
 }
 
-func openClawTriggerAllowedJobType(jobType JobType) bool {
+func consumerTriggerAllowedJobType(jobType JobType) bool {
 	switch jobType {
-	case JobTypeOpenClawSnapshot, JobTypeRPIRun, JobTypeDreamRun, JobTypeWikiForge:
+	case JobTypeConsumerSnapshot, JobTypeRPIRun, JobTypeDreamRun, JobTypeWikiForge:
 		return true
 	default:
 		return false

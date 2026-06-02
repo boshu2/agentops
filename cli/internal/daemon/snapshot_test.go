@@ -30,7 +30,7 @@ func TestProjectionSnapshotRoundTrip(t *testing.T) {
 		Jobs: []JobProjection{
 			{
 				JobID:     "job-1",
-				JobType:   JobTypeOpenClawSnapshot,
+				JobType:   JobTypeConsumerSnapshot,
 				RequestID: "req-1",
 				Status:    JobStatusCompleted,
 				Artifacts: map[string]string{

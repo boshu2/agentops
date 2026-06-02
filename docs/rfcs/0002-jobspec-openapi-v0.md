@@ -9,7 +9,7 @@ Companion spec: [`docs/contracts/jobspec-openapi-v0.yaml`](../contracts/jobspec-
 Publish JobSpec OpenAPI v0 as the first daemon conformance contract for
 AgentOps runtimes. The v0 contract describes current `agentopsd` behavior only:
 durable job submission, cancellation, queue state, ledger replay, projection
-readiness, and the OpenClaw consumer surface.
+readiness, and the Consumer consumer surface.
 
 This RFC does not ask to refactor `agentopsd`, add placement, or introduce new
 job types. It asks whether the current behavior is stable enough to name,
@@ -37,7 +37,7 @@ small useful kernel today:
 - queue leasing with claim tokens, lease epochs, heartbeats, retry waiting, and
   terminal completion, failure, or cancellation
 - read models rebuilt from ledger replay
-- OpenClaw projection resources and allowlisted safe triggers
+- Consumer projection resources and allowlisted safe triggers
 
 The OpenAPI document turns that kernel into a portable conformance target. Any
 runtime can implement the same contract without adopting AgentOps internals.
@@ -50,8 +50,8 @@ Source of truth:
 - `cli/internal/daemon/jobs.go` for queue mutation and replay behavior
 - `cli/internal/daemon/types.go` for job, status, event, and failure enums
 - `cli/internal/daemon/projections.go` for projection names and read models
-- `cli/internal/openclaw/api.go` and `cli/internal/openclaw/types.go` for the
-  OpenClaw consumer surface
+- `cli/internal/consumer/api.go` and `cli/internal/consumer/types.go` for the
+  Consumer consumer surface
 
 Versioned daemon routes:
 
@@ -66,16 +66,16 @@ Versioned daemon routes:
 
 The current router also exposes unversioned aliases for the same daemon routes.
 
-OpenClaw consumer routes:
+Consumer consumer routes:
 
 | Route | Method | Purpose |
 |---|---:|---|
-| `/openclaw/v1/health` | GET | consumer projection health |
-| `/openclaw/v1/snapshot/latest` | GET | aggregate consumer snapshot |
-| `/openclaw/v1/runs` | GET | run resources |
-| `/openclaw/v1/jobs` | GET | job resources |
-| `/openclaw/v1/wiki` | GET | wiki resources |
-| `/openclaw/v1/triggers/jobs` | POST | allowlisted job trigger |
+| `/consumer/v1/health` | GET | consumer projection health |
+| `/consumer/v1/snapshot/latest` | GET | aggregate consumer snapshot |
+| `/consumer/v1/runs` | GET | run resources |
+| `/consumer/v1/jobs` | GET | job resources |
+| `/consumer/v1/wiki` | GET | wiki resources |
+| `/consumer/v1/triggers/jobs` | POST | allowlisted job trigger |
 
 ## Non-Goals
 
@@ -161,9 +161,9 @@ checks:
 8. `POST /v1/jobs/cancel` appends a cancellation for non-terminal jobs and
    returns an `already_terminal_*` outcome for terminal jobs.
 9. `GET /v1/events` returns replayed ledger events and last event id.
-10. OpenClaw read routes report resources from the same daemon projections as
+10. Consumer read routes report resources from the same daemon projections as
     `/v1/status`.
-11. `/openclaw/v1/triggers/jobs` refuses non-allowlisted job types.
+11. `/consumer/v1/triggers/jobs` refuses non-allowlisted job types.
 
 The next tactical step is to turn this list into golden compatibility tests for
 `/jobs`, `/status`, ledger replay, and queue transitions.
@@ -177,7 +177,7 @@ The next tactical step is to turn this list into golden compatibility tests for
    compatibility conveniences outside the required profile?
 3. Should `placement.affinity` be a JobSpec v0 extension field under
    `payload.placement`, or wait for JobSpec v1 after the mt-olympus shim soaks?
-4. Should OpenClaw stay inside the JobSpec v0 document, or split into a separate
+4. Should Consumer stay inside the JobSpec v0 document, or split into a separate
    consumer API conformance profile?
 
 ## Recommendation

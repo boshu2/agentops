@@ -27,7 +27,7 @@ All three: temp file + write + fsync + atomic rename. Survives mid-write SIGKILL
 
 After the agentops-3ga.4 dedup, the following packages will import these helpers:
 - `cli/internal/overnight/` (4 sites: checkpoint, reduce, measure, commit)
-- `cli/internal/openclaw/snapshot.go` (1 site, 0o600 security-sensitive)
+- `cli/internal/consumer/snapshot.go` (1 site, 0o600 security-sensitive)
 
 ## See also
 - `~/.agents/olympus-history-index.md` for the full extraction history

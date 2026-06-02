@@ -1,4 +1,4 @@
-package openclaw
+package consumer
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	quest "github.com/boshu2/agentops/cli/internal/domain/quest"
 )
 
-const SnapshotDirRel = ".agents/daemon/projections/openclaw"
+const SnapshotDirRel = ".agents/daemon/projections/consumer"
 
 type ProjectionInput struct {
 	GeneratedAt time.Time
@@ -103,11 +103,11 @@ func (s *SnapshotStore) Write(snapshot ConsumerSnapshot) error {
 	}
 	data, err := json.MarshalIndent(snapshot, "", "  ")
 	if err != nil {
-		return fmt.Errorf("marshal OpenClaw snapshot: %w", err)
+		return fmt.Errorf("marshal Consumer snapshot: %w", err)
 	}
 	data = append(data, '\n')
 	if err := os.MkdirAll(s.Dir(), 0700); err != nil {
-		return fmt.Errorf("create OpenClaw snapshot dir: %w", err)
+		return fmt.Errorf("create Consumer snapshot dir: %w", err)
 	}
 	if err := quest.AtomicWriteFileWithPerm(versionPath, data, 0o600); err != nil {
 		return err
@@ -133,7 +133,7 @@ func (s *SnapshotStore) Read(snapshotID string) (ConsumerSnapshot, error) {
 func (s *SnapshotStore) ReadPath(path string) (ConsumerSnapshot, error) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
-		return ConsumerSnapshot{}, fmt.Errorf("read OpenClaw snapshot: %w", err)
+		return ConsumerSnapshot{}, fmt.Errorf("read Consumer snapshot: %w", err)
 	}
 	return ParseConsumerSnapshot(raw)
 }

@@ -289,8 +289,8 @@ func detectDreamRuntimes() []dreamRuntimeStatus {
 		{name: "codex", command: "codex", supported: true},
 		{name: "claude", command: "claude", supported: true},
 		{name: "gemini", command: "gemini", supported: false, note: "Detected for future Dream integrations; overnight execution is not wired yet."},
-		{name: "openclaw", command: "openclaw", supported: false, note: "OpenClaw/Morai bridge must be discoverable before Dream Council can execute it."},
-		{name: "oc-ask", command: "oc-ask", supported: false, note: "OpenClaw/Morai bridge must be discoverable before Dream Council can execute it."},
+		{name: "consumer", command: "consumer", supported: false, note: "Consumer/Morai bridge must be discoverable before Dream Council can execute it."},
+		{name: "oc-ask", command: "oc-ask", supported: false, note: "Consumer/Morai bridge must be discoverable before Dream Council can execute it."},
 		{name: "opencode", command: "opencode", supported: false, note: "Detected locally, but Dream Council does not execute it yet."},
 	}
 	out := make([]dreamRuntimeStatus, 0, len(candidates))

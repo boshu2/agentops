@@ -29,11 +29,11 @@ The first API surface should expose read-only projection resources:
 
 | Resource | Purpose |
 |----------|---------|
-| `/openclaw/v1/snapshot/latest` | latest aggregate consumer snapshot |
-| `/openclaw/v1/runs` | RPI and Dream run summaries |
-| `/openclaw/v1/jobs` | daemon job summaries |
-| `/openclaw/v1/wiki` | wiki/forge corpus and generation summaries |
-| `/openclaw/v1/health` | daemon projection health for the consumer |
+| `/consumer/v1/snapshot/latest` | latest aggregate consumer snapshot |
+| `/consumer/v1/runs` | RPI and Dream run summaries |
+| `/consumer/v1/jobs` | daemon job summaries |
+| `/consumer/v1/wiki` | wiki/forge corpus and generation summaries |
+| `/consumer/v1/health` | daemon projection health for the consumer |
 
 Read-only resources must be safe for unauthenticated local inspection only when
 the daemon local trust policy allows it.
@@ -62,7 +62,7 @@ Snapshots are versioned projections:
 Readers must tolerate unknown additive fields and reject unsupported
 `schema_version` values with a compatibility error.
 
-The v1 schema is represented in code as `openclaw.ConsumerSnapshot`:
+The v1 schema is represented in code as `consumer.ConsumerSnapshot`:
 
 | Field | Required | Notes |
 |-------|----------|-------|
@@ -80,11 +80,11 @@ Each resource summary carries `resource_id`, `resource_kind`, `status`, optional
 job/run identifiers, request IDs, artifacts, projection targets, timestamps, and
 provenance links. `resource_kind` must match the containing list: `run` for
 `resources.runs`, `job` for `resources.jobs`, and `wiki` for `resources.wiki`.
-For terminal daemon jobs, `/openclaw/v1/jobs` must report the same `status`,
+For terminal daemon jobs, `/consumer/v1/jobs` must report the same `status`,
 failure summary, artifacts, and latest event provenance as the daemon queue
 projection used by `ao daemon jobs show`.
 
-Golden fixture: `cli/internal/openclaw/testdata/consumer_snapshot_v1.json`.
+Golden fixture: `cli/internal/consumer/testdata/consumer_snapshot_v1.json`.
 
 ## Product Proof
 
@@ -92,7 +92,7 @@ Golden fixture: `cli/internal/openclaw/testdata/consumer_snapshot_v1.json`.
 repeatable local proof that the consumer can consume terminal daemon state. The soak
 writes its scenario, filtered ledger events, JSON report, and markdown summary
 under `.agents/daemon/soaks/<run-id>/`; the report includes both daemon queue
-jobs and the matching `/openclaw/v1/jobs` resources.
+jobs and the matching `/consumer/v1/jobs` resources.
 
 ## Mutation Gate
 

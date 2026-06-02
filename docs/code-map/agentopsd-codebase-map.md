@@ -45,7 +45,7 @@ Module path: `github.com/boshu2/agentops/cli` (Go 1.26).
 | `cli/internal/eval/` | Eval engine: baseline, compare, coverage, scorecard, runtime |
 | `cli/internal/goals/`, `cli/internal/quality/` | Goals/fitness + repo-quality doctor metrics |
 | `cli/internal/storage/`, `cli/internal/types/` | Filesystem helpers + shared type definitions |
-| `cli/internal/{agentworker,wikiworker,openclaw,bridge,formatter,gascity,knowledge,corpus,forge,harvest,mine,pool,provenance,parser,plans,resolver,safety,shellutil,state,taxonomy,notebook,bench,cycles,autodev}/` | Smaller subsystems — see Packages table below |
+| `cli/internal/{agentworker,wikiworker,consumer,bridge,formatter,gascity,knowledge,corpus,forge,harvest,mine,pool,provenance,parser,plans,resolver,safety,shellutil,state,taxonomy,notebook,bench,cycles,autodev}/` | Smaller subsystems — see Packages table below |
 | `cli/pkg/`, `cli/embedded/`, `cli/hooks/`, `cli/bin/` | Public Go API surface, embedded assets, hook scripts, build outputs |
 | `docs/`, `docs/code-map/` | This map; `ARCHITECTURE.md`, `cli-surface.md`, `HOOKS.md`, `SCHEMAS.md`, runbooks |
 | `skills/`, `skills-codex/`, `skills-codex-overrides/` | AgentOps skill bundles consumed by the CLI |
@@ -95,7 +95,7 @@ Top packages by file count (non-test source under `cli/internal/`):
 | `cli/internal/quality` | 8 | 2,358 | Repo-quality doctor: golden metrics, health/ops metrics, codex-skills lint, stale-refs. |
 | `cli/internal/gascity` | 6 | 1,581 | TODO — placeholder summary; gascity is the energy/budget accounting subsystem. |
 | `cli/internal/storage` | 6 | 1,224 | Filesystem helpers: locked file IO, search index. |
-| `cli/internal/agentworker`, `wikiworker`, `bridge`, `openclaw`, `knowledge`, `formatter`, `types`, … | 3-4 each | 0.4-1.5k each | Smaller leaf packages — TODO: per-package summaries. |
+| `cli/internal/agentworker`, `wikiworker`, `bridge`, `consumer`, `knowledge`, `formatter`, `types`, … | 3-4 each | 0.4-1.5k each | Smaller leaf packages — TODO: per-package summaries. |
 
 ### Top 3 packages — detail
 
@@ -126,7 +126,7 @@ Top packages by file count (non-test source under `cli/internal/`):
   - Authentication middleware enforcing the mutation-token header (`auth.go` + `TestAuthRequiresMutationTokenHeader`).
   - `DreamRunLoopOptions` and `DreamMode` — typed run-loop config for the Dream executor.
   - RPI registry/runner pair that owns in-flight RPI runs and reconciles their state.
-- **Imports from internal:** `cli/internal/{agentworker, gascity, openclaw, rpi, wikiworker}`.
+- **Imports from internal:** `cli/internal/{agentworker, gascity, consumer, rpi, wikiworker}`.
 - **Imported by:** `cli/cmd/ao/daemon*.go` and `cli/internal/overnight` (Dream stage hands work to the daemon executor).
 
 ## Daemon internals
@@ -217,7 +217,7 @@ Edges sampled from `grep -h "agentops/cli/internal" cli/internal/<pkg>/*.go`:
 ```
 overnight ──► corpus, daemon, forge, harvest, lifecycle, mine, pool,
               provenance, rpi, search, overnight (intra)
-daemon    ──► agentworker, gascity, openclaw, rpi, wikiworker
+daemon    ──► agentworker, gascity, consumer, rpi, wikiworker
 lifecycle ──► goals, pool, ratchet, storage, types
 search    ──► notebook, ratchet, types
 context   ──► search

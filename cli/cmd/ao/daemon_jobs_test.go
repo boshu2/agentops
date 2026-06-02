@@ -196,7 +196,7 @@ func newDaemonJobsCommandFixture(t *testing.T) (string, *httptest.Server, *daemo
 			"/v1/jobs",
 			"/jobs/cancel",
 			"/v1/jobs/cancel",
-			"/openclaw/v1/triggers/jobs",
+			"/consumer/v1/triggers/jobs",
 		}),
 	})
 	server := httptest.NewServer(router)
@@ -286,7 +286,7 @@ func TestDaemonJobTerminalStatusHelper(t *testing.T) {
 func TestDaemonJobsSubmitPostsJob(t *testing.T) {
 	cwd, server, queue := newDaemonJobsCommandFixture(t)
 	prevType, prevPayload := daemonJobSubmitType, daemonJobSubmitPayload
-	daemonJobSubmitType = string(daemonpkg.JobTypeOpenClawSnapshot)
+	daemonJobSubmitType = string(daemonpkg.JobTypeConsumerSnapshot)
 	daemonJobSubmitPayload = `{"smoke":true}`
 	t.Cleanup(func() {
 		daemonJobSubmitType = prevType
@@ -304,8 +304,8 @@ func TestDaemonJobsSubmitPostsJob(t *testing.T) {
 	if !response.Accepted {
 		t.Fatalf("submit not accepted: %+v", response)
 	}
-	if response.JobType != daemonpkg.JobTypeOpenClawSnapshot {
-		t.Fatalf("submit job_type = %q, want %q", response.JobType, daemonpkg.JobTypeOpenClawSnapshot)
+	if response.JobType != daemonpkg.JobTypeConsumerSnapshot {
+		t.Fatalf("submit job_type = %q, want %q", response.JobType, daemonpkg.JobTypeConsumerSnapshot)
 	}
 	if response.JobID == "" {
 		t.Fatal("submit returned empty job_id")
@@ -354,7 +354,7 @@ func TestValidateSubmitJobTypeRejectsUnknown(t *testing.T) {
 	if unk.got != "not-a-real-type" {
 		t.Errorf("unknownJobTypeError.got = %q, want %q", unk.got, "not-a-real-type")
 	}
-	for _, want := range []string{"rpi.run", "wiki.forge", "openclaw.snapshot"} {
+	for _, want := range []string{"rpi.run", "wiki.forge", "consumer.snapshot"} {
 		if !strings.Contains(unk.Error(), want) {
 			t.Errorf("error %q missing known-type %q", unk.Error(), want)
 		}

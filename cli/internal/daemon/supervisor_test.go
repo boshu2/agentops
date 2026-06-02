@@ -11,10 +11,10 @@ import (
 func TestSupervisor_CompletesFakeJob(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
-	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-openclaw", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-consumer", JobType: JobTypeConsumerSnapshot}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("submit job: %v", err)
 	}
-	supervisor := newTestSupervisor(t, queue, testOpenClawSnapshotExecutor{})
+	supervisor := newTestSupervisor(t, queue, testConsumerSnapshotExecutor{})
 
 	result, err := supervisor.RunOnce(context.Background())
 	if err != nil {
@@ -34,10 +34,10 @@ func TestSupervisor_CompletesFakeJob(t *testing.T) {
 func TestSupervisor_FailsFakeJob(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
-	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-openclaw", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-consumer", JobType: JobTypeConsumerSnapshot}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("submit job: %v", err)
 	}
-	supervisor := newTestSupervisor(t, queue, testOpenClawSnapshotExecutor{Err: errors.New("snapshot failed")})
+	supervisor := newTestSupervisor(t, queue, testConsumerSnapshotExecutor{Err: errors.New("snapshot failed")})
 
 	result, err := supervisor.RunOnce(context.Background())
 	if err != nil {
@@ -54,10 +54,10 @@ func TestSupervisor_FailsFakeJob(t *testing.T) {
 func TestSupervisor_HeartbeatsLongJob(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
-	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-openclaw", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-consumer", JobType: JobTypeConsumerSnapshot}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("submit job: %v", err)
 	}
-	executor := &blockingOpenClawExecutor{
+	executor := &blockingConsumerExecutor{
 		started: make(chan struct{}),
 		release: make(chan struct{}),
 	}
@@ -90,7 +90,7 @@ func TestSupervisor_HeartbeatsLongJob(t *testing.T) {
 func TestSupervisor_RunLoopStopsOnCancel(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
-	supervisor := newTestSupervisor(t, queue, testOpenClawSnapshotExecutor{})
+	supervisor := newTestSupervisor(t, queue, testConsumerSnapshotExecutor{})
 	supervisor.pollInterval = 5 * time.Millisecond
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
@@ -111,10 +111,10 @@ func TestSupervisor_RunLoopStopsOnCancel(t *testing.T) {
 func TestSupervisor_RunLoopCancelDoesNotFailRunningJob(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
-	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-openclaw", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-consumer", JobType: JobTypeConsumerSnapshot}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("submit job: %v", err)
 	}
-	executor := &blockingOpenClawExecutor{
+	executor := &blockingConsumerExecutor{
 		started: make(chan struct{}),
 		release: make(chan struct{}),
 	}
@@ -151,10 +151,10 @@ func TestSupervisor_RunLoopCancelDoesNotFailRunningJob(t *testing.T) {
 func TestSupervisor_KillsHungWorker(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
-	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-openclaw", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-submit", JobID: "job-consumer", JobType: JobTypeConsumerSnapshot}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("submit job: %v", err)
 	}
-	executor := &blockingOpenClawExecutor{
+	executor := &blockingConsumerExecutor{
 		started: make(chan struct{}),
 		release: make(chan struct{}),
 	}
@@ -176,7 +176,7 @@ func TestSupervisor_KillsHungWorker(t *testing.T) {
 func TestSupervisor_OOMWorkerDoesNotKillDaemon(t *testing.T) {
 	now := projectionTestTime(t, 0)
 	queue := newTestQueue(t, &now, QueueOptions{LeaseDuration: time.Minute})
-	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-oom", JobID: "job-oom", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-oom", JobID: "job-oom", JobType: JobTypeConsumerSnapshot}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("submit oom job: %v", err)
 	}
 	executor := &oneShotOOMExecutor{}
@@ -188,7 +188,7 @@ func TestSupervisor_OOMWorkerDoesNotKillDaemon(t *testing.T) {
 	if first.Job.Status != JobStatusFailed {
 		t.Fatalf("first status = %q, want failed", first.Job.Status)
 	}
-	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-after", JobID: "job-after", JobType: JobTypeOpenClawSnapshot}, QueueMutationOptions{}); err != nil {
+	if _, err := queue.SubmitJob(SubmitJobInput{RequestID: "req-after", JobID: "job-after", JobType: JobTypeConsumerSnapshot}, QueueMutationOptions{}); err != nil {
 		t.Fatalf("submit second job: %v", err)
 	}
 	second, err := supervisor.RunOnce(context.Background())
@@ -215,17 +215,17 @@ func newTestSupervisor(t *testing.T, queue *Queue, executor JobExecutor) *Superv
 	return supervisor
 }
 
-type testOpenClawSnapshotExecutor struct {
+type testConsumerSnapshotExecutor struct {
 	Err       error
 	Artifacts map[string]string
 }
 
-func (e testOpenClawSnapshotExecutor) JobTypes() []JobType {
-	return []JobType{JobTypeOpenClawSnapshot}
+func (e testConsumerSnapshotExecutor) JobTypes() []JobType {
+	return []JobType{JobTypeConsumerSnapshot}
 }
 
-func (e testOpenClawSnapshotExecutor) RunJob(_ context.Context, claim QueueLease) (JobExecutionResult, error) {
-	if claim.Job.JobType != JobTypeOpenClawSnapshot {
+func (e testConsumerSnapshotExecutor) RunJob(_ context.Context, claim QueueLease) (JobExecutionResult, error) {
+	if claim.Job.JobType != JobTypeConsumerSnapshot {
 		return JobExecutionResult{}, errors.New("test executor received unsupported job type")
 	}
 	artifacts := map[string]string{
@@ -243,7 +243,7 @@ type oneShotOOMExecutor struct {
 }
 
 func (e *oneShotOOMExecutor) JobTypes() []JobType {
-	return []JobType{JobTypeOpenClawSnapshot}
+	return []JobType{JobTypeConsumerSnapshot}
 }
 
 func (e *oneShotOOMExecutor) RunJob(_ context.Context, _ QueueLease) (JobExecutionResult, error) {
@@ -254,16 +254,16 @@ func (e *oneShotOOMExecutor) RunJob(_ context.Context, _ QueueLease) (JobExecuti
 	return JobExecutionResult{Artifacts: map[string]string{"executor_policy": "recovered"}}, nil
 }
 
-type blockingOpenClawExecutor struct {
+type blockingConsumerExecutor struct {
 	started chan struct{}
 	release chan struct{}
 }
 
-func (e *blockingOpenClawExecutor) JobTypes() []JobType {
-	return []JobType{JobTypeOpenClawSnapshot}
+func (e *blockingConsumerExecutor) JobTypes() []JobType {
+	return []JobType{JobTypeConsumerSnapshot}
 }
 
-func (e *blockingOpenClawExecutor) RunJob(ctx context.Context, claim QueueLease) (JobExecutionResult, error) {
+func (e *blockingConsumerExecutor) RunJob(ctx context.Context, claim QueueLease) (JobExecutionResult, error) {
 	close(e.started)
 	select {
 	case <-ctx.Done():

@@ -162,7 +162,7 @@ a typed daemon payload.
 | `plans.projection` | `schema_version`, `job_type`, `refresh_trigger` | `project_id`, `output_dir` |
 | `factory.admission` | `schema_version`, `job_type`, `run_id`, `mode` | `work_order` |
 | `factory.local-pilot` | `schema_version`, `job_type`, `run_id`, `mode` | `work_order` |
-| `llmwiki.loop`, `wiki.build`, `openclaw.snapshot` | schedule metadata only | none at the schedule layer |
+| `llmwiki.loop`, `wiki.build`, `consumer.snapshot` | schedule metadata only | none at the schedule layer |
 
 Typed validation rejects malformed values, for example `rpi.run` with
 `start_phase: "two"` or `wiki.forge` without any `source_paths`.

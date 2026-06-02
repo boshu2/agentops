@@ -408,7 +408,7 @@ func buildAgentOpsDaemonSupervisor(cwd string, opts agentopsDaemonRunOptions) (*
 		if err != nil {
 			return nil, err
 		}
-		executors = []daemonpkg.JobExecutor{daemonFakeOpenClawSnapshotExecutor{}, wikiExecutor, dreamExecutor, rpiExecutor, llmwikiExecutor}
+		executors = []daemonpkg.JobExecutor{daemonFakeConsumerSnapshotExecutor{}, wikiExecutor, dreamExecutor, rpiExecutor, llmwikiExecutor}
 	case "gascity":
 		wikiExecutor, err := buildAgentOpsDaemonGasCityWikiExecutor(cwd, opts)
 		if err != nil {
@@ -931,7 +931,7 @@ func agentOpsDaemonMutationPaths() []string {
 		"/jobs/cancel",
 		"/v1/jobs/cancel",
 		"/v1/jobs/*/cancel",
-		"/openclaw/v1/triggers/jobs",
+		"/consumer/v1/triggers/jobs",
 		"/v1/schedules",
 		"/v1/schedules/*",
 	}

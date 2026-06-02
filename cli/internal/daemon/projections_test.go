@@ -29,7 +29,7 @@ func TestRequestIDModelRequiresLedgerCorrelation(t *testing.T) {
 		OccurredAt:        projectionTestTime(t, 0),
 		Actor:             "ao",
 		JobType:           JobTypeRPIRun,
-		ProjectionTargets: []ProjectionName{ProjectionRPIRegistry, ProjectionOpenClaw},
+		ProjectionTargets: []ProjectionName{ProjectionRPIRegistry, ProjectionConsumer},
 	})
 	if err != nil {
 		t.Fatalf("create ledger event: %v", err)
@@ -41,8 +41,8 @@ func TestRequestIDModelRequiresLedgerCorrelation(t *testing.T) {
 		t.Fatalf("payload job_type = %#v, want %q", got, JobTypeRPIRun)
 	}
 	targets := projectionTargetsFromPayload(event.Payload)
-	if len(targets) != 2 || targets[0] != ProjectionRPIRegistry || targets[1] != ProjectionOpenClaw {
-		t.Fatalf("projection targets = %#v, want rpi/openclaw", targets)
+	if len(targets) != 2 || targets[0] != ProjectionRPIRegistry || targets[1] != ProjectionConsumer {
+		t.Fatalf("projection targets = %#v, want rpi/consumer", targets)
 	}
 }
 
@@ -369,7 +369,7 @@ func TestFactoryProjectionRecordsYieldObservationAsRecentEvent(t *testing.T) {
 	}
 }
 
-func TestProjectionRebuildsRpiDreamWikiAndOpenClawFromLedger(t *testing.T) {
+func TestProjectionRebuildsRpiDreamWikiAndConsumerFromLedger(t *testing.T) {
 	events := []LedgerEvent{
 		mustNewProjectionTestEvent(t, "evt-rpi-accepted", "req-rpi-1", "job-rpi", EventJobAccepted, JobTypeRPIRun, 0, nil),
 		mustNewProjectionTestEvent(t, "evt-rpi-completed", "req-rpi-2", "job-rpi", EventJobCompleted, "", 1, map[string]any{
@@ -410,17 +410,17 @@ func TestProjectionRebuildsRpiDreamWikiAndOpenClawFromLedger(t *testing.T) {
 	if projections.Wiki.Jobs[0].Failure == nil || projections.Wiki.Jobs[0].Failure.Code != FailureProviderUnreachable {
 		t.Fatalf("Wiki failure = %#v, want provider_unreachable", projections.Wiki.Jobs[0].Failure)
 	}
-	if len(projections.OpenClaw.Resources.Runs) != 2 {
-		t.Fatalf("OpenClaw runs = %d, want RPI + Dream", len(projections.OpenClaw.Resources.Runs))
+	if len(projections.Consumer.Resources.Runs) != 2 {
+		t.Fatalf("Consumer runs = %d, want RPI + Dream", len(projections.Consumer.Resources.Runs))
 	}
-	if len(projections.OpenClaw.Resources.Jobs) != 3 {
-		t.Fatalf("OpenClaw jobs = %d, want all daemon jobs", len(projections.OpenClaw.Resources.Jobs))
+	if len(projections.Consumer.Resources.Jobs) != 3 {
+		t.Fatalf("Consumer jobs = %d, want all daemon jobs", len(projections.Consumer.Resources.Jobs))
 	}
-	if len(projections.OpenClaw.Resources.Wiki) != 1 {
-		t.Fatalf("OpenClaw wiki = %d, want wiki job", len(projections.OpenClaw.Resources.Wiki))
+	if len(projections.Consumer.Resources.Wiki) != 1 {
+		t.Fatalf("Consumer wiki = %d, want wiki job", len(projections.Consumer.Resources.Wiki))
 	}
-	if projections.Manifests[ProjectionOpenClaw].Status != ProjectionStatusCurrent {
-		t.Fatalf("OpenClaw manifest status = %q, want current", projections.Manifests[ProjectionOpenClaw].Status)
+	if projections.Manifests[ProjectionConsumer].Status != ProjectionStatusCurrent {
+		t.Fatalf("Consumer manifest status = %q, want current", projections.Manifests[ProjectionConsumer].Status)
 	}
 }
 
@@ -451,8 +451,8 @@ func TestProjectionReplayContentAddressedArtifacts(t *testing.T) {
 	if got := job.Artifacts["worker_session_refs"]; got != ref.Path {
 		t.Fatalf("compat artifact path = %q, want %q", got, ref.Path)
 	}
-	if got := projections.OpenClaw.Resources.Wiki[0].ArtifactRefs["worker_session_refs"]; got != ref {
-		t.Fatalf("openclaw artifact ref = %#v, want %#v", got, ref)
+	if got := projections.Consumer.Resources.Wiki[0].ArtifactRefs["worker_session_refs"]; got != ref {
+		t.Fatalf("consumer artifact ref = %#v, want %#v", got, ref)
 	}
 }
 
@@ -489,11 +489,11 @@ func TestProjectionReplayFromStoreCarriesRequestIDsAndDegradesOnCorruptLedger(t 
 	if got := strings.Join(run.RequestIDs, ","); got != "req-rpi-1,req-rpi-2" {
 		t.Fatalf("request ids = %q, want req-rpi-1,req-rpi-2", got)
 	}
-	if projections.Manifests[ProjectionOpenClaw].Status != ProjectionStatusDegraded {
-		t.Fatalf("OpenClaw manifest status = %q, want degraded", projections.Manifests[ProjectionOpenClaw].Status)
+	if projections.Manifests[ProjectionConsumer].Status != ProjectionStatusDegraded {
+		t.Fatalf("Consumer manifest status = %q, want degraded", projections.Manifests[ProjectionConsumer].Status)
 	}
-	if projections.OpenClaw.Status != ProjectionStatusDegraded {
-		t.Fatalf("OpenClaw snapshot status = %q, want degraded", projections.OpenClaw.Status)
+	if projections.Consumer.Status != ProjectionStatusDegraded {
+		t.Fatalf("Consumer snapshot status = %q, want degraded", projections.Consumer.Status)
 	}
 	if len(projections.DegradedReasons) == 0 {
 		t.Fatal("projection set missing degraded reason for corrupt replay")

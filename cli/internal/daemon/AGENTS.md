@@ -7,7 +7,7 @@ contract_source: cli/internal/daemon/types.go (JobType, EventType, JobStatus enu
 
 # cli/internal/daemon
 
-`agentopsd` long-running daemon: ledger-backed job queue, event sourcing, and read-only HTTP server for RPI/Dream/Wiki/OpenClaw jobs.
+`agentopsd` long-running daemon: ledger-backed job queue, event sourcing, and read-only HTTP server for RPI/Dream/Wiki/Consumer jobs.
 
 ## Ownership
 
@@ -19,7 +19,7 @@ contract_source: cli/internal/daemon/types.go (JobType, EventType, JobStatus enu
 
 - **HTTP surface (read-only by default):** `ReadOnlyServer` in `server.go` exposes `/health`, `/ready`, `/status`, `/events`, plus mutation endpoints when `MutationPolicy` allows. JSON shapes are the public wire contract — change them with care.
 - **Job submission:** `SubmitJobRequest` (types.go) plus `JobType` enum:
-  - `rpi.run`, `rpi.phase`, `dream.run`, `dream.stage`, `wiki.build`, `wiki.forge`, `openclaw.snapshot`
+  - `rpi.run`, `rpi.phase`, `dream.run`, `dream.stage`, `wiki.build`, `wiki.forge`, `consumer.snapshot`
 - **Event stream:** `EventType` enum (`job.accepted`, `job.claimed`, `job.heartbeat`, `job.lease_expired`, `job.completed`, `job.failed`, `job.cancelled`, `projection.marked_stale`, `projection.rebuilt`). Consumers should treat unknown events as forward-compatible.
 - **Runner registry:** `rpi_registry.go` plus `rpi_runner.go`, `dream_executor.go` give the daemon pluggable run-handlers per job type.
 
@@ -35,5 +35,5 @@ contract_source: cli/internal/daemon/types.go (JobType, EventType, JobStatus enu
 
 - Parent epic: `agentops-tqc` (Olympus → agentopsd extraction).
 - Pattern source: olympus per-folder `AGENTS.md` ownership convention (root + 6 service folders + 6 role folders).
-- Sibling packages: `cli/internal/types` (shared domain types), `cli/internal/openclaw` (snapshot inputs), `cli/internal/overnight` (Dream job type producer).
+- Sibling packages: `cli/internal/types` (shared domain types), `cli/internal/consumer` (snapshot inputs), `cli/internal/overnight` (Dream job type producer).
 - Olympus analogue: `~/dev/personal/olympus/services/apollo/` (apollo-style state transitions and ledger replay).

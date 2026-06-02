@@ -28,19 +28,19 @@ func TestDoctorDaemonRuntimeCheckPassesWithReadyServer(t *testing.T) {
 	}
 }
 
-func TestDoctorOpenClawConsumerCheckPassesWithReadyServer(t *testing.T) {
+func TestDoctorConsumerCheckPassesWithReadyServer(t *testing.T) {
 	server := httptest.NewServer(daemonpkg.NewReadOnlyRouter(
 		daemonpkg.NewStore(t.TempDir()),
 		daemonpkg.ServerOptions{Now: func() time.Time { return time.Date(2026, 4, 29, 12, 0, 0, 0, time.UTC) }},
 	))
 	t.Cleanup(server.Close)
 
-	check := checkOpenClawConsumerURL(server.URL)
-	if check.Name != "OpenClaw Consumer" || check.Status != "pass" {
-		t.Fatalf("OpenClaw check = %#v, want pass", check)
+	check := checkConsumerURL(server.URL)
+	if check.Name != "Consumer" || check.Status != "pass" {
+		t.Fatalf("Consumer check = %#v, want pass", check)
 	}
 	if !strings.Contains(check.Detail, "snapshot_status=current") || !strings.Contains(check.Detail, "jobs=0") {
-		t.Fatalf("OpenClaw detail = %q, want snapshot/count details", check.Detail)
+		t.Fatalf("Consumer detail = %q, want snapshot/count details", check.Detail)
 	}
 }
 
@@ -166,7 +166,7 @@ func TestDoctorRuntimeChecksWarnWhenUnavailable(t *testing.T) {
 	baseURL := "http://127.0.0.1:1"
 	for _, check := range []doctorCheck{
 		checkDaemonRuntimeURL(baseURL),
-		checkOpenClawConsumerURL(baseURL),
+		checkConsumerURL(baseURL),
 	} {
 		if check.Status != "warn" || check.Required {
 			t.Fatalf("%s = %#v, want non-required warning", check.Name, check)
@@ -234,7 +234,7 @@ func TestGatherDoctorChecksIncludesProductRuntimeSurfaces(t *testing.T) {
 	for _, check := range checks {
 		names[check.Name] = true
 	}
-	for _, name := range []string{"Daemon Runtime", "GasCity Bridge", "OpenClaw Consumer"} {
+	for _, name := range []string{"Daemon Runtime", "GasCity Bridge", "Consumer"} {
 		if !names[name] {
 			t.Fatalf("gatherDoctorChecks missing %q in %#v", name, names)
 		}

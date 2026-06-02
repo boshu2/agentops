@@ -434,7 +434,7 @@ func diagnoseLocalCurator(status dreamLocalCuratorStatus) []string {
 	if status.Worker.StalePID {
 		diagnostics = append(diagnostics, "worker status.json pid does not appear to be running")
 	}
-	for _, name := range []string{"openclaw", "oc-ask"} {
+	for _, name := range []string{"consumer", "oc-ask"} {
 		if runner, ok := status.Runners[name]; ok && runner.Available {
 			continue
 		}
@@ -451,15 +451,15 @@ func diagnoseLocalCurator(status dreamLocalCuratorStatus) []string {
 
 func detectCuratorRunnerStatuses() map[string]curatorRunnerStatus {
 	out := map[string]curatorRunnerStatus{}
-	for _, name := range []string{"codex", "claude", "openclaw", "oc-ask"} {
+	for _, name := range []string{"codex", "claude", "consumer", "oc-ask"} {
 		path, err := exec.LookPath(name)
 		status := curatorRunnerStatus{Available: err == nil}
 		if err == nil {
 			status.Command = path
 		}
 		switch name {
-		case "openclaw", "oc-ask":
-			status.Note = "bridge must be discoverable before OpenClaw/Morai can be marked supported"
+		case "consumer", "oc-ask":
+			status.Note = "bridge must be discoverable before Consumer/Morai can be marked supported"
 		case "codex", "claude":
 			status.Note = "Tier 2 Dream Council runner"
 		}

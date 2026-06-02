@@ -82,7 +82,7 @@ func TestScopedMutationPolicyAllowsSubmitAndRejectsCancel(t *testing.T) {
 		Tokens: []MutationToken{{
 			Name:         "phone-readonly-submit",
 			Token:        "phone-token",
-			Capabilities: []MutationCapability{MutationCapabilitySubmitJob, MutationCapabilityOpenClawTrigger},
+			Capabilities: []MutationCapability{MutationCapabilitySubmitJob, MutationCapabilityConsumerTrigger},
 		}},
 		AllowedPaths:       []string{"/v1/jobs", "/v1/jobs/cancel"},
 		AllowedMethods:     []string{http.MethodPost},
@@ -231,7 +231,7 @@ func TestLoadMutationTokensFileSupportsLegacyAndScopedJSON(t *testing.T) {
 		t.Fatalf("legacy tokens = %#v", tokens)
 	}
 	scoped := filepath.Join(dir, "scoped-token")
-	payload := `{"tokens":[{"name":"phone-readonly-submit","token":"phone-token","capabilities":["submit_job","openclaw_trigger"]},{"name":"bushido-admin","token":"admin-token","capabilities":["admin"],"local_only":true}]}`
+	payload := `{"tokens":[{"name":"phone-readonly-submit","token":"phone-token","capabilities":["submit_job","consumer_trigger"]},{"name":"bushido-admin","token":"admin-token","capabilities":["admin"],"local_only":true}]}`
 	if err := os.WriteFile(scoped, []byte(payload), 0o600); err != nil {
 		t.Fatalf("write scoped token: %v", err)
 	}

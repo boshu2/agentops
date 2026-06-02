@@ -149,7 +149,7 @@ type MutationCapability string
 const (
 	MutationCapabilitySubmitJob       MutationCapability = "submit_job"
 	MutationCapabilityCancelJob       MutationCapability = "cancel_job"
-	MutationCapabilityOpenClawTrigger MutationCapability = "openclaw_trigger"
+	MutationCapabilityConsumerTrigger MutationCapability = "consumer_trigger"
 	MutationCapabilityAdmin           MutationCapability = "admin"
 )
 
@@ -178,9 +178,9 @@ func DefaultMutationPathCapabilities() map[string]MutationCapability {
 		"/jobs/cancel":                  MutationCapabilityCancelJob,
 		"/v1/jobs/cancel":               MutationCapabilityCancelJob,
 		"/v1/jobs/*/cancel":             MutationCapabilityCancelJob,
-		"/openclaw/v1/triggers/jobs":    MutationCapabilityOpenClawTrigger,
-		"/v1/openclaw/triggers/jobs":    MutationCapabilityOpenClawTrigger,
-		"/v1/openclaw/v1/triggers/jobs": MutationCapabilityOpenClawTrigger,
+		"/consumer/v1/triggers/jobs":    MutationCapabilityConsumerTrigger,
+		"/v1/consumer/triggers/jobs":    MutationCapabilityConsumerTrigger,
+		"/v1/consumer/v1/triggers/jobs": MutationCapabilityConsumerTrigger,
 		// Schedule routes (soc-8inr.5) require admin capability — schedules are
 		// privileged operator surface, not per-job submission.
 		"/v1/schedules":   MutationCapabilityAdmin,
@@ -434,7 +434,7 @@ func defaultMutationCapabilities() []MutationCapability {
 	return []MutationCapability{
 		MutationCapabilitySubmitJob,
 		MutationCapabilityCancelJob,
-		MutationCapabilityOpenClawTrigger,
+		MutationCapabilityConsumerTrigger,
 		MutationCapabilityAdmin,
 	}
 }
@@ -459,7 +459,7 @@ func validateMutationToken(token MutationToken) error {
 	}
 	for _, capability := range token.Capabilities {
 		switch capability {
-		case MutationCapabilitySubmitJob, MutationCapabilityCancelJob, MutationCapabilityOpenClawTrigger, MutationCapabilityAdmin:
+		case MutationCapabilitySubmitJob, MutationCapabilityCancelJob, MutationCapabilityConsumerTrigger, MutationCapabilityAdmin:
 		default:
 			return fmt.Errorf("mutation token %q has unsupported capability %q", token.Name, capability)
 		}

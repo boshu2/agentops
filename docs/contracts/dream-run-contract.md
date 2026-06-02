@@ -255,7 +255,7 @@ are absent.
 The local curator is separate from Dream Council. Gemma can draft, lint, seed,
 compact audit logs, and emit needs-review events. Tier 2 runners such as Codex
 and Claude can review or synthesize those events. The consumer/Morai bridge must
-remain unsupported on Windows until a real bridge command such as `openclaw` or
+remain unsupported on Windows until a real bridge command such as `consumer` or
 `oc-ask` is discoverable from the AgentOps runtime.
 
 No trigger mesh may be unbounded. Every escalation record needs source, severity,

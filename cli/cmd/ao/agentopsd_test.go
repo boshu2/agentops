@@ -239,9 +239,9 @@ func TestDaemonRunWorkerOnceCompletesFakeJob(t *testing.T) {
 	cwd := t.TempDir()
 	queue := daemonpkg.NewQueue(daemonpkg.NewStore(cwd), daemonpkg.QueueOptions{LeaseDuration: time.Minute})
 	if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
-		RequestID: "req-openclaw",
-		JobID:     "job-openclaw",
-		JobType:   daemonpkg.JobTypeOpenClawSnapshot,
+		RequestID: "req-consumer",
+		JobID:     "job-consumer",
+		JobType:   daemonpkg.JobTypeConsumerSnapshot,
 	}, daemonpkg.QueueMutationOptions{}); err != nil {
 		t.Fatalf("submit job: %v", err)
 	}
@@ -281,7 +281,7 @@ func TestDaemonRunWorkerOnceCompletesFakeJob(t *testing.T) {
 		t.Fatalf("snapshot: %v", err)
 	}
 	if len(snapshot.Jobs) != 1 || snapshot.Jobs[0].Status != daemonpkg.JobStatusCompleted {
-		t.Fatalf("jobs = %#v, want completed openclaw job", snapshot.Jobs)
+		t.Fatalf("jobs = %#v, want completed consumer job", snapshot.Jobs)
 	}
 	if !strings.Contains(out.String(), "agentopsd ready:") {
 		t.Fatalf("output %q missing ready line", out.String())
@@ -991,8 +991,8 @@ func TestAgentOpsDaemonAcceptsWikiBuildIntoReadModels(t *testing.T) {
 	if len(status.Projections.Wiki.Jobs) != 1 || status.Projections.Wiki.Jobs[0].JobID != "job-wiki-build" {
 		t.Fatalf("wiki projection jobs = %#v, want wiki.build job", status.Projections.Wiki.Jobs)
 	}
-	if len(status.Projections.OpenClaw.Resources.Wiki) != 1 || status.Projections.OpenClaw.Resources.Wiki[0].JobID != "job-wiki-build" {
-		t.Fatalf("openclaw wiki resources = %#v, want wiki.build resource", status.Projections.OpenClaw.Resources.Wiki)
+	if len(status.Projections.Consumer.Resources.Wiki) != 1 || status.Projections.Consumer.Resources.Wiki[0].JobID != "job-wiki-build" {
+		t.Fatalf("consumer wiki resources = %#v, want wiki.build resource", status.Projections.Consumer.Resources.Wiki)
 	}
 }
 

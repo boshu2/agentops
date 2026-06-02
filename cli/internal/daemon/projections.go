@@ -76,7 +76,7 @@ const (
 	ProjectionRPIRegistry     ProjectionName = "rpi-registry"
 	ProjectionDreamRuns       ProjectionName = "dream-runs"
 	ProjectionWikiJobs        ProjectionName = "wiki-jobs"
-	ProjectionOpenClaw        ProjectionName = "openclaw-snapshot"
+	ProjectionConsumer        ProjectionName = "consumer-snapshot"
 	ProjectionDaemonStatus    ProjectionName = "daemon-status"
 	ProjectionDaemonJobStatus ProjectionName = "daemon-job-status"
 	ProjectionPlansManifest   ProjectionName = "plans-manifest"
@@ -110,7 +110,7 @@ type ProjectionSet struct {
 	RPI             RPIRegistryProjection                 `json:"rpi"`
 	Dream           DreamRunsProjection                   `json:"dream"`
 	Wiki            WikiJobsProjection                    `json:"wiki"`
-	OpenClaw        OpenClawSnapshotProjection            `json:"openclaw"`
+	Consumer        ConsumerSnapshotProjection            `json:"consumer"`
 	Plans           DaemonPlansProjection                 `json:"plans"`
 	Schedules       []RecurringJobTemplate                `json:"schedules,omitempty"`
 	Factory         FactoryStatusProjection               `json:"factory"`
@@ -161,16 +161,16 @@ type ProjectionSource struct {
 	LastEventID string `json:"last_event_id,omitempty"`
 }
 
-type OpenClawSnapshotProjection struct {
+type ConsumerSnapshotProjection struct {
 	SchemaVersion int               `json:"schema_version"`
 	SnapshotID    string            `json:"snapshot_id"`
 	GeneratedAt   string            `json:"generated_at"`
 	Source        ProjectionSource  `json:"source"`
-	Resources     OpenClawResources `json:"resources"`
+	Resources     ConsumerResources `json:"resources"`
 	Status        ProjectionStatus  `json:"status"`
 }
 
-type OpenClawResources struct {
+type ConsumerResources struct {
 	Runs []JobProjection `json:"runs"`
 	Jobs []JobProjection `json:"jobs"`
 	Wiki []JobProjection `json:"wiki"`
@@ -421,7 +421,7 @@ func (s *Store) RebuildProjections(opts ProjectionRebuildOptions) (ProjectionSet
 //
 // Callers MUST check err before using the returned set. On error, the
 // returned set is zero-valued (SchemaVersion == 0, nil Manifests/Jobs/
-// Schedules, empty derived RPI/Dream/Wiki/OpenClaw buckets). Treat the
+// Schedules, empty derived RPI/Dream/Wiki/Consumer buckets). Treat the
 // SchemaVersion == 0 sentinel as "do not use this set"; downstream code that
 // indexes into Manifests or appends to Jobs without checking err first risks
 // nil-map panics or silently emitting an empty projection. See the bug-hunt
@@ -458,7 +458,7 @@ func RebuildProjections(events []LedgerEvent, opts ProjectionRebuildOptions) (Pr
 	collectJobsIntoSet(jobsByID, jobOrder, &set)
 	finalizeFactoryProjection(&set)
 	finalizeManifests(&set)
-	finalizeOpenClawSnapshot(&set, opts.SourceLedger, rebuiltAt)
+	finalizeConsumerSnapshot(&set, opts.SourceLedger, rebuiltAt)
 	set.Schedules = ScheduleStateFromEvents(events)
 	return set, nil
 }
@@ -481,7 +481,7 @@ func filterEventsAfter(events []LedgerEvent, lastEventID string) []LedgerEvent {
 }
 
 // initStateFromSnapshot seeds the rebuild loop with state recovered from a
-// previous snapshot. Derived buckets (RPI/Dream/Wiki/OpenClaw.Resources) are
+// previous snapshot. Derived buckets (RPI/Dream/Wiki/Consumer.Resources) are
 // reset to empty — collectJobsIntoSet rebuilds them from jobsByID after the
 // delta events apply. Manifests are re-derived from defaultProjectionManifests
 // then refreshed by finalizeManifests, so snapshot Manifests are intentionally
@@ -703,7 +703,7 @@ func collectJobsIntoSet(jobsByID map[string]*JobProjection, jobOrder []string, s
 		}
 		set.Jobs = append(set.Jobs, job)
 		classifyJobIntoBuckets(job, set)
-		set.OpenClaw.Resources.Jobs = append(set.OpenClaw.Resources.Jobs, job)
+		set.Consumer.Resources.Jobs = append(set.Consumer.Resources.Jobs, job)
 	}
 }
 
@@ -711,13 +711,13 @@ func classifyJobIntoBuckets(job JobProjection, set *ProjectionSet) {
 	switch job.JobType {
 	case JobTypeRPIRun, JobTypeRPIPhase:
 		set.RPI.Runs = append(set.RPI.Runs, job)
-		set.OpenClaw.Resources.Runs = append(set.OpenClaw.Resources.Runs, job)
+		set.Consumer.Resources.Runs = append(set.Consumer.Resources.Runs, job)
 	case JobTypeDreamRun, JobTypeDreamStage:
 		set.Dream.Runs = append(set.Dream.Runs, job)
-		set.OpenClaw.Resources.Runs = append(set.OpenClaw.Resources.Runs, job)
+		set.Consumer.Resources.Runs = append(set.Consumer.Resources.Runs, job)
 	case JobTypeWikiBuild, JobTypeWikiForge:
 		set.Wiki.Jobs = append(set.Wiki.Jobs, job)
-		set.OpenClaw.Resources.Wiki = append(set.OpenClaw.Resources.Wiki, job)
+		set.Consumer.Resources.Wiki = append(set.Consumer.Resources.Wiki, job)
 	}
 }
 
@@ -728,15 +728,15 @@ func finalizeManifests(set *ProjectionSet) {
 	}
 }
 
-func finalizeOpenClawSnapshot(set *ProjectionSet, sourceLedger, rebuiltAt string) {
-	set.OpenClaw.SchemaVersion = ProjectionSchemaVersion
-	set.OpenClaw.SnapshotID = "snap_empty"
+func finalizeConsumerSnapshot(set *ProjectionSet, sourceLedger, rebuiltAt string) {
+	set.Consumer.SchemaVersion = ProjectionSchemaVersion
+	set.Consumer.SnapshotID = "snap_empty"
 	if set.LastEventID != "" {
-		set.OpenClaw.SnapshotID = "snap_" + set.LastEventID
+		set.Consumer.SnapshotID = "snap_" + set.LastEventID
 	}
-	set.OpenClaw.GeneratedAt = rebuiltAt
-	set.OpenClaw.Source = ProjectionSource{Ledger: sourceLedger, LastEventID: set.LastEventID}
-	set.OpenClaw.Status = set.Manifests[ProjectionOpenClaw].Status
+	set.Consumer.GeneratedAt = rebuiltAt
+	set.Consumer.Source = ProjectionSource{Ledger: sourceLedger, LastEventID: set.LastEventID}
+	set.Consumer.Status = set.Manifests[ProjectionConsumer].Status
 }
 
 func applyEventToJobProjection(job *JobProjection, event LedgerEvent) {
@@ -2004,7 +2004,7 @@ func (set *ProjectionSet) markDegraded(reason string) {
 		manifest.DegradedReasons = append(manifest.DegradedReasons, reason)
 		set.Manifests[name] = manifest
 	}
-	set.OpenClaw.Status = ProjectionStatusDegraded
+	set.Consumer.Status = ProjectionStatusDegraded
 }
 
 func defaultProjectionManifests(sourceLedger, rebuiltAt string) map[ProjectionName]ProjectionManifest {
@@ -2027,7 +2027,7 @@ func allProjectionNames() []ProjectionName {
 		ProjectionRPIRegistry,
 		ProjectionDreamRuns,
 		ProjectionWikiJobs,
-		ProjectionOpenClaw,
+		ProjectionConsumer,
 		ProjectionDaemonStatus,
 		ProjectionDaemonJobStatus,
 	}
@@ -2041,8 +2041,8 @@ func defaultProjectionOutputPaths(name ProjectionName) []string {
 		return []string{".agents/overnight/*/summary.json", ".agents/overnight/*/summary.md"}
 	case ProjectionWikiJobs:
 		return []string{".agents/wiki"}
-	case ProjectionOpenClaw:
-		return []string{".agents/daemon/projections/openclaw/latest.json"}
+	case ProjectionConsumer:
+		return []string{".agents/daemon/projections/consumer/latest.json"}
 	case ProjectionDaemonStatus:
 		return []string{".agents/daemon/projections/status.json"}
 	case ProjectionDaemonJobStatus:
@@ -2056,13 +2056,13 @@ func defaultProjectionTargetsForJobType(jobType JobType) []ProjectionName {
 	targets := []ProjectionName{ProjectionDaemonStatus, ProjectionDaemonJobStatus}
 	switch jobType {
 	case JobTypeRPIRun, JobTypeRPIPhase:
-		targets = append([]ProjectionName{ProjectionRPIRegistry, ProjectionOpenClaw}, targets...)
+		targets = append([]ProjectionName{ProjectionRPIRegistry, ProjectionConsumer}, targets...)
 	case JobTypeDreamRun, JobTypeDreamStage:
-		targets = append([]ProjectionName{ProjectionDreamRuns, ProjectionOpenClaw}, targets...)
+		targets = append([]ProjectionName{ProjectionDreamRuns, ProjectionConsumer}, targets...)
 	case JobTypeWikiBuild, JobTypeWikiForge:
-		targets = append([]ProjectionName{ProjectionWikiJobs, ProjectionOpenClaw}, targets...)
-	case JobTypeOpenClawSnapshot:
-		targets = append([]ProjectionName{ProjectionOpenClaw}, targets...)
+		targets = append([]ProjectionName{ProjectionWikiJobs, ProjectionConsumer}, targets...)
+	case JobTypeConsumerSnapshot:
+		targets = append([]ProjectionName{ProjectionConsumer}, targets...)
 	case JobTypePlansProjection:
 		targets = append([]ProjectionName{ProjectionPlansManifest}, targets...)
 	}

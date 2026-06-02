@@ -22,7 +22,7 @@
         "artifacts": {
           "summary": ".agents/rpi/runs/rpi-run-1/phase-3-summary.md"
         },
-        "projection_targets": ["rpi-registry", "openclaw-snapshot"],
+        "projection_targets": ["rpi-registry", "consumer-snapshot"],
         "created_at": "2026-04-28T20:00:00Z",
         "updated_at": "2026-04-28T20:05:00Z",
         "last_event_id": "evt_20260428_000001",
@@ -42,7 +42,7 @@
         "job_type": "dream.run",
         "request_id": "req-dream-1",
         "status": "running",
-        "projection_targets": ["dream-runs", "openclaw-snapshot"],
+        "projection_targets": ["dream-runs", "consumer-snapshot"],
         "created_at": "2026-04-28T20:10:00Z",
         "updated_at": "2026-04-28T20:12:00Z",
         "last_event_id": "evt_20260428_000002"
@@ -94,7 +94,7 @@
         "artifacts": {
           "worker_session_refs": ".agents/daemon/wiki/job-wiki-1-worker-sessions.json"
         },
-        "projection_targets": ["wiki-jobs", "openclaw-snapshot"],
+        "projection_targets": ["wiki-jobs", "consumer-snapshot"],
         "created_at": "2026-04-28T20:20:00Z",
         "updated_at": "2026-04-28T20:25:00Z",
         "last_event_id": "evt_20260428_000003",

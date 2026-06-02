@@ -12,21 +12,21 @@ import (
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
 )
 
-type daemonFakeOpenClawSnapshotExecutor struct {
+type daemonFakeConsumerSnapshotExecutor struct {
 	Delay     time.Duration
 	Err       error
 	Artifacts map[string]string
 }
 
-func (e daemonFakeOpenClawSnapshotExecutor) JobTypes() []daemonpkg.JobType {
-	return []daemonpkg.JobType{daemonpkg.JobTypeOpenClawSnapshot}
+func (e daemonFakeConsumerSnapshotExecutor) JobTypes() []daemonpkg.JobType {
+	return []daemonpkg.JobType{daemonpkg.JobTypeConsumerSnapshot}
 }
 
-func (e daemonFakeOpenClawSnapshotExecutor) RunJob(ctx context.Context, claim daemonpkg.QueueLease) (daemonpkg.JobExecutionResult, error) {
+func (e daemonFakeConsumerSnapshotExecutor) RunJob(ctx context.Context, claim daemonpkg.QueueLease) (daemonpkg.JobExecutionResult, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	if claim.Job.JobType != daemonpkg.JobTypeOpenClawSnapshot {
+	if claim.Job.JobType != daemonpkg.JobTypeConsumerSnapshot {
 		return daemonpkg.JobExecutionResult{}, fmt.Errorf("fake executor does not support job type %s", claim.Job.JobType)
 	}
 	if e.Delay > 0 {

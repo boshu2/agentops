@@ -37,7 +37,7 @@ func newScheduleCommandFixture(t *testing.T) (string, *httptest.Server) {
 			"/v1/jobs",
 			"/jobs/cancel",
 			"/v1/jobs/cancel",
-			"/openclaw/v1/triggers/jobs",
+			"/consumer/v1/triggers/jobs",
 			"/v1/schedules",
 			"/v1/schedules/*",
 		}),

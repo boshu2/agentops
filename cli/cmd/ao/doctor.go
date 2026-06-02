@@ -14,8 +14,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/consumer"
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
-	"github.com/boshu2/agentops/cli/internal/openclaw"
 	"github.com/boshu2/agentops/cli/internal/quality"
 	"github.com/boshu2/agentops/cli/internal/sessionstore"
 )
@@ -59,7 +59,7 @@ func gatherDoctorChecks() []doctorCheck {
 		checkDaemonLedgerHealth(time.Now(), daemonpkg.LedgerHealthDefaultThresholds()),
 		checkDaemonTelemetry(),
 		checkGasCityBridge(),
-		checkOpenClawConsumer(),
+		checkConsumer(),
 		checkHookCoverage(),
 		checkKnowledgeBase(),
 		checkKnowledgeFreshness(),
@@ -242,7 +242,7 @@ func gatherDoctorProductRuntimeChecks() []doctorCheck {
 	return []doctorCheck{
 		checkDaemonRuntime(),
 		checkGasCityProductRuntime(),
-		checkOpenClawConsumer(),
+		checkConsumer(),
 	}
 }
 
@@ -283,23 +283,23 @@ func formatGasCityDiagnostic(diag gcBridgeDiagnostics) string {
 	return strings.Join(parts, "; ")
 }
 
-func checkOpenClawConsumer() doctorCheck {
+func checkConsumer() doctorCheck {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return doctorCheck{Name: "OpenClaw Consumer", Status: "warn", Detail: "cannot determine working directory", Required: false}
+		return doctorCheck{Name: "Consumer", Status: "warn", Detail: "cannot determine working directory", Required: false}
 	}
 	baseURL, err := resolveDaemonURL(cwd, "")
 	if err != nil {
-		return doctorCheck{Name: "OpenClaw Consumer", Status: "warn", Detail: fmt.Sprintf("daemon activation unavailable: %v", err), Required: false}
+		return doctorCheck{Name: "Consumer", Status: "warn", Detail: fmt.Sprintf("daemon activation unavailable: %v", err), Required: false}
 	}
-	return checkOpenClawConsumerURL(baseURL)
+	return checkConsumerURL(baseURL)
 }
 
-func checkOpenClawConsumerURL(baseURL string) doctorCheck {
+func checkConsumerURL(baseURL string) doctorCheck {
 	baseURL = strings.TrimRight(baseURL, "/")
-	var health openclaw.HealthResponse
-	if err := fetchDaemonJSON(context.Background(), baseURL+"/openclaw/v1/health", &health); err != nil {
-		return doctorCheck{Name: "OpenClaw Consumer", Status: "warn", Detail: fmt.Sprintf("health unavailable at %s: %v", baseURL, err), Required: false}
+	var health consumer.HealthResponse
+	if err := fetchDaemonJSON(context.Background(), baseURL+"/consumer/v1/health", &health); err != nil {
+		return doctorCheck{Name: "Consumer", Status: "warn", Detail: fmt.Sprintf("health unavailable at %s: %v", baseURL, err), Required: false}
 	}
 	detail := fmt.Sprintf(
 		"%s; status=%s snapshot=%s snapshot_status=%s runs=%d jobs=%d wiki=%d last_event=%s",
@@ -315,10 +315,10 @@ func checkOpenClawConsumerURL(baseURL string) doctorCheck {
 	if len(health.DegradedReasons) > 0 {
 		detail += "; degraded=" + strings.Join(health.DegradedReasons, "; ")
 	}
-	if health.Status != "ok" || !health.Ready || health.SnapshotStatus != openclaw.SnapshotStatusCurrent {
-		return doctorCheck{Name: "OpenClaw Consumer", Status: "warn", Detail: "not ready at " + detail, Required: false}
+	if health.Status != "ok" || !health.Ready || health.SnapshotStatus != consumer.SnapshotStatusCurrent {
+		return doctorCheck{Name: "Consumer", Status: "warn", Detail: "not ready at " + detail, Required: false}
 	}
-	return doctorCheck{Name: "OpenClaw Consumer", Status: "pass", Detail: "ready at " + detail, Required: false}
+	return doctorCheck{Name: "Consumer", Status: "pass", Detail: "ready at " + detail, Required: false}
 }
 
 func doctorValueOrDash(value string) string {

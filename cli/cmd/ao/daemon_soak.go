@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/consumer"
 	daemonpkg "github.com/boshu2/agentops/cli/internal/daemon"
 	"github.com/boshu2/agentops/cli/internal/format"
-	"github.com/boshu2/agentops/cli/internal/openclaw"
 	"github.com/spf13/cobra"
 )
 
@@ -68,7 +68,7 @@ type daemonSoakReport struct {
 	Duration        string                     `json:"duration"`
 	RequireTerminal bool                       `json:"require_terminal"`
 	Jobs            []daemonpkg.QueueJobState  `json:"jobs"`
-	OpenClawJobs    []openclaw.ResourceSummary `json:"openclaw_jobs"`
+	ConsumerJobs    []consumer.ResourceSummary `json:"consumer_jobs"`
 	EventCount      int                        `json:"event_count"`
 	Proof           daemonSoakProofPaths       `json:"proof"`
 	Failure         string                     `json:"failure,omitempty"`
@@ -148,11 +148,11 @@ func runDaemonSoak(ctx context.Context, cwd string, opts daemonSoakOptions) (dae
 		runErr = snapshotErr
 	}
 	jobs := filterDaemonSoakJobs(snapshot.Jobs, jobIDs)
-	openClawJobs, ocErr := readOpenClawJobsFromStore(store)
+	consumerJobs, ocErr := readConsumerJobsFromStore(store)
 	if ocErr != nil && runErr == nil {
 		runErr = ocErr
 	}
-	openClawJobs = filterOpenClawJobs(openClawJobs, jobIDs)
+	consumerJobs = filterConsumerJobs(consumerJobs, jobIDs)
 	if terminalErr := validateDaemonSoakTerminal(opts, jobs); terminalErr != nil && runErr == nil {
 		runErr = terminalErr
 	}
@@ -167,7 +167,7 @@ func runDaemonSoak(ctx context.Context, cwd string, opts daemonSoakOptions) (dae
 		Duration:        finishedAt.Sub(startedAt).Round(time.Millisecond).String(),
 		RequireTerminal: opts.RequireTerminal,
 		Jobs:            jobs,
-		OpenClawJobs:    openClawJobs,
+		ConsumerJobs:    consumerJobs,
 		EventCount:      len(filteredEvents),
 		Proof:           proof,
 	}
@@ -211,7 +211,7 @@ func runDaemonSoakScenario(ctx context.Context, cwd string, queue *daemonpkg.Que
 		_, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
 			RequestID:      daemonpkg.RequestID("req-" + opts.RunID + "-queue"),
 			JobID:          jobID,
-			JobType:        daemonpkg.JobTypeOpenClawSnapshot,
+			JobType:        daemonpkg.JobTypeConsumerSnapshot,
 			IdempotencyKey: "daemon-soak:" + opts.RunID + ":queue",
 			Actor:          "ao daemon soak",
 			Payload:        map[string]any{"scenario": opts.Scenario, "run_id": opts.RunID},
@@ -222,14 +222,14 @@ func runDaemonSoakScenario(ctx context.Context, cwd string, queue *daemonpkg.Que
 		if _, err := queue.SubmitJob(daemonpkg.SubmitJobInput{
 			RequestID:      daemonpkg.RequestID("req-" + opts.RunID + "-fake"),
 			JobID:          jobID,
-			JobType:        daemonpkg.JobTypeOpenClawSnapshot,
+			JobType:        daemonpkg.JobTypeConsumerSnapshot,
 			IdempotencyKey: "daemon-soak:" + opts.RunID + ":fake",
 			Actor:          "ao daemon soak",
 			Payload:        map[string]any{"scenario": opts.Scenario, "run_id": opts.RunID},
 		}, daemonpkg.QueueMutationOptions{}); err != nil {
 			return []string{jobID}, err
 		}
-		executor := daemonFakeOpenClawSnapshotExecutor{Artifacts: map[string]string{
+		executor := daemonFakeConsumerSnapshotExecutor{Artifacts: map[string]string{
 			"soak_run_id": opts.RunID,
 			"soak_report": filepath.Join(proofDir, "soak-report.json"),
 		}}
@@ -360,15 +360,15 @@ func validateDaemonSoakTerminal(opts daemonSoakOptions, jobs []daemonpkg.QueueJo
 	return nil
 }
 
-func readOpenClawJobsFromStore(store *daemonpkg.Store) ([]openclaw.ResourceSummary, error) {
+func readConsumerJobsFromStore(store *daemonpkg.Store) ([]consumer.ResourceSummary, error) {
 	router := daemonpkg.NewReadOnlyRouter(store, daemonpkg.ServerOptions{})
-	req := httptest.NewRequest(http.MethodGet, "/openclaw/v1/jobs", nil)
+	req := httptest.NewRequest(http.MethodGet, "/consumer/v1/jobs", nil)
 	resp := httptest.NewRecorder()
 	router.ServeHTTP(resp, req)
 	if resp.Code != http.StatusOK {
-		return nil, fmt.Errorf("OpenClaw jobs status = %d", resp.Code)
+		return nil, fmt.Errorf("consumer jobs status = %d", resp.Code)
 	}
-	var jobs openclaw.JobsResponse
+	var jobs consumer.JobsResponse
 	if err := json.Unmarshal(resp.Body.Bytes(), &jobs); err != nil {
 		return nil, err
 	}
@@ -397,9 +397,9 @@ func filterDaemonSoakJobs(jobs []daemonpkg.QueueJobState, jobIDs []string) []dae
 	return out
 }
 
-func filterOpenClawJobs(jobs []openclaw.ResourceSummary, jobIDs []string) []openclaw.ResourceSummary {
+func filterConsumerJobs(jobs []consumer.ResourceSummary, jobIDs []string) []consumer.ResourceSummary {
 	ids := daemonSoakStringSet(jobIDs)
-	out := make([]openclaw.ResourceSummary, 0, len(jobs))
+	out := make([]consumer.ResourceSummary, 0, len(jobs))
 	for _, job := range jobs {
 		if _, ok := ids[job.JobID]; ok {
 			out = append(out, job)
@@ -449,7 +449,7 @@ func renderDaemonSoakSummary(report daemonSoakReport) string {
 	fmt.Fprintf(&b, "- scenario: %s\n", report.Scenario)
 	fmt.Fprintf(&b, "- status: %s\n", report.Status)
 	fmt.Fprintf(&b, "- jobs: %d\n", len(report.Jobs))
-	fmt.Fprintf(&b, "- openclaw_jobs: %d\n", len(report.OpenClawJobs))
+	fmt.Fprintf(&b, "- consumer_jobs: %d\n", len(report.ConsumerJobs))
 	fmt.Fprintf(&b, "- events: %d\n", report.EventCount)
 	if report.Failure != "" {
 		fmt.Fprintf(&b, "- failure: %s\n", report.Failure)
