@@ -152,7 +152,7 @@ Map touched paths to product areas:
 |---|---|
 | `scripts/install*`, `.goreleaser.yml`, `.github/workflows/release.yml`, installer docs, Homebrew notes | Install, Upgrade, and Distribution |
 | `cli/cmd/ao/**`, `cli/docs/COMMANDS.md`, command tests | CLI and Operator Commands |
-| `cli/internal/daemon/**`, `cli/internal/schedule/**`, `cli/internal/agentworker/**`, `cli/internal/gascity/**`, daemon docs/contracts | Daemon, Scheduling, and Factory |
+| `cli/internal/daemon/**`, `cli/internal/schedule/**`, `cli/internal/agentworker/**`, daemon docs/contracts | Daemon, Scheduling, and Factory |
 | `skills/**`, `skills-codex/**`, `skills-codex-overrides/**` | Skills and Workflows |
 | `.codex-plugin/**`, `scripts/install-codex*`, `scripts/validate-codex*`, Codex docs/tests | Codex and Runtime Integrations |
 | `hooks/**`, `cli/embedded/hooks/**`, `lib/hook-helpers.sh`, hook tests | Hooks and Lifecycle |

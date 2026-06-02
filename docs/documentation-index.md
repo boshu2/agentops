@@ -68,7 +68,7 @@ Bridge / framing docs:
 - [ADR-0006: Re-Steer Policy and Mutation Safety](adr/ADR-0006-re-steer-policy-and-mutation-safety.md) — The `docs/re-steer-policy.json` engine, human-gate, and non-lossy GOALS.md patcher that govern `ao goals steer recommend`/`apply`
 - [ADR-0007: Deterministic /evolve Loop — Only the Operator Stops It](adr/ADR-0007-deterministic-loop-only-operator-stops.md) — Mechanical pre-cycle gate (`scripts/evolve/halt-check.sh`): operator-only markers, goal-regression halt, revert-on-red; ported from the mt-olympus unbounded-evolve substrate
 - [ADR-0008: /evolve Operating Model — Intelligent-Agile, Not Waterfall](adr/ADR-0008-evolve-intelligent-agile-operating-model.md) — Three-layer loop contract (intent re-read each cycle / locked architecture / bounded shaping authority) + the scope-precondition audit that prevents building-the-wrong-thing drift
-- [ADR-0009: Delete the Daemon — AgentOps Is In-Session Only](adr/ADR-0009-daemon-deletion-in-session-only.md) — Why the standalone daemon/scheduler/overnight-runner was deleted (not deprecated): AgentOps is a Gas City reference config with no core to protect, the in-session loop is the zero-dependency sovereignty floor, always-on opts into Gas City; names the rejected deprecate-keep-standalone alternative and the e2e-proof GC dispatch gap
+- [ADR-0009: Delete the Daemon — AgentOps Is In-Session Only](adr/ADR-0009-daemon-deletion-in-session-only.md) — Why the standalone daemon/scheduler/overnight-runner was deleted (not deprecated): AgentOps is an orchestration-substrate reference config with no core to protect, the in-session loop is the zero-dependency sovereignty floor, always-on opts into the substrate; names the rejected deprecate-keep-standalone alternative and the e2e-proof GC dispatch gap
 - [PDC Framework](architecture/pdc-framework.md) — Prevent, Detect, Correct quality control approach
 - [FAAFO Alignment](architecture/faafo-alignment.md) — FAAFO promise framework for vibe coding value
 - [Failure Patterns](architecture/failure-patterns.md) — The 12 failure patterns reference guide
@@ -303,7 +303,7 @@ Bridge / framing docs:
 - [Orchestration Ports](contracts/orchestration-ports.md) — `OrchestrationPort` dual-runtime selection seam: the 3-category model (Claude Workflow / NTM swarm / plain skill), the NTM → Claude-native → beads-floor degradation ladder, `AGENTOPS_ORCHESTRATION=off` opt-out, capability detection via `ntm --robot-capabilities`, output-contract parity (`orchestration-result.v1`), and the two-ladders distinction. Paired schemas `schemas/orchestration-backend.v1.schema.json` + `schemas/orchestration-result.v1.schema.json`.
 - [Orchestration Backend Selection Contract](contracts/orchestration-backend.md) — wire shape of one `OrchestrationPort` selection decision (chosen/reason/considered/opt_out/pin); pairs `schemas/orchestration-backend.v1.schema.json` for structural-floor validation.
 - [Orchestration Result Parity Contract](contracts/orchestration-result.md) — the output-contract parity shape every tier (NTM/Claude/beads) must emit; pairs `schemas/orchestration-result.v1.schema.json`; enforced by the degradation-conformance test.
-- [Remote Compute Contract](contracts/remote-compute.md) — Product-neutral RemoteTarget, RemoteSession, command ledger, recovery, and GasCity-first remote execution contract
+- [Remote Compute Contract](contracts/remote-compute.md) — Product-neutral RemoteTarget, RemoteSession, command ledger, recovery, and substrate-first remote execution contract
 - [Rubric Schema](https://github.com/boshu2/agentops/blob/main/schemas/rubric.v1.schema.json) — JSON Schema for rubric files (outcome rubric → target → grader → retry loop)
 - [Worker Spec Schema](https://github.com/boshu2/agentops/blob/main/schemas/worker-spec.v1.schema.json) — JSON Schema for per-worker model/tool/prompt isolation specs
 - [Repo Execution Profile Schema](contracts/repo-execution-profile.schema.json) — Machine-readable schema for repo execution profiles
@@ -321,7 +321,7 @@ Bridge / framing docs:
 - [Eval Workbench](https://github.com/boshu2/agentops/tree/main/evals/workbench) — Known-good fixture project (Go CLI, Python FastAPI, DevOps scripts) with 12 behavioral eval tasks and scoring scripts
 - [Eval Suite Schema](https://github.com/boshu2/agentops/blob/main/schemas/eval-suite.v1.schema.json) — JSON Schema for public canary and private holdout evaluation suites
 - [Eval Run Schema](https://github.com/boshu2/agentops/blob/main/schemas/eval-run.v1.schema.json) — JSON Schema for evaluation run records and scorecards
-- [Remote Compute Target Schema](https://github.com/boshu2/agentops/blob/main/schemas/remote-compute-target.schema.json) — JSON Schema for product-neutral GasCity-backed remote compute targets
+- [Remote Compute Target Schema](https://github.com/boshu2/agentops/blob/main/schemas/remote-compute-target.schema.json) — JSON Schema for product-neutral substrate-backed remote compute targets
 - [Remote Session Event Schema](https://github.com/boshu2/agentops/blob/main/schemas/remote-session-event.schema.json) — JSON Schema for remote session event and idempotent command ledger records
 - [Next-Work Queue Schema](contracts/next-work.schema.md) — Contract for `.agents/rpi/next-work.jsonl`
 - [RPI Phase Result Schema](contracts/rpi-phase-result.schema.json) — Machine-readable schema for RPI phase results

@@ -8,7 +8,7 @@ section, launch post, or video description.
 AgentOps is the engineering operating system for agent teams: a disciplined
 engineering layer that gives coding agents shared domain context, review
 verdicts, tracked follow-up work, and optional out-of-session compounding (the
-loop dispatched on the Gas City reference City).
+loop dispatched on the reference orchestration substrate).
 
 ## Problem Statement
 
@@ -116,20 +116,20 @@ The important shape:
 
 Out-of-session orchestration is the deeper lane, not the first proof.
 AgentOps ships no daemon or scheduler of its own — the loop runs in session,
-and unattended runs are delegated to the Gas City reference City (see
+and unattended runs are delegated to the reference orchestration substrate (see
 [ADR-0009](adr/ADR-0009-daemon-deletion-in-session-only.md)).
 
 After the user sees one packet and one verdict:
 
 ```bash
-# In the reference City, a long-lived mayor agent slings the next ready bead
-# to a refinery worker, which runs the loop as one invocable unit:
+# On the reference substrate, a long-lived controller agent dispatches the next ready bead
+# to a worker pane, which runs the loop as one invocable unit:
 ao rpi <bead-id>
 # Scheduled maintenance (Dream reports, wiki curation, release checks) runs as
-# Gas City cron Orders. See docs/dependencies.md and the using-gc skill.
+# substrate cron jobs. See docs/dependencies.md and the swarm skill.
 ```
 
-Use the Gas City lane for approved recurring work such as Dream reports, wiki
+Use the out-of-session substrate lane for approved recurring work such as Dream reports, wiki
 curation, release checks, or other compounding jobs where the operator has
 already accepted the artifact shape.
 

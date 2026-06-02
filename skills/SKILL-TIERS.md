@@ -371,7 +371,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | doc | standards | required |
 | flywheel | - | - |
 | forge | - | - |
-| **dream** | - | - (retired pointer; out-of-session compounding runs via Gas City) |
+| **dream** | - | - (retired pointer; out-of-session compounding runs via the substrate) |
 | handoff | - | - |
 | **implement** | beads, standards | optional, required |
 | inject | - | - |

@@ -7,7 +7,7 @@ Full autonomous operation with `/crank`.
 - Using `/crank` for epic-to-completion
 - The ODMCR reconciliation loop
 - Mayor vs Crew execution modes
-- Integration with gastown for parallel workers
+- Integration with NTM for parallel workers
 
 ## Prerequisites
 
@@ -30,7 +30,7 @@ Full autonomous operation with `/crank`.
 
 - **Crank**: Autonomous epic execution - runs until ALL children are CLOSED
 - **ODMCR loop**: Observe → Dispatch → Monitor → Collect → Retry
-- **Mayor mode**: Dispatches to parallel polecats via gastown
+- **Mayor mode**: Dispatches to parallel polecats via NTM
 - **Crew mode**: Executes sequentially via `/implement`
 
 ## Crank Flow

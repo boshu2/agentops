@@ -10,7 +10,7 @@ AgentOps makes agents work like a disciplined engineering team.
 In the demo, the operator gives Claude and Codex the same domain/practice
 packet. They judge the same product/design/engineering decision, produce one
 verdict artifact, and turn that verdict into tracked work. Out-of-session
-automation (the loop dispatched on the Gas City reference City) appears only
+automation (the loop dispatched on the reference orchestration substrate) appears only
 after first trust, as the second-stage compounding lane.
 
 ## Repo, Task, And Setup
@@ -176,18 +176,18 @@ execution is delegated to a substrate, and the loop is dispatched as one
 invocable unit:
 
 ```bash
-# In the reference City, a long-lived mayor agent slings the next ready bead
-# to a refinery worker, which runs the loop:
+# On the reference substrate, a long-lived controller agent dispatches the next ready bead
+# to a worker pane, which runs the loop:
 ao rpi soc-m6v5.9.7.8
-# Scheduled maintenance (ao compile, ao maturity --scan) runs as Gas City
-# cron Orders. See docs/dependencies.md and the using-gc skill.
+# Scheduled maintenance (ao compile, ao maturity --scan) runs as substrate
+# cron jobs. See docs/dependencies.md and the swarm skill.
 ```
 
 Narration:
 
 > Once you trust the packet, verdict, and evidence trail, the same operating
-> layer can run unattended out of session — dispatched on the Gas City
-> reference City, not an AgentOps daemon. That is the orchestration lane, not
+> layer can run unattended out of session — dispatched on the reference orchestration
+> substrate, not an AgentOps daemon. That is the orchestration lane, not
 > the first thing you need to understand.
 
 ## Engineering Practice On Screen
@@ -228,7 +228,7 @@ Do not use:
 | 3:15 | Run `/council --mixed`. |
 | 5:00 | Inspect the verdict artifact. |
 | 6:00 | Show the verdict becoming bd work. |
-| 7:00 | Show out-of-session dispatch on Gas City / Dream as second-stage automation. |
+| 7:00 | Show out-of-session dispatch on the substrate / Dream as second-stage automation. |
 | 8:00 | Close with the install or gist CTA. |
 
 ## PMF Evidence Fields
@@ -251,5 +251,5 @@ This storyboard is ready for the `ao demo` rebuild when:
 - The packet path is stable.
 - `product-council` is the named first-value profile.
 - The expected verdict shape is accepted.
-- The out-of-session (Gas City) lane is second-stage.
+- The out-of-session (NTM + MCP + managed-agents) lane is second-stage.
 - Claim boundaries are copied into README/docs/demo work.

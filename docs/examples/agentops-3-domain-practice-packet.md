@@ -59,8 +59,8 @@ weak review evidence, and cold starts between sessions.
 - The consolidated verdict should land in `.agents/council/` for local work.
 - Any public claim about PMF, productivity, or user outcomes needs exported
   evidence under `docs/releases/` or `evals/workbench/results/`.
-- The out-of-session orchestration lane (the loop dispatched on the Gas City
-  reference City) is proof of deeper automation, not a prerequisite for first
+- The out-of-session orchestration lane (the loop dispatched on the reference orchestration
+  substrate) is proof of deeper automation, not a prerequisite for first
   value.
 
 ## Runtime Path
@@ -86,15 +86,15 @@ Run council:
 /council --mixed validate "Given docs/examples/agentops-3-domain-practice-packet.md, should the 3.0 launch demo lead with council-first engineering judgment?"
 ```
 
-Optional second-stage automation (out of session, on the Gas City reference
-City — AgentOps ships no daemon or scheduler of its own; see
+Optional second-stage automation (out of session, on the reference orchestration substrate
+— AgentOps ships no daemon or scheduler of its own; see
 [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)):
 
 ```bash
-# A long-lived mayor agent slings the next ready bead to a refinery worker,
+# A long-lived controller agent dispatches the next ready bead to a worker pane,
 # which runs the loop as one invocable unit:
 ao rpi <bead-id>
-# Scheduled maintenance runs as Gas City cron Orders. See the using-gc skill.
+# Scheduled maintenance runs as substrate cron jobs. See the swarm skill.
 ```
 
 ## Expected Outputs
@@ -108,7 +108,7 @@ ao rpi <bead-id>
 
 ## Non-Goals
 
-- Do not lead with out-of-session orchestration setup (Gas City) as the first proof.
+- Do not lead with out-of-session orchestration setup (NTM + MCP + managed-agents) as the first proof.
 - Do not frame the product as generic multi-agent orchestration.
 - Do not use stale reliability-framed agent copy as public launch language.
 - Do not claim PMF or productivity improvements from local `.agents` notes
