@@ -19,7 +19,7 @@ The same split applies to Dream's in-session surface:
 - skills (`/dream`) are the interactive operator surface for a compounding session
 - the `ao` CLI primitives (`ao compile`, `ao maturity`, `ao flywheel close-loop`) are the headless work the loop performs
 
-Running that compounding *out of session* — always-on, scheduled, unattended — is delegated to an orchestration substrate (Gas City is the reference City), not an AgentOps daemon or scheduler; those surfaces were deleted in 3.0. GitHub nightly remains the public CI proof harness for the report contract; the private always-on compounding engine is the Gas City substrate driving the in-session loop.
+Running that compounding *out of session* — always-on, scheduled, unattended — is delegated to an orchestration substrate (the reference is NTM + MCP + managed-agents), not an AgentOps daemon or scheduler; those surfaces were deleted in 3.0. GitHub nightly remains the public CI proof harness for the report contract; the private always-on compounding engine is the substrate driving the in-session loop.
 
 ## The Proof Gaps
 
@@ -221,7 +221,7 @@ Dream is the compounding expression of the same loop model:
 
 A foreground `/dream` session keeps runtime behavior honest: no tracked source-code edits by default, optional bounded Dream Council synthesis through independent runner reports, and a shared report contract.
 
-Running Dream **unattended** — always-on, scheduled, queue-driven — is out-of-session orchestration, which AgentOps delegates to a substrate (Gas City is the reference City) rather than shipping its own daemon or scheduler. The Gas City pattern is a long-lived agent running `/dream`-equivalent maintenance Orders (`ao compile`, `ao maturity --scan`) on a cron `exec` schedule. There are no fake scheduler guarantees on a sleeping laptop; the substrate owns when and where.
+Running Dream **unattended** — always-on, scheduled, queue-driven — is out-of-session orchestration, which AgentOps delegates to a substrate (the reference is NTM + MCP + managed-agents) rather than shipping its own daemon or scheduler. The pattern is a long-lived agent — an NTM swarm pane or a managed-agent driver — running `/dream`-equivalent maintenance (`ao compile`, `ao maturity --scan`) on a cron schedule. There are no fake scheduler guarantees on a sleeping laptop; the substrate owns when and where.
 
 GitHub nightly remains useful for a different job: it proves that Dream's report contract and flywheel primitives still work in CI. It does not replace a substrate-driven unattended run.
 
