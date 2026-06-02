@@ -88,11 +88,11 @@ def run_import(
             key = f"{m.key}-{n}"
             n += 1
         seen_keys.add(key)
-        ledger.append({"source": m.header.source, "key": key})
         if not dry_run:
             store.remember(key, mem.render(m.header, m.text))
             if sleep_s:
                 time.sleep(sleep_s)
+        ledger.append({"source": m.header.source, "key": key})
     return {
         "schema": "bd-first-memory.ledger.v1",
         "dry_run": dry_run,

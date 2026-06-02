@@ -190,7 +190,7 @@ class BdStore:
 
     @staticmethod
     def _default_runner(argv: list[str]) -> str:
-        proc = subprocess.run(argv, capture_output=True, text=True, timeout=120, check=False)
+        proc = subprocess.run(argv, capture_output=True, text=True, timeout=120, check=True)
         return proc.stdout
 
     def remember(self, key: str, body: str) -> None:

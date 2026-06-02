@@ -69,7 +69,7 @@ def main(argv: list[str] | None = None) -> int:
     index = render_index(mem.BdStore().list_memories(), args.max_lines)
     if args.out:
         Path(args.out).expanduser().write_text(index)
-        print(f"MEMORY.md -> {args.out} ({index.count(chr(10)) + 1} lines)")
+        print(f"MEMORY.md -> {args.out} ({index.count(chr(10))} lines)")
     else:
         print(index)
     return 0
