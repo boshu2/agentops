@@ -14,7 +14,7 @@ research_refs:
 
 # Evolution Road Map — 2026-05-11
 
-> **Historical (2026-05-11).** A dated planning snapshot retained for provenance. Some surfaces it names have since changed — notably the standalone daemon (`agentopsd`) and its code map were removed in the AgentOps 3.0 rearchitecture ([ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)); AgentOps is in-session only, with out-of-session orchestration delegated to the Gas City reference City. Read for intent, not as a current task list.
+> **Historical (2026-05-11).** A dated planning snapshot retained for provenance. Some surfaces it names have since changed — notably the standalone daemon (`agentopsd`) and its code map were removed in the AgentOps 3.0 rearchitecture ([ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)); AgentOps is in-session only, with out-of-session orchestration delegated to the reference orchestration substrate. Read for intent, not as a current task list.
 
 ## Purpose
 

@@ -10,8 +10,8 @@ phased runs and `ao evolve` supervisor loops.
 > daemon of its own (see
 > [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)). The in-session
 > loop (`ao rpi`, `ao evolve`) runs end-to-end in a plain session; to run it
-> unattended out of session, dispatch it on the **Gas City reference City** (a
-> mayor agent slings ready beads to refinery workers that run `ao rpi`). This
+> unattended out of session, dispatch it on the **reference orchestration substrate** (a
+> controller agent dispatches ready beads to worker panes that run `ao rpi`). This
 > runbook now covers the in-session surfaces only.
 
 ## Activation
@@ -41,7 +41,7 @@ Cycle-1 runtime controls are in-session command flags:
 Activation rule:
 
 - Start with `--dry-run` and `--max-cycles 1`.
-- For unattended out-of-session runs, dispatch the loop on the Gas City reference City only after the local RPI and evolve dry runs are clean.
+- For unattended out-of-session runs, dispatch the loop on the reference orchestration substrate only after the local RPI and evolve dry runs are clean.
 - Keep manual merge/review in the loop until the release-readiness contract says otherwise.
 
 ## Rollback Trigger
@@ -64,7 +64,7 @@ Verify lifecycle and orchestration evidence via:
 
 1. RPI / bead events include the relevant lifecycle markers and payload fields.
    - RPI phased state and artifacts live under `.agents/rpi/`.
-   - Out-of-session job events (when dispatched on Gas City) are inspectable through the substrate's own event surface, not an AgentOps daemon.
+   - Out-of-session job events (when dispatched on the substrate) are inspectable through the substrate's own event surface, not an AgentOps daemon.
 2. RPI run ledger / bead store contains attempt records for affected beads (`bd show <id>`, `ao rpi status`).
 3. RPI tests pass:
    - `cd cli && go test ./internal/rpi/...`
@@ -74,7 +74,7 @@ Verify lifecycle and orchestration evidence via:
 
 ## Operator Notes
 
-- This runbook covers the in-session loop only; out-of-session/fleet orchestration is delegated to the Gas City reference City, not an AgentOps daemon.
+- This runbook covers the in-session loop only; out-of-session/fleet orchestration is delegated to the reference orchestration substrate, not an AgentOps daemon.
 - This runbook does not relax validation boundaries (`/vibe`, `/council`, `ao goals validate`, gate scripts all still apply).
 - This runbook is cycle-1 only; fleet/autopilot runtime expansion is a follow-on cycle.
 

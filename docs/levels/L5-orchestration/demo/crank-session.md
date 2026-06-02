@@ -127,7 +127,7 @@ You: /crank agentops-epic-xyz
 Claude: Loading epic...
 
 **Epic:** Add real-time notifications
-**Mode:** mayor (parallel via gastown)
+**Mode:** mayor (parallel via NTM)
 **Issues:** 6 total
 
 [OBSERVE] 2 issues ready (a1, b2)
@@ -162,4 +162,4 @@ Claude: Loading epic...
 2. Auto-detects crew (sequential) vs mayor (parallel) mode
 3. NO human prompts - fully autonomous
 4. Handles dependencies automatically via beads
-5. Integrates with gastown for multi-agent parallelization
+5. Integrates with NTM for multi-agent parallelization

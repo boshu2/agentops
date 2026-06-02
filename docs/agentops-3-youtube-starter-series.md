@@ -159,10 +159,10 @@ with clearer context.
 
 1. Recap the packet and verdict artifact.
 2. Run the loop in session: `ao rpi <bead>` (one cycle), `ao evolve` (many).
-3. To run it out of session, point the AgentOps reference Gas City at the repo
-   (`city.toml` + `packs/agentops`); a long-lived mayor agent slings ready beads
-   to refinery workers that run `ao rpi`.
-4. Schedule corpus maintenance as Gas City cron `exec` Orders (`ao compile`,
+3. To run it out of session, point the AgentOps reference substrate at the repo
+   (e.g. an NTM swarm with the AgentOps skills overlaid); a long-lived controller agent dispatches ready beads
+   to worker panes that run `ao rpi`.
+4. Schedule corpus maintenance as substrate cron jobs (`ao compile`,
    `ao maturity --scan`).
 5. Explain Dream/wiki/forge as compounding jobs, not unattended source mutation.
 
@@ -174,7 +174,7 @@ session.
 **Measurement fields**
 
 - In-session loop runs (`ao rpi` / `ao evolve`) before opting into always-on.
-- Gas City dispatch screenshots or reports.
+- substrate dispatch screenshots or reports.
 - Questions about safety boundaries and source mutation.
 
 ### 5. AgentOps 3.0 Full Path: First Verdict To PMF Evidence
