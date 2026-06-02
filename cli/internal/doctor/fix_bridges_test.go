@@ -55,11 +55,10 @@ func validSnapshotBytes(t *testing.T, id string, generatedAt time.Time) []byte {
 	return append(data, '\n')
 }
 
-// TestBridgesRegistration verifies all 6 detectors and 6 fixers are registered.
+// TestBridgesRegistration verifies both detectors and both fixers are registered.
 func TestBridgesRegistration(t *testing.T) {
 	ids := []string{
-		fmGCBinaryMissing, fmGCVersionIncompatible, fmGCControllerDown,
-		fmGCStatusParseError, fmOpenClawHealthUnreachable, fmOpenClawSnapshotStale,
+		fmOpenClawHealthUnreachable, fmOpenClawSnapshotStale,
 	}
 	for _, id := range ids {
 		var found bool
@@ -84,10 +83,6 @@ func TestBridgesRegistration(t *testing.T) {
 // TestBridgesAutoFixableFlags verifies exactly one fixer is auto-fixable.
 func TestBridgesAutoFixableFlags(t *testing.T) {
 	cases := map[string]bool{
-		fmGCBinaryMissing:           false,
-		fmGCVersionIncompatible:     false,
-		fmGCControllerDown:          false,
-		fmGCStatusParseError:        false,
 		fmOpenClawHealthUnreachable: false,
 		fmOpenClawSnapshotStale:     true,
 	}
@@ -106,105 +101,6 @@ func TestBridgesAutoFixableFlags(t *testing.T) {
 	}
 	if autoCount != 1 {
 		t.Errorf("auto-fixable fixer count = %d, want 1", autoCount)
-	}
-}
-
-// TestBridgesGCBinaryMissingDetector verifies the detector classifies a missing
-// `gc` binary by sanitizing PATH to a directory with no `gc`.
-func TestBridgesGCBinaryMissingDetector(t *testing.T) {
-	repo := t.TempDir()
-	emptyBin := t.TempDir()
-	t.Setenv("PATH", emptyBin)
-
-	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir()}
-	fs, err := gcBinaryMissingDetector{}.Detect(env)
-	if err != nil {
-		t.Fatalf("Detect: %v", err)
-	}
-	if len(fs) != 1 {
-		t.Fatalf("findings = %d, want 1", len(fs))
-	}
-	if fs[0].ID != fmGCBinaryMissing {
-		t.Errorf("finding ID = %q, want %q", fs[0].ID, fmGCBinaryMissing)
-	}
-	if fs[0].Severity != "P2" {
-		t.Errorf("severity = %q, want P2", fs[0].Severity)
-	}
-	if fs[0].Remediation.AutoFixable {
-		t.Error("binary-missing finding must not be auto-fixable")
-	}
-}
-
-// TestBridgesGCBinaryMissingFixerRefuses verifies the detect-only fixer writes
-// exactly one report, marks Fixed=false, and never installs a binary.
-func TestBridgesGCBinaryMissingFixerRefuses(t *testing.T) {
-	repo := t.TempDir()
-	emptyBin := t.TempDir()
-	t.Setenv("PATH", emptyBin)
-
-	ctx, ra := newBridgesTestCtx(t, repo)
-	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: t.TempDir()}
-
-	res, err := gcBinaryMissingFixer{}.Fix(ctx, env, nil)
-	if err != nil {
-		t.Fatalf("Fix: %v", err)
-	}
-	if res.Fixed {
-		t.Error("detect-only fixer must report Fixed=false")
-	}
-	if res.ActionsTaken != 1 {
-		t.Errorf("ActionsTaken = %d, want 1", res.ActionsTaken)
-	}
-	reportFile := filepath.Join(ra.RunDir, "reports", fmGCBinaryMissing+".txt")
-	body, err := os.ReadFile(reportFile)
-	if err != nil {
-		t.Fatalf("report not written: %v", err)
-	}
-	if !strings.Contains(string(body), "ao doctor") && !strings.Contains(string(body), "Install GasCity") {
-		t.Errorf("report does not name an operator action: %q", body)
-	}
-	assertActionLine(t, ra)
-}
-
-// TestBridgesGCStatusDriftClassification verifies the pure JSON drift classifier.
-func TestBridgesGCStatusDriftClassification(t *testing.T) {
-	cases := []struct {
-		name    string
-		payload string
-		kind    string
-		missing []string
-	}{
-		{"missing_controller", `{"agents":[],"summary":{}}`, "missing_top_level_fields", []string{"controller"}},
-		{"wrapped", `{"data":{"controller":{"running":true}}}`, "wrapped_envelope", []string{"agents", "controller", "summary"}},
-		{"not_json", `not json at all`, "not_json", nil},
-		{"nested", `{"controller":{"x":1},"agents":[],"summary":{}}`, "nested_shape_drift", nil},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			kind, missing := classifyGCStatusDrift([]byte(tc.payload))
-			if kind != tc.kind {
-				t.Errorf("kind = %q, want %q", kind, tc.kind)
-			}
-			if strings.Join(missing, ",") != strings.Join(tc.missing, ",") {
-				t.Errorf("missing = %v, want %v", missing, tc.missing)
-			}
-		})
-	}
-}
-
-// TestBridgesGCVersionParsing verifies the pure semver helpers.
-func TestBridgesGCVersionParsing(t *testing.T) {
-	if got := gcVersionToken("gc version 0.12.4"); got != "0.12.4" {
-		t.Errorf("token = %q, want 0.12.4", got)
-	}
-	if got := gcVersionToken("GasCity build (dev)"); got != "" {
-		t.Errorf("token for non-semver = %q, want empty", got)
-	}
-	if compareSemverParts(semverParts("0.12.4"), semverParts("0.13.0")) >= 0 {
-		t.Error("0.12.4 must compare below 0.13.0")
-	}
-	if compareSemverParts(semverParts("0.13.2"), semverParts("0.13.0")) < 0 {
-		t.Error("0.13.2 must compare at or above 0.13.0")
 	}
 }
 
