@@ -36,6 +36,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### driving-adapter
 
+- `bd-first-memory-migration` — Consolidate fragmented agent-memory layers into one bd-canonical store, then GC/retire the rest. Use when: "memory migration", "consolidate agent memory", "beads-first memory", "too many memory stores", "clean up ao/.agents pile", or migrating Claude MEMORY.md + ao flywheel + .agents/learnings into bd.
 - `bootstrap` — Initialize AgentOps project files.
 - `implement` — Implement one tracked issue.
 - `inject` — Load relevant .agents context.
@@ -182,6 +183,9 @@ graph LR
 | `agent-native` | produces | docs/contracts/agent-runtime-profile.md |
 | `autodev` | consumes | evolve |
 | `autodev` | consumes | rpi |
+| `bd-first-memory-migration` | consumes | repo-context |
+| `bd-first-memory-migration` | produces | bd-memories |
+| `bd-first-memory-migration` | produces | migration-report |
 | `beads` | consumes | bd-issue |
 | `beads` | produces | bd-issue |
 | `bootstrap` | consumes | doc |
