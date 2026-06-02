@@ -1,8 +1,29 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-05-28T10:23:15Z",
-  "skill_count": 75,
+  "generated_at": "2026-06-02T12:40:24Z",
+  "skill_count": 80,
   "skills": [
+    {
+      "name": "agent-native",
+      "description": "Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native — via skills + the ao CLI + CI, not hooks.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "standards",
+        "converter",
+        "validation"
+      ],
+      "produces": [
+        "docs/contracts/agent-runtime-profile.md"
+      ],
+      "practices": [
+        "continuous-delivery",
+        "ddd"
+      ],
+      "context_rel": [],
+      "references_count": 1,
+      "codex_override_present": true
+    },
     {
       "name": "autodev",
       "description": "Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.",
@@ -19,6 +40,31 @@
         "dora-metrics"
       ],
       "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "automation-shape-routing",
+      "description": "Front door for agent automation — decide the SHAPE (Workflow vs NTM vs skill), then hand off. Triggers: \"build automation\", \"convert skills to workflows\", \"which shape\".",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "hexagonal-architecture",
+        "team-topologies",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "skill-builder"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "workflow-builder"
+        }
+      ],
       "references_count": 0,
       "codex_override_present": true
     },
@@ -118,6 +164,35 @@
         }
       ],
       "references_count": 8,
+      "codex_override_present": true
+    },
+    {
+      "name": "burndown",
+      "description": "Drive a finite epic set to all-merged, then stop.",
+      "hexagonal_role": "domain",
+      "user_invocable": true,
+      "consumes": [
+        "beads",
+        "rpi",
+        "implement",
+        "post-mortem"
+      ],
+      "produces": [
+        ".agents/burndown/*.json",
+        "git-changes"
+      ],
+      "practices": [
+        "continuous-delivery",
+        "xp",
+        "agile-manifesto"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -285,7 +360,12 @@
         "continuous-delivery",
         "sre"
       ],
-      "context_rel": [],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "vibe"
+        }
+      ],
       "references_count": 1,
       "codex_override_present": true
     },
@@ -381,12 +461,12 @@
         "pragmatic-programmer"
       ],
       "context_rel": [],
-      "references_count": 16,
+      "references_count": 17,
       "codex_override_present": true
     },
     {
       "name": "dream",
-      "description": "Retired pointer — out-of-session compounding moved to Gas City.",
+      "description": "Retired pointer — out-of-session compounding moved to the substrate (NTM + MCP + managed-agents).",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],
@@ -397,6 +477,27 @@
         "lean-startup",
         "wiki-knowledge-surface",
         "sre"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "eval-outcomes",
+      "description": "Grade against Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "validation",
+        "ratchet",
+        "council"
+      ],
+      "produces": [
+        "skills/council/schemas/verdict.json"
+      ],
+      "practices": [
+        "continuous-delivery",
+        "ddd"
       ],
       "context_rel": [],
       "references_count": 0,
@@ -428,7 +529,7 @@
           "with": "rpi"
         }
       ],
-      "references_count": 25,
+      "references_count": 26,
       "codex_override_present": true
     },
     {
@@ -563,7 +664,12 @@
         "refactoring",
         "code-complete"
       ],
-      "context_rel": [],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "skill-auditor"
+        }
+      ],
       "references_count": 2,
       "codex_override_present": true
     },
@@ -675,6 +781,23 @@
       "practices": [
         "prompt-as-spec",
         "ai-assisted-dev"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "operating-loop-workflow",
+      "description": "Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "git-changes"
+      ],
+      "practices": [
+        "pragmatic-programmer",
+        "agile-manifesto"
       ],
       "context_rel": [],
       "references_count": 0,
@@ -916,7 +1039,12 @@
         "adr",
         "hermetic-builds"
       ],
-      "context_rel": [],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "trace"
+        }
+      ],
       "references_count": 0,
       "codex_override_present": true
     },
@@ -1028,7 +1156,12 @@
         "design-by-contract",
         "sre"
       ],
-      "context_rel": [],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "vibe"
+        }
+      ],
       "references_count": 4,
       "codex_override_present": true
     },
@@ -1067,7 +1200,12 @@
         "gitops",
         "supply-chain-integrity"
       ],
-      "context_rel": [],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "ship-loop"
+        }
+      ],
       "references_count": 8,
       "codex_override_present": true
     },
@@ -1236,7 +1374,12 @@
         "snapshot-testing",
         "llm-eval-harness"
       ],
-      "context_rel": [],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "validation"
+        }
+      ],
       "references_count": 1,
       "codex_override_present": true
     },
@@ -1421,13 +1564,22 @@
         "cmm-process-maturity",
         "design-by-contract"
       ],
-      "context_rel": [],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "skill-builder"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "heal-skill"
+        }
+      ],
       "references_count": 3,
       "codex_override_present": true
     },
     {
       "name": "skill-builder",
-      "description": "'Scaffold or absorb new SKILL.md files against the unified AgentOps template.",
+      "description": "Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -1439,7 +1591,16 @@
         "pragmatic-programmer",
         "design-patterns"
       ],
-      "context_rel": [],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "automation-shape-routing"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "skill-auditor"
+        }
+      ],
       "references_count": 3,
       "codex_override_present": true
     },
@@ -1557,7 +1718,12 @@
         "adr",
         "ebpf-observability"
       ],
-      "context_rel": [],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "provenance"
+        }
+      ],
       "references_count": 3,
       "codex_override_present": true
     },
@@ -1577,24 +1743,6 @@
       ],
       "context_rel": [],
       "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "using-gc",
-      "description": "Explain how to run AgentOps on the Gas City (gc) substrate.",
-      "hexagonal_role": "generic",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [
-        "documentation"
-      ],
-      "practices": [
-        "wiki-knowledge-surface",
-        "twelve-factor-app",
-        "agile-manifesto"
-      ],
-      "context_rel": [],
-      "references_count": 2,
       "codex_override_present": true
     },
     {
@@ -1677,6 +1825,33 @@
         }
       ],
       "references_count": 22,
+      "codex_override_present": true
+    },
+    {
+      "name": "workflow-builder",
+      "description": "Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: \"build a workflow\", \"create a workflow\", \"scaffold workflow\", \"author a workflow\".",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "workflow-script"
+      ],
+      "practices": [
+        "pragmatic-programmer",
+        "hexagonal-architecture",
+        "agile-manifesto"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "automation-shape-routing"
+        },
+        {
+          "kind": "shared-kernel",
+          "with": "operating-loop-workflow"
+        }
+      ],
+      "references_count": 0,
       "codex_override_present": true
     }
   ]

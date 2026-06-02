@@ -638,12 +638,6 @@
         "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
       },
       {
-        "name": "using-gc",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Guide to running AgentOps on the Gas City (gc) substrate; gc-specific shell idioms and out-of-session orchestration vocabulary."
-      },
-      {
         "name": "operating-loop-workflow",
         "treatment": "parity_only",
         "wave": "catalog-parity",
@@ -673,7 +667,7 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "0954334c8c9455712baca97f5168ee1355fb372213587e39d4f60cca54c16bae",
+      "source_hash": "1de3afb8e53caa52b33bad2b2a77d46201728c31b2762ebf41a8c94bf0b77c34",
       "generated_hash": "314b9cc76584601464e2bf70c1356f8e8a7f6d8c557c29e0e2abf6c45cffa51f"
     },
     {
@@ -763,7 +757,7 @@
     {
       "name": "deps",
       "source_skill": "skills/deps",
-      "source_hash": "e5c4620db781e66c8512a23f1db425fd33b99e857d351f35d507a8e32daac7fb",
+      "source_hash": "27ae05545f79c1422bfed81f60f05e60499b6ea1d36ca7bce3f141594fe0f0d0",
       "generated_hash": "97ccc3fc5b60f9e81a0dd9bc956fd82ce6481014b4ce53d259fb09d878427a5b"
     },
     {
@@ -787,14 +781,14 @@
     {
       "name": "domain",
       "source_skill": "skills/domain",
-      "source_hash": "a9728200b9d491bbc601c446e1fa9fc28fbddc47419963a5481995e59051d71a",
+      "source_hash": "594c5d173260e0c6d3b6ad29dbb82210103afe07181f0989f71f57ccb3081073",
       "generated_hash": "5de534737803c76fab3ad06e1a47dba85eb8f631a159cc6157ce4f932c2e99e4"
     },
     {
       "name": "dream",
       "source_skill": "skills/dream",
-      "source_hash": "30e04bc30a20b4404049a8ca31ecf21047e58ead1d97ccd29d38f476c0c21d47",
-      "generated_hash": "e0ff08b8e3e94f8bc6ae5d253a4a5b5d89152c3544991bf05c5f4152d32c2bb6"
+      "source_hash": "1252a94ea7ad0b1150dfa909e101ee1c071f3d5ced54861aea703ebaa1803af5",
+      "generated_hash": "4e2e82d30915be97bc19402fb8afe172539bff5d83bec1c1627224f2629ccd52"
     },
     {
       "name": "eval-outcomes",
@@ -907,7 +901,7 @@
     {
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
-      "source_hash": "629f0c1d95807d58e251bf26e3b864906598435ea772857749b74fcedc33d7f9",
+      "source_hash": "3ea1471cfbcd7b5af5cdf94ce15497b35a7ef8a5ea771f153e120a9f40fee71a",
       "generated_hash": "960c599da43c3a8167fbb2a766cfc88a45fe1f8fb29295f5ccd006b8f52442bb"
     },
     {
@@ -949,7 +943,7 @@
     {
       "name": "provenance",
       "source_skill": "skills/provenance",
-      "source_hash": "9f27ae854232be88a9b3924e85eecbd5a18f67dcf8b176785affd72af6b86fc4",
+      "source_hash": "0f6b1c9cbe0d2dc80aaa1e6d0d5422ef21f627b9e45e033b3f7d15e3223b3a82",
       "generated_hash": "b593198452acdf60279ca98d52b4d76a7d5bf7893db36ada3daccf5dfd3737dc"
     },
     {
@@ -979,7 +973,7 @@
     {
       "name": "red-team",
       "source_skill": "skills/red-team",
-      "source_hash": "db0a03ef08c3e97f7085ac3bd0622752010304777b20fcabf9a043192d385038",
+      "source_hash": "02d0f873ecb1dde555d831337b212d4a9447e56ec99712ce56932ecd9808f5c6",
       "generated_hash": "5b154a7fa29e162df34f7e765a75cfe8a9335e65e1fd13d388d6b46c514bef1d"
     },
     {
@@ -991,7 +985,7 @@
     {
       "name": "release",
       "source_skill": "skills/release",
-      "source_hash": "de0db99fec8d814411fcdb57772fb6a2b4e4bbba6c0aed2bc25e52e561fdcbbb",
+      "source_hash": "6f169bdd77b8f4773f04895e120c3d7202ede6e2bb0b7aab4e1f866e052fc6a0",
       "generated_hash": "5b3075bdee6aeed794ad7841e990f0cc94dbad414506c57f8cb4f42515c4e465"
     },
     {
@@ -1033,7 +1027,7 @@
     {
       "name": "scenario",
       "source_skill": "skills/scenario",
-      "source_hash": "46ed0481b2606231a22899550eb5d60ed041fe81fed103eb9d5c117cd06c2d6f",
+      "source_hash": "ee89cd03710ca7e2d9667f68a68e839e931dcd7ffce21eed09bd7ea39b88719b",
       "generated_hash": "1736927301013e0f0aa5492ac60c2b909caee1a7ec232752998d85f1c9767de5"
     },
     {
@@ -1063,13 +1057,13 @@
     {
       "name": "shared",
       "source_skill": "skills/shared",
-      "source_hash": "03e175d2946ab377d4fbfa884d8fb32ae83d3c71542f627cddcbc05adf9ee0e9",
+      "source_hash": "332c02b6a0fc14733839d88ccd80cbe4bbfaf6a0c631ad1d4df929fc875d2b74",
       "generated_hash": "0758c94cf77d7fd1bde265f3bff580a57f15fe601c59f893502d14175d57b763"
     },
     {
       "name": "ship-loop",
       "source_skill": "skills/ship-loop",
-      "source_hash": "64b08753a482ebd54c444563e894f3e61627a8f692598795da9611f848c5155f",
+      "source_hash": "361538994b9170ced590c48d2468d39d1855ce7eff4bcbc158446ec0a8bda278",
       "generated_hash": "a6b0df3d81b3680704b99b871fae44819cc7b05e7f3353877e4957e7fbbb97a6"
     },
     {
@@ -1081,7 +1075,7 @@
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
-      "source_hash": "09ca51bcec58dd8d144bf8a244deec9f716178bc0fc3ebd444b6ccbe314cdfe2",
+      "source_hash": "9174143cbff5f83fd4f47aeac4694bb54a1f00d55665537a5261a7efb9e6acc9",
       "generated_hash": "4d8b01766df9b10099f4f669e60c74dede37bd604e70d7b6a9a732cb5b2a5c05"
     },
     {
@@ -1117,20 +1111,14 @@
     {
       "name": "trace",
       "source_skill": "skills/trace",
-      "source_hash": "f13d70a293bccbea9a5fd55922c2df28b37d9af1f0a668c9ba306caa1bccaaf8",
+      "source_hash": "d8e973155e52f6339cc0481909f063b625accd3123f59f50fd7171ef4bacc2fb",
       "generated_hash": "c0a7ce3beb038f142c9ad8ef0eef4a9072eb2a2c6c90b4f1e0f39699462f4cec"
     },
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "0590d919e318a9e99e2f819e10150875640ab3c46af8a4ec2fe82b58718df738",
+      "source_hash": "bc0d61f7fa8ce5a9d53ab77948fa7dffd3fe3ba970cd4edfb32f0240662cd930",
       "generated_hash": "80119493d38739d5ca4d9377c97c7e4f6e5766365525c965297c1cd78029e74b"
-    },
-    {
-      "name": "using-gc",
-      "source_skill": "skills/using-gc",
-      "source_hash": "abd2d7adb161e872840f5f27354d718f6d5c51e1a033cf1e8e9daccc806e03c6",
-      "generated_hash": "592032dd971333472eff48f75814889b5915d1c65714fd5fa703a772657a1531"
     },
     {
       "name": "validate",
