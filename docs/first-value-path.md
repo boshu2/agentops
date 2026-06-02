@@ -11,7 +11,7 @@ The first value is a council verdict over a visible engineering domain:
 3. Assemble bounded context for one decision.
 4. Run council across Claude and Codex, with a same-packet fallback.
 5. Inspect the verdict artifact and turn it into tracked work.
-6. Only then point at the optional out-of-session compounding lane, which runs the same loop on an orchestration substrate (Gas City is the reference) — AgentOps itself ships no daemon or scheduler.
+6. Only then point at the optional out-of-session compounding lane, which runs the same loop on an orchestration substrate (the reference is NTM + MCP + managed-agents) — AgentOps itself ships no daemon or scheduler.
 
 ## Target Viewer
 
@@ -32,7 +32,7 @@ need to see one agent decision become an inspectable engineering artifact.
 | Context assembly | 1 min | `.agents/rpi/briefing-current.md` exists. |
 | Council run | 5-10 min | `.agents/council/<run-id>/verdict.md` exists. |
 | Verdict to work | 2 min | `bd show <issue-id>` cites the verdict path. |
-| Optional out-of-session lane | 5 min | A substrate (Gas City) Order is registered to run the loop unattended. |
+| Optional out-of-session lane | 5 min | A substrate (NTM / managed-agents) dispatch is registered to run the loop unattended. |
 
 ## Commands And Expected Outputs
 
@@ -167,15 +167,16 @@ the zero-dependency sovereignty floor. Running the same loop **out of session**
 (always-on, scheduled, unattended) is a separate concern. AgentOps 3.0 ships no
 daemon, scheduler, or overnight runner of its own — those surfaces were deleted
 (see [AgentOps 3.0 north star](3.0.md)). Out-of-session orchestration is
-delegated to a substrate, and AgentOps ships a reference one: a **Gas City**
-City (`city.toml` + `packs/agentops/`).
+delegated to a substrate. The reference is the trio AgentOps actually runs on —
+**NTM** (a tmux agent swarm), **MCP** (`ao mcp serve`), and **managed-agents**
+(`ao agent`) — none of it AgentOps-owned.
 
-On the reference substrate, a long-lived **mayor** agent runs `bd ready` and
-dispatches the next bead to a **refinery** worker that runs `ao rpi <bead>`;
-scheduled maintenance (`ao compile`, `ao maturity --scan`) runs as cron `exec`
-Orders. The agents inherit the AgentOps skills via an overlay and run the same
+On the reference substrate, an NTM swarm (or a lead agent) runs `bd ready` and
+dispatches the next bead to a worker that runs `ao rpi <bead>`; scheduled
+maintenance (`ao compile`, `ao maturity --scan`) runs via a managed-agent driver
+or cron. The agents inherit the AgentOps skills via an overlay and run the same
 loop you just ran by hand. See the [AgentOps 3.0 north star](3.0.md) for the
-in-session / out-of-session split and the reference City.
+in-session / out-of-session split and the reference substrate.
 
 ## First Artifacts To Inspect
 
@@ -185,7 +186,7 @@ in-session / out-of-session split and the reference City.
 | `.agents/rpi/briefing-current.md` | The bounded task context assembled for the run. |
 | `.agents/council/<run-id>/verdict.md` | The engineering verdict from the council. |
 | `.beads/issues.jsonl` | The tracked work created from the verdict. |
-| `city.toml` + `packs/agentops/` | The reference Gas City substrate for the optional out-of-session lane, only after first trust exists. |
+| Substrate config (an NTM swarm · `ao mcp serve` · `ao agent`) | The reference out-of-session substrate (NTM + MCP + managed-agents) for the optional lane, only after first trust exists. |
 
 ## Friction List
 
