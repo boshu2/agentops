@@ -9,10 +9,12 @@ import (
 	"strings"
 )
 
-// NTMHardDeps are the dependencies an NTM swarm cannot run without.
+// NTMHardDeps are the dependencies an AgentOps NTM background-agent swarm
+// cannot run without.
 // These are the spike-identified HARD deps: a missing entry means the
-// host cannot drive a swarm even if the ntm binary is on PATH, which is
-// exactly why detection is capability-based rather than `command -v`.
+// host cannot drive background Claude/Codex skill sessions even if the ntm
+// binary is on PATH, which is exactly why detection is capability-based rather
+// than `command -v`.
 //
 // Deliberately NOT in this list: cursors and pipeline-state. Those are
 // host-bound, non-portable runtime artifacts — they describe a specific
@@ -23,6 +25,7 @@ var NTMHardDeps = []string{
 	"git",
 	"persistent-host",
 	"agent-CLIs",
+	"mcp-agent-mail",
 }
 
 // NTMCapabilities is the result of probing the NTM runtime. Available

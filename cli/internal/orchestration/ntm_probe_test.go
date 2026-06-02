@@ -26,7 +26,7 @@ func (f *fakeRunner) Run(_ context.Context, name string, args ...string) ([]byte
 func TestNTMProbe_PresentReportsCapabilities(t *testing.T) {
 	// ntm present and reports all hard deps as capabilities.
 	runner := &fakeRunner{
-		out: []byte(`{"capabilities":["agent-CLIs","git","persistent-host","tmux"]}`),
+		out: []byte(`{"capabilities":["agent-CLIs","git","mcp-agent-mail","persistent-host","tmux"]}`),
 	}
 
 	got, err := ProbeNTM(context.Background(), runner)
@@ -37,7 +37,7 @@ func TestNTMProbe_PresentReportsCapabilities(t *testing.T) {
 		t.Fatalf("Available = false, want true")
 	}
 
-	wantCaps := []string{"agent-CLIs", "git", "persistent-host", "tmux"}
+	wantCaps := []string{"agent-CLIs", "git", "mcp-agent-mail", "persistent-host", "tmux"}
 	if !reflect.DeepEqual(got.Capabilities, wantCaps) {
 		t.Fatalf("Capabilities = %v, want %v", got.Capabilities, wantCaps)
 	}
@@ -69,7 +69,7 @@ func TestNTMProbe_PresentWithMissingHardDeps(t *testing.T) {
 		t.Fatalf("Available = false, want true")
 	}
 
-	wantMissing := []string{"persistent-host", "agent-CLIs"}
+	wantMissing := []string{"persistent-host", "agent-CLIs", "mcp-agent-mail"}
 	if !reflect.DeepEqual(got.MissingDeps, wantMissing) {
 		t.Fatalf("MissingDeps = %v, want %v", got.MissingDeps, wantMissing)
 	}

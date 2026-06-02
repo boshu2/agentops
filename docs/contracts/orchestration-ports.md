@@ -94,7 +94,7 @@ is not a usable swarm runtime. `cli/internal/orchestration/ntm_probe.go` invokes
 them against the hard dependencies a swarm cannot run without:
 
 ```
-NTMHardDeps = [tmux, git, persistent-host, agent-CLIs]
+NTMHardDeps = [tmux, git, persistent-host, agent-CLIs, mcp-agent-mail]
 ```
 
 Deliberately **not** hard deps: cursors and pipeline-state — those are
