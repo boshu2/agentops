@@ -1,11 +1,17 @@
 # Remote Compute Contract
 
+> **Note:** This contract was originally written for the GasCity session provider.
+> GasCity was removed in the 3.0 GC teardown; the reference out-of-session
+> substrate is now NTM + MCP + managed-agents. The contract has been generalized
+> to be provider-agnostic; specific provider implementations may extend these
+> patterns.
+
 Remote compute is the AgentOps product boundary for running agent sessions on a
 configured remote node while keeping product names generic. Bushido is a
 private dogfood target and soak harness, not a public AgentOps namespace.
 
-This contract freezes the nouns used by `ao compute`, daemon jobs, GasCity
-worker sessions, and recovery projections before implementation starts.
+This contract freezes the nouns used by `ao compute`, daemon jobs, remote
+worker sessions, and recovery projections.
 
 ## Contract Version
 
@@ -14,17 +20,17 @@ worker sessions, and recovery projections before implementation starts.
 | `schema_version` | `1` |
 | Target schema | `remote-compute-target.schema.json` |
 | Session event schema | `remote-session-event.schema.json` |
-| Primary session provider | `gascity-api-sse` |
+| Primary session provider | substrate-specific (NTM / MCP / managed-agents) |
 | Bootstrap transports | `ssh`, `local`, `manual`, `none` |
 
 ## Core Nouns
 
 | Noun | Definition |
 |------|------------|
-| `RemoteTarget` | Operator-configured product target for a GasCity city endpoint plus bootstrap metadata. It is not a host alias alone. |
-| `RemoteNode` | Host or process environment running the GasCity supervisor and worker providers. A node may be reached by bootstrap transport, but session state comes from GasCity. |
-| `BootstrapTransport` | Setup or rescue mechanism such as SSH. It may install, start, or diagnose GasCity; it is not a product session provider. |
-| `SessionProvider` | Runtime API that owns sessions, events, transcripts, artifacts, and provider request IDs. The first provider is GasCity API/SSE. |
+| `RemoteTarget` | Operator-configured product target for a remote endpoint plus bootstrap metadata. It is not a host alias alone. |
+| `RemoteNode` | Host or process environment running the orchestration substrate and worker providers. A node may be reached by bootstrap transport, but session state comes from the provider. |
+| `BootstrapTransport` | Setup or rescue mechanism such as SSH. It may install, start, or diagnose the substrate; it is not a product session provider. |
+| `SessionProvider` | Runtime API that owns sessions, events, transcripts, artifacts, and provider request IDs. The reference provider is the NTM + MCP + managed-agents substrate. |
 | `RemoteSession` | AgentOps durable view of one provider session, owned by a daemon job or foreground command record. |
 | `RemoteCommand` | Idempotent prompt or control delivery attempt recorded by AgentOps before provider delivery. |
 
@@ -35,9 +41,8 @@ Every `RemoteTarget` must define stable identity without embedding secrets.
 Required target fields:
 
 - `target_id`: local stable name used by CLI and projections.
-- `provider`: `gascity`.
-- `gascity.endpoint`: HTTP(S) endpoint for the GasCity supervisor.
-- `gascity.city`: target city name.
+- `provider`: provider identifier (e.g., `ntm`, `managed-agents`).
+- `endpoint`: HTTP(S) endpoint for the provider (when applicable).
 - `bootstrap_transport`: one of `ssh`, `local`, `manual`, or `none`.
 - `bootstrap_profile`: optional host, user, workdir, and supervisor hints used
   only for bootstrap or rescue.
@@ -57,13 +62,12 @@ foreground command ledger after a crash.
 Required session fields:
 
 - `session_id`: AgentOps remote session identity.
-- `provider`: `gascity`.
-- `target.target_id` and `target.city`.
+- `provider`: provider identifier.
+- `target.target_id`.
 - `job_id` and `attempt_id` when daemon-owned.
 - `request_id`: AgentOps request correlation ID.
-- `provider_request_id`: provider response correlation value such as
-  `X-GC-Request-Id`.
-- `provider_session_id`: GasCity session ID or alias.
+- `provider_request_id`: provider response correlation value.
+- `provider_session_id`: provider session ID or alias.
 - `event_cursor`: last consumed list/SSE cursor.
 - `transcript_refs`: durable transcript references.
 - `artifact_refs`: durable artifact references.
@@ -76,7 +80,7 @@ authoritative terminal state for product remote sessions.
 
 ## Command Ledger
 
-AgentOps must record command intent before delivery to GasCity.
+AgentOps must record command intent before delivery to the provider.
 
 Each `RemoteCommand` includes:
 
@@ -128,36 +132,35 @@ ledger events and provider replay.
 |---------|-----------|
 | `.agents/remote/targets.json` | Optional local target registry for CLI use. |
 | `.agents/daemon/ledger.jsonl` | Durable job, session, command, and projection facts for daemon-owned work. |
-| GasCity API/SSE | Provider source of truth for provider session status, events, transcripts, and artifacts. |
+| Provider API | Provider source of truth for provider session status, events, transcripts, and artifacts. |
 | OpenClaw | Read-only projection consumer; it does not own remote session mutation. |
 
 Foreground `ao compute` commands may write local command/session proof records,
 but daemon-submitted work must not report accepted or running until the daemon
 ledger append succeeds.
 
-## GasCity First
+## Provider Integration
 
-The product remote execution path is GasCity API/SSE:
+The product remote execution path follows this pattern:
 
-1. Diagnose target readiness through GasCity health, readiness, provider
-   readiness, city readiness, and event replay surfaces.
+1. Diagnose target readiness through provider health, readiness, and event
+   replay surfaces.
 2. Record AgentOps session and command intent.
-3. Deliver start, nudge, cancel, and attach operations through the public
-   GasCity API.
-4. Persist `X-GC-Request-Id`, provider session ID, event cursor, transcript
+3. Deliver start, nudge, cancel, and attach operations through the provider API.
+4. Persist provider request ID, provider session ID, event cursor, transcript
    refs, artifact refs, and terminal classification.
 5. Rebuild AgentOps projections from the ledger and provider replay.
 
 SSH/tmux is bootstrap and rescue only. A direct SSH/tmux product provider
-requires a new contract revision and must not be introduced in RC-01.
+requires a new contract revision.
 
 ## Recovery Rules
 
 Recovery must prefer durable evidence in this order:
 
 1. AgentOps daemon ledger command/session events.
-2. GasCity list/event replay using `event_cursor` or `Last-Event-ID`.
-3. GasCity transcript and artifact evidence.
+2. Provider list/event replay using `event_cursor` or `Last-Event-ID`.
+3. Provider transcript and artifact evidence.
 4. Bootstrap/rescue diagnostics.
 
 If the provider is unreachable before terminal proof, classify the session as
@@ -170,14 +173,14 @@ found after reconciliation, classify it as `lost`. Neither state is success.
 - Auth values are referenced by `auth_ref` and redacted in logs.
 - Remote command payloads are either redacted or stored by durable proof ref.
 - Local daemon mutation rules apply before remote session mutations are added.
-- Live Bushido GC-city soak tests are opt-in and use private target labels.
+- Live Bushido soak tests are opt-in and use private target labels.
 
 ## Conformance Checks
 
 RC-01 is valid when these checks pass:
 
 ```bash
-rg -n "RemoteTarget|RemoteNode|RemoteSession|RemoteCommand|GasCity|bootstrap_transport" docs/contracts/remote-compute.md
+rg -n "RemoteTarget|RemoteNode|RemoteSession|RemoteCommand|bootstrap_transport" docs/contracts/remote-compute.md
 python3 -m json.tool schemas/remote-compute-target.schema.json >/dev/null
 python3 -m json.tool schemas/remote-session-event.schema.json >/dev/null
 bash tests/scripts/test-remote-compute-contracts.sh

@@ -56,7 +56,7 @@ What used to be hook responsibilities are now explicit, pulled surfaces:
 Both lanes run **in session** because people use Codex or they use Claude
 Code — neither relies on hooks. Running the same loop **out of session**
 (always-on, scheduled, unattended) is a separate concern AgentOps delegates to
-an orchestration substrate; Gas City is the reference City. AgentOps 3.0 ships
+an orchestration substrate (NTM + MCP + managed-agents is the reference). AgentOps 3.0 ships
 no daemon, scheduler, or overnight runner of its own — those surfaces were
 deleted (see [AgentOps 3.0 north star](3.0.md)).
 
@@ -66,7 +66,7 @@ deleted (see [AgentOps 3.0 north star](3.0.md)).
 |------|---------|------------------|
 | Operator | What the human or lead agent should touch first | `ao factory start`, `/rpi`, `ao rpi phased`, `ao rpi status` |
 | Briefing + runtime | Bounded startup context and thread-time state | `ao knowledge brief`, `ao context assemble` |
-| Out-of-session | Running the loop unattended (always-on, scheduled) | Delegated to an orchestration substrate (Gas City is the reference) — not an AgentOps surface |
+| Out-of-session | Running the loop unattended (always-on, scheduled) | Delegated to an orchestration substrate (NTM + MCP + managed-agents is the reference) — not an AgentOps surface |
 | Delivery line | Research, planning, execution, validation | `/discovery`, `/plan`, `/crank`, `/validation`, `/rpi` |
 | Learning loop | Convert completed work into future advantage | `ao knowledge activate`, `ao flywheel close-loop`, `/retro`, `/forge` |
 | Enforcement | Automatic quality gates and execution discipline | CI (`.github/workflows/validate.yml`), skill-level checks, `cd cli && make test` |

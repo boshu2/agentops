@@ -9,7 +9,7 @@ Three repositories converge into a single product surface:
 | Repository | Role | Status |
 |------------|------|--------|
 | **AgentOps** (`ao`) | One binary. Skills, hooks, knowledge flywheel, RPI orchestration, goal-driven evolution. The product. | Active |
-| **Gas Town** (`gt`) | Upstream workspace manager. Multi-agent coordination, rig registry, dispatch. Consumes `ao` as a tool. | Active (upstream) |
+| **NTM** | Upstream tmux agent swarm. Multi-agent coordination and dispatch. Consumes `ao` as a tool. | Active (adopted substrate) |
 
 Olympus (`ol`) was the power-user daemon predecessor, archived. Its patterns (context compilation, constraint injection, run ledger) survive as features inside `ao`. No live integration exists.
 
@@ -19,8 +19,8 @@ The public product does not require users to know this vocabulary. This is the i
 
 **Knowledge OS** (the systems-theoretic substrate — Meadows leverage points, the dK/dt equation, stigmergy as the multi-agent coordination primitive)
 → **Olympus** (archived runtime; patterns absorbed as skills)
-→ **AgentOps** (this reference implementation: skills + hooks + `ao` CLI + scheduling daemon)
-→ **Mt. Olympus** (forkable Gas City runtime proof — the empirical demonstration the substrate runs autonomously against a real codebase under operator control).
+→ **AgentOps** (this reference implementation: skills + `ao` CLI; out-of-session adopts NTM + MCP + managed-agents)
+→ **Mt. Olympus** (sovereign Rust runtime — the empirical demonstration a typed loop runs autonomously against a real codebase under operator control).
 
 Industry parallels (Anthropic Managed Agents, factory-style mission systems, Cursor agents) are convergent on the same planner/implementer/validator shape — not derived-from.
 
