@@ -29,6 +29,7 @@ func DefaultGate() Gate {
 type Decision struct {
 	EntryID       string   `json:"entry_id"`
 	Eligible      bool     `json:"eligible"`
+	Tier          Tier     `json:"tier,omitempty"`
 	Citations     int      `json:"citations"`
 	Verifications int      `json:"verifications"`
 	Refuted       bool     `json:"refuted"`
