@@ -55,9 +55,9 @@ class Manifest:
     summary: dict[str, object] = field(default_factory=dict)
 
 
-def _file_sha1(p: Path) -> str | None:
+def _file_hash(p: Path) -> str | None:
     try:
-        return hashlib.sha1(p.read_bytes()).hexdigest()  # noqa: S324 - content id
+        return hashlib.sha256(p.read_bytes()).hexdigest()  # content id, not crypto
     except OSError:
         return None
 
@@ -81,7 +81,7 @@ def classify_learnings(root: Path, sample_cap: int) -> tuple[list[Item], list[It
         if "-pend-" in p.name:
             drop.append(Item("agents_learnings", str(p), "drop", "pending-extract dump", size))
             continue
-        digest = _file_sha1(p)
+        digest = _file_hash(p)
         if digest is not None and digest in seen_hashes:
             drop.append(Item("agents_learnings", str(p), "drop", "duplicate content", size))
             continue
