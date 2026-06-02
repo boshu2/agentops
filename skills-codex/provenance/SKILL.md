@@ -47,7 +47,7 @@ trace the local coordination trail:
    background-session event JSONL. Do not commit repo-root `.agents/`; cite paths
    as runtime evidence only.
 4. Resolve the worker profile (`ao agent bundle --runtime codex-ntm`, or the
-   Claude NTM profile when present) to list the skills and guardrails loaded.
+   sibling NTM runtime profile when present) to list the skills and guardrails loaded.
 
 ### Step 3: Search Session Transcripts with CASS
 
