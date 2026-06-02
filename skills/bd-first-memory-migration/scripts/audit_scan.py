@@ -115,7 +115,12 @@ def scan_claude_memory(home: Path, sample_cap: int) -> LayerReport:
     files: list[Path] = []
     for d in mem_dirs:
         files.extend(_iter_files(d))
-    total_bytes = sum((f.stat().st_size for f in files if f.exists()), 0)
+    total_bytes = 0
+    for f in files:
+        try:
+            total_bytes += f.stat().st_size
+        except OSError:
+            continue
     dup_groups, dup_files = _dup_stats(files, sample_cap)
     rep = LayerReport(
         name="claude_memory",
