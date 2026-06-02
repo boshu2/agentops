@@ -67,7 +67,7 @@ fi
 |------------|-------------|-------------------|
 | `bd` | Issue tracking unavailable | Use TaskList for tracking. Note "install bd for persistent issue tracking" |
 | `ao` | Knowledge flywheel unavailable | Write learnings to `.agents/learnings/` directly. Skip flywheel metrics |
-| out-of-session substrate (`ntm` / `ao agent`) | Always-on orchestration unavailable | Run the loop in-session (`/rpi`, `/evolve`). A substrate (an NTM tmux swarm or managed-agents via `ao agent`) only adds always-on dispatch of whole `ao rpi`/`ao evolve` loops — see [agent-native](../agent-native/SKILL.md) and [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md) |
+| NTM background agents (`ntm` + `mcp-agent-mail`) | Always-on orchestration unavailable | Run an interactive skill session yourself. NTM only adds supervised Claude/Codex background sessions coordinated by mcp-agent-mail; it does not run deprecated `ao rpi`/`ao evolve` wrappers — see [agent-native](../agent-native/SKILL.md) and [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md) |
 | `gt` | Workspace management unavailable | Work in current directory. Skip convoy/sling operations |
 | `gh` | PR/CI automation unavailable | Open PRs via the web UI; skip automated PR status/merge steps |
 | `go` | Build-from-source unavailable | Install a prebuilt `ao` (Homebrew / install script / release binary); no Go needed |
@@ -111,11 +111,11 @@ Use capability detection at runtime, not hardcoded tool names. The same skill mu
 
 Global opt-out first: if `AGENTOPS_ORCHESTRATION=off` is set, skip all spawn backends and degrade to the **beads floor** (single-agent inline / `--quick`; workers' work is tracked through `bd`). This mirrors the `AGENTOPS_HOOKS_DISABLED=1` convention. Otherwise, select in this order:
 
-1. **NTM (top tier).** If `ntm` is on PATH, capability-probe it with `ntm --robot-capabilities`. When the probe confirms multi-agent primitives, use **NTM** as the primary backend.
+1. **NTM (top tier).** If `ntm` is on PATH, capability-probe it with `ntm --robot-capabilities`. When the probe confirms multi-agent primitives, use **NTM** as the primary backend for Claude/Codex background skill sessions. mcp-agent-mail handles reservations and inter-agent coordination.
 2. **Runtime-native.** If NTM is unavailable: in a Claude session with `TeamCreate`/`SendMessage`, use **Claude Native Teams**; in a Codex session with `spawn_agent`, use **Codex sub-agents**. If both are technically available, pick the backend native to the current runtime unless the user explicitly requests mixed/cross-vendor execution. Only use background tasks when neither native backend is available.
 3. **Beads floor.** If no multi-agent capability is detected, degrade to single-agent inline mode (`--quick`).
 
-> **`gc` is NOT a selectable tier.** AgentOps no longer references Gas City; out-of-session orchestration is delegated to a swappable substrate (NTM + MCP + managed-agents — see [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md)). Any residual `gc`-based dispatch prose in older swarm/crank reference files is historical only and is never selected.
+> **`gc` is NOT a selectable tier.** AgentOps no longer references Gas City; out-of-session orchestration is NTM-supervised Claude/Codex skill sessions coordinated through mcp-agent-mail (see [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md)). Any residual `gc`-based dispatch prose in older swarm/crank reference files is historical only and is never selected.
 
 **Output-contract parity is unchanged across all tiers:** workers write results to `.agents/swarm/results/*.json`, and the lead verifies-then-trusts those artifacts. This invariant holds whether the backend is NTM, a runtime-native team, or the beads floor.
 

@@ -136,11 +136,11 @@ above: pick the model that is best for each phase, with state preserved
 across the boundaries. This is a workflow-level capability that is
 orthogonal to (and does not depend on) cross-harness parity.
 
-**Off-API, off-vendor operation on your hardware.** The whole loop —
-dream / evolve / compile / defrag / forge — runs in session against your
-subscription, off any vendor's API. To run it unattended, dispatch it on the
-Gas City reference City (a mayor agent slings beads to refinery workers that
-run `ao rpi`); AgentOps ships no daemon or scheduler of its own (see
+**Off-API, off-vendor operation on your hardware.** Skill sessions —
+dream-style maintenance, compile, defrag, forge, validation, and implementation
+skills — run against your subscription, off any vendor's API. To run them
+unattended, keep Claude/Codex sessions warm under NTM and coordinate assignments
+through mcp-agent-mail; AgentOps ships no daemon or scheduler of its own (see
 [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)). The corpus
 compounds while you sleep. everything-claude-code is in-session by design with
 no off-vendor out-of-session story.

@@ -194,6 +194,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/trace` | Trace design decisions through history |
 | `/provenance` | Trace artifact lineage to sources |
 | `/beads` | Issue tracking operations |
+| `/bd-first-memory-migration` | Consolidate fragmented agent memory into bd-canonical recall |
 | `/heal-skill` | Detect and fix skill hygiene issues |
 | `/converter` | Convert skills to Codex/Cursor formats |
 
@@ -211,7 +212,7 @@ AgentOps has several runtime modes. Do not assume hook automation exists everywh
 
 | Mode | When it applies | Start path | Closeout path | Guarantees |
 |------|-----------------|------------|---------------|------------|
-| `substrate` (out-of-session) | A swappable orchestration substrate available out-of-session: an NTM tmux swarm, MCP (`ao mcp serve`), or managed-agents (`ao agent`) | The operator or a lead agent runs `bd ready` and dispatches a whole loop per bead (`ao rpi <bead>`); cron / managed triggers run maintenance | The substrate owns the merge gate (CI-green is the signal) and triggers the knowledge-flywheel feedback | The substrate orchestrates *whole* `ao rpi`/`ao evolve` loops — it never sees the loop's insides; the seam is substrate → `ao` as a subprocess. There is no in-CLI `runtime=gc` executor. See [agent-native](../agent-native/SKILL.md) and [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md). |
+| `substrate` (out-of-session) | NTM background agents: Claude/Codex tmux sessions coordinated by mcp-agent-mail, with MCP (`ao mcp serve`) for tools | The operator or lead agent runs `bd ready`, assigns work through mcp-agent-mail, and starts/resumes a worker session with the right skills loaded | The substrate owns session lifecycle, reservations, and handoff; the worker session owns skill-guided work and evidence | Background agents run skill sessions, not deprecated `ao rpi`/`ao evolve` wrappers. There is no in-CLI `runtime=gc` executor. See [agent-native](../agent-native/SKILL.md) and [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md). |
 | `hook-capable` | Claude/OpenCode with lifecycle hooks installed (no gc) | Runtime hook or `ao inject` / `ao lookup` | Runtime hook or `ao forge transcript` + `ao flywheel close-loop` | Automatic startup/context injection and session-end maintenance when hooks are installed |
 | `codex-native-hooks` | Codex CLI v0.115.0+ with native hook support (March 2026) | Runtime hooks (same as hook-capable) | Runtime hooks (same as hook-capable) | Native lifecycle hooks — same guarantees as hook-capable mode |
 | `codex-hookless-fallback` | Codex Desktop / Codex CLI pre-v0.115.0 without hook surfaces | `ao codex start` | `ao codex stop` | Explicit startup context, citation tracking, transcript fallback, and close-loop metrics without hooks |

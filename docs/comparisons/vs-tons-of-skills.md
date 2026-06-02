@@ -61,7 +61,7 @@ This is the cleanest framing: a marketplace and a context library are complement
 
 **Model-independent phase routing.** Inside a single RPI loop, AgentOps runs Claude for research, Codex for implementation, fresh Claude for validation, with state preserved across the boundaries. Skills in any marketplace inherit the harness's model — they don't compose model choices per phase. This is a workflow-level capability, orthogonal to skill inventory.
 
-**Off-API, off-vendor operation.** The whole loop — dream / evolve / compile / defrag / forge — runs in session on your hardware against your subscription, off any vendor's API. To run it unattended, dispatch it on the Gas City reference City (a mayor agent slings beads to refinery workers that run `ao rpi`); AgentOps ships no daemon or scheduler of its own (see [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)). The corpus compounds while you sleep. Tons-of-Skills is in-session by design with no off-vendor out-of-session story.
+**Off-API, off-vendor operation.** Skill sessions — dream-style maintenance, compile, defrag, forge, validation, and implementation skills — run on your hardware against your subscription, off any vendor's API. To run them unattended, keep Claude/Codex sessions warm under NTM and coordinate assignments through mcp-agent-mail; AgentOps ships no daemon or scheduler of its own (see [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)). The corpus compounds while you sleep. Tons-of-Skills is in-session by design with no off-vendor out-of-session story.
 
 ---
 

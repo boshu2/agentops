@@ -11,7 +11,7 @@ The first value is a council verdict over a visible engineering domain:
 3. Assemble bounded context for one decision.
 4. Run council across Claude and Codex, with a same-packet fallback.
 5. Inspect the verdict artifact and turn it into tracked work.
-6. Only then point at the optional out-of-session compounding lane, which runs the same loop on an orchestration substrate (the reference is NTM + MCP + managed-agents) — AgentOps itself ships no daemon or scheduler.
+6. Only then point at the optional out-of-session compounding lane: NTM background agents (Claude/Codex sessions coordinated by mcp-agent-mail) using the same skills — AgentOps itself ships no daemon or scheduler.
 
 ## Target Viewer
 
@@ -32,7 +32,7 @@ need to see one agent decision become an inspectable engineering artifact.
 | Context assembly | 1 min | `.agents/rpi/briefing-current.md` exists. |
 | Council run | 5-10 min | `.agents/council/<run-id>/verdict.md` exists. |
 | Verdict to work | 2 min | `bd show <issue-id>` cites the verdict path. |
-| Optional out-of-session lane | 5 min | A substrate (NTM / managed-agents) dispatch is registered to run the loop unattended. |
+| Optional out-of-session lane | 5 min | An NTM background-agent roster/profile is registered for unattended skill sessions. |
 
 ## Commands And Expected Outputs
 
@@ -163,20 +163,16 @@ decision leaves chat and becomes tracked engineering work.
 Only point at this after the first verdict has landed.
 
 The first six steps all run **in session** — that is the AgentOps product and
-the zero-dependency sovereignty floor. Running the same loop **out of session**
+the zero-dependency sovereignty floor. Running work **out of session**
 (always-on, scheduled, unattended) is a separate concern. AgentOps 3.0 ships no
 daemon, scheduler, or overnight runner of its own — those surfaces were deleted
-(see [AgentOps 3.0 north star](3.0.md)). Out-of-session orchestration is
-delegated to a substrate. The reference is the trio AgentOps actually runs on —
-**NTM** (a tmux agent swarm), **MCP** (`ao mcp serve`), and **managed-agents**
-(`ao agent`) — none of it AgentOps-owned.
+(see [AgentOps 3.0 north star](3.0.md)).
 
-On the reference substrate, an NTM swarm (or a lead agent) runs `bd ready` and
-dispatches the next bead to a worker that runs `ao rpi <bead>`; scheduled
-maintenance (`ao compile`, `ao maturity --scan`) runs via a managed-agent driver
-or cron. The agents inherit the AgentOps skills via an overlay and run the same
-loop you just ran by hand. See the [AgentOps 3.0 north star](3.0.md) for the
-in-session / out-of-session split and the reference substrate.
+The reference background lane is NTM: a lead agent or operator runs `bd ready`,
+assigns a bead through mcp-agent-mail, workers reserve files, load the relevant
+skills, and write evidence/provenance back to bd/git. MCP (`ao mcp serve`)
+exposes the tool surface when a worker needs it. See the
+[AgentOps 3.0 north star](3.0.md) for the in-session / background-agent split.
 
 ## First Artifacts To Inspect
 
@@ -186,7 +182,7 @@ in-session / out-of-session split and the reference substrate.
 | `.agents/rpi/briefing-current.md` | The bounded task context assembled for the run. |
 | `.agents/council/<run-id>/verdict.md` | The engineering verdict from the council. |
 | `.beads/issues.jsonl` | The tracked work created from the verdict. |
-| Substrate config (an NTM swarm · `ao mcp serve` · `ao agent`) | The reference out-of-session substrate (NTM + MCP + managed-agents) for the optional lane, only after first trust exists. |
+| Background-agent config (NTM roster · mcp-agent-mail identity · `ao mcp serve`) | The optional out-of-session lane, only after first trust exists. |
 
 ## Friction List
 

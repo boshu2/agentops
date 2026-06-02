@@ -124,9 +124,9 @@ AgentOps degrades gracefully — skills check for a tool before using it. The on
 |------|-------|---------|-----------|
 | `claude` / `codex` / `opencode` | Agent runtime | The harness AgentOps sits on top of | **Required** (one of) |
 | `git` | Required | Version control — `.agents/` state lives next to your code | **Required** |
-| `ao` | Required (recommended) | The AgentOps CLI: bookkeeping, retrieval, health, the loops | Recommended |
+| `ao` | Required (recommended) | The AgentOps CLI: bookkeeping, retrieval, health, session profiles, provenance, and gates | Recommended |
 | `bd` (beads) + Dolt backend | Tracking | Git-native issue tracking (the mandatory task surface) | Optional |
-| `ntm` / `ao agent` | Orchestration | Out-of-session substrate that runs whole `ao rpi`/`ao evolve` loops (NTM tmux swarm, MCP via `ao mcp serve`, or managed-agents) | Optional (out-of-session) |
+| `ntm` + `mcp-agent-mail` | Orchestration | Out-of-session background agents: NTM keeps Claude/Codex sessions alive, mcp-agent-mail coordinates work and reservations, MCP exposes tools | Optional (out-of-session) |
 | `gh` | PR / CI | Open PRs, query CI status | Optional |
 | `go` | Build-from-source | Build `cli/bin/ao` from source (`go 1.26`) | Optional |
 | `jq`, `rg`/ripgrep, `curl`, `openssl`, `sha256sum`, `tmux`, `cass` | Utilities | JSON parsing, search, downloads, hashing, sessions, history | Optional |
@@ -149,7 +149,7 @@ Coding agents are non-deterministic workers. Engineering already has a long hist
 | CI/CD | Validation gates (`/vibe`, `/pre-mortem`) |
 | Postmortems | Automated postmortems (`/post-mortem` → learnings) |
 | Runbooks | Skills + planning rules |
-| Software factories | The in-session loop (`/rpi`, `/evolve`); out-of-session runs on a swappable substrate (NTM + MCP + managed-agents) |
+| Software factories | Skill-driven agent sessions; out-of-session runs as NTM-supervised Claude/Codex background agents coordinated by mcp-agent-mail |
 | Markdown / Git / Linux (open primitives) | LLM Wiki of Markdown |
 | Open-source corpus | Your private corpus (`.agents/` in your repo) |
 
@@ -294,14 +294,14 @@ Full reference: [CLI Commands](cli/docs/COMMANDS.md).
 
 | Surface | When to use it | What it looks like | Operator role |
 |---------|---------------|-------------------|---------------|
-| **In session** (the AgentOps product) | All active work — exploration, high-stakes decisions, ambiguous scope, and the full loop | `/research`, `/plan`, `/pre-mortem`, `/council`, `/rpi`, `/evolve`, `/crank` invoked from a session; zero AgentOps-managed always-on infrastructure | Driving or on the loop; you steer, agents run the loop |
-| **Out of session** (a substrate's job) | Vetted, well-defined work; always-on; queue-driven dispatch | The same loop run by a swappable orchestration substrate — an NTM tmux swarm, MCP (`ao mcp serve`), or managed-agents (`ao agent`) — each dispatching a whole `ao rpi` loop per ready bead | Operator: set cadence and quality bars on the substrate; it runs the loop |
+| **In session** (the AgentOps product) | All active work — exploration, high-stakes decisions, ambiguous scope, and skill-guided implementation | Skills such as `/research`, `/plan`, `/pre-mortem`, `/council`, `/crank`, `/swarm`, `/validation` invoked from a Claude/Codex session; zero AgentOps-managed always-on infrastructure | Driving or on the loop; you steer, agents use skills |
+| **Out of session** (NTM background agents) | Vetted, well-defined work; always-on; queue-driven dispatch | Long-lived Claude/Codex sessions supervised by NTM, coordinated through mcp-agent-mail, equipped with MCP/`ao` tools, and executing the same skills a human-started session would use | Operator: keep the roster warm, set quality bars, review/merge outputs |
 
-**In session** is the AgentOps product. The whole loop — `rpi` (inner), `evolve` (outer), `crank`/`swarm` (in-session agent teams), the skills runtime, and the `.agents/` corpus — runs in a plain session with no daemon, no scheduler, and no cloud. Skills run from a session with rigor levels to match the work: light skills for exploration, the full RPI loop for anything that should be tracked, council validation before you ship. This is the zero-dependency sovereignty floor.
+**In session** is the AgentOps product. Skills, `ao` support commands, and the `.agents/` corpus run in a plain Claude/Codex session with no daemon, no scheduler, and no cloud. Skills run with rigor levels to match the work: light skills for exploration, stronger validation/council/checklist skills before you ship. Historical loop wrappers (`/rpi`, `/evolve`) remain compatibility surfaces, but the product direction is skill sessions.
 
 <!-- agentops:claim:AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL -->
 
-**Out of session** is delegated. AgentOps deleted its standalone daemon, scheduler, and overnight runner ([ADR-0009](docs/adr/ADR-0009-daemon-deletion-in-session-only.md)) — it has no core to protect, so always-on opts into a swappable orchestration substrate instead. The reference substrate is the trio AgentOps actually runs on, none of it AgentOps-owned: **NTM** (a local tmux swarm whose workers each run `ao rpi <bead>` as the operator or a lead agent slings ready beads), **MCP** via `ao mcp serve` (exposes the `ao` tool surface to any MCP-aware harness), and **managed-agents** via `ao agent` (hosted, scheduled drivers). In every case the substrate dispatches a whole loop as one unit; it never drives the loop's insides. Mount Olympus (full-custom Rust) is the other reference implementation of the same loop — it keeps its own daemon because, unlike AgentOps, it is a sovereign product.
+**Out of session** is NTM background agents. AgentOps deleted its standalone daemon, scheduler, and overnight runner ([ADR-0009](docs/adr/ADR-0009-daemon-deletion-in-session-only.md)); always-on work now means keeping Claude and Codex sessions warm under NTM. NTM supervises tmux panes, mcp-agent-mail carries assignments/reservations/check-ins, MCP exposes tools such as `ao mcp serve`, and `ao agent`/session profiles describe which skills and guardrails a worker loads. Background agents do not run deprecated `ao rpi`/`ao evolve` wrappers; they run skill sessions and write evidence back to bd/git for operator review.
 
 → [What 3.0 is (north star)](docs/3.0.md) · [the canonical loop model](docs/architecture/canonical-loop-model.md) · [running the loop out of session](docs/3.0.md).
 

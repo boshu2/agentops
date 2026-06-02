@@ -1,6 +1,6 @@
 ---
 name: dream
-description: 'Retired pointer — out-of-session compounding moved to the substrate (NTM + MCP + managed-agents).'
+description: 'Retired pointer — out-of-session compounding moved to NTM background skill sessions.'
 ---
 # Dream Skill - Retired (out-of-session compounding moved to the substrate)
 
@@ -8,8 +8,8 @@ description: 'Retired pointer — out-of-session compounding moved to the substr
 and its whole CLI surface (the former always-on lane) were removed, along with
 the always-on background process that carried it. AgentOps no longer ships an
 out-of-session orchestration substrate — scheduled, between-session knowledge
-compounding now runs on a substrate AgentOps adopts but does not own (**NTM +
-MCP + managed-agents**). Do not invent a replacement `$ao` workflow.
+compounding now runs as NTM background skill sessions coordinated by
+mcp-agent-mail. Do not invent a replacement `$ao` workflow.
 
 ## What stays in AgentOps
 
@@ -20,12 +20,12 @@ transcripts into learnings), `$compile` (Mine → Grow → Defrag → Lint), and
 `.github/workflows/nightly.yml` still runs against the checked-in corpus and is
 built on those primitives, not on the retired CLI engine.
 
-## Delineation vs $evolve
+## Delineation vs implementation sessions
 
-`$evolve` owns the daytime code-compounding layer (operator-driven, via `$rpi`).
-The knowledge-compounding layer this skill used to own now lives outside
-AgentOps, on the adopted substrate (NTM + MCP + managed-agents). Both still
-share the fitness-measurement substrate via `corpus.Compute` / `ao goals measure`.
+Implementation skills own the daytime code-compounding layer (operator-driven,
+with explicit validation). The knowledge-compounding layer this skill used to own
+now lives outside AgentOps, on NTM background sessions. Both still share the
+fitness-measurement substrate via `corpus.Compute` / `ao goals measure`.
 
 ## See Also
 

@@ -125,8 +125,8 @@ Record:
 - No always-on interest.
 - Interested but blocked.
 - Ran the loop in session (`ao rpi` / `ao evolve`).
-- Handed the loop to the reference substrate (NTM + MCP + managed-agents).
-- Substrate dispatch sent a ready bead to a worker running `ao rpi`.
+- Handed work to NTM background agents coordinated by mcp-agent-mail.
+- Background dispatch sent a ready bead to a Claude/Codex worker skill session.
 - An out-of-session run completed and produced an inspected artifact.
 
 Do not count always-on substrate setup as first-value activation.

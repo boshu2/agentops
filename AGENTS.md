@@ -1,10 +1,10 @@
 # Agent Instructions
 
-**AgentOps compiles and compounds the context that feeds your software factory.** It automates the bookkeeping agents do not reliably do for themselves — attempts, decisions, citations, verdicts, handoffs, learnings — then encodes the DevSecOps CDLC and multi-agent operating practices into a portable corpus that compounds across sessions and runtimes. Plugin + CLI + scheduling daemon (hookless — skills + the `ao` CLI, with CI as the authoritative gate), runs on your hardware against your subscription. Humans choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled compounding.
+**AgentOps compiles and compounds the context that feeds your software factory.** It automates the bookkeeping agents do not reliably do for themselves — attempts, decisions, citations, verdicts, handoffs, learnings — then encodes the DevSecOps CDLC and multi-agent operating practices into a portable corpus that compounds across sessions and runtimes. Skills + the `ao` CLI + CI are the AgentOps waist; background agents are NTM-supervised Claude/Codex sessions, not an AgentOps daemon. Humans choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled compounding.
 
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
-**Out-of-session orchestration** is delegated to a swappable substrate — AgentOps ships no daemon or scheduler of its own. The reference substrate is **NTM** (a local tmux agent swarm), **MCP** (`ao mcp serve`, shipped), and **managed-agents** (`ao agent`); each dispatches a whole `ao rpi`/`ao evolve` loop as one unit. `ao` does NOT own or wrap a substrate — always-on is opt-in, the way `bd` is. See [docs/3.0.md](docs/3.0.md) and [docs/dependencies.md](docs/dependencies.md).
+**Out-of-session orchestration** is AgentOps background agents on **NTM** — AgentOps ships no daemon or scheduler of its own. NTM keeps Claude and Codex tmux sessions ready; **mcp-agent-mail** coordinates assignments, file reservations, and handoffs; **MCP** (`ao mcp serve`) exposes the tool surface when needed; `ao agent` / session profiles describe which skills a worker loads. Background agents run skill-guided sessions, not deprecated `ao rpi`/`ao evolve` wrappers. See [docs/3.0.md](docs/3.0.md) and [docs/dependencies.md](docs/dependencies.md).
 
 > **Spawning an agent? Run this first:** `ao session bootstrap` — the universal init prompt that orients every agent identically regardless of model. AgentOps 3.0 is hookless, so nothing auto-injects this: run it explicitly, then `ao inject` / `ao corpus inject --query "<topic>"` to pull decay-ranked prior context.
 
@@ -50,6 +50,10 @@ bd close <id>         # Complete work
 cd cli && make build  # Build ao binary
 cd cli && make test   # Run tests
 cd cli && make lint   # Run linter
+
+# Tracker closeout
+bd dolt remote list
+bd dolt push          # only if a real Dolt remote is configured
 ```
 
 Push, let CI validate (it is the authoritative gate — no local omnibus gate). Per-tool sanity checks + the full release gate live in [`docs/agent-workflow-reference.md`](docs/agent-workflow-reference.md).

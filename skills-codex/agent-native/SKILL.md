@@ -3,14 +3,14 @@ name: agent-native
 description: 'Make an out-of-session agent AgentOps-native via skills + ao CLI + CI, not hooks.'
 ---
 
-# $agent-native — Make Out-of-Session Agents AgentOps-Native (Codex Native)
+# $agent-native — Make NTM Background Agents AgentOps-Native (Codex Native)
 
-> **Quick Ref:** Run a Claude/Codex loop *outside* an interactive session (Managed Agent, Agent SDK, or self-hosted sandbox) under the same AgentOps guardrails — hooklessly. Guardrails = skills + the `ao` CLI + CI, never ported hooks. Bundle skills into the agent definition, expose `ao` as a callable tool so the loop self-bootstraps + self-validates, and gate the output through the SAME CI as interactive work.
+> **Quick Ref:** Run Claude/Codex background sessions under NTM with the same AgentOps guardrails — hooklessly. Guardrails = skills + the `ao` CLI + CI, never ported hooks. Bundle skills into the session profile, expose `ao` as a callable tool, coordinate through mcp-agent-mail, and gate the output through the SAME CI as interactive work.
 
 ## Codex/NTM path
 
-Codex (gpt-5.3-codex) has NO Managed Agents API, NO Workflow tool, NO Task subagent. It orchestrates via NTM (tmux pane swarms + agent-mail) + skills + the `ao` CLI + ssh to bushido. So an out-of-session Codex loop becomes AgentOps-native the same way: load the AgentOps skills, call `ao session bootstrap` / `ao inject` / `ao validate` directly (no MCP needed — Codex shells out), and gate outputs through CI (`agent-output-validate.yml`). `ao` does not wrap `gc`; a whole loop needing a mayor/refinery still routes through `gc`.
+Codex background agents run as NTM tmux pane sessions coordinated by mcp-agent-mail. A Codex NTM session becomes AgentOps-native by loading AgentOps skills, calling `ao session bootstrap` / `ao inject` / `ao validate` directly (no cloud Managed Agents API required — Codex shells out), reserving files through agent-mail, and gating outputs through CI (`agent-output-validate.yml`). `ao` does not wrap `gc`, and background agents do not run deprecated `ao rpi`/`ao evolve` wrappers.
 
 ## Instructions
 
-Load and follow the skill instructions from the sibling `SKILL.md` — OR read `skills/agent-native/SKILL.md` in the host repo for the canonical specification. Honor the Critical Constraints: this is a reframe of "port hooks", NOT a hook revival; no skill fork (load the same `skills/` files); Managed Agents are NOT ZDR (no holdout/PII in the agent definition); CI is the enforcement boundary, not the optional in-loop adapter.
+Load and follow the skill instructions from the sibling `SKILL.md` — OR read `skills/agent-native/SKILL.md` in the host repo for the canonical specification. Honor the Critical Constraints: this is a reframe of "port hooks", NOT a hook revival; no skill fork (load the same `skills/` files); no holdout/PII in any background-agent profile or tool response; CI is the enforcement boundary, not the optional in-loop adapter.

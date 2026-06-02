@@ -124,10 +124,10 @@ rules, and ~3,867 cited decisions captured by the system on itself.
 
 ### 2. Off-API, off-vendor operation
 
-The whole loop — dream / evolve / compile / defrag / forge — runs in session
-on your hardware, against your subscription, off any vendor's API. To run it
-unattended, dispatch it on the Gas City reference City (a long-lived mayor
-agent slings beads to refinery workers that run `ao rpi`); AgentOps ships no
+Skill sessions — dream-style maintenance, compile, defrag, forge, validation,
+and implementation skills — run on your hardware, against your subscription,
+off any vendor's API. To run them unattended, keep Claude/Codex sessions warm
+under NTM and coordinate assignments through mcp-agent-mail; AgentOps ships no
 daemon or scheduler of its own (see [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)).
 All seven competitors are in-session plugins with no off-vendor out-of-session
 story. Off-API operation is the structural answer to "what if a frontier

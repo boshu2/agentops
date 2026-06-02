@@ -372,7 +372,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | doc | standards | required |
 | flywheel | - | - |
 | forge | - | - |
-| **dream** | - | - (retired pointer; out-of-session compounding runs on the substrate — NTM + MCP + managed-agents) |
+| **dream** | - | - (retired pointer; out-of-session compounding runs as NTM background skill sessions coordinated by mcp-agent-mail) |
 | handoff | - | - |
 | **implement** | beads, standards | optional, required |
 | inject | - | - |
