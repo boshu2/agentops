@@ -263,6 +263,143 @@ func TestBuildNTMSpawnArgs_RequiresAtLeastOneAgent(t *testing.T) {
 	}
 }
 
+func TestBuildNTMSpawnPlan_DefaultManualCodex(t *testing.T) {
+	plan, err := buildNTMSpawnPlan("agentops-bg", 1, 1, "/repo", "gpt-5.5", false)
+	if err != nil {
+		t.Fatalf("build plan: %v", err)
+	}
+	if !plan.DryRun {
+		t.Fatalf("dry_run = false, want true when --execute is unset")
+	}
+	// Codex is routed to a manual pane, so NTM is told --spawn-cod=0.
+	wantNTM := []string{
+		"--robot-spawn=agentops-bg",
+		"--spawn-cc=1",
+		"--spawn-cod=0",
+		"--spawn-dir=/repo",
+		"--dry-run",
+	}
+	if strings.Join(plan.NTMArgs, "\n") != strings.Join(wantNTM, "\n") {
+		t.Fatalf("ntm_args = %v, want %v", plan.NTMArgs, wantNTM)
+	}
+	if len(plan.ManualCodexPanes) != 1 {
+		t.Fatalf("manual_codex_panes len = %d, want 1", len(plan.ManualCodexPanes))
+	}
+	if plan.ManualCodexPanes[0].Model != "gpt-5.5" {
+		t.Fatalf("pane model = %q, want gpt-5.5", plan.ManualCodexPanes[0].Model)
+	}
+	joined := strings.Join(plan.ManualCodexPanes[0].TmuxArgs, " ")
+	for _, want := range []string{"split-window", "-t agentops-bg:", "-c /repo", "-m 'gpt-5.5'"} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("pane tmux_args %q missing %q", joined, want)
+		}
+	}
+}
+
+func TestBuildNTMSpawnPlan_CustomCodexModel(t *testing.T) {
+	plan, err := buildNTMSpawnPlan("agentops-bg", 1, 2, "/repo", "gpt-5.5-mini", false)
+	if err != nil {
+		t.Fatalf("build plan: %v", err)
+	}
+	if len(plan.ManualCodexPanes) != 2 {
+		t.Fatalf("manual_codex_panes len = %d, want 2 (one per --codex)", len(plan.ManualCodexPanes))
+	}
+	for i, pane := range plan.ManualCodexPanes {
+		if pane.Model != "gpt-5.5-mini" {
+			t.Fatalf("pane[%d] model = %q, want gpt-5.5-mini", i, pane.Model)
+		}
+		if !strings.Contains(strings.Join(pane.TmuxArgs, " "), "-m 'gpt-5.5-mini'") {
+			t.Fatalf("pane[%d] tmux_args missing custom model: %v", i, pane.TmuxArgs)
+		}
+	}
+}
+
+func TestBuildNTMSpawnPlan_EmptyCodexModelUsesNTM(t *testing.T) {
+	// An empty --codex-model means NTM spawns Codex itself; no manual panes.
+	plan, err := buildNTMSpawnPlan("agentops-bg", 1, 1, "/repo", "", false)
+	if err != nil {
+		t.Fatalf("build plan: %v", err)
+	}
+	if len(plan.ManualCodexPanes) != 0 {
+		t.Fatalf("manual_codex_panes len = %d, want 0", len(plan.ManualCodexPanes))
+	}
+	if !argsContain(plan.NTMArgs, "--spawn-cod=1") {
+		t.Fatalf("ntm_args = %v, want NTM-managed --spawn-cod=1", plan.NTMArgs)
+	}
+}
+
+func TestBuildNTMSpawnPlan_ExecuteOmitsDryRun(t *testing.T) {
+	plan, err := buildNTMSpawnPlan("agentops-bg", 1, 1, "/repo", "gpt-5.5", true)
+	if err != nil {
+		t.Fatalf("build plan: %v", err)
+	}
+	if plan.DryRun {
+		t.Fatalf("dry_run = true, want false when --execute is set")
+	}
+	if argsContain(plan.NTMArgs, "--dry-run") {
+		t.Fatalf("ntm_args = %v, must not contain --dry-run in execute mode", plan.NTMArgs)
+	}
+}
+
+func TestRunAgentNTMSpawn_JSONPlan(t *testing.T) {
+	prev := struct {
+		claude  int
+		codex   int
+		model   string
+		dir     string
+		execute bool
+		js      bool
+	}{agentNTMSpawnClaude, agentNTMSpawnCodex, agentNTMSpawnCodexModel, agentNTMSpawnDir, agentNTMSpawnExecute, agentNTMSpawnJSON}
+	t.Cleanup(func() {
+		agentNTMSpawnClaude = prev.claude
+		agentNTMSpawnCodex = prev.codex
+		agentNTMSpawnCodexModel = prev.model
+		agentNTMSpawnDir = prev.dir
+		agentNTMSpawnExecute = prev.execute
+		agentNTMSpawnJSON = prev.js
+	})
+	agentNTMSpawnClaude = 1
+	agentNTMSpawnCodex = 1
+	agentNTMSpawnCodexModel = "gpt-5.5"
+	agentNTMSpawnDir = "/tmp"
+	agentNTMSpawnExecute = false
+	agentNTMSpawnJSON = true
+
+	cmd, out := agentTestCmd()
+	if err := runAgentNTMSpawn(cmd, []string{"agentops-beta"}); err != nil {
+		t.Fatalf("ntm-spawn --json: %v", err)
+	}
+	var plan ntmSpawnPlan
+	if err := json.Unmarshal(out.Bytes(), &plan); err != nil {
+		t.Fatalf("parse plan JSON: %v\n%s", err, out.String())
+	}
+	if plan.Session != "agentops-beta" {
+		t.Fatalf("session = %q, want agentops-beta", plan.Session)
+	}
+	if !plan.DryRun {
+		t.Fatalf("dry_run = false, want true")
+	}
+	if len(plan.NTMArgs) == 0 {
+		t.Fatalf("ntm_args empty, want NTM spawn args")
+	}
+	if len(plan.ManualCodexPanes) != 1 {
+		t.Fatalf("manual_codex_panes len = %d, want 1", len(plan.ManualCodexPanes))
+	}
+	// JSON mode never executes: ntm is rendered as a dry-run plan only.
+	if !argsContain(plan.NTMArgs, "--dry-run") {
+		t.Fatalf("ntm_args = %v, want --dry-run (no live NTM execution)", plan.NTMArgs)
+	}
+}
+
+func argsContain(haystack []string, needle string) bool {
+	for _, s := range haystack {
+		if s == needle {
+			return true
+		}
+	}
+	return false
+}
+
 func TestBuildNTMStopArgs(t *testing.T) {
 	args, err := buildNTMStopArgs("agentops-bg")
 	if err != nil {

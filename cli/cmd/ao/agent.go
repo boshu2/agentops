@@ -44,6 +44,7 @@ var (
 	agentNTMSpawnCodexModel string
 	agentNTMSpawnDir        string
 	agentNTMSpawnExecute    bool
+	agentNTMSpawnJSON       bool
 
 	agentEligibleFile         string
 	agentEligibleEligibleOnly bool
@@ -94,8 +95,10 @@ var agentNTMSpawnCmd = &cobra.Command{
 	Short: "Render or execute an NTM background-agent spawn command",
 	Long: `Render the NTM command that starts an AgentOps background-agent
 session. By default this is a dry run and prints the command. Pass --execute to
-call ntm for real. NTM owns tmux pane lifecycle; mcp-agent-mail owns
-assignment, reservations, check-ins, and handoff.`,
+call ntm for real, or --json to emit a machine-readable plan (ntm_args,
+manual_codex_panes, dry_run) without executing — so operators can see which
+panes NTM manages versus the manual tmux Codex panes. NTM owns tmux pane
+lifecycle; mcp-agent-mail owns assignment, reservations, check-ins, and handoff.`,
 	Args: cobra.ExactArgs(1),
 	RunE: runAgentNTMSpawn,
 }
@@ -178,6 +181,7 @@ func init() {
 	agentNTMSpawnCmd.Flags().StringVar(&agentNTMSpawnCodexModel, "codex-model", "gpt-5.5", "Codex model for manual Codex panes (set empty to use NTM's default Codex spawn)")
 	agentNTMSpawnCmd.Flags().StringVar(&agentNTMSpawnDir, "dir", ".", "Working directory for the NTM session")
 	agentNTMSpawnCmd.Flags().BoolVar(&agentNTMSpawnExecute, "execute", false, "Execute ntm instead of printing a dry-run command")
+	agentNTMSpawnCmd.Flags().BoolVar(&agentNTMSpawnJSON, "json", false, "Emit the spawn plan as machine-readable JSON (ntm_args, manual_codex_panes, dry_run) without executing")
 
 	agentEligibleCmd.Flags().StringVar(&agentEligibleFile, "file", "", "Read candidate bead JSON from this file instead of running bd ready")
 	agentEligibleCmd.Flags().BoolVar(&agentEligibleEligibleOnly, "eligible-only", false, "Emit only eligible candidates")
@@ -250,41 +254,93 @@ func runAgentRoster(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func runAgentNTMSpawn(cmd *cobra.Command, args []string) error {
-	cmd.SilenceUsage = true
-	manualCodex := strings.TrimSpace(agentNTMSpawnCodexModel) != "" && agentNTMSpawnCodex > 0
-	ntmCodex := agentNTMSpawnCodex
+// ntmSpawnPlan is the machine-readable spawn plan emitted by `ao agent
+// ntm-spawn --json`. It separates the NTM-managed panes (ntm_args) from the
+// manual tmux Codex panes so operators can see exactly which panes NTM starts
+// versus which AgentOps appends by hand for Codex model override.
+type ntmSpawnPlan struct {
+	Session          string               `json:"session"`
+	DryRun           bool                 `json:"dry_run"`
+	NTMArgs          []string             `json:"ntm_args"`
+	ManualCodexPanes []ntmManualCodexPane `json:"manual_codex_panes"`
+}
+
+// ntmManualCodexPane describes a single manual Codex tmux pane in a spawn plan.
+type ntmManualCodexPane struct {
+	Model    string   `json:"model"`
+	TmuxArgs []string `json:"tmux_args"`
+}
+
+// buildNTMSpawnPlan resolves the NTM-managed and manual-Codex panes for a spawn
+// request without executing anything. dry_run reflects whether ntm would be
+// invoked with --dry-run (i.e. !execute).
+func buildNTMSpawnPlan(session string, claudeCount, codexCount int, dir, codexModel string, execute bool) (ntmSpawnPlan, error) {
+	manualCodex := strings.TrimSpace(codexModel) != "" && codexCount > 0
+	ntmCodex := codexCount
 	if manualCodex {
 		ntmCodex = 0
 	}
-	ntmArgs, err := buildNTMSpawnArgs(args[0], agentNTMSpawnClaude, ntmCodex, agentNTMSpawnDir, !agentNTMSpawnExecute)
+	ntmArgs, err := buildNTMSpawnArgs(session, claudeCount, ntmCodex, dir, !execute)
+	if err != nil {
+		return ntmSpawnPlan{}, err
+	}
+	plan := ntmSpawnPlan{
+		Session:          session,
+		DryRun:           !execute,
+		NTMArgs:          ntmArgs,
+		ManualCodexPanes: []ntmManualCodexPane{},
+	}
+	if manualCodex {
+		model := strings.TrimSpace(codexModel)
+		if model == "" {
+			model = "gpt-5.5"
+		}
+		for _, tmuxArgs := range buildManualCodexPaneArgs(session, codexCount, dir, codexModel) {
+			plan.ManualCodexPanes = append(plan.ManualCodexPanes, ntmManualCodexPane{
+				Model:    model,
+				TmuxArgs: tmuxArgs,
+			})
+		}
+	}
+	return plan, nil
+}
+
+func runAgentNTMSpawn(cmd *cobra.Command, args []string) error {
+	cmd.SilenceUsage = true
+	plan, err := buildNTMSpawnPlan(args[0], agentNTMSpawnClaude, agentNTMSpawnCodex, agentNTMSpawnDir, agentNTMSpawnCodexModel, agentNTMSpawnExecute)
 	if err != nil {
 		return err
 	}
+	if agentNTMSpawnJSON {
+		raw, err := json.MarshalIndent(plan, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshaling ntm spawn plan: %w", err)
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), string(raw))
+		return nil
+	}
 	if !agentNTMSpawnExecute {
-		fmt.Fprintf(cmd.OutOrStdout(), "ntm %s\n", strings.Join(ntmArgs, " "))
-		if manualCodex {
+		fmt.Fprintf(cmd.OutOrStdout(), "ntm %s\n", strings.Join(plan.NTMArgs, " "))
+		if len(plan.ManualCodexPanes) > 0 {
 			fmt.Fprintln(cmd.OutOrStdout(), "# Codex panes use manual tmux split-window so --codex-model can override NTM's default Codex model.")
-			for _, tmuxArgs := range buildManualCodexPaneArgs(args[0], agentNTMSpawnCodex, agentNTMSpawnDir, agentNTMSpawnCodexModel) {
-				fmt.Fprintf(cmd.OutOrStdout(), "tmux %s\n", strings.Join(tmuxArgs, " "))
+			for _, pane := range plan.ManualCodexPanes {
+				fmt.Fprintf(cmd.OutOrStdout(), "tmux %s\n", strings.Join(pane.TmuxArgs, " "))
 			}
 		}
 		return nil
 	}
-	c := exec.CommandContext(cmd.Context(), "ntm", ntmArgs...)
+	c := exec.CommandContext(cmd.Context(), "ntm", plan.NTMArgs...)
 	c.Stdout = cmd.OutOrStdout()
 	c.Stderr = cmd.ErrOrStderr()
 	if err := c.Run(); err != nil {
 		return err
 	}
-	if manualCodex {
-		for _, tmuxArgs := range buildManualCodexPaneArgs(args[0], agentNTMSpawnCodex, agentNTMSpawnDir, agentNTMSpawnCodexModel) {
-			tmuxCmd := exec.CommandContext(cmd.Context(), "tmux", tmuxArgs...)
-			tmuxCmd.Stdout = cmd.OutOrStdout()
-			tmuxCmd.Stderr = cmd.ErrOrStderr()
-			if err := tmuxCmd.Run(); err != nil {
-				return err
-			}
+	for _, pane := range plan.ManualCodexPanes {
+		tmuxCmd := exec.CommandContext(cmd.Context(), "tmux", pane.TmuxArgs...)
+		tmuxCmd.Stdout = cmd.OutOrStdout()
+		tmuxCmd.Stderr = cmd.ErrOrStderr()
+		if err := tmuxCmd.Run(); err != nil {
+			return err
 		}
 	}
 	return nil

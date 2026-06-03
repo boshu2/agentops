@@ -3893,6 +3893,7 @@ ao agent ntm-spawn <session> [flags]
       --dir string           Working directory for the NTM session (default ".")
       --execute              Execute ntm instead of printing a dry-run command
   -h, --help                 help for ntm-spawn
+      --json                 Emit the spawn plan as machine-readable JSON (ntm_args, manual_codex_panes, dry_run) without executing
 ```
 
 #### `ao agent ntm-status`
