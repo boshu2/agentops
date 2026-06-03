@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-02T23:58:44Z",
+  "generated_at": "2026-06-03T00:03:21Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
@@ -989,8 +989,7 @@
           "autodev",
           "evolve",
           "shared",
-          "using-agentops",
-          "using-ntm"
+          "using-agentops"
         ]
       },
       {
@@ -1330,8 +1329,7 @@
           "shared",
           "standards",
           "swarm",
-          "using-agentops",
-          "using-ntm"
+          "using-agentops"
         ]
       },
       {
@@ -3309,9 +3307,7 @@
       "drives_commands": [
         "ao agent",
         "ao agent bundle",
-        "ao evolve",
-        "ao mcp serve",
-        "ao rpi"
+        "ao mcp serve"
       ],
       "path": "skills/using-ntm/",
       "references": 0
@@ -3918,8 +3914,7 @@
         "autodev",
         "evolve",
         "shared",
-        "using-agentops",
-        "using-ntm"
+        "using-agentops"
       ],
       "flags": [
         "--auto-clean",
@@ -4725,8 +4720,7 @@
         "shared",
         "standards",
         "swarm",
-        "using-agentops",
-        "using-ntm"
+        "using-agentops"
       ],
       "flags": [
         "--config",

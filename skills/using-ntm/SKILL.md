@@ -41,8 +41,8 @@ AgentOps-owned surface — AgentOps adopts it, it does not vendor it.
 
 > **Skills are the runtime, not the CLI.** The substrate dispatches a *whole
 > loop* by spawning an agent that **runs the `/rpi` or `/evolve` skill** — it
-> does **not** shell out to an `ao rpi` / `ao evolve` subprocess. Those terminal
-> wrappers are retired; the loop lives as a skill an agent executes. The seam is
+> does **not** shell out to retired RPI/evolve CLI subprocesses. The loop
+> lives as a skill an agent executes. The seam is
 > **NTM pane → agent → `/rpi <bead>` skill**, one bead dispatched as one
 > invocable unit.
 
@@ -140,7 +140,7 @@ on a transient quiet patch — a rate-limited pane also looks idle.
 
 ## Anti-patterns
 
-- ❌ **Shelling out to `ao rpi` / `ao evolve`.** Those CLI wrappers are retired.
+- ❌ **Shelling out to retired RPI/evolve CLI subprocesses.**
   Dispatch the `/rpi` / `/evolve` **skill** to an agent pane instead.
 - ❌ **Decomposing the loop into substrate steps.** Dispatch the whole loop as
   one invocable unit; never re-express `/rpi`'s phases as NTM-side orchestration.
