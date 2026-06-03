@@ -48,10 +48,13 @@ output_contract: code changes, GOALS.md fitness deltas
 
 > Measure what's wrong. Fix the worst thing. Measure again. Compound.
 
-**V2 command surface:** keep the name `evolve`. Use `ao evolve` for the
-terminal-native loop. It is the top-level operator entrypoint for
-`ao rpi loop --supervisor`, preserving the old `/evolve` concept while reusing
-the v2 RPI loop engine.
+**The loop runs as this skill (skills-are-the-runtime).** `/evolve` selects work
+and invokes complete `/rpi --auto` cycles — that *is* the loop. `ao evolve` (and
+`ao rpi loop --supervisor`) are terminal-native **wrapper commands** for humans or
+non-skill runtimes, not the default expression of the loop; they reuse the same v2
+RPI loop engine. (The substrate dispatches the whole `/evolve` skill loop as one
+unit; it never drives the loop's insides. The `ao evolve`/`ao rpi` CLI wrappers are
+being retired — ag-iowf.)
 
 **Operator cadence:** post-mortem finished work, analyze the current repo state,
 select or create the next highest-value work item, let `/rpi` handle research,
