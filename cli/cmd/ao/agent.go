@@ -47,6 +47,9 @@ var (
 
 	agentEligibleFile         string
 	agentEligibleEligibleOnly bool
+
+	agentInitRuntime string
+	agentInitMailbox string
 )
 
 var agentBundleCmd = &cobra.Command{
@@ -99,12 +102,24 @@ and holdout/evaluator/PII/human/operator-gated work is excluded.`,
 	RunE: runAgentEligible,
 }
 
+var agentInitPromptCmd = &cobra.Command{
+	Use:   "init-prompt",
+	Short: "Print the NTM background-agent initialization prompt",
+	Long: `Print the prompt an operator or NTM lead sends to a newly-started
+Claude/Codex background session. The prompt orients the worker, requires
+skills-as-contract execution, mcp-agent-mail coordination, and no bead claim
+until assignment.`,
+	Args: cobra.NoArgs,
+	RunE: runAgentInitPrompt,
+}
+
 func init() {
 	rootCmd.AddCommand(agentCmd)
 	agentCmd.AddCommand(agentBundleCmd)
 	agentCmd.AddCommand(agentRosterCmd)
 	agentCmd.AddCommand(agentNTMSpawnCmd)
 	agentCmd.AddCommand(agentEligibleCmd)
+	agentCmd.AddCommand(agentInitPromptCmd)
 	agentBundleCmd.Flags().StringVar(&agentBundleRuntime, "runtime", "", "Target runtime: managed | codex-ntm | claude-ntm (required)")
 	agentBundleCmd.Flags().StringVar(&agentBundleSkills, "skills", "", "Comma-separated skill names (default: session-bootstrap,standards,validation,provenance)")
 	agentBundleCmd.Flags().StringVar(&agentBundleSandbox, "sandbox", "", "Sandbox placement: self-hosted | cloud")
@@ -121,6 +136,9 @@ func init() {
 
 	agentEligibleCmd.Flags().StringVar(&agentEligibleFile, "file", "", "Read candidate bead JSON from this file instead of running bd ready")
 	agentEligibleCmd.Flags().BoolVar(&agentEligibleEligibleOnly, "eligible-only", false, "Emit only eligible candidates")
+
+	agentInitPromptCmd.Flags().StringVar(&agentInitRuntime, "runtime", "", "Runtime identity to include (claude-ntm|codex-ntm)")
+	agentInitPromptCmd.Flags().StringVar(&agentInitMailbox, "mailbox", "", "Expected mcp-agent-mail identity, if preassigned")
 }
 
 func runAgentBundle(cmd *cobra.Command, _ []string) error {
@@ -348,6 +366,39 @@ func loadBackgroundCandidatesViaSQL(ctx context.Context) ([]background.Candidate
 		})
 	}
 	return candidates, nil
+}
+
+func runAgentInitPrompt(cmd *cobra.Command, _ []string) error {
+	cmd.SilenceUsage = true
+	fmt.Fprint(cmd.OutOrStdout(), buildAgentInitPrompt(agentInitRuntime, agentInitMailbox))
+	return nil
+}
+
+func buildAgentInitPrompt(runtimeName, mailbox string) string {
+	var sb strings.Builder
+	sb.WriteString("You are an AgentOps background agent running under NTM.\n\n")
+	if strings.TrimSpace(runtimeName) != "" {
+		sb.WriteString("Runtime profile: ")
+		sb.WriteString(strings.TrimSpace(runtimeName))
+		sb.WriteString("\n")
+	}
+	if strings.TrimSpace(mailbox) != "" {
+		sb.WriteString("Expected mcp-agent-mail identity: ")
+		sb.WriteString(strings.TrimSpace(mailbox))
+		sb.WriteString("\n")
+	}
+	sb.WriteString(`
+Initialize, then wait for operator assignment:
+1. Run ` + "`ao session bootstrap --json`" + `.
+2. Read AGENTS.md/CLAUDE.md as needed.
+3. Register or confirm your mcp-agent-mail identity.
+4. Do not claim or edit any bead until assigned via mcp-agent-mail or an operator message.
+5. Before editing, reserve file paths through mcp-agent-mail and use one worktree per bead.
+6. When assigned, use skills as the execution contract; do not use deprecated ` + "`ao rpi`" + ` / ` + "`ao evolve`" + ` wrappers.
+
+After initialization, respond with a one-line READY including your runtime and mailbox identity.
+`)
+	return sb.String()
 }
 
 func splitLabelsCSV(s string) []string {

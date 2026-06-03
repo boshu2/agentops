@@ -323,6 +323,39 @@ func TestRunAgentEligible_EligibleOnly(t *testing.T) {
 	}
 }
 
+func TestBuildAgentInitPrompt(t *testing.T) {
+	got := buildAgentInitPrompt("codex-ntm", "JadeElk")
+	for _, want := range []string{
+		"Runtime profile: codex-ntm",
+		"Expected mcp-agent-mail identity: JadeElk",
+		"ao session bootstrap --json",
+		"reserve file paths through mcp-agent-mail",
+		"do not use deprecated `ao rpi` / `ao evolve` wrappers",
+		"READY",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("init prompt missing %q:\n%s", want, got)
+		}
+	}
+}
+
+func TestRunAgentInitPrompt(t *testing.T) {
+	prevRuntime, prevMailbox := agentInitRuntime, agentInitMailbox
+	t.Cleanup(func() {
+		agentInitRuntime = prevRuntime
+		agentInitMailbox = prevMailbox
+	})
+	agentInitRuntime = "claude-ntm"
+	agentInitMailbox = "JadeBeacon"
+	cmd, out := agentTestCmd()
+	if err := runAgentInitPrompt(cmd, nil); err != nil {
+		t.Fatalf("init-prompt: %v", err)
+	}
+	if !strings.Contains(out.String(), "claude-ntm") || !strings.Contains(out.String(), "JadeBeacon") {
+		t.Fatalf("init prompt output missing runtime/mailbox: %s", out.String())
+	}
+}
+
 func TestSplitLabelsCSV(t *testing.T) {
 	got := splitLabelsCSV("alpha, beta,,gamma ")
 	want := []string{"alpha", "beta", "gamma"}

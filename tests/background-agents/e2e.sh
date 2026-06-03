@@ -97,6 +97,16 @@ else
   exit 1
 fi
 
+init_prompt="$(run_ao agent init-prompt --runtime codex-ntm --mailbox agentops-codex-ntm-worker)"
+if grep -Fq 'ao session bootstrap --json' <<<"$init_prompt" &&
+  grep -Fq 'mcp-agent-mail' <<<"$init_prompt" &&
+  grep -Fq 'do not use deprecated `ao rpi` / `ao evolve` wrappers' <<<"$init_prompt"; then
+  e2e_log_pass "ao agent init-prompt contains bootstrap/mail/deprecation contract"
+else
+  e2e_log_fail "ao agent init-prompt missing expected contract" "$(jq -nc --arg prompt "$init_prompt" '{prompt:$prompt}')"
+  exit 1
+fi
+
 if eligible_json="$(run_ao agent eligible --eligible-only 2>&1)"; then
   eligible_count="$(jq 'length' <<<"$eligible_json")"
   e2e_log_pass "ao agent eligible ran" "$(jq -nc --argjson count "$eligible_count" '{eligible_count:$count}')"

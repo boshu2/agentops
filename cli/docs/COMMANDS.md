@@ -3841,6 +3841,22 @@ ao agent eligible [flags]
   -h, --help            help for eligible
 ```
 
+#### `ao agent init-prompt`
+
+Print the prompt an operator or NTM lead sends to a newly-started
+
+```
+ao agent init-prompt [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help             help for init-prompt
+      --mailbox string   Expected mcp-agent-mail identity, if preassigned
+      --runtime string   Runtime identity to include (claude-ntm|codex-ntm)
+```
+
 #### `ao agent ntm-spawn`
 
 Render the NTM command that starts an AgentOps background-agent
