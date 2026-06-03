@@ -109,7 +109,7 @@ build_arm_sandbox() {
   else
     # context_off: strip context the base may have carried, so off is provably clean.
     rm -f "$home/.claude/CLAUDE.md"
-    rm -rf "$home/.claude/projects"
+    rm -rf "$home/.claude/projects" "$home/.claude/rules"
   fi
   echo "$home $ws $agents"
 }
@@ -125,10 +125,10 @@ run_arm() {
   for ((seed = 1; seed <= SEEDS; seed++)); do
     read -r home ws agents < <(build_arm_sandbox "$variant" "$corpus_root")
     if [[ "$RUNNER" == "$DEFAULT_RUNNER" ]]; then
-      line="$(HOME="$home" AO_AGENTS_DIR="$agents" CORPUS_DELTA_WORKSPACE="$ws" "$RUNNER" --task "$TASK_ID" --agent "$AGENT" --runs 1 2>/dev/null | tail -1)"
+      line="$(cd "$ws" && HOME="$home" AO_AGENTS_DIR="$agents" CORPUS_DELTA_WORKSPACE="$ws" "$RUNNER" --task "$TASK_ID" --agent "$AGENT" --runs 1 2>/dev/null | tail -1)"
     else
       # Injected (test) runner contract: <task> <agent> <seed>; reads HOME, AO_AGENTS_DIR, CORPUS_DELTA_WORKSPACE.
-      line="$(HOME="$home" AO_AGENTS_DIR="$agents" CORPUS_DELTA_WORKSPACE="$ws" "$RUNNER" "$TASK_ID" "$AGENT" "$seed" 2>/dev/null | tail -1)"
+      line="$(cd "$ws" && HOME="$home" AO_AGENTS_DIR="$agents" CORPUS_DELTA_WORKSPACE="$ws" "$RUNNER" "$TASK_ID" "$AGENT" "$seed" 2>/dev/null | tail -1)"
     fi
     is_pass="$(printf '%s' "$line" | jq -r 'if .pass == true then 1 else 0 end' 2>/dev/null || echo 0)"
     [[ "$is_pass" == "1" ]] && passes=$((passes + 1))
