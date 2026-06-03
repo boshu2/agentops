@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-03T12:02:11Z",
+  "generated_at": "2026-06-03T16:03:08Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
@@ -1323,7 +1323,7 @@
         "bounded_context": "BC3",
         "driven_by_skills": [
           "autodev",
-          "domain",
+          "evolve",
           "shared",
           "standards",
           "swarm"
@@ -2007,7 +2007,6 @@
         "ao inject",
         "ao maturity",
         "ao mcp serve",
-        "ao rpi",
         "ao rpi phased"
       ],
       "path": "skills/domain/",
@@ -2097,6 +2096,7 @@
         "ao metrics cite",
         "ao mine",
         "ao ratchet",
+        "ao rpi",
         "ao rpi loop"
       ],
       "path": "skills/evolve/",
@@ -4708,7 +4708,7 @@
       "status": "active",
       "driven_by_skills": [
         "autodev",
-        "domain",
+        "evolve",
         "shared",
         "standards",
         "swarm"
