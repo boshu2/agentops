@@ -89,6 +89,16 @@ else
 fi
 
 e2e_log_phase "roster"
+if command -v go >/dev/null 2>&1; then
+  root_roster_json="$(cd "$REPO_ROOT" && go run ./cli/cmd/ao agent roster --json)"
+  if jq -e '.agents | length == 2' >/dev/null <<<"$root_roster_json"; then
+    e2e_log_pass "root go.work invocation works"
+  else
+    e2e_log_fail "root go.work invocation returned unexpected roster" "$root_roster_json"
+    exit 1
+  fi
+fi
+
 roster_json="$(run_ao agent roster --json)"
 if jq -e '.agents | length == 2 and ([.[].runtime] | sort == ["claude-ntm","codex-ntm"])' >/dev/null <<<"$roster_json"; then
   e2e_log_pass "ao agent roster emits claude/codex NTM agents"

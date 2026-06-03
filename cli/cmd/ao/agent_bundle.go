@@ -146,7 +146,7 @@ func buildNTMBundle(runtime string, skills []string, reference string) agentBund
 		Runtime:        runtime,
 		Instructions:   stitchInstructions(skills),
 		Skills:         skills,
-		Bootstrap:      "ao session bootstrap && ao inject --query \"$BEAD\"",
+		Bootstrap:      "ao session bootstrap --json && ao inject --query \"$BEAD\"",
 		Reference:      reference,
 		Mailbox:        "agentops-" + runtime + "-worker",
 		WorktreePolicy: "one-worktree-per-bead",
