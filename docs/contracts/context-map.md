@@ -96,6 +96,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `system-tuning` — Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene.
 - `test` — Generate tests and coverage plans.
 - `trace` — Trace decisions through artifacts.
+- `using-ntm` — Use NTM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.
 - `workflow-builder` — Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: "build a workflow", "create a workflow", "scaffold workflow", "author a workflow".
 
 ### generic
@@ -166,6 +167,7 @@ graph LR
   skill-builder -- "supplier-to" --> skill-auditor
   swarm -- "customer-of" --> crank
   trace -- "customer-of" --> provenance
+  using-ntm -- "customer-of" --> swarm
   validate -- "customer-of" --> validation
   validation -- "shared-kernel" --> standards
   vibe -- "shared-kernel" --> standards
@@ -344,6 +346,7 @@ graph LR
 | `test` | produces | result.json |
 | `trace` | produces | result.json |
 | `using-agentops` | produces | documentation |
+| `using-ntm` | produces | documentation |
 | `validate` | consumes | validation |
 | `validate` | produces | result.json |
 | `validation` | consumes | forge |

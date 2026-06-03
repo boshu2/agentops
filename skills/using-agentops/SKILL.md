@@ -145,6 +145,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/release` | Pre-flight, changelog, version bumps, tag |
 | `/crank` | Autonomous epic loop (uses swarm for each wave) |
 | `/swarm` | Fresh-context parallel execution (Ralph pattern) |
+| `/using-ntm` | Run AgentOps loops out of session on an NTM tmux swarm (the NTM leg of the substrate) |
 | `/evolve` | Goal-driven fitness-scored improvement loop |
 | `/burndown` | Bounded epic-completion loop — drive a finite target to all-merged, then stop |
 | `/eval-outcomes` | Grade via Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes |

@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-02T21:25:32Z",
-  "skill_count": 81,
+  "generated_at": "2026-06-02T23:56:18Z",
+  "skill_count": 82,
   "skills": [
     {
       "name": "agent-native",
@@ -1762,6 +1762,29 @@
         "agile-manifesto"
       ],
       "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "using-ntm",
+      "description": "Use NTM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [
+        "documentation"
+      ],
+      "practices": [
+        "team-topologies",
+        "agile-manifesto",
+        "mythical-man-month"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "swarm"
+        }
+      ],
       "references_count": 0,
       "codex_override_present": true
     },
