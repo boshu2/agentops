@@ -56,6 +56,8 @@ var (
 	agentAssignFiles      string
 	agentAssignSkills     string
 	agentAssignValidation string
+
+	agentNTMStatusJSON bool
 )
 
 var agentBundleCmd = &cobra.Command{
@@ -129,6 +131,17 @@ reservation manifest, skills to use, and validation evidence expected back.`,
 	RunE: runAgentAssignPrompt,
 }
 
+var agentNTMStatusCmd = &cobra.Command{
+	Use:   "ntm-status [session]",
+	Short: "Show NTM background-agent session status",
+	Long: `Show NTM background-agent session status by delegating to
+ntm --robot-status. With a session argument, the output is narrowed to that
+session and summarized for operators; --json emits the filtered machine-readable
+record. Without a session, the raw NTM status JSON is passed through.`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runAgentNTMStatus,
+}
+
 func init() {
 	rootCmd.AddCommand(agentCmd)
 	agentCmd.AddCommand(agentBundleCmd)
@@ -137,6 +150,7 @@ func init() {
 	agentCmd.AddCommand(agentEligibleCmd)
 	agentCmd.AddCommand(agentInitPromptCmd)
 	agentCmd.AddCommand(agentAssignPromptCmd)
+	agentCmd.AddCommand(agentNTMStatusCmd)
 	agentBundleCmd.Flags().StringVar(&agentBundleRuntime, "runtime", "", "Target runtime: managed | codex-ntm | claude-ntm (required)")
 	agentBundleCmd.Flags().StringVar(&agentBundleSkills, "skills", "", "Comma-separated skill names (default: session-bootstrap,standards,validation,provenance)")
 	agentBundleCmd.Flags().StringVar(&agentBundleSandbox, "sandbox", "", "Sandbox placement: self-hosted | cloud")
@@ -162,6 +176,8 @@ func init() {
 	agentAssignPromptCmd.Flags().StringVar(&agentAssignFiles, "files", "", "Comma-separated file paths/globs to reserve")
 	agentAssignPromptCmd.Flags().StringVar(&agentAssignSkills, "skills", "", "Comma-separated skills the worker should use")
 	agentAssignPromptCmd.Flags().StringVar(&agentAssignValidation, "validation", "", "Validation command/evidence expected from the worker")
+
+	agentNTMStatusCmd.Flags().BoolVar(&agentNTMStatusJSON, "json", false, "Emit filtered machine-readable JSON")
 }
 
 func runAgentBundle(cmd *cobra.Command, _ []string) error {
@@ -475,6 +491,71 @@ func buildAgentAssignmentPrompt(bead, branch string, files, skills []string, val
 	sb.WriteString("- Reply with branch, commits, tests, provenance/evidence paths, and any scope escapes.\n")
 	sb.WriteString("- Do not self-merge.\n")
 	return sb.String()
+}
+
+func runAgentNTMStatus(cmd *cobra.Command, args []string) error {
+	cmd.SilenceUsage = true
+	c := exec.CommandContext(cmd.Context(), "ntm", "--robot-status")
+	raw, err := c.Output()
+	if err != nil {
+		return fmt.Errorf("ntm --robot-status: %w", err)
+	}
+	if len(args) == 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), string(raw))
+		return nil
+	}
+	session, err := filterNTMStatus(raw, args[0])
+	if err != nil {
+		return err
+	}
+	if agentNTMStatusJSON {
+		enc := json.NewEncoder(cmd.OutOrStdout())
+		enc.SetIndent("", "  ")
+		return enc.Encode(session)
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "%s\tpanes=%d\tagents=%d\n", session.Name, session.Panes, len(session.Agents))
+	for _, agent := range session.Agents {
+		fmt.Fprintf(cmd.OutOrStdout(), "pane=%d\ttype=%s\tstate=%s\tmodel=%s\n",
+			agent.PaneIdx, emptyDash(agent.Type), emptyDash(agent.ProcessStateName), emptyDash(agent.ContextModel))
+	}
+	return nil
+}
+
+type ntmStatusPayload struct {
+	Sessions []ntmSessionStatus `json:"sessions"`
+}
+
+type ntmSessionStatus struct {
+	Name   string           `json:"name"`
+	Panes  int              `json:"panes"`
+	Agents []ntmAgentStatus `json:"agents"`
+}
+
+type ntmAgentStatus struct {
+	Type             string `json:"type"`
+	PaneIdx          int    `json:"pane_idx"`
+	ProcessStateName string `json:"process_state_name"`
+	ContextModel     string `json:"context_model"`
+}
+
+func filterNTMStatus(raw []byte, sessionName string) (ntmSessionStatus, error) {
+	var payload ntmStatusPayload
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return ntmSessionStatus{}, fmt.Errorf("parse ntm status: %w", err)
+	}
+	for _, session := range payload.Sessions {
+		if session.Name == sessionName {
+			return session, nil
+		}
+	}
+	return ntmSessionStatus{}, fmt.Errorf("ntm session %q not found", sessionName)
+}
+
+func emptyDash(s string) string {
+	if strings.TrimSpace(s) == "" {
+		return "-"
+	}
+	return s
 }
 
 func splitLabelsCSV(s string) []string {

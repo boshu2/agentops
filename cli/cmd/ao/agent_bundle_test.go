@@ -411,6 +411,26 @@ func TestRunAgentAssignPrompt(t *testing.T) {
 	}
 }
 
+func TestFilterNTMStatus(t *testing.T) {
+	raw := []byte(`{"sessions":[{"name":"other","panes":1,"agents":[]},{"name":"agentops-bg","panes":2,"agents":[{"type":"claude","pane_idx":2,"process_state_name":"sleeping","context_model":"claude-opus"}]}]}`)
+	got, err := filterNTMStatus(raw, "agentops-bg")
+	if err != nil {
+		t.Fatalf("filter status: %v", err)
+	}
+	if got.Name != "agentops-bg" || got.Panes != 2 || len(got.Agents) != 1 {
+		t.Fatalf("filtered status = %+v", got)
+	}
+	if got.Agents[0].ContextModel != "claude-opus" {
+		t.Fatalf("agent status = %+v", got.Agents[0])
+	}
+}
+
+func TestFilterNTMStatusMissingSession(t *testing.T) {
+	if _, err := filterNTMStatus([]byte(`{"sessions":[]}`), "missing"); err == nil {
+		t.Fatal("expected missing session error")
+	}
+}
+
 func TestSplitLabelsCSV(t *testing.T) {
 	got := splitLabelsCSV("alpha, beta,,gamma ")
 	want := []string{"alpha", "beta", "gamma"}

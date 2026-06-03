@@ -3895,6 +3895,21 @@ ao agent ntm-spawn <session> [flags]
   -h, --help                 help for ntm-spawn
 ```
 
+#### `ao agent ntm-status`
+
+Show NTM background-agent session status by delegating to
+
+```
+ao agent ntm-status [session] [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for ntm-status
+      --json   Emit filtered machine-readable JSON
+```
+
 #### `ao agent roster`
 
 Emit the default AgentOps background-agent roster: one Claude NTM
