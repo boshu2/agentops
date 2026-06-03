@@ -81,6 +81,27 @@ This proves the full loop beyond smoke testing: live background agent receives
 work, reserves files, creates an isolated worktree, implements, validates,
 commits, pushes, and reports provenance/handoff without self-merging.
 
+## Second integration loop evidence
+
+After the first fan-out, the loop continued into product integration beads:
+
+| Bead | Worker | Branch | Commit | Result |
+|---|---|---|---|---|
+| `ag-v4gu` — integrate NTM state into `ao status` | Claude `JadeBeacon` | `cursor/ag-v4gu-status-background-agents-1944415608179314` | `282694d6` | PASS |
+| `ag-vhjb` — send assignments through mcp-agent-mail | Codex `JadeElk` | `cursor/ag-vhjb-agent-mail-assign-1944415608179314` | `7b49ffb3b99093c2532f98dcff502376ab217cf7` | PASS |
+
+Lead verification:
+
+- `ag-v4gu`: `cd cli && go test ./cmd/ao -run 'Status|Agent|NTMStatus'`
+  passed (606 tests). The branch adds an `ao status` Background Agents (NTM)
+  section and JSON `background_agents` projection.
+- `ag-vhjb`: `cd cli && go test ./cmd/ao -run 'Agent|Assign'` passed (207
+  tests), and `cd cli && go test ./internal/background` passed (13 tests). The
+  branch adds a real `ao agent assign` transport/fallback surface.
+
+This validates a second loop: beta findings became new beads, the same live NTM
+agents implemented them, and the lead independently re-ran the targeted tests.
+
 ## Remaining caveats
 
 - The original NTM-spawned Codex pane remains in `agentops-bg` and shows the
