@@ -264,6 +264,7 @@ func runAgentNTMSpawn(cmd *cobra.Command, args []string) error {
 	if !agentNTMSpawnExecute {
 		fmt.Fprintf(cmd.OutOrStdout(), "ntm %s\n", strings.Join(ntmArgs, " "))
 		if manualCodex {
+			fmt.Fprintln(cmd.OutOrStdout(), "# Codex panes use manual tmux split-window so --codex-model can override NTM's default Codex model.")
 			for _, tmuxArgs := range buildManualCodexPaneArgs(args[0], agentNTMSpawnCodex, agentNTMSpawnDir, agentNTMSpawnCodexModel) {
 				fmt.Fprintf(cmd.OutOrStdout(), "tmux %s\n", strings.Join(tmuxArgs, " "))
 			}
@@ -488,6 +489,7 @@ func buildAgentAssignmentPrompt(bead, branch string, files, skills []string, val
 	sb.WriteString("Validation: ")
 	sb.WriteString(validation)
 	sb.WriteString("\n\n")
+	sb.WriteString("Working-directory note: file paths are repo-root relative. Go CLI validation commands that reference `./cmd/ao` should run from `cli/` (for example `cd cli && go test ./cmd/ao -run Agent`).\n\n")
 	sb.WriteString("Before editing:\n")
 	sb.WriteString("1. Confirm this assignment in the mcp-agent-mail thread.\n")
 	sb.WriteString("2. Reserve these file paths/globs through mcp-agent-mail:\n")

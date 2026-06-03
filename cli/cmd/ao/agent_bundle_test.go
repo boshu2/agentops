@@ -97,6 +97,9 @@ func TestBuildAgentBundle_CodexNTM(t *testing.T) {
 	if !strings.Contains(b.Bootstrap, "ao session bootstrap") {
 		t.Errorf("codex-ntm Bootstrap must run `ao session bootstrap`, got %q", b.Bootstrap)
 	}
+	if !strings.Contains(b.Bootstrap, "--json") {
+		t.Errorf("codex-ntm Bootstrap must use machine-readable bootstrap, got %q", b.Bootstrap)
+	}
 	if b.Reference != "skills-codex/agent-native" {
 		t.Errorf("Reference = %q, want skills-codex/agent-native", b.Reference)
 	}
@@ -131,6 +134,9 @@ func TestBuildAgentBundle_ClaudeNTM(t *testing.T) {
 	}
 	if !strings.Contains(b.Bootstrap, "ao session bootstrap") {
 		t.Errorf("claude-ntm Bootstrap must run `ao session bootstrap`, got %q", b.Bootstrap)
+	}
+	if !strings.Contains(b.Bootstrap, "--json") {
+		t.Errorf("claude-ntm Bootstrap must use machine-readable bootstrap, got %q", b.Bootstrap)
 	}
 	if len(b.Tools) != 0 {
 		t.Errorf("claude-ntm must not carry hosted MCP tool descriptors, got %d", len(b.Tools))
@@ -383,6 +389,7 @@ func TestBuildAgentAssignmentPrompt(t *testing.T) {
 		"Bead: ag-demo",
 		"Branch/worktree: cursor/ag-demo-work",
 		"Skills: swarm, provenance",
+		"Working-directory note:",
 		"Reserve these file paths/globs",
 		"cli/cmd/ao/agent.go",
 		"mcp-agent-mail thread",
