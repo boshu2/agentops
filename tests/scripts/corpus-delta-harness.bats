@@ -62,6 +62,16 @@ STUB_EOF
   jq -e '.aggregate_delta == 1' "$TMP/sc.json" >/dev/null
 }
 
+@test "runner is invoked from the sandbox workspace" {
+  WSTUB="$TMP/workspace-stub.sh"
+  printf '#!/usr/bin/env bash\n[ "$PWD" = "${CORPUS_DELTA_WORKSPACE}" ] && echo '"'"'{"pass":true}'"'"' || echo '"'"'{"pass":false}'"'"'\n' > "$WSTUB"
+  chmod +x "$WSTUB"
+  run env CORPUS_DELTA_RUNNER="$WSTUB" "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS" --out "$TMP/sc.json"
+  [ "$status" -eq 0 ]
+  jq -e '.context_off.aggregate_score == 1' "$TMP/sc.json" >/dev/null
+  jq -e '.context_on.aggregate_score == 1' "$TMP/sc.json" >/dev/null
+}
+
 @test "requires --task" {
   run env CORPUS_DELTA_RUNNER="$STUB" "$HARNESS" --seeds 1
   [ "$status" -eq 2 ]
@@ -109,8 +119,10 @@ CSTUB_EOF
 @test "HOME_BASE auth survives both arms while context is stripped from off" {
   setup_contam
   BASE="$TMP/homebase"; mkdir -p "$BASE"
+  mkdir -p "$BASE/rules"
   echo '{"token":"x"}' > "$BASE/.credentials.json"   # auth-like file, no marker
   echo "$MK leaked-via-base" > "$BASE/CLAUDE.md"      # context the base must NOT carry into off
+  echo "$MK leaked-via-base-rules" > "$BASE/rules/base.md"
   # Stub: pass iff it sees the AUTH file (proves base copied into both arms).
   ASTUB="$TMP/auth-stub.sh"
   printf '#!/usr/bin/env bash\n[ -f "${HOME}/.claude/.credentials.json" ] && echo '"'"'{"pass":true}'"'"' || echo '"'"'{"pass":false}'"'"'\n' > "$ASTUB"
@@ -121,7 +133,7 @@ CSTUB_EOF
   # auth present in BOTH arms -> both pass -> delta 0 (auth is runtime, not context)
   jq -e '.context_off.aggregate_score == 1' "$TMP/sc.json" >/dev/null
   jq -e '.context_on.aggregate_score == 1' "$TMP/sc.json" >/dev/null
-  # and the base-carried CLAUDE.md marker must NOT survive into the off arm
+  # and base-carried context markers must NOT survive into the off arm
   run env CORPUS_DELTA_RUNNER="$CSTUB" CORPUS_DELTA_HOME_BASE="$BASE" \
     CORPUS_DELTA_REPO_ROOT="$TMP/none" CORPUS_DELTA_USER_CLAUDE="$TMP/none" CORPUS_DELTA_MEM_DIR="$TMP/none" \
     "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS" --out "$TMP/sc2.json"
