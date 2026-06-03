@@ -105,6 +105,10 @@ Bridge / framing docs:
 - [Infrastructure Deployment](workflows/infrastructure-deployment.md) — Orchestrate deployment with validation gates
 - [Meta-Observer Pattern](workflows/meta-observer-pattern.md) — Autonomous multi-session coordination
 
+## Evidence
+
+- [NTM Background-Agent Beta Report](evidence/2026-06-03-ntm-background-agent-beta.md) — Live beta findings from Claude/Codex NTM background agents (`JadeBeacon`, `JadeElk`), fixes, and readiness verdict for the background-agent CLI slice.
+
 ### Meta-Observer
 
 - [Meta-Observer README](workflows/meta-observer/README.md) — Complete workflow package overview
