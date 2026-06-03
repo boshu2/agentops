@@ -3910,6 +3910,21 @@ ao agent ntm-status [session] [flags]
       --json   Emit filtered machine-readable JSON
 ```
 
+#### `ao agent ntm-stop`
+
+Render the NTM command that stops an AgentOps background-agent
+
+```
+ao agent ntm-stop <session> [flags]
+```
+
+**Flags:**
+
+```
+      --execute   Execute ntm kill instead of printing a dry-run command
+  -h, --help      help for ntm-stop
+```
+
 #### `ao agent roster`
 
 Emit the default AgentOps background-agent roster: one Claude NTM
