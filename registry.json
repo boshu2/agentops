@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-02T23:40:17Z",
+  "generated_at": "2026-06-02T23:58:44Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
@@ -3299,7 +3299,7 @@
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "execution",
-      "purpose": "Use NTM (Named Tmux Manager) as the out-of-session substrate: spawn Claude/Codex panes that run the /rpi and /evolve skills over a bead queue, coordinate via beads + MCP Agent Mail, and tend the swarm to convergence. Use when running AgentOps loops unattended, standing up an NTM agent swarm, dispatching the loop to a substrate, or tending/unsticking a running swarm.",
+      "purpose": "Use NTM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.",
       "status": "active",
       "disposition": "keep",
       "consumes": [],

@@ -96,7 +96,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `system-tuning` — Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene.
 - `test` — Generate tests and coverage plans.
 - `trace` — Trace decisions through artifacts.
-- `using-ntm` — Use NTM (Named Tmux Manager) as the out-of-session substrate: spawn Claude/Codex panes that run the /rpi and /evolve skills over a bead queue, coordinate via beads + MCP Agent Mail, and tend the swarm to convergence. Use when running AgentOps loops unattended, standing up an NTM agent swarm, dispatching the loop to a substrate, or tending/unsticking a running swarm.
+- `using-ntm` — Use NTM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.
 - `workflow-builder` — Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: "build a workflow", "create a workflow", "scaffold workflow", "author a workflow".
 
 ### generic

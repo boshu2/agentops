@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "391a3d1bc2aae59453208361f11612fad2ab840739ec7489612a0ee5ebec018d",
+  "codex_override_catalog_hash": "9adf69f9b456a65338e914bf511025a64c5c7cc6b3d56ddf6a05185762ee0503",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -660,6 +660,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Hookless Agent-native pattern; codex form is canonical-derived (no bespoke shell idioms)."
+      },
+      {
+        "name": "using-ntm",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "NTM substrate guidance is documentation-led and portable across runtimes; Codex parity is sufficient"
       }
     ]
   },
@@ -1123,8 +1129,14 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "f9ed647dd29a9a0d7b4fb3af1644f6619ebb833bb237dcca66437ad175b3285c",
+      "source_hash": "ec3f75bd54588f260393006552ca7ad8104bec8e11c27ca4db80134a33b1ef65",
       "generated_hash": "93c23a804e321d4dbdf86a31fe7d2165632d159b426395c5040f0a1fdb84fe0c"
+    },
+    {
+      "name": "using-ntm",
+      "source_skill": "skills/using-ntm",
+      "source_hash": "ac30d1684cde02b76bb081e4df4ce80c47324b6db49b7440c0742b47fc2475b7",
+      "generated_hash": "6fa63809ed9265bb70107df030fbedfa1bb363fc89a21637841f873a24ea61dc"
     },
     {
       "name": "validate",

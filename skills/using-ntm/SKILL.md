@@ -1,6 +1,6 @@
 ---
 name: using-ntm
-description: 'Use NTM (Named Tmux Manager) as the out-of-session substrate: spawn Claude/Codex panes that run the /rpi and /evolve skills over a bead queue, coordinate via beads + MCP Agent Mail, and tend the swarm to convergence. Use when running AgentOps loops unattended, standing up an NTM agent swarm, dispatching the loop to a substrate, or tending/unsticking a running swarm.'
+description: 'Use NTM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.'
 practices:
 - team-topologies
 - agile-manifesto
