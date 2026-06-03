@@ -3854,7 +3854,7 @@ ao agent ntm-spawn <session> [flags]
 ```
       --claude int           Number of Claude background agents (default 1)
       --codex int            Number of Codex background agents (default 1)
-      --codex-model string   Override Codex model by adding Codex panes manually after NTM spawn
+      --codex-model string   Codex model for manual Codex panes (set empty to use NTM's default Codex spawn) (default "gpt-5.5")
       --dir string           Working directory for the NTM session (default ".")
       --execute              Execute ntm instead of printing a dry-run command
   -h, --help                 help for ntm-spawn

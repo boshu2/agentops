@@ -115,7 +115,7 @@ func init() {
 
 	agentNTMSpawnCmd.Flags().IntVar(&agentNTMSpawnClaude, "claude", 1, "Number of Claude background agents")
 	agentNTMSpawnCmd.Flags().IntVar(&agentNTMSpawnCodex, "codex", 1, "Number of Codex background agents")
-	agentNTMSpawnCmd.Flags().StringVar(&agentNTMSpawnCodexModel, "codex-model", "", "Override Codex model by adding Codex panes manually after NTM spawn")
+	agentNTMSpawnCmd.Flags().StringVar(&agentNTMSpawnCodexModel, "codex-model", "gpt-5.5", "Codex model for manual Codex panes (set empty to use NTM's default Codex spawn)")
 	agentNTMSpawnCmd.Flags().StringVar(&agentNTMSpawnDir, "dir", ".", "Working directory for the NTM session")
 	agentNTMSpawnCmd.Flags().BoolVar(&agentNTMSpawnExecute, "execute", false, "Execute ntm instead of printing a dry-run command")
 
