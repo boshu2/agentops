@@ -356,6 +356,61 @@ func TestRunAgentInitPrompt(t *testing.T) {
 	}
 }
 
+func TestBuildAgentAssignmentPrompt(t *testing.T) {
+	got := buildAgentAssignmentPrompt(
+		"ag-demo",
+		"cursor/ag-demo-work",
+		[]string{"cli/cmd/ao/agent.go", "skills/swarm/SKILL.md"},
+		[]string{"swarm", "provenance"},
+		"go test ./cmd/ao -run Agent",
+	)
+	for _, want := range []string{
+		"BACKGROUND AGENT ASSIGNMENT",
+		"Bead: ag-demo",
+		"Branch/worktree: cursor/ag-demo-work",
+		"Skills: swarm, provenance",
+		"Reserve these file paths/globs",
+		"cli/cmd/ao/agent.go",
+		"mcp-agent-mail thread",
+		"do not run deprecated `ao rpi` / `ao evolve` wrappers",
+		"Do not self-merge",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("assignment prompt missing %q:\n%s", want, got)
+		}
+	}
+}
+
+func TestRunAgentAssignPromptRequiresBead(t *testing.T) {
+	prevBead := agentAssignBead
+	t.Cleanup(func() { agentAssignBead = prevBead })
+	agentAssignBead = ""
+	cmd, _ := agentTestCmd()
+	if err := runAgentAssignPrompt(cmd, nil); err == nil {
+		t.Fatal("assign-prompt should require --bead")
+	}
+}
+
+func TestRunAgentAssignPrompt(t *testing.T) {
+	prevBead, prevFiles := agentAssignBead, agentAssignFiles
+	t.Cleanup(func() {
+		agentAssignBead = prevBead
+		agentAssignFiles = prevFiles
+		agentAssignBranch = ""
+		agentAssignSkills = ""
+		agentAssignValidation = ""
+	})
+	agentAssignBead = "ag-demo"
+	agentAssignFiles = "README.md,docs/3.0.md"
+	cmd, out := agentTestCmd()
+	if err := runAgentAssignPrompt(cmd, nil); err != nil {
+		t.Fatalf("assign-prompt: %v", err)
+	}
+	if !strings.Contains(out.String(), "ag-demo") || !strings.Contains(out.String(), "README.md") {
+		t.Fatalf("assignment output missing bead/files: %s", out.String())
+	}
+}
+
 func TestSplitLabelsCSV(t *testing.T) {
 	got := splitLabelsCSV("alpha, beta,,gamma ")
 	want := []string{"alpha", "beta", "gamma"}
