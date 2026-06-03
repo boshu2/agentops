@@ -58,6 +58,8 @@ var (
 	agentAssignValidation string
 
 	agentNTMStatusJSON bool
+
+	agentNTMStopExecute bool
 )
 
 var agentBundleCmd = &cobra.Command{
@@ -142,11 +144,23 @@ record. Without a session, the raw NTM status JSON is passed through.`,
 	RunE: runAgentNTMStatus,
 }
 
+var agentNTMStopCmd = &cobra.Command{
+	Use:   "ntm-stop <session>",
+	Short: "Render or execute a safe NTM background-agent stop command",
+	Long: `Render the NTM command that stops an AgentOps background-agent
+session. By default this is a dry run and prints the command. Pass --execute to
+call 'ntm kill <session> --force' for real. Stop live sessions only when the
+operator explicitly intends cleanup.`,
+	Args: cobra.ExactArgs(1),
+	RunE: runAgentNTMStop,
+}
+
 func init() {
 	rootCmd.AddCommand(agentCmd)
 	agentCmd.AddCommand(agentBundleCmd)
 	agentCmd.AddCommand(agentRosterCmd)
 	agentCmd.AddCommand(agentNTMSpawnCmd)
+	agentCmd.AddCommand(agentNTMStopCmd)
 	agentCmd.AddCommand(agentEligibleCmd)
 	agentCmd.AddCommand(agentInitPromptCmd)
 	agentCmd.AddCommand(agentAssignPromptCmd)
@@ -178,6 +192,7 @@ func init() {
 	agentAssignPromptCmd.Flags().StringVar(&agentAssignValidation, "validation", "", "Validation command/evidence expected from the worker")
 
 	agentNTMStatusCmd.Flags().BoolVar(&agentNTMStatusJSON, "json", false, "Emit filtered machine-readable JSON")
+	agentNTMStopCmd.Flags().BoolVar(&agentNTMStopExecute, "execute", false, "Execute ntm kill instead of printing a dry-run command")
 }
 
 func runAgentBundle(cmd *cobra.Command, _ []string) error {
@@ -556,6 +571,29 @@ func emptyDash(s string) string {
 		return "-"
 	}
 	return s
+}
+
+func runAgentNTMStop(cmd *cobra.Command, args []string) error {
+	cmd.SilenceUsage = true
+	ntmArgs, err := buildNTMStopArgs(args[0])
+	if err != nil {
+		return err
+	}
+	if !agentNTMStopExecute {
+		fmt.Fprintf(cmd.OutOrStdout(), "ntm %s\n", strings.Join(ntmArgs, " "))
+		return nil
+	}
+	c := exec.CommandContext(cmd.Context(), "ntm", ntmArgs...)
+	c.Stdout = cmd.OutOrStdout()
+	c.Stderr = cmd.ErrOrStderr()
+	return c.Run()
+}
+
+func buildNTMStopArgs(session string) ([]string, error) {
+	if strings.TrimSpace(session) == "" {
+		return nil, fmt.Errorf("session is required")
+	}
+	return []string{"kill", session, "--force"}, nil
 }
 
 func splitLabelsCSV(s string) []string {

@@ -257,6 +257,20 @@ func TestBuildNTMSpawnArgs_RequiresAtLeastOneAgent(t *testing.T) {
 	}
 }
 
+func TestBuildNTMStopArgs(t *testing.T) {
+	args, err := buildNTMStopArgs("agentops-bg")
+	if err != nil {
+		t.Fatalf("build stop args: %v", err)
+	}
+	want := []string{"kill", "agentops-bg", "--force"}
+	if strings.Join(args, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("args = %v, want %v", args, want)
+	}
+	if _, err := buildNTMStopArgs(""); err == nil {
+		t.Fatal("expected empty session error")
+	}
+}
+
 func TestRunAgentEligible_FileFiltersCandidates(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "ready.json")
 	raw := `[
