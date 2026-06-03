@@ -4,6 +4,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -365,5 +366,151 @@ func TestOutputStatus_IncludesQualitySignalsHuman(t *testing.T) {
 	}
 	if !strings.Contains(got, "correction") || !strings.Contains(got, "Prompt starts with correction pattern") {
 		t.Fatalf("expected rendered quality signal, got: %q", got)
+	}
+}
+
+// sampleNTMStatusJSON is a representative `ntm --robot-status` payload: a
+// background-agent session with a claude pane plus a non-agent shell pane, and
+// an unrelated session that must be ignored.
+func sampleNTMStatusJSON(claudeLastOutput string) string {
+	return `{
+  "success": true,
+  "sessions": [
+    {
+      "name": "agentops-bg",
+      "panes": 2,
+      "agents": [
+        {"type":"unknown","pane_idx":1,"is_active":false,"process_state":"S","process_state_name":"sleeping","last_output_ts":"` + claudeLastOutput + `"},
+        {"type":"claude","pane_idx":2,"is_active":true,"process_state":"S","process_state_name":"sleeping","last_output_ts":"` + claudeLastOutput + `","context_model":"claude-opus-4-5-20251101"}
+      ]
+    },
+    {
+      "name": "scratch",
+      "panes": 1,
+      "agents": [
+        {"type":"codex","pane_idx":1,"is_active":true,"process_state":"S","process_state_name":"running","last_output_ts":"` + claudeLastOutput + `"}
+      ]
+    }
+  ]
+}`
+}
+
+func TestBackgroundAgents_ParseSampleNTMStatus(t *testing.T) {
+	now := time.Date(2026, 6, 3, 12, 0, 0, 0, time.UTC)
+	recent := now.Add(-30 * time.Second).Format(time.RFC3339)
+	agents := parseBackgroundAgents([]byte(sampleNTMStatusJSON(recent)), now)
+
+	if len(agents) != 1 {
+		t.Fatalf("len = %d, want 1 (only the claude pane in agentops-bg; shell pane + scratch session excluded)", len(agents))
+	}
+	a := agents[0]
+	if a.Session != "agentops-bg" {
+		t.Errorf("Session = %q, want agentops-bg", a.Session)
+	}
+	if a.Runtime != "claude" {
+		t.Errorf("Runtime = %q, want claude", a.Runtime)
+	}
+	if a.Mailbox != "agentops-claude-ntm-worker" {
+		t.Errorf("Mailbox = %q, want agentops-claude-ntm-worker", a.Mailbox)
+	}
+	if a.PaneIdx != 2 {
+		t.Errorf("PaneIdx = %d, want 2", a.PaneIdx)
+	}
+	if !a.Active {
+		t.Error("Active = false, want true for the claude pane")
+	}
+	if a.Health != "ok" {
+		t.Errorf("Health = %q, want ok", a.Health)
+	}
+	if a.ContextModel != "claude-opus-4-5-20251101" {
+		t.Errorf("ContextModel = %q, want claude-opus-4-5-20251101", a.ContextModel)
+	}
+	if a.LastCheckIn == "" {
+		t.Error("LastCheckIn empty, want a derived '<dur> ago' string")
+	}
+	// Bead/branch are not carried by NTM; they must stay empty, not fabricated.
+	if a.Bead != "" || a.Branch != "" {
+		t.Errorf("Bead=%q Branch=%q, want both empty (not derivable from NTM)", a.Bead, a.Branch)
+	}
+}
+
+func TestBackgroundAgents_NoNTMFallback(t *testing.T) {
+	prev := statusNTMRunner
+	t.Cleanup(func() { statusNTMRunner = prev })
+
+	// ntm binary missing / errors -> fail-open to nil.
+	statusNTMRunner = func(context.Context) ([]byte, error) {
+		return nil, errors.New("exec: \"ntm\": executable file not found in $PATH")
+	}
+	if got := loadBackgroundAgents(context.Background(), time.Now()); got != nil {
+		t.Fatalf("no-NTM fallback = %+v, want nil", got)
+	}
+
+	// Garbage JSON also fails open rather than erroring the whole status command.
+	statusNTMRunner = func(context.Context) ([]byte, error) {
+		return []byte("not json"), nil
+	}
+	if got := loadBackgroundAgents(context.Background(), time.Now()); got != nil {
+		t.Fatalf("invalid-JSON fallback = %+v, want nil", got)
+	}
+}
+
+func TestBackgroundAgents_LoadFromInjectedNTM(t *testing.T) {
+	prev := statusNTMRunner
+	t.Cleanup(func() { statusNTMRunner = prev })
+	now := time.Date(2026, 6, 3, 12, 0, 0, 0, time.UTC)
+	recent := now.Add(-10 * time.Second).Format(time.RFC3339)
+	statusNTMRunner = func(context.Context) ([]byte, error) {
+		return []byte(sampleNTMStatusJSON(recent)), nil
+	}
+	got := loadBackgroundAgents(context.Background(), now)
+	if len(got) != 1 || got[0].Runtime != "claude" {
+		t.Fatalf("loadBackgroundAgents = %+v, want one claude agent", got)
+	}
+}
+
+func TestBackgroundAgents_HealthStuckAndError(t *testing.T) {
+	now := time.Date(2026, 6, 3, 12, 0, 0, 0, time.UTC)
+
+	ok := bgNTMAgent{ProcessState: "S", ProcessStateName: "sleeping", LastOutputTS: now.Add(-1 * time.Minute).Format(time.RFC3339)}
+	if got := classifyBackgroundHealth(ok, now); got != "ok" {
+		t.Errorf("recent pane health = %q, want ok", got)
+	}
+
+	stuck := bgNTMAgent{ProcessState: "S", ProcessStateName: "sleeping", LastOutputTS: now.Add(-30 * time.Minute).Format(time.RFC3339)}
+	if got := classifyBackgroundHealth(stuck, now); got != "stuck" {
+		t.Errorf("silent pane health = %q, want stuck", got)
+	}
+
+	zombie := bgNTMAgent{ProcessState: "Z", ProcessStateName: "zombie", LastOutputTS: now.Format(time.RFC3339)}
+	if got := classifyBackgroundHealth(zombie, now); got != "error" {
+		t.Errorf("zombie pane health = %q, want error", got)
+	}
+}
+
+func TestBackgroundAgents_OutputStatusHumanSection(t *testing.T) {
+	got, err := captureStdout(t, func() error {
+		return outputStatus(&statusOutput{
+			Initialized: true,
+			BaseDir:     filepath.Join(t.TempDir(), ".agents"),
+			BackgroundAgents: []backgroundAgentInfo{{
+				Session:      "agentops-bg",
+				Runtime:      "claude",
+				Mailbox:      "agentops-claude-ntm-worker",
+				PaneIdx:      2,
+				Active:       true,
+				Health:       "ok",
+				LastCheckIn:  "<1m ago",
+				ContextModel: "claude-opus-4-5-20251101",
+			}},
+		})
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"Background Agents (NTM)", "agentops-bg", "runtime=claude", "mailbox=agentops-claude-ntm-worker", "bead=-", "branch=-"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("background-agent section missing %q:\n%s", want, got)
+		}
 	}
 }
