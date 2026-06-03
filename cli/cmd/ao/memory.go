@@ -141,6 +141,10 @@ func readNLatestSessionEntries(cwd string, maxCount int) ([]*pendingEntry, error
 	sessionsDir := filepath.Join(cwd, ".agents", "ao", "sessions")
 	dirEntries, err := os.ReadDir(sessionsDir)
 	if err != nil {
+		if os.IsNotExist(err) {
+			// No sessions dir yet (fresh checkout / CI / isolated run) → no data to sync, not an error.
+			return nil, nil
+		}
 		return nil, err
 	}
 
