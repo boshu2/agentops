@@ -432,6 +432,55 @@ func TestRunAgentAssignPrompt(t *testing.T) {
 	}
 }
 
+func TestRunAgentAssignDryRunEmitsJSONFallback(t *testing.T) {
+	prev := agentAssignStateSnapshot()
+	t.Cleanup(func() { restoreAgentAssignState(prev) })
+	origDryRun := dryRun
+	t.Cleanup(func() { dryRun = origDryRun })
+	dryRun = true
+
+	agentAssignBead = "ag-demo"
+	agentAssignTo = "JadeElk"
+	agentAssignFiles = "README.md,docs/3.0.md"
+	agentAssignBranch = "cursor/ag-demo"
+	agentAssignSkills = "implement,validation"
+	agentAssignValidation = "scripts/pre-push-gate.sh --fast"
+	agentAssignSession = "agentops-bg"
+
+	cmd, out := agentTestCmd()
+	if err := runAgentAssign(cmd, nil); err != nil {
+		t.Fatalf("assign dry-run: %v", err)
+	}
+	var evidence struct {
+		Bead      string `json:"bead"`
+		Transport string `json:"transport"`
+		Sent      bool   `json:"sent"`
+		CopyPaste struct {
+			Message string `json:"message"`
+		} `json:"copy_paste"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &evidence); err != nil {
+		t.Fatalf("parse evidence: %v\n%s", err, out.String())
+	}
+	if evidence.Bead != "ag-demo" || evidence.Transport != "copy-paste" || evidence.Sent {
+		t.Fatalf("evidence = %+v, want dry-run copy-paste for ag-demo", evidence)
+	}
+	if !strings.Contains(evidence.CopyPaste.Message, "BACKGROUND AGENT ASSIGNMENT") {
+		t.Fatalf("copy-paste message missing assignment body: %s", evidence.CopyPaste.Message)
+	}
+}
+
+func TestRunAgentAssignRequiresRecipient(t *testing.T) {
+	prev := agentAssignStateSnapshot()
+	t.Cleanup(func() { restoreAgentAssignState(prev) })
+	agentAssignBead = "ag-demo"
+	agentAssignFiles = "README.md"
+	cmd, _ := agentTestCmd()
+	if err := runAgentAssign(cmd, nil); err == nil || !strings.Contains(err.Error(), "--to is required") {
+		t.Fatalf("err = %v, want --to required", err)
+	}
+}
+
 func TestFilterNTMStatus(t *testing.T) {
 	raw := []byte(`{"sessions":[{"name":"other","panes":1,"agents":[]},{"name":"agentops-bg","panes":2,"agents":[{"type":"claude","pane_idx":2,"process_state_name":"sleeping","context_model":"claude-opus"}]}]}`)
 	got, err := filterNTMStatus(raw, "agentops-bg")

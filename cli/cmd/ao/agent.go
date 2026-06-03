@@ -52,10 +52,13 @@ var (
 	agentInitMailbox string
 
 	agentAssignBead       string
+	agentAssignTo         string
 	agentAssignBranch     string
 	agentAssignFiles      string
 	agentAssignSkills     string
 	agentAssignValidation string
+	agentAssignSession    string
+	agentAssignTTL        string
 
 	agentNTMStatusJSON bool
 
@@ -133,6 +136,17 @@ reservation manifest, skills to use, and validation evidence expected back.`,
 	RunE: runAgentAssignPrompt,
 }
 
+var agentAssignCmd = &cobra.Command{
+	Use:   "assign",
+	Short: "Send a background-agent assignment through Agent Mail",
+	Long: `Send a background-agent assignment through the NTM Agent Mail bridge.
+The command reserves the declared file paths before sending the assignment
+message. With the global --dry-run flag, it emits JSON evidence with a
+copy-paste fallback instead of touching live Agent Mail.`,
+	Args: cobra.NoArgs,
+	RunE: runAgentAssign,
+}
+
 var agentNTMStatusCmd = &cobra.Command{
 	Use:   "ntm-status [session]",
 	Short: "Show NTM background-agent session status",
@@ -164,6 +178,7 @@ func init() {
 	agentCmd.AddCommand(agentEligibleCmd)
 	agentCmd.AddCommand(agentInitPromptCmd)
 	agentCmd.AddCommand(agentAssignPromptCmd)
+	agentCmd.AddCommand(agentAssignCmd)
 	agentCmd.AddCommand(agentNTMStatusCmd)
 	agentBundleCmd.Flags().StringVar(&agentBundleRuntime, "runtime", "", "Target runtime: managed | codex-ntm | claude-ntm (required)")
 	agentBundleCmd.Flags().StringVar(&agentBundleSkills, "skills", "", "Comma-separated skill names (default: session-bootstrap,standards,validation,provenance)")
@@ -190,6 +205,15 @@ func init() {
 	agentAssignPromptCmd.Flags().StringVar(&agentAssignFiles, "files", "", "Comma-separated file paths/globs to reserve")
 	agentAssignPromptCmd.Flags().StringVar(&agentAssignSkills, "skills", "", "Comma-separated skills the worker should use")
 	agentAssignPromptCmd.Flags().StringVar(&agentAssignValidation, "validation", "", "Validation command/evidence expected from the worker")
+
+	agentAssignCmd.Flags().StringVar(&agentAssignBead, "bead", "", "Bead id to assign (required)")
+	agentAssignCmd.Flags().StringVar(&agentAssignTo, "to", "", "Comma-separated mcp-agent-mail recipient(s) (required)")
+	agentAssignCmd.Flags().StringVar(&agentAssignBranch, "branch", "", "Branch/worktree for the worker")
+	agentAssignCmd.Flags().StringVar(&agentAssignFiles, "files", "", "Comma-separated file paths/globs to reserve (required)")
+	agentAssignCmd.Flags().StringVar(&agentAssignSkills, "skills", "", "Comma-separated skills the worker should use")
+	agentAssignCmd.Flags().StringVar(&agentAssignValidation, "validation", "", "Validation command/evidence expected from the worker")
+	agentAssignCmd.Flags().StringVar(&agentAssignSession, "session", background.DefaultAssignmentSession, "NTM session/project key for Agent Mail")
+	agentAssignCmd.Flags().StringVar(&agentAssignTTL, "ttl", "2h", "File reservation TTL for NTM lock")
 
 	agentNTMStatusCmd.Flags().BoolVar(&agentNTMStatusJSON, "json", false, "Emit filtered machine-readable JSON")
 	agentNTMStopCmd.Flags().BoolVar(&agentNTMStopExecute, "execute", false, "Execute ntm kill instead of printing a dry-run command")
@@ -436,6 +460,75 @@ func runAgentAssignPrompt(cmd *cobra.Command, _ []string) error {
 	}
 	fmt.Fprint(cmd.OutOrStdout(), buildAgentAssignmentPrompt(agentAssignBead, agentAssignBranch, splitLabelsCSV(agentAssignFiles), splitLabelsCSV(agentAssignSkills), agentAssignValidation))
 	return nil
+}
+
+func runAgentAssign(cmd *cobra.Command, _ []string) error {
+	cmd.SilenceUsage = true
+	if strings.TrimSpace(agentAssignBead) == "" {
+		return fmt.Errorf("--bead is required")
+	}
+	if strings.TrimSpace(agentAssignTo) == "" {
+		return fmt.Errorf("--to is required")
+	}
+	if strings.TrimSpace(agentAssignFiles) == "" {
+		return fmt.Errorf("--files is required so assignment reservations are explicit")
+	}
+	req := background.AssignmentRequest{
+		Bead:       agentAssignBead,
+		To:         splitLabelsCSV(agentAssignTo),
+		Branch:     agentAssignBranch,
+		Files:      splitLabelsCSV(agentAssignFiles),
+		Skills:     splitLabelsCSV(agentAssignSkills),
+		Validation: agentAssignValidation,
+		Session:    agentAssignSession,
+		DryRun:     GetDryRun(),
+	}
+	var transport background.AssignmentTransport
+	if !GetDryRun() {
+		transport = background.NewNTMAssignmentTransport(execCommandRunner{}, agentAssignTTL)
+	}
+	evidence, err := background.AssignBackgroundAgent(cmd.Context(), req, transport)
+	if err != nil {
+		return err
+	}
+	enc := json.NewEncoder(cmd.OutOrStdout())
+	enc.SetIndent("", "  ")
+	return enc.Encode(evidence)
+}
+
+type agentAssignState struct {
+	bead       string
+	to         string
+	branch     string
+	files      string
+	skills     string
+	validation string
+	session    string
+	ttl        string
+}
+
+func agentAssignStateSnapshot() agentAssignState {
+	return agentAssignState{
+		bead:       agentAssignBead,
+		to:         agentAssignTo,
+		branch:     agentAssignBranch,
+		files:      agentAssignFiles,
+		skills:     agentAssignSkills,
+		validation: agentAssignValidation,
+		session:    agentAssignSession,
+		ttl:        agentAssignTTL,
+	}
+}
+
+func restoreAgentAssignState(state agentAssignState) {
+	agentAssignBead = state.bead
+	agentAssignTo = state.to
+	agentAssignBranch = state.branch
+	agentAssignFiles = state.files
+	agentAssignSkills = state.skills
+	agentAssignValidation = state.validation
+	agentAssignSession = state.session
+	agentAssignTTL = state.ttl
 }
 
 func buildAgentInitPrompt(runtimeName, mailbox string) string {
