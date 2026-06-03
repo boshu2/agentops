@@ -64,13 +64,31 @@ done
 DEFAULT_RUNNER="$REPO_ROOT/scripts/eval-agent-harness.sh"
 RUNNER="${CORPUS_DELTA_RUNNER:-$DEFAULT_RUNNER}"
 
+canonical_runner_path() {
+  local path="$1" resolved
+
+  if resolved="$(command -v "$path" 2>/dev/null)"; then
+    path="$resolved"
+  fi
+  if resolved="$(realpath "$path" 2>/dev/null)"; then
+    printf '%s\n' "$resolved"
+  else
+    printf '%s\n' "$path"
+  fi
+}
+
+IS_DEFAULT_RUNNER=false
+if [[ "$(canonical_runner_path "$RUNNER")" == "$(canonical_runner_path "$DEFAULT_RUNNER")" ]]; then
+  IS_DEFAULT_RUNNER=true
+fi
+
 # run_arm <variant> <corpus_root> -> echoes "passes total" (passes = #seeds that passed)
 run_arm() {
   local variant="$1" corpus_root="$2"
   local passes=0 seed line is_pass
   echo "[corpus-delta] arm=$variant corpus=$corpus_root seeds=$SEEDS" >&2
   for ((seed = 1; seed <= SEEDS; seed++)); do
-    if [[ "$RUNNER" == "$DEFAULT_RUNNER" ]]; then
+    if [[ "$IS_DEFAULT_RUNNER" == "true" ]]; then
       line="$(AO_AGENTS_DIR="$corpus_root" "$RUNNER" --task "$TASK_ID" --agent "$AGENT" --runs 1 2>/dev/null | tail -1)"
     else
       # Injected (test) runner contract: <task> <agent> <seed>, reads AO_AGENTS_DIR.

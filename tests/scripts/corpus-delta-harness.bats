@@ -26,6 +26,21 @@ STUB_EOF
   CORPUS="$TMP/corpus"
   mkdir -p "$CORPUS/learnings"
   echo "# a prior decision" > "$CORPUS/learnings/marker.md"
+
+  FAKEBIN="$TMP/fakebin"
+  PROMPT_LOG="$TMP/prompts.txt"
+  mkdir -p "$FAKEBIN"
+  cat > "$FAKEBIN/claude" <<'FAKE_CLAUDE_EOF'
+#!/usr/bin/env bash
+while [[ $# -gt 0 ]]; do
+  if [[ "$1" == "-p" ]]; then
+    shift
+    printf '%s\n' "${1:-}" >> "${PROMPT_LOG:?}"
+  fi
+  shift || true
+done
+FAKE_CLAUDE_EOF
+  chmod +x "$FAKEBIN/claude"
 }
 
 # Assert on the --out file (clean JSON; stdout/stderr carry a human progress line).
@@ -60,6 +75,15 @@ STUB_EOF
   [ "$status" -eq 0 ]
   [ -f "$TMP/sc.json" ]
   jq -e '.aggregate_delta == 1' "$TMP/sc.json" >/dev/null
+}
+
+@test "equivalent default runner path uses default args and AO_AGENTS_DIR prompt" {
+  run env PATH="$FAKEBIN:$PATH" PROMPT_LOG="$PROMPT_LOG" CORPUS_DELTA_RUNNER="$REPO_ROOT/scripts/../scripts/eval-agent-harness.sh" "$HARNESS" --task ops-01 --seeds 1 --agent claude --corpus "$CORPUS" --out "$TMP/sc.json"
+  [ "$status" -eq 0 ]
+  [ -f "$TMP/sc.json" ]
+  prompts="$(< "$PROMPT_LOG")"
+  [[ "$prompts" == *"$CORPUS"* ]]
+  [[ "$prompts" == *"Use only that corpus path"* ]]
 }
 
 @test "requires --task" {
