@@ -50,6 +50,12 @@ var (
 
 	agentInitRuntime string
 	agentInitMailbox string
+
+	agentAssignBead       string
+	agentAssignBranch     string
+	agentAssignFiles      string
+	agentAssignSkills     string
+	agentAssignValidation string
 )
 
 var agentBundleCmd = &cobra.Command{
@@ -113,6 +119,16 @@ until assignment.`,
 	RunE: runAgentInitPrompt,
 }
 
+var agentAssignPromptCmd = &cobra.Command{
+	Use:   "assign-prompt",
+	Short: "Print an mcp-agent-mail assignment prompt for a background worker",
+	Long: `Print the assignment message a lead sends to an NTM background worker
+through mcp-agent-mail. The message names the bead, branch/worktree, file
+reservation manifest, skills to use, and validation evidence expected back.`,
+	Args: cobra.NoArgs,
+	RunE: runAgentAssignPrompt,
+}
+
 func init() {
 	rootCmd.AddCommand(agentCmd)
 	agentCmd.AddCommand(agentBundleCmd)
@@ -120,6 +136,7 @@ func init() {
 	agentCmd.AddCommand(agentNTMSpawnCmd)
 	agentCmd.AddCommand(agentEligibleCmd)
 	agentCmd.AddCommand(agentInitPromptCmd)
+	agentCmd.AddCommand(agentAssignPromptCmd)
 	agentBundleCmd.Flags().StringVar(&agentBundleRuntime, "runtime", "", "Target runtime: managed | codex-ntm | claude-ntm (required)")
 	agentBundleCmd.Flags().StringVar(&agentBundleSkills, "skills", "", "Comma-separated skill names (default: session-bootstrap,standards,validation,provenance)")
 	agentBundleCmd.Flags().StringVar(&agentBundleSandbox, "sandbox", "", "Sandbox placement: self-hosted | cloud")
@@ -139,6 +156,12 @@ func init() {
 
 	agentInitPromptCmd.Flags().StringVar(&agentInitRuntime, "runtime", "", "Runtime identity to include (claude-ntm|codex-ntm)")
 	agentInitPromptCmd.Flags().StringVar(&agentInitMailbox, "mailbox", "", "Expected mcp-agent-mail identity, if preassigned")
+
+	agentAssignPromptCmd.Flags().StringVar(&agentAssignBead, "bead", "", "Bead id to assign (required)")
+	agentAssignPromptCmd.Flags().StringVar(&agentAssignBranch, "branch", "", "Branch/worktree for the worker")
+	agentAssignPromptCmd.Flags().StringVar(&agentAssignFiles, "files", "", "Comma-separated file paths/globs to reserve")
+	agentAssignPromptCmd.Flags().StringVar(&agentAssignSkills, "skills", "", "Comma-separated skills the worker should use")
+	agentAssignPromptCmd.Flags().StringVar(&agentAssignValidation, "validation", "", "Validation command/evidence expected from the worker")
 }
 
 func runAgentBundle(cmd *cobra.Command, _ []string) error {
@@ -374,6 +397,15 @@ func runAgentInitPrompt(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
+func runAgentAssignPrompt(cmd *cobra.Command, _ []string) error {
+	cmd.SilenceUsage = true
+	if strings.TrimSpace(agentAssignBead) == "" {
+		return fmt.Errorf("--bead is required")
+	}
+	fmt.Fprint(cmd.OutOrStdout(), buildAgentAssignmentPrompt(agentAssignBead, agentAssignBranch, splitLabelsCSV(agentAssignFiles), splitLabelsCSV(agentAssignSkills), agentAssignValidation))
+	return nil
+}
+
 func buildAgentInitPrompt(runtimeName, mailbox string) string {
 	var sb strings.Builder
 	sb.WriteString("You are an AgentOps background agent running under NTM.\n\n")
@@ -398,6 +430,50 @@ Initialize, then wait for operator assignment:
 
 After initialization, respond with a one-line READY including your runtime and mailbox identity.
 `)
+	return sb.String()
+}
+
+func buildAgentAssignmentPrompt(bead, branch string, files, skills []string, validation string) string {
+	if strings.TrimSpace(branch) == "" {
+		branch = "cursor/<bead>-<slug>-<session>"
+	}
+	if len(skills) == 0 {
+		skills = []string{"research", "implement", "validation", "provenance"}
+	}
+	if strings.TrimSpace(validation) == "" {
+		validation = "run the smallest relevant tests plus `scripts/pre-push-gate.sh --fast` when code/docs changed"
+	}
+	var sb strings.Builder
+	sb.WriteString("BACKGROUND AGENT ASSIGNMENT\n\n")
+	sb.WriteString("Bead: ")
+	sb.WriteString(strings.TrimSpace(bead))
+	sb.WriteString("\n")
+	sb.WriteString("Branch/worktree: ")
+	sb.WriteString(branch)
+	sb.WriteString("\n")
+	sb.WriteString("Skills: ")
+	sb.WriteString(strings.Join(skills, ", "))
+	sb.WriteString("\n")
+	sb.WriteString("Validation: ")
+	sb.WriteString(validation)
+	sb.WriteString("\n\n")
+	sb.WriteString("Before editing:\n")
+	sb.WriteString("1. Confirm this assignment in the mcp-agent-mail thread.\n")
+	sb.WriteString("2. Reserve these file paths/globs through mcp-agent-mail:\n")
+	if len(files) == 0 {
+		sb.WriteString("   - <lead must provide file manifest before edits>\n")
+	} else {
+		for _, f := range files {
+			sb.WriteString("   - ")
+			sb.WriteString(f)
+			sb.WriteString("\n")
+		}
+	}
+	sb.WriteString("3. Create/use one worktree for this bead; do not edit the shared checkout.\n")
+	sb.WriteString("4. Use skills as the execution contract; do not run deprecated `ao rpi` / `ao evolve` wrappers.\n\n")
+	sb.WriteString("Closeout:\n")
+	sb.WriteString("- Reply with branch, commits, tests, provenance/evidence paths, and any scope escapes.\n")
+	sb.WriteString("- Do not self-merge.\n")
 	return sb.String()
 }
 

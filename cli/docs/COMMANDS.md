@@ -3806,6 +3806,25 @@ ao agent [command]
 
 **Subcommands:**
 
+#### `ao agent assign-prompt`
+
+Print the assignment message a lead sends to an NTM background worker
+
+```
+ao agent assign-prompt [flags]
+```
+
+**Flags:**
+
+```
+      --bead string         Bead id to assign (required)
+      --branch string       Branch/worktree for the worker
+      --files string        Comma-separated file paths/globs to reserve
+  -h, --help                help for assign-prompt
+      --skills string       Comma-separated skills the worker should use
+      --validation string   Validation command/evidence expected from the worker
+```
+
 #### `ao agent bundle`
 
 Stitch the selected AgentOps skills + the ao tool surface into an
