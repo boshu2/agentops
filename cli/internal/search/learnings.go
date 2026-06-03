@@ -10,10 +10,32 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/boshu2/agentops/cli/internal/wiki"
 )
+
+// searchStopwords are common English function words dropped from query tokens so a
+// verbose query (e.g. a whole task prompt) reduces to its salient terms. Without this,
+// MatchRatio (matched/total) collapses for long queries and ranking falls back to generic
+// freshness — the retrieval-relevance gap found by the corpus-delta W1c first signal
+// (ag-32gx): the task-relevant learning was buried under recency-ranked noise. Only true
+// function words are listed — domain words (gate, job, exit, ci, run, check) are kept.
+var searchStopwords = map[string]bool{
+	"the": true, "a": true, "an": true, "and": true, "or": true, "of": true, "to": true,
+	"in": true, "on": true, "for": true, "is": true, "it": true, "with": true, "by": true,
+	"at": true, "as": true, "be": true, "this": true, "that": true, "these": true, "those": true,
+	"if": true, "any": true, "all": true, "do": true, "does": true, "not": true, "no": true,
+	"so": true, "than": true, "then": true, "into": true, "its": true, "are": true, "was": true,
+	"were": true, "will": true, "would": true, "can": true, "could": true, "should": true,
+	"must": true, "may": true, "you": true, "your": true, "we": true, "they": true, "i": true,
+	"but": true, "also": true, "such": true, "when": true, "which": true, "what": true,
+	"who": true, "whom": true, "via": true, "per": true, "from": true, "up": true, "out": true,
+	"about": true, "over": true, "only": true, "each": true, "both": true, "just": true,
+	"here": true, "there": true, "has": true, "have": true, "had": true, "been": true,
+	"some": true, "more": true, "most": true, "other": true, "them": true, "their": true,
+}
 
 // ValidPhases is the set of canonical RPI phase values for source_phase.
 var ValidPhases = map[string]bool{
@@ -29,15 +51,23 @@ func SanitizeSourcePhase(phase string) string {
 	return ""
 }
 
-// QueryTokens splits a lowercased query into individual search tokens.
-// Tokens shorter than 2 characters are dropped to avoid noise.
+// QueryTokens splits a lowercased query into salient search tokens: it splits on any
+// non-alphanumeric rune (so "continue-on-error:true" -> continue/error/true), drops
+// stopwords and sub-2-char tokens, and deduplicates (order-preserving). Stopword removal
+// is what lets a verbose query (a whole task prompt) still rank the relevant learning
+// instead of collapsing to generic freshness (ag-32gx).
 func QueryTokens(queryLower string) []string {
-	words := strings.Fields(queryLower)
-	tokens := make([]string, 0, len(words))
-	for _, w := range words {
-		if len(w) >= 2 {
-			tokens = append(tokens, w)
+	fields := strings.FieldsFunc(queryLower, func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r)
+	})
+	seen := make(map[string]bool, len(fields))
+	tokens := make([]string, 0, len(fields))
+	for _, w := range fields {
+		if len(w) < 2 || searchStopwords[w] || seen[w] {
+			continue
 		}
+		seen[w] = true
+		tokens = append(tokens, w)
 	}
 	return tokens
 }
