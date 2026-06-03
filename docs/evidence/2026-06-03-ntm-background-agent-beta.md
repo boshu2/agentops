@@ -51,6 +51,36 @@ new NTM/background-agent CLI surfaces like a beta user and report bugs.
   - reservation id: `27`
   - result: granted, no conflicts, released, no repo modification
 
+## Real bead fan-out evidence
+
+After the smoke beta, two real background-agent-safe beads were created and
+assigned to live NTM workers through operator prompts:
+
+| Bead | Worker | Branch | Commit | Result |
+|---|---|---|---|---|
+| `ag-skb2` — JSON dry-run plan for `ntm-spawn` | Claude `JadeBeacon` | `cursor/ag-skb2-ntm-spawn-json-1944415608179314` | `614575d0` | PASS |
+| `ag-fhbd` — background agents operator guide | Codex `JadeElk` | `cursor/ag-fhbd-background-guide-1944415608179314` | `4dd21e7d3967252b307be90ee7af1d7726ccfe51` | PASS |
+
+Validation independently re-run by the lead:
+
+- `ag-skb2`: `cd cli && go test ./cmd/ao -run 'Agent|NTMSpawn|ManualCodex'`
+  passed; diff was limited to `cli/cmd/ao/agent.go`,
+  `cli/cmd/ao/agent_bundle_test.go`, and regenerated `cli/docs/COMMANDS.md`.
+- `ag-fhbd`: `scripts/pre-push-gate.sh --fast` passed; diff was limited to
+  `docs/background-agents.md` and `docs/documentation-index.md`.
+
+Agent-mail coordination evidence:
+
+- `JadeBeacon` reported file reservations for the `ag-skb2` implementation and
+  released/allowed them to expire after push.
+- `JadeElk` reserved `docs/background-agents.md` and
+  `docs/documentation-index.md`, reported completion on topic `ag-fhbd`, and
+  released reservation ids `28` and `29`.
+
+This proves the full loop beyond smoke testing: live background agent receives
+work, reserves files, creates an isolated worktree, implements, validates,
+commits, pushes, and reports provenance/handoff without self-merging.
+
 ## Remaining caveats
 
 - The original NTM-spawned Codex pane remains in `agentops-bg` and shows the
@@ -66,7 +96,8 @@ new NTM/background-agent CLI surfaces like a beta user and report bugs.
 
 Ready for a supervised beta of the NTM background-agent flow.
 
-The critical beta issues found by the live workers were fixed and retested. The
-remaining items are operational/deployment follow-ups: merge the branch, keep
-PATH `ao` current, and decide how to handle the stale failed Codex pane in the
-live `agentops-bg` session.
+The critical beta issues found by the live workers were fixed and retested, and
+the workers subsequently completed two real beads. The remaining items are
+operational/deployment follow-ups: merge the branches, keep PATH `ao` current,
+and decide how to handle the stale failed Codex pane in the live `agentops-bg`
+session.
