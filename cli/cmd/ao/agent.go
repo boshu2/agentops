@@ -39,10 +39,11 @@ var (
 
 	agentRosterJSON bool
 
-	agentNTMSpawnClaude  int
-	agentNTMSpawnCodex   int
-	agentNTMSpawnDir     string
-	agentNTMSpawnExecute bool
+	agentNTMSpawnClaude     int
+	agentNTMSpawnCodex      int
+	agentNTMSpawnCodexModel string
+	agentNTMSpawnDir        string
+	agentNTMSpawnExecute    bool
 
 	agentEligibleFile         string
 	agentEligibleEligibleOnly bool
@@ -114,6 +115,7 @@ func init() {
 
 	agentNTMSpawnCmd.Flags().IntVar(&agentNTMSpawnClaude, "claude", 1, "Number of Claude background agents")
 	agentNTMSpawnCmd.Flags().IntVar(&agentNTMSpawnCodex, "codex", 1, "Number of Codex background agents")
+	agentNTMSpawnCmd.Flags().StringVar(&agentNTMSpawnCodexModel, "codex-model", "", "Override Codex model by adding Codex panes manually after NTM spawn")
 	agentNTMSpawnCmd.Flags().StringVar(&agentNTMSpawnDir, "dir", ".", "Working directory for the NTM session")
 	agentNTMSpawnCmd.Flags().BoolVar(&agentNTMSpawnExecute, "execute", false, "Execute ntm instead of printing a dry-run command")
 
@@ -178,18 +180,41 @@ func runAgentRoster(cmd *cobra.Command, _ []string) error {
 
 func runAgentNTMSpawn(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
-	ntmArgs, err := buildNTMSpawnArgs(args[0], agentNTMSpawnClaude, agentNTMSpawnCodex, agentNTMSpawnDir, !agentNTMSpawnExecute)
+	manualCodex := strings.TrimSpace(agentNTMSpawnCodexModel) != "" && agentNTMSpawnCodex > 0
+	ntmCodex := agentNTMSpawnCodex
+	if manualCodex {
+		ntmCodex = 0
+	}
+	ntmArgs, err := buildNTMSpawnArgs(args[0], agentNTMSpawnClaude, ntmCodex, agentNTMSpawnDir, !agentNTMSpawnExecute)
 	if err != nil {
 		return err
 	}
 	if !agentNTMSpawnExecute {
 		fmt.Fprintf(cmd.OutOrStdout(), "ntm %s\n", strings.Join(ntmArgs, " "))
+		if manualCodex {
+			for _, tmuxArgs := range buildManualCodexPaneArgs(args[0], agentNTMSpawnCodex, agentNTMSpawnDir, agentNTMSpawnCodexModel) {
+				fmt.Fprintf(cmd.OutOrStdout(), "tmux %s\n", strings.Join(tmuxArgs, " "))
+			}
+		}
 		return nil
 	}
 	c := exec.CommandContext(cmd.Context(), "ntm", ntmArgs...)
 	c.Stdout = cmd.OutOrStdout()
 	c.Stderr = cmd.ErrOrStderr()
-	return c.Run()
+	if err := c.Run(); err != nil {
+		return err
+	}
+	if manualCodex {
+		for _, tmuxArgs := range buildManualCodexPaneArgs(args[0], agentNTMSpawnCodex, agentNTMSpawnDir, agentNTMSpawnCodexModel) {
+			tmuxCmd := exec.CommandContext(cmd.Context(), "tmux", tmuxArgs...)
+			tmuxCmd.Stdout = cmd.OutOrStdout()
+			tmuxCmd.Stderr = cmd.ErrOrStderr()
+			if err := tmuxCmd.Run(); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func buildNTMSpawnArgs(session string, claudeCount, codexCount int, dir string, dryRun bool) ([]string, error) {
@@ -215,6 +240,29 @@ func buildNTMSpawnArgs(session string, claudeCount, codexCount int, dir string, 
 		out = append(out, "--dry-run")
 	}
 	return out, nil
+}
+
+func buildManualCodexPaneArgs(session string, count int, dir, model string) [][]string {
+	if count <= 0 {
+		return nil
+	}
+	if strings.TrimSpace(dir) == "" {
+		dir = "."
+	}
+	if strings.TrimSpace(model) == "" {
+		model = "gpt-5.5"
+	}
+	cmd := "codex --dangerously-bypass-approvals-and-sandbox -m " + shellQuoteArg(model) +
+		" -c model_reasoning_effort='xhigh' -c model_reasoning_summary_format=experimental"
+	out := make([][]string, 0, count)
+	for i := 0; i < count; i++ {
+		out = append(out, []string{"split-window", "-t", session + ":", "-c", dir, cmd})
+	}
+	return out
+}
+
+func shellQuoteArg(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "'\\''") + "'"
 }
 
 func runAgentEligible(cmd *cobra.Command, _ []string) error {

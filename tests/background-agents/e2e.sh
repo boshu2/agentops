@@ -110,14 +110,19 @@ fi
 e2e_log_phase "spawn-dry-run"
 session_name="${AGENTOPS_BACKGROUND_E2E_SESSION:-agentops-bg-e2e}"
 if [[ "${AGENTOPS_BACKGROUND_E2E_EXECUTE:-0}" == "1" ]]; then
-  spawn_json="$(run_ao agent ntm-spawn "$session_name" --dir "$REPO_ROOT" --claude 1 --codex 1 --execute)"
+  spawn_json="$(run_ao agent ntm-spawn "$session_name" --dir "$REPO_ROOT" --claude 1 --codex 1 --codex-model "${AGENTOPS_BACKGROUND_E2E_CODEX_MODEL:-gpt-5.5}" --execute)"
+  if jq -e '.success == true' >/dev/null <<<"$spawn_json"; then
+    e2e_log_pass "ntm spawn command succeeded" "$spawn_json"
+  else
+    e2e_log_fail "ntm spawn command failed" "$spawn_json"
+    exit 1
+  fi
 else
-  spawn_json="$(ntm --robot-spawn="$session_name" --spawn-cc=1 --spawn-cod=1 --spawn-dir="$REPO_ROOT" --dry-run)"
-fi
-
-if jq -e '.success == true' >/dev/null <<<"$spawn_json"; then
-  e2e_log_pass "ntm spawn command succeeded" "$spawn_json"
-else
-  e2e_log_fail "ntm spawn command failed" "$spawn_json"
-  exit 1
+  spawn_plan="$(run_ao agent ntm-spawn "$session_name" --dir "$REPO_ROOT" --claude 1 --codex 1 --codex-model "${AGENTOPS_BACKGROUND_E2E_CODEX_MODEL:-gpt-5.5}")"
+  if grep -Fq -- "--robot-spawn=$session_name" <<<"$spawn_plan" && grep -Fq -- "tmux split-window" <<<"$spawn_plan"; then
+    e2e_log_pass "ntm spawn dry-run rendered" "$(jq -nc --arg plan "$spawn_plan" '{plan:$plan}')"
+  else
+    e2e_log_fail "ntm spawn dry-run missing expected commands" "$(jq -nc --arg plan "$spawn_plan" '{plan:$plan}')"
+    exit 1
+  fi
 fi
