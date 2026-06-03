@@ -25,7 +25,7 @@ from GitHub Actions.
 | Reference substrate (NTM + MCP + managed-agents) | Out-of-session orchestration (swarm + worker agents) for unattended runs |
 | `scripts/nightly-evolution.sh` | Repo-owned run contract and digest writer |
 | `/dream` skill | Private Dream/wiki knowledge compounding (in session; dispatched out of session via the substrate) |
-| `ao rpi` / `ao evolve` | Code-mutating implementation cycles, dispatched as one invocable unit |
+| `/rpi` / `/evolve` skills | Code-mutating implementation cycles, dispatched as one unit (an agent runs the skill) |
 | Claude Code | Headless worker/reviewer via local CLI or GitHub companion action |
 | Codex | Headless worker/reviewer via `codex exec` or local AgentOps runtime |
 | Mt. Olympus | Sovereign full-custom runtime (keeps its own Rust daemon) — alternate out-of-session driver |
@@ -149,7 +149,7 @@ Use Claude and Codex differently until eval evidence says mixed mode is stable:
   burden.
 - CI/GitHub companion: use Claude Code GitHub Actions for repo-visible reviews
   or reports, not private `.agents` mutation.
-- Substrate: dispatch whole `ao rpi` / `ao evolve` loops as one invocable unit
+- Substrate: dispatch whole `/rpi` / `/evolve` skill loops as one unit (an agent runs the skill)
   only after provider readiness and replay are proven.
 
 ## Safety Controls

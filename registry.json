@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-03T00:03:21Z",
+  "generated_at": "2026-06-03T12:02:11Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
@@ -988,8 +988,7 @@
         "driven_by_skills": [
           "autodev",
           "evolve",
-          "shared",
-          "using-agentops"
+          "shared"
         ]
       },
       {
@@ -1323,13 +1322,11 @@
         "purpose": "RPI lifecycle automation",
         "bounded_context": "BC3",
         "driven_by_skills": [
-          "agent-native",
           "autodev",
           "domain",
           "shared",
           "standards",
-          "swarm",
-          "using-agentops"
+          "swarm"
         ]
       },
       {
@@ -1557,7 +1554,6 @@
         "ao goals",
         "ao inject",
         "ao mcp serve",
-        "ao rpi",
         "ao session bootstrap",
         "ao validate"
       ],
@@ -3278,13 +3274,11 @@
         "ao agents inspect",
         "ao codex start",
         "ao codex stop",
-        "ao evolve",
         "ao flywheel close-loop",
         "ao forge transcript",
         "ao inject",
         "ao lookup",
         "ao mcp serve",
-        "ao rpi",
         "ao search"
       ],
       "path": "skills/using-agentops/",
@@ -3913,8 +3907,7 @@
       "driven_by_skills": [
         "autodev",
         "evolve",
-        "shared",
-        "using-agentops"
+        "shared"
       ],
       "flags": [
         "--auto-clean",
@@ -4714,13 +4707,11 @@
       "purpose": "RPI lifecycle automation",
       "status": "active",
       "driven_by_skills": [
-        "agent-native",
         "autodev",
         "domain",
         "shared",
         "standards",
-        "swarm",
-        "using-agentops"
+        "swarm"
       ],
       "flags": [
         "--config",

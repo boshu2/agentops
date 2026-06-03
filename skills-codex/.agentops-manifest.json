@@ -673,7 +673,7 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "1de3afb8e53caa52b33bad2b2a77d46201728c31b2762ebf41a8c94bf0b77c34",
+      "source_hash": "ab561f911b1b57c49bf7ba8a96ce0e8fed1a673149c97eb34e31d90c700c3060",
       "generated_hash": "314b9cc76584601464e2bf70c1356f8e8a7f6d8c557c29e0e2abf6c45cffa51f"
     },
     {
@@ -793,7 +793,7 @@
     {
       "name": "domain",
       "source_skill": "skills/domain",
-      "source_hash": "bfc7fa6664f6954c9ae891c889580ee4954944838a0e80da5c451797eab826f6",
+      "source_hash": "7dc9ac3269b8ede42329a33bf371589d0ba19e83d0d2c61fda8d06512fe5e397",
       "generated_hash": "5de534737803c76fab3ad06e1a47dba85eb8f631a159cc6157ce4f932c2e99e4"
     },
     {
@@ -1129,13 +1129,13 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "ec3f75bd54588f260393006552ca7ad8104bec8e11c27ca4db80134a33b1ef65",
+      "source_hash": "59d72c15344ff99f314bb6aee6b28eb1de99e423cf410a2afbb6214e2e34cdfb",
       "generated_hash": "93c23a804e321d4dbdf86a31fe7d2165632d159b426395c5040f0a1fdb84fe0c"
     },
     {
       "name": "using-ntm",
       "source_skill": "skills/using-ntm",
-      "source_hash": "ac30d1684cde02b76bb081e4df4ce80c47324b6db49b7440c0742b47fc2475b7",
+      "source_hash": "7748b832005d0f63a763d851879ddd8df345d9d039fa33455a2035c04e64f3de",
       "generated_hash": "6fa63809ed9265bb70107df030fbedfa1bb363fc89a21637841f873a24ea61dc"
     },
     {

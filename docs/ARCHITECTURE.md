@@ -435,8 +435,10 @@ For full flow orchestration and headless automation, skills integrate with the
 | `/crank` | `ao rpi phased`, `ao ratchet`, `ao flywheel status` |
 
 Dream's in-tree out-of-session engine was retired (soc-2rtm0): `/dream` is now a
-retirement pointer, and scheduled, between-session compounding runs via Gas City
-(the reference substrate) rather than an AgentOps-owned automation surface.
+retirement pointer, and scheduled, between-session compounding runs on the
+out-of-session substrate (an NTM tmux swarm, MCP via `ao mcp serve`, or
+managed-agents via `ao agent` — AgentOps adopts, does not own; see
+[docs/3.0.md](3.0.md)) rather than an AgentOps-owned automation surface.
 
 ---
 

@@ -14,7 +14,7 @@ AgentOps 3.0 ships **no** always-on daemon, scheduler, or overnight runner — t
 
 ## Swarm-driven dispatch (honest current state)
 
-On the reference substrate, dispatch is **swarm-driven**: an NTM tmux swarm (or a lead agent) runs `bd ready`, then dispatches the next bead to a worker that runs `ao rpi <bead>`; a managed-agent driver (`ao agent`) or cron handles scheduled maintenance, and `ao mcp serve` exposes the `ao` tool surface across the seam. The substrate dispatches a whole loop as one invocable unit — it never re-expresses the rpi tick as substrate-side steps.
+On the reference substrate, dispatch is **swarm-driven**: an NTM tmux swarm (or a lead agent) runs `bd ready`, then dispatches the next bead to a worker agent that runs the `/rpi` skill; a managed-agent driver (`ao agent`) or cron handles scheduled maintenance, and `ao mcp serve` exposes the `ao` tool surface across the seam. The substrate dispatches a whole loop as one unit (an agent running the skill) — it never re-expresses the rpi tick as substrate-side steps.
 
 ## When to use
 
