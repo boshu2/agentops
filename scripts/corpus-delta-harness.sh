@@ -84,8 +84,8 @@ trap 'rm -rf "$WORK"' EXIT
 
 # build_arm_sandbox <variant> <corpus_root> -> echoes "<home> <workspace> <agents_dir>"
 build_arm_sandbox() {
-  local variant="$1" corpus_root="$2" sb home ws agents
-  sb="$(mktemp -d -p "$WORK")"
+  local variant="$1" corpus_root="$2" sb home ws agents mem_target
+  sb="$(mktemp -d "$WORK/corpus-delta.XXXXXX")"
   home="$sb/home"; ws="$sb/ws"; agents="$ws/.agents"
   mkdir -p "$home/.claude" "$ws" "$agents"
   # auth/settings base (preserved in BOTH arms; never carries context)
@@ -101,8 +101,9 @@ build_arm_sandbox() {
     # user-global surface + auto-memory
     if [[ -f "$SRC_USER_CLAUDE" ]]; then cp "$SRC_USER_CLAUDE" "$home/.claude/CLAUDE.md"; fi
     if [[ -d "$SRC_MEM_DIR" ]]; then
-      mkdir -p "$home/.claude/projects/_mem/memory"
-      cp -r "$SRC_MEM_DIR/." "$home/.claude/projects/_mem/memory/" 2>/dev/null || true
+      mem_target="$home/.claude/projects/${ws//\//-}/memory"
+      mkdir -p "$mem_target"
+      cp -r "$SRC_MEM_DIR/." "$mem_target/" 2>/dev/null || true
     fi
     # organic .agents corpus
     if [[ -d "$corpus_root" ]]; then cp -r "$corpus_root/." "$agents/" 2>/dev/null || true; fi
