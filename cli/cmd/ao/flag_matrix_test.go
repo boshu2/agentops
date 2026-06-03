@@ -100,11 +100,19 @@ func TestFlagMatrix_QuietMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd := exec.Command(bin, tt.args...)
+			args := tt.args
+			// ag-jfzs: `ao memory sync` defaults to writing the repo-root MEMORY.md. Running it
+			// against the real repo root under -race mutates a shared file and flakes. Redirect the
+			// write to a per-test temp file so the subprocess stays isolated while still exercising
+			// the real session-read path from the repo root.
+			if tt.name == "memory-sync" {
+				args = append(append([]string{}, tt.args...), "--output-file", filepath.Join(t.TempDir(), "MEMORY.md"))
+			}
+			cmd := exec.Command(bin, args...)
 			cmd.Dir = findRepoRoot(t)
 			out, err := cmd.CombinedOutput()
 			if err != nil {
-				t.Fatalf("command %v failed (exit error: %v):\n%s", tt.args, err, string(out))
+				t.Fatalf("command %v failed (exit error: %v):\n%s", args, err, string(out))
 			}
 			// Quiet mode should succeed — output may be empty or minimal, both are fine.
 			// We only assert exit code 0 (already checked via err == nil).
