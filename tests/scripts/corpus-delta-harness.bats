@@ -66,3 +66,64 @@ STUB_EOF
   run env CORPUS_DELTA_RUNNER="$STUB" "$HARNESS" --seeds 1
   [ "$status" -eq 2 ]
 }
+
+# --- ag-5apc: always-loaded-root contamination self-test ---------------------------
+# Proves the off arm cannot reach knowledge from the always-loaded roots (repo CLAUDE.md,
+# .claude/rules/*, user-global ~/.claude/CLAUDE.md, auto-memory). A CONTAM stub passes iff
+# it finds a MARKER anywhere in its sandbox (HOME + workspace); the harness seeds the
+# marker into FIXTURE sources for the always-loaded roots. on -> sees marker; off -> must not.
+setup_contam() {
+  MK="CORPUS_DELTA_MARKER_a5pc"
+  SRCREPO="$TMP/srcrepo"; mkdir -p "$SRCREPO/.claude/rules"
+  echo "$MK project-claude" > "$SRCREPO/CLAUDE.md"
+  echo "$MK rules" > "$SRCREPO/.claude/rules/go.md"
+  USERCLAUDE="$TMP/user-CLAUDE.md"; echo "$MK user-global" > "$USERCLAUDE"
+  MEMDIR="$TMP/mem"; mkdir -p "$MEMDIR"; echo "$MK memory" > "$MEMDIR/MEMORY.md"
+  # CONTAM stub: greps its whole sandbox (HOME + workspace) for the marker.
+  CSTUB="$TMP/contam-stub.sh"
+  cat > "$CSTUB" <<CSTUB_EOF
+#!/usr/bin/env bash
+if grep -rqsl "$MK" "\${HOME}" "\${CORPUS_DELTA_WORKSPACE:-/nonexistent}" 2>/dev/null; then
+  echo '{"pass": true, "score": 1, "total": 1}'
+else
+  echo '{"pass": false, "score": 0, "total": 1}'
+fi
+CSTUB_EOF
+  chmod +x "$CSTUB"
+}
+
+@test "always-loaded marker reaches context_on but NOT context_off (delta=1)" {
+  setup_contam
+  run env CORPUS_DELTA_RUNNER="$CSTUB" \
+    CORPUS_DELTA_REPO_ROOT="$SRCREPO" \
+    CORPUS_DELTA_USER_CLAUDE="$USERCLAUDE" \
+    CORPUS_DELTA_MEM_DIR="$MEMDIR" \
+    "$HARNESS" --task demo --seeds 2 --corpus "$CORPUS" --out "$TMP/sc.json"
+  [ "$status" -eq 0 ]
+  # off arm provably blind to all always-loaded roots; on arm sees them.
+  jq -e '.context_off.aggregate_score == 0' "$TMP/sc.json" >/dev/null
+  jq -e '.context_on.aggregate_score == 1' "$TMP/sc.json" >/dev/null
+  jq -e '.aggregate_delta == 1' "$TMP/sc.json" >/dev/null
+}
+
+@test "HOME_BASE auth survives both arms while context is stripped from off" {
+  setup_contam
+  BASE="$TMP/homebase"; mkdir -p "$BASE"
+  echo '{"token":"x"}' > "$BASE/.credentials.json"   # auth-like file, no marker
+  echo "$MK leaked-via-base" > "$BASE/CLAUDE.md"      # context the base must NOT carry into off
+  # Stub: pass iff it sees the AUTH file (proves base copied into both arms).
+  ASTUB="$TMP/auth-stub.sh"
+  printf '#!/usr/bin/env bash\n[ -f "${HOME}/.claude/.credentials.json" ] && echo '"'"'{"pass":true}'"'"' || echo '"'"'{"pass":false}'"'"'\n' > "$ASTUB"
+  chmod +x "$ASTUB"
+  run env CORPUS_DELTA_RUNNER="$ASTUB" CORPUS_DELTA_HOME_BASE="$BASE" \
+    "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS" --out "$TMP/sc.json"
+  [ "$status" -eq 0 ]
+  # auth present in BOTH arms -> both pass -> delta 0 (auth is runtime, not context)
+  jq -e '.context_off.aggregate_score == 1' "$TMP/sc.json" >/dev/null
+  jq -e '.context_on.aggregate_score == 1' "$TMP/sc.json" >/dev/null
+  # and the base-carried CLAUDE.md marker must NOT survive into the off arm
+  run env CORPUS_DELTA_RUNNER="$CSTUB" CORPUS_DELTA_HOME_BASE="$BASE" \
+    CORPUS_DELTA_REPO_ROOT="$TMP/none" CORPUS_DELTA_USER_CLAUDE="$TMP/none" CORPUS_DELTA_MEM_DIR="$TMP/none" \
+    "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS" --out "$TMP/sc2.json"
+  jq -e '.context_off.aggregate_score == 0' "$TMP/sc2.json" >/dev/null
+}
