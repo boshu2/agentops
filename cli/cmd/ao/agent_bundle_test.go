@@ -238,6 +238,19 @@ func TestBuildNTMSpawnArgs_DefaultDryRun(t *testing.T) {
 	}
 }
 
+func TestBuildManualCodexPaneArgs(t *testing.T) {
+	got := buildManualCodexPaneArgs("agentops-bg", 1, "/repo", "gpt-5.5")
+	if len(got) != 1 {
+		t.Fatalf("len = %d, want 1", len(got))
+	}
+	joined := strings.Join(got[0], " ")
+	for _, want := range []string{"split-window", "-t agentops-bg:", "-c /repo", "codex", "-m 'gpt-5.5'"} {
+		if !strings.Contains(joined, want) {
+			t.Fatalf("manual codex args %q missing %q", joined, want)
+		}
+	}
+}
+
 func TestBuildNTMSpawnArgs_RequiresAtLeastOneAgent(t *testing.T) {
 	if _, err := buildNTMSpawnArgs("agentops-bg", 0, 0, ".", true); err == nil {
 		t.Fatal("expected error when both agent counts are zero")

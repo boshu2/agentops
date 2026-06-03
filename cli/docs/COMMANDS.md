@@ -3852,11 +3852,12 @@ ao agent ntm-spawn <session> [flags]
 **Flags:**
 
 ```
-      --claude int   Number of Claude background agents (default 1)
-      --codex int    Number of Codex background agents (default 1)
-      --dir string   Working directory for the NTM session (default ".")
-      --execute      Execute ntm instead of printing a dry-run command
-  -h, --help         help for ntm-spawn
+      --claude int           Number of Claude background agents (default 1)
+      --codex int            Number of Codex background agents (default 1)
+      --codex-model string   Override Codex model by adding Codex panes manually after NTM spawn
+      --dir string           Working directory for the NTM session (default ".")
+      --execute              Execute ntm instead of printing a dry-run command
+  -h, --help                 help for ntm-spawn
 ```
 
 #### `ao agent roster`
