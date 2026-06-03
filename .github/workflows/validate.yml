@@ -1452,6 +1452,12 @@ jobs:
           chmod +x scripts/check-test-count-regression.sh
           ./scripts/check-test-count-regression.sh
 
+      - name: Test-isolation ratchet (scripts/check-test-isolation.sh)
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/check-test-isolation.sh
+          ./scripts/check-test-isolation.sh
+
       - name: Check for stale tests (advisory)
         if: needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
         continue-on-error: true
