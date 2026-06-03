@@ -108,6 +108,7 @@ Bridge / framing docs:
 ## Evidence
 
 - [NTM Background-Agent Beta Report](evidence/2026-06-03-ntm-background-agent-beta.md) — Live beta findings from Claude/Codex NTM background agents (`JadeBeacon`, `JadeElk`), fixes, and readiness verdict for the background-agent CLI slice.
+- [NTM Background-Agent Loop Post-mortem](evidence/2026-06-03-ntm-background-agent-postmortem.md) — Post-mortem from the first real-bead fan-out, including product integration gaps and follow-up beads.
 
 ### Meta-Observer
 
