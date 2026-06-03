@@ -93,6 +93,7 @@ Bridge / framing docs:
 
 - [Agent Workflow Reference](agent-workflow-reference.md) — On-demand deep detail behind the thin `CLAUDE.md` router: building the CLI, key scripts, CI-validation rules, testing rules, release pipeline, `ao goals` surface
 - [Workflow Guide](workflows/README.md) — Decision matrix for choosing the right workflow
+- [Background Agents Operator Guide](background-agents.md) — Operator guide for NTM-supervised Claude/Codex background agents, mcp-agent-mail coordination, `ao agent` commands, eligibility, dry-run safety, PATH deployment checks, and beta evidence
 - [Complete Cycle](workflows/complete-cycle.md) — Full Research, Plan, Implement, Validate, Learn workflow
 - [Session Lifecycle](workflows/session-lifecycle.md) — Runtime-aware session start and closeout across hook-capable and Codex hookless runtimes
 - [Quick Fix](workflows/quick-fix.md) — Fast implementation for simple, low-risk changes
