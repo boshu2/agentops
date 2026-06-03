@@ -65,16 +65,24 @@ func ApplyMarkdownLine(line string, meta *ArtifactMeta) {
 		meta.Maturity = strings.ToLower(val)
 	}
 	if val, ok := ParseMarkdownField(line, "Utility"); ok {
-		//nolint:errcheck // parsing optional metadata, zero value is acceptable default
-		fmt.Sscanf(val, "%f", &meta.Utility) // #nosec G104
+		// ag-chvc: assign only on a clean parse; a malformed value keeps the prior
+		// default rather than silently corrupting it to zero.
+		var f float64
+		if _, err := fmt.Sscanf(val, "%f", &f); err == nil {
+			meta.Utility = f
+		}
 	}
 	if val, ok := ParseMarkdownField(line, "Confidence"); ok {
-		//nolint:errcheck // parsing optional metadata, zero value is acceptable default
-		fmt.Sscanf(val, "%f", &meta.Confidence) // #nosec G104
+		var f float64
+		if _, err := fmt.Sscanf(val, "%f", &f); err == nil {
+			meta.Confidence = f
+		}
 	}
 	if val, ok := ParseMarkdownField(line, "Schema Version"); ok {
-		//nolint:errcheck // parsing optional metadata, zero value is acceptable default
-		fmt.Sscanf(val, "%d", &meta.SchemaVersion) // #nosec G104
+		var n int
+		if _, err := fmt.Sscanf(val, "%d", &n); err == nil {
+			meta.SchemaVersion = n
+		}
 	}
 	if val, ok := ParseMarkdownField(line, "Status"); ok {
 		if strings.ToLower(val) == "tempered" || strings.ToLower(val) == "locked" {
