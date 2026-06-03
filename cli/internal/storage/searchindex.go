@@ -244,8 +244,11 @@ func ParseMemRLMetadata(content string) (utility float64, maturity string) {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "**Utility**:") || strings.HasPrefix(line, "- **Utility**:") {
 			utilStr := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(line, "**Utility**:"), "- **Utility**:"))
-			//nolint:errcheck
-			fmt.Sscanf(utilStr, "%f", &utility) // #nosec G104
+			// ag-chvc: assign only on a clean parse; a malformed value keeps the default.
+			var f float64
+			if _, err := fmt.Sscanf(utilStr, "%f", &f); err == nil {
+				utility = f
+			}
 		}
 		if strings.HasPrefix(line, "**Maturity**:") || strings.HasPrefix(line, "- **Maturity**:") {
 			maturity = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(line, "**Maturity**:"), "- **Maturity**:"))

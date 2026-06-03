@@ -114,6 +114,33 @@ func TestApplyMarkdownLine_StatusLocked(t *testing.T) {
 	}
 }
 
+// ag-chvc: a malformed numeric field must NOT silently overwrite the prior value
+// with zero (the old fmt.Sscanf //#nosec G104 path corrupted decay-rank inputs).
+func TestApplyMarkdownLine_MalformedUtilityKeepsDefault(t *testing.T) {
+	meta := ArtifactMeta{Utility: 0.9, Confidence: 0.8, SchemaVersion: 2}
+	ApplyMarkdownLine("**Utility**: notanumber", &meta)
+	ApplyMarkdownLine("**Confidence**: ", &meta)
+	ApplyMarkdownLine("**Schema Version**: bogus", &meta)
+	if meta.Utility != 0.9 {
+		t.Errorf("malformed Utility should keep default 0.9, got %v", meta.Utility)
+	}
+	if meta.Confidence != 0.8 {
+		t.Errorf("empty Confidence should keep default 0.8, got %v", meta.Confidence)
+	}
+	if meta.SchemaVersion != 2 {
+		t.Errorf("malformed Schema Version should keep default 2, got %v", meta.SchemaVersion)
+	}
+}
+
+// A well-formed value is still parsed and assigned.
+func TestApplyMarkdownLine_ValidUtilityParses(t *testing.T) {
+	meta := ArtifactMeta{}
+	ApplyMarkdownLine("**Utility**: 0.5", &meta)
+	if meta.Utility != 0.5 {
+		t.Errorf("valid Utility should parse to 0.5, got %v", meta.Utility)
+	}
+}
+
 func TestValidateArtifactMeta_MissingID(t *testing.T) {
 	meta := ArtifactMeta{Maturity: "established", Utility: 1.0, FeedbackCount: 5, SchemaVersion: 1}
 	issues, _ := ValidateArtifactMeta(meta, "candidate", 0.5, 3)

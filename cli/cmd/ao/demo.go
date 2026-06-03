@@ -218,8 +218,10 @@ Press Enter to continue...`)
 
 	fmt.Println("\n━━━ STEP 1: Creating the operating workspace ━━━")
 	for _, dir := range dirs {
-		//nolint:errcheck // demo code, errors shown implicitly by missing output
-		os.MkdirAll(dir, 0750) // #nosec G104
+		if err := os.MkdirAll(dir, 0750); err != nil { // ag-chvc: don't claim ✓ on a failed mkdir
+			fmt.Fprintf(os.Stderr, "  ⚠ could not create %s: %v\n", dir, err)
+			continue
+		}
 		fmt.Printf("  ✓ Created %s\n", dir)
 	}
 
@@ -246,9 +248,11 @@ and operational visibility.
 - Risk list for duplicate charge and stuck checkout states
 - Consolidated council verdict
 `
-	//nolint:errcheck // demo code, errors shown implicitly by missing output
-	os.WriteFile(packetPath, []byte(packetContent), 0600) // #nosec G104
-	fmt.Printf("  ✓ Created domain/practice packet: %s\n", packetPath)
+	if err := os.WriteFile(packetPath, []byte(packetContent), 0600); err != nil { // ag-chvc
+		fmt.Fprintf(os.Stderr, "  ⚠ could not write %s: %v\n", packetPath, err)
+	} else {
+		fmt.Printf("  ✓ Created domain/practice packet: %s\n", packetPath)
+	}
 
 	briefingPath := filepath.Join(demoDir, ".agents/rpi/briefing-current.md")
 	briefingContent := `# Context Briefing: Validate Checkout Retry Plan
@@ -266,9 +270,11 @@ Validate the implementation plan before code changes begin.
 Run a mixed-model council and require a consolidated PASS/WARN/BLOCK verdict.
 
 `
-	//nolint:errcheck // demo code, errors shown implicitly by missing output
-	os.WriteFile(briefingPath, []byte(briefingContent), 0600) // #nosec G104
-	fmt.Printf("  ✓ Created context briefing: %s\n", briefingPath)
+	if err := os.WriteFile(briefingPath, []byte(briefingContent), 0600); err != nil { // ag-chvc
+		fmt.Fprintf(os.Stderr, "  ⚠ could not write %s: %v\n", briefingPath, err)
+	} else {
+		fmt.Printf("  ✓ Created context briefing: %s\n", briefingPath)
+	}
 
 	verdictPath := filepath.Join(demoDir, ".agents/council/demo-run/verdict.md")
 	verdictContent := `# Council Verdict: Checkout Retry Plan
@@ -286,9 +292,11 @@ Proceed after adding jitter bounds and duplicate-submit tests.
 - Add idempotency regression tests
 - Capture post-merge learning for future checkout work
 `
-	//nolint:errcheck // demo code, errors shown implicitly by missing output
-	os.WriteFile(verdictPath, []byte(verdictContent), 0600) // #nosec G104
-	fmt.Printf("  ✓ Created council verdict: %s\n", verdictPath)
+	if err := os.WriteFile(verdictPath, []byte(verdictContent), 0600); err != nil { // ag-chvc
+		fmt.Fprintf(os.Stderr, "  ⚠ could not write %s: %v\n", verdictPath, err)
+	} else {
+		fmt.Printf("  ✓ Created council verdict: %s\n", verdictPath)
+	}
 
 	schedulePath := filepath.Join(demoDir, ".agents/schedules/nightly-dream.yaml")
 	scheduleContent := `version: 1
@@ -297,9 +305,11 @@ schedules:
     cron: "0 2 * * *"
     command: "ao overnight run --goal 'find stale checkout learnings'"
 `
-	//nolint:errcheck // demo code, errors shown implicitly by missing output
-	os.WriteFile(schedulePath, []byte(scheduleContent), 0600) // #nosec G104
-	fmt.Printf("  ✓ Created optional schedule: %s\n", schedulePath)
+	if err := os.WriteFile(schedulePath, []byte(scheduleContent), 0600); err != nil { // ag-chvc
+		fmt.Fprintf(os.Stderr, "  ⚠ could not write %s: %v\n", schedulePath, err)
+	} else {
+		fmt.Printf("  ✓ Created optional schedule: %s\n", schedulePath)
+	}
 
 	fmt.Println("\n━━━ STEP 2: The Product Path ━━━")
 	fmt.Print(`
