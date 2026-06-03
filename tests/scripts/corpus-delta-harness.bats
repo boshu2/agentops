@@ -116,6 +116,30 @@ CSTUB_EOF
   jq -e '.aggregate_delta == 1' "$TMP/sc.json" >/dev/null
 }
 
+@test "auto-memory is copied under the sandbox workspace project slug" {
+  setup_contam
+  MSTUB="$TMP/memory-stub.sh"
+  cat > "$MSTUB" <<'MSTUB_EOF'
+#!/usr/bin/env bash
+project_slug="${CORPUS_DELTA_WORKSPACE//\//-}"
+mem_path="${HOME}/.claude/projects/${project_slug}/memory/MEMORY.md"
+if [[ -f "$mem_path" ]]; then
+  echo '{"pass": true, "score": 1, "total": 1}'
+else
+  echo '{"pass": false, "score": 0, "total": 1}'
+fi
+MSTUB_EOF
+  chmod +x "$MSTUB"
+  run env CORPUS_DELTA_RUNNER="$MSTUB" \
+    CORPUS_DELTA_REPO_ROOT="$TMP/none" \
+    CORPUS_DELTA_USER_CLAUDE="$TMP/none" \
+    CORPUS_DELTA_MEM_DIR="$MEMDIR" \
+    "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS" --out "$TMP/sc.json"
+  [ "$status" -eq 0 ]
+  jq -e '.context_off.aggregate_score == 0' "$TMP/sc.json" >/dev/null
+  jq -e '.context_on.aggregate_score == 1' "$TMP/sc.json" >/dev/null
+}
+
 @test "HOME_BASE auth survives both arms while context is stripped from off" {
   setup_contam
   BASE="$TMP/homebase"; mkdir -p "$BASE"
