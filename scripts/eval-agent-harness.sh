@@ -71,18 +71,23 @@ fi
 
 build_prompt() {
   local workspace="$1"
+  local corpus_hint=""
+
+  if [[ -n "${AO_AGENTS_DIR:-}" ]]; then
+    corpus_hint=" AgentOps corpus root for this run: ${AO_AGENTS_DIR}. Use only that corpus path for prior AgentOps context; if it is empty, proceed without prior corpus context."
+  fi
 
   if [[ -n "$PROMPT" ]]; then
-    echo "$PROMPT"
+    echo "${PROMPT}${corpus_hint}"
     return
   fi
 
   if [[ "$GENERIC_PROMPT" == "false" && -f "$TASK_DIR/prompt.md" ]]; then
     local task_prompt
     task_prompt="$(cat "$TASK_DIR/prompt.md")"
-    echo "You are in a software project at $workspace. $task_prompt"
+    echo "You are in a software project at $workspace.${corpus_hint} $task_prompt"
   else
-    echo "You are in a software project at $workspace. There are failing tests or issues. Fix the code so all tests pass and the project builds cleanly. Do not explain — just fix the files."
+    echo "You are in a software project at $workspace.${corpus_hint} There are failing tests or issues. Fix the code so all tests pass and the project builds cleanly. Do not explain — just fix the files."
   fi
 }
 
