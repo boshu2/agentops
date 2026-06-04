@@ -37,7 +37,7 @@ type RPIC2Event struct {
 // (nil, nil). The path is computed inline so this reader carries no dependency
 // on the rpi command surface (mirrors internal/rpi.RPIRunRegistryDir).
 func loadRPIC2Events(root, runID string) ([]RPIC2Event, error) {
-	if root == "" || runID == "" {
+	if runID == "" {
 		return nil, nil
 	}
 	path := filepath.Join(root, ".agents", "rpi", "runs", runID, "events.jsonl")
