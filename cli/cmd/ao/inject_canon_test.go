@@ -111,3 +111,50 @@ func TestCollectLearnings_CanonAbsentDirNoop(t *testing.T) {
 		t.Fatalf("expected 1 non-canon learning, got %d (canon=%v)", len(learnings), len(learnings) > 0 && learnings[0].Canon)
 	}
 }
+
+func TestCollectLearnings_ComputesAlwaysOnlyForEstablishedCanon(t *testing.T) {
+	root := t.TempDir()
+	localDir := filepath.Join(root, ".agents", "learnings")
+	if err := os.MkdirAll(localDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	local := "---\nutility: 0.8\nmaturity: established\nreach: always\n---\n# Local Established\n\nLocal established content tries to self-author always reach without canon.\n"
+	if err := os.WriteFile(filepath.Join(localDir, "local.md"), []byte(local), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	canonDir := filepath.Join(root, ".agents", "canon", "learnings")
+	if err := os.MkdirAll(canonDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	canonEstablished := "---\nutility: 0.8\nmaturity: established\n---\n# Canon Established\n\nCanon established content earned the computed always reach projection.\n"
+	if err := os.WriteFile(filepath.Join(canonDir, "canon-established.md"), []byte(canonEstablished), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	canonCandidate := "---\nutility: 0.8\nmaturity: candidate\nreach: always\n---\n# Canon Candidate\n\nCanon candidate content cannot self-author always reach before establishment.\n"
+	if err := os.WriteFile(filepath.Join(canonDir, "canon-candidate.md"), []byte(canonCandidate), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	learnings, err := collectLearnings(root, "", 10, "", 0.8)
+	if err != nil {
+		t.Fatalf("collectLearnings() error = %v", err)
+	}
+	if len(learnings) != 3 {
+		t.Fatalf("expected 3 learnings, got %d", len(learnings))
+	}
+
+	byTitle := map[string]learning{}
+	for _, l := range learnings {
+		byTitle[l.Title] = l
+	}
+	if got := byTitle["Local Established"].Reach; got != "pull" {
+		t.Fatalf("local authored reach=always computed to %q, want pull", got)
+	}
+	if got := byTitle["Canon Established"].Reach; got != "always" {
+		t.Fatalf("canon established reach = %q, want always", got)
+	}
+	if got := byTitle["Canon Candidate"].Reach; got != "pull" {
+		t.Fatalf("canon candidate authored reach=always computed to %q, want pull", got)
+	}
+}

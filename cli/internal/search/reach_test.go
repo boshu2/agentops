@@ -41,3 +41,60 @@ func TestParseFrontMatter_Reach(t *testing.T) {
 		t.Fatalf("absent reach should default to pull, got %q", got)
 	}
 }
+
+func TestSanitizeAuthoredReach_DowngradesAlways(t *testing.T) {
+	for _, in := range []string{"always", "ALWAYS", "  always  "} {
+		if got := SanitizeAuthoredReach(in); got != "pull" {
+			t.Fatalf("SanitizeAuthoredReach(%q) = %q, want pull", in, got)
+		}
+	}
+	if got := SanitizeAuthoredReach("bead"); got != "bead" {
+		t.Fatalf("SanitizeAuthoredReach(bead) = %q, want bead", got)
+	}
+}
+
+func TestComputeReach_AlwaysRequiresEstablishedCanon(t *testing.T) {
+	cases := []struct {
+		name         string
+		authored     string
+		maturity     string
+		canon        bool
+		wantComputed string
+	}{
+		{
+			name:         "established canon computes always",
+			maturity:     "established",
+			canon:        true,
+			wantComputed: "always",
+		},
+		{
+			name:         "established non-canon remains pull",
+			authored:     "always",
+			maturity:     "established",
+			canon:        false,
+			wantComputed: "pull",
+		},
+		{
+			name:         "canon candidate remains pull",
+			authored:     "always",
+			maturity:     "candidate",
+			canon:        true,
+			wantComputed: "pull",
+		},
+		{
+			name:         "authored bead survives when not always",
+			authored:     "bead",
+			maturity:     "candidate",
+			canon:        false,
+			wantComputed: "bead",
+		},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ComputeReach(tt.authored, tt.maturity, tt.canon)
+			if got != tt.wantComputed {
+				t.Fatalf("ComputeReach(%q, %q, %v) = %q, want %q", tt.authored, tt.maturity, tt.canon, got, tt.wantComputed)
+			}
+		})
+	}
+}
