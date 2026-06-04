@@ -495,7 +495,7 @@ The context packet unifies and structures what multiple components already provi
 | `collectRecentSessions()` | Session history | Feeds HISTORY section (sessions) |
 | `ratchet.LoadChain()` | Provenance chain | Feeds HISTORY section (chain) |
 | `recordCitations()` | Citation tracking | Provenance tracking (injection-log.jsonl) |
-| `hooks/session-start.sh` | Session initialization | Points agent to `.agents/AGENTS.md` for on-demand lookup |
+| `ao session bootstrap` (hookless orientation) | Session initialization | Points agent to `.agents/AGENTS.md` for on-demand lookup |
 | Memory packets (`memory-packet.v1.schema.json`) | Boundary-memory for handoff | Orthogonal — handoff packets are emitted at session END; context packets are assembled at session START |
 
 ---

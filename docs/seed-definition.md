@@ -13,7 +13,7 @@ AgentOps is the same. The same core seed, planted in a Go CLI repo or a Python w
 ```
 1. GOALS.md           -- what to optimize toward
 2. .agents/           -- where knowledge accumulates
-3. Hook readiness     -- optional rules that enforce the flywheel
+3. Lifecycle stages   -- explicit, hookless rules that run the flywheel
 4. CLAUDE.md section  -- instructions that start the flywheel
 5. Core skills        -- the capabilities the agent can invoke
 6. Bootstrap learning -- the first turn of the flywheel
@@ -28,8 +28,9 @@ ao quick-start
 
 Optional layers are deliberately separate: `/bootstrap` adds PRODUCT.md,
 README.md, and PROGRAM.md/AUTODEV.md; `bd init --prefix <prefix>` adds
-tracking; `ao init --hooks` explicitly activates optional hooks; `ao init --with-schedule` opts
-into continuous scheduling.
+tracking; the `hooks-authoring` skill lets you author your own optional runtime
+hooks (AgentOps 3.0 ships none); an out-of-session substrate (NTM + MCP +
+managed-agents) adds continuous scheduling.
 
 ### 1. GOALS.md -- Fitness Specification
 
@@ -100,7 +101,7 @@ Two lines added to the repo's CLAUDE.md:
 See `.agents/AGENTS.md` for orientation. Run `ao lookup --query "topic"` when you need prior knowledge. Run `ao forge` at session end.
 ```
 
-**Why it exists:** Hooks handle the automation, but CLAUDE.md provides the fallback for environments where hooks are not configured and the explanation for environments where they are. It bridges the gap between "hooks fire automatically" and "the agent understands why." This is belt-and-suspenders: structural enforcement (hooks) plus cognitive priming (instructions).
+**Why it exists:** The explicit lifecycle rules (`ao` commands) and CI gates handle enforcement, but CLAUDE.md provides the explanation so the agent understands *why* the flywheel matters and runs the stages even without any optional hook configured. This is belt-and-suspenders: mechanical enforcement (CI gates + explicit commands) plus cognitive priming (instructions).
 
 **Meadows mapping:** #6 (information flows -- ensures the agent is aware of the flywheel even if hooks are not installed).
 
@@ -115,7 +116,7 @@ Four skills installed globally, available in any repo:
 | `/implement` | Full lifecycle for one task: plan, build, validate, learn | #8 (balancing feedback) |
 | `/vibe` | Code quality review with multi-model council | #8 (balancing feedback) |
 
-**Why it exists:** The seed needs agency. GOALS.md defines intent, `.agents/` stores knowledge, hooks enforce rules -- but without skills, the agent has no structured way to act on goals, validate work, or extract learnings. Skills are the verbs that operate on the nouns.
+**Why it exists:** The seed needs agency. GOALS.md defines intent, `.agents/` stores knowledge, CI gates + explicit lifecycle rules enforce -- but without skills, the agent has no structured way to act on goals, validate work, or extract learnings. Skills are the verbs that operate on the nouns.
 
 **Meadows mapping:** #4 (self-organization -- `/evolve` changes the system's own rules based on measured fitness).
 
