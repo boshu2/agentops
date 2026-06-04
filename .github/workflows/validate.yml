@@ -40,6 +40,7 @@ jobs:
       goals: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.goals }}
       learning: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.learning }}
       markdown: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.markdown }}
+      corpus: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.corpus }}
     steps:
       - uses: actions/checkout@v6
       - name: Detect release tag push
@@ -135,6 +136,9 @@ jobs:
               - '.agents/learnings/**'
             markdown:
               - '**/*.md'
+            corpus:
+              - '.agents/**/*.md'
+              - '.agents/**/*.jsonl'
 
   # ─────────────────────────────────────────────────────────────────────────
   # correctness — go build/test/coverage/complexity, embedded sync, CLI
@@ -604,7 +608,7 @@ jobs:
     if: >-
       needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true' ||
       needs.changes.outputs.contracts == 'true' || needs.changes.outputs.go == 'true' ||
-      needs.changes.outputs.hooks == 'true'
+      needs.changes.outputs.hooks == 'true' || needs.changes.outputs.corpus == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
