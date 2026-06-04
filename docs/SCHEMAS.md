@@ -69,9 +69,9 @@ Most schemas follow JSON Schema Draft 2020-12. Any compatible validator will wor
 # Validate skill frontmatter across all skills
 scripts/validate-skills.sh
 
-# Validate hooks manifest
-jq -e . hooks/hooks.json           # well-formed JSON
-ao hooks show --validate           # schema-aware check
+# Validate the legacy hooks manifest (opt-in only — AgentOps 3.0 ships zero
+# hooks; you only have one if you authored it via the hooks-authoring skill)
+jq -e . hooks/hooks.json           # legacy/opt-in manifest, if present
 
 # Validate swarm evidence artifacts
 scripts/validate-swarm-evidence.sh

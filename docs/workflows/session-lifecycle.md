@@ -512,7 +512,7 @@ research + plan      validated code      learnings + next work
 | Progress template | `.claude/templates/claude-progress.json` | Session state template |
 | Feature template | `.claude/templates/feature-list.json` | Feature tracking template |
 | Intent router | `.claude/skills/intent-router.md` | Natural language routing |
-| Session autostart | `.claude/hooks/session-autostart.sh` | Auto-show context |
+| Session autostart (opt-in) | `.claude/hooks/session-autostart.sh` | Auto-show context — AgentOps ships none; author one via the hooks-authoring skill |
 | Session start cmd | `.claude/commands/session-start.md` | Manual session start |
 | Session end cmd | `.claude/commands/session-end.md` | Manual session end |
 | Progress update cmd | `.claude/commands/progress-update.md` | Manual progress update |

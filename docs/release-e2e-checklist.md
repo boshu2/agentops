@@ -41,7 +41,7 @@ Run:
 ```bash
 bash scripts/ci-local-release.sh \
   --release-version X.Y.Z \
-  --hil-target 'local:bushido:ao version && ao init --help && ao hooks show && ao rpi status'
+  --hil-target 'local:bushido:ao version && ao init --help && ao doctor && ao rpi status'
 ```
 
 Expect:

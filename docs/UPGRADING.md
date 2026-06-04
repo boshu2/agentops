@@ -135,7 +135,6 @@ See [`CHANGELOG.md`](CHANGELOG.md) directly. No hard breakages were introduced i
 # Verify the new install
 ao --version
 ao doctor
-ao hooks test
 
 # Re-run any local gates touched by the upgrade
 scripts/pre-push-gate.sh --fast

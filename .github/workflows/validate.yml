@@ -1212,6 +1212,17 @@ jobs:
           chmod +x scripts/check-docs-learning-references.sh
           ./scripts/check-docs-learning-references.sh
 
+      - name: Hooks-runtime drift gate — live-facing docs/ stay hookless (ag-rryf)
+        # Companion to sync-skill-counts.sh: fails when a live-facing doc
+        # reintroduces a live hooks runtime (hooks/hooks.json, a hooks/*.sh path,
+        # `ao hooks`, or a bare session-*.sh hook ref) without a hookless/opt-in/
+        # historical hedge. Archival + opt-in-subsystem surfaces are out of scope
+        # (see the script header). Guards the ag-t1ca de-hooking against regression.
+        if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.shell == 'true'
+        run: |
+          chmod +x scripts/check-doc-hooks-drift.sh
+          ./scripts/check-doc-hooks-drift.sh
+
       - name: Directive-to-scenario link lint (ao goals scenarios --lint, blocking)
         # T1 (≤5min). Blocking (soc-x7y9f): the directive↔scenario link lint
         # fails the job on any broken edge. The broader whole-chain orphan/gap
