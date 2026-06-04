@@ -51,6 +51,23 @@ func SanitizeSourcePhase(phase string) string {
 	return ""
 }
 
+// ValidReach is the set of canonical blast-radius tiers for the reach field.
+var ValidReach = map[string]bool{"bead": true, "pull": true, "always": true}
+
+// SanitizeReach returns the canonical reach tier, defaulting to "pull" when the
+// value is absent or invalid. reach is the blast-radius axis, orthogonal to
+// maturity: "bead" = per-bead context, "pull" = queried on demand (the default),
+// "always" = auto-injected at session bootstrap. Per ag-oqha the "always" tier is
+// a COMPUTED projection of maturity==established ∩ canon, never author-set; this
+// sanitizer only normalizes the stored value and never promotes to "always".
+func SanitizeReach(reach string) string {
+	r := strings.ToLower(strings.TrimSpace(reach))
+	if ValidReach[r] {
+		return r
+	}
+	return "pull"
+}
+
 // QueryTokens splits a lowercased query into salient search tokens: it splits on any
 // non-alphanumeric rune (so "continue-on-error:true" -> continue/error/true), drops
 // stopwords and sub-2-char tokens, and deduplicates (order-preserving). Stopword removal
@@ -102,6 +119,7 @@ type FrontMatter struct {
 	SourcePhase  string
 	Maturity     string
 	Stability    string
+	Reach        string
 }
 
 // ParseFrontMatter extracts YAML front matter from markdown content lines.
@@ -143,6 +161,8 @@ func ParseFrontMatterLine(line string, fm *FrontMatter) {
 		fm.Maturity = strings.TrimSpace(strings.TrimPrefix(line, "maturity:"))
 	case strings.HasPrefix(line, "stability:"):
 		fm.Stability = strings.TrimSpace(strings.TrimPrefix(line, "stability:"))
+	case strings.HasPrefix(line, "reach:"):
+		fm.Reach = strings.TrimSpace(strings.TrimPrefix(line, "reach:"))
 	}
 }
 
@@ -242,6 +262,7 @@ func ParseLearningFile(path string) (Learning, error) {
 	l.SourcePhase = SanitizeSourcePhase(fm.SourcePhase)
 	l.Maturity = fm.Maturity
 	l.Stability = fm.Stability
+	l.Reach = SanitizeReach(fm.Reach)
 
 	ParseLearningBody(lines, contentStart, &l)
 	l.Summary = ExtractSummary(lines, contentStart)
@@ -282,6 +303,9 @@ func PopulateLearningFromJSON(data map[string]any, l *Learning) {
 	}
 	if s, ok := data["stability"].(string); ok {
 		l.Stability = s
+	}
+	if r, ok := data["reach"].(string); ok {
+		l.Reach = SanitizeReach(r)
 	}
 }
 
