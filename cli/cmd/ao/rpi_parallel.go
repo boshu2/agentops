@@ -577,8 +577,7 @@ func resolveMergeOrder(epics []parallelEpic, results []parallelResult) []int {
 // goalSlug delegates to internal/rpi.GoalSlug.
 func goalSlug(goal string) string { return cliRPI.GoalSlug(goal) }
 
-// shellQuote delegates to internal/rpi.ShellQuote.
-func shellQuote(s string) string { return cliRPI.ShellQuote(s) }
+// shellQuote moved to shell_quote.go (ag-362v) so it outlives the rpi removal.
 
 // tmuxPaneIsDead checks whether a tmux pane has exited.
 // Returns (dead, exitCode). If the pane/window is gone, returns (true, 1).
