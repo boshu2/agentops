@@ -188,6 +188,19 @@ patch_file "$REPO_ROOT/PRODUCT.md" \
   "s|Distribution/runtime reach: [0-9]+ shared skills, [0-9]+ checked-in Codex artifacts, and [0-9]+ Codex overrides|Distribution/runtime reach: ${TOTAL} shared skills, ${CODEX_TOTAL} checked-in Codex artifacts, and ${CODEX_OVERRIDES} Codex overrides|" \
   "PRODUCT.md distribution/runtime reach"
 
+# docs/index.md: full-catalog link label "All N skills" (links to the generated
+# catalog, which lists every checked-in skill, so this is the TOTAL).
+patch_file "$REPO_ROOT/docs/index.md" \
+  '\*\*All [0-9]+ skills\*\*\]\(skills/catalog\.md\)' \
+  "s|\\*\\*All [0-9]+ skills\\*\\*\\]\\(skills/catalog\\.md\\)|**All ${TOTAL} skills**](skills/catalog.md)|" \
+  "docs/index.md catalog link count"
+
+# docs/documentation-index.md: skill-domain-map entry "All N checked-in skills".
+patch_file "$REPO_ROOT/docs/documentation-index.md" \
+  'All [0-9]+ checked-in skills mapped' \
+  "s|All [0-9]+ checked-in skills mapped|All ${TOTAL} checked-in skills mapped|" \
+  "docs/documentation-index.md domain-map skill count"
+
 echo ""
 
 if [[ "$errors" -gt 0 ]]; then

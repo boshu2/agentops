@@ -98,7 +98,7 @@ Which `ao` commands each skill invokes.
 | council | `rpi phased` |
 | shared | `rpi phased` |
 
-Skills with **no ao commands**: beads, brainstorm, bug-hunt, codex-team, complexity, converter, doc, heal-skill, llm-wiki, openai-docs, oss-docs, pr-implement, pr-plan, pr-prep, pr-research, pr-retro, pr-validate, product, readme, release, reverse-engineer-rpi, security, security-suite, standards, trace, update.
+Skills with **no ao commands**: beads, brainstorm, bug-hunt, codex-team, complexity, converter, doc, heal-skill, llm-wiki, openai-docs, pr-implement, pr-prep, pr-research, pr-validate, product, release, reverse-engineer-rpi, security, security-suite, standards, trace.
 
 Conceptual slash commands such as `/knowledge` are documented elsewhere in the product docs, but they are not counted as source skill directories in this map.
 

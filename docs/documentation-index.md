@@ -46,7 +46,7 @@ Bridge / framing docs:
 
 ## Architecture
 
-- [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, agent backends, hooks, context windowing
+- [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, agent backends, context windowing
 - [Software Factory Surface](software-factory.md) — Explicit automation surface for briefings, RPI flows, and operator-controlled closeout
 - [Assurance Profile](assurance-profile.md) — High-assurance operating posture, authority boundaries, and evidence artifact expectations for constrained environments
 - [Architecture](ARCHITECTURE.md) — System design and component overview
@@ -80,7 +80,7 @@ Bridge / framing docs:
 - [Skill API](SKILL-API.md) — Frontmatter fields, context declarations, enforcement status
 - [Skill Quality Rubric](reference/skill-quality-rubric.md) — Scoring rubric for repo-runtime, export, and mega-skill readiness
 - [AgentOps Domain Evolution BDD](reference/agentops-domain-evolution-bdd.md) — Gherkin acceptance contract for skill, CLI, and hook evolution
-- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 78 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
+- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 82 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
 - [AgentOps Hexagonal Architecture Map](reference/agentops-hexagonal-architecture-map.md) — Bounded contexts, ports, adapters, and proof gates for the evolution program
 - [AgentOps Domain Evolution Plan](reference/agentops-domain-evolution-plan.md) — Sequenced bootstrap and evolution plan anchored to `soc-y5vh`
 - [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph
