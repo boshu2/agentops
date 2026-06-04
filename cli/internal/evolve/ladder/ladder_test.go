@@ -288,7 +288,7 @@ func TestRun_ExhaustionEmitsBlockedHint(t *testing.T) {
 	if !strings.Contains(got.Rationale, "ladder exhausted") {
 		t.Errorf("rationale: %q", got.Rationale)
 	}
-	if !strings.Contains(got.Rationale, "ao evolve blocked") {
+	if !strings.Contains(got.Rationale, "ao loop blocked") {
 		t.Errorf("rationale missing blocked hint: %q", got.Rationale)
 	}
 }

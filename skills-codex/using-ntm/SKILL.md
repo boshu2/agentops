@@ -14,7 +14,7 @@ external tool (`ntm` on `PATH`), **not** an AgentOps-owned surface.
 
 > **Skills are the runtime, not the CLI.** The substrate dispatches a *whole
 > loop* by spawning an agent that **runs the $rpi or $evolve skill** — it does
-> **not** shell out to an `ao rpi` / `ao evolve` subprocess. Those terminal
+> **not** shell out to a retired CLI subprocess. Those terminal
 > wrappers are retired; the loop lives as a skill an agent executes. The seam is
 > **NTM pane → agent → $rpi <bead>**, one bead dispatched as one invocable unit.
 
@@ -95,7 +95,7 @@ pane also looks idle.
 
 ## Anti-patterns
 
-- ❌ Shelling out to `ao rpi` / `ao evolve` — retired CLI; dispatch the `$rpi` / `$evolve` skill instead.
+- ❌ Shelling out to a retired CLI; dispatch the `$rpi` / `$evolve` skill instead.
 - ❌ Decomposing the loop into substrate steps — dispatch the whole loop as one invocable unit.
 - ❌ Editing the shared checkout from a pane — worktree-per-bead, always.
 - ❌ Treating NTM as AgentOps-owned — it is an adopted external substrate; a managed-agents driver (`ao agent`) or a plain in-session run are equally valid legs. Choose via $automation-shape-routing.

@@ -70,9 +70,9 @@ func withFixedNextWorkClock(t *testing.T, ts time.Time) {
 	t.Cleanup(func() { evolveNextWorkClock = prev })
 }
 
-// TestEvolveNextWork_Step1Pick exercises the happy path: shape-compatible
+// TestLoopNextWork_Step1Pick exercises the happy path: shape-compatible
 // bead picked at step 1 with JSON output.
-func TestEvolveNextWork_Step1Pick(t *testing.T) {
+func TestLoopNextWork_Step1Pick(t *testing.T) {
 	dir := chdirTemp(t)
 	withFixedNextWorkClock(t, time.Date(2026, 5, 21, 12, 0, 0, 0, time.UTC))
 	withFakeNextWorkRunners(t, &fakeBeadRunner{
@@ -87,7 +87,7 @@ func TestEvolveNextWork_Step1Pick(t *testing.T) {
 		},
 	}, fakeGrep{})
 
-	out, err := executeCommand("evolve", "next-work", "--json")
+	out, err := executeCommand("loop", "next-work", "--json")
 	if err != nil {
 		t.Fatalf("err: %v\nout=%s", err, out)
 	}
@@ -125,9 +125,9 @@ func TestEvolveNextWork_Step1Pick(t *testing.T) {
 	}
 }
 
-// TestEvolveNextWork_PrimitiveTestFailsRecommendsScout exercises the step-3
+// TestLoopNextWork_PrimitiveTestFailsRecommendsScout exercises the step-3
 // scout-mode rationale.
-func TestEvolveNextWork_PrimitiveTestFailsRecommendsScout(t *testing.T) {
+func TestLoopNextWork_PrimitiveTestFailsRecommendsScout(t *testing.T) {
 	chdirTemp(t)
 	withFakeNextWorkRunners(t, &fakeBeadRunner{
 		ReadyList: []ladder.Bead{
@@ -135,7 +135,7 @@ func TestEvolveNextWork_PrimitiveTestFailsRecommendsScout(t *testing.T) {
 		},
 	}, fakeGrep{})
 
-	out, err := executeCommand("evolve", "next-work", "--json")
+	out, err := executeCommand("loop", "next-work", "--json")
 	if err != nil {
 		t.Fatalf("err: %v\nout=%s", err, out)
 	}
@@ -155,13 +155,13 @@ func TestEvolveNextWork_PrimitiveTestFailsRecommendsScout(t *testing.T) {
 	}
 }
 
-// TestEvolveNextWork_LadderExhaustionEmitsBlockedHint covers the terminal
+// TestLoopNextWork_LadderExhaustionEmitsBlockedHint covers the terminal
 // "ladder exhausted" recommendation.
-func TestEvolveNextWork_LadderExhaustionEmitsBlockedHint(t *testing.T) {
+func TestLoopNextWork_LadderExhaustionEmitsBlockedHint(t *testing.T) {
 	chdirTemp(t)
 	withFakeNextWorkRunners(t, &fakeBeadRunner{}, fakeGrep{})
 
-	out, err := executeCommand("evolve", "next-work", "--json")
+	out, err := executeCommand("loop", "next-work", "--json")
 	if err != nil {
 		t.Fatalf("err: %v\nout=%s", err, out)
 	}
@@ -176,13 +176,13 @@ func TestEvolveNextWork_LadderExhaustionEmitsBlockedHint(t *testing.T) {
 	if rec.RecommendedBead != "" {
 		t.Errorf("bead = %q, want empty", rec.RecommendedBead)
 	}
-	if !strings.Contains(rec.Rationale, "ao evolve blocked") {
+	if !strings.Contains(rec.Rationale, "ao loop blocked") {
 		t.Errorf("rationale missing blocked hint: %q", rec.Rationale)
 	}
 }
 
-// TestEvolveNextWork_HumanReadableFallback covers the non-JSON output path.
-func TestEvolveNextWork_HumanReadableFallback(t *testing.T) {
+// TestLoopNextWork_HumanReadableFallback covers the non-JSON output path.
+func TestLoopNextWork_HumanReadableFallback(t *testing.T) {
 	chdirTemp(t)
 	withFakeNextWorkRunners(t, &fakeBeadRunner{
 		ReadyList: []ladder.Bead{
@@ -194,7 +194,7 @@ func TestEvolveNextWork_HumanReadableFallback(t *testing.T) {
 		},
 	}, fakeGrep{})
 
-	out, err := executeCommand("evolve", "next-work")
+	out, err := executeCommand("loop", "next-work")
 	if err != nil {
 		t.Fatalf("err: %v\nout=%s", err, out)
 	}
@@ -203,23 +203,23 @@ func TestEvolveNextWork_HumanReadableFallback(t *testing.T) {
 	}
 }
 
-// TestEvolveNextWork_RegisteredOnEvolve confirms registration under evolveCmd.
-func TestEvolveNextWork_RegisteredOnEvolve(t *testing.T) {
+// TestLoopNextWork_RegisteredOnLoop confirms registration under loopCmd.
+func TestLoopNextWork_RegisteredOnLoop(t *testing.T) {
 	var found bool
-	for _, sub := range evolveCmd.Commands() {
+	for _, sub := range loopCmd.Commands() {
 		if sub.Name() == "next-work" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Fatal("evolve next-work subcommand should be registered on evolveCmd")
+		t.Fatal("evolve next-work subcommand should be registered on loopCmd")
 	}
 }
 
-// TestEvolveNextWork_IncludeOperatorShape exercises the flag-driven step-1
+// TestLoopNextWork_IncludeOperatorShape exercises the flag-driven step-1
 // override.
-func TestEvolveNextWork_IncludeOperatorShape(t *testing.T) {
+func TestLoopNextWork_IncludeOperatorShape(t *testing.T) {
 	chdirTemp(t)
 	withFakeNextWorkRunners(t, &fakeBeadRunner{
 		ReadyList: []ladder.Bead{
@@ -232,7 +232,7 @@ func TestEvolveNextWork_IncludeOperatorShape(t *testing.T) {
 		},
 	}, fakeGrep{})
 
-	out, err := executeCommand("evolve", "next-work", "--include-operator-shape", "--json")
+	out, err := executeCommand("loop", "next-work", "--include-operator-shape", "--json")
 	if err != nil {
 		t.Fatalf("err: %v\nout=%s", err, out)
 	}

@@ -103,9 +103,9 @@
       "expectations": [
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao goals`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao autodev`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao evolve`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao loop`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Track, measure, and validate project fitness goals."},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run the v2 autonomous improvement loop."}
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Operations on the /evolve cycle history and related Loop bounded-context state."}
       ],
       "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"]
     },
