@@ -15,6 +15,7 @@ type Learning struct {
 	Utility         float64 `json:"utility,omitempty"`         // MemRL utility value
 	CompositeScore  float64 `json:"composite_score,omitempty"` // Two-Phase ranking score
 	Maturity        string  `json:"maturity,omitempty"`        // CASS maturity level
+	Reach           string  `json:"reach,omitempty"`           // blast-radius tier: bead|pull|always (default pull); orthogonal to Maturity
 	SessionType     string  `json:"session_type,omitempty"`    // career, research, debug, implement, brainstorm
 	SectionHeading  string  `json:"section_heading,omitempty"`
 	SectionLocator  string  `json:"section_locator,omitempty"`

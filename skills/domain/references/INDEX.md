@@ -52,6 +52,7 @@ case-insensitive filesystems (macOS APFS default) do not collapse the two.
 | `context-density-rule.md` | Context Density Rule | canonical  | concept |
 | `behavior-shaping.md`     | Behavior Shaping     | draft      | concept |
 | `primitive-selection.md`  | Primitive Selection  | draft      | concept |
+| `reach.md`                | Reach                | draft      | concept |
 
 ### Loop family (the operating loop)
 

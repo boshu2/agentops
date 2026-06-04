@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-04T19:16:16Z",
+  "generated_at": "2026-06-04T20:43:55Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
@@ -418,7 +418,7 @@
         "path": "skills/domain/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 17
+        "reference_count": 18
       },
       {
         "name": "harvest",
@@ -2011,14 +2011,16 @@
       "drives_commands": [
         "ao agent",
         "ao compile",
+        "ao corpus inject",
         "ao eval run",
         "ao inject",
         "ao maturity",
         "ao mcp serve",
-        "ao rpi phased"
+        "ao rpi phased",
+        "ao session bootstrap"
       ],
       "path": "skills/domain/",
-      "references": 17
+      "references": 18
     },
     {
       "sku": "skill:dream",
