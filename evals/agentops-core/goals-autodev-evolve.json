@@ -111,14 +111,14 @@
     },
     {
       "id": "evolve-code-defaults",
-      "title": "evolve source preserves supervised RPI loop defaults",
+      "title": "loop source preserves rehomed mode defaults",
       "kind": "artifact_check",
-      "objective": "Ensure evolve continues to route code cycles through the supervised RPI loop and captures fitness baselines by goals era.",
+      "objective": "Ensure the kept loop surface owns the burst/loop mode contract rehomed from the retired evolve CLI.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/evolve.go", "value": "applyEvolveDefaults(cmd)"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/evolve.go", "value": "rpiSupervisor = true"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/evolve.go", "value": "ensureEvolveEraBaseline(cwd)"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/evolve.go", "value": "return runRPILoop(cmd, args)"}
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/loop_mode.go", "value": "Loop-execution-mode contract, re-homed from the deleted `ao evolve` CLI"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/loop_mode.go", "value": "loopModeBurst = \"burst\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/loop_mode.go", "value": "loopModeLoop  = \"loop\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/loop_mode.go", "value": "func validateLoopMode(mode string) error"}
       ],
       "dimensions": ["correctness", "process_adherence", "artifact_quality"]
     }
