@@ -15,6 +15,7 @@ import (
 
 	aocontext "github.com/boshu2/agentops/cli/internal/context"
 	"github.com/boshu2/agentops/cli/internal/goals"
+	"github.com/boshu2/agentops/cli/internal/llm"
 	"github.com/spf13/cobra"
 )
 
@@ -35,11 +36,18 @@ const (
 	maxHistoryEntries = 5
 )
 
-// Redaction patterns.
+// Redaction patterns. These supplement the canonical secret-pattern set in
+// llm.Redact (ag-zi90): redactContent runs llm.Redact first (single source of
+// truth for credential patterns incl. JWTs), then applies these context-assemble
+// -specific passes — sensitive env-var assignments and high-entropy strings —
+// which llm.Redact does not cover.
 var (
 	envVarLineRe = regexp.MustCompile(`(?i).*(KEY|TOKEN|SECRET|PASSWORD|API).*`)
 	envAssignRe  = regexp.MustCompile(`[A-Z_]+=\S+`)
-	jwtRe        = regexp.MustCompile(`eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+`)
+	// jwtRe catches 2-segment app tokens (header.payload) that llm.Redact's
+	// stricter 3-segment JWT pattern intentionally does not — a supplement,
+	// not a duplicate.
+	jwtRe = regexp.MustCompile(`eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+`)
 )
 
 // Static protocol template embedded in the binary.
@@ -396,6 +404,14 @@ func truncateToCharBudget(content string, budget int) string {
 func redactContent(content, cwd string) (string, int) {
 	redactionCount := 0
 
+	// 0. Canonical secret patterns (single source of truth: llm.Redact) —
+	// API keys, tokens, JWTs, PEM blocks, bearer/basic-auth URLs, home paths.
+	// Deduplicates the credential-pattern list (ag-zi90); the passes below
+	// only add what llm.Redact does not cover.
+	before := strings.Count(content, "[REDACTED]")
+	content = llm.Redact(content)
+	redactionCount += strings.Count(content, "[REDACTED]") - before
+
 	// 1. Env var assignments on sensitive lines.
 	lines := strings.Split(content, "\n")
 	for i, line := range lines {
@@ -411,7 +427,7 @@ func redactContent(content, cwd string) (string, int) {
 	}
 	content = strings.Join(lines, "\n")
 
-	// 2. JWT tokens.
+	// 2. JWT tokens (2-segment app tokens llm.Redact's 3-segment pattern misses).
 	jwtMatches := jwtRe.FindAllStringIndex(content, -1)
 	for i := len(jwtMatches) - 1; i >= 0; i-- {
 		content = content[:jwtMatches[i][0]] + "[REDACTED: jwt-token]" + content[jwtMatches[i][1]:]
