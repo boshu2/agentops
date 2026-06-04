@@ -43,10 +43,10 @@ the next session loads better context before repeating the mistake.
 Records the operational memory agents do not keep for themselves: attempts, decisions, citations, verdicts, handoffs, findings, retros, and post-mortems. The work leaves a trace in `.agents/`.
 
 ### Layer 1: Context Compiler
-Assembles the right context for the right phase. Research gets prior knowledge; plan gets a compressed summary; workers get fresh context per wave. Skills, hooks, and the `ao` CLI collaborate to load, scope, and trim context to the token budget before the agent sees it.
+Assembles the right context for the right phase. Research gets prior knowledge; plan gets a compressed summary; workers get fresh context per wave. Skills and the `ao` CLI (`ao session bootstrap`, `ao inject`, `ao corpus inject`) collaborate to load, scope, and trim context to the token budget before the agent sees it.
 
 ### Layer 2: Validation Gates
-Challenges plans before build and code before commit. Multi-model councils (`/council`, `/vibe`, `/pre-mortem`) return auditable verdicts — PASS, WARN, or FAIL. Gates block, not advise. Runtime hooks enforce them even when the operator forgets.
+Challenges plans before build and code before commit. Multi-model councils (`/council`, `/vibe`, `/pre-mortem`) return auditable verdicts — PASS, WARN, or FAIL. Gates block, not advise. CI is the authoritative gate (`.github/workflows/validate.yml`), enforcing them on every PR regardless of what the operator remembers to run locally.
 
 ### Layer 3: Knowledge Flywheel
 Extracts learnings from completed work, scores them for quality, promotes durable patterns, and re-injects them at the next session start. `.agents/` carries state on disk; `ao forge`, `ao lookup`, and maturity controls keep the loop closing.
@@ -57,7 +57,7 @@ Extracts learnings from completed work, scores them for quality, promotes durabl
 
 ```
 Session starts
-  -> Startup hooks retrieve lightweight context and continuity hints
+  -> ao session bootstrap + ao inject retrieve lightweight context and continuity hints (hookless)
   -> Discovery scopes the work and pressure-tests the plan
 
 Implementation runs
@@ -143,9 +143,9 @@ They will. Anthropic's Managed Agents is the first move; others will follow. Tha
 ┌──────────────────────────────────────────────────────────────────┐
 │                    AgentOps at a Glance                          │
 ├───────────────────┬──────────────────────┬───────────────────────┤
-│ 73 shared skills  │   `ao` Control Plane │   12 Hook Events      │
-│ plus runtime      │ repo-native retrieval│  runtime manifest     │
-│    artifacts      │ goals, and automation│                       │
+│ 82 shared skills  │   `ao` Control Plane │   CI-gated (hookless) │
+│ plus runtime      │ repo-native retrieval│  validate.yml is the  │
+│    artifacts      │ goals, and automation│  authoritative gate   │
 └───────────────────┴──────────────────────┴───────────────────────┘
 ```
 
@@ -191,18 +191,23 @@ GOALS.md
 /recover           ->    handoff artifacts          Interrupted work resumed from disk
 ```
 
-### Hooks — Automatic Enforcement
+### Lifecycle — Hookless Enforcement
+
+AgentOps 3.0 is hookless: nothing auto-fires at session boundaries. The lifecycle
+runs through explicit skills and `ao` commands, with CI as the authoritative gate.
+(An opt-in `hooks-authoring` skill exists if you want to add your own hooks;
+AgentOps ships none by default.)
 
 ```
-TRIGGER                   HOOK                        WHAT IT DOES
-───────                   ────                        ────────────
-Session starts         session-start.sh            Stage runtime state
-Session ends           session-end-maintenance.sh  Harvest learnings
-Agent stops            ao-flywheel-close.sh        Close learning loop
-Prompt submit         factory-router.sh           Route explicit factory intake
-Pre tool use          pre-mortem-gate.sh          Require review before risky work
-Post tool use         go-complexity-precommit.sh  Block over-complex edits
-Task complete         task-validation-gate.sh     Execute compiled validation constraints
+LIFECYCLE POINT           SKILL / COMMAND             WHAT IT DOES
+───────────────           ───────────────             ────────────
+Session starts         ao session bootstrap        Stage orientation + runtime state
+                       + ao inject                 Pull decay-ranked context
+Session ends           /post-mortem + ao forge     Harvest learnings
+Loop closure           ao flywheel + /retro        Close the learning loop
+Plan review            /pre-mortem                 Require review before risky work
+Code review            /vibe + ao ratchet          Block over-complex / unready edits
+PR validation          validate.yml (CI)           Execute compiled validation gates
 ```
 
 ### CLI Command Groups
@@ -215,7 +220,7 @@ ao search                   ao ratchet record        ao rpi status
 ao forge                    ao ratchet check         ao goals measure
 ao curate                   ao constraint activate   ao goals steer
 ao maturity                 ao constraint review     ao flywheel status
-ao dedup                    ao session close         ao hooks list
+ao dedup                    ao session close         ao session bootstrap
 ao contradict               ao temper validate       ao status
 ao notebook                                          ao doctor
 ao extract
