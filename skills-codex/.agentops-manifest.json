@@ -733,7 +733,7 @@
     {
       "name": "compile",
       "source_skill": "skills/compile",
-      "source_hash": "693a128f8d82af33afa4dbdbf47a0d7e831eac0c823438ca89100762070c78d6",
+      "source_hash": "6c51079d716df94195bb33cd2aa656ad7e66c5af768a636414750d845ceedaad",
       "generated_hash": "3610ba8eb9b1690d7d0f0765ef9319e71ec3fd39924c0599a6a5da65ffc945a9"
     },
     {
@@ -1087,7 +1087,7 @@
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
-      "source_hash": "9174143cbff5f83fd4f47aeac4694bb54a1f00d55665537a5261a7efb9e6acc9",
+      "source_hash": "4085416ad58a4e94acf0cd22a87a81b12c4ddf2c2f2496c9ab6d7ee61ed826c1",
       "generated_hash": "4d8b01766df9b10099f4f669e60c74dede37bd604e70d7b6a9a732cb5b2a5c05"
     },
     {

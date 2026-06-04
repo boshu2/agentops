@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-04T17:29:05Z",
+  "generated_at": "2026-06-04T19:16:16Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
@@ -8,7 +8,7 @@
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 75,
-    "capabilities": 168
+    "capabilities": 169
   },
   "surfaces": {
     "skills": [
@@ -1454,10 +1454,10 @@
     ]
   },
   "capability_summary": {
-    "total": 168,
+    "total": 169,
     "skills": 82,
     "cli_commands": 75,
-    "gates": 11,
+    "gates": 12,
     "reference_impls": 0
   },
   "cli_top_level_commands": [
@@ -5030,6 +5030,15 @@
     {
       "sku": "gate:changes",
       "name": "changes",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:skill-gates",
+      "name": "skill-gates",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
