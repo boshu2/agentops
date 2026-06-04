@@ -15,11 +15,19 @@ a missing trigger phrase is a material skill-selection risk, not cosmetic. See
 
 Usage:
     python3 scan_descriptions.py [SKILLS_DIR] [--json] [--strict] [--quiet]
+    python3 scan_descriptions.py [SKILLS_DIR] --probe "<phrase>" [--json]
+
+Probe mode (`--probe "<phrase>"`) ranks every skill against the phrase using
+ONLY the deterministic lexical ranker below — no live model, no `claude -p`, no
+network — and asserts the skill that DECLARES the phrase in its
+`trigger_probes:` frontmatter list ranks #1. Output is byte-stable across runs.
 
 Exit codes:
-    0  every description carries a trigger (or --strict not set)
-    1  one or more descriptions lack a trigger AND --strict is set
-    2  usage error (skills dir not found)
+    0  every description carries a trigger (or --strict not set);
+       in --probe mode: the declaring skill ranks #1 for the phrase
+    1  one or more descriptions lack a trigger AND --strict is set;
+       in --probe mode: the declaring skill does NOT rank #1
+    2  usage error (skills dir not found, or no skill declares the phrase)
 """
 
 from __future__ import annotations
@@ -121,6 +129,144 @@ def count_trigger_list(frontmatter: str) -> int:
             if re.match(r"^\s*[A-Za-z_-]+:", line):
                 break
     return count
+
+
+def parse_trigger_probes(frontmatter: str) -> list[str]:
+    """Return the items under a top-level `trigger_probes:` YAML list.
+
+    Supports the flow form (`trigger_probes: ["a", "b"]`) and the block form
+    (`trigger_probes:` followed by indented `- item` lines). Quotes are
+    stripped; order is preserved. Purely lexical — no YAML library required so
+    the scanner stays dependency-free and deterministic.
+    """
+    lines = frontmatter.splitlines()
+    probes: list[str] = []
+    for idx, line in enumerate(lines):
+        flow = re.match(r"^trigger_probes:\s*\[(.*)\]\s*$", line)
+        if flow:
+            inner = flow.group(1).strip()
+            if inner:
+                for item in inner.split(","):
+                    cleaned = item.strip().strip("'\"").strip()
+                    if cleaned:
+                        probes.append(cleaned)
+            return probes
+        if re.match(r"^trigger_probes:\s*$", line):
+            for follow in lines[idx + 1 :]:
+                item = re.match(r"^\s+-\s+(.*)$", follow)
+                if item:
+                    cleaned = item.group(1).strip().strip("'\"").strip()
+                    if cleaned:
+                        probes.append(cleaned)
+                    continue
+                if re.match(r"^\S", follow):
+                    break
+            return probes
+    return probes
+
+
+_WORD_RE = re.compile(r"[a-z0-9]+")
+
+
+def _tokens(text: str) -> list[str]:
+    """Lowercase alphanumeric tokens, in order, for deterministic scoring."""
+    return _WORD_RE.findall(text.lower())
+
+
+def lexical_score(phrase: str, scan: SkillScan) -> tuple:
+    """Deterministic lexical relevance of one skill to a probe phrase.
+
+    Pure token math over the skill's own SEARCHABLE TEXT (name + description) —
+    no model, no network, and deliberately NOT a function of the skill's
+    `trigger_probes:` declaration. The declaration only identifies *which*
+    skill is expected to win; the ranking itself is earned purely by lexical
+    overlap, so a skill that stops describing its phrase genuinely drops in
+    rank. Returns a tuple sort key (higher is more relevant); ties break by
+    name so the ranking is total and byte-stable. Signals, in priority order:
+
+    1. fraction of phrase tokens present in the searchable text (coverage),
+    2. raw count of phrase-token hits,
+    3. name-token overlap (a phrase word that is also a name word).
+    """
+    phrase_tokens = _tokens(phrase)
+    name_tokens = set(_tokens(scan.name))
+    haystack = " ".join([scan.name, scan.description])
+    hay_tokens = _tokens(haystack)
+    hay_set = set(hay_tokens)
+
+    if phrase_tokens:
+        present = sum(1 for t in phrase_tokens if t in hay_set)
+        coverage = present / len(phrase_tokens)
+        hits = sum(hay_tokens.count(t) for t in set(phrase_tokens))
+    else:
+        coverage = 0.0
+        hits = 0
+    name_overlap = sum(1 for t in set(phrase_tokens) if t in name_tokens)
+    return (coverage, hits, name_overlap)
+
+
+@dataclass
+class ProbeResult:
+    """One skill's deterministic rank for a probe phrase."""
+
+    name: str
+    score_key: tuple
+    declares_phrase: bool
+
+    def to_dict(self) -> dict:
+        """JSON-serializable view (score_key as a list for stable output)."""
+        return {
+            "name": self.name,
+            "score_key": list(self.score_key),
+            "declares_phrase": self.declares_phrase,
+        }
+
+
+def probe_corpus(skills_dir: Path, phrase: str) -> list[ProbeResult]:
+    """Rank every skill against `phrase` using the deterministic lexical ranker.
+
+    Sorted by descending score, then ascending name — a total, byte-stable
+    order. Each result records whether that skill declares the phrase in its
+    `trigger_probes:` list.
+    """
+    ranked: list[ProbeResult] = []
+    for skill_md in sorted(skills_dir.glob("*/SKILL.md")):
+        scan = scan_skill(skill_md)
+        if scan is None:
+            continue
+        frontmatter, _ = split_frontmatter(skill_md.read_text(encoding="utf-8"))
+        probes = parse_trigger_probes(frontmatter)
+        key = lexical_score(phrase, scan)
+        declares = phrase.strip().lower() in {p.strip().lower() for p in probes}
+        ranked.append(ProbeResult(name=scan.name, score_key=key, declares_phrase=declares))
+
+    def sort_key(result: ProbeResult) -> tuple:
+        # Descending score (negate the numeric components), ascending name.
+        return (tuple(-x for x in result.score_key), result.name)
+
+    ranked.sort(key=sort_key)
+    return ranked
+
+
+def render_probe(phrase: str, ranked: list[ProbeResult]) -> str:
+    """Render a deterministic human-readable probe report."""
+    declaring = [r.name for r in ranked if r.declares_phrase]
+    lines = [
+        "# Trigger probe",
+        "",
+        f"- Phrase: {phrase!r}",
+        f"- Skills ranked: {len(ranked)}",
+        f"- Declaring skills: {', '.join(declaring) if declaring else '(none)'}",
+        "",
+        "## Ranking (deterministic lexical, no model)",
+        "",
+        "| Rank | Skill | Declares | Score key |",
+        "|------|-------|----------|-----------|",
+    ]
+    for i, r in enumerate(ranked, start=1):
+        mark = "yes" if r.declares_phrase else ""
+        lines.append(f"| {i} | `{r.name}` | {mark} | {list(r.score_key)} |")
+    return "\n".join(lines)
 
 
 def detect_trigger(text: str, frontmatter: str) -> list[str]:
@@ -232,6 +378,37 @@ def render_markdown(results: list[SkillScan]) -> str:
     return "\n".join(lines)
 
 
+def _run_probe(skills_dir: Path, phrase: str, *, json_mode: bool, quiet: bool) -> int:
+    """Drive --probe: rank the corpus and assert the declaring skill wins.
+
+    Returns 2 if no skill declares the phrase (a usage error — nothing to
+    assert), 0 if the declaring skill ranks #1, 1 otherwise.
+    """
+    ranked = probe_corpus(skills_dir, phrase)
+    declaring = [r for r in ranked if r.declares_phrase]
+    top = ranked[0] if ranked else None
+    declarer_is_top = bool(top and top.declares_phrase)
+
+    if json_mode:
+        payload = {
+            "phrase": phrase,
+            "ranked": len(ranked),
+            "declaring": [r.name for r in declaring],
+            "top": top.name if top else None,
+            "declarer_is_top": declarer_is_top,
+            "skills": [r.to_dict() for r in ranked],
+        }
+        print(json.dumps(payload, indent=2, sort_keys=True))
+    elif not quiet:
+        print(render_probe(phrase, ranked))
+
+    if not declaring:
+        if not json_mode:
+            print(f"error: no skill declares the probe phrase: {phrase!r}", file=sys.stderr)
+        return 2
+    return 0 if declarer_is_top else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     """CLI entry point."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -246,12 +423,22 @@ def main(argv: list[str] | None = None) -> int:
         "--strict", action="store_true", help="Exit 1 if any description lacks a trigger"
     )
     parser.add_argument("--quiet", action="store_true", help="Suppress the human report")
+    parser.add_argument(
+        "--probe",
+        metavar="PHRASE",
+        default=None,
+        help="Deterministic lexical probe: assert the skill that declares PHRASE "
+        "in trigger_probes: ranks #1 (no live model, no network)",
+    )
     args = parser.parse_args(argv)
 
     skills_dir = Path(args.skills_dir)
     if not skills_dir.is_dir():
         print(f"error: skills dir not found: {skills_dir}", file=sys.stderr)
         return 2
+
+    if args.probe is not None:
+        return _run_probe(skills_dir, args.probe, json_mode=args.json, quiet=args.quiet)
 
     results = scan_corpus(skills_dir)
     missing = [r for r in results if not r.has_trigger]
