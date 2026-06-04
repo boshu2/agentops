@@ -61,8 +61,8 @@ Donella Meadows ranked intervention points in complex systems from least to most
 | 9 | Delays | Freshness decay intervals, maturity lifecycle (expire/evict), stale run TTL | Controls lag between `I(t)` and usable `K` |
 | 8 | Balancing feedback loops | Regression gates auto-revert bad cycles, council FAIL blocks merge, push gate blocks unvalidated code | Prevents `K` regression |
 | 7 | Reinforcing feedback loops | Knowledge flywheel (session N learnings feed session N+1), citation-based utility scoring (MemRL) | The `s*r*K` compounding term |
-| 6 | Information flows | `ao lookup` (knowledge into context on demand), `ao forge` (experience out of sessions), hook nudges, briefing packets | Increases `s` by getting right knowledge to right window |
-| 5 | Rules | Hooks wired through `hooks/hooks.json`, validation gates, worker-guard (lead-only commit), dangerous-git guard, pre-mortem gate | Structural enforcement. Rules cannot be forgotten or ignored. |
+| 6 | Information flows | `ao lookup` (knowledge into context on demand), `ao forge` (experience out of sessions), context-packet nudges, briefing packets | Increases `s` by getting right knowledge to right window |
+| 5 | Rules | CI gates wired through `.github/workflows/validate.yml`, validation gates, worker-guard (lead-only commit), dangerous-git guard, pre-mortem gate | Structural enforcement. Rules cannot be forgotten or ignored. |
 | 4 | Self-organization | `/evolve` fitness loop (measure-fix-validate-learn-repeat), constraint compiler (learnings become structural rules), progressive skill revelation | The system improves its own rules based on experience |
 | 3 | Goals | `GOALS.md` with mechanically verifiable gates, `ao goals measure`, severity-weighted selection, North Stars and Anti Stars | System intent. What the system optimizes toward. |
 | 2 | Mindset/paradigm | The 6 paradigm shifts below | How the builder thinks about agent systems |

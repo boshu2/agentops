@@ -62,7 +62,7 @@ The knowledge stock `K` lives in `.agents/`. Its structure:
 .agents/
   learnings/     -- I(t) deposits here via ao forge
   patterns/      -- Reusable solutions extracted from learnings
-  constraints/   -- Compiled rules (constraint-compiler.sh)
+  constraints/   -- Compiled rules (via `ao curate constrain`)
   retros/        -- Retrospective summaries
   council/       -- Validation verdicts
   research/      -- Exploration findings
