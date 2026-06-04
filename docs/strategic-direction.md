@@ -19,7 +19,7 @@ The public product does not require users to know this vocabulary. This is the i
 
 **Knowledge OS** (the systems-theoretic substrate — Meadows leverage points, the dK/dt equation, stigmergy as the multi-agent coordination primitive)
 → **Olympus** (archived runtime; patterns absorbed as skills)
-→ **AgentOps** (this reference implementation: skills + hooks + `ao` CLI + scheduling daemon)
+→ **AgentOps** (this reference implementation: skills + `ao` CLI + the CDLC operating loop; hookless, no daemon — out-of-session work is delegated to an NTM/MCP/managed-agents substrate)
 → **Mt. Olympus** (forkable Gas City runtime proof — the empirical demonstration the substrate runs autonomously against a real codebase under operator control).
 
 Industry parallels (Anthropic Managed Agents, factory-style mission systems, Cursor agents) are convergent on the same planner/implementer/validator shape — not derived-from.
