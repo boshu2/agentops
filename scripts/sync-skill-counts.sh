@@ -207,6 +207,29 @@ patch_file "$REPO_ROOT/docs/GLOSSARY.md" \
   "s|ships [0-9]+ shared skills|ships ${TOTAL} shared skills|" \
   "docs/GLOSSARY.md shared-skills count"
 
+# --- ASCII-diagram skill-count guard (ag-c4wn) ---
+# docs/agentops-system-map.md and docs/agentops-brief.md hardcode the skill
+# count inside box-drawing borders whose column widths are alignment-sensitive.
+# patch_file deliberately does NOT rewrite them — a digit-width change (e.g.
+# 99 -> 100) would silently break the box. This is the "tolerant check" half:
+# VERIFY each "<N> [shared ]skills" token equals TOTAL and fail on drift so a
+# human re-pads the diagram by hand. Closes the drift class auto-patch leaves open.
+DIAGRAM_FILES=(
+  "docs/agentops-system-map.md"
+  "docs/agentops-brief.md"
+)
+for rel in "${DIAGRAM_FILES[@]}"; do
+  f="$REPO_ROOT/$rel"
+  [[ -f "$f" ]] || continue
+  while IFS= read -r found; do
+    [[ -n "$found" ]] || continue
+    if [[ "$found" != "$TOTAL" ]]; then
+      echo "ERROR: $rel ASCII diagram hardcodes skill count $found, expected $TOTAL (re-pad the box-drawing diagram by hand)"
+      errors=$((errors + 1))
+    fi
+  done < <(grep -oiE '[0-9]+ +(shared )?skills\b' "$f" | grep -oE '^[0-9]+')
+done
+
 echo ""
 
 if [[ "$errors" -gt 0 ]]; then

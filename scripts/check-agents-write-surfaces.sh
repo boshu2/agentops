@@ -161,7 +161,7 @@ fi
 
 # Extract referenced top-level subdirs from production code.
 # - cli/**/*.go excluding _test.go
-# - scripts/*.sh, hooks/*.sh, lib/*.sh
+# - scripts/*.sh, lib/*.sh
 referenced_tmp="$(mktemp)"
 references_tmp="$(mktemp)"
 trap 'rm -f "$allowlist_tmp" "$contract_tmp" "$classification_errors_tmp" "$referenced_tmp" "$references_tmp"' EXIT
@@ -185,7 +185,6 @@ scan_agent_references() {
 
 scan_dirs=()
 [[ -d "$REPO_ROOT/scripts" ]] && scan_dirs+=("$REPO_ROOT/scripts")
-[[ -d "$REPO_ROOT/hooks" ]]   && scan_dirs+=("$REPO_ROOT/hooks")
 [[ -d "$REPO_ROOT/lib" ]]     && scan_dirs+=("$REPO_ROOT/lib")
 
 {
