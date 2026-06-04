@@ -47,6 +47,9 @@ echo ""
 for skill_dir in "$SKILLS_DIR"/*/; do
     [ -d "$skill_dir" ] || continue
     skill_name=$(basename "$skill_dir")
+    # Skip leading-underscore scaffolding (e.g. skills/_fixtures/) — planted
+    # test fixtures, not real skills (the dir root has no SKILL.md by design).
+    case "$skill_name" in _*) continue ;; esac
     validate_script="$skill_dir/scripts/validate.sh"
 
     # Check if it's an infrastructure skill (library)
