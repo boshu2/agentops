@@ -20,7 +20,9 @@ AgentOps sits on top of the coding harness you already use (Claude Code, Codex, 
 
 <div align="center">
 
-![AgentOps CLI demo: ao --help, the knowledge flywheel badge, and the council-first value loop](docs/assets/agentops-demo.gif)
+![A real Claude Code session running the delivery loop with a cross-model council gate: research, plan, council --mixed, implement, validate](docs/assets/loop-hero.gif)
+
+<sub>Real Claude Code, lightly edited for pace — the delivery loop end to end: research → plan → <code>/council --mixed</code> (3 Claude + 3 Codex judges) → implement → validate. <a href="docs/assets/loop-hero.mp4">Full-resolution MP4</a>.</sub>
 
 </div>
 
@@ -276,6 +278,12 @@ Full reference: [docs/SKILLS.md](docs/SKILLS.md).
 ## The `ao` CLI
 
 The `ao` CLI is the repo-native control plane behind the skills. It handles retrieval, health checks, compounding, goals, and terminal workflows.
+
+<div align="center">
+
+![ao CLI: ao --help, the knowledge flywheel badge, and the council-first value path](docs/assets/agentops-demo.gif)
+
+</div>
 
 <!-- agentops:claim:AOP-CLAIM-README-EVOLVE-AUTONOMOUS -->
 
