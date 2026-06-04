@@ -1,5 +1,5 @@
 ---
-last_reviewed: 2026-05-15
+last_reviewed: 2026-06-03
 ---
 
 # PRODUCT.md
@@ -62,7 +62,7 @@ Bring your agent and bring your harness. If it can consume plugins or skills, Ag
 
 ## Market Convergence
 
-The April 2026 Claude Code source analysis confirmed that Anthropic's internal tooling follows the same architecture AgentOps implements:
+Anthropic's Managed Agents (and peers like Cursor and Factory) appear to converge on the same architecture AgentOps implements — convergent, not derived-from (see the convergence note below):
 
 | Anthropic Concept | AgentOps Equivalent | Status |
 |---|---|---|
@@ -202,7 +202,7 @@ The same model used in the README: bookkeeping records the work, the context com
 <!-- agentops:claim:AOP-CLAIM-PRODUCT-EVOLVE-RECONCILE -->
 - `/evolve` — bounded reconciliation: reads goals, targets the worst gap, validates, and can repeat under operator limits
 - `/dream` — bounded private compounding lane
-- Gas City reference City — operator-owned cadence for unattended rpi, compile, maturity, and related jobs
+- Out-of-session substrate (reference: NTM + MCP + managed-agents) — operator-owned cadence for unattended rpi, compile, maturity, and related jobs
 - `.github/workflows/nightly.yml` — public proof harness for the contracts (not your private runtime)
 - MemRL feedback — cited artifacts receive session reward, utility scores update
 - Corpus health snapshot — the flywheel reports whether current citation flow is compounding or decaying

@@ -8,7 +8,7 @@ section, launch post, or video description.
 AgentOps is the engineering operating system for agent teams: a disciplined
 engineering layer that gives coding agents shared domain context, review
 verdicts, tracked follow-up work, and optional out-of-session compounding (the
-loop dispatched on the Gas City reference City).
+loop dispatched on a reference NTM + MCP + managed-agents substrate).
 
 ## Problem Statement
 
@@ -116,20 +116,22 @@ The important shape:
 
 Out-of-session orchestration is the deeper lane, not the first proof.
 AgentOps ships no daemon or scheduler of its own — the loop runs in session,
-and unattended runs are delegated to the Gas City reference City (see
-[ADR-0009](adr/ADR-0009-daemon-deletion-in-session-only.md)).
+and unattended runs are delegated to a swappable orchestration substrate. The
+reference substrate is the trio **NTM + MCP + managed-agents** (see
+[ADR-0009](adr/ADR-0009-daemon-deletion-in-session-only.md) and
+[docs/dependencies.md](dependencies.md)).
 
 After the user sees one packet and one verdict:
 
 ```bash
-# In the reference City, a long-lived mayor agent slings the next ready bead
-# to a refinery worker, which runs the loop as one invocable unit:
+# The substrate dispatches a whole loop as one unit: it spawns an agent that
+# runs the /rpi skill over the next ready bead — it never drives the loop's insides:
 ao rpi <bead-id>
-# Scheduled maintenance (Dream reports, wiki curation, release checks) runs as
-# Gas City cron Orders. See docs/dependencies.md and the using-gc skill.
+# Scheduled maintenance (Dream reports, wiki curation, release checks) is driven
+# by the substrate's triggers (NTM swarm, cron, or MCP). See docs/dependencies.md.
 ```
 
-Use the Gas City lane for approved recurring work such as Dream reports, wiki
+Use the substrate lane for approved recurring work such as Dream reports, wiki
 curation, release checks, or other compounding jobs where the operator has
 already accepted the artifact shape.
 
