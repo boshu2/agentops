@@ -201,6 +201,12 @@ patch_file "$REPO_ROOT/docs/documentation-index.md" \
   "s|All [0-9]+ checked-in skills mapped|All ${TOTAL} checked-in skills mapped|" \
   "docs/documentation-index.md domain-map skill count"
 
+# docs/GLOSSARY.md: "ships N shared skills" (TOTAL — every checked-in skill).
+patch_file "$REPO_ROOT/docs/GLOSSARY.md" \
+  'ships [0-9]+ shared skills' \
+  "s|ships [0-9]+ shared skills|ships ${TOTAL} shared skills|" \
+  "docs/GLOSSARY.md shared-skills count"
+
 echo ""
 
 if [[ "$errors" -gt 0 ]]; then
