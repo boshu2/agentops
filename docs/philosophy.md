@@ -60,11 +60,11 @@ Not every knowledge operation needs a frontier model. AgentOps uses three tiers:
 
 | Tier | When | Why |
 |------|------|-----|
-| Local 8B (ollama, etc.) | Volume work — dedup, defrag, freshness scoring, overnight compounding | Fast, private, cheap. Runs while you sleep. |
+| Local 8B (ollama, etc.) — **optional, user-supplied** | Volume work — dedup, defrag, freshness scoring, overnight compounding | Fast, private, cheap. Runs while you sleep. AgentOps ships no model host; bring your own, or run these on your frontier model. |
 | Frontier (Claude, GPT-4o, etc.) | Quality work — council validation, pre-mortem review, pattern extraction | Accuracy matters more than throughput. |
 | Human | Curation and promotion decisions | Judgment calls that agents get wrong systematically. |
 
-`/dream` uses the local tier for continuous compounding; when that compounding runs out of session — always-on, scheduled, unattended — it runs on the Gas City substrate (the reference out-of-session orchestrator), not an AgentOps daemon. `/council` and `/pre-mortem` use the frontier tier for high-stakes validation. The human reviews promotions from learning → finding → rule.
+`/dream` uses the local tier when one is configured (otherwise your frontier model) for continuous compounding; when that compounding runs out of session — always-on, scheduled, unattended — it runs on an out-of-session substrate (reference: NTM + MCP + managed-agents), not an AgentOps daemon. `/council` and `/pre-mortem` use the frontier tier for high-stakes validation. The human reviews promotions from learning → finding → rule.
 
 The ratio is intentional. Validation and curation cost 3-5x implementation time. This is not overhead — it is the ratchet. Without it, the flywheel runs backward.
 
