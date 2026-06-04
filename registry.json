@@ -1,13 +1,13 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-31T20:11:38Z",
+  "generated_at": "2026-06-04T17:29:05Z",
   "summary": {
-    "skills": 81,
+    "skills": 82,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 73,
+    "cli_commands": 75,
     "capabilities": 168
   },
   "surfaces": {
@@ -317,6 +317,14 @@
         "reference_count": 6
       },
       {
+        "name": "using-ntm",
+        "tier": "execution",
+        "path": "skills/using-ntm/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
         "name": "council",
         "tier": "judgment",
         "path": "skills/council/",
@@ -381,6 +389,14 @@
         "reference_count": 22
       },
       {
+        "name": "bd-first-memory-migration",
+        "tier": "knowledge",
+        "path": "skills/bd-first-memory-migration/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 4
+      },
+      {
         "name": "compile",
         "tier": "knowledge",
         "path": "skills/compile/",
@@ -402,7 +418,7 @@
         "path": "skills/domain/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 16
+        "reference_count": 17
       },
       {
         "name": "harvest",
@@ -531,14 +547,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 0
-      },
-      {
-        "name": "using-gc",
-        "tier": "meta",
-        "path": "skills/using-gc/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 2
       },
       {
         "name": "validation",
@@ -777,7 +785,12 @@
         "path": "cli/cmd/ao/",
         "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
         "bounded_context": "",
-        "driven_by_skills": []
+        "driven_by_skills": [
+          "domain",
+          "shared",
+          "using-agentops",
+          "using-ntm"
+        ]
       },
       {
         "name": "ao agents",
@@ -819,6 +832,13 @@
         "path": "cli/cmd/ao/",
         "purpose": "Complementary tooling for the bd (beads) issue tracker",
         "bounded_context": "BC3",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao canon",
+        "path": "cli/cmd/ao/",
+        "purpose": "Team-knowledge canon: learnings earned by independent attestation",
+        "bounded_context": "",
         "driven_by_skills": []
       },
       {
@@ -865,8 +885,7 @@
         "bounded_context": "BC1",
         "driven_by_skills": [
           "compile",
-          "domain",
-          "using-gc"
+          "domain"
         ]
       },
       {
@@ -969,9 +988,7 @@
         "driven_by_skills": [
           "autodev",
           "evolve",
-          "shared",
-          "using-agentops",
-          "using-gc"
+          "shared"
         ]
       },
       {
@@ -1083,8 +1100,7 @@
           "domain",
           "harvest",
           "inject",
-          "using-agentops",
-          "using-gc"
+          "using-agentops"
         ]
       },
       {
@@ -1137,8 +1153,7 @@
         "bounded_context": "BC1",
         "driven_by_skills": [
           "domain",
-          "flywheel",
-          "using-gc"
+          "flywheel"
         ]
       },
       {
@@ -1279,6 +1294,13 @@
         ]
       },
       {
+        "name": "ao redact",
+        "path": "cli/cmd/ao/",
+        "purpose": "Scrub secrets from stdin to stdout (canonical redactor)",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao registry",
         "path": "cli/cmd/ao/",
         "purpose": "Query the unified registry",
@@ -1308,12 +1330,10 @@
         "bounded_context": "BC3",
         "driven_by_skills": [
           "autodev",
-          "domain",
+          "evolve",
           "shared",
           "standards",
-          "swarm",
-          "using-agentops",
-          "using-gc"
+          "swarm"
         ]
       },
       {
@@ -1404,8 +1424,7 @@
         "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
         "bounded_context": "BC2",
         "driven_by_skills": [
-          "agent-native",
-          "using-gc"
+          "agent-native"
         ]
       },
       {
@@ -1436,10 +1455,10 @@
   },
   "capability_summary": {
     "total": 168,
-    "skills": 81,
-    "cli_commands": 73,
+    "skills": 82,
+    "cli_commands": 75,
     "gates": 11,
-    "reference_impls": 3
+    "reference_impls": 0
   },
   "cli_top_level_commands": [
     "agent",
@@ -1448,6 +1467,7 @@
     "autodev",
     "badge",
     "beads",
+    "canon",
     "capabilities",
     "ci",
     "citation",
@@ -1497,6 +1517,7 @@
     "quick-start",
     "ratchet",
     "reconcile",
+    "redact",
     "registry",
     "retrieval-bench",
     "robot-docs",
@@ -1587,6 +1608,27 @@
       "drives_commands": [],
       "path": "skills/automation-shape-routing/",
       "references": 0
+    },
+    {
+      "sku": "skill:bd-first-memory-migration",
+      "name": "bd-first-memory-migration",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "driving-adapter",
+      "tier": "knowledge",
+      "purpose": "Consolidate fragmented agent-memory layers into one bd-canonical store, then GC/retire the rest. Triggers: \"memory migration\", \"consolidate agent memory\", \"beads-first memory\".",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "repo-context"
+      ],
+      "produces": [
+        "migration-report",
+        "bd-memories"
+      ],
+      "drives_commands": [],
+      "path": "skills/bd-first-memory-migration/",
+      "references": 4
     },
     {
       "sku": "skill:beads",
@@ -1967,15 +2009,16 @@
         "stdout"
       ],
       "drives_commands": [
+        "ao agent",
         "ao compile",
         "ao eval run",
         "ao inject",
         "ao maturity",
-        "ao rpi",
+        "ao mcp serve",
         "ao rpi phased"
       ],
       "path": "skills/domain/",
-      "references": 16
+      "references": 17
     },
     {
       "sku": "skill:dream",
@@ -1984,7 +2027,7 @@
       "bounded_context": "BC1",
       "hex_role": "supporting",
       "tier": "session",
-      "purpose": "Retired pointer — out-of-session compounding moved to Gas City.",
+      "purpose": "Retired pointer — out-of-session compounding moved to the substrate (NTM + MCP + managed-agents).",
       "status": "active",
       "disposition": "refactor",
       "consumes": [],
@@ -2061,6 +2104,7 @@
         "ao metrics cite",
         "ao mine",
         "ao ratchet",
+        "ao rpi",
         "ao rpi loop"
       ],
       "path": "skills/evolve/",
@@ -3016,6 +3060,7 @@
         "stdout"
       ],
       "drives_commands": [
+        "ao agent",
         "ao beads verify",
         "ao evolve",
         "ao rpi",
@@ -3233,45 +3278,41 @@
         "documentation"
       ],
       "drives_commands": [
+        "ao agent",
         "ao agents inspect",
         "ao codex start",
         "ao codex stop",
-        "ao evolve",
         "ao flywheel close-loop",
         "ao forge transcript",
         "ao inject",
         "ao lookup",
-        "ao rpi",
+        "ao mcp serve",
         "ao search"
       ],
       "path": "skills/using-agentops/",
       "references": 0
     },
     {
-      "sku": "skill:using-gc",
-      "name": "using-gc",
+      "sku": "skill:using-ntm",
+      "name": "using-ntm",
       "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "generic",
-      "tier": "meta",
-      "purpose": "Explain how to run AgentOps on the Gas City (gc) substrate.",
+      "bounded_context": "BC4",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": "Use NTM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.",
       "status": "active",
-      "disposition": "update",
+      "disposition": "keep",
       "consumes": [],
       "produces": [
         "documentation"
       ],
       "drives_commands": [
-        "ao compile",
-        "ao corpus inject",
-        "ao evolve",
-        "ao inject",
-        "ao maturity",
-        "ao rpi",
-        "ao validate"
+        "ao agent",
+        "ao agent bundle",
+        "ao mcp serve"
       ],
-      "path": "skills/using-gc/",
-      "references": 2
+      "path": "skills/using-ntm/",
+      "references": 0
     },
     {
       "sku": "skill:validate",
@@ -3386,7 +3427,12 @@
       "bounded_context": "",
       "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
       "status": "active",
-      "driven_by_skills": [],
+      "driven_by_skills": [
+        "domain",
+        "shared",
+        "using-agentops",
+        "using-ntm"
+      ],
       "flags": [
         "--config",
         "--dry-run",
@@ -3479,6 +3525,23 @@
       "type": "cli-command",
       "bounded_context": "BC3",
       "purpose": "Complementary tooling for the bd (beads) issue tracker",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.canon",
+      "name": "ao canon",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Team-knowledge canon: learnings earned by independent attestation",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
@@ -3587,8 +3650,7 @@
       "status": "active",
       "driven_by_skills": [
         "compile",
-        "domain",
-        "using-gc"
+        "domain"
       ],
       "flags": [
         "--batch-size",
@@ -3853,9 +3915,7 @@
       "driven_by_skills": [
         "autodev",
         "evolve",
-        "shared",
-        "using-agentops",
-        "using-gc"
+        "shared"
       ],
       "flags": [
         "--auto-clean",
@@ -4150,8 +4210,7 @@
         "domain",
         "harvest",
         "inject",
-        "using-agentops",
-        "using-gc"
+        "using-agentops"
       ],
       "flags": [
         "--apply-decay",
@@ -4264,8 +4323,7 @@
       "status": "active",
       "driven_by_skills": [
         "domain",
-        "flywheel",
-        "using-gc"
+        "flywheel"
       ],
       "flags": [
         "--apply",
@@ -4587,6 +4645,23 @@
       "path": "cli/cmd/ao/"
     },
     {
+      "sku": "cmd:ao.redact",
+      "name": "ao redact",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Scrub secrets from stdin to stdout (canonical redactor)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
       "sku": "cmd:ao.registry",
       "name": "ao registry",
       "type": "cli-command",
@@ -4658,12 +4733,10 @@
       "status": "active",
       "driven_by_skills": [
         "autodev",
-        "domain",
+        "evolve",
         "shared",
         "standards",
-        "swarm",
-        "using-agentops",
-        "using-gc"
+        "swarm"
       ],
       "flags": [
         "--config",
@@ -4878,8 +4951,7 @@
       "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
       "status": "active",
       "driven_by_skills": [
-        "agent-native",
-        "using-gc"
+        "agent-native"
       ],
       "flags": [
         "--bead",
@@ -5053,33 +5125,6 @@
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
       "status": "active",
       "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "ref-impl:agentops-pack",
-      "name": "agentops reference City pack",
-      "type": "reference-impl",
-      "bounded_context": "BC5",
-      "purpose": "Reference Gas City pack: mayor + refinery agents drive ao rpi/evolve loops.",
-      "status": "active",
-      "path": "packs/agentops/"
-    },
-    {
-      "sku": "ref-impl:agentops-agent.mayor",
-      "name": "agentops mayor agent",
-      "type": "reference-impl",
-      "bounded_context": "BC5",
-      "purpose": "Reference City mayor agent role.",
-      "status": "active",
-      "path": "packs/agentops/agents/mayor/"
-    },
-    {
-      "sku": "ref-impl:agentops-agent.refinery",
-      "name": "agentops refinery agent",
-      "type": "reference-impl",
-      "bounded_context": "BC5",
-      "purpose": "Reference City refinery agent role.",
-      "status": "active",
-      "path": "packs/agentops/agents/refinery/"
     }
   ],
   "cadence_recommendations": [

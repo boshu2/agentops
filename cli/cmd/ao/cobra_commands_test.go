@@ -365,13 +365,13 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 
 	// Verify all top-level commands are registered (flat namespace)
 	expectedCmds := []string{
-		"agent", "agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
+		"agent", "agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "canon", "capabilities", "ci", "citation", "claim", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
 		"defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
 		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
 		"mcp", "memory", "metrics", "migrate", "mind", "mine", "next-work", "notebook", "operator", "orchestrate", "patterns",
-		"pool", "provenance", "quick-start", "ratchet", "reconcile", "retrieval-bench", "robot-docs", "rpi",
+		"pool", "provenance", "quick-start", "ratchet", "reconcile", "redact", "retrieval-bench", "robot-docs", "rpi",
 		"registry", "scenario", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
 		"store", "task-feedback", "task-status", "task-sync", "temper",
 		"trace", "turn", "validate", "version", "vibe-check", "wiki", "worktree",
@@ -424,13 +424,13 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 
 	// Same list as TestCobraCommandTreeRegistration
 	expectedCmds := []string{
-		"agent", "agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
+		"agent", "agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "canon", "capabilities", "ci", "citation", "claim", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
 		"defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
 		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
 		"mcp", "memory", "metrics", "migrate", "mind", "mine", "next-work", "notebook", "operator", "orchestrate", "patterns",
-		"pool", "provenance", "quick-start", "ratchet", "reconcile", "retrieval-bench", "robot-docs", "rpi",
+		"pool", "provenance", "quick-start", "ratchet", "reconcile", "redact", "retrieval-bench", "robot-docs", "rpi",
 		"registry", "scenario", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
 		"store", "task-feedback", "task-status", "task-sync", "temper",
 		"trace", "turn", "validate", "version", "vibe-check", "wiki", "worktree",

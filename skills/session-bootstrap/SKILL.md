@@ -40,7 +40,7 @@ Triggers:
 
 - **Manual spawn** — operator just spawned a fresh agent into the repo: `ao session bootstrap`.
 - **SessionStart hook (opt-in)** — AgentOps 3.0 ships no SessionStart hook. If you author one via the `hooks-authoring` skill, it can fail-open auto-fire `ao session bootstrap --robot` and discard the exit code.
-- **Pipeline submit** — the orchestration substrate (the reference Gas City City) and headless CI agents call `ao session bootstrap --json` before claiming work.
+- **Pipeline submit** — the orchestration substrate (the reference is NTM + MCP + managed-agents) and headless CI agents call `ao session bootstrap --json` before claiming work.
 
 If you spawned without running it: stop, run it, then resume.
 

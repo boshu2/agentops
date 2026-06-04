@@ -134,6 +134,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/llm-wiki` | External reading wiki proposal — raw sources to compiled wiki |
 | `/harvest` | Cross-rig knowledge consolidation — sweep, dedup, promote to global hub |
 | `/knowledge-activation` | Operationalize a mature `.agents` corpus into beliefs, playbooks, briefings, and gap surfaces |
+| `/bd-first-memory-migration` | Consolidate fragmented agent-memory layers onto a bd-canonical store, then GC/retire the rest |
 | `/brainstorm` | Structured idea exploration before planning |
 | `/discovery` | Full discovery phase orchestrator (brainstorm → search → research → plan → pre-mortem) |
 | `/plan` | Epic decomposition into issues |
@@ -144,6 +145,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/release` | Pre-flight, changelog, version bumps, tag |
 | `/crank` | Autonomous epic loop (uses swarm for each wave) |
 | `/swarm` | Fresh-context parallel execution (Ralph pattern) |
+| `/using-ntm` | Run AgentOps loops out of session on an NTM tmux swarm (the NTM leg of the substrate) |
 | `/evolve` | Goal-driven fitness-scored improvement loop |
 | `/burndown` | Bounded epic-completion loop — drive a finite target to all-merged, then stop |
 | `/eval-outcomes` | Grade via Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes |
@@ -211,7 +213,7 @@ AgentOps has several runtime modes. Do not assume hook automation exists everywh
 
 | Mode | When it applies | Start path | Closeout path | Guarantees |
 |------|-----------------|------------|---------------|------------|
-| `gc` (reference City) | Gas City (`gc`) binary available, used out-of-session via the reference City (`packs/agentops/`) | A long-lived mayor agent dispatches whole `ao rpi` loops to refinery workers (`bd ready` → `gc sling` → `ao rpi <bead>`); cron `exec` Orders run maintenance | The mayor owns the merge gate (CI-green is the signal) and triggers the knowledge-flywheel feedback | gc orchestrates *whole* `ao rpi`/`ao evolve` loops — it never sees the loop's insides. There is no in-CLI `runtime=gc` executor (removed); the seam is `gc` → `ao` as a subprocess. Dispatch is mayor-driven today; order-auto-dispatch is an upstream-GC gap (soc-5jwah). See the `using-gc` skill. |
+| `substrate` (out-of-session) | A swappable orchestration substrate available out-of-session: an NTM tmux swarm, MCP (`ao mcp serve`), or managed-agents (`ao agent`) | The operator or a lead agent runs `bd ready` and dispatches a whole loop per bead — an agent that runs the `/rpi` skill; cron / managed triggers run maintenance | The substrate owns the merge gate (CI-green is the signal) and triggers the knowledge-flywheel feedback | The substrate orchestrates *whole* `/rpi`/`/evolve` loops (each an agent running the skill) — it never sees the loop's insides; the seam is substrate → agent-running-the-skill. There is no in-CLI `runtime=gc` executor. See [agent-native](../agent-native/SKILL.md) and [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md). |
 | `hook-capable` | Claude/OpenCode with lifecycle hooks installed (no gc) | Runtime hook or `ao inject` / `ao lookup` | Runtime hook or `ao forge transcript` + `ao flywheel close-loop` | Automatic startup/context injection and session-end maintenance when hooks are installed |
 | `codex-native-hooks` | Codex CLI v0.115.0+ with native hook support (March 2026) | Runtime hooks (same as hook-capable) | Runtime hooks (same as hook-capable) | Native lifecycle hooks — same guarantees as hook-capable mode |
 | `codex-hookless-fallback` | Codex Desktop / Codex CLI pre-v0.115.0 without hook surfaces | `ao codex start` | `ao codex stop` | Explicit startup context, citation tracking, transcript fallback, and close-loop metrics without hooks |

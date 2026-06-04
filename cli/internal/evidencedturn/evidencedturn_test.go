@@ -37,14 +37,14 @@ func wellFormedTransitions(t *testing.T, beadID string) []turnstate.Transition {
 func provEdge(t *testing.T, from, to string) provenancegraph.Edge {
 	t.Helper()
 	e := provenancegraph.Edge{
-		FromID:   from,
-		FromType: "commit",
-		ToID:     to,
-		ToType:   "bead",
-		Relation: "wasRevisionOf",
+		FromID:      from,
+		FromType:    "commit",
+		ToID:        to,
+		ToType:      "bead",
+		Relation:    "wasRevisionOf",
 		EvidenceRef: "deadbeef",
-		TrustTier: "inferred",
-		TS:        "2026-05-31T03:00:00Z",
+		TrustTier:   "inferred",
+		TS:          "2026-05-31T03:00:00Z",
 	}
 	sealed, err := provenancegraph.Seal(e, "")
 	if err != nil {
@@ -269,7 +269,7 @@ func TestEvaluate_EmptyBeadIDErrors(t *testing.T) {
 
 func TestEvaluate_MultipleGapsAllReported(t *testing.T) {
 	in := wellFormedInput(t)
-	in.Scenarios = nil      // fails scenarios_covered + evidence_resolves
+	in.Scenarios = nil       // fails scenarios_covered + evidence_resolves
 	in.ProvenanceEdges = nil // fails provenance_event
 	v, err := Evaluate(in)
 	if err != nil {

@@ -24,10 +24,10 @@ func TestValidDirectiveID_Boundaries(t *testing.T) {
 		{"d-123", true},
 		// Invalid: missing prefix, uppercase, spaces, leading digit after d-
 		{"", false},
-		{"dx", false},       // no hyphen
-		{"D-x", false},      // uppercase
-		{"d-X", false},      // uppercase body
-		{"d- x", false},     // space
+		{"dx", false},           // no hyphen
+		{"D-x", false},          // uppercase
+		{"d-X", false},          // uppercase body
+		{"d- x", false},         // space
 		{"reduce-flaky", false}, // no d- prefix
 	}
 	for _, tc := range cases {
