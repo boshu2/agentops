@@ -735,6 +735,11 @@ jobs:
           chmod +x scripts/check-no-tracked-agents.sh
           bash scripts/check-no-tracked-agents.sh
 
+      - name: Corpus secret-scan (committed .agents + canon)
+        run: |
+          chmod +x scripts/check-corpus-secret-scan.sh
+          bash scripts/check-corpus-secret-scan.sh
+
       - name: Test plugin directory structure
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.ci == 'true'
         run: |
