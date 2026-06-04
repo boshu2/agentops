@@ -35,7 +35,7 @@ NEVER carry a ground-truth answer, a holdout value, a `target`, or an
 ## Payload shape
 
 The payload is the JSON encoding of `evalsubstrate.Rubric` — the exact output of
-`ao eval outcomes compile`. Schema: [`schemas/outcomes-rubric.v1.schema.json`](../../schemas/outcomes-rubric.v1.schema.json).
+`ao eval outcomes compile`. Schema: [`schemas/outcomes-rubric.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/outcomes-rubric.v1.schema.json).
 
 ```json
 {
@@ -81,13 +81,13 @@ alone.
 
 ## Validation
 
-- **Standalone validator:** [`scripts/validate-outcomes-rubric.sh`](../../scripts/validate-outcomes-rubric.sh)
+- **Standalone validator:** [`scripts/validate-outcomes-rubric.sh`](https://github.com/boshu2/agentops/blob/main/scripts/validate-outcomes-rubric.sh)
   `<payload.json>…` or `--selftest`. Gating structural pass is python
   `jsonschema` (Draft7), mirroring `scripts/validate-next-work.sh`.
 - **Acceptance fixtures:** `tests/fixtures/outcomes-rubric/` —
   `valid-dev` (pass), `valid-holdout-criteria-only` (pass, no instructions),
   `invalid-contains-target` (fail — smuggles a `target`). Driven by
-  [`tests/scripts/validate-outcomes-rubric.bats`](../../tests/scripts/validate-outcomes-rubric.bats).
+  [`tests/scripts/validate-outcomes-rubric.bats`](https://github.com/boshu2/agentops/blob/main/tests/scripts/validate-outcomes-rubric.bats).
 - **Schema↔struct drift guard:** `TestOutcomesRubricSchemaMatchesStruct` and
   siblings in `cli/internal/evalsubstrate/rubric_schema_test.go` keep the
   committed schema and the `Rubric`/`Criterion` Go structs in lockstep.

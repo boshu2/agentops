@@ -1,6 +1,6 @@
 # Orchestration Result Parity Contract
 
-Schema: [`schemas/orchestration-result.v1.schema.json`](../../schemas/orchestration-result.v1.schema.json)
+Schema: [`schemas/orchestration-result.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/orchestration-result.v1.schema.json)
 
 The output-contract **parity shape** every orchestration tier (NTM swarm,
 Claude-native, beads floor) MUST emit. This is the load-bearing safety property
