@@ -131,6 +131,39 @@ def count_trigger_list(frontmatter: str) -> int:
     return count
 
 
+def split_flow_items(inner: str) -> list[str]:
+    """Split a simple YAML flow sequence body without breaking quoted commas."""
+    items: list[str] = []
+    current: list[str] = []
+    quote = ""
+    i = 0
+    while i < len(inner):
+        char = inner[i]
+        if quote:
+            if char == "\\" and quote == '"' and i + 1 < len(inner):
+                current.append(inner[i + 1])
+                i += 2
+                continue
+            if char == quote:
+                if quote == "'" and i + 1 < len(inner) and inner[i + 1] == "'":
+                    current.append("'")
+                    i += 2
+                    continue
+                quote = ""
+            else:
+                current.append(char)
+        elif char in ("'", '"'):
+            quote = char
+        elif char == ",":
+            items.append("".join(current))
+            current = []
+        else:
+            current.append(char)
+        i += 1
+    items.append("".join(current))
+    return items
+
+
 def parse_trigger_probes(frontmatter: str) -> list[str]:
     """Return the items under a top-level `trigger_probes:` YAML list.
 
@@ -146,7 +179,7 @@ def parse_trigger_probes(frontmatter: str) -> list[str]:
         if flow:
             inner = flow.group(1).strip()
             if inner:
-                for item in inner.split(","):
+                for item in split_flow_items(inner):
                     cleaned = item.strip().strip("'\"").strip()
                     if cleaned:
                         probes.append(cleaned)
