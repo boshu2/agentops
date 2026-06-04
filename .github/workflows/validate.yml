@@ -186,7 +186,9 @@ jobs:
         run: sudo apt-get install -y jq
 
       - name: Install python schema deps
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
+        # Must cover every trigger that runs the drift sweep below (incl. docs/go/shell),
+        # otherwise a docs-only change runs regen-all.sh --check without PyYAML installed.
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
         run: pip install jsonschema pyyaml
 
       - name: Run skill structural integrity checks (heal --strict)
