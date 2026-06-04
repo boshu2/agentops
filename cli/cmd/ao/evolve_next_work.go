@@ -25,13 +25,13 @@ const (
 )
 
 var (
-	evolveNextWorkMode             string
-	evolveNextWorkIncludeOperator  bool
-	evolveNextWorkJSON             bool
-	evolveNextWorkBDBinary         string
-	evolveNextWorkRunnerOverride   ladder.BeadRunner
-	evolveNextWorkGrepOverride     ladder.GrepRunner
-	evolveNextWorkClock            func() time.Time
+	evolveNextWorkMode            string
+	evolveNextWorkIncludeOperator bool
+	evolveNextWorkJSON            bool
+	evolveNextWorkBDBinary        string
+	evolveNextWorkRunnerOverride  ladder.BeadRunner
+	evolveNextWorkGrepOverride    ladder.GrepRunner
+	evolveNextWorkClock           func() time.Time
 )
 
 var evolveNextWorkCmd = &cobra.Command{
