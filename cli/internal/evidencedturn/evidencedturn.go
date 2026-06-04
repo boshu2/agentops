@@ -178,10 +178,10 @@ func Evaluate(in Input) (Verdict, error) {
 	}
 
 	results := map[string]PredicateResult{
-		PredicateChainIntact:      evalChainIntact(in),
-		PredicateTerminalState:    evalTerminalState(in),
-		PredicateScenariosCovered: evalScenariosCovered(in),
-		PredicateEvidenceResolves: evalEvidenceResolves(in),
+		PredicateChainIntact:        evalChainIntact(in),
+		PredicateTerminalState:      evalTerminalState(in),
+		PredicateScenariosCovered:   evalScenariosCovered(in),
+		PredicateEvidenceResolves:   evalEvidenceResolves(in),
 		PredicateProvenanceEvent:    evalProvenanceEvent(in),
 		PredicateNoOrphan:           evalNoOrphan(in),
 		PredicateAuthorNeqValidator: evalAuthorNeqValidator(in),

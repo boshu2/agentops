@@ -14,13 +14,13 @@ import (
 // every marker variant with a stderr message referencing 'operator-stop'.
 func TestEvolveWriteStopMarker_Table(t *testing.T) {
 	tests := []struct {
-		name        string
-		mode        string
-		marker      string
-		reason      string
-		wantErr     bool
-		wantErrSub  string
-		wantFile    string
+		name         string
+		mode         string
+		marker       string
+		reason       string
+		wantErr      bool
+		wantErrSub   string
+		wantFile     string
 		wantFileBody string
 	}{
 		{
@@ -33,28 +33,28 @@ func TestEvolveWriteStopMarker_Table(t *testing.T) {
 			wantFileBody: "queue stable",
 		},
 		{
-			name:        "loop dormant refused",
-			mode:        "loop",
-			marker:      "dormant",
-			reason:      "agent self-halt attempt",
-			wantErr:     true,
-			wantErrSub:  "refused under --mode=loop",
+			name:       "loop dormant refused",
+			mode:       "loop",
+			marker:     "dormant",
+			reason:     "agent self-halt attempt",
+			wantErr:    true,
+			wantErrSub: "refused under --mode=loop",
 		},
 		{
-			name:        "loop stop refused",
-			mode:        "loop",
-			marker:      "stop",
-			reason:      "operator override",
-			wantErr:     true,
-			wantErrSub:  "refused under --mode=loop",
+			name:       "loop stop refused",
+			mode:       "loop",
+			marker:     "stop",
+			reason:     "operator override",
+			wantErr:    true,
+			wantErrSub: "refused under --mode=loop",
 		},
 		{
-			name:        "loop kill refused",
-			mode:        "loop",
-			marker:      "kill",
-			reason:      "kill switch",
-			wantErr:     true,
-			wantErrSub:  "refused under --mode=loop",
+			name:       "loop kill refused",
+			mode:       "loop",
+			marker:     "kill",
+			reason:     "kill switch",
+			wantErr:    true,
+			wantErrSub: "refused under --mode=loop",
 		},
 	}
 
