@@ -18,6 +18,12 @@ AgentOps sits on top of the coding harness you already use (Claude Code, Codex, 
 
 ## See It Work
 
+<div align="center">
+
+![AgentOps CLI demo: ao --help, the knowledge flywheel badge, and the council-first value loop](docs/assets/agentops-demo.gif)
+
+</div>
+
 Most teams run coding agents as isolated chat sessions. Prior attempts, warnings, decisions, and fixes scatter across chats, commits, and human memory, so the same mistakes recur and nothing leaves a reviewable trail.
 
 AgentOps breaks intent into bounded slices, gives each slice a first failing test and a write scope, and makes every phase boundary a gate that records evidence.
