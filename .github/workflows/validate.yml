@@ -228,7 +228,7 @@ jobs:
           ./scripts/check-scenario-test-linkage.sh
 
       - name: Six-surface derived-artifact drift sweep (regen-all.sh --check)
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
         run: |
           chmod +x scripts/regen-all.sh
           bash scripts/regen-all.sh --check
