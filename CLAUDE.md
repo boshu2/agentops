@@ -66,7 +66,7 @@ Building the CLI, the Key Scripts table, CI-validation detail + the "rules that 
 
 1. **Claim.** `bd ready` → pick a bead → `bd update <id> --claim`. **No bead, no PR.** If the work is genuinely new, `bd create` first.
 2. **Scope.** Read the bead's acceptance: a `.feature` file (canonical when present) or an embedded `## Scenarios` block in the bead description. Free-text acceptance is invalid — promote it to scenarios before work begins. Default: **one PR per coherent arc** — bundle scenarios that ship-or-revert together; split scenarios with independent rollback. The PR is the *atomic-revert unit*. Carve-out: `type=chore` with `#trivial` label for tiny work.
-3. **Ship.** `bd worktree create --branch <type>/<bead-id>-<scenario-token>-<short-slug>` — worktree-mandatory; do not edit in the shared checkout. Implement. Run `scripts/pre-push-gate.sh --fast` before push (smart conditional gate that runs the per-tool checks — `cd cli && make test`, `bats tests/scripts/<file>.bats`, etc. — only for the surfaces you changed); CI runs the omnibus validation on push.
+3. **Ship.** `bd worktree create wt-<bead-id> --branch <type>/<bead-id>-<scenario-token>-<short-slug>` (the worktree dir name is the required positional arg) — worktree-mandatory; do not edit in the shared checkout. Implement. Run `scripts/pre-push-gate.sh --fast` before push (smart conditional gate that runs the per-tool checks — `cd cli && make test`, `bats tests/scripts/<file>.bats`, etc. — only for the surfaces you changed); CI runs the omnibus validation on push.
 4. **Close.** Open PR. CI validates the merge state. Squash-merge when green. The bead closes only when every scenario is merged (or explicitly cancelled in bead metadata).
 
 ### Branch + PR shape
@@ -81,7 +81,7 @@ Building the CLI, the Key Scripts table, CI-validation detail + the "rules that 
 
 ### Multi-agent discipline (shared checkout)
 
-The host `~/dev/agentops` is contended. **Agents do not edit it directly.** Use `bd worktree create --branch <name>` for every change. Cross-bead merge serialization: `bd merge-slot`. Foreign uncommitted files = quarantined; identify owner, attach to a bead, move into a worktree.
+The host `~/dev/agentops` is contended. **Agents do not edit it directly.** Use `bd worktree create <name> --branch <branch>` for every change. Cross-bead merge serialization: `bd merge-slot`. Foreign uncommitted files = quarantined; identify owner, attach to a bead, move into a worktree.
 
 ### Provenance
 

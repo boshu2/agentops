@@ -38,7 +38,9 @@ require_conditional_push_wording() {
     fi
 }
 
-require_conditional_push_wording "AGENTS.md"
+# The bd-closeout conditional-push wording lives in AGENTS-WORKFLOW.md after the
+# AGENTS.md tiered split (soc-vuu6.3); the thin root AGENTS.md only points to it.
+require_conditional_push_wording "AGENTS-WORKFLOW.md"
 require_conditional_push_wording "cli/AGENTS.md"
 
 if require_file "docs/runbooks/bd-server-mode-closeout.md"; then
