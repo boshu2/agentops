@@ -20,9 +20,9 @@ AgentOps sits on top of the coding harness you already use (Claude Code, Codex, 
 
 <div align="center">
 
-![A real Claude Code session taking a repo through the full delivery loop: research, plan, implement, validate](docs/assets/loop-hero.gif)
+![A real Claude Code session running the delivery loop with a cross-model council gate: research, plan, council --mixed, implement, validate](docs/assets/loop-hero.gif)
 
-<sub>One real session, the whole loop end to end — research → plan → implement → validate. Sped for pace; <a href="docs/assets/loop-hero.mp4">full-resolution MP4</a>.</sub>
+<sub>Real Claude Code, lightly edited for pace — the delivery loop end to end: research → plan → <code>/council --mixed</code> (3 Claude + 3 Codex judges) → implement → validate. <a href="docs/assets/loop-hero.mp4">Full-resolution MP4</a>.</sub>
 
 </div>
 
