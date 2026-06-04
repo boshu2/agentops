@@ -99,7 +99,7 @@ Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `ag
 
 - **DDD (vocabulary):** `skills/domain/references/` — BC names + ubiquitous language.
 - **Hex (structure):** `skills/*/SKILL.md` frontmatter (`hexagonal_role`, `consumes`, `produces`, `context_rel`) → generated to `docs/contracts/context-map.md`. CI gate: `validate-context-map-drift`.
-- **Gherkin (acceptance):** `skills/*/references/*.feature` + bead-embedded `## Scenarios`. CI gate: `scenario-hash-stability`.
+- **Gherkin (acceptance):** `skills/*/references/*.feature` + bead-embedded `## Scenarios`. CI gate: `check-scenario-test-linkage` (in the `skill-gates` job).
 
 ### CI tiers (no "advisory")
 
