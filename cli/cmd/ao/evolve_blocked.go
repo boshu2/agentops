@@ -87,12 +87,12 @@ func init() {
 // fields except cycle/timestamp/reason are optional; the JSONL reader rejects
 // records missing those three.
 type BlockedEvent struct {
-	Cycle             string `json:"cycle"`
-	Timestamp         string `json:"timestamp"`
-	Bead              string `json:"bead,omitempty"`
-	Reason            string `json:"reason"`
-	NeededContext     string `json:"needed_context,omitempty"`
-	LadderStepFailed  int    `json:"ladder_step_failed,omitempty"`
+	Cycle            string `json:"cycle"`
+	Timestamp        string `json:"timestamp"`
+	Bead             string `json:"bead,omitempty"`
+	Reason           string `json:"reason"`
+	NeededContext    string `json:"needed_context,omitempty"`
+	LadderStepFailed int    `json:"ladder_step_failed,omitempty"`
 }
 
 func runEvolveBlocked(cmd *cobra.Command, _ []string) error {

@@ -446,7 +446,7 @@ draft ──────> active ──────> retired
 ### Connection to Existing Infrastructure
 
 - **Hooks:** Active constraints are sourced by `task-validation-gate.sh` during validation. The hook reads `.agents/constraints/index.json`, evaluates supported detector kinds, and treats companion `.sh` files as review artifacts rather than executable runtime contracts.
-- **Post-mortem / Retro:** After extracting learnings, if any score >= 4/5 on actionability and are tagged `constraint` or `anti-pattern`, the skill invokes `hooks/constraint-compiler.sh <learning-path>` to generate the template.
+- **Post-mortem / Retro:** After extracting learnings, if any score >= 4/5 on actionability and are tagged `constraint` or `anti-pattern`, the skill generates the template via `ao curate constrain`; an opt-in `constraint-compiler.sh` hook (authored via the hooks-authoring skill) can run it too.
 - **Pool:** Reads established learnings from `.agents/pool/staged/` or promoted artifacts in `.agents/learnings/`.
 - **CLI:** `ao curate constrain` -- scans for established learnings meeting promotion criteria, generates constraint templates.
 

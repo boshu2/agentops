@@ -46,7 +46,6 @@ Every `ao` command that is actively called by at least one skill.
 | `ao dedup` | flywheel |
 | `ao contradict` | flywheel |
 | `ao metrics` | flywheel |
-| `ao hooks` | quickstart |
 | `ao init` | quickstart |
 | `ao session` | post-mortem, retro |
 | `ao temper` | post-mortem |
