@@ -20,10 +20,10 @@
 | Operational delta | avg_age_days / 100 | `ao metrics health` (`cli/cmd/ao/metrics_health.go`) |
 | Retrieval target (sigma) | 0.7 | `ao metrics health` escape velocity threshold |
 | Citation target (rho) | 0.3 | `ao metrics health` escape velocity threshold |
-| Context load ceiling | 40% of window | Hook enforcement (35% warn, 40% hard stop) |
+| Context load ceiling | 40% of window | `ao context assemble` budgeting (35% warn, 40% hard stop) |
 | Summary budget | 500 tokens | Briefing packet assembly (`ao context assemble`) |
 | Max waves per epic | 50 | `/crank` FIRE loop global limit |
-| Max retries per gate | 3 | Gate retry logic in validation hooks |
+| Max retries per gate | 3 | Gate retry logic in the `/crank` FIRE loop |
 | Confidence decay | 10%/week | Learning freshness scoring in `ao lookup` |
 | Circuit breaker | 60 minutes | `/evolve` stops if no productive cycle in 60 min |
 
@@ -39,7 +39,7 @@
 
 **AgentOps implementation:**
 
-- **Context guard** — 35% warn threshold, 40% hard stop. Prevents the "lost in the middle" retrieval collapse (Liu et al. 2023). Implemented in session-start hook and context assembly.
+- **Context guard** — 35% warn threshold, 40% hard stop. Prevents the "lost in the middle" retrieval collapse (Liu et al. 2023). Enforced in `ao context assemble` / `ao inject` budgeting (AgentOps 3.0 is hookless — `ao session bootstrap` is the explicit session-start step that pulls decay-ranked context).
 - **Knowledge tiering** — Gold/silver/bronze tiers in `.agents/learnings/`. Gold learnings are always injected; bronze are available but not proactively loaded. Controls the hot-set size.
 - **Idle streak detection** — `/evolve` tracks consecutive idle cycles from `cycle-history.jsonl`. At threshold, the system stops rather than wasting cycles. This is a buffer against runaway autonomous loops.
 - **`.agents/` corpus size** — The physical K stock. Tiering and pruning (`ao maturity --expire`) prevent the buffer from growing past the point where retrieval degrades.
@@ -91,7 +91,7 @@ The knowledge stock `K` lives in `.agents/`. Its structure:
 - **Phase boundaries (R to P to I to V)** — The RPI lifecycle enforces sequential phases: Research, Plan, Implement, Validate. Each phase must complete before the next begins. This is a deliberate delay that prevents premature implementation. The cost of finding a bug increases 10x at each stage it survives.
 - **Circuit breaker (60 min)** — `/evolve` stops if no productive cycle occurred in the last 60 minutes. This prevents the system from oscillating between idle cycles indefinitely. Implemented as a timestamp check against `cycle-history.jsonl`.
 - **Confidence decay (10%/week)** — Learning freshness scores decay over time, creating a delay between when knowledge was created and when it becomes effectively invisible to retrieval. This matches Ebbinghaus's forgetting curve.
-- **Stale run TTL** — Sessions that do not close cleanly have their state cleaned up by the pending-cleaner hook after a timeout. Prevents stale state from contaminating future sessions.
+- **Stale run TTL** — RPI runs that do not close cleanly have their state cleaned up by `ao rpi cleanup` (and the `--auto-clean-stale-after` pre-run sweep) once older than the TTL. Prevents stale state from contaminating future sessions.
 - **Maturity lifecycle** — `ao maturity --expire` implements time-delayed eviction. Knowledge that is not retrieved within its TTL decays out of the active set.
 
 **dK/dt mapping:** Controls the lag between `I(t)` and usable `K`. Phase boundaries create healthy delays (validation before deployment). Confidence decay and maturity lifecycle create the `delta * K` drain term.
@@ -112,8 +112,8 @@ The knowledge stock `K` lives in `.agents/`. Its structure:
 | **B2: Scale friction** | As K grows, retrieval quality degrades and governance cost rises | Prevents corpus bloat from collapsing sigma | Tiering, pruning, MemRL utility scoring (`ao feedback`) |
 | **Regression gates** | `/evolve` snapshots fitness before each cycle; regression = automatic revert | Prevents improvement cycles from making things worse | `ao goals measure`, fitness snapshot comparison |
 | **Council FAIL** | Multi-model council returns FAIL verdict; blocks merge | Prevents bad code from locking into ratchet | `/vibe`, `/council` verdicts in `.agents/council/` |
-| **Push gate** | Hook blocks `git push` if `/vibe` has not passed | Prevents unvalidated code from reaching main | `hooks/push-gate.sh` |
-| **Pre-mortem gate** | Hook blocks `/crank` if `/pre-mortem` has not passed | Prevents implementation of unvetted plans | `hooks/pre-mortem-gate.sh` |
+| **Push gate** | CI (`.github/workflows/validate.yml`) blocks merge to main unless validation passes; `/vibe` is the explicit pre-push readiness step | Prevents unvalidated code from reaching main | `scripts/pre-push-gate.sh`, `/vibe`, branch protection + CI |
+| **Pre-mortem gate** | `/pre-mortem` is the explicit pre-implementation step; `/crank` / `/evolve` surface the post-mortem checkpoint | Prevents implementation of unvetted plans | `/pre-mortem`, `/crank`, `scripts/session-pr-scope.sh` |
 
 **dK/dt mapping:**
 - B1 creates the `delta * K` term — the constant drain that R1 must overcome.
@@ -183,18 +183,18 @@ When `dominant: "R1"`, the flywheel is spinning faster than decay can drain it. 
 | Flow | From | To | Mechanism | Why it matters |
 |------|------|----|-----------|----------------|
 | Knowledge injection | `.agents/learnings/` | Session context | `ao lookup` (freshness-weighted, utility-scored, on demand) | Session N knows what session 1 learned |
-| Knowledge extraction | Session output | `.agents/learnings/` | `ao forge` (hook-enforced at session end) | Experience survives session death |
+| Knowledge extraction | Session output | `.agents/learnings/` | `ao forge` (explicit session-end step, e.g. via `/post-mortem` / `/handoff`) | Experience survives session death |
 | Briefing packets | Prior research/plans | Agent context | `ao context assemble` (500-token summaries) | Right information, right phase, right agent |
 | Least-privilege loading | Full knowledge stock | Filtered subset | Phase-based and role-based filtering | Prevents lost-in-the-middle; context as security boundary |
 | Ralph Wiggum | Previous wave state | New wave workers | Fresh context per wave (zero bleed-through) | Workers reason from clean state, not accumulated garbage |
-| Hook nudges | System state | Agent prompt | PostToolUse/UserPromptSubmit hooks | "Run /vibe before pushing" — invisible except when needed |
-| Finding registry + compiled prevention | `.agents/findings/registry.jsonl`, `.agents/planning-rules/*.md`, `.agents/pre-mortem-checks/*.md`, `.agents/constraints/index.json` | `/plan`, `/pre-mortem`, `/vibe`, `/post-mortem`, `task-validation-gate.sh` | skill contracts + `hooks/finding-compiler.sh` + `docs/contracts/finding-registry.md` | Reusable failures become earlier planning/review checks, and mechanically detectable ones can become active validation blockers |
+| Workflow nudges | System state | Agent prompt | Explicit skill steps (`/vibe`, `/pre-mortem`) + opt-in hooks via the `hooks-authoring` skill (AgentOps ships none by default) | "Run /vibe before pushing" — surfaced at the relevant step |
+| Finding registry + compiled prevention | `.agents/findings/registry.jsonl`, `.agents/planning-rules/*.md`, `.agents/pre-mortem-checks/*.md`, `.agents/constraints/index.json` | `/plan`, `/pre-mortem`, `/vibe`, `/post-mortem` | skill contracts + `docs/contracts/finding-registry.md` + CI gate `scripts/check-finding-registry.sh` | Reusable failures become earlier planning/review checks, and the registry contract is CI-enforced |
 
 **The 40% Rule as an information flow control:** The context guard is not just a buffer control (#11). It is fundamentally an information flow decision: what gets loaded and what does not. At 40% capacity, the system must choose. That choice — freshness-weighted, utility-scored, phase-scoped — determines sigma.
 
 **dK/dt mapping:** Directly increases `sigma` by getting the right knowledge to the right window at the right time. Also increases `rho` by making retrieved knowledge more relevant to the current task (phase scoping reduces noise).
 
-**Status:** Implemented. All seven information flows are active. The prevention-oriented seventh flow now spans registry intake and compiled prevention outputs: planning and judgment load compiled artifacts first, and task validation consumes active constraint index entries for mechanically detectable findings. `ao context assemble` and `ao lookup` remain the primary CLI delivery mechanisms for broader knowledge retrieval.
+**Status:** Implemented. All seven information flows are active. The prevention-oriented seventh flow now spans registry intake and compiled prevention outputs: planning and judgment load compiled artifacts first (`/plan`, `/pre-mortem`, `/vibe`), and the registry contract is CI-enforced (`scripts/check-finding-registry.sh`). `ao context assemble` and `ao lookup` remain the primary CLI delivery mechanisms for broader knowledge retrieval.
 
 ---
 
@@ -204,26 +204,26 @@ When `dominant: "R1"`, the flywheel is spinning faster than decay can drain it. 
 
 **AgentOps implementation:**
 
-AgentOps has 3 active runtime hooks in `hooks/hooks.json` that enforce the core knowledge lifecycle mechanically. The agent does not decide whether to follow them. The system enforces them.
+AgentOps 3.0 is **hookless**: it ships zero runtime hooks. The core knowledge lifecycle is enforced by CI gates plus explicit skill steps, not by auto-firing hooks. CI (`.github/workflows/validate.yml`) is the authoritative gate — the agent cannot merge to main unless it passes — and the skills provide the in-session steps that keep the lifecycle whole.
 
 | Rule | Enforcement | What it prevents |
 |------|-------------|------------------|
-| Session start hook | Runs `hooks/session-start.sh` on `SessionStart` | Cold starts without prior knowledge |
-| Session end maintenance hook | Runs `hooks/session-end-maintenance.sh` on `SessionEnd` | Lost session learnings and stale pools |
-| Stop close-loop hook | Runs `hooks/ao-flywheel-close.sh` on `Stop` | Unclosed flywheel feedback cycles |
-| Task validation constraint hook | Runs `hooks/task-validation-gate.sh` on `TaskCompleted` | Mechanically detectable failures escaping validation despite prior findings |
+| Session orientation | Explicit `ao session bootstrap` + `ao inject` at session start | Cold starts without prior knowledge |
+| Session-end extraction | Explicit `ao forge` step via `/post-mortem` / `/handoff` | Lost session learnings and stale pools |
+| Flywheel close-loop | Explicit `/post-mortem` / citation-tracking step | Unclosed flywheel feedback cycles |
+| Validation gate | CI omnibus validation + `/vibe` pre-push step + `scripts/pre-push-gate.sh` | Mechanically detectable failures escaping validation |
 
-Guardrail hook scripts (push gate, worker guard, pre-mortem gate, etc.) remain in the repo and can be re-enabled by manifest policy, but they are not part of the active runtime contract by default.
+The guardrail behaviors above (session start, push gate, pre-mortem gate, etc.) are realized as CI gates and explicit skill steps. AgentOps does not ship them as hooks; a consumer who wants always-on, pre-action enforcement can author opt-in hooks via the `hooks-authoring` skill.
 
 **Additional rules:**
 - **Sisyphus rule** — Completion requires an explicit marker. The agent cannot claim "done" without the system agreeing. Prevents premature completion claims.
 - **Max 50 waves** — Global wave limit prevents infinite execution loops in `/crank`.
 - **Strike check** — Skip goal after 3 consecutive failures. Prevents infinite retry on fundamentally broken goals.
-- **Kill switches** — `AGENTOPS_HOOKS_DISABLED=1` (all hooks), deploy kill file (stops `/evolve`). Every autonomous loop has a manual override.
+- **Kill switches** — deploy kill file (stops `/evolve`), circuit breaker (60-min idle stop). Every autonomous loop has a manual override.
 
 **dK/dt mapping:** Rules do not appear directly in the equation, but they prevent catastrophic dK/dt events — regressions that would send K to zero. They also enforce the information flows (#6) that keep sigma high. Without rules, the flywheel depends on agent memory. Agents forget. Rules do not.
 
-**Status:** Implemented. The session-boundary hooks and task-validation constraint hook are enforced. All kill switches tested.
+**Status:** Implemented. The lifecycle steps are enforced by CI gates and explicit skill steps (AgentOps 3.0 ships zero hooks). All kill switches tested.
 
 ---
 
@@ -234,14 +234,14 @@ This is the product insight.
 Simple rules produce complex behavior that evolves. The seed encodes rules (#5). Emergence produces self-organization (#4). This transition — from mechanical enforcement to adaptive behavior — is what separates AgentOps from a checklist.
 
 Consider what happens:
-1. **Rules** (#5): Hooks enforce the extract-inject cycle. Every session deposits learnings. Every session retrieves them. The agent has no choice.
+1. **Rules** (#5): CI gates and explicit skill steps enforce the extract-inject cycle. Every session deposits learnings (`ao forge`). Every session retrieves them (`ao inject` / `ao session bootstrap`). The merge gate makes it non-optional.
 2. **Information flows** (#6): The flywheel delivers the right knowledge to the right context. Sigma increases.
 3. **Reinforcing feedback** (#7): Retrieved knowledge that is used gets reinforced. Utility scores rise. Future retrieval improves. The flywheel accelerates.
 4. **Self-organization** (#4): `/evolve` measures fitness, picks the worst gap, fixes it, validates nothing regressed, extracts what it learned. The system's rules change based on its own experience.
 
 The rules do not specify what the system should build. They specify how it should learn. The fitness landscape (GOALS.md) determines what gets built. The rules determine that whatever gets built also produces knowledge that compounds.
 
-This is why the product is the seed, not the tree. The same 6 seed elements — GOALS.md, `.agents/`, hooks, CLAUDE.md section, core skills, bootstrap learning — planted in different repos produce different systems. The rules are identical. The emergent behavior differs because the goals differ.
+This is why the product is the seed, not the tree. The same 6 seed elements — GOALS.md, `.agents/`, CI gates, CLAUDE.md section, core skills, bootstrap learning — planted in different repos produce different systems. The rules are identical. The emergent behavior differs because the goals differ.
 
 Fractal composition is the structural manifestation of this insight:
 
@@ -262,17 +262,17 @@ The same shape at every scale (function, issue, epic, repository) means rules at
 | Mechanism | What self-organizes | How |
 |-----------|--------------------|----|
 | `/evolve` fitness loop | Goal pursuit strategy | Measures all goals, selects worst by severity weight, fixes it, validates no regression, learns. Next cycle's choice depends on this cycle's result. |
-| Finding registry ratchet | Planning, review, and validation context | Structured findings enter through `.agents/findings/registry.jsonl`, compile into promoted artifacts plus planning/pre-mortem outputs, and mechanical active findings feed `.agents/constraints/index.json` for `task-validation-gate.sh`. |
+| Finding registry ratchet | Planning, review, and validation context | Structured findings enter through `.agents/findings/registry.jsonl`, compile into promoted artifacts plus planning/pre-mortem outputs, and feed `.agents/constraints/index.json`; the registry contract is CI-enforced (`scripts/check-finding-registry.sh`). |
 | `/forge` pattern extraction | Knowledge taxonomy | Extracts reusable patterns from sessions. The pattern library grows and changes shape based on what the system encounters. |
 | Skill composition | Capability surface | Skills chain: `/research` -> `/plan` -> `/pre-mortem` -> `/crank` -> `/vibe` -> `/post-mortem`. The chain is fixed but each skill adapts its behavior to its inputs. |
 | Progressive skill revelation | User-visible surface | New users see 8 starter skills. The remaining skills reveal as the user grows. The system's visible complexity adapts to the user's readiness. |
 | Severity-weighted goal selection | Priority ordering | `ao goals measure` scores all goals by weight. `/evolve` works the highest-weight failure first. The priority order changes every cycle based on measurement. |
 
-**The finding registry deserves emphasis.** It is the mechanism that converts #7 (reinforcing feedback - learnings) into earlier-stage prevention. When a failure is normalized into a structured finding, it no longer stays as prose: the compiler promotes it into reusable planning/review artifacts, and mechanically detectable active findings can also become task-validation constraints. The important limit is not "registry versus enforcement" anymore; it is "advisory for ambiguous findings, enforced for the mechanical subset."
+**The finding registry deserves emphasis.** It is the mechanism that converts #7 (reinforcing feedback - learnings) into earlier-stage prevention. When a failure is normalized into a structured finding, it no longer stays as prose: it is promoted into reusable planning/review artifacts that `/plan`, `/pre-mortem`, and `/vibe` load, and the registry contract itself is CI-enforced (`scripts/check-finding-registry.sh`). The important limit is selectivity: which findings are concrete enough to compile into a reusable check versus which stay advisory.
 
-**dK/dt mapping:** Self-organization does not appear in the equation because it changes the equation itself. When the finding registry promotes a failure into reusable planning/review artifacts, it changes the system's `sigma` by improving retrieval focus and its `rho` by making reuse happen earlier in the lifecycle. When the same finding becomes an active mechanical constraint, it also reduces `phi` by preventing repeated validation misses from compounding into governance friction.
+**dK/dt mapping:** Self-organization does not appear in the equation because it changes the equation itself. When the finding registry promotes a failure into reusable planning/review artifacts, it changes the system's `sigma` by improving retrieval focus and its `rho` by making reuse happen earlier in the lifecycle. By surfacing the same failure as a reusable check before implementation, it also reduces `phi` by preventing repeated validation misses from compounding into governance friction.
 
-**Status:** Implemented in part. `/evolve` is production-tested (116 cycles, ~7 hours continuous). Registry intake, compiled planning/review reuse, and active task-validation enforcement for mechanically detectable findings are all live. The remaining limit is selectivity, not absence: many findings will always stay advisory because they cannot be compiled safely.
+**Status:** Implemented in part. `/evolve` is production-tested (116 cycles, ~7 hours continuous). Registry intake, compiled planning/review reuse, and the CI-enforced registry contract are all live. The remaining limit is selectivity, not absence: many findings will always stay advisory because they cannot be compiled into a reusable check safely.
 
 ---
 
@@ -321,8 +321,8 @@ The same shape at every scale (function, issue, epic, repository) means rules at
 |---|------|----|-------|
 | 1 | Reduce variance | Harness variance (Brownian Ratchet) | Spawn parallel attempts, filter aggressively, ratchet successes |
 | 2 | Context is infinite | Context is scarce (40% Rule) | Treat context as a security boundary, least-privilege loading |
-| 3 | Validation is post-hoc | Validation is preventive (Shift-Left) | `/pre-mortem` before implementation, hooks at every gate |
-| 4 | Rules are guidelines | Rules are structural (Hooks) | 3 active runtime hooks that cannot be forgotten, skipped, or rationalized away |
+| 3 | Validation is post-hoc | Validation is preventive (Shift-Left) | `/pre-mortem` before implementation, CI gates + `/vibe` at every gate |
+| 4 | Rules are guidelines | Rules are structural (CI gates) | CI merge gates that cannot be forgotten, skipped, or rationalized away |
 | 5 | Knowledge is hoarded | Knowledge is flowing (Flywheel) | Extract, score, tier, decay, re-inject across sessions |
 | 6 | Designed systems | Evolved systems (The Seed) | Define starting conditions, let the system evolve toward goals |
 
@@ -337,7 +337,7 @@ A designed system is specified upfront and built to spec. An evolved system is g
 
 The seed does not design outcomes. It creates conditions for emergence:
 - GOALS.md defines the fitness landscape
-- Hooks enforce the rules of engagement
+- CI gates enforce the rules of engagement
 - The flywheel provides the memory mechanism
 - `/evolve` provides the selection pressure
 
@@ -361,7 +361,7 @@ Two mechanisms approach this level:
 
 **Stigmergy coordination** — Workers leave traces in shared state (`.agents/`) that influence other workers' behavior without direct communication. No worker knows the full system state. No coordinator directs the full system. The system's behavior emerges from local interactions with shared artifacts — the same principle that governs ant colonies.
 
-**The honest assessment:** Level #1 is aspirational. True paradigm transcendence would mean the system can recognize when its own organizing metaphors (the seed, the flywheel, the ratchet) are limiting and replace them. AgentOps does not do this yet. The finding registry (#4) can now promote learnings into reusable advisory checks and active task-validation constraints, and `/evolve` can change what it works on, but neither can change the fundamental assumptions of the system itself.
+**The honest assessment:** Level #1 is aspirational. True paradigm transcendence would mean the system can recognize when its own organizing metaphors (the seed, the flywheel, the ratchet) are limiting and replace them. AgentOps does not do this yet. The finding registry (#4) can now promote learnings into reusable planning/review checks, and `/evolve` can change what it works on, but neither can change the fundamental assumptions of the system itself.
 
 What exists is the infrastructure for it: append-only logs that let a future meta-observer analyze whether the system's paradigms are serving it.
 
@@ -400,7 +400,7 @@ Each term maps to specific leverage points:
 | #6 (Info flows) | Least-privilege loading, phase scoping, and context assembly determine what gets retrieved (sigma) |
 | #8 (B2 via MemRL) | Utility scoring (`ao feedback`) adjusts retrieval priority, preventing sigma collapse at scale |
 | #7 (R1 loop) | This IS the R1 loop. Retrieval × usage × existing stock = compound growth |
-| #5 (Rules) | Hooks enforce the extract-inject cycle that keeps sigma and rho nonzero |
+| #5 (Rules) | CI gates + explicit skill steps enforce the extract-inject cycle that keeps sigma and rho nonzero |
 
 ### phi * K^2 — Scale Friction
 
@@ -484,5 +484,5 @@ What is missing from the Meadows mapping and what would close each gap.
 - [strategic-direction.md](strategic-direction.md) — Consolidation decision, summary Meadows table, 6 paradigm shifts
 - [seed-definition.md](seed-definition.md) — The 6 seed elements with Meadows mapping per element
 - [the-science.md](the-science.md) — The dK/dt equation, escape velocity, limits to growth
-- [how-it-works.md](how-it-works.md) — Hooks, ratchet, Ralph Wiggum, compaction resilience
+- [how-it-works.md](how-it-works.md) — Hookless enforcement, ratchet, Ralph Wiggum, compaction resilience
 - [workflows/meta-observer-pattern.md](workflows/meta-observer-pattern.md) — Stigmergy coordination pattern
