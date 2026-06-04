@@ -50,18 +50,9 @@ func TestLoadRPIC2Events_EmptyRootReadsRelativeRunEventLog(t *testing.T) {
 		t.Fatalf("write events.jsonl: %v", err)
 	}
 
-	previous, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("get cwd: %v", err)
-	}
-	if err := os.Chdir(root); err != nil {
-		t.Fatalf("chdir temp root: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := os.Chdir(previous); err != nil {
-			t.Fatalf("restore cwd: %v", err)
-		}
-	})
+	// t.Chdir resolves the relative ("") root and auto-restores cwd at test
+	// end — the test-isolation ratchet's preferred helper over raw os.Chdir.
+	t.Chdir(root)
 
 	events, err := loadRPIC2Events("", runID)
 	if err != nil {
