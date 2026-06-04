@@ -5,7 +5,7 @@
 ## Overview
 
 AgentOps is a repo-native operating layer that combines interactive skills, the
-`ao` control plane, hooks, and `.agents/` artifacts. Three product layers do the
+`ao` control plane, CI gates, and `.agents/` artifacts. Three product layers do the
 work: the **Context Compiler** assembles the right context at session start, the
 **Validation Gates** challenge plans and code before they ship, and the
 **Knowledge Flywheel** extracts learnings, scores them, and resurfaces them so
@@ -52,11 +52,11 @@ The meta-framework. [DevOps' Three Ways](https://itrevolution.com/articles/the-t
 
 **Flow.** Orchestration skills move WIP through the system. Research → plan → validate → build → review → learn — single-piece flow, minimizing context switches. `/rpi` runs all phases end to end. `/crank` executes waves of parallel workers. `/swarm` spawns teams.
 
-**Feedback.** Shorten the feedback loop until defects can't survive it. Multi-model councils (`/council`) catch issues before code ships. Hooks make the rules unavoidable — validation gates, push blocking, regression auto-revert. Problems found Friday don't wait until Monday.
+**Feedback.** Shorten the feedback loop until defects can't survive it. Multi-model councils (`/council`) catch issues before code ships. CI gates (`.github/workflows/validate.yml`) make the rules unavoidable — validation gates, push blocking, regression auto-revert. Problems found Friday don't wait until Monday.
 
 **Continual Learning.** Stop rediscovering what you already know. Every session extracts learnings, scores them, and makes them retrievable via `ao lookup` for the next session. Knowledge compounds when retrieval quality and usage stay ahead of decay and scale friction. Session 50 knows what session 1 learned the hard way.
 
-These three ways aren't aspirational — they're mechanically enforced through skills, hooks, and operational invariants.
+These three ways aren't aspirational — they're mechanically enforced through skills, CI gates, and operational invariants.
 
 Deep dive: [the-science.md](the-science.md) — formal model, decay rates, escape velocity.
 
@@ -89,11 +89,11 @@ The reconciliation engine that implements the ratchet:
 
 ### Validation Gates
 
-Gates are checkpoints enforced by hooks. They block progress until a condition is met:
+Gates are checkpoints enforced by CI (`.github/workflows/validate.yml`) and explicit `/vibe` / `/pre-mortem` runs. They block progress until a condition is met:
 
 | Gate | Blocks | Condition |
 |------|--------|-----------|
-| Push gate | `git push` | `/vibe` must pass |
+| Push gate | merge to `main` | `/vibe` must pass |
 | Pre-mortem gate | `/crank` on 3+ issue epics | `/pre-mortem` must pass |
 | Task validation | Task completion | Acceptance criteria verified |
 | Worker guard | Workers committing | Only lead commits |
@@ -186,7 +186,7 @@ The system enforces context isolation at three levels:
 
 **Session boundaries.** Each session starts with injected knowledge (freshness-weighted, quality-gated) and ends with extracted learnings. The flywheel bridges sessions without carrying raw context forward.
 
-Deep dive: [how-it-works.md](how-it-works.md) — Ralph Wiggum Pattern, agent backends, hooks, context windowing.
+Deep dive: [how-it-works.md](how-it-works.md) — Ralph Wiggum Pattern, agent backends, context windowing.
 
 ---
 
@@ -324,16 +324,16 @@ Gate sizing adapts to epic complexity:
 
 ## Operational Invariants
 
-Cross-cutting rules enforced by hooks — not guidelines, not suggestions. Mechanically enforced.
+Cross-cutting rules enforced by CI gates (`.github/workflows/validate.yml`) and the skills that own each loop — not guidelines, not suggestions. Mechanically enforced.
 
 | Invariant | Enforced By | What It Prevents |
 |-----------|-------------|------------------|
-| Workers MUST NOT commit | Worker guard hook | Concurrent commits, unvalidated changes |
+| Workers MUST NOT commit | Worker-guard CI gate | Concurrent commits, unvalidated changes |
 | Workers MUST NOT race-claim tasks | Pre-assignment before spawn | Race conditions in multi-worker waves |
 | Verify THEN trust | Validation contract | False completion claims from agents |
-| Push blocked until `/vibe` passes | Push gate hook | Unvalidated code reaching remote |
-| `/crank` blocked until `/pre-mortem` passes (3+ issues) | Pre-mortem gate hook | Expensive implementation of flawed plans |
-| No destructive git without explicit request | Dangerous git guard | Accidental data loss |
+| Push blocked until `/vibe` passes | Push CI gate | Unvalidated code reaching remote |
+| `/crank` blocked until `/pre-mortem` passes (3+ issues) | Pre-mortem gate (`/crank` skill) | Expensive implementation of flawed plans |
+| No destructive git without explicit request | Dangerous-git CI gate | Accidental data loss |
 | Mechanical checks override council PASS | Constraint tests | LLMs estimating instead of measuring |
 | Max 50 waves per epic | Global wave limit | Infinite execution loops |
 | Max 3 retries per gate | Gate retry logic | Infinite retry loops |
@@ -341,7 +341,7 @@ Cross-cutting rules enforced by hooks — not guidelines, not suggestions. Mecha
 | Kill switch checked every cycle | Deploy kill switch | Runaway `/evolve` loops |
 | Skip goal after 3 consecutive failures | Strike check | Infinite retry on fundamentally broken goals |
 
-All hooks can be disabled: `AGENTOPS_HOOKS_DISABLED=1` (kill switch) or per-hook variables in [ENV-VARS.md](ENV-VARS.md).
+AgentOps 3.0 is hookless — these invariants live in CI and the skills themselves, not in always-on runtime hooks. If you want an always-on pre-creation signal, author one with the opt-in `hooks-authoring` skill; AgentOps ships zero hooks by default.
 
 ---
 
@@ -366,7 +366,7 @@ All hooks can be disabled: `AGENTOPS_HOOKS_DISABLED=1` (kill switch) or per-hook
 │   ├── post-mortem/     # solo — Council + knowledge lifecycle (wrap up work)
 │   ├── shared/          # library — Shared reference docs
 │   └── ...              # 39 more skills
-├── hooks/               # 12 hook scripts (lifecycle enforcement)
+├── cli/                 # Go CLI (ao binary) — the control plane
 ├── lib/                 # Shared code
 └── docs/                # Documentation
 ```
@@ -381,8 +381,8 @@ Skills span six tiers. Each level composes the ones below it.
 | **Team** | `/implement` | Single issue, full lifecycle |
 | **Solo** | `/research`, `/plan`, `/vibe`, `/pre-mortem`, `/post-mortem`, `/retro`, etc. | Standalone use |
 | **Library** | `beads`, `standards`, `shared` | Reference docs loaded by other skills |
-| **Background** | `inject`, `extract`, `forge`, `provenance`, `ratchet`, `flywheel` | Hook-triggered, invisible |
-| **Meta** | `using-agentops` | Flow guide, auto-injected |
+| **Background** | `inject`, `extract`, `forge`, `provenance`, `ratchet`, `flywheel` | Invoked by `ao` commands / CI, mostly invisible |
+| **Meta** | `using-agentops` | Flow guide, surfaced via `ao session bootstrap` |
 
 ### Subagents
 
@@ -442,35 +442,39 @@ managed-agents via `ao agent` — AgentOps adopts, does not own; see
 
 ---
 
-## Session Hooks
+## Session Lifecycle
 
-The runtime manifest currently declares seven hook event sections. Three lifecycle anchors form the compounding backbone, while the others enforce guardrails at prompt, tool, and task boundaries.
+AgentOps 3.0 is hookless — nothing auto-fires on session start or stop. The
+compounding backbone runs as explicit `ao` commands the agent invokes at the
+start, end, and close of work. (If you want these to fire automatically, the
+opt-in `hooks-authoring` skill can wire them into your harness; AgentOps ships
+zero hooks by default.)
 
-### SessionStart — sessions compound without eager context
+### Start — sessions compound without eager context
 
-On session start, `hooks/session-start.sh`:
+`ao session bootstrap` is the universal init prompt. It:
 1. Creates `.agents/` directories if missing (local + global `~/.agents/`)
 2. Runs lightweight stale-run cleanup and closes any pending flywheel loop
 3. Consumes structured handoff packets when present
 4. Stages factory-goal state so the first substantive prompt can build a
    task-scoped briefing
-5. Keeps operator-facing output silent
+5. Returns the standard orientation report
 
 Startup no longer injects broad prior knowledge by default. The agent uses
-goal-scoped factory briefings and `ao lookup --query "topic"` when task context
-is actually needed.
+goal-scoped factory briefings and `ao inject` / `ao lookup --query "topic"` when
+task context is actually needed.
 
-### SessionEnd — Extract and prune
+### End — Extract and prune
 
-On session end, `hooks/session-end-maintenance.sh` (35s timeout):
+At session end, the agent runs the maintenance pass:
 1. `ao forge transcript --last-session --queue` — mine transcript for learnings
 2. `ao maturity --scan` — identify artifacts ready for promotion
 3. `ao maturity --expire --archive` — mark stale artifacts (freshness decay ~17%/week)
 4. `ao maturity --evict --archive` — archive what's decayed past threshold
 
-### Stop — Close the loop
+### Close — Close the loop
 
-On stop, `hooks/ao-flywheel-close.sh` (15s timeout):
+To close out, the agent runs:
 1. `ao flywheel close-loop` — record session completion, trigger deferred promotion
 
 ---
