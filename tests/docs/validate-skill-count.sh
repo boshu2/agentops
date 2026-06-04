@@ -56,7 +56,9 @@ check_numeric_match() {
 
 # --- Actual counts from disk ---
 
-actual_total=$(find "$REPO_ROOT/skills" -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
+# `-not -name '_*'` excludes non-skill scaffolding (e.g. skills/_fixtures/,
+# planted test fixtures) — they are not real skills and must not be counted.
+actual_total=$(find "$REPO_ROOT/skills" -mindepth 1 -maxdepth 1 -type d -not -name '.*' -not -name '_*' | wc -l | tr -d ' ')
 actual_codex_total=$(find "$REPO_ROOT/skills-codex" -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
 actual_codex_overrides=$(find "$REPO_ROOT/skills-codex-overrides" -mindepth 1 -maxdepth 1 -type d -not -name '.*' | wc -l | tr -d ' ')
 

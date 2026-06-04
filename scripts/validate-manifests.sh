@@ -379,6 +379,9 @@ if [[ -f "$SKILL_SCHEMA" ]]; then
     for skill_md in "$REPO_ROOT"/skills/*/SKILL.md; do
         [[ -f "$skill_md" ]] || continue
         skill_name="$(basename "$(dirname "$skill_md")")"
+        # Skip leading-underscore scaffolding (e.g. skills/_fixtures/) — planted
+        # test fixtures, not real skills.
+        [[ "$skill_name" == _* ]] && continue
 
         # Extract YAML frontmatter and convert to JSON.
         # Prefer PyYAML when present, but fall back to a repo-local Go helper so

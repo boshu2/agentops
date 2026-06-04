@@ -822,6 +822,10 @@ jobs:
               [[ ! -d "$skill" ]] && continue
               skill_name=$(basename "$skill")
 
+              # skills/_*/ holds scaffolding, not real skills — skip it in
+              # the directory-structure gate.
+              [[ "$skill_name" == _* ]] && continue
+
               # Each skill must have SKILL.md
               if [[ ! -f "${skill}SKILL.md" ]]; then
                 echo "❌ $skill_name: missing SKILL.md"

@@ -243,6 +243,9 @@ fi
 for skill_dir in "$SKILLS_DIR"/*/; do
   [[ ! -d "$skill_dir" ]] && continue
   skill_name=$(basename "$skill_dir")
+  # Leading-underscore dirs (e.g. skills/_fixtures/) are non-skill scaffolding
+  # (planted test fixtures); they are not real skills, so don't schema-validate.
+  [[ "$skill_name" == _* ]] && continue
   skill_file="$skill_dir/SKILL.md"
 
   if [[ ! -f "$skill_file" ]]; then
