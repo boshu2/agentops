@@ -11,7 +11,7 @@ exactly one reach tier:
 | Reach | Meaning | Cost model |
 |-------|---------|------------|
 | `bead` | per-bead working context; lives on the bead, dies on close | blast radius = 1 work item |
-| `pull` | queried on demand via `ao inject --query` | **default**; paid per use |
+| `pull` | queried on demand via `ao corpus inject --query` | **default**; paid per use |
 | `always` | auto-injected at `ao session bootstrap` for every session | paid every session — kept tiny |
 
 **Default is `pull`.** An entry with no `reach:` frontmatter is read as `pull`

@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-04T19:16:16Z",
+  "generated_at": "2026-06-04T19:40:47Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
@@ -8,7 +8,7 @@
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 75,
-    "capabilities": 169
+    "capabilities": 168
   },
   "surfaces": {
     "skills": [
@@ -418,7 +418,7 @@
         "path": "skills/domain/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 17
+        "reference_count": 18
       },
       {
         "name": "harvest",
@@ -1454,10 +1454,10 @@
     ]
   },
   "capability_summary": {
-    "total": 169,
+    "total": 168,
     "skills": 82,
     "cli_commands": 75,
-    "gates": 12,
+    "gates": 11,
     "reference_impls": 0
   },
   "cli_top_level_commands": [
@@ -2011,14 +2011,16 @@
       "drives_commands": [
         "ao agent",
         "ao compile",
+        "ao corpus inject",
         "ao eval run",
         "ao inject",
         "ao maturity",
         "ao mcp serve",
-        "ao rpi phased"
+        "ao rpi phased",
+        "ao session bootstrap"
       ],
       "path": "skills/domain/",
-      "references": 17
+      "references": 18
     },
     {
       "sku": "skill:dream",
@@ -5030,15 +5032,6 @@
     {
       "sku": "gate:changes",
       "name": "changes",
-      "type": "gate",
-      "bounded_context": "BC2",
-      "purpose": "CI validation gate (.github/workflows/validate.yml).",
-      "status": "active",
-      "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "gate:skill-gates",
-      "name": "skill-gates",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
