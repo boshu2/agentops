@@ -141,6 +141,99 @@ jobs:
               - '.agents/**/*.jsonl'
 
   # ─────────────────────────────────────────────────────────────────────────
+  # skill-gates — REQUIRED. The consolidated skill-authoring gate surface:
+  # every check that guards a SKILL.md / .feature / derived-skill-surface edit,
+  # grouped into one named job (ag-87sv). Pure regroup of already-live gates —
+  # no new gate logic. Absorbs from skills-integrity (heal --strict,
+  # validate-skill-schema, validate-skill-frontmatter, validate-skill-body-refs)
+  # + contracts-sync (validate-skill-flow) + doctrine-proof
+  # (check-scenario-test-linkage), and adds the six-surface drift sweep
+  # `regen-all.sh --check`. Required: listed in `summary.needs`.
+  # ─────────────────────────────────────────────────────────────────────────
+  skill-gates:
+    needs: [changes]
+    if: >-
+      needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true' ||
+      needs.changes.outputs.contracts == 'true' || needs.changes.outputs.go == 'true' ||
+      needs.changes.outputs.shell == 'true' || needs.changes.outputs.docs == 'true' ||
+      needs.changes.outputs.goals == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go (skill-body-refs + regen-all against live CLI)
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true'
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: Set up Python
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.docs == 'true'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install yq (skill-schema)
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Install jq
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true'
+        run: sudo apt-get install -y jq
+
+      - name: Install python schema deps
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
+        run: pip install jsonschema pyyaml
+
+      - name: Run skill structural integrity checks (heal --strict)
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x skills/heal-skill/scripts/heal.sh
+          bash skills/heal-skill/scripts/heal.sh --strict
+
+      - name: Validate SKILL.md frontmatter against schema
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/validate-skill-schema.sh
+          ./scripts/validate-skill-schema.sh --verbose
+
+      - name: Validate SKILL.md frontmatter against v2 schema
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/validate-skill-frontmatter.sh
+          bash scripts/validate-skill-frontmatter.sh
+
+      - name: Validate skill-body command/flag refs against live CLI
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/validate-skill-body-refs.sh
+          bash scripts/validate-skill-body-refs.sh
+
+      - name: Validate skill-flow connectivity and closed consumes vocabulary
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/validate-skill-flow.sh
+          bash scripts/validate-skill-flow.sh
+
+      - name: Scenario→test linkage gate (scripts/check-scenario-test-linkage.sh)
+        # Every Gherkin Scenario in skills/*/references/*.feature must carry a
+        # @covered-by:<test-path> tag OR be allowlisted (doc-only).
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
+        run: |
+          chmod +x scripts/check-scenario-test-linkage.sh
+          ./scripts/check-scenario-test-linkage.sh
+
+      - name: Six-surface derived-artifact drift sweep (regen-all.sh --check)
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/regen-all.sh
+          bash scripts/regen-all.sh --check
+
+  # ─────────────────────────────────────────────────────────────────────────
   # correctness — go build/test/coverage/complexity, embedded sync, CLI
   # integration, JSON-flag consistency, bats, python smoke, native Windows
   # smoke, and the advisory `ao doctor` dead-reference check. Windows folds in
@@ -627,39 +720,9 @@ jobs:
         with:
           python-version: '3.14'
 
-      - name: Install yq (skill-schema)
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-        run: |
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          sudo chmod +x /usr/local/bin/yq
-
       - name: Install python schema deps
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
         run: pip install jsonschema pyyaml
-
-      - name: Run skill structural integrity checks
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-        run: |
-          chmod +x skills/heal-skill/scripts/heal.sh
-          bash skills/heal-skill/scripts/heal.sh --strict
-
-      - name: Validate SKILL.md frontmatter against schema
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-        run: |
-          chmod +x scripts/validate-skill-schema.sh
-          ./scripts/validate-skill-schema.sh --verbose
-
-      - name: Validate SKILL.md frontmatter against v2 schema
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
-        run: |
-          chmod +x scripts/validate-skill-frontmatter.sh
-          bash scripts/validate-skill-frontmatter.sh
-
-      - name: Validate skill-body command/flag refs against live CLI
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
-        run: |
-          chmod +x scripts/validate-skill-body-refs.sh
-          bash scripts/validate-skill-body-refs.sh
 
       - name: Validate skill dependency references resolve
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
@@ -869,12 +932,6 @@ jobs:
         run: |
           chmod +x scripts/validate-context-map-drift.sh
           bash scripts/validate-context-map-drift.sh
-
-      - name: Validate skill-flow connectivity and closed consumes vocabulary
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
-        run: |
-          chmod +x scripts/validate-skill-flow.sh
-          bash scripts/validate-skill-flow.sh
 
       - name: Verify embedded lib/skills are in sync
         if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
@@ -1270,14 +1327,6 @@ jobs:
           chmod +x scripts/witness-dolt-jsonl-crosscheck.sh
           ./scripts/witness-dolt-jsonl-crosscheck.sh
 
-      - name: Scenario→test linkage gate (scripts/check-scenario-test-linkage.sh)
-        # T1 (≤5min, soc-63xfx). Every Gherkin Scenario in skills/*/references/*.feature
-        # must carry a @covered-by:<test-path> tag OR be allowlisted (doc-only).
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
-        run: |
-          chmod +x scripts/check-scenario-test-linkage.sh
-          ./scripts/check-scenario-test-linkage.sh
-
   # ─────────────────────────────────────────────────────────────────────────
   # eval — eval baseline-audit drift gate, eval-skill-delta dry-run,
   # workbench golden verify, retrieval-quality bench. Absorbs:
@@ -1535,7 +1584,7 @@ jobs:
   # here rather than in process-hygiene. Invokes scripts/verify-gate-claim.sh.
   # ─────────────────────────────────────────────────────────────────────────
   summary:
-    needs: [changes, correctness, lint, security, skills-integrity, contracts-sync, codex-parity, doctrine-proof, eval, process-hygiene]
+    needs: [changes, correctness, lint, security, skill-gates, skills-integrity, contracts-sync, codex-parity, doctrine-proof, eval, process-hygiene]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1547,6 +1596,7 @@ jobs:
           echo "correctness: ${{ needs.correctness.result }}"
           echo "lint: ${{ needs.lint.result }}"
           echo "security: ${{ needs.security.result }}"
+          echo "skill-gates: ${{ needs.skill-gates.result }}"
           echo "skills-integrity: ${{ needs.skills-integrity.result }}"
           echo "contracts-sync: ${{ needs.contracts-sync.result }}"
           echo "codex-parity: ${{ needs.codex-parity.result }}"
