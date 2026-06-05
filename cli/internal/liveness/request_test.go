@@ -8,7 +8,7 @@ func valid() AuthorizationRequest {
 	return AuthorizationRequest{
 		AgentID:     "agent-1",
 		Role:        RoleWorker,
-		RoleSource:  "orchestrator-assignment",
+		RoleSource:  "lease",
 		Verb:        VerbEdit,
 		Surface:     "worktree/foo",
 		ModelFamily: "claude",
@@ -78,14 +78,26 @@ func TestIsProtectedSurface(t *testing.T) {
 }
 
 func TestIsTrustedRoleSource(t *testing.T) {
-	for _, s := range []string{"operator", "quorum", "orchestrator-assignment"} {
+	for _, s := range []string{"lease", "registration", "operator", "quorum"} {
 		if !IsTrustedRoleSource(s) {
 			t.Fatalf("IsTrustedRoleSource(%q) = false, want true", s)
 		}
 	}
-	for _, s := range []string{"", "i-grant-myself", "agent-1", "random"} {
+	for _, s := range []string{"", "self-asserted", "pulse", "orchestrator-assignment", "agent-1", "random"} {
 		if IsTrustedRoleSource(s) {
 			t.Fatalf("IsTrustedRoleSource(%q) = true, want false", s)
+		}
+	}
+}
+
+// TestCheckValidSourcesAllowed confirms every allowlisted source passes Check on
+// an otherwise-well-formed request (the reviewers' happy-path bar).
+func TestCheckValidSourcesAllowed(t *testing.T) {
+	for _, src := range []string{"lease", "registration", "operator", "quorum"} {
+		req := valid()
+		req.RoleSource = src
+		if got := Check(req); got != Allowed {
+			t.Fatalf("Check with RoleSource=%q = %q, want Allowed", src, got)
 		}
 	}
 }

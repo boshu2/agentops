@@ -17,11 +17,13 @@ type AuthorizationRequest struct {
 
 // trustedRoleSources is the allowlist of authorities that may grant a role. An
 // arbitrary or unknown source string is not a grant — authority is sourced from
-// a recognized authority, never asserted by free text.
+// a recognized authority, never asserted by free text. (self-asserted, pulse,
+// unknown, and empty all fail this check.)
 var trustedRoleSources = map[string]struct{}{
-	"operator":                {}, // operator-root assignment
-	"quorum":                  {}, // quorum-ratified assignment
-	"orchestrator-assignment": {}, // an orchestrator delegating within its authority
+	"lease":        {}, // role granted by a work-lease
+	"registration": {}, // role from agent registration
+	"operator":     {}, // operator-root assignment
+	"quorum":       {}, // quorum-ratified assignment
 }
 
 // IsTrustedRoleSource reports whether s is an allowlisted role-granting authority.
