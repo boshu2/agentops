@@ -688,7 +688,14 @@ func TestProcessCitationFeedback_RefutedOverridesAppliedEvidence(t *testing.T) {
 	}
 	citations := []types.CitationEvent{
 		{ArtifactPath: ".agents/learnings/refuted-evidence.jsonl", CitationType: types.CitationTypeApplied, FeedbackGiven: false, CitedAt: time.Now().Add(-time.Minute)},
-		{ArtifactPath: ".agents/learnings/refuted-evidence.jsonl", CitationType: types.CitationTypeRefuted, FeedbackGiven: false, CitedAt: time.Now()},
+		{
+			ArtifactPath:     ".agents/learnings/refuted-evidence.jsonl",
+			CitationType:     types.CitationTypeRefuted,
+			ArtifactAuthorID: "author-agent",
+			CitedByAgentID:   "judge-agent",
+			FeedbackGiven:    false,
+			CitedAt:          time.Now(),
+		},
 	}
 	var lines []string
 	for _, citation := range citations {
@@ -703,15 +710,64 @@ func TestProcessCitationFeedback_RefutedOverridesAppliedEvidence(t *testing.T) {
 	}
 
 	total, rewarded, skipped := processCitationFeedbackWithOptions(tmp, citationFeedbackOptions{MutateArtifacts: false})
-	if total != 1 || rewarded != 0 || skipped != 1 {
-		t.Fatalf("expected refuted evidence to skip reward, got (%d,%d,%d)", total, rewarded, skipped)
+	if total != 1 || rewarded != 1 || skipped != 0 {
+		t.Fatalf("expected refuted evidence to apply negative feedback, got (%d,%d,%d)", total, rewarded, skipped)
 	}
 	feedback := readCitationFeedbackEvents(t, filepath.Join(aoDir, "feedback.jsonl"))
 	if len(feedback) != 1 {
 		t.Fatalf("feedback event count = %d, want 1", len(feedback))
 	}
-	if feedback[0].Decision != "skipped" || feedback[0].Reason != "explicit-refuted" {
-		t.Fatalf("feedback decision/reason = %q/%q, want skipped/explicit-refuted", feedback[0].Decision, feedback[0].Reason)
+	if feedback[0].Decision != "rewarded" || feedback[0].Reason != "explicit-refuted" || feedback[0].Reward != 0 {
+		t.Fatalf("feedback decision/reason/reward = %q/%q/%v, want rewarded/explicit-refuted/0", feedback[0].Decision, feedback[0].Reason, feedback[0].Reward)
+	}
+}
+
+func TestProcessCitationFeedback_RejectsAuthorSelfOutcome(t *testing.T) {
+	tmp := t.TempDir()
+	aoDir := filepath.Join(tmp, ".agents", "ao")
+	learningsDir := filepath.Join(tmp, ".agents", "learnings")
+	if err := os.MkdirAll(aoDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(learningsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	learningPath := filepath.Join(learningsDir, "self-judged.jsonl")
+	learningContent := `{"id":"self-judged","title":"Self Judged","utility":0.5}`
+	if err := os.WriteFile(learningPath, []byte(learningContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	citation := types.CitationEvent{
+		ArtifactPath:     ".agents/learnings/self-judged.jsonl",
+		CitationType:     types.CitationTypeHelpful,
+		ArtifactAuthorID: "same-agent",
+		CitedByAgentID:   "same-agent",
+		FeedbackGiven:    false,
+		CitedAt:          time.Now(),
+	}
+	data, err := json.Marshal(citation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(aoDir, "citations.jsonl"), append(data, '\n'), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	total, rewarded, skipped := processCitationFeedback(tmp)
+	if total != 1 || rewarded != 0 || skipped != 1 {
+		t.Fatalf("expected self-judged outcome to skip, got (%d,%d,%d)", total, rewarded, skipped)
+	}
+	gotLearning, err := os.ReadFile(learningPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotLearning) != learningContent {
+		t.Fatalf("self-judged outcome mutated learning:\n%s", string(gotLearning))
+	}
+	feedback := readCitationFeedbackEvents(t, filepath.Join(aoDir, "feedback.jsonl"))
+	if len(feedback) != 1 || feedback[0].Decision != "skipped" || feedback[0].Reason != "outcome-identity-not-disjoint" {
+		t.Fatalf("unexpected feedback event for self-judged outcome: %#v", feedback)
 	}
 }
 

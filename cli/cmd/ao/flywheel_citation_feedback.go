@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/liveness"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/resolver"
 	"github.com/boshu2/agentops/cli/internal/types"
@@ -90,6 +91,9 @@ func evaluateCitationFeedback(
 	decision, reason, rewardable := classifyCitationFeedback(citationType)
 	metricNamespace := canonicalMetricNamespace(c.MetricNamespace)
 
+	if !citationFeedbackOutcomeIdentityAllowed(c, citationType) {
+		return rejectedOutcomeIdentityCitationFeedback(cwd, c, citationType, metricNamespace, sessionID, res)
+	}
 	if !isPrimaryMetricNamespace(metricNamespace) {
 		return nonPrimaryNamespaceCitationFeedback(cwd, c, citationType, metricNamespace, sessionID, res)
 	}
@@ -97,6 +101,47 @@ func evaluateCitationFeedback(
 		return findingArtifactCitationFeedback(cwd, c, citationType, metricNamespace, decision, reason, rewardable, sessionID, mutateArtifacts)
 	}
 	return learningArtifactCitationFeedback(cwd, c, citationType, metricNamespace, decision, reason, rewardable, sessionID, reward, mutateArtifacts, res)
+}
+
+func citationFeedbackOutcomeIdentityAllowed(c types.CitationEvent, citationType string) bool {
+	if !isOutcomeCitationType(citationType) {
+		return true
+	}
+	if c.ArtifactAuthorID == "" || c.CitedByAgentID == "" {
+		return false
+	}
+	return liveness.Disjoint(c.ArtifactAuthorID, c.CitedByAgentID) == liveness.Allowed
+}
+
+func rejectedOutcomeIdentityCitationFeedback(
+	cwd string,
+	c types.CitationEvent,
+	citationType, metricNamespace, sessionID string,
+	res *resolver.FileResolver,
+) citationFeedbackResult {
+	artifactPath := canonicalArtifactPath(cwd, c.ArtifactPath)
+	currentUtility := 0.0
+	if !isFindingArtifactPath(cwd, c.ArtifactPath) {
+		learningID := extractLearningID(c.ArtifactPath)
+		if path, err := res.Resolve(learningID); err == nil {
+			artifactPath = path
+			currentUtility = parseUtilityFromFile(path)
+		}
+	}
+	event := FeedbackEvent{
+		SessionID:       sessionID,
+		ArtifactPath:    artifactPath,
+		CitationType:    citationType,
+		MetricNamespace: metricNamespace,
+		Decision:        "skipped",
+		Reason:          "outcome-identity-not-disjoint",
+		Reward:          0,
+		UtilityBefore:   currentUtility,
+		UtilityAfter:    currentUtility,
+		Alpha:           0,
+		RecordedAt:      time.Now(),
+	}
+	return citationFeedbackResult{event: &event, skipped: 1}
 }
 
 func nonPrimaryNamespaceCitationFeedback(
@@ -211,6 +256,7 @@ func learningArtifactCitationFeedback(
 		return citationFeedbackResult{event: &event, skipped: 1}
 	}
 
+	effectiveReward := citationFeedbackReward(c, reward)
 	rewardCount := getLearningRewardCount(path)
 	alpha := annealedAlpha(types.DefaultAlpha, rewardCount)
 	if !mutateArtifacts {
@@ -222,7 +268,7 @@ func learningArtifactCitationFeedback(
 			MetricNamespace: metricNamespace,
 			Decision:        decision,
 			Reason:          reason,
-			Reward:          reward,
+			Reward:          effectiveReward,
 			UtilityBefore:   currentUtility,
 			UtilityAfter:    currentUtility,
 			Alpha:           0,
@@ -231,7 +277,7 @@ func learningArtifactCitationFeedback(
 		return citationFeedbackResult{event: &event, rewarded: 1}
 	}
 
-	oldUtility, newUtility, err := updateLearningUtility(path, reward, alpha)
+	oldUtility, newUtility, err := updateLearningUtility(path, effectiveReward, alpha)
 	if err != nil {
 		currentUtility := parseUtilityFromFile(path)
 		event := FeedbackEvent{
@@ -257,7 +303,7 @@ func learningArtifactCitationFeedback(
 		MetricNamespace: metricNamespace,
 		Decision:        decision,
 		Reason:          reason,
-		Reward:          reward,
+		Reward:          effectiveReward,
 		UtilityBefore:   oldUtility,
 		UtilityAfter:    newUtility,
 		Alpha:           alpha,
@@ -376,6 +422,19 @@ func citationEventIsHighConfidence(citation types.CitationEvent) bool {
 	return citationEventConfidence(citation) >= highConfidenceCitationThreshold
 }
 
+func citationFeedbackReward(citation types.CitationEvent, fallbackReward float64) float64 {
+	switch effectiveCitationFeedbackType(citation.CitationType) {
+	case types.CitationTypeHelpful:
+		return 1.0
+	case types.CitationTypeUsedInFinalArtifact:
+		return citationEventConfidence(citation)
+	case types.CitationTypeHarmful, types.CitationTypeRefuted:
+		return 0
+	default:
+		return fallbackReward
+	}
+}
+
 func classifyCitationFeedback(citationType string) (decision, reason string, rewardable bool) {
 	switch citationType {
 	case types.CitationTypeHelpful:
@@ -389,9 +448,9 @@ func classifyCitationFeedback(citationType string) (decision, reason string, rew
 	case types.CitationTypeRetrieved:
 		return "skipped", "retrieved-no-artifact-evidence", false
 	case types.CitationTypeHarmful:
-		return "skipped", "explicit-harmful", false
+		return "rewarded", "explicit-harmful", true
 	case types.CitationTypeRefuted:
-		return "skipped", "explicit-refuted", false
+		return "rewarded", "explicit-refuted", true
 	default:
 		return "skipped", "unsupported-citation-type", false
 	}
