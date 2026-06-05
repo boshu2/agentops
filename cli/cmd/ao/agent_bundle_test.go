@@ -94,6 +94,12 @@ func TestBuildAgentBundle_CodexNTM(t *testing.T) {
 	if !strings.Contains(b.Bootstrap, "ao session bootstrap") {
 		t.Errorf("codex-ntm Bootstrap must run `ao session bootstrap`, got %q", b.Bootstrap)
 	}
+	if !strings.Contains(b.Bootstrap, `ao inject --bead "$BEAD"`) {
+		t.Errorf("codex-ntm Bootstrap must request bead-scoped injection, got %q", b.Bootstrap)
+	}
+	if strings.Contains(b.Bootstrap, "ao inject --query") {
+		t.Errorf("codex-ntm Bootstrap must not use invalid `ao inject --query`, got %q", b.Bootstrap)
+	}
 	if b.Reference != "skills-codex/agent-native" {
 		t.Errorf("Reference = %q, want skills-codex/agent-native", b.Reference)
 	}

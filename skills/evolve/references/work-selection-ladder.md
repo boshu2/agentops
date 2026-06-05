@@ -25,7 +25,7 @@ Before claiming a candidate, gate scope vs session budget. If the work touches >
 
 Scout NEVER returns "no work done." If `bd ready` ≥1, the loop MUST claim one this cycle. See `references/scout-mode.md` and `references/mechanical-batches.md`.
 
-**Metronome gate:** read `mode_repeat_streak` from `session-state.json`. If `>= 3` AND the candidate would repeat the trailing run's `mode`, BLOCK this rung and jump to the next. If `>= 5`, `bd remember "metronome-N: <mode>"` and require operator override. See `references/metronome-gate.md`.
+**Metronome gate:** read `mode_repeat_streak` from `session-state.json`. If `>= 3` AND the candidate would repeat the trailing run's `mode`, BLOCK this rung and jump to the next. If `>= 5`, record the gap as bead/provenance evidence and require operator override. See `references/metronome-gate.md`.
 
 **Step 3.1: Harvested work first**
 
