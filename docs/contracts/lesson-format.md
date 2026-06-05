@@ -128,7 +128,8 @@ The learning file is the source of truth. AgentOps recall reads this markdown co
 
 ```bash
 ao session bootstrap
-ao inject --query "<topic>"
+ao inject "<topic>"
+ao corpus inject --query "<topic>"
 ```
 
 Projection constraints:
@@ -140,8 +141,8 @@ Projection constraints:
 
 `bd prime` remains tracker workflow context. It should point agents to the markdown-backed AgentOps recall path
 instead of treating `bd memories` as the knowledge source.
-During the W4 migration, `bd prime` may still surface a legacy memories block; treat that block as lineage
-only. New recall is markdown-sourced, and W4.3 removes the legacy block.
+If `bd prime` still surfaces a legacy memories block from the external tracker, treat that block as lineage
+only. New recall is markdown-sourced.
 
 ---
 
