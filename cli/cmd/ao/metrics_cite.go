@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/boshu2/agentops/cli/internal/liveness"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
@@ -34,6 +35,9 @@ func runMetricsCite(cmd *cobra.Command, args []string) error {
 	citeSession, _ := cmd.Flags().GetString("session")
 	citeQuery, _ := cmd.Flags().GetString("query")
 	citeVendor, _ := cmd.Flags().GetString("vendor")
+	citeArtifactAuthor, _ := cmd.Flags().GetString("artifact-author")
+	citeByAgent, _ := cmd.Flags().GetString("cited-by-agent")
+	citeByFamily, _ := cmd.Flags().GetString("cited-by-family")
 
 	// Auto-detect session ID if not provided
 	if citeSession == "" {
@@ -45,15 +49,33 @@ func runMetricsCite(cmd *cobra.Command, args []string) error {
 	if citeVendor == "" {
 		citeVendor = detectModelVendor()
 	}
+	if citeByAgent == "" {
+		citeByAgent = os.Getenv("AGENT_NAME")
+	}
+	if citeByFamily == "" {
+		citeByFamily = citeVendor
+	}
+	citeType = canonicalCitationType(citeType)
+	if isOutcomeCitationType(citeType) {
+		if citeArtifactAuthor == "" || citeByAgent == "" {
+			return fmt.Errorf("outcome citation %q requires artifact-author and cited-by-agent identities", citeType)
+		}
+		if liveness.Disjoint(citeArtifactAuthor, citeByAgent) != liveness.Allowed {
+			return fmt.Errorf("outcome citation %q requires non-author identity: artifact-author and cited-by-agent are both %q", citeType, citeByAgent)
+		}
+	}
 
 	event := types.CitationEvent{
-		ArtifactPath:    artifactPath,
-		SessionID:       citeSession,
-		CitedAt:         time.Now(),
-		CitationType:    citeType,
-		ModelVendor:     citeVendor,
-		Query:           citeQuery,
-		MetricNamespace: defaultCitationMetricNamespace(),
+		ArtifactPath:       artifactPath,
+		SessionID:          citeSession,
+		CitedAt:            time.Now(),
+		CitationType:       citeType,
+		ModelVendor:        citeVendor,
+		ArtifactAuthorID:   citeArtifactAuthor,
+		CitedByAgentID:     citeByAgent,
+		CitedByModelFamily: citeByFamily,
+		Query:              citeQuery,
+		MetricNamespace:    defaultCitationMetricNamespace(),
 	}
 
 	if GetDryRun() {
@@ -64,6 +86,10 @@ func runMetricsCite(cmd *cobra.Command, args []string) error {
 		if citeVendor != "" {
 			fmt.Printf("  Vendor: %s\n", citeVendor)
 		}
+		if citeArtifactAuthor != "" || citeByAgent != "" {
+			fmt.Printf("  Artifact author: %s\n", citeArtifactAuthor)
+			fmt.Printf("  Cited by: %s\n", citeByAgent)
+		}
 		return nil
 	}
 
@@ -73,6 +99,18 @@ func runMetricsCite(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Citation recorded: %s\n", filepath.Base(artifactPath))
 	return nil
+}
+
+func isOutcomeCitationType(citationType string) bool {
+	switch canonicalCitationType(citationType) {
+	case types.CitationTypeUsedInFinalArtifact,
+		types.CitationTypeHelpful,
+		types.CitationTypeHarmful,
+		types.CitationTypeRefuted:
+		return true
+	default:
+		return false
+	}
 }
 
 // detectSessionID tries to detect the current session ID.

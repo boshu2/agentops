@@ -1149,9 +1149,11 @@ func collectCodexCitationHealth(cwd string, days int) codexCitationHealth {
 		filtered = append(filtered, citation)
 		result.Total++
 		switch canonicalCitationType(citation.CitationType) {
-		case "applied":
+		case types.CitationTypeApplied, types.CitationTypeUsedInFinalArtifact, types.CitationTypeHelpful:
 			result.Applied++
-		case "reference":
+		case types.CitationTypeReference:
+			result.Reference++
+		case types.CitationTypeHarmful, types.CitationTypeRefuted:
 			result.Reference++
 		default:
 			result.Retrieved++

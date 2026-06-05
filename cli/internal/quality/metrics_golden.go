@@ -16,13 +16,26 @@ import (
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 
-// CanonicalCitationType normalises citation type strings to "applied" or "retrieved".
+// CanonicalCitationType normalises citation type strings while preserving
+// legacy values that existing citation logs and commands still use.
 func CanonicalCitationType(ct string) string {
 	switch strings.ToLower(strings.TrimSpace(ct)) {
-	case "applied", "apply":
-		return "applied"
+	case types.CitationTypeApplied, "apply":
+		return types.CitationTypeApplied
+	case types.CitationTypeUsedInFinalArtifact, "used", "used_in_final_artifact", "used-in-final", "final-artifact":
+		return types.CitationTypeUsedInFinalArtifact
+	case types.CitationTypeHelpful:
+		return types.CitationTypeHelpful
+	case types.CitationTypeHarmful:
+		return types.CitationTypeHarmful
+	case types.CitationTypeRefuted:
+		return types.CitationTypeRefuted
+	case types.CitationTypeReference, "ref", "manual-reference":
+		return types.CitationTypeReference
+	case types.CitationTypeSkillLoaded, "skill-loaded":
+		return types.CitationTypeSkillLoaded
 	case "retrieved", "retrieve", "pulled", "pull":
-		return "retrieved"
+		return types.CitationTypeRetrieved
 	default:
 		return strings.ToLower(strings.TrimSpace(ct))
 	}
@@ -172,9 +185,9 @@ func ComputeCitationPipeline(baseDir string, days int) (highPct, medianDelta, ap
 			continue
 		}
 		switch CanonicalCitationType(c.CitationType) {
-		case "applied":
+		case types.CitationTypeApplied, types.CitationTypeUsedInFinalArtifact, types.CitationTypeHelpful:
 			applied++
-		case "retrieved":
+		case types.CitationTypeRetrieved:
 			retrieved++
 		}
 	}

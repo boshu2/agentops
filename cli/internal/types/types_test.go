@@ -856,21 +856,24 @@ func TestKnowledgeTierValues(t *testing.T) {
 
 func TestCitationEventJSONRoundTrip(t *testing.T) {
 	original := CitationEvent{
-		ArtifactPath:    "/home/user/.agents/learnings/test.md",
-		SessionID:       "session-456",
-		CitedAt:         time.Date(2026, 2, 1, 14, 0, 0, 0, time.UTC),
-		CitationType:    "retrieved",
-		MetricNamespace: "shadow",
-		MatchConfidence: 0.75,
-		MatchProvenance: "substring",
-		SectionHeading:  "Acceptance Criteria",
-		SectionLocator:  "L10-L18",
-		Query:           "context cancellation",
-		FeedbackGiven:   true,
-		FeedbackReward:  0.8,
-		UtilityBefore:   0.5,
-		UtilityAfter:    0.53,
-		FeedbackAt:      time.Date(2026, 2, 1, 14, 5, 0, 0, time.UTC),
+		ArtifactPath:       "/home/user/.agents/learnings/test.md",
+		SessionID:          "session-456",
+		CitedAt:            time.Date(2026, 2, 1, 14, 0, 0, 0, time.UTC),
+		CitationType:       CitationTypeHelpful,
+		ArtifactAuthorID:   "author-123",
+		CitedByAgentID:     "reviewer-456",
+		CitedByModelFamily: "codex",
+		MetricNamespace:    "shadow",
+		MatchConfidence:    0.75,
+		MatchProvenance:    "substring",
+		SectionHeading:     "Acceptance Criteria",
+		SectionLocator:     "L10-L18",
+		Query:              "context cancellation",
+		FeedbackGiven:      true,
+		FeedbackReward:     0.8,
+		UtilityBefore:      0.5,
+		UtilityAfter:       0.53,
+		FeedbackAt:         time.Date(2026, 2, 1, 14, 5, 0, 0, time.UTC),
 	}
 
 	data, err := json.Marshal(original)
@@ -888,6 +891,15 @@ func TestCitationEventJSONRoundTrip(t *testing.T) {
 	}
 	if decoded.CitationType != original.CitationType {
 		t.Errorf("CitationType mismatch: got %q, want %q", decoded.CitationType, original.CitationType)
+	}
+	if decoded.ArtifactAuthorID != original.ArtifactAuthorID {
+		t.Errorf("ArtifactAuthorID mismatch: got %q, want %q", decoded.ArtifactAuthorID, original.ArtifactAuthorID)
+	}
+	if decoded.CitedByAgentID != original.CitedByAgentID {
+		t.Errorf("CitedByAgentID mismatch: got %q, want %q", decoded.CitedByAgentID, original.CitedByAgentID)
+	}
+	if decoded.CitedByModelFamily != original.CitedByModelFamily {
+		t.Errorf("CitedByModelFamily mismatch: got %q, want %q", decoded.CitedByModelFamily, original.CitedByModelFamily)
 	}
 	if decoded.MetricNamespace != original.MetricNamespace {
 		t.Errorf("MetricNamespace mismatch: got %q, want %q", decoded.MetricNamespace, original.MetricNamespace)
