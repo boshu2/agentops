@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-05T01:01:16Z",
+  "generated_at": "2026-06-05T02:33:27Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
@@ -178,7 +178,7 @@
         "path": "skills/evolve/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 26
+        "reference_count": 27
       },
       {
         "name": "grafana-platform-dashboard",
@@ -2098,7 +2098,7 @@
         "ao rpi loop"
       ],
       "path": "skills/evolve/",
-      "references": 26
+      "references": 27
     },
     {
       "sku": "skill:flywheel",
