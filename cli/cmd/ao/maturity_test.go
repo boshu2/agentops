@@ -1975,6 +1975,125 @@ func TestMaturity_runMaturityScanAll_noTransitions2(t *testing.T) {
 	}
 }
 
+func TestMaturity_runMaturityScanAll_reconcilesHelpfulCitationBeforeApply(t *testing.T) {
+	tmp, learningsDir := setupMaturityDir(t)
+	patternsDir := filepath.Join(tmp, ".agents", "patterns")
+	chdirTo(t, tmp)
+
+	learningPath := writeTestMDLearning(t, learningsDir, "helpful-promote.md", map[string]string{
+		"id":            "helpful-promote",
+		"maturity":      "provisional",
+		"utility":       "0.5000",
+		"reward_count":  "2",
+		"helpful_count": "2",
+		"harmful_count": "0",
+		"confidence":    "0.4",
+	}, "# Helpful Promote\nCitation outcome should move this learning into candidate.\n")
+
+	if err := ratchet.RecordCitation(tmp, types.CitationEvent{
+		ArtifactPath:     ".agents/learnings/helpful-promote.md",
+		CitationType:     types.CitationTypeHelpful,
+		ArtifactAuthorID: "author-agent",
+		CitedByAgentID:   "judge-agent",
+		CitedAt:          time.Date(2026, 6, 5, 7, 0, 0, 0, time.UTC),
+	}); err != nil {
+		t.Fatalf("record helpful citation: %v", err)
+	}
+
+	oldApply := maturityApply
+	oldDryRun := dryRun
+	oldHelpful := feedbackHelpful
+	oldHarmful := feedbackHarmful
+	maturityApply = true
+	dryRun = false
+	feedbackHelpful = false
+	feedbackHarmful = false
+	defer func() {
+		maturityApply = oldApply
+		dryRun = oldDryRun
+		feedbackHelpful = oldHelpful
+		feedbackHarmful = oldHarmful
+	}()
+
+	captureJSONStdout(t, func() {
+		if err := runMaturityScanAll(learningsDir, patternsDir); err != nil {
+			t.Fatalf("scan all: %v", err)
+		}
+	})
+
+	data, err := os.ReadFile(learningPath)
+	if err != nil {
+		t.Fatalf("read learning: %v", err)
+	}
+	text := string(data)
+	for _, want := range []string{"maturity: candidate", "reward_count: 3", "helpful_count: 3"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("expected %q after helpful citation reconciliation, got:\n%s", want, text)
+		}
+	}
+
+	citations, err := ratchet.LoadCitations(tmp)
+	if err != nil {
+		t.Fatalf("load citations: %v", err)
+	}
+	if len(citations) != 1 || !citations[0].FeedbackGiven || citations[0].FeedbackReward != 1 {
+		t.Fatalf("citation feedback not marked with helpful reward: %#v", citations)
+	}
+}
+
+func TestMaturity_runMaturityScanAll_retrievedCitationDoesNotChangeUtility(t *testing.T) {
+	tmp, learningsDir := setupMaturityDir(t)
+	patternsDir := filepath.Join(tmp, ".agents", "patterns")
+	chdirTo(t, tmp)
+
+	learningPath := writeTestMDLearning(t, learningsDir, "retrieved-only.md", map[string]string{
+		"id":            "retrieved-only",
+		"maturity":      "provisional",
+		"utility":       "0.6000",
+		"reward_count":  "2",
+		"helpful_count": "2",
+		"harmful_count": "0",
+		"confidence":    "0.4",
+	}, "# Retrieved Only\nExposure without outcome evidence must not change maturity counters.\n")
+
+	if err := ratchet.RecordCitation(tmp, types.CitationEvent{
+		ArtifactPath: ".agents/learnings/retrieved-only.md",
+		CitationType: types.CitationTypeRetrieved,
+		CitedAt:      time.Date(2026, 6, 5, 7, 15, 0, 0, time.UTC),
+	}); err != nil {
+		t.Fatalf("record retrieved citation: %v", err)
+	}
+
+	oldApply := maturityApply
+	oldDryRun := dryRun
+	maturityApply = true
+	dryRun = false
+	defer func() {
+		maturityApply = oldApply
+		dryRun = oldDryRun
+	}()
+
+	captureJSONStdout(t, func() {
+		if err := runMaturityScanAll(learningsDir, patternsDir); err != nil {
+			t.Fatalf("scan all: %v", err)
+		}
+	})
+
+	data, err := os.ReadFile(learningPath)
+	if err != nil {
+		t.Fatalf("read learning: %v", err)
+	}
+	text := string(data)
+	for _, want := range []string{"maturity: provisional", "utility: 0.6000", "reward_count: 2", "helpful_count: 2"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("expected %q to remain after retrieved-only citation, got:\n%s", want, text)
+		}
+	}
+	if strings.Contains(text, "maturity: candidate") {
+		t.Fatalf("retrieved-only citation promoted learning unexpectedly:\n%s", text)
+	}
+}
+
 func TestMaturity_displayPendingTransitions_jsonOut(t *testing.T) {
 	oldOutput := output
 	output = "json"

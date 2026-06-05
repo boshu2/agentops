@@ -352,6 +352,8 @@ func runMaturityScanAll(learningsDir, patternsDir string) error {
 		return nil
 	}
 
+	reconcileMaturityCitationFeedback(dirs[0])
+
 	totalDist := &ratchet.MaturityDistribution{}
 	var allResults []*ratchet.MaturityTransitionResult
 
@@ -392,11 +394,42 @@ func runMaturityScanAll(learningsDir, patternsDir string) error {
 	return nil
 }
 
+func reconcileMaturityCitationFeedback(artifactDir string) {
+	if !maturityApply {
+		return
+	}
+	baseDir := maturityCitationBaseDir(artifactDir)
+	total, rewarded, skipped := processCitationFeedback(baseDir)
+	if total > 0 {
+		VerbosePrintf("Reconciled citation feedback before maturity scan: total=%d rewarded=%d skipped=%d\n", total, rewarded, skipped)
+	}
+}
+
+func maturityCitationBaseDir(artifactDir string) string {
+	dir := filepath.Clean(artifactDir)
+	if cwd, err := os.Getwd(); err == nil {
+		agentsDir := filepath.Clean(agentsDirIn(cwd))
+		if rel, relErr := filepath.Rel(agentsDir, dir); relErr == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+			return cwd
+		}
+	}
+	switch filepath.Base(dir) {
+	case "learnings", "patterns":
+		agentsDir := filepath.Dir(dir)
+		if filepath.Base(agentsDir) == ".agents" {
+			return filepath.Dir(agentsDir)
+		}
+	}
+	return filepath.Dir(filepath.Dir(dir))
+}
+
 func runMaturityScan(learningsDir string) error {
 	if GetDryRun() {
 		fmt.Printf("[dry-run] Would scan learnings in: %s\n", learningsDir)
 		return nil
 	}
+
+	reconcileMaturityCitationFeedback(learningsDir)
 
 	dist, err := ratchet.GetMaturityDistribution(learningsDir)
 	if err != nil {
