@@ -677,6 +677,22 @@ else
     fail "missing executable: scripts/check-mutation-route-coverage.sh"
 fi
 
+# --- 3a2. Author!=judge convergence guard (DRIFT #149) ---
+# The no-self-grade invariant must live in ONE predicate (liveness.Disjoint).
+# A divergent reimplementation is the pattern that let the empty-ID self-grade
+# bypass recur (#737->#741). Always-on (fast grep): a divergent author==judge
+# check landing on main reintroduces the bypass class.
+if [[ -x scripts/check-author-judge-convergence.sh ]]; then
+    if aj_conv_output="$(scripts/check-author-judge-convergence.sh 2>&1)"; then
+        pass "author!=judge convergence"
+    else
+        fail "author!=judge convergence"
+        indent_output "$aj_conv_output"
+    fi
+else
+    fail "missing executable: scripts/check-author-judge-convergence.sh"
+fi
+
 # --- 3b. HOME isolation in harvest.*/RunIngest tests ---
 if needs_check go; then
     if [[ -x scripts/check-home-isolation.sh ]]; then
