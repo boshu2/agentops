@@ -51,6 +51,56 @@ description: Build a custom widget faster than anyone.
 EOF
 }
 
+# Build a fixture whose declaring skill uses FLOW-form trigger_probes
+# (`trigger_probes: ["a", "b"]`) instead of block form. Mirrors the scanner's
+# parse_trigger_probes flow branch — flow-form skills must NOT be silently
+# skipped by the wrapper's awk discovery (ag-iyu4 AMEND).
+_mk_flow_fixture() {
+  local fix="$1"
+  mkdir -p "$fix/skill-builder/scripts" "$fix/alpha-skill" "$fix/beta-skill"
+  cp "$REAL_SCANNER" "$fix/skill-builder/scripts/scan_descriptions.py"
+  cat > "$fix/skill-builder/SKILL.md" <<'EOF'
+---
+name: skill-builder
+description: scaffold skills
+---
+# Skill Builder
+EOF
+  # Two flow-form phrases on one inline YAML list line.
+  cat > "$fix/alpha-skill/SKILL.md" <<'EOF'
+---
+name: alpha-skill
+description: Handle the alpha phrase workflow uniquely.
+trigger_probes: ["alpha phrase", "beta phrase"]
+---
+# Alpha Skill
+EOF
+  cat > "$fix/beta-skill/SKILL.md" <<'EOF'
+---
+name: beta-skill
+description: A rival that mentions beta phrase too.
+---
+# Beta Skill
+EOF
+}
+
+@test "i0-probe: flow-form trigger_probes are discovered, not silently skipped (ag-iyu4 AMEND)" {
+  FIX="$BATS_TEST_TMPDIR/skills"
+  RCPT="$BATS_TEST_TMPDIR/receipts"
+  _mk_flow_fixture "$FIX"
+
+  run "$DRIVER" "$FIX" "$RCPT"
+  [ "$status" -eq 0 ]
+
+  # A receipt is emitted (flow-form phrases were discovered, not skipped).
+  [ -f "$RCPT/alpha-skill.json" ]
+
+  # BOTH flow-form phrases produced a receipt line — proven via the wrapper's
+  # per-phrase "wrote receipt ... (phrase: '...')" log.
+  echo "$output" | grep -qF "(phrase: 'alpha phrase')"
+  echo "$output" | grep -qF "(phrase: 'beta phrase')"
+}
+
 @test "i0-probe: produces a per-skill JSON receipt for each declared phrase (exit 0)" {
   FIX="$BATS_TEST_TMPDIR/skills"
   RCPT="$BATS_TEST_TMPDIR/receipts"

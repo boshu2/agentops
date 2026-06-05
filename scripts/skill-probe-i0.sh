@@ -57,6 +57,25 @@ mapfile -t pairs < <(
     awk -v sid="$sid" '
       # A YAML doc/frontmatter boundary (--- or ...) always ends the block.
       /^(---|\.\.\.)[[:space:]]*$/ { inblock=0; next }
+      # Flow form: `trigger_probes: ["a", "b"]` (inline YAML list). Mirrors the
+      # scanner (scan_descriptions.py parse_trigger_probes) so the two parsers
+      # do not diverge — flow-form skills must NOT be silently skipped.
+      /^trigger_probes:[[:space:]]*\[/ {
+        flow=$0
+        sub(/^trigger_probes:[[:space:]]*\[/, "", flow)
+        sub(/\][[:space:]]*$/, "", flow)
+        n=split(flow, items, ",")
+        for (k=1; k<=n; k++) {
+          it=items[k]
+          gsub(/^[[:space:]]+|[[:space:]]+$/, "", it)
+          gsub(/^"|"$/, "", it)
+          gsub(/^'"'"'|'"'"'$/, "", it)
+          gsub(/^[[:space:]]+|[[:space:]]+$/, "", it)
+          if (length(it) > 0) print sid "\t" it
+        }
+        inblock=0
+        next
+      }
       /^trigger_probes:[[:space:]]*$/ { inblock=1; next }
       # Indented "- item" list entries belong to the block.
       inblock && /^[[:space:]]+-[[:space:]]+/ {
