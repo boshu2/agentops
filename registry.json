@@ -1086,6 +1086,7 @@
         "bounded_context": "BC1",
         "driven_by_skills": [
           "agent-native",
+          "beads",
           "domain",
           "harvest",
           "inject",
@@ -1635,6 +1636,8 @@
         "bd-issue"
       ],
       "drives_commands": [
+        "ao corpus inject",
+        "ao inject",
         "ao reconcile"
       ],
       "path": "skills/beads/",
@@ -4142,6 +4145,7 @@
       "status": "active",
       "driven_by_skills": [
         "agent-native",
+        "beads",
         "domain",
         "harvest",
         "inject",

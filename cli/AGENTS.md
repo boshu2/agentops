@@ -57,10 +57,9 @@ bd close <id>         # Complete work
 - Run `bd prime` for detailed command reference and session close protocol
 - Treat `bd prime` as tracker workflow context. Durable knowledge recall comes
   from the AgentOps markdown corpus via `ao session bootstrap` and
-  `ao inject --query`.
-- During the W4 migration, `bd prime` may still surface a legacy memories block;
-  treat it as lineage only. New recall is markdown-sourced, and W4.3 removes
-  that block.
+  `ao inject "<topic>"` or `ao corpus inject --query "<topic>"`.
+- If `bd prime` surfaces a legacy memories block from the external tracker,
+  treat it as lineage only. New recall is markdown-sourced.
 - Do not use `bd remember` for new persistent knowledge. Preserve existing
   entries only as migration lineage; do NOT use MEMORY.md files.
 

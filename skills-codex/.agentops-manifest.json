@@ -697,7 +697,7 @@
     {
       "name": "beads",
       "source_skill": "skills/beads",
-      "source_hash": "ed5f5d242b6bb903c7ba3120e7ffe82a8c2a7bd7f21b21d9c6274de205d710e1",
+      "source_hash": "86bfef3ef7ff64509d6321681275bcb0c9c437f208d2fd4226d05ed6f60dacde",
       "generated_hash": "51db26466d4646eddfc2132ea521508fe2ced556ef0ab69db41acd363afba770"
     },
     {
@@ -763,8 +763,8 @@
     {
       "name": "curate",
       "source_skill": "skills/curate",
-      "source_hash": "8dc6adda58141217c1b58a77c15f65927b2275f0d2e6d9a7b709ed1489fdc717",
-      "generated_hash": "e591a74578afc525c4eb284f36ee3e6f9efa103070505cf32e5c3b494fb7c490"
+      "source_hash": "3b20b9234d306929d649a651c5255a0c72e5ac435b6aa86e283b7f5571621efd",
+      "generated_hash": "d29c42ee80576ff28ea150b690dba46c6339b79c102af3de84a75a18fb9296c3"
     },
     {
       "name": "deps",
