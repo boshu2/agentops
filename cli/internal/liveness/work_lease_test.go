@@ -108,6 +108,35 @@ func TestLeaseTracker_RenewRequiresFreshEvidence(t *testing.T) {
 	}
 }
 
+func TestLeaseTracker_RenewRejectsExpiredLease(t *testing.T) {
+	base := time.Date(2026, 6, 5, 3, 0, 0, 0, time.UTC)
+	clk := base
+	tr := NewLeaseTracker(func() time.Time { return clk })
+	if _, err := tr.Create("ag-1", "b", "ruby", "claude", "r", "ev-1", time.Hour); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	// Advance past expiry; renewal — even with fresh evidence — must NOT
+	// resurrect an expired lease. Expiry is a hard state; takeover goes through
+	// Create, not Renew.
+	clk = base.Add(2 * time.Hour)
+	if _, err := tr.Renew("ag-1", "ev-2", time.Hour); !errors.Is(err, ErrLeaseExpired) {
+		t.Fatalf("renew expired lease: want ErrLeaseExpired, got %v", err)
+	}
+	// The lease stays expired and its ExpiresAt is unchanged (not extended).
+	got, _ := tr.Get("ag-1")
+	if got.Status(clk) != LeaseExpired {
+		t.Fatalf("expired lease should stay expired after rejected renew, got %s", got.Status(clk))
+	}
+	if got.ExpiresAt != base.Add(time.Hour) {
+		t.Fatalf("rejected renew must not extend ExpiresAt: want %v, got %v", base.Add(time.Hour), got.ExpiresAt)
+	}
+	// Create over the expired lease IS the takeover path (still allowed).
+	if _, err := tr.Create("ag-1", "b2", "windy", "claude", "takeover", "ev-3", time.Hour); err != nil {
+		t.Fatalf("Create takeover over expired lease should succeed: %v", err)
+	}
+}
+
 func TestLeaseTracker_StatusListAndExpired(t *testing.T) {
 	base := time.Date(2026, 6, 5, 3, 0, 0, 0, time.UTC)
 	clk := base

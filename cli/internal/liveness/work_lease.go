@@ -55,6 +55,11 @@ var (
 	// ErrEvidenceRequired is returned when a renewal omits fresh evidence —
 	// alive means externally-visible evidence, not self-report.
 	ErrEvidenceRequired = errors.New("liveness: lease renewal requires a non-empty evidence_ref")
+	// ErrLeaseExpired is returned when renewing an already-expired lease.
+	// Expiry is a HARD state: an expired lease cannot be resurrected by its old
+	// owner; it must go through Create (quorum takeover). This keeps deadman /
+	// fallback mechanical instead of scheduler-luck dependent.
+	ErrLeaseExpired = errors.New("liveness: cannot renew an expired lease; use Create for takeover")
 )
 
 // LeaseTracker is a deterministic in-memory store of work leases keyed by
@@ -103,9 +108,11 @@ func (t *LeaseTracker) Create(beadID, branch, ownerAgentID, modelFamily, reason,
 	return lease, nil
 }
 
-// Renew extends an existing lease by ttl from now and records fresh evidence.
+// Renew extends an active lease by ttl from now and records fresh evidence.
 // The evidenceRef MUST be non-empty: a lease is kept alive by externally-visible
-// progress, not by self-report. Fails if the lease is absent.
+// progress, not by self-report. Renewal is for ACTIVE leases only — an already
+// expired lease returns ErrLeaseExpired and is left expired (expiry is a hard
+// state; takeover goes through Create). Fails if the lease is absent.
 func (t *LeaseTracker) Renew(beadID, evidenceRef string, ttl time.Duration) (WorkLease, error) {
 	if ttl <= 0 {
 		return WorkLease{}, errors.New("liveness: Renew requires a positive ttl")
@@ -118,6 +125,9 @@ func (t *LeaseTracker) Renew(beadID, evidenceRef string, ttl time.Duration) (Wor
 		return WorkLease{}, fmt.Errorf("%w: %s", ErrLeaseNotFound, beadID)
 	}
 	now := t.now()
+	if lease.Status(now) == LeaseExpired {
+		return WorkLease{}, fmt.Errorf("%w: %s (expired %s)", ErrLeaseExpired, beadID, lease.ExpiresAt.Format(time.RFC3339))
+	}
 	lease.RenewedAt = now
 	lease.ExpiresAt = now.Add(ttl)
 	lease.EvidenceRef = evidenceRef
