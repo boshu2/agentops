@@ -134,7 +134,7 @@ AgentOps degrades gracefully — skills check for a tool before using it. The on
 | `git` | Required | Version control — `.agents/` state lives next to your code | **Required** |
 | `ao` | Required (recommended) | The AgentOps CLI: bookkeeping, retrieval, health, the loops | Recommended |
 | `bd` (beads) + Dolt backend | Tracking | Git-native issue tracking (the mandatory task surface) | Optional |
-| `ntm` / `ao agent` | Orchestration | Out-of-session substrate that runs whole `ao rpi`/`ao evolve` loops (NTM tmux swarm, MCP via `ao mcp serve`, or managed-agents) | Optional (out-of-session) |
+| `ntm` / `ao agent` | Orchestration | Out-of-session substrate that runs whole `ao rpi` loops (NTM tmux swarm, MCP via `ao mcp serve`, or managed-agents) | Optional (out-of-session) |
 | `gh` | PR / CI | Open PRs, query CI status | Optional |
 | `go` | Build-from-source | Build `cli/bin/ao` from source (`go 1.26`) | Optional |
 | `jq`, `rg`/ripgrep, `curl`, `openssl`, `sha256sum`, `tmux`, `cass` | Utilities | JSON parsing, search, downloads, hashing, sessions, history | Optional |
@@ -289,7 +289,6 @@ ao search "query"                         # Search session history and local kno
 ao lookup --query "topic"                 # Retrieve curated learnings and findings
 ao context assemble                       # Build a task briefing
 ao rpi phased "fix auth startup"          # Run the phased lifecycle from the terminal
-ao evolve --max-cycles 1                  # Run one bounded improvement cycle
 ao compile                                # Rebuild the corpus (Mine → Grow → Defrag → Lint)
 ao metrics health                         # Show flywheel health
 ```
