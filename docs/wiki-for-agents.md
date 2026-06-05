@@ -58,7 +58,7 @@ AgentOps inverts this. Sessions write to the wiki by default — runs land citat
 
 **Version control.** Diffs, branches, and merges are how engineers already think about change. A wiki you can `git revert` is a wiki you can trust.
 
-**Decay-ranked retrieval.** `ao inject --query "..."` returns a token-budgeted packet weighted by recency, citations, and validation history — different from full-text search.
+**Decay-ranked retrieval.** `ao inject "..."` returns a token-budgeted packet weighted by recency, citations, and validation history — different from full-text search.
 
 **Automated capture.** Sessions write run packets, citations, and verdicts without anyone being asked. The discipline lives in the tooling.
 
@@ -84,7 +84,7 @@ Then, inside any repo:
 ao quick-start          # seed .agents/, GOALS.md, AgentOps instructions
 ```
 
-That is the entry point. After that, work with your agents normally — `/rpi`, `/council`, `/research`, `/vibe`. `.agents/` accumulates without explicit attention. `ao inject --query "..."` returns a decay-ranked, token-budgeted packet whenever you ask.
+That is the entry point. After that, work with your agents normally — `/rpi`, `/council`, `/research`, `/vibe`. `.agents/` accumulates without explicit attention. `ao inject "..."` returns a decay-ranked, token-budgeted packet whenever you ask.
 
 ## What you own at the end
 
