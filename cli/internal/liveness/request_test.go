@@ -33,14 +33,20 @@ func TestCheck(t *testing.T) {
 		// Denied — identity / source integrity.
 		{"missing agent identity", func(r *AuthorizationRequest) { r.AgentID = "" }, Denied},
 		{"missing role source", func(r *AuthorizationRequest) { r.RoleSource = "" }, Denied},
+		{"arbitrary role-source string is not a grant", func(r *AuthorizationRequest) { r.RoleSource = "i-grant-myself" }, Denied},
 		{"self-asserted role (source == actor)", func(r *AuthorizationRequest) { r.RoleSource = r.AgentID }, Denied},
 		{"unknown role", func(r *AuthorizationRequest) { r.Role = Role("admin") }, Denied},
 
-		// Denied — self-grade.
+		// Denied — judge integrity.
 		{"verifier judging its OWN artifact (self-grade)", func(r *AuthorizationRequest) {
 			r.Role = RoleVerifier
 			r.Verb = VerbJudge
 			r.ArtifactAuthorID = r.AgentID
+		}, Denied},
+		{"judge with no named artifact author", func(r *AuthorizationRequest) {
+			r.Role = RoleVerifier
+			r.Verb = VerbJudge
+			r.ArtifactAuthorID = ""
 		}, Denied},
 
 		// NeedsAdmission — protected-surface edit (escalate, don't execute).
@@ -68,5 +74,18 @@ func TestIsProtectedSurface(t *testing.T) {
 	}
 	if IsProtectedSurface("worktree/foo") {
 		t.Fatalf("IsProtectedSurface(worktree/foo) = true, want false")
+	}
+}
+
+func TestIsTrustedRoleSource(t *testing.T) {
+	for _, s := range []string{"operator", "quorum", "orchestrator-assignment"} {
+		if !IsTrustedRoleSource(s) {
+			t.Fatalf("IsTrustedRoleSource(%q) = false, want true", s)
+		}
+	}
+	for _, s := range []string{"", "i-grant-myself", "agent-1", "random"} {
+		if IsTrustedRoleSource(s) {
+			t.Fatalf("IsTrustedRoleSource(%q) = true, want false", s)
+		}
 	}
 }

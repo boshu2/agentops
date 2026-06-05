@@ -8,31 +8,46 @@ package liveness
 type AuthorizationRequest struct {
 	AgentID          string // the acting identity
 	Role             Role   // the role being exercised; must be externally sourced
-	RoleSource       string // who/what assigned the role; MUST NOT equal AgentID
+	RoleSource       string // who/what assigned the role; must be a trusted source, not the actor
 	Verb             Verb   // the action attempted
 	Surface          string // the target surface (for protected-surface checks)
 	ModelFamily      string // the acting model family (for the cross-model quorum layer)
-	ArtifactAuthorID string // for VerbJudge: author of the artifact under review (optional)
+	ArtifactAuthorID string // for VerbJudge: author of the artifact under review (required for judge)
+}
+
+// trustedRoleSources is the allowlist of authorities that may grant a role. An
+// arbitrary or unknown source string is not a grant — authority is sourced from
+// a recognized authority, never asserted by free text.
+var trustedRoleSources = map[string]struct{}{
+	"operator":                {}, // operator-root assignment
+	"quorum":                  {}, // quorum-ratified assignment
+	"orchestrator-assignment": {}, // an orchestrator delegating within its authority
+}
+
+// IsTrustedRoleSource reports whether s is an allowlisted role-granting authority.
+func IsTrustedRoleSource(s string) bool {
+	_, ok := trustedRoleSources[s]
+	return ok
 }
 
 // Check is the central authorization decision over an AuthorizationRequest.
 // Precedence — first failure wins:
 //
-//  1. Identity/source integrity -> Denied: missing agent identity, missing or
-//     self-asserted role source (RoleSource == AgentID), or an unknown role.
-//     Authority is sourced, not authored — a role the actor grants itself is
-//     rejected hard.
+//  1. Identity/source integrity -> Denied: missing agent identity; a role source
+//     that is not an allowlisted authority (arbitrary strings do NOT grant); a
+//     self-asserted role (RoleSource == AgentID); or an unknown role. Authority
+//     is sourced from a recognized authority, not authored by the actor.
 //  2. Protected-surface edit -> NeedsAdmission: editing a constitutional surface
-//     (role-matrix, kernel policy) escalates regardless of role — the gate
-//     cannot be self-edited by ordinary capability.
+//     (role-matrix, kernel policy) escalates regardless of role.
 //  3. Capability -> NeedsAdmission: a known, validly-sourced role acting outside
 //     its verbs escalates to the admission controller.
-//  4. Self-grade -> Denied: a verifier judging its own artifact is rejected hard
-//     (no-self-grade / author != judge).
+//  4. Judge integrity -> Denied: a judge action with no named artifact author,
+//     or a verifier judging its own artifact (author == judge). No-self-grade,
+//     and a judgment must name what it judges.
 //  5. Otherwise -> Allowed.
 func Check(req AuthorizationRequest) Decision {
-	// 1. Identity present, role externally sourced (not self-asserted), and known.
-	if req.AgentID == "" || req.RoleSource == "" || req.RoleSource == req.AgentID || !IsRole(req.Role) {
+	// 1. Identity present, role granted by a TRUSTED source, not self-asserted, known.
+	if req.AgentID == "" || !IsTrustedRoleSource(req.RoleSource) || req.RoleSource == req.AgentID || !IsRole(req.Role) {
 		return Denied
 	}
 	// 2. Editing a constitutional surface escalates regardless of role.
@@ -43,9 +58,11 @@ func Check(req AuthorizationRequest) Decision {
 	if Authorize(req.Role, req.Verb) != Allowed {
 		return NeedsAdmission
 	}
-	// 4. A verifier may not judge its own artifact.
-	if req.Verb == VerbJudge && req.ArtifactAuthorID != "" && Disjoint(req.ArtifactAuthorID, req.AgentID) != Allowed {
-		return Denied
+	// 4. A judge must name an artifact author and must not be that author.
+	if req.Verb == VerbJudge {
+		if req.ArtifactAuthorID == "" || Disjoint(req.ArtifactAuthorID, req.AgentID) != Allowed {
+			return Denied
+		}
 	}
 	return Allowed
 }
