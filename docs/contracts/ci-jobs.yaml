@@ -37,6 +37,9 @@ jobs:
 - name: eval
   reason: Eval baseline-audit drift-only gate (`stale_suite_hashes>0`), eval-skill-delta dry-run, workbench golden state (D10 delta), and offline retrieval-quality bench + comparison smoke
   failure: A promoted baseline's suite SHA drift, broken delta/harness infrastructure, a workbench golden-state regression, or a retrieval-quality regression
+- name: skill-eval
+  reason: 'T1 changed-files-scoped: gates each CHANGED skill''s SKILL.md through Jeff Emanuel''s `ms` (meta_skill v0.1.2) lint + validate via `scripts/skill-eval.sh`. Pinned-`ms` install gated on `ms --version` before the gate runs — a failed install HARD-FAILS the job (never green-skips). Runs `ms` only for skills whose `skills/<id>/**` changed in the PR.'
+  failure: A blocking `ms` finding (no-secrets/no-injection/safe-paths/required-metadata/no-cycle/valid-version) on a changed skill's SKILL.md, or a pinned-`ms`-install failure
 - name: process-hygiene
   reason: Doc-release stabilization (skill counts + links), `tests/_quarantine/` empty (D3), test-count non-regression ratchet, file-manifest overlap self-test, plus advisory test-staleness, swarm-evidence, and Evidence-line lint
   failure: Skill-count drift, a non-empty quarantine, a net per-package test-count decrease without a `Test-Removal-Reason:` trailer, or a manifest-overlap regression
