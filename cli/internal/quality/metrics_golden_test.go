@@ -14,15 +14,22 @@ import (
 
 func TestCanonicalCitationType(t *testing.T) {
 	cases := map[string]string{
-		"applied":   "applied",
-		"apply":     "applied",
-		"APPLIED":   "applied",
-		"retrieved": "retrieved",
-		"retrieve":  "retrieved",
-		"pulled":    "retrieved",
-		"pull":      "retrieved",
-		"unknown":   "unknown",
-		"  APPLY ":  "applied",
+		"applied":                "applied",
+		"apply":                  "applied",
+		"APPLIED":                "applied",
+		"used":                   types.CitationTypeUsedInFinalArtifact,
+		"used_in_final_artifact": types.CitationTypeUsedInFinalArtifact,
+		"used-in-final-artifact": types.CitationTypeUsedInFinalArtifact,
+		"helpful":                types.CitationTypeHelpful,
+		"harmful":                types.CitationTypeHarmful,
+		"refuted":                types.CitationTypeRefuted,
+		"ref":                    types.CitationTypeReference,
+		"retrieved":              "retrieved",
+		"retrieve":               "retrieved",
+		"pulled":                 "retrieved",
+		"pull":                   "retrieved",
+		"unknown":                "unknown",
+		"  APPLY ":               "applied",
 	}
 	for in, want := range cases {
 		if got := CanonicalCitationType(in); got != want {

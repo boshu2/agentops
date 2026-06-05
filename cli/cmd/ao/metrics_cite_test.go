@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/boshu2/agentops/cli/internal/ratchet"
+	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
 )
 
@@ -118,6 +120,155 @@ func TestMetricsCite_ValidArtifact(t *testing.T) {
 	err := runMetricsCite(cmd, []string{artifactPath})
 	if err != nil {
 		t.Fatalf("runMetricsCite failed: %v", err)
+	}
+}
+
+func TestMetricsCite_RecordsHelpfulNonAuthorIdentity(t *testing.T) {
+	dir := t.TempDir()
+
+	testProjectDir = dir
+	defer func() { testProjectDir = "" }()
+
+	if err := os.MkdirAll(dir+"/.agents/ao", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	artifactPath := dir + "/helpful-artifact.md"
+	if err := os.WriteFile(artifactPath, []byte("# Helpful"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	oldDryRun := dryRun
+	dryRun = false
+	defer func() { dryRun = oldDryRun }()
+
+	cmd := findCiteSubcmd()
+	if cmd == nil {
+		t.Skip("cite subcommand not found on metricsCmd")
+	}
+	cmd.Flags().Set("type", types.CitationTypeHelpful)
+	cmd.Flags().Set("session", "session-pr-740")
+	cmd.Flags().Set("artifact-author", "author-agent")
+	cmd.Flags().Set("cited-by-agent", "reviewer-agent")
+	cmd.Flags().Set("cited-by-family", "codex")
+	defer func() {
+		cmd.Flags().Set("type", types.CitationTypeReference)
+		cmd.Flags().Set("session", "")
+		cmd.Flags().Set("artifact-author", "")
+		cmd.Flags().Set("cited-by-agent", "")
+		cmd.Flags().Set("cited-by-family", "")
+	}()
+
+	if err := runMetricsCite(cmd, []string{artifactPath}); err != nil {
+		t.Fatalf("runMetricsCite failed: %v", err)
+	}
+
+	citations, err := ratchet.LoadCitations(dir)
+	if err != nil {
+		t.Fatalf("LoadCitations failed: %v", err)
+	}
+	if len(citations) != 1 {
+		t.Fatalf("expected 1 citation, got %d", len(citations))
+	}
+	got := citations[0]
+	if got.CitationType != types.CitationTypeHelpful {
+		t.Fatalf("CitationType = %q, want %q", got.CitationType, types.CitationTypeHelpful)
+	}
+	if got.ArtifactAuthorID != "author-agent" || got.CitedByAgentID != "reviewer-agent" {
+		t.Fatalf("identity not recorded: author=%q cited_by=%q", got.ArtifactAuthorID, got.CitedByAgentID)
+	}
+	if got.ArtifactAuthorID == got.CitedByAgentID {
+		t.Fatalf("expected non-author identity, got both %q", got.ArtifactAuthorID)
+	}
+	if got.CitedByModelFamily != "codex" {
+		t.Fatalf("CitedByModelFamily = %q, want codex", got.CitedByModelFamily)
+	}
+}
+
+func TestMetricsCite_RejectsSelfAuthoredOutcomeIdentity(t *testing.T) {
+	dir := t.TempDir()
+
+	testProjectDir = dir
+	defer func() { testProjectDir = "" }()
+
+	artifactPath := dir + "/self-authored.md"
+	if err := os.WriteFile(artifactPath, []byte("# Self"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := findCiteSubcmd()
+	if cmd == nil {
+		t.Skip("cite subcommand not found on metricsCmd")
+	}
+	cmd.Flags().Set("type", types.CitationTypeHelpful)
+	cmd.Flags().Set("artifact-author", "same-agent")
+	cmd.Flags().Set("cited-by-agent", "same-agent")
+	defer func() {
+		cmd.Flags().Set("type", types.CitationTypeReference)
+		cmd.Flags().Set("artifact-author", "")
+		cmd.Flags().Set("cited-by-agent", "")
+	}()
+
+	if err := runMetricsCite(cmd, []string{artifactPath}); err == nil {
+		t.Fatal("expected self-authored helpful citation to be rejected")
+	}
+}
+
+func TestMetricsCite_RejectsOutcomeWithoutArtifactAuthor(t *testing.T) {
+	dir := t.TempDir()
+
+	testProjectDir = dir
+	defer func() { testProjectDir = "" }()
+
+	artifactPath := dir + "/missing-author.md"
+	if err := os.WriteFile(artifactPath, []byte("# Missing author"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := findCiteSubcmd()
+	if cmd == nil {
+		t.Skip("cite subcommand not found on metricsCmd")
+	}
+	cmd.Flags().Set("type", types.CitationTypeHelpful)
+	cmd.Flags().Set("artifact-author", "")
+	cmd.Flags().Set("cited-by-agent", "reviewer-agent")
+	defer func() {
+		cmd.Flags().Set("type", types.CitationTypeReference)
+		cmd.Flags().Set("artifact-author", "")
+		cmd.Flags().Set("cited-by-agent", "")
+	}()
+
+	if err := runMetricsCite(cmd, []string{artifactPath}); err == nil {
+		t.Fatal("expected helpful citation without artifact-author to be rejected")
+	}
+}
+
+func TestMetricsCite_RejectsOutcomeWithoutCitedByAgent(t *testing.T) {
+	dir := t.TempDir()
+
+	testProjectDir = dir
+	defer func() { testProjectDir = "" }()
+
+	artifactPath := dir + "/missing-cited-by.md"
+	if err := os.WriteFile(artifactPath, []byte("# Missing cited-by"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("AGENT_NAME", "")
+	cmd := findCiteSubcmd()
+	if cmd == nil {
+		t.Skip("cite subcommand not found on metricsCmd")
+	}
+	cmd.Flags().Set("type", types.CitationTypeHelpful)
+	cmd.Flags().Set("artifact-author", "author-agent")
+	cmd.Flags().Set("cited-by-agent", "")
+	defer func() {
+		cmd.Flags().Set("type", types.CitationTypeReference)
+		cmd.Flags().Set("artifact-author", "")
+		cmd.Flags().Set("cited-by-agent", "")
+	}()
+
+	if err := runMetricsCite(cmd, []string{artifactPath}); err == nil {
+		t.Fatal("expected helpful citation without cited-by-agent to be rejected")
 	}
 }
 

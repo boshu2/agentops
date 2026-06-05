@@ -34,9 +34,14 @@ const FeedbackLoopFilePath = ".agents/ao/feedback.jsonl"
 
 // ValidFeedbackLoopCitationTypes is the set of allowed citation type filter values.
 var ValidFeedbackLoopCitationTypes = map[string]bool{
-	"retrieved": true,
-	"applied":   true,
-	"all":       true,
+	types.CitationTypeRetrieved:           true,
+	types.CitationTypeApplied:             true,
+	types.CitationTypeUsedInFinalArtifact: true,
+	types.CitationTypeHelpful:             true,
+	types.CitationTypeHarmful:             true,
+	types.CitationTypeRefuted:             true,
+	types.CitationTypeReference:           true,
+	"all":                                 true,
 }
 
 // ValidateFeedbackLoopCitationType checks that citationType is an allowed value.
@@ -45,7 +50,7 @@ func ValidateFeedbackLoopCitationType(citationType string) (string, error) {
 	if ValidFeedbackLoopCitationTypes[candidate] {
 		return candidate, nil
 	}
-	return "", fmt.Errorf("invalid --citation-type %q (valid: retrieved, applied, all)", candidate)
+	return "", fmt.Errorf("invalid --citation-type %q (valid: retrieved, used-in-final-artifact, helpful, harmful, refuted, applied, reference, all)", candidate)
 }
 
 // ResolveFeedbackLoopSessionID resolves the session ID from flag or env.
