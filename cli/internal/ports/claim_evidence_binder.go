@@ -1,7 +1,12 @@
 // practices: [hexagonal-architecture, ddd-bounded-context]
 package ports
 
-import "context"
+import (
+	"context"
+	"errors"
+
+	"github.com/boshu2/agentops/cli/internal/liveness"
+)
 
 // ClaimID identifies a single AOP-CLAIM in the project's
 // .agents/findings/all-claims-evidence-map.md ledger (e.g.
@@ -37,10 +42,26 @@ const (
 // anchors (line numbers, named anchors) that adapters MAY populate to
 // help readers find the exact evidence span.
 type EvidenceBinding struct {
-	Claim   ClaimID
-	Path    string
-	Level   EvidenceLevel
-	Anchors []string
+	Claim    ClaimID
+	Path     string
+	Level    EvidenceLevel
+	Anchors  []string
+	AuthorID string
+	JudgeID  string
+}
+
+// ValidateEvidenceBindingReviewers enforces the artifact-tier no-self-grade
+// invariant when reviewer metadata is present. Legacy bindings may omit both
+// IDs; a judgment that names only one side, or names the same author and judge,
+// is rejected at the port boundary.
+func ValidateEvidenceBindingReviewers(binding EvidenceBinding) error {
+	if binding.AuthorID == "" && binding.JudgeID == "" {
+		return nil
+	}
+	if liveness.Disjoint(binding.AuthorID, binding.JudgeID) != liveness.Allowed {
+		return errors.New("ports: EvidenceBinding author_id and judge_id must be non-empty and distinct")
+	}
+	return nil
 }
 
 // ClaimEvidenceBinderPort wraps the bind operation that creates or
@@ -61,6 +82,7 @@ type EvidenceBinding struct {
 //     error in that case.
 //   - List returns all known bindings, most-recently-bound first.
 //   - Empty Claim or empty Path is a structural-rejection error on Bind.
+//   - If AuthorID or JudgeID is present, both MUST be present and distinct.
 //   - Context cancellation MUST be honored on a best-effort basis.
 //
 // See docs/contracts/ubiquitous-language.md (BC2 row) for the

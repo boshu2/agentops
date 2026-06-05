@@ -88,6 +88,53 @@ func TestInMemoryClaimEvidenceBinder_BindRejectsEmptyClaimOrPath(t *testing.T) {
 	}
 }
 
+func TestInMemoryClaimEvidenceBinder_BindRejectsSelfGrade(t *testing.T) {
+	a := NewInMemoryClaimEvidenceBinder()
+	err := a.Bind(context.Background(), EvidenceBinding{
+		Claim:    "C",
+		Path:     "p",
+		Level:    EvidenceLevelPG4,
+		AuthorID: "agent-1",
+		JudgeID:  "agent-1",
+	})
+	if err == nil {
+		t.Fatal("expected self-grade rejection, got nil")
+	}
+	if !strings.Contains(err.Error(), "author_id and judge_id") {
+		t.Fatalf("error = %v, want author/judge guidance", err)
+	}
+}
+
+func TestInMemoryClaimEvidenceBinder_BindRejectsPartialReviewerMetadata(t *testing.T) {
+	a := NewInMemoryClaimEvidenceBinder()
+	err := a.Bind(context.Background(), EvidenceBinding{
+		Claim:    "C",
+		Path:     "p",
+		Level:    EvidenceLevelPG4,
+		AuthorID: "agent-1",
+	})
+	if err == nil {
+		t.Fatal("expected partial reviewer metadata rejection, got nil")
+	}
+}
+
+func TestInMemoryClaimEvidenceBinder_BindAcceptsDistinctAuthorJudge(t *testing.T) {
+	a := NewInMemoryClaimEvidenceBinder()
+	if err := a.Bind(context.Background(), EvidenceBinding{
+		Claim:    "C",
+		Path:     "p",
+		Level:    EvidenceLevelPG4,
+		AuthorID: "agent-1",
+		JudgeID:  "agent-2",
+	}); err != nil {
+		t.Fatalf("distinct author/judge rejected: %v", err)
+	}
+	list, _ := a.List(context.Background())
+	if list[0].AuthorID != "agent-1" || list[0].JudgeID != "agent-2" {
+		t.Fatalf("reviewer metadata not preserved: %+v", list[0])
+	}
+}
+
 func TestInMemoryClaimEvidenceBinder_ListReturnsMostRecentFirst(t *testing.T) {
 	a := NewInMemoryClaimEvidenceBinder()
 	_ = a.Bind(context.Background(), EvidenceBinding{Claim: "A", Path: "p", Level: EvidenceLevelPG1})
