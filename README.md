@@ -20,9 +20,9 @@ AgentOps sits on top of the coding harness you already use (Claude Code, Codex, 
 
 <div align="center">
 
-![Real Claude Code and Codex sessions running the AgentOps loop: discovery, research, plan, crank, validate, and a Claude-plus-Codex council](docs/assets/hero.gif)
+![The AgentOps loop in Claude Code, command by command: /discovery builds a bead graph, /crank fans sub-agents out in waves, /validate --mixed gets a Claude + Codex verdict](docs/assets/hero.gif)
 
-<sub>Real Claude Code + Codex sessions, lightly edited for pace — the loop end to end: discovery → research → plan → crank → validate → <code>/council --mixed</code> (Claude + Codex) → merge. <a href="docs/assets/hero.mp4">Full-resolution MP4</a>.</sub>
+<sub>The loop, one command at a time — <code>/discovery</code> turns intent into a tracked bead graph, <code>/crank</code> fans sub-agents out in waves, <code>/validate --mixed</code> gets a real <b>Claude + Codex</b> verdict. Live sessions, lightly edited for pace. <a href="docs/assets/hero.mp4">Full-resolution MP4</a>.</sub>
 
 </div>
 
