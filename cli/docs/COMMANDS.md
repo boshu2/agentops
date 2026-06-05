@@ -959,11 +959,14 @@ ao metrics cite <artifact-path> [flags]
 **Flags:**
 
 ```
-  -h, --help             help for cite
-      --query string     Search query that surfaced this artifact
-      --session string   Session ID (auto-detected if not provided)
-      --type string      Citation type: recall, reference, applied (default "reference")
-      --vendor string    Model vendor attribution: claude, codex
+      --artifact-author string   Author/owner identity of the cited artifact
+      --cited-by-agent string    Agent identity recording the citation outcome
+      --cited-by-family string   Model family of the citing/reviewing agent
+  -h, --help                     help for cite
+      --query string             Search query that surfaced this artifact
+      --session string           Session ID (auto-detected if not provided)
+      --type string              Citation type: retrieved, used-in-final-artifact, helpful, harmful, refuted, applied, reference (default "reference")
+      --vendor string            Model vendor attribution: claude, codex
 ```
 
 #### `ao metrics cite-report`
@@ -1769,7 +1772,7 @@ ao feedback-loop [flags]
 
 ```
       --alpha float            EMA learning rate (default 0.1)
-      --citation-type string   Filter citations by type (retrieved, applied, all) (default "retrieved")
+      --citation-type string   Filter citations by type (retrieved, used-in-final-artifact, helpful, harmful, refuted, applied, reference, all) (default "retrieved")
       --drain                  Walk citations.jsonl and feed entries with zero feedback_at sentinel (idempotent)
       --drain-reward float     Neutral reward applied to drained citations (0.0-1.0) (default 0.5)
   -h, --help                   help for feedback-loop

@@ -47,7 +47,16 @@ func TestResolveFeedbackLoopSessionID(t *testing.T) {
 
 func TestValidateFeedbackCitationType(t *testing.T) {
 	t.Run("accepts valid values", func(t *testing.T) {
-		for _, input := range []string{"retrieved", "applied", "all"} {
+		for _, input := range []string{
+			types.CitationTypeRetrieved,
+			types.CitationTypeUsedInFinalArtifact,
+			types.CitationTypeHelpful,
+			types.CitationTypeHarmful,
+			types.CitationTypeRefuted,
+			types.CitationTypeApplied,
+			types.CitationTypeReference,
+			"all",
+		} {
 			got, err := validateFeedbackCitationType(input)
 			if err != nil {
 				t.Fatalf("validateFeedbackCitationType(%q): %v", input, err)

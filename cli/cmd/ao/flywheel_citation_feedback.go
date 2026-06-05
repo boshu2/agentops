@@ -317,11 +317,13 @@ func preferCitationFeedbackEvidence(current, candidate types.CitationEvent) bool
 
 func citationFeedbackEvidenceRank(citationType string) int {
 	switch citationType {
-	case "applied":
+	case types.CitationTypeHelpful, types.CitationTypeHarmful, types.CitationTypeRefuted:
+		return 4
+	case types.CitationTypeUsedInFinalArtifact, types.CitationTypeApplied:
 		return 3
-	case "reference":
+	case types.CitationTypeReference:
 		return 2
-	case "retrieved":
+	case types.CitationTypeRetrieved:
 		return 1
 	default:
 		return 0
@@ -340,18 +342,26 @@ const highConfidenceCitationThreshold = 0.7
 
 func citationConfidenceScore(citationType string) float64 {
 	switch effectiveCitationFeedbackType(citationType) {
-	case "applied":
+	case types.CitationTypeHelpful:
+		return 1.0
+	case types.CitationTypeUsedInFinalArtifact, types.CitationTypeApplied:
 		return 0.9
-	case "reference":
+	case types.CitationTypeReference:
 		return 0.7
-	case "retrieved":
+	case types.CitationTypeRetrieved:
 		return 0.5
+	case types.CitationTypeHarmful, types.CitationTypeRefuted:
+		return 0
 	default:
 		return 0
 	}
 }
 
 func citationEventConfidence(citation types.CitationEvent) float64 {
+	switch effectiveCitationFeedbackType(citation.CitationType) {
+	case types.CitationTypeHarmful, types.CitationTypeRefuted:
+		return 0
+	}
 	if citation.MatchConfidence > 0 {
 		return normalizeCitationMatchConfidence(citation.MatchConfidence)
 	}
@@ -368,12 +378,20 @@ func citationEventIsHighConfidence(citation types.CitationEvent) bool {
 
 func classifyCitationFeedback(citationType string) (decision, reason string, rewardable bool) {
 	switch citationType {
-	case "applied":
+	case types.CitationTypeHelpful:
+		return "rewarded", "explicit-helpful", true
+	case types.CitationTypeUsedInFinalArtifact:
+		return "rewarded", "used-in-final-artifact", true
+	case types.CitationTypeApplied:
 		return "rewarded", "artifact-applied", true
-	case "reference":
+	case types.CitationTypeReference:
 		return "rewarded", "manual-reference", true
-	case "retrieved":
+	case types.CitationTypeRetrieved:
 		return "skipped", "retrieved-no-artifact-evidence", false
+	case types.CitationTypeHarmful:
+		return "skipped", "explicit-harmful", false
+	case types.CitationTypeRefuted:
+		return "skipped", "explicit-refuted", false
 	default:
 		return "skipped", "unsupported-citation-type", false
 	}

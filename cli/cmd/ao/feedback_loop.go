@@ -72,8 +72,17 @@ func init() {
 	feedbackLoopCmd.Flags().Float64Var(&feedbackLoopReward, "reward", -1, "Override reward value (0.0-1.0); -1 = compute from transcript")
 	feedbackLoopCmd.Flags().StringVar(&feedbackLoopTranscript, "transcript", "", "Path to transcript for reward computation")
 	feedbackLoopCmd.Flags().Float64Var(&feedbackLoopAlpha, "alpha", types.DefaultAlpha, "EMA learning rate")
-	feedbackLoopCmd.Flags().StringVar(&feedbackLoopCitationType, "citation-type", "retrieved", "Filter citations by type (retrieved, applied, all)")
-	_ = feedbackLoopCmd.RegisterFlagCompletionFunc("citation-type", staticCompletionFunc("retrieved", "applied", "all"))
+	feedbackLoopCmd.Flags().StringVar(&feedbackLoopCitationType, "citation-type", types.CitationTypeRetrieved, "Filter citations by type (retrieved, used-in-final-artifact, helpful, harmful, refuted, applied, reference, all)")
+	_ = feedbackLoopCmd.RegisterFlagCompletionFunc("citation-type", staticCompletionFunc(
+		types.CitationTypeRetrieved,
+		types.CitationTypeUsedInFinalArtifact,
+		types.CitationTypeHelpful,
+		types.CitationTypeHarmful,
+		types.CitationTypeRefuted,
+		types.CitationTypeApplied,
+		types.CitationTypeReference,
+		"all",
+	))
 	feedbackLoopCmd.Flags().BoolVar(&feedbackLoopDrain, "drain", false, "Walk citations.jsonl and feed entries with zero feedback_at sentinel (idempotent)")
 	feedbackLoopCmd.Flags().Float64Var(&feedbackLoopDrainReward, "drain-reward", defaultDrainReward, "Neutral reward applied to drained citations (0.0-1.0)")
 }
