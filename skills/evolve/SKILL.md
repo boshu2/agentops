@@ -390,12 +390,22 @@ before invoking /release. Do NOT skip any of these on the basis of "cycles
 were green" — fast pre-push gate ≠ full pre-push gate; goals-measure ≠
 release readiness.
 
-  [ ] 1. Regenerate CLI reference docs if any cobra command/flag changed:
-         bash scripts/generate-cli-reference.sh
-         git diff cli/docs/COMMANDS.md   # commit if non-empty
+  [ ] 1. Regenerate ALL derived surfaces if any cobra command/flag changed:
+         bash scripts/regen-all.sh          # COMMANDS.md, registry.json, maps
+         # ADDING an `ao` command also needs the 2 surfaces regen-all only WARNS
+         # about: cli/cmd/ao/cobra_commands_test.go expectedCmds (x2 lists) +
+         # the cli-command-surface heading counts in
+         # evals/agentops-core/fixtures/cli-command-surface-smoke.sh AND
+         # evals/agentops-core/cli-command-surface-matrix.json (top/sub/all).
+         # Run the smoke fixture to read the exact new counts. (ag-jy12 will
+         # automate this.) Full procedure in
+         # [references/ao-command-landing.md](references/ao-command-landing.md)
+         git diff cli/docs/COMMANDS.md registry.json   # commit if non-empty
 
-  [ ] 2. Run the FULL pre-push gate (NOT --fast):
-         bash scripts/pre-push-gate.sh
+  [ ] 2. Run the FULL pre-push gate (NOT --fast) with fail-fast OFF, so a
+         PRE-EXISTING failure (e.g. corpus-freshness) cannot mask your own
+         regressions by stopping the run early:
+         PRE_PUSH_FAIL_FAST=false bash scripts/pre-push-gate.sh
 
   [ ] 3. Run the release-readiness gate:
          bash scripts/ci-local-release.sh
@@ -459,6 +469,7 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - [references/fitness-scoring.md](references/fitness-scoring.md) — Baseline capture, regression detection, revert procedure
 - [references/gate-hygiene.md](references/gate-hygiene.md) — Pre-gate source-surface detection, structural gate-output parsing, pre-push diff-scope check, pre-existing-vs-mine red triage
 - [references/new-skill-landing.md](references/new-skill-landing.md) — The six derived surfaces a new/modified skill must regenerate in one shot to stay one-shot-green
+- [references/ao-command-landing.md](references/ao-command-landing.md) — The surfaces a new/renamed `ao` command must regenerate (cobra expectedCmds x2 + cli-command-surface counts that regen-all only WARNS about)
 - [references/goals-schema.md](references/goals-schema.md) — GOALS.yaml format and continuous metrics
 - [references/knowledge-loop-integration.md](references/knowledge-loop-integration.md) — Claim/release semantics and harvest re-read
 - [references/mechanical-batches.md](references/mechanical-batches.md) — Script-first vs per-file Edit for > 20-file uniform batches
