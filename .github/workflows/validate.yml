@@ -1588,6 +1588,50 @@ jobs:
           done
           exit "$rc"
 
+      # ── I0-INFORMATIONAL retrieval-probe receipt (ag-iyu4) ────────────────
+      # Wires scripts/skill-probe-i0.sh — the deterministic lexical trigger
+      # ranker (scan_descriptions.py --probe, ag-7led) — as an I0 step: it RUNS
+      # and REPORTS a per-skill JSON receipt artifact (.agents/ao/skill-eval/
+      # <id>.json, uploaded below), but it is NOT a PR check. I0 =
+      # informational, not required and not advisory: `continue-on-error: true`
+      # lives INSIDE this existing job rather than as a separate job, so it adds
+      # no new GitHub check and cannot block (or even annotate-as-advisory) a
+      # merge. The step's only finding is a NON-DETERMINISTIC probe (byte-diff
+      # across two runs), surfaced as a `::warning::` — that determinism
+      # assertion is what must hold before the probe is ever promoted to a
+      # blocking gate.
+      #
+      # GATE-PROMOTION GUARD — 2-WEEK STABILITY BASELINE: do NOT promote
+      # `--probe` from this I0 lane to a blocking gate until this receipt lane
+      # has run green and byte-stable across the corpus for ≥2 weeks of merges.
+      # See docs/contracts/ci-jobs.yaml (skill-eval entry) and the
+      # `trigger_probes:` note in skills/skill-builder/SKILL.md.
+      - name: Retrieval probe receipt (I0-informational; not a PR check)
+        # Runs on every skill-eval invocation. continue-on-error so a
+        # non-deterministic probe never blocks — it only reports.
+        continue-on-error: true
+        run: |
+          set +e
+          chmod +x scripts/skill-probe-i0.sh
+          scripts/skill-probe-i0.sh skills .agents/ao/skill-eval
+          rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::warning::skill-probe-i0: a probe was non-deterministic (rc=${rc}). I0-informational — not blocking; the determinism assertion exists to catch this BEFORE any gate promotion."
+          fi
+          # I0: never propagate non-zero from the informational lane.
+          exit 0
+
+      - name: Upload retrieval-probe receipts (I0 artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-retrieval-probe-receipts
+          path: .agents/ao/skill-eval/*.json
+          # Receipts live under the hidden .agents/ tree, so hidden-file
+          # inclusion is required or the upload would silently skip them.
+          include-hidden-files: true
+          if-no-files-found: ignore
+
   # ─────────────────────────────────────────────────────────────────────────
   # process-hygiene — quarantine-empty, test-count non-regression, doc-release
   # stabilization, file-manifest overlap, and the advisory test-staleness,
