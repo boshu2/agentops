@@ -34,7 +34,7 @@ var (
 	evolveNextWorkClock           func() time.Time
 )
 
-var evolveNextWorkCmd = &cobra.Command{
+var loopNextWorkCmd = &cobra.Command{
 	Use:   "next-work",
 	Short: "Recommend the next bead to claim via the 5-step ladder",
 	Long: `Run the 5-step next-work ladder and recommend a bead to claim.
@@ -43,27 +43,27 @@ The ladder filters operator-shape beads, enriches with sibling-pattern grep
 hits, gates with the 3-question Primitive Test, falls back to cross-hop
 discovered-from chains, and finally to the smallest bug. On exhaustion the
 recommended bead is empty and the rationale tells the agent to call
-'ao evolve blocked' instead of halting.
+'ao loop blocked' instead of halting.
 
 The full ladder spec lives at docs/plans/2026-05-21-evolve-loop-epic-design.md
 §A5. Each cycle's decision is appended to .agents/evolve/next-work-decisions.jsonl.
 
 Examples:
-  ao evolve next-work
-  ao evolve next-work --json
-  ao evolve next-work --include-operator-shape
-  ao evolve next-work --mode=loop`,
+  ao loop next-work
+  ao loop next-work --json
+  ao loop next-work --include-operator-shape
+  ao loop next-work --mode=loop`,
 	Args: cobra.NoArgs,
-	RunE: runEvolveNextWork,
+	RunE: runLoopNextWork,
 }
 
 func init() {
 	evolveNextWorkClock = func() time.Time { return time.Now().UTC() }
-	evolveNextWorkCmd.Flags().StringVar(&evolveNextWorkMode, "mode", evolveModeBurst, "Execution contract: 'burst' (default) or 'loop'")
-	evolveNextWorkCmd.Flags().BoolVar(&evolveNextWorkIncludeOperator, "include-operator-shape", false, "Do not filter operator-shape beads at step 1")
-	evolveNextWorkCmd.Flags().BoolVar(&evolveNextWorkJSON, "json", false, "Emit JSON instead of human-readable text")
-	evolveNextWorkCmd.Flags().StringVar(&evolveNextWorkBDBinary, "bd-binary", "", "Override path to the 'bd' binary (default: resolves via PATH)")
-	evolveCmd.AddCommand(evolveNextWorkCmd)
+	loopNextWorkCmd.Flags().StringVar(&evolveNextWorkMode, "mode", loopModeBurst, "Execution contract: 'burst' (default) or 'loop'")
+	loopNextWorkCmd.Flags().BoolVar(&evolveNextWorkIncludeOperator, "include-operator-shape", false, "Do not filter operator-shape beads at step 1")
+	loopNextWorkCmd.Flags().BoolVar(&evolveNextWorkJSON, "json", false, "Emit JSON instead of human-readable text")
+	loopNextWorkCmd.Flags().StringVar(&evolveNextWorkBDBinary, "bd-binary", "", "Override path to the 'bd' binary (default: resolves via PATH)")
+	loopCmd.AddCommand(loopNextWorkCmd)
 }
 
 // nextWorkDecisionLogRow is the schema for one row in
@@ -76,8 +76,8 @@ type nextWorkDecisionLogRow struct {
 	Alternatives      []string `json:"alternatives,omitempty"`
 }
 
-func runEvolveNextWork(cmd *cobra.Command, _ []string) error {
-	if err := validateEvolveMode(evolveNextWorkMode); err != nil {
+func runLoopNextWork(cmd *cobra.Command, _ []string) error {
+	if err := validateLoopMode(evolveNextWorkMode); err != nil {
 		return err
 	}
 	cwd, err := os.Getwd()

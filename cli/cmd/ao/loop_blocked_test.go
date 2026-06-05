@@ -19,16 +19,16 @@ func withFixedBlockedClock(t *testing.T, ts time.Time) {
 	t.Cleanup(func() { evolveBlockedTimestampClock = prev })
 }
 
-// TestEvolveBlocked_WriteThenListRoundTrip writes a blocked event, reads it
+// TestLoopBlocked_WriteThenListRoundTrip writes a blocked event, reads it
 // back via --list --json, and asserts structural equality on the parsed JSON.
-func TestEvolveBlocked_WriteThenListRoundTrip(t *testing.T) {
+func TestLoopBlocked_WriteThenListRoundTrip(t *testing.T) {
 	dir := chdirTemp(t)
 	fixed := time.Date(2026, 5, 21, 16, 30, 0, 0, time.UTC)
 	withFixedBlockedClock(t, fixed)
 
 	// Write.
 	writeOut, err := executeCommand(
-		"evolve", "blocked",
+		"loop", "blocked",
 		"--reason", "ladder exhausted",
 		"--bead", "soc-mlbm",
 		"--needed-context", "undefined ladder step 4 semantics",
@@ -52,7 +52,7 @@ func TestEvolveBlocked_WriteThenListRoundTrip(t *testing.T) {
 		t.Fatalf("expected 1 record, got %d", len(lines))
 	}
 
-	listOut, err := executeCommand("evolve", "blocked", "--list", "--json")
+	listOut, err := executeCommand("loop", "blocked", "--list", "--json")
 	if err != nil {
 		t.Fatalf("list: %v\nout=%s", err, listOut)
 	}
@@ -78,9 +78,9 @@ func TestEvolveBlocked_WriteThenListRoundTrip(t *testing.T) {
 	}
 }
 
-// TestEvolveBlocked_ClearRemovesMatchingCycle seeds two events, clears one,
+// TestLoopBlocked_ClearRemovesMatchingCycle seeds two events, clears one,
 // then re-reads.
-func TestEvolveBlocked_ClearRemovesMatchingCycle(t *testing.T) {
+func TestLoopBlocked_ClearRemovesMatchingCycle(t *testing.T) {
 	dir := chdirTemp(t)
 	fixed := time.Date(2026, 5, 21, 16, 30, 0, 0, time.UTC)
 
@@ -102,7 +102,7 @@ func TestEvolveBlocked_ClearRemovesMatchingCycle(t *testing.T) {
 		f.Close()
 	}
 
-	out, err := executeCommand("evolve", "blocked", "--clear", "cycle-A")
+	out, err := executeCommand("loop", "blocked", "--clear", "cycle-A")
 	if err != nil {
 		t.Fatalf("clear: %v\nout=%s", err, out)
 	}
@@ -119,9 +119,9 @@ func TestEvolveBlocked_ClearRemovesMatchingCycle(t *testing.T) {
 	}
 }
 
-// TestEvolveBlocked_MalformedJSONLRejected confirms readBlockedEvents returns
+// TestLoopBlocked_MalformedJSONLRejected confirms readBlockedEvents returns
 // a typed error referencing the line number for malformed rows.
-func TestEvolveBlocked_MalformedJSONLRejected(t *testing.T) {
+func TestLoopBlocked_MalformedJSONLRejected(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "blocked.jsonl")
 	if err := os.WriteFile(path, []byte("not json\n"), 0o644); err != nil {
@@ -136,9 +136,9 @@ func TestEvolveBlocked_MalformedJSONLRejected(t *testing.T) {
 	}
 }
 
-// TestEvolveBlocked_MissingRequiredFieldsRejected confirms records that parse
+// TestLoopBlocked_MissingRequiredFieldsRejected confirms records that parse
 // as JSON but omit required fields fail readBlockedEvents.
-func TestEvolveBlocked_MissingRequiredFieldsRejected(t *testing.T) {
+func TestLoopBlocked_MissingRequiredFieldsRejected(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "blocked.jsonl")
 	row := `{"bead":"x"}` + "\n"
@@ -154,12 +154,12 @@ func TestEvolveBlocked_MissingRequiredFieldsRejected(t *testing.T) {
 	}
 }
 
-// TestEvolveBlocked_MutuallyExclusiveFlags confirms resolveBlockedMode rejects
+// TestLoopBlocked_MutuallyExclusiveFlags confirms resolveBlockedMode rejects
 // combinations of --reason + --list.
-func TestEvolveBlocked_MutuallyExclusiveFlags(t *testing.T) {
+func TestLoopBlocked_MutuallyExclusiveFlags(t *testing.T) {
 	chdirTemp(t)
 
-	out, err := executeCommand("evolve", "blocked", "--reason", "x", "--list")
+	out, err := executeCommand("loop", "blocked", "--reason", "x", "--list")
 	if err == nil {
 		t.Fatalf("expected mutual-exclusion error\nout=%s", out)
 	}
@@ -169,9 +169,9 @@ func TestEvolveBlocked_MutuallyExclusiveFlags(t *testing.T) {
 	}
 }
 
-// TestEvolveBlocked_DefaultCycleIDUsesCronHistoryCounter confirms the default
+// TestLoopBlocked_DefaultCycleIDUsesCronHistoryCounter confirms the default
 // cycle id is derived as <date>-cycle-<count of cron-history rows>.
-func TestEvolveBlocked_DefaultCycleIDUsesCronHistoryCounter(t *testing.T) {
+func TestLoopBlocked_DefaultCycleIDUsesCronHistoryCounter(t *testing.T) {
 	dir := chdirTemp(t)
 	fixed := time.Date(2026, 5, 21, 0, 0, 0, 0, time.UTC)
 	withFixedBlockedClock(t, fixed)
@@ -184,7 +184,7 @@ func TestEvolveBlocked_DefaultCycleIDUsesCronHistoryCounter(t *testing.T) {
 		t.Fatalf("seed: %v", err)
 	}
 
-	out, err := executeCommand("evolve", "blocked", "--reason", "test")
+	out, err := executeCommand("loop", "blocked", "--reason", "test")
 	if err != nil {
 		t.Fatalf("write: %v\nout=%s", err, out)
 	}
@@ -193,23 +193,23 @@ func TestEvolveBlocked_DefaultCycleIDUsesCronHistoryCounter(t *testing.T) {
 	}
 }
 
-// TestEvolveBlocked_RegisteredOnEvolve confirms the subcommand is reachable via
-// `ao evolve blocked`.
-func TestEvolveBlocked_RegisteredOnEvolve(t *testing.T) {
+// TestLoopBlocked_RegisteredOnLoop confirms the subcommand is reachable via
+// `ao loop blocked`.
+func TestLoopBlocked_RegisteredOnLoop(t *testing.T) {
 	var found bool
-	for _, sub := range evolveCmd.Commands() {
+	for _, sub := range loopCmd.Commands() {
 		if sub.Name() == "blocked" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Fatal("evolve blocked subcommand should be registered on evolveCmd")
+		t.Fatal("evolve blocked subcommand should be registered on loopCmd")
 	}
 }
 
-// TestEvolveBlocked_NextCycleIDFormat covers the cycle id derivation helper.
-func TestEvolveBlocked_NextCycleIDFormat(t *testing.T) {
+// TestLoopBlocked_NextCycleIDFormat covers the cycle id derivation helper.
+func TestLoopBlocked_NextCycleIDFormat(t *testing.T) {
 	tmp := t.TempDir()
 	now := time.Date(2026, 5, 21, 0, 0, 0, 0, time.UTC)
 	got := nextBlockedCycleID(tmp, now)

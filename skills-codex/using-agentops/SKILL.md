@@ -166,13 +166,13 @@ AgentOps has several runtime modes. Do not assume hook automation exists everywh
 
 | Mode | When it applies | Start path | Closeout path | Guarantees |
 |------|-----------------|------------|---------------|------------|
-| `substrate` (out-of-session) | A swappable orchestration substrate available out-of-session: an NTM tmux swarm, MCP (`ao mcp serve`), or managed-agents (`ao agent`) | The operator or a lead agent runs `bd ready` and dispatches a whole loop per bead (`ao rpi <bead>`); cron / managed triggers run maintenance | The substrate owns the merge gate (CI-green is the signal) and triggers the knowledge-flywheel feedback | The substrate orchestrates *whole* `ao rpi`/`ao evolve` loops — it never sees the loop's insides; the seam is substrate → `ao` as a subprocess. There is no in-CLI `runtime=gc` executor. Codex skills still chain `$skill` invocations for lead orchestration. See [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md). |
+| `substrate` (out-of-session) | A swappable orchestration substrate available out-of-session: an NTM tmux swarm, MCP (`ao mcp serve`), or managed-agents (`ao agent`) | The operator or a lead agent runs `bd ready` and dispatches a whole loop per bead (`ao rpi <bead>`); cron / managed triggers run maintenance | The substrate owns the merge gate (CI-green is the signal) and triggers the knowledge-flywheel feedback | The substrate orchestrates *whole* `ao rpi` loops — it never sees the loop's insides; the seam is substrate → `ao` as a subprocess. There is no in-CLI `runtime=gc` executor. Codex skills still chain `$skill` invocations for lead orchestration. See [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md). |
 | `codex-hookless-fallback` | Codex Desktop / Codex CLI without hook surfaces | `ao codex start` or `ao codex ensure-start` | `ao codex stop` or `ao codex ensure-stop` | Explicit startup context, citation tracking, transcript fallback, and close-loop metrics without hooks |
 | `manual` | Codex cannot resolve repo/runtime state automatically | `ao inject` / `ao lookup` | `ao forge transcript` + `ao flywheel close-loop` | Works everywhere, but lifecycle actions are operator-driven |
 
 Codex skill orchestration default is `$skill` chaining. Inside a Codex skill,
 invoke peer skills such as `$rpi`, `$discovery`, `$crank`, `$validation`,
-`$evolve`, `$plan`, and `$pre-mortem` directly. Use `ao rpi`, `ao evolve`, or
+`$evolve`, `$plan`, and `$pre-mortem` directly. Use `ao rpi` or
 similar lifecycle wrapper commands only when the user explicitly asks for a
 terminal wrapper or when documenting a non-skill runtime path. Operational CLI
 commands such as `ao lookup`, `ao goals measure`, `ao ratchet`, and
