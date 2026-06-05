@@ -49,11 +49,18 @@ const (
 type Decision string
 
 const (
-	// Allowed means the role holds the verb in the capability matrix.
+	// Allowed means the role holds the verb in the capability matrix and all
+	// identity/disjointness/surface checks passed.
 	Allowed Decision = "allowed"
-	// NeedsAdmission means the action is outside the role's capability and must
-	// be routed to the admission controller rather than executed.
+	// NeedsAdmission means a KNOWN, validly-sourced role attempted something
+	// outside its capability (or a protected-surface edit). It is legitimate but
+	// must be routed to the admission controller / escalated, not executed.
 	NeedsAdmission Decision = "needs-admission"
+	// Denied is a HARD reject for identity/source integrity failures: a missing
+	// identity, a self-asserted or unknown role, or a self-grade
+	// (author==judge). Unlike NeedsAdmission it is not escalatable — the request
+	// is malformed or adversarial, not merely out of capability.
+	Denied Decision = "denied"
 )
 
 // roleCapabilities is the authoritative role->verb matrix. A verb absent for a

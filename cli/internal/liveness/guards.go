@@ -1,47 +1,34 @@
 package liveness
 
-// This file adds the separation-of-duties guards layered on top of the role
-// matrix (per the RubyMoose checklist on ag-c3c7.1): author/judge disjointness
-// (the reusable ag-xdrw primitive), external role binding (roles are assigned,
-// never self-asserted — the same computed-not-authored invariant as reach), and
-// the protected-surface marker. Pure logic only; no CLI, event schema,
-// blast-radius, deadman, or CI surface lives here.
+// Separation-of-duties primitives layered on the role matrix (per the
+// SageHarbor/RubyMoose review of ag-c3c7.1). These are the reusable building
+// blocks the request-shaped Check (request.go) composes, and which ag-xdrw
+// consumes directly. Pure logic only — no CLI, event schema, blast-radius,
+// deadman, or CI surface.
 
 // Disjoint reports whether an author and a judge are distinct, non-empty
-// identities. It returns NeedsAdmission when authorID == judgeID (a self-grade)
-// or when either id is empty, and Allowed otherwise.
+// identities. A self-grade (author==judge) or a missing identity returns Denied
+// — a hard integrity failure, not an escalatable capability gap.
 //
 // This is the reusable primitive ag-xdrw consumes: no work may be verified by
 // its own author. It is identity-level (orthogonal to Authorize, which is
-// role-level) so the two compose — see AuthorizeReview.
+// role-level) so the two compose in Check.
 func Disjoint(authorID, judgeID string) Decision {
 	if authorID == "" || judgeID == "" || authorID == judgeID {
-		return NeedsAdmission
+		return Denied
 	}
 	return Allowed
 }
 
-// AuthorizeReview composes the verifier capability with author/judge
-// disjointness: a judge may review an author's work only if it holds the
-// verifier role AND is a distinct identity from the author. Any failure of
-// either condition is NeedsAdmission.
-func AuthorizeReview(judgeRole Role, authorID, judgeID string) Decision {
-	if Authorize(judgeRole, VerbJudge) != Allowed {
-		return NeedsAdmission
-	}
-	return Disjoint(authorID, judgeID)
-}
-
 // VerifyAssignedRole reports whether a claimed role matches the role assigned to
-// an actor by an external/trusted source. An actor cannot self-assert authority
-// it was not assigned: a mismatch, an empty assignment, or an unknown assigned
-// role is NeedsAdmission. This is the role-level form of the same invariant that
-// governs reach=always — high-authority labels are sourced, not authored — so
-// the role passed to Authorize must come from VerifyAssignedRole, never from the
-// actor's own claim.
+// an actor by an external/trusted source. An empty assignment, an unknown
+// assigned role, or a claim that does not match the assignment returns Denied:
+// authority is sourced, not authored — an actor cannot self-grant a role. (The
+// self-source check itself — RoleSource must not be the actor — lives in Check,
+// which holds the agent identity.)
 func VerifyAssignedRole(claimed, assigned Role) Decision {
 	if assigned == "" || !IsRole(assigned) || claimed != assigned {
-		return NeedsAdmission
+		return Denied
 	}
 	return Allowed
 }
