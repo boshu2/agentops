@@ -53,9 +53,11 @@ func (a *productionClaimEvidence) Derive(ctx context.Context, req ports.ClaimEvi
 	newLevel := productionPromoteEvidenceLevel(verdict.Status, existingLevel, targetLevel)
 	return ports.ClaimEvidenceResult{
 		Binding: ports.EvidenceBinding{
-			Claim: req.Claim,
-			Path:  req.EvidenceFile,
-			Level: newLevel,
+			Claim:    req.Claim,
+			Path:     req.EvidenceFile,
+			Level:    newLevel,
+			AuthorID: req.AuthorID,
+			JudgeID:  req.JudgeID,
 		},
 		Verdict: verdict,
 	}, nil

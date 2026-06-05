@@ -276,15 +276,17 @@ ao claim [command]
 Append (or upgrade) a claim→evidence binding via the typed BC2
 
 ```
-ao claim bind --claim <AOP-CLAIM-X> --path <evidence-path> [--level PG1|PG2|PG3|PG4] [--anchor ...] [flags]
+ao claim bind --claim <AOP-CLAIM-X> --path <evidence-path> [--level PG1|PG2|PG3|PG4] [--anchor ...] [--author-id <id> --judge-id <id>] [flags]
 ```
 
 **Flags:**
 
 ```
       --anchor stringArray   optional in-file anchors (repeatable)
+      --author-id string     artifact author identity for reviewer separation checks
       --claim string         claim ID (required, e.g. AOP-CLAIM-X)
   -h, --help                 help for bind
+      --judge-id string      judge/verifier identity for reviewer separation checks
       --level string         promotion level: PG1|PG2|PG3|PG4 (default "PG1")
       --path string          evidence file path (required, relative to repo root)
 ```
