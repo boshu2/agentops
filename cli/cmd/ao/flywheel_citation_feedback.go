@@ -448,9 +448,9 @@ func classifyCitationFeedback(citationType string) (decision, reason string, rew
 	case types.CitationTypeRetrieved:
 		return "skipped", "retrieved-no-artifact-evidence", false
 	case types.CitationTypeHarmful:
-		return "rewarded", "explicit-harmful", true
+		return "penalized", "explicit-harmful", true
 	case types.CitationTypeRefuted:
-		return "rewarded", "explicit-refuted", true
+		return "penalized", "explicit-refuted", true
 	default:
 		return "skipped", "unsupported-citation-type", false
 	}
