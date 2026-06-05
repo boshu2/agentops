@@ -717,8 +717,27 @@ func TestProcessCitationFeedback_RefutedOverridesAppliedEvidence(t *testing.T) {
 	if len(feedback) != 1 {
 		t.Fatalf("feedback event count = %d, want 1", len(feedback))
 	}
-	if feedback[0].Decision != "rewarded" || feedback[0].Reason != "explicit-refuted" || feedback[0].Reward != 0 {
-		t.Fatalf("feedback decision/reason/reward = %q/%q/%v, want rewarded/explicit-refuted/0", feedback[0].Decision, feedback[0].Reason, feedback[0].Reward)
+	if feedback[0].Decision != "penalized" || feedback[0].Reason != "explicit-refuted" || feedback[0].Reward != 0 {
+		t.Fatalf("feedback decision/reason/reward = %q/%q/%v, want penalized/explicit-refuted/0", feedback[0].Decision, feedback[0].Reason, feedback[0].Reward)
+	}
+}
+
+func TestClassifyCitationFeedback_NegativeOutcomesArePenalized(t *testing.T) {
+	tests := []struct {
+		citationType string
+		wantReason   string
+	}{
+		{types.CitationTypeHarmful, "explicit-harmful"},
+		{types.CitationTypeRefuted, "explicit-refuted"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.citationType, func(t *testing.T) {
+			decision, reason, rewardable := classifyCitationFeedback(tt.citationType)
+			if decision != "penalized" || reason != tt.wantReason || !rewardable {
+				t.Fatalf("classifyCitationFeedback(%q) = %q/%q/%v, want penalized/%s/true", tt.citationType, decision, reason, rewardable, tt.wantReason)
+			}
+		})
 	}
 }
 
