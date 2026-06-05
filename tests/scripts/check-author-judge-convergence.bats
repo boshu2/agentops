@@ -41,6 +41,14 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
+@test "does not flag EqualFold(authorName, authorEmail) (author-vs-author, no grader operand)" {
+  # The #746 AMEND2 catch: the EqualFold arm must require one author AND one
+  # grader operand, not merely any author/judge/cited token.
+  printf 'package foo\nimport "strings"\nfunc ok(authorName, authorEmail string) bool { return strings.EqualFold(authorName, authorEmail) }\n' > "$FIX/ef_aa.go"
+  run bash "$GUARD" "$BATS_TEST_TMPDIR/fix"
+  [ "$status" -eq 0 ]
+}
+
 @test "does not flag a comment describing author == judge" {
   printf 'package foo\n\t// a self-grade is author == judge\nfunc ok() bool { return false }\n' > "$FIX/c.go"
   run bash "$GUARD" "$BATS_TEST_TMPDIR/fix"

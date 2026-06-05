@@ -26,7 +26,12 @@ ROOT="${1:-cli}"
 # citedByAgent == artifactAuthor) — both are the same self-grade predicate.
 AUTH='[A-Za-z]*[Aa]uthor[A-Za-z]*'
 GRADER='[A-Za-z]*([Jj]udge|[Cc]ited)[A-Za-z]*'
-PATTERN="(EqualFold\\([^)]*([Aa]uthor|[Jj]udge|[Cc]ited)|${AUTH}[[:space:]]*==[[:space:]]*${GRADER}|${GRADER}[[:space:]]*==[[:space:]]*${AUTH})"
+# Both the case-insensitive (EqualFold) and direct (==) arms require exactly ONE
+# author operand AND ONE grader operand (judge/cited), in either order. This is
+# the author-vs-grader self-grade pair; author-vs-author or grader-vs-grader is
+# NOT flagged (e.g. EqualFold(authorName, authorEmail) is fine — no grader side).
+EQF="EqualFold\\([[:space:]]*(${AUTH}[[:space:]]*,[[:space:]]*${GRADER}|${GRADER}[[:space:]]*,[[:space:]]*${AUTH})"
+PATTERN="(${EQF}|${AUTH}[[:space:]]*==[[:space:]]*${GRADER}|${GRADER}[[:space:]]*==[[:space:]]*${AUTH})"
 
 hits="$(grep -rnE "$PATTERN" "$ROOT" --include='*.go' 2>/dev/null \
   | grep -viE '_test\.go' \
