@@ -101,6 +101,54 @@ EOF
   echo "$output" | grep -qF "(phrase: 'beta phrase')"
 }
 
+# Build a fixture whose declaring skill uses a flow-form phrase containing a
+# QUOTED comma (`trigger_probes: ["alpha, beta"]`). The wrapper must treat this
+# as the ONE phrase `alpha, beta`, not split it into two (`alpha` + `beta`).
+# This is the AMEND2 regression: the old awk discovery did a naive comma split
+# and broke quoted commas; reusing the scanner's parse_trigger_probes parser
+# (via --list-probes) preserves them.
+_mk_quoted_comma_fixture() {
+  local fix="$1"
+  mkdir -p "$fix/skill-builder/scripts" "$fix/phrase-skill"
+  cp "$REAL_SCANNER" "$fix/skill-builder/scripts/scan_descriptions.py"
+  cat > "$fix/skill-builder/SKILL.md" <<'EOF'
+---
+name: skill-builder
+description: scaffold skills
+---
+# Skill Builder
+EOF
+  cat > "$fix/phrase-skill/SKILL.md" <<'EOF'
+---
+name: phrase-skill
+description: Handle the alpha beta combined phrase distinctly.
+trigger_probes: ["alpha, beta"]
+---
+# Phrase Skill
+EOF
+}
+
+@test "i0-probe: a QUOTED comma is ONE phrase, not two (ag-iyu4 AMEND2)" {
+  FIX="$BATS_TEST_TMPDIR/skills"
+  RCPT="$BATS_TEST_TMPDIR/receipts"
+  _mk_quoted_comma_fixture "$FIX"
+
+  run "$DRIVER" "$FIX" "$RCPT"
+  [ "$status" -eq 0 ]
+
+  # Exactly ONE receipt line for the single phrase `alpha, beta`.
+  echo "$output" | grep -qF "(phrase: 'alpha, beta')"
+
+  # The naive-split bug would have probed 'alpha' and 'beta' separately — assert
+  # those split fragments were NEVER probed as standalone phrases.
+  ! echo "$output" | grep -qF "(phrase: 'alpha')"
+  ! echo "$output" | grep -qF "(phrase: 'beta')"
+
+  # Exactly one "wrote receipt" line total (one phrase => one receipt write).
+  run bash -c "$DRIVER '$FIX' '$RCPT' | grep -c 'wrote receipt'"
+  [ "$output" = "1" ]
+}
+
 @test "i0-probe: produces a per-skill JSON receipt for each declared phrase (exit 0)" {
   FIX="$BATS_TEST_TMPDIR/skills"
   RCPT="$BATS_TEST_TMPDIR/receipts"

@@ -49,48 +49,14 @@ fi
 mkdir -p "$RECEIPT_DIR"
 
 # Collect every (skill-id, phrase) pair declared in `trigger_probes:` blocks.
-# Format: "<skill-id>\t<phrase>". Pure text walk — no YAML dep, byte-stable.
-mapfile -t pairs < <(
-  for skill_md in "$SKILLS_DIR"/*/SKILL.md; do
-    [[ -f "$skill_md" ]] || continue
-    sid="$(basename "$(dirname "$skill_md")")"
-    awk -v sid="$sid" '
-      # A YAML doc/frontmatter boundary (--- or ...) always ends the block.
-      /^(---|\.\.\.)[[:space:]]*$/ { inblock=0; next }
-      # Flow form: `trigger_probes: ["a", "b"]` (inline YAML list). Mirrors the
-      # scanner (scan_descriptions.py parse_trigger_probes) so the two parsers
-      # do not diverge — flow-form skills must NOT be silently skipped.
-      /^trigger_probes:[[:space:]]*\[/ {
-        flow=$0
-        sub(/^trigger_probes:[[:space:]]*\[/, "", flow)
-        sub(/\][[:space:]]*$/, "", flow)
-        n=split(flow, items, ",")
-        for (k=1; k<=n; k++) {
-          it=items[k]
-          gsub(/^[[:space:]]+|[[:space:]]+$/, "", it)
-          gsub(/^"|"$/, "", it)
-          gsub(/^'"'"'|'"'"'$/, "", it)
-          gsub(/^[[:space:]]+|[[:space:]]+$/, "", it)
-          if (length(it) > 0) print sid "\t" it
-        }
-        inblock=0
-        next
-      }
-      /^trigger_probes:[[:space:]]*$/ { inblock=1; next }
-      # Indented "- item" list entries belong to the block.
-      inblock && /^[[:space:]]+-[[:space:]]+/ {
-        line=$0
-        sub(/^[[:space:]]+-[[:space:]]+/, "", line)
-        gsub(/^"|"$/, "", line)
-        gsub(/^'"'"'|'"'"'$/, "", line)
-        if (length(line) > 0) print sid "\t" line
-        next
-      }
-      # Any other non-blank, non-list line ends the block.
-      inblock && /[^[:space:]]/ { inblock=0 }
-    ' "$skill_md"
-  done | sort -u
-)
+# Format: "<skill-id>\t<phrase>". We REUSE the scanner's own parser via
+# `--list-probes` instead of reimplementing the YAML walk in awk — that
+# reimplementation kept diverging from scan_descriptions.py's
+# parse_trigger_probes (first it missed flow-form lists entirely, then it broke
+# QUOTED commas like `["alpha, beta"]`). ONE parser, zero divergence: the same
+# no-parallel-vocabulary principle the rest of the liveness kernel follows.
+# Output is already (skill-id, phrase)-sorted + de-duped by the scanner.
+mapfile -t pairs < <(python3 "$SCANNER" "$SKILLS_DIR" --list-probes)
 
 if [[ "${#pairs[@]}" -eq 0 ]]; then
   echo "::notice::skill-probe-i0: no \`trigger_probes:\` phrases declared in ${SKILLS_DIR}/*/SKILL.md — I0 receipt lane has nothing to probe (this is expected until skills opt in)."
