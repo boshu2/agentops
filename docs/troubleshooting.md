@@ -17,7 +17,7 @@ the authoritative gate** (see `.github/workflows/validate.yml`).
 
 ```bash
 ao session bootstrap                 # the universal init prompt / orientation report
-ao inject --query "<topic>"          # pull decay-ranked prior context on demand
+ao inject "<topic>"                  # pull decay-ranked prior context on demand
 ```
 
 **Diagnosis (check your install, not hooks):**
@@ -348,7 +348,7 @@ primitives rather than relying on an auto-snapshot hook (there is none in 3.0):
 
 ```bash
 ao session bootstrap                 # re-orient
-ao inject --query "<topic>"          # pull back the relevant prior context
+ao inject "<topic>"                  # pull back the relevant prior context
 ```
 
 You can also manually re-seed the session from `MEMORY.md`.
