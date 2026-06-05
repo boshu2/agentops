@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-04T20:43:55Z",
+  "generated_at": "2026-06-04T22:44:18Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 75,
-    "capabilities": 169
+    "cli_commands": 74,
+    "capabilities": 168
   },
   "surfaces": {
     "skills": [
@@ -981,17 +981,6 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao evolve",
-        "path": "cli/cmd/ao/",
-        "purpose": "Run the autonomous code-improvement loop",
-        "bounded_context": "BC3",
-        "driven_by_skills": [
-          "autodev",
-          "evolve",
-          "shared"
-        ]
-      },
-      {
         "name": "ao extract",
         "path": "cli/cmd/ao/",
         "purpose": "Process pending learning extractions",
@@ -1143,6 +1132,7 @@
         "purpose": "BC3 Loop operations (cycle history, etc.)",
         "bounded_context": "BC3",
         "driven_by_skills": [
+          "evolve",
           "standards"
         ]
       },
@@ -1454,9 +1444,9 @@
     ]
   },
   "capability_summary": {
-    "total": 169,
+    "total": 168,
     "skills": 82,
-    "cli_commands": 75,
+    "cli_commands": 74,
     "gates": 12,
     "reference_impls": 0
   },
@@ -1485,7 +1475,6 @@
     "demo",
     "doctor",
     "eval",
-    "evolve",
     "extract",
     "feedback-loop",
     "findings",
@@ -1587,7 +1576,6 @@
         "ao autodev",
         "ao autodev init",
         "ao autodev validate",
-        "ao evolve",
         "ao rpi"
       ],
       "path": "skills/autodev/",
@@ -2092,17 +2080,17 @@
         "ao ci recent",
         "ao corpus inject",
         "ao defrag",
-        "ao evolve",
-        "ao evolve blocked",
-        "ao evolve next-work",
-        "ao evolve write-stop-marker",
         "ao goals",
         "ao lookup",
+        "ao loop",
         "ao loop append",
+        "ao loop blocked",
         "ao loop converged",
         "ao loop history",
         "ao loop hypothesis list",
+        "ao loop next-work",
         "ao loop verify",
+        "ao loop write-stop-marker",
         "ao metrics cite",
         "ao mine",
         "ao ratchet",
@@ -3064,7 +3052,6 @@
       "drives_commands": [
         "ao agent",
         "ao beads verify",
-        "ao evolve",
         "ao rpi",
         "ao rpi phased",
         "ao version"
@@ -3908,60 +3895,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.evolve",
-      "name": "ao evolve",
-      "type": "cli-command",
-      "bounded_context": "BC3",
-      "purpose": "Run the autonomous code-improvement loop",
-      "status": "active",
-      "driven_by_skills": [
-        "autodev",
-        "evolve",
-        "shared"
-      ],
-      "flags": [
-        "--auto-clean",
-        "--auto-clean-stale-after",
-        "--bd-sync-policy",
-        "--cleanup-prune-branches",
-        "--cleanup-prune-worktrees",
-        "--command-timeout",
-        "--compile",
-        "--compile-defrag",
-        "--compile-interval",
-        "--compile-since",
-        "--config",
-        "--cycle-delay",
-        "--cycle-retries",
-        "--detached-branch-prefix",
-        "--detached-heal",
-        "--dry-run",
-        "--ensure-cleanup",
-        "--failure-policy",
-        "--gate-fast-script",
-        "--gate-policy",
-        "--gate-security-script",
-        "--json",
-        "--kill-switch-path",
-        "--landing-branch",
-        "--landing-commit-message",
-        "--landing-lock-path",
-        "--landing-policy",
-        "--lease",
-        "--lease-path",
-        "--lease-ttl",
-        "--max-cycles",
-        "--mode",
-        "--output",
-        "--ralph",
-        "--repo-filter",
-        "--retry-backoff",
-        "--supervisor",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.extract",
       "name": "ao extract",
       "type": "cli-command",
@@ -4305,12 +4238,14 @@
       "purpose": "BC3 Loop operations (cycle history, etc.)",
       "status": "active",
       "driven_by_skills": [
+        "evolve",
         "standards"
       ],
       "flags": [
         "--config",
         "--dry-run",
         "--json",
+        "--mode",
         "--output",
         "--verbose"
       ],

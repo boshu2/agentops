@@ -135,6 +135,34 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
+      "category": "manual-only",
+      "command": "canon cite",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "manual-only",
+      "command": "canon promote",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
+      "category": "public-tested",
+      "command": "canon status",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "manual-only",
+      "command": "canon verify",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
       "category": "public-tested",
       "command": "capabilities",
       "coverage_status": "covered",
@@ -521,34 +549,6 @@
     },
     {
       "category": "public-tested",
-      "command": "evolve blocked",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "evolve config",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "evolve next-work",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
-      "command": "evolve write-stop-marker",
-      "coverage_status": "covered",
-      "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
-    },
-    {
-      "category": "public-tested",
       "command": "extract",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -912,6 +912,13 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
+      "category": "manual-only",
+      "command": "loop blocked",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
       "category": "public-tested",
       "command": "loop converged",
       "coverage_status": "covered",
@@ -940,11 +947,25 @@
       "reason": "No smoke, direct test, or allowlist coverage found."
     },
     {
+      "category": "manual-only",
+      "command": "loop next-work",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
+    },
+    {
       "category": "public-tested",
       "command": "loop verify",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "manual-only",
+      "command": "loop write-stop-marker",
+      "coverage_status": "missing",
+      "kind": "leaf",
+      "reason": "No smoke, direct test, or allowlist coverage found."
     },
     {
       "category": "public-tested",
@@ -1047,6 +1068,13 @@
     {
       "category": "public-tested",
       "command": "mine",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "next-work materialize",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
@@ -1158,6 +1186,34 @@
     },
     {
       "category": "public-tested",
+      "command": "provenance add",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "provenance export",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "provenance list",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "provenance trace",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "quick-start",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -1250,6 +1306,13 @@
     {
       "category": "public-tested",
       "command": "reconcile",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "redact",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
@@ -1452,7 +1515,35 @@
     },
     {
       "category": "public-tested",
+      "command": "skills consumers",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "skills find",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "skills graph",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "skills list",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "skills producers",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
@@ -1467,6 +1558,13 @@
     {
       "category": "public-tested",
       "command": "trace",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "turn verify",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."

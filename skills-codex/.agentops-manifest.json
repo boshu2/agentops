@@ -49,7 +49,7 @@
         "name": "autodev",
         "treatment": "parity_only",
         "wave": "catalog-parity",
-        "reason": "Thin operator layer over the shipped ao autodev, ao evolve, and ao rpi contracts; converter parity is sufficient for the first rollout."
+        "reason": "Thin operator layer over the shipped ao autodev, /evolve, and ao rpi contracts; converter parity is sufficient for the first rollout."
       },
       {
         "name": "beads",
@@ -679,8 +679,8 @@
     {
       "name": "autodev",
       "source_skill": "skills/autodev",
-      "source_hash": "9b4ecf0399c67b1d55675b293ec382b7b7e4e6cafccec40eda2c7b6da16437b6",
-      "generated_hash": "ba2a82dc22e5bcead7f9e2ef899601c4235604092a1bf1362e2c546608880c7b"
+      "source_hash": "028e8ab0e5b7682cd53de50b8d8e9dd931aa7cb6484ef842938fe546808feb2d",
+      "generated_hash": "c4231da4e3a6bca68af4c5fe6d716ac451a043b58b2877aefd5ca75d05c6eb89"
     },
     {
       "name": "automation-shape-routing",
@@ -811,8 +811,8 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "a74d21b0a712c5c5361abef76aeda637c3dbc50e3e1ce82f689fd4168efd0535",
-      "generated_hash": "4c291f25cfc6e9ee2547e8140488a75097c6fa38615282742d375f603f5daae5"
+      "source_hash": "659314217a89788bb2895f6e65265a550c1e1d3fcd2fa41495ab6e1555832eae",
+      "generated_hash": "30756e2ad2f3b5f924fda8442038e9dc8feb8f19ef0a530c0592d7a29577763d"
     },
     {
       "name": "flywheel",
@@ -1069,7 +1069,7 @@
     {
       "name": "shared",
       "source_skill": "skills/shared",
-      "source_hash": "332c02b6a0fc14733839d88ccd80cbe4bbfaf6a0c631ad1d4df929fc875d2b74",
+      "source_hash": "e697b151e8db12c970a28ce51292f9896896351f1d15070ca62dc55f736db1bb",
       "generated_hash": "0758c94cf77d7fd1bde265f3bff580a57f15fe601c59f893502d14175d57b763"
     },
     {
@@ -1129,14 +1129,14 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "59d72c15344ff99f314bb6aee6b28eb1de99e423cf410a2afbb6214e2e34cdfb",
-      "generated_hash": "93c23a804e321d4dbdf86a31fe7d2165632d159b426395c5040f0a1fdb84fe0c"
+      "source_hash": "65ce8bc520d395e3ced1b7d84a78a2c4ccf90110523dccd3cf519d4606cd784c",
+      "generated_hash": "a079efeefdad05fedc49a995474bb5bb90ecbd2d639ea32ebc3f96d1e5788cf9"
     },
     {
       "name": "using-ntm",
       "source_skill": "skills/using-ntm",
-      "source_hash": "7748b832005d0f63a763d851879ddd8df345d9d039fa33455a2035c04e64f3de",
-      "generated_hash": "6fa63809ed9265bb70107df030fbedfa1bb363fc89a21637841f873a24ea61dc"
+      "source_hash": "75a1e2fa3ad16719fe01fae7770574477523d9ff0fd9b43cb8136cb7442f6cb3",
+      "generated_hash": "81f148461eb109ec897e1f8d3e2f53ff38f94ce14167ffd9d025b6c698c05600"
     },
     {
       "name": "validate",

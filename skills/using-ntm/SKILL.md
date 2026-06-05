@@ -40,7 +40,7 @@ panes. NTM is an adopted external tool (`ntm` on `PATH`), **not** an
 AgentOps-owned surface — AgentOps adopts it, it does not vendor it.
 
 > **Skills are the runtime, not the CLI.** The substrate dispatches a *whole
-> loop* by spawning an agent that **runs the `/rpi` or `/evolve` skill** — it
+> loop* by spawning an agent that **runs the `rpi` or `evolve` skill** — it
 > does **not** shell out to retired RPI/evolve CLI subprocesses. The loop
 > lives as a skill an agent executes. The seam is
 > **NTM pane → agent → `/rpi <bead>` skill**, one bead dispatched as one
@@ -52,8 +52,8 @@ AgentOps-owned surface — AgentOps adopts it, it does not vendor it.
 standing up or tending an NTM swarm that runs AgentOps loops; a pane is stuck,
 rate-limited, or wedged; you need to know whether the swarm has converged.
 
-**Skip it when:** the work fits a single in-session run (just run `/rpi` or
-`/evolve` yourself); you want in-session parallel fan-out across worktrees (use
+**Skip it when:** the work fits a single in-session run (just run `rpi` or
+`evolve` yourself); you want in-session parallel fan-out across worktrees (use
 [`/swarm`](../swarm/SKILL.md)); you're choosing between automation shapes at all
 (start at [`/automation-shape-routing`](../automation-shape-routing/SKILL.md),
 which routes Workflow vs NTM swarm vs plain skill).
@@ -67,11 +67,11 @@ dispatch and tend AgentOps loops on an NTM swarm.
 1. **One bead = one whole-loop skill invocation.** A pane's agent runs
    `/rpi <bead> --auto` (one cycle) or `/evolve --auto` (the outer loop). The
    substrate never decomposes the loop into per-phase steps — whoever owns the
-   loop owns its invariants, and AgentOps owns the loop. Re-expressing `/rpi` as
+   loop owns its invariants, and AgentOps owns the loop. Re-expressing `rpi` as
    substrate-side steps duplicates the loop shape and pits the substrate's retry
    machinery against the ratchet rules. Dispatch the skill; don't reimplement it.
 2. **Agents inherit the skills via overlay.** Each pane is a Claude or Codex
-   agent with the AgentOps skills installed, so `/rpi`, `/evolve`, `/validation`,
+   agent with the AgentOps skills installed, so `rpi`, `evolve`, `/validation`,
    etc. resolve in-pane.
 3. **The bead queue is the work source.** A lead (operator or a lead pane) runs
    `bd ready`, picks the next bead, and dispatches it to a free worker pane.
@@ -98,7 +98,7 @@ ntm doctor                     # validate the NTM ecosystem
 ntm deps                       # required agent CLIs present
 ```
 
-Scheduled cadence (e.g. a nightly `/evolve` pass) is driven by host-OS timing (a
+Scheduled cadence (e.g. a nightly `evolve` pass) is driven by host-OS timing (a
 systemd user timer or cron) that runs `ntm send … "/evolve --auto"`, or by a
 managed-agent driver — **not** an AgentOps daemon.
 
@@ -141,9 +141,9 @@ on a transient quiet patch — a rate-limited pane also looks idle.
 ## Anti-patterns
 
 - ❌ **Shelling out to retired RPI/evolve CLI subprocesses.**
-  Dispatch the `/rpi` / `/evolve` **skill** to an agent pane instead.
+  Dispatch the `rpi` / `evolve` **skill** to an agent pane instead.
 - ❌ **Decomposing the loop into substrate steps.** Dispatch the whole loop as
-  one invocable unit; never re-express `/rpi`'s phases as NTM-side orchestration.
+  one invocable unit; never re-express `rpi`'s phases as NTM-side orchestration.
 - ❌ **Editing the shared checkout from a pane.** Worktree-per-bead, always.
 - ❌ **Treating NTM as AgentOps-owned.** It is an adopted external substrate; a
   managed-agents driver (`ao agent`) or a plain in-session run are equally valid
@@ -154,4 +154,4 @@ on a transient quiet patch — a rate-limited pane also looks idle.
 - [`/automation-shape-routing`](../automation-shape-routing/SKILL.md) — decide Workflow vs NTM swarm vs plain skill *before* standing up a swarm.
 - [`/swarm`](../swarm/SKILL.md) — in-session parallel fan-out across worktrees (the in-session sibling of this out-of-session substrate).
 - [`/agent-native`](../agent-native/SKILL.md) — `ao agent bundle` produces the loop definition a managed-agents substrate runs (the managed-agents leg).
-- [`/rpi`](../rpi/SKILL.md) · [`/evolve`](../evolve/SKILL.md) — the loops the substrate dispatches.
+- [`rpi`](../rpi/SKILL.md) · [`evolve`](../evolve/SKILL.md) — the loops the substrate dispatches.

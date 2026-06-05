@@ -21,8 +21,8 @@ setup() {
   LADDER="$REPO_ROOT/skills/evolve/references/work-selection-ladder.md"
 }
 
-@test "SKILL.md Step 3 invokes 'ao evolve next-work' for work selection" {
-  run bash -c "sed -n '/### Step 3: Select Work/,/### Step 4/p' '$SKILL' | grep -F 'ao evolve next-work'"
+@test "SKILL.md Step 3 invokes 'ao loop next-work' for work selection" {
+  run bash -c "sed -n '/### Step 3: Select Work/,/### Step 4/p' '$SKILL' | grep -F 'ao loop next-work'"
   [ "$status" -eq 0 ]
 }
 
@@ -31,26 +31,26 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "the ladder routes the stagnation marker write through 'ao evolve write-stop-marker'" {
-  run grep -F 'ao evolve write-stop-marker --marker dormant' "$LADDER"
+@test "the ladder routes the stagnation marker write through 'ao loop write-stop-marker'" {
+  run grep -F 'ao loop write-stop-marker --marker dormant' "$LADDER"
   [ "$status" -eq 0 ]
 }
 
-@test "the ladder logs a typed blocked event via 'ao evolve blocked' instead of halting" {
-  run grep -F 'ao evolve blocked --reason' "$LADDER"
+@test "the ladder logs a typed blocked event via 'ao loop blocked' instead of halting" {
+  run grep -F 'ao loop blocked --reason' "$LADDER"
   [ "$status" -eq 0 ]
 }
 
 @test "the write-stop-marker wire passes --mode loop (deterministic no-self-stop)" {
-  run grep -F 'ao evolve write-stop-marker --marker dormant --reason "$REASON" --mode loop' "$LADDER"
+  run grep -F 'ao loop write-stop-marker --marker dormant --reason "$REASON" --mode loop' "$LADDER"
   [ "$status" -eq 0 ]
 }
 
 @test "each wire keeps a fallback for ao without the subcommand (--help probe)" {
   # write-stop-marker + next-work both guard their call behind a --help probe so
   # an older ao falls back instead of erroring.
-  run grep -F 'ao evolve write-stop-marker --help >/dev/null 2>&1' "$LADDER"
+  run grep -F 'ao loop write-stop-marker --help >/dev/null 2>&1' "$LADDER"
   [ "$status" -eq 0 ]
-  run grep -F 'ao evolve next-work --help >/dev/null 2>&1' "$LADDER"
+  run grep -F 'ao loop next-work --help >/dev/null 2>&1' "$LADDER"
   [ "$status" -eq 0 ]
 }

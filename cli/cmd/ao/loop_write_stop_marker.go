@@ -28,7 +28,7 @@ var (
 	evolveWriteStopMarkerMode   string
 )
 
-var evolveWriteStopMarkerCmd = &cobra.Command{
+var loopWriteStopMarkerCmd = &cobra.Command{
 	Use:   "write-stop-marker",
 	Short: "Write an evolve stop marker (refused under --mode=loop)",
 	Long: `Write a DORMANT, STOP, or KILL marker under .agents/evolve/.
@@ -36,35 +36,35 @@ var evolveWriteStopMarkerCmd = &cobra.Command{
 Behavior depends on --mode:
   burst (default): writes .agents/evolve/<marker> with --reason content and exits 0.
   loop:            mechanically refuses with exit 1 and a stderr message pointing
-                   operators at 'ao evolve operator-stop' for explicit intent.
+                   operators at 'ao loop operator-stop' for explicit intent.
 
 This is the soc-hwax mechanical no-self-stop contract: under --mode=loop the
 agent cannot self-halt, even if its prompt asks it to. Only the operator (or
-a future 'ao evolve operator-stop' subcommand) may write a stop marker.`,
+a future 'ao loop operator-stop' subcommand) may write a stop marker.`,
 	Args: cobra.NoArgs,
-	RunE: runEvolveWriteStopMarker,
+	RunE: runLoopWriteStopMarker,
 }
 
 func init() {
-	evolveWriteStopMarkerCmd.Flags().StringVar(&evolveWriteStopMarkerName, "marker", "", "Marker name: dormant, stop, or kill")
-	evolveWriteStopMarkerCmd.Flags().StringVar(&evolveWriteStopMarkerReason, "reason", "", "Reason text written to the marker file")
-	evolveWriteStopMarkerCmd.Flags().StringVar(&evolveWriteStopMarkerMode, "mode", evolveModeBurst, "Execution contract: 'burst' or 'loop' (loop refuses unconditionally)")
-	_ = evolveWriteStopMarkerCmd.MarkFlagRequired("marker")
-	evolveCmd.AddCommand(evolveWriteStopMarkerCmd)
+	loopWriteStopMarkerCmd.Flags().StringVar(&evolveWriteStopMarkerName, "marker", "", "Marker name: dormant, stop, or kill")
+	loopWriteStopMarkerCmd.Flags().StringVar(&evolveWriteStopMarkerReason, "reason", "", "Reason text written to the marker file")
+	loopWriteStopMarkerCmd.Flags().StringVar(&evolveWriteStopMarkerMode, "mode", loopModeBurst, "Execution contract: 'burst' or 'loop' (loop refuses unconditionally)")
+	_ = loopWriteStopMarkerCmd.MarkFlagRequired("marker")
+	loopCmd.AddCommand(loopWriteStopMarkerCmd)
 }
 
-// runEvolveWriteStopMarker is the RunE for `ao evolve write-stop-marker`. It
+// runLoopWriteStopMarker is the RunE for `ao loop write-stop-marker`. It
 // enforces the loop-mode refusal before touching the filesystem and wraps any
 // IO error with context per repo conventions.
-func runEvolveWriteStopMarker(cmd *cobra.Command, _ []string) error {
+func runLoopWriteStopMarker(cmd *cobra.Command, _ []string) error {
 	mode := detectEvolveWriteStopMarkerMode(cmd)
-	if err := validateEvolveMode(mode); err != nil {
+	if err := validateLoopMode(mode); err != nil {
 		return err
 	}
-	if mode == evolveModeLoop {
+	if mode == loopModeLoop {
 		// Stderr surface is load-bearing: tests and operators key off this
 		// string to confirm the loop contract is in force.
-		return fmt.Errorf("STOP markers refused under --mode=loop. Use 'ao evolve operator-stop' for explicit operator intent")
+		return fmt.Errorf("STOP markers refused under --mode=loop. Use 'ao loop operator-stop' for explicit operator intent")
 	}
 
 	marker, err := normalizeStopMarkerName(evolveWriteStopMarkerName)

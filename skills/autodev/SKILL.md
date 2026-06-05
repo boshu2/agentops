@@ -29,17 +29,17 @@ output_contract: validated PROGRAM.md/AUTODEV.md contract or clear evolve/RPI ex
 # /autodev
 
 `/autodev` manages the repo-local operational contract for autonomous development.
-It does not replace `/evolve` or `/rpi`.
+It does not replace `evolve` or `rpi`.
 
 ## Loop position
 
-The config/intent layer the [operating loop](../../docs/architecture/operating-loop.md) reads each tick — NOT a loop itself. `/autodev` defines and validates the contract declared in `PROGRAM.md`/`AUTODEV.md` — mutable scope, immutable scope, validation commands, escalation rules, stop conditions. The drivers ([`/evolve`](../evolve/SKILL.md) and Factory, the daemon) consume that contract and run the loop; autodev does not run it. Loop discipline still applies under autonomy: no parallel wave without the wave-validity check; no slice closes without a passing test mapped to a Given/When/Then; capture goes through the promotion ratchet, not into a landfill.
+The config/intent layer the [operating loop](../../docs/architecture/operating-loop.md) reads each tick — NOT a loop itself. `/autodev` defines and validates the contract declared in `PROGRAM.md`/`AUTODEV.md` — mutable scope, immutable scope, validation commands, escalation rules, stop conditions. The drivers ([`evolve`](../evolve/SKILL.md) and Factory, the daemon) consume that contract and run the loop; autodev does not run it. Loop discipline still applies under autonomy: no parallel wave without the wave-validity check; no slice closes without a passing test mapped to a Given/When/Then; capture goes through the promotion ratchet, not into a landfill.
 
 - `PROGRAM.md` or `AUTODEV.md` defines the contract: mutable scope, immutable
   scope, experiment unit, validation commands, decision policy, escalation rules,
   and stop conditions.
 - `ao autodev` creates, inspects, and validates that contract.
-- `ao evolve` runs the v2 autonomous improvement loop.
+- `evolve` runs the v2 autonomous improvement loop.
 - `ao rpi` runs one research -> plan -> implement -> validate lifecycle.
 
 ## Routing
@@ -50,8 +50,8 @@ new command or skill:
 | Intent | Action |
 |--------|--------|
 | define or repair the repo-local autonomous policy | use `/autodev` and `ao autodev` |
-| run the autonomous improvement loop | use `/evolve` or `ao evolve` |
-| run one bounded lifecycle | use `/rpi` or `ao rpi` |
+| run the autonomous improvement loop | use `evolve` or `evolve` |
+| run one bounded lifecycle | use `rpi` or `ao rpi` |
 
 `PROGRAM.md` takes precedence over `AUTODEV.md`. Treat `AUTODEV.md` as the
 compatibility alias.
@@ -110,7 +110,7 @@ contract.
 After `ao autodev validate` passes:
 
 - For one lifecycle, run `/rpi "<goal>"` or `ao rpi ...`.
-- For the repeated autonomous loop, run `/evolve` or `ao evolve --max-cycles <n>`.
+- For the repeated autonomous loop, run `evolve` (skill-driven) or dispatch it via NTM for out-of-session runs.
 - If both `PROGRAM.md` and `GOALS.md` exist, `GOALS.md` is strategic fitness and
   `PROGRAM.md` is the operational execution layer.
 
@@ -122,14 +122,14 @@ program validation bundle and stop conditions must also be satisfied.
 ```text
 User: turn this postmortem/analyze/plan/pre-mortem/implement/validate loop into
 a v2 command.
-Agent: Explain that `ao evolve` runs the loop, then create or validate
+Agent: Explain that `evolve` runs the loop, then create or validate
 `PROGRAM.md` with `/autodev` so the loop has explicit scope and gates.
 ```
 
 ```bash
 ao autodev init "Continuously improve AgentOps skills within explicit scope."
 ao autodev validate
-ao evolve --max-cycles 1
+# then run the repeated loop: /evolve (skill-driven; /evolve CLI retired, ag-llni)
 ```
 
 ## Troubleshooting
