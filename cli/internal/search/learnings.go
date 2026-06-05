@@ -68,6 +68,27 @@ func SanitizeReach(reach string) string {
 	return "pull"
 }
 
+// SanitizeAuthoredReach normalizes persisted/frontmatter reach values while
+// rejecting author-set "always". always is derived by ComputeReach once canon
+// membership is known.
+func SanitizeAuthoredReach(reach string) string {
+	r := SanitizeReach(reach)
+	if r == "always" {
+		return "pull"
+	}
+	return r
+}
+
+// ComputeReach derives the effective blast radius for a learning. The only path
+// to "always" is established maturity plus verification-earned canon; authored
+// "always" is treated like absent/invalid reach.
+func ComputeReach(authoredReach, maturity string, canon bool) string {
+	if canon && types.Maturity(strings.ToLower(strings.TrimSpace(maturity))) == types.MaturityEstablished {
+		return "always"
+	}
+	return SanitizeAuthoredReach(authoredReach)
+}
+
 // QueryTokens splits a lowercased query into salient search tokens: it splits on any
 // non-alphanumeric rune (so "continue-on-error:true" -> continue/error/true), drops
 // stopwords and sub-2-char tokens, and deduplicates (order-preserving). Stopword removal
@@ -262,7 +283,7 @@ func ParseLearningFile(path string) (Learning, error) {
 	l.SourcePhase = SanitizeSourcePhase(fm.SourcePhase)
 	l.Maturity = fm.Maturity
 	l.Stability = fm.Stability
-	l.Reach = SanitizeReach(fm.Reach)
+	l.Reach = SanitizeAuthoredReach(fm.Reach)
 
 	ParseLearningBody(lines, contentStart, &l)
 	l.Summary = ExtractSummary(lines, contentStart)
@@ -305,7 +326,7 @@ func PopulateLearningFromJSON(data map[string]any, l *Learning) {
 		l.Stability = s
 	}
 	if r, ok := data["reach"].(string); ok {
-		l.Reach = SanitizeReach(r)
+		l.Reach = SanitizeAuthoredReach(r)
 	}
 }
 

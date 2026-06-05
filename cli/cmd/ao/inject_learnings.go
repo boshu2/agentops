@@ -138,6 +138,7 @@ func appendCanonLearnings(learnings []learning, canonDir string, localPaths, loc
 			localContentHashes[contentHash] = true
 		}
 		l.Canon = true
+		l.Reach = search.ComputeReach(l.Reach, l.Maturity, true)
 		learnings = append(learnings, l)
 	}
 	return learnings
