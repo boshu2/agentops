@@ -46,9 +46,11 @@ func TestProductionClaimEvidenceBinder_UpgradeAllowed(t *testing.T) {
 		Level: ports.EvidenceLevelPG1,
 	})
 	err := b.Bind(context.Background(), ports.EvidenceBinding{
-		Claim: "AOP-CLAIM-X",
-		Path:  "p",
-		Level: ports.EvidenceLevelPG3,
+		Claim:    "AOP-CLAIM-X",
+		Path:     "p",
+		Level:    ports.EvidenceLevelPG3,
+		AuthorID: "agent-1",
+		JudgeID:  "agent-2",
 	})
 	if err != nil {
 		t.Fatalf("PG1 → PG3 upgrade rejected: %v", err)
@@ -62,7 +64,11 @@ func TestProductionClaimEvidenceBinder_UpgradeAllowed(t *testing.T) {
 func TestProductionClaimEvidenceBinder_DowngradeRejected(t *testing.T) {
 	b := newTempBinder(t)
 	_ = b.Bind(context.Background(), ports.EvidenceBinding{
-		Claim: "AOP-CLAIM-X", Path: "p", Level: ports.EvidenceLevelPG3,
+		Claim:    "AOP-CLAIM-X",
+		Path:     "p",
+		Level:    ports.EvidenceLevelPG3,
+		AuthorID: "agent-1",
+		JudgeID:  "agent-2",
 	})
 	err := b.Bind(context.Background(), ports.EvidenceBinding{
 		Claim: "AOP-CLAIM-X", Path: "p", Level: ports.EvidenceLevelPG1,
@@ -125,6 +131,21 @@ func TestProductionClaimEvidenceBinder_EmptyPathRejected(t *testing.T) {
 	err := b.Bind(context.Background(), ports.EvidenceBinding{Claim: "X", Level: ports.EvidenceLevelPG1})
 	if err == nil {
 		t.Fatal("expected empty-path rejection, got nil")
+	}
+}
+
+func TestProductionClaimEvidenceBinder_HighAssuranceWithoutReviewersRejected(t *testing.T) {
+	b := newTempBinder(t)
+	err := b.Bind(context.Background(), ports.EvidenceBinding{
+		Claim: "X",
+		Path:  "p",
+		Level: ports.EvidenceLevelPG3,
+	})
+	if err == nil {
+		t.Fatal("expected PG3 reviewer metadata rejection, got nil")
+	}
+	if !strings.Contains(err.Error(), "author_id and judge_id") {
+		t.Fatalf("error = %v, want author/judge guidance", err)
 	}
 }
 

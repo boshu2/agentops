@@ -51,17 +51,21 @@ type EvidenceBinding struct {
 }
 
 // ValidateEvidenceBindingReviewers enforces the artifact-tier no-self-grade
-// invariant when reviewer metadata is present. Legacy bindings may omit both
-// IDs; a judgment that names only one side, or names the same author and judge,
-// is rejected at the port boundary.
+// invariant. PG3/PG4 bindings are high-assurance evidence and must carry
+// reviewer metadata. PG1/PG2 legacy bindings may omit both IDs, but any binding
+// that names reviewers must name both sides distinctly.
 func ValidateEvidenceBindingReviewers(binding EvidenceBinding) error {
-	if binding.AuthorID == "" && binding.JudgeID == "" {
+	if binding.AuthorID == "" && binding.JudgeID == "" && !requiresReviewerMetadata(binding.Level) {
 		return nil
 	}
 	if liveness.Disjoint(binding.AuthorID, binding.JudgeID) != liveness.Allowed {
 		return errors.New("ports: EvidenceBinding author_id and judge_id must be non-empty and distinct")
 	}
 	return nil
+}
+
+func requiresReviewerMetadata(level EvidenceLevel) bool {
+	return level == EvidenceLevelPG3 || level == EvidenceLevelPG4
 }
 
 // ClaimEvidenceBinderPort wraps the bind operation that creates or
@@ -82,7 +86,9 @@ func ValidateEvidenceBindingReviewers(binding EvidenceBinding) error {
 //     error in that case.
 //   - List returns all known bindings, most-recently-bound first.
 //   - Empty Claim or empty Path is a structural-rejection error on Bind.
-//   - If AuthorID or JudgeID is present, both MUST be present and distinct.
+//   - PG3/PG4 bindings MUST include distinct AuthorID and JudgeID; PG1/PG2
+//     bindings MAY omit both for legacy compatibility, but if either is present
+//     both MUST be present and distinct.
 //   - Context cancellation MUST be honored on a best-effort basis.
 //
 // See docs/contracts/ubiquitous-language.md (BC2 row) for the

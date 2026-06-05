@@ -55,7 +55,13 @@ func TestInMemoryClaimEvidenceBinder_BindAllowsLevelUpgrade(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Upgrade to PG3
-	if err := a.Bind(context.Background(), EvidenceBinding{Claim: "C", Path: "p", Level: EvidenceLevelPG3}); err != nil {
+	if err := a.Bind(context.Background(), EvidenceBinding{
+		Claim:    "C",
+		Path:     "p",
+		Level:    EvidenceLevelPG3,
+		AuthorID: "agent-1",
+		JudgeID:  "agent-2",
+	}); err != nil {
 		t.Fatalf("upgrade PG1 → PG3 should succeed, got %v", err)
 	}
 	list, _ := a.List(context.Background())
@@ -66,7 +72,13 @@ func TestInMemoryClaimEvidenceBinder_BindAllowsLevelUpgrade(t *testing.T) {
 
 func TestInMemoryClaimEvidenceBinder_BindRejectsLevelDowngrade(t *testing.T) {
 	a := NewInMemoryClaimEvidenceBinder()
-	if err := a.Bind(context.Background(), EvidenceBinding{Claim: "C", Path: "p", Level: EvidenceLevelPG3}); err != nil {
+	if err := a.Bind(context.Background(), EvidenceBinding{
+		Claim:    "C",
+		Path:     "p",
+		Level:    EvidenceLevelPG3,
+		AuthorID: "agent-1",
+		JudgeID:  "agent-2",
+	}); err != nil {
 		t.Fatal(err)
 	}
 	err := a.Bind(context.Background(), EvidenceBinding{Claim: "C", Path: "p", Level: EvidenceLevelPG1})
@@ -85,6 +97,21 @@ func TestInMemoryClaimEvidenceBinder_BindRejectsEmptyClaimOrPath(t *testing.T) {
 	}
 	if err := a.Bind(context.Background(), EvidenceBinding{Claim: "C", Level: EvidenceLevelPG1}); err == nil {
 		t.Fatal("expected error on empty Path, got nil")
+	}
+}
+
+func TestInMemoryClaimEvidenceBinder_BindRejectsHighAssuranceWithoutReviewers(t *testing.T) {
+	a := NewInMemoryClaimEvidenceBinder()
+	err := a.Bind(context.Background(), EvidenceBinding{
+		Claim: "C",
+		Path:  "p",
+		Level: EvidenceLevelPG3,
+	})
+	if err == nil {
+		t.Fatal("expected PG3 reviewer metadata rejection, got nil")
+	}
+	if !strings.Contains(err.Error(), "author_id and judge_id") {
+		t.Fatalf("error = %v, want author/judge guidance", err)
 	}
 }
 
@@ -115,6 +142,17 @@ func TestInMemoryClaimEvidenceBinder_BindRejectsPartialReviewerMetadata(t *testi
 	})
 	if err == nil {
 		t.Fatal("expected partial reviewer metadata rejection, got nil")
+	}
+}
+
+func TestInMemoryClaimEvidenceBinder_BindAcceptsLowAssuranceWithoutReviewers(t *testing.T) {
+	a := NewInMemoryClaimEvidenceBinder()
+	if err := a.Bind(context.Background(), EvidenceBinding{
+		Claim: "C",
+		Path:  "p",
+		Level: EvidenceLevelPG2,
+	}); err != nil {
+		t.Fatalf("PG2 anonymous legacy binding rejected: %v", err)
 	}
 }
 
