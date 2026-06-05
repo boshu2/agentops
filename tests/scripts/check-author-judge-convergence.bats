@@ -28,6 +28,19 @@ setup() {
   [ "$status" -eq 1 ]
 }
 
+@test "flags the REVERSED grader-left equality (citedByAgent == artifactAuthor)" {
+  # The same self-grade predicate with operands swapped (the #746 AMEND catch).
+  printf 'package foo\nfunc bad(citedByAgent, artifactAuthor string) bool { return citedByAgent == artifactAuthor }\n' > "$FIX/rev.go"
+  run bash "$GUARD" "$BATS_TEST_TMPDIR/fix"
+  [ "$status" -eq 1 ]
+}
+
+@test "does not flag author == author (not a self-grade pair)" {
+  printf 'package foo\nfunc ok(authorName, authorEmail string) bool { return authorName == authorEmail }\n' > "$FIX/aa.go"
+  run bash "$GUARD" "$BATS_TEST_TMPDIR/fix"
+  [ "$status" -eq 0 ]
+}
+
 @test "does not flag a comment describing author == judge" {
   printf 'package foo\n\t// a self-grade is author == judge\nfunc ok() bool { return false }\n' > "$FIX/c.go"
   run bash "$GUARD" "$BATS_TEST_TMPDIR/fix"

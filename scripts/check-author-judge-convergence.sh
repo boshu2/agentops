@@ -18,8 +18,15 @@ set -euo pipefail
 
 ROOT="${1:-cli}"
 
-# author<->judge identity equality in CODE, in any of the three historical shapes.
-PATTERN='(EqualFold\([^)]*([Aa]uthor|[Jj]udge)|([Aa]uthor[A-Za-z]*)[[:space:]]*==[[:space:]]*([Jj]udge|[Cc]ited)|([Jj]udge[A-Za-z]*)[[:space:]]*==[[:space:]]*([Aa]uthor))'
+# author<->grader identity equality in CODE, in EITHER operand order. The grader
+# side is "judge" (verdict) or "cited" (citation reward); the author!=judge
+# invariant covers both author/judge and author/cited pairs. Identifiers are matched
+# by *containing* the keyword (e.g. artifactAuthor, citedByAgent), and the equality
+# may be written in either direction (artifactAuthor == citedByAgent OR
+# citedByAgent == artifactAuthor) — both are the same self-grade predicate.
+AUTH='[A-Za-z]*[Aa]uthor[A-Za-z]*'
+GRADER='[A-Za-z]*([Jj]udge|[Cc]ited)[A-Za-z]*'
+PATTERN="(EqualFold\\([^)]*([Aa]uthor|[Jj]udge|[Cc]ited)|${AUTH}[[:space:]]*==[[:space:]]*${GRADER}|${GRADER}[[:space:]]*==[[:space:]]*${AUTH})"
 
 hits="$(grep -rnE "$PATTERN" "$ROOT" --include='*.go' 2>/dev/null \
   | grep -viE '_test\.go' \
