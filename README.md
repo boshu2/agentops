@@ -18,6 +18,14 @@ AgentOps sits on top of the coding harness you already use (Claude Code, Codex, 
 
 ## See It Work
 
+<div align="center">
+
+![Real Claude Code and Codex sessions running the AgentOps loop: discovery, research, plan, crank, validate, and a Claude-plus-Codex council](docs/assets/hero.gif)
+
+<sub>Real Claude Code + Codex sessions, lightly edited for pace — the loop end to end: discovery → research → plan → crank → validate → <code>/council --mixed</code> (Claude + Codex) → merge. <a href="docs/assets/hero.mp4">Full-resolution MP4</a>.</sub>
+
+</div>
+
 Most teams run coding agents as isolated chat sessions. Prior attempts, warnings, decisions, and fixes scatter across chats, commits, and human memory, so the same mistakes recur and nothing leaves a reviewable trail.
 
 AgentOps breaks intent into bounded slices, gives each slice a first failing test and a write scope, and makes every phase boundary a gate that records evidence.
