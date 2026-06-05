@@ -16,6 +16,7 @@ a missing trigger phrase is a material skill-selection risk, not cosmetic. See
 Usage:
     python3 scan_descriptions.py [SKILLS_DIR] [--json] [--strict] [--quiet]
     python3 scan_descriptions.py [SKILLS_DIR] --probe "<phrase>" [--json]
+    python3 scan_descriptions.py [SKILLS_DIR] --list-probes
 
 Probe mode (`--probe "<phrase>"`) ranks every skill against the phrase using
 ONLY the deterministic lexical ranker below — no live model, no `claude -p`, no
@@ -384,6 +385,28 @@ def scan_corpus(skills_dir: Path) -> list[SkillScan]:
     return results
 
 
+def list_probe_pairs(skills_dir: Path) -> list[tuple[str, str]]:
+    """Return every (skill-id, probe-phrase) pair declared in the corpus.
+
+    The skill-id is the SKILL.md's parent directory name (matching what the
+    rest of the tooling keys on). Phrases come from the SAME `parse_trigger_probes`
+    parser used by --probe, so any downstream consumer that wants the parsed
+    pairs reuses this one parser instead of reimplementing the YAML walk.
+    Sorted by (skill-id, phrase) for byte-stable output.
+    """
+    pairs: list[tuple[str, str]] = []
+    for skill_md in sorted(skills_dir.glob("*/SKILL.md")):
+        try:
+            text = skill_md.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        frontmatter, _body = split_frontmatter(text)
+        sid = skill_md.parent.name
+        for phrase in parse_trigger_probes(frontmatter):
+            pairs.append((sid, phrase))
+    return sorted(set(pairs))
+
+
 def render_markdown(results: list[SkillScan]) -> str:
     """Render a human-readable remediation report."""
     total = len(results)
@@ -463,12 +486,23 @@ def main(argv: list[str] | None = None) -> int:
         help="Deterministic lexical probe: assert the skill that declares PHRASE "
         "in trigger_probes: ranks #1 (no live model, no network)",
     )
+    parser.add_argument(
+        "--list-probes",
+        action="store_true",
+        help="Emit every declared (skill-id<TAB>phrase) pair, one per line, using "
+        "the SAME parser as --probe (so consumers don't reimplement the YAML walk)",
+    )
     args = parser.parse_args(argv)
 
     skills_dir = Path(args.skills_dir)
     if not skills_dir.is_dir():
         print(f"error: skills dir not found: {skills_dir}", file=sys.stderr)
         return 2
+
+    if args.list_probes:
+        for sid, phrase in list_probe_pairs(skills_dir):
+            print(f"{sid}\t{phrase}")
+        return 0
 
     if args.probe is not None:
         return _run_probe(skills_dir, args.probe, json_mode=args.json, quiet=args.quiet)
