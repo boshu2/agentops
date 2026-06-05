@@ -29,14 +29,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/adapters/tracker_bd"
+	"github.com/boshu2/agentops/cli/internal/search"
+	"github.com/boshu2/agentops/cli/internal/types"
 
 	"github.com/spf13/cobra"
 )
@@ -86,14 +91,32 @@ func init() {
 // SessionBootstrapStatus is the canonical bootstrap report shape. Field
 // names and types must match schemas/session-bootstrap.v1.schema.json.
 type SessionBootstrapStatus struct {
-	AgentsMDRead       bool     `json:"agents_md_read"`
-	AgentsSiblingsRead []string `json:"agents_siblings_read"`
-	OnboardPhase       string   `json:"onboard_phase"`
-	ReadyBeadsCount    *int     `json:"ready_beads_count"`
-	MailUnreadCount    *int     `json:"mail_unread_count"`
-	Runtime            string   `json:"runtime"`
-	StartedAt          string   `json:"started_at"`
-	BootstrapVersion   string   `json:"bootstrap_version"`
+	AgentsMDRead                bool                         `json:"agents_md_read"`
+	AgentsSiblingsRead          []string                     `json:"agents_siblings_read"`
+	OnboardPhase                string                       `json:"onboard_phase"`
+	ReadyBeadsCount             *int                         `json:"ready_beads_count"`
+	MailUnreadCount             *int                         `json:"mail_unread_count"`
+	Runtime                     string                       `json:"runtime"`
+	StartedAt                   string                       `json:"started_at"`
+	BootstrapVersion            string                       `json:"bootstrap_version"`
+	BootstrapMemory             []SessionBootstrapMemoryItem `json:"bootstrap_memory"`
+	BootstrapMemoryBudgetTokens int                          `json:"bootstrap_memory_budget_tokens"`
+	BootstrapMemoryUsedTokens   int                          `json:"bootstrap_memory_used_tokens"`
+	BootstrapMemoryOmittedCount int                          `json:"bootstrap_memory_omitted_count"`
+	BootstrapMemoryOverBudget   bool                         `json:"bootstrap_memory_over_budget"`
+}
+
+// SessionBootstrapMemoryItem is a compact canon-gated T2 memory entry surfaced
+// at bootstrap.
+type SessionBootstrapMemoryItem struct {
+	ID       string  `json:"id"`
+	Title    string  `json:"title"`
+	Content  string  `json:"content"`
+	Source   string  `json:"source"`
+	Maturity string  `json:"maturity"`
+	Reach    string  `json:"reach"`
+	Score    float64 `json:"score"`
+	Tokens   int     `json:"tokens"`
 }
 
 // agentsMDSiblings are the post-vuu6.3 split files. Reported individually so
@@ -105,9 +128,14 @@ var agentsMDSiblings = []string{
 	"AGENTS-RUNTIME.md",
 }
 
+const sessionBootstrapMemoryTokenBudget = 1200
+
 func runSessionBootstrap(cmd *cobra.Command, _ []string) error {
 	robot := sessionBootstrapRobot || sessionBootstrapJSON
 	status := computeBootstrapStatus(cmd.Context(), os.Getenv("PWD"), sessionBootstrapNoMail)
+	if err := writeBootstrapMemoryWarning(cmd.ErrOrStderr(), status); err != nil {
+		return err
+	}
 
 	if robot {
 		enc := json.NewEncoder(cmd.OutOrStdout())
@@ -132,11 +160,13 @@ func computeBootstrapStatus(ctx context.Context, cwd string, noMail bool) Sessio
 	}
 
 	status := SessionBootstrapStatus{
-		AgentsSiblingsRead: []string{},
-		Runtime:            detectRuntime(),
-		StartedAt:          time.Now().UTC().Format(time.RFC3339),
-		BootstrapVersion:   "v1",
-		OnboardPhase:       sessionBootstrapOnboard(ctx, cwd),
+		AgentsSiblingsRead:          []string{},
+		Runtime:                     detectRuntime(),
+		StartedAt:                   time.Now().UTC().Format(time.RFC3339),
+		BootstrapVersion:            "v1",
+		OnboardPhase:                sessionBootstrapOnboard(ctx, cwd),
+		BootstrapMemory:             []SessionBootstrapMemoryItem{},
+		BootstrapMemoryBudgetTokens: sessionBootstrapMemoryTokenBudget,
 	}
 
 	status.AgentsMDRead = fileExists(filepath.Join(cwd, "AGENTS.md"))
@@ -156,7 +186,146 @@ func computeBootstrapStatus(ctx context.Context, cwd string, noMail bool) Sessio
 		}
 	}
 
+	memory, used, omitted := sessionBootstrapCanonMemory(cwd, sessionBootstrapMemoryTokenBudget, nowFunc())
+	status.BootstrapMemory = memory
+	status.BootstrapMemoryUsedTokens = used
+	status.BootstrapMemoryOmittedCount = omitted
+	status.BootstrapMemoryOverBudget = omitted > 0
+
 	return status
+}
+
+type sessionBootstrapMemoryCandidate struct {
+	item  SessionBootstrapMemoryItem
+	score float64
+}
+
+func sessionBootstrapCanonMemory(cwd string, tokenBudget int, now time.Time) ([]SessionBootstrapMemoryItem, int, int) {
+	if tokenBudget <= 0 || cwd == "" {
+		return []SessionBootstrapMemoryItem{}, 0, 0
+	}
+	canonPath := filepath.Join(cwd, canonLearningsDir)
+	if !dirExists(canonPath) {
+		return []SessionBootstrapMemoryItem{}, 0, 0
+	}
+
+	candidates := make([]sessionBootstrapMemoryCandidate, 0)
+	for _, file := range globLearningFiles(canonPath) {
+		l, err := parseLearningFile(file)
+		if err != nil || l.Superseded {
+			continue
+		}
+		meta := sessionBootstrapLearningMetadata(file)
+		if !sessionBootstrapMemoryEligible(l, meta) {
+			continue
+		}
+		applyFreshnessScore(&l, file, now)
+		if l.Utility <= 0 {
+			l.Utility = types.InitialUtility
+		}
+		content := sessionBootstrapMemoryContent(l)
+		tokens := max(1, estimateTokens(strings.Join([]string{l.Title, content}, "\n")))
+		score := l.Utility * meta.confidence * maxFloat(l.FreshnessScore, 0.1)
+		item := SessionBootstrapMemoryItem{
+			ID:       l.ID,
+			Title:    l.Title,
+			Content:  content,
+			Source:   l.Source,
+			Maturity: l.Maturity,
+			Reach:    search.ComputeReach(l.Reach, l.Maturity, true),
+			Score:    score,
+			Tokens:   tokens,
+		}
+		candidates = append(candidates, sessionBootstrapMemoryCandidate{item: item, score: score})
+	}
+
+	sort.SliceStable(candidates, func(i, j int) bool {
+		if candidates[i].score == candidates[j].score {
+			return candidates[i].item.ID < candidates[j].item.ID
+		}
+		return candidates[i].score > candidates[j].score
+	})
+
+	selected := make([]SessionBootstrapMemoryItem, 0, len(candidates))
+	used := 0
+	omitted := 0
+	for _, candidate := range candidates {
+		if used+candidate.item.Tokens > tokenBudget {
+			omitted++
+			continue
+		}
+		selected = append(selected, candidate.item)
+		used += candidate.item.Tokens
+	}
+	return selected, used, omitted
+}
+
+type sessionBootstrapMemoryMetadata struct {
+	confidence float64
+	severity   string
+}
+
+func sessionBootstrapLearningMetadata(file string) sessionBootstrapMemoryMetadata {
+	meta := sessionBootstrapMemoryMetadata{confidence: 0.5}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return meta
+	}
+	content := string(data)
+	if strings.HasSuffix(file, ".jsonl") {
+		first := strings.SplitN(content, "\n", 2)[0]
+		var payload map[string]any
+		if err := json.Unmarshal([]byte(first), &payload); err == nil {
+			if confidence, ok := payload["confidence"].(float64); ok && confidence > 0 {
+				meta.confidence = confidence
+			}
+			if severity, ok := payload["severity"].(string); ok {
+				meta.severity = strings.ToLower(strings.TrimSpace(severity))
+			}
+		}
+		return meta
+	}
+	fields := parseFrontmatterFromContent(content, "confidence", "severity")
+	if confidence, err := strconv.ParseFloat(strings.TrimSpace(fields["confidence"]), 64); err == nil && confidence > 0 {
+		meta.confidence = confidence
+	}
+	meta.severity = strings.ToLower(strings.TrimSpace(fields["severity"]))
+	return meta
+}
+
+func sessionBootstrapMemoryEligible(l learning, meta sessionBootstrapMemoryMetadata) bool {
+	switch types.Maturity(strings.ToLower(strings.TrimSpace(l.Maturity))) {
+	case types.MaturityEstablished:
+		return true
+	case types.MaturityAntiPattern:
+		return meta.severity == "high" || meta.severity == "critical"
+	default:
+		return false
+	}
+}
+
+func sessionBootstrapMemoryContent(l learning) string {
+	content := strings.TrimSpace(l.BodyText)
+	if content == "" {
+		content = strings.TrimSpace(l.Summary)
+	}
+	return content
+}
+
+func writeBootstrapMemoryWarning(w io.Writer, s SessionBootstrapStatus) error {
+	if !s.BootstrapMemoryOverBudget {
+		return nil
+	}
+	_, err := fmt.Fprintf(w, "warn: bootstrap memory canon set exceeded %d tokens; injected %d tokens and omitted %d lower-ranked item(s)\n",
+		s.BootstrapMemoryBudgetTokens, s.BootstrapMemoryUsedTokens, s.BootstrapMemoryOmittedCount)
+	return err
+}
+
+func maxFloat(a, b float64) float64 {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 func detectRuntime() string {
@@ -254,12 +423,41 @@ func printBootstrapSummary(cmd *cobra.Command, s SessionBootstrapStatus) error {
 	if _, err := fmt.Fprintf(cmd.OutOrStdout(), "session bootstrap: %s\n", strings.Join(parts, " ")); err != nil {
 		return err
 	}
+	if len(s.BootstrapMemory) > 0 {
+		if _, err := fmt.Fprintf(cmd.OutOrStdout(), "bootstrap memory: %d item(s), %d/%d tokens\n",
+			len(s.BootstrapMemory), s.BootstrapMemoryUsedTokens, s.BootstrapMemoryBudgetTokens); err != nil {
+			return err
+		}
+		for _, item := range s.BootstrapMemory {
+			if _, err := fmt.Fprintf(cmd.OutOrStdout(), "- %s [%s/%s] score=%.3f source=%s\n",
+				item.Title, item.Maturity, item.Reach, item.Score, item.Source); err != nil {
+				return err
+			}
+			if content := formatBootstrapMemoryContent(item.Content); content != "" {
+				if _, err := fmt.Fprintf(cmd.OutOrStdout(), "  %s\n", content); err != nil {
+					return err
+				}
+			}
+		}
+	}
 	if !s.AgentsMDRead {
 		_, err := fmt.Fprintln(cmd.ErrOrStderr(),
 			"warn: AGENTS.md missing — start with `cat AGENTS.md` if it exists, or `bd onboard` for repo orientation")
 		return err
 	}
 	return nil
+}
+
+func formatBootstrapMemoryContent(content string) string {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return ""
+	}
+	lines := strings.Split(content, "\n")
+	for i, line := range lines {
+		lines[i] = strings.TrimSpace(line)
+	}
+	return strings.Join(lines, "\n  ")
 }
 
 // sessionBootstrapMakeReady is a test seam for the ready-beads path. Kept here

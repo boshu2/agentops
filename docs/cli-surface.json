@@ -912,11 +912,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "manual-only",
+      "category": "public-tested",
       "command": "loop blocked",
-      "coverage_status": "missing",
+      "coverage_status": "covered",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
       "category": "public-tested",
@@ -947,11 +947,11 @@
       "reason": "No smoke, direct test, or allowlist coverage found."
     },
     {
-      "category": "manual-only",
+      "category": "public-tested",
       "command": "loop next-work",
-      "coverage_status": "missing",
+      "coverage_status": "covered",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
       "category": "public-tested",
@@ -961,11 +961,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "manual-only",
+      "category": "public-tested",
       "command": "loop write-stop-marker",
-      "coverage_status": "missing",
+      "coverage_status": "covered",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
       "category": "public-tested",

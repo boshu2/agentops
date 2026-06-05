@@ -12,7 +12,12 @@
     "mail_unread_count",
     "runtime",
     "started_at",
-    "bootstrap_version"
+    "bootstrap_version",
+    "bootstrap_memory",
+    "bootstrap_memory_budget_tokens",
+    "bootstrap_memory_used_tokens",
+    "bootstrap_memory_omitted_count",
+    "bootstrap_memory_over_budget"
   ],
   "properties": {
     "agents_md_read": {
@@ -67,6 +72,51 @@
       "type": "string",
       "const": "v1",
       "description": "Schema version. Increment in a new schema file when fields change shape."
+    },
+    "bootstrap_memory": {
+      "type": "array",
+      "description": "Canon-gated T2 memory injected at bootstrap: canon-promoted established learnings plus high-severity canon anti-patterns, ranked and capped below the normal ao inject budget.",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "content", "source", "maturity", "reach", "score", "tokens"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "content": { "type": "string" },
+          "source": { "type": "string" },
+          "maturity": { "type": "string" },
+          "reach": {
+            "type": "string",
+            "enum": ["bead", "pull", "always"]
+          },
+          "score": { "type": "number" },
+          "tokens": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "bootstrap_memory_budget_tokens": {
+      "type": "integer",
+      "const": 1200,
+      "description": "Hard token budget for bootstrap_memory; intentionally below DefaultInjectMaxTokens (1500)."
+    },
+    "bootstrap_memory_used_tokens": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1200,
+      "description": "Approximate tokens used by selected bootstrap_memory items."
+    },
+    "bootstrap_memory_omitted_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of eligible canon memory items omitted because the 1200-token bootstrap budget was full."
+    },
+    "bootstrap_memory_over_budget": {
+      "type": "boolean",
+      "description": "True when eligible canon memory exceeded the hard budget and lower-ranked items were omitted with a stderr warning."
     }
   },
   "additionalProperties": false

@@ -134,14 +134,14 @@
 | `ao knowledge playbooks` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao lookup` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao loop append` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao loop blocked` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao loop blocked` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao loop converged` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao loop history` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao loop hypothesis append` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
 | `ao loop hypothesis list` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
-| `ao loop next-work` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao loop next-work` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao loop verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao loop write-stop-marker` | `manual-only` | `missing` | No smoke, direct test, or allowlist coverage found. |
+| `ao loop write-stop-marker` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao maturity` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao mcp serve` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao memory sync` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
