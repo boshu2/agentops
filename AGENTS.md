@@ -4,7 +4,7 @@
 
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
-**Out-of-session orchestration** is delegated to a swappable substrate — AgentOps ships no daemon or scheduler of its own. The reference substrate is **NTM** (a local tmux agent swarm), **MCP** (`ao mcp serve`, shipped), and **managed-agents** (`ao agent`); each dispatches a whole `ao rpi`/`ao evolve` loop as one unit. `ao` does NOT own or wrap a substrate — always-on is opt-in, the way `bd` is. See [docs/3.0.md](docs/3.0.md) and [docs/dependencies.md](docs/dependencies.md).
+**Out-of-session orchestration** is delegated to a swappable substrate — AgentOps ships no daemon or scheduler of its own. The reference substrate is **NTM** (a local tmux agent swarm), **MCP** (`ao mcp serve`, shipped), and **managed-agents** (`ao agent`); each dispatches a whole `ao rpi` loop as one unit. `ao` does NOT own or wrap a substrate — always-on is opt-in, the way `bd` is. See [docs/3.0.md](docs/3.0.md) and [docs/dependencies.md](docs/dependencies.md).
 
 > **Spawning an agent? Run this first:** `ao session bootstrap` — the universal init prompt that orients every agent identically regardless of model. AgentOps 3.0 is hookless, so nothing auto-injects this: run it explicitly, then `ao inject` / `ao corpus inject --query "<topic>"` to pull decay-ranked prior context.
 
