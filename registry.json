@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-05T04:08:51Z",
+  "generated_at": "2026-06-06T12:22:32Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
@@ -3819,6 +3819,7 @@
         "--dedup",
         "--dry-run",
         "--json",
+        "--no-snapshot",
         "--output",
         "--output-dir",
         "--prune",
