@@ -14,14 +14,7 @@ import (
 // structure and verifies it gets written to .agents/learnings/.
 func TestCurate_Catalog_Learning(t *testing.T) {
 	tmpDir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	// Create a test artifact file with YAML frontmatter
 	artifactContent := `---
@@ -85,14 +78,7 @@ Agents forget context between sessions. Use .agents/ for persistence.
 // TestCurate_Catalog_InvalidType rejects artifacts with unknown type.
 func TestCurate_Catalog_InvalidType(t *testing.T) {
 	tmpDir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	// Create artifact with invalid type
 	artifactContent := `---
@@ -106,7 +92,7 @@ This is not a valid type.
 		t.Fatalf("write input: %v", err)
 	}
 
-	err = runCurateCatalog(nil, []string{inputPath})
+	err := runCurateCatalog(nil, []string{inputPath})
 	if err == nil {
 		t.Fatal("expected error for unknown artifact type, got nil")
 	}
@@ -128,14 +114,7 @@ This is not a valid type.
 // and verifying that no regressions are detected.
 func TestCurate_Verify_AllPass(t *testing.T) {
 	tmpDir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	// Create a minimal GOALS.yaml with a trivially passing check
 	goalsContent := `version: 3
@@ -180,7 +159,7 @@ goals:
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	err = runCurateVerify(nil, nil)
+	err := runCurateVerify(nil, nil)
 
 	w.Close()
 	os.Stdout = origStdout
@@ -216,14 +195,7 @@ goals:
 // passed now fails.
 func TestCurate_Verify_Regression(t *testing.T) {
 	tmpDir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	// Create a GOALS.yaml with a gate that fails
 	goalsContent := `version: 3
@@ -268,7 +240,7 @@ goals:
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	err = runCurateVerify(nil, nil)
+	err := runCurateVerify(nil, nil)
 
 	w.Close()
 	os.Stdout = origStdout
@@ -303,14 +275,7 @@ goals:
 // TestCurate_Status_EmptyRepo returns zero counts gracefully when no artifacts exist.
 func TestCurate_Status_EmptyRepo(t *testing.T) {
 	tmpDir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	// Force JSON output
 	origOutput := output
@@ -322,7 +287,7 @@ func TestCurate_Status_EmptyRepo(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	err = runCurateStatus(nil, nil)
+	err := runCurateStatus(nil, nil)
 
 	w.Close()
 	os.Stdout = origStdout
@@ -368,14 +333,7 @@ func TestCurate_Status_EmptyRepo(t *testing.T) {
 
 func TestCurateVerify_GoalsMDFallback(t *testing.T) {
 	tmpDir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	goalsMD := `# Goals
 
@@ -398,7 +356,7 @@ Curate verify fallback test
 	origStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	err = runCurateVerify(nil, nil)
+	err := runCurateVerify(nil, nil)
 	w.Close()
 	os.Stdout = origStdout
 	if err != nil {
@@ -453,14 +411,7 @@ Body fallback content
 
 func TestCuratePipeline_CatalogAssembleVerify(t *testing.T) {
 	tmpDir := t.TempDir()
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(tmpDir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(origDir) })
+	t.Chdir(tmpDir)
 
 	goalsMD := `# Goals
 
@@ -505,7 +456,7 @@ Context assembly should read curated JSON artifacts.
 	origStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
-	err = runCurateVerify(nil, nil)
+	err := runCurateVerify(nil, nil)
 	w.Close()
 	os.Stdout = origStdout
 	if err != nil {
