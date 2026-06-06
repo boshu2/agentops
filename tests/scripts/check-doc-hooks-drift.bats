@@ -57,10 +57,40 @@ EOF
     [[ "$output" == *"architecture.md:2"* ]]
 }
 
+@test "fails when a doc presents a SessionStart hook promise without a hedge" {
+    cat > "$FAKE_REPO/docs/session.md" <<'EOF'
+# Session
+The SessionStart hook reads handoff context automatically.
+EOF
+    run "$FAKE_REPO/scripts/check-doc-hooks-drift.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"session.md:2"* ]]
+}
+
+@test "fails when a doc presents startup hooks as hidden default behavior" {
+    cat > "$FAKE_REPO/docs/session.md" <<'EOF'
+# Session
+Startup hooks stage state silently for every session.
+EOF
+    run "$FAKE_REPO/scripts/check-doc-hooks-drift.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"session.md:2"* ]]
+}
+
 @test "passes when a hook ref is hedged as opt-in / hooks-authoring" {
     cat > "$FAKE_REPO/docs/newcomer-guide.md" <<'EOF'
 # Newcomer Guide
 A `hooks/session-start.sh` is opt-in only (author one via the hooks-authoring skill).
+EOF
+    run "$FAKE_REPO/scripts/check-doc-hooks-drift.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"PASS"* ]]
+}
+
+@test "passes when SessionStart is hedged as opt-in" {
+    cat > "$FAKE_REPO/docs/session.md" <<'EOF'
+# Session
+An opt-in SessionStart hook may call `ao session bootstrap`, but AgentOps ships none.
 EOF
     run "$FAKE_REPO/scripts/check-doc-hooks-drift.sh"
     [ "$status" -eq 0 ]

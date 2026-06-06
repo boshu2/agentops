@@ -110,7 +110,7 @@ SessionEnd would normally run.
 
 | Mode | Start | Closeout | Notes |
 |------|-------|----------|-------|
-| Hook-capable | Natural language, `/session-start`, or startup hooks | Natural language, `/session-end`, or session-end hooks | Best fit for Claude/OpenCode when hooks are installed; `CLAUDE.md` is the startup surface and hooks stage state silently |
+| Opt-in hook-capable | Natural language, `/session-start`, or authored startup hooks | Natural language, `/session-end`, or authored session-end hooks | Use only when you author/install hooks; `CLAUDE.md` remains the startup surface |
 | Codex optional native hooks | Quiet native `SessionStart` maintenance plus explicit `ao codex start` / `ao codex ensure-start` when context retrieval is needed | Native `Stop` hook for turn-scope close-loop; explicit `ao codex stop` / `ao codex ensure-stop` for transcript-driven closeout | Opt-in with `install-codex.sh --with-hooks`; startup hooks stay quiet and no native `SessionEnd` event exists today |
 | Codex hookless default | `ao factory start --goal "<goal>"`, `ao rpi phased`, `ao codex start`, or skill-driven `ao codex ensure-start` | `ao codex stop` or skill-driven `ao codex ensure-stop` | No startup/session-end hook surface required; lifecycle is explicit, and closeout owns the same curation hygiene as SessionEnd |
 | Dream compounding run | `/dream "<goal>"` (foreground, in session) | Reads `summary.json` / `summary.md` from the run dir | Private local compounding in a watchable session. Running it unattended is out-of-session orchestration, delegated to a substrate (the reference is NTM + MCP + managed-agents) — AgentOps ships no daemon or scheduler |

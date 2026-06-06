@@ -37,7 +37,7 @@ output_contract: diagnosis report, optional fix commits
 Systematic investigation to find root cause and design a complete fix — or proactive audit to find hidden bugs before they bite.
 
 **Requires:**
-- session-start.sh has executed (creates `.agents/` directories for output)
+- writable `.agents/` output directories; create them explicitly if absent
 - bd CLI (beads) for issue tracking if creating follow-up issues
 
 ## Modes

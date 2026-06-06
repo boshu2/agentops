@@ -8,7 +8,7 @@ Project-specific terms used throughout AgentOps documentation.
 Per-repo local directory where AgentOps stores learnings, plans, findings, handoffs, and run state. Plain text for local grep/diff/review. Repo-root `.agents/` is ignored by policy and must not be tracked because it can churn and may contain sensitive session context.
 
 ### `MEMORY.md`
-Per-repo durable memory file loaded automatically by some runtimes at session start. Compiled by `SessionStart` and `SessionEnd` hooks from `.agents/` artifacts. Primary pointer surface in `AGENTOPS_STARTUP_CONTEXT_MODE=manual`.
+Per-repo durable memory pointer for high-value context. In AgentOps 3.0, session startup pulls orientation explicitly with `ao session bootstrap`, then `ao inject` / `ao lookup`; older or opt-in lifecycle hooks may also consume the file, but AgentOps ships none by default.
 
 ## A
 

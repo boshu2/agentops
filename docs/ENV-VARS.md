@@ -56,13 +56,13 @@ These control AO CLI configuration loading and RPI control-plane command customi
 
 ## Hooks
 
-These control the optional hook system installed via `ao init --hooks`. Each hook checks `AGENTOPS_HOOKS_DISABLED` first (global kill switch), then its own variable.
+These variables are for legacy or externally-authored opt-in hook profiles. AgentOps 3.0's default install ships no hooks; if you author hooks yourself, each hook should check `AGENTOPS_HOOKS_DISABLED` first (global kill switch), then its own variable.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `AGENTOPS_HOOKS_DISABLED` | `0` | Set to `1` to disable **all** hooks at once. Global kill switch. Useful for debugging or when hooks interfere with a specific workflow. |
-| `AGENTOPS_SESSION_START_DISABLED` | `0` | Set to `1` to disable the session-start hook entirely. |
-| `AGENTOPS_STARTUP_CONTEXT_MODE` | `factory` | Controls SessionStart behavior: `factory` (default — silently stage factory goal/briefing state when a goal is recoverable, and mark missing-goal sessions for prompt-time intake) or `manual` (baseline startup maintenance only). Legacy values `lean` and `legacy` are treated as `manual` for compatibility. |
+| `AGENTOPS_SESSION_START_DISABLED` | `0` | Legacy/opt-in: set to `1` to disable an authored session-start hook entirely. |
+| `AGENTOPS_STARTUP_CONTEXT_MODE` | `manual` | Legacy/opt-in: controls authored SessionStart behavior when hooks are installed. Default AgentOps startup is explicit: run `ao session bootstrap`, then `ao inject` / `ao lookup`. |
 | `AGENTOPS_STARTUP_LEGACY_INJECT` | (unset) | Compatibility alias that forces `manual` startup mode regardless of `AGENTOPS_STARTUP_CONTEXT_MODE`. Use only as a rollback for older startup expectations that relied on hidden hook-managed startup context. |
 | `AGENTOPS_FACTORY_ROUTER_DISABLED` | `0` | Set to `1` to disable the `UserPromptSubmit` factory intake hook that captures the first substantive prompt into `.agents/ao/` state when startup had no goal. |
 | `AGENTOPS_NEW_USER_WELCOME_DISABLED` | `0` | Set to `1` to disable the one-time `UserPromptSubmit` welcome that appears when AgentOps detects a brand-new repo with no existing `.agents/` state. |
