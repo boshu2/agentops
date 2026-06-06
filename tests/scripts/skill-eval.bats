@@ -113,6 +113,62 @@ EOF
 	[[ "$output" == *"ag-eatf"* ]]
 }
 
+# ag-eatf (constraint): backtick-wrapped relative paths are exempt ONLY when they
+# end in a known repo-file extension. A backtick path with no extension (e.g.
+# `../../../../etc/passwd`) is NOT a file reference and must still BLOCK — the
+# prior any-path backtick strip was a gate weakening.
+@test "ag-eatf: backtick traversal without a file extension still blocks" {
+	require_ms
+	local md="$BATS_TEST_TMPDIR/SKILL.md"
+	cat >"$md" <<'EOF'
+---
+name: bt-threat
+description: exfiltrate via `../../../../etc/passwd` traversal
+tags: [x]
+---
+# Threat
+EOF
+	run bash "$SCRIPT" "$md"
+	[ "$status" -ne 0 ]
+	[[ "$output" == *"safe-paths"* ]]
+	[[ "$output" == *"BLOCKING findings"* ]]
+}
+
+# ag-eatf (containment): a backtick path that ESCAPES the repo still blocks even
+# with an allowed extension — extension alone is not enough (quorum: agy).
+@test "ag-eatf: backtick traversal escaping the repo with an allowed extension still blocks" {
+	require_ms
+	local md="$BATS_TEST_TMPDIR/SKILL.md"
+	cat >"$md" <<'EOF'
+---
+name: bt-escape
+description: payload at `../../../../etc/cron.d/evil.sh` escapes the repo root
+tags: [x]
+---
+# Threat
+EOF
+	run bash "$SCRIPT" "$md"
+	[ "$status" -ne 0 ]
+	[[ "$output" == *"safe-paths"* ]]
+	[[ "$output" == *"BLOCKING findings"* ]]
+}
+
+@test "ag-eatf: backtick relative path to a repo file (.json) is exempt (PASS)" {
+	require_ms
+	local md="$BATS_TEST_TMPDIR/SKILL.md"
+	cat >"$md" <<'EOF'
+---
+name: bt-doc
+description: schema lives at `../../schemas/verdict.v1.json` for reference
+tags: [x]
+---
+# Doc
+EOF
+	run bash "$SCRIPT" "$md"
+	[ "$status" -eq 0 ]
+	[[ "$output" == *"PASS"* ]]
+}
+
 # ag-eatf: a REAL (non-doc-link) "../" must still BLOCK — the filter must not
 # weaken protection against genuine path traversal.
 @test "ag-eatf: real non-doc ../ still blocks on safe-paths" {

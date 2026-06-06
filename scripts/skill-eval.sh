@@ -69,16 +69,30 @@ annotate_warn() { printf '::warning::%s\n' "$*" >&2; }
 # not a real path-traversal threat — flagging it is pure noise that reds the
 # gate on every skill-touching PR. This filter preserves real protection:
 # it returns 0 (a REAL violation exists -> KEEP safe-paths blocking) only when
-# a "../" survives stripping (1) markdown inline-link targets `](...)` and
-# (2) relative doc-path tokens; otherwise returns 1 (every "../" is a doc
-# reference -> safe-paths is a false positive here, downgrade to advisory).
+# a "../" survives stripping (1) markdown inline-link targets `](...)`, (2)
+# relative doc-path tokens (*.md/.markdown/.mdx/.txt/.rst), and (3) backtick-
+# wrapped relative paths that are REPO-INTERNAL (<=2 "../" from a depth-2
+# skills/<id>/SKILL.md, no intermediate "..") AND end in a known repo-file
+# extension. A backtick path that ESCAPES the repo (>=3 "../") or has no
+# extension still counts as a real violation -> blocks — extension alone is not
+# enough (a backtick `../../../../etc/cron.d/x.sh` must NOT be exempt). Both
+# constraints came from cross-model quorum (Codex: repo-internal; agy: escape-
+# via-allowed-extension). Otherwise returns 1 (every "../" is a doc reference
+# -> false positive, downgrade to advisory).
 safe_paths_has_real_violation() {
 	local file="$1"
 	local stripped
+	# The backtick rule's `{1,2}` ../ bound is INTENTIONAL, not a hardcode bug:
+	# skill-eval's contract is to evaluate skills/<id>/SKILL.md (always depth 2
+	# below repo root), so <=2 "../" is the max that stays in-repo; >=3 escapes
+	# and must block. Quorum 2026-06-06 (Codex APPROVE / agy REVISE-on-depth) ->
+	# operator ruled depth-2 is the gate invariant (ag-eatf). A path-derived
+	# dynamic depth was rejected: bats fixtures live outside the repo, so it
+	# would compute garbage and weaken the gate.
 	stripped="$(sed -E \
 		-e 's/\]\([^)]*\)//g' \
 		-e 's#(\.\./)+[A-Za-z0-9_.@/-]+\.(md|markdown|mdx|txt|rst)([#][A-Za-z0-9_-]+)?##g' \
-		-e 's#`(\.\./)+[A-Za-z0-9_.@/-]+`##g' \
+		-e 's#`(\.\./){1,2}([A-Za-z0-9_@-]+/)*[A-Za-z0-9_.@-]+\.(md|markdown|mdx|txt|rst|json|ya?ml|toml|sh|go|py|ts|rs)`##g' \
 		"$file")"
 	printf '%s' "$stripped" | grep -qF '../'
 }
