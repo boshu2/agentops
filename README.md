@@ -4,7 +4,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/boshu2/agentops?style=social)](https://github.com/boshu2/agentops/stargazers)
 
-### The SDLC control plane for agentic software development.
+### The in-session operating loop + context compiler for coding agents — the part that makes them compound.
 
 AgentOps sits on top of the coding harness you already use (Claude Code, Codex, Cursor, OpenCode) and adds the parts an engineering team would notice missing: a record of what was tried, gates between phases, and a corpus of learnings that survives the next session. State lives in `.agents/` next to your code, and you can mix Claude, Codex, or any model per phase.
 
@@ -269,7 +269,7 @@ Full reference: [docs/SKILLS.md](docs/SKILLS.md).
 
 ## The `ao` CLI
 
-The `ao` CLI is the repo-native control plane behind the skills. It handles retrieval, health checks, compounding, goals, and terminal workflows.
+The `ao` CLI is the repo-native engine behind the skills. It handles retrieval, health checks, compounding, goals, and terminal workflows.
 
 <!-- agentops:claim:AOP-CLAIM-README-EVOLVE-AUTONOMOUS -->
 

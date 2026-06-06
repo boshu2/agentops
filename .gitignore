@@ -189,3 +189,46 @@ evals/workbench/scorecard-latest.json
 # SBOM + security-gate summary). Must be ignored so GoReleaser's --clean dirty-state
 # check passes in the publish job.
 release-artifacts/
+ag-1aav-primitive-selection/
+ag-mjlg-materialize/
+ag-hlng-regen-docs/
+ag-vb3q-authoring/
+ag-dxqy/
+ag-lkxx/
+ag-z8c4/
+ag-sjz8-gut-poison/
+egpu1-schema-v2/
+ag-b4p9-prepublish/
+ag-okfu-judgment/
+ag-maaa-r3/
+ag-32xk-autosnap/
+wt-tcf0-1/
+wt-ag-469h/
+wt-mm6q/
+ag-2zf8/
+# bd worktree
+ag-60jd/
+# bd worktree
+wt-soc-xn5s/
+# bd worktree
+ag-dclv/
+
+# Beads / Dolt files (added by bd init)
+.beads/proxieddb/
+
+# bv (beads viewer) local config and caches
+.bv/
+# bd worktree
+ag-ni1b-agy-consolidated/
+
+# Local orchestration/session artifacts.
+.ntm/
+test_budget.env
+thread_output.md
+
+# Local bd/git worktrees kept inside the checkout; reconciled by cp-snx.
+wt-ag-28dp/
+wt-ag-ddrb/
+wt-ag-ni1b/
+wt-ag-y4ac/
+wt-gofmt/
