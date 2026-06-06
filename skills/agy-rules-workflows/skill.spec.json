@@ -1,0 +1,52 @@
+{
+  "name": "agy-rules-workflows",
+  "skill_api_version": 1,
+  "form": "A",
+  "quality_score": 0.95,
+  "sections": [
+    { "id": "title",        "title": "agy-rules-workflows",       "type": "intro",        "priority": "required" },
+    { "id": "overview",     "title": "Overview / When to Use",    "type": "overview",     "priority": "required" },
+    { "id": "constraints",  "title": "⚠️ Critical Constraints",   "type": "constraints",  "priority": "required" },
+    { "id": "workflow",     "title": "Workflow / Methodology",    "type": "procedure",    "priority": "required" },
+    { "id": "output",       "title": "Output Specification",      "type": "contract",     "priority": "required" },
+    { "id": "rubric",       "title": "Quality Rubric",            "type": "rubric",       "priority": "required" },
+    { "id": "examples",     "title": "Examples",                  "type": "examples",     "priority": "standard" },
+    { "id": "troubleshoot", "title": "Troubleshooting",           "type": "table",        "priority": "standard" },
+    { "id": "seealso",      "title": "See Also / References",     "type": "routing",      "priority": "required" }
+  ],
+  "references": [
+    { "file": "references/agy-loop-workflow.md", "topic": "verbatim agy-loop.md slash workflow body + validator/tie-break subagent defs + ~/.gemini/settings.json hook stanza + plugin.json + cross-harness law parity table" }
+  ],
+  "metadata": {
+    "tier": "orchestration",
+    "stability": "experimental",
+    "dependencies": ["beads-br", "operating-loop-workflow"],
+    "hexagonal_role": "driving-adapter",
+    "context_window": "inherit",
+    "triggers": [
+      "AGY rules",
+      "Antigravity rules",
+      "agy workflow",
+      "AGY native loop",
+      "port the operating loop to AGY",
+      "author != judge in AGY",
+      "evidence-gated close AGY",
+      "AGY plugin",
+      "bead crank on Antigravity"
+    ],
+    "token_estimate": {
+      "minimal": 60,
+      "overview": 300,
+      "standard": 1600,
+      "full": 3400
+    }
+  },
+  "output_contract": "Materializes AGY-native artifacts: .agents/rules/flywheel-laws.md (always-active invariant law), .agents/workflows/agy-loop.md (claim->work->validate->close->persist slash workflow), and an extended hooks block in ~/.gemini/settings.json (close-guard + scope-guard, dcg preserved). Optional plugin.json bundling rules+workflow+hooks+subagents. Returns: paths written, rule/workflow IDs, and the smoke-run verdict (which bead, who judged it, evidence captured).",
+  "evidence": {
+    "sources": [
+      "~/.agents/research/agy-native-harness-2026-06-06.md",
+      "agy --help (verified: -p/--print, --print-timeout, plugin {list,import,install,validate})",
+      "~/.gemini/settings.json (verified: BeforeTool dcg guard, run_shell_command matcher)"
+    ]
+  }
+}
