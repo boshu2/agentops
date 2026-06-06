@@ -46,7 +46,7 @@ lacks. Proposed as a **superset**, so existing `worker-spec.v1` files validate u
 {
   "schema_version": 1,
   "worker": { /* worker-spec.v1 inline or $ref — model/tools/effort/timeout/prompt */ },
-  "function": "generator",      // planner | generator | oracle | scribe   (spine Roles×Primitives)
+  "function": "generator",      // planner | generator | oracle | scribe | integrator   (spine Roles×Primitives)
   "anti_affinity": {            // the membrane, as schedulable constraint
     "model_family": true,       // oracle must NOT share a model family with the generator it judges
     "node": false               // node anti-affinity lands with the scheduler (ag-xanm)
@@ -55,8 +55,21 @@ lacks. Proposed as a **superset**, so existing `worker-spec.v1` files validate u
 }
 ```
 
-- `function` binds to the spine's **Planner / Generator / Oracle / Scribe** roles — *not* a new
-  RBAC enum (RBAC stays `roles.go`); it is the legible product layer the spine already defines.
+- `function` binds to the spine's **Planner / Generator / Oracle / Scribe / Integrator** roles — *not* a
+  new RBAC enum (RBAC stays `roles.go`); it is the legible product layer the spine already defines.
+- `integrator` is **merge-execution**: it takes Oracle-passed, green PRs and integrates them to main
+  (rebase/update-branch, CI-shepherd, serialize merges, keep trunk green, revert on red). It is distinct
+  from the Oracle (which *decides* whether to merge — the verdict/authority) and the Orchestrator (which
+  *schedules* pods). Maps to `RoleWorker` (it holds write/merge perms); it canNOT be folded into the
+  Oracle (`RoleVerifier` "never edits") or the Orchestrator (control-plane injection boundary).
+  **Added by 2-of-3 cross-model quorum 2026-06-06 (ag-egpu; Codex + agy APPROVE, Claude author-recused)
+  — derivation: msg #160.** Two quorum-mandated guardrails:
+  1. **Mechanics-only authority (Codex):** the Integrator may run integration mechanics, but any
+     *semantic* conflict-resolution that changes code re-enters the Generator/Oracle gate — an
+     Integrator is never a privileged post-verdict author path that mutates approved code without fresh
+     anti-affine review.
+  2. **Circuit-breaker (agy):** automated merge/revert and rebase loops must be bounded (max retries,
+     halt-on-thrash) so a misbehaving Integrator cannot thrash trunk or burn CI without limit.
 - `anti_affinity.model_family` is the schema-level expression of the no-self-grade membrane
   (`liveness` kernel: author≠judge, ≥2 families). An Oracle AgentPod with `model_family:true` may not
   be scheduled onto the Generator's family.
