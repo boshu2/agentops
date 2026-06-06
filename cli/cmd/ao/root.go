@@ -107,6 +107,14 @@ func Execute() {
 			}
 			os.Exit(gateErr.ExitCode())
 		}
+		var beadsErr *beadsExitError
+		if errors.As(err, &beadsErr) {
+			// The exit code IS the verdict in `ao beads verify|lint|audit`:
+			// 1 means stale/flagged beads found. The verdict already went to
+			// stdout and the command silenced cobra's error print, so there is
+			// nothing more to surface here — just map to the process exit code.
+			os.Exit(beadsErr.ExitCode())
+		}
 		printRequiredFlagHint(executedCmd, err)
 		os.Exit(1)
 	}

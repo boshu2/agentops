@@ -324,16 +324,30 @@ func emitArtifactCitationEdge(b *builder, a rpiArtifact, lf learningFile, learni
 
 // emitBeadClaimEdges emits one scenario_claimed_by_bead edge per scenario a
 // bead claims, classifying explicit vs heuristic claims per ADR-0005 §2.3.
+//
+// Heuristic (free-text) claims that resolve to no scenario file are dropped
+// before emission: a token that matches the slug grammar but names no real
+// scenario is indistinguishable from ordinary prose (e.g. "auto-merge-update-
+// branch", "auto-safe-pull", "auto-picks-up"), so surfacing it as a
+// broken_bead_scenario_claim is a false positive (soc-artx7). Only explicit
+// "Scenarios:"-line claims are kept when unresolved — a broken explicit link is
+// a genuine defect (ADR-0005 §4.1) and stays an error.
 func emitBeadClaimEdges(b *builder, root string, bead beadRecord) {
 	explicit, heuristic := claimedScenarios(bead)
-	if len(explicit) == 0 && len(heuristic) == 0 {
+	var resolvedHeuristic []string
+	for _, sid := range heuristic {
+		if resolveScenario(root, sid).Found {
+			resolvedHeuristic = append(resolvedHeuristic, sid)
+		}
+	}
+	if len(explicit) == 0 && len(resolvedHeuristic) == 0 {
 		return
 	}
 	b.addNode(Node{ID: bead.ID, Type: NodeBead, Label: bead.Title})
 	for _, sid := range explicit {
 		b.addEdge(beadClaimEdge(root, bead.ID, sid, ConfidenceHigh))
 	}
-	for _, sid := range heuristic {
+	for _, sid := range resolvedHeuristic {
 		b.addEdge(beadClaimEdge(root, bead.ID, sid, ConfidenceLow))
 	}
 }
@@ -345,7 +359,9 @@ func emitBeadClaimEdges(b *builder, root string, bead beadRecord) {
 // broken — i.e. the claim came from an explicit "Scenarios:" line
 // (conf == ConfidenceHigh). A heuristic free-text match (conf == ConfidenceLow)
 // can never constitute an explicit declaration, so an unresolvable heuristic
-// token is downgraded to a warning rather than an error.
+// token is downgraded to a warning rather than an error. In practice
+// emitBeadClaimEdges already drops unresolvable heuristic claims (soc-artx7), so
+// this downgrade is now a defensive fallback for direct callers.
 func beadClaimEdge(root, beadID, scenarioID string, conf Confidence) Edge {
 	e := Edge{
 		Type:       EdgeScenarioClaimedByBead,

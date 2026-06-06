@@ -141,7 +141,7 @@ func Mermaid(entries []CatalogEntry) string {
 	var b strings.Builder
 	b.WriteString("graph LR\n")
 	for _, e := range sorted {
-		b.WriteString(fmt.Sprintf("  %s[%s]\n", mermaidID(e.Name), e.Name))
+		fmt.Fprintf(&b, "  %s[%s]\n", mermaidID(e.Name), e.Name)
 	}
 	for _, e := range sorted {
 		deps := append([]string(nil), e.Consumes...)
@@ -150,7 +150,7 @@ func Mermaid(entries []CatalogEntry) string {
 			if !known[dep] {
 				continue
 			}
-			b.WriteString(fmt.Sprintf("  %s --> %s\n", mermaidID(e.Name), mermaidID(dep)))
+			fmt.Fprintf(&b, "  %s --> %s\n", mermaidID(e.Name), mermaidID(dep))
 		}
 	}
 	return b.String()
