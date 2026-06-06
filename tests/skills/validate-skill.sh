@@ -404,6 +404,9 @@ if [ "$SKILL" = "--all" ]; then
 
     for skill_dir in "$SKILLS_DIR"/*/; do
         skill_name=$(basename "$skill_dir")
+        # Skip leading-underscore scaffolding (e.g. skills/_fixtures/) — planted
+        # test fixtures, not real skills.
+        case "$skill_name" in _*) continue ;; esac
         if validate_skill "$skill_name"; then
             PASSED=$((PASSED + 1))
         else

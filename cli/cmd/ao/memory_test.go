@@ -437,10 +437,15 @@ func TestReadNLatestSessionEntries_Empty(t *testing.T) {
 }
 
 func TestReadNLatestSessionEntries_NoDir(t *testing.T) {
+	// ag-jfzs: a missing sessions dir is "no data", not an error — so `ao memory sync`
+	// is a clean no-op in a fresh checkout / CI / isolated run instead of failing.
 	tmp := t.TempDir()
-	_, err := readNLatestSessionEntries(tmp, 10)
-	if err == nil {
-		t.Error("expected error for missing sessions dir")
+	entries, err := readNLatestSessionEntries(tmp, 10)
+	if err != nil {
+		t.Fatalf("expected no error for missing sessions dir, got %v", err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("expected 0 entries for missing sessions dir, got %d", len(entries))
 	}
 }
 

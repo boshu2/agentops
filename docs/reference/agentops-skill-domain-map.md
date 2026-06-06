@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-81 checked-in AgentOps skills before any broad rewrite, using current
+82 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 81 |
+| Skills audited | 82 |
 | Domains classified | 5 of 5 (BC1-BC5) |
-| Dispositions assigned | 81 / 81 |
+| Dispositions assigned | 82 / 82 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -62,6 +62,7 @@ Disposition meanings:
 | `agent-native` | BC5 Runtime | supporting | keep | Hookless reframe: makes out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI; extends standards+converter, never a hook revival. |
 | `autodev` | BC3 Loop | supporting | refactor | Must compose with PROGRAM.md and RPI as one vertical-slice executor. |
 | `automation-shape-routing` | BC4 Factory | supporting | keep | Front-door router: decides Workflow vs NTM swarm vs plain skill, hands off to the right builder. |
+| `bd-first-memory-migration` | BC1 Corpus | driving-adapter | keep | New: consolidate fragmented memory layers onto bd-canonical store. |
 | `beads` | BC3 Loop | driven-adapter | update | Tracker adapter is core; add BDD/slice acceptance self-test. |
 | `bootstrap` | BC4 Factory | driving-adapter | update | First-run factory entrypoint; needs current 3.0/domain packet shape. |
 | `brainstorm` | BC3 Loop | domain | update | Intent-shaping skill; should emit BDD-ready language. |
@@ -135,7 +136,7 @@ Disposition meanings:
 | `test` | BC2 Validation | supporting | update | Test generator; central to first-failing-test loop. |
 | `trace` | BC1 Corpus | supporting | update | Decision trace builder; align to provenance and cycle trace. |
 | `using-agentops` | BC4 Factory | generic | update | Operator education; align to 3.0 first-value path. |
-| `using-gc` | BC5 Runtime | generic | update | Operator guide for running AgentOps on the Gas City substrate. |
+| `using-ntm` | BC4 Factory | supporting | keep | Shippable AgentOps-scoped guide for the NTM leg of the out-of-session substrate (NTM+MCP+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill.. |
 | `validate` | BC2 Validation | driving-adapter | keep | Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24). |
 | `validation` | BC2 Validation | domain | update | Canonical post-implementation validation; strengthen self-test first. |
 | `vibe` | BC2 Validation | domain | update | Code-readiness validator; add self-test and tighten result contract. |

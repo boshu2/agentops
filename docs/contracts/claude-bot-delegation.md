@@ -141,4 +141,4 @@ Validated 2026-05-18 across PRs #321–#326: every PR received `claude-review: S
 - [Lesson Format](lesson-format.md) — schema for `.agents/learnings/` entries
 - [AGENTS.md `## Workflow`](https://github.com/boshu2/agentops/blob/main/AGENTS.md) — PR-only discipline this bot operates inside
 
-> `.agents/learnings/` is repo-local (gitignored). Search local lessons with `bd memories <keyword>` or via the [Lesson Format](lesson-format.md) contract.
+> `.agents/learnings/` is repo-local (gitignored). Search local lessons with `ao inject "<keyword>"`, or inspect files that follow the [Lesson Format](lesson-format.md) contract.

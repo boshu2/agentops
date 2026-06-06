@@ -65,9 +65,9 @@ workflow:
 **Running Dream unattended is out-of-session orchestration**, which AgentOps
 3.0 delegates to a substrate rather than shipping its own daemon, scheduler, or
 overnight runner — those surfaces were deleted (see
-[AgentOps 3.0 north star](../3.0.md)). On the reference substrate (Gas City), a
-long-lived agent runs `/dream`-equivalent maintenance Orders on a cron `exec`
-schedule. The substrate owns when and where; AgentOps owns what the loop does.
+[AgentOps 3.0 north star](../3.0.md)). On the reference substrate (NTM + MCP +
+managed-agents), a long-lived agent runs `/dream`-equivalent maintenance on a
+cron schedule. The substrate owns when and where; AgentOps owns what the loop does.
 No tool pretends a sleeping laptop has guaranteed wake behavior.
 
 ### Option 4: Lower-Level Codex Lifecycle
@@ -113,7 +113,7 @@ SessionEnd would normally run.
 | Hook-capable | Natural language, `/session-start`, or startup hooks | Natural language, `/session-end`, or session-end hooks | Best fit for Claude/OpenCode when hooks are installed; `CLAUDE.md` is the startup surface and hooks stage state silently |
 | Codex optional native hooks | Quiet native `SessionStart` maintenance plus explicit `ao codex start` / `ao codex ensure-start` when context retrieval is needed | Native `Stop` hook for turn-scope close-loop; explicit `ao codex stop` / `ao codex ensure-stop` for transcript-driven closeout | Opt-in with `install-codex.sh --with-hooks`; startup hooks stay quiet and no native `SessionEnd` event exists today |
 | Codex hookless default | `ao factory start --goal "<goal>"`, `ao rpi phased`, `ao codex start`, or skill-driven `ao codex ensure-start` | `ao codex stop` or skill-driven `ao codex ensure-stop` | No startup/session-end hook surface required; lifecycle is explicit, and closeout owns the same curation hygiene as SessionEnd |
-| Dream compounding run | `/dream "<goal>"` (foreground, in session) | Reads `summary.json` / `summary.md` from the run dir | Private local compounding in a watchable session. Running it unattended is out-of-session orchestration, delegated to a substrate (Gas City is the reference) — AgentOps ships no daemon or scheduler |
+| Dream compounding run | `/dream "<goal>"` (foreground, in session) | Reads `summary.json` / `summary.md` from the run dir | Private local compounding in a watchable session. Running it unattended is out-of-session orchestration, delegated to a substrate (the reference is NTM + MCP + managed-agents) — AgentOps ships no daemon or scheduler |
 | Manual fallback | `ao inject`, `ao lookup` | `ao forge transcript`, `ao flywheel close-loop` | Lowest-level portable path |
 
 ---
@@ -512,7 +512,7 @@ research + plan      validated code      learnings + next work
 | Progress template | `.claude/templates/claude-progress.json` | Session state template |
 | Feature template | `.claude/templates/feature-list.json` | Feature tracking template |
 | Intent router | `.claude/skills/intent-router.md` | Natural language routing |
-| Session autostart | `.claude/hooks/session-autostart.sh` | Auto-show context |
+| Session autostart (opt-in) | `.claude/hooks/session-autostart.sh` | Auto-show context — AgentOps ships none; author one via the hooks-authoring skill |
 | Session start cmd | `.claude/commands/session-start.md` | Manual session start |
 | Session end cmd | `.claude/commands/session-end.md` | Manual session end |
 | Progress update cmd | `.claude/commands/progress-update.md` | Manual progress update |

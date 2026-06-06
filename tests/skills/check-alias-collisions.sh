@@ -24,6 +24,9 @@ trap 'rm -f "$TRIGGER_MAP"' EXIT
 
 for skill_file in "$REPO_ROOT"/skills/*/SKILL.md; do
   skill_name=$(basename "$(dirname "$skill_file")")
+  # Skip leading-underscore scaffolding (e.g. skills/_fixtures/) — planted
+  # test fixtures, not real skills.
+  case "$skill_name" in _*) continue ;; esac
 
   # Extract description from YAML frontmatter
   desc=$(sed -n '/^---$/,/^---$/p' "$skill_file" \

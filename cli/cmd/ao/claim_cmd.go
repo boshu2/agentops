@@ -25,7 +25,7 @@ var claimCmd = &cobra.Command{
 }
 
 var claimBindCmd = &cobra.Command{
-	Use:   "bind --claim <AOP-CLAIM-X> --path <evidence-path> [--level PG1|PG2|PG3|PG4] [--anchor ...]",
+	Use:   "bind --claim <AOP-CLAIM-X> --path <evidence-path> [--level PG1|PG2|PG3|PG4] [--anchor ...] [--author-id <id> --judge-id <id>]",
 	Short: "Bind a claim to an evidence file at a promotion level",
 	Long: `Append (or upgrade) a claim→evidence binding via the typed BC2
 ClaimEvidenceBinderPort (productionClaimEvidenceBinder, cycle 116).
@@ -36,7 +36,8 @@ to downgrade (e.g., PG3 → PG1) returns an error.
 
 Examples:
   ao claim bind --claim AOP-CLAIM-X --path .agents/findings/x.md --level PG2
-  ao claim bind --claim AOP-CLAIM-Y --path p.md --level PG4 --anchor L10 --anchor L20`,
+  ao claim bind --claim AOP-CLAIM-Y --path p.md --level PG4 --anchor L10 --anchor L20
+  ao claim bind --claim AOP-CLAIM-Z --path verdict.md --level PG4 --author-id worker-1 --judge-id verifier-2`,
 	RunE: runClaimBind,
 }
 
@@ -48,13 +49,15 @@ var claimListCmd = &cobra.Command{
 }
 
 type claimOptions struct {
-	claim   string
-	path    string
-	level   string
-	anchors []string
-	writer  io.Writer
-	bindFn  func(ctx context.Context, opts claimOptions) error
-	listFn  func(ctx context.Context, opts claimOptions) ([]ports.EvidenceBinding, error)
+	claim    string
+	path     string
+	level    string
+	anchors  []string
+	authorID string
+	judgeID  string
+	writer   io.Writer
+	bindFn   func(ctx context.Context, opts claimOptions) error
+	listFn   func(ctx context.Context, opts claimOptions) ([]ports.EvidenceBinding, error)
 }
 
 func init() {
@@ -65,6 +68,8 @@ func init() {
 	claimBindCmd.Flags().String("path", "", "evidence file path (required, relative to repo root)")
 	claimBindCmd.Flags().String("level", "PG1", "promotion level: PG1|PG2|PG3|PG4")
 	claimBindCmd.Flags().StringArray("anchor", nil, "optional in-file anchors (repeatable)")
+	claimBindCmd.Flags().String("author-id", "", "artifact author identity for reviewer separation checks")
+	claimBindCmd.Flags().String("judge-id", "", "judge/verifier identity for reviewer separation checks")
 	_ = claimBindCmd.MarkFlagRequired("claim")
 	_ = claimBindCmd.MarkFlagRequired("path")
 	claimCmd.AddCommand(claimBindCmd)
@@ -77,12 +82,16 @@ func runClaimBind(cmd *cobra.Command, _ []string) error {
 	path, _ := cmd.Flags().GetString("path")
 	level, _ := cmd.Flags().GetString("level")
 	anchors, _ := cmd.Flags().GetStringArray("anchor")
+	authorID, _ := cmd.Flags().GetString("author-id")
+	judgeID, _ := cmd.Flags().GetString("judge-id")
 	return claimBindRun(cmd.Context(), claimOptions{
-		claim:   claim,
-		path:    path,
-		level:   level,
-		anchors: anchors,
-		writer:  cmd.OutOrStdout(),
+		claim:    claim,
+		path:     path,
+		level:    level,
+		anchors:  anchors,
+		authorID: authorID,
+		judgeID:  judgeID,
+		writer:   cmd.OutOrStdout(),
 	})
 }
 
@@ -165,10 +174,12 @@ func claimBindViaPort(ctx context.Context, opts claimOptions) error {
 	}
 	b := newProductionClaimEvidenceBinder(path)
 	return b.Bind(ctx, ports.EvidenceBinding{
-		Claim:   ports.ClaimID(opts.claim),
-		Path:    opts.path,
-		Level:   ports.EvidenceLevel(strings.ToUpper(opts.level)),
-		Anchors: opts.anchors,
+		Claim:    ports.ClaimID(opts.claim),
+		Path:     opts.path,
+		Level:    ports.EvidenceLevel(strings.ToUpper(opts.level)),
+		Anchors:  opts.anchors,
+		AuthorID: opts.authorID,
+		JudgeID:  opts.judgeID,
 	})
 }
 

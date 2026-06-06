@@ -51,6 +51,9 @@ func (b *productionClaimEvidenceBinder) Bind(ctx context.Context, binding ports.
 	if binding.Path == "" {
 		return errors.New("productionClaimEvidenceBinder: Path required")
 	}
+	if err := ports.ValidateEvidenceBindingReviewers(binding); err != nil {
+		return fmt.Errorf("productionClaimEvidenceBinder: %w", err)
+	}
 	if b.path == "" {
 		return errors.New("productionClaimEvidenceBinder: file path required")
 	}
@@ -73,10 +76,12 @@ func (b *productionClaimEvidenceBinder) Bind(ctx context.Context, binding ports.
 	}
 
 	payload, err := json.Marshal(evidenceBindingRecord{
-		Claim:   string(binding.Claim),
-		Path:    binding.Path,
-		Level:   string(binding.Level),
-		Anchors: binding.Anchors,
+		Claim:    string(binding.Claim),
+		Path:     binding.Path,
+		Level:    string(binding.Level),
+		Anchors:  binding.Anchors,
+		AuthorID: binding.AuthorID,
+		JudgeID:  binding.JudgeID,
 	})
 	if err != nil {
 		return fmt.Errorf("productionClaimEvidenceBinder marshal: %w", err)
@@ -147,10 +152,12 @@ func (b *productionClaimEvidenceBinder) scanAllLocked() ([]ports.EvidenceBinding
 			continue
 		}
 		out = append(out, ports.EvidenceBinding{
-			Claim:   ports.ClaimID(rec.Claim),
-			Path:    rec.Path,
-			Level:   ports.EvidenceLevel(rec.Level),
-			Anchors: rec.Anchors,
+			Claim:    ports.ClaimID(rec.Claim),
+			Path:     rec.Path,
+			Level:    ports.EvidenceLevel(rec.Level),
+			Anchors:  rec.Anchors,
+			AuthorID: rec.AuthorID,
+			JudgeID:  rec.JudgeID,
 		})
 	}
 	if err := scanner.Err(); err != nil {
@@ -161,10 +168,12 @@ func (b *productionClaimEvidenceBinder) scanAllLocked() ([]ports.EvidenceBinding
 
 // evidenceBindingRecord is the on-disk shape.
 type evidenceBindingRecord struct {
-	Claim   string   `json:"claim"`
-	Path    string   `json:"path"`
-	Level   string   `json:"level,omitempty"`
-	Anchors []string `json:"anchors,omitempty"`
+	Claim    string   `json:"claim"`
+	Path     string   `json:"path"`
+	Level    string   `json:"level,omitempty"`
+	Anchors  []string `json:"anchors,omitempty"`
+	AuthorID string   `json:"author_id,omitempty"`
+	JudgeID  string   `json:"judge_id,omitempty"`
 }
 
 // evidenceLevelRank gives EvidenceLevel an integer ordering for the

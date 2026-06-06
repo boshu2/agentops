@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
+	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/spf13/cobra"
 )
 
@@ -131,7 +132,16 @@ func TestFlagCompletions_Registered(t *testing.T) {
 		{"rpi phased --runtime", mustFindCompletionCommand(t, "rpi", "phased"), "runtime",
 			sortedCompletionValues("auto", "direct", "stream", "tmux")},
 		{"feedback-loop --citation-type", feedbackLoopCmd, "citation-type",
-			sortedCompletionValues("retrieved", "applied", "all")},
+			sortedCompletionValues(
+				types.CitationTypeRetrieved,
+				types.CitationTypeUsedInFinalArtifact,
+				types.CitationTypeHelpful,
+				types.CitationTypeHarmful,
+				types.CitationTypeRefuted,
+				types.CitationTypeApplied,
+				types.CitationTypeReference,
+				"all",
+			)},
 	}
 
 	for _, tc := range cases {

@@ -24,7 +24,7 @@ See also: `skills/swarm/references/worker-pitfalls.md` for general platform pitf
 
 ## Embedded Assets
 
-- **Sync after editing hooks/skills**: After editing `hooks/`, `lib/hook-helpers.sh`, or `skills/standards/references/`, run `cd cli && make sync-hooks`. Tests and builds use the embedded copies, not the source files.
+- **Sync embedded copies after editing source**: After editing `lib/chain-parser.sh`, `skills/standards/references/`, `skills/using-agentops/SKILL.md`, or `skills/compile/scripts/`, run `cd cli && make sync-hooks` (it copies those into `cli/embedded/`). Tests and builds use the embedded copies, not the source files. (The target name is legacy — AgentOps 3.0 is hookless; it embeds skills/lib, not runtime hooks.)
 - **CLI docs drift**: After adding/changing CLI commands or flags, run `scripts/generate-cli-reference.sh`. CI checks for drift.
 
 ## Scope Overflow

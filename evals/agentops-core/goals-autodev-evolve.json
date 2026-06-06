@@ -30,14 +30,14 @@
   "cases": [
     {
       "id": "goals-autodev-evolve-focused-tests",
-      "title": "goals, autodev, and evolve focused tests pass",
+      "title": "goals, autodev, and loop focused tests pass",
       "kind": "command",
-      "objective": "Protect goals lifecycle measurement, GOALS.md validation, JSON validity, PROGRAM/AUTODEV validation, evolve command registration, evolve default supervisor mode, era baselines, and dry-run generator fallback behavior.",
+      "objective": "Protect goals lifecycle measurement, GOALS.md validation, JSON validity, PROGRAM/AUTODEV validation, and rehomed loop next-work, blocked-event, and stop-marker behavior.",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../../cli",
-        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run '^(TestGoals_Integration_FullLifecycle|TestGoals_Integration_MeasureDirectivesJSON|TestGoalsMeasure_BasicRun|TestGoalsMeasure_WeightedScoring|TestGoalsValidate_ValidMD|TestJSONValidity_GoalsMeasure|TestJSONValidity_GoalsDrift|TestCobraAutodevValidateJSON|TestAutodev_Integration_ValidateJSON|TestEvolveCommandRegisteredOnRoot|TestEvolveCommandReusesRPILoopFlags|TestEvolveHelpDescribesV2OperatorCadence|TestEnsureEvolveEraBaselineWritesOncePerGoalsHash|TestEvolveDryRunEmptyQueueShowsGeneratorFallback)$'"
+        "shell": "env -u AGENTOPS_RPI_RUNTIME go test -timeout=120s ./cmd/ao -run '^(TestGoals_Integration_FullLifecycle|TestGoals_Integration_MeasureDirectivesJSON|TestGoalsMeasure_BasicRun|TestGoalsMeasure_WeightedScoring|TestGoalsValidate_ValidMD|TestJSONValidity_GoalsMeasure|TestJSONValidity_GoalsDrift|TestCobraAutodevValidateJSON|TestAutodev_Integration_ValidateJSON|TestLoopNextWork_(Step1Pick|LadderExhaustionEmitsBlockedHint|RegisteredOnLoop|IncludeOperatorShape)|TestLoopBlocked_(WriteThenListRoundTrip|RegisteredOnLoop)|TestLoopWriteStopMarker_(Table|RegisteredOnLoop))$'"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
@@ -55,11 +55,11 @@
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" goals validate --json | jq -e '.valid == true' >/dev/null; \"$tmp/ao\" autodev validate --json | jq -e '.valid == true and .program_path == \"PROGRAM.md\"' >/dev/null; \"$tmp/ao\" evolve --dry-run --max-cycles 1 | tee \"$tmp/evolve.txt\"; rg -q 'Evolve loop finished' \"$tmp/evolve.txt\""
+        "shell": "tmp=$(mktemp -d); trap 'rm -rf \"$tmp\"' EXIT; (cd cli && env -u AGENTOPS_RPI_RUNTIME go build -o \"$tmp/ao\" ./cmd/ao); \"$tmp/ao\" goals validate --json | jq -e '.valid == true' >/dev/null; \"$tmp/ao\" autodev validate --json | jq -e '.valid == true and .program_path == \"PROGRAM.md\"' >/dev/null; \"$tmp/ao\" rpi loop --dry-run --max-cycles 1 | tee \"$tmp/loop.txt\"; rg -q 'RPI loop finished' \"$tmp/loop.txt\""
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Evolve loop finished"}
+        {"type": "stdout_contains", "value": "RPI loop finished"}
       ],
       "dimensions": ["correctness", "process_adherence", "runtime_compatibility"],
       "critical": true
@@ -103,22 +103,22 @@
       "expectations": [
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao goals`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao autodev`"},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao evolve`"},
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "### `ao loop`"},
         {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Track, measure, and validate project fitness goals."},
-        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Run the v2 autonomous improvement loop."}
+        {"type": "artifact_contains", "target": "../../cli/docs/COMMANDS.md", "value": "Operations on the /evolve cycle history and related Loop bounded-context state."}
       ],
       "dimensions": ["process_adherence", "artifact_quality", "runtime_compatibility"]
     },
     {
       "id": "evolve-code-defaults",
-      "title": "evolve source preserves supervised RPI loop defaults",
+      "title": "loop source preserves rehomed mode defaults",
       "kind": "artifact_check",
-      "objective": "Ensure evolve continues to route code cycles through the supervised RPI loop and captures fitness baselines by goals era.",
+      "objective": "Ensure the kept loop surface owns the burst/loop mode contract rehomed from the retired evolve CLI.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/evolve.go", "value": "applyEvolveDefaults(cmd)"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/evolve.go", "value": "rpiSupervisor = true"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/evolve.go", "value": "ensureEvolveEraBaseline(cwd)"},
-        {"type": "artifact_contains", "target": "../../cli/cmd/ao/evolve.go", "value": "return runRPILoop(cmd, args)"}
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/loop_mode.go", "value": "Loop-execution-mode contract, re-homed from the deleted `ao evolve` CLI"},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/loop_mode.go", "value": "loopModeBurst = \"burst\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/loop_mode.go", "value": "loopModeLoop  = \"loop\""},
+        {"type": "artifact_contains", "target": "../../cli/cmd/ao/loop_mode.go", "value": "func validateLoopMode(mode string) error"}
       ],
       "dimensions": ["correctness", "process_adherence", "artifact_quality"]
     }

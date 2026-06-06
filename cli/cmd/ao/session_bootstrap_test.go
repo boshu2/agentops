@@ -10,9 +10,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestSessionBootstrap_FullStatusJSON(t *testing.T) {
@@ -106,6 +109,8 @@ func TestSessionBootstrap_PrintsHumanSummaryByDefault(t *testing.T) {
 	dir := t.TempDir()
 	mustWriteFile(t, filepath.Join(dir, "AGENTS.md"), "# A")
 	mustWriteFile(t, filepath.Join(dir, "AGENTS-WORKFLOW.md"), "# w")
+	writeBootstrapLearning(t, filepath.Join(dir, ".agents", "canon", "learnings", "human.md"),
+		"Canon Human", "established", "", "0.8", "1.0", "human bootstrap canon memory should be visible")
 
 	s := computeBootstrapStatus(context.Background(), dir, true)
 
@@ -117,7 +122,15 @@ func TestSessionBootstrap_PrintsHumanSummaryByDefault(t *testing.T) {
 		t.Fatalf("printBootstrapSummary: %v", err)
 	}
 	got := out.String()
-	for _, want := range []string{"session bootstrap:", "agents_md=ok", "siblings=1/4", "onboard=skipped"} {
+	for _, want := range []string{
+		"session bootstrap:",
+		"agents_md=ok",
+		"siblings=1/4",
+		"onboard=skipped",
+		"bootstrap memory: 1 item(s)",
+		"Canon Human",
+		"human bootstrap canon memory should be visible",
+	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("summary: want substring %q, got %q", want, got)
 		}
@@ -126,12 +139,14 @@ func TestSessionBootstrap_PrintsHumanSummaryByDefault(t *testing.T) {
 
 func TestSessionBootstrap_JSONRoundTripsStatus(t *testing.T) {
 	s := SessionBootstrapStatus{
-		AgentsMDRead:       true,
-		AgentsSiblingsRead: []string{"AGENTS-WORKFLOW.md"},
-		OnboardPhase:       "skipped:not-implemented",
-		Runtime:            "test",
-		StartedAt:          "2026-05-20T00:00:00Z",
-		BootstrapVersion:   "v1",
+		AgentsMDRead:                true,
+		AgentsSiblingsRead:          []string{"AGENTS-WORKFLOW.md"},
+		OnboardPhase:                "skipped:not-implemented",
+		Runtime:                     "test",
+		StartedAt:                   "2026-05-20T00:00:00Z",
+		BootstrapVersion:            "v1",
+		BootstrapMemory:             []SessionBootstrapMemoryItem{},
+		BootstrapMemoryBudgetTokens: sessionBootstrapMemoryTokenBudget,
 	}
 	blob, err := json.Marshal(s)
 	if err != nil {
@@ -143,6 +158,87 @@ func TestSessionBootstrap_JSONRoundTripsStatus(t *testing.T) {
 	}
 	if back.AgentsMDRead != s.AgentsMDRead || back.OnboardPhase != s.OnboardPhase {
 		t.Fatalf("round-trip mismatch: %+v vs %+v", back, s)
+	}
+}
+
+func TestSessionBootstrap_CanonGatedMemoryFiltersToEstablishedAndHighAntiPatterns(t *testing.T) {
+	dir := t.TempDir()
+	mustWriteFile(t, filepath.Join(dir, "AGENTS.md"), "# AGENTS")
+	for i := range 200 {
+		writeBootstrapLearning(t, filepath.Join(dir, ".agents", "learnings", fmt.Sprintf("local-%03d.md", i)),
+			"Local Established", "established", "high", "0.99", "1.0", "local established must not be injected")
+		writeBootstrapLearning(t, filepath.Join(dir, ".agents", "canon", "learnings", fmt.Sprintf("candidate-%03d.md", i)),
+			"Canon Candidate", "candidate", "high", "0.99", "1.0", "canon candidate must not be injected")
+	}
+	writeBootstrapLearning(t, filepath.Join(dir, ".agents", "canon", "learnings", "established.md"),
+		"Canon Established", "established", "", "0.9", "1.0", "established canon memory should be injected")
+	writeBootstrapLearning(t, filepath.Join(dir, ".agents", "canon", "learnings", "anti-high.md"),
+		"High Anti Pattern", "anti-pattern", "high", "0.8", "1.0", "high severity anti-pattern guardrail should be injected")
+	writeBootstrapLearning(t, filepath.Join(dir, ".agents", "canon", "learnings", "anti-medium.md"),
+		"Medium Anti Pattern", "anti-pattern", "medium", "0.8", "1.0", "medium severity anti-pattern must not be injected")
+
+	got := computeBootstrapStatus(context.Background(), dir, true)
+	titles := map[string]bool{}
+	for _, item := range got.BootstrapMemory {
+		titles[item.Title] = true
+		if item.Maturity == "established" && item.Reach != "always" {
+			t.Fatalf("established canon reach = %q, want always", item.Reach)
+		}
+	}
+	if !titles["Canon Established"] || !titles["High Anti Pattern"] {
+		t.Fatalf("missing expected canon memory titles: %v", titles)
+	}
+	if titles["Local Established"] || titles["Canon Candidate"] || titles["Medium Anti Pattern"] {
+		t.Fatalf("ineligible memory injected: %v", titles)
+	}
+	if got.BootstrapMemoryUsedTokens > sessionBootstrapMemoryTokenBudget {
+		t.Fatalf("used tokens = %d, want <= %d", got.BootstrapMemoryUsedTokens, sessionBootstrapMemoryTokenBudget)
+	}
+}
+
+func TestSessionBootstrap_CanonMemoryOverBudgetWarnsAndKeepsTopUnderCap(t *testing.T) {
+	dir := t.TempDir()
+	mustWriteFile(t, filepath.Join(dir, "AGENTS.md"), "# AGENTS")
+	body := strings.Repeat("budgeted canon sentence ", 100)
+	for i := range 8 {
+		writeBootstrapLearning(t, filepath.Join(dir, ".agents", "canon", "learnings", fmt.Sprintf("canon-%02d.md", i)),
+			fmt.Sprintf("Canon %02d", i), "established", "", fmt.Sprintf("0.%d", i+1), "1.0", body)
+	}
+
+	got := computeBootstrapStatus(context.Background(), dir, true)
+	if !got.BootstrapMemoryOverBudget {
+		t.Fatal("BootstrapMemoryOverBudget = false, want true")
+	}
+	if got.BootstrapMemoryUsedTokens > sessionBootstrapMemoryTokenBudget {
+		t.Fatalf("used tokens = %d, want <= %d", got.BootstrapMemoryUsedTokens, sessionBootstrapMemoryTokenBudget)
+	}
+	if got.BootstrapMemoryOmittedCount == 0 {
+		t.Fatal("BootstrapMemoryOmittedCount = 0, want omitted lower-ranked items")
+	}
+	if len(got.BootstrapMemory) == 0 || got.BootstrapMemory[0].Title != "Canon 07" {
+		t.Fatalf("first bootstrap memory = %+v, want highest utility Canon 07", got.BootstrapMemory)
+	}
+	var warn bytes.Buffer
+	if err := writeBootstrapMemoryWarning(&warn, got); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(warn.String(), "exceeded 1200 tokens") {
+		t.Fatalf("warning = %q, want token budget warning", warn.String())
+	}
+}
+
+func writeBootstrapLearning(t *testing.T, path, title, maturity, severity, utility, confidence, body string) {
+	t.Helper()
+	severityLine := ""
+	if severity != "" {
+		severityLine = "severity: " + severity + "\n"
+	}
+	content := fmt.Sprintf("---\nmaturity: %s\n%sutility: %s\nconfidence: %s\n---\n# %s\n\n%s\n",
+		maturity, severityLine, utility, confidence, title, body)
+	mustWriteFile(t, path, content)
+	when := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	if err := os.Chtimes(path, when, when); err != nil {
+		t.Fatalf("chtimes %s: %v", path, err)
 	}
 }
 

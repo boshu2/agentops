@@ -50,8 +50,8 @@ const (
 	DimensionRuntimeCompatibility Dimension = "runtime_compatibility"
 	DimensionEfficiency           Dimension = "efficiency"
 	DimensionSafety               Dimension = "safety"
-	DimensionLearningClosure        Dimension = "learning_closure"
-	DimensionContextComprehension   Dimension = "context_comprehension"
+	DimensionLearningClosure      Dimension = "learning_closure"
+	DimensionContextComprehension Dimension = "context_comprehension"
 )
 
 type Status string

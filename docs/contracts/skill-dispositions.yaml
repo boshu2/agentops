@@ -27,6 +27,11 @@ dispositions:
     hexagonal_role: driven-adapter
     disposition:    update
     rationale:      "Tracker adapter is core; add BDD/slice acceptance self-test"
+  - skill:          bd-first-memory-migration
+    domain:         "BC1 Corpus"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "New: consolidate fragmented memory layers onto bd-canonical store"
   - skill:          bootstrap
     domain:         "BC4 Factory"
     hexagonal_role: driving-adapter
@@ -392,11 +397,6 @@ dispositions:
     hexagonal_role: generic
     disposition:    update
     rationale:      "Operator education; align to 3.0 first-value path"
-  - skill:          using-gc
-    domain:         "BC5 Runtime"
-    hexagonal_role: generic
-    disposition:    update
-    rationale:      "Operator guide for running AgentOps on the Gas City substrate"
   - skill:          validate
     domain:         "BC2 Validation"
     hexagonal_role: driving-adapter
@@ -422,3 +422,8 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "Hookless reframe: makes out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI; extends standards+converter, never a hook revival"
+  - skill:          using-ntm
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Shippable AgentOps-scoped guide for the NTM leg of the out-of-session substrate (NTM+MCP+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill."

@@ -20,21 +20,9 @@ const (
 	rpiC2EventsFileName     = "events.jsonl"
 )
 
-// RPIC2Event is one normalized C2/runtime event stored in events.jsonl.
-type RPIC2Event struct {
-	SchemaVersion int             `json:"schema_version"`
-	EventID       string          `json:"event_id"`
-	RunID         string          `json:"run_id"`
-	CommandID     string          `json:"command_id,omitempty"`
-	Phase         int             `json:"phase,omitempty"`
-	Backend       string          `json:"backend,omitempty"`
-	Source        string          `json:"source,omitempty"`
-	WorkerID      string          `json:"worker_id,omitempty"`
-	Type          string          `json:"type"`
-	Message       string          `json:"message,omitempty"`
-	Details       json.RawMessage `json:"details,omitempty"`
-	Timestamp     string          `json:"timestamp"`
-}
+// RPIC2Event (type) and loadRPIC2Events (reader) moved to c2_event_reader.go
+// (ag-362v) so mine.go keeps reading run event logs after the rpi engine is
+// removed. The writer (appendRPIC2Event) below stays with the rpi engine.
 
 type rpiC2EventInput struct {
 	RunID     string
@@ -151,42 +139,6 @@ func mirrorRootsForEvent(root, runID string) []string {
 		out = append(out, clean)
 	}
 	return out
-}
-
-func loadRPIC2Events(root, runID string) ([]RPIC2Event, error) {
-	path := rpiC2EventsPath(root, runID)
-	if path == "" {
-		return nil, nil
-	}
-	file, err := os.Open(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("open events log: %w", err)
-	}
-	defer func() { _ = file.Close() }()
-
-	scanner := bufio.NewScanner(file)
-	scanner.Buffer(make([]byte, 0, 128*1024), 2*1024*1024)
-	out := make([]RPIC2Event, 0)
-	lineNum := 0
-	for scanner.Scan() {
-		lineNum++
-		line := bytes.TrimSpace(scanner.Bytes())
-		if len(line) == 0 {
-			continue
-		}
-		var ev RPIC2Event
-		if err := json.Unmarshal(line, &ev); err != nil {
-			return nil, fmt.Errorf("parse events.jsonl line %d: %w", lineNum, err)
-		}
-		out = append(out, ev)
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("scan events.jsonl: %w", err)
-	}
-	return out, nil
 }
 
 func appendRPIC2WorkerLogEvents(root, runID string, phaseNum int, backend, workerID, logPath string) error {

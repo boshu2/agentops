@@ -7,13 +7,14 @@ An SDLC control plane for agentic software development, backed by a repo-native 
 ## North Stars
 
 <!-- agentops:claim:AOP-CLAIM-GOALS-DREAM-VALIDATED -->
-- The knowledge flywheel is the product — every session makes the next session smarter
-- The wiki maintains itself: every session contributes to `.agents/` by default
-- Skills work identically across Claude Code, Codex CLI, Cursor, and OpenCode
-- Knowledge captured in one session is retrieved and applied in the next
-- The flywheel runs autonomously between sessions (dream cycle), not just on-demand
-- A new user goes from install to first validated flow in under 5 minutes
-- AgentOps speaks public SDLC language while executing the CDLC internally: every high-value context token carries intent, boundary, evidence, decision, constraint, or next action
+- **The verification membrane is the product.** Nothing an agent generates is trusted until an independent verifier — never the author, never the same model — proves it against an explicit acceptance contract. Like a Kubernetes admission controller, it rejects everything unproven and delivers bounded assurance graduated to each output's verification surface (strongest for code; attestation where only judgment exists). It cannot *guarantee* stochastic output — it gates it.
+- **Beneath the membrane, the corpus compounds.** A versioned, provenance-tracked context corpus makes each session measurably better than the last — fewer tokens, fewer failures, a rollback path. The knowledge flywheel is the compounding *layer under* the membrane — measured, not asserted; not the headline.
+- **The moat is structural, not a feature.** Credible verification *requires* cross-vendor neutrality: a model vendor cannot grade its own model's output without committing the self-grade the membrane forbids. Plus your corpus, in your formats, in your repo — portable across whichever frontier model wins next quarter.
+- **The control plane is HA; the compute is fungible.** The membrane, corpus, and state are a host-agnostic control plane with no single point — quorum, not one host; cross-model, not one model. Agents are the fungible, disposable workload scheduled across interchangeable compute. A quorum of one is not a quorum, at either altitude.
+- Skills work identically across Claude Code, Codex CLI, Cursor, and OpenCode.
+- The wiki maintains itself: every session contributes to `.agents/` by default, and knowledge captured in one session is retrieved and applied in the next — including autonomously between sessions (dream cycle), not just on-demand.
+- A new user goes from install to first validated flow in under 5 minutes.
+- AgentOps speaks public SDLC language while executing the CDLC internally: every high-value context token carries intent, boundary, evidence, decision, constraint, or next action.
 
 ## Anti Stars
 

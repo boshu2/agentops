@@ -588,6 +588,30 @@ func GetTierBehaviors() []TierBehavior {
 
 // --- Citation tracking (ol-a46 Phase 0) ---
 
+const (
+	// CitationTypeRetrieved records exposure only: a retrieval surfaced the artifact,
+	// but there is no evidence it influenced the final work.
+	CitationTypeRetrieved = "retrieved"
+
+	// CitationTypeUsedInFinalArtifact records evidence that the cited artifact
+	// influenced a final work artifact.
+	CitationTypeUsedInFinalArtifact = "used-in-final-artifact"
+
+	// CitationTypeHelpful records an explicit positive outcome judgment.
+	CitationTypeHelpful = "helpful"
+
+	// CitationTypeHarmful records an explicit negative outcome judgment.
+	CitationTypeHarmful = "harmful"
+
+	// CitationTypeRefuted records that the cited artifact was contradicted or rejected.
+	CitationTypeRefuted = "refuted"
+
+	// Legacy citation types remain parseable for existing logs and commands.
+	CitationTypeApplied     = "applied"
+	CitationTypeReference   = "reference"
+	CitationTypeSkillLoaded = "skill_loaded"
+)
+
 // CitationEvent records when an artifact is referenced in a session.
 // These events drive the knowledge flywheel: σρ > δ/100 = operational escape velocity.
 type CitationEvent struct {
@@ -604,14 +628,23 @@ type CitationEvent struct {
 	CitedAt time.Time `json:"cited_at"`
 
 	// CitationType indicates how the artifact was used.
-	// Values: "retrieved" (surfaced via ol inject), "applied" (used in implementation),
-	// "reference" (manual citation).
+	// Values: retrieved, used-in-final-artifact, helpful, harmful, refuted.
+	// Legacy values "applied", "reference", and "skill_loaded" remain supported.
 	CitationType string `json:"citation_type,omitempty"`
 
 	// ModelVendor identifies which model vendor surfaced or applied this artifact.
 	// Values: "claude", "codex", "" (unknown/unattributed).
 	// Enables per-vendor σ/ρ tracking and cross-vendor comparison.
 	ModelVendor string `json:"model_vendor,omitempty"`
+
+	// ArtifactAuthorID is the known author/owner identity of the cited artifact.
+	ArtifactAuthorID string `json:"artifact_author_id,omitempty"`
+
+	// CitedByAgentID is the non-author agent identity recording the outcome event.
+	CitedByAgentID string `json:"cited_by_agent_id,omitempty"`
+
+	// CitedByModelFamily captures the judging/recording model family, when known.
+	CitedByModelFamily string `json:"cited_by_model_family,omitempty"`
 
 	// Query is the search query that surfaced this artifact (if applicable).
 	Query string `json:"query,omitempty"`

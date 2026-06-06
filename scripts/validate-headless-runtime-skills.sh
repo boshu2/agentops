@@ -217,6 +217,10 @@ def parse_frontmatter(path: Path):
 
 inventory = []
 for skill_file in sorted(skills_root.glob("*/SKILL.md")):
+    # Skip leading-underscore scaffolding dirs (e.g. skills/_fixtures/) —
+    # planted test fixtures, not real skills.
+    if skill_file.parent.name.startswith("_"):
+        continue
     inventory.append(parse_frontmatter(skill_file))
 
 out_file.write_text(json.dumps(inventory, indent=2) + "\n")

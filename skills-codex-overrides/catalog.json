@@ -648,12 +648,6 @@
       "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
     },
     {
-      "name": "using-gc",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Guide to running AgentOps on the Gas City (gc) substrate; gc-specific shell idioms and out-of-session orchestration vocabulary."
-    },
-    {
       "name": "operating-loop-workflow",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -688,6 +682,18 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for agent-native"
+    },
+    {
+      "name": "bd-first-memory-migration",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for bd-first-memory-migration"
+    },
+    {
+      "name": "using-ntm",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "NTM substrate guidance is documentation-led and portable across runtimes; Codex parity is sufficient"
     }
   ]
 }

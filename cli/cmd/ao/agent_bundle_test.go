@@ -91,8 +91,19 @@ func TestBuildAgentBundle_CodexNTM(t *testing.T) {
 	if b.Runtime != "codex-ntm" {
 		t.Errorf("Runtime = %q, want codex-ntm", b.Runtime)
 	}
+	// Exact Bootstrap value — guards the codex-ntm struct literal against
+	// silent edits/drift (the field was the site of an unformatted-source fix).
+	if want := `ao session bootstrap && ao inject --bead "$BEAD"`; b.Bootstrap != want {
+		t.Errorf("codex-ntm Bootstrap = %q, want exactly %q", b.Bootstrap, want)
+	}
 	if !strings.Contains(b.Bootstrap, "ao session bootstrap") {
 		t.Errorf("codex-ntm Bootstrap must run `ao session bootstrap`, got %q", b.Bootstrap)
+	}
+	if !strings.Contains(b.Bootstrap, `ao inject --bead "$BEAD"`) {
+		t.Errorf("codex-ntm Bootstrap must request bead-scoped injection, got %q", b.Bootstrap)
+	}
+	if strings.Contains(b.Bootstrap, "ao inject --query") {
+		t.Errorf("codex-ntm Bootstrap must not use invalid `ao inject --query`, got %q", b.Bootstrap)
 	}
 	if b.Reference != "skills-codex/agent-native" {
 		t.Errorf("Reference = %q, want skills-codex/agent-native", b.Reference)

@@ -53,9 +53,11 @@ func (a *InMemoryClaimEvidence) Derive(ctx context.Context, req ClaimEvidenceReq
 	newLevel := promoteEvidenceLevel(verdict.Status, existingLevel, targetLevel)
 	return ClaimEvidenceResult{
 		Binding: EvidenceBinding{
-			Claim: req.Claim,
-			Path:  req.EvidenceFile,
-			Level: newLevel,
+			Claim:    req.Claim,
+			Path:     req.EvidenceFile,
+			Level:    newLevel,
+			AuthorID: req.AuthorID,
+			JudgeID:  req.JudgeID,
 		},
 		Verdict: verdict,
 	}, nil

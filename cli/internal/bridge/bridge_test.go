@@ -52,12 +52,12 @@ func TestFirstNonEmptyTrimmed(t *testing.T) {
 
 func TestCodexStopAlreadyClosed(t *testing.T) {
 	tests := []struct {
-		name                  string
-		lastStopSessionID     string
-		lastStopTranscript    string
-		sessionID             string
-		transcriptPath        string
-		want                  bool
+		name               string
+		lastStopSessionID  string
+		lastStopTranscript string
+		sessionID          string
+		transcriptPath     string
+		want               bool
 	}{
 		{
 			name:               "matching transcripts same session",
@@ -188,4 +188,3 @@ func TestCompareSemver(t *testing.T) {
 		})
 	}
 }
-

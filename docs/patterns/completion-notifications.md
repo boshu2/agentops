@@ -71,26 +71,26 @@ Trade-off: scoped to the local clone (only fires on the developer / runner
 that ran the commit), but reaches any HTTP endpoint and runs synchronously
 on commit so debugging is easy.
 
-## Pattern C — substrate event tailing (Gas City)
+## Pattern C — substrate event tailing
 
 Use when: the work runs unattended out of session on an orchestration
-substrate (the loop dispatched on the Gas City reference City — a scheduled
-Dream Order, a recurring `ao goals measure` Order, a wiki-forge Order) and you
-want a downstream consumer to react to specific job events. AgentOps ships no
+substrate (the loop dispatched on an NTM swarm, MCP, or managed-agents — a
+scheduled evolve run, a recurring `ao goals measure` job, a wiki-forge job) and
+you want a downstream consumer to react to specific job events. AgentOps ships no
 daemon of its own; out-of-session execution is delegated to the substrate (see
 [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)), and the
 substrate is where the event stream lives.
 
-The substrate writes one JSON line per Order/job event to its event log. A
+The substrate writes one JSON line per job event to its event log. A
 consumer process (systemd unit, tmux pane, container sidecar) tails that log
 and forwards the events it cares about.
 
 Skeleton:
 
 ```bash
-# Consumer running alongside the Gas City substrate.
+# Consumer running alongside the out-of-session substrate.
 # Point the tail at your substrate's event log (path varies by deployment).
-tail -F "$GC_EVENT_LOG" \
+tail -F "$SUBSTRATE_EVENT_LOG" \
   | jq -c --unbuffered 'select(.event == "job.completed" and .job.kind == "dream.run")' \
   | while read -r line; do
       url=$(echo "$line" | jq -r '.job.report_url // empty')
@@ -111,7 +111,7 @@ dependency.
 |---|---|
 | Work runs in GitHub Actions; you watch issues | A — GitHub Actions issue creation |
 | Work writes a tracked artifact; you have a chat webhook URL | B — git post-commit → curl |
-| Work runs unattended on the substrate (Gas City); you want real-time events | C — substrate event tailing |
+| Work runs unattended on the substrate (NTM / MCP / managed-agents); you want real-time events | C — substrate event tailing |
 | You think you need a webhook server | You probably don't — start with A or B; reach for C only if you genuinely need event streaming |
 
 ## What this is NOT

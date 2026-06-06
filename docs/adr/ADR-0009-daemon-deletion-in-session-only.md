@@ -6,6 +6,8 @@
 - **Builds on:** [ADR-0002](ADR-0002-agentops-3-hookless-cdlc-rearchitecture.md) (hookless-first), [ADR-0007](ADR-0007-deterministic-loop-only-operator-stops.md) (deterministic evolve loop)
 - **Supersedes:** the "Software factory daemon (`ao daemon`)" surface as an AgentOps-shipped capability.
 
+> **Historical-substrate note (added 2026-06-03, ag-xa7q):** This ADR predates the Gas City prune (ag-124p, #679) and names **Gas City** as the reference out-of-session substrate throughout. The *decision* (delete the daemon; adopt a substrate; AgentOps has no sovereign core to protect) stands unchanged — but the substrate has since been renarrated to **NTM + MCP (`ao mcp serve`) + managed-agents (`ao agent`)**; `runtime=gc`, `city.toml`, and `packs/agentops` were removed. Read "Gas City" below as "the out-of-session substrate." Canonical current statement: [docs/3.0.md](../3.0.md). The decision record is preserved as-is for provenance.
+
 ## Context
 
 AgentOps 3.0 converged on an honest identity: it is the **in-session agent operating loop plus the context compiler that feeds it**. The in-session loop — `rpi` (inner), `evolve` (outer), `crank`/`swarm` (in-session agent teams), the skills as the portable runtime, and the `.agents/` corpus as the compounding moat — is the product. It runs end-to-end in a plain session with zero AgentOps-managed always-on infrastructure.

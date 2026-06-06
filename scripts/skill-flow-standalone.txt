@@ -33,3 +33,4 @@ system-tuning             # restore system responsiveness (process/host hygiene)
 # --- human-facing explainers (documentation skills, no pipeline role) ---
 using-agentops            # explain AgentOps workflows
 using-gc                  # explain running AgentOps on the Gas City substrate
+bd-first-memory-migration

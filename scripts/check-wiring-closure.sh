@@ -21,6 +21,9 @@ if [ -f skills/SKILL-TIERS.md ]; then
   for skill_dir in skills/*/; do
     [ -d "$skill_dir" ] || continue
     skill_name=$(basename "$skill_dir")
+    # Leading-underscore dirs (e.g. skills/_fixtures/) are non-skill scaffolding
+    # (planted test fixtures); they are intentionally absent from SKILL-TIERS.md.
+    case "$skill_name" in _*) continue ;; esac
     if ! grep -q "$skill_name" skills/SKILL-TIERS.md 2>/dev/null; then
       echo "UNWIRED SKILL: $skill_name not in SKILL-TIERS.md"
       ERRORS=$((ERRORS + 1))

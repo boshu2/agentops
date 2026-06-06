@@ -567,9 +567,9 @@ func TestComputeSummary_CodeDrivenAndRuntimeArtifactSplit(t *testing.T) {
 	// Mixed corpus: two code-driven (one pass, one fail), two
 	// runtime-artifact (one pass, one fail), one skip in each lane.
 	summary := computeSummary([]Measurement{
-		{Result: resultPass, Weight: 6}, // code-driven pass
-		{Result: resultFail, Weight: 8}, // code-driven fail
-		{Result: resultSkip, Weight: 3}, // code-driven skip
+		{Result: resultPass, Weight: 6},                                     // code-driven pass
+		{Result: resultFail, Weight: 8},                                     // code-driven fail
+		{Result: resultSkip, Weight: 3},                                     // code-driven skip
 		{Result: resultPass, Weight: 4, Tags: []string{"runtime-artifact"}}, // RA pass
 		{Result: resultFail, Weight: 4, Tags: []string{"runtime-artifact"}}, // RA fail
 	})

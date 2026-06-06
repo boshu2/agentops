@@ -330,6 +330,11 @@ func TestSkillContract_AllSKILLMDHaveDescription(t *testing.T) {
 			continue
 		}
 		name := entry.Name()
+		// Leading-underscore dirs (e.g. skills/_fixtures/) hold test scaffolding,
+		// not real skills, and have no top-level SKILL.md — skip them.
+		if strings.HasPrefix(name, "_") {
+			continue
+		}
 		t.Run(name, func(t *testing.T) {
 			skillFile := filepath.Join(skillsDir, name, "SKILL.md")
 			data, err := os.ReadFile(skillFile)

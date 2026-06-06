@@ -7,7 +7,7 @@ Selection is a ladder, not a one-shot check. After every productive cycle, retur
 **Programmatic recommendation (soc-g2qd wire):** when present, consult the ladder primitive first and prefer its `.recommended_bead`; the rungs below are the cross-check + fallback.
 
 ```bash
-ao evolve next-work --help >/dev/null 2>&1 && RECO_BEAD=$(ao evolve next-work --json 2>/dev/null | jq -r '.recommended_bead // empty')
+ao loop next-work --help >/dev/null 2>&1 && RECO_BEAD=$(ao loop next-work --json 2>/dev/null | jq -r '.recommended_bead // empty')
 ```
 
 When a repo-local program contract exists, apply a scope filter before Step 4:
@@ -25,7 +25,7 @@ Before claiming a candidate, gate scope vs session budget. If the work touches >
 
 Scout NEVER returns "no work done." If `bd ready` ≥1, the loop MUST claim one this cycle. See `references/scout-mode.md` and `references/mechanical-batches.md`.
 
-**Metronome gate:** read `mode_repeat_streak` from `session-state.json`. If `>= 3` AND the candidate would repeat the trailing run's `mode`, BLOCK this rung and jump to the next. If `>= 5`, `bd remember "metronome-N: <mode>"` and require operator override. See `references/metronome-gate.md`.
+**Metronome gate:** read `mode_repeat_streak` from `session-state.json`. If `>= 3` AND the candidate would repeat the trailing run's `mode`, BLOCK this rung and jump to the next. If `>= 5`, record the gap as bead/provenance evidence and require operator override. See `references/metronome-gate.md`.
 
 **Step 3.1: Harvested work first**
 
@@ -186,9 +186,9 @@ fi
 if [ "${GENERATOR_EMPTY_STREAK:-0}" -ge 2 ] && [ "${IDLE_STREAK:-0}" -ge 2 ]; then
   REASON="stagnation: all sources empty x3"
   # soc-g2qd wire: under loop, write-stop-marker refuses → log blocked + operator-wait, never self-halt (ADR-0007).
-  if ao evolve write-stop-marker --help >/dev/null 2>&1; then
-    ao evolve write-stop-marker --marker dormant --reason "$REASON" --mode loop 2>/dev/null \
-      || ao evolve blocked --reason "$REASON" --needed-context "queue empty; operator adds work or marker" 2>/dev/null || true
+  if ao loop write-stop-marker --help >/dev/null 2>&1; then
+    ao loop write-stop-marker --marker dormant --reason "$REASON" --mode loop 2>/dev/null \
+      || ao loop blocked --reason "$REASON" --needed-context "queue empty; operator adds work or marker" 2>/dev/null || true
   else
     printf '%s\n%s\n%s\n' "cycle $CYCLE" "$(date -u +%FT%TZ)" "$REASON" > .agents/evolve/DORMANT  # fallback
   fi

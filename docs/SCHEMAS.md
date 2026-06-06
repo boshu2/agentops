@@ -35,7 +35,7 @@ These describe data written and consumed at runtime — handoffs between session
 | [`eval-suite.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/eval-suite.v1.schema.json) | Public canary and private holdout evaluation suite manifests. See [`Eval Environment`](contracts/eval-environment.md). |
 | [`eval-run.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/eval-run.v1.schema.json) | Evaluation run records, scorecards, baseline comparisons, runtime hygiene, and artifacts. See [`Eval Environment`](contracts/eval-environment.md). |
 | [`release-readiness.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/release-readiness.v1.schema.json) | Release readiness score artifact with SIL/VIL/HIL evidence and waiver state. See [`Release Readiness`](contracts/release-readiness.md). |
-| [`routing-policy.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/routing-policy.v1.schema.json) | Historical model/provider/runtime lane policy schema. The companion daemon routing-policy contract was removed with the daemon in 3.0; out-of-session routing is now the substrate's concern (Gas City is the reference). |
+| [`routing-policy.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/routing-policy.v1.schema.json) | Historical model/provider/runtime lane policy schema. The companion daemon routing-policy contract was removed with the daemon in 3.0; out-of-session routing is now the substrate's concern (an NTM swarm / MCP / managed-agents — AgentOps adopts, does not own). |
 | [`remote-compute-target.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/remote-compute-target.schema.json) | Product-neutral GasCity-backed remote compute target configuration. See [`Remote Compute`](contracts/remote-compute.md). |
 | [`remote-session-event.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/remote-session-event.schema.json) | Remote session events and idempotent command delivery records. See [`Remote Compute`](contracts/remote-compute.md). |
 | [`swarm-evidence.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/swarm-evidence.schema.json) | Permissive shape for files written by swarm workers to `.agents/swarm/results/<task>.json`. Companion strict schema: [`contracts/swarm-worker-result.schema.json`](contracts/swarm-worker-result.schema.json). |
@@ -69,9 +69,9 @@ Most schemas follow JSON Schema Draft 2020-12. Any compatible validator will wor
 # Validate skill frontmatter across all skills
 scripts/validate-skills.sh
 
-# Validate hooks manifest
-jq -e . hooks/hooks.json           # well-formed JSON
-ao hooks show --validate           # schema-aware check
+# Validate the legacy hooks manifest (opt-in only — AgentOps 3.0 ships zero
+# hooks; you only have one if you authored it via the hooks-authoring skill)
+jq -e . hooks/hooks.json           # legacy/opt-in manifest, if present
 
 # Validate swarm evidence artifacts
 scripts/validate-swarm-evidence.sh

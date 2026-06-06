@@ -36,6 +36,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### driving-adapter
 
+- `bd-first-memory-migration` — Consolidate fragmented agent-memory layers into one bd-canonical store, then GC/retire the rest. Triggers: "memory migration", "consolidate agent memory", "beads-first memory".
 - `bootstrap` — Initialize AgentOps project files.
 - `implement` — Implement one tracked issue.
 - `inject` — Load relevant .agents context.
@@ -74,7 +75,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `compile` — Compile .agents knowledge wiki.
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.
 - `doc` — Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss).
-- `dream` — Retired pointer — out-of-session compounding moved to Gas City.
+- `dream` — Retired pointer — out-of-session compounding moved to the substrate (NTM + MCP + managed-agents).
 - `eval-outcomes` — Grade against Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes.
 - `evolve` — Run autonomous improvement loops.
 - `handoff` — Write compact session handoffs.
@@ -95,13 +96,13 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `system-tuning` — Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene.
 - `test` — Generate tests and coverage plans.
 - `trace` — Trace decisions through artifacts.
+- `using-ntm` — Use NTM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.
 - `workflow-builder` — Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: "build a workflow", "create a workflow", "scaffold workflow", "author a workflow".
 
 ### generic
 
 - `converter` — Convert AgentOps skill formats.
 - `using-agentops` — Explain AgentOps workflows.
-- `using-gc` — Explain how to run AgentOps on the Gas City (gc) substrate.
 
 ### unclassified
 
@@ -166,6 +167,7 @@ graph LR
   skill-builder -- "supplier-to" --> skill-auditor
   swarm -- "customer-of" --> crank
   trace -- "customer-of" --> provenance
+  using-ntm -- "customer-of" --> swarm
   validate -- "customer-of" --> validation
   validation -- "shared-kernel" --> standards
   vibe -- "shared-kernel" --> standards
@@ -183,6 +185,9 @@ graph LR
 | `agent-native` | produces | docs/contracts/agent-runtime-profile.md |
 | `autodev` | consumes | evolve |
 | `autodev` | consumes | rpi |
+| `bd-first-memory-migration` | consumes | repo-context |
+| `bd-first-memory-migration` | produces | bd-memories |
+| `bd-first-memory-migration` | produces | migration-report |
 | `beads` | consumes | bd-issue |
 | `beads` | produces | bd-issue |
 | `bootstrap` | consumes | doc |
@@ -341,7 +346,7 @@ graph LR
 | `test` | produces | result.json |
 | `trace` | produces | result.json |
 | `using-agentops` | produces | documentation |
-| `using-gc` | produces | documentation |
+| `using-ntm` | produces | documentation |
 | `validate` | consumes | validation |
 | `validate` | produces | result.json |
 | `validation` | consumes | forge |

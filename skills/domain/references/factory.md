@@ -10,11 +10,11 @@ The **out-of-session driver** of the [Loop](loop.md): the loop run unattended ov
 
 ## The substrate owns it, not AgentOps
 
-AgentOps 3.0 ships **no** always-on daemon, scheduler, or overnight runner — those surfaces were **deleted** in the 3.0 rearchitecture (see [`docs/adr/ADR-0009-daemon-deletion-in-session-only.md`](../../../docs/adr/ADR-0009-daemon-deletion-in-session-only.md)). The Factory driver is the orchestration substrate's job. **Gas City** is the reference substrate: its Orders drive the loop, its queue holds the work, its agents inherit the AgentOps skills via overlay. AgentOps stays zero-dependency in a plain session through the Evolve driver.
+AgentOps 3.0 ships **no** always-on daemon, scheduler, or overnight runner — those surfaces were **deleted** in the 3.0 rearchitecture (see [`docs/adr/ADR-0009-daemon-deletion-in-session-only.md`](../../../docs/adr/ADR-0009-daemon-deletion-in-session-only.md)). The Factory driver is the orchestration substrate's job. The reference substrate is the trio AgentOps actually runs on — **NTM** (a tmux agent swarm), **MCP** (`ao mcp serve`), and **managed-agents** (`ao agent`) — none of it AgentOps-owned: it holds the queue, supervises the agents, and they inherit the AgentOps skills via overlay. AgentOps stays zero-dependency in a plain session through the Evolve driver.
 
-## Mayor-driven dispatch (honest current state)
+## Swarm-driven dispatch (honest current state)
 
-On the reference Gas City City, dispatch is **mayor-driven** today: a long-lived mayor agent runs `bd ready`, then `gc sling`s the next bead to a refinery worker that runs `ao rpi <bead>`; cron `exec` Orders handle scheduled maintenance. Order-level autonomous dispatch (a cooldown Order binding the next ready bead to a formula on its own) is a known **Gas City maturity gap** — GC Orders have no per-fire variable binding — tracked as an upstream contribution (`soc-5jwah`), not a turnkey AgentOps feature.
+On the reference substrate, dispatch is **swarm-driven**: an NTM tmux swarm (or a lead agent) runs `bd ready`, then dispatches the next bead to a worker agent that runs the `/rpi` skill; a managed-agent driver (`ao agent`) or cron handles scheduled maintenance, and `ao mcp serve` exposes the `ao` tool surface across the seam. The substrate dispatches a whole loop as one unit (an agent running the skill) — it never re-expresses the rpi tick as substrate-side steps.
 
 ## When to use
 

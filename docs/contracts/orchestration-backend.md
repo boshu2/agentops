@@ -1,6 +1,6 @@
 # Orchestration Backend Selection Contract
 
-Schema: [`schemas/orchestration-backend.v1.schema.json`](../../schemas/orchestration-backend.v1.schema.json)
+Schema: [`schemas/orchestration-backend.v1.schema.json`](https://github.com/boshu2/agentops/blob/main/schemas/orchestration-backend.v1.schema.json)
 
 The selection trace emitted by the `OrchestrationPort` when it resolves which
 backend runs a unit of orchestrable work. The full port semantics, the

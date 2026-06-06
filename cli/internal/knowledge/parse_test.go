@@ -8,10 +8,10 @@ import (
 
 func TestParseBuilderMetadata(t *testing.T) {
 	tests := []struct {
-		name   string
-		input  string
-		want   map[string]string
-		isNil  bool
+		name  string
+		input string
+		want  map[string]string
+		isNil bool
 	}{
 		{
 			name:  "key=value pairs",

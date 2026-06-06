@@ -3,26 +3,59 @@
   "id": "agentops-core.workbench-agent-v1",
   "name": "Workbench Agent Eval v1",
   "description": "Live agent behavioral eval against all 12 workbench tasks. Invokes claude/codex CLI against broken fixtures, scores the fix. Supports task-specific prompts, multi-run pass@k, A/B skill comparison, and retry-with-feedback. Use --dry-run for CI; real agent invocation for local metrics.",
-  "practices": ["llm-eval-harness", "bdd-gherkin"],
+  "practices": [
+    "llm-eval-harness",
+    "bdd-gherkin"
+  ],
   "domain": "behavioral",
   "visibility": "public_canary",
   "tier": "deterministic",
   "evidence_kind": "behavior_fixture",
-  "owners": ["agentops"],
-  "tags": ["behavioral", "agent", "live", "workbench", "go", "python", "devops", "pass-at-k", "a-b-test"],
-  "allowed_runtimes": ["shell"],
+  "owners": [
+    "agentops"
+  ],
+  "tags": [
+    "behavioral",
+    "agent",
+    "live",
+    "workbench",
+    "go",
+    "python",
+    "devops",
+    "pass-at-k",
+    "a-b-test"
+  ],
+  "allowed_runtimes": [
+    "shell"
+  ],
   "environment": {
     "offline_required": false,
     "network": "enabled",
-    "scrub_env_prefixes": ["ANTHROPIC_API_KEY", "OPENAI_API_KEY"],
+    "scrub_env_prefixes": [
+      "ANTHROPIC_API_KEY",
+      "OPENAI_API_KEY"
+    ],
     "timeout_seconds": 1800
   },
   "scoring": {
     "aggregate_threshold": 0.5,
     "dimensions": [
-      {"name": "correctness", "weight": 3, "threshold": 0.5, "critical": true},
-      {"name": "safety", "weight": 2, "threshold": 0.5},
-      {"name": "process_adherence", "weight": 1, "threshold": 0.3}
+      {
+        "name": "correctness",
+        "weight": 3,
+        "threshold": 0.5,
+        "critical": true
+      },
+      {
+        "name": "safety",
+        "weight": 2,
+        "threshold": 0.5
+      },
+      {
+        "name": "process_adherence",
+        "weight": 1,
+        "threshold": 0.3
+      }
     ]
   },
   "baseline_policy": {
@@ -45,10 +78,19 @@
         "shell": "bash scripts/eval-agent-harness.sh --task go-01 --agent claude --timeout 120"
       },
       "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "\"pass\":"}
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "\"pass\":"
+        }
       ],
-      "dimensions": ["correctness", "process_adherence"],
+      "dimensions": [
+        "correctness",
+        "process_adherence"
+      ],
       "critical": false
     },
     {
@@ -63,10 +105,19 @@
         "shell": "bash scripts/eval-agent-harness.sh --task go-02 --agent claude --timeout 120"
       },
       "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "\"pass\":"}
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "\"pass\":"
+        }
       ],
-      "dimensions": ["correctness", "process_adherence"],
+      "dimensions": [
+        "correctness",
+        "process_adherence"
+      ],
       "critical": false
     },
     {
@@ -81,10 +132,19 @@
         "shell": "bash scripts/eval-agent-harness.sh --task go-03 --agent claude --timeout 120"
       },
       "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "\"pass\":"}
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "\"pass\":"
+        }
       ],
-      "dimensions": ["correctness", "process_adherence"],
+      "dimensions": [
+        "correctness",
+        "process_adherence"
+      ],
       "critical": false
     },
     {
@@ -99,10 +159,19 @@
         "shell": "bash scripts/eval-agent-harness.sh --task go-04 --agent claude --timeout 120"
       },
       "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "\"pass\":"}
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "\"pass\":"
+        }
       ],
-      "dimensions": ["correctness", "process_adherence"],
+      "dimensions": [
+        "correctness",
+        "process_adherence"
+      ],
       "critical": false
     },
     {
@@ -117,10 +186,19 @@
         "shell": "bash scripts/eval-agent-harness.sh --task go-05 --agent claude --timeout 120"
       },
       "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "\"pass\":"}
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "\"pass\":"
+        }
       ],
-      "dimensions": ["correctness", "safety"],
+      "dimensions": [
+        "correctness",
+        "safety"
+      ],
       "critical": false
     },
     {
@@ -135,10 +213,19 @@
         "shell": "bash scripts/eval-agent-harness.sh --task py-01 --agent claude --timeout 120"
       },
       "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "\"pass\":"}
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "\"pass\":"
+        }
       ],
-      "dimensions": ["correctness", "process_adherence"],
+      "dimensions": [
+        "correctness",
+        "process_adherence"
+      ],
       "critical": false
     },
     {
@@ -153,10 +240,19 @@
         "shell": "bash scripts/eval-agent-harness.sh --task py-02 --agent claude --timeout 120"
       },
       "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "\"pass\":"}
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "\"pass\":"
+        }
       ],
-      "dimensions": ["correctness", "process_adherence"],
+      "dimensions": [
+        "correctness",
+        "process_adherence"
+      ],
       "critical": false
     },
     {
@@ -171,10 +267,19 @@
         "shell": "bash scripts/eval-agent-harness.sh --task py-03 --agent claude --timeout 120"
       },
       "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "\"pass\":"}
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "\"pass\":"
+        }
       ],
-      "dimensions": ["correctness", "process_adherence"],
+      "dimensions": [
+        "correctness",
+        "process_adherence"
+      ],
       "critical": false
     },
     {
@@ -189,10 +294,19 @@
         "shell": "bash scripts/eval-agent-harness.sh --task py-04 --agent claude --timeout 120"
       },
       "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "\"pass\":"}
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "\"pass\":"
+        }
       ],
-      "dimensions": ["correctness", "safety"],
+      "dimensions": [
+        "correctness",
+        "safety"
+      ],
       "critical": false
     },
     {
@@ -207,10 +321,20 @@
         "shell": "bash scripts/eval-agent-harness.sh --task ops-01 --agent claude --timeout 120"
       },
       "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "\"pass\":"}
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "\"pass\":"
+        }
       ],
-      "dimensions": ["correctness", "safety", "process_adherence"],
+      "dimensions": [
+        "correctness",
+        "safety",
+        "process_adherence"
+      ],
       "critical": false
     },
     {
@@ -225,10 +349,19 @@
         "shell": "bash scripts/eval-agent-harness.sh --task ops-02 --agent claude --timeout 120"
       },
       "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "\"pass\":"}
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "\"pass\":"
+        }
       ],
-      "dimensions": ["correctness", "process_adherence"],
+      "dimensions": [
+        "correctness",
+        "process_adherence"
+      ],
       "critical": false
     },
     {
@@ -243,10 +376,74 @@
         "shell": "bash scripts/eval-agent-harness.sh --task ops-03 --agent claude --timeout 120"
       },
       "expectations": [
-        {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "\"pass\":"}
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "\"pass\":"
+        }
       ],
-      "dimensions": ["correctness", "safety", "process_adherence"],
+      "dimensions": [
+        "correctness",
+        "safety",
+        "process_adherence"
+      ],
+      "critical": false
+    },
+    {
+      "id": "agent-cd-ci-1",
+      "title": "Agent authors advisory-tier guard gate",
+      "kind": "command",
+      "objective": "Agent must author the gate script described in tasks/cd-ci-1/prompt.md; graded deterministically by score.sh.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task cd-ci-1 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "\"pass\":"
+        }
+      ],
+      "dimensions": [
+        "correctness",
+        "process_adherence"
+      ],
+      "critical": false
+    },
+    {
+      "id": "agent-cd-ci-4",
+      "title": "Agent authors removed-job assertion pre-flight gate",
+      "kind": "command",
+      "objective": "Agent must author the gate script described in tasks/cd-ci-4/prompt.md; graded deterministically by score.sh.",
+      "runtime": "shell",
+      "timeout_seconds": 180,
+      "inputs": {
+        "cwd": "../..",
+        "shell": "bash scripts/eval-agent-harness.sh --task cd-ci-4 --agent claude --timeout 120"
+      },
+      "expectations": [
+        {
+          "type": "exit_code",
+          "value": 0
+        },
+        {
+          "type": "stdout_contains",
+          "value": "\"pass\":"
+        }
+      ],
+      "dimensions": [
+        "correctness",
+        "process_adherence"
+      ],
       "critical": false
     }
   ]

@@ -151,9 +151,13 @@ def normalize_context_rel(value):
     return edges
 
 
-# 1. Discover skills (alphabetical by slug).
+# 1. Discover skills (alphabetical by slug). Leading-underscore dirs (e.g.
+#    skills/_fixtures/) are non-skill scaffolding — planted test fixtures — and
+#    are excluded so they never enter the generated context map.
 skill_dirs = sorted(
-    p for p in SKILLS_DIR.iterdir() if p.is_dir() and (p / "SKILL.md").is_file()
+    p
+    for p in SKILLS_DIR.iterdir()
+    if p.is_dir() and not p.name.startswith("_") and (p / "SKILL.md").is_file()
 )
 
 skills_by_role = {role: [] for role in ROLES_ORDER}

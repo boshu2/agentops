@@ -48,8 +48,8 @@ func fixturePath(t *testing.T, name string) string {
 // expectedOrphanFixtures mirrors tests/fixtures/provenance/expected-orphans.json.
 type expectedOrphanFixtures struct {
 	Fixtures []struct {
-		File             string                       `json:"file"`
-		OrphanArtifactID string                       `json:"orphan_artifact_id"`
+		File             string                        `json:"file"`
+		OrphanArtifactID string                        `json:"orphan_artifact_id"`
 		ExpectedFinding  provenancegraph.OrphanFinding `json:"expected_finding"`
 	} `json:"fixtures"`
 }

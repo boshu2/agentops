@@ -40,6 +40,22 @@ func TestProductionClaimEvidence_TargetLevelHonored(t *testing.T) {
 	}
 }
 
+func TestProductionClaimEvidence_BindingCarriesReviewerMetadata(t *testing.T) {
+	c := newPCEFixture(map[ports.GateName]ports.GateVerdict{
+		"g": {Status: ports.GateStatusPass, Reason: "ok"},
+	})
+	res, _ := c.Derive(context.Background(), ports.ClaimEvidenceRequest{
+		Claim:        "X",
+		EvidenceFile: "p",
+		Gate:         "g",
+		AuthorID:     "agent-1",
+		JudgeID:      "agent-2",
+	}, ports.EvidenceLevelNone, ports.EvidenceLevelPG4)
+	if res.Binding.AuthorID != "agent-1" || res.Binding.JudgeID != "agent-2" {
+		t.Fatalf("reviewer metadata not carried: %+v", res.Binding)
+	}
+}
+
 func TestProductionClaimEvidence_WarnToPG1(t *testing.T) {
 	c := newPCEFixture(map[ports.GateName]ports.GateVerdict{
 		"g": {Status: ports.GateStatusWarn, Reason: "advisory"},

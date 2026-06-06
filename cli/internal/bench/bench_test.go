@@ -101,13 +101,13 @@ func TestScoreResults(t *testing.T) {
 	expected := map[string]bool{"a": true, "b": true, "c": true}
 
 	tests := []struct {
-		name      string
-		results   []string
-		expected  map[string]bool
-		bestID    string
-		k         int
-		wantPAtK  float64
-		wantMRR   float64
+		name     string
+		results  []string
+		expected map[string]bool
+		bestID   string
+		k        int
+		wantPAtK float64
+		wantMRR  float64
 	}{
 		{
 			name:     "perfect precision",

@@ -52,12 +52,16 @@ if [[ "$MODE" == "regen" ]]; then
   step "context-map"           bash scripts/generate-context-map.sh
   step "embedded skills"       make -C cli sync-hooks
   step "cli reference (COMMANDS.md)" bash scripts/generate-cli-reference.sh
+  step "command surfaces (cobra expectedCmds + heading counts)" bash scripts/regen-command-surfaces.sh
   step "cli-surface inventory" bash scripts/check-cmdao-surface-parity.sh --write-surface
   step "codex hashes"          bash scripts/regen-codex-hashes.sh ${REGEN_SKILLS:+--only "$REGEN_SKILLS"}
   echo
   echo "Regenerated. Review 'git status', then run: scripts/regen-all.sh --check"
-  echo "Reminder: new skills also need MANUAL skills-codex/<name>/ twins +"
-  echo "  the cobra expectedCmds list + cli-help-matrix golden when adding ao commands."
+  echo "Reminder: new skills also need MANUAL skills-codex/<name>/ twins."
+  echo "Note: cobra expectedCmds + cli-command-surface counts are now AUTO-regenerated"
+  echo "  (regen-command-surfaces.sh). DELETING/RENAMING a command also needs manual"
+  echo "  attention on codex-contract gates + skills-codex twins + VERBATIM template SHAs"
+  echo "  — see the 'deletion ⊃ addition' note in scripts/regen-command-surfaces.sh."
   echo "Scope tip: changed only some skills? Re-run with --skills a,b (or REGEN_SKILLS=a,b)"
   echo "  so the codex-hash step skips unrelated pre-existing drift instead of sweeping it in."
 else
@@ -70,6 +74,7 @@ else
   step "codex hashes (no drift)" bash scripts/regen-codex-hashes.sh --check ${REGEN_SKILLS:+--only "$REGEN_SKILLS"}
   step "SKU catalog drift"     bash scripts/validate-sku-catalog-drift.sh
   step "context-map drift"     bash scripts/validate-context-map-drift.sh
+  step "command surfaces drift" bash scripts/regen-command-surfaces.sh --check
   step "doc-release gate"      bash tests/docs/validate-doc-release.sh
   echo
   [[ $fail -eq 0 ]] && echo "ALL GATES GREEN — safe to push" || echo "DRIFT DETECTED — run scripts/regen-all.sh (no flag) to fix, then commit"

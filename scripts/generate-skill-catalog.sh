@@ -191,6 +191,9 @@ first=1
 for sd in "$SKILLS_DIR"/*/SKILL.md; do
   [ -r "$sd" ] || continue
   name="$(basename "$(dirname "$sd")")"
+  # Skip leading-underscore scaffolding dirs (e.g. skills/_fixtures/) — planted
+  # test fixtures, not real skills; they must not enter the catalog.
+  case "$name" in _*) continue ;; esac
   fm="$(extract_frontmatter "$sd")"
   base="$(parse_frontmatter "$fm")"
   # Compute reference count + codex override presence.
