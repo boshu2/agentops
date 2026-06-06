@@ -19,7 +19,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 # Baselines captured 2026-06-03 (excludes the testutil_test.go helper home).
-BASELINE_CHDIR=163
+# CHDIR lowered 163->151 (ag-4nif): dedup_test.go migrated 6 raw os.Chdir blocks to t.Chdir.
+BASELINE_CHDIR=151
 BASELINE_SETENV=22
 
 chdir=$(grep -rho --include='*_test.go' --exclude='testutil_test.go' 'os\.Chdir(' cli 2>/dev/null | wc -l | tr -d ' ')
