@@ -90,7 +90,7 @@ Operating discipline:
 - [`references/primitive-selection.md`](references/primitive-selection.md) — Primitive Selection: when to use a Skill vs CLI subcommand vs Hook vs CI gate (CLI is the deterministic core; hook + CI-gate are trigger surfaces that call it)
 - [`references/reach.md`](references/reach.md) — Reach: the blast-radius tier of a knowledge entry (`bead`/`pull`/`always`), orthogonal to maturity; `always` is computed from verification-earned canon, never authored
 
-Loop family (the operating loop — "one loop body, two drivers, one inner tick, one config"; doctrine in [`docs/architecture/canonical-loop-model.md`](../../docs/architecture/canonical-loop-model.md)):
+Loop family (the operating loop — "one loop body, two drivers, one inner tick, one config"; doctrine in `docs/architecture/canonical-loop-model.md`):
 
 - [`references/loop.md`](references/loop.md) — Loop: the umbrella; the same five-beat tick at every scale
 - [`references/evolve.md`](references/evolve.md) — Evolve: the in-session driver (AgentOps-shipped, zero-dependency)
