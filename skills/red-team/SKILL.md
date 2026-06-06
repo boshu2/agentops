@@ -1,6 +1,6 @@
 ---
 name: red-team
-description: Probe docs and skills.
+description: 'Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.'
 practices:
 - ai-assisted-dev
 - design-by-contract

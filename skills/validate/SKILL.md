@@ -1,6 +1,6 @@
 ---
 name: validate
-description: Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates.
+description: 'Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured verdict on an artifact, plan, code, PR, or CI gate before proceeding.'
 practices:
 - design-by-contract
 - llm-eval-harness
