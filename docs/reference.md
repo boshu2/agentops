@@ -2,6 +2,8 @@
 
 Deep documentation for AgentOps. For quick start, see [README](https://github.com/boshu2/agentops/blob/main/README.md).
 
+> **⚠ 3.0 note (hookless).** AgentOps 3.0 installs **no hooks by default**. Diagrams/text below that show `auto-inject (hook)` / `hook (automatic)` are **historical (2.x)** — in 3.0 context is pulled **on-demand** (`ao lookup` / `ao inject`) and CI is the authoritative gate. See [3.0.md](3.0.md) and [MIGRATION-3.0.md](MIGRATION-3.0.md).
+
 ---
 
 ## The Pipeline
@@ -209,7 +211,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts
 bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)
 ```
 
-### CLI Install (enables hooks)
+### CLI Install
 
 ```bash
 # macOS

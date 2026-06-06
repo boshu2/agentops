@@ -8,7 +8,7 @@
 
 Coding agents don't do their own bookkeeping. AgentOps does. It sits on top of the agent you already use (Claude Code, Codex, Cursor, OpenCode) and adds the parts an engineering team would notice missing: a record of what was tried, gates between phases, and a corpus of learnings that survives the next session. Plain markdown in `.agents/` next to your code; mix any model per phase.
 
-<sub>Built with AgentOps: this repo's own `.agents/` holds ~1,842 learnings and ~3,867 cited decisions (`bash scripts/corpus-stats.sh`). Browse it to see the corpus a real project builds. New here? Start with [what AgentOps 3.0 is](docs/3.0.md).</sub>
+<sub>Built with AgentOps: this repo's own `.agents/` holds ~1,842 learnings and ~3,867 cited decisions (`bash scripts/corpus-stats.sh`). Browse it to see the corpus a real project builds. New here? Start with [what AgentOps 3.0 is](docs/3.0.md), or read the doctrine at [12factoragentops.com](https://12factoragentops.com).</sub>
 
 </div>
 
@@ -153,6 +153,6 @@ ao metrics health         # flywheel health
 
 ## Docs & contributing
 
-[What 3.0 is](docs/3.0.md) · [docs index](docs/documentation-index.md) · [newcomer guide](docs/newcomer-guide.md) · [architecture](docs/ARCHITECTURE.md) · [FAQ](docs/FAQ.md) · [published site](https://boshu2.github.io/agentops/) · built on the [12-factor doctrine](https://12factoragentops.com).
+[What 3.0 is](docs/3.0.md) · [docs index](docs/documentation-index.md) · [newcomer guide](docs/newcomer-guide.md) · [architecture](docs/ARCHITECTURE.md) · [FAQ](docs/FAQ.md) · built on the [12-factor doctrine](https://12factoragentops.com).
 
 Contributing: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) (agents: read [AGENTS.md](AGENTS.md), track work with `bd`). License: Apache-2.0.

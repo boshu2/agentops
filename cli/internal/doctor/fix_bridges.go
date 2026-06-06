@@ -208,8 +208,8 @@ func probeOpenClawHealth(baseURL string) (kind, detail string) {
 	}
 }
 
-// openclawHealthUnreachableFixer is detect-only: it never starts/restarts
-// agentopsd and never rewrites the activation file.
+// openclawHealthUnreachableFixer is detect-only: it never starts/restarts the
+// OpenClaw daemon and never rewrites the activation file.
 type openclawHealthUnreachableFixer struct{}
 
 func (openclawHealthUnreachableFixer) ID() string { return fmOpenClawHealthUnreachable }
@@ -224,8 +224,8 @@ func (openclawHealthUnreachableFixer) Reversible() bool  { return true }
 func (openclawHealthUnreachableFixer) Idempotent() bool  { return true }
 func (openclawHealthUnreachableFixer) AutoFixable() bool { return false }
 
-// Fix re-runs the detector and reports the exact `ao agentopsd` action. It
-// starts nothing and rewrites no activation file. The finding persists.
+// Fix re-runs the detector and reports the remediation guidance. It starts
+// nothing and rewrites no activation file. The finding persists.
 func (openclawHealthUnreachableFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
 	fs, err := openclawHealthUnreachableDetector{}.Detect(env)
 	if err != nil {
@@ -257,33 +257,32 @@ func (openclawHealthUnreachableFixer) Fix(ctx *MutateContext, env *DetectEnv, _ 
 func openclawHealthReport(kind, detail string) string {
 	switch kind {
 	case "activation_missing":
-		return "agentopsd was never started for this project: " +
-			"`.agents/daemon/activation.json` is absent. Start the daemon with " +
-			"`ao agentopsd start`, then re-run `ao doctor`. The doctor will not " +
+		return "The OpenClaw activation file `.agents/daemon/activation.json` is " +
+			"absent. The in-repo daemon that wrote it was removed (ADR-0009), so " +
+			"`ao` no longer starts a daemon in-session. Bring up the OpenClaw " +
+			"daemon out-of-band, then re-run `ao doctor`. The doctor will not " +
 			"start the daemon."
 	case "unreachable":
 		return fmt.Sprintf("OpenClaw health endpoint %s is unreachable. The daemon "+
-			"is down or the activation file points at a dead port. Run "+
-			"`ao agentopsd status`; if dead, `ao agentopsd restart`; if the "+
-			"activation file is stale, `ao agentopsd start` rewrites it. The "+
-			"doctor will not restart the daemon or rewrite the activation file.",
-			detail)
+			"is down or the activation file points at a dead port. Bring the "+
+			"OpenClaw daemon back up out-of-band (the in-repo daemon was removed — "+
+			"ADR-0009). The doctor will not restart the daemon or rewrite the "+
+			"activation file.", detail)
 	case "slow_or_hung":
 		return fmt.Sprintf("OpenClaw health endpoint %s did not respond within 3s. "+
-			"The daemon is slow or wedged. Inspect with `ao agentopsd status` and "+
-			"the daemon log; restart with `ao agentopsd restart` if wedged.", detail)
+			"The daemon is slow or wedged. Inspect and restart the OpenClaw daemon "+
+			"out-of-band; the doctor will not manage the daemon.", detail)
 	case "route_missing":
 		return fmt.Sprintf("The daemon at %s answers but `/openclaw/v1/health` "+
-			"returns 404 — this agentopsd build predates the OpenClaw consumer "+
-			"routes. Upgrade `ao`/agentopsd and restart the daemon "+
-			"(`ao agentopsd restart`).", detail)
+			"returns 404 — this OpenClaw build predates the consumer routes. "+
+			"Upgrade and restart the OpenClaw daemon out-of-band.", detail)
 	case "http_error":
 		return fmt.Sprintf("OpenClaw health endpoint %s returned an HTTP error. "+
-			"Inspect the daemon log; restart with `ao agentopsd restart` if it "+
-			"crashed.", detail)
+			"Inspect the daemon log and restart the OpenClaw daemon out-of-band if "+
+			"it crashed.", detail)
 	default: // not_ok
 		return fmt.Sprintf("OpenClaw health endpoint %s responded but status != ok. "+
-			"Inspect the daemon log and restart with `ao agentopsd restart` if "+
+			"Inspect the daemon log and restart the OpenClaw daemon out-of-band if "+
 			"needed.", detail)
 	}
 }
@@ -501,21 +500,25 @@ func snapshotStaleReport(obs snapshotObservation) string {
 	case "schema_mismatch":
 		return fmt.Sprintf("`latest.json` schema_version=%d, but the bridge "+
 			"requires version %d. A daemon upgrade bumped the snapshot schema. "+
-			"Rebuild the projection from the current daemon: `ao agentopsd "+
-			"projection rebuild --consumer openclaw` (or restart agentopsd so it "+
-			"re-emits a v%d snapshot). The doctor will not fabricate a schema "+
-			"downgrade.", obs.schemaVersion, openclaw.ConsumerSnapshotSchemaVersion,
+			"The in-repo daemon that emitted this projection was removed "+
+			"(ADR-0009); regenerate the OpenClaw projection from your out-of-session "+
+			"substrate so it re-emits a v%d snapshot. The doctor will not fabricate "+
+			"a schema downgrade.", obs.schemaVersion,
+			openclaw.ConsumerSnapshotSchemaVersion,
 			openclaw.ConsumerSnapshotSchemaVersion)
 	case "latest_missing":
 		return "`latest.json` is absent and no versioned snapshot exists to " +
-			"recover from. Rebuild via `ao agentopsd projection rebuild " +
-			"--consumer openclaw`."
+			"recover from. The in-repo daemon that emitted this projection was " +
+			"removed (ADR-0009); regenerate the OpenClaw projection from your " +
+			"out-of-session substrate."
 	case "torn_no_recovery":
 		return "`latest.json` is torn/truncated and no byte-valid versioned " +
-			"`snap_*.json` exists to recover from. Rebuild via `ao agentopsd " +
-			"projection rebuild --consumer openclaw`."
+			"`snap_*.json` exists to recover from. The in-repo daemon that emitted " +
+			"this projection was removed (ADR-0009); regenerate the OpenClaw " +
+			"projection from your out-of-session substrate."
 	default:
-		return "OpenClaw snapshot is not current. Rebuild via `ao agentopsd " +
-			"projection rebuild --consumer openclaw`."
+		return "OpenClaw snapshot is not current. The in-repo daemon that emitted " +
+			"this projection was removed (ADR-0009); regenerate the OpenClaw " +
+			"projection from your out-of-session substrate."
 	}
 }

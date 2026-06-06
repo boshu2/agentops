@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-05T04:08:51Z",
+  "generated_at": "2026-06-06T14:22:13Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
@@ -418,7 +418,7 @@
         "path": "skills/domain/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 18
+        "reference_count": 19
       },
       {
         "name": "harvest",
@@ -1090,6 +1090,7 @@
           "domain",
           "harvest",
           "inject",
+          "quickstart",
           "using-agentops"
         ]
       },
@@ -1350,7 +1351,6 @@
         "bounded_context": "BC1",
         "driven_by_skills": [
           "discovery",
-          "inject",
           "plan",
           "pre-mortem",
           "provenance",
@@ -2011,7 +2011,7 @@
         "ao session bootstrap"
       ],
       "path": "skills/domain/",
-      "references": 18
+      "references": 19
     },
     {
       "sku": "skill:dream",
@@ -2320,7 +2320,7 @@
       "drives_commands": [
         "ao inject",
         "ao lookup",
-        "ao search"
+        "ao session bootstrap"
       ],
       "path": "skills/inject/",
       "references": 0
@@ -2673,11 +2673,14 @@
         "ao codex ensure-start",
         "ao codex ensure-stop",
         "ao codex status",
+        "ao corpus inject",
         "ao flywheel close-loop",
         "ao init",
+        "ao inject",
         "ao metrics",
         "ao quick-start",
-        "ao reconcile"
+        "ao reconcile",
+        "ao session bootstrap"
       ],
       "path": "skills/quickstart/",
       "references": 3
@@ -2728,7 +2731,8 @@
         "ao codex status",
         "ao codex stop",
         "ao lookup",
-        "ao metrics cite"
+        "ao metrics cite",
+        "ao session bootstrap"
       ],
       "path": "skills/recover/",
       "references": 0
@@ -3279,7 +3283,8 @@
         "ao inject",
         "ao lookup",
         "ao mcp serve",
-        "ao search"
+        "ao search",
+        "ao session bootstrap"
       ],
       "path": "skills/using-agentops/",
       "references": 0
@@ -3819,6 +3824,7 @@
         "--dedup",
         "--dry-run",
         "--json",
+        "--no-snapshot",
         "--output",
         "--output-dir",
         "--prune",
@@ -4149,6 +4155,7 @@
         "domain",
         "harvest",
         "inject",
+        "quickstart",
         "using-agentops"
       ],
       "flags": [
@@ -4734,7 +4741,6 @@
       "status": "active",
       "driven_by_skills": [
         "discovery",
-        "inject",
         "plan",
         "pre-mortem",
         "provenance",

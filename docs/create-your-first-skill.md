@@ -153,10 +153,10 @@ Start from a simple, high-signal skill rather than the biggest orchestration lay
 
 Useful examples:
 
-- [skills/research/SKILL.md](skills/research.md)
-- [skills/retro/SKILL.md](skills/retro.md)
-- [skills/doc/SKILL.md](skills/doc.md)
-- [skills/implement/SKILL.md](skills/implement.md)
+- [skills/research/SKILL.md](../skills/research/SKILL.md)
+- [skills/retro/SKILL.md](../skills/retro/SKILL.md)
+- [skills/doc/SKILL.md](../skills/doc/SKILL.md)
+- [skills/implement/SKILL.md](../skills/implement/SKILL.md)
 
 ## Opening The PR
 

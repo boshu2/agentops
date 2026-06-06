@@ -151,7 +151,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/eval-outcomes` | Grade via Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes |
 | `/operating-loop-workflow` | Install + run the operating-loop multi-agent Workflow (seven-move loop) |
 | `/autodev` | PROGRAM.md autonomous development contract setup and validation |
-| `/dream` | Interactive Dream operator surface for setup, bedtime runs, and morning reports |
+| `/dream` | **Retired** — out-of-session compounding moved to Gas City; pointer skill only |
 | `/doc` | Documentation generation — repo docs (default), gold-standard README (`--mode=readme`), OSS doc packs (`--mode=oss`) |
 | `/retro` | Quick-capture a learning (full retro → /post-mortem) |
 | `/validation` | Full validation phase orchestrator (vibe → post-mortem → retro → forge) |
@@ -232,7 +232,7 @@ bd vc status          # Inspect Dolt state if needed (JSONL auto-sync is automat
 
 ## Examples
 
-**Startup context loading.** Hook-capable runtimes run `session-start.sh` at session start (`manual` mode auto-loads MEMORY.md and points to `ao search`/`ao lookup`; `lean` mode injects prior learnings on a reduced token budget). Codex v0.115.0+ fires hooks automatically; pre-v0.115.0 runs `ao codex start` / `ao codex stop` explicitly. Either way the agent gets the RPI workflow, prior context, and a citation path.
+**Startup context loading.** AgentOps 3.0's default path is explicit: run `ao session bootstrap`, then pull prior context with `ao inject` / `ao lookup` or a phase-scoped packet. Optional hook-capable runtimes may run an authored `session-start.sh`, and Codex CLI can use opt-in native hooks via `install-codex.sh --with-hooks`; those are compatibility/adaptor paths, not the default. Either way the agent gets the RPI workflow, prior context, and a citation path.
 
 **Workflow reference during planning.** When a user asks how to approach a feature, the agent uses this skill's RPI section to recommend Research → Plan → Implement → Validate — `/research` for exploration, `/plan` for decomposition, `/pre-mortem` for failure simulation — instead of an ad-hoc approach.
 
@@ -240,7 +240,7 @@ bd vc status          # Inspect Dolt state if needed (JSONL auto-sync is automat
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| Skill not auto-loaded | Hook runtime unavailable or startup path not run | Hook-capable runtimes: verify `hooks/session-start.sh` exists and is enabled. Codex: run `ao codex start` explicitly |
+| Skill not loaded | Startup path not run | Run `ao session bootstrap`, then `ao inject` / `ao lookup`; for Codex lifecycle recovery, run `ao codex start` explicitly |
 | Outdated skill catalog | This file not synced with actual skills/ directory | Update skill list in this file after adding/removing skills |
 | Wrong skill suggested | Natural language trigger ambiguous | User explicitly calls skill with `/skill-name` syntax |
 | Workflow unclear | RPI phases not well-documented here | Read full workflow guide in README.md or docs/ARCHITECTURE.md |
