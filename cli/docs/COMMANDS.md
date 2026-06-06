@@ -3083,6 +3083,7 @@ ao defrag [flags]
 ```
       --dedup               Flag learnings with >80% content similarity
   -h, --help                help for defrag
+      --no-snapshot         Skip the automatic corpus snapshot taken before a destructive prune
       --output-dir string   Directory for defrag report JSON (default ".agents/defrag")
       --prune               Find orphaned learnings not referenced in patterns or research
       --quiet               Suppress progress output

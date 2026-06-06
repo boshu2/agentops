@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
+	"github.com/boshu2/agentops/cli/internal/liveness"
 	"github.com/boshu2/agentops/cli/internal/paths"
+	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
 	"github.com/boshu2/agentops/cli/internal/types"
 	"github.com/boshu2/agentops/cli/internal/wiki"
@@ -403,6 +406,15 @@ func reconcileMaturityCitationFeedback(artifactDir string) {
 	if total > 0 {
 		VerbosePrintf("Reconciled citation feedback before maturity scan: total=%d rewarded=%d skipped=%d\n", total, rewarded, skipped)
 	}
+	summary, err := reconcileReachAlwaysErrorBudgets(baseDir, time.Now())
+	if err != nil {
+		VerbosePrintf("Warning: reconcile reach=always error budgets: %v\n", err)
+		return
+	}
+	if summary.Scanned > 0 && (summary.Spent > 0 || summary.Reset > 0 || summary.Demoted > 0 || summary.FoundationSkipped > 0) {
+		VerbosePrintf("Reconciled reach=always error budgets: scanned=%d spent=%d reset=%d demoted=%d foundation_skipped=%d\n",
+			summary.Scanned, summary.Spent, summary.Reset, summary.Demoted, summary.FoundationSkipped)
+	}
 }
 
 func maturityCitationBaseDir(artifactDir string) string {
@@ -634,6 +646,347 @@ func buildCitationMap(baseDir string) map[string]time.Time {
 	}
 
 	return result
+}
+
+const (
+	reachAlwaysDefaultErrorBudget = 3
+	reachAlwaysDroughtDays        = 45
+)
+
+type reachBudgetSummary struct {
+	Scanned           int
+	Spent             int
+	Reset             int
+	Demoted           int
+	FoundationSkipped int
+}
+
+type reachBudgetSignals struct {
+	LatestPositive  time.Time
+	LatestHarmful   time.Time
+	LatestRefuted   time.Time
+	HarmfulEvidence string
+	RefutedEvidence string
+}
+
+func reconcileReachAlwaysErrorBudgets(baseDir string, now time.Time) (reachBudgetSummary, error) {
+	var summary reachBudgetSummary
+	if GetDryRun() {
+		return summary, nil
+	}
+	canonPath := filepath.Join(baseDir, canonLearningsDir)
+	if !dirExists(canonPath) {
+		return summary, nil
+	}
+
+	citations, err := ratchet.LoadCitations(baseDir)
+	if err != nil {
+		return summary, err
+	}
+	files, err := ratchet.GlobLearningFiles(canonPath)
+	if err != nil {
+		return summary, err
+	}
+
+	cutoff := now.AddDate(0, 0, -reachAlwaysDroughtDays)
+	for _, file := range files {
+		data, ok := readLearningData(file)
+		if !ok || !isComputedAlwaysCanonLearning(data) {
+			continue
+		}
+		summary.Scanned++
+
+		signals := collectReachBudgetSignals(baseDir, file, citations)
+		if !signals.LatestRefuted.IsZero() {
+			demoted, err := demoteCanonAlwaysLearning(baseDir, file, data, "refuted-citation", signals.RefutedEvidence, now)
+			if err != nil {
+				return summary, err
+			}
+			if demoted {
+				summary.Demoted++
+			}
+			continue
+		}
+
+		if !signals.LatestHarmful.IsZero() && signals.LatestHarmful.After(timeValueFromData(data, "reach_budget_last_negative_at")) {
+			demoted, err := spendReachAlwaysBudget(baseDir, file, data, "harmful-outcome", signals.HarmfulEvidence, "reach_budget_last_negative_at", signals.LatestHarmful, now)
+			if err != nil {
+				return summary, err
+			}
+			summary.Spent++
+			if demoted {
+				summary.Demoted++
+			}
+			continue
+		}
+
+		if !signals.LatestPositive.IsZero() && signals.LatestPositive.After(cutoff) {
+			if resetReachAlwaysBudget(file, data, now) {
+				summary.Reset++
+			}
+			continue
+		}
+
+		if isFoundationContractLearning(data) {
+			summary.FoundationSkipped++
+			continue
+		}
+
+		lastDroughtSpend := timeValueFromData(data, "reach_budget_last_drought_spent_at")
+		if lastDroughtSpend.IsZero() || !lastDroughtSpend.After(cutoff) {
+			evidence := reachDroughtEvidence(signals.LatestPositive, cutoff)
+			demoted, err := spendReachAlwaysBudget(baseDir, file, data, "citation-drought-45d", evidence, "reach_budget_last_drought_spent_at", now, now)
+			if err != nil {
+				return summary, err
+			}
+			summary.Spent++
+			if demoted {
+				summary.Demoted++
+			}
+		}
+	}
+
+	return summary, nil
+}
+
+func isComputedAlwaysCanonLearning(data map[string]any) bool {
+	maturity := strings.ToLower(strings.TrimSpace(nonEmptyStringFromData(data, "maturity", "")))
+	return types.Maturity(maturity) == types.MaturityEstablished
+}
+
+func collectReachBudgetSignals(baseDir, file string, citations []types.CitationEvent) reachBudgetSignals {
+	target := canonicalArtifactPath(baseDir, file)
+	var signals reachBudgetSignals
+	for _, c := range citations {
+		if canonicalArtifactPath(baseDir, c.ArtifactPath) != target {
+			continue
+		}
+		if !isReachBudgetCrossEngineerCitation(c) {
+			continue
+		}
+		citedAt := c.CitedAt
+		if citedAt.IsZero() {
+			continue
+		}
+		switch effectiveCitationFeedbackType(c.CitationType) {
+		case types.CitationTypeRefuted:
+			if citedAt.After(signals.LatestRefuted) {
+				signals.LatestRefuted = citedAt
+				signals.RefutedEvidence = reachBudgetCitationEvidence(c)
+			}
+		case types.CitationTypeHarmful:
+			if citedAt.After(signals.LatestHarmful) {
+				signals.LatestHarmful = citedAt
+				signals.HarmfulEvidence = reachBudgetCitationEvidence(c)
+			}
+		case types.CitationTypeHelpful, types.CitationTypeUsedInFinalArtifact, types.CitationTypeApplied, types.CitationTypeReference:
+			if citedAt.After(signals.LatestPositive) {
+				signals.LatestPositive = citedAt
+			}
+		}
+	}
+	return signals
+}
+
+func isReachBudgetCrossEngineerCitation(c types.CitationEvent) bool {
+	if c.ArtifactAuthorID == "" || c.CitedByAgentID == "" {
+		return false
+	}
+	return liveness.Disjoint(c.ArtifactAuthorID, c.CitedByAgentID) == liveness.Allowed
+}
+
+func reachBudgetCitationEvidence(c types.CitationEvent) string {
+	parts := []string{"citation_type=" + effectiveCitationFeedbackType(c.CitationType)}
+	if !c.CitedAt.IsZero() {
+		parts = append(parts, "cited_at="+c.CitedAt.UTC().Format(time.RFC3339))
+	}
+	if c.SessionID != "" {
+		parts = append(parts, "session="+c.SessionID)
+	}
+	if c.CitedByAgentID != "" {
+		parts = append(parts, "cited_by="+c.CitedByAgentID)
+	}
+	return strings.Join(parts, ";")
+}
+
+func reachDroughtEvidence(latestPositive, cutoff time.Time) string {
+	if latestPositive.IsZero() {
+		return "no-cross-engineer-citation-before=" + cutoff.UTC().Format(time.RFC3339)
+	}
+	return "latest_cross_engineer_citation=" + latestPositive.UTC().Format(time.RFC3339) +
+		";cutoff=" + cutoff.UTC().Format(time.RFC3339)
+}
+
+func spendReachAlwaysBudget(baseDir, file string, data map[string]any, reason, evidence, timestampField string, eventTime, now time.Time) (bool, error) {
+	budget := reachErrorBudgetFromData(data)
+	if budget > 0 {
+		budget--
+	}
+	updates := map[string]any{
+		"reach_error_budget":         budget,
+		"reach_budget_last_reason":   reason,
+		"reach_budget_last_spent_at": now.UTC().Format(time.RFC3339),
+	}
+	if !eventTime.IsZero() {
+		updates[timestampField] = eventTime.UTC().Format(time.RFC3339)
+	}
+	if budget > 0 {
+		return false, updateLearningMetadataFields(file, updates)
+	}
+	return demoteCanonAlwaysLearningWithUpdates(baseDir, file, updates, reason, evidence, now)
+}
+
+func resetReachAlwaysBudget(file string, data map[string]any, now time.Time) bool {
+	if reachErrorBudgetFromData(data) >= reachAlwaysDefaultErrorBudget {
+		return false
+	}
+	updates := map[string]any{
+		"reach_error_budget":         reachAlwaysDefaultErrorBudget,
+		"reach_budget_last_reason":   "cross-engineer-citation-reset",
+		"reach_budget_last_reset_at": now.UTC().Format(time.RFC3339),
+	}
+	if err := updateLearningMetadataFields(file, updates); err != nil {
+		VerbosePrintf("Warning: reset reach budget for %s: %v\n", filepath.Base(file), err)
+		return false
+	}
+	return true
+}
+
+func demoteCanonAlwaysLearning(baseDir, file string, data map[string]any, reason, evidence string, now time.Time) (bool, error) {
+	updates := map[string]any{
+		"reach_error_budget": 0,
+	}
+	if budget := reachErrorBudgetFromData(data); budget > 0 && reason == "refuted-citation" {
+		updates["reach_error_budget"] = budget
+	}
+	return demoteCanonAlwaysLearningWithUpdates(baseDir, file, updates, reason, evidence, now)
+}
+
+func demoteCanonAlwaysLearningWithUpdates(baseDir, file string, updates map[string]any, reason, evidence string, now time.Time) (bool, error) {
+	updates["maturity"] = string(types.MaturityCandidate)
+	updates["reach"] = "pull"
+	updates["reach_demoted_at"] = now.UTC().Format(time.RFC3339)
+	updates["reach_demotion_reason"] = reason
+	if err := updateLearningMetadataFields(file, updates); err != nil {
+		return false, err
+	}
+	archivedPath, err := archiveDemotedCanonLearning(baseDir, file)
+	if err != nil {
+		return false, err
+	}
+	if err := appendReachBudgetProvenance(baseDir, file, archivedPath, reason, evidence, now); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func archiveDemotedCanonLearning(baseDir, file string) (string, error) {
+	archiveDir := filepath.Join(agentsDirIn(baseDir), "archive", "canon", "learnings")
+	if err := os.MkdirAll(archiveDir, 0o750); err != nil {
+		return "", fmt.Errorf("create canon archive directory: %w", err)
+	}
+	dst := uniqueArchivePath(filepath.Join(archiveDir, filepath.Base(file)))
+	if err := os.Rename(file, dst); err != nil {
+		return "", fmt.Errorf("archive demoted canon learning: %w", err)
+	}
+	return dst, nil
+}
+
+func uniqueArchivePath(path string) string {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return path
+	}
+	ext := filepath.Ext(path)
+	stem := strings.TrimSuffix(path, ext)
+	for i := 1; ; i++ {
+		candidate := fmt.Sprintf("%s.%d%s", stem, i, ext)
+		if _, err := os.Stat(candidate); os.IsNotExist(err) {
+			return candidate
+		}
+	}
+}
+
+func appendReachBudgetProvenance(baseDir, originalPath, archivedPath, reason, evidence string, now time.Time) error {
+	if strings.TrimSpace(evidence) == "" {
+		evidence = reason
+	}
+	edge := provenancegraph.Edge{
+		FromID:      repoRelativePath(baseDir, originalPath),
+		FromType:    "learning",
+		ToID:        repoRelativePath(baseDir, archivedPath),
+		ToType:      "artifact",
+		Relation:    "wasInvalidatedBy",
+		EvidenceRef: "reach-demotion:" + reason + ";" + evidence,
+		TrustTier:   "inferred",
+		TS:          now.UTC().Format(time.RFC3339),
+	}
+	store := provenancegraph.NewStore(filepath.Join(baseDir, provenancegraph.LedgerRelativePath))
+	_, err := store.Append(edge)
+	return err
+}
+
+func repoRelativePath(baseDir, path string) string {
+	rel, err := filepath.Rel(baseDir, path)
+	if err == nil && rel != "." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)) && rel != ".." {
+		return filepath.ToSlash(rel)
+	}
+	return filepath.ToSlash(filepath.Clean(path))
+}
+
+func updateLearningMetadataFields(path string, updates map[string]any) error {
+	if strings.HasSuffix(path, ".jsonl") {
+		return updateJSONLLearningMetadataFields(path, updates)
+	}
+	return updateMarkdownLearningMetadataFields(path, updates)
+}
+
+func updateJSONLLearningMetadataFields(path string, updates map[string]any) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(content), "\n")
+	if len(lines) == 0 || strings.TrimSpace(lines[0]) == "" {
+		return fmt.Errorf("empty JSONL learning")
+	}
+	var data map[string]any
+	if err := json.Unmarshal([]byte(lines[0]), &data); err != nil {
+		return err
+	}
+	for key, value := range updates {
+		data[key] = value
+	}
+	line, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	lines[0] = string(line)
+	return atomicWriteFile(path, []byte(strings.Join(lines, "\n")), 0o600)
+}
+
+func updateMarkdownLearningMetadataFields(path string, updates map[string]any) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(content), "\n")
+	updateStrings := make(map[string]string, len(updates))
+	for key, value := range updates {
+		updateStrings[key] = fmt.Sprintf("%v", value)
+	}
+	if lifecycle.HasYAMLFrontmatter(string(content)) {
+		endIdx := lifecycle.FindFrontmatterEnd(lines)
+		if endIdx == -1 {
+			return fmt.Errorf("malformed frontmatter")
+		}
+		updatedFM := updateFrontMatterFields(lines[1:endIdx], updateStrings)
+		return atomicWriteFile(path, []byte(rebuildWithFrontMatter(updatedFM, lines[endIdx+1:])), 0o600)
+	}
+	frontmatter := make([]string, 0, len(updateStrings))
+	for key, value := range updateStrings {
+		frontmatter = append(frontmatter, key+": "+value)
+	}
+	return atomicWriteFile(path, []byte(rebuildWithFrontMatter(frontmatter, lines)), 0o600)
 }
 
 func runMaturityCurate(cmd *cobra.Command) error {
@@ -1043,7 +1396,9 @@ func readLearningData(file string) (map[string]any, bool) {
 	}
 	// For .md: parse frontmatter fields
 	fields, err := parseFrontmatterFields(file, "utility", "confidence", "maturity",
-		"helpful_count", "harmful_count", "reward_count")
+		"helpful_count", "harmful_count", "reward_count", "reach", "reach_error_budget",
+		"reach_budget_last_spent_at", "reach_budget_last_negative_at", "reach_budget_last_drought_spent_at",
+		"reach_budget_last_reset_at", "foundation_contract", "foundation-contract", "kind")
 	if err != nil {
 		return nil, false
 	}
@@ -1121,6 +1476,67 @@ func floatValueFromData(data map[string]any, key string, defaultValue float64) f
 
 func nonEmptyStringFromData(data map[string]any, key, defaultValue string) string {
 	return lifecycle.NonEmptyStringFromData(data, key, defaultValue)
+}
+
+func intValueFromData(data map[string]any, key string, defaultValue int) int {
+	switch v := data[key].(type) {
+	case int:
+		return v
+	case int64:
+		return int(v)
+	case float64:
+		return int(v)
+	case string:
+		if parsed, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
+			return parsed
+		}
+	}
+	return defaultValue
+}
+
+func reachErrorBudgetFromData(data map[string]any) int {
+	return intValueFromData(data, "reach_error_budget", reachAlwaysDefaultErrorBudget)
+}
+
+func timeValueFromData(data map[string]any, key string) time.Time {
+	value, ok := data[key]
+	if !ok {
+		return time.Time{}
+	}
+	if t, ok := value.(time.Time); ok {
+		return t
+	}
+	s, ok := value.(string)
+	if !ok || strings.TrimSpace(s) == "" {
+		return time.Time{}
+	}
+	for _, layout := range []string{time.RFC3339Nano, time.RFC3339, "2006-01-02"} {
+		if parsed, err := time.Parse(layout, strings.TrimSpace(s)); err == nil {
+			return parsed
+		}
+	}
+	return time.Time{}
+}
+
+func boolValueFromData(data map[string]any, key string) bool {
+	switch v := data[key].(type) {
+	case bool:
+		return v
+	case string:
+		switch strings.ToLower(strings.TrimSpace(v)) {
+		case "true", "yes", "1", "foundation-contract":
+			return true
+		}
+	}
+	return false
+}
+
+func isFoundationContractLearning(data map[string]any) bool {
+	if boolValueFromData(data, "foundation_contract") || boolValueFromData(data, "foundation-contract") {
+		return true
+	}
+	kind := strings.ToLower(nonEmptyStringFromData(data, "kind", ""))
+	return strings.Contains(kind, "foundation-contract") || strings.Contains(kind, "foundation contract")
 }
 
 // antiPatternCmd lists and manages anti-patterns.
