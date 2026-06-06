@@ -94,7 +94,7 @@ MAYOR (orchestrator)                AGENTS (executors)
                                        |
 NEXT SESSION                           |
 ------------                           |
-auto-inject (hook) <-------------------+
+explicit pull (`ao session bootstrap`) <+
   |
   +-> Starts with prior knowledge
 ```
@@ -129,7 +129,7 @@ OUTPUT: LEARNINGS (feed your next spec)
 
   SESSION START
   +------------------------------------+
-  | auto-inject prior knowledge        |  <-- hook (automatic)
+  | pull prior knowledge explicitly    |  <-- `ao session bootstrap` / `ao inject`
   +------------------+-----------------+
                      |
                      v

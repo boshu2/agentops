@@ -25,7 +25,7 @@ output_contract: 'stdout: recovered context summary'
 ---
 # /recover — Context Recovery After Compaction
 
-> **Purpose:** Help you get back up to speed after context compaction. Automatically detects in-progress work (RPI runs, evolve cycles), loads relevant knowledge, summarizes what you were doing and what's next. Codex v0.115.0+ uses native hooks automatically; for older Codex versions, prefers the explicit hookless fallback path (`ao codex start`/`ao codex stop`).
+> **Purpose:** Help you get back up to speed after context compaction. Detects in-progress work (RPI runs, evolve cycles), loads relevant knowledge, and summarizes what you were doing and what's next. AgentOps 3.0's default recovery path is explicit (`ao session bootstrap`, `ao codex start` / `ao codex stop`); Codex native hooks are opt-in compatibility, not assumed.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 

@@ -14,6 +14,10 @@
 #   - a `hooks/<name>.sh` path      — a hook runtime path presented as live
 #   - `ao hooks`                    — a command that does not exist
 #   - bare `session-{start,end,autostart}*.sh` — hook-file refs presented as live
+#   - `SessionStart hook` / `session-start hook` / `startup hooks` promises that
+#     describe hidden session-boundary behavior without an opt-in/historical hedge
+#   - `auto-inject ... hook` phrasing that reintroduces the removed context-push
+#     model without naming a hook file path
 # unless the SAME line hedges the reference as hookless / opt-in / historical /
 # removed / a git-hook (see HEDGE). Per-line hedging mirrors check-hookless-cold-
 # start.sh: an artifact that merely names a hook in a "this is gone / author your
@@ -35,7 +39,7 @@ DOCS="$ROOT/docs"
 
 # Live-hooks patterns. A doc line matching any of these is a candidate violation
 # unless it also matches HEDGE.
-PAT='hooks/hooks\.json|hooks/[A-Za-z0-9_-]+\.sh|\bao hooks\b|\b[a-z0-9-]*session-(start|end|autostart)[a-z0-9-]*\.sh\b'
+PAT='hooks/hooks\.json|hooks/[A-Za-z0-9_-]+\.sh|\bao hooks\b|\b[a-z0-9-]*session-(start|end|autostart)[a-z0-9-]*\.sh\b|Session(Start|End) hook|session-(start|end|autostart) hook|[Ss]tartup hooks?|precompact-snapshot hook|auto-inject[^[:cntrl:]]*hook|hook[^[:cntrl:]]*auto-inject'
 
 # A reference is "hedged" (allowed) when the SAME line carries one of these.
 # They frame the hook as NOT a live default surface: hookless / opt-in / author-
