@@ -56,10 +56,11 @@ ssh bushido 'cd ~/dev/agentops && ao corpus inject --query "<topic>"'
 ssh bushido 'cd ~/dev/agentops && ao validate --gate --changes <files>'
 ```
 
-For a **whole out-of-session loop** (mayor + refinery agents, not a single
-pane), orchestration routes through `gc` — `ao` does not wrap `gc`. See
-[`../../using-gc/SKILL.md`](../../using-gc/SKILL.md). Multi-pane coordination
-(file locks, inboxes, handoffs) uses **agent-mail**; see the `ntm` and
+For a **whole out-of-session loop** (a swarm of panes, not a single pane),
+orchestration routes through the NTM substrate — `ao` does not own or wrap a
+substrate; each pane dispatches its own `ao rpi` loop. See
+[`../../using-ntm/SKILL.md`](../../using-ntm/SKILL.md). Multi-pane coordination
+(file locks, inboxes, handoffs) uses **agent-mail**; see the `using-ntm` and
 `agent-mail` skills.
 
 **Checkpoint:** the pane can call `ao session bootstrap` + `ao inject` itself
