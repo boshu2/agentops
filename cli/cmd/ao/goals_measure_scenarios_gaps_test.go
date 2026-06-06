@@ -165,4 +165,3 @@ func TestGoalsMeasure_ContributingIsEmptySliceNotNil(t *testing.T) {
 		t.Fatalf("JSON contains 'contributing': null; want empty array []\nraw: %s", raw)
 	}
 }
-

@@ -34,8 +34,8 @@ The composition primitives that produce those semantics:
 | Create an isolated workspace for the work | `bd worktree create --branch <type>/<bead-id>-<slug>` |
 | Serialize merges across concurrent agents | `bd merge-slot` |
 | Mark an issue blocked / waiting | `bd update <id> --status=blocked` |
-| Record an insight for future cycles | `bd remember "<insight>"` |
-| Look up prior insights | `bd memories <keyword>` |
+| Record an insight for future cycles | Write a Lesson Format entry under `.agents/learnings/` and cite the current bead in `related:` |
+| Look up prior insights | `ao inject "<keyword>"`, `ao corpus inject --query "<keyword>"`, or grep `.agents/learnings/` |
 | Pull/push the dolt-backed history | `bd dolt pull` / `bd dolt push` |
 
 ## Evidence (anchored)

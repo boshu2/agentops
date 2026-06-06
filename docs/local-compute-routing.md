@@ -1,8 +1,14 @@
 # Local Compute Routing
 
-Status: policy draft
+> ⚠️ **Design draft — NOT implemented.** The `local-scout` and `local-review`
+> lanes described below are a proposed design, not shipped behavior. There are no
+> `local-scout` / `local-review` skills in `skills/`, and AgentOps 3.0 ships no
+> local model host (local Ollama/llama hosting is retired). Treat this as a
+> forward-looking policy sketch; nothing here is wired into the runtime today.
+
+Status: policy draft (design only — see banner above)
 Owner: AgentOps policy, with Mt. Olympus runtime evidence
-Last reviewed: 2026-05-03
+Last reviewed: 2026-06-03
 
 ## Purpose
 

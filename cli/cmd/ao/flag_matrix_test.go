@@ -105,11 +105,19 @@ func TestFlagMatrix_QuietMode(t *testing.T) {
 			os.MkdirAll(filepath.Join(tmp, ".git"), 0750)
 			os.MkdirAll(filepath.Join(tmp, ".agents", "ao", "sessions"), 0750)
 
-			cmd := exec.Command(bin, tt.args...)
+			args := tt.args
+			// ag-jfzs: `ao memory sync` defaults to writing the repo-root MEMORY.md. Running it
+			// against the real repo root under -race mutates a shared file and flakes. ag-x2gv runs
+			// the subprocess in a per-test temp dir (full isolation); we additionally redirect the
+			// write to a temp MEMORY.md so the output path is explicit and never touches the repo root.
+			if tt.name == "memory-sync" {
+				args = append(append([]string{}, tt.args...), "--output-file", filepath.Join(tmp, "MEMORY.md"))
+			}
+			cmd := exec.Command(bin, args...)
 			cmd.Dir = tmp
 			out, err := cmd.CombinedOutput()
 			if err != nil {
-				t.Fatalf("command %v failed (exit error: %v):\n%s", tt.args, err, string(out))
+				t.Fatalf("command %v failed (exit error: %v):\n%s", args, err, string(out))
 			}
 		})
 	}

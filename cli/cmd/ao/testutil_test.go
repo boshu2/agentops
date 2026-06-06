@@ -501,14 +501,9 @@ func resetCommandState(t *testing.T) {
 func chdirTemp(t *testing.T) string {
 	t.Helper()
 	tmp := t.TempDir()
-	prev, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prev) })
+	// ag-k38x: t.Chdir auto-restores on cleanup and fails fast if the test (or a
+	// parent) is parallel — the isolation-safe replacement for os.Chdir + t.Cleanup.
+	t.Chdir(tmp)
 	// Match os.Getwd() canonicalization (macOS /var → /private/var symlinks).
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -527,10 +522,8 @@ func chdirTo(t *testing.T, wd string) string {
 	if err != nil {
 		t.Fatalf("getwd: %v", err)
 	}
-	if err := os.Chdir(wd); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(prev) })
+	// ag-k38x: t.Chdir auto-restores + blocks parallel; prev is returned for callers.
+	t.Chdir(wd)
 	return prev
 }
 

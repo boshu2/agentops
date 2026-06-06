@@ -189,6 +189,45 @@ func TestWriter_CaptureCreatesFile(t *testing.T) {
 	}
 }
 
+// TestWriter_CaptureScrubsSecrets is the L2 git-safety proof for ag-6vlm:
+// secrets in a corpus body are redacted before the file lands on disk, while
+// non-sensitive content passes through unchanged.
+func TestWriter_CaptureScrubsSecrets(t *testing.T) {
+	root := t.TempDir()
+	w := NewWriter(root)
+
+	const safe = "This learning is about caching strategy."
+	anthropic := "sk-ant-api03-0123456789012345678901234567890123456789AB"
+	awsKey := "AKIAIOSFODNN7EXAMPLE"
+	pem := "-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJBAKtttt\n-----END RSA PRIVATE KEY-----"
+	in := safe + "\nkey1: " + anthropic + "\nkey2: " + awsKey + "\n" + pem + "\n"
+
+	res, err := w.Capture(context.Background(), ports.CorpusWriteRequest{
+		Path: "learnings/secret.md",
+		Body: []byte(in),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(res.ResolvedPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	persisted := string(got)
+
+	for _, secret := range []string{anthropic, awsKey, "-----BEGIN RSA PRIVATE KEY-----"} {
+		if strings.Contains(persisted, secret) {
+			t.Fatalf("persisted file leaked secret %q\nfull body:\n%s", secret, persisted)
+		}
+	}
+	if !strings.Contains(persisted, "[REDACTED]") {
+		t.Fatalf("persisted file missing [REDACTED] placeholder; got:\n%s", persisted)
+	}
+	if !strings.Contains(persisted, safe) {
+		t.Fatalf("scrub clobbered non-sensitive content; want %q in:\n%s", safe, persisted)
+	}
+}
+
 func TestWriter_CaptureIsIdempotent(t *testing.T) {
 	root := t.TempDir()
 	w := NewWriter(root)

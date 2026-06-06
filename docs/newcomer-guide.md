@@ -4,7 +4,7 @@ If you're new to this repository, this guide gives you a practical mental model,
 
 ## What this repo is
 
-AgentOps is the **operational layer for coding agents**: a skills + CLI system (with opt-in hooks) that provides bookkeeping, validation, primitives, and flows so sessions compound instead of restarting from zero.
+AgentOps is the **operational layer for coding agents**: a skills + CLI system that provides bookkeeping, validation, primitives, and flows so sessions compound instead of restarting from zero. (AgentOps 3.0 is hookless by default — CI is the authoritative gate; hooks are an opt-in surface you author yourself.)
 
 At a high level:
 
@@ -21,20 +21,19 @@ See also:
 
 ## Repo structure (what matters most)
 
-Think in five layers:
+Think in four layers:
 
 1. **Product/docs layer** — `docs/` + selected repo-root entrypoints such as `README.md`, `CHANGELOG.md`, `GOALS.md`, and `PRODUCT.md`
 2. **Skills layer** — `skills/`, checked-in `skills-codex/`, and `skills-codex-overrides/` (`SKILL.md` contracts + per-skill scripts/references + Codex-only tailoring)
-3. **Hooks layer** — `hooks/` with active runtime manifest in `hooks/hooks.json`
-4. **CLI layer** — `cli/` (`cli/cmd/ao/`, `cli/internal/`, generated `cli/docs/COMMANDS.md`)
-5. **Validation layer** — `scripts/`, `tests/`, and `.github/workflows/validate.yml`
+3. **CLI layer** — `cli/` (`cli/cmd/ao/`, `cli/internal/`, generated `cli/docs/COMMANDS.md`)
+4. **Validation layer** — `scripts/`, `tests/`, and `.github/workflows/validate.yml` (CI is the authoritative gate; AgentOps 3.0 ships no hooks)
 
 ## Source-of-truth precedence
 
 When docs disagree, follow this order:
 
-1. Executable code + generated artifacts (`cli/**`, `hooks/**`, `scripts/**`, `cli/docs/COMMANDS.md`)
-2. Skill contracts/manifests (`skills/**/SKILL.md`, `hooks/hooks.json`, `schemas/**`)
+1. Executable code + generated artifacts (`cli/**`, `scripts/**`, `cli/docs/COMMANDS.md`)
+2. Skill contracts/manifests (`skills/**/SKILL.md`, `schemas/**`)
 3. Explanatory docs (`docs/**`, `README.md`)
 
 For Codex skills specifically:
@@ -68,9 +67,9 @@ Use the router in [Skills Reference](SKILLS.md) to choose the right entry point:
 - Run multi-issue waves: `/crank`
 - Run end-to-end lifecycle: `/rpi`
 
-### 3) Hooks are part of runtime behavior
+### 3) Hooks are opt-in, not a default
 
-The active hook manifest in `hooks/hooks.json` is authoritative for what runs at session boundaries.
+AgentOps 3.0 ships zero hooks; nothing auto-injects or runs at session boundaries. CI (`.github/workflows/validate.yml`) is the authoritative gate. If you want a bounded local gate of your own, author one with the `hooks-authoring` skill — AgentOps does not ship one.
 
 ### 4) CLI docs are generated, not hand-maintained
 
@@ -78,7 +77,7 @@ The active hook manifest in `hooks/hooks.json` is authoritative for what runs at
 
 ### 5) CI checks many non-code contracts
 
-CI validates not just builds/tests but also docs parity, hook safety, skill integrity/schema, security scans, and contract compatibility.
+CI validates not just builds/tests but also docs parity, skill integrity/schema, security scans, and contract compatibility.
 
 ## Suggested learning path
 
@@ -94,23 +93,23 @@ CI validates not just builds/tests but also docs parity, hook safety, skill inte
 
 - **CLI behavior:** `cli/cmd/ao/`, `cli/internal/`, `cli/docs/COMMANDS.md`
 - **Skill behavior:** `skills/<name>/SKILL.md`
-- **Hook/gate behavior:** `hooks/hooks.json` + `hooks/*.sh`
+- **Opt-in hooks:** `skills/hooks-authoring/` (AgentOps ships none by default)
 - **Validation/release/security:** `scripts/*.sh` + `tests/` + `.github/workflows/validate.yml`
 
 ### Recommended first contributions
 
 1. **Docs-only fix** (safe): update wording or cross-links and run docs validation scripts.
-2. **Hook/docs parity fix** (medium): update docs to match runtime hook manifest and validate parity.
+2. **Skill/docs parity fix** (medium): update docs to match a `SKILL.md` change and validate parity.
 3. **Small CLI command improvement** (advanced beginner): update command behavior, regenerate CLI docs, and run CLI checks.
 
 ## Practical tips
 
-- Activate the repo-managed git hooks once per clone/worktree: `bash scripts/install-dev-hooks.sh`
+- Run the local gate before pushing: `bash scripts/pre-push-gate.sh --fast` (smart conditional gate that only checks what changed).
 - Trust runtime files over narrative docs when there is a mismatch.
 - Keep changes small and verify with local gates before pushing.
-- Treat `.agents/` and hooks as first-class parts of the system behavior.
+- Treat `.agents/` as a first-class part of the system behavior.
 - Treat Codex as a first-class runtime: when a skill change affects Codex UX or execution style, inspect `skills-codex-overrides/`, update `skills-codex-overrides/catalog.json` if treatment changes, update the checked-in `skills-codex/` copy when needed, and run the Codex validation scripts.
-- If you touch command surfaces or hook contracts, expect related parity checks to fail until updated.
+- If you touch command surfaces or skill contracts, expect related parity checks to fail until updated.
 
 ## Where to go next
 

@@ -137,6 +137,22 @@ func TestInMemoryClaimEvidence_BindingCarriesClaimAndPath(t *testing.T) {
 	}
 }
 
+func TestInMemoryClaimEvidence_BindingCarriesReviewerMetadata(t *testing.T) {
+	c := newCEFixture(map[GateName]GateVerdict{
+		"g": {Status: GateStatusPass, Reason: "ok"},
+	})
+	res, _ := c.Derive(context.Background(), ClaimEvidenceRequest{
+		Claim:        "AOP-CLAIM-Y",
+		EvidenceFile: "p/q.md",
+		Gate:         "g",
+		AuthorID:     "agent-1",
+		JudgeID:      "agent-2",
+	}, EvidenceLevelNone, EvidenceLevelNone)
+	if res.Binding.AuthorID != "agent-1" || res.Binding.JudgeID != "agent-2" {
+		t.Fatalf("reviewer metadata not carried: %+v", res.Binding)
+	}
+}
+
 func TestInMemoryClaimEvidence_HonorsContextCancellation(t *testing.T) {
 	c := newCEFixture(map[GateName]GateVerdict{})
 	ctx, cancel := context.WithCancel(context.Background())
