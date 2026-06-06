@@ -588,9 +588,7 @@ func TestMergeDedupGroups_DryRun(t *testing.T) {
 
 func TestRunDedup_NoDirs(t *testing.T) {
 	tmp := t.TempDir()
-	origDir, _ := os.Getwd()
-	os.Chdir(tmp)
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 	r, w, _ := os.Pipe()
 	origStdout := os.Stdout
 	os.Stdout = w
@@ -610,9 +608,7 @@ func TestRunDedup_NoDirs(t *testing.T) {
 func TestRunDedup_EmptyDirs(t *testing.T) {
 	tmp := t.TempDir()
 	os.MkdirAll(filepath.Join(tmp, ".agents", "learnings"), 0o755)
-	origDir, _ := os.Getwd()
-	os.Chdir(tmp)
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 	r, w, _ := os.Pipe()
 	origStdout := os.Stdout
 	os.Stdout = w
@@ -634,9 +630,7 @@ func TestRunDedup_TextOutput(t *testing.T) {
 	ld := filepath.Join(tmp, ".agents", "learnings")
 	os.MkdirAll(ld, 0o755)
 	os.WriteFile(filepath.Join(ld, "a.md"), []byte("---\ntitle: A\n---\nUnique A."), 0o644)
-	origDir, _ := os.Getwd()
-	os.Chdir(tmp)
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 	origOutput := output
 	output = "table"
 	defer func() { output = origOutput }()
@@ -664,9 +658,7 @@ func TestRunDedup_TextOutputWithDuplicates(t *testing.T) {
 	body := "Identical body."
 	os.WriteFile(filepath.Join(ld, "d1.md"), []byte("---\ntitle: D1\n---\n"+body), 0o644)
 	os.WriteFile(filepath.Join(ld, "d2.md"), []byte("---\ntitle: D2\n---\n"+body), 0o644)
-	origDir, _ := os.Getwd()
-	os.Chdir(tmp)
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 	origOutput := output
 	output = "table"
 	defer func() { output = origOutput }()
@@ -693,9 +685,7 @@ func TestRunDedup_MergeDryRun(t *testing.T) {
 	body := "Same merge."
 	os.WriteFile(filepath.Join(ld, "m1.md"), []byte("---\nutility: 0.9\n---\n"+body), 0o644)
 	os.WriteFile(filepath.Join(ld, "m2.md"), []byte("---\nutility: 0.3\n---\n"+body), 0o644)
-	origDir, _ := os.Getwd()
-	os.Chdir(tmp)
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 	origMerge := dedupMerge
 	dedupMerge = true
 	defer func() { dedupMerge = origMerge }()
@@ -723,9 +713,7 @@ func TestRunDedup_MergeNoDuplicates(t *testing.T) {
 	ld := filepath.Join(tmp, ".agents", "learnings")
 	os.MkdirAll(ld, 0o755)
 	os.WriteFile(filepath.Join(ld, "u.md"), []byte("---\ntitle: U\n---\nUnique."), 0o644)
-	origDir, _ := os.Getwd()
-	os.Chdir(tmp)
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(tmp)
 	origMerge := dedupMerge
 	dedupMerge = true
 	defer func() { dedupMerge = origMerge }()
