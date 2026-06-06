@@ -943,7 +943,7 @@
     {
       "name": "pre-mortem",
       "source_skill": "skills/pre-mortem",
-      "source_hash": "54b97fbb1ff8722c5488e83004b16d4c6652678976544034d23c1959a415f62a",
+      "source_hash": "4ed46f30063d690c14dd30c7a52bbbb3f1d8d9c90ceebb89be305c3bdbd91598",
       "generated_hash": "f98f6d4ad93124bdbe08cf728f218626e59ae4538621b03351138f593ee17b42"
     },
     {
@@ -1093,7 +1093,7 @@
     {
       "name": "standards",
       "source_skill": "skills/standards",
-      "source_hash": "f9046b2822250f82670fd93ccdf60deb96a81bd1299150a5c74ddc052a05d1eb",
+      "source_hash": "561316a559d131d6ff9c141dbd2d4b160cf7330a774edf2150c31e864bae6a22",
       "generated_hash": "f6a7cadda9928b92bb1a59da3a34c6b9d5aa9132d5bc17a1bd770ebd3efc220c"
     },
     {

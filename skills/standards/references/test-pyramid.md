@@ -407,6 +407,21 @@ After L0–L3 coverage is complete, run bug-finding levels:
 | `/plan` (format changes) | Flag BF8 backward compat — add old format as fixture before changing |
 | `/pre-mortem` (security) | Verify BF9 tests planned for code handling secrets or user input |
 
+## Fixture Fidelity — guard tests must use the real persisted shape
+
+> **Proven 2026-05-31 (ag-mjlg / PR #652):** a next-work materialize over-creation bug (44 beads planned vs 16 expected) shipped green because `TestNextWorkMaterialize_SkipsConsumed` set `consumed` at the **per-item** level while the real `next-work.jsonl` marks `consumed` at the **batch** level. The guard test exercised a data shape production never emits, so CI passed on a fixture that could not catch the bug.
+
+**The standard:** regression, idempotency, skip, dedup, and consumed/already-done guard tests MUST build their fixtures from the **real persisted data shape** — round-trip an actual on-disk sample (write → read back through the production serializer/parser), or assert against a checked-in real example. Do NOT hand-construct the in-memory struct via a convenient constructor when production reads the value from disk: the constructor lets you set fields at a granularity (per-item vs batch-level, flat vs nested) that the persisted format never produces, giving a false green.
+
+**Why it bites agents specifically:** an agent writing a guard test reaches for the cheapest fixture — the in-memory constructor — because it compiles fastest and reads cleanest. That fixture silently diverges from the persisted shape, and the test then "passes" by asserting on a state the system can't reach. The skip/dedup logic under test reads the persisted shape, so the test proves nothing about the real path.
+
+**How to comply:**
+- Round-trip the fixture: serialize a sample with the production writer, read it back with the production reader, then assert. If that path doesn't exist yet, write the sample to a temp file in the real on-disk format and load it through the production loader.
+- Match the marker granularity exactly: if production records `consumed`/`skip`/`dedup` state at the batch (or parent, or envelope) level, set it there — never only at the item level.
+- Prefer a checked-in real sample (a trimmed copy of an actual artifact) over a synthetic one for the canonical happy/skip cases.
+
+**Pre-mortem / checklist flag:** when reviewing a plan or diff that adds a skip/dedup/consumed/idempotency guard test, FLAG any fixture built only from an in-memory constructor or that sets the guard marker at item-level when the persisted artifact marks it at batch-level. Require the fixture to round-trip the real persisted shape before the test counts as coverage. (See `.claude/rules/go.md` → "Guard-test fixtures must use the real persisted shape.")
+
 ## Coverage Assessment Template
 
 Used by `/post-mortem` and `/vibe` to assess test shape health:
