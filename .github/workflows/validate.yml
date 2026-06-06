@@ -28,6 +28,14 @@ on:
   # path-filter — which has no PR base in-queue — can't skip validation.
   merge_group:
 
+# Cancel superseded PR runs so update-branch / force-push churn during a merge
+# train doesn't leave stale runs eating the (20-slot, free-plan) concurrency pool
+# — the self-DoS that produced a 19-deep queue on 2026-06-06. NEVER cancels main
+# or tag pushes (cancel-in-progress is false unless this is a pull_request).
+concurrency:
+  group: validate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -284,8 +292,12 @@ jobs:
       - name: Run bats tests
         if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
         run: |
-          echo "=== Running bats tests ==="
-          bats --print-output-on-failure tests/scripts/*.bats
+          echo "=== Running bats tests (4-way parallel) ==="
+          # bats --jobs needs GNU parallel; the serial run was ~237s (55% of the
+          # correctness critical path). --no-parallelize-within-files preserves
+          # ordering inside each file; only independent files run concurrently.
+          sudo apt-get install -y parallel >/dev/null 2>&1 || { sudo apt-get update -qq && sudo apt-get install -y parallel; }
+          bats --jobs 4 --no-parallelize-within-files --print-output-on-failure tests/scripts/*.bats
           echo "✅ Bats tests passed"
 
       - name: Setup Go
