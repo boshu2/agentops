@@ -100,14 +100,17 @@ func TestFlagMatrix_QuietMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tmp := t.TempDir()
+			os.MkdirAll(filepath.Join(tmp, ".git"), 0750)
+			os.MkdirAll(filepath.Join(tmp, ".agents", "ao", "sessions"), 0750)
+
 			cmd := exec.Command(bin, tt.args...)
-			cmd.Dir = findRepoRoot(t)
+			cmd.Dir = tmp
 			out, err := cmd.CombinedOutput()
 			if err != nil {
 				t.Fatalf("command %v failed (exit error: %v):\n%s", tt.args, err, string(out))
 			}
-			// Quiet mode should succeed — output may be empty or minimal, both are fine.
-			// We only assert exit code 0 (already checked via err == nil).
 		})
 	}
 }
