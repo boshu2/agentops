@@ -10,15 +10,25 @@ import (
 )
 
 // compileOutcomesRubric projects a locked eval Task + its grading criteria into a
-// holdout-safe Outcomes rubric, then re-scans the result (defense-in-depth guard
-// layer 3) against the run's holdout answer values. It REFUSES to return a rubric
-// that would carry any holdout value across the cloud boundary — Managed Agents
-// are not ZDR, so a leak is permanent. ProjectRubric already strips ground truth
-// by construction; this re-scan is the deny-by-default backstop.
+// holdout-safe Outcomes rubric, then runs two deny-by-default re-scans before
+// returning it: layer 3 checks the payload for the run's holdout answer *values*
+// (ContainsAny), and layer 4 checks it for any holdout-leak *key name*
+// (HasForbiddenKey). It REFUSES to return a rubric that would carry either across
+// the cloud boundary — Managed Agents are not ZDR, so a leak is permanent.
+// ProjectRubric already strips ground truth by construction; these re-scans are
+// the backstops that keep that true under future drift.
 func compileOutcomesRubric(task evalsubstrate.Task, criteria []evalsubstrate.Criterion, judgeContentHash string, holdoutValues []string) (evalsubstrate.Rubric, error) {
 	r := evalsubstrate.ProjectRubric(task, criteria, judgeContentHash)
 	if hit, found := r.ContainsAny(holdoutValues); found {
 		return evalsubstrate.Rubric{}, fmt.Errorf("outcomes compile: holdout value %q would leak into the rubric payload; refusing (Managed Agents are not ZDR)", hit)
+	}
+	// Layer 4 (key-name backstop, ag-uux93): re-parse the emitted payload and
+	// refuse any object key matching a holdout-leak pattern. The allowlisted
+	// Rubric struct never carries one today; this pins that invariant so a
+	// future field that smuggles ground truth across the (non-ZDR) cloud
+	// boundary fails closed instead of leaking silently.
+	if key, found := r.HasForbiddenKey(); found {
+		return evalsubstrate.Rubric{}, fmt.Errorf("outcomes compile: emitted payload carries holdout-leak key %q; refusing (Managed Agents are not ZDR)", key)
 	}
 	return r, nil
 }
