@@ -14,7 +14,8 @@
 #
 #   no-secrets         hardcoded secrets / API keys / credentials
 #   no-injection       prompt-injection payloads
-#   safe-paths         unsafe / dangerous file paths
+#   safe-paths         unsafe / dangerous file paths (doc-link "../" refs are
+#                      filtered out as false-positives — see ag-eatf filter)
 #   required-metadata  missing id / name / description
 #   no-cycle           circular skill dependencies
 #   valid-version      version must be valid semver
@@ -58,6 +59,28 @@ err() { printf '%s\n' "$*" >&2; }
 # GitHub-Actions workflow-command annotations; harmless plain text locally.
 annotate_error() { printf '::error::%s\n' "$*" >&2; }
 annotate_warn() { printf '::warning::%s\n' "$*" >&2; }
+
+# safe-paths false-positive filter (ag-eatf) --------------------------------
+# ms's `safe-paths` rule is a blunt regex that flags EVERY "../" — including
+# the relative markdown doc-links that are the repo-wide SKILL.md convention
+# (47+ skills use `[text](../other-skill/SKILL.md)` and `../../docs/...md`).
+# SKILL.md is documentation, not executed code, so a "../" inside a markdown
+# link target or a relative path to a doc (*.md/.markdown/.mdx/.txt/.rst) is
+# not a real path-traversal threat — flagging it is pure noise that reds the
+# gate on every skill-touching PR. This filter preserves real protection:
+# it returns 0 (a REAL violation exists -> KEEP safe-paths blocking) only when
+# a "../" survives stripping (1) markdown inline-link targets `](...)` and
+# (2) relative doc-path tokens; otherwise returns 1 (every "../" is a doc
+# reference -> safe-paths is a false positive here, downgrade to advisory).
+safe_paths_has_real_violation() {
+	local file="$1"
+	local stripped
+	stripped="$(sed -E \
+		-e 's/\]\([^)]*\)//g' \
+		-e 's#(\.\./)+[A-Za-z0-9_.@/-]+\.(md|markdown|mdx|txt|rst)([#][A-Za-z0-9_-]+)?##g' \
+		"$file")"
+	printf '%s' "$stripped" | grep -qF '../'
+}
 
 usage() {
 	cat <<EOF
@@ -166,12 +189,24 @@ main() {
 	local blocking_filter
 	blocking_filter="$(printf '%s\n' "${BLOCKING_RULES[@]}" | jq -R . | jq -s '. as $b | [.[]]' | jq -c '{rules: .}')"
 
-	local blocking_lines nonblocking_lines
+	# safe-paths is partitioned separately (it gets the ag-eatf doc-link
+	# false-positive filter below); the primary blocking bucket excludes it and
+	# real safe-paths violations are folded back in afterward.
+	local blocking_lines safepaths_lines nonblocking_lines
 	blocking_lines="$(
 		printf '%s' "$lint_json" | jq -r --argjson cfg "$blocking_filter" '
 			[.files[].diagnostics[]] as $d
 			| $d[]
+			| select(.rule_id != "safe-paths")
 			| select(.rule_id as $r | ($cfg.rules | index($r)) != null)
+			| "\(.rule_id)\t\(.severity)\t\(.message)"
+		'
+	)"
+	safepaths_lines="$(
+		printf '%s' "$lint_json" | jq -r '
+			[.files[].diagnostics[]] as $d
+			| $d[]
+			| select(.rule_id == "safe-paths")
 			| "\(.rule_id)\t\(.severity)\t\(.message)"
 		'
 	)"
@@ -179,10 +214,25 @@ main() {
 		printf '%s' "$lint_json" | jq -r --argjson cfg "$blocking_filter" '
 			[.files[].diagnostics[]] as $d
 			| $d[]
+			| select(.rule_id != "safe-paths")
 			| select(.rule_id as $r | ($cfg.rules | index($r)) == null)
 			| "\(.rule_id)\t\(.severity)\t\(.message)"
 		'
 	)"
+
+	# --- safe-paths doc-link false-positive filter (ag-eatf) ----------------
+	# Fold safe-paths findings into BLOCKING only if a real (non-doc-link) "../"
+	# survives in the source; otherwise downgrade them to advisory annotations.
+	if [ -n "$safepaths_lines" ]; then
+		if safe_paths_has_real_violation "$skill_md"; then
+			blocking_lines="$(printf '%s\n%s' "$blocking_lines" "$safepaths_lines" | sed '/^[[:space:]]*$/d')"
+		else
+			local sp_count
+			sp_count="$(printf '%s' "$safepaths_lines" | grep -c .)"
+			annotate_warn "skill-eval [safe-paths]: $sp_count '../' finding(s) are relative markdown doc-links / doc paths (repo SKILL.md convention) — non-blocking false-positives (ag-eatf). SKILL.md is documentation, not executed; no real path traversal."
+			nonblocking_lines="$(printf '%s\n%s' "$nonblocking_lines" "$safepaths_lines" | sed '/^[[:space:]]*$/d')"
+		fi
+	fi
 
 	# --- annotate non-blocking findings -------------------------------------
 	if [ -n "$nonblocking_lines" ]; then
