@@ -82,6 +82,13 @@ annotate_warn() { printf '::warning::%s\n' "$*" >&2; }
 safe_paths_has_real_violation() {
 	local file="$1"
 	local stripped
+	# The backtick rule's `{1,2}` ../ bound is INTENTIONAL, not a hardcode bug:
+	# skill-eval's contract is to evaluate skills/<id>/SKILL.md (always depth 2
+	# below repo root), so <=2 "../" is the max that stays in-repo; >=3 escapes
+	# and must block. Quorum 2026-06-06 (Codex APPROVE / agy REVISE-on-depth) ->
+	# operator ruled depth-2 is the gate invariant (ag-eatf). A path-derived
+	# dynamic depth was rejected: bats fixtures live outside the repo, so it
+	# would compute garbage and weaken the gate.
 	stripped="$(sed -E \
 		-e 's/\]\([^)]*\)//g' \
 		-e 's#(\.\./)+[A-Za-z0-9_.@/-]+\.(md|markdown|mdx|txt|rst)([#][A-Za-z0-9_-]+)?##g' \
