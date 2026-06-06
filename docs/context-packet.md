@@ -201,7 +201,7 @@ Must include 5 sections with char budgets, redaction contract, assembly algorith
 ```
 
 **Assembly rules:**
-1. Task content is injected by the orchestrating skill (`/crank`, `/implement`, `/evolve`) during initialization (3.0 is hookless — there is no session-start hook).
+1. Task content is assembled by the orchestrating skill (`/crank`, `/implement`, `/evolve`) or by an explicit `ao session bootstrap` / context-packet command when a bead is assigned.
 2. If a bead ID is available, its full description and acceptance criteria are included.
 3. Epic context (parent bead title, sibling issues) is summarized in one line.
 4. Cross-cutting constraints relevant to the task are appended from the epic's constraint list.
@@ -239,7 +239,7 @@ Use `/plan` to decompose work into tracked issues, or work ad-hoc.
 ### Recording Learnings
 1. After completing work, run `/retro` to extract session learnings.
 2. Learnings are saved to `.agents/learnings/` and scored for quality.
-3. High-quality learnings are injected into future sessions automatically.
+3. High-quality learnings are available to future sessions through `ao session bootstrap`, `ao inject`, and `ao lookup`.
 
 ### Updating the Ratchet
 1. Gate passes are recorded via `ao ratchet record`.
@@ -247,10 +247,10 @@ Use `/plan` to decompose work into tracked issues, or work ad-hoc.
 3. Never manually edit chain.jsonl — use `ao ratchet` subcommands.
 
 ### Handoff
-1. If your session ends before work is complete, the precompact-snapshot
-   hook saves context to `.agents/handoff/`.
-2. The next session reads handoff context on-demand via `ao lookup` / `ao inject` (3.0 is hookless — no auto-read at session start).
-3. Write a brief summary of where you stopped and what remains.
+1. If your session ends before work is complete, run `ao handoff` or write a
+   brief summary of where you stopped and what remains.
+2. The next session starts with `ao session bootstrap`, then pulls handoff or
+   topic context explicitly with `ao inject` / `ao lookup`.
 ```
 
 **Assembly rules:** PROTOCOL is assembled from a static template that varies only by repo configuration (e.g., whether hooks are installed, whether `ao` CLI is available). It is generated once at `ao init` time and updated when hooks change.

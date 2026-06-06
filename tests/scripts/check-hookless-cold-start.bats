@@ -36,6 +36,19 @@ EOF
     [[ "$output" == *"without an opt-in/historical hedge"* ]]
 }
 
+@test "fails when a scoped surface presents a SessionStart hook as current" {
+    cat > "$FAKE_REPO/docs/architecture/primitive-chains.md" <<'EOF'
+# Primitive Chains
+
+The SessionStart hook loads repo context for every worker.
+EOF
+
+    run "$FAKE_REPO/scripts/check-hookless-cold-start.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"primitive-chains.md:3"* ]]
+    [[ "$output" == *"hook/startup promise"* ]]
+}
+
 @test "passes when a hook path is hedged as opt-in / author-it-yourself" {
     cat > "$FAKE_REPO/docs/architecture/primitive-chains.md" <<'EOF'
 # Primitive Chains

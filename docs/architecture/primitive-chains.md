@@ -131,8 +131,8 @@ AgentOps 3.0 ships no hooks. Every behavior a lifecycle hook used to fire automa
 
 | Removed hook behavior | What fired automatically | Hookless replacement |
 |-----------------------|--------------------------|----------------------|
-| Cold-start context injection (`session-start.sh`) | Injected lightweight repo context at session start | `ao session bootstrap`, then `ao inject` / `ao corpus inject --query "<topic>"` |
-| End-of-session curation (`session-end-maintenance.sh`, `ao-flywheel-close.sh`) | Curated end-of-session knowledge and closed the flywheel loop at stop | `ao forge transcript` (capture) → `ao flywheel close-loop` (curate + close) |
+| Cold-start context injection (removed `session-start.sh`) | Formerly injected lightweight repo context at session start | Hookless replacement: `ao session bootstrap`, then `ao inject` / `ao corpus inject --query "<topic>"` |
+| End-of-session curation (removed `session-end-maintenance.sh`, `ao-flywheel-close.sh`) | Formerly curated end-of-session knowledge and closed the flywheel loop at stop | Hookless replacement: `ao forge transcript` (capture) → `ao flywheel close-loop` (curate + close) |
 | Standards surfacing (edit-time standards injector) | Surfaced coding standards on edit | The `standards` skill plus `.claude/rules/*.md`, referenced from CLAUDE.md and read on demand |
 | Validation reminders (edit / commit guardrails) | Reminded the agent to run gates | CI is the authoritative gate (`.github/workflows/validate.yml`); run the per-tool checks locally and the `vibe` skill before pushing |
 | Prompt nudges (`prompt-nudge.sh`, `intent-echo.sh`, `new-user-welcome.sh`) | Injected prompt-time nudges and a welcome banner | Confirmed noise — removed first as pure context bloat; no replacement |
