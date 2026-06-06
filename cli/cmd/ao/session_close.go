@@ -111,6 +111,14 @@ type SessionCloseResult struct {
 	LearningsExtracted int     `json:"learnings_extracted"`
 	LearningsRejected  int     `json:"learnings_rejected,omitempty"`
 	HandoffWritten     string  `json:"handoff_written,omitempty"`
+
+	// Reused is the count of distinct prior corpus artifacts this session cited
+	// (the READ-side flywheel payoff). ReusedTitles is a short sample (≤3) and
+	// CorpusEntries is the current durable-corpus size — together the
+	// per-session corpus-reuse receipt that makes compounding felt (ag-469h).
+	Reused        int      `json:"reused,omitempty"`
+	ReusedTitles  []string `json:"reused_titles,omitempty"`
+	CorpusEntries int      `json:"corpus_entries,omitempty"`
 }
 
 func runSessionClose(cmd *cobra.Command, args []string) error {
@@ -209,6 +217,8 @@ func forgeExtractReportWithOptions(transcriptPath, cwd string, autoExtract, proc
 		}
 	}
 
+	receipt := computeReuseReceipt(cwd, session.ID)
+
 	return SessionCloseResult{
 		SessionID:          session.ID,
 		Transcript:         transcriptPath,
@@ -222,6 +232,9 @@ func forgeExtractReportWithOptions(transcriptPath, cwd string, autoExtract, proc
 		LearningsExtracted: extractResult.written,
 		LearningsRejected:  extractResult.rejected,
 		HandoffWritten:     handoffPath,
+		Reused:             receipt.Reused,
+		ReusedTitles:       receipt.Titles,
+		CorpusEntries:      receipt.CorpusEntries,
 	}, nil
 }
 
@@ -389,6 +402,7 @@ func printCloseTable(r SessionCloseResult) {
 	if r.LearningsRejected > 0 {
 		fmt.Printf("  Rejected:      %d (run with --verbose to see why)\n", r.LearningsRejected)
 	}
+	fmt.Printf("  Reused:        %d\n", r.Reused)
 	fmt.Println()
 
 	// Flywheel impact
@@ -398,7 +412,24 @@ func printCloseTable(r SessionCloseResult) {
 	}
 	fmt.Printf("  Flywheel:      %s (velocity %s%.3f)\n", r.Status, sign, r.VelocityDelta)
 	fmt.Println()
+	printReuseReceiptLine(r)
 	fmt.Printf("  %s\n", r.Message)
+	fmt.Println()
+}
+
+// printReuseReceiptLine renders the LOUD compounding payoff — the one line that
+// makes the corpus moat visible at the moment it pays off. Only printed when the
+// session actually reused prior corpus, so a cold run stays quiet (ag-469h).
+func printReuseReceiptLine(r SessionCloseResult) {
+	if r.Reused <= 0 {
+		return
+	}
+	noun := "learnings"
+	if r.Reused == 1 {
+		noun = "learning"
+	}
+	fmt.Printf("  ♻ Compounding: this run reused %d prior %s%s; corpus now %d entries.\n",
+		r.Reused, noun, formatReuseTitles(r.ReusedTitles), r.CorpusEntries)
 	fmt.Println()
 }
 

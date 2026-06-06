@@ -166,8 +166,11 @@ func TestBridgesOpenClawHealthUnreachableFixerRefuses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("report not written: %v", err)
 	}
-	if !strings.Contains(string(body), "ao agentopsd") {
-		t.Errorf("report does not name ao agentopsd: %q", body)
+	if strings.Contains(string(body), "ao agentopsd") {
+		t.Errorf("report still instructs the removed `ao agentopsd` command: %q", body)
+	}
+	if !strings.Contains(string(body), "OpenClaw") {
+		t.Errorf("report missing OpenClaw remediation guidance: %q", body)
 	}
 }
 
@@ -338,8 +341,11 @@ func TestBridgesSnapshotSchemaMismatchRefuses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("report not written: %v", err)
 	}
-	if !strings.Contains(string(body), "projection rebuild") {
-		t.Errorf("report does not name the rebuild command: %q", body)
+	if strings.Contains(string(body), "ao agentopsd") {
+		t.Errorf("report still instructs the removed `ao agentopsd` command: %q", body)
+	}
+	if !strings.Contains(string(body), "regenerate the OpenClaw projection") {
+		t.Errorf("report does not give projection-regeneration guidance: %q", body)
 	}
 }
 

@@ -1609,6 +1609,8 @@ ao eval outcomes ingest <score.json> [flags]
       --burn-ledger string         path to a JSON HoldoutBurnLedger; when set, a holdout-split score registers a burn and is REFUSED if the (suite,gt) quota is exhausted (gate #3 runtime enforcement), persisted across invocations
       --expect-judge-hash string   refuse the ingest if the score's judge_content_hash does not match this value (gate #2 rubric-drift parity)
   -h, --help                       help for ingest
+      --manifest-out string        also write an eval-run.v1 manifest to <dir>/<run-id>/manifest.json so the verdict pipeline feeds the Knowledge Flywheel (closes the Outcomes→Flywheel loop)
+      --run-id string              run id for the --manifest-out manifest; defaults to the score's run_id, then source_task_id (sanitized to the eval-run.v1 pattern)
 ```
 
 #### `ao eval run`
@@ -3083,6 +3085,7 @@ ao defrag [flags]
 ```
       --dedup               Flag learnings with >80% content similarity
   -h, --help                help for defrag
+      --no-snapshot         Skip the automatic corpus snapshot taken before a destructive prune
       --output-dir string   Directory for defrag report JSON (default ".agents/defrag")
       --prune               Find orphaned learnings not referenced in patterns or research
       --quiet               Suppress progress output

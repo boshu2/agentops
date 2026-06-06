@@ -99,7 +99,7 @@ Always-on autonomous loop over `rpi`. Work selection order:
 | `/dream` | nightly, private local | **No** | **Yes (heavy)** | **Yes (convergence)** | wall-clock + plateau |
 | `evolve` | daytime, operator-driven | Yes (via `rpi`) | Yes (light) | Yes | cycle cap |
 
-Dream owns the knowledge compounding layer; `evolve` owns the code compounding layer. Both share fitness-measurement substrate via `corpus.Compute` / `ao goals measure`. Run Dream overnight, then start each day with `evolve` against the freshly-compounded corpus with a clean fitness baseline.
+**`/dream` is retired** (out-of-session compounding moved to Gas City — see `skills/dream/SKILL.md`); the table above is historical. `/evolve` owns the live daytime code-compounding lane; the nightly knowledge-compounding it once contrasted against now runs out-of-session on the substrate, not via `/dream`. Both still share the fitness-measurement substrate via `corpus.Compute` / `ao goals measure`.
 
 ## Flags
 

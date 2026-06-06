@@ -236,7 +236,7 @@ AgentOps:           ████████████░░░░░░░░
 │                 CLAUDE-FLOW + AGENTOPS                          │
 │                                                                 │
 │  SessionStart:                                                  │
-│    └── AgentOps injects prior knowledge                         │
+│    └── AgentOps loads context on-demand                         │
 │                                                                 │
 │  Execution:                                                     │
 │    └── Claude-Flow orchestrates 60+ agents                      │
