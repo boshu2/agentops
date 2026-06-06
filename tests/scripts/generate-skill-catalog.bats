@@ -125,6 +125,32 @@ skill_api_version: 1"
   echo "$output" | jq -e '.skills[0].context_rel[2].with == "delta"' >/dev/null
 }
 
+@test "multi-line frontmatter parses on BSD/POSIX awk without 'newline in string' (ag-mm6q)" {
+  # Regression for the BSD-awk incompatibility: the parser used to pass the
+  # whole frontmatter via `awk -v fm="$fm"`, which only GNU awk accepts with
+  # embedded newlines. On macOS/BSD awk it errored "awk: newline in string"
+  # and produced no catalog. Assert a multi-line frontmatter parses cleanly
+  # and the error string never appears on stderr.
+  write_skill delta "name: delta
+description: multi-line frontmatter regression
+hexagonal_role: domain
+consumes:
+- standards
+- domain
+produces:
+- result.json
+context_rel:
+- kind: customer-of
+  with: alpha
+skill_api_version: 1"
+  run_gen --stdout
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"newline in string"* ]]
+  echo "$output" | jq -e '.skills[0].name == "delta"' >/dev/null
+  echo "$output" | jq -e '.skills[0].consumes == ["standards","domain"]' >/dev/null
+  echo "$output" | jq -e '.skills[0].context_rel[0].with == "alpha"' >/dev/null
+}
+
 @test "user_invocable is true only when explicitly set" {
   write_skill u1 "name: u1
 description: invocable
