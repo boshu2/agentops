@@ -29,7 +29,13 @@ Ordered repo paths to read before selecting work. This is the bootstrap layer th
 Declares the canonical goals document plus any compatibility mirrors that must stay aligned.
 
 ### `validation_commands`
-Ordered shell commands that define the repo's standard landing gate for substantive slices.
+Ordered shell commands that define the repo's standard landing gate for substantive slices. This list is the **declared gate** run as a unit, not a menu the consumer samples from.
+
+- **Run the full declared bundle via a single canonical runner.** Prefer one declared entrypoint (a repo gate script, or per gate the typed BC2 `GateRunnerPort` surfaced as `ao gate run <name>`) over an agent re-typing commands from memory. Consumers MUST run the complete bundle and MUST NOT execute a remembered subset, drop a step, or infer the gate from prose.
+- **Lane narrowing is declared, not recalled.** When a repo legitimately runs fewer checks, that narrowing comes from `validation_lanes` metadata (`auto_select`, `read_only`, `release_only`, changed-surface matching) — never from the agent's recollection of "what usually matters".
+- **Fail-closed.** A gate that cannot run, errors, or returns `UNKNOWN` blocks the slice; it is never treated as a pass.
+
+A slice is "validated" only once the full declared bundle (or the correctly-narrowed declared lane set) has run and passed. See also the autodev program contract's [Gate Runner Discipline](autodev-program.md#gate-runner-discipline).
 
 ### `validation_lanes`
 Structured metadata for validation commands. Each lane has a stable `name`, the exact `command`, and mutation policy fields:

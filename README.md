@@ -8,7 +8,7 @@
 
 Coding agents don't do their own bookkeeping. AgentOps does. It sits on top of the agent you already use (Claude Code, Codex, Cursor, OpenCode) and adds the parts an engineering team would notice missing: a record of what was tried, gates between phases, and a corpus of learnings that survives the next session. Plain markdown in `.agents/` next to your code; mix any model per phase.
 
-<sub>Built with AgentOps: this repo's own `.agents/` holds ~1,842 learnings and ~3,867 cited decisions (`bash scripts/corpus-stats.sh`). Browse it to see the corpus a real project builds. New here? Start with [what AgentOps 3.0 is](docs/3.0.md).</sub>
+<sub>Built with AgentOps: this repo's own `.agents/` holds ~1,842 learnings and ~3,867 cited decisions (`bash scripts/corpus-stats.sh`). Browse it to see the corpus a real project builds. New here? Start with [what AgentOps 3.0 is](docs/3.0.md), or read the doctrine at [12factoragentops.com](https://12factoragentops.com).</sub>
 
 </div>
 
@@ -66,8 +66,10 @@ Pick your runtime, then type `/quickstart` in the agent.
 # Claude Code
 claude plugin marketplace add boshu2/agentops && claude plugin install agentops@agentops-marketplace
 
-# Codex CLI (macOS/Linux/WSL).  Windows: install-codex.ps1.  OpenCode: install-opencode.sh
+# Codex CLI (macOS/Linux/WSL).  OpenCode: install-opencode.sh
 curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
+# Codex CLI (Windows):
+irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex
 
 # Other skills-compatible agents
 npx skills@latest add boshu2/agentops --cursor -g
@@ -77,7 +79,8 @@ The `ao` CLI is optional but recommended (bookkeeping, retrieval, health, the lo
 
 ```bash
 brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops && brew install agentops   # macOS
-# Windows: irm .../install-ao.ps1 | iex.  Or release binaries / build from source (cli/README.md).
+# Windows: irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-ao.ps1 | iex
+# Or release binaries / build from source (cli/README.md).
 ```
 
 Installs hookless: skills and the `ao` CLI guide the workflow, and CI is the authoritative gate. The only hard requirement is an agent runtime and `git`; everything else degrades gracefully. Full dependency matrix: [docs/dependencies.md](docs/dependencies.md).
@@ -110,7 +113,7 @@ Every skill works alone; flows compose them. Full catalog: [docs/SKILLS.md](docs
 | `/rpi` | you want discovery, build, validation, and bookkeeping in one flow |
 | `/council` | you want independent judges (optionally Claude and Codex) to return one verdict |
 | `/vibe` | you want a code-quality and risk review before shipping |
-| `/evolve` · `/dream` | a goal-driven improvement loop · bounded compounding that never mutates source |
+| `/evolve` | a goal-driven improvement loop that compounds knowledge without mutating source |
 
 ---
 
@@ -141,7 +144,7 @@ ao metrics health         # flywheel health
 - **It doesn't write code.** It wraps Claude Code / Codex / Cursor / OpenCode with bookkeeping, gates, and a corpus; the harness still writes it.
 - **No hosted control plane or telemetry.** Everything lives in your repo; there's no cross-team dashboard unless you commit `.agents/`.
 - **Multi-model councils cost tokens.** Six judges per PR isn't free; running them on a substrate makes the cost predictable, not zero.
-- **The corpus needs hygiene.** `ao defrag`, `ao maturity`, and `/dream` keep it healthy; neglected, it rots like any markdown vault.
+- **The corpus needs hygiene.** `ao defrag` and `ao maturity` keep it healthy; neglected, it rots like any markdown vault.
 - **There are ~80 skills.** `/quickstart` and the [Skill Router](docs/SKILL-ROUTER.md) exist so you don't have to learn them all up front.
 
 **What if the labs ship this natively?** They will. The durable value is the `.agents/` corpus you build, not the tool that builds it: plain markdown in your repo, it carries forward to whatever ships next, stays forkable, and is Apache-2.0 with no lock-in.
@@ -150,6 +153,6 @@ ao metrics health         # flywheel health
 
 ## Docs & contributing
 
-[What 3.0 is](docs/3.0.md) · [docs index](docs/documentation-index.md) · [newcomer guide](docs/newcomer-guide.md) · [architecture](docs/ARCHITECTURE.md) · [FAQ](docs/FAQ.md) · [published site](https://boshu2.github.io/agentops/) · built on the [12-factor doctrine](https://12factoragentops.com).
+[What 3.0 is](docs/3.0.md) · [docs index](docs/documentation-index.md) · [newcomer guide](docs/newcomer-guide.md) · [architecture](docs/ARCHITECTURE.md) · [FAQ](docs/FAQ.md) · built on the [12-factor doctrine](https://12factoragentops.com).
 
 Contributing: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) (agents: read [AGENTS.md](AGENTS.md), track work with `bd`). License: Apache-2.0.

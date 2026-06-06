@@ -210,7 +210,10 @@ func runBeadsAudit(cmd *cobra.Command, args []string) error {
 		emitAuditHuman(os.Stdout, report)
 	}
 	if beadsAuditStrict && auditFlaggedCount(report) > 0 {
-		os.Exit(1)
+		if cmd != nil {
+			cmd.SilenceErrors = true
+		}
+		return &beadsExitError{code: 1}
 	}
 	return nil
 }

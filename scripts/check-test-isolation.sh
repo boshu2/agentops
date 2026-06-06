@@ -19,8 +19,11 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 # Baselines captured 2026-06-03 (excludes the testutil_test.go helper home).
+# os.Setenv lowered 22->12 on 2026-06-06 (ag-k38x #bulk-migration). The remaining 12
+# are intentional and cannot use t.Setenv: TestMain sites (no *testing.T), string-literal
+# fixtures in fix_cliconfig_test.go, and unset-semantics helpers (t.Setenv cannot unset).
 BASELINE_CHDIR=163
-BASELINE_SETENV=22
+BASELINE_SETENV=12
 
 chdir=$(grep -rho --include='*_test.go' --exclude='testutil_test.go' 'os\.Chdir(' cli 2>/dev/null | wc -l | tr -d ' ')
 setenv=$(grep -rho --include='*_test.go' --exclude='testutil_test.go' 'os\.Setenv(' cli 2>/dev/null | wc -l | tr -d ' ')
