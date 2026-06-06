@@ -2,9 +2,10 @@
 # check-hookless-cold-start.sh — scenario-2 regression gate for soc-qh2g1.
 #
 # AgentOps 3.0 is hookless: no SessionStart/Stop hook ships, so no cold-start or
-# continuity doc/skill may present a `hooks/<name>.sh` path as a CURRENTLY ACTIVE
-# surface. A hook path is allowed only on a line that hedges it as opt-in /
-# author-it-yourself / historical / removed (the hooks-authoring escape hatch).
+# continuity doc/skill may present a hook path or SessionStart hook as a
+# CURRENTLY ACTIVE surface. A hook reference is allowed only on a line that
+# hedges it as opt-in / author-it-yourself / historical / removed / legacy (the
+# hooks-authoring escape hatch).
 #
 # Scope is a FIXED list of cold-start / continuity AND workflow-discipline
 # surfaces. It deliberately does NOT scan all of docs/+skills/ (release notes, the
@@ -23,6 +24,16 @@ FILES=(
   "docs/architecture/primitive-chains.md"
   "skills/session-bootstrap/SKILL.md"
   "skills-codex/session-bootstrap/SKILL.md"
+  "skills/quickstart/SKILL.md"
+  "skills-codex/quickstart/SKILL.md"
+  "skills/inject/SKILL.md"
+  "skills-codex/inject/SKILL.md"
+  "skills/using-agentops/SKILL.md"
+  "skills-codex/using-agentops/SKILL.md"
+  "skills/recover/SKILL.md"
+  "skills-codex/recover/SKILL.md"
+  "skills/bug-hunt/SKILL.md"
+  "skills-codex/bug-hunt/SKILL.md"
   "docs/newcomer-guide.md"
   # Workflow-discipline surfaces (ag-o5xp): must never present the removed
   # session-pr-counter hook as an active surface.
@@ -37,8 +48,8 @@ FILES=(
 # These hedge ARTIFACT EXISTENCE (opt-in / author-it-yourself / historical /
 # removed). "When supported" is deliberately NOT here: it hedges harness
 # capability, not whether AgentOps ships the hook (it does not).
-HEDGE='opt-in|optional|author|if you author|hooks-authoring|historical|removed|no such hook|ships no|example|if installed|when hooks are installed|when installed'
-HOOK_PATH='hooks/[A-Za-z0-9_.-]+\.sh'
+HEDGE='hookless|explicit|replacement|replaced|opt-in|optional|author|authored|if you author|hooks-authoring|historical|legacy|compatibility|removed|no such hook|ships no|example|if installed|when hooks are installed|when installed|used to|formerly'
+HOOK_PROMISE='hooks/[A-Za-z0-9_.-]+\.sh|[A-Za-z0-9_.-]*session-(start|end|autostart)[A-Za-z0-9_.-]*\.sh|Session(Start|End) hook|session-(start|end|autostart) hook|startup hooks?|precompact-snapshot hook|auto-inject[^[:cntrl:]]*hook|hook[^[:cntrl:]]*auto-inject'
 
 fail() {
   printf 'FAIL: %s\n' "$1" >&2
@@ -56,12 +67,12 @@ for rel in "${FILES[@]}"; do
     lineno="${match%%:*}"
     content="${match#*:}"
     if ! grep -qiE "$HEDGE" <<<"$content"; then
-      printf 'FAIL: %s:%s presents a hook path as an active surface without an opt-in/historical hedge\n' \
+      printf 'FAIL: %s:%s presents a hook/startup promise as an active surface without an opt-in/historical hedge\n' \
         "$rel" "$lineno" >&2
       printf '      %s\n' "$content" >&2
       violations=$((violations + 1))
     fi
-  done < <(grep -nE "$HOOK_PATH" "$file" || true)
+  done < <(grep -nE "$HOOK_PROMISE" "$file" || true)
 done
 
 [[ "$scanned" -gt 0 ]] || fail "no cold-start surfaces found under $ROOT"

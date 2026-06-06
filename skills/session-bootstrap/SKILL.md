@@ -58,7 +58,7 @@ Four fail-open substeps, each producing a field in the [session-bootstrap.v1 sch
 | Flag        | Effect                                                                                |
 |-------------|---------------------------------------------------------------------------------------|
 | `--json`    | Emit the full status object (machine-readable, matches the v1 schema)                 |
-| `--robot`   | Same as `--json` plus a tight exit-code contract for SessionStart hooks               |
+| `--robot`   | Same as `--json` plus a tight exit-code contract for opt-in SessionStart hooks        |
 | `--no-mail` | Skip the mcp-agent-mail probe even when the MCP server is reachable                   |
 
 Default (no flags): one-line human summary on stdout, plus a stderr warning if `AGENTS.md` is missing.
@@ -113,4 +113,4 @@ The [agent-fungibility-philosophy](https://github.com/boshu2/agentops/issues?q=l
 
 ## Reference Documents
 
-- [references/session-bootstrap.feature](references/session-bootstrap.feature) — Executable spec: every agent runs first, identical model-fungible frame, fail-open SessionStart hook, --json for pipeline (soc-qk4b)
+- [references/session-bootstrap.feature](references/session-bootstrap.feature) — Executable spec: every agent runs first, identical model-fungible frame, fail-open opt-in SessionStart hook, --json for pipeline (soc-qk4b)

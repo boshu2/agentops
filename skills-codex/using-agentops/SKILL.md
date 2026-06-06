@@ -223,7 +223,7 @@ bd vc status          # Inspect Dolt state if needed (JSONL auto-sync is automat
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| Skill not auto-loaded | Hook runtime unavailable or startup path not run | Hook-capable runtimes: verify `hooks/session-start.sh` exists and is enabled. Codex: let an entry skill ensure `ao codex ensure-start`, or use `ao codex status` / `ao codex start` as the manual fallback |
+| Skill not loaded | Startup path not run | Run `ao session bootstrap`, then `ao inject` / `ao lookup`; for Codex lifecycle recovery, run `ao codex ensure-start` or `ao codex start` explicitly |
 | Outdated skill catalog | This file not synced with actual skills/ directory | Update skill list in this file after adding/removing skills |
 | Wrong skill suggested | Natural language trigger ambiguous | User explicitly calls skill with `/skill-name` syntax |
 | Workflow unclear | RPI phases not well-documented here | Read full workflow guide in README.md or docs/ARCHITECTURE.md |
