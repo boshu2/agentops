@@ -1,6 +1,6 @@
 ---
 name: pre-mortem
-description: Stress-test plans before work.
+description: Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
 practices:
 - adr
 - mythical-man-month
