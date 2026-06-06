@@ -126,7 +126,7 @@ AgentOps degrades gracefully — skills check for a tool before using it. The on
 | `git` | Required | Version control — `.agents/` state lives next to your code | **Required** |
 | `ao` | Required (recommended) | The AgentOps CLI: bookkeeping, retrieval, health, the loops | Recommended |
 | `bd` (beads) + Dolt backend | Tracking | Git-native issue tracking (the mandatory task surface) | Optional |
-| `gc` (Gas City) | Orchestration | Out-of-session substrate that runs whole `ao rpi`/`ao evolve` loops — see [`using-gc`](skills/using-gc/SKILL.md) | Optional (out-of-session) |
+| `gc` (Gas City) | Orchestration | Out-of-session substrate that dispatches agent loops — see [`using-gc`](skills/using-gc/SKILL.md) | Optional (out-of-session) |
 | `gh` | PR / CI | Open PRs, query CI status | Optional |
 | `go` | Build-from-source | Build `cli/bin/ao` from source (`go 1.26`) | Optional |
 | `jq`, `rg`/ripgrep, `curl`, `openssl`, `sha256sum`, `tmux`, `cass` | Utilities | JSON parsing, search, downloads, hashing, sessions, history | Optional |
@@ -166,7 +166,7 @@ The narrow waist is small on purpose:
 
 Everything else plugs into that waist: CI/CD repeats the proof, SRE/DORA measures fitness, ADRs and provenance preserve why-memory, wikis and ratchets preserve durable learning, and Agile/XP keeps work in vertical slices. The atomic unit is one behavior, one bounded context, one failing test, one write scope, and one acceptance proof. A new learning is added only when it would change a future run.
 
-The waist is executable. `GOALS.md` declares intent as directives; `/scenario` and `ao goals render` turn each directive into Gherkin acceptance examples; `ao rpi phased --domain <name>` builds inside one bounded context with a declared read scope; `ao goals measure` scores whether the result satisfies the spec. Intent, behavior, build, and validation stay linked end-to-end.
+The waist is executable. `GOALS.md` declares intent as directives; `/scenario` and `ao goals render` turn each directive into Gherkin acceptance examples; agents build inside one bounded context with a declared read scope; `ao goals measure` scores whether the result satisfies the spec. Intent, behavior, build, and validation stay linked end-to-end.
 
 Full treatment: [docs/cdlc.md](docs/cdlc.md).
 
@@ -280,8 +280,6 @@ ao demo                                   # See the council-first value path
 ao search "query"                         # Search session history and local knowledge
 ao lookup --query "topic"                 # Retrieve curated learnings and findings
 ao context assemble                       # Build a task briefing
-ao rpi phased "fix auth startup"          # Run the phased lifecycle from the terminal
-ao evolve --max-cycles 1                  # Run one bounded improvement cycle
 ao compile                                # Rebuild the corpus (Mine → Grow → Defrag → Lint)
 ao metrics health                         # Show flywheel health
 ```
@@ -294,10 +292,10 @@ Full reference: [CLI Commands](cli/docs/COMMANDS.md).
 
 | Surface | When to use it | What it looks like | Operator role |
 |---------|---------------|-------------------|---------------|
-| **In session** (the AgentOps product) | All active work — exploration, high-stakes decisions, ambiguous scope, and the full loop | `/research`, `/plan`, `/pre-mortem`, `/council`, `/rpi`, `/evolve`, `/crank` invoked from a session; zero AgentOps-managed always-on infrastructure | Driving or on the loop; you steer, agents run the loop |
-| **Out of session** (a substrate's job) | Vetted, well-defined work; always-on; queue-driven dispatch | The same loop run by an orchestration substrate. AgentOps ships a **reference Gas City City** (`city.toml` + `packs/agentops`); a mayor agent dispatches ready beads to refinery workers that run `ao rpi` | Operator: set cadence and quality bars on the substrate; it runs the loop |
+| **In session** (the AgentOps product) | All active work — exploration, high-stakes decisions, ambiguous scope, and the full loop | `/research`, `/plan`, `/pre-mortem`, `/council`, `/crank` invoked from a session; zero AgentOps-managed always-on infrastructure | Driving or on the loop; you steer, agents run the loop |
+| **Out of session** (a substrate's job) | Vetted, well-defined work; always-on; queue-driven dispatch | The same loop run by an orchestration substrate. AgentOps ships a **reference Gas City City** (`city.toml` + `packs/agentops`); a mayor agent dispatches ready beads to refinery workers | Operator: set cadence and quality bars on the substrate; it runs the loop |
 
-**In session** is the AgentOps product. The whole loop — `rpi` (inner), `evolve` (outer), `crank`/`swarm` (in-session agent teams), the skills runtime, and the `.agents/` corpus — runs in a plain session with no daemon, no scheduler, and no cloud. Skills run from a session with rigor levels to match the work: light skills for exploration, the full RPI loop for anything that should be tracked, council validation before you ship. This is the zero-dependency sovereignty floor.
+**In session** is the AgentOps product. The whole loop — `crank`/`swarm` (in-session agent teams), the skills runtime, and the `.agents/` corpus — runs in a plain session with no daemon, no scheduler, and no cloud. Skills run from a session with rigor levels to match the work: light skills for exploration, council validation before you ship. This is the zero-dependency sovereignty floor.
 
 <!-- agentops:claim:AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL -->
 

@@ -367,11 +367,11 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 	expectedCmds := []string{
 		"agent", "agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
-		"defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
+		"defrag", "demo", "doctor", "eval", "extract", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
 		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
 		"mcp", "memory", "metrics", "migrate", "mind", "mine", "next-work", "notebook", "operator", "orchestrate", "patterns",
-		"pool", "provenance", "quick-start", "ratchet", "reconcile", "retrieval-bench", "robot-docs", "rpi",
+		"pool", "provenance", "quick-start", "ratchet", "reconcile", "retrieval-bench", "robot-docs",
 		"registry", "scenario", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
 		"store", "task-feedback", "task-status", "task-sync", "temper",
 		"trace", "turn", "validate", "version", "vibe-check", "wiki", "worktree",
@@ -426,11 +426,11 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 	expectedCmds := []string{
 		"agent", "agents", "anti-patterns", "autodev", "badge", "batch-feedback", "beads", "capabilities", "ci", "citation", "claim", "completion", "config",
 		"constraint", "context", "codex", "compile", "contradict", "corpus", "cron", "curate", "dedup",
-		"defrag", "demo", "doctor", "eval", "evolve", "extract", "feedback", "feedback-loop",
+		"defrag", "demo", "doctor", "eval", "extract", "feedback", "feedback-loop",
 		"findings", "flywheel", "forge", "gate", "goals", "handoff", "harness", "harvest",
 		"index", "init", "inject", "knowledge", "lookup", "loop", "maturity",
 		"mcp", "memory", "metrics", "migrate", "mind", "mine", "next-work", "notebook", "operator", "orchestrate", "patterns",
-		"pool", "provenance", "quick-start", "ratchet", "reconcile", "retrieval-bench", "robot-docs", "rpi",
+		"pool", "provenance", "quick-start", "ratchet", "reconcile", "retrieval-bench", "robot-docs",
 		"registry", "scenario", "scope", "search", "seed", "session", "session-outcome", "sessions", "skills", "status",
 		"store", "task-feedback", "task-status", "task-sync", "temper",
 		"trace", "turn", "validate", "version", "vibe-check", "wiki", "worktree",
@@ -2494,17 +2494,6 @@ func TestCobraRatchetParentHelp(t *testing.T) {
 	}
 	if !strings.Contains(out, "Brownian Ratchet") {
 		t.Errorf("expected 'Brownian Ratchet' in output, got: %s", out)
-	}
-}
-
-// TestCobraRPIParentHelp ensures rpi parent help works.
-func TestCobraRPIParentHelp(t *testing.T) {
-	out, err := executeCommand("rpi", "--help")
-	if err != nil {
-		t.Fatalf("ao rpi --help failed: %v", err)
-	}
-	if !strings.Contains(out, "RPI") {
-		t.Errorf("expected 'RPI' in output, got: %s", out)
 	}
 }
 

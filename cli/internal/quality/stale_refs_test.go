@@ -51,7 +51,7 @@ func TestCheckStaleReferences_AggregatesMatches(t *testing.T) {
 	if err := os.WriteFile(a, []byte("ao know forge\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(b, []byte("ao work rpi status\nao know inject\n"), 0o644); err != nil {
+	if err := os.WriteFile(b, []byte("ao work ratchet status\nao know inject\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -83,7 +83,7 @@ func TestCountUniqueFiles(t *testing.T) {
 	refs := []StaleReference{
 		{File: "a.sh", OldCommand: "ao know forge"},
 		{File: "a.sh", OldCommand: "ao know inject"},
-		{File: "b.sh", OldCommand: "ao work rpi"},
+		{File: "b.sh", OldCommand: "ao work ratchet"},
 	}
 	if got := CountUniqueFiles(refs); got != 2 {
 		t.Errorf("CountUniqueFiles = %d, want 2", got)
