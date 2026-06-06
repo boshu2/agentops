@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-06T12:24:09Z",
+  "generated_at": "2026-06-06T14:21:21Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
@@ -490,7 +490,7 @@
         "path": "skills/agent-native/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 3
       },
       {
         "name": "automation-shape-routing",
@@ -1320,6 +1320,7 @@
         "purpose": "RPI lifecycle automation",
         "bounded_context": "BC3",
         "driven_by_skills": [
+          "agent-native",
           "autodev",
           "evolve",
           "shared",
@@ -1552,11 +1553,12 @@
         "ao goals",
         "ao inject",
         "ao mcp serve",
+        "ao rpi",
         "ao session bootstrap",
         "ao validate"
       ],
       "path": "skills/agent-native/",
-      "references": 1
+      "references": 3
     },
     {
       "sku": "skill:autodev",
@@ -3819,6 +3821,7 @@
         "--dedup",
         "--dry-run",
         "--json",
+        "--no-snapshot",
         "--output",
         "--output-dir",
         "--prune",
@@ -4673,6 +4676,7 @@
       "purpose": "RPI lifecycle automation",
       "status": "active",
       "driven_by_skills": [
+        "agent-native",
         "autodev",
         "evolve",
         "shared",

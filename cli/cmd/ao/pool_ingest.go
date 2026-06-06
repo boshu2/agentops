@@ -339,12 +339,18 @@ func buildCandidateFromLearningBlock(b learningBlock, srcPath string, fileDate t
 	// triple-ID filenames whenever a learning's source file, session hint, and
 	// frontmatter id all degenerated to the same string — and the resulting id
 	// re-amplified on each close-loop pass.
+	// Compare case-insensitively: the final id is lowercased by Slugify, and
+	// learningID is already lowercased (above), but base and sessionHint keep
+	// their source-filename case. Without normalizing, a source filename with
+	// any uppercase character (e.g. "...fix20260430T090800-1") skips the dedup
+	// branch and produces a DOUBLED id (soc-xn5s).
+	lowerBase := strings.ToLower(base)
 	parts := []string{base}
-	if sessionHint != "" && sessionHint != base && !strings.Contains(base, sessionHint) {
+	if sessionHint != "" && lowerBase != strings.ToLower(sessionHint) && !strings.Contains(lowerBase, strings.ToLower(sessionHint)) {
 		parts = append(parts, sessionHint)
 	}
 	if learningID != "" && learningID != "noid" {
-		joined := strings.Join(parts, "-")
+		joined := strings.ToLower(strings.Join(parts, "-"))
 		if !strings.Contains(joined, learningID) {
 			parts = append(parts, learningID)
 		}

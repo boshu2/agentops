@@ -35,6 +35,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// beadsExitError carries a verdict exit code out through cobra's RunE so
+// Execute() can map it to os.Exit() WITHOUT calling os.Exit() mid-command —
+// which would skip deferred cleanup (temp files, lock release) and kill the
+// test binary, making these paths untestable.
+//
+// The `ao beads verify|lint|audit` commands use exit-code-as-verdict: exit 1
+// means "stale citations / flagged beads found", a normal diagnostic outcome,
+// not an internal failure. The verdict text already went to stdout, so the
+// error carries no message (Error() == ""); the returning RunE sets
+// cmd.SilenceErrors so cobra emits no spurious "Error:" line, while genuine
+// errors returned elsewhere in those commands still print normally. Mirrors
+// gateExitError (validate.go) and doctorExitError (doctor_surface.go).
+type beadsExitError struct {
+	code int
+}
+
+func (e *beadsExitError) Error() string { return "" }
+
+// ExitCode returns the process exit code this verdict maps to.
+func (e *beadsExitError) ExitCode() int { return e.code }
+
 // execBD is the single entry point for shelling out to bd. Tests override
 // this to avoid a hard dependency on the real binary. Production code calls
 // `bd` via PATH; if absent, the caller emits a graceful warning and returns.
@@ -204,7 +225,10 @@ func runBeadsVerify(cmd *cobra.Command, args []string) error {
 	}
 	emitVerifyHuman(os.Stdout, report, beadsVerifyVerbose)
 	if report.StaleCount > 0 {
-		os.Exit(1)
+		if cmd != nil {
+			cmd.SilenceErrors = true
+		}
+		return &beadsExitError{code: 1}
 	}
 	return nil
 }
@@ -639,7 +663,10 @@ func runBeadsLint(cmd *cobra.Command, args []string) error {
 		emitLintHuman(os.Stdout, report)
 	}
 	if report.StaleBeads > 0 {
-		os.Exit(1)
+		if cmd != nil {
+			cmd.SilenceErrors = true
+		}
+		return &beadsExitError{code: 1}
 	}
 	return nil
 }
