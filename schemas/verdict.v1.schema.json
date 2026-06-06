@@ -36,7 +36,12 @@
         "properties": {
           "severity": {"type": "string", "enum": ["critical", "significant", "minor"]},
           "description": {"type": "string"},
-          "location": {"type": "string"}
+          "location": {"type": "string"},
+          "category": {
+            "type": "string",
+            "enum": ["tool-choice", "output-contract", "call-signature", "data-provenance"],
+            "description": "Optional RubricRefine contract-check category for a silent-contract-violation finding (runs clean, no exception, still wrong). Omitted for general findings. See skills/domain/references/silent-contract-violation.md."
+          }
         },
         "additionalProperties": false
       }
