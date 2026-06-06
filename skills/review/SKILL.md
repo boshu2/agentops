@@ -1,6 +1,6 @@
 ---
 name: review
-description: Review diffs for risk, find mocks, scan for bugs, and audit codebases. Use when: reviewing a diff or PR for bugs and risk, hunting for mocks/stubs/placeholders, or auditing a codebase for quality.
+description: 'Review diffs for risk, find mocks, scan for bugs, and audit codebases. Use when: reviewing a diff or PR for bugs and risk, hunting for mocks/stubs/placeholders, or auditing a codebase for quality.'
 practices:
 - code-complete
 - refactoring
