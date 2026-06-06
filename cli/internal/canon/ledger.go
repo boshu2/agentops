@@ -36,7 +36,7 @@ func (l *ledger[T]) append(record T) error {
 	if err != nil {
 		return fmt.Errorf("open ledger: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	if _, err := f.Write(append(data, '\n')); err != nil {
 		return fmt.Errorf("write record: %w", err)
 	}
@@ -67,7 +67,7 @@ func (l *ledger[T]) load() ([]T, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open ledger: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var out []T
 	scanner := bufio.NewScanner(f)

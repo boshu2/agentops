@@ -88,26 +88,27 @@ type snapshotManifest struct {
 	CreatedAt    time.Time `json:"created_at"`
 }
 
-func runCorpusSnapshot(cmd *cobra.Command, args []string) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("corpus snapshot: cwd: %w", err)
-	}
+// createCorpusSnapshot writes a tar.gz of cwd/.agents to the resolved snapshot
+// dir (override > $AGENTOPS_CORPUS_SNAPSHOT_DIR > ~/.agentops/corpus-snapshots)
+// plus a sidecar manifest, and returns the manifest and manifest path. It is the
+// shared engine behind both `ao corpus snapshot` and the auto-snapshot that
+// destructive corpus ops (e.g. `ao defrag`) take before deleting anything.
+func createCorpusSnapshot(cwd, outDirOverride string) (snapshotManifest, string, error) {
 	srcAbs := filepath.Join(cwd, corpusSourceDir)
 	info, err := os.Stat(srcAbs)
 	if err != nil {
-		return fmt.Errorf("corpus snapshot: %s not found at %s: %w", corpusSourceDir, cwd, err)
+		return snapshotManifest{}, "", fmt.Errorf("corpus snapshot: %s not found at %s: %w", corpusSourceDir, cwd, err)
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("corpus snapshot: %s is not a directory", srcAbs)
+		return snapshotManifest{}, "", fmt.Errorf("corpus snapshot: %s is not a directory", srcAbs)
 	}
 
-	outDir, err := resolveSnapshotDir(snapshotOutputDir)
+	outDir, err := resolveSnapshotDir(outDirOverride)
 	if err != nil {
-		return fmt.Errorf("corpus snapshot: resolving output dir: %w", err)
+		return snapshotManifest{}, "", fmt.Errorf("corpus snapshot: resolving output dir: %w", err)
 	}
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
-		return fmt.Errorf("corpus snapshot: mkdir %s: %w", outDir, err)
+		return snapshotManifest{}, "", fmt.Errorf("corpus snapshot: mkdir %s: %w", outDir, err)
 	}
 
 	now := time.Now().UTC()
@@ -119,11 +120,11 @@ func runCorpusSnapshot(cmd *cobra.Command, args []string) error {
 	count, total, sum, err := writeSnapshot(tmpPath, srcAbs)
 	if err != nil {
 		_ = os.Remove(tmpPath)
-		return fmt.Errorf("corpus snapshot: writing tarball: %w", err)
+		return snapshotManifest{}, "", fmt.Errorf("corpus snapshot: writing tarball: %w", err)
 	}
 	if err := os.Rename(tmpPath, snapPath); err != nil {
 		_ = os.Remove(tmpPath)
-		return fmt.Errorf("corpus snapshot: rename: %w", err)
+		return snapshotManifest{}, "", fmt.Errorf("corpus snapshot: rename: %w", err)
 	}
 
 	manifest := snapshotManifest{
@@ -137,7 +138,20 @@ func runCorpusSnapshot(cmd *cobra.Command, args []string) error {
 	}
 	manifestPath := snapPath + ".manifest.json"
 	if err := writeCorpusManifestFile(manifestPath, manifest); err != nil {
-		return fmt.Errorf("corpus snapshot: writing manifest: %w", err)
+		return snapshotManifest{}, "", fmt.Errorf("corpus snapshot: writing manifest: %w", err)
+	}
+	return manifest, manifestPath, nil
+}
+
+func runCorpusSnapshot(cmd *cobra.Command, args []string) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("corpus snapshot: cwd: %w", err)
+	}
+
+	manifest, manifestPath, err := createCorpusSnapshot(cwd, snapshotOutputDir)
+	if err != nil {
+		return err
 	}
 
 	if snapshotJSON {

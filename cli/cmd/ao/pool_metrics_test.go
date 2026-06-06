@@ -908,6 +908,45 @@ func TestPoolIngest_buildCandidateFromLearningBlock(t *testing.T) {
 			t.Errorf("high confidence score (%f) should be > low confidence score (%f)", candH.RawScore, candL.RawScore)
 		}
 	})
+
+	// soc-xn5s: learningID is lowercased before the dedup check, but base keeps
+	// its source-filename case. A filename with any uppercase character must
+	// still dedup against the (already-contained) learningID — otherwise the id
+	// doubles. Filename base "2026-04-30-fix20260430T090800-1" already contains
+	// the lowercased id "fix20260430t090800-1", so the id must appear once.
+	t.Run("mixed-case filename does not double the learning id", func(t *testing.T) {
+		b := learningBlock{
+			Title: "Mixed Case Dedup",
+			ID:    "fix20260430T090800-1",
+			Body:  "Body content for the mixed-case dedup regression.",
+		}
+		cand, _, ok := buildCandidateFromLearningBlock(b, "/p/2026-04-30-fix20260430T090800-1.md", time.Now(), "ag-test")
+		if !ok {
+			t.Fatal("expected ok=true")
+		}
+		const idToken = "fix20260430t090800-1"
+		if n := strings.Count(cand.ID, idToken); n != 1 {
+			t.Errorf("learning id token %q appears %d times in %q, want exactly 1 (doubled-id bug)", idToken, n, cand.ID)
+		}
+	})
+
+	// soc-xn5s: the sessionHint == base equality/contains checks must also be
+	// case-insensitive so a mixed-case session hint that matches the base is not
+	// re-appended.
+	t.Run("mixed-case session hint matching base is not appended", func(t *testing.T) {
+		b := learningBlock{
+			Title: "Session Hint Dedup",
+			ID:    "L-1",
+			Body:  "Body content for the session-hint dedup regression.",
+		}
+		cand, _, ok := buildCandidateFromLearningBlock(b, "/p/ag-Session.md", time.Now(), "ag-session")
+		if !ok {
+			t.Fatal("expected ok=true")
+		}
+		if n := strings.Count(cand.ID, "ag-session"); n != 1 {
+			t.Errorf("session hint token appears %d times in %q, want exactly 1", n, cand.ID)
+		}
+	})
 }
 
 // ===========================================================================

@@ -3,36 +3,35 @@ package main
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestGoals_Integration_FullLifecycle(t *testing.T) {
-	resetCommandState(t)
-	dir := chdirTemp(t)
+	t.Parallel()
+	bin := aoBinary(t)
+	tmp := t.TempDir()
+	os.MkdirAll(filepath.Join(tmp, ".git"), 0o750)
+	os.MkdirAll(filepath.Join(tmp, ".agents", "ao", "sessions"), 0o750)
+	os.MkdirAll(filepath.Join(tmp, ".agents", "ao", "goals", "baselines"), 0o750)
 
 	// Step 1: init creates GOALS.md with --non-interactive
-	out, err := captureStdout(t, func() error {
-		goalsInitNonInteractive = true
-		goalsInitTemplate = ""
-		defer func() { goalsInitNonInteractive = false }()
-		rootCmd.SetArgs([]string{"goals", "init", "--non-interactive"})
-		return rootCmd.Execute()
-	})
+	cmd := exec.Command(bin, "goals", "init", "--non-interactive")
+	cmd.Dir = tmp
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("goals init failed: %v", err)
+		t.Fatalf("goals init failed: %v\n%s", err, out)
 	}
-
-	goalsPath := filepath.Join(dir, "GOALS.md")
-	if _, statErr := os.Stat(goalsPath); statErr != nil {
-		t.Fatalf("GOALS.md not created: %v", statErr)
-	}
-	if !strings.Contains(out, "Created") {
+	if !strings.Contains(string(out), "Created") {
 		t.Errorf("expected 'Created' in output, got: %s", out)
 	}
 
-	// Verify file contains expected content
+	goalsPath := filepath.Join(tmp, "GOALS.md")
+	if _, statErr := os.Stat(goalsPath); statErr != nil {
+		t.Fatalf("GOALS.md not created: %v", statErr)
+	}
 	content, err := os.ReadFile(goalsPath)
 	if err != nil {
 		t.Fatalf("read GOALS.md: %v", err)
@@ -42,18 +41,17 @@ func TestGoals_Integration_FullLifecycle(t *testing.T) {
 	}
 
 	// Step 2: steer add appends a directive
-	out, err = captureStdout(t, func() error {
-		rootCmd.SetArgs([]string{"goals", "steer", "add", "Improve coverage", "--description", "Raise test coverage above 80%", "--steer", "increase"})
-		return rootCmd.Execute()
-	})
+	cmd = exec.Command(bin, "goals", "steer", "add", "Improve coverage",
+		"--description", "Raise test coverage above 80%", "--steer", "increase")
+	cmd.Dir = tmp
+	out, err = cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("goals steer add failed: %v", err)
+		t.Fatalf("goals steer add failed: %v\n%s", err, out)
 	}
-	if !strings.Contains(out, "Added directive #2") {
+	if !strings.Contains(string(out), "Added directive #2") {
 		t.Errorf("expected 'Added directive #2' in output, got: %s", out)
 	}
 
-	// Verify the directive was persisted
 	content, err = os.ReadFile(goalsPath)
 	if err != nil {
 		t.Fatalf("read GOALS.md after steer add: %v", err)
@@ -62,20 +60,14 @@ func TestGoals_Integration_FullLifecycle(t *testing.T) {
 		t.Errorf("GOALS.md missing added directive, content:\n%s", content)
 	}
 
-	// Step 3: measure runs checks (all gates should be skipped/pass with no real checks)
-	// Create snapshot dir so measure can save
-	if err := os.MkdirAll(filepath.Join(dir, ".agents", "ao", "goals", "baselines"), 0o755); err != nil {
-		t.Fatalf("create baselines dir: %v", err)
-	}
-
-	out, err = captureStdout(t, func() error {
-		rootCmd.SetArgs([]string{"goals", "measure"})
-		return rootCmd.Execute()
-	})
+	// Step 3: measure runs checks
+	cmd = exec.Command(bin, "goals", "measure")
+	cmd.Dir = tmp
+	out, err = cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("goals measure failed: %v", err)
+		t.Fatalf("goals measure failed: %v\n%s", err, out)
 	}
-	if !strings.Contains(out, "Score:") {
+	if !strings.Contains(string(out), "Score:") {
 		t.Errorf("expected 'Score:' in measure output, got: %s", out)
 	}
 }

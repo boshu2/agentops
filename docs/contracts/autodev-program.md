@@ -45,7 +45,7 @@ List of paths or scopes the agent must not modify.
 Description of what counts as one bounded slice. This should be small enough to validate and revert cleanly.
 
 ### `Validation Commands`
-Ordered shell commands that must run before the slice can be considered complete.
+Ordered shell commands that must run before the slice can be considered complete. This list is the **declared gate**: the full set a slice must pass, not a menu to pick from. Consumers run it in its entirety — see [Gate Runner Discipline](#gate-runner-discipline).
 
 ### `Decision Policy`
 Rules for keep vs revert. This is where the repo states how to interpret passing tests, partial improvements, tie-breaks, and simplicity bias.
@@ -55,6 +55,19 @@ Rules for when the loop must stop making local edits and hand work off to a bead
 
 ### `Stop Conditions`
 Concrete conditions that allow the loop to stop. Avoid vague prose.
+
+## Gate Runner Discipline
+
+The single most common silent failure of an autonomous loop is **running a subset of the declared validation bundle** — an agent reconstructs "the gate" from memory or prose, drops a command it forgot, and reports the slice green while a real check never ran. (Origin: 2026-06-04, ag-8rns — a `/evolve` cycle skipped `PROGRAM.md` grounding greps from its validation bundle for several slices; an independent `/validate` pass caught the red.)
+
+The contract defense is a **single declared gate runner**, not a remembered command list:
+
+- **One canonical invocation.** A repo SHOULD expose its full validation bundle behind a single declared entrypoint — a gate script (e.g. `scripts/pre-push-gate.sh`) or, per gate, the typed BC2 `GateRunnerPort` surfaced as `ao gate run <name>` (resolves `scripts/check-<name>.sh`, emits a structured `GateVerdict`). `Validation Commands` then *documents* what that runner runs; it is not an a-la-carte list for the agent to sample.
+- **Full bundle, every time.** Consumers MUST run the **entire** declared bundle before marking a slice complete. They MUST NOT reconstruct a subset from memory, "skip the slow one", or infer the gate from prose. Selecting the smallest *lane set* is a property of the declared profile (see the repo execution profile's `validation_lanes`), not of the agent's recollection.
+- **Fail-closed.** A gate that cannot run, errors, or returns `UNKNOWN` blocks the slice — it is never treated as a pass. Absence of a green is a red, not a skip.
+- **Completion-claim assertion.** A slice is "validated" only once the full declared gate ran and passed. A keep decision predicated on a partial run is invalid regardless of the partial result.
+
+This mirrors the repo execution profile's `validation_commands` rule — both contracts treat the declared bundle as a unit run via the canonical runner.
 
 ## Minimal Example
 

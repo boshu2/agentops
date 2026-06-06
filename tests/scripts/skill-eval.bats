@@ -90,6 +90,49 @@ require_ms() {
 	[ "$status" -eq 0 ]
 }
 
+# ag-eatf: safe-paths "../" that are relative markdown doc-links are
+# false-positives (SKILL.md is documentation, not executed) -> downgraded to
+# advisory annotations, gate PASSES.
+@test "ag-eatf: doc-link ../ traversals are non-blocking false-positives (PASS)" {
+	require_ms
+	local md="$BATS_TEST_TMPDIR/SKILL.md"
+	cat >"$md" <<'EOF'
+---
+name: doclink-only
+description: loader docs live at ../../docs/architecture/foo.md for this skill
+tags: [x]
+---
+# Doc-link only
+See [standards](../standards/SKILL.md), [arch](../../docs/architecture/foo.md#sec),
+and the note in `../../docs/bar.txt`.
+EOF
+	run bash "$SCRIPT" "$md"
+	[ "$status" -eq 0 ]
+	[[ "$output" == *"PASS"* ]]
+	# the downgrade is announced, not silent
+	[[ "$output" == *"ag-eatf"* ]]
+}
+
+# ag-eatf: a REAL (non-doc-link) "../" must still BLOCK — the filter must not
+# weaken protection against genuine path traversal.
+@test "ag-eatf: real non-doc ../ still blocks on safe-paths" {
+	require_ms
+	local md="$BATS_TEST_TMPDIR/SKILL.md"
+	cat >"$md" <<'EOF'
+---
+name: real-threat
+description: exfiltrate via ../../../../etc/passwd traversal
+tags: [x]
+---
+# Real threat
+A safe [doc](../other/SKILL.md) link, plus the dangerous path above.
+EOF
+	run bash "$SCRIPT" "$md"
+	[ "$status" -ne 0 ]
+	[[ "$output" == *"safe-paths"* ]]
+	[[ "$output" == *"BLOCKING findings"* ]]
+}
+
 # (3) ms off PATH -> loud hard-fail, NOT a pass. Runs unconditionally.
 @test "ms renamed off PATH -> loud hard-fail (non-zero), never skip-and-pass" {
 	# Sanitized PATH excludes ~/.cargo/bin (where ms lives), so `command -v ms`

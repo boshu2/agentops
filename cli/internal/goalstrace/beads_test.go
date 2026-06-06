@@ -271,3 +271,39 @@ func TestWalk_EnglishAutoWordInBeadDescriptionProducesNoError(t *testing.T) {
 		}
 	}
 }
+
+// TestWalk_MultiSegmentProseAutoSlugProducesNoClaim is the soc-artx7 regression:
+// multi-segment "auto-" prose slugs that match the heuristic token grammar but
+// resolve to no scenario file (e.g. "auto-merge-update-branch", "auto-safe-pull")
+// must produce zero broken_bead_scenario_claim findings of ANY severity — not a
+// warning, not an error. Before the fix these surfaced as warnings that polluted
+// `ao goals trace --orphans` and blocked promoting it to a required gate.
+func TestWalk_MultiSegmentProseAutoSlugProducesNoClaim(t *testing.T) {
+	root, err := filepath.Abs(filepath.Join("..", "..", "..", "tests", "fixtures", "goals-trace"))
+	if err != nil {
+		t.Fatalf("resolving fixture root: %v", err)
+	}
+	beads := []beadRecord{
+		{
+			ID:    "soc-test.5",
+			Title: "prose auto-slug bead",
+			Description: "The orchestrator does auto-merge-update-branch when main moves, " +
+				"plus auto-safe-pull and auto-picks-up handling.",
+			Status: "open",
+		},
+	}
+	g, err := Walk(Options{
+		ProjectRoot: root,
+		Beads:       NewStaticBeadQuerier(true, beads),
+	})
+	if err != nil {
+		t.Fatalf("Walk error: %v", err)
+	}
+	for _, e := range g.Edges {
+		for _, d := range e.Defects {
+			if d.Code == DefectBrokenBeadScenarioClaim {
+				t.Errorf("unresolved prose auto- slug surfaced as %s broken_bead_scenario_claim: edge %+v defect %+v", d.Severity, e, d)
+			}
+		}
+	}
+}

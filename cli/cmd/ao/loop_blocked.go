@@ -234,7 +234,7 @@ func appendBlockedEvent(path string, event BlockedEvent) error {
 	if err != nil {
 		return fmt.Errorf("open blocked log %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	data, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("marshal blocked event: %w", err)
@@ -256,7 +256,7 @@ func readBlockedEvents(path string) ([]BlockedEvent, error) {
 		}
 		return nil, fmt.Errorf("open blocked log %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	var events []BlockedEvent
@@ -292,12 +292,12 @@ func rewriteBlockedEvents(path string, events []BlockedEvent) error {
 	for _, ev := range events {
 		data, err := json.Marshal(ev)
 		if err != nil {
-			f.Close()
+			_ = f.Close()
 			_ = os.Remove(tmp)
 			return fmt.Errorf("marshal blocked event: %w", err)
 		}
 		if _, err := f.Write(append(data, '\n')); err != nil {
-			f.Close()
+			_ = f.Close()
 			_ = os.Remove(tmp)
 			return fmt.Errorf("write tmp: %w", err)
 		}

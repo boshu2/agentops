@@ -112,9 +112,7 @@ func TestSelectExecutor_StreamDefault(t *testing.T) {
 // TestDirectExecutor_Execute_PropagatesError verifies that directExecutor.Execute
 // returns an error when the claude binary is not available.
 func TestDirectExecutor_Execute_PropagatesError(t *testing.T) {
-	// Temporarily redirect PATH so claude is not found.
-	origPath := os.Getenv("PATH")
-	defer func() { _ = os.Setenv("PATH", origPath) }()
+	// Redirect PATH so claude is not found; t.Setenv auto-restores.
 	t.Setenv("PATH", t.TempDir()) // empty dir = no binaries
 
 	d := &directExecutor{}
@@ -127,9 +125,7 @@ func TestDirectExecutor_Execute_PropagatesError(t *testing.T) {
 // TestStreamExecutor_Execute_PropagatesError verifies streamExecutor.Execute
 // returns an error when claude is not found.
 func TestStreamExecutor_Execute_PropagatesError(t *testing.T) {
-	origPath := os.Getenv("PATH")
-	defer func() { _ = os.Setenv("PATH", origPath) }()
-	t.Setenv("PATH", t.TempDir()) // no binaries
+	t.Setenv("PATH", t.TempDir()) // no binaries; t.Setenv auto-restores
 
 	s := &streamExecutor{statusPath: filepath.Join(t.TempDir(), "status.md"), allPhases: nil}
 	err := s.Execute(context.Background(), "prompt", t.TempDir(), "run-stream-err", 3)
@@ -431,9 +427,7 @@ func TestWritePhasedStateAtomic_LeavesNoTmpOnSuccess(t *testing.T) {
 // TestRecordRatchetCheckpoint_FailSilently verifies that recordRatchetCheckpoint
 // does not panic or return an error when ao ratchet is not on PATH.
 func TestRecordRatchetCheckpoint_FailSilently(t *testing.T) {
-	origPath := os.Getenv("PATH")
-	defer func() { _ = os.Setenv("PATH", origPath) }()
-	// Use an empty dir so no binaries are found.
+	// Use an empty dir so no binaries are found; t.Setenv auto-restores.
 	t.Setenv("PATH", t.TempDir())
 
 	// Should complete without panic when ao is not on PATH

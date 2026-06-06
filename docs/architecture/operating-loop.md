@@ -104,6 +104,8 @@ Do not run full ceremony for every observation. Promote progressively:
 
 The ratchet is what keeps `.agents/` from becoming a landfill. Compounding only happens when capture meets pruning.
 
+**R3 self-enforcement (no learning without a constraint).** The "Must never regress → add a validation gate" rung used to be prose only — a learning could be promoted to a durable maturity tier without ever compiling into a gate/test/rule. `scripts/check-ratchet-r3-constraint.sh` enforces it against the live (gitignored) `.agents/learnings/` corpus: any durable-tier learning (`candidate`/`established`/`canonical`/`stable`/`promoted`) that cites no constraint — a `scripts/`/`.github/workflows/` gate, a `_test.go`/`tests/` reference, a `skills/**/SKILL.md` step, or a `constraint:`/`enforced_by:` frontmatter field — is flagged. Warn-only by default; `--strict` (or `RATCHET_R3_BLOCKING=true`) makes it blocking, mirroring the same warn-then-fail ladder. A CI path-filter gate is intentionally *not* used because the learnings corpus is gitignored (dead-by-design, like the retired learning-coherence job); the script's own correctness is gated by `tests/scripts/check-ratchet-r3-constraint.bats`.
+
 ## Skill → loop-move map
 
 | Loop move | Primary skills | Produces |

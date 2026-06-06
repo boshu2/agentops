@@ -37,9 +37,9 @@ actually closes these gaps.
 
 | Mechanism | Source | Role |
 |-----------|--------|------|
-| `/pre-mortem` | [skills/pre-mortem/SKILL.md](skills/pre-mortem.md) | Loads plan-review validation before code exists |
-| `/vibe` | [skills/vibe/SKILL.md](skills/vibe.md) | Runs post-implementation validation instead of stopping at build/test |
-| `/council` | [skills/council/SKILL.md](skills/council.md) | Supplies multi-judge review for plans and code |
+| `/pre-mortem` | [skills/pre-mortem/SKILL.md](../skills/pre-mortem/SKILL.md) | Loads plan-review validation before code exists |
+| `/vibe` | [skills/vibe/SKILL.md](../skills/vibe/SKILL.md) | Runs post-implementation validation instead of stopping at build/test |
+| `/council` | [skills/council/SKILL.md](../skills/council/SKILL.md) | Supplies multi-judge review for plans and code |
 | Pre-mortem gate | CI gate ([.github/workflows/validate.yml](https://github.com/boshu2/agentops/blob/main/.github/workflows/validate.yml)) + the `/pre-mortem` skill | Prevents large implementation work from skipping plan validation |
 | Task-validation constraint check | `/validate` skill + `ao constraint` reading `.agents/constraints/index.json` | Task-validation executes active compiled constraints for mechanically detectable findings |
 | Product-aware review context | [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md) | Injects product and DX perspectives into validation flows |
@@ -67,7 +67,7 @@ actually closes these gaps.
 | `.agents/` ledger | [Knowledge Ledger](#the-knowledge-ledger-session-to-session-flow) | Stores plans, learnings, patterns, council outputs, and next-work artifacts on disk |
 | Finding registry | [docs/contracts/finding-registry.md](contracts/finding-registry.md) | Stores reusable structured findings that planning and validation can load before rediscovering the same failure |
 | `ao lookup` / injection | [Knowledge Ledger](#the-knowledge-ledger-session-to-session-flow) and `ao` CLI | Retrieves repo-specific context at session start and task boundaries |
-| `/retro` and `/post-mortem` extraction | [skills/post-mortem/SKILL.md](skills/post-mortem.md) | Turns completed work into reusable learnings and patterns |
+| `/retro` and `/post-mortem` extraction | [skills/post-mortem/SKILL.md](../skills/post-mortem/SKILL.md) | Turns completed work into reusable learnings and patterns |
 | Freshness / maturity controls | `ao maturity`, `ao dedup`, `ao contradict` | Keeps retrieval focused on useful, current knowledge |
 | Compile cycle | [GOALS.md](https://github.com/boshu2/agentops/blob/main/GOALS.md) directive 5 | Mines missed signal, defrags stale knowledge, and flags oscillation |
 
@@ -91,7 +91,7 @@ actually closes these gaps.
 
 | Mechanism | Source | Role |
 |-----------|--------|------|
-| `/post-mortem` | [skills/post-mortem/SKILL.md](skills/post-mortem.md) | Validates shipped work, extracts learnings, and harvests next work |
+| `/post-mortem` | [skills/post-mortem/SKILL.md](../skills/post-mortem/SKILL.md) | Validates shipped work, extracts learnings, and harvests next work |
 | Finding registry + compiler path | [docs/contracts/finding-registry.md](contracts/finding-registry.md), [docs/contracts/finding-compiler.md](contracts/finding-compiler.md), `ao findings` / `ao constraint` | Promotes reusable findings into advisory artifacts and active constraint index entries |
 | Task-validation constraint execution | `/validate` skill + `ao constraint` reading `.agents/constraints/index.json` | Turns mechanically detectable findings into enforced validation checks before task completion |
 | Flywheel close | `/post-mortem` skill + [docs/how-it-works.md](how-it-works.md) | Closes the feedback loop at session end |

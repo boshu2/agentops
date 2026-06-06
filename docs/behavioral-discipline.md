@@ -100,6 +100,6 @@ AgentOps enforces this through the behavioral discipline standard in [`skills/st
 ## Where This Lives in AgentOps
 
 - [`README.md`](https://github.com/boshu2/agentops/blob/main/README.md) gives the front-door version.
-- [`skills/implement/SKILL.md`](skills/implement.md) requires an execution frame before editing.
-- [`skills/review/SKILL.md`](skills/review.md) checks for hidden assumptions, speculative abstractions, and weak proof.
+- [`skills/implement/SKILL.md`](../skills/implement/SKILL.md) requires an execution frame before editing.
+- [`skills/review/SKILL.md`](../skills/review/SKILL.md) checks for hidden assumptions, speculative abstractions, and weak proof.
 - [`skills/standards/references/behavioral-discipline.md`](https://github.com/boshu2/agentops/blob/main/skills/standards/references/behavioral-discipline.md) is the reusable reference that the skills load.

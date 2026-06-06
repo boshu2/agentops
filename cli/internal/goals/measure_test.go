@@ -357,10 +357,8 @@ func TestTruncateOutput_MultiByteRunes(t *testing.T) {
 // (lines 109-113). When bash itself cannot start, the function should return
 // a fail result with the error message in Output.
 func TestMeasureOne_StartError(t *testing.T) {
-	// Save current PATH and set it to empty to make "bash" unresolvable.
-	origPath := os.Getenv("PATH")
+	// Set PATH empty to make "bash" unresolvable; t.Setenv auto-restores.
 	t.Setenv("PATH", "")
-	defer os.Setenv("PATH", origPath)
 
 	goal := Goal{
 		ID:     "start-error",

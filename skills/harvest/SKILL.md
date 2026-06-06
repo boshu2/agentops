@@ -22,10 +22,10 @@ output_contract: .agents/learnings/*.md (consolidated)
 ---
 # Harvest — Cross-Rig Knowledge Consolidation
 
-> **Nightly usage (2026-04-09):** `/dream start` now runs harvest as part
-> of its bounded compounding loop. Use `/harvest` for manual sweeps, CI
-> runs, or when Dream is disabled. Dream holds `.agents/overnight/run.lock`
-> while running — manual `ao harvest` will refuse until the lock releases.
+> **Usage:** `/harvest` is for manual sweeps and CI runs. (The old `/dream start`
+> nightly loop that wrapped harvest is **retired** — out-of-session compounding
+> moved to Gas City; there is no live Dream process or `.agents/overnight/run.lock`
+> to wait on.)
 
 Sweep all `.agents/` directories across the workspace, extract learnings, patterns,
 and research, deduplicate cross-rig, and promote high-value items to the global

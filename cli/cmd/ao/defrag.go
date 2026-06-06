@@ -15,11 +15,12 @@ import (
 )
 
 var (
-	defragPrune     bool
-	defragDedup     bool
-	defragStaleDays int
-	defragOutputDir string
-	defragQuiet     bool
+	defragPrune      bool
+	defragDedup      bool
+	defragStaleDays  int
+	defragOutputDir  string
+	defragQuiet      bool
+	defragNoSnapshot bool
 )
 
 // Type aliases for cmd/ao test compatibility.
@@ -41,9 +42,14 @@ deleting orphaned or duplicate learnings.
 
 Output: .agents/defrag/YYYY-MM-DD.json with full delta report.
 
+Before applying a destructive prune (anything that deletes from .agents/), defrag
+takes an automatic corpus snapshot — the same tar.gz that ao corpus snapshot
+writes — so an over-aggressive cleanup is always recoverable via ao corpus
+restore. Pass --no-snapshot to skip it. A snapshot failure aborts the prune.
+
 Examples:
-  ao --dry-run defrag --prune --dedup           # full report only
-  ao defrag --prune --stale-days 14             # apply prune/delete rules`,
+  ao --dry-run defrag --prune --dedup           # full report only (no snapshot)
+  ao defrag --prune --stale-days 14             # snapshot, then apply prune/delete`,
 	RunE: runDefrag,
 }
 
@@ -59,6 +65,8 @@ func init() {
 	defragCmd.Flags().StringVar(&defragOutputDir, "output-dir", ".agents/defrag",
 		"Directory for defrag report JSON")
 	defragCmd.Flags().BoolVar(&defragQuiet, "quiet", false, "Suppress progress output")
+	defragCmd.Flags().BoolVar(&defragNoSnapshot, "no-snapshot", false,
+		"Skip the automatic corpus snapshot taken before a destructive prune")
 }
 
 func runDefrag(cmd *cobra.Command, args []string) error {
@@ -70,6 +78,10 @@ func runDefrag(cmd *cobra.Command, args []string) error {
 	isDryRun := GetDryRun()
 	defragDefaultModes()
 
+	if err := autoSnapshotBeforeDefrag(cwd, isDryRun, cmd.OutOrStdout()); err != nil {
+		return err
+	}
+
 	report := &DefragReport{
 		Timestamp: time.Now().UTC(),
 		DryRun:    isDryRun,
@@ -80,6 +92,25 @@ func runDefrag(cmd *cobra.Command, args []string) error {
 	}
 
 	return writeDefragReport(defragOutputDir, report, cmd.OutOrStdout())
+}
+
+// autoSnapshotBeforeDefrag takes a recoverable corpus snapshot before defrag
+// applies a destructive prune. It is a no-op for dry-runs (nothing is deleted),
+// when prune is disabled (dedup-only defrag only flags, never deletes), or when
+// --no-snapshot is set. A snapshot failure is fatal: we refuse to delete corpus
+// files we could not first back up (safe-by-default — ag-32xk moat durability).
+func autoSnapshotBeforeDefrag(cwd string, isDryRun bool, w io.Writer) error {
+	if isDryRun || !defragPrune || defragNoSnapshot {
+		return nil
+	}
+	manifest, _, err := createCorpusSnapshot(cwd, snapshotOutputDir)
+	if err != nil {
+		return fmt.Errorf("defrag: pre-prune corpus snapshot failed (refusing to delete; pass --no-snapshot to override): %w", err)
+	}
+	if !defragQuiet && GetOutput() != "json" {
+		fmt.Fprintf(w, "Corpus snapshot (pre-prune): %s (%d files)\n", manifest.SnapshotPath, manifest.FileCount)
+	}
+	return nil
 }
 
 func defragDefaultModes() {

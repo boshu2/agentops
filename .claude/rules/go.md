@@ -29,6 +29,7 @@ Or equivalently: `cd cli && make build && make test`
 - Prefer table-driven tests for multi-case functions.
 - Test low-level functions directly; don't depend on external CLIs (`bd`, `ao`) in tests.
 - **Prefer L2 integration tests** that call a command/workflow entry point over L1 tests that mock dependencies.
+- **Guard-test fixtures must use the real persisted shape.** Skip/dedup/consumed/idempotency/regression guard tests must build fixtures by round-tripping a real persisted sample (serialize with the production writer, read back with the production reader) or asserting against a checked-in real example — never a hand-built in-memory constructor that sets a marker at a granularity the on-disk format never produces (e.g. `consumed` at the item level when `next-work.jsonl` marks it at the batch level). A fixture of a shape production can't emit gives a false green (ag-mjlg / PR #652). Full rationale: `skills/standards/references/test-pyramid.md` → "Fixture Fidelity".
 
 ## Error Handling
 

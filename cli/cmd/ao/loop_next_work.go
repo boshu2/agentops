@@ -128,7 +128,7 @@ func appendNextWorkDecision(cwd string, rec ladder.Recommendation, now time.Time
 	if err != nil {
 		return fmt.Errorf("open %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	data, err := json.Marshal(row)
 	if err != nil {
 		return fmt.Errorf("marshal log row: %w", err)
