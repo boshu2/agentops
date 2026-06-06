@@ -264,6 +264,7 @@ func TestClassifyServeArg(t *testing.T) {
 - **Assert exact expected values:** Use `== expected`, never `!= wrong`. (See Exact Assertion Rule above.)
 - **Table-driven tests** preferred for multi-case functions. (See example above.)
 - **Test low-level functions directly;** don't depend on external CLIs (`bd`, `ao`) in tests. (See CI-Safe Test Pattern above.)
+- **Guard-test fixtures must use the real persisted shape.** Skip/dedup/consumed/idempotency/regression guard tests must round-trip a real persisted sample (production writer → production reader) or assert against a checked-in real example — never a hand-built in-memory constructor that sets a marker at a granularity the on-disk format never emits (e.g. `consumed` at item-level when `next-work.jsonl` marks it at batch-level). A fixture of a shape production can't produce gives a false green (ag-mjlg / PR #652). Full rationale: `test-pyramid.md` → "Fixture Fidelity".
 
 ### Benchmark Tests (BF7)
 
