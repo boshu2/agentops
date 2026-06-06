@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-06T05:09:33Z",
+  "generated_at": "2026-06-06T12:24:09Z",
   "summary": {
-    "skills": 81,
+    "skills": 82,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 73,
-    "capabilities": 168
+    "cli_commands": 74,
+    "capabilities": 169
   },
   "surfaces": {
     "skills": [
@@ -178,7 +178,7 @@
         "path": "skills/evolve/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 26
+        "reference_count": 27
       },
       {
         "name": "grafana-platform-dashboard",
@@ -317,6 +317,14 @@
         "reference_count": 6
       },
       {
+        "name": "using-ntm",
+        "tier": "execution",
+        "path": "skills/using-ntm/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
         "name": "council",
         "tier": "judgment",
         "path": "skills/council/",
@@ -381,6 +389,14 @@
         "reference_count": 22
       },
       {
+        "name": "bd-first-memory-migration",
+        "tier": "knowledge",
+        "path": "skills/bd-first-memory-migration/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 4
+      },
+      {
         "name": "compile",
         "tier": "knowledge",
         "path": "skills/compile/",
@@ -402,7 +418,7 @@
         "path": "skills/domain/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 16
+        "reference_count": 19
       },
       {
         "name": "harvest",
@@ -531,14 +547,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 0
-      },
-      {
-        "name": "using-gc",
-        "tier": "meta",
-        "path": "skills/using-gc/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 2
       },
       {
         "name": "validation",
@@ -777,7 +785,12 @@
         "path": "cli/cmd/ao/",
         "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
         "bounded_context": "",
-        "driven_by_skills": []
+        "driven_by_skills": [
+          "domain",
+          "shared",
+          "using-agentops",
+          "using-ntm"
+        ]
       },
       {
         "name": "ao agents",
@@ -819,6 +832,13 @@
         "path": "cli/cmd/ao/",
         "purpose": "Complementary tooling for the bd (beads) issue tracker",
         "bounded_context": "BC3",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao canon",
+        "path": "cli/cmd/ao/",
+        "purpose": "Team-knowledge canon: learnings earned by independent attestation",
+        "bounded_context": "",
         "driven_by_skills": []
       },
       {
@@ -865,8 +885,7 @@
         "bounded_context": "BC1",
         "driven_by_skills": [
           "compile",
-          "domain",
-          "using-gc"
+          "domain"
         ]
       },
       {
@@ -960,19 +979,6 @@
         "purpose": "Run deterministic local evaluation suites",
         "bounded_context": "BC2",
         "driven_by_skills": []
-      },
-      {
-        "name": "ao evolve",
-        "path": "cli/cmd/ao/",
-        "purpose": "Run the autonomous code-improvement loop",
-        "bounded_context": "BC3",
-        "driven_by_skills": [
-          "autodev",
-          "evolve",
-          "shared",
-          "using-agentops",
-          "using-gc"
-        ]
       },
       {
         "name": "ao extract",
@@ -1080,11 +1086,11 @@
         "bounded_context": "BC1",
         "driven_by_skills": [
           "agent-native",
+          "beads",
           "domain",
           "harvest",
           "inject",
-          "using-agentops",
-          "using-gc"
+          "using-agentops"
         ]
       },
       {
@@ -1127,6 +1133,7 @@
         "purpose": "BC3 Loop operations (cycle history, etc.)",
         "bounded_context": "BC3",
         "driven_by_skills": [
+          "evolve",
           "standards"
         ]
       },
@@ -1137,8 +1144,7 @@
         "bounded_context": "BC1",
         "driven_by_skills": [
           "domain",
-          "flywheel",
-          "using-gc"
+          "flywheel"
         ]
       },
       {
@@ -1279,6 +1285,13 @@
         ]
       },
       {
+        "name": "ao redact",
+        "path": "cli/cmd/ao/",
+        "purpose": "Scrub secrets from stdin to stdout (canonical redactor)",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao registry",
         "path": "cli/cmd/ao/",
         "purpose": "Query the unified registry",
@@ -1308,12 +1321,10 @@
         "bounded_context": "BC3",
         "driven_by_skills": [
           "autodev",
-          "domain",
+          "evolve",
           "shared",
           "standards",
-          "swarm",
-          "using-agentops",
-          "using-gc"
+          "swarm"
         ]
       },
       {
@@ -1404,8 +1415,7 @@
         "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
         "bounded_context": "BC2",
         "driven_by_skills": [
-          "agent-native",
-          "using-gc"
+          "agent-native"
         ]
       },
       {
@@ -1435,11 +1445,11 @@
     ]
   },
   "capability_summary": {
-    "total": 168,
-    "skills": 81,
-    "cli_commands": 73,
-    "gates": 11,
-    "reference_impls": 3
+    "total": 169,
+    "skills": 82,
+    "cli_commands": 74,
+    "gates": 13,
+    "reference_impls": 0
   },
   "cli_top_level_commands": [
     "agent",
@@ -1448,6 +1458,7 @@
     "autodev",
     "badge",
     "beads",
+    "canon",
     "capabilities",
     "ci",
     "citation",
@@ -1465,7 +1476,6 @@
     "demo",
     "doctor",
     "eval",
-    "evolve",
     "extract",
     "feedback-loop",
     "findings",
@@ -1497,6 +1507,7 @@
     "quick-start",
     "ratchet",
     "reconcile",
+    "redact",
     "registry",
     "retrieval-bench",
     "robot-docs",
@@ -1566,7 +1577,6 @@
         "ao autodev",
         "ao autodev init",
         "ao autodev validate",
-        "ao evolve",
         "ao rpi"
       ],
       "path": "skills/autodev/",
@@ -1589,6 +1599,27 @@
       "references": 0
     },
     {
+      "sku": "skill:bd-first-memory-migration",
+      "name": "bd-first-memory-migration",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "driving-adapter",
+      "tier": "knowledge",
+      "purpose": "Consolidate fragmented agent-memory layers into one bd-canonical store, then GC/retire the rest. Triggers: \"memory migration\", \"consolidate agent memory\", \"beads-first memory\".",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "repo-context"
+      ],
+      "produces": [
+        "migration-report",
+        "bd-memories"
+      ],
+      "drives_commands": [],
+      "path": "skills/bd-first-memory-migration/",
+      "references": 4
+    },
+    {
       "sku": "skill:beads",
       "name": "beads",
       "type": "skill",
@@ -1605,6 +1636,8 @@
         "bd-issue"
       ],
       "drives_commands": [
+        "ao corpus inject",
+        "ao inject",
         "ao reconcile"
       ],
       "path": "skills/beads/",
@@ -1789,7 +1822,7 @@
       "bounded_context": "BC2",
       "hex_role": "domain",
       "tier": "judgment",
-      "purpose": "Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs multiple independent judges before committing — architecture forks, one-way doors, or scoring competing options against a rubric.",
+      "purpose": "Run multi-judge consensus.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -1888,7 +1921,7 @@
       "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "judgment",
-      "purpose": "Validate product fit before discovery. Use when: framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.",
+      "purpose": "Validate product fit before discovery.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -1967,15 +2000,18 @@
         "stdout"
       ],
       "drives_commands": [
+        "ao agent",
         "ao compile",
+        "ao corpus inject",
         "ao eval run",
         "ao inject",
         "ao maturity",
-        "ao rpi",
-        "ao rpi phased"
+        "ao mcp serve",
+        "ao rpi phased",
+        "ao session bootstrap"
       ],
       "path": "skills/domain/",
-      "references": 16
+      "references": 19
     },
     {
       "sku": "skill:dream",
@@ -1984,7 +2020,7 @@
       "bounded_context": "BC1",
       "hex_role": "supporting",
       "tier": "session",
-      "purpose": "Retired pointer — out-of-session compounding moved to Gas City.",
+      "purpose": "Retired pointer — out-of-session compounding moved to the substrate (NTM + MCP + managed-agents).",
       "status": "active",
       "disposition": "refactor",
       "consumes": [],
@@ -2047,24 +2083,25 @@
         "ao ci recent",
         "ao corpus inject",
         "ao defrag",
-        "ao evolve",
-        "ao evolve blocked",
-        "ao evolve next-work",
-        "ao evolve write-stop-marker",
         "ao goals",
         "ao lookup",
+        "ao loop",
         "ao loop append",
+        "ao loop blocked",
         "ao loop converged",
         "ao loop history",
         "ao loop hypothesis list",
+        "ao loop next-work",
         "ao loop verify",
+        "ao loop write-stop-marker",
         "ao metrics cite",
         "ao mine",
         "ao ratchet",
+        "ao rpi",
         "ao rpi loop"
       ],
       "path": "skills/evolve/",
-      "references": 26
+      "references": 27
     },
     {
       "sku": "skill:flywheel",
@@ -2424,7 +2461,7 @@
       "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "judgment",
-      "purpose": "Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs in a session (the mandatory scope checkpoint).",
+      "purpose": "Review completed work and learn.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -2536,7 +2573,7 @@
       "bounded_context": "BC2",
       "hex_role": "domain",
       "tier": "judgment",
-      "purpose": "Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.",
+      "purpose": "Stress-test plans before work.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -2703,7 +2740,7 @@
       "bounded_context": "BC2",
       "hex_role": "supporting",
       "tier": "judgment",
-      "purpose": "Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.",
+      "purpose": "Probe docs and skills.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -2828,7 +2865,7 @@
       "bounded_context": "BC2",
       "hex_role": "driving-adapter",
       "tier": "judgment",
-      "purpose": "Review diffs for risk, find mocks, scan for bugs, and audit codebases. Use when: reviewing a diff or PR for bugs and risk, hunting for mocks/stubs/placeholders, or auditing a codebase for quality.",
+      "purpose": "Review diffs for risk, find mocks, scan for bugs, and audit codebases.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -3016,8 +3053,8 @@
         "stdout"
       ],
       "drives_commands": [
+        "ao agent",
         "ao beads verify",
-        "ao evolve",
         "ao rpi",
         "ao rpi phased",
         "ao version"
@@ -3233,45 +3270,41 @@
         "documentation"
       ],
       "drives_commands": [
+        "ao agent",
         "ao agents inspect",
         "ao codex start",
         "ao codex stop",
-        "ao evolve",
         "ao flywheel close-loop",
         "ao forge transcript",
         "ao inject",
         "ao lookup",
-        "ao rpi",
+        "ao mcp serve",
         "ao search"
       ],
       "path": "skills/using-agentops/",
       "references": 0
     },
     {
-      "sku": "skill:using-gc",
-      "name": "using-gc",
+      "sku": "skill:using-ntm",
+      "name": "using-ntm",
       "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "generic",
-      "tier": "meta",
-      "purpose": "Explain how to run AgentOps on the Gas City (gc) substrate.",
+      "bounded_context": "BC4",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": "Use NTM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.",
       "status": "active",
-      "disposition": "update",
+      "disposition": "keep",
       "consumes": [],
       "produces": [
         "documentation"
       ],
       "drives_commands": [
-        "ao compile",
-        "ao corpus inject",
-        "ao evolve",
-        "ao inject",
-        "ao maturity",
-        "ao rpi",
-        "ao validate"
+        "ao agent",
+        "ao agent bundle",
+        "ao mcp serve"
       ],
-      "path": "skills/using-gc/",
-      "references": 2
+      "path": "skills/using-ntm/",
+      "references": 0
     },
     {
       "sku": "skill:validate",
@@ -3280,7 +3313,7 @@
       "bounded_context": "BC2",
       "hex_role": "driving-adapter",
       "tier": "judgment",
-      "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured PASS/WARN/FAIL verdict on an artifact, plan, code change, PR, or CI gate before proceeding.",
+      "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -3341,7 +3374,7 @@
       "bounded_context": "BC2",
       "hex_role": "domain",
       "tier": "judgment",
-      "purpose": "Validate code readiness. Use when: doing a quick readiness or sanity check that code is ready to commit or ship, short of a full review.",
+      "purpose": "Validate code readiness.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -3386,7 +3419,12 @@
       "bounded_context": "",
       "purpose": "Produce AgentOps-native Agent definitions for out-of-session loops",
       "status": "active",
-      "driven_by_skills": [],
+      "driven_by_skills": [
+        "domain",
+        "shared",
+        "using-agentops",
+        "using-ntm"
+      ],
       "flags": [
         "--config",
         "--dry-run",
@@ -3479,6 +3517,23 @@
       "type": "cli-command",
       "bounded_context": "BC3",
       "purpose": "Complementary tooling for the bd (beads) issue tracker",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.canon",
+      "name": "ao canon",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Team-knowledge canon: learnings earned by independent attestation",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
@@ -3587,8 +3642,7 @@
       "status": "active",
       "driven_by_skills": [
         "compile",
-        "domain",
-        "using-gc"
+        "domain"
       ],
       "flags": [
         "--batch-size",
@@ -3844,62 +3898,6 @@
       "path": "cli/cmd/ao/"
     },
     {
-      "sku": "cmd:ao.evolve",
-      "name": "ao evolve",
-      "type": "cli-command",
-      "bounded_context": "BC3",
-      "purpose": "Run the autonomous code-improvement loop",
-      "status": "active",
-      "driven_by_skills": [
-        "autodev",
-        "evolve",
-        "shared",
-        "using-agentops",
-        "using-gc"
-      ],
-      "flags": [
-        "--auto-clean",
-        "--auto-clean-stale-after",
-        "--bd-sync-policy",
-        "--cleanup-prune-branches",
-        "--cleanup-prune-worktrees",
-        "--command-timeout",
-        "--compile",
-        "--compile-defrag",
-        "--compile-interval",
-        "--compile-since",
-        "--config",
-        "--cycle-delay",
-        "--cycle-retries",
-        "--detached-branch-prefix",
-        "--detached-heal",
-        "--dry-run",
-        "--ensure-cleanup",
-        "--failure-policy",
-        "--gate-fast-script",
-        "--gate-policy",
-        "--gate-security-script",
-        "--json",
-        "--kill-switch-path",
-        "--landing-branch",
-        "--landing-commit-message",
-        "--landing-lock-path",
-        "--landing-policy",
-        "--lease",
-        "--lease-path",
-        "--lease-ttl",
-        "--max-cycles",
-        "--mode",
-        "--output",
-        "--ralph",
-        "--repo-filter",
-        "--retry-backoff",
-        "--supervisor",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
       "sku": "cmd:ao.extract",
       "name": "ao extract",
       "type": "cli-command",
@@ -4147,11 +4145,11 @@
       "status": "active",
       "driven_by_skills": [
         "agent-native",
+        "beads",
         "domain",
         "harvest",
         "inject",
-        "using-agentops",
-        "using-gc"
+        "using-agentops"
       ],
       "flags": [
         "--apply-decay",
@@ -4244,12 +4242,14 @@
       "purpose": "BC3 Loop operations (cycle history, etc.)",
       "status": "active",
       "driven_by_skills": [
+        "evolve",
         "standards"
       ],
       "flags": [
         "--config",
         "--dry-run",
         "--json",
+        "--mode",
         "--output",
         "--verbose"
       ],
@@ -4264,8 +4264,7 @@
       "status": "active",
       "driven_by_skills": [
         "domain",
-        "flywheel",
-        "using-gc"
+        "flywheel"
       ],
       "flags": [
         "--apply",
@@ -4587,6 +4586,23 @@
       "path": "cli/cmd/ao/"
     },
     {
+      "sku": "cmd:ao.redact",
+      "name": "ao redact",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Scrub secrets from stdin to stdout (canonical redactor)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
       "sku": "cmd:ao.registry",
       "name": "ao registry",
       "type": "cli-command",
@@ -4658,12 +4674,10 @@
       "status": "active",
       "driven_by_skills": [
         "autodev",
-        "domain",
+        "evolve",
         "shared",
         "standards",
-        "swarm",
-        "using-agentops",
-        "using-gc"
+        "swarm"
       ],
       "flags": [
         "--config",
@@ -4878,8 +4892,7 @@
       "purpose": "Umbrella validation gate (exit-code-as-verdict with --gate)",
       "status": "active",
       "driven_by_skills": [
-        "agent-native",
-        "using-gc"
+        "agent-native"
       ],
       "flags": [
         "--bead",
@@ -4965,6 +4978,15 @@
       "path": ".github/workflows/validate.yml"
     },
     {
+      "sku": "gate:skill-gates",
+      "name": "skill-gates",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
       "sku": "gate:correctness",
       "name": "correctness",
       "type": "gate",
@@ -5037,6 +5059,15 @@
       "path": ".github/workflows/validate.yml"
     },
     {
+      "sku": "gate:skill-eval",
+      "name": "skill-eval",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
       "sku": "gate:process-hygiene",
       "name": "process-hygiene",
       "type": "gate",
@@ -5053,33 +5084,6 @@
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
       "status": "active",
       "path": ".github/workflows/validate.yml"
-    },
-    {
-      "sku": "ref-impl:agentops-pack",
-      "name": "agentops reference City pack",
-      "type": "reference-impl",
-      "bounded_context": "BC5",
-      "purpose": "Reference Gas City pack: mayor + refinery agents drive ao rpi/evolve loops.",
-      "status": "active",
-      "path": "packs/agentops/"
-    },
-    {
-      "sku": "ref-impl:agentops-agent.mayor",
-      "name": "agentops mayor agent",
-      "type": "reference-impl",
-      "bounded_context": "BC5",
-      "purpose": "Reference City mayor agent role.",
-      "status": "active",
-      "path": "packs/agentops/agents/mayor/"
-    },
-    {
-      "sku": "ref-impl:agentops-agent.refinery",
-      "name": "agentops refinery agent",
-      "type": "reference-impl",
-      "bounded_context": "BC5",
-      "purpose": "Reference City refinery agent role.",
-      "status": "active",
-      "path": "packs/agentops/agents/refinery/"
     }
   ],
   "cadence_recommendations": [

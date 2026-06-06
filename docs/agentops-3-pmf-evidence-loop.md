@@ -57,8 +57,8 @@ Minimum scenario:
 Second-stage scenario:
 
 1. Reuse the same packet or verdict in a later engineering decision.
-2. Run the loop out of session: point the reference Gas City at the repo and let
-   the mayor sling ready beads to refinery workers running `ao rpi`.
+2. Run the loop out of session: hand it to the reference substrate (NTM + MCP +
+   managed-agents) and let it dispatch ready beads to workers running `ao rpi`.
 3. Report whether always-on compounding felt useful or premature.
 
 ## Interview Script
@@ -125,8 +125,8 @@ Record:
 - No always-on interest.
 - Interested but blocked.
 - Ran the loop in session (`ao rpi` / `ao evolve`).
-- Pointed the reference Gas City at the repo.
-- Mayor-driven dispatch slung a ready bead to a refinery worker.
+- Handed the loop to the reference substrate (NTM + MCP + managed-agents).
+- Substrate dispatch sent a ready bead to a worker running `ao rpi`.
 - An out-of-session run completed and produced an inspected artifact.
 
 Do not count always-on substrate setup as first-value activation.

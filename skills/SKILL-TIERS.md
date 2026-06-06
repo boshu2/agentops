@@ -18,7 +18,7 @@ Skills fall into three functional categories, plus infrastructure tiers for inte
 | **cross-vendor** | Execution | Multi-runtime orchestration | codex-team, openai-docs, converter |
 | **library** | Internal | Reference skills loaded JIT by other skills | beads, standards, shared |
 | **background** | Internal | Hook-triggered or automatic skills | inject, extract, forge, provenance, ratchet |
-| **meta** | Internal | Skills about skills | using-agentops, using-gc, heal-skill |
+| **meta** | Internal | Skills about skills | using-agentops, heal-skill |
 
 ## The Three Categories
 
@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (71)
+### User-Facing Skills (73)
 
 **Judgment:**
 
@@ -248,6 +248,7 @@ These are how skills chain in practice:
 | **discovery** | meta | Discovery phase orchestrator — brainstorm → search → research → plan → pre-mortem |
 | **validation** | meta | Validation phase orchestrator — vibe → post-mortem → retro → forge |
 | **swarm** | execution | Parallelize any skill — fresh context per agent |
+| **using-ntm** | execution | Run AgentOps loops out of session on an NTM tmux swarm — the NTM leg of the substrate |
 | **rpi** | meta | Thin wrapper: /discovery → /crank → /validation with complexity classification and loop |
 | **evolve** | execution | Autonomous fitness-scored improvement loop |
 | **burndown** | execution | Bounded epic-completion loop — drive a finite target to all-merged, then stop |
@@ -302,6 +303,7 @@ These are how skills chain in practice:
 | **status** | session | Single-screen dashboard |
 | **quickstart** | session | Interactive onboarding |
 | **dream** | session | Private overnight operator surface — setup, bedtime run, and morning report |
+| **bd-first-memory-migration** | knowledge | Consolidate fragmented memory layers onto a bd-canonical store |
 | **bootstrap** | session | One-command full AgentOps setup — fills gaps only |
 | **session-bootstrap** | session | Universal init prompt — every agent runs this first (soc-vuu6.25) |
 
@@ -329,7 +331,7 @@ These are how skills chain in practice:
 | **workflow-builder** | meta | Scaffold a new Claude Workflow script (.claude/workflows/*.js) from the operating-loop.js template |
 | **agent-native** | meta | Make out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI, not hooks |
 
-### Internal Skills (10) — `metadata.internal: true`
+### Internal Skills (9) — `metadata.internal: true`
 
 Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hooks. Loaded JIT by other skills via Read or auto-triggered by hooks.
 
@@ -344,7 +346,6 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | ratchet | background | Execution | Progress gates |
 | flywheel | background | Knowledge | Knowledge health monitoring |
 | using-agentops | meta | Meta | AgentOps workflow guide (auto-injected) |
-| using-gc | meta | Meta | Guide to running AgentOps on the Gas City (gc) substrate |
 
 ---
 
@@ -372,7 +373,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | doc | standards | required |
 | flywheel | - | - |
 | forge | - | - |
-| **dream** | - | - (retired pointer; out-of-session compounding runs via Gas City) |
+| **dream** | - | - (retired pointer; out-of-session compounding runs on the substrate — NTM + MCP + managed-agents) |
 | handoff | - | - |
 | **implement** | beads, standards | optional, required |
 | inject | - | - |
@@ -408,7 +409,6 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | trace | provenance | alternative |
 | **update** | - | - (standalone) |
 | using-agentops | - | - |
-| using-gc | - | - |
 | **test** | standards, complexity | required, optional |
 | **review** | standards, council | required, optional |
 | **design** | council, shared | required, optional |

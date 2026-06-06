@@ -14,7 +14,7 @@ The metronome gate adds a structural detector: when the same `mode` value repeat
 |---|---|
 | 0–2 | No gate. The selection ladder runs normally. |
 | 3–4 | **Soft block.** If the selected work would produce the same `mode` value, skip to the next rung of the selection ladder. Do not abort — try the rung below. |
-| 5+ | **Hard block.** File `bd remember "metronome-N: <mode>"` and require operator override (write `.agents/evolve/RESCOPE` with a new directive). The cycle is logged as `unchanged` with `selected_source: "metronome-gate-blocked"`. |
+| 5+ | **Hard block.** Record the gap as bead/provenance evidence and require operator override (write `.agents/evolve/RESCOPE` with a new directive). The cycle is logged as `unchanged` with `selected_source: "metronome-gate-blocked"`. |
 
 ## Why the threshold is 3, not 2
 

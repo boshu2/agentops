@@ -45,6 +45,9 @@ skill_count=0
 broken=0
 for skill_md in "$REPO_ROOT/skills"/*/SKILL.md; do
     [[ -f "$skill_md" ]] || continue
+    # Skip leading-underscore scaffolding (e.g. skills/_fixtures/) — planted
+    # test fixtures, not real skills.
+    case "$(basename "$(dirname "$skill_md")")" in _*) continue ;; esac
     skill_count=$((skill_count + 1))
     # SKILL.md must start with --- (YAML frontmatter) — required by all runtimes
     if ! head -1 "$skill_md" | grep -q '^---'; then
@@ -68,6 +71,7 @@ echo "Stage 3: Runtime-agnostic skill structure"
 missing_skillmd=0
 for skill_dir in "$REPO_ROOT/skills"/*/; do
     [[ -d "$skill_dir" ]] || continue
+    case "$(basename "$skill_dir")" in _*) continue ;; esac
     if [[ ! -f "$skill_dir/SKILL.md" ]]; then
         fail "$(basename "$skill_dir") missing SKILL.md"
         missing_skillmd=$((missing_skillmd + 1))
@@ -81,6 +85,7 @@ fi
 readme_found=0
 for skill_dir in "$REPO_ROOT/skills"/*/; do
     [[ -d "$skill_dir" ]] || continue
+    case "$(basename "$skill_dir")" in _*) continue ;; esac
     if [[ -f "$skill_dir/README.md" ]]; then
         fail "$(basename "$skill_dir") has README.md (should be SKILL.md only)"
         readme_found=$((readme_found + 1))
