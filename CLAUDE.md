@@ -66,7 +66,7 @@ Building the CLI, the Key Scripts table, CI-validation detail + the "rules that 
 
 1. **Claim.** `bd ready` → pick a bead → `bd update <id> --claim`. **No bead, no PR.** If the work is genuinely new, `bd create` first.
 2. **Scope.** Read the bead's acceptance: a `.feature` file (canonical when present) or an embedded `## Scenarios` block in the bead description. Free-text acceptance is invalid — promote it to scenarios before work begins. Default: **one PR per coherent arc** — bundle scenarios that ship-or-revert together; split scenarios with independent rollback. The PR is the *atomic-revert unit*. Carve-out: `type=chore` with `#trivial` label for tiny work.
-3. **Ship.** `bd worktree create --branch <type>/<bead-id>-<scenario-token>-<short-slug>` — worktree-mandatory; do not edit in the shared checkout. Implement. Run per-tool sanity checks for the surfaces you touched (`cd cli && make test`, `bats tests/scripts/<file>.bats`, etc.); CI runs the omnibus validation on push.
+3. **Ship.** `bd worktree create wt-<bead-id> --branch <type>/<bead-id>-<scenario-token>-<short-slug>` (the worktree dir name is the required positional arg) — worktree-mandatory; do not edit in the shared checkout. Implement. Run `scripts/pre-push-gate.sh --fast` before push (smart conditional gate that runs the per-tool checks — `cd cli && make test`, `bats tests/scripts/<file>.bats`, etc. — only for the surfaces you changed); CI runs the omnibus validation on push.
 4. **Close.** Open PR. CI validates the merge state. Squash-merge when green. The bead closes only when every scenario is merged (or explicitly cancelled in bead metadata).
 
 ### Branch + PR shape
@@ -81,7 +81,7 @@ Building the CLI, the Key Scripts table, CI-validation detail + the "rules that 
 
 ### Multi-agent discipline (shared checkout)
 
-The host `~/dev/agentops` is contended. **Agents do not edit it directly.** Use `bd worktree create --branch <name>` for every change. Cross-bead merge serialization: `bd merge-slot`. Foreign uncommitted files = quarantined; identify owner, attach to a bead, move into a worktree.
+The host `~/dev/agentops` is contended. **Agents do not edit it directly.** Use `bd worktree create <name> --branch <branch>` for every change. Cross-bead merge serialization: `bd merge-slot`. Foreign uncommitted files = quarantined; identify owner, attach to a bead, move into a worktree.
 
 ### Provenance
 
@@ -99,7 +99,7 @@ Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `ag
 
 - **DDD (vocabulary):** `skills/domain/references/` — BC names + ubiquitous language.
 - **Hex (structure):** `skills/*/SKILL.md` frontmatter (`hexagonal_role`, `consumes`, `produces`, `context_rel`) → generated to `docs/contracts/context-map.md`. CI gate: `validate-context-map-drift`.
-- **Gherkin (acceptance):** `skills/*/references/*.feature` + bead-embedded `## Scenarios`. CI gate: `scenario-hash-stability`.
+- **Gherkin (acceptance):** `skills/*/references/*.feature` + bead-embedded `## Scenarios`. CI gate: `check-scenario-test-linkage` (in the `skill-gates` job).
 
 ### CI tiers (no "advisory")
 
@@ -113,7 +113,7 @@ Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `ag
 - **Before proposing new capability:** check it doesn't already exist — `.github/workflows/validate.yml`, `GOALS.md`, existing `skills/**/SKILL.md`, and the `ao` command surface (`cli/cmd/ao/`, generated `cli/docs/COMMANDS.md`).
 - **Gas City (gc) — optional out-of-session SDK, NOT the live substrate.** The live substrate is NTM + Agent Mail (above). `gc` is an optional dependency for out-of-session orchestration only; `ao` does NOT wrap it. (The CLI gc-bridge was removed — see next line.)
 - **Gas City (gc) bridge — REMOVED (soc-2rtm0, wave 2).** The CLI gc-bridge glue (`cli/cmd/ao/gc_bridge.go`, `gc_events.go`, `rpi_phased_gc.go`) was severed and deleted. The phased engine keeps its non-gc backends (`auto`/`direct`/`stream`/`tmux`); `runtime=gc` is no longer a valid mode. The injectable exec/look typedefs (`execFn`/`lookFn`, formerly `gcExecFn`/`gcLookFn`) now live in `rpi_phased_context.go`. The last dangling gascity compat — `internal/gascity`, its only importer (the orphaned `agentworker` GasCity adapter), and `internal/bridge/gc.go` — was removed in ag-hfc (3.1 teardown S2); the live `bridge` codex/semver helpers (`CompareSemver`, `ParseSemverParts`, codex lifecycle) stay in `bridge/semver.go` + `bridge/codex.go`.
-- **Legacy RPI lane — load-bearing, not dead code.** Do not write new tests or features for `rpi_loop_supervisor.go`, `rpi_c2_events.go`, `rpi_phased_tmux.go`, `rpi_parallel.go`, but do NOT delete them: live code references their symbols (`RPIC2Event`/`appendRPIC2Event` across 13+ `rpi_phased*` files + `mine`; `rpiLoopSupervisorConfig`/`runRPISupervisedCycle` in `rpi_loop`/`agentopsd`/`rpi_cancel`; `shellQuote` in `handoff`/`overnight_setup`; tmux helpers in `rpi_nudge`/`rpi_phased_stream`). Deleting any breaks the build; removal needs a caller-migration refactor (soc-1gbpz), not a delete. `rpi_workers.go` and `fire.go` were already removed.
+- **Legacy RPI lane — load-bearing, live (tested) code; no new surface area.** `rpi_loop_supervisor.go`, `rpi_c2_events.go`, `rpi_phased_tmux.go`, `rpi_parallel.go` are live and **have substantial test suites** — extend those tests when a caller-driven change legitimately touches the lane (the test-count-regression ratchet expects them maintained, not abandoned). Do NOT add **new features / new surface area** here, and do NOT delete the files: live code references their symbols (`RPIC2Event`/`appendRPIC2Event` across 13+ `rpi_phased*` files + `mine`; `rpiLoopSupervisorConfig`/`runRPISupervisedCycle` in `rpi_loop`/`agentopsd`/`rpi_cancel`; `shellQuote` in `handoff`/`overnight_setup`; tmux helpers in `rpi_nudge`/`rpi_phased_stream`). Deleting any breaks the build; full removal needs a caller-migration refactor (soc-1gbpz), not a flat delete. `rpi_workers.go` and `fire.go` were already removed. (Prior wording said "do not write tests for them," which contradicted the on-disk test suites + the ratchet — ag-etgr.)
 
 ### Execution Discipline
 

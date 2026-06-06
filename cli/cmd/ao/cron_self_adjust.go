@@ -274,3 +274,23 @@ func cronHistoryReadRows(path string) ([]cronSelfAdjustHistoryRow, error) {
 	}
 	return rows, scanner.Err()
 }
+
+// countCronHistoryRows counts non-empty lines in a JSONL file (0 if missing).
+// Relocated from the deleted ao-evolve CLI surface (ag-llni); its only consumer
+// is cronSelfAdjust above.
+func countCronHistoryRows(path string) int {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	n := 0
+	for scanner.Scan() {
+		if strings.TrimSpace(scanner.Text()) != "" {
+			n++
+		}
+	}
+	return n
+}

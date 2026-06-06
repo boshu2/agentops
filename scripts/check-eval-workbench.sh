@@ -26,11 +26,13 @@ task_count=$(find "$WORKBENCH/tasks" -name "score.sh" -type f 2>/dev/null | wc -
 prompt_count=$(find "$WORKBENCH/tasks" -name "prompt.md" -type f 2>/dev/null | wc -l)
 [ "$prompt_count" -eq "$task_count" ] || fail "prompt.md count ($prompt_count) != task count ($task_count) — every task needs a prompt.md"
 
-# Check agent eval suite exists and covers all tasks
+# Check agent eval suite exists and covers all live-agent task families.
+# Corpus-delta tasks are exercised by the side harness, not this agent suite.
+agent_task_count=$(find "$WORKBENCH/tasks" -type f \( -path "$WORKBENCH/tasks/go-*/score.sh" -o -path "$WORKBENCH/tasks/py-*/score.sh" -o -path "$WORKBENCH/tasks/ops-*/score.sh" \) 2>/dev/null | wc -l)
 agent_suite="$REPO_ROOT/evals/agentops-core/workbench-agent-v1.json"
 [ -f "$agent_suite" ] || fail "Agent eval suite not found"
 agent_case_count=$(python3 -c "import json; print(len(json.load(open('$agent_suite'))['cases']))" 2>/dev/null)
-[ "$agent_case_count" -ge "$task_count" ] || fail "Agent suite has $agent_case_count cases but $task_count tasks exist"
+[ "$agent_case_count" -ge "$agent_task_count" ] || fail "Agent suite has $agent_case_count cases but $agent_task_count live-agent tasks exist"
 
 # Check behavioral eval suite exists
 suite="$REPO_ROOT/evals/agentops-core/workbench-behavioral-v1.json"

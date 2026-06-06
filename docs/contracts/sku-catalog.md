@@ -79,7 +79,7 @@ what a "real command" is.
   `scripts/generate-registry.sh` (folds it into `registry.json` schema v2).
 - Sources joined: `skills/*/SKILL.md` frontmatter, `docs/contracts/skill-dispositions.yaml`,
   `skills/SKILL-TIERS.md`, the live `ao capabilities` cobra tree,
-  `.github/workflows/validate.yml` job ids, `packs/agentops/`.
+  `.github/workflows/validate.yml` job ids.
 
 Regenerate after touching any source:
 

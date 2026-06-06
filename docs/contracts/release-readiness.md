@@ -58,10 +58,10 @@ checks, and optional release-version match.
 ```bash
 scripts/check-release-hil.sh \
   --expected-version X.Y.Z \
-  --target 'local:bushido:ao version && ao init --help && ao hooks show && ao rpi status'
+  --target 'local:bushido:ao version && ao init --help && ao doctor && ao rpi status'
 scripts/check-release-hil.sh \
   --expected-version X.Y.Z \
-  --target 'ssh:bushido:bushido:ao version && ao init --help && ao hooks show && ao rpi status'
+  --target 'ssh:bushido:bushido:ao version && ao init --help && ao doctor && ao rpi status'
 ```
 
 When no physical target is available for an official release, the release owner

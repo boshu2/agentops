@@ -19,7 +19,7 @@ This writes a fitness snapshot to `.agents/evolve/` atomically via a temp file p
 
 Skip if `--skip-baseline` or `--beads-only` or baseline already exists.
 
-`ao evolve` captures this automatically before entering the RPI loop. It hashes
+`/evolve` captures this automatically before entering the RPI loop. It hashes
 the active GOALS.md or GOALS.yaml file to an era ID, then writes a snapshot
 under `.agents/evolve/fitness-baselines/goals-<hash>/` if that era directory
 does not already contain a JSON snapshot.

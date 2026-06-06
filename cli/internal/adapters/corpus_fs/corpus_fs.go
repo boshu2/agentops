@@ -48,6 +48,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/boshu2/agentops/cli/internal/llm"
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
@@ -232,7 +233,11 @@ func (w *Writer) Capture(ctx context.Context, req ports.CorpusWriteRequest) (por
 		return ports.CorpusWriteResult{}, fmt.Errorf("corpus_fs: stat %q: %w", full, err)
 	}
 
-	body := renderCorpusBody(req.Body, req.Metadata)
+	// Scrub-on-write (git-safety chokepoint, ag-6vlm): every byte that lands
+	// in the corpus — frontmatter + body — is passed through the secret
+	// redactor before it touches disk, so credentials cannot leak into the
+	// committed/local .agents/ corpus. Non-sensitive content is unchanged.
+	body := llm.RedactBytes(renderCorpusBody(req.Body, req.Metadata))
 	if err := os.WriteFile(full, body, 0o644); err != nil {
 		return ports.CorpusWriteResult{}, fmt.Errorf("corpus_fs: write %q: %w", full, err)
 	}

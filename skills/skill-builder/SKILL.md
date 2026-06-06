@@ -52,7 +52,7 @@ Materializes a new skill against the unified template at `references/skill-templ
 |------|--------|-------------|
 | `from-scratch` | stable | Interactive scaffold from canonical template. Produces full skill skeleton + scripts/validate.sh + codex parity. |
 | `from-template` | stable | `--like <existing-skill>` copies structure from a sibling skill, swaps domain-specific sections. |
-| `absorb-external` | stable | Reads external SKILL.md (e.g., from `~/dev/financial-services/.../<skill>/SKILL.md`), wraps in AgentOps frontmatter, invokes `/converter` for codex parity. |
+| `absorb-external` | stable | Reads external SKILL.md (e.g., from `~/dev/financial-services/<some-dir>/<skill>/SKILL.md`), wraps in AgentOps frontmatter, invokes `/converter` for codex parity. |
 | `from-pattern` | **alpha (passthrough)** | Delegates to `ao flywheel close-loop`. Outputs land at `.agents/knowledge/promoted/` per flywheel rules — they are NOT yet shaped as SKILL.md drafts. v2 will add skill-specific synthesis. Use `from-scratch` or `absorb-external` for SKILL.md output today. |
 
 ## Workflow

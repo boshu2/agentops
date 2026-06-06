@@ -36,6 +36,9 @@ func (a *InMemoryClaimEvidenceBinder) Bind(ctx context.Context, binding Evidence
 	if binding.Path == "" {
 		return errors.New("ports: EvidenceBinding.Path required")
 	}
+	if err := ValidateEvidenceBindingReviewers(binding); err != nil {
+		return err
+	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	prev, existed := a.bindings[binding.Claim]
