@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-31T20:11:38Z",
+  "generated_at": "2026-06-06T11:04:37Z",
   "summary": {
     "skills": 81,
     "hooks": 0,
@@ -474,7 +474,7 @@
         "path": "skills/agent-native/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 3
       },
       {
         "name": "automation-shape-routing",
@@ -1545,7 +1545,7 @@
         "ao validate"
       ],
       "path": "skills/agent-native/",
-      "references": 1
+      "references": 3
     },
     {
       "sku": "skill:autodev",
