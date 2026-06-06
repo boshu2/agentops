@@ -48,18 +48,21 @@ output_contract: code changes, GOALS.md fitness deltas
 
 > Measure what's wrong. Fix the worst thing. Measure again. Compound.
 
-**V2 command surface:** keep the name `evolve`. Use `ao evolve` for the
-terminal-native loop. It is the top-level operator entrypoint for
-`ao rpi loop --supervisor`, preserving the old `/evolve` concept while reusing
-the v2 RPI loop engine.
+**The loop runs as this skill (skills-are-the-runtime).** `evolve` selects work
+and invokes complete `/rpi --auto` cycles — that *is* the loop. `evolve` (and
+`ao rpi loop --supervisor`) are terminal-native **wrapper commands** for humans or
+non-skill runtimes, not the default expression of the loop; they reuse the same v2
+RPI loop engine. (The substrate dispatches the whole `evolve` skill loop as one
+unit; it never drives the loop's insides. The `evolve`/`ao rpi` CLI wrappers are
+being retired — ag-iowf.)
 
 **Operator cadence:** post-mortem finished work, analyze the current repo state,
-select or create the next highest-value work item, let `/rpi` handle research,
+select or create the next highest-value work item, let `rpi` handle research,
 planning, pre-mortem, implementation, and validation, then harvest follow-ups
 and repeat until a kill switch, max-cycle cap, regression breaker, or real
 dormancy stops the run.
 
-Always-on autonomous loop over `/rpi`. Work selection order:
+Always-on autonomous loop over `rpi`. Work selection order:
 1. **Harvested `.agents/rpi/next-work.jsonl` work** (freshest concrete follow-up)
 2. **Open ready beads work** (`bd ready`)
 3. **Failing goals and directive gaps** (`ao goals measure`)
@@ -94,9 +97,9 @@ Always-on autonomous loop over `/rpi`. Work selection order:
 | Lane | Runs | Mutates code? | Mutates corpus? | Outer loop? | Budget |
 |------|------|---------------|-----------------|-------------|--------|
 | `/dream` | nightly, private local | **No** | **Yes (heavy)** | **Yes (convergence)** | wall-clock + plateau |
-| `/evolve` | daytime, operator-driven | Yes (via `/rpi`) | Yes (light) | Yes | cycle cap |
+| `evolve` | daytime, operator-driven | Yes (via `rpi`) | Yes (light) | Yes | cycle cap |
 
-Dream owns the knowledge compounding layer; `/evolve` owns the code compounding layer. Both share fitness-measurement substrate via `corpus.Compute` / `ao goals measure`. Run Dream overnight, then start each day with `/evolve` against the freshly-compounded corpus with a clean fitness baseline.
+**`/dream` is retired** (out-of-session compounding moved to Gas City — see `skills/dream/SKILL.md`); the table above is historical. `/evolve` owns the live daytime code-compounding lane; the nightly knowledge-compounding it once contrasted against now runs out-of-session on the substrate, not via `/dream`. Both still share the fitness-measurement substrate via `corpus.Compute` / `ao goals measure`.
 
 ## Flags
 
@@ -108,8 +111,8 @@ Dream owns the knowledge compounding layer; `/evolve` owns the code compounding 
 | `--skip-baseline` | off | Skip first-run baseline snapshot |
 | `--quality` | off | Prioritize harvested post-mortem findings |
 | `--compile` | off | Run `ao mine` + `ao defrag` warmup before cycle 1 |
-| `--test-first` | on | Pass strict-quality defaults through to `/rpi` |
-| `--no-test-first` | off | Explicitly disable test-first passthrough to `/rpi` |
+| `--test-first` | on | Pass strict-quality defaults through to `rpi` |
+| `--no-test-first` | off | Explicitly disable test-first passthrough to `rpi` |
 | `--no-lifecycle` | off | Skip lifecycle work generators in Steps 3.4-3.6 (/test, /deps, /perf, /refactor). Falls back to manual scanning. |
 | `--mode=burst\|loop` | burst | Operator-loop; STOP refused. [loop-mode.md](references/loop-mode.md). |
 
@@ -117,7 +120,7 @@ Dream owns the knowledge compounding layer; `/evolve` owns the code compounding 
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
-**FULLY AUTONOMOUS.** Read `references/autonomous-execution.md`. Every `/rpi` uses `--auto`. Do NOT ask the user anything. Each cycle = complete 3-phase `/rpi` run.
+**FULLY AUTONOMOUS.** Read `references/autonomous-execution.md`. Every `rpi` uses `--auto`. Do NOT ask the user anything. Each cycle = complete 3-phase `rpi` run.
 
 For broad AgentOps 3.0 domain evolution across skills, CLI, hooks, docs, tests,
 beads, and knowledge, first read
@@ -247,7 +250,7 @@ Skip if `--beads-only`. Run `scripts/evolve-measure-fitness.sh` to produce a rol
 
 ### Step 3: Select Work
 
-Selection is a ladder, not a one-shot check — after every productive cycle, return to the TOP and re-read the queue before considering dormancy. **Read [references/work-selection-ladder.md](references/work-selection-ladder.md) for the full per-rung procedure** (programmatic `ao evolve next-work` recommendation, scope filter, metronome gate, the generator rungs with their code blocks, the `--quality` inverted cascade, and the dormancy hard-gate).
+Selection is a ladder, not a one-shot check — after every productive cycle, return to the TOP and re-read the queue before considering dormancy. **Read [references/work-selection-ladder.md](references/work-selection-ladder.md) for the full per-rung procedure** (programmatic `ao loop next-work` recommendation, scope filter, metronome gate, the generator rungs with their code blocks, the `--quality` inverted cascade, and the dormancy hard-gate).
 
 Ladder order (standard mode):
 - **3.0 Scope filter** (soc-5qit) — split-or-defer oversized candidates via scout-mode; never bail.
@@ -265,12 +268,12 @@ If `--dry-run`: report what would be worked on and go to Teardown.
 
 ### Step 4: Execute
 
-Primary engine: `/rpi` for implementation-quality work (all 3 phases mandatory). `/implement` or `/crank` only when a bead has execution-ready scope.
+Primary engine: `rpi` for implementation-quality work (all 3 phases mandatory). `/implement` or `/crank` only when a bead has execution-ready scope.
 
-If a repo-local `PROGRAM.md` contract is active, `/rpi` will load it automatically. `/evolve` must compose with that behavior, not bypass it:
+If a repo-local `PROGRAM.md` contract is active, `rpi` will load it automatically. `evolve` must compose with that behavior, not bypass it:
 - Do not select work that is obviously outside mutable scope.
-- If a bead or goal would require edits under immutable scope, escalate it or convert it into durable follow-up work instead of launching `/rpi`.
-- When work is plausibly in scope but still uncertain, let `/rpi` discovery validate the fit and surface a scope escape explicitly.
+- If a bead or goal would require edits under immutable scope, escalate it or convert it into durable follow-up work instead of launching `rpi`.
+- When work is plausibly in scope but still uncertain, let `rpi` discovery validate the fit and surface a scope escape explicitly.
 
 For a **harvested item, failing goal, directive gap, testing improvement, validation tightening task, bug-hunt result, drift finding, or feature suggestion**:
 ```
@@ -288,7 +291,7 @@ If Step 3 created durable work instead of executing it immediately, re-enter Ste
 
 **Mechanical-batch hint:** when the implementation phase identifies > 20 uniform per-file edits, prefer a script (`awk`/`sed`/`for f in $candidates`) over N tool-level Edit calls. See `references/mechanical-batches.md` for the decision rule and the script-first pattern.
 
-**Pre-flight schema check (architectural migrations):** if the selected work is a port/adapter migration that rewires an existing consumer, BEFORE invoking `/rpi`, sample two representative consumer call sites and compare field-use against the target port surface. If the consumer reads > 20% more fields than the port projects, abort the migration cycle and convert the work into a port-widening cycle instead. The phase-2 narrowness post-mortem (`docs/learnings/2026-05-13-bc-ports-narrowness-postmortem.md`) is the encoded lesson; see `references/pre-flight-schema-check.md` for the procedure.
+**Pre-flight schema check (architectural migrations):** if the selected work is a port/adapter migration that rewires an existing consumer, BEFORE invoking `rpi`, sample two representative consumer call sites and compare field-use against the target port surface. If the consumer reads > 20% more fields than the port projects, abort the migration cycle and convert the work into a port-widening cycle instead. The phase-2 narrowness post-mortem (`docs/learnings/2026-05-13-bc-ports-narrowness-postmortem.md`) is the encoded lesson; see `references/pre-flight-schema-check.md` for the procedure.
 
 **Operator-shape carve-out:** `AskUserQuestion` is permitted ONLY for shape decisions affecting > 50 files OR a schema/contract surface (carrier choice, struct-field shape, frontmatter-key shape). See `references/autonomous-execution.md` for the bound on this exception.
 
@@ -355,7 +358,7 @@ done
 
 **Mandatory checkpoint #6 — session-PR threshold (NOT terminal, gates next cycle):** at `session_pr_count >= 5` (soc-waxr default), invoke `/post-mortem --deep`, wait for verdict file. PASS → continue. WARN → continue with caveat in next cycle's `notes`. FAIL or non-convergence → write STOP. Agent MUST NOT self-grade or self-write STOP. Full procedure in `references/postmortem-checkpoint.md` (soc-n75z).
 
-**Self-perpetuation modes:** the terminal-native `ao evolve` loop and the Claude-Code-harness `ScheduleWakeup` end-of-turn pattern are duals — both drive Step 1..Step 7 repeatedly against the same persisted state. See `references/autonomous-execution.md` for the ScheduleWakeup cadence and the rule that hard stops must NOT re-arm.
+**Self-perpetuation modes:** the terminal-native `evolve` loop and the Claude-Code-harness `ScheduleWakeup` end-of-turn pattern are duals — both drive Step 1..Step 7 repeatedly against the same persisted state. See `references/autonomous-execution.md` for the ScheduleWakeup cadence and the rule that hard stops must NOT re-arm.
 
 Push only when productive work has accumulated:
 ```bash
@@ -387,12 +390,22 @@ before invoking /release. Do NOT skip any of these on the basis of "cycles
 were green" — fast pre-push gate ≠ full pre-push gate; goals-measure ≠
 release readiness.
 
-  [ ] 1. Regenerate CLI reference docs if any cobra command/flag changed:
-         bash scripts/generate-cli-reference.sh
-         git diff cli/docs/COMMANDS.md   # commit if non-empty
+  [ ] 1. Regenerate ALL derived surfaces if any cobra command/flag changed:
+         bash scripts/regen-all.sh          # COMMANDS.md, registry.json, maps
+         # ADDING an `ao` command also needs the 2 surfaces regen-all only WARNS
+         # about: cli/cmd/ao/cobra_commands_test.go expectedCmds (x2 lists) +
+         # the cli-command-surface heading counts in
+         # evals/agentops-core/fixtures/cli-command-surface-smoke.sh AND
+         # evals/agentops-core/cli-command-surface-matrix.json (top/sub/all).
+         # Run the smoke fixture to read the exact new counts. (ag-jy12 will
+         # automate this.) Full procedure in
+         # [references/ao-command-landing.md](references/ao-command-landing.md)
+         git diff cli/docs/COMMANDS.md registry.json   # commit if non-empty
 
-  [ ] 2. Run the FULL pre-push gate (NOT --fast):
-         bash scripts/pre-push-gate.sh
+  [ ] 2. Run the FULL pre-push gate (NOT --fast) with fail-fast OFF, so a
+         PRE-EXISTING failure (e.g. corpus-freshness) cannot mask your own
+         regressions by stopping the run early:
+         PRE_PUSH_FAIL_FAST=false bash scripts/pre-push-gate.sh
 
   [ ] 3. Run the release-readiness gate:
          bash scripts/ci-local-release.sh
@@ -413,7 +426,7 @@ The handoff artifact (e.g., `.agents/runs/<release>/READY-TO-TAG.md`) MUST conta
 ## Examples
 
 **User says:** `/evolve --max-cycles=5`
-**What happens:** Evolve re-enters the full selection ladder after every `/rpi` cycle and runs producer layers instead of idling on empty queues.
+**What happens:** Evolve re-enters the full selection ladder after every `rpi` cycle and runs producer layers instead of idling on empty queues.
 
 **User says:** `/evolve --beads-only`
 **What happens:** Evolve skips goals measurement and works through `bd ready` backlog.
@@ -424,7 +437,7 @@ The handoff artifact (e.g., `.agents/runs/<release>/READY-TO-TAG.md`) MUST conta
 **User says:** `/evolve --compile`
 **What happens:** Evolve runs `ao mine` + `ao defrag` at session start to surface fresh signal (orphaned research, code hotspots, oscillating goals) before the first evolve cycle. Use before a long autonomous run or after a burst of development activity.
 
-**User says:** `/evolve`
+**User says:** `evolve`
 **What happens:** See `references/examples.md` for a worked overnight flow that moves through beads -> harvested work -> goals -> testing -> bug hunt -> feature suggestion before dormancy is considered.
 
 See `references/examples.md` for detailed walkthroughs.
@@ -456,6 +469,7 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - [references/fitness-scoring.md](references/fitness-scoring.md) — Baseline capture, regression detection, revert procedure
 - [references/gate-hygiene.md](references/gate-hygiene.md) — Pre-gate source-surface detection, structural gate-output parsing, pre-push diff-scope check, pre-existing-vs-mine red triage
 - [references/new-skill-landing.md](references/new-skill-landing.md) — The six derived surfaces a new/modified skill must regenerate in one shot to stay one-shot-green
+- [references/ao-command-landing.md](references/ao-command-landing.md) — The surfaces a new/renamed `ao` command must regenerate (cobra expectedCmds x2 + cli-command-surface counts that regen-all only WARNS about)
 - [references/goals-schema.md](references/goals-schema.md) — GOALS.yaml format and continuous metrics
 - [references/knowledge-loop-integration.md](references/knowledge-loop-integration.md) — Claim/release semantics and harvest re-read
 - [references/mechanical-batches.md](references/mechanical-batches.md) — Script-first vs per-file Edit for > 20-file uniform batches

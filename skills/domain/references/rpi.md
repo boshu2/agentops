@@ -20,7 +20,7 @@ The **inner tick** of the [Loop](loop.md): one Research → Plan → Implement �
 
 ## RPI is one invocable unit
 
-A substrate dispatches `ao rpi` as one unit; it does not drive the five beats as separate substrate steps. Decomposing rpi across the substrate seam would duplicate the loop shape and pit substrate retry against the ratchet rules. Whoever owns the loop owns its invariants, and AgentOps owns rpi.
+A substrate dispatches the `/rpi` loop (an agent running the skill) as one unit; it does not drive the five beats as separate substrate steps. Decomposing rpi across the substrate seam would duplicate the loop shape and pit substrate retry against the ratchet rules. Whoever owns the loop owns its invariants, and AgentOps owns rpi.
 
 ## When to use
 

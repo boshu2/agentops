@@ -35,6 +35,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/liveness"
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 	"github.com/boshu2/agentops/cli/internal/turnstate"
 )
@@ -178,10 +179,10 @@ func Evaluate(in Input) (Verdict, error) {
 	}
 
 	results := map[string]PredicateResult{
-		PredicateChainIntact:      evalChainIntact(in),
-		PredicateTerminalState:    evalTerminalState(in),
-		PredicateScenariosCovered: evalScenariosCovered(in),
-		PredicateEvidenceResolves: evalEvidenceResolves(in),
+		PredicateChainIntact:        evalChainIntact(in),
+		PredicateTerminalState:      evalTerminalState(in),
+		PredicateScenariosCovered:   evalScenariosCovered(in),
+		PredicateEvidenceResolves:   evalEvidenceResolves(in),
 		PredicateProvenanceEvent:    evalProvenanceEvent(in),
 		PredicateNoOrphan:           evalNoOrphan(in),
 		PredicateAuthorNeqValidator: evalAuthorNeqValidator(in),
@@ -339,16 +340,23 @@ func evalAuthorNeqValidator(in Input) PredicateResult {
 		r.Reason = "self-grading explicitly waived via --allow-self (inline fallback)"
 		return r
 	}
-	if author == "" {
-		r.Reason = "no author_id recorded (cannot prove the judge is independent of the author)"
-		return r
-	}
-	if judge == "" {
-		r.Reason = "no judge_id recorded (independent judge context required; use --allow-self to waive)"
-		return r
-	}
-	if judge == author {
-		r.Reason = fmt.Sprintf("verdict self-graded: judge_id == author_id (%q); an independent judge context is required (use --allow-self to waive)", author)
+	// Route the core author!=judge decision through the canonical
+	// liveness.Disjoint predicate (ag-xdrw/#737) so there is ONE no-self-grade
+	// invariant, not a divergent reimplementation. Disjoint denies on empty
+	// author, empty judge, OR author==judge — behaviour-identical to the prior
+	// inline checks here — but now a single source of truth. The divergence
+	// between these reimplementations is exactly what let the empty-ID
+	// self-grade bypass recur (#737 PG3/PG4, #741 citation reward). Reason
+	// strings stay specific for verdict legibility.
+	if liveness.Disjoint(author, judge) != liveness.Allowed {
+		switch {
+		case author == "":
+			r.Reason = "no author_id recorded (cannot prove the judge is independent of the author)"
+		case judge == "":
+			r.Reason = "no judge_id recorded (independent judge context required; use --allow-self to waive)"
+		default:
+			r.Reason = fmt.Sprintf("verdict self-graded: judge_id == author_id (%q); an independent judge context is required (use --allow-self to waive)", author)
+		}
 		return r
 	}
 	r.Passed = true

@@ -45,18 +45,17 @@ The rest are specialized references. Skim titles and jump in when a topic become
 
     Process-level ports and adapters from BDD intent through evidence ratchet.
 
--   :material-city: **[GC Posture](gc-posture.md)**
-
-    ---
-
-    Gas City is one opt-in, swappable adapter behind AgentOps ports — plus the
-    managed-city guardrail and the "no cloud required" sovereignty promise.
-
 -   :material-swap-horizontal: **[Fungibility Charter](fungibility-charter.md)**
 
     ---
 
     AgentOps 3.0's six doctrinal commitments — fungible by default, specialized when you opt in.
+
+-   :material-stairs: **[Autonomy Ladder](autonomy-ladder.md)**
+
+    ---
+
+    The explicit L0–L4 dispatch progression — named promotion gates, auto-downgrade, and the Red Button — with the deterministic enforcement boundary held constant at every rung.
 
 -   :material-school: **[Behavior-Shaping Environment](behavior-shaping-environment.md)**
 

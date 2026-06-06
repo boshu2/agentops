@@ -37,7 +37,7 @@ output_contract: 'a routing verdict — Workflow | NTM swarm | plain skill — w
 | Shape | What it is | Mechanism |
 |---|---|---|
 | **Workflow** | Deterministic, reproducible orchestration of subagents | Claude `Workflow` tool — `agent({schema})`, `parallel()`, `pipeline()`, `phase()`, loop-until-budget. In-process, headless, ~16 concurrent. |
-| **NTM swarm** | Long-lived, human-in-the-loop multi-agent run | `ntm` / `*-with-ntm` — persistent tmux panes, robot API, mail/locks, attach + nudge + kill/relaunch. |
+| **NTM swarm** | Long-lived, human-in-the-loop multi-agent run | `ntm` (the CLI) driven by [`/using-ntm`](../using-ntm/SKILL.md) — persistent tmux panes running whole `/rpi`/`/evolve` loops over a bead queue, with attach + nudge + kill/relaunch and mail/locks coordination. |
 | **Plain skill** | One model reasoning through a procedure or knowledge | A single `SKILL.md`. No fan-out, or a strictly sequential edit-loop. |
 
 ## The decision rule (three axes)
@@ -129,7 +129,7 @@ decided, hand off:
 |---|---|---|
 | **plain skill** | `skill-builder` | Scaffold a new `SKILL.md` against the unified template → then `skill-auditor` → `heal-skill`. |
 | **Workflow** | `workflow-builder` | Scaffold a new `.claude/workflows/*.js` from the operating-loop.js template. |
-| **NTM swarm** | `ntm` + `vibing-with-ntm` | Stand up + tend a persistent, human-attachable tmux swarm. |
+| **NTM swarm** | `ntm` + [`/using-ntm`](../using-ntm/SKILL.md) | Stand up + tend an NTM swarm running AgentOps loops (`/rpi`/`/evolve`) over a bead queue. |
 
 State the verdict and the deciding axis in one line, then invoke the chosen
 builder. Do not scaffold here.

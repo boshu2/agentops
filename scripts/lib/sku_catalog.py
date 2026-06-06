@@ -253,6 +253,10 @@ def build_skill_skus(
     for skill_md in sorted(skills_dir.glob("*/SKILL.md")):
         skill_dir = skill_md.parent
         name = skill_dir.name
+        # Skip leading-underscore scaffolding dirs (e.g. skills/_fixtures/) —
+        # planted test fixtures, not real skills; they must not become SKUs.
+        if name.startswith("_"):
+            continue
         fm = parse_skill_frontmatter(skill_md)
         disp = dispositions.get(name, {})
         drives = sku_extract.extract_skill_commands(skill_dir, valid_commands)

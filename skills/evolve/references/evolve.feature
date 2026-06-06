@@ -30,5 +30,5 @@ Feature: Evolve runs a goal-driven compounding loop
 
   Scenario: The loop never self-halts
     When the loop is blocked or out of bounded work
-    Then it logs `ao evolve blocked` and continues or operator-waits
+    Then it logs `ao loop blocked` and continues or operator-waits
     And it never writes a STOP/DORMANT marker itself (operator-only, ADR-0007)

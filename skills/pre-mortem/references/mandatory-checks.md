@@ -87,6 +87,8 @@ Check each issue in the plan:
 | Does every feature/bug issue include L1 (unit) tests? | Yes | severity=significant: "Missing unit tests for feature/bug issue" |
 | Do cross-module changes include L2 (integration) tests? | Yes | severity=moderate: "Missing integration tests for cross-module change" |
 | Are L4+ levels deferred to human gate (not agent-planned)? | Yes | severity=low: "Agent planning L4+ tests — these require human-defined scenarios" |
+| For any skip/dedup/consumed/idempotency/regression guard test, does the fixture round-trip the **real persisted shape** (not a hand-built in-memory constructor)? | Yes | severity=significant: "Guard-test fixture uses a shape production never emits — false-green risk (cf. ag-mjlg / PR #652)" |
+| Does any guard marker (`consumed`/`skip`/`dedup`) get set at the granularity the on-disk artifact uses (batch/parent/envelope vs item)? | Yes | severity=significant: "Guard marker set at item-level when persisted artifact marks it at batch-level" |
 
 Add to each judge's prompt when test pyramid check is active:
 

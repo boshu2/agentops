@@ -1,5 +1,14 @@
 # Legacy To Daemon Migration
 
+> ⚠️ **ARCHIVED — describes removed infrastructure.** AgentOps 3.0 has **no
+> daemon**. `agentopsd` and the `internal/daemon` package were deleted (soc-2rtm0),
+> and the `ao daemon` / `ao overnight` commands no longer exist (`ao daemon` →
+> "unknown command"). 3.0 is in-session only; always-on / out-of-session work is
+> delegated to a swappable substrate — **NTM + MCP (`ao mcp serve`) +
+> managed-agents (`ao agent`)**. See [docs/3.0.md](3.0.md) ("not … a daemon") and
+> [docs/dependencies.md](dependencies.md). This page is retained only as a record
+> of the pre-3.0 design; nothing below is live.
+
 AgentOps is moving from foreground command flows to an always-on local daemon.
 The daemon path is currently opt-in: existing one-shot RPI, Dream, and
 wiki/forge commands continue to work unless you pass the daemon flags.

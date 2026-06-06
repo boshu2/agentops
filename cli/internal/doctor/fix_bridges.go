@@ -7,35 +7,29 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/openclaw"
 )
 
-// The bridges subsystem detects failures in the GasCity (`gc`) bridge and the
-// OpenClaw consumer surface. Per the Phase 2 analysis, 5 of the 6 failure
-// modes are detect-only — the doctor must never install binaries, start or
-// kill processes, or rewrite activation files. The single partial fixer is
-// fm-bridges-openclaw-snapshot-stale, whose torn-`latest.json` sub-case is
-// safely reconstructible from an intact versioned snapshot.
+// The bridges subsystem detects failures in the OpenClaw consumer surface. Per
+// the Phase 2 analysis, the health probe is detect-only and the snapshot fixer
+// is partial — the doctor must never start or kill processes or rewrite
+// activation files. The single partial fixer is fm-bridges-openclaw-snapshot-stale,
+// whose torn-`latest.json` sub-case is safely reconstructible from an intact
+// versioned snapshot.
+//
+// The GasCity (`gc`) bridge detectors/fixers were removed in ag-gdns: AgentOps
+// no longer references Gas City (ag-124p), so the doctor no longer probes the
+// `gc` binary, version, controller, or status schema.
 
 // init registers every bridges detector and fixer with the package registry.
 func init() {
-	RegisterDetector(gcBinaryMissingDetector{})
-	RegisterDetector(gcVersionIncompatibleDetector{})
-	RegisterDetector(gcControllerDownDetector{})
-	RegisterDetector(gcStatusParseErrorDetector{})
 	RegisterDetector(openclawHealthUnreachableDetector{})
 	RegisterDetector(openclawSnapshotStaleDetector{})
 
-	RegisterFixer(gcBinaryMissingFixer{})
-	RegisterFixer(gcVersionIncompatibleFixer{})
-	RegisterFixer(gcControllerDownFixer{})
-	RegisterFixer(gcStatusParseErrorFixer{})
 	RegisterFixer(openclawHealthUnreachableFixer{})
 	RegisterFixer(openclawSnapshotStaleFixer{})
 }
@@ -43,157 +37,13 @@ func init() {
 const (
 	subsystemBridges = "bridges"
 
-	fmGCBinaryMissing           = "fm-bridges-gc-binary-missing"
-	fmGCVersionIncompatible     = "fm-bridges-gc-version-incompatible"
-	fmGCControllerDown          = "fm-bridges-gc-controller-down"
-	fmGCStatusParseError        = "fm-bridges-gc-status-parse-error"
 	fmOpenClawHealthUnreachable = "fm-bridges-openclaw-health-unreachable"
 	fmOpenClawSnapshotStale     = "fm-bridges-openclaw-snapshot-stale"
-
-	// gcBridgeMinVersion is the minimum gc version the bridge supports. Kept
-	// as a literal here so the doctor package does not depend on cmd/ao.
-	gcBridgeMinVersion = "0.13.0"
 )
 
 // ---------------------------------------------------------------------------
 // Shared helpers (all pure / read-only).
 // ---------------------------------------------------------------------------
-
-// lookGC resolves the `gc` binary on the current process PATH. It is pure:
-// exec.LookPath performs no disk writes.
-func lookGC() (string, bool) {
-	p, err := exec.LookPath("gc")
-	if err != nil {
-		return "", false
-	}
-	return p, true
-}
-
-// bridgeCityPath walks up from cwd looking for city.toml. It returns the
-// directory containing city.toml, or "" if none is found. stat-only, pure.
-func bridgeCityPath(cwd string) string {
-	dir := cwd
-	for {
-		if _, err := os.Stat(filepath.Join(dir, "city.toml")); err == nil {
-			return dir
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return ""
-		}
-		dir = parent
-	}
-}
-
-// gcStatusArgs returns the argument vector for `gc status --json`, scoped to a
-// city path when one is known.
-func gcStatusArgs(cityPath string) []string {
-	if strings.TrimSpace(cityPath) == "" {
-		return []string{"status", "--json"}
-	}
-	return []string{"--city", cityPath, "status", "--json"}
-}
-
-// gcProbeResult is the outcome of a bounded `gc` subprocess probe.
-type gcProbeResult struct {
-	timedOut bool
-	exitErr  bool
-	stdout   []byte
-	stderr   string
-}
-
-// runGCBounded runs `gc <args...>` under a hard wall-clock deadline so a wedged
-// controller cannot hang `ao doctor`. It is read-only: `gc status`/`gc version`
-// only print to stdout. The deadline is enforced via context cancellation.
-func runGCBounded(args []string, deadline time.Duration) gcProbeResult {
-	ctx, cancel := context.WithTimeout(context.Background(), deadline)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "gc", args...)
-	var errBuf strings.Builder
-	cmd.Stderr = &errBuf
-	out, err := cmd.Output()
-	if ctx.Err() == context.DeadlineExceeded {
-		return gcProbeResult{timedOut: true, stderr: errBuf.String()}
-	}
-	if err != nil {
-		return gcProbeResult{exitErr: true, stdout: out, stderr: errBuf.String()}
-	}
-	return gcProbeResult{stdout: out, stderr: errBuf.String()}
-}
-
-// gcVersionToken extracts the first semver-looking token from gc version output.
-// Returns "" if none is present. Pure string work.
-func gcVersionToken(raw string) string {
-	for _, field := range strings.Fields(raw) {
-		t := strings.TrimPrefix(strings.TrimSpace(field), "v")
-		if t == "" {
-			continue
-		}
-		first := t[0]
-		if first >= '0' && first <= '9' && strings.Count(t, ".") >= 1 {
-			// Trim any trailing non-version punctuation.
-			return strings.TrimRight(t, ",;")
-		}
-	}
-	return ""
-}
-
-// semverParts parses up to three dotted integer components. Non-numeric
-// components coerce to 0 (matching the bridge's lenient parser).
-func semverParts(v string) [3]int {
-	var parts [3]int
-	core := v
-	if i := strings.IndexByte(core, '-'); i >= 0 {
-		core = core[:i]
-	}
-	for i, seg := range strings.SplitN(core, ".", 3) {
-		if i > 2 {
-			break
-		}
-		n := 0
-		ok := false
-		for _, r := range seg {
-			if r < '0' || r > '9' {
-				ok = false
-				break
-			}
-			n = n*10 + int(r-'0')
-			ok = true
-		}
-		if ok {
-			parts[i] = n
-		}
-	}
-	return parts
-}
-
-// compareSemverParts returns -1, 0, 1 comparing two parsed semver triples.
-func compareSemverParts(a, b [3]int) int {
-	for i := 0; i < 3; i++ {
-		switch {
-		case a[i] < b[i]:
-			return -1
-		case a[i] > b[i]:
-			return 1
-		}
-	}
-	return 0
-}
-
-// hasNonNumeric reports whether v's core (pre-prerelease) has any non-numeric,
-// non-dot rune — a marker of version-string format drift.
-func hasNonNumeric(v string) bool {
-	core := v
-	if i := strings.IndexByte(core, '-'); i >= 0 {
-		core = core[:i]
-	}
-	for _, r := range core {
-		if (r < '0' || r > '9') && r != '.' {
-			return true
-		}
-	}
-	return false
-}
 
 // truncatePayload bounds an observed-payload string for evidence storage.
 func truncatePayload(s string) string {
@@ -237,570 +87,7 @@ func detectOnlyRemediation(id string) Remediation {
 }
 
 // ---------------------------------------------------------------------------
-// FM 1: fm-bridges-gc-binary-missing — DETECT-ONLY.
-// ---------------------------------------------------------------------------
-
-// gcBinaryMissingDetector fires when the `gc` binary is not on PATH.
-type gcBinaryMissingDetector struct{}
-
-func (gcBinaryMissingDetector) ID() string        { return fmGCBinaryMissing }
-func (gcBinaryMissingDetector) Subsystem() string { return subsystemBridges }
-func (gcBinaryMissingDetector) Severity() string  { return "P2" }
-func (gcBinaryMissingDetector) Describe() string {
-	return "GasCity `gc` binary is not resolvable on the doctor's PATH"
-}
-func (gcBinaryMissingDetector) EstimatedCostMS() int { return 10 }
-func (gcBinaryMissingDetector) OnlineRequired() bool { return false }
-func (gcBinaryMissingDetector) QuickPath() bool      { return true }
-
-// Detect resolves `gc` on PATH and, if missing, enriches the finding with the
-// off-PATH install directories where a `gc` binary actually exists. PURE.
-func (gcBinaryMissingDetector) Detect(env *DetectEnv) ([]Finding, error) {
-	if _, ok := lookGC(); ok {
-		return nil, nil
-	}
-	var offPath []string
-	for _, rel := range []string{".local/bin/gc", "go/bin/gc", "bin/gc"} {
-		cand := filepath.Join(env.HomeDir, rel)
-		if isExecutableFile(cand) {
-			offPath = append(offPath, cand)
-		}
-	}
-	if isExecutableFile("/usr/local/bin/gc") {
-		offPath = append(offPath, "/usr/local/bin/gc")
-	}
-	return []Finding{{
-		ID:         fmGCBinaryMissing,
-		Severity:   "P2",
-		Subsystem:  subsystemBridges,
-		Title:      "GasCity `gc` binary not found on PATH",
-		Confidence: 1.0,
-		Evidence: Evidence{
-			Query: "command -v gc || echo MISSING",
-			File:  strings.Join(offPath, ","),
-		},
-		Remediation: detectOnlyRemediation(fmGCBinaryMissing),
-	}}, nil
-}
-
-// isExecutableFile reports whether path is a regular file with an executable
-// bit set. stat-only, pure.
-func isExecutableFile(path string) bool {
-	info, err := os.Stat(path)
-	if err != nil || info.IsDir() {
-		return false
-	}
-	return info.Mode().Perm()&0o111 != 0
-}
-
-// gcBinaryMissingFixer is detect-only: it never installs a binary or edits
-// PATH. It refuses with a precise operator instruction routed through Mutate.
-type gcBinaryMissingFixer struct{}
-
-func (gcBinaryMissingFixer) ID() string              { return fmGCBinaryMissing }
-func (gcBinaryMissingFixer) Preconditions() []string { return []string{"run_dir_writable"} }
-func (gcBinaryMissingFixer) WritesTo() []string {
-	return []string{".doctor/runs/<run-id>/reports"}
-}
-func (gcBinaryMissingFixer) Ops() []string     { return []string{"WriteFile"} }
-func (gcBinaryMissingFixer) Reversible() bool  { return true }
-func (gcBinaryMissingFixer) Idempotent() bool  { return true }
-func (gcBinaryMissingFixer) AutoFixable() bool { return false }
-
-// Fix re-runs the pure detector and writes a precise operator report. It
-// installs nothing and edits no PATH. The finding legitimately persists.
-func (gcBinaryMissingFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
-	fs, err := gcBinaryMissingDetector{}.Detect(env)
-	if err != nil {
-		return FixResult{FixerID: fmGCBinaryMissing, Err: err}, err
-	}
-	if len(fs) == 0 {
-		return FixResult{FixerID: fmGCBinaryMissing, Fixed: true}, nil
-	}
-	offPath := fs[0].Evidence.File
-	var report string
-	if strings.TrimSpace(offPath) == "" {
-		report = "GasCity `gc` binary not found. Install GasCity, then re-run " +
-			"`ao doctor`. The doctor will not install third-party binaries."
-	} else {
-		first := strings.SplitN(offPath, ",", 2)[0]
-		report = fmt.Sprintf("GasCity `gc` found at %s but it is not on the PATH "+
-			"`ao` runs under. For interactive shells add that directory to PATH "+
-			"in your shell rc. For systemd-user / agentopsd / hook contexts set "+
-			"PATH in the unit's Environment= or the hook wrapper. The doctor will "+
-			"not edit shell rc files.", first)
-	}
-	actions, err := writeReport(ctx, fmGCBinaryMissing+".txt", report)
-	if err != nil {
-		return FixResult{FixerID: fmGCBinaryMissing, ActionsTaken: actions, Err: err}, err
-	}
-	return FixResult{
-		FixerID:      fmGCBinaryMissing,
-		FindingIDs:   []string{fmGCBinaryMissing},
-		ActionsTaken: actions,
-		Fixed:        false,
-	}, nil
-}
-
-// ---------------------------------------------------------------------------
-// FM 2: fm-bridges-gc-version-incompatible — DETECT-ONLY.
-// ---------------------------------------------------------------------------
-
-// gcVersionObservation classifies how a `gc version` probe failed.
-type gcVersionObservation struct {
-	kind   string // "cmd_failed" | "unparseable" | "format_drift" | "genuinely_old"
-	value  string
-	rawOut string
-}
-
-// gcVersionIncompatibleDetector fires when an installed `gc` is below the
-// bridge minimum, or its version output cannot be parsed.
-type gcVersionIncompatibleDetector struct{}
-
-func (gcVersionIncompatibleDetector) ID() string        { return fmGCVersionIncompatible }
-func (gcVersionIncompatibleDetector) Subsystem() string { return subsystemBridges }
-func (gcVersionIncompatibleDetector) Severity() string  { return "P2" }
-func (gcVersionIncompatibleDetector) Describe() string {
-	return "Installed `gc` is below the bridge minimum version or unparseable"
-}
-func (gcVersionIncompatibleDetector) EstimatedCostMS() int { return 80 }
-func (gcVersionIncompatibleDetector) OnlineRequired() bool { return false }
-func (gcVersionIncompatibleDetector) QuickPath() bool      { return false }
-
-// classifyGCVersion runs `gc version` and classifies the result. Pure.
-func classifyGCVersion() (gcVersionObservation, bool) {
-	probe := runGCBounded([]string{"version"}, 4*time.Second)
-	if probe.timedOut || probe.exitErr {
-		return gcVersionObservation{kind: "cmd_failed", rawOut: truncatePayload(string(probe.stdout) + probe.stderr)}, true
-	}
-	raw := strings.TrimSpace(string(probe.stdout))
-	token := gcVersionToken(raw)
-	if token == "" {
-		return gcVersionObservation{kind: "unparseable", rawOut: truncatePayload(raw)}, true
-	}
-	parts := semverParts(token)
-	if compareSemverParts(parts, semverParts(gcBridgeMinVersion)) >= 0 {
-		return gcVersionObservation{}, false // compatible
-	}
-	if parts == [3]int{0, 0, 0} && token != "0.0.0" && hasNonNumeric(token) {
-		return gcVersionObservation{kind: "format_drift", value: token, rawOut: truncatePayload(raw)}, true
-	}
-	return gcVersionObservation{kind: "genuinely_old", value: token, rawOut: truncatePayload(raw)}, true
-}
-
-// Detect resolves `gc`, runs `gc version`, and classifies any incompatibility.
-// It early-returns nil when `gc` is missing (that is fm-bridges-gc-binary-missing).
-// PURE.
-func (gcVersionIncompatibleDetector) Detect(_ *DetectEnv) ([]Finding, error) {
-	if _, ok := lookGC(); !ok {
-		return nil, nil // upstream precedence: binary-missing handles this
-	}
-	obs, found := classifyGCVersion()
-	if !found {
-		return nil, nil
-	}
-	return []Finding{{
-		ID:         fmGCVersionIncompatible,
-		Severity:   "P2",
-		Subsystem:  subsystemBridges,
-		Title:      "GasCity `gc` version incompatible (" + obs.kind + ")",
-		Confidence: 1.0,
-		Evidence: Evidence{
-			Query: "gc version  # compare against " + gcBridgeMinVersion + " floor",
-			File:  obs.kind + ":" + obs.value,
-		},
-		Remediation: detectOnlyRemediation(fmGCVersionIncompatible),
-	}}, nil
-}
-
-// gcVersionIncompatibleFixer is detect-only: it never upgrades `gc` or patches
-// ao source. It writes a precise per-sub-case operator report.
-type gcVersionIncompatibleFixer struct{}
-
-func (gcVersionIncompatibleFixer) ID() string { return fmGCVersionIncompatible }
-func (gcVersionIncompatibleFixer) Preconditions() []string {
-	return []string{"gc_on_path", "run_dir_writable"}
-}
-func (gcVersionIncompatibleFixer) WritesTo() []string {
-	return []string{".doctor/runs/<run-id>/reports"}
-}
-func (gcVersionIncompatibleFixer) Ops() []string     { return []string{"WriteFile"} }
-func (gcVersionIncompatibleFixer) Reversible() bool  { return true }
-func (gcVersionIncompatibleFixer) Idempotent() bool  { return true }
-func (gcVersionIncompatibleFixer) AutoFixable() bool { return false }
-
-// Fix re-runs the detector, disambiguates the sub-case, and reports. No binary
-// upgrade, no ao source edit. The finding legitimately persists.
-func (gcVersionIncompatibleFixer) Fix(ctx *MutateContext, _ *DetectEnv, _ []Finding) (FixResult, error) {
-	if _, ok := lookGC(); !ok {
-		return FixResult{FixerID: fmGCVersionIncompatible, Fixed: true}, nil
-	}
-	obs, found := classifyGCVersion()
-	if !found {
-		return FixResult{FixerID: fmGCVersionIncompatible, Fixed: true}, nil
-	}
-	report := gcVersionReport(obs)
-	actions, err := writeReport(ctx, fmGCVersionIncompatible+".txt", report)
-	if err != nil {
-		return FixResult{FixerID: fmGCVersionIncompatible, ActionsTaken: actions, Err: err}, err
-	}
-	return FixResult{
-		FixerID:      fmGCVersionIncompatible,
-		FindingIDs:   []string{fmGCVersionIncompatible},
-		ActionsTaken: actions,
-		Fixed:        false,
-	}, nil
-}
-
-// gcVersionReport builds the operator instruction for a version observation.
-func gcVersionReport(obs gcVersionObservation) string {
-	switch obs.kind {
-	case "genuinely_old":
-		return fmt.Sprintf("Installed `gc` is %s, below the bridge minimum %s. "+
-			"Upgrade GasCity to >= %s, then re-run `ao doctor`. Verify with "+
-			"`gc version`. The doctor will not upgrade third-party binaries.",
-			obs.value, gcBridgeMinVersion, gcBridgeMinVersion)
-	case "format_drift":
-		return fmt.Sprintf("`gc version` printed %q; ao parsed it as %s and treated "+
-			"it as 0.0.0 (parse coercion). `gc` may actually be new enough. Confirm "+
-			"the real version with `gc version`. If it is >= %s this is an ao "+
-			"version-parser drift — file a bd issue against the bridges subsystem; "+
-			"the doctor will not patch ao source.", obs.rawOut, obs.value, gcBridgeMinVersion)
-	case "unparseable":
-		return fmt.Sprintf("`gc version` output %q contains no recognizable semver "+
-			"token. Confirm `gc version` works in your shell. If gc prints a "+
-			"banner/JSON now, this is an ao parser drift — file a bd issue; the "+
-			"doctor will not patch ao.", obs.rawOut)
-	default: // cmd_failed
-		return fmt.Sprintf("`gc version` exited non-zero or hung: %q. The gc binary "+
-			"is on PATH but broken. Reinstall/repair GasCity, then re-run "+
-			"`ao doctor`.", obs.rawOut)
-	}
-}
-
-// ---------------------------------------------------------------------------
-// FM 3: fm-bridges-gc-controller-down — DETECT-ONLY (bounded probe).
-// ---------------------------------------------------------------------------
-
-// gcStatusProbe runs a bounded `gc status --json` and returns the raw result.
-// It is the shared probe for the controller-down and status-parse-error
-// detectors. The 4s deadline prevents a wedged controller from hanging
-// `ao doctor`.
-func gcStatusProbe(env *DetectEnv) gcProbeResult {
-	city := bridgeCityPath(env.CWD)
-	return runGCBounded(gcStatusArgs(city), 4*time.Second)
-}
-
-// gcStatusControllerRunning reports whether a parsed `gc status` JSON shows the
-// controller as running. Pure JSON inspection.
-func gcStatusControllerRunning(stdout []byte) (running, parsed bool) {
-	var top map[string]json.RawMessage
-	if json.Unmarshal(stdout, &top) != nil {
-		return false, false
-	}
-	ctrlRaw, ok := top["controller"]
-	if !ok {
-		return false, false
-	}
-	var ctrl struct {
-		Running bool `json:"running"`
-	}
-	if json.Unmarshal(ctrlRaw, &ctrl) != nil {
-		return false, false
-	}
-	// A valid status payload also carries agents + summary.
-	_, hasAgents := top["agents"]
-	_, hasSummary := top["summary"]
-	if !hasAgents || !hasSummary {
-		return false, false
-	}
-	return ctrl.Running, true
-}
-
-// gcControllerDownDetector fires when the GasCity controller is not running,
-// the gc API is unavailable, or the status probe wedged.
-type gcControllerDownDetector struct{}
-
-func (gcControllerDownDetector) ID() string        { return fmGCControllerDown }
-func (gcControllerDownDetector) Subsystem() string { return subsystemBridges }
-func (gcControllerDownDetector) Severity() string  { return "P1" }
-func (gcControllerDownDetector) Describe() string {
-	return "GasCity controller is not running, unreachable, or wedged"
-}
-func (gcControllerDownDetector) EstimatedCostMS() int { return 4000 }
-func (gcControllerDownDetector) OnlineRequired() bool { return false }
-func (gcControllerDownDetector) QuickPath() bool      { return false }
-
-// Detect probes `gc status` under a bounded 4s deadline. It honors the GasCity
-// precedence chain: it early-returns nil when `gc` is missing or below the
-// minimum version, and nil when status parses (parse errors are a downstream
-// FM). PURE.
-func (gcControllerDownDetector) Detect(env *DetectEnv) ([]Finding, error) {
-	if _, ok := lookGC(); !ok {
-		return nil, nil // upstream: binary-missing
-	}
-	if _, found := classifyGCVersion(); found {
-		return nil, nil // upstream: version-incompatible
-	}
-	probe := gcStatusProbe(env)
-	var kind, detail string
-	switch {
-	case probe.timedOut:
-		kind, detail = "controller_wedged", "gc status did not respond within 4s"
-	case probe.exitErr:
-		kind, detail = "api_unavailable", truncatePayload(probe.stderr)
-	default:
-		running, parsed := gcStatusControllerRunning(probe.stdout)
-		if !parsed {
-			return nil, nil // downstream: status-parse-error
-		}
-		if running {
-			return nil, nil // healthy
-		}
-		kind, detail = "controller_not_running", "controller.running == false"
-	}
-	return []Finding{{
-		ID:         fmGCControllerDown,
-		Severity:   "P1",
-		Subsystem:  subsystemBridges,
-		Title:      "GasCity controller down (" + kind + ")",
-		Confidence: 1.0,
-		Evidence: Evidence{
-			Query: "gc status --json | jq .controller.running   # expect true",
-			File:  kind + ":" + detail,
-		},
-		Remediation: detectOnlyRemediation(fmGCControllerDown),
-	}}, nil
-}
-
-// gcControllerDownFixer is detect-only: it never starts, stops, or signals the
-// controller. It writes a precise per-sub-case operator report.
-type gcControllerDownFixer struct{}
-
-func (gcControllerDownFixer) ID() string { return fmGCControllerDown }
-func (gcControllerDownFixer) Preconditions() []string {
-	return []string{"gc_on_path", "run_dir_writable"}
-}
-func (gcControllerDownFixer) WritesTo() []string {
-	return []string{".doctor/runs/<run-id>/reports"}
-}
-func (gcControllerDownFixer) Ops() []string     { return []string{"WriteFile"} }
-func (gcControllerDownFixer) Reversible() bool  { return true }
-func (gcControllerDownFixer) Idempotent() bool  { return true }
-func (gcControllerDownFixer) AutoFixable() bool { return false }
-
-// Fix re-runs the bounded detector and reports the exact `gc` command to bring
-// the controller up. It starts no process. The finding legitimately persists.
-func (gcControllerDownFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
-	fs, err := gcControllerDownDetector{}.Detect(env)
-	if err != nil {
-		return FixResult{FixerID: fmGCControllerDown, Err: err}, err
-	}
-	if len(fs) == 0 {
-		return FixResult{FixerID: fmGCControllerDown, Fixed: true}, nil
-	}
-	kind := strings.SplitN(fs[0].Evidence.File, ":", 2)[0]
-	cityFlag := ""
-	if city := bridgeCityPath(env.CWD); city != "" {
-		cityFlag = "--city " + city + " "
-	}
-	report := gcControllerReport(kind, cityFlag)
-	actions, err := writeReport(ctx, fmGCControllerDown+".txt", report)
-	if err != nil {
-		return FixResult{FixerID: fmGCControllerDown, ActionsTaken: actions, Err: err}, err
-	}
-	return FixResult{
-		FixerID:      fmGCControllerDown,
-		FindingIDs:   []string{fmGCControllerDown},
-		ActionsTaken: actions,
-		Fixed:        false,
-	}, nil
-}
-
-// gcControllerReport builds the operator instruction for a controller-down kind.
-func gcControllerReport(kind, cityFlag string) string {
-	switch kind {
-	case "controller_not_running":
-		return fmt.Sprintf("GasCity controller is registered but not running. "+
-			"Start it with `gc %scontroller start` (or the city's supervisor: "+
-			"`gc %sup`), then re-run `ao doctor`. The doctor will not start "+
-			"runtime processes.", cityFlag, cityFlag)
-	case "api_unavailable":
-		return fmt.Sprintf("`gc %sstatus` failed: the controller process / socket "+
-			"is gone. Bring the city daemon up with `gc %sup`, confirm with "+
-			"`gc %sstatus --json`, then re-run `ao doctor`. The doctor will not "+
-			"start runtime processes.", cityFlag, cityFlag, cityFlag)
-	default: // controller_wedged
-		return fmt.Sprintf("`gc %sstatus` did not respond within 4s — the "+
-			"controller is wedged. Inspect with `gc %sstatus` directly; you may "+
-			"need to stop and restart the city supervisor. Reconcile any lingering "+
-			"`agentworker-gascity` processes. The doctor will not kill or restart "+
-			"processes.", cityFlag, cityFlag)
-	}
-}
-
-// ---------------------------------------------------------------------------
-// FM 4: fm-bridges-gc-status-parse-error — DETECT-ONLY.
-// ---------------------------------------------------------------------------
-
-// gcStatusParseErrorDetector fires when `gc status --json` returns a payload
-// the bridge parser cannot consume.
-type gcStatusParseErrorDetector struct{}
-
-func (gcStatusParseErrorDetector) ID() string        { return fmGCStatusParseError }
-func (gcStatusParseErrorDetector) Subsystem() string { return subsystemBridges }
-func (gcStatusParseErrorDetector) Severity() string  { return "P2" }
-func (gcStatusParseErrorDetector) Describe() string {
-	return "`gc status --json` output drifted from the bridge schema"
-}
-func (gcStatusParseErrorDetector) EstimatedCostMS() int { return 4000 }
-func (gcStatusParseErrorDetector) OnlineRequired() bool { return false }
-func (gcStatusParseErrorDetector) QuickPath() bool      { return false }
-
-// classifyGCStatusDrift inspects an unparseable `gc status` payload and names
-// the drift class. Pure JSON inspection.
-func classifyGCStatusDrift(stdout []byte) (kind string, missing []string) {
-	var top map[string]json.RawMessage
-	if json.Unmarshal(stdout, &top) != nil {
-		return "not_json", nil
-	}
-	for _, key := range []string{"controller", "agents", "summary"} {
-		raw, ok := top[key]
-		if !ok || string(raw) == "null" {
-			missing = append(missing, key)
-		}
-	}
-	sort.Strings(missing)
-	if len(missing) == 0 {
-		return "nested_shape_drift", nil
-	}
-	if _, ok := top["data"]; ok {
-		return "wrapped_envelope", missing
-	}
-	if _, ok := top["status"]; ok {
-		return "wrapped_envelope", missing
-	}
-	if _, ok := top["result"]; ok {
-		return "wrapped_envelope", missing
-	}
-	return "missing_top_level_fields", missing
-}
-
-// Detect probes `gc status` and classifies a parse failure. It honors the
-// precedence chain: nil when `gc` is missing, version-incompatible, the probe
-// failed/wedged (controller-down), or the payload parses. PURE.
-func (gcStatusParseErrorDetector) Detect(env *DetectEnv) ([]Finding, error) {
-	if _, ok := lookGC(); !ok {
-		return nil, nil // upstream: binary-missing
-	}
-	if _, found := classifyGCVersion(); found {
-		return nil, nil // upstream: version-incompatible
-	}
-	probe := gcStatusProbe(env)
-	if probe.timedOut || probe.exitErr {
-		return nil, nil // upstream: controller-down
-	}
-	if _, parsed := gcStatusControllerRunning(probe.stdout); parsed {
-		return nil, nil // parses fine — not this FM
-	}
-	kind, missing := classifyGCStatusDrift(probe.stdout)
-	return []Finding{{
-		ID:         fmGCStatusParseError,
-		Severity:   "P2",
-		Subsystem:  subsystemBridges,
-		Title:      "`gc status --json` schema drift (" + kind + ")",
-		Confidence: 1.0,
-		Evidence: Evidence{
-			Query: "gc status --json | jq 'has(\"controller\") and has(\"agents\") and has(\"summary\")'",
-			File:  kind + ":" + strings.Join(missing, ","),
-		},
-		Remediation: detectOnlyRemediation(fmGCStatusParseError),
-	}}, nil
-}
-
-// gcStatusParseErrorFixer is detect-only: it cannot repair GasCity's transient
-// stdout. It captures the offending payload and writes an operator report —
-// two advisory writes, both through Mutate.
-type gcStatusParseErrorFixer struct{}
-
-func (gcStatusParseErrorFixer) ID() string { return fmGCStatusParseError }
-func (gcStatusParseErrorFixer) Preconditions() []string {
-	return []string{"gc_on_path", "run_dir_writable"}
-}
-func (gcStatusParseErrorFixer) WritesTo() []string {
-	return []string{".doctor/runs/<run-id>/reports"}
-}
-func (gcStatusParseErrorFixer) Ops() []string     { return []string{"WriteFile"} }
-func (gcStatusParseErrorFixer) Reversible() bool  { return true }
-func (gcStatusParseErrorFixer) Idempotent() bool  { return true }
-func (gcStatusParseErrorFixer) AutoFixable() bool { return false }
-
-// Fix re-probes `gc status`, captures the offending payload verbatim, and
-// writes an operator report. No ao source edit. The finding legitimately
-// persists.
-func (gcStatusParseErrorFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
-	fs, err := gcStatusParseErrorDetector{}.Detect(env)
-	if err != nil {
-		return FixResult{FixerID: fmGCStatusParseError, Err: err}, err
-	}
-	if len(fs) == 0 {
-		return FixResult{FixerID: fmGCStatusParseError, Fixed: true}, nil
-	}
-	kind := strings.SplitN(fs[0].Evidence.File, ":", 2)[0]
-	missing := ""
-	if parts := strings.SplitN(fs[0].Evidence.File, ":", 2); len(parts) == 2 {
-		missing = parts[1]
-	}
-	// Re-probe once for a fresh verbatim payload capture.
-	payload := gcStatusProbe(env).stdout
-	actions := 0
-	n, err := writeReport(ctx, fmGCStatusParseError+".payload.json", string(payload))
-	actions += n
-	if err != nil {
-		return FixResult{FixerID: fmGCStatusParseError, ActionsTaken: actions, Err: err}, err
-	}
-	n, err = writeReport(ctx, fmGCStatusParseError+".txt", gcStatusParseReport(kind, missing))
-	actions += n
-	if err != nil {
-		return FixResult{FixerID: fmGCStatusParseError, ActionsTaken: actions, Err: err}, err
-	}
-	return FixResult{
-		FixerID:      fmGCStatusParseError,
-		FindingIDs:   []string{fmGCStatusParseError},
-		ActionsTaken: actions,
-		Fixed:        false,
-	}, nil
-}
-
-// gcStatusParseReport builds the operator instruction for a status-drift class.
-func gcStatusParseReport(kind, missing string) string {
-	switch kind {
-	case "missing_top_level_fields":
-		return fmt.Sprintf("`gc status --json` is missing required top-level "+
-			"field(s): [%s]. GasCity's status schema drifted. Confirm with "+
-			"`gc status --json | jq 'keys'`. This is an upstream contract drift "+
-			"between GasCity and the ao bridge — file a bd issue against the "+
-			"bridges subsystem and pin/downgrade `gc` to a known-compatible "+
-			"version. The doctor will not patch ao source.", missing)
-	case "wrapped_envelope":
-		return fmt.Sprintf("`gc status --json` now wraps the status in an "+
-			"envelope; top-level field(s) [%s] are not where the bridge expects "+
-			"them. The bridge parser needs an unwrap shim. File a bd issue against "+
-			"bridges; pin `gc` to a compatible version meanwhile.", missing)
-	case "nested_shape_drift":
-		return "`gc status --json` top-level keys are present but a nested shape " +
-			"changed — a JSON shape the bridge's UnmarshalJSON shims do not cover. " +
-			"File a bd issue against bridges; pin `gc` to a compatible version " +
-			"meanwhile."
-	default: // not_json
-		return "`gc status --json` did not return valid JSON. The gc binary may " +
-			"be printing a banner/error on stdout. Confirm `gc status --json` " +
-			"output directly; reinstall/repair gc if it is malfunctioning."
-	}
-}
-
-// ---------------------------------------------------------------------------
-// FM 5: fm-bridges-openclaw-health-unreachable — DETECT-ONLY (online probe).
+// FM 1: fm-bridges-openclaw-health-unreachable — DETECT-ONLY (online probe).
 // ---------------------------------------------------------------------------
 
 // daemonActivation is the subset of .agents/daemon/activation.json the bridge
@@ -921,8 +208,8 @@ func probeOpenClawHealth(baseURL string) (kind, detail string) {
 	}
 }
 
-// openclawHealthUnreachableFixer is detect-only: it never starts/restarts
-// agentopsd and never rewrites the activation file.
+// openclawHealthUnreachableFixer is detect-only: it never starts/restarts the
+// OpenClaw daemon and never rewrites the activation file.
 type openclawHealthUnreachableFixer struct{}
 
 func (openclawHealthUnreachableFixer) ID() string { return fmOpenClawHealthUnreachable }
@@ -937,8 +224,8 @@ func (openclawHealthUnreachableFixer) Reversible() bool  { return true }
 func (openclawHealthUnreachableFixer) Idempotent() bool  { return true }
 func (openclawHealthUnreachableFixer) AutoFixable() bool { return false }
 
-// Fix re-runs the detector and reports the exact `ao agentopsd` action. It
-// starts nothing and rewrites no activation file. The finding persists.
+// Fix re-runs the detector and reports the remediation guidance. It starts
+// nothing and rewrites no activation file. The finding persists.
 func (openclawHealthUnreachableFixer) Fix(ctx *MutateContext, env *DetectEnv, _ []Finding) (FixResult, error) {
 	fs, err := openclawHealthUnreachableDetector{}.Detect(env)
 	if err != nil {
@@ -970,39 +257,38 @@ func (openclawHealthUnreachableFixer) Fix(ctx *MutateContext, env *DetectEnv, _ 
 func openclawHealthReport(kind, detail string) string {
 	switch kind {
 	case "activation_missing":
-		return "agentopsd was never started for this project: " +
-			"`.agents/daemon/activation.json` is absent. Start the daemon with " +
-			"`ao agentopsd start`, then re-run `ao doctor`. The doctor will not " +
+		return "The OpenClaw activation file `.agents/daemon/activation.json` is " +
+			"absent. The in-repo daemon that wrote it was removed (ADR-0009), so " +
+			"`ao` no longer starts a daemon in-session. Bring up the OpenClaw " +
+			"daemon out-of-band, then re-run `ao doctor`. The doctor will not " +
 			"start the daemon."
 	case "unreachable":
 		return fmt.Sprintf("OpenClaw health endpoint %s is unreachable. The daemon "+
-			"is down or the activation file points at a dead port. Run "+
-			"`ao agentopsd status`; if dead, `ao agentopsd restart`; if the "+
-			"activation file is stale, `ao agentopsd start` rewrites it. The "+
-			"doctor will not restart the daemon or rewrite the activation file.",
-			detail)
+			"is down or the activation file points at a dead port. Bring the "+
+			"OpenClaw daemon back up out-of-band (the in-repo daemon was removed — "+
+			"ADR-0009). The doctor will not restart the daemon or rewrite the "+
+			"activation file.", detail)
 	case "slow_or_hung":
 		return fmt.Sprintf("OpenClaw health endpoint %s did not respond within 3s. "+
-			"The daemon is slow or wedged. Inspect with `ao agentopsd status` and "+
-			"the daemon log; restart with `ao agentopsd restart` if wedged.", detail)
+			"The daemon is slow or wedged. Inspect and restart the OpenClaw daemon "+
+			"out-of-band; the doctor will not manage the daemon.", detail)
 	case "route_missing":
 		return fmt.Sprintf("The daemon at %s answers but `/openclaw/v1/health` "+
-			"returns 404 — this agentopsd build predates the OpenClaw consumer "+
-			"routes. Upgrade `ao`/agentopsd and restart the daemon "+
-			"(`ao agentopsd restart`).", detail)
+			"returns 404 — this OpenClaw build predates the consumer routes. "+
+			"Upgrade and restart the OpenClaw daemon out-of-band.", detail)
 	case "http_error":
 		return fmt.Sprintf("OpenClaw health endpoint %s returned an HTTP error. "+
-			"Inspect the daemon log; restart with `ao agentopsd restart` if it "+
-			"crashed.", detail)
+			"Inspect the daemon log and restart the OpenClaw daemon out-of-band if "+
+			"it crashed.", detail)
 	default: // not_ok
 		return fmt.Sprintf("OpenClaw health endpoint %s responded but status != ok. "+
-			"Inspect the daemon log and restart with `ao agentopsd restart` if "+
+			"Inspect the daemon log and restart the OpenClaw daemon out-of-band if "+
 			"needed.", detail)
 	}
 }
 
 // ---------------------------------------------------------------------------
-// FM 6: fm-bridges-openclaw-snapshot-stale — PARTIAL (torn-latest auto-fix).
+// FM 2: fm-bridges-openclaw-snapshot-stale — PARTIAL (torn-latest auto-fix).
 // ---------------------------------------------------------------------------
 
 // snapshotObservation classifies the OpenClaw consumer snapshot state.
@@ -1214,21 +500,25 @@ func snapshotStaleReport(obs snapshotObservation) string {
 	case "schema_mismatch":
 		return fmt.Sprintf("`latest.json` schema_version=%d, but the bridge "+
 			"requires version %d. A daemon upgrade bumped the snapshot schema. "+
-			"Rebuild the projection from the current daemon: `ao agentopsd "+
-			"projection rebuild --consumer openclaw` (or restart agentopsd so it "+
-			"re-emits a v%d snapshot). The doctor will not fabricate a schema "+
-			"downgrade.", obs.schemaVersion, openclaw.ConsumerSnapshotSchemaVersion,
+			"The in-repo daemon that emitted this projection was removed "+
+			"(ADR-0009); regenerate the OpenClaw projection from your out-of-session "+
+			"substrate so it re-emits a v%d snapshot. The doctor will not fabricate "+
+			"a schema downgrade.", obs.schemaVersion,
+			openclaw.ConsumerSnapshotSchemaVersion,
 			openclaw.ConsumerSnapshotSchemaVersion)
 	case "latest_missing":
 		return "`latest.json` is absent and no versioned snapshot exists to " +
-			"recover from. Rebuild via `ao agentopsd projection rebuild " +
-			"--consumer openclaw`."
+			"recover from. The in-repo daemon that emitted this projection was " +
+			"removed (ADR-0009); regenerate the OpenClaw projection from your " +
+			"out-of-session substrate."
 	case "torn_no_recovery":
 		return "`latest.json` is torn/truncated and no byte-valid versioned " +
-			"`snap_*.json` exists to recover from. Rebuild via `ao agentopsd " +
-			"projection rebuild --consumer openclaw`."
+			"`snap_*.json` exists to recover from. The in-repo daemon that emitted " +
+			"this projection was removed (ADR-0009); regenerate the OpenClaw " +
+			"projection from your out-of-session substrate."
 	default:
-		return "OpenClaw snapshot is not current. Rebuild via `ao agentopsd " +
-			"projection rebuild --consumer openclaw`."
+		return "OpenClaw snapshot is not current. The in-repo daemon that emitted " +
+			"this projection was removed (ADR-0009); regenerate the OpenClaw " +
+			"projection from your out-of-session substrate."
 	}
 }

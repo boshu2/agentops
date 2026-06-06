@@ -201,7 +201,7 @@ Must include 5 sections with char budgets, redaction contract, assembly algorith
 ```
 
 **Assembly rules:**
-1. Task content is injected by the orchestrating skill (`/crank`, `/implement`, `/evolve`) or by the session-start hook when a bead is assigned.
+1. Task content is injected by the orchestrating skill (`/crank`, `/implement`, `/evolve`) during initialization (3.0 is hookless — there is no session-start hook).
 2. If a bead ID is available, its full description and acceptance criteria are included.
 3. Epic context (parent bead title, sibling issues) is summarized in one line.
 4. Cross-cutting constraints relevant to the task are appended from the epic's constraint list.
@@ -249,7 +249,7 @@ Use `/plan` to decompose work into tracked issues, or work ad-hoc.
 ### Handoff
 1. If your session ends before work is complete, the precompact-snapshot
    hook saves context to `.agents/handoff/`.
-2. The next session's session-start hook reads handoff context automatically.
+2. The next session reads handoff context on-demand via `ao lookup` / `ao inject` (3.0 is hookless — no auto-read at session start).
 3. Write a brief summary of where you stopped and what remains.
 ```
 
@@ -495,7 +495,7 @@ The context packet unifies and structures what multiple components already provi
 | `collectRecentSessions()` | Session history | Feeds HISTORY section (sessions) |
 | `ratchet.LoadChain()` | Provenance chain | Feeds HISTORY section (chain) |
 | `recordCitations()` | Citation tracking | Provenance tracking (injection-log.jsonl) |
-| `hooks/session-start.sh` | Session initialization | Points agent to `.agents/AGENTS.md` for on-demand lookup |
+| `ao session bootstrap` (hookless orientation) | Session initialization | Points agent to `.agents/AGENTS.md` for on-demand lookup |
 | Memory packets (`memory-packet.v1.schema.json`) | Boundary-memory for handoff | Orthogonal — handoff packets are emitted at session END; context packets are assembled at session START |
 
 ---
@@ -506,4 +506,4 @@ The context packet unifies and structures what multiple components already provi
 - [Knowledge Flywheel](knowledge-flywheel.md) — How learnings compound across sessions
 - [How It Works](how-it-works.md) — Context windowing, Brownian Ratchet, Ralph Wiggum
 - [The Science](the-science.md) — Freshness decay model, MemRL two-phase retrieval
-- [CLI Reference](cli/commands.md) — `ao lookup` command documentation
+- [CLI Reference](../cli/docs/COMMANDS.md) — `ao lookup` command documentation

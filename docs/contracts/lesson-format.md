@@ -2,10 +2,12 @@
 
 This is the canonical format for entries in `.agents/learnings/` — durable, agent-readable lessons captured at the end of a session.
 
-The contract has three goals:
+The contract has four goals:
 1. **Searchable** — every lesson has a frontmatter schema an `ao inject` or grep can filter.
 2. **Falsifiable** — every rule names what would prove it wrong.
 3. **Graduating** — lessons that survive citation pressure move into `PRACTICE-REGISTRY.md` → CI gates → standards.
+4. **Markdown-sourced recall** — the learning file is the source of truth; recall is a projection from the
+   markdown corpus, not from `bd memories`.
 
 This contract applies to **new** lessons. Pre-existing files predating this spec are grandfathered.
 
@@ -20,8 +22,10 @@ This contract applies to **new** lessons. Pre-existing files predating this spec
 
 Filename rules:
 - Date prefix = the date the lesson was first captured.
-- `id` = kebab-case slug, identical to the `bd remember --key` value, identical to the lesson's `id:` frontmatter field. **All three must match.**
+- `id` = kebab-case slug, identical to the lesson's `id:` frontmatter field.
 - One concept per file. Composite lessons split.
+- If a lesson was migrated from a legacy `bd remember` entry, record that lineage under
+  `related: - legacy-bd-memory:<key>`. The legacy key is provenance, not a required naming source.
 
 ---
 
@@ -29,7 +33,7 @@ Filename rules:
 
 ```yaml
 ---
-id: <kebab-case-slug>          # matches bd remember --key and the filename id
+id: <kebab-case-slug>          # matches the filename id
 date: YYYY-MM-DD
 severity: critical | high | medium | low
 trigger: |
@@ -40,14 +44,14 @@ verifiable: |
   How to test the rule fires correctly. A PR number, a command,
   a commit SHA. Future agents validate the rule still holds.
 rule: |
-  One-sentence imperative prescription. This is the bd remember body.
+  One-sentence imperative prescription. This is the atomic recall projection.
 falsified_by: |
   What would prove this rule wrong. "None" means "I haven't thought
   hard enough" — rewrite until you find a concrete failure mode.
 practice: <slug> | unassigned | proposed | accepted | encoded
 related:
-  - bd-memory:<key>
   - learning:<other-lesson-id>
+  - legacy-bd-memory:<key>
   - bead:<bead-id>
   - pr:<number>
 ---
@@ -55,7 +59,7 @@ related:
 
 ### Field rules
 
-- **`id`** — Kebab-case. 2–6 words. Identical to filename id, identical to `bd remember --key`. Required for cross-referencing.
+- **`id`** — Kebab-case. 2–6 words. Identical to filename id. Required for cross-referencing.
 - **`date`** — ISO date of capture. Not the date of the underlying event (cite that in Context).
 - **`severity`**:
   - `critical` — Workflow-breaking. Ignoring it loses work, breaks production, or silently corrupts state.
@@ -64,7 +68,7 @@ related:
   - `low` — Nice-to-know taste/style.
 - **`trigger`** — Mandatory. A rule without a recognition signal is dogma. Be concrete: "When a commit message says 'landed' or 'fast-forwarded'…"
 - **`verifiable`** — Mandatory. Cite at least one of: PR #, command output, commit SHA, test name. "Just trust me" is not verifiable.
-- **`rule`** — Mandatory. Imperative voice ("Verify push," not "we should verify push"). ≤200 chars when serialized. This is the body of the matching `bd remember` entry.
+- **`rule`** — Mandatory. Imperative voice ("Verify push," not "we should verify push"). ≤200 chars when serialized. This is the atomic sentence emitted by markdown-backed recall when the lesson is eligible.
 - **`falsified_by`** — Mandatory. The condition under which the rule would no longer apply. Forces honest thinking about scope.
 - **`practice`** — The graduation state (see below).
 - **`related`** — Other artifacts that cite or are cited by this lesson. Use the `<type>:<id>` shorthand.
@@ -118,20 +122,27 @@ A lesson that **never** graduates past `unassigned` after a year is a candidate 
 
 ---
 
-## Companion `bd remember` entry
+## Markdown recall projection
 
-Every learning file MUST have a paired `bd remember` entry:
+The learning file is the source of truth. AgentOps recall reads this markdown corpus through:
 
 ```bash
-bd remember "<rule frontmatter field, verbatim>" --key <id>
+ao session bootstrap
+ao inject "<topic>"
+ao corpus inject --query "<topic>"
 ```
 
-Constraints:
-- **One line.** No paragraphs. ≤200 chars including the imperative.
-- **Key matches `id`** in the frontmatter, character-for-character.
-- **Body is the `rule:` field**, with no rewriting. Two surfaces, one source of truth.
+Projection constraints:
+- **One line.** The `rule:` field is the atomic recall sentence; no paragraphs.
+- **Markdown is canonical.** The file, frontmatter, and citation history decide whether a lesson is pullable or
+  always-injected.
+- **No bd-memory dependency.** New lessons do not require `bd remember`. A legacy `bd remember` key may be
+  preserved in `related: - legacy-bd-memory:<key>` during the W4 migration, but it is lineage only.
 
-`bd prime` injects these on session start, so every agent has the rule's atomic form. The deep file is the citation; the memory is the recall.
+`bd prime` remains tracker workflow context. It should point agents to the markdown-backed AgentOps recall path
+instead of treating `bd memories` as the knowledge source.
+If `bd prime` still surfaces a legacy memories block from the external tracker, treat that block as lineage
+only. New recall is markdown-sourced.
 
 ---
 
@@ -164,7 +175,6 @@ falsified_by: |
   server-side protection).
 practice: unassigned
 related:
-  - bd-memory:landed-means-pushed
   - bead:soc-dmxn
   - pr:296
   - pr:293
@@ -205,11 +215,8 @@ overwritten when origin/main moved.
   encoded the PR-only rule into branch protection.
 ```
 
-The companion `bd remember`:
-
-```bash
-bd remember '"Landed" means visible on origin/main via gh api or web UI. Never trust local fast-forward state.' --key landed-means-pushed
-```
+The recall projection is the `rule:` field above. If this lesson also has a pre-migration `bd remember` mirror,
+record it as `related: - legacy-bd-memory:landed-means-pushed`; do not treat that mirror as the source of truth.
 
 ---
 
@@ -220,8 +227,9 @@ bd remember '"Landed" means visible on origin/main via gh api or web UI. Never t
 | Multiple lessons in one file | Can't link to a single rule; can't graduate one without the others. |
 | Missing `trigger:` field | Future agents can't recognize when the rule applies. Dogma. |
 | Missing `falsified_by:` field | Untestable. The rule outlives its truth. |
-| `bd remember` body that's a paragraph | Memories scan in seconds; paragraphs don't. |
-| `bd remember --key` ≠ filename id ≠ frontmatter id | Cross-referencing breaks. Three names for the same thing. |
+| `rule:` body that's a paragraph | Atomic recall needs one sentence; paragraphs belong in Context / Why this matters / How to apply. |
+| Filename id ≠ frontmatter id | Cross-referencing breaks. Two names for the same lesson. |
+| Treating `bd remember` as the new recall source | Recreates the junk drawer. New knowledge must enter markdown and earn reach/maturity through the corpus path. |
 | Rule in passive voice ("we should…", "it would be good to…") | Not actionable. Use imperative ("Verify push," "Grep the test corpus"). |
 | `practice: unassigned` for >1 year with no citations | Low leverage. Archive or rewrite. |
 
@@ -234,10 +242,11 @@ A `validate-lesson-format.sh` script (filed as a follow-up bead) will check:
 - File path matches `<YYYY-MM-DD>-<id>.md`.
 - Frontmatter has all 9 required fields.
 - `id:` matches filename `id`.
-- `bd remember --key <id>` exists; body matches `rule:` field.
+- `rule:` is one atomic sentence suitable for markdown-backed recall.
 - `severity:` is one of the 4 allowed values.
 - `practice:` is one of the 5 allowed values, with consistent state transitions.
-- `related:` items resolve (file paths exist, bead IDs are valid, PR numbers exist).
+- `related:` items resolve (file paths exist, bead IDs are valid, PR numbers exist). Legacy bd-memory lineage, if
+  present, uses `legacy-bd-memory:<key>`.
 
 Until that lints, this contract is honor-system.
 

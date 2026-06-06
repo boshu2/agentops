@@ -368,20 +368,30 @@ func parseFrontmatterMetadata(path string, meta *artifactMetadata) {
 		meta.Maturity = types.Maturity(strings.ToLower(fields["maturity"]))
 	}
 	if fields["utility"] != "" {
-		//nolint:errcheck // parsing optional metadata, zero value is acceptable default
-		fmt.Sscanf(fields["utility"], "%f", &meta.Utility) // #nosec G104
+		// ag-chvc: assign only on a clean parse; a malformed value keeps the default
+		// rather than silently corrupting it to zero.
+		var f float64
+		if _, err := fmt.Sscanf(fields["utility"], "%f", &f); err == nil {
+			meta.Utility = f
+		}
 	}
 	if fields["confidence"] != "" {
-		//nolint:errcheck // parsing optional metadata, zero value is acceptable default
-		fmt.Sscanf(fields["confidence"], "%f", &meta.Confidence) // #nosec G104
+		var f float64
+		if _, err := fmt.Sscanf(fields["confidence"], "%f", &f); err == nil {
+			meta.Confidence = f
+		}
 	}
 	if fields["reward_count"] != "" {
-		//nolint:errcheck // parsing optional metadata, zero value is acceptable default
-		fmt.Sscanf(fields["reward_count"], "%d", &meta.FeedbackCount) // #nosec G104
+		var n int
+		if _, err := fmt.Sscanf(fields["reward_count"], "%d", &n); err == nil {
+			meta.FeedbackCount = n
+		}
 	}
 	if fields["schema_version"] != "" {
-		//nolint:errcheck // parsing optional metadata, zero value is acceptable default
-		fmt.Sscanf(fields["schema_version"], "%d", &meta.SchemaVersion) // #nosec G104
+		var n int
+		if _, err := fmt.Sscanf(fields["schema_version"], "%d", &n); err == nil {
+			meta.SchemaVersion = n
+		}
 	}
 	if status := strings.ToLower(fields["status"]); status == "tempered" || status == "locked" {
 		meta.Tempered = true

@@ -81,7 +81,7 @@ A clean CI gate for this is **out of scope** here: GitHub Actions cannot reliabl
 **Policy (documented here; mechanical enforcement deferred to a follow-up bead):**
 
 1. An `--admin` squash-merge of a **self-authored** PR (PR author == the merging operator/agent) SHOULD carry a second automation signal before merge: either (a) a green `claude-code-review` verdict that did NOT soft-fail on usage-limit, or (b) an explicit human spot-check recorded as a provenance ledger event (`claude-code-review` verdicts are first-class ledger events per AGENTS.md → Provenance).
-2. When neither is available (e.g. weekly Claude limit exhausted during an autonomous run), the merge is permitted but the orchestrator MUST emit a `bd remember` note and flag the bead for a post-hoc human review pass, so the gap is auditable rather than silent.
+2. When neither is available (e.g. weekly Claude limit exhausted during an autonomous run), the merge is permitted but the orchestrator MUST record the gap as bead/provenance evidence and flag the bead for a post-hoc human review pass, so the gap is auditable rather than silent.
 3. The autonomous loop's post-mortem checkpoint (the sibling crank/evolve skill gate, ag-7gmv) is the human-in-the-loop counterweight: ≥5 self-merged PRs in one session forces the checkpoint.
 
 **Follow-up:** a mechanical signal (e.g. a `merge`-event workflow that records merge-method + author parity into the provenance ledger, or a branch-protection rule requiring `claude-code-review` to be a non-soft-fail success) is filed as a follow-up bead rather than shipped half-built here.

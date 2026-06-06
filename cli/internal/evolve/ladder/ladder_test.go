@@ -11,14 +11,14 @@ import (
 
 // fakeBeadRunner is a test double implementing BeadRunner.
 type fakeBeadRunner struct {
-	ReadyList         []Bead
-	ReadyErr          error
-	ReadyByTypeMap    map[string][]Bead
-	ReadyByTypeErr    error
-	ShowMap           map[string]Bead
-	ShowErr           error
-	InProgressList    []Bead
-	InProgressErr     error
+	ReadyList      []Bead
+	ReadyErr       error
+	ReadyByTypeMap map[string][]Bead
+	ReadyByTypeErr error
+	ShowMap        map[string]Bead
+	ShowErr        error
+	InProgressList []Bead
+	InProgressErr  error
 }
 
 func (f *fakeBeadRunner) Ready(ctx context.Context) ([]Bead, error) {
@@ -56,11 +56,11 @@ func (g fakeGrep) Grep(ctx context.Context, pattern string, roots []string) ([]s
 // TestStep1ShapeFilter exercises the operator-shape skip behavior.
 func TestStep1ShapeFilter(t *testing.T) {
 	tests := []struct {
-		name        string
-		beads       []Bead
-		includeOps  bool
-		wantID      string
-		wantAlts    []string
+		name       string
+		beads      []Bead
+		includeOps bool
+		wantID     string
+		wantAlts   []string
 	}{
 		{
 			name: "filters operator-shape by default",
@@ -83,9 +83,9 @@ func TestStep1ShapeFilter(t *testing.T) {
 			wantAlts:   []string{"soc-b"},
 		},
 		{
-			name:    "empty when nothing ready",
-			beads:   nil,
-			wantID:  "",
+			name:   "empty when nothing ready",
+			beads:  nil,
+			wantID: "",
 		},
 		{
 			name: "all filtered returns empty",
@@ -288,7 +288,7 @@ func TestRun_ExhaustionEmitsBlockedHint(t *testing.T) {
 	if !strings.Contains(got.Rationale, "ladder exhausted") {
 		t.Errorf("rationale: %q", got.Rationale)
 	}
-	if !strings.Contains(got.Rationale, "ao evolve blocked") {
+	if !strings.Contains(got.Rationale, "ao loop blocked") {
 		t.Errorf("rationale missing blocked hint: %q", got.Rationale)
 	}
 }

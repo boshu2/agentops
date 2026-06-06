@@ -40,6 +40,9 @@ if $FULL_TEST; then
     # Build skills array dynamically from skill directories
     SKILLS=()
     for skill_dir in "$REPO_ROOT"/skills/*/; do
+        # Skip leading-underscore scaffolding (e.g. skills/_fixtures/) — planted
+        # test fixtures, not invokable skills.
+        case "$(basename "$skill_dir")" in _*) continue ;; esac
         [[ -f "${skill_dir}SKILL.md" ]] && SKILLS+=("$(basename "$skill_dir")")
     done
 
