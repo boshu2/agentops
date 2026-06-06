@@ -69,16 +69,20 @@ annotate_warn() { printf '::warning::%s\n' "$*" >&2; }
 # not a real path-traversal threat — flagging it is pure noise that reds the
 # gate on every skill-touching PR. This filter preserves real protection:
 # it returns 0 (a REAL violation exists -> KEEP safe-paths blocking) only when
-# a "../" survives stripping (1) markdown inline-link targets `](...)` and
-# (2) relative doc-path tokens; otherwise returns 1 (every "../" is a doc
-# reference -> safe-paths is a false positive here, downgrade to advisory).
+# a "../" survives stripping (1) markdown inline-link targets `](...)`, (2)
+# relative doc-path tokens (*.md/.markdown/.mdx/.txt/.rst), and (3) backtick-
+# wrapped relative paths that end in a known repo-file extension (doc/schema/
+# script/code). A backtick path with NO extension (e.g. `../../../../etc/passwd`)
+# is not a file reference and still counts as a real violation -> blocks.
+# Otherwise returns 1 (every "../" is a doc reference -> false positive,
+# downgrade to advisory).
 safe_paths_has_real_violation() {
 	local file="$1"
 	local stripped
 	stripped="$(sed -E \
 		-e 's/\]\([^)]*\)//g' \
 		-e 's#(\.\./)+[A-Za-z0-9_.@/-]+\.(md|markdown|mdx|txt|rst)([#][A-Za-z0-9_-]+)?##g' \
-		-e 's#`(\.\./)+[A-Za-z0-9_.@/-]+`##g' \
+		-e 's#`(\.\./)+[A-Za-z0-9_.@/-]+\.(md|markdown|mdx|txt|rst|json|ya?ml|toml|sh|go|py|ts|rs)`##g' \
 		"$file")"
 	printf '%s' "$stripped" | grep -qF '../'
 }
