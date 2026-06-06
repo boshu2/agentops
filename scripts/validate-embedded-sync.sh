@@ -35,7 +35,7 @@ check_file "$REPO_ROOT/skills/compile/scripts/compile.sh" "$EMBEDDED/skills/comp
 if [[ $ERRORS -gt 0 ]]; then
     echo ""
     echo "ERROR: $ERRORS embedded file(s) are out of sync."
-    echo "Run 'cd cli && make sync-embedded' to fix."
+    echo "Run 'cd cli && make sync-hooks' to fix."
     exit 1
 fi
 
