@@ -982,6 +982,12 @@ jobs:
           )
           echo "BEADS_DIR=$bd_eval_root/.beads" >> "$GITHUB_ENV"
 
+      - name: Check CLI surface counts (fast pre-flight)
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/update-cli-surface-counts.sh
+          scripts/update-cli-surface-counts.sh
+
       - name: Run official AgentOps contract canaries
         if: needs.changes.outputs.contracts == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
         run: |
