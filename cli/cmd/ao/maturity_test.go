@@ -2094,6 +2094,247 @@ func TestMaturity_runMaturityScanAll_retrievedCitationDoesNotChangeUtility(t *te
 	}
 }
 
+func TestMaturity_reachAlwaysBudgetRefutedDemotesCanonAndLogsProvenance(t *testing.T) {
+	tmp, canonDir := setupCanonLearningDir(t)
+	now := time.Date(2026, 6, 5, 9, 0, 0, 0, time.UTC)
+	learningPath := writeTestMDLearning(t, canonDir, "refuted-canon.md", map[string]string{
+		"id":                 "refuted-canon",
+		"maturity":           "established",
+		"utility":            "0.9000",
+		"confidence":         "1.0000",
+		"reach_error_budget": "3",
+	}, "# Refuted Canon\nEstablished canon entry should lose computed always reach on refutation.\n")
+
+	if err := ratchet.RecordCitation(tmp, types.CitationEvent{
+		ArtifactPath:       ".agents/canon/learnings/refuted-canon.md",
+		CitationType:       types.CitationTypeRefuted,
+		ArtifactAuthorID:   "author-agent",
+		CitedByAgentID:     "judge-agent",
+		CitedByModelFamily: "codex",
+		CitedAt:            now.Add(-time.Hour),
+		SessionID:          "sess-refuted",
+	}); err != nil {
+		t.Fatalf("record refuted citation: %v", err)
+	}
+
+	summary, err := reconcileReachAlwaysErrorBudgets(tmp, now)
+	if err != nil {
+		t.Fatalf("reconcile reach budget: %v", err)
+	}
+	if summary.Demoted != 1 {
+		t.Fatalf("Demoted = %d, want 1 (summary=%+v)", summary.Demoted, summary)
+	}
+	if _, err := os.Stat(learningPath); !os.IsNotExist(err) {
+		t.Fatalf("canon learning should be removed from canon path, stat err=%v", err)
+	}
+
+	archivedPath := filepath.Join(tmp, ".agents", "archive", "canon", "learnings", "refuted-canon.md")
+	archived, err := os.ReadFile(archivedPath)
+	if err != nil {
+		t.Fatalf("read archived demoted canon learning: %v", err)
+	}
+	text := string(archived)
+	for _, want := range []string{"maturity: candidate", "reach: pull", "reach_error_budget: 3", "reach_demotion_reason: refuted-citation"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("archived demotion missing %q:\n%s", want, text)
+		}
+	}
+
+	ledger, err := os.ReadFile(filepath.Join(tmp, "docs", "provenance", "ledger.jsonl"))
+	if err != nil {
+		t.Fatalf("read provenance ledger: %v", err)
+	}
+	for _, want := range []string{"wasInvalidatedBy", "reach-demotion:refuted-citation", "refuted-canon.md"} {
+		if !strings.Contains(string(ledger), want) {
+			t.Fatalf("provenance ledger missing %q:\n%s", want, ledger)
+		}
+	}
+}
+
+func TestMaturity_reachAlwaysBudgetDroughtSpendsWithoutImmediateDemotion(t *testing.T) {
+	tmp, canonDir := setupCanonLearningDir(t)
+	now := time.Date(2026, 6, 5, 9, 0, 0, 0, time.UTC)
+	learningPath := writeTestMDLearning(t, canonDir, "drought-canon.md", map[string]string{
+		"id":                 "drought-canon",
+		"maturity":           "established",
+		"utility":            "0.9000",
+		"confidence":         "1.0000",
+		"reach_error_budget": "2",
+	}, "# Drought Canon\nEstablished canon entry spends budget after a citation drought.\n")
+
+	summary, err := reconcileReachAlwaysErrorBudgets(tmp, now)
+	if err != nil {
+		t.Fatalf("reconcile reach budget: %v", err)
+	}
+	if summary.Spent != 1 || summary.Demoted != 0 {
+		t.Fatalf("summary = %+v, want one spend and no demotion", summary)
+	}
+
+	data, err := os.ReadFile(learningPath)
+	if err != nil {
+		t.Fatalf("read learning: %v", err)
+	}
+	text := string(data)
+	for _, want := range []string{"reach_error_budget: 1", "reach_budget_last_reason: citation-drought-45d"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("drought spend missing %q:\n%s", want, text)
+		}
+	}
+	if strings.Contains(text, "maturity: candidate") {
+		t.Fatalf("budget spend before zero should not demote:\n%s", text)
+	}
+}
+
+func TestMaturity_reachAlwaysBudgetDroughtAtZeroDemotes(t *testing.T) {
+	tmp, canonDir := setupCanonLearningDir(t)
+	now := time.Date(2026, 6, 5, 9, 0, 0, 0, time.UTC)
+	learningPath := writeTestMDLearning(t, canonDir, "zero-drought.md", map[string]string{
+		"id":                 "zero-drought",
+		"maturity":           "established",
+		"utility":            "0.9000",
+		"confidence":         "1.0000",
+		"reach_error_budget": "1",
+	}, "# Zero Drought\nBudget reaching zero removes this entry from computed always reach.\n")
+
+	summary, err := reconcileReachAlwaysErrorBudgets(tmp, now)
+	if err != nil {
+		t.Fatalf("reconcile reach budget: %v", err)
+	}
+	if summary.Spent != 1 || summary.Demoted != 1 {
+		t.Fatalf("summary = %+v, want spend+demotion", summary)
+	}
+	if _, err := os.Stat(learningPath); !os.IsNotExist(err) {
+		t.Fatalf("canon learning should be removed after budget zero, stat err=%v", err)
+	}
+	archived, err := os.ReadFile(filepath.Join(tmp, ".agents", "archive", "canon", "learnings", "zero-drought.md"))
+	if err != nil {
+		t.Fatalf("read archive: %v", err)
+	}
+	for _, want := range []string{"maturity: candidate", "reach: pull", "reach_error_budget: 0", "reach_demotion_reason: citation-drought-45d"} {
+		if !strings.Contains(string(archived), want) {
+			t.Fatalf("archived demotion missing %q:\n%s", want, archived)
+		}
+	}
+}
+
+func TestMaturity_reachAlwaysBudgetHarmfulOutcomeSpends(t *testing.T) {
+	tmp, canonDir := setupCanonLearningDir(t)
+	now := time.Date(2026, 6, 5, 9, 0, 0, 0, time.UTC)
+	learningPath := writeTestMDLearning(t, canonDir, "harmful-canon.md", map[string]string{
+		"id":                 "harmful-canon",
+		"maturity":           "established",
+		"utility":            "0.9000",
+		"confidence":         "1.0000",
+		"reach_error_budget": "2",
+	}, "# Harmful Canon\nA harmful independent outcome spends reach budget.\n")
+
+	if err := ratchet.RecordCitation(tmp, types.CitationEvent{
+		ArtifactPath:     ".agents/canon/learnings/harmful-canon.md",
+		CitationType:     types.CitationTypeHarmful,
+		ArtifactAuthorID: "author-agent",
+		CitedByAgentID:   "judge-agent",
+		CitedAt:          now.Add(-time.Minute),
+		SessionID:        "sess-harmful",
+	}); err != nil {
+		t.Fatalf("record harmful citation: %v", err)
+	}
+
+	summary, err := reconcileReachAlwaysErrorBudgets(tmp, now)
+	if err != nil {
+		t.Fatalf("reconcile reach budget: %v", err)
+	}
+	if summary.Spent != 1 || summary.Demoted != 0 {
+		t.Fatalf("summary = %+v, want harmful spend and no demotion", summary)
+	}
+	data, err := os.ReadFile(learningPath)
+	if err != nil {
+		t.Fatalf("read learning: %v", err)
+	}
+	for _, want := range []string{"reach_error_budget: 1", "reach_budget_last_reason: harmful-outcome", "reach_budget_last_negative_at:"} {
+		if !strings.Contains(string(data), want) {
+			t.Fatalf("harmful spend missing %q:\n%s", want, data)
+		}
+	}
+}
+
+func TestMaturity_reachAlwaysBudgetRecentCrossEngineerCitationResets(t *testing.T) {
+	tmp, canonDir := setupCanonLearningDir(t)
+	now := time.Date(2026, 6, 5, 9, 0, 0, 0, time.UTC)
+	learningPath := writeTestMDLearning(t, canonDir, "reset-canon.md", map[string]string{
+		"id":                 "reset-canon",
+		"maturity":           "established",
+		"utility":            "0.9000",
+		"confidence":         "1.0000",
+		"reach_error_budget": "1",
+	}, "# Reset Canon\nA fresh independent citation restores the reach error budget.\n")
+
+	if err := ratchet.RecordCitation(tmp, types.CitationEvent{
+		ArtifactPath:     ".agents/canon/learnings/reset-canon.md",
+		CitationType:     types.CitationTypeHelpful,
+		ArtifactAuthorID: "author-agent",
+		CitedByAgentID:   "judge-agent",
+		CitedAt:          now.Add(-24 * time.Hour),
+		SessionID:        "sess-reset",
+	}); err != nil {
+		t.Fatalf("record helpful citation: %v", err)
+	}
+
+	summary, err := reconcileReachAlwaysErrorBudgets(tmp, now)
+	if err != nil {
+		t.Fatalf("reconcile reach budget: %v", err)
+	}
+	if summary.Reset != 1 || summary.Spent != 0 || summary.Demoted != 0 {
+		t.Fatalf("summary = %+v, want reset only", summary)
+	}
+	data, err := os.ReadFile(learningPath)
+	if err != nil {
+		t.Fatalf("read learning: %v", err)
+	}
+	for _, want := range []string{"reach_error_budget: 3", "reach_budget_last_reason: cross-engineer-citation-reset"} {
+		if !strings.Contains(string(data), want) {
+			t.Fatalf("reset missing %q:\n%s", want, data)
+		}
+	}
+}
+
+func TestMaturity_reachAlwaysBudgetFoundationDroughtCarveOut(t *testing.T) {
+	tmp, canonDir := setupCanonLearningDir(t)
+	now := time.Date(2026, 6, 5, 9, 0, 0, 0, time.UTC)
+	learningPath := writeTestMDLearning(t, canonDir, "foundation-canon.md", map[string]string{
+		"id":                  "foundation-canon",
+		"maturity":            "established",
+		"utility":             "0.9000",
+		"confidence":          "1.0000",
+		"reach_error_budget":  "1",
+		"foundation_contract": "true",
+	}, "# Foundation Canon\nFoundation contracts are exempt from blind drought demotion.\n")
+
+	summary, err := reconcileReachAlwaysErrorBudgets(tmp, now)
+	if err != nil {
+		t.Fatalf("reconcile reach budget: %v", err)
+	}
+	if summary.FoundationSkipped != 1 || summary.Spent != 0 || summary.Demoted != 0 {
+		t.Fatalf("summary = %+v, want foundation drought carve-out", summary)
+	}
+	data, err := os.ReadFile(learningPath)
+	if err != nil {
+		t.Fatalf("foundation canon should remain in canon: %v", err)
+	}
+	if !strings.Contains(string(data), "reach_error_budget: 1") {
+		t.Fatalf("foundation budget should not be spent:\n%s", data)
+	}
+}
+
+func setupCanonLearningDir(t *testing.T) (string, string) {
+	t.Helper()
+	tmp := t.TempDir()
+	canonDir := filepath.Join(tmp, ".agents", "canon", "learnings")
+	if err := os.MkdirAll(canonDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return tmp, canonDir
+}
+
 func TestMaturity_displayPendingTransitions_jsonOut(t *testing.T) {
 	oldOutput := output
 	output = "json"
