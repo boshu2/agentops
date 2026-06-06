@@ -96,19 +96,10 @@ func TestMerge_BooleanNotSet(t *testing.T) {
 }
 
 func TestApplyEnv(t *testing.T) {
-	// Save and restore env
-	origOutput := os.Getenv("AGENTOPS_OUTPUT")
-	origVerbose := os.Getenv("AGENTOPS_VERBOSE")
-	origNoSC := os.Getenv("AGENTOPS_NO_SC")
-	defer func() {
-		_ = os.Setenv("AGENTOPS_OUTPUT", origOutput)   //nolint:errcheck // test env restore
-		_ = os.Setenv("AGENTOPS_VERBOSE", origVerbose) //nolint:errcheck // test env restore
-		_ = os.Setenv("AGENTOPS_NO_SC", origNoSC)      //nolint:errcheck // test env restore
-	}()
-
-	_ = os.Setenv("AGENTOPS_OUTPUT", "yaml")  //nolint:errcheck // test env setup
-	_ = os.Setenv("AGENTOPS_VERBOSE", "true") //nolint:errcheck // test env setup
-	_ = os.Setenv("AGENTOPS_NO_SC", "1")      //nolint:errcheck // test env setup
+	// t.Setenv sets and auto-restores on cleanup (and blocks t.Parallel).
+	t.Setenv("AGENTOPS_OUTPUT", "yaml")
+	t.Setenv("AGENTOPS_VERBOSE", "true")
+	t.Setenv("AGENTOPS_NO_SC", "1")
 
 	cfg := Default()
 	cfg = applyEnv(cfg)
