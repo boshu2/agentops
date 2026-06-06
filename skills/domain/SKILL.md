@@ -99,6 +99,10 @@ Loop family (the operating loop — "one loop body, two drivers, one inner tick,
 - [`references/autodev.md`](references/autodev.md) — Autodev: the config/intent layer the loop reads each tick (NOT a loop)
 - [`references/context-compiler.md`](references/context-compiler.md) — Context-Compiler: turns the corpus into the working set and absorbs the tick's exhaust
 
+Verification membrane:
+
+- [`references/silent-contract-violation.md`](references/silent-contract-violation.md) — Silent Contract Violation: tool-use code that runs clean, raises no exception, and is still wrong (wrong routing / output shape / argument provenance); the four contract-check categories that name where it lands (RubricRefine)
+
 Catalog:
 
 - [`references/INDEX.md`](references/INDEX.md) — full corpus index
