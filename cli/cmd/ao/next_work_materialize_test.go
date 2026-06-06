@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 // writeMaterializeQueue writes lines (already JSON-encoded) to a temp next-work.jsonl
@@ -26,9 +25,9 @@ func writeMaterializeQueue(t *testing.T, lines ...string) string {
 }
 
 // batchLine builds one next-work.jsonl batch entry line.
-func batchLine(t *testing.T, sourceEpic string, items ...rpi.NextWorkItem) string {
+func batchLine(t *testing.T, sourceEpic string, items ...nextWorkItem) string {
 	t.Helper()
-	entry := rpi.NextWorkEntry{
+	entry := nextWorkEntry{
 		SourceEpic:  sourceEpic,
 		Timestamp:   "2026-05-30T12:00:00Z",
 		Items:       items,
@@ -84,18 +83,18 @@ func runMaterialize(t *testing.T, beadIDs []string, o matOpts) (string, [][]stri
 	return out.String(), calls, err
 }
 
-func readQueueItems(t *testing.T, path string) []rpi.NextWorkItem {
+func readQueueItems(t *testing.T, path string) []nextWorkItem {
 	t.Helper()
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("read queue: %v", err)
 	}
-	var items []rpi.NextWorkItem
+	var items []nextWorkItem
 	for _, line := range strings.Split(string(data), "\n") {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		entry, err := rpi.ParseNextWorkEntryLine(line)
+		entry, err := parseNextWorkEntryLine(line)
 		if err != nil {
 			continue
 		}
@@ -112,13 +111,13 @@ func readQueueItems(t *testing.T, path string) []rpi.NextWorkItem {
 //	Then a durable bead exists (via bd create) carrying source_epic + proof_ref,
 //	     not only a next-work.jsonl queue line.
 func TestNextWorkMaterialize_CreatesDurableBeadWithProvenance(t *testing.T) {
-	item := rpi.NextWorkItem{
+	item := nextWorkItem{
 		Title:       "Fix the cwd bug in ao goals measure",
 		Type:        "bug",
 		Severity:    "high",
 		Source:      "post-mortem-finding",
 		Description: "ao goals measure fails when invoked outside repo root.",
-		ProofRef:    &rpi.NextWorkProofRef{Kind: "completed_run", RunID: "run-abc123"},
+		ProofRef:    &nextWorkProofRef{Kind: "completed_run", RunID: "run-abc123"},
 	}
 	path := writeMaterializeQueue(t, batchLine(t, "ag-9jle", item))
 
@@ -164,7 +163,7 @@ func TestNextWorkMaterialize_CreatesDurableBeadWithProvenance(t *testing.T) {
 }
 
 func TestNextWorkMaterialize_Idempotent(t *testing.T) {
-	item := rpi.NextWorkItem{
+	item := nextWorkItem{
 		Title: "Tidy the docs links", Type: "docs", Severity: "low",
 		Source: "post-mortem-finding", Description: "Fix link rot.",
 	}
@@ -187,15 +186,15 @@ func TestNextWorkMaterialize_Idempotent(t *testing.T) {
 }
 
 func TestNextWorkMaterialize_SkipsConsumedAndHeld(t *testing.T) {
-	fresh := rpi.NextWorkItem{
+	fresh := nextWorkItem{
 		Title: "Fresh actionable item", Type: "task", Severity: "medium",
 		Source: "post-mortem-finding", Description: "Do the thing.",
 	}
-	consumed := rpi.NextWorkItem{
+	consumed := nextWorkItem{
 		Title: "Already done", Type: "task", Severity: "low",
 		Source: "post-mortem-finding", Description: "Historical.", Consumed: true,
 	}
-	held := rpi.NextWorkItem{
+	held := nextWorkItem{
 		Title: "Needs human review", Type: "feature", Severity: "high",
 		Source: "feature-suggestion", Description: "Held.", Requires: []string{"human-review"},
 	}
@@ -227,14 +226,14 @@ func TestNextWorkMaterialize_SkipsBatchConsumedEntry(t *testing.T) {
 	consumedAt := "2026-05-08T09:30:00-04:00"
 	// Item itself looks fresh — no item-level consumed flag, no bead_id —
 	// exactly how historical queue entries store their items.
-	freshLooking := rpi.NextWorkItem{
+	freshLooking := nextWorkItem{
 		Title: "Historical work already handled by soc-xlw8", Type: "task",
 		Severity: "medium", Source: "post-mortem-finding", Description: "Done long ago.",
 	}
-	entry := rpi.NextWorkEntry{
+	entry := nextWorkEntry{
 		SourceEpic:  "soc-9xn0",
 		Timestamp:   "2026-05-07T21:45:29-04:00",
-		Items:       []rpi.NextWorkItem{freshLooking},
+		Items:       []nextWorkItem{freshLooking},
 		Consumed:    true,
 		ClaimStatus: "consumed",
 		ConsumedBy:  &consumedBy,
@@ -259,7 +258,7 @@ func TestNextWorkMaterialize_SkipsBatchConsumedEntry(t *testing.T) {
 }
 
 func TestNextWorkMaterialize_DryRunDoesNotMutate(t *testing.T) {
-	item := rpi.NextWorkItem{
+	item := nextWorkItem{
 		Title: "Candidate item", Type: "improvement", Severity: "medium",
 		Source: "retro-learning", Description: "Improve.",
 	}
@@ -282,8 +281,8 @@ func TestNextWorkMaterialize_DryRunDoesNotMutate(t *testing.T) {
 }
 
 func TestNextWorkMaterialize_SourceEpicFilter(t *testing.T) {
-	a := rpi.NextWorkItem{Title: "From epic A", Type: "task", Severity: "low", Source: "post-mortem-finding", Description: "A."}
-	b := rpi.NextWorkItem{Title: "From epic B", Type: "task", Severity: "low", Source: "post-mortem-finding", Description: "B."}
+	a := nextWorkItem{Title: "From epic A", Type: "task", Severity: "low", Source: "post-mortem-finding", Description: "A."}
+	b := nextWorkItem{Title: "From epic B", Type: "task", Severity: "low", Source: "post-mortem-finding", Description: "B."}
 	path := writeMaterializeQueue(t, batchLine(t, "epic-a", a), batchLine(t, "epic-b", b))
 
 	_, calls, err := runMaterialize(t, []string{"ag-realA"}, matOpts{file: path, sourceEpic: "epic-a"})

@@ -11,7 +11,7 @@
 //   - CLI owns the deterministic core; skills (post-mortem harvest, crank
 //     wave-close) just CALL `ao next-work materialize`.
 //   - Idempotent: an item is materialized once. The per-item bead_id field
-//     (rpi.NextWorkItem.BeadID) is the back-reference; a set bead_id means the
+//     (nextWorkItem.BeadID) is the back-reference; a set bead_id means the
 //     item already has a durable bead and is skipped on re-run.
 //   - Provenance rides bd's native --metadata (no forked provenance format).
 //     The actual graph edge is deferred to ag-x31t.4's future `ao provenance
@@ -26,7 +26,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/boshu2/agentops/cli/internal/rpi"
 	"github.com/spf13/cobra"
 )
 
@@ -221,9 +220,9 @@ func enumerateMaterializeCandidates(path, sourceEpicFilter string) ([]materializ
 // entry level (the dominant case: the legacy evolve/rpi-loop consumer marks the
 // whole entry consumed via entry.consumed / consumed_by). Items inside such an
 // entry must not be materialized, even though their per-item consumed flags are
-// unset. Mirrors the entry half of rpi.IsFullyConsumed.
+// unset.
 func isEntryConsumed(entry *nextWorkEntry) bool {
-	return entry.Consumed || rpi.NormalizeClaimStatus(entry.Consumed, entry.ClaimStatus) == "consumed"
+	return entry.Consumed || normalizeClaimStatus(entry.Consumed, entry.ClaimStatus) == "consumed"
 }
 
 // isMaterializable reports whether an item should become a durable bead.
@@ -239,7 +238,7 @@ func isMaterializable(item nextWorkItem) bool {
 	if strings.TrimSpace(item.Title) == "" {
 		return false
 	}
-	return !rpi.IsQueueItemHeldForReview(item)
+	return !isQueueItemHeldForReview(item)
 }
 
 // materializeOne creates (or, in dry-run, plans) a single bead for a candidate.

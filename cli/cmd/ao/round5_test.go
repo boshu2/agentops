@@ -2,13 +2,9 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -392,107 +388,6 @@ func TestRecordPromoteSkip(t *testing.T) {
 	if result.Reasons[0].CandidateID != "cand-1" {
 		t.Errorf("first reason candidate = %q, want %q", result.Reasons[0].CandidateID, "cand-1")
 	}
-}
-
-// ---------------------------------------------------------------------------
-// rpi_phased_processing.go: classifyByVerdict, classifyByPhase
-// ---------------------------------------------------------------------------
-
-func TestClassifyByVerdict(t *testing.T) {
-	tests := []struct {
-		verdict string
-		want    types.MemRLFailureClass
-	}{
-		{string(failReasonTimeout), types.MemRLFailureClassPhaseTimeout},
-		{string(failReasonStall), types.MemRLFailureClassPhaseStall},
-		{string(failReasonExit), types.MemRLFailureClassPhaseExitError},
-		{"CUSTOM", types.MemRLFailureClass("custom")},
-		{"", types.MemRLFailureClass("")},
-	}
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("verdict_%s", tt.verdict), func(t *testing.T) {
-			got := classifyByVerdict(tt.verdict)
-			if got != tt.want {
-				t.Errorf("classifyByVerdict(%q) = %q, want %q", tt.verdict, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestClassifyByPhase(t *testing.T) {
-	tests := []struct {
-		name     string
-		phaseNum int
-		verdict  string
-		want     types.MemRLFailureClass
-	}{
-		{"phase1 FAIL", 1, "FAIL", types.MemRLFailureClassPreMortemFail},
-		{"phase1 other", 1, "PASS", ""},
-		{"phase2 BLOCKED", 2, "BLOCKED", types.MemRLFailureClassCrankBlocked},
-		{"phase2 PARTIAL", 2, "PARTIAL", types.MemRLFailureClassCrankPartial},
-		{"phase2 other", 2, "FAIL", ""},
-		{"phase3 FAIL", 3, "FAIL", types.MemRLFailureClassVibeFail},
-		{"phase3 other", 3, "PASS", ""},
-		{"phase4 any", 4, "FAIL", ""},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := classifyByPhase(tt.phaseNum, tt.verdict)
-			if got != tt.want {
-				t.Errorf("classifyByPhase(%d, %q) = %q, want %q", tt.phaseNum, tt.verdict, got, tt.want)
-			}
-		})
-	}
-}
-
-// ---------------------------------------------------------------------------
-// rpi_phased_stream.go: classifyStreamResult
-// ---------------------------------------------------------------------------
-
-func TestClassifyStreamResult(t *testing.T) {
-	bg := context.Background()
-
-	t.Run("nil errors and events", func(t *testing.T) {
-		err := classifyStreamResult(bg, bg, "claude", 1, 10*time.Minute, nil, nil, 5)
-		if err != nil {
-			t.Errorf("expected nil, got %v", err)
-		}
-	})
-	t.Run("zero events", func(t *testing.T) {
-		err := classifyStreamResult(bg, bg, "claude", 1, 10*time.Minute, nil, nil, 0)
-		if err == nil {
-			t.Error("expected error for zero events")
-		}
-	})
-	t.Run("timeout", func(t *testing.T) {
-		ctx, cancel := context.WithDeadline(bg, time.Now().Add(-1*time.Second))
-		defer cancel()
-		err := classifyStreamResult(ctx, bg, "claude", 1, 5*time.Minute, nil, nil, 0)
-		if err == nil {
-			t.Error("expected timeout error")
-		}
-	})
-	t.Run("wait error", func(t *testing.T) {
-		err := classifyStreamResult(bg, bg, "claude", 1, 10*time.Minute, errors.New("process failed"), nil, 5)
-		if err == nil {
-			t.Error("expected error from waitErr")
-		}
-	})
-	t.Run("exit error", func(t *testing.T) {
-		// Create an exec.ExitError by running a command that fails
-		cmd := exec.Command("false")
-		exitErr := cmd.Run()
-		err := classifyStreamResult(bg, bg, "claude", 1, 10*time.Minute, exitErr, nil, 5)
-		if err == nil {
-			t.Error("expected error from exit error")
-		}
-	})
-	t.Run("parse error", func(t *testing.T) {
-		err := classifyStreamResult(bg, bg, "claude", 1, 10*time.Minute, nil, errors.New("parse failed"), 5)
-		if err == nil {
-			t.Error("expected error from parseErr")
-		}
-	})
 }
 
 // parseTimestamp tests are in context_test.go. Duplicate removed.

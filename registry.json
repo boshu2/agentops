@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-05-31T20:11:38Z",
+  "generated_at": "2026-06-06T03:29:40Z",
   "summary": {
     "skills": 81,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 73,
-    "capabilities": 168
+    "cli_commands": 71,
+    "capabilities": 166
   },
   "surfaces": {
     "skills": [
@@ -962,19 +962,6 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao evolve",
-        "path": "cli/cmd/ao/",
-        "purpose": "Run the autonomous code-improvement loop",
-        "bounded_context": "BC3",
-        "driven_by_skills": [
-          "autodev",
-          "evolve",
-          "shared",
-          "using-agentops",
-          "using-gc"
-        ]
-      },
-      {
         "name": "ao extract",
         "path": "cli/cmd/ao/",
         "purpose": "Process pending learning extractions",
@@ -1302,21 +1289,6 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao rpi",
-        "path": "cli/cmd/ao/",
-        "purpose": "RPI lifecycle automation",
-        "bounded_context": "BC3",
-        "driven_by_skills": [
-          "autodev",
-          "domain",
-          "shared",
-          "standards",
-          "swarm",
-          "using-agentops",
-          "using-gc"
-        ]
-      },
-      {
         "name": "ao scenario",
         "path": "cli/cmd/ao/",
         "purpose": "Manage holdout scenarios for behavioral validation",
@@ -1435,9 +1407,9 @@
     ]
   },
   "capability_summary": {
-    "total": 168,
+    "total": 166,
     "skills": 81,
-    "cli_commands": 73,
+    "cli_commands": 71,
     "gates": 11,
     "reference_impls": 3
   },
@@ -1465,7 +1437,6 @@
     "demo",
     "doctor",
     "eval",
-    "evolve",
     "extract",
     "feedback-loop",
     "findings",
@@ -1500,7 +1471,6 @@
     "registry",
     "retrieval-bench",
     "robot-docs",
-    "rpi",
     "scenario",
     "scope",
     "search",
@@ -1565,9 +1535,7 @@
       "drives_commands": [
         "ao autodev",
         "ao autodev init",
-        "ao autodev validate",
-        "ao evolve",
-        "ao rpi"
+        "ao autodev validate"
       ],
       "path": "skills/autodev/",
       "references": 0
@@ -1799,9 +1767,7 @@
         "result.json",
         "verdict.json"
       ],
-      "drives_commands": [
-        "ao rpi phased"
-      ],
+      "drives_commands": [],
       "path": "skills/council/",
       "references": 33
     },
@@ -1837,7 +1803,6 @@
         "ao mine",
         "ao pool list",
         "ao ratchet",
-        "ao rpi phased",
         "ao version"
       ],
       "path": "skills/crank/",
@@ -1970,9 +1935,7 @@
         "ao compile",
         "ao eval run",
         "ao inject",
-        "ao maturity",
-        "ao rpi",
-        "ao rpi phased"
+        "ao maturity"
       ],
       "path": "skills/domain/",
       "references": 16
@@ -2047,10 +2010,6 @@
         "ao ci recent",
         "ao corpus inject",
         "ao defrag",
-        "ao evolve",
-        "ao evolve blocked",
-        "ao evolve next-work",
-        "ao evolve write-stop-marker",
         "ao goals",
         "ao lookup",
         "ao loop append",
@@ -2060,8 +2019,7 @@
         "ao loop verify",
         "ao metrics cite",
         "ao mine",
-        "ao ratchet",
-        "ao rpi loop"
+        "ao ratchet"
       ],
       "path": "skills/evolve/",
       "references": 26
@@ -2410,8 +2368,6 @@
         "ao lookup",
         "ao metrics cite",
         "ao ratchet",
-        "ao rpi cleanup",
-        "ao rpi status",
         "ao search"
       ],
       "path": "skills/plan/",
@@ -2551,7 +2507,6 @@
         "ao lookup",
         "ao metrics cite",
         "ao ratchet",
-        "ao rpi phased",
         "ao search",
         "ao turn verify"
       ],
@@ -2777,8 +2732,7 @@
         "result.json"
       ],
       "drives_commands": [
-        "ao metrics cite",
-        "ao rpi phased"
+        "ao metrics cite"
       ],
       "path": "skills/research/",
       "references": 17
@@ -2886,8 +2840,7 @@
         "converted-skill"
       ],
       "drives_commands": [
-        "ao goals",
-        "ao rpi phased"
+        "ao goals"
       ],
       "path": "skills/scaffold/",
       "references": 2
@@ -3017,9 +2970,6 @@
       ],
       "drives_commands": [
         "ao beads verify",
-        "ao evolve",
-        "ao rpi",
-        "ao rpi phased",
         "ao version"
       ],
       "path": "skills/shared/",
@@ -3104,8 +3054,7 @@
         "ao ci",
         "ao corpus inject",
         "ao loop",
-        "ao loop history",
-        "ao rpi"
+        "ao loop history"
       ],
       "path": "skills/standards/",
       "references": 23
@@ -3156,9 +3105,7 @@
         ".agents/swarm/results/*.json"
       ],
       "drives_commands": [
-        "ao lookup",
-        "ao rpi",
-        "ao rpi phased"
+        "ao lookup"
       ],
       "path": "skills/swarm/",
       "references": 21
@@ -3236,12 +3183,10 @@
         "ao agents inspect",
         "ao codex start",
         "ao codex stop",
-        "ao evolve",
         "ao flywheel close-loop",
         "ao forge transcript",
         "ao inject",
         "ao lookup",
-        "ao rpi",
         "ao search"
       ],
       "path": "skills/using-agentops/",
@@ -3264,10 +3209,8 @@
       "drives_commands": [
         "ao compile",
         "ao corpus inject",
-        "ao evolve",
         "ao inject",
         "ao maturity",
-        "ao rpi",
         "ao validate"
       ],
       "path": "skills/using-gc/",
@@ -3292,8 +3235,7 @@
       "drives_commands": [
         "ao doctor",
         "ao goals",
-        "ao ratchet",
-        "ao rpi phased"
+        "ao ratchet"
       ],
       "path": "skills/validate/",
       "references": 0
@@ -3839,62 +3781,6 @@
         "--json",
         "--output",
         "--tmp-files",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.evolve",
-      "name": "ao evolve",
-      "type": "cli-command",
-      "bounded_context": "BC3",
-      "purpose": "Run the autonomous code-improvement loop",
-      "status": "active",
-      "driven_by_skills": [
-        "autodev",
-        "evolve",
-        "shared",
-        "using-agentops",
-        "using-gc"
-      ],
-      "flags": [
-        "--auto-clean",
-        "--auto-clean-stale-after",
-        "--bd-sync-policy",
-        "--cleanup-prune-branches",
-        "--cleanup-prune-worktrees",
-        "--command-timeout",
-        "--compile",
-        "--compile-defrag",
-        "--compile-interval",
-        "--compile-since",
-        "--config",
-        "--cycle-delay",
-        "--cycle-retries",
-        "--detached-branch-prefix",
-        "--detached-heal",
-        "--dry-run",
-        "--ensure-cleanup",
-        "--failure-policy",
-        "--gate-fast-script",
-        "--gate-policy",
-        "--gate-security-script",
-        "--json",
-        "--kill-switch-path",
-        "--landing-branch",
-        "--landing-commit-message",
-        "--landing-lock-path",
-        "--landing-policy",
-        "--lease",
-        "--lease-path",
-        "--lease-ttl",
-        "--max-cycles",
-        "--mode",
-        "--output",
-        "--ralph",
-        "--repo-filter",
-        "--retry-backoff",
-        "--supervisor",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"
@@ -4640,31 +4526,6 @@
       "purpose": "Print the paste-ready agent handbook for the ao CLI (Markdown)",
       "status": "active",
       "driven_by_skills": [],
-      "flags": [
-        "--config",
-        "--dry-run",
-        "--json",
-        "--output",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.rpi",
-      "name": "ao rpi",
-      "type": "cli-command",
-      "bounded_context": "BC3",
-      "purpose": "RPI lifecycle automation",
-      "status": "active",
-      "driven_by_skills": [
-        "autodev",
-        "domain",
-        "shared",
-        "standards",
-        "swarm",
-        "using-agentops",
-        "using-gc"
-      ],
       "flags": [
         "--config",
         "--dry-run",

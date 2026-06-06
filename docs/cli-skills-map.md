@@ -2,7 +2,7 @@
 
 > Which `ao` commands are called by which skills and hooks — and vice versa.
 
-Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-28. 75 generated CLI command headings, 69 source skills, 12 runtime hook event sections.
+Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-28. 71 generated CLI command headings, 69 source skills, 12 runtime hook event sections.
 
 Source-of-truth note: `hooks/hooks.json` currently declares the full Claude runtime event surface. `hooks/codex-hooks.json` declares the Codex-native subset that runtime can support.
 
@@ -30,9 +30,7 @@ Every `ao` command that is actively called by at least one skill or hook.
 | `ao ratchet` | crank, handoff, implement, plan, pre-mortem, ratchet, rpi, status, vibe | ratchet-advance.sh, stop-auto-handoff.sh, precompact-snapshot.sh |
 | `ao goals` | goals, evolve | — |
 | `ao search` | crank, inject, plan, pre-mortem, provenance, research, using-agentops, vibe | session-start.sh |
-| `ao rpi` | autodev, council, crank, plan, quickstart, research, rpi, shared, swarm | — |
 | `ao autodev` | autodev | — |
-| `ao evolve` | autodev, evolve | — |
 | `ao flywheel` | crank, evolve, flywheel, post-mortem, quickstart, retro, status | ao-flywheel-close.sh, session-end-maintenance.sh |
 | `ao pool` | crank, status | session-end-maintenance.sh |
 | `ao lookup` | crank, implement, inject, plan, pre-mortem, research, using-agentops | session-start.sh |

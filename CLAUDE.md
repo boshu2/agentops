@@ -91,7 +91,7 @@ Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `ag
 
 - **North star:** [`docs/3.0.md`](docs/3.0.md) — what AgentOps 3.0 is (hookless-first CDLC, the SDLC↔CDLC loop, the four-practice waist). The single source of truth; everything below is consistent with it.
 - **Spine:** [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md) — 7-move agent doctrine. **Primary navigation.**
-- **One turn's executor:** `/rpi` skill. NOT primary.
+- **One turn's executor:** the agent's RPI-shaped discipline (plan → execute → verify). NOT primary.
 - **Architecture:** 5 Bounded Contexts (BC1 Corpus → BC5 Runtime). Where code lives.
 - **Consumer metaphor:** "CDLC" — the compounding Knowledge Flywheel framing (`Research → Plan → Implement → Validate → Knowledge Flywheel feedback`).
 
@@ -108,12 +108,11 @@ Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `ag
 
 ## Session Constraints
 
-- **Multi-phase work:** Route through `ao rpi` (enforces timeouts and stall detection).
 - **Before spawning workers:** Verify no file overlap across the wave. File collisions are the #1 swarm failure mode.
-- **Before proposing new capability:** Check `ao rpi serve --help`, `.github/workflows/validate.yml`, and `GOALS.md` first.
-- **Gas City (gc) — guided substrate, not an in-CLI mode.** `gc` is the optional out-of-session orchestration substrate that runs whole `ao rpi`/`ao evolve` loops (the reference City at `packs/agentops/`; mayor + refinery agents). It is a guided dependency, the way `bd` is — `ao` does NOT wrap it. Agent-facing workflow: the [`using-gc`](skills/using-gc/SKILL.md) skill. Full tool list: [docs/dependencies.md](docs/dependencies.md).
-- **Gas City (gc) bridge — REMOVED (soc-2rtm0, wave 2).** The CLI gc-bridge glue (`cli/cmd/ao/gc_bridge.go`, `gc_events.go`, `rpi_phased_gc.go`) was severed and deleted. The phased engine keeps its non-gc backends (`auto`/`direct`/`stream`/`tmux`); `runtime=gc` is no longer a valid mode. The injectable exec/look typedefs (`execFn`/`lookFn`, formerly `gcExecFn`/`gcLookFn`) now live in `rpi_phased_context.go`. The last dangling gascity compat — `internal/gascity`, its only importer (the orphaned `agentworker` GasCity adapter), and `internal/bridge/gc.go` — was removed in ag-hfc (3.1 teardown S2); the live `bridge` codex/semver helpers (`CompareSemver`, `ParseSemverParts`, codex lifecycle) stay in `bridge/semver.go` + `bridge/codex.go`.
-- **Legacy RPI lane — load-bearing, not dead code.** Do not write new tests or features for `rpi_loop_supervisor.go`, `rpi_c2_events.go`, `rpi_phased_tmux.go`, `rpi_parallel.go`, but do NOT delete them: live code references their symbols (`RPIC2Event`/`appendRPIC2Event` across 13+ `rpi_phased*` files + `mine`; `rpiLoopSupervisorConfig`/`runRPISupervisedCycle` in `rpi_loop`/`agentopsd`/`rpi_cancel`; `shellQuote` in `handoff`/`overnight_setup`; tmux helpers in `rpi_nudge`/`rpi_phased_stream`). Deleting any breaks the build; removal needs a caller-migration refactor (soc-1gbpz), not a delete. `rpi_workers.go` and `fire.go` were already removed.
+- **Before proposing new capability:** Check `.github/workflows/validate.yml` and `GOALS.md` first.
+- **Gas City (gc) — guided substrate, not an in-CLI mode.** `gc` is the optional out-of-session orchestration substrate (the reference City at `packs/agentops/`; mayor + refinery agents). It is a guided dependency, the way `bd` is — `ao` does NOT wrap it. Agent-facing workflow: the [`using-gc`](skills/using-gc/SKILL.md) skill. Full tool list: [docs/dependencies.md](docs/dependencies.md).
+- **Gas City (gc) bridge — REMOVED (soc-2rtm0, wave 2).** The CLI gc-bridge glue was severed and deleted. The last dangling gascity compat — `internal/gascity`, its only importer (the orphaned `agentworker` GasCity adapter), and `internal/bridge/gc.go` — was removed in ag-hfc (3.1 teardown S2); the live `bridge` codex/semver helpers (`CompareSemver`, `ParseSemverParts`, codex lifecycle) stay in `bridge/semver.go` + `bridge/codex.go`.
+- **RPI/Evolve CLI commands — REMOVED (ag-dxqy).** The `ao rpi` and `ao evolve` CLI command trees were deleted. `internal/rpi` stays as a library; relocated proof-checking and worktree-GC helpers live in `rpi_compat.go` and `worktree_cleanup.go`.
 
 ### Execution Discipline
 

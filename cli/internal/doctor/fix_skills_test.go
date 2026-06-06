@@ -50,7 +50,7 @@ func TestSkillsStaleCommandRefsFixer(t *testing.T) {
 		"ao know inject -> ao inject (renamed)\n"
 	writeSkillsFile(t, skillMD, original)
 	docMD := filepath.Join(repo, "docs", "sample.md")
-	writeSkillsFile(t, docMD, "Use `ao work rpi` to start.\n")
+	writeSkillsFile(t, docMD, "Use `ao work ratchet` to start.\n")
 
 	env := &DetectEnv{RepoRoot: repo, CWD: repo, HomeDir: home}
 
@@ -85,7 +85,7 @@ func TestSkillsStaleCommandRefsFixer(t *testing.T) {
 		t.Fatalf("SKILL.md after fix = %q, want %q", got, want)
 	}
 	gotDoc, _ := os.ReadFile(docMD)
-	if string(gotDoc) != "Use `ao rpi` to start.\n" {
+	if string(gotDoc) != "Use `ao ratchet` to start.\n" {
 		t.Fatalf("docs/sample.md after fix = %q", gotDoc)
 	}
 

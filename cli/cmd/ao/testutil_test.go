@@ -7,11 +7,13 @@ package main
 // makes cross-file dependencies explicit.
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -672,4 +674,82 @@ func runFixtureGit(t *testing.T, dir string, extraEnv []string, args ...string) 
 		t.Fatalf("git %v in %s: %v\n%s", args, dir, err, out)
 	}
 	return string(out)
+}
+
+// ---------------------------------------------------------------------------
+// String helpers (previously in rpi_phased_test.go / rpi_loop_test.go)
+// ---------------------------------------------------------------------------
+
+func containsStr(s, substr string) bool { return strings.Contains(s, substr) }
+
+// writeCompletedLoopRegistryRun creates a minimal phased-state.json entry under
+// <rootDir>/.agents/rpi/runs/<runID>/ for tests that verify registry scanning.
+func writeCompletedLoopRegistryRun(t *testing.T, rootDir, runID, epicID, goal string) {
+	t.Helper()
+	runDir := filepath.Join(rootDir, ".agents", "rpi", "runs", runID)
+	if err := os.MkdirAll(runDir, 0o755); err != nil {
+		t.Fatalf("mkdir registry run dir: %v", err)
+	}
+
+	state := map[string]any{
+		"schema_version": 1,
+		"run_id":         runID,
+		"epic_id":        epicID,
+		"goal":           goal,
+		"phase":          3,
+		"started_at":     time.Now().Add(-30 * time.Minute).UTC().Format(time.RFC3339),
+	}
+	data, err := json.Marshal(state)
+	if err != nil {
+		t.Fatalf("marshal registry state: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(runDir, phasedStateFile), data, 0o644); err != nil {
+		t.Fatalf("write registry state: %v", err)
+	}
+}
+
+// writeEvidenceOnlyClosurePacket creates a staged evidence-only closure packet.
+func writeEvidenceOnlyClosurePacket(t *testing.T, rootDir, targetID string) string {
+	t.Helper()
+	packetDir := filepath.Join(rootDir, ".agents", "releases", "evidence-only-closures")
+	if err := os.MkdirAll(packetDir, 0o755); err != nil {
+		t.Fatalf("mkdir evidence-only closure dir: %v", err)
+	}
+
+	packetPath := filepath.Join(packetDir, strings.ReplaceAll(targetID, "/", "_")+".json")
+	packet := map[string]any{
+		"schema_version": 1,
+		"artifact_id":    "evidence-only-closure-" + targetID,
+		"target_id":      targetID,
+		"target_type":    "task",
+		"created_at":     time.Now().UTC().Format(time.RFC3339),
+		"producer":       "rpi-loop-test",
+		"evidence_mode":  "staged",
+		"validation_commands": []string{
+			"bash scripts/validate-go-fast.sh",
+		},
+		"repo_state": map[string]any{
+			"repo_root":       ".",
+			"git_branch":      "main",
+			"git_dirty":       false,
+			"head_sha":        "deadbeef",
+			"modified_files":  []string{},
+			"staged_files":    []string{},
+			"unstaged_files":  []string{},
+			"untracked_files": []string{},
+		},
+		"evidence": map[string]any{
+			"summary":   "proof-backed closure",
+			"artifacts": []string{".agents/releases/evidence-only-closures/" + strings.ReplaceAll(targetID, "/", "_") + ".json"},
+			"notes":     []string{},
+		},
+	}
+	data, err := json.Marshal(packet)
+	if err != nil {
+		t.Fatalf("marshal evidence-only closure packet: %v", err)
+	}
+	if err := os.WriteFile(packetPath, data, 0o644); err != nil {
+		t.Fatalf("write evidence-only closure packet: %v", err)
+	}
+	return packetPath
 }

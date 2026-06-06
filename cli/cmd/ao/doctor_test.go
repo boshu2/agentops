@@ -1400,8 +1400,8 @@ func TestCheckStaleReferences_StaleInDocs(t *testing.T) {
 	if err := os.MkdirAll(docsDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	// Use old namespace-style "ao work rpi" instead of flat "ao rpi"
-	if err := os.WriteFile(filepath.Join(docsDir, "guide.md"), []byte("# Guide\nRun `ao work rpi status` to check.\n"), 0644); err != nil {
+	// Use old namespace-style "ao work ratchet" instead of flat "ao ratchet"
+	if err := os.WriteFile(filepath.Join(docsDir, "guide.md"), []byte("# Guide\nRun `ao work ratchet status` to check.\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1454,7 +1454,7 @@ func TestCheckStaleReferences_SubdirsScanned(t *testing.T) {
 	// Write a stale reference in hooks/examples/
 	if err := os.WriteFile(
 		filepath.Join(examplesDir, "example.sh"),
-		[]byte("#!/bin/bash\nao work rpi status\n"),
+		[]byte("#!/bin/bash\nao work ratchet status\n"),
 		0644,
 	); err != nil {
 		t.Fatal(err)
