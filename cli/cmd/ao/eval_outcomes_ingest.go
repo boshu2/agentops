@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/boshu2/agentops/cli/internal/evalsubstrate"
 	"github.com/spf13/cobra"
@@ -202,8 +203,10 @@ func applyOutcomesBurn(path string, s outcomesScore) error {
 }
 
 var (
-	evalOutcomesIngestExpectHash string
-	evalOutcomesIngestBurnLedger string
+	evalOutcomesIngestExpectHash  string
+	evalOutcomesIngestBurnLedger  string
+	evalOutcomesIngestManifestOut string
+	evalOutcomesIngestRunID       string
 )
 
 var evalOutcomesIngestCmd = &cobra.Command{
@@ -231,11 +234,21 @@ func runEvalOutcomesIngest(cmd *cobra.Command, args []string) error {
 	if err := applyOutcomesBurn(evalOutcomesIngestBurnLedger, s); err != nil {
 		return err
 	}
-	out, err := json.MarshalIndent(ingestOutcomesScore(s), "", "  ")
+	v := ingestOutcomesScore(s)
+	out, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode verdict: %w", err)
 	}
 	fmt.Fprintln(cmd.OutOrStdout(), string(out))
+	if evalOutcomesIngestManifestOut != "" {
+		runID := resolveOutcomesRunID(evalOutcomesIngestRunID, s)
+		rec := buildOutcomesRunManifest(s, v.Verdict, runID, time.Now().UTC())
+		path, err := writeOutcomesRunManifest(evalOutcomesIngestManifestOut, runID, rec)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(cmd.ErrOrStderr(), "wrote eval-run manifest: %s\n", path)
+	}
 	return nil
 }
 
@@ -244,5 +257,9 @@ func init() {
 		"refuse the ingest if the score's judge_content_hash does not match this value (gate #2 rubric-drift parity)")
 	evalOutcomesIngestCmd.Flags().StringVar(&evalOutcomesIngestBurnLedger, "burn-ledger", "",
 		"path to a JSON HoldoutBurnLedger; when set, a holdout-split score registers a burn and is REFUSED if the (suite,gt) quota is exhausted (gate #3 runtime enforcement), persisted across invocations")
+	evalOutcomesIngestCmd.Flags().StringVar(&evalOutcomesIngestManifestOut, "manifest-out", "",
+		"also write an eval-run.v1 manifest to <dir>/<run-id>/manifest.json so the verdict pipeline feeds the Knowledge Flywheel (closes the Outcomes→Flywheel loop)")
+	evalOutcomesIngestCmd.Flags().StringVar(&evalOutcomesIngestRunID, "run-id", "",
+		"run id for the --manifest-out manifest; defaults to the score's run_id, then source_task_id (sanitized to the eval-run.v1 pattern)")
 	evalOutcomesCmd.AddCommand(evalOutcomesIngestCmd)
 }
