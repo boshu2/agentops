@@ -66,8 +66,10 @@ Pick your runtime, then type `/quickstart` in the agent.
 # Claude Code
 claude plugin marketplace add boshu2/agentops && claude plugin install agentops@agentops-marketplace
 
-# Codex CLI (macOS/Linux/WSL).  Windows: install-codex.ps1.  OpenCode: install-opencode.sh
+# Codex CLI (macOS/Linux/WSL).  OpenCode: install-opencode.sh
 curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
+# Codex CLI (Windows):
+irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex
 
 # Other skills-compatible agents
 npx skills@latest add boshu2/agentops --cursor -g
@@ -77,7 +79,8 @@ The `ao` CLI is optional but recommended (bookkeeping, retrieval, health, the lo
 
 ```bash
 brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops && brew install agentops   # macOS
-# Windows: irm .../install-ao.ps1 | iex.  Or release binaries / build from source (cli/README.md).
+# Windows: irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-ao.ps1 | iex
+# Or release binaries / build from source (cli/README.md).
 ```
 
 Installs hookless: skills and the `ao` CLI guide the workflow, and CI is the authoritative gate. The only hard requirement is an agent runtime and `git`; everything else degrades gracefully. Full dependency matrix: [docs/dependencies.md](docs/dependencies.md).
