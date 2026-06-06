@@ -40,7 +40,7 @@ var (
 )
 
 const forgeLegacyLocalLLMEnv = "AGENTOPS_FORGE_LEGACY_LOCAL_LLM"
-const forgeLegacyLocalLLMDeprecationWarning = "WARNING: --legacy-local-llm uses the deprecated local Ollama/Gemma bridge (removal target: v3.0.0); use AgentWorker/GasCity-backed Codex or Claude workers for daemon wiki/forge."
+const forgeLegacyLocalLLMDeprecationWarning = "WARNING: --legacy-local-llm uses the deprecated local Ollama/Gemma bridge (removal target: v3.0.0); configure a Dream worker queue for tier-1 forge instead."
 
 const (
 	// SnippetMaxLength is the maximum length for extracted text snippets.
