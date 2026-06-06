@@ -46,7 +46,7 @@ Bridge / framing docs:
 
 ## Architecture
 
-- [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, agent backends, hooks, context windowing
+- [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, agent backends, context windowing
 - [Software Factory Surface](software-factory.md) — Explicit automation surface for briefings, RPI flows, and operator-controlled closeout
 - [Assurance Profile](assurance-profile.md) — High-assurance operating posture, authority boundaries, and evidence artifact expectations for constrained environments
 - [Architecture](ARCHITECTURE.md) — System design and component overview
@@ -80,7 +80,7 @@ Bridge / framing docs:
 - [Skill API](SKILL-API.md) — Frontmatter fields, context declarations, enforcement status
 - [Skill Quality Rubric](reference/skill-quality-rubric.md) — Scoring rubric for repo-runtime, export, and mega-skill readiness
 - [AgentOps Domain Evolution BDD](reference/agentops-domain-evolution-bdd.md) — Gherkin acceptance contract for skill, CLI, and hook evolution
-- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 78 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
+- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 82 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
 - [AgentOps Hexagonal Architecture Map](reference/agentops-hexagonal-architecture-map.md) — Bounded contexts, ports, adapters, and proof gates for the evolution program
 - [AgentOps Domain Evolution Plan](reference/agentops-domain-evolution-plan.md) — Sequenced bootstrap and evolution plan anchored to `soc-y5vh`
 - [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph
@@ -276,6 +276,7 @@ Bridge / framing docs:
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
 - [Lesson Format](contracts/lesson-format.md) — Schema for `.agents/learnings/` entries with frontmatter (id/severity/trigger/verifiable/rule/falsified_by/practice/related) and graduation path (unassigned → proposed → accepted → encoded)
+- [bd remember Migration Manifest](contracts/bd-remember-migration-manifest.md) — Lineage-preserving manifest contract for classifying `bd remember` notes into bead-scoped, pull-learning, or discard dispositions before migration
 - [Bounded Contexts (yaml)](contracts/bounded-contexts.yaml) — Canonical BC1-BC5 definitions (id/name/responsibility/ports/center-of-gravity); registry doc prose must match this yaml (drift-checked by `scripts/check-bounded-contexts-drift.sh`, soc-zxia.2)
 - [add-validate-job scaffolder](https://github.com/boshu2/agentops/blob/main/scripts/add-validate-job.sh) — CI integration scaffolder; emits all 5 touch-points (workflow + summary needs + summary echo + pre-push + bats stub + AGENTS table) atomically when adding a new `validate-*` job (soc-3oij)
 - [CI Jobs Manifest (yaml)](contracts/ci-jobs.yaml) — Canonical reason+failure for every validate.yml CI job; AGENTS.md `### CI Jobs and What They Check` table is rendered from this yaml + workflow `summary.needs` via `scripts/generate-ci-jobs-table.sh` (golden-file gate enforced by `validate-ci-policy-parity`, soc-3oij)

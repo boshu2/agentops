@@ -493,9 +493,11 @@ func createTasksFile(cwd string) {
   "note": "Beads-optional mode. Use 'bd init' to enable full git-native issues."
 }
 `
-	//nolint:errcheck // quickstart setup, errors shown implicitly by missing output
-	os.WriteFile(tasksPath, []byte(content), 0600) // #nosec G104
-	if GetOutput() != "json" {
+	// ag-chvc: surface write failures instead of silently dropping them; only claim
+	// success after the write actually lands.
+	if err := os.WriteFile(tasksPath, []byte(content), 0600); err != nil {
+		fmt.Fprintf(os.Stderr, "  ⚠ could not write %s: %v\n", tasksPath, err)
+	} else if GetOutput() != "json" {
 		fmt.Println("  ✓ Created .agents/tasks.json (beads-optional mode)")
 	}
 }

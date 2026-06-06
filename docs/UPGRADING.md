@@ -68,7 +68,7 @@ The AO↔Olympus bridge has been archived. Removed surfaces:
 
 ### Daemon mode is available as an opt-in product runtime
 
-> **⚠ Superseded in AgentOps 3.0:** the standalone daemon (`agentopsd`) was **removed** in the 3.0 rearchitecture — AgentOps is in-session only, and out-of-session orchestration is delegated to the Gas City reference City. See [`MIGRATION-3.0.md`](MIGRATION-3.0.md) and [ADR-0009](adr/ADR-0009-daemon-deletion-in-session-only.md). The entry below is retained as historical record of the (now-removed) v2.x daemon.
+> **⚠ Superseded in AgentOps 3.0:** the standalone daemon (`agentopsd`) was **removed** in the 3.0 rearchitecture — AgentOps is in-session only, and out-of-session orchestration is delegated to a swappable substrate (reference: NTM + MCP + managed-agents). See [`MIGRATION-3.0.md`](MIGRATION-3.0.md) and [ADR-0009](adr/ADR-0009-daemon-deletion-in-session-only.md). The entry below is retained as historical record of the (now-removed) v2.x daemon.
 
 **Affects:** anyone migrating RPI, Dream, wiki/forge, or OpenClaw integrations
 from foreground command ownership to `agentopsd`.
@@ -135,7 +135,6 @@ See [`CHANGELOG.md`](CHANGELOG.md) directly. No hard breakages were introduced i
 # Verify the new install
 ao --version
 ao doctor
-ao hooks test
 
 # Re-run any local gates touched by the upgrade
 scripts/pre-push-gate.sh --fast

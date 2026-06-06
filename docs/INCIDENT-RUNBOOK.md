@@ -10,7 +10,7 @@
 1. [Emergency Kill Switches](#1-emergency-kill-switches)
 2. [Scenario A: Broken Skills After Update](#2-scenario-a-broken-skills-after-update)
 3. [Scenario B: Evolve Pushed Bad Code to Main](#3-scenario-b-evolve-pushed-bad-code-to-main)
-4. [Scenario C: Hook Scripts Fail at Session Start](#4-scenario-c-hook-scripts-fail-at-session-start)
+4. [Scenario C: Skills Not Loading / CI Gate Failing](#4-scenario-c-skills-not-loading--ci-gate-failing)
 5. [Rollback Options](#5-rollback-options)
 6. [Root Cause Analysis](#6-root-cause-analysis)
 7. [Prevention Checklist](#7-prevention-checklist)
@@ -22,56 +22,36 @@
 **Do these FIRST if sessions are broken. Restore functionality, then investigate.**
 
 ```bash
-# Disable ALL AgentOps hooks globally (instant, affects all sessions)
-export AGENTOPS_HOOKS_DISABLED=1
-
 # Stop evolve from running (persistent across sessions)
 mkdir -p ~/.config/evolve
 echo "incident $(date -Iseconds)" > ~/.config/evolve/KILL
 ```
 
-To make the hook disable persistent, add to your shell profile:
-```bash
-echo 'export AGENTOPS_HOOKS_DISABLED=1' >> ~/.zshrc
-```
-
-### Per-Hook Kill Switches
-
-If you know which hook is broken, disable just that one:
-
-| Hook | Kill Switch Env Var |
-|------|-------------------|
-| session-start.sh | `AGENTOPS_SESSION_START_DISABLED=1` |
-| pre-mortem-gate.sh | `AGENTOPS_SKIP_PRE_MORTEM_GATE=1` |
-| task-validation-gate.sh | `AGENTOPS_TASK_VALIDATION_DISABLED=1` |
-| pending-cleaner.sh | `AGENTOPS_PENDING_CLEANER_DISABLED=1` |
-| precompact-snapshot.sh | `AGENTOPS_PRECOMPACT_DISABLED=1` |
-| All hooks (global) | `AGENTOPS_HOOKS_DISABLED=1` |
-
-Every hook script checks `AGENTOPS_HOOKS_DISABLED=1` at the top and exits immediately if set.
+> **AgentOps 3.0 is hookless.** A default install ships **zero** hooks — nothing auto-runs at
+> session start, so there is no global "disable hooks" recovery step to take. Orientation is
+> explicit (`ao session bootstrap`, `ao inject`) and CI (`.github/workflows/validate.yml`) is the
+> authoritative gate. If you authored your own hooks via the `hooks-authoring` skill, see the
+> note under [Scenario C](#4-scenario-c-skills-not-loading--ci-gate-failing) for how to disable them.
 
 ---
 
 ## 2. Scenario A: Broken Skills After Update
 
-**Symptom:** Consumer ran the install script and now Claude sessions are broken — hooks error, skills don't load, or sessions hang at start.
+**Symptom:** Consumer ran the install script and now Claude sessions are broken — skills don't load, `ao` subcommands error, or skill invocations fail.
 
 ### Triage (< 5 min)
 
 ```bash
-# 1. Kill hooks immediately
-export AGENTOPS_HOOKS_DISABLED=1
-
-# 2. Check what version was installed
+# 1. Check what version was installed
 cat ~/.claude/skills/agentops/plugin.json 2>/dev/null | jq -r '.version'
 # Or check the marketplace cache
 cat ~/.claude/plugins/marketplaces/agentops-marketplace/plugin.json 2>/dev/null | jq -r '.version'
 
-# 3. Check if skills are symlinks (known failure mode)
+# 2. Check if skills are symlinks (known failure mode)
 ls -la ~/.claude/skills/ | head -20
 
-# 4. Test a hook manually
-bash ~/.claude/skills/agentops/hooks/session-start.sh
+# 3. Confirm the ao CLI is on PATH and runs
+which ao && ao status
 ```
 
 ### Fix: Reinstall from a known-good version
@@ -104,11 +84,12 @@ claude plugin marketplace add boshu2/agentops
 claude plugin install agentops@agentops-marketplace
 ```
 
-### Re-enable hooks after fix
+### Verify the fix
 
 ```bash
-unset AGENTOPS_HOOKS_DISABLED
-# Remove from shell profile if you added it there
+# Confirm skills resolve and the CLI runs
+ls ~/.claude/skills/agentops/ | head
+ao status
 ```
 
 ---
@@ -179,76 +160,61 @@ rm .agents/evolve/STOP 2>/dev/null
 
 ---
 
-## 4. Scenario C: Hook Scripts Fail at Session Start
+## 4. Scenario C: Skills Not Loading / CI Gate Failing
 
-**Symptom:** Claude session hangs, errors on start, or prints garbage JSON. The session-start hook or one of the other 11 hook scripts has a bug.
+**Symptom:** A skill won't invoke (Claude reports the skill is missing or malformed), or a PR is blocked because a CI gate in `.github/workflows/validate.yml` fails. AgentOps 3.0 is hookless — there is no session-start hook to misfire, so a broken skill or a failing gate is the usual culprit.
 
 ### Triage (< 5 min)
 
 ```bash
-# 1. Disable hooks to get a working session
+# 1. Confirm the skill exists and has a valid manifest
+ls ~/.claude/skills/agentops/skills/<skill-name>/SKILL.md
+# Frontmatter must parse — a malformed SKILL.md silently fails to load
+head -20 ~/.claude/skills/agentops/skills/<skill-name>/SKILL.md
+
+# 2. If a PR is red, see which gate failed (CI is the authoritative gate)
+gh pr checks <pr-number>
+
+# 3. Reproduce the failing gate locally (run the FULL job, not a subset)
+cat .github/workflows/validate.yml | grep -n "run:" | head -40   # find the step
+bash scripts/<failing-gate>.sh                                    # run it
+```
+
+### Common failures
+
+**Malformed or unregistered skill:**
+```bash
+# Skills source of truth is skills/ in the repo; the installed copy lives under
+# ~/.claude/skills/agentops/. A skill that isn't in the registry won't be offered.
+ls skills/<skill-name>/SKILL.md          # source of truth
+bash scripts/check-registry-drift.sh     # catches missing-from-registry skills
+```
+
+**CI gate disagreement (docs drifted from executable behavior):**
+```bash
+# Contracts/counts/context-map gates fail when a generated surface is stale.
+# Regenerate the derived surfaces, then re-run the gate.
+bash scripts/regen-all.sh 2>/dev/null || true
+bash scripts/validate-context-map-drift.sh
+```
+
+**Missing binary (ao, jq):**
+```bash
+which ao    # CLI must be installed and on PATH
+which jq    # required by several validation scripts
+```
+
+### Optional: user-authored hooks
+
+AgentOps ships **no** hooks by default. If you opted in and authored your own hooks via the
+`hooks-authoring` skill, hook troubleshooting applies to **those** files only — not to any shipped
+default. For backward-compat, AgentOps-authored hooks still honor the `AGENTOPS_HOOKS_DISABLED=1`
+environment variable as an opt-out:
+
+```bash
+# Only relevant if you authored your own hooks. Disables AgentOps-aware hooks for the session.
 export AGENTOPS_HOOKS_DISABLED=1
-
-# 2. Check hook error log
-cat .agents/ao/hook-errors.log 2>/dev/null | tail -20
-
-# 3. Test each hook manually to find the broken one
-for hook in ~/.claude/skills/agentops/hooks/*.sh; do
-  echo "--- Testing: $(basename $hook) ---"
-  timeout 5 bash "$hook" 2>&1 | tail -3
-  echo "Exit: $?"
-done
-
-# 4. Check for syntax errors
-for hook in ~/.claude/skills/agentops/hooks/*.sh; do
-  bash -n "$hook" 2>&1 && echo "OK: $(basename $hook)" || echo "BROKEN: $(basename $hook)"
-done
-```
-
-### Common hook failures
-
-**Missing binary (ao, jq, shellcheck):**
-```bash
-# Check if ao CLI is installed
-which ao    # should be /opt/homebrew/bin/ao
-which jq    # required by several hooks
-
-# If ao is missing, hooks degrade gracefully (|| true pattern)
-# But session-start.sh may still produce broken JSON
-```
-
-**Infinite loop or timeout:**
-```bash
-# hooks.json defines timeouts per hook (2-120s)
-# If a hook exceeds its timeout, Claude kills it
-# Check hooks.json for timeout values
-jq '.hooks | to_entries[] | .value[].hooks[] | {command: .command[:60], timeout: .timeout}' \
-  ~/.claude/skills/agentops/hooks/hooks.json
-```
-
-**Bad JSON output from session-start.sh:**
-```bash
-# session-start.sh must output valid JSON with hookSpecificOutput
-# Test it and validate output
-bash ~/.claude/skills/agentops/hooks/session-start.sh 2>/dev/null | jq .
-# If jq fails, the output is malformed
-```
-
-### Fix: Disable just the broken hook
-
-Once you identify the broken hook, disable only that one instead of all hooks. Use the per-hook kill switches from Section 1.
-
-If the broken hook doesn't have its own kill switch, you can patch it:
-```bash
-# Add a kill switch to the top of the hook (after the shebang)
-# This is a temporary fix in the installed copy
-HOOK_FILE=~/.claude/skills/agentops/hooks/<broken-hook>.sh
-# Back it up first
-cp "$HOOK_FILE" "${HOOK_FILE}.bak"
-# Make it exit immediately
-sed -i '' '2i\
-exit 0  # TEMPORARY: disabled during incident\
-' "$HOOK_FILE"
+# Then debug your own hook scripts wherever you installed them.
 ```
 
 ---
@@ -306,7 +272,7 @@ claude plugin install agentops@agentops-marketplace
 
 # Verify
 cat ~/.claude/skills/agentops/.claude-plugin/plugin.json | jq -r '.version'
-bash ~/.claude/skills/agentops/hooks/session-start.sh 2>/dev/null | jq .
+ao status
 ```
 
 ---
@@ -346,17 +312,18 @@ git bisect good <last-known-good-sha>
 git bisect reset
 ```
 
-### Was it a hook script bug?
+### Was it a skill or CI-gate failure?
 
 ```bash
-# Shellcheck all hooks
-shellcheck -x -P SCRIPTDIR hooks/*.sh
+# AgentOps 3.0 is hookless — CI is the authoritative gate. Reproduce it locally.
+# Check which gate failed on the PR
+gh pr checks <pr-number>
 
-# Check for recent hook changes
-git log --oneline -20 -- hooks/
+# Run the omnibus validation locally (the same job CI runs)
+bash scripts/pre-push-gate.sh
 
-# Run the hook preflight validation
-./scripts/validate-hook-preflight.sh
+# Check for recent skill / generated-surface changes
+git log --oneline -20 -- skills/ docs/
 
 # Run full test suite
 ./tests/run-all.sh
@@ -387,11 +354,9 @@ done
 - [ ] `./tests/run-all.sh` passes (all tiers)
 - [ ] `./tests/smoke-test.sh` passes
 - [ ] `cd cli && go build ./cmd/ao && go test -race ./...` clean
-- [ ] `shellcheck -x -P SCRIPTDIR hooks/*.sh` clean
-- [ ] `./scripts/validate-hook-preflight.sh` passes
-- [ ] All hook scripts test manually: `bash hooks/<name>.sh`
+- [ ] CI validation passes locally: `bash scripts/pre-push-gate.sh`
+- [ ] Generated/derived surfaces are in sync: `bash scripts/check-registry-drift.sh` and `bash scripts/validate-context-map-drift.sh` clean
 - [ ] Plugin and marketplace versions match: `jq -r '.version' .claude-plugin/plugin.json` equals `jq -r '.metadata.version' .claude-plugin/marketplace.json`
-- [ ] `session-start.sh` output is valid JSON: `bash hooks/session-start.sh 2>/dev/null | jq .`
 
 ### Before running evolve
 
@@ -408,24 +373,23 @@ done
 - [ ] Check `git log --oneline -20` for reasonable commit messages
 - [ ] Run `git diff <pre-evolve-sha>..HEAD --stat` to see total scope of changes
 
-### Hook script authoring rules
+### Optional hook authoring rules (only if you opt in)
 
-- Every hook MUST check `AGENTOPS_HOOKS_DISABLED=1` at the top
-- Every hook MUST fail open (`exit 0` on error, never `set -e`)
-- Every hook MUST respect its timeout in `hooks.json`
+AgentOps ships no hooks. If you author your own via the `hooks-authoring` skill, the safe pattern is:
+
+- Honor `AGENTOPS_HOOKS_DISABLED=1` at the top so operators can opt out
+- Fail open (`exit 0` on error, never `set -e`) — a broken hook must never wedge a session
 - Guard all external commands: `command -v <tool> >/dev/null 2>&1 && ...`
-- JSON output must be valid — test with `jq .` before committing
-- Log failures to `.agents/ao/hook-errors.log`, never to stderr
+- If a hook emits JSON, validate it with `jq .` before committing
 
 ---
 
 ## Quick Reference Card
 
 ```
-STOP EVERYTHING:     export AGENTOPS_HOOKS_DISABLED=1
 STOP EVOLVE:         echo "stop" > ~/.config/evolve/KILL
-CHECK HOOK ERRORS:   cat .agents/ao/hook-errors.log | tail -20
-TEST HOOKS:          for h in hooks/*.sh; do bash -n "$h"; done
+CHECK CI GATE:       gh pr checks <pr-number>
+RUN GATE LOCALLY:    bash scripts/pre-push-gate.sh
 REINSTALL:           claude plugin marketplace update agentops-marketplace && claude plugin install agentops@agentops-marketplace
 NUCLEAR REINSTALL:   rm -rf ~/.claude/skills/agentops ~/.claude/plugins/marketplaces/agentops-marketplace && claude plugin marketplace add boshu2/agentops && claude plugin install agentops@agentops-marketplace
 REVERT EVOLVE:       git revert --no-commit <good-sha>..HEAD && git commit -m "revert: evolve incident"

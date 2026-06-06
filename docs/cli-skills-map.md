@@ -1,10 +1,8 @@
-# CLI ↔ Skills/Hooks Wiring Map
+# CLI ↔ Skills Wiring Map
 
-> Which `ao` commands are called by which skills and hooks — and vice versa.
+> Which `ao` commands are called by which skills — and vice versa.
 
-Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-28. 76 generated CLI command headings, 69 source skills, 12 runtime hook event sections.
-
-Source-of-truth note: `hooks/hooks.json` currently declares the full Claude runtime event surface. `hooks/codex-hooks.json` declares the Codex-native subset that runtime can support.
+Auto-audited 2026-04-24; targeted runtime-proof update 2026-04-28. 76 generated CLI command headings, 69 source skills. (AgentOps 3.0 is hookless — there is no runtime hook surface; lifecycle work is driven by skills + the `ao` CLI, with CI as the authoritative gate.)
 
 Registry-first note: `/plan`, `/pre-mortem`, `/research`, `/vibe`, and `/post-mortem` now also read or write `.agents/findings/registry.jsonl` directly via skill contract. Those file-native prevention reads are intentionally not counted as `ao` command invocations in the tables below.
 
@@ -13,7 +11,7 @@ Registry-first note: `/plan`, `/pre-mortem`, `/research`, `/vibe`, and `/post-mo
 | Category | Count |
 |----------|-------|
 | Generated CLI command headings | 59 |
-| CLI command entries with skill/hook callers | 34 |
+| CLI command entries with skill callers | 32 |
 | Orphan/hidden command entries (user utilities, hidden, CI-only) | 21 |
 | Known phantom subcommands | 0 |
 
@@ -21,44 +19,40 @@ Registry-first note: `/plan`, `/pre-mortem`, `/research`, `/vibe`, and `/post-mo
 
 ## CLI Commands → Callers
 
-Every `ao` command that is actively called by at least one skill or hook.
+Every `ao` command that is actively called by at least one skill.
 
-| Command | Skill Callers | Hook Callers |
-|---------|--------------|--------------|
-| `ao inject` | crank, evolve, implement, inject, recover, research, retro | worktree-setup.sh |
-| `ao forge` | flywheel, forge, post-mortem, retro, vibe, evolve, crank | session-end-maintenance.sh |
-| `ao ratchet` | crank, handoff, implement, plan, pre-mortem, ratchet, rpi, status, vibe | ratchet-advance.sh, stop-auto-handoff.sh, precompact-snapshot.sh |
-| `ao goals` | goals, evolve | — |
-| `ao search` | crank, inject, plan, pre-mortem, provenance, research, using-agentops, vibe | session-start.sh |
-| `ao rpi` | autodev, council, crank, plan, quickstart, research, rpi, shared, swarm | — |
-| `ao autodev` | autodev | — |
-| `ao evolve` | autodev, evolve | — |
-| `ao flywheel` | crank, evolve, flywheel, post-mortem, quickstart, retro, status | ao-flywheel-close.sh, session-end-maintenance.sh |
-| `ao pool` | crank, status | session-end-maintenance.sh |
-| `ao lookup` | crank, implement, inject, plan, pre-mortem, research, using-agentops | session-start.sh |
-| `ao context` | crank, implement, swarm | context-guard.sh |
-| `ao codex` | autodev, brainstorm, crank, discovery, handoff, implement, post-mortem, quickstart, recover, research, rpi, status, using-agentops, validation | — |
-| `ao compile` | compile | — |
-| `ao maturity` | flywheel | session-end-maintenance.sh |
-| `ao constraint` | flywheel, post-mortem, retro | — |
-| `ao badge` | flywheel, status | — |
-| `ao retrieval-bench` | flywheel | — |
-| `ao seed` | quickstart | — |
-| `ao notebook` | retro | session-start.sh |
-| `ao memory` | — | session-end-maintenance.sh |
-| `ao dedup` | flywheel | session-end-maintenance.sh |
-| `ao contradict` | flywheel | session-end-maintenance.sh |
-| `ao metrics` | flywheel | session-end-maintenance.sh |
-| `ao extract` | — | session-start.sh |
-| `ao hooks` | quickstart | — |
-| `ao init` | quickstart | — |
-| `ao session` | post-mortem, retro | session-end-maintenance.sh |
-| `ao temper` | post-mortem | — |
-| `ao curate` | flywheel | — |
-| `ao status` | flywheel, quickstart | — |
-| `ao task-feedback` | retro | — |
-| `ao task-status` | status | — |
-| `ao anti-patterns` | flywheel | — |
+| Command | Skill Callers |
+|---------|--------------|
+| `ao inject` | crank, evolve, implement, inject, recover, research, retro |
+| `ao forge` | flywheel, forge, post-mortem, retro, vibe, evolve, crank |
+| `ao ratchet` | crank, handoff, implement, plan, pre-mortem, ratchet, rpi, status, vibe |
+| `ao goals` | goals, evolve |
+| `ao search` | crank, inject, plan, pre-mortem, provenance, research, using-agentops, vibe |
+| `ao rpi` | autodev, council, crank, plan, quickstart, research, rpi, shared, swarm |
+| `ao autodev` | autodev |
+| `ao flywheel` | crank, evolve, flywheel, post-mortem, quickstart, retro, status |
+| `ao pool` | crank, status |
+| `ao lookup` | crank, implement, inject, plan, pre-mortem, research, using-agentops |
+| `ao context` | crank, implement, swarm |
+| `ao codex` | autodev, brainstorm, crank, discovery, handoff, implement, post-mortem, quickstart, recover, research, rpi, status, using-agentops, validation |
+| `ao compile` | compile |
+| `ao maturity` | flywheel |
+| `ao constraint` | flywheel, post-mortem, retro |
+| `ao badge` | flywheel, status |
+| `ao retrieval-bench` | flywheel |
+| `ao seed` | quickstart |
+| `ao notebook` | retro |
+| `ao dedup` | flywheel |
+| `ao contradict` | flywheel |
+| `ao metrics` | flywheel |
+| `ao init` | quickstart |
+| `ao session` | post-mortem, retro |
+| `ao temper` | post-mortem |
+| `ao curate` | flywheel |
+| `ao status` | flywheel, quickstart |
+| `ao task-feedback` | retro |
+| `ao task-status` | status |
+| `ao anti-patterns` | flywheel |
 
 ---
 
@@ -98,7 +92,7 @@ Which `ao` commands each skill invokes.
 | council | `rpi phased` |
 | shared | `rpi phased` |
 
-Skills with **no ao commands**: beads, brainstorm, bug-hunt, codex-team, complexity, converter, doc, heal-skill, llm-wiki, openai-docs, oss-docs, pr-implement, pr-plan, pr-prep, pr-research, pr-retro, pr-validate, product, readme, release, reverse-engineer-rpi, security, security-suite, standards, trace, update.
+Skills with **no ao commands**: beads, brainstorm, bug-hunt, codex-team, complexity, converter, doc, heal-skill, llm-wiki, openai-docs, pr-implement, pr-prep, pr-research, pr-validate, product, release, reverse-engineer-rpi, security, security-suite, standards, trace.
 
 Conceptual slash commands such as `/knowledge` are documented elsewhere in the product docs, but they are not counted as source skill directories in this map.
 
@@ -107,36 +101,16 @@ Conceptual slash commands such as `/knowledge` are documented elsewhere in the p
 These are active skill-level reads or writes that do not go through an `ao` subcommand:
 
 - `/plan` reads `.agents/findings/registry.jsonl` before decomposition and cites `Applied findings:`
-- `/research` persists reusable findings to `.agents/findings/registry.jsonl` and refreshes `hooks/finding-compiler.sh`
+- `/research` persists reusable findings to `.agents/findings/registry.jsonl`
 - `/pre-mortem` reads `.agents/findings/registry.jsonl` in both quick and deep modes, injects `known_risks`, and can persist reusable findings
 - `/vibe` reads `.agents/findings/registry.jsonl` before council review and can persist reusable findings
 - `/post-mortem` writes normalized reusable findings to `.agents/findings/registry.jsonl`
 
 ---
 
-## Hooks → Commands
-
-Which `ao` commands each hook invokes.
-
-| Hook File | Event | ao Commands |
-|-----------|-------|-------------|
-| **session-start.sh** | SessionStart | `flywheel close-loop`, `knowledge brief`, `rpi cleanup` |
-| **session-end-maintenance.sh** | SessionEnd | `contradict`, `dedup`, `forge transcript`, `maturity`, `memory sync`, `notebook update`, `pool ingest` |
-| **compile-session-defrag.sh** | SessionEnd | `defrag` |
-| **ao-flywheel-close.sh** | Stop | `flywheel close-loop` |
-| **ratchet-advance.sh** | PostToolUse | `ratchet record` |
-| **context-guard.sh** | UserPromptSubmit | `context guard` |
-| **precompact-snapshot.sh** | PreCompact | `ratchet status` |
-| **stop-auto-handoff.sh** | Stop | `ratchet status` |
-| **worktree-setup.sh** | setup script (outside `hooks/hooks.json`) | `inject` |
-
-Hooks with **no ao commands**: citation-tracker.sh, config-change-monitor.sh, constraint-compiler.sh, dangerous-git-guard.sh, git-worker-guard.sh, holdout-isolation-gate.sh, lead-only-worker-git-guard.sh, pending-cleaner.sh, pre-mortem-gate.sh, skill-lint-gate.sh, stop-team-guard.sh, subagent-stop.sh, task-validation-gate.sh, worktree-cleanup.sh.
-
----
-
 ## Orphan Commands
 
-Commands that exist in the Go CLI but are not called by any skill or hook. All are intentionally uncalled — user utilities, hidden internals, or CI-only.
+Commands that exist in the Go CLI but are not called by any skill. All are intentionally uncalled — user utilities, hidden internals, or CI-only. (`ao memory` and `ao extract` were previously invoked only by runtime hooks, which AgentOps 3.0 no longer ships; they remain available as direct commands.)
 
 | Command | Category | Notes |
 |---------|----------|-------|
@@ -150,6 +124,8 @@ Commands that exist in the Go CLI but are not called by any skill or hook. All a
 | `ao vibe-check` | User utility | `/vibe` skill orchestrates directly |
 | `ao trace` | User utility | Artifact tracing |
 | `ao gate` | CI/test | Promotion gate — called in test scripts |
+| `ao memory` | Internal | Memory sync (previously a hook caller) |
+| `ao extract` | Internal | Learning extraction (previously a hook caller) |
 | `ao feedback` | Hidden | UI for providing feedback on learnings |
 | `ao feedback-loop` | Internal | Async feedback processing |
 | `ao batch-feedback` | Hidden | Batch feedback processing |
@@ -159,7 +135,6 @@ Commands that exist in the Go CLI but are not called by any skill or hook. All a
 | `ao task-sync` | Hidden | Task synchronization |
 | `ao migrate` | Hidden | Migration utility (`migrate memrl`) |
 | `ao worktree` | Hidden | Worktree GC utility |
-| `ao anti-patterns` | Hidden | Anti-pattern list |
 
 ---
 
@@ -169,50 +144,9 @@ No known phantom subcommands are present in the current map. `scripts/validate-c
 
 ---
 
-## Session Lifecycle Flow
+## Session Lifecycle Flow (hookless)
 
-How hooks chain `ao` commands across a session:
-
-```
-Session Start
-  → session-start.sh
-      → ao rpi cleanup --all --stale-after 24h --dry-run
-      → ao flywheel close-loop --quiet
-      → stage factory goal/briefing state for JIT retrieval
-
-During Session
-  → ratchet-advance.sh (PostToolUse)
-      → ao ratchet record
-  → context-guard.sh (UserPromptSubmit)
-      → ao context guard
-  → citation-tracker.sh (PostToolUse)
-      → appends citation events to .agents/ao/citations.jsonl (no ao command)
-
-Session End
-  → session-end-maintenance.sh
-      → ao session close --auto-extract
-      → ao forge transcript
-      → ao flywheel close-loop
-      → ao metrics baseline
-      → ao memory sync
-      → ao maturity --expire --evict --curate
-      → ao dedup
-      → ao contradict
-
-Stop Event
-  → ao-flywheel-close.sh
-      → ao flywheel close-loop (citation → utility → maturity)
-  → stop-auto-handoff.sh
-      → ao ratchet status (check for incomplete gates)
-
-Pre-Compaction
-  → precompact-snapshot.sh
-      → ao ratchet status (snapshot before context loss)
-```
-
-## Codex Hookless Lifecycle Flow
-
-How Codex sessions replace missing runtime hooks with explicit lifecycle commands:
+AgentOps 3.0 ships no runtime hooks. Session-boundary maintenance is driven explicitly by skills calling `ao` commands. For Codex, the entry/closeout skills replace what runtime hooks used to do:
 
 ```
 Codex Thread Entry
@@ -243,20 +177,21 @@ Codex Health
       → reads capture / retrieval / promotion / citation health
 ```
 
+If you want a runtime hook of your own (e.g. a PostToolUse gate), author one with the `hooks-authoring` skill — AgentOps ships none by default.
+
 ---
 
 ## Regenerating
 
-When skills, hooks, or command usage changes, refresh this map as follows:
+When skills or command usage changes, refresh this map as follows:
 
-1. Re-scan source invocations in: `skills/*/SKILL.md`, `skills-codex/*/SKILL.md`, `hooks/*.sh`, `hooks/hooks.json`.
+1. Re-scan source invocations in: `skills/*/SKILL.md`, `skills-codex/*/SKILL.md`.
 2. Update the relevant rows in this document, keeping hidden/subcommands aligned with the live command tree (`ao anti-patterns`, `ao context assemble`, etc.).
 3. Update the audit header date above.
 
 ## Maintaining This Document
 
 Re-audit when:
-- Adding a new `ao` CLI command (check it has skill/hook callers or is intentionally orphaned)
+- Adding a new `ao` CLI command (check it has skill callers or is intentionally orphaned)
 - Adding a new skill that calls `ao` commands (verify the commands exist)
-- Adding a new hook that calls `ao` commands
 - Running `scripts/generate-cli-reference.sh` (companion to this doc)

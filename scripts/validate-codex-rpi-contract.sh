@@ -64,17 +64,17 @@ require_contains "skills-codex/validation/SKILL.md" 'Validation delegates to `$v
 require_contains "skills-codex/rpi/prompt.md" 'do not hand RPI orchestration to wrapper commands' \
   'rpi Codex prompt must reject wrapper-command orchestration'
 
-require_contains "skills-codex/evolve/SKILL.md" 'Treat `ao evolve` and `ao rpi` as terminal' \
-  'evolve must classify ao evolve/ao rpi as terminal wrappers, not Codex defaults'
-require_contains "skills-codex/evolve/prompt.md" 'Do not shell out to `ao evolve`, `ao rpi`, or any wrapper command for the lead cycle.' \
+require_contains "skills-codex/evolve/SKILL.md" 'Treat retired CLI wrappers as terminal' \
+  'evolve must classify the retired ao evolve/ao rpi CLIs as terminal wrappers, not Codex defaults (ag-llni: ao evolve deleted)'
+require_contains "skills-codex/evolve/prompt.md" 'Drive the lead cycle in-session through the skills; do not shell out to a CLI loop wrapper.' \
   'evolve prompt must prohibit wrapper-command lead cycles'
-require_contains "skills-codex-overrides/evolve/prompt.md" 'Do not shell out to `ao evolve`, `ao rpi`, or any wrapper command for the lead cycle.' \
+require_contains "skills-codex-overrides/evolve/prompt.md" 'Drive the lead cycle in-session through the skills; do not shell out to a CLI loop wrapper.' \
   'evolve override prompt must preserve wrapper-command prohibition'
 
 require_contains "skills-codex/autodev/SKILL.md" 'In Codex, `$autodev` hands work to `$evolve` or `$rpi` as skill invocations.' \
   'autodev must hand off to Codex skills by default'
-require_contains "skills-codex/autodev/prompt.md" 'Do not use `ao evolve` or `ao rpi` as the Codex' \
-  'autodev prompt must reject ao evolve/ao rpi as Codex handoff'
+require_contains "skills-codex/autodev/prompt.md" 'Do not shell out to a retired CLI wrapper as the Codex' \
+  'autodev prompt must reject retired-CLI wrapper handoff (ag-llni: ao evolve deleted)'
 require_contains "skills-codex/using-agentops/SKILL.md" 'Codex skill orchestration default is `$skill` chaining.' \
   'using-agentops must document $skill chaining as the Codex default'
 

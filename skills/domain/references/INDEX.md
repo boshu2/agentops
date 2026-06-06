@@ -45,6 +45,12 @@ case-insensitive filesystems (macOS APFS default) do not collapse the two.
 |---------------------|---------------|------------|----------|
 | `tracer-bullet.md`  | Tracer Bullet | tracer     | concept  |
 
+### Verification membrane concepts
+
+| Slug                           | Concept                   | Status | Kind         |
+|--------------------------------|---------------------------|--------|--------------|
+| `silent-contract-violation.md` | Silent Contract Violation | draft  | anti-pattern |
+
 ### Operating discipline concepts
 
 | Slug                      | Concept              | Status     | Kind    |
@@ -52,6 +58,7 @@ case-insensitive filesystems (macOS APFS default) do not collapse the two.
 | `context-density-rule.md` | Context Density Rule | canonical  | concept |
 | `behavior-shaping.md`     | Behavior Shaping     | draft      | concept |
 | `primitive-selection.md`  | Primitive Selection  | draft      | concept |
+| `reach.md`                | Reach                | draft      | concept |
 
 ### Loop family (the operating loop)
 

@@ -276,15 +276,17 @@ ao claim [command]
 Append (or upgrade) a claim→evidence binding via the typed BC2
 
 ```
-ao claim bind --claim <AOP-CLAIM-X> --path <evidence-path> [--level PG1|PG2|PG3|PG4] [--anchor ...] [flags]
+ao claim bind --claim <AOP-CLAIM-X> --path <evidence-path> [--level PG1|PG2|PG3|PG4] [--anchor ...] [--author-id <id> --judge-id <id>] [flags]
 ```
 
 **Flags:**
 
 ```
       --anchor stringArray   optional in-file anchors (repeatable)
+      --author-id string     artifact author identity for reviewer separation checks
       --claim string         claim ID (required, e.g. AOP-CLAIM-X)
   -h, --help                 help for bind
+      --judge-id string      judge/verifier identity for reviewer separation checks
       --level string         promotion level: PG1|PG2|PG3|PG4 (default "PG1")
       --path string          evidence file path (required, relative to repo root)
 ```
@@ -747,6 +749,29 @@ ao loop append --mode <m> --result <r> [flags]
       --trace-json string   XP/BDD/TDD evidence trace as a JSON object — a file path or inline JSON (optional)
 ```
 
+#### `ao loop blocked`
+
+Record or inspect typed blocked-events emitted by the /evolve loop.
+
+```
+ao loop blocked [flags]
+```
+
+**Flags:**
+
+```
+      --bead string              Bead id the agent was working on (write mode, optional)
+      --clear string             Clear mode: delete entries for the given cycle id (operator-only)
+      --cycle string             Override cycle-id (write mode; defaults to date-derived counter)
+  -h, --help                     help for blocked
+      --json                     Read mode: emit JSON instead of human-readable text
+      --ladder-step-failed int   Ladder step that failed (write mode, optional)
+      --list                     Read mode: list blocked events
+      --needed-context string    Missing context description (write mode, optional)
+      --reason string            Reason text (write mode)
+      --tail int                 Read mode: show last N entries (default 10)
+```
+
 #### `ao loop converged`
 
 Evaluate the evolve loop's convergence STOP predicate via the typed
@@ -819,6 +844,24 @@ Read .agents/evolve/hypotheses.jsonl via the typed BC3
 ao loop hypothesis list [flags]
 ```
 
+#### `ao loop next-work`
+
+Run the 5-step next-work ladder and recommend a bead to claim.
+
+```
+ao loop next-work [flags]
+```
+
+**Flags:**
+
+```
+      --bd-binary string         Override path to the 'bd' binary (default: resolves via PATH)
+  -h, --help                     help for next-work
+      --include-operator-shape   Do not filter operator-shape beads at step 1
+      --json                     Emit JSON instead of human-readable text
+      --mode string              Execution contract: 'burst' (default) or 'loop' (default "burst")
+```
+
 #### `ao loop verify`
 
 Audit .agents/evolve/cycle-history.jsonl integrity via the typed
@@ -832,6 +875,23 @@ ao loop verify [flags]
 ```
   -h, --help           help for verify
       --max-idle int   max acceptable trailing idle/unchanged streak before flagging dormancy (default 5)
+```
+
+#### `ao loop write-stop-marker`
+
+Write a DORMANT, STOP, or KILL marker under .agents/evolve/.
+
+```
+ao loop write-stop-marker [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for write-stop-marker
+      --marker string   Marker name: dormant, stop, or kill
+      --mode string     Execution contract: 'burst' or 'loop' (loop refuses unconditionally) (default "burst")
+      --reason string   Reason text written to the marker file
 ```
 
 ---
@@ -899,11 +959,14 @@ ao metrics cite <artifact-path> [flags]
 **Flags:**
 
 ```
-  -h, --help             help for cite
-      --query string     Search query that surfaced this artifact
-      --session string   Session ID (auto-detected if not provided)
-      --type string      Citation type: recall, reference, applied (default "reference")
-      --vendor string    Model vendor attribution: claude, codex
+      --artifact-author string   Author/owner identity of the cited artifact
+      --cited-by-agent string    Agent identity recording the citation outcome
+      --cited-by-family string   Model family of the citing/reviewing agent
+  -h, --help                     help for cite
+      --query string             Search query that surfaced this artifact
+      --session string           Session ID (auto-detected if not provided)
+      --type string              Citation type: retrieved, used-in-final-artifact, helpful, harmful, refuted, applied, reference (default "reference")
+      --vendor string            Model vendor attribution: claude, codex
 ```
 
 #### `ao metrics cite-report`
@@ -1166,6 +1229,16 @@ ao reconcile [flags]
       --limit int      maximum bead and run records to sample (default 80)
       --repo string    GitHub repo override for gh calls (owner/name)
       --since string   recent .agents evidence window (default "48h")
+```
+
+---
+
+### `ao redact`
+
+Read text on stdin, apply the canonical secret redactor (the same
+
+```
+ao redact [flags]
 ```
 
 ---
@@ -1687,131 +1760,6 @@ ao eval task show <task-id> [flags]
 
 ---
 
-### `ao evolve`
-
-Run the v2 autonomous improvement loop.
-
-```
-ao evolve [command]
-```
-
-**Flags:**
-
-```
-      --auto-clean                        Run stale RPI cleanup before each phased cycle
-      --auto-clean-stale-after duration   Only auto-clean runs older than this age (default 24h0m0s)
-      --bd-sync-policy string             Legacy bd landing checkpoint policy: auto|always|never (auto/always run 'bd export -o /dev/null' on current bd releases) (default "auto")
-      --cleanup-prune-branches            Run legacy branch cleanup during supervisor cleanup
-      --cleanup-prune-worktrees           Run git worktree prune during supervisor cleanup (default true)
-      --command-timeout duration          Timeout for supervisor external commands (git/bd/gate scripts) (default 20m0s)
-      --compile                           Enable Compile producer cadence before queue selection
-      --compile-defrag                    Run defrag sweep after Compile mine producer tick
-      --compile-interval duration         Minimum interval between Compile producer ticks (0 = every cycle) (default 30m0s)
-      --compile-since string              Lookback window for Compile mine producer (default "26h")
-      --cycle-delay duration              Delay between completed cycles
-      --cycle-retries int                 Automatic retry count per cycle after a failed attempt
-      --detached-branch-prefix string     Branch prefix used by detached HEAD self-heal (default "codex/auto-rpi")
-      --detached-heal                     Auto-create/switch to a named branch when HEAD is detached
-      --ensure-cleanup                    Run stale-run cleanup after each cycle (cleanup guarantee)
-      --failure-policy string             Cycle failure policy: stop|continue (default "stop")
-      --gate-fast-script string           Fast validation gate script path (default "scripts/validate-go-fast.sh")
-      --gate-policy string                Quality/security gate policy: off|best-effort|required (default "off")
-      --gate-security-script string       Security gate script path (default "scripts/security-gate.sh")
-  -h, --help                              help for evolve
-      --kill-switch-path string           Supervisor kill-switch file path checked at cycle boundaries (absolute or repo-relative) (default ".agents/rpi/KILL")
-      --landing-branch string             Landing target branch (empty resolves origin/HEAD, then current branch, then main)
-      --landing-commit-message string     Commit message template for landing policies that commit (default "chore(rpi): autonomous cycle {{cycle}}")
-      --landing-lock-path string          Landing lock file path for synchronized integration (absolute or repo-relative) (default ".agents/rpi/landing.lock")
-      --landing-policy string             Landing policy after successful cycle: off|commit|sync-push (default "off")
-      --lease                             Acquire a single-flight supervisor lease lock before running
-      --lease-path string                 Lease lock file path (absolute or repo-relative) (default ".agents/rpi/supervisor.lock")
-      --lease-ttl duration                Lease heartbeat TTL for supervisor lock metadata (default 2m0s)
-      --max-cycles int                    Maximum cycles (0 = unlimited, stop when queue empty)
-      --mode string                       Execution contract: 'burst' (default, agent self-regulates) or 'loop' (operator-driven; STOP markers mechanically refused) (default "burst")
-      --ralph                             Enable Ralph-mode preset for unattended external loop supervision (implies supervisor defaults with safe nonstop settings)
-      --repo-filter string                Only process queue items targeting this repo (empty = all)
-      --retry-backoff duration            Backoff between cycle retry attempts (default 30s)
-      --supervisor                        Enable autonomous supervisor mode (lease lock, self-heal, retries, gates, cleanup) (default true)
-```
-
-**Subcommands:**
-
-#### `ao evolve blocked`
-
-Record or inspect typed blocked-events emitted by the /evolve loop.
-
-```
-ao evolve blocked [flags]
-```
-
-**Flags:**
-
-```
-      --bead string              Bead id the agent was working on (write mode, optional)
-      --clear string             Clear mode: delete entries for the given cycle id (operator-only)
-      --cycle string             Override cycle-id (write mode; defaults to date-derived counter)
-  -h, --help                     help for blocked
-      --json                     Read mode: emit JSON instead of human-readable text
-      --ladder-step-failed int   Ladder step that failed (write mode, optional)
-      --list                     Read mode: list blocked events
-      --needed-context string    Missing context description (write mode, optional)
-      --reason string            Reason text (write mode)
-      --tail int                 Read mode: show last N entries (default 10)
-```
-
-#### `ao evolve config`
-
-Display the resolved per-repo /evolve preferences.
-
-```
-ao evolve config [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help   help for config
-      --json   Emit JSON instead of YAML
-      --show   Print the resolved preferences (defaults + preferences.yaml)
-```
-
-#### `ao evolve next-work`
-
-Run the 5-step next-work ladder and recommend a bead to claim.
-
-```
-ao evolve next-work [flags]
-```
-
-**Flags:**
-
-```
-      --bd-binary string         Override path to the 'bd' binary (default: resolves via PATH)
-  -h, --help                     help for next-work
-      --include-operator-shape   Do not filter operator-shape beads at step 1
-      --json                     Emit JSON instead of human-readable text
-      --mode string              Execution contract: 'burst' (default) or 'loop' (default "burst")
-```
-
-#### `ao evolve write-stop-marker`
-
-Write a DORMANT, STOP, or KILL marker under .agents/evolve/.
-
-```
-ao evolve write-stop-marker [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help            help for write-stop-marker
-      --marker string   Marker name: dormant, stop, or kill
-      --mode string     Execution contract: 'burst' or 'loop' (loop refuses unconditionally) (default "burst")
-      --reason string   Reason text written to the marker file
-```
-
----
-
 ### `ao feedback-loop`
 
 Automatically close the MemRL feedback loop by updating utilities of cited learnings.
@@ -1824,7 +1772,7 @@ ao feedback-loop [flags]
 
 ```
       --alpha float            EMA learning rate (default 0.1)
-      --citation-type string   Filter citations by type (retrieved, applied, all) (default "retrieved")
+      --citation-type string   Filter citations by type (retrieved, used-in-final-artifact, helpful, harmful, refuted, applied, reference, all) (default "retrieved")
       --drain                  Walk citations.jsonl and feed entries with zero feedback_at sentinel (idempotent)
       --drain-reward float     Neutral reward applied to drained citations (0.0-1.0) (default 0.5)
   -h, --help                   help for feedback-loop
@@ -3135,6 +3083,7 @@ ao defrag [flags]
 ```
       --dedup               Flag learnings with >80% content similarity
   -h, --help                help for defrag
+      --no-snapshot         Skip the automatic corpus snapshot taken before a destructive prune
       --output-dir string   Directory for defrag report JSON (default ".agents/defrag")
       --prune               Find orphaned learnings not referenced in patterns or research
       --quiet               Suppress progress output

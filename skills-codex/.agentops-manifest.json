@@ -49,7 +49,7 @@
         "name": "autodev",
         "treatment": "parity_only",
         "wave": "catalog-parity",
-        "reason": "Thin operator layer over the shipped ao autodev, ao evolve, and ao rpi contracts; converter parity is sufficient for the first rollout."
+        "reason": "Thin operator layer over the shipped ao autodev, /evolve, and ao rpi contracts; converter parity is sufficient for the first rollout."
       },
       {
         "name": "beads",
@@ -673,14 +673,14 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "1de3afb8e53caa52b33bad2b2a77d46201728c31b2762ebf41a8c94bf0b77c34",
+      "source_hash": "ab561f911b1b57c49bf7ba8a96ce0e8fed1a673149c97eb34e31d90c700c3060",
       "generated_hash": "314b9cc76584601464e2bf70c1356f8e8a7f6d8c557c29e0e2abf6c45cffa51f"
     },
     {
       "name": "autodev",
       "source_skill": "skills/autodev",
-      "source_hash": "9b4ecf0399c67b1d55675b293ec382b7b7e4e6cafccec40eda2c7b6da16437b6",
-      "generated_hash": "ba2a82dc22e5bcead7f9e2ef899601c4235604092a1bf1362e2c546608880c7b"
+      "source_hash": "028e8ab0e5b7682cd53de50b8d8e9dd931aa7cb6484ef842938fe546808feb2d",
+      "generated_hash": "c4231da4e3a6bca68af4c5fe6d716ac451a043b58b2877aefd5ca75d05c6eb89"
     },
     {
       "name": "automation-shape-routing",
@@ -697,7 +697,7 @@
     {
       "name": "beads",
       "source_skill": "skills/beads",
-      "source_hash": "ed5f5d242b6bb903c7ba3120e7ffe82a8c2a7bd7f21b21d9c6274de205d710e1",
+      "source_hash": "86bfef3ef7ff64509d6321681275bcb0c9c437f208d2fd4226d05ed6f60dacde",
       "generated_hash": "51db26466d4646eddfc2132ea521508fe2ced556ef0ab69db41acd363afba770"
     },
     {
@@ -733,7 +733,7 @@
     {
       "name": "compile",
       "source_skill": "skills/compile",
-      "source_hash": "693a128f8d82af33afa4dbdbf47a0d7e831eac0c823438ca89100762070c78d6",
+      "source_hash": "6c51079d716df94195bb33cd2aa656ad7e66c5af768a636414750d845ceedaad",
       "generated_hash": "3610ba8eb9b1690d7d0f0765ef9319e71ec3fd39924c0599a6a5da65ffc945a9"
     },
     {
@@ -763,8 +763,8 @@
     {
       "name": "curate",
       "source_skill": "skills/curate",
-      "source_hash": "8dc6adda58141217c1b58a77c15f65927b2275f0d2e6d9a7b709ed1489fdc717",
-      "generated_hash": "e591a74578afc525c4eb284f36ee3e6f9efa103070505cf32e5c3b494fb7c490"
+      "source_hash": "3b20b9234d306929d649a651c5255a0c72e5ac435b6aa86e283b7f5571621efd",
+      "generated_hash": "d29c42ee80576ff28ea150b690dba46c6339b79c102af3de84a75a18fb9296c3"
     },
     {
       "name": "deps",
@@ -793,7 +793,7 @@
     {
       "name": "domain",
       "source_skill": "skills/domain",
-      "source_hash": "bfc7fa6664f6954c9ae891c889580ee4954944838a0e80da5c451797eab826f6",
+      "source_hash": "3c1f6579e7af129d058d5c543b9bc07baa9e6ff7fb5a8b6cdb06aa3f52d9851b",
       "generated_hash": "5de534737803c76fab3ad06e1a47dba85eb8f631a159cc6157ce4f932c2e99e4"
     },
     {
@@ -811,8 +811,8 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "e2f99817140bfc465c56832e93c61202a09d365ebfa07464356f7b0022c95179",
-      "generated_hash": "4c291f25cfc6e9ee2547e8140488a75097c6fa38615282742d375f603f5daae5"
+      "source_hash": "721ea5fde334551ad325439bfe654ac4a3593095c6e2deb2c963136062dedb39",
+      "generated_hash": "30756e2ad2f3b5f924fda8442038e9dc8feb8f19ef0a530c0592d7a29577763d"
     },
     {
       "name": "flywheel",
@@ -847,7 +847,7 @@
     {
       "name": "harvest",
       "source_skill": "skills/harvest",
-      "source_hash": "e480b7d5995b3281f40fc6426af40b54c7047024c2c15541774444f0aa6e9bea",
+      "source_hash": "d32af1553e5833a6359dd2e12a1c6fe242ad060ab20a92677e12fee0288b7dfa",
       "generated_hash": "5b7493af237b1aa26c1628c34ba0cb70928b0dfd34964fcd1d42971d6e322fd1"
     },
     {
@@ -1069,7 +1069,7 @@
     {
       "name": "shared",
       "source_skill": "skills/shared",
-      "source_hash": "332c02b6a0fc14733839d88ccd80cbe4bbfaf6a0c631ad1d4df929fc875d2b74",
+      "source_hash": "e697b151e8db12c970a28ce51292f9896896351f1d15070ca62dc55f736db1bb",
       "generated_hash": "0758c94cf77d7fd1bde265f3bff580a57f15fe601c59f893502d14175d57b763"
     },
     {
@@ -1087,7 +1087,7 @@
     {
       "name": "skill-builder",
       "source_skill": "skills/skill-builder",
-      "source_hash": "9174143cbff5f83fd4f47aeac4694bb54a1f00d55665537a5261a7efb9e6acc9",
+      "source_hash": "e63b80f0be4a97818b3913a372ef228baf33bccb7c17d366ea0401176a1edbc7",
       "generated_hash": "4d8b01766df9b10099f4f669e60c74dede37bd604e70d7b6a9a732cb5b2a5c05"
     },
     {
@@ -1111,8 +1111,8 @@
     {
       "name": "system-tuning",
       "source_skill": "skills/system-tuning",
-      "source_hash": "eb0e7c8dbffccae4f305cd92792ccbeab7d4310ff24d534d70c5ecb3527fcc6d",
-      "generated_hash": "4e20b3df3f9cb144eb50b62faf7845a06d49687b57e20cba4ee6dacff10c7852"
+      "source_hash": "6d340c15f61d023e1d87faaf576d9317756448ab30aaeacbcf566da895cf4486",
+      "generated_hash": "d2a2707b2299bdf03a376b1835bb3a32546befb3e275d39950337b8b85ef9600"
     },
     {
       "name": "test",
@@ -1129,14 +1129,14 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "ec3f75bd54588f260393006552ca7ad8104bec8e11c27ca4db80134a33b1ef65",
-      "generated_hash": "93c23a804e321d4dbdf86a31fe7d2165632d159b426395c5040f0a1fdb84fe0c"
+      "source_hash": "15f84d7c26e748521ceb86d2df03d6cfd47b155f1f9b73759b63857beafc7c46",
+      "generated_hash": "a079efeefdad05fedc49a995474bb5bb90ecbd2d639ea32ebc3f96d1e5788cf9"
     },
     {
       "name": "using-ntm",
       "source_skill": "skills/using-ntm",
-      "source_hash": "ac30d1684cde02b76bb081e4df4ce80c47324b6db49b7440c0742b47fc2475b7",
-      "generated_hash": "6fa63809ed9265bb70107df030fbedfa1bb363fc89a21637841f873a24ea61dc"
+      "source_hash": "75a1e2fa3ad16719fe01fae7770574477523d9ff0fd9b43cb8136cb7442f6cb3",
+      "generated_hash": "81f148461eb109ec897e1f8d3e2f53ff38f94ce14167ffd9d025b6c698c05600"
     },
     {
       "name": "validate",

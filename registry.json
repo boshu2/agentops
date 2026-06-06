@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-03T00:03:21Z",
+  "generated_at": "2026-06-06T12:40:49Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
@@ -8,7 +8,7 @@
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 74,
-    "capabilities": 167
+    "capabilities": 169
   },
   "surfaces": {
     "skills": [
@@ -178,7 +178,7 @@
         "path": "skills/evolve/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 26
+        "reference_count": 27
       },
       {
         "name": "grafana-platform-dashboard",
@@ -418,7 +418,7 @@
         "path": "skills/domain/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 17
+        "reference_count": 19
       },
       {
         "name": "harvest",
@@ -981,18 +981,6 @@
         "driven_by_skills": []
       },
       {
-        "name": "ao evolve",
-        "path": "cli/cmd/ao/",
-        "purpose": "Run the autonomous code-improvement loop",
-        "bounded_context": "BC3",
-        "driven_by_skills": [
-          "autodev",
-          "evolve",
-          "shared",
-          "using-agentops"
-        ]
-      },
-      {
         "name": "ao extract",
         "path": "cli/cmd/ao/",
         "purpose": "Process pending learning extractions",
@@ -1098,6 +1086,7 @@
         "bounded_context": "BC1",
         "driven_by_skills": [
           "agent-native",
+          "beads",
           "domain",
           "harvest",
           "inject",
@@ -1144,6 +1133,7 @@
         "purpose": "BC3 Loop operations (cycle history, etc.)",
         "bounded_context": "BC3",
         "driven_by_skills": [
+          "evolve",
           "standards"
         ]
       },
@@ -1295,6 +1285,13 @@
         ]
       },
       {
+        "name": "ao redact",
+        "path": "cli/cmd/ao/",
+        "purpose": "Scrub secrets from stdin to stdout (canonical redactor)",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao registry",
         "path": "cli/cmd/ao/",
         "purpose": "Query the unified registry",
@@ -1323,13 +1320,11 @@
         "purpose": "RPI lifecycle automation",
         "bounded_context": "BC3",
         "driven_by_skills": [
-          "agent-native",
           "autodev",
-          "domain",
+          "evolve",
           "shared",
           "standards",
-          "swarm",
-          "using-agentops"
+          "swarm"
         ]
       },
       {
@@ -1450,10 +1445,10 @@
     ]
   },
   "capability_summary": {
-    "total": 167,
+    "total": 169,
     "skills": 82,
     "cli_commands": 74,
-    "gates": 11,
+    "gates": 13,
     "reference_impls": 0
   },
   "cli_top_level_commands": [
@@ -1481,7 +1476,6 @@
     "demo",
     "doctor",
     "eval",
-    "evolve",
     "extract",
     "feedback-loop",
     "findings",
@@ -1513,6 +1507,7 @@
     "quick-start",
     "ratchet",
     "reconcile",
+    "redact",
     "registry",
     "retrieval-bench",
     "robot-docs",
@@ -1557,7 +1552,6 @@
         "ao goals",
         "ao inject",
         "ao mcp serve",
-        "ao rpi",
         "ao session bootstrap",
         "ao validate"
       ],
@@ -1583,7 +1577,6 @@
         "ao autodev",
         "ao autodev init",
         "ao autodev validate",
-        "ao evolve",
         "ao rpi"
       ],
       "path": "skills/autodev/",
@@ -1643,6 +1636,8 @@
         "bd-issue"
       ],
       "drives_commands": [
+        "ao corpus inject",
+        "ao inject",
         "ao reconcile"
       ],
       "path": "skills/beads/",
@@ -2007,15 +2002,16 @@
       "drives_commands": [
         "ao agent",
         "ao compile",
+        "ao corpus inject",
         "ao eval run",
         "ao inject",
         "ao maturity",
         "ao mcp serve",
-        "ao rpi",
-        "ao rpi phased"
+        "ao rpi phased",
+        "ao session bootstrap"
       ],
       "path": "skills/domain/",
-      "references": 17
+      "references": 19
     },
     {
       "sku": "skill:dream",
@@ -2087,24 +2083,25 @@
         "ao ci recent",
         "ao corpus inject",
         "ao defrag",
-        "ao evolve",
-        "ao evolve blocked",
-        "ao evolve next-work",
-        "ao evolve write-stop-marker",
         "ao goals",
         "ao lookup",
+        "ao loop",
         "ao loop append",
+        "ao loop blocked",
         "ao loop converged",
         "ao loop history",
         "ao loop hypothesis list",
+        "ao loop next-work",
         "ao loop verify",
+        "ao loop write-stop-marker",
         "ao metrics cite",
         "ao mine",
         "ao ratchet",
+        "ao rpi",
         "ao rpi loop"
       ],
       "path": "skills/evolve/",
-      "references": 26
+      "references": 27
     },
     {
       "sku": "skill:flywheel",
@@ -3058,7 +3055,6 @@
       "drives_commands": [
         "ao agent",
         "ao beads verify",
-        "ao evolve",
         "ao rpi",
         "ao rpi phased",
         "ao version"
@@ -3278,13 +3274,11 @@
         "ao agents inspect",
         "ao codex start",
         "ao codex stop",
-        "ao evolve",
         "ao flywheel close-loop",
         "ao forge transcript",
         "ao inject",
         "ao lookup",
         "ao mcp serve",
-        "ao rpi",
         "ao search"
       ],
       "path": "skills/using-agentops/",
@@ -3825,6 +3819,7 @@
         "--dedup",
         "--dry-run",
         "--json",
+        "--no-snapshot",
         "--output",
         "--output-dir",
         "--prune",
@@ -3899,61 +3894,6 @@
         "--json",
         "--output",
         "--tmp-files",
-        "--verbose"
-      ],
-      "path": "cli/cmd/ao/"
-    },
-    {
-      "sku": "cmd:ao.evolve",
-      "name": "ao evolve",
-      "type": "cli-command",
-      "bounded_context": "BC3",
-      "purpose": "Run the autonomous code-improvement loop",
-      "status": "active",
-      "driven_by_skills": [
-        "autodev",
-        "evolve",
-        "shared",
-        "using-agentops"
-      ],
-      "flags": [
-        "--auto-clean",
-        "--auto-clean-stale-after",
-        "--bd-sync-policy",
-        "--cleanup-prune-branches",
-        "--cleanup-prune-worktrees",
-        "--command-timeout",
-        "--compile",
-        "--compile-defrag",
-        "--compile-interval",
-        "--compile-since",
-        "--config",
-        "--cycle-delay",
-        "--cycle-retries",
-        "--detached-branch-prefix",
-        "--detached-heal",
-        "--dry-run",
-        "--ensure-cleanup",
-        "--failure-policy",
-        "--gate-fast-script",
-        "--gate-policy",
-        "--gate-security-script",
-        "--json",
-        "--kill-switch-path",
-        "--landing-branch",
-        "--landing-commit-message",
-        "--landing-lock-path",
-        "--landing-policy",
-        "--lease",
-        "--lease-path",
-        "--lease-ttl",
-        "--max-cycles",
-        "--mode",
-        "--output",
-        "--ralph",
-        "--repo-filter",
-        "--retry-backoff",
-        "--supervisor",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"
@@ -4206,6 +4146,7 @@
       "status": "active",
       "driven_by_skills": [
         "agent-native",
+        "beads",
         "domain",
         "harvest",
         "inject",
@@ -4302,12 +4243,14 @@
       "purpose": "BC3 Loop operations (cycle history, etc.)",
       "status": "active",
       "driven_by_skills": [
+        "evolve",
         "standards"
       ],
       "flags": [
         "--config",
         "--dry-run",
         "--json",
+        "--mode",
         "--output",
         "--verbose"
       ],
@@ -4644,6 +4587,23 @@
       "path": "cli/cmd/ao/"
     },
     {
+      "sku": "cmd:ao.redact",
+      "name": "ao redact",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Scrub secrets from stdin to stdout (canonical redactor)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
       "sku": "cmd:ao.registry",
       "name": "ao registry",
       "type": "cli-command",
@@ -4714,13 +4674,11 @@
       "purpose": "RPI lifecycle automation",
       "status": "active",
       "driven_by_skills": [
-        "agent-native",
         "autodev",
-        "domain",
+        "evolve",
         "shared",
         "standards",
-        "swarm",
-        "using-agentops"
+        "swarm"
       ],
       "flags": [
         "--config",
@@ -5021,6 +4979,15 @@
       "path": ".github/workflows/validate.yml"
     },
     {
+      "sku": "gate:skill-gates",
+      "name": "skill-gates",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
       "sku": "gate:correctness",
       "name": "correctness",
       "type": "gate",
@@ -5086,6 +5053,15 @@
     {
       "sku": "gate:eval",
       "name": "eval",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:skill-eval",
+      "name": "skill-eval",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",

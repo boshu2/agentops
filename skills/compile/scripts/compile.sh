@@ -39,6 +39,19 @@ mkdir -p "$OUTPUT_DIR"
 
 # --- Utility functions ---
 
+# scrub_secrets: git-safety chokepoint (ag-sz3h). Pipe compiled article content
+# through the canonical secret redactor before it lands on disk. Uses `ao redact`
+# when available; falls back to identity with a loud warning so compile never
+# silently writes unscrubbed output.
+scrub_secrets() {
+  if command -v ao >/dev/null 2>&1; then
+    ao redact
+  else
+    echo "WARN: 'ao' not on PATH; compile output NOT secret-scrubbed (ag-sz3h)" >&2
+    cat
+  fi
+}
+
 compute_hash() {
   if command -v md5sum &>/dev/null; then
     md5sum "$1" | cut -d' ' -f1
@@ -344,7 +357,7 @@ After all articles, output:
     if [[ "$line" =~ ^===\ ARTICLE:\ (.+)\ ===$ ]]; then
       # Save previous article if exists
       if [[ -n "$current_file" ]] && [[ -n "$current_content" ]]; then
-        echo "$current_content" > "$OUTPUT_DIR/$current_file"
+        printf '%s\n' "$current_content" | scrub_secrets > "$OUTPUT_DIR/$current_file"
         echo "Compiled: $current_file" >&2
         written_count=$((written_count + 1))
       fi
@@ -353,7 +366,7 @@ After all articles, output:
     elif [[ "$line" =~ ^===\ INDEX\ ===$ ]]; then
       # Save previous article
       if [[ -n "$current_file" ]] && [[ -n "$current_content" ]]; then
-        echo "$current_content" > "$OUTPUT_DIR/$current_file"
+        printf '%s\n' "$current_content" | scrub_secrets > "$OUTPUT_DIR/$current_file"
         echo "Compiled: $current_file" >&2
         written_count=$((written_count + 1))
       fi
@@ -371,7 +384,7 @@ After all articles, output:
 
   # Save last article
   if [[ -n "$current_file" ]] && [[ -n "$current_content" ]]; then
-    echo "$current_content" > "$OUTPUT_DIR/$current_file"
+    printf '%s\n' "$current_content" | scrub_secrets > "$OUTPUT_DIR/$current_file"
     echo "Compiled: $current_file" >&2
     written_count=$((written_count + 1))
   fi

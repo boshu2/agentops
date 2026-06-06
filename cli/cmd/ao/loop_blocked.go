@@ -45,7 +45,7 @@ var (
 	evolveBlockedTimestampClock func() time.Time
 )
 
-var evolveBlockedCmd = &cobra.Command{
+var loopBlockedCmd = &cobra.Command{
 	Use:   "blocked",
 	Short: "Log or list typed blocked-events from the /evolve loop",
 	Long: `Record or inspect typed blocked-events emitted by the /evolve loop.
@@ -57,45 +57,45 @@ or DORMANT marker. Operators triage the log between cycles.
 
 Three modes (mutually exclusive):
 
-  Write:  ao evolve blocked --reason '<text>' [--bead <id>] [--needed-context '<text>']
-  Read:   ao evolve blocked --list [--tail N] [--json]
-  Clear:  ao evolve blocked --clear <cycle-id>   (operator-only)
+  Write:  ao loop blocked --reason '<text>' [--bead <id>] [--needed-context '<text>']
+  Read:   ao loop blocked --list [--tail N] [--json]
+  Clear:  ao loop blocked --clear <cycle-id>   (operator-only)
 
 Examples:
-  ao evolve blocked --reason 'ladder exhausted' --bead soc-mlbm --needed-context 'undefined step 4 semantics'
-  ao evolve blocked --list --tail 20 --json
-  ao evolve blocked --clear 2026-05-21-cycle-42`,
+  ao loop blocked --reason 'ladder exhausted' --bead soc-mlbm --needed-context 'undefined step 4 semantics'
+  ao loop blocked --list --tail 20 --json
+  ao loop blocked --clear 2026-05-21-cycle-42`,
 	Args: cobra.NoArgs,
-	RunE: runEvolveBlocked,
+	RunE: runLoopBlocked,
 }
 
 func init() {
 	evolveBlockedTimestampClock = func() time.Time { return time.Now().UTC() }
-	evolveBlockedCmd.Flags().StringVar(&evolveBlockedReason, "reason", "", "Reason text (write mode)")
-	evolveBlockedCmd.Flags().StringVar(&evolveBlockedBead, "bead", "", "Bead id the agent was working on (write mode, optional)")
-	evolveBlockedCmd.Flags().StringVar(&evolveBlockedNeededContext, "needed-context", "", "Missing context description (write mode, optional)")
-	evolveBlockedCmd.Flags().IntVar(&evolveBlockedLadderStep, "ladder-step-failed", 0, "Ladder step that failed (write mode, optional)")
-	evolveBlockedCmd.Flags().BoolVar(&evolveBlockedList, "list", false, "Read mode: list blocked events")
-	evolveBlockedCmd.Flags().IntVar(&evolveBlockedTail, "tail", evolveBlockedDefTail, "Read mode: show last N entries")
-	evolveBlockedCmd.Flags().BoolVar(&evolveBlockedJSON, "json", false, "Read mode: emit JSON instead of human-readable text")
-	evolveBlockedCmd.Flags().StringVar(&evolveBlockedClearCycleID, "clear", "", "Clear mode: delete entries for the given cycle id (operator-only)")
-	evolveBlockedCmd.Flags().StringVar(&evolveBlockedCycleOverride, "cycle", "", "Override cycle-id (write mode; defaults to date-derived counter)")
-	evolveCmd.AddCommand(evolveBlockedCmd)
+	loopBlockedCmd.Flags().StringVar(&evolveBlockedReason, "reason", "", "Reason text (write mode)")
+	loopBlockedCmd.Flags().StringVar(&evolveBlockedBead, "bead", "", "Bead id the agent was working on (write mode, optional)")
+	loopBlockedCmd.Flags().StringVar(&evolveBlockedNeededContext, "needed-context", "", "Missing context description (write mode, optional)")
+	loopBlockedCmd.Flags().IntVar(&evolveBlockedLadderStep, "ladder-step-failed", 0, "Ladder step that failed (write mode, optional)")
+	loopBlockedCmd.Flags().BoolVar(&evolveBlockedList, "list", false, "Read mode: list blocked events")
+	loopBlockedCmd.Flags().IntVar(&evolveBlockedTail, "tail", evolveBlockedDefTail, "Read mode: show last N entries")
+	loopBlockedCmd.Flags().BoolVar(&evolveBlockedJSON, "json", false, "Read mode: emit JSON instead of human-readable text")
+	loopBlockedCmd.Flags().StringVar(&evolveBlockedClearCycleID, "clear", "", "Clear mode: delete entries for the given cycle id (operator-only)")
+	loopBlockedCmd.Flags().StringVar(&evolveBlockedCycleOverride, "cycle", "", "Override cycle-id (write mode; defaults to date-derived counter)")
+	loopCmd.AddCommand(loopBlockedCmd)
 }
 
 // BlockedEvent is the schema for one row in .agents/evolve/blocked.jsonl. All
 // fields except cycle/timestamp/reason are optional; the JSONL reader rejects
 // records missing those three.
 type BlockedEvent struct {
-	Cycle             string `json:"cycle"`
-	Timestamp         string `json:"timestamp"`
-	Bead              string `json:"bead,omitempty"`
-	Reason            string `json:"reason"`
-	NeededContext     string `json:"needed_context,omitempty"`
-	LadderStepFailed  int    `json:"ladder_step_failed,omitempty"`
+	Cycle            string `json:"cycle"`
+	Timestamp        string `json:"timestamp"`
+	Bead             string `json:"bead,omitempty"`
+	Reason           string `json:"reason"`
+	NeededContext    string `json:"needed_context,omitempty"`
+	LadderStepFailed int    `json:"ladder_step_failed,omitempty"`
 }
 
-func runEvolveBlocked(cmd *cobra.Command, _ []string) error {
+func runLoopBlocked(cmd *cobra.Command, _ []string) error {
 	mode, err := resolveBlockedMode(cmd)
 	if err != nil {
 		return err
@@ -106,13 +106,13 @@ func runEvolveBlocked(cmd *cobra.Command, _ []string) error {
 	}
 	switch mode {
 	case "write":
-		return runEvolveBlockedWrite(cmd, cwd)
+		return runLoopBlockedWrite(cmd, cwd)
 	case "list":
-		return runEvolveBlockedList(cmd, cwd)
+		return runLoopBlockedList(cmd, cwd)
 	case "clear":
-		return runEvolveBlockedClear(cmd, cwd)
+		return runLoopBlockedClear(cmd, cwd)
 	default:
-		return errors.New("ao evolve blocked: must pass one of --reason, --list, or --clear")
+		return errors.New("ao loop blocked: must pass one of --reason, --list, or --clear")
 	}
 }
 
@@ -134,10 +134,10 @@ func resolveBlockedMode(cmd *cobra.Command) (string, error) {
 		set++
 	}
 	if set == 0 {
-		return "", errors.New("ao evolve blocked: must pass one of --reason, --list, or --clear")
+		return "", errors.New("ao loop blocked: must pass one of --reason, --list, or --clear")
 	}
 	if set > 1 {
-		return "", errors.New("ao evolve blocked: --reason, --list, and --clear are mutually exclusive")
+		return "", errors.New("ao loop blocked: --reason, --list, and --clear are mutually exclusive")
 	}
 	switch {
 	case writeFlag:
@@ -149,9 +149,9 @@ func resolveBlockedMode(cmd *cobra.Command) (string, error) {
 	}
 }
 
-func runEvolveBlockedWrite(cmd *cobra.Command, cwd string) error {
+func runLoopBlockedWrite(cmd *cobra.Command, cwd string) error {
 	if strings.TrimSpace(evolveBlockedReason) == "" {
-		return errors.New("ao evolve blocked --reason: reason cannot be empty")
+		return errors.New("ao loop blocked --reason: reason cannot be empty")
 	}
 	cycle := evolveBlockedCycleOverride
 	if cycle == "" {
@@ -173,7 +173,7 @@ func runEvolveBlockedWrite(cmd *cobra.Command, cwd string) error {
 	return nil
 }
 
-func runEvolveBlockedList(cmd *cobra.Command, cwd string) error {
+func runLoopBlockedList(cmd *cobra.Command, cwd string) error {
 	path := filepath.Join(cwd, evolveBlockedRelDir, evolveBlockedLogName)
 	events, err := readBlockedEvents(path)
 	if err != nil {
@@ -192,11 +192,11 @@ func runEvolveBlockedList(cmd *cobra.Command, cwd string) error {
 	return writeBlockedEventsHuman(cmd.OutOrStdout(), events)
 }
 
-func runEvolveBlockedClear(cmd *cobra.Command, cwd string) error {
+func runLoopBlockedClear(cmd *cobra.Command, cwd string) error {
 	// Operators may use --clear under any mode, but warn if mode_default=loop.
 	prefs, prefsErr := evolve.LoadFromDir(cmd.Context(), cwd)
-	if prefsErr == nil && prefs != nil && prefs.ModeDefault == evolveModeLoop {
-		fmt.Fprintln(cmd.ErrOrStderr(), "ao evolve blocked --clear: warning — preferences indicate --mode=loop; clearing is operator-only")
+	if prefsErr == nil && prefs != nil && prefs.ModeDefault == loopModeLoop {
+		fmt.Fprintln(cmd.ErrOrStderr(), "ao loop blocked --clear: warning — preferences indicate --mode=loop; clearing is operator-only")
 	}
 	path := filepath.Join(cwd, evolveBlockedRelDir, evolveBlockedLogName)
 	events, err := readBlockedEvents(path)
@@ -234,7 +234,7 @@ func appendBlockedEvent(path string, event BlockedEvent) error {
 	if err != nil {
 		return fmt.Errorf("open blocked log %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	data, err := json.Marshal(event)
 	if err != nil {
 		return fmt.Errorf("marshal blocked event: %w", err)
@@ -256,7 +256,7 @@ func readBlockedEvents(path string) ([]BlockedEvent, error) {
 		}
 		return nil, fmt.Errorf("open blocked log %s: %w", path, err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	var events []BlockedEvent
@@ -292,12 +292,12 @@ func rewriteBlockedEvents(path string, events []BlockedEvent) error {
 	for _, ev := range events {
 		data, err := json.Marshal(ev)
 		if err != nil {
-			f.Close()
+			_ = f.Close()
 			_ = os.Remove(tmp)
 			return fmt.Errorf("marshal blocked event: %w", err)
 		}
 		if _, err := f.Write(append(data, '\n')); err != nil {
-			f.Close()
+			_ = f.Close()
 			_ = os.Remove(tmp)
 			return fmt.Errorf("write tmp: %w", err)
 		}
@@ -354,19 +354,3 @@ func nextBlockedCycleID(cwd string, now time.Time) string {
 
 // countCronHistoryRows returns the number of non-blank lines in path; 0 on
 // missing or unreadable file (the cycle counter is a soft default).
-func countCronHistoryRows(path string) int {
-	f, err := os.Open(path)
-	if err != nil {
-		return 0
-	}
-	defer f.Close()
-	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-	n := 0
-	for scanner.Scan() {
-		if strings.TrimSpace(scanner.Text()) != "" {
-			n++
-		}
-	}
-	return n
-}

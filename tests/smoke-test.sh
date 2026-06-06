@@ -43,6 +43,9 @@ skill_errors=0
 for skill_dir in skills/*/; do
     [[ ! -d "$skill_dir" ]] && continue
     skill_name=$(basename "$skill_dir")
+    # Skip leading-underscore scaffolding (e.g. skills/_fixtures/) — planted
+    # test fixtures, not real skills.
+    case "$skill_name" in _*) continue ;; esac
     skill_md="${skill_dir}SKILL.md"
 
     if [[ -f "$skill_md" ]]; then

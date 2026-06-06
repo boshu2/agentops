@@ -64,14 +64,10 @@ if [[ "$errors" -eq 0 ]]; then
     fail "map still lists phantom subcommand ao forge index"
   fi
 
-  if ! awk -v hook="session-start.sh" '
-    /^## Hooks → Commands/ { in_hooks = 1; next }
-    in_hooks && /^---$/ { exit }
-    in_hooks && index($0, hook) && index($0, "SessionStart") { found = 1 }
-    END { exit found ? 0 : 1 }
-  ' "$MAP_PATH"; then
-    fail "SessionStart hook table must include session-start.sh"
-  fi
+  # AgentOps 3.0 is hookless (ag-xhhf): the map no longer carries a
+  # "## Hooks → Commands" section, so the legacy SessionStart-hook table
+  # assertion was removed. Re-add a hook-surface check only if AgentOps
+  # ever ships a default runtime hook manifest again.
 fi
 
 if [[ "$errors" -gt 0 ]]; then

@@ -8,19 +8,19 @@ import (
 	"testing"
 )
 
-// TestEvolveWriteStopMarker_Table covers the mechanical no-self-stop contract
-// for `ao evolve write-stop-marker` introduced by soc-hwax. Burst mode must
+// TestLoopWriteStopMarker_Table covers the mechanical no-self-stop contract
+// for `ao loop write-stop-marker` introduced by soc-hwax. Burst mode must
 // write the marker file (canonicalized to upper-case); loop mode must refuse
 // every marker variant with a stderr message referencing 'operator-stop'.
-func TestEvolveWriteStopMarker_Table(t *testing.T) {
+func TestLoopWriteStopMarker_Table(t *testing.T) {
 	tests := []struct {
-		name        string
-		mode        string
-		marker      string
-		reason      string
-		wantErr     bool
-		wantErrSub  string
-		wantFile    string
+		name         string
+		mode         string
+		marker       string
+		reason       string
+		wantErr      bool
+		wantErrSub   string
+		wantFile     string
 		wantFileBody string
 	}{
 		{
@@ -33,28 +33,28 @@ func TestEvolveWriteStopMarker_Table(t *testing.T) {
 			wantFileBody: "queue stable",
 		},
 		{
-			name:        "loop dormant refused",
-			mode:        "loop",
-			marker:      "dormant",
-			reason:      "agent self-halt attempt",
-			wantErr:     true,
-			wantErrSub:  "refused under --mode=loop",
+			name:       "loop dormant refused",
+			mode:       "loop",
+			marker:     "dormant",
+			reason:     "agent self-halt attempt",
+			wantErr:    true,
+			wantErrSub: "refused under --mode=loop",
 		},
 		{
-			name:        "loop stop refused",
-			mode:        "loop",
-			marker:      "stop",
-			reason:      "operator override",
-			wantErr:     true,
-			wantErrSub:  "refused under --mode=loop",
+			name:       "loop stop refused",
+			mode:       "loop",
+			marker:     "stop",
+			reason:     "operator override",
+			wantErr:    true,
+			wantErrSub: "refused under --mode=loop",
 		},
 		{
-			name:        "loop kill refused",
-			mode:        "loop",
-			marker:      "kill",
-			reason:      "kill switch",
-			wantErr:     true,
-			wantErrSub:  "refused under --mode=loop",
+			name:       "loop kill refused",
+			mode:       "loop",
+			marker:     "kill",
+			reason:     "kill switch",
+			wantErr:    true,
+			wantErrSub: "refused under --mode=loop",
 		},
 	}
 
@@ -63,7 +63,7 @@ func TestEvolveWriteStopMarker_Table(t *testing.T) {
 			dir := chdirTemp(t)
 
 			out, err := executeCommand(
-				"evolve", "write-stop-marker",
+				"loop", "write-stop-marker",
 				"--mode", tc.mode,
 				"--marker", tc.marker,
 				"--reason", tc.reason,
@@ -106,19 +106,19 @@ func TestEvolveWriteStopMarker_Table(t *testing.T) {
 	}
 }
 
-// TestEvolveWriteStopMarker_RegisteredOnEvolve confirms the subcommand is
-// reachable via `ao evolve write-stop-marker` (catches accidental removal of
+// TestLoopWriteStopMarker_RegisteredOnLoop confirms the subcommand is
+// reachable via `ao loop write-stop-marker` (catches accidental removal of
 // the AddCommand call in init).
-func TestEvolveWriteStopMarker_RegisteredOnEvolve(t *testing.T) {
+func TestLoopWriteStopMarker_RegisteredOnLoop(t *testing.T) {
 	var found bool
-	for _, sub := range evolveCmd.Commands() {
+	for _, sub := range loopCmd.Commands() {
 		if sub.Name() == "write-stop-marker" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Fatal("evolve write-stop-marker subcommand should be registered on evolveCmd")
+		t.Fatal("loop write-stop-marker subcommand should be registered on loopCmd")
 	}
 }
 
