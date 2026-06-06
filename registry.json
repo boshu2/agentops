@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-06T12:43:32Z",
+  "generated_at": "2026-06-06T12:47:16Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
@@ -1822,7 +1822,7 @@
       "bounded_context": "BC2",
       "hex_role": "domain",
       "tier": "judgment",
-      "purpose": "Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs multiple independent judges before committing — architecture forks, one-way doors, or scoring competing options against a rubric.",
+      "purpose": "Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -2461,7 +2461,7 @@
       "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "judgment",
-      "purpose": "Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs in a session (the mandatory scope checkpoint).",
+      "purpose": "Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -2865,7 +2865,7 @@
       "bounded_context": "BC2",
       "hex_role": "driving-adapter",
       "tier": "judgment",
-      "purpose": "Review diffs for risk, find mocks, scan for bugs, and audit codebases. Use when: reviewing a diff or PR for bugs and risk, hunting for mocks/stubs/placeholders, or auditing a codebase for quality.",
+      "purpose": "Review diffs for risk, find mocks, scan for bugs, audit codebases. Use when: reviewing a diff/PR for bugs and risk, hunting mocks/stubs/placeholders, or auditing for quality.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -3313,7 +3313,7 @@
       "bounded_context": "BC2",
       "hex_role": "driving-adapter",
       "tier": "judgment",
-      "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured PASS/WARN/FAIL verdict on an artifact, plan, code change, PR, or CI gate before proceeding.",
+      "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured verdict on an artifact, plan, code, PR, or CI gate before proceeding.",
       "status": "active",
       "disposition": "keep",
       "consumes": [

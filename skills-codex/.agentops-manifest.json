@@ -751,7 +751,7 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "fd86ae55af98ef8888ccf3dd61836770f4e0fc4a104a5bab4518df8f4133093b",
+      "source_hash": "85b0d3eae9fdd2e40ae0ff543fbac740297fa6a30d9fd83d8178f11634ba7079",
       "generated_hash": "6b5ce56f36cb10393e921e524539c3dd41d28a5bdce5eac645075050864222ef"
     },
     {
@@ -913,7 +913,7 @@
     {
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
-      "source_hash": "a46138a2fb8bc8fd816cc5f4fd6504de89a740ffe354190cdc5ac193cb768022",
+      "source_hash": "8d7f972d67877baa8eb93c95f369bab8446f45de7bb1477fd3c930b8975cba54",
       "generated_hash": "960c599da43c3a8167fbb2a766cfc88a45fe1f8fb29295f5ccd006b8f52442bb"
     },
     {
@@ -1021,7 +1021,7 @@
     {
       "name": "review",
       "source_skill": "skills/review",
-      "source_hash": "62ec0dba9412f9352a7907227b3eac4b57dc0313470cd4c343690b25d1ba6b02",
+      "source_hash": "4f2a3776dbaf118da8804ca59334ffe4c4dd9ac2a45dddabb4f145853a48f1c0",
       "generated_hash": "a547f8e2a60f2ce1b63aa565cad148e62b7dbbd991fc6335ea16e37acdd0e428"
     },
     {
@@ -1141,7 +1141,7 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "c34aa97038ee1f39a520adf850cccda47e22e7d447f9782f7d58da43023ba91f",
+      "source_hash": "ae5a266b974322aa99ec3650a27b872a8e465409a88e7e00f8122b2647b613b6",
       "generated_hash": "eab1216146dff716bd142a5caf66ec72b66286855b21e5b95f6046e360f3af42"
     },
     {

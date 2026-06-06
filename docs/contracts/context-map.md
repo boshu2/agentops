@@ -13,7 +13,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `bug-hunt` — Investigate bugs and root causes.
 - `burndown` — Drive a finite epic set to all-merged, then stop.
 - `complexity` — Find focused refactor hotspots.
-- `council` — Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs multiple independent judges before committing — architecture forks, one-way doors, or scoring competing options against a rubric.
+- `council` — Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.
 - `crank` — Execute epics through waves.
 - `design` — Validate product fit before discovery. Use when: framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.
 - `discovery` — Create dense execution packets.
@@ -24,7 +24,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `hooks-authoring` — Author AgentOps runtime hooks.
 - `perf` — Profile and optimize hotspots.
 - `plan` — Decompose goals into issue plans.
-- `post-mortem` — Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs in a session (the mandatory scope checkpoint).
+- `post-mortem` — Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).
 - `pre-mortem` — Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
 - `product` — Create or refine PRODUCT.md.
 - `ratchet` — Record Brownian Ratchet gates.
@@ -48,11 +48,11 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `quickstart` — Show AgentOps next action.
 - `recover` — Recover session context.
 - `research` — Explore and write findings.
-- `review` — Review diffs for risk, find mocks, scan for bugs, and audit codebases. Use when: reviewing a diff or PR for bugs and risk, hunting for mocks/stubs/placeholders, or auditing a codebase for quality.
+- `review` — Review diffs for risk, find mocks, scan for bugs, audit codebases. Use when: reviewing a diff/PR for bugs and risk, hunting mocks/stubs/placeholders, or auditing for quality.
 - `session-bootstrap` — Universal init prompt — every agent spawned into an AgentOps repo runs `ao session bootstrap` first.
 - `ship-loop` — Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close.
 - `status` — Show AgentOps work status.
-- `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured PASS/WARN/FAIL verdict on an artifact, plan, code change, PR, or CI gate before proceeding.
+- `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured verdict on an artifact, plan, code, PR, or CI gate before proceeding.
 
 ### driven-adapter
 

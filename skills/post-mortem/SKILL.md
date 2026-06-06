@@ -1,6 +1,6 @@
 ---
 name: post-mortem
-description: 'Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs in a session (the mandatory scope checkpoint).'
+description: 'Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).'
 practices:
 - dora-metrics
 - sre
