@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-06T14:22:13Z",
+  "generated_at": "2026-06-06T14:21:21Z",
   "summary": {
     "skills": 82,
     "hooks": 0,
@@ -490,7 +490,7 @@
         "path": "skills/agent-native/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 1
+        "reference_count": 3
       },
       {
         "name": "automation-shape-routing",
@@ -1090,7 +1090,6 @@
           "domain",
           "harvest",
           "inject",
-          "quickstart",
           "using-agentops"
         ]
       },
@@ -1321,6 +1320,7 @@
         "purpose": "RPI lifecycle automation",
         "bounded_context": "BC3",
         "driven_by_skills": [
+          "agent-native",
           "autodev",
           "evolve",
           "shared",
@@ -1351,6 +1351,7 @@
         "bounded_context": "BC1",
         "driven_by_skills": [
           "discovery",
+          "inject",
           "plan",
           "pre-mortem",
           "provenance",
@@ -1552,11 +1553,12 @@
         "ao goals",
         "ao inject",
         "ao mcp serve",
+        "ao rpi",
         "ao session bootstrap",
         "ao validate"
       ],
       "path": "skills/agent-native/",
-      "references": 1
+      "references": 3
     },
     {
       "sku": "skill:autodev",
@@ -2320,7 +2322,7 @@
       "drives_commands": [
         "ao inject",
         "ao lookup",
-        "ao session bootstrap"
+        "ao search"
       ],
       "path": "skills/inject/",
       "references": 0
@@ -2673,14 +2675,11 @@
         "ao codex ensure-start",
         "ao codex ensure-stop",
         "ao codex status",
-        "ao corpus inject",
         "ao flywheel close-loop",
         "ao init",
-        "ao inject",
         "ao metrics",
         "ao quick-start",
-        "ao reconcile",
-        "ao session bootstrap"
+        "ao reconcile"
       ],
       "path": "skills/quickstart/",
       "references": 3
@@ -2731,8 +2730,7 @@
         "ao codex status",
         "ao codex stop",
         "ao lookup",
-        "ao metrics cite",
-        "ao session bootstrap"
+        "ao metrics cite"
       ],
       "path": "skills/recover/",
       "references": 0
@@ -3283,8 +3281,7 @@
         "ao inject",
         "ao lookup",
         "ao mcp serve",
-        "ao search",
-        "ao session bootstrap"
+        "ao search"
       ],
       "path": "skills/using-agentops/",
       "references": 0
@@ -4155,7 +4152,6 @@
         "domain",
         "harvest",
         "inject",
-        "quickstart",
         "using-agentops"
       ],
       "flags": [
@@ -4680,6 +4676,7 @@
       "purpose": "RPI lifecycle automation",
       "status": "active",
       "driven_by_skills": [
+        "agent-native",
         "autodev",
         "evolve",
         "shared",
@@ -4741,6 +4738,7 @@
       "status": "active",
       "driven_by_skills": [
         "discovery",
+        "inject",
         "plan",
         "pre-mortem",
         "provenance",
