@@ -45,6 +45,12 @@ case-insensitive filesystems (macOS APFS default) do not collapse the two.
 |---------------------|---------------|------------|----------|
 | `tracer-bullet.md`  | Tracer Bullet | tracer     | concept  |
 
+### Verification membrane concepts
+
+| Slug                           | Concept                   | Status | Kind         |
+|--------------------------------|---------------------------|--------|--------------|
+| `silent-contract-violation.md` | Silent Contract Violation | draft  | anti-pattern |
+
 ### Operating discipline concepts
 
 | Slug                      | Concept              | Status     | Kind    |
