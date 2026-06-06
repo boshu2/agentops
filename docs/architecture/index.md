@@ -51,6 +51,12 @@ The rest are specialized references. Skim titles and jump in when a topic become
 
     AgentOps 3.0's six doctrinal commitments — fungible by default, specialized when you opt in.
 
+-   :material-stairs: **[Autonomy Ladder](autonomy-ladder.md)**
+
+    ---
+
+    The explicit L0–L4 dispatch progression — named promotion gates, auto-downgrade, and the Red Button — with the deterministic enforcement boundary held constant at every rung.
+
 -   :material-school: **[Behavior-Shaping Environment](behavior-shaping-environment.md)**
 
     ---
