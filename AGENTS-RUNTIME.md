@@ -55,5 +55,5 @@ scripts/generate-cli-reference.sh
 
 **No TODOs in SKILL.md files.** The smoke test greps for `TODO` and `FIXME` in `skills/*/SKILL.md`. Use issue tracking (`bd`) for follow-up work instead.
 
-**Validate before proposing.** Before suggesting a new capability or safeguard, verify it doesn't already exist: check `ao rpi serve --help`, `.github/workflows/validate.yml`, `GOALS.md`, and existing SKILL.md files. Three suggested features in our March 2026 validation review were already implemented.
+**Validate before proposing.** Before suggesting a new capability or safeguard, verify it doesn't already exist: check the `ao` command surface (`cli/cmd/ao/`, generated `cli/docs/COMMANDS.md`), `.github/workflows/validate.yml`, `GOALS.md`, and existing SKILL.md files. Three suggested features in our March 2026 validation review were already implemented.
 
