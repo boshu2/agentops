@@ -69,9 +69,13 @@ Naming conventions help: prefix throwaway sessions (`ntm-test-*`,
 An agent older than the work it was meant to do is almost always idle in a
 loop or repeatedly retrying the same failing step.
 
+The matcher includes `agy` (Antigravity): ntm now maps its `gemini` agent
+slot to `agy --dangerously-skip-permissions`, so the gemini-family pane runs
+as an `agy` process. Match both — older sessions may still launch `gemini`.
+
 ```bash
 # Agents older than 16h with no live children of substance
-ps -eo pid,etimes,args | grep -E 'claude|codex|gemini' | grep -v grep \
+ps -eo pid,etimes,args | grep -E 'claude|codex|gemini|agy|antigravity' | grep -v grep \
   | awk '$2 > 57600 { print }' \
   | while read pid age rest; do
       kids=$(pgrep -P "$pid" | wc -l)
@@ -127,7 +131,7 @@ Re-run the original three checks and the count of agents:
 ```bash
 uptime
 cat /proc/pressure/cpu /proc/pressure/memory 2>/dev/null
-pgrep -af 'claude|codex|gemini' | wc -l
+pgrep -af 'claude|codex|gemini|agy|antigravity' | wc -l
 ```
 
 If pressure is down and the agent count dropped to the expected steady
