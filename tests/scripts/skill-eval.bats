@@ -134,6 +134,25 @@ EOF
 	[[ "$output" == *"BLOCKING findings"* ]]
 }
 
+# ag-eatf (containment): a backtick path that ESCAPES the repo still blocks even
+# with an allowed extension — extension alone is not enough (quorum: agy).
+@test "ag-eatf: backtick traversal escaping the repo with an allowed extension still blocks" {
+	require_ms
+	local md="$BATS_TEST_TMPDIR/SKILL.md"
+	cat >"$md" <<'EOF'
+---
+name: bt-escape
+description: payload at `../../../../etc/cron.d/evil.sh` escapes the repo root
+tags: [x]
+---
+# Threat
+EOF
+	run bash "$SCRIPT" "$md"
+	[ "$status" -ne 0 ]
+	[[ "$output" == *"safe-paths"* ]]
+	[[ "$output" == *"BLOCKING findings"* ]]
+}
+
 @test "ag-eatf: backtick relative path to a repo file (.json) is exempt (PASS)" {
 	require_ms
 	local md="$BATS_TEST_TMPDIR/SKILL.md"

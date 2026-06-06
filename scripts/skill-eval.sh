@@ -71,18 +71,21 @@ annotate_warn() { printf '::warning::%s\n' "$*" >&2; }
 # it returns 0 (a REAL violation exists -> KEEP safe-paths blocking) only when
 # a "../" survives stripping (1) markdown inline-link targets `](...)`, (2)
 # relative doc-path tokens (*.md/.markdown/.mdx/.txt/.rst), and (3) backtick-
-# wrapped relative paths that end in a known repo-file extension (doc/schema/
-# script/code). A backtick path with NO extension (e.g. `../../../../etc/passwd`)
-# is not a file reference and still counts as a real violation -> blocks.
-# Otherwise returns 1 (every "../" is a doc reference -> false positive,
-# downgrade to advisory).
+# wrapped relative paths that are REPO-INTERNAL (<=2 "../" from a depth-2
+# skills/<id>/SKILL.md, no intermediate "..") AND end in a known repo-file
+# extension. A backtick path that ESCAPES the repo (>=3 "../") or has no
+# extension still counts as a real violation -> blocks — extension alone is not
+# enough (a backtick `../../../../etc/cron.d/x.sh` must NOT be exempt). Both
+# constraints came from cross-model quorum (Codex: repo-internal; agy: escape-
+# via-allowed-extension). Otherwise returns 1 (every "../" is a doc reference
+# -> false positive, downgrade to advisory).
 safe_paths_has_real_violation() {
 	local file="$1"
 	local stripped
 	stripped="$(sed -E \
 		-e 's/\]\([^)]*\)//g' \
 		-e 's#(\.\./)+[A-Za-z0-9_.@/-]+\.(md|markdown|mdx|txt|rst)([#][A-Za-z0-9_-]+)?##g' \
-		-e 's#`(\.\./)+[A-Za-z0-9_.@/-]+\.(md|markdown|mdx|txt|rst|json|ya?ml|toml|sh|go|py|ts|rs)`##g' \
+		-e 's#`(\.\./){1,2}([A-Za-z0-9_@-]+/)*[A-Za-z0-9_.@-]+\.(md|markdown|mdx|txt|rst|json|ya?ml|toml|sh|go|py|ts|rs)`##g' \
 		"$file")"
 	printf '%s' "$stripped" | grep -qF '../'
 }
