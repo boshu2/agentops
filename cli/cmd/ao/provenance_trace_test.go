@@ -76,7 +76,6 @@ func loadExpected(t *testing.T) expectedOrphanFixtures {
 func TestProvenanceTrace_StrictCatchesEachSeededOrphan(t *testing.T) {
 	exp := loadExpected(t)
 	for _, fx := range exp.Fixtures {
-		fx := fx
 		t.Run(fx.File, func(t *testing.T) {
 			resetProvTraceFlags()
 			provTraceStrict = true
