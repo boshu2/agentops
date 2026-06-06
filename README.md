@@ -113,7 +113,7 @@ Every skill works alone; flows compose them. Full catalog: [docs/SKILLS.md](docs
 | `/rpi` | you want discovery, build, validation, and bookkeeping in one flow |
 | `/council` | you want independent judges (optionally Claude and Codex) to return one verdict |
 | `/vibe` | you want a code-quality and risk review before shipping |
-| `/evolve` · `/dream` | a goal-driven improvement loop · bounded compounding that never mutates source |
+| `/evolve` | a goal-driven improvement loop that compounds knowledge without mutating source |
 
 ---
 
@@ -144,7 +144,7 @@ ao metrics health         # flywheel health
 - **It doesn't write code.** It wraps Claude Code / Codex / Cursor / OpenCode with bookkeeping, gates, and a corpus; the harness still writes it.
 - **No hosted control plane or telemetry.** Everything lives in your repo; there's no cross-team dashboard unless you commit `.agents/`.
 - **Multi-model councils cost tokens.** Six judges per PR isn't free; running them on a substrate makes the cost predictable, not zero.
-- **The corpus needs hygiene.** `ao defrag`, `ao maturity`, and `/dream` keep it healthy; neglected, it rots like any markdown vault.
+- **The corpus needs hygiene.** `ao defrag` and `ao maturity` keep it healthy; neglected, it rots like any markdown vault.
 - **There are ~80 skills.** `/quickstart` and the [Skill Router](docs/SKILL-ROUTER.md) exist so you don't have to learn them all up front.
 
 **What if the labs ship this natively?** They will. The durable value is the `.agents/` corpus you build, not the tool that builds it: plain markdown in your repo, it carries forward to whatever ships next, stays forkable, and is Apache-2.0 with no lock-in.
