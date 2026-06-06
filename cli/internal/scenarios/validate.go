@@ -138,7 +138,7 @@ func checkStepOrder(name string, given, when, then int) error {
 	if then < 0 {
 		return fmt.Errorf("scenario %q: missing Then step", name)
 	}
-	if !(given < when && when < then) {
+	if given >= when || when >= then {
 		return fmt.Errorf("scenario %q: steps out of order (expected Given before When before Then)", name)
 	}
 	return nil
