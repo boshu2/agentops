@@ -1,6 +1,6 @@
 # Testing Guide
 
-Testing ensures AgentOps skills, hooks, and the `ao` CLI work correctly across changes. This guide covers what tests exist, how to run them, and how to write new ones.
+Testing ensures AgentOps skills and the `ao` CLI work correctly across changes. This guide covers what tests exist, how to run them, and how to write new ones.
 
 ## Test Types
 
@@ -10,8 +10,8 @@ Testing ensures AgentOps skills, hooks, and the `ao` CLI work correctly across c
 | Integration | `tests/integration/` | Shell scripts testing CLI commands, skill invocation, hook chains |
 | Smoke | `tests/smoke-test.sh` | Quick sanity checks that the plugin loads correctly |
 | Windows smoke | `tests/windows/test-windows-smoke.ps1` | Native Windows smoke for PowerShell installers, Codex plugin staging, `ao doctor` hints, and focused Windows-sensitive Go tests |
-| Contract | `tests/hooks/*.bats`, `scripts/check-contract-compatibility.sh` | Schema and contract validation |
-| BATS | `tests/hooks/*.bats`, `tests/scripts/*.bats` | Unit tests for shell hooks and scripts using the BATS framework |
+| Contract | `tests/scripts/*.bats`, `scripts/check-contract-compatibility.sh` | Schema and contract validation |
+| BATS | `tests/scripts/*.bats` | Unit tests for repo shell scripts using the BATS framework |
 | E2E | `tests/e2e/` | Full pipeline proof runs |
 | Skill | `tests/skills/`, `skills/*/scripts/validate.sh` | Skill structure, frontmatter, and behavior validation |
 | Doc | `tests/docs/` | Documentation link and count validation |
@@ -47,7 +47,6 @@ Run a specific tier:
 | Go build + vet + changed-scope race | `scripts/validate-go-fast.sh` | ~20s |
 | AgentOps contract canaries | `scripts/test-agentops-contract-canaries.sh` | ~2-5m |
 | AgentOps eval advisory corpus | `scripts/eval-agentops.sh --fast` | ~5-10m |
-| BATS hook tests | `bats tests/hooks/*.bats` | ~10s |
 | BATS script tests | `bats tests/scripts/*.bats` | ~10s |
 | Skill validation | `tests/skills/run-all.sh` | ~30s |
 | Skill integrity (heal) | `bash skills/heal-skill/scripts/heal.sh --strict` | ~15s |
@@ -127,7 +126,6 @@ That activates `.githooks/pre-commit` and `.githooks/pre-push` for the current c
 | Test type | Directory |
 |-----------|-----------|
 | Go unit tests | Next to the source file in `cli/` (e.g., `cli/internal/goals/measure_test.go`) |
-| Hook tests (BATS) | `tests/hooks/` |
 | Script tests (BATS) | `tests/scripts/` |
 | Skill validation | `skills/<name>/scripts/validate.sh` |
 | Integration tests | `tests/integration/test-<name>.sh` |
@@ -173,19 +171,11 @@ Each CLI command file in `cli/cmd/ao/` should have a corresponding `*_test.go` f
 
 Tests must make meaningful assertions about output content, exit codes, and side effects. A test that only checks `err == nil` without validating the result is insufficient.
 
-## Hook Testing (BATS)
+## Script Testing (BATS)
 
-Hooks are tested using the [BATS](https://github.com/bats-core/bats-core) framework. Test files live in `tests/hooks/`.
+Repo shell scripts (`scripts/*.sh`) are tested using the [BATS](https://github.com/bats-core/bats-core) framework. Test files live in `tests/scripts/`.
 
-### Existing BATS test files
-
-| File | Covers |
-|------|--------|
-| `test-hooks.bats` | Active hook categories (session-start, factory-router, kill switch, etc.) |
-| `hook-output-schema.bats` | Hook output JSON schema contracts |
-| `hook-stdin-contracts.bats` | Hook stdin JSON input contracts |
-| `constraint-compiler.bats` | Constraint compiler logic |
-| `lib-hook-helpers.bats` | Unit tests for `lib/hook-helpers.sh` functions |
+> AgentOps 3.0 is hookless — it ships no hook scripts, so there are no hook BATS tests. The BATS suite covers the repo's shell scripts.
 
 ### Writing a BATS test
 
@@ -193,37 +183,33 @@ Hooks are tested using the [BATS](https://github.com/bats-core/bats-core) framew
 #!/usr/bin/env bats
 
 setup() {
-    load helpers/test_helper
-    _helper_setup
-    export CLAUDE_SESSION_ID="bats-test-$$"
+    REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
+    export REPO_ROOT
 }
 
-teardown() {
-    _helper_teardown
+@test "my-script: does the expected thing" {
+    run bash "$REPO_ROOT/scripts/my-script.sh" --json
+    [ "$status" -eq 0 ]
+    echo "$output" | jq -e '.someField == "expected"'
 }
 
-@test "my-hook: does the expected thing" {
-    RESULT=$(bash "$HOOKS_DIR/my-hook.sh" 2>/dev/null)
-    echo "$RESULT" | jq -e '.hookSpecificOutput.someField == "expected"'
-}
-
-@test "my-hook: kill switch suppresses output" {
-    OUTPUT=$(AGENTOPS_HOOKS_DISABLED=1 bash "$HOOKS_DIR/my-hook.sh" 2>&1 || true)
-    [ -z "$OUTPUT" ]
+@test "my-script: exits non-zero on bad input" {
+    run bash "$REPO_ROOT/scripts/my-script.sh" --bogus
+    [ "$status" -ne 0 ]
 }
 ```
 
 ### Running BATS tests
 
 ```bash
-# All hook tests
-bats tests/hooks/*.bats
+# All script tests
+bats tests/scripts/*.bats
 
 # Single file
-bats tests/hooks/test-hooks.bats
+bats tests/scripts/agent-output-validate.bats
 
 # Verbose output
-bats --verbose-run tests/hooks/*.bats
+bats --verbose-run tests/scripts/*.bats
 ```
 
 ## Skill Testing
@@ -267,7 +253,6 @@ Quarantined tests are excluded from the default `run-all.sh` tiers and CI. Stand
 
 | Directory | Purpose |
 |-----------|---------|
-| `tests/hooks/` | BATS unit tests for hook scripts (`hooks/*.sh`) |
 | `tests/skills/` | Skill validation scripts plus standalone runtime smoke tests (Claude Code, Codex, OpenCode) |
 | `tests/spec-consistency/` | Spec consistency gates across manifests and docs |
 | `tests/goals/` | Goal validation and measurement (`GOALS.yaml` / `GOALS.md`) |

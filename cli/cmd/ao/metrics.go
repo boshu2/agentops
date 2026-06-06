@@ -103,16 +103,29 @@ Citation events drive the knowledge flywheel:
 
 Examples:
   ao metrics cite .agents/learnings/mutex-pattern.md
-  ao metrics cite .agents/patterns/error-handling.md --type applied
+  ao metrics cite .agents/patterns/error-handling.md --type used-in-final-artifact
+  ao metrics cite .agents/learnings/mutex-pattern.md --type helpful --artifact-author author-agent --cited-by-agent reviewer-agent
   ao metrics cite .agents/research/oauth.md --session abc123`,
 		Args: cobra.ExactArgs(1),
 		RunE: runMetricsCite,
 	}
-	var citeType, citeSession, citeQuery, citeVendor string
-	citeCmd.Flags().StringVar(&citeType, "type", "reference", "Citation type: recall, reference, applied")
+	var citeType, citeSession, citeQuery, citeVendor, citeArtifactAuthor, citeByAgent, citeByFamily string
+	citeCmd.Flags().StringVar(&citeType, "type", types.CitationTypeReference, "Citation type: retrieved, used-in-final-artifact, helpful, harmful, refuted, applied, reference")
 	citeCmd.Flags().StringVar(&citeSession, "session", "", "Session ID (auto-detected if not provided)")
 	citeCmd.Flags().StringVar(&citeQuery, "query", "", "Search query that surfaced this artifact")
 	citeCmd.Flags().StringVar(&citeVendor, "vendor", "", "Model vendor attribution: claude, codex")
+	citeCmd.Flags().StringVar(&citeArtifactAuthor, "artifact-author", "", "Author/owner identity of the cited artifact")
+	citeCmd.Flags().StringVar(&citeByAgent, "cited-by-agent", "", "Agent identity recording the citation outcome")
+	citeCmd.Flags().StringVar(&citeByFamily, "cited-by-family", "", "Model family of the citing/reviewing agent")
+	_ = citeCmd.RegisterFlagCompletionFunc("type", staticCompletionFunc(
+		types.CitationTypeRetrieved,
+		types.CitationTypeUsedInFinalArtifact,
+		types.CitationTypeHelpful,
+		types.CitationTypeHarmful,
+		types.CitationTypeRefuted,
+		types.CitationTypeApplied,
+		types.CitationTypeReference,
+	))
 	metricsCmd.AddCommand(citeCmd)
 }
 
