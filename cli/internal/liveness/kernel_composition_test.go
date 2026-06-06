@@ -6,20 +6,33 @@ import (
 	"time"
 )
 
-// TestKernelComposition_FullAdmissionFlow exercises all five liveness files
-// together — roles (Authorize) + guards (Disjoint) + request (Check) + quorum
-// (CheckSignificantAction) + work_lease (LeaseTracker) — as one end-to-end
-// admission lifecycle. The pieces were built across separate PRs by separate
-// contexts (#733 roles, #737 quorum/guards-via-binder, #739 work_lease); this
-// L2 test is the mechanical proof that they compose into a single coherent
-// control plane on one vocabulary, not five parallel ones. If a future change
-// breaks the composition (e.g. Check's VerbJudge stops routing through Disjoint,
-// or the quorum drops family-diversity), this test fails where the per-file unit
-// tests would not.
+// TestKernelComposition_FullAdmissionFlow exercises the liveness files together
+// — inbound admission (AdmitInboundWorkMessage) + roles (Authorize) + guards
+// (Disjoint) + request (Check) + quorum (CheckSignificantAction) + work_lease
+// (LeaseTracker) — as one end-to-end admission lifecycle. The pieces were built
+// across separate PRs by separate contexts (#733 roles, #737 quorum/guards-via-
+// binder, #739 work_lease); this L2 test is the mechanical proof that they
+// compose into a single coherent control plane on one vocabulary, not parallel
+// ones. If a future change breaks the composition (e.g. Check's VerbJudge stops
+// routing through Disjoint, or the quorum drops family-diversity), this test
+// fails where the per-file unit tests would not.
 func TestKernelComposition_FullAdmissionFlow(t *testing.T) {
 	base := time.Date(2026, 6, 5, 4, 0, 0, 0, time.UTC)
 	clk := base
 	leases := NewLeaseTracker(func() time.Time { return clk })
+
+	// 0) INBOUND ADMISSION (admission.go): a relayed work command from another
+	//    host is not a directive, even if the transport authenticated the sender.
+	//    It is downgraded to a proposal and cannot execute reflexively.
+	injection := AdmitInboundWorkMessage(InboundWorkMessage{
+		SenderID:      "relay-mac",
+		SourceKind:    InboundSourceOtherHost,
+		Authenticated: true,
+		Intent:        InboundIntentDirective,
+	})
+	if injection.CanExecute() || injection.Decision != NeedsAdmission || injection.Action != AdmissionPropose || injection.Intent != InboundIntentProposal {
+		t.Fatalf("other-host inbound directive = %+v, want proposal/non-executable", injection)
+	}
 
 	// 1) ROLE-MATRIX (roles.go): separation of duties. A worker edits; a worker
 	//    may not self-vote; an orchestrator routes but may not edit (injection
@@ -107,6 +120,17 @@ func TestKernelComposition_FullAdmissionFlow(t *testing.T) {
 	}
 	if got := CheckSignificantAction(crossFamily); got != Allowed {
 		t.Fatalf("two cross-family ACKs: want Allowed, got %s", got)
+	}
+	quorumInbound := AdmitInboundWorkMessage(InboundWorkMessage{
+		SenderID:                 "quorum-log",
+		SourceKind:               InboundSourceQuorum,
+		Authenticated:            true,
+		Intent:                   InboundIntentDirective,
+		SignificantAction:        SignificantActionMergeMain,
+		SignificantActionRequest: crossFamily,
+	})
+	if !quorumInbound.CanExecute() {
+		t.Fatalf("cross-family quorum inbound directive = %+v, want executable", quorumInbound)
 	}
 
 	// 6) HARD EXPIRY + TAKEOVER (work_lease.go): the worker goes dark, its lease
