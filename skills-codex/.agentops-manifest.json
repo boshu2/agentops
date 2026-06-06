@@ -811,7 +811,7 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "e740549f1550a3f55dde63b4e3a3b09e14f2f87948874cf0087465bcf1930e34",
+      "source_hash": "721ea5fde334551ad325439bfe654ac4a3593095c6e2deb2c963136062dedb39",
       "generated_hash": "30756e2ad2f3b5f924fda8442038e9dc8feb8f19ef0a530c0592d7a29577763d"
     },
     {
@@ -847,7 +847,7 @@
     {
       "name": "harvest",
       "source_skill": "skills/harvest",
-      "source_hash": "e480b7d5995b3281f40fc6426af40b54c7047024c2c15541774444f0aa6e9bea",
+      "source_hash": "d32af1553e5833a6359dd2e12a1c6fe242ad060ab20a92677e12fee0288b7dfa",
       "generated_hash": "5b7493af237b1aa26c1628c34ba0cb70928b0dfd34964fcd1d42971d6e322fd1"
     },
     {
@@ -1129,7 +1129,7 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "65ce8bc520d395e3ced1b7d84a78a2c4ccf90110523dccd3cf519d4606cd784c",
+      "source_hash": "15f84d7c26e748521ceb86d2df03d6cfd47b155f1f9b73759b63857beafc7c46",
       "generated_hash": "a079efeefdad05fedc49a995474bb5bb90ecbd2d639ea32ebc3f96d1e5788cf9"
     },
     {

@@ -2,6 +2,8 @@
 
 > AgentOps is a context compiler for coding agents. Three product layers — Context Compiler, Validation Gates, and Knowledge Flywheel — turn raw session signal into better next context.
 
+> **⚠ 3.0 note (hookless).** AgentOps 3.0 installs **no hooks by default** — orientation is not auto-injected at SessionStart and gates are not hook-enforced; context is pulled on-demand (`ao lookup` / `ao inject`) and **CI is the authoritative gate** (see [3.0.md](3.0.md), [MIGRATION-3.0.md](MIGRATION-3.0.md)). Sections below that describe hook-based enforcement or session-start injection are **historical (2.x)** unless explicitly noted.
+
 ## Overview
 
 AgentOps is a repo-native operating layer that combines interactive skills, the
