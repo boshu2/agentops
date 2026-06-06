@@ -793,7 +793,7 @@
     {
       "name": "domain",
       "source_skill": "skills/domain",
-      "source_hash": "8f488910bbc573bf02e6af3fd06a11e320d73eef3ea44a123439451e10b9da4e",
+      "source_hash": "3c1f6579e7af129d058d5c543b9bc07baa9e6ff7fb5a8b6cdb06aa3f52d9851b",
       "generated_hash": "5de534737803c76fab3ad06e1a47dba85eb8f631a159cc6157ce4f932c2e99e4"
     },
     {
@@ -1111,8 +1111,8 @@
     {
       "name": "system-tuning",
       "source_skill": "skills/system-tuning",
-      "source_hash": "eb0e7c8dbffccae4f305cd92792ccbeab7d4310ff24d534d70c5ecb3527fcc6d",
-      "generated_hash": "4e20b3df3f9cb144eb50b62faf7845a06d49687b57e20cba4ee6dacff10c7852"
+      "source_hash": "6d340c15f61d023e1d87faaf576d9317756448ab30aaeacbcf566da895cf4486",
+      "generated_hash": "d2a2707b2299bdf03a376b1835bb3a32546befb3e275d39950337b8b85ef9600"
     },
     {
       "name": "test",
