@@ -1,7 +1,7 @@
 // Package ladder implements the five-step "next-work" decision ladder for
 // /evolve. The ladder traverses ready beads and adjacent context to recommend
 // what the agent should claim next; when the ladder is exhausted the agent
-// is expected to call `ao evolve blocked` (see soc-g34d) rather than halt.
+// is expected to call `ao loop blocked` (see soc-g34d) rather than halt.
 //
 // Each step is a small function with a stable signature so callers can run
 // them individually for testing. Step ownership:
@@ -158,7 +158,7 @@ func Run(ctx context.Context, br BeadRunner, gr GrepRunner, cfg Config) (Recomme
 
 	return Recommendation{
 		RecommendedBead:   "",
-		Rationale:         "ladder exhausted; agent should call 'ao evolve blocked' instead of halting",
+		Rationale:         "ladder exhausted; agent should call 'ao loop blocked' instead of halting",
 		Alternatives:      nil,
 		LadderStepMatched: 0,
 	}, nil

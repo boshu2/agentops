@@ -4,55 +4,36 @@ Common issues and quick fixes for AgentOps.
 
 ---
 
-## Hooks aren't running
+## "Where are the hooks?"
 
-Hooks are runtime-specific: Claude uses `~/.claude/settings.json`, while Codex
-v0.115.0+ uses `~/.codex/hooks.json` installed by the native plugin path.
+**AgentOps 3.0 ships zero hooks.** There is no `hooks/` directory, no
+`hooks.json`, and no `ao hooks` command — nothing auto-injects orientation or
+gates your tool calls at session start. If you came from an older version
+expecting hooks to "run", that behavior is gone by design (the hookless-first
+teardown). The workflow is now guided by **skills + the `ao` CLI**, and **CI is
+the authoritative gate** (see `.github/workflows/validate.yml`).
 
-**Diagnosis:**
+**What replaces the old auto-injected context:**
+
+```bash
+ao session bootstrap                 # the universal init prompt / orientation report
+ao inject "<topic>"                  # pull decay-ranked prior context on demand
+```
+
+**Diagnosis (check your install, not hooks):**
 
 ```bash
 ao doctor
 ```
 
-Look for the "Hooks installed" check. If it shows `✗`, hooks are not configured.
+This reports CLI, knowledge-base, plugin, and freshness health. None of these
+are hooks — there are none to install.
 
-**Fixes:**
-
-1. Verify hooks are configured in `~/.claude/settings.json`:
-   ```json
-   {
-     "hooks": {
-       "PostToolUse": [...],
-       "UserPromptSubmit": [...]
-     }
-   }
-   ```
-   The `ao doctor` check counts all hooks across event types. If it reports "no hooks configured", hooks are missing from settings.json entirely.
-
-2. Check that hooks are not disabled via environment variable:
-   ```bash
-   echo $AGENTOPS_HOOKS_DISABLED
-   ```
-   If set to `1`, all hooks are bypassed. Unset it:
-   ```bash
-   unset AGENTOPS_HOOKS_DISABLED
-   ```
-
-3. Verify hook scripts exist and are executable:
-   ```bash
-   ls -la hooks/
-   ```
-   All `.sh` files in the hooks directory should have execute permissions.
-
-4. For Codex native-plugin installs, verify the native hooks file exists:
-   ```bash
-   cat ~/.codex/hooks.json | jq '.hooks'
-   ```
-   If it is missing, reinstall with:
-   ```bash
-   curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
-   ```
+**If you want your own gates:** AgentOps deliberately ships none, but you can
+author opt-in hooks yourself. Use the `hooks-authoring` skill to add a bounded
+gate (block a dangerous op, bootstrap a session, run a parity check) for your
+runtime — Claude reads `~/.claude/settings.json`; other harnesses use their own
+config. These are yours to own; AgentOps neither installs nor requires them.
 
 ---
 
@@ -226,30 +207,30 @@ raw-skill mode for a specific Codex build.
 
 ---
 
-## Push blocked by vibe gate
+## CI rejects a push that skipped quality validation
 
-The push gate hook blocks `git push` unless a recent `/vibe` check has passed. This enforces quality validation before code reaches the remote.
+AgentOps 3.0 has **no push gate hook** — `git push` itself is never blocked
+locally. Quality enforcement happens in **CI** (`.github/workflows/validate.yml`),
+which is the authoritative gate: a push that hasn't been validated will fail
+its checks on the PR, not before it leaves your machine.
 
-**Why it exists:** The vibe gate prevents untested or unreviewed code from being pushed. It is part of the AgentOps quality enforcement workflow.
-
-**Quick bypass (use sparingly):**
-
-```bash
-AGENTOPS_HOOKS_DISABLED=1 git push
-```
+**Why it works this way:** there is no local hook to bypass, so the gate cannot
+be silently skipped. The contract is "CI must be green to merge", and the cheap
+way to predict that locally is to run `/vibe` before you push.
 
 **Proper resolution:**
 
-1. Run `/vibe` on your changes:
+1. Run `/vibe` on your changes before pushing:
    ```
    /vibe
    ```
 
 2. Address any findings until you get a PASS verdict.
 
-3. Push normally:
+3. Push, then let CI confirm:
    ```bash
    git push
+   gh pr checks   # confirm the validation job is green
    ```
 
 ---
@@ -343,24 +324,34 @@ The pre-mortem gate denies ambiguous state by default (as of 2.37.2). If `/crank
    ```
    This downgrades the gate to a warning.
 
-## `go-test-precommit` blocks commits
+## Go tests fail in CI after a change
 
-The `go-test-precommit.sh` hook runs relevant Go tests before tool calls that would mutate Go code. If it fails, look for the test output above the block message. Common causes:
+AgentOps 3.0 ships no pre-commit hook that runs Go tests for you — verify
+locally before pushing. Run the per-tool checks for the surfaces you touched:
+
+```bash
+cd cli && make test          # or: go build ./... && go vet ./... && go test ./...
+```
+
+If tests fail, common causes:
 
 - Tests that depend on network (`go test -short` typically skips these).
 - A package import that fails to compile — fix compilation first, tests second.
 
-**Bypass (not recommended):** set `AGENTOPS_SKIP_GO_TEST_PRECOMMIT=1` for a single session. Prefer fixing the underlying test.
+CI runs the omnibus validation on push; if you skip the local check, the
+failure surfaces on the PR instead.
 
 ## Context window compacted and lost work
 
-If a session compacts and drops critical context, check whether `precompact-snapshot.sh` ran. Artifacts land in `.agents/compact/<timestamp>/`:
+If a session compacts and drops critical context, re-seed it with the corpus
+primitives rather than relying on an auto-snapshot hook (there is none in 3.0):
 
 ```bash
-ls -lt .agents/compact/ | head
+ao session bootstrap                 # re-orient
+ao inject "<topic>"                  # pull back the relevant prior context
 ```
 
-Restore needed state with `ao inject --from .agents/compact/<timestamp>/` or manually re-seed the session with `MEMORY.md`.
+You can also manually re-seed the session from `MEMORY.md`.
 
 ## Getting help
 

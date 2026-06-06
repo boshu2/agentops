@@ -106,7 +106,7 @@ func buildCodexNTMBundle(skills []string) agentBundle {
 		Runtime:      "codex-ntm",
 		Instructions: stitchInstructions(skills),
 		Skills:       skills,
-		Bootstrap:    "ao session bootstrap && ao inject --query \"$BEAD\"",
+		Bootstrap:    "ao session bootstrap && ao inject --bead \"$BEAD\"",
 		Reference:    "skills-codex/agent-native",
 	}
 }

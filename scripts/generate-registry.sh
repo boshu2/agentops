@@ -29,6 +29,10 @@ build_skills() {
     [[ -d "$skill_dir" ]] || continue
     local name
     name="$(basename "$skill_dir")"
+    # Leading-underscore dirs (e.g. skills/_fixtures/) are non-skill scaffolding
+    # — planted test fixtures, shared helpers — not real skills. Skip them so
+    # they never inflate the registry / skill count.
+    [[ "$name" == _* ]] && continue
 
     local tier="unknown"
     if [[ -f "$tiers_file" ]]; then

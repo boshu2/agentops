@@ -562,6 +562,105 @@ func TestCitationPathCanonicalization_MixedRelativeAndAbsolute(t *testing.T) {
 	}
 }
 
+func TestRecordCitation_PersistsHelpfulNonAuthorIdentity(t *testing.T) {
+	baseDir := t.TempDir()
+	event := types.CitationEvent{
+		ArtifactPath:       ".agents/learnings/non-author.md",
+		SessionID:          "session-pr-123",
+		CitedAt:            time.Date(2026, 6, 5, 3, 0, 0, 0, time.UTC),
+		CitationType:       types.CitationTypeHelpful,
+		ArtifactAuthorID:   "author-agent",
+		CitedByAgentID:     "reviewer-agent",
+		CitedByModelFamily: "codex",
+		MetricNamespace:    "primary",
+	}
+	if err := RecordCitation(baseDir, event); err != nil {
+		t.Fatalf("RecordCitation failed: %v", err)
+	}
+
+	citations, err := LoadCitations(baseDir)
+	if err != nil {
+		t.Fatalf("LoadCitations failed: %v", err)
+	}
+	if len(citations) != 1 {
+		t.Fatalf("expected 1 citation, got %d", len(citations))
+	}
+	got := citations[0]
+	if got.CitationType != types.CitationTypeHelpful {
+		t.Fatalf("CitationType = %q, want %q", got.CitationType, types.CitationTypeHelpful)
+	}
+	if got.ArtifactAuthorID == "" || got.CitedByAgentID == "" {
+		t.Fatalf("expected persisted author+citing identities, got author=%q cited_by=%q", got.ArtifactAuthorID, got.CitedByAgentID)
+	}
+	if got.ArtifactAuthorID == got.CitedByAgentID {
+		t.Fatalf("expected non-author identity, got both %q", got.ArtifactAuthorID)
+	}
+	if got.CitedByModelFamily != "codex" {
+		t.Fatalf("CitedByModelFamily = %q, want codex", got.CitedByModelFamily)
+	}
+}
+
+func TestRecordCitation_DistinctOutcomeTypesPersistAndLoad(t *testing.T) {
+	baseDir := t.TempDir()
+	wantTypes := []string{
+		types.CitationTypeRetrieved,
+		types.CitationTypeUsedInFinalArtifact,
+		types.CitationTypeHelpful,
+		types.CitationTypeHarmful,
+		types.CitationTypeRefuted,
+	}
+	for i, citationType := range wantTypes {
+		if err := RecordCitation(baseDir, types.CitationEvent{
+			ArtifactPath: fmt.Sprintf(".agents/learnings/type-%d.md", i),
+			SessionID:    "session-taxonomy",
+			CitedAt:      time.Date(2026, 6, 5, 4, i, 0, 0, time.UTC),
+			CitationType: citationType,
+		}); err != nil {
+			t.Fatalf("RecordCitation(%q) failed: %v", citationType, err)
+		}
+	}
+
+	citations, err := LoadCitations(baseDir)
+	if err != nil {
+		t.Fatalf("LoadCitations failed: %v", err)
+	}
+	if len(citations) != len(wantTypes) {
+		t.Fatalf("citation count = %d, want %d", len(citations), len(wantTypes))
+	}
+	seen := make(map[string]bool, len(citations))
+	for _, citation := range citations {
+		seen[citation.CitationType] = true
+	}
+	for _, citationType := range wantTypes {
+		if !seen[citationType] {
+			t.Fatalf("missing persisted citation type %q in %#v", citationType, citations)
+		}
+	}
+}
+
+func TestLoadCitations_ParsesLegacyIdentityAliases(t *testing.T) {
+	baseDir := t.TempDir()
+	citationsDir := filepath.Join(baseDir, ".agents", "ao")
+	if err := os.MkdirAll(citationsDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	line := `{"artifact_path":".agents/learnings/a.md","session_id":"s1","citation_type":"helpful","author_id":"author-a","reviewer_id":"reviewer-b","model_family":"claude"}` + "\n"
+	if err := os.WriteFile(filepath.Join(citationsDir, "citations.jsonl"), []byte(line), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	citations, err := LoadCitations(baseDir)
+	if err != nil {
+		t.Fatalf("LoadCitations failed: %v", err)
+	}
+	if len(citations) != 1 {
+		t.Fatalf("expected 1 citation, got %d", len(citations))
+	}
+	if citations[0].ArtifactAuthorID != "author-a" || citations[0].CitedByAgentID != "reviewer-b" || citations[0].CitedByModelFamily != "claude" {
+		t.Fatalf("identity aliases not parsed: %#v", citations[0])
+	}
+}
+
 // --- GetCitationsSince ---
 
 func TestGetCitationsSince(t *testing.T) {

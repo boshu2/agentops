@@ -1,0 +1,22 @@
+[
+  {
+    "key": "landed-means-origin-main",
+    "content": "Verify landed work against origin/main or GitHub, not local fast-forward state.",
+    "created_at": "2026-05-17T00:00:00Z"
+  },
+  {
+    "key": "ag-rbx8-pr-body-evidence",
+    "content": "For ag-rbx8, keep PR Evidence lines log-verifiable so AP#7 summary can validate them.",
+    "created_at": "2026-06-05T00:00:00Z"
+  },
+  {
+    "key": "old-evolve-cli",
+    "content": "Deprecated: use ao evolve as the terminal-native entrypoint.",
+    "created_at": "2026-05-01T00:00:00Z"
+  },
+  {
+    "id": "session-local-debug-note",
+    "body": "This PR only: one-off workaround for the current PR branch.",
+    "updated_at": "2026-06-01T00:00:00Z"
+  }
+]
