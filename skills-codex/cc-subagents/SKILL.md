@@ -1,16 +1,6 @@
 ---
 name: cc-subagents
-description: |
-  Drive fungible parallel workers via subscription-billed agent dispatch — background, worktree isolation, per-role model/tools/effort scoping, and an evidence-gated return. Codex-native parity of the Claude-native cc-subagents.
-
-  Triggers: "spawn a subagent", "fan out workers", "parallel agents", "background teammate", "worktree isolation", "interchangeable workers", "spawn vs inline", "fan-out codex workers".
-
-  Use when:
-  - You need to parallelize independent, file-scoped work across interchangeable workers
-  - You are deciding whether to spawn a worker vs. do the work inline in the current context
-
-  Perfect for: fan-out of N independent tasks (per-file audits, per-module refactors, per-bead implementations); long-running background explorers/judges that must not block the orchestrator; write-heavy parallel work that must not clobber a shared tree.
-  Not ideal for: a single sequential task with no parallelism (inline it); tightly-coupled edits to one file by multiple workers (combine into one worker).
+description: "Drive fungible parallel workers via subscription-billed agent dispatch — background, worktree isolation, per-role model/tools/effort scoping, and an evidence-gated return. Codex-native parity of the Claude-native cc-subagents."
 ---
 
 # cc-subagents (Codex)

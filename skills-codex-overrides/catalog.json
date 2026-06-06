@@ -688,6 +688,78 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for agent-native"
+    },
+    {
+      "name": "acfs",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+    },
+    {
+      "name": "agy-native",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+    },
+    {
+      "name": "agy-rules-workflows",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+    },
+    {
+      "name": "cc-cron-ticks",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+    },
+    {
+      "name": "cc-loop-driver",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+    },
+    {
+      "name": "cc-subagents",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+    },
+    {
+      "name": "cc-worktree-isolation",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+    },
+    {
+      "name": "codex-exec",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+    },
+    {
+      "name": "codex-goals",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+    },
+    {
+      "name": "codex-mcp-plugins",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+    },
+    {
+      "name": "codex-sandbox-evidence",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+    },
+    {
+      "name": "operating-loop-skill",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
     }
   ]
 }

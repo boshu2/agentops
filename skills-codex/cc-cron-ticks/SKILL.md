@@ -1,20 +1,6 @@
 ---
 name: cc-cron-ticks
-description: |
-  Schedule autonomous flywheel ticks inside a Claude Code session — CronCreate/CronList/CronDelete plus the /schedule routine surface — for in-session drive loops, idempotent ticks, and one-shot vs recurring cadence.
-  Triggers: "schedule a tick", "drive the flywheel", "every N minutes run", "1-min loop", "in-session cron", "one-shot reminder", "recurring routine", "CronCreate", "CronList", "CronDelete", "/schedule", "cron job for claude", "re-fire a prompt on a cadence".
-
-  **Use when:**
-  - You need an autonomous loop binary/harness re-invoked on a wall-clock cadence while the REPL is idle.
-  - You need a one-shot future action ("at 3pm run the smoke test") that fires once then deletes itself.
-
-  **Perfect for:**
-  - The 1-minute in-session drive loop that ticks an evolve/factory/control-plane harness.
-  - Cadence design for periodic burndown, health checks, or queue draining.
-
-  **Not ideal for:**
-  - Watching a log/process/command output for the moment it changes (use Monitor — cron polls, Monitor streams).
-  - Cross-machine durable scheduling that must survive a host reboot (use launchd/systemd/cron(8)).
+description: "Schedule autonomous flywheel ticks inside a Claude Code session — CronCreate/CronList/CronDelete plus the /schedule routine surface — for in-session drive loops, idempotent ticks, and one-shot vs recurring cadence."
 ---
 
 # cc-cron-ticks (Codex)

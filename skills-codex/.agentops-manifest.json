@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "391a3d1bc2aae59453208361f11612fad2ab840739ec7489612a0ee5ebec018d",
+  "codex_override_catalog_hash": "6f98755d97030a8bfb83c379162d4a1b9a4b5a6caebb5b38a4e940d8217f6b23",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -666,15 +666,105 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Hookless Agent-native pattern; codex form is canonical-derived (no bespoke shell idioms)."
+      },
+      {
+        "name": "acfs",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      },
+      {
+        "name": "agy-native",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      },
+      {
+        "name": "agy-rules-workflows",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      },
+      {
+        "name": "cc-cron-ticks",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      },
+      {
+        "name": "cc-loop-driver",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      },
+      {
+        "name": "cc-subagents",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      },
+      {
+        "name": "cc-worktree-isolation",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      },
+      {
+        "name": "codex-exec",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      },
+      {
+        "name": "codex-goals",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      },
+      {
+        "name": "codex-mcp-plugins",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      },
+      {
+        "name": "codex-sandbox-evidence",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      },
+      {
+        "name": "operating-loop-skill",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
       }
     ]
   },
   "skills": [
     {
+      "name": "acfs",
+      "source_skill": "skills/acfs",
+      "source_hash": "462ee8ee0005326d522fbbab8ffb61ddadd0528e3bbec5c12b34e8f2ac580cb5",
+      "generated_hash": "f3c2557dd40ac6e00e9813543ef598e23de5f2a913422c6c7fe2d5f17e98d068"
+    },
+    {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
       "source_hash": "0954334c8c9455712baca97f5168ee1355fb372213587e39d4f60cca54c16bae",
       "generated_hash": "314b9cc76584601464e2bf70c1356f8e8a7f6d8c557c29e0e2abf6c45cffa51f"
+    },
+    {
+      "name": "agy-native",
+      "source_skill": "skills/agy-native",
+      "source_hash": "3582c1879a1f747171a47bd8dd77cdf63a47bcf3729b7d586f05477e1fd901a1",
+      "generated_hash": "4322914e7aa64884ed182bdc307d90506ac492dac709140f93d401ad1fb701a8"
+    },
+    {
+      "name": "agy-rules-workflows",
+      "source_skill": "skills/agy-rules-workflows",
+      "source_hash": "3eea7fe93d9d4451edb83e394cf73174d5e340b17344a2e340518bf1df486525",
+      "generated_hash": "a1e709c91aa2646c61432fc66ca31b93adcf602e13044f987435c35a033e10da"
     },
     {
       "name": "autodev",
@@ -717,6 +807,54 @@
       "source_skill": "skills/burndown",
       "source_hash": "917f7277558d79c72c428fa6692d86d34d808a120d061341f5a393da063d4068",
       "generated_hash": "ef6c65f7053775a2f7cf6c3111adca2ca1d630eece87d43bf620cc89a51fd748"
+    },
+    {
+      "name": "cc-cron-ticks",
+      "source_skill": "skills/cc-cron-ticks",
+      "source_hash": "73bde4f06a0e28d0ce258cb8fcf0d5d9dea5720a86be3b0077f6aef39c5b66b4",
+      "generated_hash": "2cbd2a8fa0051ee5854fef77133ab0e093a1ac8009f47fa1dca64f1bc92cdd8a"
+    },
+    {
+      "name": "cc-loop-driver",
+      "source_skill": "skills/cc-loop-driver",
+      "source_hash": "275f6257b04a77a69364ce47fa110d9483d9d57741232f8804b45148b5458f4a",
+      "generated_hash": "a9710a5954bc417f8b3b27f0a189e67a0196a8f3010310e430a57e77a01732a7"
+    },
+    {
+      "name": "cc-subagents",
+      "source_skill": "skills/cc-subagents",
+      "source_hash": "87bb2921078ebb8f6e1576c9763d8ed1c5135016456c0e9e2b79aa8542920027",
+      "generated_hash": "c55b7c2d559db7d19c2c5f8921f831f9fd3d92e6938b7932765e95d8e49d05c1"
+    },
+    {
+      "name": "cc-worktree-isolation",
+      "source_skill": "skills/cc-worktree-isolation",
+      "source_hash": "7e8cb3808ebd0d8d4dc25f7b42cb05beb116198216f8ed854134c9caa8677a43",
+      "generated_hash": "6309ed6e0a478e493c6df23555de9bc4322a82bb6f26cb0a8a29303c0b30a392"
+    },
+    {
+      "name": "codex-exec",
+      "source_skill": "skills/codex-exec",
+      "source_hash": "0526af295a7fb2d1af6482025a27c5a99c276efaaeeb9d791782f0861324852a",
+      "generated_hash": "287cdd81f5e4a8fa4fa5fbaeca46eece671d44e37c1990ffbcb7032aee870f1d"
+    },
+    {
+      "name": "codex-goals",
+      "source_skill": "skills/codex-goals",
+      "source_hash": "60ab34d330961f233addd90d52fc822b1d63b6fd9df04345984b9afc282d03fa",
+      "generated_hash": "00b6a51945aff5638e093427bf696c5921b68608470e0fb41b1d683f5d8b0f6c"
+    },
+    {
+      "name": "codex-mcp-plugins",
+      "source_skill": "skills/codex-mcp-plugins",
+      "source_hash": "6541356ccce3592267f77af53cf5ec57ac5d03101714479174cc2a296d3306ce",
+      "generated_hash": "e7968ba59952fda5918b98490dd405fc7688a80594b61931042649a37c214a00"
+    },
+    {
+      "name": "codex-sandbox-evidence",
+      "source_skill": "skills/codex-sandbox-evidence",
+      "source_hash": "45d7eeb77f331ea511ea55f7ca2d6f87a18b47c4da48fd0a0d6f5b88f0fb9503",
+      "generated_hash": "3716f05835deab7ce48bf2d02cc7fa75610f3ed166f0b07bbe0cb989d0a7d8fa"
     },
     {
       "name": "codex-team",
@@ -885,6 +1023,12 @@
       "source_skill": "skills/openai-docs",
       "source_hash": "e0f575f3da7521aa976736a7e31e78bccec4509027ac268d6c23f9410bff6b7d",
       "generated_hash": "897d7a15f493cf6e64262e0ff44e5083bffee62787bead5fd106658cd9c09e18"
+    },
+    {
+      "name": "operating-loop-skill",
+      "source_skill": "skills/operating-loop-skill",
+      "source_hash": "f53ef322513facf52476d1ed8f0a893e5abe28494023fa2f0e4e2cbe4cfcea4f",
+      "generated_hash": "437aaa4fdbcf55b00496b4cb3525db06d216454d3783adbb84a20bacd3ad690b"
     },
     {
       "name": "operating-loop-workflow",

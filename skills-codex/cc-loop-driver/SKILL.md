@@ -1,17 +1,6 @@
 ---
 name: cc-loop-driver
-description: |
-  Run an assured control-plane tick loop on a subscription-billed agent harness — orchestrator pulls one ready bead, dispatches a fresh worker, dispatches a SEPARATE-context validator (author != judge), and only the orchestrator closes + commits + publishes on a verified PASS. Codex-native parity of the Claude-native cc-loop-driver.
-
-  Triggers: "drive the loop", "cc-loop-driver", "assured tick loop", "run the control plane", "assured loop without NTM", "bd ready -> claim -> worker -> validate -> close", "single-writer close loop", "all-Codex factory loop".
-
-  Use when:
-  - You want the control-plane loop as a shippable skill in one session with no NTM/tmux dependency.
-  - You have a `bd`/`br` bead ledger and want each bead worked + independently validated + closed + committed with evidence.
-  - You need author != judge assurance via separate execution contexts.
-
-  Perfect for: draining a ready queue overnight on the ChatGPT Pro subscription with no API burn; bootstrapping the factory before NTM/Agent-Mail turnout.
-  Not ideal for: heavy parallel multi-repo swarms (use NTM + Agent Mail); work with no acceptance criteria (nothing to validate against).
+description: "Run an assured control-plane tick loop on a subscription-billed agent harness — orchestrator pulls one ready bead, dispatches a fresh worker, dispatches a SEPARATE-context validator (author != judge), and only the orchestrator closes + commits + publishes on a verified PASS. Codex-native parity of the Claude-native cc-loop-driver."
 ---
 
 # cc-loop-driver (Codex)
