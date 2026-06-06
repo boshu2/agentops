@@ -1,6 +1,6 @@
 ---
 name: council
-description: Run multi-judge consensus.
+description: 'Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.'
 practices:
 - llm-eval-harness
 - ai-assisted-dev

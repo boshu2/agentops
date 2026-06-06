@@ -1,6 +1,6 @@
 ---
 name: design
-description: Validate product fit before discovery.
+description: 'Validate product fit before discovery. Use when: framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.'
 practices:
 - lean-startup
 - ddd-bounded-context

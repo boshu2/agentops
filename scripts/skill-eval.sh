@@ -78,6 +78,7 @@ safe_paths_has_real_violation() {
 	stripped="$(sed -E \
 		-e 's/\]\([^)]*\)//g' \
 		-e 's#(\.\./)+[A-Za-z0-9_.@/-]+\.(md|markdown|mdx|txt|rst)([#][A-Za-z0-9_-]+)?##g' \
+		-e 's#`(\.\./)+[A-Za-z0-9_.@/-]+`##g' \
 		"$file")"
 	printf '%s' "$stripped" | grep -qF '../'
 }

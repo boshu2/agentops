@@ -1,6 +1,6 @@
 ---
 name: vibe
-description: Validate code readiness.
+description: 'Validate code readiness. Use when: doing a quick readiness or sanity check that code is ready to commit or ship, short of a full review.'
 practices:
 - ai-assisted-dev
 - llm-eval-harness

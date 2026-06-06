@@ -1,5 +1,6 @@
 {
   "schema_version": 2,
+  "generated_at": "2026-06-06T15:01:39Z",
   "generated_at": "2026-06-06T15:01:53Z",
   "summary": {
     "skills": 82,
@@ -1824,7 +1825,7 @@
       "bounded_context": "BC2",
       "hex_role": "domain",
       "tier": "judgment",
-      "purpose": "Run multi-judge consensus.",
+      "purpose": "Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -1923,7 +1924,7 @@
       "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "judgment",
-      "purpose": "Validate product fit before discovery.",
+      "purpose": "Validate product fit before discovery. Use when: framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -2463,7 +2464,7 @@
       "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "judgment",
-      "purpose": "Review completed work and learn.",
+      "purpose": "Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -2575,7 +2576,7 @@
       "bounded_context": "BC2",
       "hex_role": "domain",
       "tier": "judgment",
-      "purpose": "Stress-test plans before work.",
+      "purpose": "Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -2746,7 +2747,7 @@
       "bounded_context": "BC2",
       "hex_role": "supporting",
       "tier": "judgment",
-      "purpose": "Probe docs and skills.",
+      "purpose": "Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -2871,7 +2872,7 @@
       "bounded_context": "BC2",
       "hex_role": "driving-adapter",
       "tier": "judgment",
-      "purpose": "Review diffs for risk, find mocks, scan for bugs, and audit codebases.",
+      "purpose": "Review diffs for risk, find mocks, scan for bugs, audit codebases. Use when: reviewing a diff/PR for bugs and risk, hunting mocks/stubs/placeholders, or auditing for quality.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -3320,7 +3321,7 @@
       "bounded_context": "BC2",
       "hex_role": "driving-adapter",
       "tier": "judgment",
-      "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates.",
+      "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured verdict on an artifact, plan, code, PR, or CI gate before proceeding.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -3381,7 +3382,7 @@
       "bounded_context": "BC2",
       "hex_role": "domain",
       "tier": "judgment",
-      "purpose": "Validate code readiness.",
+      "purpose": "Validate code readiness. Use when: doing a quick readiness or sanity check that code is ready to commit or ship, short of a full review.",
       "status": "active",
       "disposition": "update",
       "consumes": [
