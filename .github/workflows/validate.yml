@@ -22,6 +22,11 @@ on:
       - 'v*'
   pull_request:
     branches: [main]
+  # Merge queue: GitHub validates queued PRs on the combined merge_group ref.
+  # The `summary` required check MUST run here or the queue hangs forever. The
+  # `changes` job forces a full run on merge_group (see the release step) so the
+  # path-filter — which has no PR base in-queue — can't skip validation.
+  merge_group:
 
 jobs:
   changes:
@@ -43,11 +48,13 @@ jobs:
       corpus: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.corpus }}
     steps:
       - uses: actions/checkout@v6
-      - name: Detect release tag push
+      - name: Detect release tag push or merge-queue (force full run)
         id: release
         shell: bash
         run: |
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+          # merge_group has no PR base for the path-filter, so force the full
+          # validation suite — the queue must validate the combined ref in full.
+          if [[ "${GITHUB_REF}" == refs/tags/v* || "${GITHUB_EVENT_NAME}" == "merge_group" ]]; then
             echo "release=true" >> "$GITHUB_OUTPUT"
           else
             echo "release=false" >> "$GITHUB_OUTPUT"
