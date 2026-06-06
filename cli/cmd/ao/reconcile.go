@@ -632,16 +632,7 @@ func parseReconcileGHRuns(raw []byte) ([]reconcileCIRun, error) {
 	}
 	runs := make([]reconcileCIRun, 0, len(ghRuns))
 	for _, run := range ghRuns {
-		runs = append(runs, reconcileCIRun{
-			DatabaseID:   run.DatabaseID,
-			WorkflowName: run.WorkflowName,
-			Status:       run.Status,
-			Conclusion:   run.Conclusion,
-			HeadSHA:      run.HeadSHA,
-			DisplayTitle: run.DisplayTitle,
-			URL:          run.URL,
-			CreatedAt:    run.CreatedAt,
-		})
+		runs = append(runs, reconcileCIRun(run))
 	}
 	return runs, nil
 }
@@ -769,13 +760,7 @@ func isReleaseLike(title, releaseTag string) bool {
 }
 
 func summarizeBead(issue bdIssueForReconcile) reconcileBeadSummary {
-	return reconcileBeadSummary{
-		ID:       issue.ID,
-		Title:    issue.Title,
-		Status:   issue.Status,
-		Priority: issue.Priority,
-		Parent:   issue.Parent,
-	}
+	return reconcileBeadSummary(issue)
 }
 
 func firstBeadEvidence(beads []reconcileBeadSummary) string {
