@@ -1,12 +1,14 @@
 ---
 name: rch
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Offload cargo/gcc/bun builds to remote workers. Use when compilation slow,
   "[RCH] local" in stderr, workers unhealthy, hook silent, sync fails, disk
   pressure, or SSH/daemon/telemetry recovery.
 ---
-
 # RCH — Remote Compilation Helper
 
 `rch` transparently offloads compilation commands to remote workers via a Claude Code PreToolUse hook. The daemon picks the fastest healthy worker, rsync's the workspace, runs the build, syncs artifacts back, and exits with the worker's exit code.

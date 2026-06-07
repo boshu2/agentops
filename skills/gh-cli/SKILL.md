@@ -1,11 +1,13 @@
 ---
 name: gh-cli
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   GitHub CLI (gh) for repos, issues, PRs, actions, releases. Use when working
   with GitHub or running gh commands.
 ---
-
 <!-- TOC: Quick Start | THE EXACT PROMPT | Essential Commands | AGENTS.md Blurb | When to Use | References -->
 
 # gh-cli — GitHub CLI

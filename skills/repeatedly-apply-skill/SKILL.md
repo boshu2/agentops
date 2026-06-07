@@ -1,12 +1,14 @@
 ---
 name: repeatedly-apply-skill
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Iteratively apply a named skill or slash command N times with progressive
   deepening. Use when "apply 10 times", "keep improving", "run again",
   iterative polish, improvement loop, or multi-pass refinement.
 ---
-
 # Repeatedly Apply Skill
 
 Orchestrate N passes of any skill against a target. Each pass is delegated
@@ -28,14 +30,14 @@ You delegate each pass to a subagent via the `Agent` tool. This solves:
 slash command's purpose). Then generate N missions that are specific to
 THAT skill. Do not use generic missions.
 
-**Example for `/ui-polish`:**
+**Example for `ui-polish`:**
 1. Layout hierarchy and spacing  2. Color palette and contrast
 3. Typography scale and weight  4. Interactive states (hover, focus, active, disabled)
 5. Micro-animations and transitions  6. Empty/loading/error states
 7. Responsive breakpoints  8. Dark mode consistency
 9. Visual rhythm and alignment  10. Final screenshot comparison
 
-**Example for `/ubs` (bug scanner):**
+**Example for `ubs` (bug scanner):**
 1. Null/undefined paths  2. Error handling gaps
 3. Race conditions and async  4. Input validation boundaries
 5. Security (injection, auth)  6. Resource leaks (connections, listeners)
@@ -227,6 +229,6 @@ If Agent tool is unavailable, apply the skill yourself but:
 
 ## Skills That Loop Well
 
-`/ui-polish`, `/simplify`, `/ubs`, `tui-glamorous`,
-`react-best-practices`, `/ux-audit`, `interactive-visualization-creator`,
-`de-slopify`, `/multi-pass-bug-hunting`, `/codebase-audit`
+`ui-polish`, `simplify`, `ubs`, `tui-glamorous`,
+`react-best-practices`, `ux-audit`, `interactive-visualization-creator`,
+`de-slopify`, `multi-pass-bug-hunting`, `codebase-audit`

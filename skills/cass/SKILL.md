@@ -1,6 +1,9 @@
 ---
 name: cass
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Mine past agent sessions for working prompts, decisions, and patterns. Use when
   "what did I ask?", "find that prompt", session archaeology, or agent history.
@@ -11,7 +14,6 @@ dependencies:
   - "ssh + rsync (optional; only for cross-machine `cass sources` workflows)"
   - "fastembed model bundle ~90MB (optional; only for --mode semantic / hybrid; install via `cass models install`)"
 ---
-
 # cass Session Search
 
 ## Table of Contents

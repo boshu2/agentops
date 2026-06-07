@@ -1,12 +1,14 @@
 ---
 name: vibing-with-ntm
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Tends NTM agent swarms. Use when running orchestrator ticks, unsticking
   panes, handling rate limits, marching orders, review-only mode, convergence,
   queue-dry, or multi-agent coordination.
 ---
-
 <!-- TOC: One Rule | Cold Start | Tick Loop | Intervention Score Matrix | Operator Proof Card | Swarm Pathology Triggers | Pattern Tiers | Metrics | Checklist | Decision Tree | Quick Start | Attention-Feed Loop | Marching Orders | Swarm Loop | Operator Loop | Autonomous Unstick | Observability | Steady-State Cadence | Quality Loops | Coordination | Anti-Patterns | Troubleshooting | References | Related Skills -->
 
 > **If you are tending a swarm right now:** jump to the [Orchestrator Decision Tree](#orchestrator-decision-tree) below. Drop into [Autonomous Unstick](#autonomous-unstick--dont-wait-for-the-human) for recovery recipes. Everything else is context.
@@ -191,10 +193,10 @@ At closeout, summarize the swarm in concrete deltas:
 
 - You just need the `ntm` command catalog itself — use `/ntm`.
 - You're doing single-agent work in one pane — no orchestration layer is needed.
-- You're configuring a brand-new NTM install or provisioning a machine — use `/provision-new-machine`.
-- You're fixing Beads DB corruption or JSONL drift — use `/fixing-beads-problems`.
-- You want Gemini-specific review-swarm tuning (Flash fallback, model lock) — use `/code-review-gemini-swarm-with-ntm`.
-- You want to spawn a weighted swarm from bead backlog size — use `/open-beads-weighted-tmux-agent-sessions`.
+- You're configuring a brand-new NTM install or provisioning a machine — use `provision-new-machine`.
+- You're fixing Beads DB corruption or JSONL drift — use `fixing-beads-problems`.
+- You want Gemini-specific review-swarm tuning (Flash fallback, model lock) — use `code-review-gemini-swarm-with-ntm`.
+- You want to spawn a weighted swarm from bead backlog size — use `open-beads-weighted-tmux-agent-sessions`.
 
 **This skill deliberately does NOT cover:** the full `ntm` command surface (see `/ntm`), MCP Agent Mail primitives (see `/agent-mail`), Beads mechanics (see `/beads-br`), BV triage internals (see `/beads-bv`), or CAAM account management (see `/caam`). It focuses on the **operator layer that sits above those tools** — the decisions, ticks, nudges, and recoveries an orchestrator performs.
 
@@ -257,7 +259,7 @@ During a tick, skim each pane's last ~20 lines for these exact-or-near substring
 | If tail contains this phrase | State | Card to apply |
 | --- | --- | --- |
 | "resets 3pm", "You've hit your limit", "Upgrade to Max" | (maybe-stale) rate-limit | OC-001 Ping-Probe; then OC-002 Rotate if confirmed |
-| "Stop and wait / Switch to extra usage" | `/rate-limit-options` dialog | Autonomous Unstick → send `2` Enter |
+| "Stop and wait / Switch to extra usage" | `rate-limit-options` dialog | Autonomous Unstick → send `2` Enter |
 | "[Pasted text]" alone | codex paste buffer | Autonomous Unstick → flush Enter |
 | "Ready for validation", "MISSION ACCOMPLISHED", "Awaiting review", "Successfully identified and optimized" | **Handoff failure** (not success!) | OC-036 + Ship-Don't-Hand-Off prompt |
 | "exemplary", "already complete", "no fixes needed", "ready to ship", "LGTM", "tests are passing" | Convergence language | OC-016 three-condition check; if all hold, STOP |
@@ -481,7 +483,7 @@ ntm --robot-health-restart-stuck=myproject --stuck-threshold=10m --dry-run
 # Smart restart (checks activity, avoids trashing real work):
 ntm --robot-smart-restart=myproject --panes=5 --prompt="$(cat marching_orders.txt)"
 
-# If the CLI is wedged on /usage, /rate-limit-options, or a confirm dialog, the
+# If the CLI is wedged on usage, rate-limit-options, or a confirm dialog, the
 # graceful path fails. Use --hard-kill or go straight to restart-pane:
 ntm --robot-smart-restart=myproject --panes=5 --hard-kill --prompt="..."
 ntm --robot-restart-pane=myproject --panes=5 --restart-prompt="..."
@@ -489,9 +491,9 @@ ntm --robot-restart-pane=myproject --panes=5 --restart-prompt="..."
 
 If `ntm rotate` times out on a wedged CLI, skip straight to `--robot-restart-pane`; it uses `tmux respawn-pane -k` directly and doesn't need CLI cooperation.
 
-### Interactive blockers inside the pane (cc `/rate-limit-options`, codex `[Pasted text]`)
+### Interactive blockers inside the pane (cc `rate-limit-options`, codex `[Pasted text]`)
 
-cc panes sometimes land on an interactive `/rate-limit-options` dialog with choices like "Stop and wait" or "Switch to extra usage." Codex panes sometimes stall with a `[Pasted text]` buffer waiting for Enter. Both are fully resolvable by the orchestrator:
+cc panes sometimes land on an interactive `rate-limit-options` dialog with choices like "Stop and wait" or "Switch to extra usage." Codex panes sometimes stall with a `[Pasted text]` buffer waiting for Enter. Both are fully resolvable by the orchestrator:
 
 ```bash
 # cc rate-limit-options: pick "Switch to extra usage" (option 2 on typical layout)
@@ -655,7 +657,7 @@ Fix: use `--robot-*` for structured state and keep the TUI for humans.
 
 ### Stuck-Pane Tolerance
 
-Problem: orchestrator sees the same 70-line transcript for 30+ ticks, keeps pasting nudges, nothing lands because the CLI is wedged on `/usage`, `/rate-limit-options`, or a confirm dialog.
+Problem: orchestrator sees the same 70-line transcript for 30+ ticks, keeps pasting nudges, nothing lands because the CLI is wedged on `usage`, `rate-limit-options`, or a confirm dialog.
 
 Fix: after **≤3 ticks** of identical tail and zero output growth, stop nudging and escalate:
 
@@ -721,7 +723,7 @@ Fix: at session start, assign each pane an explicit **crate / directory domain**
 | Agents appear idle | Use `ntm --robot-is-working=myproject` and `ntm --robot-agent-health=myproject` — they are the authoritative live signals |
 | Pane stuck identical ≥3 ticks | `ntm --robot-health-restart-stuck` → `ntm --robot-smart-restart --hard-kill` → `ntm --robot-restart-pane` |
 | Pane showing "resets Xpm" rate-limit | Probe with `tmux send-keys ping Enter` + `ntm --robot-tail`. If still limited: `ntm rotate myproject --all-limited` or `ntm --robot-switch-account=claude:<account>` |
-| cc pane on `/rate-limit-options` dialog | `tmux send-keys -t session:0.N "2" Enter` to pick "Switch to extra usage"; or rotate the account |
+| cc pane on `rate-limit-options` dialog | `tmux send-keys -t session:0.N "2" Enter` to pick "Switch to extra usage"; or rotate the account |
 | codex pane on `[Pasted text]` limbo | `tmux send-keys -t session:0.N "" Enter` to flush the paste buffer |
 | `ntm send` aborts with `Continue anyway?` | Pass `--no-cass-check`, or use `ntm --robot-send` (non-interactive) |
 | Agent Mail server down/degraded/DB-busy | Proceed without it (see repo AGENTS.md); use `br update --assignee=...` as a soft coordination lock |
@@ -757,7 +759,7 @@ Reviewers scale sub-linearly — 4 covers most codebases; more produces redundan
 
 **Hot mode-switch:** flip a pane between implementer and reviewer mid-session via the MODE-SWITCH prompts in [PROMPTS.md](references/PROMPTS.md).
 
-Full spec — spawn, dispatch cadence, quality rubric, kill-relaunch timing, anti-patterns, real-bug examples — lives in [REVIEW-MODE.md](references/REVIEW-MODE.md). For **Gemini-specific** tuning (Flash-fallback detection, `gemini-3.1-pro-preview` model lock, `~/.gemini/settings.json` config), use `/code-review-gemini-swarm-with-ntm` directly.
+Full spec — spawn, dispatch cadence, quality rubric, kill-relaunch timing, anti-patterns, real-bug examples — lives in [REVIEW-MODE.md](references/REVIEW-MODE.md). For **Gemini-specific** tuning (Flash-fallback detection, `gemini-3.1-pro-preview` model lock, `~/.gemini/settings.json` config), use `code-review-gemini-swarm-with-ntm` directly.
 
 ## Reference Index
 
@@ -795,7 +797,7 @@ Full spec — spawn, dispatch cadence, quality rubric, kill-relaunch timing, ant
 | Bulk assignment slows the whole swarm | OC-044 Pressure-Aware Assignment + AP-59 |
 | Prompt landed in the wrong pane | OC-045 Pane Identity + AP-60 |
 | Integration command seems nonexistent | OC-046 Tool Contracts + AP-61 |
-| Running an audit/review-only session or mixed impl+review | REVIEW-MODE.md (agent-agnostic) or `/code-review-gemini-swarm-with-ntm` (Gemini-specific) |
+| Running an audit/review-only session or mixed impl+review | REVIEW-MODE.md (agent-agnostic) or `code-review-gemini-swarm-with-ntm` (Gemini-specific) |
 | Pane "restarted" via `--robot-restart-pane` but agent never booted | OC-027 Two-Step Relaunch + AP-39 |
 | `tmux send-keys` silently does nothing | OC-028 Verify Window Index + AP-40 |
 | Dispatch landed as `zsh: command not found: …` | OC-026 Pid/Current-Command Audit + AP-40/AP-39 |

@@ -1,11 +1,13 @@
 ---
 name: beads-bv
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Graph-aware task triage with bv and br. Use when prioritizing work, finding
   bottlenecks, tracking dependencies, or managing local issues across projects.
 ---
-
 # beads-bv — Graph-Aware Triage
 
 <!-- TOC: Robot Mode | Commands | Workflow | Scoping | Metrics | br | Troubleshooting | References -->

@@ -1,6 +1,9 @@
 ---
 name: ru-multi-repo-workflow
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Orchestrate multi-repo maintenance with ru: smart commits, careful sync, issue/PR
   review. Use when managing repos, syncing projects, reviewing GitHub issues, or
@@ -8,7 +11,6 @@ description: >-
 trigger: commit-and-release
 globs: .github/workflows/*.yml
 ---
-
 # ru Multi-Repo Workflow
 
 > **Core Insight:** ru automates the mechanical. Your job is judgment: substantive merge conflicts, scope creep decisions, canonical version selection. If it doesn't require human judgment, it should just happen.

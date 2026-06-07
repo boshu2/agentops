@@ -1,11 +1,13 @@
 ---
 name: gcloud
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Google Cloud Platform CLI - manage GCP resources. Use when working with Compute
   Engine, Cloud Run, GKE, Cloud Functions, Storage, BigQuery, or other GCP services.
 ---
-
 <!-- TOC: Quick Start | THE EXACT PROMPT | Services | Output Formatting | AGENTS.md Blurb | When to Use | References -->
 
 # GCloud CLI

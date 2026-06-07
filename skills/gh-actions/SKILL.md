@@ -1,12 +1,14 @@
 ---
 name: gh-actions
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Configure GitHub Actions CI/CD for Go, Rust, TypeScript, Bash projects.
   Use when creating workflows, release automation, signing, checksums,
   cross-platform builds, or .github/workflows files.
 ---
-
 # Optimal GitHub Actions
 
 Production-tested patterns + 2025-2026 best practices.

@@ -1,11 +1,13 @@
 ---
 name: sbh
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Disk-pressure defense for AI coding workloads. Use when: disk full, low
   space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status.
 ---
-
 # SBH — Storage Ballast Helper
 
 Prevents disk-full disasters via ballast files, artifact scanning, and predictive pressure monitoring. Three-pronged: ballast (instant space), scanner (stale artifacts), special locations (/tmp, /dev/shm, swap).

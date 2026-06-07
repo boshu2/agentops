@@ -1,11 +1,13 @@
 ---
 name: beads-br
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Local-first issue tracker (beads_rust) for AI agents. Use when tracking tasks,
   managing dependencies, finding ready work, or syncing issues to git via JSONL.
 ---
-
 <!-- TOC: Critical Rules | Quick Workflow | Essential Commands | bv Integration | References -->
 
 # beads-br — Beads Rust Issue Tracker

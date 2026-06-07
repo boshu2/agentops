@@ -1,6 +1,9 @@
 ---
 name: system-performance-remediation
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Restore machine responsiveness via safe, selective process cleanup. Use when
   system unresponsive, high CPU/load average, IO pressure, filesystem cache
@@ -8,7 +11,6 @@ description: >-
   confused agents in loops, swap thrashing, disk full, systemd-oomd kills,
   or tmux/zellij session sprawl.
 ---
-
 <!-- TOC: Quick Reference | VM Tuning & Cache Bloat | systemd-oomd Protection | Kill Hierarchy | Diagnosis | Swap & zram | Disk Cleanup | Zellij/Tmux Cleanup | Orphans | Agent Swarm Fix | Fleet Triage | Emergency | References -->
 
 # System Performance Remediation

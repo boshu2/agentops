@@ -1,12 +1,14 @@
 ---
 name: agent-mail
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   MCP Agent Mail for multi-agent coordination. Use when agents need file locks,
   messaging, inboxes, or conflict prevention. Handles macro_start_session,
   file_reservation_paths, send_message, threading, pre-commit guards.
 ---
-
 <!-- TOC: Bootstrap | Core Ops | File Reservations | Beads | Troubleshooting | Identity | Human Overseer | Pre-Commit Guard | References -->
 
 # Using MCP Agent Mail

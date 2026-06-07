@@ -12,7 +12,7 @@ which has **none** of the Claude-native scheduler tools.
 | `CronCreate` | `launchctl load` (macOS) / `systemctl --user enable --now <unit>.timer` (Linux) / a `crontab` line |
 | `CronList` | `launchctl list` / `systemctl --user list-timers` / `crontab -l` |
 | `CronDelete` | `launchctl unload` / `systemctl --user disable --now <unit>.timer` / `crontab -e` removal |
-| `/schedule` durable routine | a persisted launchd plist / systemd-timer unit (durable by nature) |
+| schedule durable routine | a persisted launchd plist / systemd-timer unit (durable by nature) |
 | `Monitor` (live stream) | not cron — poll loop or `tail -f`/`inotifywait`; for "react on change" prefer a watch, not a tick |
 
 There is no in-memory/in-session tick on Codex. Every Codex schedule is

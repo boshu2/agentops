@@ -1,12 +1,14 @@
 ---
 name: planning-workflow
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Comprehensive markdown planning methodology for software projects. Use when
   starting a new project, creating implementation plans, or refining architecture
   before coding.
 ---
-
 <!-- TOC: Philosophy | THE EXACT PROMPT | Process Overview | References -->
 
 # Planning Workflow — The Foundation of Agentic Development

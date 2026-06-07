@@ -1,11 +1,13 @@
 ---
 name: gh-triage-ru
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   GitHub issue/PR triage via ru and gh. Use when processing issues, closing PRs
   (no-contributions policy), or bulk triage. Independent verification required.
 ---
-
 # gh-triage-ru — GitHub Issues/PRs with ru
 
 > **Core Insight:** User reports are hints, not facts. Every bug report, feature request, and PR must be independently verified. Never trust suggested fixes—implement your own solution based on your own analysis.

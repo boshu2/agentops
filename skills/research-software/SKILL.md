@@ -1,11 +1,13 @@
 ---
 name: research-software
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Research software tools via source code, GitHub, web. Use when creating skills,
   learning new tools, finding undocumented features, or bleeding-edge patterns.
 ---
-
 # research-software — Software Research
 
 > **Rules:** Latest STABLE tag (not main). Filter to 2025-2026. Code > Docs. Skip Stack Overflow.

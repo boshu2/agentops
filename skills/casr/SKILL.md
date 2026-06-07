@@ -1,11 +1,13 @@
 ---
 name: casr
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Cross Agent Session Resumer. Convert and resume sessions across Claude Code,
   Codex, Gemini, and other providers.
 ---
-
 # casr — Cross Agent Session Resumer
 
 Use `casr` when you need to keep working on the same session but switch providers.

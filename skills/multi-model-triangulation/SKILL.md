@@ -1,11 +1,13 @@
 ---
 name: multi-model-triangulation
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Cross-validate decisions using multiple AI models (Codex, Gemini, Grok).
   Use when "get a second opinion", evaluating approaches, or high-stakes decisions.
 ---
-
 <!-- TOC: Core | Workflow | Quick Prompts | Synthesis | Model Strengths | Anti-Patterns | References -->
 
 # Multi-Model Triangulation

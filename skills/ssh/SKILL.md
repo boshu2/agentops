@@ -1,12 +1,14 @@
 ---
 name: ssh
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   SSH remote access - connections, tunnels, keys, file transfers. Use when
   connecting to servers, managing SSH keys, setting up port forwarding, or
   transferring files with scp/rsync.
 ---
-
 <!-- TOC: Quick Start | THE EXACT PROMPT | Essential Commands | Config | AGENTS.md Blurb | References -->
 
 # SSH — Secure Remote Access

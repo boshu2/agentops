@@ -1,12 +1,14 @@
 ---
 name: ntm
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending
   panes, reading robot state, triaging work, locks/mail, safety, pipelines,
   serve, or NTM errors.
 ---
-
 <!-- TOC: One Rule | Cold Start | Mandatory Loop | NTM Action Card | Command Selection Matrix | Pattern Tiers | Anti-Patterns | Pre-Flight Checklist | Quick Start | Mental Model | Session Orchestration | Dispatch & Reusable Assets | Work Intelligence | Coordination | Safety | Robot Mode | Controller Agents | Serve API | Project Resolution | Gotchas | References | Related Skills -->
 
 > **Scope:** this skill is the **NTM tool reference** — every verb, flag, schema, and integration point. For operator loops, marching orders, unstick ladders, swarm anti-patterns, and tending cadence, use the companion `vibing-with-ntm` skill.
@@ -36,7 +38,7 @@ If you are coming in fresh, pick the narrowest starting point:
 |---|---|
 | You need exact NTM command syntax, robot flags, schemas, or failure-mode fixes | This skill |
 | You are tending an already-running swarm and deciding whether to nudge, restart, stand down, or dispatch marching orders | `/vibing-with-ntm` |
-| You are running a Brenner-style hypothesis investigation or incident RCA through NTM panes | `/brennerbot-with-ntm` |
+| You are running a Brenner-style hypothesis investigation or incident RCA through NTM panes | `brennerbot-with-ntm` |
 | You only need Beads or BV mechanics | `/beads-br` or `/beads-bv` |
 
 For any state-changing action, read just enough of this file to choose the command, then verify the live contract with `ntm --robot-capabilities` before executing.

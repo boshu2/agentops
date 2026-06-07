@@ -1,11 +1,13 @@
 ---
 name: cc-hooks
 user-invocable: false
+skill_api_version: 1
+metadata:
+  tier: execution
 description: >-
   Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification.
   Use when blocking commands, auto-formatting, custom permissions, or writing hooks.
 ---
-
 # Claude Code Hooks
 
 Shell commands that fire at specific points in Claude Code's lifecycle.
