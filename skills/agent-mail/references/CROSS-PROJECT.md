@@ -12,8 +12,8 @@ Use the same `project_key` for related repos. Agents auto-coordinate.
 # Both agents use same project_key
 macro_start_session(
   human_key="/abs/path/monorepo",
-  program="claude-code",
-  model="opus-4.5"
+  program="codex-cli",
+  model="YOUR_MODEL"
 )
 ```
 
