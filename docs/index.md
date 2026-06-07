@@ -153,10 +153,9 @@ Every skill works alone. Compose flows for end-to-end cycles.
 | [`/rpi`](../skills/rpi/SKILL.md) | You want discovery, build, validation, and bookkeeping in one flow |
 | [`/vibe`](../skills/vibe/SKILL.md) | You want a code-quality and risk review before shipping |
 | [`/evolve`](../skills/evolve/SKILL.md) | You want a goal-driven improvement loop with regression gates |
-| [`/dream`](../skills/dream/SKILL.md) | You want overnight knowledge compounding that never mutates source code |
 
 !!! info "Full catalog"
-    [:octicons-book-24: **All 171 skills**](skills/catalog.md) — complete reference with source links and descriptions.
+    [:octicons-book-24: **All 165 skills**](skills/catalog.md) — complete reference with source links and descriptions.
     [:octicons-routes-24: **Decision tree**](skills-decision-tree.md) — "which skill do I need next?"
 
 ---

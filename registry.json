@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-07T17:00:53Z",
+  "generated_at": "2026-06-07T17:29:31Z",
   "summary": {
-    "skills": 171,
+    "skills": 165,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 83,
-    "capabilities": 267
+    "capabilities": 261
   },
   "surfaces": {
     "skills": [
@@ -32,14 +32,6 @@
         "name": "inject",
         "tier": "background",
         "path": "skills/inject/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "provenance",
-        "tier": "background",
-        "path": "skills/provenance/",
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 0
@@ -107,14 +99,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 1
-      },
-      {
-        "name": "openai-docs",
-        "tier": "cross-vendor",
-        "path": "skills/openai-docs/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
       },
       {
         "name": "agent-mail",
@@ -387,22 +371,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 6
-      },
-      {
-        "name": "grafana-platform-dashboard",
-        "tier": "execution",
-        "path": "skills/grafana-platform-dashboard/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
-        "name": "hooks-authoring",
-        "tier": "execution",
-        "path": "skills/hooks-authoring/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
       },
       {
         "name": "implement",
@@ -989,14 +957,6 @@
         "reference_count": 3
       },
       {
-        "name": "llm-wiki",
-        "tier": "knowledge",
-        "path": "skills/llm-wiki/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 2
-      },
-      {
         "name": "retro",
         "tier": "knowledge",
         "path": "skills/retro/",
@@ -1235,14 +1195,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 1
-      },
-      {
-        "name": "dream",
-        "tier": "session",
-        "path": "skills/dream/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
       },
       {
         "name": "handoff",
@@ -1767,7 +1719,6 @@
         "bounded_context": "BC3",
         "driven_by_skills": [
           "agent-native",
-          "dream",
           "evolve",
           "goals",
           "post-mortem",
@@ -1861,7 +1812,6 @@
           "discovery",
           "evolve",
           "flywheel",
-          "hooks-authoring",
           "implement",
           "inject",
           "knowledge-activation",
@@ -1986,7 +1936,7 @@
         "name": "ao provenance",
         "path": "cli/cmd/ao/",
         "purpose": "Write and read the SDLC provenance edge ledger",
-        "bounded_context": "BC1",
+        "bounded_context": "",
         "driven_by_skills": []
       },
       {
@@ -2115,7 +2065,6 @@
           "discovery",
           "plan",
           "pre-mortem",
-          "provenance",
           "using-agentops",
           "vibe"
         ]
@@ -2221,8 +2170,8 @@
     ]
   },
   "capability_summary": {
-    "total": 267,
-    "skills": 171,
+    "total": 261,
+    "skills": 165,
     "cli_commands": 83,
     "gates": 13,
     "reference_impls": 0
@@ -3466,26 +3415,6 @@
       "references": 19
     },
     {
-      "sku": "skill:dream",
-      "name": "dream",
-      "type": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "session",
-      "purpose": "Retired pointer — out-of-session compounding moved to the substrate (NTM + MCP + managed-agents).",
-      "status": "active",
-      "disposition": "refactor",
-      "consumes": [],
-      "produces": [
-        ".agents/research/*.md"
-      ],
-      "drives_commands": [
-        "ao goals"
-      ],
-      "path": "skills/dream/",
-      "references": 0
-    },
-    {
       "sku": "skill:eval-outcomes",
       "name": "eval-outcomes",
       "type": "skill",
@@ -3807,24 +3736,6 @@
       "references": 0
     },
     {
-      "sku": "skill:grafana-platform-dashboard",
-      "name": "grafana-platform-dashboard",
-      "type": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "driven-adapter",
-      "tier": "execution",
-      "purpose": "Validate OpenShift Grafana dashboards.",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [],
-      "produces": [
-        "dashboard-validation-report"
-      ],
-      "drives_commands": [],
-      "path": "skills/grafana-platform-dashboard/",
-      "references": 3
-    },
-    {
       "sku": "skill:handoff",
       "name": "handoff",
       "type": "skill",
@@ -3883,27 +3794,6 @@
       "drives_commands": [],
       "path": "skills/heal-skill/",
       "references": 2
-    },
-    {
-      "sku": "skill:hooks-authoring",
-      "name": "hooks-authoring",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "domain",
-      "tier": "execution",
-      "purpose": "Author AgentOps runtime hooks.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [
-        "ao lookup",
-        "ao metrics cite"
-      ],
-      "path": "skills/hooks-authoring/",
-      "references": 3
     },
     {
       "sku": "skill:idea-option-forge",
@@ -4097,24 +3987,6 @@
       "references": 0
     },
     {
-      "sku": "skill:llm-wiki",
-      "name": "llm-wiki",
-      "type": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "knowledge",
-      "purpose": "Build external-knowledge wikis.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [],
-      "produces": [
-        "documentation"
-      ],
-      "drives_commands": [],
-      "path": "skills/llm-wiki/",
-      "references": 2
-    },
-    {
       "sku": "skill:mcp-interface-design",
       "name": "mcp-interface-design",
       "type": "skill",
@@ -4261,24 +4133,6 @@
       "produces": [],
       "drives_commands": [],
       "path": "skills/ntm-review-worker-orchestration/",
-      "references": 0
-    },
-    {
-      "sku": "skill:openai-docs",
-      "name": "openai-docs",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driven-adapter",
-      "tier": "cross-vendor",
-      "purpose": "Use official OpenAI docs.",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "external-api"
-      ],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/openai-docs/",
       "references": 0
     },
     {
@@ -4670,26 +4524,6 @@
       ],
       "drives_commands": [],
       "path": "skills/project-reasoning-lens-analysis/",
-      "references": 0
-    },
-    {
-      "sku": "skill:provenance",
-      "name": "provenance",
-      "type": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "driven-adapter",
-      "tier": "background",
-      "purpose": "Trace artifact provenance.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [
-        "ao search"
-      ],
-      "path": "skills/provenance/",
       "references": 0
     },
     {
@@ -6556,7 +6390,6 @@
       "status": "active",
       "driven_by_skills": [
         "agent-native",
-        "dream",
         "evolve",
         "goals",
         "post-mortem",
@@ -6771,7 +6604,6 @@
         "discovery",
         "evolve",
         "flywheel",
-        "hooks-authoring",
         "implement",
         "inject",
         "knowledge-activation",
@@ -7059,7 +6891,7 @@
       "sku": "cmd:ao.provenance",
       "name": "ao provenance",
       "type": "cli-command",
-      "bounded_context": "BC1",
+      "bounded_context": "",
       "purpose": "Write and read the SDLC provenance edge ledger",
       "status": "active",
       "driven_by_skills": [],
@@ -7337,7 +7169,6 @@
         "discovery",
         "plan",
         "pre-mortem",
-        "provenance",
         "using-agentops",
         "vibe"
       ],
@@ -7728,7 +7559,6 @@
       "job_type": "dream.run",
       "description": "Full knowledge consolidation: harvest → forge → inject → defrag",
       "skills": [
-        "dream",
         "harvest",
         "forge",
         "compile",

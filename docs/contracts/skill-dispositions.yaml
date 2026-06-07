@@ -112,11 +112,6 @@ dispositions:
     hexagonal_role: domain
     disposition:    keep
     rationale:      "Ubiquitous-language kernel; central to DDD"
-  - skill:          dream
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    refactor
-    rationale:      "Scheduled compounding lane; align with Corpus ports and convergence proof"
   - skill:          evolve
     domain:         "BC3 Loop"
     hexagonal_role: supporting
@@ -137,11 +132,6 @@ dispositions:
     hexagonal_role: domain
     disposition:    keep
     rationale:      "Fitness source; use as evolution selection input"
-  - skill:          grafana-platform-dashboard
-    domain:         "BC2 Validation"
-    hexagonal_role: driven-adapter
-    disposition:    keep
-    rationale:      "Domain-specific validator with no overlap; marketplace specialization is intended — operator decision (resolved KEEP 2026-05-24)"
   - skill:          handoff
     domain:         "BC1 Corpus"
     hexagonal_role: supporting
@@ -157,11 +147,6 @@ dispositions:
     hexagonal_role: supporting
     disposition:    update
     rationale:      "Skill hygiene gate; should consume the new domain map"
-  - skill:          hooks-authoring
-    domain:         "BC5 Runtime"
-    hexagonal_role: domain
-    disposition:    update
-    rationale:      "Hook adapter authoring; align with Runtime/EventBus domain"
   - skill:          implement
     domain:         "BC3 Loop"
     hexagonal_role: driving-adapter
@@ -177,16 +162,6 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "Outer-loop operationalization (beliefs/playbooks/briefings) — write/promote surface downstream of inject/compile/flywheel, not a duplicate (resolved KEEP 2026-05-24)"
-  - skill:          llm-wiki
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "External wiki builder; align with Corpus compiler contracts"
-  - skill:          openai-docs
-    domain:         "BC5 Runtime"
-    hexagonal_role: driven-adapter
-    disposition:    keep
-    rationale:      "External API documentation adapter with clear scope"
   - skill:          operating-loop-workflow
     domain:         "BC3 Loop"
     hexagonal_role: driving-adapter
@@ -237,11 +212,6 @@ dispositions:
     hexagonal_role: domain
     disposition:    keep
     rationale:      "Product intent source; important for loop work selection"
-  - skill:          provenance
-    domain:         "BC1 Corpus"
-    hexagonal_role: driven-adapter
-    disposition:    update
-    rationale:      "Evidence lineage adapter; align with CitationPort/ClaimEvidence"
   - skill:          push
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter

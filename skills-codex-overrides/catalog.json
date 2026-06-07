@@ -35,12 +35,6 @@
       "reason": "The canonical knowledge-cycle contract is already operationally specific; a bespoke Codex prompt is not justified yet."
     },
     {
-      "name": "llm-wiki",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "The proposal is a procedural external-knowledge workflow with no Codex-only runtime divergence yet."
-    },
-    {
       "name": "autodev",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -107,12 +101,6 @@
       "reason": "Discovery delegates to sub-skills; default generated prompt is enough."
     },
     {
-      "name": "dream",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "The first Dream skill is a thin interactive layer over the shipped ao overnight contracts, so converter parity is sufficient."
-    },
-    {
       "name": "design",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -159,12 +147,6 @@
           "Prefer measurable fitness language over subjective prose."
         ]
       }
-    },
-    {
-      "name": "grafana-platform-dashboard",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "The canonical dashboard workflow is already highly domain-specific, so converter parity is sufficient for now."
     },
     {
       "name": "handoff",
@@ -227,12 +209,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "This deprecated background skill has minimal user-facing surface and does not justify bespoke Codex phrasing."
-    },
-    {
-      "name": "openai-docs",
-      "treatment": "bespoke",
-      "wave": "backbone",
-      "reason": "Official-doc retrieval and citation behavior need explicit Codex tooling guidance."
     },
     {
       "name": "plan",
@@ -307,12 +283,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "The canonical interview-and-synthesis loop already defines the interaction strongly enough for Codex."
-    },
-    {
-      "name": "provenance",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Knowledge-lineage tracing is largely read-only and does not yet need Codex-specific prompt shaping."
     },
     {
       "name": "push",
@@ -628,12 +598,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "New utility skill for restoring system responsiveness; converter parity is acceptable."
-    },
-    {
-      "name": "hooks-authoring",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Hook authoring is documentation-led and portable across runtimes; converter parity is sufficient until a Codex-only hook workflow diverges."
     },
     {
       "name": "curate",

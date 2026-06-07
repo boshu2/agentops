@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "617c731e428a28ef3440dedaae01a883b4dc457bd979e0d550d4820c79f04317",
+  "codex_override_catalog_hash": "214174aff7e5f8711c75092a9c711422853348f3d7c17f698862cbae02814fc3",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -38,12 +38,6 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "The canonical knowledge-cycle contract is already operationally specific; a bespoke Codex prompt is not justified yet."
-      },
-      {
-        "name": "llm-wiki",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "The proposal is a procedural external-knowledge workflow with no Codex-only runtime divergence yet."
       },
       {
         "name": "autodev",
@@ -112,12 +106,6 @@
         "reason": "Discovery delegates to sub-skills; default generated prompt is enough."
       },
       {
-        "name": "dream",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "The first Dream skill is a thin interactive layer over the shipped ao overnight contracts, so converter parity is sufficient."
-      },
-      {
         "name": "design",
         "treatment": "parity_only",
         "wave": "catalog-parity",
@@ -164,12 +152,6 @@
             "Prefer measurable fitness language over subjective prose."
           ]
         }
-      },
-      {
-        "name": "grafana-platform-dashboard",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "The canonical dashboard workflow is already highly domain-specific, so converter parity is sufficient for now."
       },
       {
         "name": "handoff",
@@ -232,12 +214,6 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "This deprecated background skill has minimal user-facing surface and does not justify bespoke Codex phrasing."
-      },
-      {
-        "name": "openai-docs",
-        "treatment": "bespoke",
-        "wave": "backbone",
-        "reason": "Official-doc retrieval and citation behavior need explicit Codex tooling guidance."
       },
       {
         "name": "plan",
@@ -312,12 +288,6 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "The canonical interview-and-synthesis loop already defines the interaction strongly enough for Codex."
-      },
-      {
-        "name": "provenance",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Knowledge-lineage tracing is largely read-only and does not yet need Codex-specific prompt shaping."
       },
       {
         "name": "push",
@@ -633,12 +603,6 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "New utility skill for restoring system responsiveness; converter parity is acceptable."
-      },
-      {
-        "name": "hooks-authoring",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Hook authoring is documentation-led and portable across runtimes; converter parity is sufficient until a Codex-only hook workflow diverges."
       },
       {
         "name": "curate",
@@ -1364,12 +1328,6 @@
       "generated_hash": "0c54e9c18349b56f507d891d250b1c78d64c644a0b18d26afb5ff1dc3db57273"
     },
     {
-      "name": "dream",
-      "source_skill": "skills/dream",
-      "source_hash": "1252a94ea7ad0b1150dfa909e101ee1c071f3d5ced54861aea703ebaa1803af5",
-      "generated_hash": "8c48a5c66103a037438ee53aaa13b0381e0d228c37ff29a9d0234f27eb32c69e"
-    },
-    {
       "name": "eval-outcomes",
       "source_skill": "skills/eval-outcomes",
       "source_hash": "13e509fa4ebf06539d63fafff38535c5bb3ec481f0221f650e82f9fd2788180a",
@@ -1400,12 +1358,6 @@
       "generated_hash": "b39903d4af526414f9a2f5703c21e4607bbfda7139cd90905954c3a9be935c56"
     },
     {
-      "name": "grafana-platform-dashboard",
-      "source_skill": "skills/grafana-platform-dashboard",
-      "source_hash": "d2338cda8b41b92bfbb492707aab498fdbbce231e2d0cc5a6fb8ec63cc45f271",
-      "generated_hash": "fe2ff99983bcf61c2a1f8e9b6097ab6acb80971b40b3fe64e34130010d4fbfa1"
-    },
-    {
       "name": "handoff",
       "source_skill": "skills/handoff",
       "source_hash": "4348117b261d6ce46531d251a9d6d46ecbe2fd985f707b4de11c8d406075ff47",
@@ -1424,12 +1376,6 @@
       "generated_hash": "b956ee140cb383851ffd7dd5767fd89131ad6beda7087f77b61cc87b574b6600"
     },
     {
-      "name": "hooks-authoring",
-      "source_skill": "skills/hooks-authoring",
-      "source_hash": "408c57bfc62acfc64611d7f9105b0823c6be43f021dfdc5b97f1b2546e2d4cf4",
-      "generated_hash": "bf18b5af44d57722c9308be6086105125ef27d3ffc0d5e541aaa95594eccd841"
-    },
-    {
       "name": "implement",
       "source_skill": "skills/implement",
       "source_hash": "8f72272440a4fa4df69bf41d370a7dfe7feab10c956c800fbfa2ca33577a8cd8",
@@ -1446,18 +1392,6 @@
       "source_skill": "skills/knowledge-activation",
       "source_hash": "a60f83683eb88ce0a8dfee30e8cf65f37bb304ba2f31d813cb40168dccb11db2",
       "generated_hash": "3eea44f18f76af64b68e41300a68d19b035dc147d160ea5464ef6359a9fef479"
-    },
-    {
-      "name": "llm-wiki",
-      "source_skill": "skills/llm-wiki",
-      "source_hash": "74bc0e65b3078d40591f01e69ba1bb3bb5b4508aa035b60061de75d693e9b24b",
-      "generated_hash": "3835f7d5e26e46fdb09b6431fb570cd955272cda6b52bbb350decee37d3f3c81"
-    },
-    {
-      "name": "openai-docs",
-      "source_skill": "skills/openai-docs",
-      "source_hash": "e0f575f3da7521aa976736a7e31e78bccec4509027ac268d6c23f9410bff6b7d",
-      "generated_hash": "8d29c4af20bf5b37c0632bc210521355710ca42bfd97634870f6d7407d5ab917"
     },
     {
       "name": "operating-loop-workflow",
@@ -1518,12 +1452,6 @@
       "source_skill": "skills/product",
       "source_hash": "a2f51a7e71f2ff23025dc6b6cf806096cd6c2fb4324d426bd180ab256061e9d5",
       "generated_hash": "a0f39432a23891f858a56263090d9c605940d97105c712dccc5816ea257673f5"
-    },
-    {
-      "name": "provenance",
-      "source_skill": "skills/provenance",
-      "source_hash": "0f6b1c9cbe0d2dc80aaa1e6d0d5422ef21f627b9e45e033b3f7d15e3223b3a82",
-      "generated_hash": "b23b84b16f9859eddee7b885e3620cda7055820b7b2a054b9577171555b25bd7"
     },
     {
       "name": "push",

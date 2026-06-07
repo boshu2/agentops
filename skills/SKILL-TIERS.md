@@ -15,9 +15,9 @@ Skills fall into three functional categories, plus infrastructure tiers for inte
 | **session** | Execution | Session continuity and status | handoff, recover, status, session-bootstrap |
 | **utility** | Execution | Standalone tools | quickstart, brainstorm, bug-hunt, complexity |
 | **contribute** | Execution | Upstream PR workflow | pr-research, pr-implement, pr-validate, pr-prep |
-| **cross-vendor** | Execution | Multi-runtime orchestration | codex-team, openai-docs, converter |
+| **cross-vendor** | Execution | Multi-runtime orchestration | codex-team, converter |
 | **library** | Internal | Reference skills loaded JIT by other skills | beads, standards, shared |
-| **background** | Internal | Hook-triggered or automatic skills | inject, extract, forge, provenance, ratchet |
+| **background** | Internal | Hook-triggered or automatic skills | inject, extract, forge, ratchet |
 | **meta** | Internal | Skills about skills | using-agentops, heal-skill |
 
 ## The Three Categories
@@ -102,7 +102,7 @@ Append-only ledger in `.agents/`. Every session writes. Freshness decay prunes. 
                     └──────────┘
 
 User-facing: /compile (query + grow), /retro (quick-capture), /post-mortem (full), /flywheel
-Background:  inject, forge, provenance, ratchet
+Background:  inject, forge, ratchet
 CLI:         ao lookup, ao extract, ao forge, ao maturity
 ```
 
@@ -183,7 +183,6 @@ What are you trying to do?
 │   └─ Full epic with waves ──────► /crank <epic-id>
 │
 ├─ "Session management"
-│   ├─ Prep or review Dream runs ─► /dream
 │   ├─ Where was I? ──────────────► /status
 │   ├─ Save for next session ─────► /handoff
 │   └─ Recover after compaction ──► /recover
@@ -221,7 +220,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (162)
+### User-Facing Skills (157)
 
 **Judgment:**
 
@@ -257,7 +256,6 @@ These are how skills chain in practice:
 | **autodev** | execution | PROGRAM.md autonomous development contract setup and validation |
 | **bug-hunt** | execution | Investigate bugs with git archaeology |
 | **complexity** | execution | Cyclomatic complexity analysis |
-| **grafana-platform-dashboard** | execution | Build and validate platform operations dashboards with critical-first layout and PromQL gates |
 | **push** | execution | Atomic test-commit-push workflow — tests, commits, rebases, pushes |
 | **ship-loop** | execution | Bot-paired fast lane PR cycle — single-scenario internal PR through auto-merge |
 | **test** | execution | Test generation, coverage analysis, and TDD workflow |
@@ -267,7 +265,6 @@ These are how skills chain in practice:
 | **scaffold** | execution | Project scaffolding, component generation, and boilerplate setup |
 | **scenario** | execution | Author and manage holdout scenarios for behavioral validation |
 | **scope** | execution | Edit-scope guard — freeze/unfreeze directories with hard-block PreToolUse hook |
-| **hooks-authoring** | execution | Author and validate AgentOps runtime hooks |
 | **system-tuning** | utility | Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene |
 
 **Knowledge:**
@@ -279,7 +276,6 @@ These are how skills chain in practice:
 | **curate** | knowledge | Canonical miner role — mine transcripts, `.agents/`, bd, and git for skill diffs, bd updates, and rare wiki entries |
 | **harvest** | knowledge | Cross-rig knowledge consolidation — sweep, dedup, promote |
 | **knowledge-activation** | knowledge | Outer-loop corpus operationalization — beliefs, playbooks, briefings, and gap surfaces |
-| **llm-wiki** | knowledge | External-knowledge wiki proposal — raw sources to compiled wiki |
 | **retro** | knowledge | Quick-capture wrapper (full retro → /post-mortem) |
 | **trace** | knowledge | Trace design decisions through history |
 
@@ -302,7 +298,6 @@ These are how skills chain in practice:
 | **recover** | session | Post-compaction context recovery |
 | **status** | session | Single-screen dashboard |
 | **quickstart** | session | Interactive onboarding |
-| **dream** | session | Private overnight operator surface — setup, bedtime run, and morning report |
 | **bd-first-memory-migration** | knowledge | Consolidate fragmented memory layers onto a bd-canonical store |
 | **bootstrap** | session | One-command full AgentOps setup — fills gaps only |
 | **session-bootstrap** | session | Universal init prompt — every agent runs this first (soc-vuu6.25) |
@@ -321,7 +316,6 @@ These are how skills chain in practice:
 | Skill | Tier | Description |
 |-------|------|-------------|
 | **codex-team** | cross-vendor | Spawn parallel Codex execution agents |
-| **openai-docs** | cross-vendor | Authoritative OpenAI docs lookup with citations |
 | **converter** | cross-vendor | Cross-platform skill converter (Codex, Cursor) |
 | **reverse-engineer-rpi** | execution | Reverse-engineer a product into feature catalog + code map + specs |
 | **heal-skill** | meta | Detect and fix skill hygiene issues |
@@ -426,7 +420,7 @@ These are how skills chain in practice:
 | **work-contract-portability** | knowledge | Use when designing agent work contracts, handoffs, evidence, and role boundaries across runtimes. |
 | **worktree-branch-rationalization** | execution | Use when rationalizing git worktrees and branches into a canonical line without losing useful work. |
 
-### Internal Skills (9) — `metadata.internal: true`
+### Internal Skills (8) — `metadata.internal: true`
 
 Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hooks. Loaded JIT by other skills via Read or auto-triggered by hooks.
 
@@ -437,7 +431,6 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | shared | library | Execution | Shared reference documents (multi-agent backends) |
 | inject | background | Knowledge | Load knowledge at session start (hook-triggered) |
 | forge | background | Knowledge | Mine transcripts for knowledge (includes --promote for pending extraction) |
-| provenance | background | Knowledge | Trace knowledge lineage |
 | ratchet | background | Execution | Progress gates |
 | flywheel | background | Knowledge | Knowledge health monitoring |
 | using-agentops | meta | Meta | AgentOps workflow guide (auto-injected) |
@@ -468,11 +461,9 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | doc | standards | required |
 | flywheel | - | - |
 | forge | - | - |
-| **dream** | - | - (retired pointer; out-of-session compounding runs on the substrate — NTM + MCP + managed-agents) |
 | handoff | - | - |
 | **implement** | beads, standards | optional, required |
 | inject | - | - |
-| **openai-docs** | - | - (standalone) |
 | **plan** | research, beads, pre-mortem, crank, implement | optional, optional, optional, optional, optional |
 | **push** | - | - (standalone) |
 | **product** | - | - (standalone) |
@@ -480,7 +471,6 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **pr-implement** | plan, pr-validate | optional, optional |
 | **pr-validate** | - | - (standalone) |
 | **pr-prep** | pr-validate | optional |
-| provenance | - | - |
 | **quickstart** | - | - (zero dependencies) |
 | **bootstrap** | goals, product, doc, shared | all optional (progressive — skips what exists) |
 | **discovery** | brainstorm, research, plan, pre-mortem, shared | brainstorm optional, rest required |
@@ -494,14 +484,13 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | ratchet | - | - |
 | **recover** | - | - (standalone) |
 | **reverse-engineer-rpi** | - | - (standalone) |
-| **grafana-platform-dashboard** | research, brainstorm | optional, optional |
 | research | knowledge, inject | optional, optional |
 | retro | - | - |
 | standards | - | - |
 | **goals** | - | - (reads GOALS.yaml directly) |
 | **status** | - | - (all CLIs optional) |
 | **swarm** | implement, vibe | required, optional |
-| trace | provenance | alternative |
+| trace | - | - (standalone) |
 | **update** | - | - (standalone) |
 | using-agentops | - | - |
 | **test** | standards, complexity | required, optional |

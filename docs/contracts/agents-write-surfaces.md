@@ -66,6 +66,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `pre-mortem-checks` | persistent | skills | validation-artifact | Pre-mortem check templates and runs |
 | `products` | persistent | skills | product-artifact | Product validation artifacts |
 | `profile` | persistent | cli | profile-cache | Repo execution profile cache |
+| `provenance` | persistent | cli | legacy-ratchet-chain | Legacy ratchet provenance chain (`.agents/provenance/chain.yaml`) read/migrated by the ratchet CLI; formerly covered by the retired `provenance` skill |
 | `proof` | persistent | scripts, operators | proof-evidence | Corpus-state and flywheel-compounding proof snapshots consumed by Roadmap-gate CI (GOALS.md G1) |
 | `quarantine` | rolling | cli | failure-quarantine | Failed worker payloads and retry/quarantine evidence for operator review |
 | `reconcile` | persistent | scripts, operators | reconciliation-artifact | Reconciliation engine artifacts: observation log aggregated from `factory-claim-ledger-strict (advisory)` CI runs, promotion-decision template, and related Wave-1E gate evidence (epic soc-e4ulx) |
@@ -135,6 +136,7 @@ pre-mortem-checks
 products
 profile
 proof
+provenance
 quarantine
 reconcile
 releases

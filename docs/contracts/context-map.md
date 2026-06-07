@@ -23,7 +23,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `flywheel` — Check knowledge flywheel health.
 - `forge` — Mine transcripts into learnings.
 - `goals` — Maintain AgentOps goals.
-- `hooks-authoring` — Author AgentOps runtime hooks.
 - `idea-option-forge` — Use when generating, winnowing, and operationalizing many project improvement options. Triggers:
 - `mcp-interface-design` — Use when designing MCP servers with clear tools, strict schemas, scoped resources, and useful errors. Triggers:
 - `measured-performance-optimization` — Use when optimizing a hot path from saved profiles, measurements, and verified improvements. Triggers:
@@ -79,10 +78,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `codex-mcp-plugins` — Use when wiring MCP servers or plugins into Codex CLI and the AgentOps Codex skill bundle. Triggers:
 - `dependency-update-safety` — Use when updating dependencies safely with changelog review, small batches, tests, and rollback. Triggers:
 - `deps` — Audit dependency risks and updates.
-- `grafana-platform-dashboard` — Validate OpenShift Grafana dashboards.
-- `openai-docs` — Use official OpenAI docs.
 - `pr-research` — Research an upstream repo.
-- `provenance` — Trace artifact provenance.
 - `scope` — Hard-block edits outside declared frozen directories via PreToolUse hook.
 - `security` — Run repository security scans.
 - `security-suite` — Run composable security analysis.
@@ -121,7 +117,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.
 - `dcg` — Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails.
 - `doc` — Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss).
-- `dream` — Retired pointer — out-of-session compounding moved to the substrate (NTM + MCP + managed-agents).
 - `eval-outcomes` — Grade against Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes.
 - `evolve` — Run autonomous improvement loops.
 - `expertise-to-procedure` — Use when turning tacit expert know-how into a durable skill, playbook, or checklist. Triggers:
@@ -140,7 +135,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `knowledge-activation` — Activate mature .agents knowledge.
 - `layered-defect-hunt` — Use when running systematic multi-pass bug hunting across correctness, edges, concurrency, and failures. Triggers:
 - `live-service-e2e-testing` — Use when building real-service end-to-end tests with fixtures, cleanup, rate limits, and evidence. Triggers:
-- `llm-wiki` — Build external-knowledge wikis.
 - `metamorphic-test-design` — Use when designing metamorphic tests for oracle-poor behavior using invariants and input relations. Triggers:
 - `multi-model-triangulation` — Cross-validate decisions using multiple AI models (Codex, Gemini, Grok). Use when "get a second opinion", evaluating approaches, or high-stakes decisions.
 - `ntm` — Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors.
@@ -243,7 +237,6 @@ graph LR
   forge -- "shared-kernel" --> standards
   goals -- "shared-kernel" --> standards
   heal-skill -- "customer-of" --> skill-auditor
-  hooks-authoring -- "shared-kernel" --> standards
   idea-option-forge -- "shared-kernel" --> brainstorm
   implement -- "customer-of" --> domain
   implementation-pattern-mining -- "partnership" --> research
@@ -267,7 +260,6 @@ graph LR
   production-placeholder-audit -- "supplier-to" --> security
   project-reality-check -- "supplier-to" --> beads
   project-reality-check -- "customer-of" --> legacy-codebase-recon
-  provenance -- "supplier-to" --> trace
   quickstart -- "customer-of" --> rpi
   ratchet -- "shared-kernel" --> standards
   red-team -- "supplier-to" --> vibe
@@ -424,7 +416,6 @@ graph LR
 | `doc` | consumes | repo-context |
 | `doc` | produces | documentation |
 | `domain` | produces | stdout |
-| `dream` | produces | .agents/research/*.md |
 | `eval-outcomes` | consumes | council |
 | `eval-outcomes` | consumes | ratchet |
 | `eval-outcomes` | consumes | validation |
@@ -459,10 +450,8 @@ graph LR
 | `fuzz-test-design` | produces | minimized-repro |
 | `fuzz-test-design` | produces | regression-test |
 | `goals` | produces | result.json |
-| `grafana-platform-dashboard` | produces | dashboard-validation-report |
 | `handoff` | produces | .agents/research/*.md |
 | `harvest` | produces | .agents/research/*.md |
-| `hooks-authoring` | produces | result.json |
 | `idea-option-forge` | consumes | existing-tracked-work |
 | `idea-option-forge` | produces | tracked-issues-with-deps-and-tests |
 | `idea-option-forge` | produces | vetted-idea-backlog |
@@ -484,7 +473,6 @@ graph LR
 | `live-service-e2e-testing` | produces | cleanup-report |
 | `live-service-e2e-testing` | produces | evidence-packet |
 | `live-service-e2e-testing` | produces | real-service-e2e-suite |
-| `llm-wiki` | produces | documentation |
 | `mcp-interface-design` | produces | mcp-interface-design-spec |
 | `mcp-interface-design` | produces | tool-surface-audit |
 | `measured-performance-optimization` | consumes | benchmark |
@@ -500,7 +488,6 @@ graph LR
 | `ntm-browser-test-coordination` | produces | browser-test-coordination-packet |
 | `ntm-browser-test-coordination` | produces | browser-test-evidence-index |
 | `ntm-browser-test-coordination` | produces | browser-test-handoff |
-| `openai-docs` | consumes | external-api |
 | `operating-loop-skill` | consumes | beads |
 | `operating-loop-skill` | consumes | git |
 | `operating-loop-skill` | produces | closed-bead |
@@ -548,7 +535,6 @@ graph LR
 | `project-reality-check` | produces | reality-check-report |
 | `project-reasoning-lens-analysis` | consumes | project-context |
 | `project-reasoning-lens-analysis` | produces | multi-lens-analysis.md |
-| `provenance` | produces | result.json |
 | `push` | consumes | git-changes |
 | `push` | produces | git-changes |
 | `quickstart` | consumes | rpi |

@@ -138,9 +138,6 @@ A skill (`/pre-mortem`) that runs before implementation begins. Judges simulate 
 ### Profile
 A documentation grouping for domain-specific workflows and standards. Profiles organize coding standards and validation rules by language or domain. [Full documentation](../skills/standards/SKILL.md)
 
-### Provenance
-An internal skill that traces the lineage and sources of knowledge artifacts — where a learning came from, which sessions produced it, and how it was validated. [Full documentation](../skills/provenance/SKILL.md)
-
 ## R
 
 ### Ralph Wiggum Pattern (Ralph Loop)
@@ -167,7 +164,7 @@ One of the three named stages inside an RPI run: **Discovery**, **Implementation
 The full arc of a coding-agent session: `SessionStart` → many `UserPromptSubmit` / `PreToolUse` / `PostToolUse` cycles → `Stop` → `SessionEnd`. AgentOps 3.0 is hookless — it works the lifecycle through skills + the `ao` CLI rather than attaching runtime hooks. See [`workflows/session-lifecycle.md`](workflows/session-lifecycle.md).
 
 ### Skill
-A self-contained capability defined by a `SKILL.md` file with YAML frontmatter. Skills are the primary unit of functionality in AgentOps — each one has triggers, instructions, and optional reference docs loaded just-in-time. AgentOps currently ships 171 shared skills, with runtime-specific artifacts maintained alongside them. [Full documentation](SKILLS.md)
+A self-contained capability defined by a `SKILL.md` file with YAML frontmatter. Skills are the primary unit of functionality in AgentOps — each one has triggers, instructions, and optional reference docs loaded just-in-time. AgentOps currently ships 165 shared skills, with runtime-specific artifacts maintained alongside them. [Full documentation](SKILLS.md)
 
 ### Swarm
 A skill (`/swarm`) that spawns parallel worker agents with fresh context. Each wave gets a new team; the lead validates and commits. Workers never commit directly. [Full documentation](../skills/swarm/SKILL.md)
