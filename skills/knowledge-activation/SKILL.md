@@ -45,7 +45,7 @@ Use this skill when the problem is no longer "capture more knowledge," but:
 
 Knowledge activation is the **fourth step** in the global-corpus workflow:
 
-1. `$harvest` — gather artifacts from many rigs into `~/.agents/learnings/`
+1. `$curate --mode=harvest` — gather artifacts from many rigs into `~/.agents/learnings/`
 2. `$compile` — synthesize raw artifacts into `.agents/compiled/`
 3. _(optional)_ `$dream` overnight — bounded compounding loop
 4. `$knowledge-activation` — lift compiled knowledge into playbooks,
