@@ -12,6 +12,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/adapters/vendorimage/codexruntime"
 	"github.com/boshu2/agentops/cli/internal/bridge"
 	"github.com/boshu2/agentops/cli/internal/pool"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
@@ -31,6 +32,19 @@ var (
 	codexStopNoCloseLoop       bool
 	codexStatusDays            int
 )
+
+const (
+	runtimeKindClaude   = codexruntime.RuntimeKindClaude
+	runtimeKindCodex    = codexruntime.RuntimeKindCodex
+	runtimeKindOpenCode = codexruntime.RuntimeKindOpenCode
+	runtimeKindUnknown  = codexruntime.RuntimeKindUnknown
+
+	lifecycleModeHookCapable   = codexruntime.LifecycleModeHookCapable
+	lifecycleModeCodexHookless = codexruntime.LifecycleModeCodexHookless
+	lifecycleModeManual        = codexruntime.LifecycleModeManual
+)
+
+type lifecycleRuntimeProfile = codexruntime.LifecycleRuntimeProfile
 
 type codexArtifactRef struct {
 	Title      string `json:"title"`
@@ -233,6 +247,30 @@ func init() {
 	codexEnsureStopCmd.Flags().BoolVar(&codexStopNoCloseLoop, "no-close-loop", false, "Skip flywheel close-loop maintenance after forging")
 
 	codexStatusCmd.Flags().IntVar(&codexStatusDays, "days", 7, "Citation window in days for Codex lifecycle health")
+}
+
+func detectLifecycleRuntimeProfile() lifecycleRuntimeProfile {
+	return codexruntime.DetectLifecycleRuntimeProfile()
+}
+
+func detectCodexLifecycleProfile() lifecycleRuntimeProfile {
+	return codexruntime.DetectCodexLifecycleProfile()
+}
+
+func findTranscriptBySessionID(sessionID string) (string, error) {
+	return codexruntime.FindTranscriptBySessionID(sessionID)
+}
+
+func synthesizeCodexHistoryTranscript(cwd, sessionID string) (string, error) {
+	return codexruntime.SynthesizeCodexHistoryTranscript(cwd, sessionID)
+}
+
+func findLastSession() (string, error) {
+	return codexruntime.FindLastSession()
+}
+
+func extractSessionIDFromCodexArchivedPath(path string) string {
+	return codexruntime.ExtractSessionIDFromCodexArchivedPath(path)
 }
 
 func runCodexStart(cmd *cobra.Command, args []string) error {
@@ -672,19 +710,19 @@ func collectRecentCodexArtifacts(dir, query string, limit int) []codexArtifactRe
 
 func resolveCodexStopTranscript(cwd, sessionID string, noHistoryFallback bool) (string, string, bool, string, error) {
 	if sessionID != "" {
-		if path, err := findTranscriptBySessionID(sessionID); err == nil {
+		if path, err := codexruntime.FindTranscriptBySessionID(sessionID); err == nil {
 			return path, "archived", false, sessionID, nil
 		}
 		if !noHistoryFallback {
-			path, err := synthesizeCodexHistoryTranscript(cwd, sessionID)
+			path, err := codexruntime.SynthesizeCodexHistoryTranscript(cwd, sessionID)
 			if err == nil {
 				return path, "history-fallback", true, sessionID, nil
 			}
 		}
 	}
 
-	if path, err := findLastCodexArchivedTranscript(); err == nil {
-		return path, "archived", false, extractSessionIDFromCodexArchivedPath(path), nil
+	if path, err := codexruntime.FindLastCodexArchivedTranscript(); err == nil {
+		return path, "archived", false, codexruntime.ExtractSessionIDFromCodexArchivedPath(path), nil
 	}
 
 	if noHistoryFallback {
@@ -698,7 +736,7 @@ func resolveCodexStopTranscript(cwd, sessionID string, noHistoryFallback bool) (
 	if fallbackSessionID == "" {
 		return "", "", false, "", fmt.Errorf("no Codex transcript or active history session found")
 	}
-	path, err := synthesizeCodexHistoryTranscript(cwd, fallbackSessionID)
+	path, err := codexruntime.SynthesizeCodexHistoryTranscript(cwd, fallbackSessionID)
 	if err != nil {
 		return "", "", false, fallbackSessionID, err
 	}
@@ -710,15 +748,7 @@ func resolveCodexSessionIDFromHome() string {
 	if err != nil {
 		return ""
 	}
-	return resolveCodexSessionID(homeDir)
-}
-
-func extractSessionIDFromCodexArchivedPath(path string) string {
-	match := codexArchivedSessionPattern.FindStringSubmatch(filepath.Base(path))
-	if len(match) == 2 {
-		return match[1]
-	}
-	return ""
+	return codexruntime.ResolveCodexSessionID(homeDir)
 }
 
 func syncCodexMemory(cwd string) (string, error) {

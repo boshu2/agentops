@@ -1,5 +1,5 @@
 // practices: [microservices, design-by-contract]
-package main
+package codexruntime
 
 import (
 	"os"

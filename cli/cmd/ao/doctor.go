@@ -187,7 +187,7 @@ func checkOptionalCLI(name, reason string) doctorCheck {
 func findHealScript() string                 { return quality.FindHealScript() }
 func sha256File(path string) (string, error) { return quality.SHA256File(path) }
 
-// fileExists is used by other cmd/ao files (codex.go, codex_runtime.go).
+// fileExists is used by other cmd/ao files.
 func fileExists(path string) bool { return quality.FileExists(path) }
 
 // Test-compatibility wrappers for skill/codex helpers.
