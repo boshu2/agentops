@@ -3,10 +3,14 @@ package main
 
 import (
 	"fmt"
+	"os/exec"
+	"strings"
 
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/gates"
+	// Blank import registers the seed checks into gates.Default via init().
+	_ "github.com/boshu2/agentops/cli/internal/gates/checks"
 )
 
 // `ao gate check` is the orchestrated gate surface (ag-qidx GA4): it runs the
@@ -61,15 +65,29 @@ func gateCheckMode(full bool) gates.Tier {
 	return gates.Fast
 }
 
+// gateRepoRoot resolves the repository root robustly via `git rev-parse
+// --show-toplevel` (correct from any subdir and inside linked worktrees),
+// falling back to the cwd-based resolver. The orchestrator joins scripts/ off
+// this, so it must be the repo/worktree root, not the caller's cwd.
+func gateRepoRoot() (string, error) {
+	out, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
+	if err == nil {
+		if root := strings.TrimSpace(string(out)); root != "" {
+			return root, nil
+		}
+	}
+	return resolveProjectDir()
+}
+
 func runGateCheck(cmd *cobra.Command, _ []string) error {
-	root, err := resolveProjectDir()
+	root, err := gateRepoRoot()
 	if err != nil {
-		return &gateExitError{code: gateExitInternal, msg: fmt.Sprintf("resolve project dir: %v", err)}
+		return &gateExitError{code: gateExitInternal, msg: fmt.Sprintf("resolve repo root: %v", err)}
 	}
 
 	orch := gates.NewOrchestrator(
 		gateCheckRegistry,
-		newProductionGateRunner(root),
+		gates.NewScriptRunner(root),
 		gates.NewGitChangedFiles(root),
 		root,
 	)
