@@ -79,6 +79,14 @@ func TestGateCheck_RegisteredUnderGate(t *testing.T) {
 	}
 }
 
+func TestGateCheck_HasModeFlags(t *testing.T) {
+	for _, name := range []string{"fast", "full", "json", "fail-fast", "scope"} {
+		if gateCheckCmd.Flags().Lookup(name) == nil {
+			t.Errorf("ao gate check missing --%s flag", name)
+		}
+	}
+}
+
 func TestGateCheck_FullJSONReportsVerdicts(t *testing.T) {
 	reg := gates.NewRegistry()
 	if err := reg.Add(nativeCheck("n.pass", ports.GateStatusPass, true)); err != nil {

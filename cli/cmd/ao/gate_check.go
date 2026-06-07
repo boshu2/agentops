@@ -23,6 +23,7 @@ import (
 // `--full`, refinery `--full --json` — so local and CI run the identical binary.
 
 var (
+	gateCheckFast     bool
 	gateCheckFull     bool
 	gateCheckJSON     bool
 	gateCheckFailFast bool
@@ -50,6 +51,7 @@ Exit code is the verdict: 0 if no blocking check FAILed; 1 if any did
 
 func init() {
 	f := gateCheckCmd.Flags()
+	f.BoolVar(&gateCheckFast, "fast", false, "fast cockpit subset routed to changed files (the default; explicit flag for clarity in hooks)")
 	f.BoolVar(&gateCheckFull, "full", false, "run every check (routing ignored); default is the fast changed-file subset")
 	f.BoolVar(&gateCheckJSON, "json", false, "emit the machine-readable JSON report")
 	f.BoolVar(&gateCheckFailFast, "fail-fast", false, "stop after the first blocking failure")

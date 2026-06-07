@@ -670,6 +670,7 @@ ao gate check [flags]
 
 ```
       --fail-fast      stop after the first blocking failure
+      --fast           fast cockpit subset routed to changed files (the default; explicit flag for clarity in hooks)
       --full           run every check (routing ignored); default is the fast changed-file subset
   -h, --help           help for check
       --json           emit the machine-readable JSON report
