@@ -22,6 +22,19 @@ on:
       - 'v*'
   pull_request:
     branches: [main]
+  # Merge queue: GitHub validates queued PRs on the combined merge_group ref.
+  # The `summary` required check MUST run here or the queue hangs forever. The
+  # `changes` job forces a full run on merge_group (see the release step) so the
+  # path-filter — which has no PR base in-queue — can't skip validation.
+  merge_group:
+
+# Cancel superseded PR runs so update-branch / force-push churn during a merge
+# train doesn't leave stale runs eating the (20-slot, free-plan) concurrency pool
+# — the self-DoS that produced a 19-deep queue on 2026-06-06. NEVER cancels main
+# or tag pushes (cancel-in-progress is false unless this is a pull_request).
+concurrency:
+  group: validate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   changes:
@@ -40,13 +53,16 @@ jobs:
       goals: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.goals }}
       learning: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.learning }}
       markdown: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.markdown }}
+      corpus: ${{ steps.release.outputs.release == 'true' || steps.filter.outputs.corpus }}
     steps:
       - uses: actions/checkout@v6
-      - name: Detect release tag push
+      - name: Detect release tag push or merge-queue (force full run)
         id: release
         shell: bash
         run: |
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+          # merge_group has no PR base for the path-filter, so force the full
+          # validation suite — the queue must validate the combined ref in full.
+          if [[ "${GITHUB_REF}" == refs/tags/v* || "${GITHUB_EVENT_NAME}" == "merge_group" ]]; then
             echo "release=true" >> "$GITHUB_OUTPUT"
           else
             echo "release=false" >> "$GITHUB_OUTPUT"
@@ -135,6 +151,104 @@ jobs:
               - '.agents/learnings/**'
             markdown:
               - '**/*.md'
+            corpus:
+              - '.agents/**/*.md'
+              - '.agents/**/*.jsonl'
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # skill-gates — REQUIRED. The consolidated skill-authoring gate surface:
+  # every check that guards a SKILL.md / .feature / derived-skill-surface edit,
+  # grouped into one named job (ag-87sv). Pure regroup of already-live gates —
+  # no new gate logic. Absorbs from skills-integrity (heal --strict,
+  # validate-skill-schema, validate-skill-frontmatter, validate-skill-body-refs)
+  # + contracts-sync (validate-skill-flow) + doctrine-proof
+  # (check-scenario-test-linkage), and adds the six-surface drift sweep
+  # `regen-all.sh --check`. Required: listed in `summary.needs`.
+  # ─────────────────────────────────────────────────────────────────────────
+  skill-gates:
+    needs: [changes]
+    if: >-
+      needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true' ||
+      needs.changes.outputs.contracts == 'true' || needs.changes.outputs.go == 'true' ||
+      needs.changes.outputs.shell == 'true' || needs.changes.outputs.docs == 'true' ||
+      needs.changes.outputs.goals == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go (skill-body-refs + regen-all against live CLI)
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true'
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: Set up Python
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.docs == 'true'
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install yq (skill-schema)
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Install jq
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true'
+        run: sudo apt-get install -y jq
+
+      - name: Install python schema deps
+        # Must cover every trigger that runs the drift sweep below (incl. docs/go/shell),
+        # otherwise a docs-only change runs regen-all.sh --check without PyYAML installed.
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+        run: pip install jsonschema pyyaml
+
+      - name: Run skill structural integrity checks (heal --strict)
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x skills/heal-skill/scripts/heal.sh
+          bash skills/heal-skill/scripts/heal.sh --strict
+
+      - name: Validate SKILL.md frontmatter against schema
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/validate-skill-schema.sh
+          ./scripts/validate-skill-schema.sh --verbose
+
+      - name: Validate SKILL.md frontmatter against v2 schema
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/validate-skill-frontmatter.sh
+          bash scripts/validate-skill-frontmatter.sh
+
+      - name: Validate skill-body command/flag refs against live CLI
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/validate-skill-body-refs.sh
+          bash scripts/validate-skill-body-refs.sh
+
+      - name: Validate skill-flow connectivity and closed consumes vocabulary
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/validate-skill-flow.sh
+          bash scripts/validate-skill-flow.sh
+
+      - name: Scenario→test linkage gate (scripts/check-scenario-test-linkage.sh)
+        # Every Gherkin Scenario in skills/*/references/*.feature must carry a
+        # @covered-by:<test-path> tag OR be allowlisted (doc-only).
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
+        run: |
+          chmod +x scripts/check-scenario-test-linkage.sh
+          ./scripts/check-scenario-test-linkage.sh
+
+      - name: Six-surface derived-artifact drift sweep (regen-all.sh --check)
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/regen-all.sh
+          bash scripts/regen-all.sh --check
 
   # ─────────────────────────────────────────────────────────────────────────
   # correctness — go build/test/coverage/complexity, embedded sync, CLI
@@ -178,8 +292,12 @@ jobs:
       - name: Run bats tests
         if: runner.os == 'Linux' && (needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.bats == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.docs == 'true')
         run: |
-          echo "=== Running bats tests ==="
-          bats --print-output-on-failure tests/scripts/*.bats
+          echo "=== Running bats tests (4-way parallel) ==="
+          # bats --jobs needs GNU parallel; the serial run was ~237s (55% of the
+          # correctness critical path). --no-parallelize-within-files preserves
+          # ordering inside each file; only independent files run concurrently.
+          sudo apt-get install -y parallel >/dev/null 2>&1 || { sudo apt-get update -qq && sudo apt-get install -y parallel; }
+          bats --jobs 4 --no-parallelize-within-files --print-output-on-failure tests/scripts/*.bats
           echo "✅ Bats tests passed"
 
       - name: Setup Go
@@ -604,7 +722,8 @@ jobs:
     if: >-
       needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true' ||
       needs.changes.outputs.contracts == 'true' || needs.changes.outputs.go == 'true' ||
-      needs.changes.outputs.hooks == 'true'
+      needs.changes.outputs.hooks == 'true' || needs.changes.outputs.shell == 'true' ||
+      needs.changes.outputs.corpus == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -622,39 +741,9 @@ jobs:
         with:
           python-version: '3.14'
 
-      - name: Install yq (skill-schema)
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-        run: |
-          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          sudo chmod +x /usr/local/bin/yq
-
       - name: Install python schema deps
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
         run: pip install jsonschema pyyaml
-
-      - name: Run skill structural integrity checks
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-        run: |
-          chmod +x skills/heal-skill/scripts/heal.sh
-          bash skills/heal-skill/scripts/heal.sh --strict
-
-      - name: Validate SKILL.md frontmatter against schema
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-        run: |
-          chmod +x scripts/validate-skill-schema.sh
-          ./scripts/validate-skill-schema.sh --verbose
-
-      - name: Validate SKILL.md frontmatter against v2 schema
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
-        run: |
-          chmod +x scripts/validate-skill-frontmatter.sh
-          bash scripts/validate-skill-frontmatter.sh
-
-      - name: Validate skill-body command/flag refs against live CLI
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
-        run: |
-          chmod +x scripts/validate-skill-body-refs.sh
-          bash scripts/validate-skill-body-refs.sh
 
       - name: Validate skill dependency references resolve
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
@@ -735,6 +824,11 @@ jobs:
           chmod +x scripts/check-no-tracked-agents.sh
           bash scripts/check-no-tracked-agents.sh
 
+      - name: Corpus secret-scan (committed .agents + canon)
+        run: |
+          chmod +x scripts/check-corpus-secret-scan.sh
+          bash scripts/check-corpus-secret-scan.sh
+
       - name: Test plugin directory structure
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.ci == 'true'
         run: |
@@ -748,6 +842,10 @@ jobs:
             for skill in skills/*/; do
               [[ ! -d "$skill" ]] && continue
               skill_name=$(basename "$skill")
+
+              # skills/_*/ holds scaffolding, not real skills — skip it in
+              # the directory-structure gate.
+              [[ "$skill_name" == _* ]] && continue
 
               # Each skill must have SKILL.md
               if [[ ! -f "${skill}SKILL.md" ]]; then
@@ -860,14 +958,13 @@ jobs:
           chmod +x scripts/validate-context-map-drift.sh
           bash scripts/validate-context-map-drift.sh
 
-      - name: Validate skill-flow connectivity and closed consumes vocabulary
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.contracts == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
-        run: |
-          chmod +x scripts/validate-skill-flow.sh
-          bash scripts/validate-skill-flow.sh
-
       - name: Verify embedded lib/skills are in sync
-        if: needs.changes.outputs.hooks == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
+        # MUST include `skills`: the embedded copies mirror skills/standards/references/*,
+        # skills/using-agentops/SKILL.md and skills/compile/scripts/compile.sh, so a
+        # skills-only change can drift the embeds. Omitting `skills` here let #776's
+        # standards edit reach main with empty embeds (main-red 2026-06-06). `contracts`
+        # added for defense-in-depth.
+        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.contracts == 'true'
         run: |
           chmod +x scripts/validate-embedded-sync.sh
           ./scripts/validate-embedded-sync.sh
@@ -951,7 +1048,7 @@ jobs:
       # ── agentops-contract-canaries (heavy bespoke setup: bd, gocyclo, bats) ──
       - name: Cache pinned Go tool binaries
         if: needs.changes.outputs.contracts == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/go/bin
@@ -981,6 +1078,12 @@ jobs:
             "$HOME/.local/bin/bd" init --non-interactive --skip-agents --skip-hooks --quiet
           )
           echo "BEADS_DIR=$bd_eval_root/.beads" >> "$GITHUB_ENV"
+
+      - name: Check CLI surface counts (fast pre-flight)
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/update-cli-surface-counts.sh
+          scripts/update-cli-surface-counts.sh
 
       - name: Run official AgentOps contract canaries
         if: needs.changes.outputs.contracts == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
@@ -1212,6 +1315,17 @@ jobs:
           chmod +x scripts/check-docs-learning-references.sh
           ./scripts/check-docs-learning-references.sh
 
+      - name: Hooks-runtime drift gate — live-facing docs/ stay hookless (ag-rryf)
+        # Companion to sync-skill-counts.sh: fails when a live-facing doc
+        # reintroduces a live hooks runtime (hooks/hooks.json, a hooks/*.sh path,
+        # `ao hooks`, or a bare session-*.sh hook ref) without a hookless/opt-in/
+        # historical hedge. Archival + opt-in-subsystem surfaces are out of scope
+        # (see the script header). Guards the ag-t1ca de-hooking against regression.
+        if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.shell == 'true'
+        run: |
+          chmod +x scripts/check-doc-hooks-drift.sh
+          ./scripts/check-doc-hooks-drift.sh
+
       - name: Directive-to-scenario link lint (ao goals scenarios --lint, blocking)
         # T1 (≤5min). Blocking (soc-x7y9f): the directive↔scenario link lint
         # fails the job on any broken edge. The broader whole-chain orphan/gap
@@ -1248,14 +1362,6 @@ jobs:
         run: |
           chmod +x scripts/witness-dolt-jsonl-crosscheck.sh
           ./scripts/witness-dolt-jsonl-crosscheck.sh
-
-      - name: Scenario→test linkage gate (scripts/check-scenario-test-linkage.sh)
-        # T1 (≤5min, soc-63xfx). Every Gherkin Scenario in skills/*/references/*.feature
-        # must carry a @covered-by:<test-path> tag OR be allowlisted (doc-only).
-        if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.goals == 'true'
-        run: |
-          chmod +x scripts/check-scenario-test-linkage.sh
-          ./scripts/check-scenario-test-linkage.sh
 
   # ─────────────────────────────────────────────────────────────────────────
   # eval — eval baseline-audit drift gate, eval-skill-delta dry-run,
@@ -1388,6 +1494,175 @@ jobs:
         run: AGENTOPS_RETRIEVAL_SMOKE_AO=/tmp/ao-test bash scripts/retrieval-quality-smoke.sh
 
   # ─────────────────────────────────────────────────────────────────────────
+  # skill-eval — T1 (≤5min), changed-files-scoped. Gates each CHANGED skill's
+  # SKILL.md through Jeff Emanuel's `ms` (meta_skill) lint + validate via
+  # scripts/skill-eval.sh (ag-yzoz, #726). Scoping mirrors the eval job's
+  # skilldelta pattern: `git diff --name-only` against the PR merge base, kept
+  # to skills/<id>/** so ms runs ONLY for the skills the PR touched.
+  #
+  # ms is a pinned Rust binary (v0.1.2, git+meta_skill@b0bb6bd). The setup step
+  # installs it and gates on `ms --version` BEFORE the gate runs. If the install
+  # fails the job HARD-FAILS (red) — it never green-skips. A silent skip-on-
+  # absent-ms recreates the exact "no skill evaluation" gap this gate closes
+  # (the same anti-pattern scripts/skill-eval.sh refuses internally).
+  # ─────────────────────────────────────────────────────────────────────────
+  skill-eval:
+    needs: [changes]
+    if: >-
+      needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+    runs-on: ubuntu-latest
+    # T1 (≤5min) in steady state: the pinned `ms` binary is cache-keyed on its
+    # rev, so every run after the first cold build restores it in seconds and
+    # the gate finishes well under the tier budget. The 12-min ceiling is only
+    # cold-build headroom — building ms from git source on nightly is the one
+    # slow path, and it must not be cancelled mid-compile (a cancel would look
+    # like a flaky red rather than the deterministic hard-fail this gate owns).
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The changed-skill diff is computed against the PR merge base, so the
+          # full history (or at least the base ref) must be present.
+          fetch-depth: 0
+
+      # ms v0.1.2 transitively depends on `fsqlite-types`, which uses
+      # `#![feature(portable_simd)]` — that requires the NIGHTLY channel
+      # (stable rejects it with E0554). Pin nightly so the install compiles.
+      - name: Set up Rust toolchain (nightly — ms needs portable_simd)
+        uses: dtolnay/rust-toolchain@nightly
+
+      # Cache the compiled `ms` binary keyed on its pinned rev. A cache hit
+      # restores ~/.cargo/bin/ms directly, so post-first-run gates skip the
+      # multi-minute git+nightly compile and stay inside the T1 budget. The key
+      # changes only when MS_REV changes, so the cache is correct-by-pinning.
+      - name: Cache pinned ms binary
+        id: ms-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/ms
+          key: ms-bin-b0bb6bd5-nightly-${{ runner.os }}
+
+      # Pinned `ms` install. HARD-FAIL on any install failure — never
+      # green-skip. The `ms --version` gate proves the binary is on PATH and is
+      # the pinned 0.1.2 before the eval gate runs; if either the install or the
+      # version probe fails, the step (and the job) goes RED. On a cache hit the
+      # compile is skipped, but the version gate ALWAYS runs.
+      - name: Install pinned ms (meta_skill v0.1.2) and gate on --version
+        run: |
+          set -euo pipefail
+          MS_REV=b0bb6bd541abc6389a272d03f80d4fad108c1df6   # ms 0.1.2
+          if [[ "${{ steps.ms-cache.outputs.cache-hit }}" == "true" ]] && ms --version >/dev/null 2>&1; then
+            echo "ms restored from cache: $(ms --version)"
+          elif ! cargo +nightly install \
+                --git https://github.com/Dicklesworthstone/meta_skill \
+                --rev "$MS_REV" \
+                --bin ms \
+                --locked; then
+            echo "::error::skill-eval: pinned ms (meta_skill v0.1.2 @ ${MS_REV}) install FAILED. Refusing to green-skip — the skill-eval gate cannot run without ms, and a silent skip recreates the no-evaluation gap this gate exists to close." >&2
+            exit 1
+          fi
+          if ! ms --version; then
+            echo "::error::skill-eval: ms installed but \`ms --version\` failed — binary not on PATH or broken. Hard-failing rather than skipping." >&2
+            exit 1
+          fi
+          got="$(ms --version | awk '{print $2}')"
+          if [[ "$got" != "0.1.2" ]]; then
+            echo "::error::skill-eval: pinned ms version mismatch — expected 0.1.2, got '${got}'. Hard-failing." >&2
+            exit 1
+          fi
+          echo "ms pinned-install OK: $(ms --version)"
+
+      # Compute the set of skills whose skills/<id>/** changed in this PR, then
+      # run scripts/skill-eval.sh for each. Mirrors the eval job's skilldelta
+      # convention (git diff --name-only). For a push (no PR), fall back to the
+      # last commit (HEAD~1).
+      - name: Eval changed skills
+        run: |
+          set -euo pipefail
+          chmod +x scripts/skill-eval.sh
+
+          if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
+            base="origin/${GITHUB_BASE_REF}"
+            git fetch --no-tags --depth=1 origin "${GITHUB_BASE_REF}" || true
+            range="${base}...HEAD"
+          else
+            range="HEAD~1...HEAD"
+          fi
+
+          # skills/<id>/** → unique <id>, excluding _fixtures/_scaffolding.
+          mapfile -t changed < <(
+            git diff --name-only "$range" -- 'skills/**' \
+              | awk -F/ 'NF>=2 {print $2}' \
+              | grep -vE '^_' \
+              | sort -u
+          )
+
+          if [[ "${#changed[@]}" -eq 0 ]]; then
+            echo "No changed skills/<id>/** in ${range}; skill-eval has nothing to gate."
+            exit 0
+          fi
+
+          echo "Changed skills to evaluate: ${changed[*]}"
+          rc=0
+          for id in "${changed[@]}"; do
+            if [[ ! -f "skills/${id}/SKILL.md" ]]; then
+              echo "::notice::skills/${id}/ has no SKILL.md (deleted or non-skill dir); skipping."
+              continue
+            fi
+            echo "::group::skill-eval ${id}"
+            if ! scripts/skill-eval.sh "$id"; then
+              echo "::error::skill-eval gate FAILED for skill '${id}' (blocking ms finding)."
+              rc=1
+            fi
+            echo "::endgroup::"
+          done
+          exit "$rc"
+
+      # ── I0-INFORMATIONAL retrieval-probe receipt (ag-iyu4) ────────────────
+      # Wires scripts/skill-probe-i0.sh — the deterministic lexical trigger
+      # ranker (scan_descriptions.py --probe, ag-7led) — as an I0 step: it RUNS
+      # and REPORTS a per-skill JSON receipt artifact (.agents/ao/skill-eval/
+      # <id>.json, uploaded below), but it is NOT a PR check. I0 =
+      # informational, not required and not advisory: `continue-on-error: true`
+      # lives INSIDE this existing job rather than as a separate job, so it adds
+      # no new GitHub check and cannot block (or even annotate-as-advisory) a
+      # merge. The step's only finding is a NON-DETERMINISTIC probe (byte-diff
+      # across two runs), surfaced as a `::warning::` — that determinism
+      # assertion is what must hold before the probe is ever promoted to a
+      # blocking gate.
+      #
+      # GATE-PROMOTION GUARD — 2-WEEK STABILITY BASELINE: do NOT promote
+      # `--probe` from this I0 lane to a blocking gate until this receipt lane
+      # has run green and byte-stable across the corpus for ≥2 weeks of merges.
+      # See docs/contracts/ci-jobs.yaml (skill-eval entry) and the
+      # `trigger_probes:` note in skills/skill-builder/SKILL.md.
+      - name: Retrieval probe receipt (I0-informational; not a PR check)
+        # Runs on every skill-eval invocation. continue-on-error so a
+        # non-deterministic probe never blocks — it only reports.
+        continue-on-error: true
+        run: |
+          set +e
+          chmod +x scripts/skill-probe-i0.sh
+          scripts/skill-probe-i0.sh skills .agents/ao/skill-eval
+          rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::warning::skill-probe-i0: a probe was non-deterministic (rc=${rc}). I0-informational — not blocking; the determinism assertion exists to catch this BEFORE any gate promotion."
+          fi
+          # I0: never propagate non-zero from the informational lane.
+          exit 0
+
+      - name: Upload retrieval-probe receipts (I0 artifact)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-retrieval-probe-receipts
+          path: .agents/ao/skill-eval/*.json
+          # Receipts live under the hidden .agents/ tree, so hidden-file
+          # inclusion is required or the upload would silently skip them.
+          include-hidden-files: true
+          if-no-files-found: ignore
+
+  # ─────────────────────────────────────────────────────────────────────────
   # process-hygiene — quarantine-empty, test-count non-regression, doc-release
   # stabilization, file-manifest overlap, and the advisory test-staleness,
   # swarm-evidence, and lint-evidence-lines checks. Absorbs:
@@ -1452,6 +1727,12 @@ jobs:
           chmod +x scripts/check-test-count-regression.sh
           ./scripts/check-test-count-regression.sh
 
+      - name: Test-isolation ratchet (scripts/check-test-isolation.sh)
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/check-test-isolation.sh
+          ./scripts/check-test-isolation.sh
+
       - name: Check for stale tests (advisory)
         if: needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
         continue-on-error: true
@@ -1508,7 +1789,7 @@ jobs:
   # here rather than in process-hygiene. Invokes scripts/verify-gate-claim.sh.
   # ─────────────────────────────────────────────────────────────────────────
   summary:
-    needs: [changes, correctness, lint, security, skills-integrity, contracts-sync, codex-parity, doctrine-proof, eval, process-hygiene]
+    needs: [changes, correctness, lint, security, skill-gates, skills-integrity, contracts-sync, codex-parity, doctrine-proof, eval, skill-eval, process-hygiene]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1520,11 +1801,13 @@ jobs:
           echo "correctness: ${{ needs.correctness.result }}"
           echo "lint: ${{ needs.lint.result }}"
           echo "security: ${{ needs.security.result }}"
+          echo "skill-gates: ${{ needs.skill-gates.result }}"
           echo "skills-integrity: ${{ needs.skills-integrity.result }}"
           echo "contracts-sync: ${{ needs.contracts-sync.result }}"
           echo "codex-parity: ${{ needs.codex-parity.result }}"
           echo "doctrine-proof: ${{ needs.doctrine-proof.result }}"
           echo "eval: ${{ needs.eval.result }}"
+          echo "skill-eval: ${{ needs.skill-eval.result }}"
           echo "process-hygiene: ${{ needs.process-hygiene.result }}"
 
           # Fail on actual failures. On release tags, skipped purpose jobs are

@@ -1,12 +1,8 @@
 ---
 name: gemini-skills-extensions
-description: |
-  Install, link, enable, disable, and validate AgentOps skills and Gemini CLI
-  extensions for the Gemini image.
-
-  Triggers: "gemini skills install", "gemini skills link", "Gemini extensions",
-  "install AgentOps into Gemini", "Gemini skill bundle", "gemini extensions
-  validate", "Gemini image setup", "link local skills into Gemini".
+description: |-
+  Use when installing, linking, enabling, disabling, or validating AgentOps skills for Gemini.
+  Triggers:
 practices:
 - release-engineering
 - docs-as-code

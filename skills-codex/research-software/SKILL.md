@@ -1,6 +1,6 @@
 ---
 name: research-software
-description: 'Research software tools via source code, GitHub, web. Use when creating skills, learning new tools, finding undocumented features, or bleeding-edge patterns.'
+description: "Run research software."
 ---
 
 # research-software (Codex)

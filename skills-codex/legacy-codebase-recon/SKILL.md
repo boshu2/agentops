@@ -1,6 +1,6 @@
 ---
 name: legacy-codebase-recon
-description: 'Codex-native entry point for the legacy-codebase-recon AgentOps skill.'
+description: "Run legacy codebase recon."
 ---
 
 # legacy-codebase-recon (Codex)

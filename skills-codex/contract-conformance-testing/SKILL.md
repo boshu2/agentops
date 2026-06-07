@@ -1,6 +1,6 @@
 ---
 name: contract-conformance-testing
-description: 'Codex-native entry point for the contract-conformance-testing AgentOps skill.'
+description: "Run contract conformance testing."
 ---
 
 # contract-conformance-testing (Codex)

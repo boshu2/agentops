@@ -1,6 +1,6 @@
 ---
 name: rust-port-validation-gauntlet
-description: 'Codex-native entry point for the rust-port-validation-gauntlet AgentOps skill.'
+description: "Run rust port validation gauntlet."
 ---
 
 # rust-port-validation-gauntlet (Codex)

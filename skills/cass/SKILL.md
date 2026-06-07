@@ -1,18 +1,17 @@
 ---
 name: cass
-user-invocable: false
+description: Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history.
 skill_api_version: 1
+user-invocable: false
+hexagonal_role: supporting
 metadata:
   tier: execution
-description: >-
-  Mine past agent sessions for working prompts, decisions, and patterns. Use when
-  "what did I ask?", "find that prompt", session archaeology, or agent history.
-dependencies:
-  - "cass binary (>=0.3.6 recommended; some commands require HEAD — see Version Pinning)"
-  - "jq (required for parsing --json output)"
-  - "GNU coreutils 'timeout' (recommended; cass index can hang under contention)"
-  - "ssh + rsync (optional; only for cross-machine `cass sources` workflows)"
-  - "fastembed model bundle ~90MB (optional; only for --mode semantic / hybrid; install via `cass models install`)"
+  dependencies:
+  - "cass binary (>=0.3.6 recommended; some commands require HEAD \u2014 see Version Pinning)"
+  - jq (required for parsing --json output)
+  - GNU coreutils 'timeout' (recommended; cass index can hang under contention)
+  - ssh + rsync (optional; only for cross-machine `cass sources` workflows)
+  - fastembed model bundle ~90MB (optional; only for --mode semantic / hybrid; install via `cass models install`)
 ---
 # cass Session Search
 

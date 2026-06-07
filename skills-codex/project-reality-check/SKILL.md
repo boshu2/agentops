@@ -1,6 +1,6 @@
 ---
 name: project-reality-check
-description: 'Codex-native entry point for the project-reality-check AgentOps skill.'
+description: "Run project reality check."
 ---
 
 # project-reality-check (Codex)

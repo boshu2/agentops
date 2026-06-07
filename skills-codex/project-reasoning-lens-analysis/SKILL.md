@@ -1,6 +1,6 @@
 ---
 name: project-reasoning-lens-analysis
-description: 'Codex-native entry point for the project-reasoning-lens-analysis AgentOps skill.'
+description: "Run project reasoning lens analysis."
 ---
 
 # project-reasoning-lens-analysis (Codex)

@@ -1,16 +1,8 @@
 ---
 name: measured-performance-optimization
-description: |
-  Aggressive, profile-driven performance optimization of a hot code path: measure
-  first into a saved profile artifact, then apply algorithmic and systems-level
-  improvements (better complexity, cache locality, parallelism/core-saturation,
-  allocation reduction) one change at a time, ALWAYS rolling back any change that
-  alters outputs or fails to measurably improve performance, and keeping a
-  negative-evidence ledger so the loop never re-tries a dead end.
-  Triggers: "make this faster", "optimize performance", "this is too slow",
-  "reduce latency", "speed up the hot path", "profile and optimize",
-  "extreme optimization", "core saturation", "reduce allocations",
-  "cache locality", "it's CPU-bound / memory-bound".
+description: |-
+  Use when optimizing a hot path from saved profiles, measurements, and verified improvements.
+  Triggers:
 practices:
 - profile-before-optimize
 - correctness-preserving-refactor

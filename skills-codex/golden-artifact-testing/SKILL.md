@@ -1,6 +1,6 @@
 ---
 name: golden-artifact-testing
-description: 'Codex-native entry point for the golden-artifact-testing AgentOps skill.'
+description: "Run golden artifact testing."
 ---
 
 # golden-artifact-testing (Codex)

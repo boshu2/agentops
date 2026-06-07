@@ -1,6 +1,6 @@
 ---
 name: bead-tracker-migration
-description: 'Codex-native entry point for the bead-tracker-migration AgentOps skill.'
+description: "Run bead tracker migration."
 ---
 
 # bead-tracker-migration (Codex)

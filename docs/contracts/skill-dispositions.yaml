@@ -27,6 +27,11 @@ dispositions:
     hexagonal_role: driven-adapter
     disposition:    update
     rationale:      "Tracker adapter is core; add BDD/slice acceptance self-test"
+  - skill:          bd-first-memory-migration
+    domain:         "BC1 Corpus"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "New: consolidate fragmented memory layers onto bd-canonical store"
   - skill:          bootstrap
     domain:         "BC4 Factory"
     hexagonal_role: driving-adapter
@@ -392,11 +397,6 @@ dispositions:
     hexagonal_role: generic
     disposition:    update
     rationale:      "Operator education; align to 3.0 first-value path"
-  - skill:          using-gc
-    domain:         "BC5 Runtime"
-    hexagonal_role: generic
-    disposition:    update
-    rationale:      "Operator guide for running AgentOps on the Gas City substrate"
   - skill:          validate
     domain:         "BC2 Validation"
     hexagonal_role: driving-adapter
@@ -422,3 +422,464 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "Hookless reframe: makes out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI; extends standards+converter, never a hook revival"
+  - skill:          using-ntm
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Shippable AgentOps-scoped guide for the NTM leg of the out-of-session substrate (NTM+MCP+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill."
+
+  - skill:          acfs
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          agent-mail
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          agy-native
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          agy-rules-workflows
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          artifact-clarity-pass
+    domain:         "BC2 Validation"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          automation-loop-hardening
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          bead-completion-audit
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          bead-tracker-migration
+    domain:         "BC3 Loop"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          beads-br
+    domain:         "BC3 Loop"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          beads-bv
+    domain:         "BC3 Loop"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          beads-workflow
+    domain:         "BC3 Loop"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          behavior-preserving-simplification
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          caam
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          casr
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          cass
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          cass-memory
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          cc-cron-ticks
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          cc-hooks
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          cc-loop-driver
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          cc-subagents
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          cc-worktree-isolation
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          changelog-quality-pass
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          cli-agent-ux-audit
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          cli-doctoring-workflow
+    domain:         "BC3 Loop"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          codebase-briefing-report
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          codebase-risk-audit
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          codex-exec
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          codex-goals
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          codex-mcp-plugins
+    domain:         "BC5 Runtime"
+    hexagonal_role: driven-adapter
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          codex-sandbox-evidence
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          concurrency-deadlock-remediation
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          contract-conformance-testing
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          dcg
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          dependency-update-safety
+    domain:         "BC4 Factory"
+    hexagonal_role: driven-adapter
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          expertise-to-procedure
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          external-search-triage
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          filesystem-path-rationalization
+    domain:         "BC4 Factory"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          fuzz-test-design
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          gcloud
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          gemini-headless-evidence
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          gemini-mcp-hooks
+    domain:         "BC5 Runtime"
+    hexagonal_role: driven-adapter
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          gemini-native
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          gemini-skills-extensions
+    domain:         "BC5 Runtime"
+    hexagonal_role: driven-adapter
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          gh-actions
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          gh-cli
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          gh-triage-ru
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          golden-artifact-testing
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          idea-option-forge
+    domain:         "BC2 Validation"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          implementation-pattern-mining
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          installer-quality-audit
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          layered-defect-hunt
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          legacy-codebase-recon
+    domain:         "BC2 Validation"
+    hexagonal_role: generic
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          live-service-e2e-testing
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          mcp-interface-design
+    domain:         "BC2 Validation"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          measured-performance-optimization
+    domain:         "BC2 Validation"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          metamorphic-test-design
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          multi-model-triangulation
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          native-debugger-triage
+    domain:         "BC4 Factory"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          ntm
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          ntm-browser-test-coordination
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          ntm-review-worker-orchestration
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          operating-loop-skill
+    domain:         "BC5 Runtime"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          performance-profile-triage
+    domain:         "BC2 Validation"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          planning-workflow
+    domain:         "BC3 Loop"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          process-triage
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          production-placeholder-audit
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          project-readme-craft
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          project-reality-check
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          project-reasoning-lens-analysis
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          rch
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          release-readiness-gate
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          repeatedly-apply-skill
+    domain:         "BC3 Loop"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          repository-hygiene-sweep
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          research-software
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          ripgrep-search-discipline
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          ru-multi-repo-workflow
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          rust-crate-release-readiness
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          rust-port-validation-gauntlet
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          rust-search-integration
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          rust-sqlite-cli-architecture
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          rust-ub-risk-audit
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          rust-unsafe-boundary-audit
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          sbh
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          spec-reliability-implementation
+    domain:         "BC4 Factory"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          ssh
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          stash-hygiene-sweep
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          system-performance-remediation
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          ubs
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          vibing-with-ntm
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          work-contract-portability
+    domain:         "BC1 Corpus"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          worktree-branch-rationalization
+    domain:         "BC5 Runtime"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."

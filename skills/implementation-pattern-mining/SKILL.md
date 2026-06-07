@@ -1,18 +1,15 @@
 ---
 name: implementation-pattern-mining
-description: |
-  Identify repeated implementation patterns in a codebase, extract reusable
-  conventions, and turn them into guidance without overfitting to incidental
-  examples.
-
-  Triggers: "mine implementation patterns", "extract codebase conventions",
-  "find repeated implementation patterns", "turn examples into guidance",
-  "document local implementation style", "codify codebase patterns".
+description: |-
+  Use when mining repeated codebase patterns and turning them into reusable implementation guidance.
+  Triggers:
+skill_api_version: 1
+user-invocable: false
+hexagonal_role: supporting
 practices:
 - pragmatic-programmer
 - docs-as-code
 - hexagonal-architecture
-hexagonal_role: supporting
 consumes:
 - codebase
 - implementation-examples
@@ -22,17 +19,10 @@ produces:
 - implementation-guidance
 - convention-candidates
 context_rel:
-- kind: complements
+- kind: partnership
   with: research
-- kind: complements
+- kind: partnership
   with: standards
-skill_api_version: 1
-metadata:
-  tier: judgment
-  stability: experimental
-  dependencies:
-  - research
-  - standards
 context:
   window: inherit
   intent:
@@ -41,8 +31,13 @@ context:
     exclude:
     - HISTORY
   intel_scope: topic
-output_contract: "A concise implementation-pattern report with evidence-backed repeated patterns, reusable conventions, counterexamples, and guidance that names where the convention applies and where it does not."
-user-invocable: false
+metadata:
+  tier: judgment
+  stability: experimental
+  dependencies:
+  - research
+  - standards
+output_contract: A concise implementation-pattern report with evidence-backed repeated patterns, reusable conventions, counterexamples, and guidance that names where the convention applies and where it does not.
 ---
 
 # Implementation Pattern Mining

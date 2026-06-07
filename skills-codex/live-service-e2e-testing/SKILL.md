@@ -1,6 +1,6 @@
 ---
 name: live-service-e2e-testing
-description: 'Codex-native entry point for the live-service-e2e-testing AgentOps skill.'
+description: "Run live service e2e testing."
 ---
 
 # live-service-e2e-testing (Codex)

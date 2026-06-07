@@ -1,13 +1,8 @@
 ---
 name: cli-doctoring-workflow
-description: |
-  Design or audit CLI doctor commands, health checks, repair hints, and
-  user-centered diagnostics that help users move from failure symptoms to
-  confident next actions.
-
-  Triggers: "design a doctor command", "audit doctor output", "CLI health
-  checks", "diagnostic command review", "repair hints", "troubleshooting UX",
-  "preflight checks", "environment diagnostics".
+description: |-
+  Use when designing or auditing CLI doctor commands, health checks, repair hints, and diagnostic UX.
+  Triggers:
 practices:
 - pragmatic-programmer
 - docs-as-code
@@ -35,7 +30,7 @@ context:
     exclude: [HISTORY]
   intel_scope: topic
 metadata:
-  tier: library
+  tier: judgment
   stability: stable
   dependencies: []
 output_contract: "A doctor command design or audit that defines checks, failure classification, safe repair hints, output format, verification strategy, and user-centered diagnostic behavior."

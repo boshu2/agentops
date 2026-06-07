@@ -1,6 +1,6 @@
 ---
 name: gemini-mcp-hooks
-description: 'Codex-native entry point for the gemini-mcp-hooks AgentOps skill.'
+description: "Run gemini MCP hooks."
 ---
 
 # gemini-mcp-hooks (Codex)

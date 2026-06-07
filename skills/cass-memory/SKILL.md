@@ -2,12 +2,10 @@
 name: cass-memory
 user-invocable: false
 skill_api_version: 1
+hexagonal_role: supporting
 metadata:
   tier: execution
-description: >-
-  CASS Memory System (cm) for procedural memory. Use when starting non-trivial
-  tasks, learning from past sessions, building playbooks, or preventing repeated
-  mistakes via trauma guard.
+description: "Use when starting non-trivial work, mining lessons, or preventing repeated mistakes with cm procedural memory."
 ---
 <!-- TOC: Quick Start | THE EXACT PROMPT | Architecture | Commands | References -->
 

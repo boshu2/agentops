@@ -1,6 +1,6 @@
 ---
 name: cli-doctoring-workflow
-description: 'Codex-native entry point for the cli-doctoring-workflow AgentOps skill.'
+description: "Run CLI doctoring workflow."
 ---
 
 # cli-doctoring-workflow (Codex)

@@ -1,6 +1,6 @@
 ---
 name: gh-actions
-description: 'Configure GitHub Actions CI/CD for Go, Rust, TypeScript, Bash projects. Use when creating workflows, release automation, signing, checksums, cross-platform builds, or .github/workflows files.'
+description: "Run GitHub actions."
 ---
 
 # gh-actions (Codex)

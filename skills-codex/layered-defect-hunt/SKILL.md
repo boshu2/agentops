@@ -1,6 +1,6 @@
 ---
 name: layered-defect-hunt
-description: 'Codex-native entry point for the layered-defect-hunt AgentOps skill.'
+description: "Run layered defect hunt."
 ---
 
 # layered-defect-hunt (Codex)

@@ -1,15 +1,13 @@
 ---
 name: ru-multi-repo-workflow
-user-invocable: false
+description: Use when using ru for multi-repo commits, sync, GitHub review, or maintenance automation.
 skill_api_version: 1
+user-invocable: false
+hexagonal_role: supporting
 metadata:
   tier: execution
-description: >-
-  Orchestrate multi-repo maintenance with ru: smart commits, careful sync, issue/PR
-  review. Use when managing repos, syncing projects, reviewing GitHub issues, or
-  automating maintenance en masse.
-trigger: commit-and-release
-globs: .github/workflows/*.yml
+  triggers:
+  - commit-and-release
 ---
 # ru Multi-Repo Workflow
 

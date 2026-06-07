@@ -1,6 +1,8 @@
 ---
 name: work-contract-portability
-description: 'Triggers: use when designing, reviewing, or handing off agent work that must be portable across agents through clear contracts, evidence, handoffs, durable context, and explicit role boundaries.'
+description: |-
+  Use when designing agent work contracts, handoffs, evidence, and role boundaries across runtimes.
+  Triggers:
 skill_api_version: 1
 user-invocable: false
 practices:

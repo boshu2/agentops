@@ -1,8 +1,8 @@
 # agy-native — Codex Execution Profile
 
 Runtime adapter for Codex CLI. The doctrine, the five workflow phases, and the
-six critical rules are defined in the sibling [`SKILL.md`](./SKILL.md) →
-[`../SKILL.md`](../SKILL.md). **Read the base skill first**; this file only maps
+six critical rules are defined in the Codex wrapper [`SKILL.md`](./SKILL.md) and
+the source skill [`../../skills/agy-native/SKILL.md`](../../skills/agy-native/SKILL.md). **Read the base skill first**; this file only maps
 that skill onto Codex-native tooling and restates the load-bearing guardrails.
 
 ## Codex tool mapping
@@ -21,7 +21,7 @@ that skill onto Codex-native tooling and restates the load-bearing guardrails.
 
 ## Steps
 
-1. **Read the base skill.** Open `../SKILL.md` and load Overview, the six
+1. **Read the base skill.** Open `../../skills/agy-native/SKILL.md` and load Overview, the six
    Critical Constraints, and the five-phase Workflow. Everything below assumes it.
 
 2. **Verify the image is live.** `which agy && agy models | head`; confirm
@@ -51,15 +51,15 @@ that skill onto Codex-native tooling and restates the load-bearing guardrails.
    is the durable memory. Re-enter step 4 with the next ready bead. State lives
    on the bus/artifact, never in a live session.
 
-7. **Run the quality rubric** from `../SKILL.md` before declaring the tick green
+7. **Run the quality rubric** from `../../skills/agy-native/SKILL.md` before declaring the tick green
    (two distinct `conversation_id`s, evidence-gated close, non-overlapping
    scopes, dcg hook present, nothing under `~/dev/agentops`, plugin validated).
 
 ## Guardrails
 
-- **Never `claude -p` for workers.** It bills the API per-token, not the Max
-  sub (banned). Drive AGY workers with `agy --print` / `agy -i`, Codex work with
-  `codex exec`, Claude only via NTM panes / subagents. (Base Rule 1.)
+- **Never use a different agent CLI as the Codex executor.** Drive AGY workers
+  with `agy --print` / `agy -i` when the AGY image is the target, and Codex work
+  with `codex exec`. (Base Rule 1.)
 - **author != judge, always two contexts.** The process that closes a bead must
   not be the one that validated it. Two separate `codex exec` / `agy --print`
   invocations, never `-c`/`--continue` reuse. (Base Rule 2.)

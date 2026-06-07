@@ -1,6 +1,6 @@
 ---
 name: rch
-description: 'Offload cargo/gcc/bun builds to remote workers. Use when compilation slow, "[RCH] local" in stderr, workers unhealthy, hook silent, sync fails, disk pressure, or SSH/daemon/telemetry recovery.'
+description: "Run RCH."
 ---
 
 # rch (Codex)

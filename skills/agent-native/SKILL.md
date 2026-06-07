@@ -46,6 +46,10 @@ This is an **extension of two existing skills**, not a rewrite:
 - [standards](../standards/SKILL.md) — gains an Agent-runtime profile: how the standards/behavioral-discipline checklists get loaded by a non-interactive Claude and enforced via CI rather than `/vibe`.
 - [converter](../converter/SKILL.md) + the `skills/` ↔ `skills-codex/` parity machinery — reused as-is to keep the bundle dual-runtime.
 
+**Concrete runtime recipes** — the three-phase workflow below, one per runtime:
+- [references/managed-agents-runtime.md](references/managed-agents-runtime.md) — the **Claude path**: Anthropic Managed Agents + Agent SDK + self-hosted sandbox.
+- [references/codex-ntm-runtime.md](references/codex-ntm-runtime.md) — the **Codex/NTM path**: tmux pane swarms + agent-mail + direct `ao` shell calls (no Managed Agents API).
+
 ## ⚠️ Critical Constraints
 
 - **This is a reframe of the retired "port hooks" idea, NOT a hook revival.** **Why:** hooks are runtime-coupled and fork the guardrail surface; skills + `ao` + CI are the portable 3.0 waist that works in any runtime.
@@ -111,8 +115,10 @@ ao mcp serve &   # exposes session_bootstrap/inject/validate/goals_measure as MC
 
 ## See Also
 
+- [references/managed-agents-runtime.md](references/managed-agents-runtime.md) — Claude runtime recipe (Managed Agents + Agent SDK + self-hosted sandbox)
+- [references/codex-ntm-runtime.md](references/codex-ntm-runtime.md) — Codex/NTM runtime recipe (tmux pane swarms + agent-mail + direct `ao`)
 - [standards](../standards/SKILL.md) — the checklists the agent loads + CI enforces
 - [converter](../converter/SKILL.md) — keeps the bundle dual-runtime (skills ↔ skills-codex)
 - [eval-outcomes](../eval-outcomes/SKILL.md) — holdout-safe grading for cloud/out-of-session agents
-- [using-gc](../using-gc/SKILL.md) — running a whole out-of-session loop (gc owns orchestration; `ao agent bundle` produces the definition)
+- [swarm](../swarm/SKILL.md) — the in-session/NTM multi-agent backends that dispatch whole `/rpi` skill loops (`ao agent bundle` produces the definition a managed-agents substrate runs)
 - [skill-auditor](../skill-auditor/SKILL.md) — audit this skill before declaring stable

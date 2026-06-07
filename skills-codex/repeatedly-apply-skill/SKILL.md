@@ -1,6 +1,6 @@
 ---
 name: repeatedly-apply-skill
-description: 'Iteratively apply a named skill or slash command N times with progressive deepening. Use when "apply 10 times", "keep improving", "run again", iterative polish, improvement loop, or multi-pass refinement.'
+description: "Run repeatedly apply skill."
 ---
 
 # repeatedly-apply-skill (Codex)

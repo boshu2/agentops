@@ -1,6 +1,6 @@
 ---
 name: performance-profile-triage
-description: 'Codex-native entry point for the performance-profile-triage AgentOps skill.'
+description: "Run performance profile triage."
 ---
 
 # performance-profile-triage (Codex)

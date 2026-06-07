@@ -1,42 +1,44 @@
 ---
 name: codex-exec
-description: |
-  Drive worker/validator agents with `codex exec` on the ChatGPT Pro subscription (OAuth) — never an API-billed path.
-
-  Triggers: "codex exec", "spawn a codex worker", "run codex non-interactively", "codex validator", "headless codex", "codex resume", "drive codex from a script", "factory worker on Codex".
-
-  Use when:
-  - Dispatching a non-interactive Codex worker or validator from a loop, script, or NTM pane
-  - Resuming a prior Codex session to continue work
-  - Piping a prompt into Codex via stdin from an orchestrator
-
-  Perfect for: factory/loop turns that need a non-Claude vendor lane on the Pro sub.
-  Not ideal for: interactive pair-coding (use the `codex` TUI) or Claude work (use NTM panes / subagents — never `claude -p`).
-Triggers: '"codex exec", "spawn a codex worker", "run codex non-interactively", "codex validator", "headless codex", "codex resume", "drive codex from a script", "factory worker on Codex"'
+description: |-
+  Use when running Codex workers or validators non-interactively through codex exec with evidence.
+  Triggers:
+skill_api_version: 1
+user-invocable: false
+hexagonal_role: driving-adapter
 practices:
 - pragmatic-programmer
 - continuous-delivery
-hexagonal_role: driving-adapter
 consumes: []
 produces:
 - codex-run-output
 context_rel:
 - kind: supplier-to
   with: codex-sandbox-evidence
-skill_api_version: 1
-user-invocable: false
 context:
   window: inherit
   intent:
     mode: none
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: none
 metadata:
   tier: orchestration
-  dependencies: [ntm, caam]
+  dependencies:
+  - ntm
+  - caam
   stability: stable
-output_contract: "Runs codex exec on the OAuth/Pro sub; final agent message to stdout (or --output-last-message FILE / --json JSONL)."
+  triggers:
+  - codex exec
+  - spawn a codex worker
+  - run codex non-interactively
+  - codex validator
+  - headless codex
+  - codex resume
+  - drive codex from a script
+  - factory worker on Codex
+output_contract: Runs codex exec on the OAuth/Pro sub; final agent message to stdout (or --output-last-message FILE / --json JSONL).
 ---
 
 # codex-exec

@@ -1,6 +1,6 @@
 ---
 name: system-performance-remediation
-description: 'Restore machine responsiveness via safe, selective process cleanup. Use when system unresponsive, high CPU/load average, IO pressure, filesystem cache bloat, memory pressure from btrfs/ext4, stuck tests, competing cargo builds, confused agents in loops, swap thrashing, disk full, systemd-oomd kills, or tmux/zellij session sprawl.'
+description: "Run system performance remediation."
 ---
 
 # system-performance-remediation (Codex)

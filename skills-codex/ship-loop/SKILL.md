@@ -1,6 +1,6 @@
 ---
 name: ship-loop
-description: 'Internal-PR fast-lane cycle.'
+description: "Run ship loop."
 ---
 
 # $ship-loop — Bot-paired fast lane PR cycle

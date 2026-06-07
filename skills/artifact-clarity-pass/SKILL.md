@@ -1,14 +1,8 @@
 ---
 name: artifact-clarity-pass
-description: |
-  Strip "AI slop" — verbose generic output, filler comments, hedge-words, redundant
-  boilerplate, over-explanation — from code and prose, tightening to real signal
-  without losing meaning. Detects slop patterns and cuts them while preserving the
-  load-bearing content.
-  Triggers: "artifact-clarity-pass", "remove AI slop", "this reads like AI wrote it", "too verbose",
-  "tighten this", "cut the filler", "make this less generic", "strip hedge words",
-  "remove filler comments", "over-explained", "this is bloated", "sounds robotic",
-  "punch this up", "trim the boilerplate".
+description: |-
+  Use when removing generic filler from code, docs, or handoffs while preserving every load-bearing fact.
+  Triggers:
 skill_api_version: 1
 hexagonal_role: domain
 practices:

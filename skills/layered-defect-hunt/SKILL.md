@@ -1,16 +1,8 @@
 ---
 name: layered-defect-hunt
-description: >-
-  Systematic multi-pass bug hunting — run the code (or a diff) through a fixed
-  sequence of single-lens passes (correctness, edge/boundary, concurrency,
-  error handling, resource leaks, security) so each pass surfaces a different
-  bug class instead of one shallow sweep that misses everything off-lens. Loop
-  the passes until they converge (a full cycle finds no new confirmed issue),
-  then emit a deduped findings ledger.
-  Triggers: "find all the bugs", "deep bug hunt", "multi-pass review",
-  "harden this before release", "audit for bugs", "what could go wrong here",
-  "exhaustive code review", "did I miss any edge cases", "check for races and
-  leaks", "thorough review of this diff", "review until clean".
+description: |-
+  Use when running systematic multi-pass bug hunting across correctness, edges, concurrency, and failures.
+  Triggers:
 practices:
 - code-review
 - root-cause-analysis

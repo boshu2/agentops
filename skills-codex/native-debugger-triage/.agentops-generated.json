@@ -2,6 +2,6 @@
   "generator": "manual-maintained",
   "source_skill": "skills/native-debugger-triage",
   "layout": "modular",
-  "source_hash": "984b209f7b172b832b36dcfb2153e9649f45ebf9956ff364c1b96d92bbcae80a",
-  "generated_hash": "adf17680d097f17ef5fd4b98c79b76988e0d36e78995968f8d123bfa8970f4b0"
+  "source_hash": "c108ed3bae7dd475a8b2bbce4a8c1796e15fc3aa0168e4f9d46d7e35b25e9db0",
+  "generated_hash": "27041b158c5caae4ffa956aed2819311ace4b4beeb5ed3594ca7e8d1c9e596aa"
 }

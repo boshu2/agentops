@@ -2,12 +2,10 @@
 name: process-triage
 user-invocable: false
 skill_api_version: 1
+hexagonal_role: supporting
 metadata:
   tier: execution
-description: >-
-  Triage system processes with the `pt` wrapper and choose safe remediation.
-  Use when diagnosing runaway processes, comparing `pt scan` and `pt deep-scan`,
-  or using `pt agent` plan/apply workflows.
+description: "Use when diagnosing runaway processes with the pt wrapper and choosing safe remediation."
 ---
 # process-triage
 

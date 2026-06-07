@@ -45,12 +45,14 @@ func TestClaimBind_StubCalledWithBinding(t *testing.T) {
 	}
 	var buf bytes.Buffer
 	err := claimBindRun(context.Background(), claimOptions{
-		claim:   "AOP-CLAIM-X",
-		path:    ".agents/findings/x.md",
-		level:   "PG3",
-		anchors: []string{"L10", "L20"},
-		writer:  &buf,
-		bindFn:  stub,
+		claim:    "AOP-CLAIM-X",
+		path:     ".agents/findings/x.md",
+		level:    "PG3",
+		anchors:  []string{"L10", "L20"},
+		authorID: "agent-1",
+		judgeID:  "agent-2",
+		writer:   &buf,
+		bindFn:   stub,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -60,6 +62,9 @@ func TestClaimBind_StubCalledWithBinding(t *testing.T) {
 	}
 	if gotOpts.claim != "AOP-CLAIM-X" || gotOpts.level != "PG3" {
 		t.Fatalf("opts mismatch: %+v", gotOpts)
+	}
+	if gotOpts.authorID != "agent-1" || gotOpts.judgeID != "agent-2" {
+		t.Fatalf("reviewer metadata mismatch: %+v", gotOpts)
 	}
 	if !strings.Contains(buf.String(), `level=PG3`) {
 		t.Fatalf("confirmation missing level: %q", buf.String())

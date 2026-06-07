@@ -1,6 +1,6 @@
 ---
 name: rust-unsafe-boundary-audit
-description: 'Codex-native entry point for the rust-unsafe-boundary-audit AgentOps skill.'
+description: "Run rust unsafe boundary audit."
 ---
 
 # rust-unsafe-boundary-audit (Codex)

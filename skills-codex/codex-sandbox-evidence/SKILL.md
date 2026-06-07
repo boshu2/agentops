@@ -1,6 +1,6 @@
 ---
 name: codex-sandbox-evidence
-description: "Run codex exec under a least-privilege sandbox and emit a machine-checkable JSONL proof surface for the validator."
+description: "Run codex sandbox evidence."
 ---
 
 # codex-sandbox-evidence (Codex)

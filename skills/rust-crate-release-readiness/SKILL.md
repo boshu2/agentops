@@ -1,19 +1,15 @@
 ---
 name: rust-crate-release-readiness
-description: |
-  Prepare a Rust crate for a defensible release by checking crate metadata,
-  semver impact, public API docs, tests, feature combinations, packaging
-  dry-runs, publish-blocking warnings, and rollback notes before any upload.
-
-  Triggers: "prepare this Rust crate for release", "is this crate ready to
-  publish", "crate release checklist", "cargo package dry run", "Rust semver
-  review", "verify Cargo.toml metadata", "prepublish crate audit".
+description: |-
+  Use when preparing a Rust crate release with metadata, semver, docs, tests, packaging, and rollback notes.
+  Triggers:
 skill_api_version: 1
+user-invocable: false
+hexagonal_role: supporting
 practices:
 - evidence-over-confidence
 - release-readiness
 - docs-as-code
-hexagonal_role: supporting
 consumes:
 - Cargo.toml
 - Cargo.lock
@@ -25,20 +21,16 @@ produces:
 - package-dry-run-evidence
 - rollback-note
 context_rel: []
-user-invocable: false
 context:
   window: inherit
   intent:
     mode: task
-    summary: >
-      Decide whether a Rust crate is ready to release by validating metadata,
-      semver, documentation, tests, package contents, dry-run behavior, and
-      recovery steps with command-backed evidence.
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
-  tier: library
+  tier: judgment
   stability: stable
   dependencies:
   - cargo
@@ -46,22 +38,7 @@ metadata:
   - git
   clean_room: true
   owner: agentops
-output_contract:
-  format: crate_release_readiness_report
-  required_sections:
-  - candidate
-  - metadata
-  - semver
-  - documentation
-  - tests
-  - package
-  - dry_run
-  - decision
-  - rollback
-  guarantees:
-  - Release readiness is decided from observed commands and inspected files.
-  - Public API or behavior changes are mapped to a semver decision.
-  - Package contents and registry-facing metadata are verified before upload.
+output_contract: 'crate_release_readiness_report with sections: candidate, metadata, semver, documentation, tests, package, dry_run, decision, rollback.'
 ---
 
 # Rust Crate Release Readiness

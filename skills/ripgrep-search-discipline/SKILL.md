@@ -2,6 +2,7 @@
 name: ripgrep-search-discipline
 user-invocable: false
 skill_api_version: 1
+hexagonal_role: supporting
 metadata:
   tier: library
   stability: stable
@@ -15,15 +16,9 @@ context:
     exclude: [HISTORY]
   intel_scope: topic
 output_contract: "A concise ripgrep search plan or command sequence that uses fast, precise rg flags and avoids slow grep/find patterns."
-description: >-
-  CLI-reference contract for using ripgrep (rg) optimally — the flags that make
-  code search fast and precise, the slow patterns to avoid, and the search
-  strategy an agent should default to instead of grep -r / find.
-  Triggers: "search the codebase", "find where X is defined", "grep for", "rg",
-  "ripgrep", "find all usages", "which files contain", "search for a string",
-  "find function/symbol", "grep -r is slow", "search with context lines",
-  "multiline / cross-line regex search", "machine-readable search output".
-  This is a reference contract an agent greps in place, not a procedure to run end-to-end.
+description: |-
+  Use when searching code with rg using precise, fast flags instead of slow grep or find patterns.
+  Triggers:
 ---
 <!-- TOC: Critical Constraints | Why This Exists | Quick Start | Flag Reference | Strategy Decision Tree | Robot Mode | Exit Codes | Slow Patterns | Quality Rubric | Examples | Troubleshooting | See Also -->
 

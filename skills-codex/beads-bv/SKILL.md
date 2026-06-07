@@ -1,6 +1,6 @@
 ---
 name: beads-bv
-description: 'Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects.'
+description: "Run beads bv."
 ---
 
 # beads-bv (Codex)

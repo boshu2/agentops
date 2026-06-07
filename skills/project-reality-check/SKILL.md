@@ -1,6 +1,8 @@
 ---
 name: project-reality-check
-description: 'Compare a project''s stated vision (README, goals, open issues — "the dream") against what the code actually does, then file the exact gap as concrete tracked work and run "ambition rounds" that propose how the project could be more useful. Triggers: "reality check this project", "does the code match the README", "spec vs reality", "gap between vision and code", "what is unfinished here", "ambition round", "roadmap from the dream", "audit the project against its goals".'
+description: |-
+  Use when comparing a project vision to code reality and turning gaps into tracked work.
+  Triggers:
 practices:
 - pragmatic-programmer
 - code-complete

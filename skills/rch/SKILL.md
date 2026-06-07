@@ -2,12 +2,10 @@
 name: rch
 user-invocable: false
 skill_api_version: 1
+hexagonal_role: supporting
 metadata:
   tier: execution
-description: >-
-  Offload cargo/gcc/bun builds to remote workers. Use when compilation slow,
-  "[RCH] local" in stderr, workers unhealthy, hook silent, sync fails, disk
-  pressure, or SSH/daemon/telemetry recovery.
+description: "Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues."
 ---
 # RCH — Remote Compilation Helper
 

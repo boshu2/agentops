@@ -1,6 +1,6 @@
 ---
 name: installer-quality-audit
-description: 'Codex-native entry point for the installer-quality-audit AgentOps skill.'
+description: "Run installer quality audit."
 ---
 
 # installer-quality-audit (Codex)

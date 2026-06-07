@@ -1,6 +1,6 @@
 ---
 name: rust-crate-release-readiness
-description: 'Codex-native entry point for the rust-crate-release-readiness AgentOps skill.'
+description: "Run rust crate release readiness."
 ---
 
 # rust-crate-release-readiness (Codex)

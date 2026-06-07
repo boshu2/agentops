@@ -2,12 +2,10 @@
 name: repeatedly-apply-skill
 user-invocable: false
 skill_api_version: 1
+hexagonal_role: supporting
 metadata:
   tier: execution
-description: >-
-  Iteratively apply a named skill or slash command N times with progressive
-  deepening. Use when "apply 10 times", "keep improving", "run again",
-  iterative polish, improvement loop, or multi-pass refinement.
+description: "Use when applying a skill repeatedly with progressive deepening for iterative improvement."
 ---
 # Repeatedly Apply Skill
 

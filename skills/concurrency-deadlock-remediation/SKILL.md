@@ -1,14 +1,8 @@
 ---
 name: concurrency-deadlock-remediation
-description: >-
-  Find and fix concurrency deadlocks: analyze lock ordering, detect circular
-  waits, reliably reproduce the hang, then fix it with a consistent global lock
-  order, timeouts, or a lock-free alternative. Language-agnostic with concrete
-  examples (threads, mutexes, async tasks, DB transactions).
-  Triggers: "deadlock", "the program hangs", "threads stuck", "circular wait",
-  "lock ordering", "two threads waiting on each other", "mutex deadlock",
-  "transaction deadlock", "frozen / no progress", "lock-order-reversal",
-  "ABBA deadlock", "thread dump shows blocked".
+description: |-
+  Use when finding and fixing deadlocks with lock ordering, reproduction, timeouts, or lock-free alternatives.
+  Triggers:
 practices:
 - debugging
 - defensive-programming

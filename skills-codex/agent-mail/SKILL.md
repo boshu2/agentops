@@ -1,6 +1,6 @@
 ---
 name: agent-mail
-description: 'MCP Agent Mail for multi-agent coordination. Use when agents need file locks, messaging, inboxes, or conflict prevention. Handles macro_start_session, file_reservation_paths, send_message, threading, pre-commit guards.'
+description: "Run agent mail."
 ---
 
 # agent-mail (Codex)

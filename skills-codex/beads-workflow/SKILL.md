@@ -1,6 +1,6 @@
 ---
 name: beads-workflow
-description: 'Convert markdown plans into beads with dependencies using br CLI. Use when creating task graphs, polishing beads before implementation, or bridging planning to agent swarm execution.'
+description: "Run beads workflow."
 ---
 
 # beads-workflow (Codex)

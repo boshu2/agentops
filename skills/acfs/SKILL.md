@@ -1,14 +1,9 @@
 ---
 name: acfs
 user-invocable: false
-description: |
-  Operate the ACFS flywheel — health-check, init, and run the agent-flywheel substrate via ~/acfs/bin/acfs. The operator's front door to the Plan→Coordinate→Execute→Scan→Remember loop and its tool stack (br/ntm/dcg/cass/cm/caam/ubs).
-
-  Triggers: "acfs doctor", "is the flywheel up", "init the flywheel", "acfs up", "run the loop", "operate the substrate", "what's broken in the stack", "ACFS health", "spin up a swarm on this repo", "where do I work / work-root".
-
-  Perfect for: verifying the substrate before a session; wiring a fresh fleet host; driving the operating loop; deciding installed-vs-actually-working.
-
-  Not ideal for: client-facing work; building the binaries themselves (fork-and-own, invoke-never-rebuild); deep host topology (that's bushido.md / fleet-ops).
+description: |-
+  Use when operating ACFS flywheel health checks, init, and agent loop tooling from ~/acfs/bin/acfs.
+  Triggers:
 practices:
 - pragmatic-programmer
 - continuous-delivery

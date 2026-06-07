@@ -1,6 +1,6 @@
 ---
 name: external-search-triage
-description: 'Codex-native entry point for the external-search-triage AgentOps skill.'
+description: "Run external search triage."
 ---
 
 # external-search-triage (Codex)

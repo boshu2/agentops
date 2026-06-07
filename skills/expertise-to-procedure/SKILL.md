@@ -1,14 +1,8 @@
 ---
 name: expertise-to-procedure
-description: >-
-  Convert tacit/expert know-how into durable, reusable assets — a skill,
-  playbook, or checklist that captures HOW an expert actually does a task so
-  the knowledge is repeatable and survives the person leaving.
-  Triggers: "operationalize this expertise", "turn what I know into a skill",
-  "capture how the expert does it", "make this knowledge repeatable", "document
-  this so anyone can do it", "extract a playbook from this person", "the only
-  person who knows this is leaving", "bus-factor of one", "tacit knowledge",
-  "tribal knowledge", "knowledge transfer", "build a checklist from how I work".
+description: |-
+  Use when turning tacit expert know-how into a durable skill, playbook, or checklist.
+  Triggers:
 practices:
 - code-complete
 - refactoring

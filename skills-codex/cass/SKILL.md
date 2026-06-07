@@ -1,6 +1,6 @@
 ---
 name: cass
-description: 'Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history.'
+description: "Run CASS."
 ---
 
 # cass (Codex)

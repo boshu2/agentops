@@ -1,27 +1,9 @@
 ---
 name: agy-native
 user-invocable: false
-description: |
-  Drive the AgentOps claim->work->validate->close->persist loop natively on Google Antigravity (the agy CLI + Gemini brain), the third image after the Claude and Codex harnesses.
-
+description: |-
+  Use when driving AgentOps work natively in Google Antigravity with claims, validation, closeout, and persistence.
   Triggers:
-  - "agy", "antigravity", "drive the loop on Gemini/Antigravity"
-  - "agy plugin import/install", "agy --print headless tick"
-  - "author!=judge on Antigravity", "Gemini-native loop harness"
-  - "~/.gemini brain / knowledge store", "third image after Claude and Codex"
-
-  Use when:
-  - Running the factory/control-plane loop on the Antigravity image instead of Claude/Codex.
-  - Packaging the laws (rules, workflows, hooks, subagents) as an agy plugin and importing them.
-  - Wiring headless ticks, worktree isolation, and async author!=judge subagents on Gemini.
-
-  Perfect for:
-  - Cross-vendor turnout: making the same loop contract run on a Gemini-native harness.
-  - Headless, scheduled, evidence-gated ticks driven by `agy --print`.
-
-  Not ideal for:
-  - Client-facing content (operator-side only).
-  - Authoring agentops product code under ~/dev/agentops (this drives binaries; it does not rebuild them).
 practices:
 - team-topologies
 - continuous-delivery

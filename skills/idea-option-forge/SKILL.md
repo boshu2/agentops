@@ -1,14 +1,9 @@
 ---
 name: idea-option-forge
 user-invocable: false
-description: |
-  A generate→winnow→operationalize methodology for improving a project. Generate ~30 candidate improvements, reason each through, winnow to the best 5, expand the survivors to ~15 sub-ideas, overlap-check against existing tracked work, then operationalize the winners into self-documenting tracked issues (br beads) with dependencies and test tasks — refining in plan space over several passes before any implementation.
-
-  Triggers: "what should we improve about this project", "brainstorm improvements then turn them into issues", "generate a bunch of ideas and winnow them down", "give me a backlog of the best changes", "idea wizard", "plan-space refinement before coding", "turn the best ideas into tracked beads with dependencies and tests".
-
-  Perfect for: opening a planning session on an existing repo; producing a vetted, dependency-ordered backlog; deliberately staying in plan space before writing code.
-
-  Not ideal for: a single known change (just file the bead); pure ideation with no operationalization (use brainstorm); implementing already-tracked work (use the tracker's normal flow).
+description: |-
+  Use when generating, winnowing, and operationalizing many project improvement options.
+  Triggers:
 practices:
 - lean-startup
 - pragmatic-programmer

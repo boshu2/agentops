@@ -1,23 +1,9 @@
 ---
 name: codex-goals
 user-invocable: false
-description: |
-  Drive Codex's native iterate-until-done loop with the stable Goals feature — define the objective once, let Codex own the loop.
-
-  Triggers: "codex goals", "iterate until done", "codex autodev", "define the goal and let it run", "Codex-native operating loop", "the codex /goals slash command", "first-class loop primitive for codex".
-
-  **Use when:**
-  - You want a Codex-native AUTODEV/operating loop: state the objective once, Codex drives iterate → check → continue until the goal is met.
-  - Replacing a hand-rolled bash while-loop or `codex exec` re-prompt harness with a first-class loop primitive.
-  - Running an unattended/background Codex worker against a durable objective on the flywheel.
-
-  **Perfect for:**
-  - Operator-side flywheel/factory workers (NTM panes, spawned codex-exec jobs) that must converge on a stated outcome.
-  - Long objectives with a clear done-condition (tests green, spec satisfied, beads closed).
-
-  **Not ideal for:**
-  - Client-facing content (this is operator-side; never surface Codex/Goals jargon to clients).
-  - Open-ended exploration with no done-condition — Goals needs a termination criterion.
+description: |-
+  Use when using Codex Goals to define an objective once and let Codex iterate until done.
+  Triggers:
 practices:
 - agile-manifesto
 - continuous-delivery

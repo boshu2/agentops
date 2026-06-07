@@ -1,7 +1,10 @@
 ---
 name: metamorphic-test-design
-description: "Design metamorphic tests using invariants and input relations when exact expected outputs are hard. Triggers: oracle-poor behavior, fuzzing relation-preserving transforms, validating numerical or parser pipelines, or triaging outputs without a golden answer."
+description: |-
+  Use when designing metamorphic tests for oracle-poor behavior using invariants and input relations.
+  Triggers:
 skill_api_version: 1
+hexagonal_role: supporting
 metadata:
   tier: judgment
   stability: stable

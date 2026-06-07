@@ -1,6 +1,6 @@
 ---
 name: validation
-description: 'Run post-implementation validation.'
+description: "Run validation."
 ---
 # $validation — Full Validation Phase Orchestrator
 

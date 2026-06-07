@@ -2,6 +2,6 @@
   "generator": "manual-maintained",
   "source_skill": "skills/rust-sqlite-cli-architecture",
   "layout": "modular",
-  "source_hash": "17a674081399b40fa672aa2183847a57b854b79bc556ddf88845ad26e45265d6",
-  "generated_hash": "abaaf2dec17800a53f411439b27d0f4e5fe4993491a9d9bd32be52ea294c9c48"
+  "source_hash": "f0de7c0ccdbab639339f1d4ce9a41da320ea70182853c1068b6429fe8af42bbf",
+  "generated_hash": "2d82e7a75bf2dfa956e50c8e1f5daff570fdcde6b61fd8f846d24f93eace4979"
 }

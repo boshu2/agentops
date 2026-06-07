@@ -2,12 +2,10 @@
 name: beads-workflow
 user-invocable: false
 skill_api_version: 1
+hexagonal_role: supporting
 metadata:
   tier: execution
-description: >-
-  Convert markdown plans into beads with dependencies using br CLI. Use when
-  creating task graphs, polishing beads before implementation, or bridging
-  planning to agent swarm execution.
+description: "Use when converting markdown plans into br beads with dependencies for implementation or swarm execution."
 ---
 <!-- TOC: Quick Start | THE EXACT PROMPT | Polishing | br Commands | bd → br Migration | Quality Checklist | Troubleshooting | References -->
 

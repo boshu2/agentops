@@ -1,6 +1,6 @@
 ---
 name: cc-subagents
-description: "Drive fungible parallel workers via subscription-billed agent dispatch — background, worktree isolation, per-role model/tools/effort scoping, and an evidence-gated return. Codex-native parity of the Claude-native cc-subagents."
+description: Run managed subagents.
 ---
 
 # cc-subagents (Codex)

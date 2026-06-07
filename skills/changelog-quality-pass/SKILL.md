@@ -1,14 +1,15 @@
 ---
 name: changelog-quality-pass
+description: |-
+  Use when writing or auditing changelogs and release notes for user-facing, semver-aware clarity.
+  Triggers:
 skill_api_version: 1
-description: >-
-  Triggers: use when writing, auditing, or repairing a CHANGELOG.md, release
-  notes, or version history so it follows Keep-a-Changelog structure, aligns
-  with semantic versioning, speaks in user-facing language instead of dumping
-  commits, groups entries (Added / Changed / Fixed / Removed), and stays current
-  as part of the release flow. Fires on "write a changelog", "changelog
-  workmanship", "release notes", "Unreleased section", or "keep a changelog".
 user-invocable: false
+hexagonal_role: supporting
+context:
+  window: inherit
+  intent:
+    mode: task
 metadata:
   tier: library
   stability: stable
@@ -18,35 +19,9 @@ metadata:
   owner: agentops
   dependencies: []
   primary_artifacts:
-    - CHANGELOG.md
-    - release notes
-context:
-  window: inherit
-  intent: >-
-    Raise changelog workmanship by reviewing the whole release-history surface:
-    structure, semver alignment, audience-facing language, grouping, and the
-    discipline that keeps the file current across releases.
-  constraints:
-    - Preserve the project's real history; never invent or backdate entries.
-    - Write for the human who upgrades, not for the committer who shipped.
-    - Treat the Unreleased section as a living buffer, edited every change.
-    - Keep remediation scoped to the changelog surface under review.
-  inputs:
-    - The existing CHANGELOG.md (or its absence).
-    - Tags, releases, and the commit / PR / issue history since the last release.
-    - The project's versioning scheme and release cadence.
-output_contract:
-  format: workmanship_report
-  required_sections:
-    - verdict
-    - findings
-    - changes
-    - verification
-    - residual_risk
-  guarantees:
-    - Findings name the failing changelog property and the user-visible impact.
-    - Changes preserve or improve structure, grouping, semver alignment, and language.
-    - Verification confirms the file parses, links resolve, and the latest release maps to a tag.
+  - CHANGELOG.md
+  - release notes
+output_contract: 'workmanship_report with sections: verdict, findings, changes, verification, residual_risk.'
 ---
 
 # Changelog Workmanship

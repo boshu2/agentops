@@ -1,23 +1,9 @@
 ---
 name: cc-loop-driver
 user-invocable: false
-description: |
-  Run an assured, Claude-native control-plane tick loop in PURE Claude tools — no NTM, no claude -p. The orchestrator (main agent) pulls one ready bead, dispatches a fresh Task subagent worker, dispatches a separate-context validator (author != judge), and only the orchestrator closes + commits + publishes on a verified PASS.
-
-  Triggers: "drive the loop", "cc-loop-driver", "Claude-native tick loop", "run the control plane in Claude", "assured loop without NTM", "bd ready -> claim -> worker -> validate -> close", "single-writer close loop", "all-Claude factory loop".
-
-  **Use when:**
-  - You want the control-plane loop as a shippable skill that runs in one Claude session with no NTM/tmux dependency.
-  - You have a `bd`/`br` bead ledger and want each bead worked + independently validated + closed + committed with evidence.
-  - You need author != judge assurance in an all-Claude system (separate Task subagent contexts).
-
-  **Perfect for:**
-  - Draining a ready queue overnight on a Max subscription with no API burn.
-  - Bootstrapping the factory before NTM/Agent-Mail turnout is wired.
-
-  **Not ideal for:**
-  - Heavy parallel multi-repo swarms (use NTM + Agent Mail).
-  - Work with no acceptance criteria on the bead (nothing to validate against).
+description: |-
+  Use when running a Claude-native control-plane tick loop with worker and separate-validator subagents.
+  Triggers:
 practices:
 - design-by-contract
 - continuous-delivery

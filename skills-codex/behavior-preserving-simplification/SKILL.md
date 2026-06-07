@@ -1,6 +1,6 @@
 ---
 name: behavior-preserving-simplification
-description: 'Codex-native entry point for the behavior-preserving-simplification AgentOps skill.'
+description: "Run behavior preserving simplification."
 ---
 
 # behavior-preserving-simplification (Codex)

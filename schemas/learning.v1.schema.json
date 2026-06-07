@@ -57,6 +57,12 @@
     "tombstone_reason": {
       "type": ["string", "null"]
     },
+    "reach": {
+      "type": "string",
+      "enum": ["bead", "pull", "always"],
+      "default": "pull",
+      "description": "Blast-radius tier, orthogonal to maturity: bead=per-bead context, pull=queried on demand (default), always=auto-injected at session bootstrap (computed from maturity==established INTERSECT canon, never author-set)."
+    },
     "schema_version": {
       "type": "integer",
       "const": 1

@@ -166,6 +166,10 @@ if [[ "${#changed_files[@]}" -gt 0 ]]; then
 
   for changed_file in "${changed_files[@]}"; do
     case "$changed_file" in
+      skills/_*/*)
+        # Leading-underscore scaffolding under skills/ is not real skill
+        # source and has no Codex twin under skills-codex/.
+        ;;
       skills/*/*)
         skill_name="${changed_file#skills/}"
         skill_name="${skill_name%%/*}"

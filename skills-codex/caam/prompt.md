@@ -1,6 +1,6 @@
 # Codex Execution Profile -- caam
 
-Manage AI coding CLI accounts with sub-100ms switching. Use when hitting rate limits on Claude Max, GPT Pro, or Gemini Ultra subscriptions and need instant account swapping without browser OAuth.
+Manage AI coding CLI accounts with sub-100ms switching. Use when hitting rate limits on vendor subscriptions and need instant account swapping without browser OAuth.
 
 ## Steps
 
@@ -13,7 +13,7 @@ Manage AI coding CLI accounts with sub-100ms switching. Use when hitting rate li
 
 ## Guardrails
 
-- Do not use Claude Code, `claude -p`, or Claude-only tools as the executor from Codex.
+- Do not use a different agent CLI as the executor from Codex.
 - Do not invent command flags. Verify with `--help` or checked-in references.
 - Do not broaden scope beyond the requested operator action.
 - Do not land source files into `~/dev/agentops`; staged generation belongs under `~/acfs` until the orchestrator lands the batch.

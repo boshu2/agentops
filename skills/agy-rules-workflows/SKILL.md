@@ -1,22 +1,9 @@
 ---
 name: agy-rules-workflows
 user-invocable: false
-description: |
-  Land the AGY (Google Antigravity) flywheel laws as native Rules + Workflows: author!=judge, evidence-gated close, no self-grade, scoped commits, and the claim->work->validate->close->persist bead loop.
-
-  Triggers: "AGY rules", "Antigravity rules", "agy workflow", "AGY native loop", "port the operating loop to AGY", "author != judge in AGY", "evidence-gated close AGY", "AGY plugin", "bead crank on Antigravity".
-
-  Use when:
-  - Standing up the AGY image / Antigravity-native control-plane node and you need the invariant laws + loop expressed in AGY primitives (not a Claude/Codex port).
-  - Enforcing author!=judge, evidence-gated closes, no-self-grade, and scoped commits on `agy` agents.
-  - Wiring claim->work->validate->close->persist as an AGY slash workflow.
-
-  Perfect for:
-  - Operators bootstrapping the AGY turnout of the flywheel after the Claude image hardened.
-
-  Not ideal for:
-  - Claude Code (use operating-loop-workflow / bead-crank) or Codex (use the codex-team skill). This is AGY-native only.
-  - Any client-facing content. Operator-side: drives the harness binaries.
+description: |-
+  Use when installing or validating AgentOps rules and workflows for Google Antigravity.
+  Triggers:
 practices:
 - design-by-contract
 - continuous-delivery

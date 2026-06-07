@@ -1,6 +1,6 @@
 ---
 name: bead-completion-audit
-description: 'Codex-native entry point for the bead-completion-audit AgentOps skill.'
+description: "Run bead completion audit."
 ---
 
 # bead-completion-audit (Codex)

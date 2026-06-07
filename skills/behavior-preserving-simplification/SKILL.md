@@ -1,18 +1,11 @@
 ---
 name: behavior-preserving-simplification
-description: >
-  Triggers: simplify code, refactor code, reduce complexity, remove duplication,
-  split functions, clarify control flow, preserve behavior, characterization
-  tests, invariants, rollback-safe refactoring. Use this when code should become
-  smaller or clearer while keeping externally observable behavior unchanged.
+description: |-
+  Use when simplifying code, reducing duplication, or clarifying flow while preserving behavior with tests.
+  Triggers:
 skill_api_version: 1
-metadata:
-  tier: execution
-  stability: experimental
-  dependencies:
-  - standards
-  - refactor
-  - validation
+user-invocable: false
+hexagonal_role: supporting
 context:
   window: fork
   intent:
@@ -21,15 +14,14 @@ context:
     exclude:
     - HISTORY
   intel_scope: topic
-output_contract:
-  format: refactor_result
-  required_sections:
-  - behavior_baseline
-  - invariants
-  - changes
-  - verification
-  - rollback_plan
-user-invocable: false
+metadata:
+  tier: execution
+  stability: experimental
+  dependencies:
+  - standards
+  - refactor
+  - validation
+output_contract: 'refactor_result with sections: behavior_baseline, invariants, changes, verification, rollback_plan.'
 ---
 # Simplify And Refactor Code Isomorphically
 

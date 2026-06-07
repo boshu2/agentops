@@ -1,6 +1,6 @@
 ---
 name: process-triage
-description: 'Triage system processes with the `pt` wrapper and choose safe remediation. Use when diagnosing runaway processes, comparing `pt scan` and `pt deep-scan`, or using `pt agent` plan/apply workflows.'
+description: "Run process triage."
 ---
 
 # process-triage (Codex)

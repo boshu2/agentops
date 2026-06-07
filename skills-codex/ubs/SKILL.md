@@ -1,6 +1,6 @@
 ---
 name: ubs
-description: 'Run Ultimate Bug Scanner (UBS) for code review. Use when reviewing code, checking for bugs, scanning for security issues, validating AI-generated code, or pre-commit quality checks.'
+description: "Run UBS."
 ---
 
 # ubs (Codex)

@@ -1,27 +1,24 @@
 ---
 name: cli-agent-ux-audit
-description: |
-  Score and aggressively improve CLI ergonomics for AI agents — predictable flags,
-  greppable --help, machine-readable (JSON/NDJSON) output modes, stable exit codes,
-  and low-friction robot surfaces — then apply the fixes in-tree.
-  Triggers: "make this CLI agent-friendly", "agent ergonomics", "robot mode for my CLI",
-  "JSON output mode", "NDJSON streaming output", "stable exit codes", "audit CLI for agents",
-  "design --help for agents", "machine-readable output", "CLI affordances for AI", "--robot flag".
+description: |-
+  Use when improving CLI ergonomics for agents: flags, help, JSON output, exit codes, and robot surfaces.
+  Triggers:
+skill_api_version: 1
+user-invocable: false
+hexagonal_role: supporting
 practices:
 - hexagonal-architecture
 - pragmatic-programmer
 - design-for-the-machine
-hexagonal_role: supporting
 consumes: []
 produces:
 - ergonomics-scorecard
 - remediation-plan
 context_rel:
-- kind: complements
+- kind: partnership
   with: installer-workmanship
-- kind: complements
+- kind: partnership
   with: readme-writing
-skill_api_version: 1
 context:
   window: inherit
   intent:
@@ -31,8 +28,7 @@ metadata:
   tier: judgment
   stability: experimental
   dependencies: []
-output_contract: 'an ergonomics scorecard (0–100 across 8 axes) plus a prioritized, in-tree remediation plan with concrete flag/output/exit-code changes'
-user-invocable: false
+output_contract: "an ergonomics scorecard (0\u2013100 across 8 axes) plus a prioritized, in-tree remediation plan with concrete flag/output/exit-code changes"
 allowed-tools:
 - Read
 - Edit

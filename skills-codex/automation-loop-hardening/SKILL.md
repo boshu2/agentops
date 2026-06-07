@@ -1,6 +1,6 @@
 ---
 name: automation-loop-hardening
-description: 'Codex-native entry point for the automation-loop-hardening AgentOps skill.'
+description: "Run automation loop hardening."
 ---
 
 # automation-loop-hardening (Codex)

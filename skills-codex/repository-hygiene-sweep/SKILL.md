@@ -1,6 +1,6 @@
 ---
 name: repository-hygiene-sweep
-description: 'Codex-native entry point for the repository-hygiene-sweep AgentOps skill.'
+description: "Run repository hygiene sweep."
 ---
 
 # repository-hygiene-sweep (Codex)

@@ -2,12 +2,10 @@
 name: caam
 user-invocable: false
 skill_api_version: 1
+hexagonal_role: supporting
 metadata:
   tier: execution
-description: >-
-  Manage AI coding CLI accounts with sub-100ms switching. Use when hitting rate
-  limits on Claude Max, GPT Pro, or Gemini Ultra subscriptions and need instant
-  account swapping without browser OAuth.
+description: "Use when switching AI coding CLI accounts quickly to recover from subscription rate limits or OAuth friction."
 ---
 <!-- TOC: Quick Start | THE EXACT PROMPT | Smart Rotation | TUI | Isolated Profiles | References -->
 

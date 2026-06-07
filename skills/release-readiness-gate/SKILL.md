@@ -1,15 +1,15 @@
 ---
 name: release-readiness-gate
+description: |-
+  Use when preparing releases with versioning, changelog, artifacts, smoke tests, tags, and go/no-go.
+  Triggers:
 skill_api_version: 1
-description: >-
-  Triggers: use when preparing a software release — picking the next semantic
-  version, finalizing the changelog, building and signing artifacts, running
-  smoke tests and the project gates, tagging, and making the go/no-go call. A
-  repeatable pre-release discipline that produces an evidence-backed release
-  decision before anything is published. Fires on "prepare a release", "cut a
-  release", "release checklist", "version bump", "release prep", "is this ready
-  to ship", or "tag and release".
 user-invocable: false
+hexagonal_role: supporting
+context:
+  window: inherit
+  intent:
+    mode: task
 metadata:
   tier: execution
   stability: stable
@@ -19,38 +19,10 @@ metadata:
   owner: agentops
   dependencies: []
   primary_artifacts:
-    - release-readiness report
-    - signed release artifacts
-    - annotated version tag
-context:
-  window: inherit
-  intent: >-
-    Drive a release from "looks done" to a defensible go/no-go decision by
-    running a fixed pre-release sequence — version, changelog, build/sign, smoke,
-    gates, tag — and recording the evidence for each step instead of trusting a
-    feeling that it is ready.
-  constraints:
-    - Never publish, push a tag, or announce until the go decision is recorded.
-    - Pick the version from the actual change set (semver), not from habit.
-    - Build artifacts from a clean, committed tree at the tagged commit.
-    - Every readiness claim must cite a command and its exit code, not a memory.
-  inputs:
-    - The repository at the candidate commit, with a clean working tree.
-    - The change set since the last release (commits, PRs, merged issues).
-    - The project's gate suite, build/sign tooling, and release destination.
-output_contract:
-  format: release_readiness_report
-  required_sections:
-    - version
-    - changelog
-    - artifacts
-    - smoke
-    - gates
-    - decision
-  guarantees:
-    - The chosen version is justified by the highest-impact change (semver).
-    - Every gate and smoke result is reported with its command and exit code.
-    - The go/no-go decision names blockers explicitly; no-go lists the fix.
+  - release-readiness report
+  - signed release artifacts
+  - annotated version tag
+output_contract: 'release_readiness_report with sections: version, changelog, artifacts, smoke, gates, decision.'
 ---
 
 # Release Preparations

@@ -1,6 +1,6 @@
 ---
 name: gemini-headless-evidence
-description: 'Codex-native entry point for the gemini-headless-evidence AgentOps skill.'
+description: "Run gemini headless evidence."
 ---
 
 # gemini-headless-evidence (Codex)

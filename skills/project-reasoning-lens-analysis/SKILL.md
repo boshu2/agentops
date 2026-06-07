@@ -1,14 +1,8 @@
 ---
 name: project-reasoning-lens-analysis
-description: |
-  Analyze a project through multiple distinct reasoning lenses — first-principles,
-  systems-thinking, adversarial/red-team, economic/cost, user-centric, and
-  historical — so each angle surfaces insights the others structurally miss, then
-  synthesize the cross-lens findings into one prioritized view.
-  Triggers: "analyze this project from multiple angles", "modes of reasoning",
-  "look at it from every angle", "first-principles analysis", "what are we
-  missing", "multi-lens review", "different perspectives on this design",
-  "stress-test the whole project", "blind spots in this plan".
+description: |-
+  Use when analyzing a project through first-principles, systems, adversarial, cost, and user lenses.
+  Triggers:
 practices:
 - ai-assisted-dev
 - design-by-contract

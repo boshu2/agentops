@@ -1,6 +1,6 @@
 ---
 name: changelog-quality-pass
-description: 'Codex-native entry point for the changelog-quality-pass AgentOps skill.'
+description: "Run changelog quality pass."
 ---
 
 # changelog-quality-pass (Codex)

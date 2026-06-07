@@ -1,6 +1,6 @@
 ---
 name: implementation-pattern-mining
-description: 'Codex-native entry point for the implementation-pattern-mining AgentOps skill.'
+description: "Run implementation pattern mining."
 ---
 
 # implementation-pattern-mining (Codex)

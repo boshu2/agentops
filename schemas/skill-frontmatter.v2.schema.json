@@ -22,6 +22,11 @@
       "enum": ["domain", "driving-adapter", "driven-adapter", "supporting", "generic"],
       "description": "REQUIRED: which hexagonal-architecture role this skill plays. Enforces the DDD/hex layer cannot drift silently (registries-drift lesson, 2026-05-17)."
     },
+    "trigger_probes": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "OPTIONAL: deterministic lexical trigger phrases this skill must rank #1 for under scan_descriptions.py --probe. Each phrase is a self-declared selection cue; the probe asserts the skill wins its own phrases against the corpus without a live model."
+    },
     "consumes": {
       "type": "array",
       "items": {"type": "string", "description": "artifact-kind or skill slug"}

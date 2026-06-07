@@ -1,19 +1,9 @@
 ---
 name: production-placeholder-audit
 user-invocable: false
-description: |
-  Find mocks, stubs, fake paths, test-only code leaking into production, and evidence-free placeholders; produce actionable findings.
-
-  Triggers: "find mocks", "mock code audit", "stub finder", "fake path scan", "test-only code in production", "placeholder audit", "evidence-free placeholder", "production mock leak".
-
-  Use when:
-  - A codebase might ship mocks, fixtures, dummy paths, fake credentials, no-op integrations, or test harness code through production paths.
-  - A reviewer needs file:line evidence plus a concrete remediation, not a broad TODO inventory.
-  - A release or PR needs a focused audit for placeholder behavior hidden behind plausible names.
-
-  Not ideal for:
-  - General code review without mock, stub, fake, test-leak, or placeholder risk.
-  - Rewriting the code. This skill reports findings; fixes belong to implement/refactor after triage.
+description: |-
+  Use when finding mocks, stubs, fake paths, or placeholders leaking into production code.
+  Triggers:
 practices:
 - design-by-contract
 - testability

@@ -1,6 +1,6 @@
 ---
 name: concurrency-deadlock-remediation
-description: 'Codex-native entry point for the concurrency-deadlock-remediation AgentOps skill.'
+description: "Run concurrency deadlock remediation."
 ---
 
 # concurrency-deadlock-remediation (Codex)

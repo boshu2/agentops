@@ -1,6 +1,8 @@
 ---
 name: fuzz-test-design
-description: "Design and run fuzz, property, and randomized tests. Triggers: fuzz testing, property tests, randomized testing, generator design, oracle design, corpus management, failure minimization, replay, CI fuzz budgets."
+description: |-
+  Use when designing fuzz, property, randomized, or corpus-based tests and replaying failures.
+  Triggers:
 practices:
 - property-based-testing
 - chaos-testing

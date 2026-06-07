@@ -1,6 +1,6 @@
 ---
 name: review
-description: 'Review diffs, find mocks, scan bugs, audit code.'
+description: "Run review."
 ---
 
 # Review Skill

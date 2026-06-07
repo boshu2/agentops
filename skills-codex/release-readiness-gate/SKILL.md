@@ -1,6 +1,6 @@
 ---
 name: release-readiness-gate
-description: 'Codex-native entry point for the release-readiness-gate AgentOps skill.'
+description: "Run release readiness gate."
 ---
 
 # release-readiness-gate (Codex)

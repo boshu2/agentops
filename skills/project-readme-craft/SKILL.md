@@ -1,12 +1,8 @@
 ---
 name: project-readme-craft
-description: |
-  Write practical project READMEs that help real users install, evaluate, run,
-  test, troubleshoot, and decide whether to adopt a project.
-
-  Triggers: "write a README", "improve the README", "README review",
-  "installation docs", "project quickstart", "adoption docs",
-  "document how to run this project".
+description: |-
+  Use when writing READMEs that help users install, run, test, troubleshoot, and adopt a project.
+  Triggers:
 practices:
 - pragmatic-programmer
 - docs-as-code

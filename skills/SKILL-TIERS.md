@@ -18,7 +18,7 @@ Skills fall into three functional categories, plus infrastructure tiers for inte
 | **cross-vendor** | Execution | Multi-runtime orchestration | codex-team, openai-docs, converter |
 | **library** | Internal | Reference skills loaded JIT by other skills | beads, standards, shared |
 | **background** | Internal | Hook-triggered or automatic skills | inject, extract, forge, provenance, ratchet |
-| **meta** | Internal | Skills about skills | using-agentops, using-gc, heal-skill |
+| **meta** | Internal | Skills about skills | using-agentops, heal-skill |
 
 ## The Three Categories
 
@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (71)
+### User-Facing Skills (164)
 
 **Judgment:**
 
@@ -248,6 +248,7 @@ These are how skills chain in practice:
 | **discovery** | meta | Discovery phase orchestrator — brainstorm → search → research → plan → pre-mortem |
 | **validation** | meta | Validation phase orchestrator — vibe → post-mortem → retro → forge |
 | **swarm** | execution | Parallelize any skill — fresh context per agent |
+| **using-ntm** | execution | Run AgentOps loops out of session on an NTM tmux swarm — the NTM leg of the substrate |
 | **rpi** | meta | Thin wrapper: /discovery → /crank → /validation with complexity classification and loop |
 | **evolve** | execution | Autonomous fitness-scored improvement loop |
 | **burndown** | execution | Bounded epic-completion loop — drive a finite target to all-merged, then stop |
@@ -302,6 +303,7 @@ These are how skills chain in practice:
 | **status** | session | Single-screen dashboard |
 | **quickstart** | session | Interactive onboarding |
 | **dream** | session | Private overnight operator surface — setup, bedtime run, and morning report |
+| **bd-first-memory-migration** | knowledge | Consolidate fragmented memory layers onto a bd-canonical store |
 | **bootstrap** | session | One-command full AgentOps setup — fills gaps only |
 | **session-bootstrap** | session | Universal init prompt — every agent runs this first (soc-vuu6.25) |
 
@@ -329,7 +331,104 @@ These are how skills chain in practice:
 | **workflow-builder** | meta | Scaffold a new Claude Workflow script (.claude/workflows/*.js) from the operating-loop.js template |
 | **agent-native** | meta | Make out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI, not hooks |
 
-### Internal Skills (10) — `metadata.internal: true`
+
+**Factory-Built Operator And Pack Skills:**
+
+| Skill | Tier | Description |
+|-------|------|-------------|
+| **acfs** | orchestration | Use when operating ACFS flywheel health checks, init, and agent loop tooling from ~/acfs/bin/acfs. |
+| **agent-mail** | execution | Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. |
+| **agy-native** | cross-vendor | Use when driving AgentOps work natively in Google Antigravity with claims, validation, closeout, and persistence. |
+| **agy-rules-workflows** | orchestration | Use when installing or validating AgentOps rules and workflows for Google Antigravity. |
+| **artifact-clarity-pass** | judgment | Use when removing generic filler from code, docs, or handoffs while preserving every load-bearing fact. |
+| **automation-loop-hardening** | execution | Use when turning repeated manual operations into safer, observable, reusable automation loops. |
+| **bead-completion-audit** | judgment | Use when auditing closed beads for real shipped evidence, acceptance proof, and truthful closeout. |
+| **bead-tracker-migration** | execution | Use when migrating an issue tracker workspace from bd to br with loss-free verification. |
+| **beads-br** | execution | Local-first issue tracker (beads_rust) for AI agents. Use when tracking tasks, managing dependencies, finding ready work, or syncing issues to git via JSONL. |
+| **beads-bv** | execution | Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects. |
+| **beads-workflow** | execution | Use when converting markdown plans into br beads with dependencies for implementation or swarm execution. |
+| **behavior-preserving-simplification** | execution | Use when simplifying code, reducing duplication, or clarifying flow while preserving behavior with tests. |
+| **caam** | execution | Use when switching AI coding CLI accounts quickly to recover from subscription rate limits or OAuth friction. |
+| **casr** | execution | Cross Agent Session Resumer. Convert and resume sessions across Claude Code, Codex, Gemini, and other providers. |
+| **cass** | execution | Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history. |
+| **cass-memory** | execution | Use when starting non-trivial work, mining lessons, or preventing repeated mistakes with cm procedural memory. |
+| **cc-cron-ticks** | orchestration | Use when scheduling autonomous in-session flywheel ticks with Claude Code cron routines. |
+| **cc-hooks** | execution | Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification. Use when blocking commands, auto-formatting, custom permissions, or writing hooks. |
+| **cc-loop-driver** | orchestration | Use when running a Claude-native control-plane tick loop with worker and separate-validator subagents. |
+| **cc-subagents** | orchestration | Use when dispatching scoped Claude Code subagents with worktrees, roles, tools, memory, and evidence gates. |
+| **cc-worktree-isolation** | orchestration | Use when isolating parallel Claude Code workers in separate git worktrees to prevent file collisions. |
+| **changelog-quality-pass** | library | Use when writing or auditing changelogs and release notes for user-facing, semver-aware clarity. |
+| **cli-agent-ux-audit** | judgment | Use when improving CLI ergonomics for agents: flags, help, JSON output, exit codes, and robot surfaces. |
+| **cli-doctoring-workflow** | judgment | Use when designing or auditing CLI doctor commands, health checks, repair hints, and diagnostic UX. |
+| **codebase-briefing-report** | knowledge | Use when producing a shareable architecture, module, metrics, and health report for a codebase. |
+| **codebase-risk-audit** | execution | Use when auditing codebase risks with evidence and prioritized remediation. |
+| **codex-exec** | orchestration | Use when running Codex workers or validators non-interactively through codex exec with evidence. |
+| **codex-goals** | orchestration | Use when using Codex Goals to define an objective once and let Codex iterate until done. |
+| **codex-mcp-plugins** | execution | Use when wiring MCP servers or plugins into Codex CLI and the AgentOps Codex skill bundle. |
+| **codex-sandbox-evidence** | execution | Use when running codex exec in a least-privilege sandbox with machine-checkable proof. |
+| **concurrency-deadlock-remediation** | judgment | Use when finding and fixing deadlocks with lock ordering, reproduction, timeouts, or lock-free alternatives. |
+| **contract-conformance-testing** | execution | Use when building conformance tests from specs, contracts, examples, or compatibility matrices. |
+| **dcg** | execution | Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. |
+| **dependency-update-safety** | library | Use when updating dependencies safely with changelog review, small batches, tests, and rollback. |
+| **expertise-to-procedure** | knowledge | Use when turning tacit expert know-how into a durable skill, playbook, or checklist. |
+| **external-search-triage** | library | Use when deciding whether external research is needed and turning cited findings into repo actions. |
+| **filesystem-path-rationalization** | execution | Use when rationalizing file or directory layout and updating references without breaking builds. |
+| **fuzz-test-design** | execution | Use when designing fuzz, property, randomized, or corpus-based tests and replaying failures. |
+| **gcloud** | execution | Google Cloud Platform CLI - manage GCP resources. Use when working with Compute Engine, Cloud Run, GKE, Cloud Functions, Storage, BigQuery, or other GCP services. |
+| **gemini-headless-evidence** | execution | Use when running Gemini CLI headlessly and capturing structured, machine-checkable evidence. |
+| **gemini-mcp-hooks** | execution | Use when wiring MCP servers, hooks, and scoped tool policy into the Gemini CLI image. |
+| **gemini-native** | cross-vendor | Use when driving AgentOps natively on Gemini CLI with skills, MCP, hooks, worktrees, and structured output. |
+| **gemini-skills-extensions** | execution | Use when installing, linking, enabling, disabling, or validating AgentOps skills for Gemini. |
+| **gh-actions** | execution | Use when creating GitHub Actions workflows, release automation, checksums, signing, or CI/CD. |
+| **gh-cli** | execution | GitHub CLI (gh) for repos, issues, PRs, actions, releases. Use when working with GitHub or running gh commands. |
+| **gh-triage-ru** | execution | GitHub issue/PR triage via ru and gh. Use when processing issues, closing PRs (no-contributions policy), or bulk triage. Independent verification required. |
+| **golden-artifact-testing** | judgment | Use when designing or repairing golden-file, snapshot, fixture, or generated-artifact tests. |
+| **idea-option-forge** | judgment | Use when generating, winnowing, and operationalizing many project improvement options. |
+| **implementation-pattern-mining** | judgment | Use when mining repeated codebase patterns and turning them into reusable implementation guidance. |
+| **installer-quality-audit** | judgment | Use when auditing install, setup, bootstrap, or update scripts for safe, idempotent behavior. |
+| **layered-defect-hunt** | judgment | Use when running systematic multi-pass bug hunting across correctness, edges, concurrency, and failures. |
+| **legacy-codebase-recon** | judgment | Investigate unfamiliar legacy code before edits. Triggers: legacy module, unknown repo, risky refactor, trace ownership. |
+| **live-service-e2e-testing** | execution | Use when building real-service end-to-end tests with fixtures, cleanup, rate limits, and evidence. |
+| **mcp-interface-design** | judgment | Use when designing MCP servers with clear tools, strict schemas, scoped resources, and useful errors. |
+| **measured-performance-optimization** | execution | Use when optimizing a hot path from saved profiles, measurements, and verified improvements. |
+| **metamorphic-test-design** | judgment | Use when designing metamorphic tests for oracle-poor behavior using invariants and input relations. |
+| **multi-model-triangulation** | execution | Cross-validate decisions using multiple AI models (Codex, Gemini, Grok). Use when "get a second opinion", evaluating approaches, or high-stakes decisions. |
+| **native-debugger-triage** | execution | Use when debugging native programs or ELF binaries with gdb breakpoints, backtraces, and memory inspection. |
+| **ntm** | execution | Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. |
+| **ntm-browser-test-coordination** | orchestration | Use when coordinating browser or UI tests through NTM panes with screenshots and handoffs. |
+| **ntm-review-worker-orchestration** | orchestration | Use when operating an NTM review or analysis worker with bounded inputs and evidence-backed output. |
+| **operating-loop-skill** | orchestration | Use when driving one bead end-to-end through claim, work, independent validation, closeout, and persistence. |
+| **performance-profile-triage** | execution | Use when investigating slowness with baselines, profiler evidence, and ranked bottlenecks. |
+| **planning-workflow** | execution | Comprehensive markdown planning methodology for software projects. Use when starting a new project, creating implementation plans, or refining architecture before coding. |
+| **process-triage** | execution | Use when diagnosing runaway processes with the pt wrapper and choosing safe remediation. |
+| **production-placeholder-audit** | execution | Use when finding mocks, stubs, fake paths, or placeholders leaking into production code. |
+| **project-readme-craft** | library | Use when writing READMEs that help users install, run, test, troubleshoot, and adopt a project. |
+| **project-reality-check** | judgment | Use when comparing a project vision to code reality and turning gaps into tracked work. |
+| **project-reasoning-lens-analysis** | judgment | Use when analyzing a project through first-principles, systems, adversarial, cost, and user lenses. |
+| **rch** | execution | Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. |
+| **release-readiness-gate** | execution | Use when preparing releases with versioning, changelog, artifacts, smoke tests, tags, and go/no-go. |
+| **repeatedly-apply-skill** | execution | Use when applying a skill repeatedly with progressive deepening for iterative improvement. |
+| **repository-hygiene-sweep** | execution | Use when cleaning repository branches, worktrees, gc state, large objects, and ignore rules safely. |
+| **research-software** | execution | Research software tools via source code, GitHub, web. Use when creating skills, learning new tools, finding undocumented features, or bleeding-edge patterns. |
+| **ripgrep-search-discipline** | library | Use when searching code with rg using precise, fast flags instead of slow grep or find patterns. |
+| **ru-multi-repo-workflow** | execution | Use when using ru for multi-repo commits, sync, GitHub review, or maintenance automation. |
+| **rust-crate-release-readiness** | judgment | Use when preparing a Rust crate release with metadata, semver, docs, tests, packaging, and rollback notes. |
+| **rust-port-validation-gauntlet** | library | Use when running a Rust port through build, test, clippy, fmt, miri, fuzz, and bench gates. |
+| **rust-search-integration** | library | Use when adding fast lexical or semantic code search to a Rust project with an ergonomic query API. |
+| **rust-sqlite-cli-architecture** | judgment | Use when designing Rust CLIs backed by SQLite with migrations, transactions, tests, and data safety. |
+| **rust-ub-risk-audit** | judgment | Use when auditing Rust UB risks in unsafe, FFI, raw pointers, layout, or concurrency. |
+| **rust-unsafe-boundary-audit** | library | Use when auditing Rust unsafe blocks and FFI boundaries, invariants, tests, and tooling. |
+| **sbh** | execution | Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status. |
+| **spec-reliability-implementation** | execution | Use when implementing a written spec into a reliable service with acceptance examples and observability. |
+| **ssh** | execution | Use when configuring SSH access, keys, tunnels, host diagnostics, or safe remote command workflows. |
+| **stash-hygiene-sweep** | execution | Use when auditing git stashes, deciding keep/drop/apply/archive, and clearing confirmed stale entries. |
+| **system-performance-remediation** | execution | Use when restoring machine responsiveness from high CPU, memory, IO, cache, or runaway process pressure. |
+| **ubs** | execution | Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks. |
+| **vibing-with-ntm** | execution | Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence. |
+| **work-contract-portability** | knowledge | Use when designing agent work contracts, handoffs, evidence, and role boundaries across runtimes. |
+| **worktree-branch-rationalization** | execution | Use when rationalizing git worktrees and branches into a canonical line without losing useful work. |
+
+### Internal Skills (9) — `metadata.internal: true`
 
 Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hooks. Loaded JIT by other skills via Read or auto-triggered by hooks.
 
@@ -344,7 +443,6 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | ratchet | background | Execution | Progress gates |
 | flywheel | background | Knowledge | Knowledge health monitoring |
 | using-agentops | meta | Meta | AgentOps workflow guide (auto-injected) |
-| using-gc | meta | Meta | Guide to running AgentOps on the Gas City (gc) substrate |
 
 ---
 
@@ -372,7 +470,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | doc | standards | required |
 | flywheel | - | - |
 | forge | - | - |
-| **dream** | - | - (retired pointer; out-of-session compounding runs via Gas City) |
+| **dream** | - | - (retired pointer; out-of-session compounding runs on the substrate — NTM + MCP + managed-agents) |
 | handoff | - | - |
 | **implement** | beads, standards | optional, required |
 | inject | - | - |
@@ -408,7 +506,6 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | trace | provenance | alternative |
 | **update** | - | - (standalone) |
 | using-agentops | - | - |
-| using-gc | - | - |
 | **test** | standards, complexity | required, optional |
 | **review** | standards, council | required, optional |
 | **design** | council, shared | required, optional |

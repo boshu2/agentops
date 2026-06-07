@@ -1,6 +1,6 @@
 ---
 name: project-readme-craft
-description: 'Codex-native entry point for the project-readme-craft AgentOps skill.'
+description: "Run project readme craft."
 ---
 
 # project-readme-craft (Codex)

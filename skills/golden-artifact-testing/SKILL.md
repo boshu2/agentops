@@ -1,10 +1,15 @@
 ---
 name: golden-artifact-testing
-description: >-
-  Triggers: use when designing, reviewing, or repairing golden-file,
-  snapshot, fixture, or generated-artifact tests that need explicit approval,
-  normalization, stable diffs, fixture ownership, and disciplined updates.
+description: |-
+  Use when designing or repairing golden-file, snapshot, fixture, or generated-artifact tests.
+  Triggers:
 skill_api_version: 1
+user-invocable: false
+hexagonal_role: supporting
+context:
+  window: fork
+  intent:
+    mode: task
 metadata:
   tier: judgment
   stability: experimental
@@ -13,33 +18,7 @@ metadata:
   maturity: source
   clean_room: true
   owner: agentops
-context:
-  window: fork
-  intent:
-    mode: task
-    summary: >-
-      Turn artifact comparisons into readable, reviewable tests that catch
-      behavioral drift without creating noisy fixture churn.
-  inputs:
-    - Generated files, serialized payloads, CLI output, reports, snapshots, or rendered artifacts.
-    - Existing fixture layout and test command surface.
-    - Known volatile fields, platform-specific values, and update workflow constraints.
-output_contract:
-  format: golden_artifact_test_plan
-  required_sections:
-    - scope
-    - artifact_contract
-    - normalization
-    - comparator_and_diff
-    - fixture_ownership
-    - approval_workflow
-    - update_discipline
-    - verification
-  guarantees:
-    - Golden updates are opt-in and reviewable.
-    - Diffs explain behavior changes without hiding meaningful data.
-    - Fixtures have a clear owner and a bounded update path.
-user-invocable: false
+output_contract: 'golden_artifact_test_plan with sections: scope, artifact_contract, normalization, comparator_and_diff, fixture_ownership, approval_workflow, update_discipline, verification.'
 ---
 
 # Testing Golden Artifacts

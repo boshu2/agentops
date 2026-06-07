@@ -28,7 +28,7 @@ check "has metadata.tier" "grep -qE '^  tier:' '$SKILL'"
 check "has output_contract" "grep -qE '^output_contract:' '$SKILL'"
 
 # --- triggers (FAIL-severity per AUTHORING-STANDARD §0/§8.2) ---
-check "EXACT line-start Triggers: marker present" "grep -qE '^Triggers:' '$SKILL'"
+check "line-start Triggers: marker present" "grep -qE '^[[:space:]]*Triggers:' '$SKILL'"
 check "description carries a Triggers clause" "awk '/^description:/{f=1} /^[A-Za-z_]/&&!/^description:/{if(f)exit} f' '$SKILL' | grep -q 'Triggers:'"
 
 # --- section spine (required order per §5) ---

@@ -1,22 +1,8 @@
 ---
 name: cc-worktree-isolation
-description: |
-  Isolate parallel agent writes with Claude Code worktrees so concurrent subagents never clobber each other's files.
-
-  Triggers: "worktree isolation", "parallel subagents collide", "isolation: worktree", "EnterWorktree", "sparse worktree checkout", "WorktreeCreate hook", "two agents editing the same file".
-
-  **Use when:**
-  - Spawning parallel subagents or swarm workers that write to the same repo
-  - A run produced merge garbage / lost edits from concurrent writers
-  - You need declarative per-agent write isolation instead of ad hoc `git worktree` choreography
-
-  **Perfect for:**
-  - Fan-out implementation across independent beads/issues in one repo
-  - Large monorepos where each worker only needs a subtree (sparse checkout)
-
-  **Not ideal for:**
-  - Single-agent sequential work (no contention — plain branch is simpler)
-  - Two tasks that MUST edit the same file (combine into one worker instead)
+description: |-
+  Use when isolating parallel Claude Code workers in separate git worktrees to prevent file collisions.
+  Triggers:
 practices:
 - team-topologies
 - continuous-delivery

@@ -1,6 +1,6 @@
 ---
 name: grafana-platform-dashboard
-description: 'Validate OpenShift Grafana dashboards.'
+description: "Run grafana platform dashboard."
 ---
 # Grafana Platform Dashboard
 

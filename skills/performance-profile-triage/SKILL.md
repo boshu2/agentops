@@ -1,6 +1,8 @@
 ---
 name: performance-profile-triage
-description: "Profile-driven performance analysis with reproducible baselines, profiler or trace evidence, ranked bottlenecks, and verified improvements. Triggers: use when a user asks to investigate slowness, latency, throughput, CPU, memory, IO, allocation, contention, startup time, regressions, or performance-sensitive changes."
+description: |-
+  Use when investigating slowness with baselines, profiler evidence, and ranked bottlenecks.
+  Triggers:
 practices:
 - code-complete
 - empirical-performance

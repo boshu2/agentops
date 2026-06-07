@@ -1,6 +1,6 @@
 ---
 name: artifact-clarity-pass
-description: 'Codex-native entry point for the artifact-clarity-pass AgentOps skill.'
+description: "Run artifact clarity pass."
 ---
 
 # artifact-clarity-pass (Codex)

@@ -1,21 +1,16 @@
 ---
 name: filesystem-path-rationalization
-description: |
-  Rationalize a project's file/directory layout: fix scattered or inconsistent
-  structure, establish one convention, then move files and update every reference
-  without breaking imports, builds, or links.
-  Triggers: use when the user says "rationalize the file structure", "reorganize
-  the directory layout", "the folders are a mess", "establish a naming
-  convention", "move these files and fix the imports", "flatten/restructure this
-  repo", "files are scattered everywhere", or "clean up the project layout".
+description: |-
+  Use when rationalizing file or directory layout and updating references without breaking builds.
+  Triggers:
 skill_api_version: 1
 user-invocable: false
+hexagonal_role: domain
 practices:
 - inventory-before-action
 - one-convention
 - reference-graph-first
 - atomic-move-then-fix
-hexagonal_role: domain
 consumes:
 - repo-tree
 - convention-target
@@ -27,7 +22,7 @@ context_rel: []
 context:
   window: inherit
   intent:
-    mode: execute
+    mode: task
   intel_scope: topic
 metadata:
   tier: execution

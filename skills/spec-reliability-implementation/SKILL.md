@@ -1,21 +1,16 @@
 ---
 name: spec-reliability-implementation
+description: |-
+  Use when implementing a written spec into a reliable service with acceptance examples and observability.
+  Triggers:
 skill_api_version: 1
-description: |
-  Turn a written specification into a reliable, running service: derive
-  acceptance examples (BDD) from the spec, implement against gates, build in
-  error handling, retries, idempotency, and observability, then verify behavior
-  matches the spec before shipping.
-  Triggers: "build a service from this spec", "spec to service", "turn this
-  spec into an API", "implement this specification", "make this service
-  reliable", "add retries and idempotency", "the service must match the spec",
-  "acceptance tests from the spec", "production-ready service from requirements".
+user-invocable: false
+hexagonal_role: driving-adapter
 practices:
 - behavior-driven-development
 - design-by-contract
 - defensive-programming
 - evidence-driven
-hexagonal_role: driving-adapter
 consumes:
 - specification
 - repo-context
@@ -24,9 +19,8 @@ produces:
 - running-service
 - conformance-report.md
 context_rel:
-- kind: consumer-of
+- kind: customer-of
   with: validate
-user-invocable: false
 context:
   window: fork
   intent:
@@ -38,7 +32,7 @@ metadata:
   dependencies:
   - standards
   - validate
-output_contract: 'file: conformance-report.md (spec→behavior verification verdict, with acceptance results)'
+output_contract: "file: conformance-report.md (spec\u2192behavior verification verdict, with acceptance results)"
 ---
 
 # spec-reliability-implementation — a spec becomes a service that provably behaves like the spec

@@ -1,14 +1,8 @@
 ---
 name: stash-hygiene-sweep
-description: |
-  Safely audit and clear a backlog of git stashes — list every stash, inspect
-  each one's diff and provenance, decide keep vs. drop per-stash, apply or
-  archive the useful ones to a branch, and drop only what is confirmed
-  redundant. Refuses to bulk-clear; when in doubt about a stash it skips and
-  archives rather than dropping. Triggers: "clean up my git stashes",
-  "git stash list is huge", "too many stashes", "stash backlog", "drop old
-  stashes", "is it safe to clear stashes", "review my stashes", "git stash
-  janitor", "audit stashes before deleting".
+description: |-
+  Use when auditing git stashes, deciding keep/drop/apply/archive, and clearing confirmed stale entries.
+  Triggers:
 practices:
 - defensive-programming
 - code-complete

@@ -48,8 +48,8 @@ func fixturePath(t *testing.T, name string) string {
 // expectedOrphanFixtures mirrors tests/fixtures/provenance/expected-orphans.json.
 type expectedOrphanFixtures struct {
 	Fixtures []struct {
-		File             string                       `json:"file"`
-		OrphanArtifactID string                       `json:"orphan_artifact_id"`
+		File             string                        `json:"file"`
+		OrphanArtifactID string                        `json:"orphan_artifact_id"`
 		ExpectedFinding  provenancegraph.OrphanFinding `json:"expected_finding"`
 	} `json:"fixtures"`
 }
@@ -76,7 +76,6 @@ func loadExpected(t *testing.T) expectedOrphanFixtures {
 func TestProvenanceTrace_StrictCatchesEachSeededOrphan(t *testing.T) {
 	exp := loadExpected(t)
 	for _, fx := range exp.Fixtures {
-		fx := fx
 		t.Run(fx.File, func(t *testing.T) {
 			resetProvTraceFlags()
 			provTraceStrict = true

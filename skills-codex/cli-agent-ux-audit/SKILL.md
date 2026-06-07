@@ -1,6 +1,6 @@
 ---
 name: cli-agent-ux-audit
-description: 'Codex-native entry point for the cli-agent-ux-audit AgentOps skill.'
+description: "Run CLI agent ux audit."
 ---
 
 # cli-agent-ux-audit (Codex)

@@ -1,6 +1,6 @@
 ---
 name: multi-model-triangulation
-description: 'Cross-validate decisions using multiple AI models (Codex, Gemini, Grok). Use when "get a second opinion", evaluating approaches, or high-stakes decisions.'
+description: "Run multi model triangulation."
 ---
 
 # multi-model-triangulation (Codex)

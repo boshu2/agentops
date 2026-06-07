@@ -1,6 +1,6 @@
 ---
 name: mcp-interface-design
-description: 'Codex-native entry point for the mcp-interface-design AgentOps skill.'
+description: "Run MCP interface design."
 ---
 
 # mcp-interface-design (Codex)

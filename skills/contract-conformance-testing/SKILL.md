@@ -1,6 +1,8 @@
 ---
 name: contract-conformance-testing
-description: "Build conformance harnesses from specs, contracts, and examples to verify implementations across cases and versions. Triggers: spec compliance checks, contract parity tests, compatibility matrices, golden example validation, cross-version behavior verification."
+description: |-
+  Use when building conformance tests from specs, contracts, examples, or compatibility matrices.
+  Triggers:
 skill_api_version: 1
 user-invocable: false
 practices:

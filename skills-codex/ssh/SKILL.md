@@ -1,6 +1,6 @@
 ---
 name: ssh
-description: 'SSH remote access - connections, tunnels, keys, file transfers. Use when connecting to servers, managing SSH keys, setting up port forwarding, or transferring files with scp/rsync.'
+description: "Run SSH."
 ---
 
 # ssh (Codex)

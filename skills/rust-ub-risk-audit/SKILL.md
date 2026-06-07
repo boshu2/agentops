@@ -1,13 +1,8 @@
 ---
 name: rust-ub-risk-audit
-description: |
-  Audit Rust code for undefined behavior risk around unsafe blocks, FFI, raw
-  pointers, pointer aliasing, lifetimes, layout assumptions, concurrency, and
-  dependency boundaries.
-
-  Triggers: "audit unsafe Rust", "Rust UB risk audit", "FFI safety review",
-  "pointer aliasing review", "layout assumption audit", "Miri follow-up",
-  "unsafe impl review", "dependency safety boundary review".
+description: |-
+  Use when auditing Rust UB risks in unsafe, FFI, raw pointers, layout, or concurrency.
+  Triggers:
 practices:
 - secure-coding
 - defense-in-depth
@@ -31,7 +26,7 @@ context:
     exclude: [HISTORY]
   intel_scope: topic
 metadata:
-  tier: library
+  tier: judgment
   stability: experimental
   dependencies:
   - rust-toolchain

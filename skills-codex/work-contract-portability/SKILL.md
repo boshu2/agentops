@@ -1,6 +1,6 @@
 ---
 name: work-contract-portability
-description: 'Codex-native entry point for the work-contract-portability AgentOps skill.'
+description: "Run work contract portability."
 ---
 
 # work-contract-portability (Codex)

@@ -1,14 +1,8 @@
 ---
 name: rust-sqlite-cli-architecture
-description: |
-  Design Rust command-line tools backed by SQLite with deliberate storage
-  boundaries, migrations, transactions, tests, and operational data-safety
-  practices.
-
-  Triggers: "design a Rust CLI with SQLite", "SQLite-backed Rust command",
-  "CLI database migrations", "transaction strategy for Rust CLI",
-  "test a SQLite CLI", "local-first Rust data store",
-  "operational safety for embedded SQLite".
+description: |-
+  Use when designing Rust CLIs backed by SQLite with migrations, transactions, tests, and data safety.
+  Triggers:
 practices:
 - pragmatic-programmer
 - devsecops-cdlc
@@ -35,7 +29,7 @@ context:
     exclude: [HISTORY]
   intel_scope: topic
 metadata:
-  tier: library
+  tier: judgment
   stability: stable
   dependencies:
   - Rust toolchain

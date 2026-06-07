@@ -1,6 +1,6 @@
 ---
 name: codex-exec
-description: "Drive worker/validator agents with `codex exec` on the ChatGPT Pro subscription (OAuth) — never an API-billed path."
+description: "Run codex exec."
 ---
 
 # codex-exec (Codex)

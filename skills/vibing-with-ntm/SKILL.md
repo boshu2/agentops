@@ -2,12 +2,10 @@
 name: vibing-with-ntm
 user-invocable: false
 skill_api_version: 1
+hexagonal_role: supporting
 metadata:
   tier: execution
-description: >-
-  Tends NTM agent swarms. Use when running orchestrator ticks, unsticking
-  panes, handling rate limits, marching orders, review-only mode, convergence,
-  queue-dry, or multi-agent coordination.
+description: "Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence."
 ---
 <!-- TOC: One Rule | Cold Start | Tick Loop | Intervention Score Matrix | Operator Proof Card | Swarm Pathology Triggers | Pattern Tiers | Metrics | Checklist | Decision Tree | Quick Start | Attention-Feed Loop | Marching Orders | Swarm Loop | Operator Loop | Autonomous Unstick | Observability | Steady-State Cadence | Quality Loops | Coordination | Anti-Patterns | Troubleshooting | References | Related Skills -->
 
@@ -211,13 +209,13 @@ Is CURSOR expired (or missing)?
   → ntm --robot-snapshot  (resync, get new cursor); continue next tick.
 
 Is ANY pane rate_limited?  (check via --robot-health-oauth, NOT pane buffer text)
-  → See OC-001 & OC-002 in references/OPERATOR-CARDS.md.
+  → See OC-001 & OC-002 in [OPERATOR-CARDS.md](references/OPERATOR-CARDS.md).
     Probe: tmux send-keys "ping" Enter; sleep 5; --robot-tail.
     Rotate: ntm rotate <session> --all-limited.
     Or switch: ntm --robot-switch-account=<provider>:<account>.
 
 Is ANY pane stuck (identical tail ≥3 ticks, zero output growth)?
-  → Climb the stuck-pane ladder (see OC-003 in OPERATOR-CARDS.md):
+  → Climb the stuck-pane ladder (see OC-003 in [OPERATOR-CARDS.md](references/OPERATOR-CARDS.md)):
     wake-ping → C-u + send → smart-restart → hard-kill → restart-pane → add+kill.
 
 Is there prose-without-commits? (pane is_working=true but git log 1h=0)
@@ -325,393 +323,64 @@ Scale up only when the operator loop is under control.
 
 ## Marching Orders
 
-### Start-of-Session Prompt
+Use [PROMPTS.md](references/PROMPTS.md) for copy-paste marching orders. Keep the operating constraints here in the live context:
 
-Send a prompt like this to every agent at session start:
+- First dispatch: read repo instructions, register or coordinate if required, claim one scoped work item, reserve files or worktree scope, and start work.
+- Steady-state dispatch: do not re-read onboarding docs every tick; ask for one commit or one explicit blocker within the timebox.
+- Wide swarm dispatch: assign each pane a domain before work starts, then enforce file reservations or worktrees.
+- Review dispatch: switch panes into review-only mode explicitly and block implementer-style bead claims.
 
-```text
-Before doing anything else, read all of AGENTS.md and README.md and understand both. Then inspect the codebase enough to understand the project purpose, architecture, and the specific workflows that matter for the current repo.
+## Operator Commands
 
-Register with MCP Agent Mail if the repo expects it, introduce yourself to the other agents, and check for any existing messages or active coordination threads. If the repo uses Beads and BV, use them to find ready work and pick the next bead you can usefully advance now.
-
-Do not get stuck in communication purgatory. Announce what you are taking on, reserve the relevant files or worktree scope, start doing real work, keep your bead status current, and reply promptly to important agent mail.
-
-If the repo AGENTS.md has special rules for builds, tests, lints, or remote execution helpers such as rch, follow those rules exactly.
-```
-
-### Next-Bead Prompt (steady-state, no AGENTS.md re-read)
-
-```text
-Pick one open/claimed bead you can fully complete in under 60 minutes — prefer the top of `bv --robot-triage`. Claim it (br update <id> --status=in_progress), reserve the files you will edit, code the diff, verify, commit, close the bead, and move on. Do not file new review beads unless you find a real defect that blocks you. Do not write prose mental models or subsystem walkthroughs — ship the commit or surface an explicit blocker within one hour.
-```
-
-Drop the "Reread AGENTS.md" preamble from every steady-state nudge — it costs ~30s/tick per agent in context and gives zero value once the session is running. Keep it only for the first dispatch and for post-compaction resumption.
-
-### Explicit domain assignment (critical for ≥3 agents in one workspace)
-
-At session start, tell each pane what it owns so they don't collide:
-
-```text
-You are pane-N, owner of <crate/directory domain>. Do not edit outside your domain without reserving the files first and announcing in your dispatch prompt. Your ready-work search is scoped to issues tagged or pathed inside this domain.
-```
-
-For the fuller prompt bank — including code-review, post-compaction, exploration, commit-only, "stop prose ship commits", "close the backlog", terse steady-state nudges, and the autonomous-unstick operator prompts — read [PROMPTS.md](references/PROMPTS.md).
-
-## The Swarm Loop
-
-```text
-1. Read repo instructions and current docs
-2. Register / check Agent Mail if the repo uses it
-3. Use bv --robot-triage or ntm work triage
-4. Claim a bead and reserve files or a worktree scope
-5. Implement
-6. Self-review and fix obvious issues
-7. Update bead status and coordination thread
-8. Pick the next ready task
-```
-
-Key commands:
-
-```bash
-bv --robot-triage
-bv --robot-next
-ntm work triage
-ntm work next
-ntm assign myproject --auto --strategy=dependency
-ntm mail inbox myproject
-ntm locks list myproject --all-agents
-```
-
-## Operator Loop
-
-For a human or orchestrator agent tending the swarm.
-
-> **Before nudging anyone, check real pane state.** `ntm activity` / `ntm health` lag behind reality and have in the past shown everything as stale ("56 years ago"). Trust the newer `--robot-is-working` and `--robot-agent-health` surfaces instead. If an agent looks idle in one tool and busy in another, always believe the newer one.
-
-### Each tick — truth first, nudges second
-
-```bash
-# 1. Real per-pane work state (working / idle / rate_limited / error / context_low)
-ntm --robot-is-working=myproject
-
-# 2. OAuth + quota + provider reality (catches false "resets 3pm" messages)
-ntm --robot-health-oauth=myproject
-ntm --robot-quota-status
-ntm --robot-account-status
-
-# 3. Agents stuck with no output for N minutes — auto-restart eligible
-ntm --robot-health-restart-stuck=myproject --stuck-threshold=10m --dry-run
-
-# 4. Coordination surfaces (file conflicts, collisions, digest)
-ntm coordinator status myproject
-ntm coordinator conflicts myproject
-ntm coordinator digest myproject
-
-# 5. Work graph reality
-bv --robot-triage
-br list --status in_progress --json | jq '.issues | length'
-br list --status claimed --json  | jq '.issues | length'   # don't forget claimed
-```
-
-### Act — targeted, not broadcast
-
-```bash
-ntm --robot-send=myproject --msg="..." --type=cod          # non-interactive, avoids confirm prompts
-ntm send myproject --pane=5 --no-cass-check "..."          # use --no-cass-check in loops (CASS dupe prompt blocks otherwise)
-ntm --robot-smart-restart=myproject --panes=4,5 --prompt="..."  # check-then-restart, sends new prompt
-ntm --robot-restart-pane=myproject --panes=4 --restart-bead=br-123  # nuclear: tmux respawn-pane -k + fresh prompt
-ntm rotate myproject --all-limited                          # swap rate-limited CAAM accounts at once
-ntm --robot-switch-account=claude:jeff2718281               # explicit CAAM account switch
-ntm assign myproject --auto --strategy=dependency
-```
-
-### Useful operator surfaces
+Prefer robot surfaces and one-pane actions:
 
 ```bash
 ntm --robot-snapshot
-ntm --robot-attention --attention-cursor=42
-ntm --robot-markdown --md-compact
-ntm --robot-terse
-ntm --robot-mail-check --mail-project=myproject --urgent-only
-ntm --robot-diagnose=myproject --diagnose-fix       # auto-fix where possible
-ntm --robot-wait=myproject --wait-until=idle --timeout=10m
-ntm --robot-wait=myproject --wait-until=rate_limited --timeout=30m   # wake when the wall drops
+ntm --robot-attention --attention-cursor=<cursor>
+ntm --robot-is-working=<session>
+ntm --robot-health-oauth=<session>
+ntm --robot-health-restart-stuck=<session> --stuck-threshold=10m --dry-run
+ntm --robot-send=<session> --panes=<pane> --msg="<specific instruction>"
+ntm --robot-smart-restart=<session> --panes=<pane> --prompt="<restart prompt>"
+ntm --robot-restart-pane=<session> --panes=<pane> --restart-prompt="<fresh prompt>"
 ```
 
-If the cursor expires, re-run `ntm --robot-snapshot` and continue.
+Use interactive dashboards for humans only. Agents should use `--robot-*`, `br`, `bv`, git, and Agent Mail evidence.
 
-## Autonomous Unstick — Don't Wait For The Human
+## Recovery Shortcuts
 
-The swarm's throughput collapses when the orchestrator waits for manual user intervention that it could resolve itself. The operator agent is authorized to take every unstick action below on its own.
+| State | First move | Escalation |
+| --- | --- | --- |
+| stale cursor | `ntm --robot-snapshot` | resume from new cursor |
+| stale rate-limit text | ping probe + `--robot-health-oauth` | rotate account if confirmed |
+| identical tail >=3 ticks | smart-restart dry run | hard-kill or respawn pane |
+| paste buffer / dialog | `Escape Escape Escape C-u`, then targeted send | respawn if submit does not land |
+| mail or reservation down | mark bead owner/blocker directly | backfill Agent Mail when fresh |
+| prose without commits | ship-or-surface prompt | close-the-backlog or stand down |
+| destructive dialog | decline by default | require explicit justification |
 
-### Rate limits are transient — probe, don't assume
+Full recipes live in [RECOVERY.md](references/RECOVERY.md), [OPERATOR-CARDS.md](references/OPERATOR-CARDS.md), and [ANTI-PATTERNS.md](references/ANTI-PATTERNS.md).
 
-A pane showing "resets 3pm (America/New_York)" does **not** mean the pane is dead now. That message is stale the moment it renders. Always probe:
+## Cadence And Stop Conditions
 
-```bash
-# Truth from the provider, not from the pane buffer:
-ntm --robot-health-oauth=myproject | jq '.panes[] | {pane, provider, rate_limited, resets_at}'
+Tick every 4 minutes during nucleation, 10-17 minutes in steady state, and 30 minutes when panes are deep in real work. Stop tending when the convergence triple-check holds: no new commits, no ready work, and in-flight panes unchanged or explicitly standing down across repeated observations.
 
-# Wake a pane from zsh/idle by sending a ping (bypasses ntm's confirm prompts):
-tmux send-keys -t myproject:0.4 "ping" Enter
-sleep 5
-ntm --robot-tail=myproject --lines=10 --panes=4
-```
+If the queue is dry, do not manufacture tasks. Report the state, blockers, degraded sources, and residual risk.
 
-If the pane ponged, the limit already lifted — dispatch work. If it is still rate-limited, try:
+## Quality And Coordination Loops
 
-```bash
-# 1. Rotate the CAAM account (cod uses ChatGPT subscription, cc uses Claude; different pools)
-ntm rotate myproject --pane=4 --account=jeff2718281@gmail.com
-ntm rotate myproject --all-limited       # do them all at once
+- Use [PROMPTS.md](references/PROMPTS.md) for self-review, cross-review, exploration, close-backlog, and mode-switch prompts.
+- Use Beads for work selection, Agent Mail for coordination, reservations or worktrees for write isolation, and NTM for shared state.
+- If coordination surfaces degrade, continue with explicit bead ownership and backfill mail later.
+- Track productivity with commits, closed beads, changed artifacts, pane interventions, degraded sources, and queue state.
 
-# 2. Or switch globally if you know the next healthy account
-ntm --robot-switch-account=claude:jeff2718281
+## Anti-Patterns
 
-# 3. Or wait — ntm will wake you when the wall drops
-ntm --robot-wait=myproject --wait-until=rate_limited --timeout=30m
-```
+The common failure modes are communication purgatory, stale bead state, review-bead inflation, false rate-limit assumptions, duplicate-work collisions, stale activity signals, context drift, and over-broad broadcasts. Match symptoms to [ANTI-PATTERNS.md](references/ANTI-PATTERNS.md) before escalating.
 
-### Stuck panes (identical tail ≥3 ticks, no commits, no new bead churn)
+## Review-Only Mode
 
-Don't keep pasting nudges into a dead buffer. Escalate fast:
-
-```bash
-# Detect:
-ntm --robot-health-restart-stuck=myproject --stuck-threshold=10m --dry-run
-
-# Smart restart (checks activity, avoids trashing real work):
-ntm --robot-smart-restart=myproject --panes=5 --prompt="$(cat marching_orders.txt)"
-
-# If the CLI is wedged on usage, rate-limit-options, or a confirm dialog, the
-# graceful path fails. Use --hard-kill or go straight to restart-pane:
-ntm --robot-smart-restart=myproject --panes=5 --hard-kill --prompt="..."
-ntm --robot-restart-pane=myproject --panes=5 --restart-prompt="..."
-```
-
-If `ntm rotate` times out on a wedged CLI, skip straight to `--robot-restart-pane`; it uses `tmux respawn-pane -k` directly and doesn't need CLI cooperation.
-
-### Interactive blockers inside the pane (cc `rate-limit-options`, codex `[Pasted text]`)
-
-cc panes sometimes land on an interactive `rate-limit-options` dialog with choices like "Stop and wait" or "Switch to extra usage." Codex panes sometimes stall with a `[Pasted text]` buffer waiting for Enter. Both are fully resolvable by the orchestrator:
-
-```bash
-# cc rate-limit-options: pick "Switch to extra usage" (option 2 on typical layout)
-tmux send-keys -t myproject:0.2 "2" Enter
-
-# codex pending paste buffer:
-tmux send-keys -t myproject:0.5 "" Enter
-
-# If the pane has trailing garbage from a prior partial send, clear first:
-tmux send-keys -t myproject:0.5 Escape Escape Escape C-u
-tmux send-keys -t myproject:0.5 "<your prompt>" Enter
-```
-
-Always `C-u` (clear-line) before sending a fresh prompt into codex — codex TUI frequently concatenates a new send onto leftover buffer text and corrupts both.
-
-### Orchestrator send confirmation prompts
-
-`ntm send` aborts with `Continue anyway? [y/N]` when CASS detects a similar past prompt. In an orchestrator loop this is a silent blocker. Two fixes:
-
-```bash
-# Per-call:
-ntm send myproject --pane=5 --no-cass-check "..."
-
-# Structural: use --robot-send, which is non-interactive by design:
-ntm --robot-send=myproject --panes=5 --msg="..."
-```
-
-Never broadcast via `ntm send --all` without excluding the user pane (`-s` / `--skip-first`). Without exclusion, stray prompts land in zsh and show as `zsh: command not found: <truncated-prompt>`.
-
-### Cod/codex approval purgatory
-
-Codex without bypass perms stops every few seconds asking to approve trivial reads. Fix at the alias layer: launch codex with `--dangerously-bypass-approvals-and-sandbox` (the standard `cod` alias does this). If panes were spawned without it, respawn them via `ntm --robot-restart-pane` — that launches via the alias.
-
-## Steady-State Cadence & Productivity Signals
-
-The operator's core job once the swarm is humming is to keep agents moving without burning the whole context on monitoring. Pick a cadence and stick with it; don't sub-minute poll.
-
-### Tick interval
-
-- **4 min** when panes are compiling, restarting, or dispatch has just fired — watch for nucleation.
-- **10–17 min** at steady state — this is the default.
-- Back off to **30 min** when multiple panes are deep in real work and the last tick surfaced nothing new.
-- Never go below 3 min — it just burns tokens without new information.
-
-### What "productive" actually looks like — verify with git, not vibes
-
-```bash
-git -C /path/to/project log --since="1 hour ago" --oneline --format='%ar %an %h %s' | head -20
-ps -eo comm | grep -cE '^(cargo|rustc|go|bun|node)$'     # actual build processes
-ntm --robot-is-working=myproject | jq '[.panes[] | select(.is_working)] | length'
-```
-
-If `git log` shows zero commits across 2+ hours AND panes are reporting "already complete" / "no fixes needed," the swarm is out of work. Stop tending it — more nudges produce prose, not code.
-
-### Close-the-backlog rotation
-
-When `open + claimed + in_progress > 100`, dispatch the "Close the Backlog" prompt (see PROMPTS.md) and **block new review-bead creation** until the count drops below 100. Alternate close and review prompts at a ratio driven by backlog depth:
-
-| Backlog depth | Close : Review |
-| --- | --- |
-| < 50 | 1 : 3 |
-| 50–100 | 1 : 1 |
-| > 100 | 3 : 1 |
-| > 200 | close-only mode |
-
-### Convergence termination
-
-Auto-terminate the orchestrator loop when ALL of:
-
-1. `git log --since="1 hour ago"` shows 0 commits attributed to swarm agents.
-2. ≥2 consecutive ticks where every pane produced convergence language ("exemplary", "already complete", "no fixes needed", "ready to ship").
-3. `br ready --json` returns 0 items AND `br list --status=in_progress,claimed` is empty or unchanged.
-
-When all three hold, stop. Don't ask for more work — report and exit. Infinite nudging a converged swarm is the single biggest source of wasted tokens and user frustration.
-
-## Quality Loops
-
-### Self-Review Prompt
-
-```text
-Read over all of the code you just wrote and the existing code you modified with fresh eyes. Look for obvious bugs, regressions, unsafe assumptions, confusing logic, missing tests, and sloppy edge cases. Fix anything you find before you move on.
-```
-
-### Cross-Review Prompt
-
-```text
-Turn your attention to code written by the other agents and review it critically for bugs, regressions, reliability problems, security issues, and poor assumptions. Diagnose root causes, then fix what actually needs fixing.
-```
-
-### Exploration Prompt
-
-```text
-Randomly explore unfamiliar parts of the codebase, trace the real execution flow, understand how those pieces fit into the larger workflow, and then do a fresh-eyes pass for obvious bugs and bad assumptions. Fix what you can justify.
-```
-
-## Coordination Patterns
-
-Default coordination stack:
-
-```text
-Beads decide what should happen.
-Agent Mail records who is doing what.
-File reservations or worktrees prevent collisions.
-NTM gives the operator shared state, prompts, assignments, and recovery surfaces.
-```
-
-Helpful commands:
-
-```bash
-ntm mail send myproject --all "Report blockers and current file focus."
-ntm locks renew myproject
-ntm locks check internal/auth/service.go --session myproject --pane 2 --json
-ntm checkpoint save myproject -m "before risky merge"
-ntm checkpoint list myproject
-ntm worktrees list
-ntm worktrees merge claude_1
-```
-
-If Agent Mail returns DB-busy errors, `Resource temporarily unavailable`, or repeated
-timeouts, stop retrying after two attempts. Treat mail/reservations as degraded, mark
-the bead owner/notes with `br update`, keep working, and backfill the coordination
-thread once the mail/reservation source is fresh again.
-
-## Swarm Anti-Patterns
-
-### Communication Purgatory / Prose Over Code
-
-Problem: agents keep writing subsystem walkthroughs, mental models, and "exemplary" self-reviews instead of shipping commits. The swarm looks busy; `git log --since="4 hours ago"` shows zero commits.
-
-Fix: enforce a **ship-or-surface** SLA in every dispatch prompt — the agent must either commit a real diff or surface an explicit blocker within one hour. Use the "Stop Prose, Ship Commits" prompt from [PROMPTS.md](references/PROMPTS.md). If convergence language ("no fixes needed", "exemplary", "already complete") appears two rounds in a row and `git log` confirms zero commits, the swarm has run out of work — stop, don't nudge again.
-
-### File Thrashing
-
-Problem: multiple agents edit the same file or same logical area without coordination.
-
-Fix: reserve files up front. Assign explicit **crate / directory domains** at session start — never leave agents to pick overlapping scopes. When collisions happen, explicitly pick a canonical owner and redirect everyone else. When repo policy allows, use worktrees for isolation-heavy efforts.
-
-### Stale Bead State, Hidden "claimed" Backlog
-
-Problem: work is done but bead status is wrong, or agents are tracking `open + in_progress` and silently missing `claimed` (which can hide 50-100 beads from reports).
-
-Fix: always check all three statuses. `br list --status=open,in_progress,claimed --json | jq '.issues | length'`. Periodically run `bv --robot-triage`, `ntm work triage`, and `ntm coordinator digest` to keep the graph honest.
-
-### Review-Bead Inflation
-
-Problem: agents file new review beads every round but never close the backlog. Open beads grow unboundedly while the swarm feels "productive."
-
-Fix: alternate **close-prompts** with **review-prompts**, weighted by backlog depth. When `len(open) + len(claimed) + len(in_progress) > 100`, dispatch the "Close the Backlog" prompt and block new review-bead creation. See [PROMPTS.md](references/PROMPTS.md).
-
-### Broken Build Drift
-
-Problem: one agent breaks the build and the rest keep coding blindly.
-
-Fix: broadcast that the build is broken, stop duplicate speculative work, route one or two agents to repair the baseline. Obey repo rules for offloading heavy verification commands (such as `rch`).
-
-### TUI Misuse
-
-Problem: an agent tries to drive `ntm dashboard` or another interactive surface.
-
-Fix: use `--robot-*` for structured state and keep the TUI for humans.
-
-### Stuck-Pane Tolerance
-
-Problem: orchestrator sees the same 70-line transcript for 30+ ticks, keeps pasting nudges, nothing lands because the CLI is wedged on `usage`, `rate-limit-options`, or a confirm dialog.
-
-Fix: after **≤3 ticks** of identical tail and zero output growth, stop nudging and escalate:
-
-1. `ntm --robot-health-restart-stuck=myproject --stuck-threshold=10m` — detects and surfaces stuck panes.
-2. `ntm --robot-smart-restart --hard-kill --prompt="..."` — graceful-with-fallback.
-3. `ntm --robot-restart-pane --restart-prompt="..."` — nuclear option, bypasses CLI cooperation entirely.
-
-Always `C-u` / Escape × 3 the pane before sending fresh prompts into codex — codex TUI concatenates stray buffer text and corrupts new sends.
-
-### False Rate-Limit-Dead Assumption
-
-Problem: a pane shows "You've hit your limit · resets 3pm (America/New_York)" and the orchestrator treats it as dead for hours — but the wall lifted long ago.
-
-Fix: probe every ~10 min instead of trusting the stale message. `tmux send-keys -t session:0.N "ping" Enter; sleep 5; ntm --robot-tail` — if it pongs, the limit already cleared. Or query reality: `ntm --robot-health-oauth=myproject` and `ntm --robot-quota-status`. See Autonomous Unstick for full recipe.
-
-### Duplicate-Work Collisions
-
-Problem: two agents claim the same bead or edit the same file because the dispatch prompt didn't include a dynamic avoid-list.
-
-Fix: let the coordinator auto-assign, or compute the avoid-list dynamically each dispatch:
-
-```bash
-ntm coordinator enable auto-assign
-ntm coordinator enable digest --interval=15m
-ntm assign myproject --auto --strategy=dependency
-
-# Manual avoid-list for hand-rolled dispatch:
-avoid=$(br list --status=in_progress,claimed --json | jq -r '[.issues[].id] | join(",")')
-ntm --robot-send=myproject --panes=3 --msg="Claim a bead NOT in {$avoid}..."
-```
-
-### Stale Activity Signal
-
-Problem: `ntm activity` / `ntm health` report everything as "56 years stale," so the orchestrator thinks the swarm is dead when it is actually working.
-
-Fix: use the newer `--robot-is-working`, `--robot-agent-health`, `--robot-diagnose` surfaces, which use live pane-buffer sampling instead of cached timestamps. If a tool's output is obviously wrong (timestamps from the epoch), switch tools rather than believing it.
-
-### Saturated Context Drift
-
-Problem: a cc pane has been running for 4–6 days, context is exhausted, work becomes circular planning instead of real code.
-
-Fix: rotate saturated agents. `ntm --robot-restart-pane=myproject --panes=N --restart-bead=br-xxx` — a fresh pane on a clean quota is almost always higher-EV than babying a context-toasted one.
-
-### Orchestrator Prompt Degradation
-
-Problem: nudges shorten to "Next review." after many cycles, and the downstream work becomes equally shallow.
-
-Fix: never shorten nudges below one concrete verb + one specific target. If you can't think of a specific target, stop nudging — the swarm is done. Terseness only works when it is specific-terse, not generic-terse.
-
-### Missing Domain Assignment
-
-Problem: N agents spawned, no domain split — all pick from the same triage list → duplicate work, collisions.
-
-Fix: at session start, assign each pane an explicit **crate / directory domain** in its marching orders ("you own fcp-mesh, fcp-store, fcp-raptorq") AND enable coordinator auto-assign. Domain assignment is the single biggest productivity lever for wide workspaces.
+When the swarm is auditing rather than implementing, dispatch review-only instructions from [REVIEW-MODE.md](references/REVIEW-MODE.md): no Agent Mail registration, no bead claims, read recent diffs, tag findings by severity, and rotate reviewers between study, fresh-eyes, cross-review, and continuation passes.
 
 ## Troubleshooting
 
@@ -782,72 +451,24 @@ Full spec — spawn, dispatch cadence, quality rubric, kill-relaunch timing, ant
 
 | What you see | Start here |
 | --- | --- |
-| "Agent isn't working" / tool shows stale epoch timestamps | ROBOT-MODE.md `--robot-is-working` + OBSERVABILITY.md "Three-Observation Rule" |
-| Rate limit message, unsure if real | RECOVERY.md `QUOTA_*` + OC-001 in OPERATOR-CARDS.md |
-| Pane stuck for 3+ ticks | OC-003 stuck-pane ladder + AP-13 |
-| Prose-without-commits | OC-004 Ship-or-Surface + AP-32 |
-| Agent Mail down | OC-007 + AP-19 |
-| Coordinator digest reports "no conflicts" but conflicts exist | OC-019 + AP-23 |
-| Too-broad file reservation blocks swarm | OC-008 + AP-20 |
-| Need to reassign a bead owned by saturated pane | OC-015 + AP-21 |
-| Need to automate the tick cadence | CRON-AND-AUTOMATION.md |
-| Need the right robot-mode command | ROBOT-MODE.md registry query |
-| Need to know when to stop | OC-016 Convergence Termination + OBSERVABILITY.md |
-| Queue appears dry / no ready beads | OC-043 Queue-Dry Guard + PROMPTS.md "Queue-Dry Operator Prompt" |
-| Bulk assignment slows the whole swarm | OC-044 Pressure-Aware Assignment + AP-59 |
-| Prompt landed in the wrong pane | OC-045 Pane Identity + AP-60 |
-| Integration command seems nonexistent | OC-046 Tool Contracts + AP-61 |
-| Running an audit/review-only session or mixed impl+review | REVIEW-MODE.md (agent-agnostic) or `code-review-gemini-swarm-with-ntm` (Gemini-specific) |
-| Pane "restarted" via `--robot-restart-pane` but agent never booted | OC-027 Two-Step Relaunch + AP-39 |
-| `tmux send-keys` silently does nothing | OC-028 Verify Window Index + AP-40 |
-| Dispatch landed as `zsh: command not found: …` | OC-026 Pid/Current-Command Audit + AP-40/AP-39 |
-| Timer says "Cogitated 35m" but unclear if productive | Liveness Truth Stack above + OBSERVABILITY.md "Liveness Signals That Can Lie" + AP-42 |
-| Pane parked on "Ready for validation" / "MISSION ACCOMPLISHED" | OC-036 Handoff-Failure + AP-43 + PROMPTS.md "Ship-Don't-Hand-Off" |
-| Codex dispatch returns success but agent never starts thinking | OC-037 Multi-Enter Submit + AP-44 |
-| Mysterious bead-DB / registry lock with no obvious source in your swarm | OC-031 Cross-Session Zombie Sweep + AP-49 + RECOVERY.md Cross-Session Contention |
-| Disk climbing 3pp/tick, still under threshold | OBSERVABILITY.md "Disk trajectory beats absolute threshold" + OC-032 + AP-50 |
-| Review pane declares "clean — rotate me" in 3 min | OC-034 Depth-Gate + PROMPTS.md Depth-Gate Prompt |
-| Domain-blocked pane | OC-039 Rotate-Into-Phase + PROMPTS.md Rotate-Into-New-Phase |
-| Parent epic cold for 24h, sub-bead workers blocked | OC-033 Stall-Flip |
-| Pane proposes destructive action in dialog | OC-040 Never Auto-"1" + AP-45 |
-| `--no-cass-check` rejected on `--robot-send` | AP-51 (flag is valid on `ntm send`, not `--robot-send`) |
-| `dcg` blocks a dispatch whose message text mentions destructive verbs | AP-52 |
-| Recovered the pane twice and it's still wedged | OC-029 Recovery-Attempt Budget |
-| Many panes sitting on detached retries (br close / mail) | OC-030 Detached Background-Close |
-| Reviewer panes idle because implementers paused | OC-042 Orchestrator Hygiene Commits |
-| Skill rotation repeats the same skill across rounds | OC-041 Session-Scoped De-Dup + AP-56 |
+| stale activity, epoch timestamps, unclear liveness | `--robot-is-working`, OBSERVABILITY.md, OC-026/027 |
+| possible rate limit | RECOVERY.md `QUOTA_*`, OC-001/002 |
+| pane stuck, prompt in wrong pane, send no-op | OC-003, OC-026-029, AP-39-44 |
+| prose without commits or handoff failure | OC-004, OC-036, PROMPTS.md |
+| Agent Mail, reservation, or coordinator drift | OC-007/008/019, AP-19/20/23 |
+| queue dry or convergence | OC-016/043, OBSERVABILITY.md, PROMPTS.md |
+| review-only swarm | REVIEW-MODE.md or Gemini-specific review skill |
 
 ## Related Skills
 
-This skill is deliberately **narrow**: it covers how to tend an NTM swarm through its operator loop, recovery recipes, and prompt library. For adjacent concerns, invoke these:
-
 | Concern | Skill |
 | --- | --- |
-| Full NTM command catalog, spawn mixes, recipes, `ntm work ...` intelligence | `ntm` |
-| MCP Agent Mail primitives: register, reserve, send, inbox, macros, handshakes | `agent-mail` |
-| Bead state changes, dependencies, ready work | `br` |
-| Graph-aware triage, critical path, priority misalignment | `bv` |
-| Account management, rotation, CAAM quota | `caam` |
-| Canonical multi-agent swarm flow with review loops | `multi-agent-swarm-workflow` |
-| Dual-agent (cc+cod) per-repo flywheels | `flywheel-with-two-agents-per-repo` |
-| Gemini 3.1 Pro review-only swarms with Flash fallback detection | `code-review-gemini-swarm-with-ntm` |
-| Weighted bead-count swarm spawning | `open-beads-weighted-tmux-agent-sessions` |
-| Agent fungibility (why the swarm treats panes as interchangeable) | `agent-fungibility-philosophy` |
-| Multi-model reasoning ensembles (symbolic vs neural, fast vs deep) | `modes-of-reasoning-project-analysis` |
-| Adversarial two-agent idea generation | `dueling-idea-wizards` |
-| Recurring orchestrator ticks | `loop`, `schedule` |
-| Automated pane-stuck detection via hooks | `cc-hooks` |
-| Remote cargo/gcc/bun offload (for rch-related concerns) | `rch` |
-| Past-session mining for prompts / decisions | `cass` |
-| Cross-project pattern extraction | `codebase-pattern-extraction` |
-| Codifying this skill's methodology | `operationalizing-expertise` |
+| NTM command catalog and work intelligence | `ntm` |
+| Agent Mail primitives | `agent-mail` |
+| Bead state and dependencies | `br`, `bv` |
+| Account rotation and quota | `caam` |
+| Multi-model or review swarms | `multi-model-triangulation`, `code-review-gemini-swarm-with-ntm` |
+| Remote build offload | `rch` |
+| Past-session mining | `cass` |
 
----
-
-## Meta-Note On Skill Size
-
-This skill deliberately exceeds the 200-line SKILL.md guideline. Orchestrating a multi-agent swarm requires a large in-the-moment lookup surface — decision tree, truth stack, red-flag phrase table, prompt bank links, convergence conditions, symptom lookup — because an operator tick has a few seconds' budget and the wrong classification wastes hours. The body is still progressively disclosed: only the decision tree, Red-Flag table, Liveness Truth Stack, and Quick Start are needed to run a tick; everything else is referenced on demand via `references/`, `scripts/`, `assets/`, and `SELF-TEST.md`.
-
-Scripts contribute 0 context tokens (they are executed, not loaded). Assets are copy-paste templates, not loaded unless read. References load only when the operator follows a link. The SKILL.md body itself loads once, when the skill triggers — and is structured so the first two screens (Decision Tree → When to Use → Red-Flag Phrases → Liveness Truth Stack) handle ~80% of tick work without scrolling further.
-
-This is the exception that proves the rule: **know why the size guideline exists so you know when to break it**. Skills that reach for this level of detail should explicitly acknowledge and justify the excess.
+This skill stays focused on swarm tending decisions: observe, classify, act once, verify, and stop when the evidence says stop.

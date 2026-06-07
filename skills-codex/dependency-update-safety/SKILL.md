@@ -1,6 +1,6 @@
 ---
 name: dependency-update-safety
-description: 'Codex-native entry point for the dependency-update-safety AgentOps skill.'
+description: "Run dependency update safety."
 ---
 
 # dependency-update-safety (Codex)

@@ -1,16 +1,8 @@
 ---
 name: worktree-branch-rationalization
-description: >-
-  Rationalize a repo's accumulated git worktrees and local branches down to a
-  canonical line plus a small set of protected branches, harvesting the strongest
-  content from every variant onto a staging branch BEFORE any destructive
-  cleanup. Built for the aftermath of parallel-agent (multi-worktree) work, where
-  dozens of linked worktrees and stale branches pile up and drift apart from the
-  branches they were created for.
-  Triggers: "rationalize my branches", "clean up git worktrees", "213 branches /
-  47 worktrees", "kill all worktrees save what's worth saving", "merge what's
-  worth merging and delete the rest", "branch archaeology", "worktree drift",
-  "orphaned worktree", "prune stale branches", "parallel-agent repo cleanup".
+description: |-
+  Use when rationalizing git worktrees and branches into a canonical line without losing useful work.
+  Triggers:
 skill_api_version: 1
 user-invocable: false
 practices:

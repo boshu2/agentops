@@ -1,6 +1,6 @@
 ---
 name: gh-cli
-description: 'GitHub CLI (gh) for repos, issues, PRs, actions, releases. Use when working with GitHub or running gh commands.'
+description: "Run GitHub CLI."
 ---
 
 # gh-cli (Codex)

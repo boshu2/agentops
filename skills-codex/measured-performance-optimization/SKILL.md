@@ -1,6 +1,6 @@
 ---
 name: measured-performance-optimization
-description: 'Codex-native entry point for the measured-performance-optimization AgentOps skill.'
+description: "Run measured performance optimization."
 ---
 
 # measured-performance-optimization (Codex)

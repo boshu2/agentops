@@ -1,6 +1,6 @@
 ---
 name: fuzz-test-design
-description: 'Codex-native entry point for the fuzz-test-design AgentOps skill.'
+description: "Run fuzz test design."
 ---
 
 # fuzz-test-design (Codex)

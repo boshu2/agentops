@@ -2,19 +2,16 @@
 name: bead-tracker-migration
 user-invocable: false
 skill_api_version: 1
+hexagonal_role: supporting
 metadata:
   tier: execution
   stability: experimental
   dependencies:
     - beads
     - beads-br
-description: >-
-  Migrate an issue tracker workspace from bd (beads, Go) to br (beads_rust,
-  SQLite). Covers config differences, JSONL data migration, command mapping, and
-  loss-free verification. Triggers: "migrate bd to br", "bd to br migration",
-  "switch from beads to beads_rust", "convert bd workspace to br", "move beads
-  Dolt workspace to SQLite", "bd export then br import", or any task that takes a
-  `.beads/` directory tracked by bd and re-homes it on br.
+description: |-
+  Use when migrating an issue tracker workspace from bd to br with loss-free verification.
+  Triggers:
 context:
   window: inherit
 output_contract: A br-backed .beads/ workspace with verified-equal issue counts plus a migration report.

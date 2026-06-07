@@ -1,6 +1,6 @@
 ---
 name: codex-mcp-plugins
-description: "Wire MCP servers and plugins into the Codex CLI — the harness-native path to reach flywheel binaries (Agent-Mail, br/beads) and to ship the AgentOps skill bundle to Codex."
+description: "Run codex MCP plugins."
 ---
 
 # codex-mcp-plugins (Codex)

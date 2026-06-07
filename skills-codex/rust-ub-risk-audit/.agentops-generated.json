@@ -2,6 +2,6 @@
   "generator": "manual-maintained",
   "source_skill": "skills/rust-ub-risk-audit",
   "layout": "modular",
-  "source_hash": "b9427f58c63b6c740aac3f98f4eb9ac2353068df24e60824bbd8a2ffb0ddff8b",
-  "generated_hash": "4d7ec8546e721c9acd54edafbe8c794d783e244a26a7073d842d2b35a2ab5524"
+  "source_hash": "73dd2b553b3ea683e2053fc7432b677decb96a6802202dbf808f44c8ceb51ea4",
+  "generated_hash": "27a06850b4dbdebf0adb90a1cc6cf20861d7d822d741b9a68530e4b15e84cfb6"
 }

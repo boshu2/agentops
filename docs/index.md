@@ -145,18 +145,18 @@ Every skill works alone. Compose flows for end-to-end cycles.
 
 | Skill | Use it when |
 |-------|-------------|
-| [`/quickstart`](skills/quickstart.md) | You want the fastest setup check and next action |
-| [`/council`](skills/council.md) | You want independent judges to review a plan, PR, or decision |
-| [`/research`](skills/research.md) | You need codebase context and prior learnings before changing code |
-| [`/pre-mortem`](skills/pre-mortem.md) | You want to pressure-test a plan before implementation |
-| [`/implement`](skills/implement.md) | You want one scoped task built and validated |
-| [`/rpi`](skills/rpi.md) | You want discovery, build, validation, and bookkeeping in one flow |
-| [`/vibe`](skills/vibe.md) | You want a code-quality and risk review before shipping |
-| [`/evolve`](skills/evolve.md) | You want a goal-driven improvement loop with regression gates |
-| [`/dream`](skills/dream.md) | You want overnight knowledge compounding that never mutates source code |
+| [`/quickstart`](../skills/quickstart/SKILL.md) | You want the fastest setup check and next action |
+| [`/council`](../skills/council/SKILL.md) | You want independent judges to review a plan, PR, or decision |
+| [`/research`](../skills/research/SKILL.md) | You need codebase context and prior learnings before changing code |
+| [`/pre-mortem`](../skills/pre-mortem/SKILL.md) | You want to pressure-test a plan before implementation |
+| [`/implement`](../skills/implement/SKILL.md) | You want one scoped task built and validated |
+| [`/rpi`](../skills/rpi/SKILL.md) | You want discovery, build, validation, and bookkeeping in one flow |
+| [`/vibe`](../skills/vibe/SKILL.md) | You want a code-quality and risk review before shipping |
+| [`/evolve`](../skills/evolve/SKILL.md) | You want a goal-driven improvement loop with regression gates |
+| [`/dream`](../skills/dream/SKILL.md) | You want overnight knowledge compounding that never mutates source code |
 
 !!! info "Full catalog"
-    [:octicons-book-24: **All 73 skills**](skills/catalog.md) — complete reference with source links and descriptions.
+    [:octicons-book-24: **All 173 skills**](skills/catalog.md) — complete reference with source links and descriptions.
     [:octicons-routes-24: **Decision tree**](skills-decision-tree.md) — "which skill do I need next?"
 
 ---
@@ -219,7 +219,7 @@ Read the lineage at [12factoragentops.com](https://12factoragentops.com) — Dev
 
     Progressive learning curriculum from single-session work to full autonomous orchestration.
 
--   :material-console-line: **[CLI Reference](cli/commands.md)**
+-   :material-console-line: **[CLI Reference](../cli/docs/COMMANDS.md)**
 
     ---
 

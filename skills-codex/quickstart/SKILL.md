@@ -1,6 +1,6 @@
 ---
 name: quickstart
-description: 'Show AgentOps next action.'
+description: "Run quickstart."
 ---
 # $quickstart
 
@@ -36,6 +36,7 @@ It gives your coding agent four things it doesn't have by default:
   Flows       — $research, $implement, $validation, and $rpi can run alone or compose end to end
 
 Key skills: $rpi  $research  $validation  $implement  $council  $pre-mortem  $swarm  $status
+Fresh-session orientation: `ao session bootstrap`, then `ao inject` / `ao corpus inject --query "<topic>"`
 Full reference: $quickstart --catalog
 ```
 

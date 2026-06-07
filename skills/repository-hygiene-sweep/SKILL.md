@@ -1,35 +1,31 @@
 ---
 name: repository-hygiene-sweep
+description: |-
+  Use when cleaning repository branches, worktrees, gc state, large objects, and ignore rules safely.
+  Triggers:
+skill_api_version: 1
 user-invocable: false
-description: |
-  Safely clean up a git repository: prune merged/stale branches, run gc + repack, find large or dangling objects, remove accidentally-committed large files from history (with strong warnings), and fix .gitignore hygiene. The overriding rule is conservation: never destroy useful work, always prefer a reversible step, and skip anything when in doubt.
-
-  Triggers: "clean up this git repo", "prune merged branches", "delete stale branches", "git gc", "repack the repository", "my .git folder is huge", "repo is bloated", "find large files in git history", "remove a big file from history", "purge a secret from git history", "dangling objects", "git repo maintenance", "fix the .gitignore", "shrink the repository", "too many old branches".
-
-  Perfect for: a routine maintenance pass on a working repo; reclaiming disk after a repo has bloated; auditing which branches are safe to delete; investigating what is making .git large; carefully excising a large file or leaked secret from history.
-
-  Not ideal for: anything on a repo with uncommitted work the user has not backed up; rewriting shared/published history without explicit owner sign-off; non-git VCS; deciding business questions about what code to keep.
+hexagonal_role: supporting
 practices:
 - pragmatic-programmer
 - twelve-factor
-hexagonal_role: execution-adapter
 consumes: []
 produces:
 - repo-cleanup-report
 context_rel: []
-skill_api_version: 1
 context:
   window: inherit
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: execution
   dependencies: []
   stability: stable
-output_contract: "A cleanup report (what was found, what was changed, what was deliberately skipped and why) plus a list of reversible recovery commands. No destructive operation runs without explicit, scoped confirmation."
+output_contract: A cleanup report (what was found, what was changed, what was deliberately skipped and why) plus a list of reversible recovery commands. No destructive operation runs without explicit, scoped confirmation.
 ---
 
 # repository-hygiene-sweep — clean a repository without destroying useful work

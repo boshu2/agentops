@@ -1,6 +1,6 @@
 ---
 name: production-placeholder-audit
-description: 'Codex-native entry point for the production-placeholder-audit AgentOps skill.'
+description: "Run production placeholder audit."
 ---
 
 # production-placeholder-audit (Codex)

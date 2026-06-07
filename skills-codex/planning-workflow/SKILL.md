@@ -1,6 +1,6 @@
 ---
 name: planning-workflow
-description: 'Comprehensive markdown planning methodology for software projects. Use when starting a new project, creating implementation plans, or refining architecture before coding.'
+description: "Run planning workflow."
 ---
 
 # planning-workflow (Codex)

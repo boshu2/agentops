@@ -1,6 +1,6 @@
 ---
 name: rust-sqlite-cli-architecture
-description: 'Codex-native entry point for the rust-sqlite-cli-architecture AgentOps skill.'
+description: "Run rust sqlite CLI architecture."
 ---
 
 # rust-sqlite-cli-architecture (Codex)

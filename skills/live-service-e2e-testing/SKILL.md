@@ -1,6 +1,8 @@
 ---
 name: live-service-e2e-testing
-description: "Build real-service end-to-end tests without mocks, using isolated accounts, explicit fixtures, cleanup, rate-limit controls, and evidence. Triggers: real service e2e, no mocks integration test, external API acceptance test."
+description: |-
+  Use when building real-service end-to-end tests with fixtures, cleanup, rate limits, and evidence.
+  Triggers:
 practices:
 - tdd
 - bdd-gherkin

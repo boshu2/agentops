@@ -1,6 +1,6 @@
 ---
 name: gcloud
-description: 'Google Cloud Platform CLI - manage GCP resources. Use when working with Compute Engine, Cloud Run, GKE, Cloud Functions, Storage, BigQuery, or other GCP services.'
+description: "Run gcloud."
 ---
 
 # gcloud (Codex)

@@ -26,7 +26,7 @@ Load-bearing context: docs/plans/2026-05-21-evolve-loop-epic-design.md (this epi
 ## 7-step unblock ladder
 
 If `bd ready` returns ≥1 unblocked bead, claim and work one.
-If you feel "blocked": log via `ao evolve blocked --reason '<text>'` (Wave 2). NEVER write a STOP marker.
+If you feel "blocked": surface the blocker and pick the next ready bead. NEVER write a STOP marker.
 The ladder (programmatic enforcement: soc-mlbm Wave 2):
 1. Shape-compatible ready bead exists → pick it
 2. Sibling pattern in another bead's description → surface match
@@ -52,5 +52,5 @@ Bounded by: bead-graph coherence, operator-set scope (preferences.yaml), no-self
 <!-- VERBATIM-PRESERVE:start name="no-self-stop" -->
 ## The no-self-stop principle
 
-In `--mode=loop`, the agent NEVER writes a STOP/DORMANT/KILL marker. `ao evolve write-stop-marker` mechanically refuses (exit 1). When stuck: log via `ao evolve blocked`, pick smallest-available P1 anyway. Stop signals come from the operator, never the agent.
+In `--mode=loop`, the agent NEVER writes a STOP/DORMANT/KILL marker. `ao loop write-stop-marker` mechanically refuses (exit 1). When stuck: log via `ao loop blocked`, pick smallest-available P1 anyway. Stop signals come from the operator, never the agent.
 <!-- VERBATIM-PRESERVE:end -->

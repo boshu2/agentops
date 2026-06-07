@@ -1,6 +1,6 @@
 ---
 name: cc-loop-driver
-description: "Run an assured control-plane tick loop on a subscription-billed agent harness — orchestrator pulls one ready bead, dispatches a fresh worker, dispatches a SEPARATE-context validator (author != judge), and only the orchestrator closes + commits + publishes on a verified PASS. Codex-native parity of the Claude-native cc-loop-driver."
+description: Run control-plane loop driver.
 ---
 
 # cc-loop-driver (Codex)

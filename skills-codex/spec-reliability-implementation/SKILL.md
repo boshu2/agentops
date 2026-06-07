@@ -1,6 +1,6 @@
 ---
 name: spec-reliability-implementation
-description: 'Codex-native entry point for the spec-reliability-implementation AgentOps skill.'
+description: "Run spec reliability implementation."
 ---
 
 # spec-reliability-implementation (Codex)

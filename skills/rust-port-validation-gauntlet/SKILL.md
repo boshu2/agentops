@@ -1,13 +1,8 @@
 ---
 name: rust-port-validation-gauntlet
-description: |
-  Run a Rust port or crate through a full battery of quality gates — build, test,
-  clippy (deny warnings), fmt, miri (UB), fuzz, bench — as an autonomous loop that
-  iterates until every gate is green, keeping a negative-evidence ledger of
-  tried-and-failed approaches so it never repeats a dead end.
-  Triggers: "run the gauntlet", "rust quality gauntlet", "all gates green on this
-  crate", "harden this rust port", "clippy + miri + fuzz loop", "make this crate
-  CI-clean", "autonomous rust hardening loop".
+description: |-
+  Use when running a Rust port through build, test, clippy, fmt, miri, fuzz, and bench gates.
+  Triggers:
 skill_api_version: 1
 practices:
 - evidence-over-confidence

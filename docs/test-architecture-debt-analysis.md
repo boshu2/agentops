@@ -1,8 +1,8 @@
 # Test Architecture Debt Analysis: cli/cmd/ao/
 
-**Package:** `/Users/fullerbt/gt/agentops/crew/nami/cli/cmd/ao/`  
-**Analysis Date:** 2026-04-05  
-**Scope:** Single Go package with 4,163 test functions across 258 test files  
+**Package:** `cli/cmd/ao/` (repo-relative)
+**Analysis Date:** 2026-04-05
+**Scope:** Single Go package with 4,163 test functions across 258 test files
 
 ---
 

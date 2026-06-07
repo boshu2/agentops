@@ -1,8 +1,9 @@
 # agy-rules-workflows — Codex Execution Profile
 
 Runtime adapter for Codex CLI. The doctrine, the five invariant **laws**, the
-five-phase Workflow, and the output spec are defined in the sibling
-[`SKILL.md`](./SKILL.md) → [`../SKILL.md`](../SKILL.md). **Read the base skill
+five-phase Workflow, and the output spec are defined in the Codex wrapper
+[`SKILL.md`](./SKILL.md) and the source skill
+[`../../skills/agy-rules-workflows/SKILL.md`](../../skills/agy-rules-workflows/SKILL.md). **Read the base skill
 first**; this file only maps that skill onto Codex-native tooling and restates
 the load-bearing guardrails.
 
@@ -31,7 +32,7 @@ must stay AGY-native per the base skill.
 
 ## Steps
 
-1. **Read the base skill.** Open `../SKILL.md` and load Overview, the five
+1. **Read the base skill.** Open `../../skills/agy-rules-workflows/SKILL.md` and load Overview, the five
    Critical Constraints (the laws), and the five-phase Workflow. Everything below
    assumes it.
 
@@ -64,7 +65,7 @@ must stay AGY-native per the base skill.
    evidence. If the author closed its own bead, Rule 1 is not wired — return to
    Phase 2/3.
 
-7. **Run the quality rubric** from `../SKILL.md` before declaring done (all five
+7. **Run the quality rubric** from `../../skills/agy-rules-workflows/SKILL.md` before declaring done (all five
    laws as always-active Rules, separate clean-context judge, evidence-gated
    close, scoped commits, persist-before-done, `dcg` intact, nothing leaks into
    client-facing surfaces). Return the paths written + rule/workflow IDs + smoke
@@ -89,9 +90,9 @@ must stay AGY-native per the base skill.
 - **`dcg` guard stays on.** Merge hooks into `~/.gemini/settings.json` without
   clobbering the existing `BeforeTool` `dcg` entry. Under Codex's own
   `danger-full-access` sandbox, still route destructive commands through `dcg`.
-- **Never `claude -p` for workers.** It bills the API per-token, not the Max sub
-  (banned). Drive AGY work with `agy -p`/`agy -i`, Codex work with `codex exec`,
-  Claude only via NTM panes / subagents.
+- **Never use a different agent CLI as the Codex executor.** Drive AGY work with
+  `agy -p`/`agy -i` when the AGY image is the target, and Codex work with
+  `codex exec`.
 - **Operator-side; AGY-native only.** Never emit this skill's content into
   client-facing material. For Claude use `operating-loop-workflow` / `bead-crank`;
   this is the AGY turnout, authored from Codex but not a Codex port.

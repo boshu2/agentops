@@ -1,6 +1,6 @@
 ---
 name: codebase-risk-audit
-description: 'Codex-native entry point for the codebase-risk-audit AgentOps skill.'
+description: "Run codebase risk audit."
 ---
 
 # codebase-risk-audit (Codex)

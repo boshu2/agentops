@@ -1,6 +1,6 @@
 ---
 name: codebase-briefing-report
-description: 'Codex-native entry point for the codebase-briefing-report AgentOps skill.'
+description: "Run codebase briefing report."
 ---
 
 # codebase-briefing-report (Codex)

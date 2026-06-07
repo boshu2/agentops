@@ -1,18 +1,17 @@
 ---
 name: installer-quality-audit
+description: |-
+  Use when auditing install, setup, bootstrap, or update scripts for safe, idempotent behavior.
+  Triggers:
 skill_api_version: 1
-description: >-
-  Triggers: use when writing, auditing, or repairing an install / setup /
-  bootstrap / update script so it is idempotent (safe to re-run), additive
-  (never clobbers the user's existing config), cross-platform, free of
-  surprise sudo or reboots, gated by clear preflight checks, and shipped with
-  an obvious recovery / uninstall path. Fires on "write an installer",
-  "install script", "installer workmanship", "make this idempotent",
-  "setup.sh", "bootstrap script", "uninstall path", or "is this install safe
-  to re-run".
 user-invocable: false
+hexagonal_role: supporting
+context:
+  window: inherit
+  intent:
+    mode: task
 metadata:
-  tier: library
+  tier: judgment
   stability: stable
   dependencies: []
   category: engineering-quality
@@ -20,37 +19,9 @@ metadata:
   clean_room: true
   owner: agentops
   primary_artifacts:
-    - install.sh
-    - uninstall.sh
-context:
-  window: inherit
-  intent: >-
-    Raise installer workmanship by reviewing the whole install lifecycle:
-    preflight gating, platform detection, additive mutation, privilege and
-    reboot behavior, rollback, verification, and the recovery / uninstall path
-    that makes the script trustworthy to run on a stranger's machine.
-  constraints:
-    - Default to read-only discovery; never delete or overwrite without backup.
-    - Treat the user's existing config and data as sacred — append, never clobber.
-    - Never escalate privilege or reboot silently; ask, and explain why.
-    - Treat repeat runs, partial runs, and interrupted runs as first-class cases.
-    - Keep remediation scoped to the install surface under review.
-  inputs:
-    - The existing installer (or its absence) and what it claims to set up.
-    - The target platforms, shells, and package managers it must support.
-    - The files, paths, and services it will touch on the host.
-output_contract:
-  format: workmanship_report
-  required_sections:
-    - verdict
-    - findings
-    - changes
-    - verification
-    - residual_risk
-  guarantees:
-    - Findings name the failing installer property and the user-visible impact.
-    - Changes preserve idempotency, additive config handling, and a recovery path.
-    - Verification confirms a clean run, a re-run, and the uninstall all behave.
+  - install.sh
+  - uninstall.sh
+output_contract: 'workmanship_report with sections: verdict, findings, changes, verification, residual_risk.'
 ---
 
 # Installer Workmanship

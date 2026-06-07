@@ -1,6 +1,6 @@
 ---
 name: security
-description: 'Run repository security scans.'
+description: "Run security."
 ---
 # Security Skill
 

@@ -1,6 +1,6 @@
 ---
 name: casr
-description: 'Cross Agent Session Resumer. Convert and resume sessions across Claude Code, Codex, Gemini, and other providers.'
+description: "Run casr."
 ---
 
 # casr (Codex)

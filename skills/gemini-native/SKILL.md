@@ -1,13 +1,8 @@
 ---
 name: gemini-native
-description: |
-  Drive the AgentOps claim->work->validate->close->persist loop natively on
-  Gemini CLI, using `gemini -p`, worktrees, skills, MCP, hooks, and structured
-  output instead of Claude or Codex runtime wrappers.
-
-  Triggers: "gemini native", "Gemini CLI image", "run the loop on Gemini",
-  "Gemini worker", "Gemini validator", "gemini -p", "gemini worktree",
-  "Gemini headless tick", "make Gemini AgentOps-native", "Google-family lane".
+description: |-
+  Use when driving AgentOps natively on Gemini CLI with skills, MCP, hooks, worktrees, and structured output.
+  Triggers:
 practices:
 - continuous-delivery
 - design-by-contract

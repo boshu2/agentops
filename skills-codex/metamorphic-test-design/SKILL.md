@@ -1,6 +1,6 @@
 ---
 name: metamorphic-test-design
-description: 'Codex-native entry point for the metamorphic-test-design AgentOps skill.'
+description: "Run metamorphic test design."
 ---
 
 # metamorphic-test-design (Codex)

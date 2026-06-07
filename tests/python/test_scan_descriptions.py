@@ -140,6 +140,16 @@ class TestCli(unittest.TestCase):
         code = scan.main([str(self.root / "does-not-exist")])
         self.assertEqual(code, 2)
 
+    def test_probe_flow_form_allows_quoted_commas(self):
+        _write_skill(
+            self.root,
+            "deploy",
+            'name: deploy\ndescription: Run ci cd deploy.\ntrigger_probes: ["ci, cd deploy"]',
+        )
+        with redirect_stdout(io.StringIO()):
+            code = scan.main([str(self.root), "--probe", "ci, cd deploy"])
+        self.assertEqual(code, 0)
+
     def test_json_output_reports_counts(self):
         _write_skill(self.root, "a", "name: a\ndescription: Plain.")
         _write_skill(self.root, "b", 'name: b\ndescription: X. Triggers: "b", "x".')

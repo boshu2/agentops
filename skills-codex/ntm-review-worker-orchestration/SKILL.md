@@ -1,6 +1,6 @@
 ---
 name: ntm-review-worker-orchestration
-description: 'Codex-native entry point for the ntm-review-worker-orchestration AgentOps skill.'
+description: "Run NTM review worker orchestration."
 ---
 
 # ntm-review-worker-orchestration (Codex)

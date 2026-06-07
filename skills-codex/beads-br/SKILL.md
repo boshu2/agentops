@@ -1,6 +1,6 @@
 ---
 name: beads-br
-description: 'Local-first issue tracker (beads_rust) for AI agents. Use when tracking tasks, managing dependencies, finding ready work, or syncing issues to git via JSONL.'
+description: "Run beads br."
 ---
 
 # beads-br (Codex)

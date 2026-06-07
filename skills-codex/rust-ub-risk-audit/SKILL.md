@@ -1,6 +1,6 @@
 ---
 name: rust-ub-risk-audit
-description: 'Codex-native entry point for the rust-ub-risk-audit AgentOps skill.'
+description: "Run rust ub risk audit."
 ---
 
 # rust-ub-risk-audit (Codex)

@@ -1,6 +1,6 @@
 ---
 name: native-debugger-triage
-description: 'Codex-native entry point for the native-debugger-triage AgentOps skill.'
+description: "Run native debugger triage."
 ---
 
 # native-debugger-triage (Codex)

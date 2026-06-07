@@ -10,6 +10,8 @@ type ClaimEvidenceRequest struct {
 	Claim        ClaimID
 	EvidenceFile string
 	Gate         GateName
+	AuthorID     string
+	JudgeID      string
 }
 
 // ClaimEvidenceResult is the materialized binding plus its derived

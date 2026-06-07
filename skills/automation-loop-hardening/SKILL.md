@@ -1,10 +1,8 @@
 ---
 name: automation-loop-hardening
-description: >-
-  Identify repeated manual automation operations and turn them into safer,
-  observable, reusable automation loops. Triggers: recurring manual task,
-  repeated operational step, copy-paste workflow, brittle script hardening,
-  runbook automation, cron candidate, scheduled maintenance loop, toil reduction.
+description: |-
+  Use when turning repeated manual operations into safer, observable, reusable automation loops.
+  Triggers:
 skill_api_version: 1
 user-invocable: false
 context:
@@ -15,6 +13,7 @@ context:
     exclude:
     - HISTORY
   intel_scope: topic
+hexagonal_role: supporting
 metadata:
   tier: execution
   stability: experimental

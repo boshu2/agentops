@@ -2,6 +2,6 @@
   "generator": "manual-maintained",
   "source_skill": "skills/concurrency-deadlock-remediation",
   "layout": "modular",
-  "source_hash": "6b5aa31fc20e4f819fb7da61927acefc2ee38084b7de5eaaa47398ee4654cbe0",
-  "generated_hash": "d241325125a00379b5c432294ad5fe1539d1f7d7dba8b5c5c19bd356e37d5655"
+  "source_hash": "e3817adeea7597d06074dde4fa72ddf0df88d58699b4dfac33c388b78934d04b",
+  "generated_hash": "82eea08b5f90db6edd23e457fde1a80524f3d4aa13c52932bb341d4eccfd3de5"
 }

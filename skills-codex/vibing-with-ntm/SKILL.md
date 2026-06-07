@@ -1,6 +1,6 @@
 ---
 name: vibing-with-ntm
-description: 'Tends NTM agent swarms. Use when running orchestrator ticks, unsticking panes, handling rate limits, marching orders, review-only mode, convergence, queue-dry, or multi-agent coordination.'
+description: "Run vibing with NTM."
 ---
 
 # vibing-with-ntm (Codex)

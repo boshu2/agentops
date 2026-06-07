@@ -1,12 +1,8 @@
 ---
 name: gemini-headless-evidence
-description: |
-  Run Gemini CLI headless with least-privilege approval and capture a durable,
-  machine-checkable proof surface from `gemini -p` runs.
-
-  Triggers: "gemini headless", "gemini -p", "Gemini evidence", "Gemini JSON",
-  "stream-json", "Gemini validator", "Gemini worker proof", "capture Gemini
-  exit code", "Gemini sandbox", "Gemini approval mode".
+description: |-
+  Use when running Gemini CLI headlessly and capturing structured, machine-checkable evidence.
+  Triggers:
 practices:
 - design-by-contract
 - evidence-over-assertion

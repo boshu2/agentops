@@ -1,6 +1,6 @@
 ---
 name: worktree-branch-rationalization
-description: 'Codex-native entry point for the worktree-branch-rationalization AgentOps skill.'
+description: "Run worktree branch rationalization."
 ---
 
 # worktree-branch-rationalization (Codex)

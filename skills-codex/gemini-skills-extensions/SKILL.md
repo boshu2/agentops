@@ -1,6 +1,6 @@
 ---
 name: gemini-skills-extensions
-description: 'Codex-native entry point for the gemini-skills-extensions AgentOps skill.'
+description: "Run gemini skills extensions."
 ---
 
 # gemini-skills-extensions (Codex)

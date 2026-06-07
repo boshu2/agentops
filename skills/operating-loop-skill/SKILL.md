@@ -1,16 +1,9 @@
 ---
 name: operating-loop-skill
 user-invocable: false
-description: |
-  Drive one bead end-to-end through the assured operating loop: claim → work → independent-validate → close → persist. The on-disk, harness-portable form of the /operating-loop + /bead-crank plugin commands — loadable by Codex and Gemini, which cannot invoke Claude slash-commands. Operator-side; runs the flywheel binaries (br/bd + git) directly.
-
+description: |-
+  Use when driving one bead end-to-end through claim, work, independent validation, closeout, and persistence.
   Triggers:
-  - "run the operating loop", "crank a bead", "crank the queue", "drive this bead to done"
-  - "claim work and validate it", "work the ready queue", "one assured increment", "tick the loop"
-  - on Codex/Gemini and cannot invoke /operating-loop or /bead-crank (Claude-only plugin commands)
-  - any tracker (br or bd) has ready beads and you want the next taken to an evidence-gated, independently-validated close
-
-  Not for: multi-slice capability shaping from scratch (use `agentops:rpi`, the heavyweight seven-move loop — this is its per-bead inner crank); or work with no acceptance criteria — define them first.
 practices:
 - design-by-contract
 - agile-manifesto

@@ -1,6 +1,6 @@
 ---
 name: codex-goals
-description: "Drive Codex's native iterate-until-done loop with the stable Goals feature — define the objective once, let Codex own the loop."
+description: "Run codex goals."
 ---
 
 # codex-goals (Codex)

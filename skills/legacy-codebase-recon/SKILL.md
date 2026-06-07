@@ -1,6 +1,8 @@
 ---
 name: legacy-codebase-recon
-description: "Investigate unfamiliar legacy code before edits. Triggers: legacy module, unknown repo, risky refactor, trace ownership."
+description: |-
+  Investigate unfamiliar legacy code before edits. Triggers: legacy module, unknown repo, risky refactor, trace ownership.
+  Triggers:
 skill_api_version: 1
 metadata:
   tier: judgment

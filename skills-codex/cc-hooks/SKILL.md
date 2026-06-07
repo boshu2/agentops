@@ -1,6 +1,6 @@
 ---
 name: cc-hooks
-description: 'Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification. Use when blocking commands, auto-formatting, custom permissions, or writing hooks.'
+description: Run hook policy workflows.
 ---
 
 # cc-hooks (Codex)

@@ -1,6 +1,6 @@
 ---
 name: llm-wiki
-description: 'Build external-knowledge wikis.'
+description: "Run llm wiki."
 ---
 # LLM Wiki Skill (proposal)
 

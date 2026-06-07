@@ -2,6 +2,7 @@
 name: dcg
 user-invocable: false
 skill_api_version: 1
+hexagonal_role: supporting
 metadata:
   tier: execution
 description: >-

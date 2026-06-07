@@ -1,13 +1,8 @@
 ---
 name: rust-unsafe-boundary-audit
-description: |
-  Audit Rust unsafe blocks and FFI boundaries by inventorying unsafe surfaces,
-  stating required invariants, shrinking unsafe scope, and validating tests and
-  tooling around unsafe contracts.
-
-  Triggers: "audit Rust unsafe", "review unsafe blocks", "FFI boundary review",
-  "unsafe contract audit", "Rust safety invariants", "minimize unsafe surface",
-  "Miri validation", "sanitizer validation".
+description: |-
+  Use when auditing Rust unsafe blocks and FFI boundaries, invariants, tests, and tooling.
+  Triggers:
 practices:
 - secure-by-design
 - defense-in-depth

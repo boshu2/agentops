@@ -1,11 +1,15 @@
 ---
 name: codebase-risk-audit
-description: "Audit a codebase for architectural, operational, testing, security-adjacent, and maintainability risks with evidence and prioritized remediation. Triggers: \"audit codebase risk\", \"find architectural risks\", \"review operational risks\", \"prioritize remediation\", \"risk audit\"."
+description: |-
+  Use when auditing codebase risks with evidence and prioritized remediation.
+  Triggers:
+skill_api_version: 1
+user-invocable: false
+hexagonal_role: supporting
 practices:
 - code-review
 - threat-modeling
 - operational-readiness
-hexagonal_role: supporting
 consumes:
 - repository
 - test-results
@@ -17,15 +21,14 @@ context_rel:
   with: plan
 - kind: supplier-to
   with: validate
-skill_api_version: 1
 context:
-  window: standard
+  window: inherit
   intent:
-    mode: evidence
+    mode: task
   sections:
     exclude:
     - HISTORY
-  intel_scope: repo
+  intel_scope: full
 metadata:
   tier: execution
   stability: experimental
@@ -33,8 +36,7 @@ metadata:
   - shell
   - git
   - rg
-output_contract: "markdown report with evidence-backed findings, severity, likelihood, blast radius, and prioritized remediation"
-user-invocable: false
+output_contract: markdown report with evidence-backed findings, severity, likelihood, blast radius, and prioritized remediation
 ---
 
 # Codebase Risk Audit
@@ -204,4 +206,3 @@ Return a markdown report with these sections:
   or runbook would reduce the risk enough.
 - Prefer fewer, stronger findings over broad undifferentiated lists.
 - Mark inferences clearly when evidence is indirect.
-

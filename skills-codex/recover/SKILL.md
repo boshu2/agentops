@@ -1,10 +1,10 @@
 ---
 name: recover
-description: 'Recover session context.'
+description: "Run recover."
 ---
 # $recover — Context Recovery After Compaction
 
-> **Purpose:** Help you get back up to speed after context compaction. Automatically detects in-progress work (RPI runs, evolve cycles), loads relevant knowledge, summarizes what you were doing and what's next, and prefers the Codex hookless lifecycle path when applicable.
+> **Purpose:** Help you get back up to speed after context compaction. Detects in-progress work (RPI runs, evolve cycles), loads relevant knowledge, summarizes what you were doing and what's next, and prefers the explicit Codex hookless lifecycle path when applicable.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 

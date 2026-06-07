@@ -1,8 +1,8 @@
 ---
 name: ntm-browser-test-coordination
-description: |
-  Coordinate browser and UI test work through NTM panes with explicit scenarios, per-pane ownership, screenshots/evidence, failures, and handoff-ready results.
-  Triggers: "coordinate browser tests with NTM", "fan out UI testing across panes", "collect screenshots from browser test workers", "triage browser failures from NTM", "handoff browser test evidence", "run UI scenarios in an NTM swarm".
+description: |-
+  Use when coordinating browser or UI tests through NTM panes with screenshots and handoffs.
+  Triggers:
 skill_api_version: 1
 user-invocable: false
 practices:

@@ -1,13 +1,8 @@
 ---
 name: bead-completion-audit
-description: |
-  Audit closed beads/issues to prove they actually shipped what they claimed —
-  catch false-closed work, demand acceptance evidence, and enforce the rule that
-  closed means verified, not merely marked done. Produces a per-bead PASS / FAIL
-  / NEEDS-EVIDENCE verdict report and reopens the false-closed ones.
-  Triggers: "audit closed beads", "false-closed beads", "beads compliance audit",
-  "did we actually finish", "verify completed issues", "completion discipline",
-  "closed = verified", "check acceptance evidence".
+description: |-
+  Use when auditing closed beads for real shipped evidence, acceptance proof, and truthful closeout.
+  Triggers:
 skill_api_version: 1
 user-invocable: false
 practices:

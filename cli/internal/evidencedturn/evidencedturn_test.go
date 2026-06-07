@@ -3,9 +3,46 @@ package evidencedturn
 import (
 	"testing"
 
+	"github.com/boshu2/agentops/cli/internal/liveness"
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 	"github.com/boshu2/agentops/cli/internal/turnstate"
 )
+
+// TestAuthorNeqValidator_AgreesWithDisjoint locks the no-self-grade consolidation:
+// the predicate's decision MUST match the canonical liveness.Disjoint predicate
+// (ag-xdrw) across every identity case. If a future change reintroduces a
+// divergent inline check, this fails — the divergence between reimplementations
+// is precisely what let the empty-ID self-grade bypass recur (#737 PG3/PG4, #741
+// citation reward). The --allow-self waiver is an explicit override on top.
+func TestAuthorNeqValidator_AgreesWithDisjoint(t *testing.T) {
+	cases := []struct {
+		name          string
+		author, judge string
+		wantPass      bool
+	}{
+		{"distinct", "session:a", "session:b", true},
+		{"self-graded", "session:a", "session:a", false},
+		{"empty-author", "", "session:b", false},
+		{"empty-judge", "session:a", "", false},
+		{"both-empty", "", "", false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := evalAuthorNeqValidator(Input{AuthorID: c.author, JudgeID: c.judge})
+			wantDisjoint := liveness.Disjoint(c.author, c.judge) == liveness.Allowed
+			if got.Passed != wantDisjoint {
+				t.Fatalf("author=%q judge=%q: validator pass=%v but Disjoint=%v — DIVERGENCE", c.author, c.judge, got.Passed, wantDisjoint)
+			}
+			if got.Passed != c.wantPass {
+				t.Fatalf("author=%q judge=%q: want pass=%v, got %v", c.author, c.judge, c.wantPass, got.Passed)
+			}
+		})
+	}
+	// The documented --allow-self escape hatch still overrides a self-grade.
+	if w := evalAuthorNeqValidator(Input{AuthorID: "session:x", JudgeID: "session:x", AllowSelf: true}); !w.Passed {
+		t.Fatal("--allow-self must still waive a self-graded verdict (preserved behavior)")
+	}
+}
 
 // wellFormedTransitions builds a verifying, sealed log that folds the bead into
 // the "closed" state: ""->in_progress->validated->closed.
@@ -37,14 +74,14 @@ func wellFormedTransitions(t *testing.T, beadID string) []turnstate.Transition {
 func provEdge(t *testing.T, from, to string) provenancegraph.Edge {
 	t.Helper()
 	e := provenancegraph.Edge{
-		FromID:   from,
-		FromType: "commit",
-		ToID:     to,
-		ToType:   "bead",
-		Relation: "wasRevisionOf",
+		FromID:      from,
+		FromType:    "commit",
+		ToID:        to,
+		ToType:      "bead",
+		Relation:    "wasRevisionOf",
 		EvidenceRef: "deadbeef",
-		TrustTier: "inferred",
-		TS:        "2026-05-31T03:00:00Z",
+		TrustTier:   "inferred",
+		TS:          "2026-05-31T03:00:00Z",
 	}
 	sealed, err := provenancegraph.Seal(e, "")
 	if err != nil {
@@ -269,7 +306,7 @@ func TestEvaluate_EmptyBeadIDErrors(t *testing.T) {
 
 func TestEvaluate_MultipleGapsAllReported(t *testing.T) {
 	in := wellFormedInput(t)
-	in.Scenarios = nil      // fails scenarios_covered + evidence_resolves
+	in.Scenarios = nil       // fails scenarios_covered + evidence_resolves
 	in.ProvenanceEdges = nil // fails provenance_event
 	v, err := Evaluate(in)
 	if err != nil {

@@ -1,13 +1,8 @@
 ---
 name: external-search-triage
-description: |
-  Structure external-source and search triage for repository work: decide when
-  targeted research is needed, capture citations, and turn findings into grounded
-  implementation, review, or documentation actions.
-
-  Triggers: "need current docs", "verify dependency behavior",
-  "search before changing repo", "cite sources for implementation",
-  "triage search results", "ground next actions from external sources".
+description: |-
+  Use when deciding whether external research is needed and turning cited findings into repo actions.
+  Triggers:
 hexagonal_role: supporting
 consumes:
 - repo-context

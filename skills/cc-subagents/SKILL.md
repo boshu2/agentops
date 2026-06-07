@@ -1,23 +1,9 @@
 ---
 name: cc-subagents
 user-invocable: false
-description: |
-  Drive fungible Claude Code workers via the Task tool + .claude/agents/*.md — background, worktree isolation, per-role model/tools/memory/effort scoping, and SubagentStop handling.
-  Triggers: "spawn a subagent", "fan out workers", "parallel agents", "background teammate", "Task tool", ".claude/agents", "worktree isolation", "SubagentStop hook", "interchangeable workers", "spawn vs inline".
-
-  **Use when:**
-  - You need to parallelize independent, file-scoped work across interchangeable workers
-  - You are deciding whether to spawn a subagent vs. do the work inline in the current context
-
-  **Perfect for:**
-  - Fan-out of N independent tasks (per-file audits, per-module refactors, per-bead implementations)
-  - Long-running background explorers/judges that must not block the orchestrator
-  - Write-heavy parallel work that must not clobber a shared working tree
-
-  **Not ideal for:**
-  - A single sequential task with no parallelism (inline it — spawning costs a full context load)
-  - Tightly-coupled edits to one file by multiple workers (combine into one worker instead)
-  - Driving non-Claude runtimes (use codex exec / NTM panes; never `claude -p` for workers)
+description: |-
+  Use when dispatching scoped Claude Code subagents with worktrees, roles, tools, memory, and evidence gates.
+  Triggers:
 practices:
 - team-topologies
 - mythical-man-month

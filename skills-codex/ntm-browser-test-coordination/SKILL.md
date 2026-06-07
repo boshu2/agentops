@@ -1,6 +1,6 @@
 ---
 name: ntm-browser-test-coordination
-description: 'Codex-native entry point for the ntm-browser-test-coordination AgentOps skill.'
+description: "Run NTM browser test coordination."
 ---
 
 # ntm-browser-test-coordination (Codex)

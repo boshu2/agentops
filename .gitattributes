@@ -4,3 +4,14 @@
 
 # Keep executable scripts runnable when cloned on Windows.
 *.sh text eol=lf
+
+# Generated/derived artifacts — union-merge to kill textual re-conflicts during
+# multi-PR drains (their canonical content is restored by scripts/regen-all.sh).
+# Council 2026-06-06 (ag-bdg1). NOTE: cli/embedded/** is //go:embed'd and
+# skills-codex/** ships in the tarball — they MUST stay committed; union-merge
+# only avoids spurious conflict markers, regen produces the authoritative bytes.
+registry.json                          merge=union
+**/.agentops-generated.json            merge=union
+skills-codex/.agentops-manifest.json   merge=union
+docs/contracts/context-map.md          merge=union
+cli/docs/COMMANDS.md                   merge=union

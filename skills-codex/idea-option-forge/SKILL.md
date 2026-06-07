@@ -1,6 +1,6 @@
 ---
 name: idea-option-forge
-description: 'Codex-native entry point for the idea-option-forge AgentOps skill.'
+description: "Run idea option forge."
 ---
 
 # idea-option-forge (Codex)

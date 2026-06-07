@@ -1,23 +1,9 @@
 ---
 name: codex-sandbox-evidence
 user-invocable: false
-description: |
-  Run codex exec under a least-privilege sandbox and emit a machine-checkable JSONL proof surface for the validator.
-
-  Triggers: "codex exec", "codex sandbox", "least-privilege codex", "codex evidence", "codex JSONL proof", "--output-schema", "codex worker dispatch", "read-only codex", "workspace-write", "events.jsonl", "verifiable codex run", "factory/flywheel Codex worker", "harden a codex invocation".
-
-  **Use when:**
-  - Dispatching a Codex worker in the factory/flywheel loop that must produce verifiable evidence, not just a final answer
-  - A validator (human or agent) needs to confirm WHAT a Codex run did — its event stream, tool calls, and structured last message
-  - Hardening a Codex invocation to read-only / workspace-write so it cannot escape its lane
-
-  **Perfect for:**
-  - ACFS / Mount Olympus worker dispatch where every run must leave a proof artifact on disk
-  - dcg-aligned least-privilege execution: default-deny, widen the sandbox only as the task requires
-
-  **Not ideal for:**
-  - Interactive Codex sessions (use the TUI); this is the non-interactive `codex exec` lane
-  - Claude work — use NTM panes or subagents; `claude -p` is banned (bills API, not the sub)
+description: |-
+  Use when running codex exec in a least-privilege sandbox with machine-checkable proof.
+  Triggers:
 practices:
 - design-by-contract
 - data-contracts

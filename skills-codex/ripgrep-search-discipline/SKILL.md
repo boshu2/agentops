@@ -1,6 +1,6 @@
 ---
 name: ripgrep-search-discipline
-description: 'Codex-native entry point for the ripgrep-search-discipline AgentOps skill.'
+description: "Run ripgrep search discipline."
 ---
 
 # ripgrep-search-discipline (Codex)

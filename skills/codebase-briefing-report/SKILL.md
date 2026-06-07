@@ -1,12 +1,8 @@
 ---
 name: codebase-briefing-report
-description: |
-  Produce a structured, shareable report on a codebase's current state — architecture
-  overview, module map, metrics, and a health/risk summary — the artifact you hand a new
-  team member or a stakeholder.
-  Triggers: "write a codebase report", "codebase state report", "architecture overview doc",
-  "onboarding report for this repo", "module map", "summarize this codebase for a stakeholder",
-  "repo health and risk summary", "hand a new team member a writeup of this project".
+description: |-
+  Use when producing a shareable architecture, module, metrics, and health report for a codebase.
+  Triggers:
 skill_api_version: 1
 hexagonal_role: supporting
 consumes: []

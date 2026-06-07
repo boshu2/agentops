@@ -1,6 +1,6 @@
 ---
 name: operating-loop-skill
-description: "Drive one bead end-to-end through the assured operating loop: claim → work → independent-validate → close → persist. The on-disk, harness-portable form of the operating-loop + bead-crank plugin commands — loadable by Codex and Gemini, which cannot invoke Claude slash-commands. Operator-side; runs the flywheel binaries (br/bd + git) directly. Codex execution profile in `prompt.md`; full methodology in the sibling `../SKILL.md`."
+description: "Run operating loop skill."
 ---
 
 # Operating Loop Skill (Codex)

@@ -2,12 +2,10 @@
 name: ubs
 user-invocable: false
 skill_api_version: 1
+hexagonal_role: supporting
 metadata:
   tier: execution
-description: >-
-  Run Ultimate Bug Scanner (UBS) for code review. Use when reviewing code,
-  checking for bugs, scanning for security issues, validating AI-generated
-  code, or pre-commit quality checks.
+description: "Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks."
 ---
 <!-- TOC: Core Insight | THE EXACT PROMPT | Quick Reference | When to Use | Critical Rules | Suppression | Triage | Troubleshooting | AI Validation | References -->
 

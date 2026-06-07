@@ -1,6 +1,6 @@
 ---
 name: acfs
-description: "Operate the ACFS flywheel — health-check, init, and run the agent-flywheel substrate via ~/acfs/bin/acfs. The operator's front door to the Plan→Coordinate→Execute→Scan→Remember loop and its tool stack (br/ntm/dcg/cass/cm/caam/ubs)."
+description: "Run ACFS."
 ---
 
 # acfs (Codex)

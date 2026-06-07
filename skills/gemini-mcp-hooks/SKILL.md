@@ -1,12 +1,8 @@
 ---
 name: gemini-mcp-hooks
-description: |
-  Wire MCP servers and hook policy into Gemini CLI for AgentOps: add/list/enable
-  MCP servers, migrate hooks, and keep tool access scoped to the Gemini image.
-
-  Triggers: "gemini mcp", "Gemini MCP server", "add MCP to Gemini", "Gemini
-  hooks", "gemini hooks migrate", "Agent Mail in Gemini", "beads from Gemini",
-  "Gemini policy", "Gemini tool server".
+description: |-
+  Use when wiring MCP servers, hooks, and scoped tool policy into the Gemini CLI image.
+  Triggers:
 practices:
 - data-contracts
 - least-privilege

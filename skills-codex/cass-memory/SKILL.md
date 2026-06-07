@@ -1,6 +1,6 @@
 ---
 name: cass-memory
-description: 'CASS Memory System (cm) for procedural memory. Use when starting non-trivial tasks, learning from past sessions, building playbooks, or preventing repeated mistakes via trauma guard.'
+description: "Run CASS memory."
 ---
 
 # cass-memory (Codex)

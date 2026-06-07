@@ -1,6 +1,6 @@
 ---
 name: ntm
-description: 'Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors.'
+description: "Run NTM."
 ---
 
 # ntm (Codex)

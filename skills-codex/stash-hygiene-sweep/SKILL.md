@@ -1,6 +1,6 @@
 ---
 name: stash-hygiene-sweep
-description: 'Codex-native entry point for the stash-hygiene-sweep AgentOps skill.'
+description: "Run stash hygiene sweep."
 ---
 
 # stash-hygiene-sweep (Codex)

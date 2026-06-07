@@ -1,25 +1,22 @@
 ---
 name: ntm-review-worker-orchestration
-description: >-
-  Operate a named analysis or review worker through NTM panes with a clear
-  mission, bounded inputs, evidence-backed outputs, validation, and handoff.
-  Triggers: NTM review worker, named analysis bot, review pane orchestration,
-  multi-pane critique, worker handoff, hypothesis review through NTM.
+description: |-
+  Use when operating an NTM review or analysis worker with bounded inputs and evidence-backed output.
+  Triggers:
 skill_api_version: 1
 user-invocable: false
-metadata:
-  tier: orchestration
-  stability: stable
-  dependencies:
-    - ntm
+hexagonal_role: supporting
 context:
   window: inherit
   intent:
     mode: task
-  intel_scope: focused
-output_contract: >-
-  A reviewed worker run: mission card, NTM pane assignment, input bundle,
-  evidence-backed findings, validation result, and durable handoff.
+  intel_scope: topic
+metadata:
+  tier: orchestration
+  stability: stable
+  dependencies:
+  - ntm
+output_contract: 'A reviewed worker run: mission card, NTM pane assignment, input bundle, evidence-backed findings, validation result, and durable handoff.'
 ---
 
 # NTM Review Worker Orchestration

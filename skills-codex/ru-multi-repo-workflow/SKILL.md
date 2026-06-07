@@ -1,6 +1,6 @@
 ---
 name: ru-multi-repo-workflow
-description: 'Orchestrate multi-repo maintenance with ru: smart commits, careful sync, issue/PR review. Use when managing repos, syncing projects, reviewing GitHub issues, or automating maintenance en masse.'
+description: "Run ru multi repo workflow."
 ---
 
 # ru-multi-repo-workflow (Codex)

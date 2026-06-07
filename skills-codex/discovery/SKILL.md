@@ -1,6 +1,6 @@
 ---
 name: discovery
-description: 'Create dense execution packets.'
+description: "Run discovery."
 ---
 # $discovery - Dense Discovery Phase Adapter
 

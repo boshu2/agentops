@@ -1,6 +1,6 @@
 ---
 name: gh-triage-ru
-description: 'GitHub issue/PR triage via ru and gh. Use when processing issues, closing PRs (no-contributions policy), or bulk triage. Independent verification required.'
+description: "Run GitHub triage ru."
 ---
 
 # gh-triage-ru (Codex)

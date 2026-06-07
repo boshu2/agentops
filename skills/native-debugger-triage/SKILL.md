@@ -1,15 +1,8 @@
 ---
 name: native-debugger-triage
-description: >-
-  Debug native programs (C/C++/Rust/Go-cgo and any ELF binary) with GNU gdb —
-  set breakpoints and watchpoints, capture backtraces, inspect memory and
-  variables, run conditional/temporary breakpoints, drive the TUI, and analyze
-  core dumps. Includes a non-interactive batch mode (`gdb -batch -ex`) an agent
-  can drive head-less.
-  Triggers: "debug with gdb", "use gdb", "set a breakpoint", "gdb backtrace",
-  "analyze core dump", "segfault backtrace", "watchpoint", "inspect memory",
-  "why did my C program crash", "native debugger", "gdb batch mode",
-  "non-interactive gdb", "conditional breakpoint", "examine registers".
+description: |-
+  Use when debugging native programs or ELF binaries with gdb breakpoints, backtraces, and memory inspection.
+  Triggers:
 skill_api_version: 1
 user-invocable: false
 hexagonal_role: domain

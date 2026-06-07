@@ -1,6 +1,6 @@
 ---
 name: provenance
-description: 'Trace artifact provenance.'
+description: "Run provenance."
 ---
 # Provenance Skill
 

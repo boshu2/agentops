@@ -1,6 +1,6 @@
 ---
 name: caam
-description: 'Manage AI coding CLI accounts with sub-100ms switching. Use when hitting rate limits on Claude Max, GPT Pro, or Gemini Ultra subscriptions and need instant account swapping without browser OAuth.'
+description: "Run CAAM."
 ---
 
 # caam (Codex)

@@ -1,6 +1,6 @@
 ---
 name: security-suite
-description: 'Run composable security analysis.'
+description: "Run security suite."
 ---
 # Security Suite
 

@@ -1,6 +1,6 @@
 # Codex Execution Profile -- cc-hooks
 
-Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification. Use when blocking commands, auto-formatting, custom permissions, or writing hooks.
+Configure agent runtime hooks for PreToolUse, PostToolUse, Stop, and Notification. Use when blocking commands, auto-formatting, custom permissions, or writing hooks.
 
 ## Steps
 
@@ -13,7 +13,7 @@ Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification. Use
 
 ## Guardrails
 
-- Do not use Claude Code, `claude -p`, or Claude-only tools as the executor from Codex.
+- Do not use a different agent CLI as the executor from Codex.
 - Do not invent command flags. Verify with `--help` or checked-in references.
 - Do not broaden scope beyond the requested operator action.
 - Do not land source files into `~/dev/agentops`; staged generation belongs under `~/acfs` until the orchestrator lands the batch.

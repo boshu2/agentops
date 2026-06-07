@@ -1,6 +1,6 @@
 ---
 name: expertise-to-procedure
-description: 'Codex-native entry point for the expertise-to-procedure AgentOps skill.'
+description: "Run expertise to procedure."
 ---
 
 # expertise-to-procedure (Codex)

@@ -1,18 +1,14 @@
 ---
 name: mcp-interface-design
+description: |-
+  Use when designing MCP servers with clear tools, strict schemas, scoped resources, and useful errors.
+  Triggers:
+skill_api_version: 1
 user-invocable: false
-description: |
-  Design MCP (Model Context Protocol) servers that agents can actually use reliably — sharp tool definitions, strict JSON Schemas, self-correcting error messages, scoped resources, least-privilege auth, and ergonomics that keep tool calls cheap and unambiguous. A design discipline, not a transport tutorial: it shapes the agent-facing contract so the model picks the right tool, fills it correctly, and recovers from failure without a human.
-
-  Triggers: "design an MCP server", "MCP tool definitions", "JSON schema for a tool", "my agent keeps calling the wrong tool", "MCP tool errors", "expose resources over MCP", "MCP auth / scopes", "least privilege for tools", "tool description is ambiguous", "agent fills the wrong arguments", "should this be a tool or a resource", "MCP server pitfalls", "make my tools agent-ergonomic".
-
-  Perfect for: scoping a new MCP server before writing transport code; auditing an existing server's tool surface for ambiguity; tightening schemas so the model stops sending malformed args; designing error payloads that let the agent self-correct; choosing tool-vs-resource and auth boundaries.
-
-  Not ideal for: the MCP wire protocol / SDK plumbing (read the SDK docs); generic REST API design unrelated to agents; client-side MCP host configuration (that's the runtime, not the server contract).
+hexagonal_role: domain
 practices:
 - pragmatic-programmer
 - twelve-factor
-hexagonal_role: domain-policy
 consumes: []
 produces:
 - mcp-interface-design-spec
@@ -20,19 +16,19 @@ produces:
 context_rel:
 - kind: supplier-to
   with: cli-agent-ux-audit
-skill_api_version: 1
 context:
   window: inherit
   intent:
     mode: task
   sections:
-    exclude: [HISTORY]
+    exclude:
+    - HISTORY
   intel_scope: topic
 metadata:
   tier: judgment
   dependencies: []
   stability: experimental
-output_contract: "A design spec or audit (PASS/FAIL per principle) for an MCP server's tool/resource/auth surface, written to a durable artifact (markdown spec or a bead). No server code generated unless asked."
+output_contract: A design spec or audit (PASS/FAIL per principle) for an MCP server's tool/resource/auth surface, written to a durable artifact (markdown spec or a bead). No server code generated unless asked.
 ---
 
 # mcp-interface-design — make MCP tools an agent can use without a human

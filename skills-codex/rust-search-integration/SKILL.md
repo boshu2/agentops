@@ -1,6 +1,6 @@
 ---
 name: rust-search-integration
-description: 'Codex-native entry point for the rust-search-integration AgentOps skill.'
+description: "Run rust search integration."
 ---
 
 # rust-search-integration (Codex)

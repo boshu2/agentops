@@ -1,6 +1,6 @@
 ---
 name: gemini-native
-description: 'Codex-native entry point for the gemini-native AgentOps skill.'
+description: "Run gemini native."
 ---
 
 # gemini-native (Codex)

@@ -1,6 +1,6 @@
 ---
 name: filesystem-path-rationalization
-description: 'Codex-native entry point for the filesystem-path-rationalization AgentOps skill.'
+description: "Run filesystem path rationalization."
 ---
 
 # filesystem-path-rationalization (Codex)

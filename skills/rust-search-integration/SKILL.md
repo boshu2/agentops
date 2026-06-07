@@ -1,30 +1,23 @@
 ---
 name: rust-search-integration
-description: |
-  Add a fast, hybrid (lexical + semantic) code-search capability to a Rust project
-  so agents and developers can query the codebase in milliseconds — choose an
-  indexing strategy, design an ergonomic query API, keep the index fresh with
-  incremental re-indexing, and wire a CLI/library surface that returns ranked,
-  source-anchored hits.
-  Triggers: "add code search to my Rust project", "hybrid lexical + semantic
-  search in Rust", "build a code index in Rust", "incremental re-indexing",
-  "fast codebase search for agents", "tantivy full-text search", "embedding-based
-  code search Rust", "wire a search API into my crate", "fuzzy + vector search
-  for a codebase", "make my repo agent-searchable".
+description: |-
+  Use when adding fast lexical or semantic code search to a Rust project with an ergonomic query API.
+  Triggers:
+skill_api_version: 1
+user-invocable: false
+hexagonal_role: supporting
 practices:
 - hexagonal-architecture
 - design-for-the-machine
 - pragmatic-programmer
-hexagonal_role: supporting
 consumes: []
 produces:
 - SEARCH-INTEGRATION-PLAN.md
 context_rel:
-- kind: complements
+- kind: partnership
   with: legacy-codebase-recon
-- kind: complements
+- kind: partnership
   with: cli-agent-ux-audit
-skill_api_version: 1
 context:
   window: inherit
   intent:
@@ -34,7 +27,6 @@ metadata:
   stability: experimental
   dependencies: []
 output_contract: 'file: SEARCH-INTEGRATION-PLAN.md (index strategy + query API + incremental-reindex design + wiring), plus an in-tree search module'
-user-invocable: false
 allowed-tools:
 - Read
 - Edit

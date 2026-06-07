@@ -73,7 +73,12 @@ extract_frontmatter() {
 # Returns JSON object with only the fields we project into the catalog.
 parse_frontmatter() {
   local fm="$1"
-  awk -v fm="$fm" '
+  # Feed the frontmatter on stdin rather than via `-v fm=...`: BSD/POSIX awk
+  # rejects a literal newline inside a `-v var=value` assignment (only GNU awk
+  # tolerates it), so the multi-line value tripped "awk: newline in string" on
+  # macOS hosts without gawk. Lines are accumulated into lines[] and processed
+  # in END, identical to the prior split(fm,...) flow. (ag-mm6q)
+  printf '%s\n' "$fm" | awk '
     function trim(s){ sub(/^[[:space:]]+/,"",s); sub(/[[:space:]]+$/,"",s); return s }
     function jstr(s) {
       gsub(/\\/, "\\\\", s)
@@ -83,7 +88,6 @@ parse_frontmatter() {
       return "\"" s "\""
     }
     BEGIN {
-      n = split(fm, lines, "\n")
       cur_key = ""
       in_list = 0
       list_buf = ""
@@ -98,9 +102,11 @@ parse_frontmatter() {
       ctx_list = ""
     }
     {
-      # Re-iterate over the lines stored in `lines[]`.
+      # Accumulate each input line; the parse runs over lines[] in END.
+      lines[NR] = $0
     }
     END {
+      n = NR
       for (i = 1; i <= n; i++) {
         line = lines[i]
         if (line ~ /^[[:space:]]*$/) { continue }
@@ -191,6 +197,9 @@ first=1
 for sd in "$SKILLS_DIR"/*/SKILL.md; do
   [ -r "$sd" ] || continue
   name="$(basename "$(dirname "$sd")")"
+  # Skip leading-underscore scaffolding dirs (e.g. skills/_fixtures/) — planted
+  # test fixtures, not real skills; they must not enter the catalog.
+  case "$name" in _*) continue ;; esac
   fm="$(extract_frontmatter "$sd")"
   base="$(parse_frontmatter "$fm")"
   # Compute reference count + codex override presence.

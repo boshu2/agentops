@@ -1,15 +1,9 @@
 ---
 name: dependency-update-safety
 skill_api_version: 1
-description: |
-  Safely update project dependencies without breaking the build — audit current
-  vs latest, read changelogs for breaking changes, update in small batches, run
-  the test suite between batches, and roll back cleanly on regression. Keeps deps
-  current and the build green at every step.
-  Triggers: "update dependencies", "update our packages", "bump deps", "upgrade
-  the libraries", "deps are out of date", "audit outdated packages", "npm/pip/go
-  dependencies behind", "safe dependency upgrade", "roll back a bad dependency
-  bump", "patch a vulnerable dependency".
+description: |-
+  Use when updating dependencies safely with changelog review, small batches, tests, and rollback.
+  Triggers:
 practices:
 - evidence-driven
 - supply-chain-integrity

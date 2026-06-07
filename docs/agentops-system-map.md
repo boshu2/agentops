@@ -4,8 +4,8 @@
 ┌──────────────────────────────────────────────────────────────────┐
 │                    AgentOps at a Glance                          │
 ├───────────────────┬──────────────────────┬───────────────────────┤
-│    52  Skills     │  121 CLI Commands    │   13 Hook Entries     │
-│  (workflows)      │  (ao binary)         │  (auto-enforcement)   │
+│   173 Skills      │   76 CLI Commands    │   Hookless (CI-gated) │
+│  (workflows)      │  (ao binary)         │  (validate.yml)       │
 └───────────────────┴──────────────────────┴───────────────────────┘
 ```
 
@@ -85,7 +85,7 @@ Skills hand off to `ao` to persist knowledge across sessions:
 /evolve            →    ao goals measure           Fitness checked before next cycle
 /rpi               →    ao ratchet record          Progress gate checkpointed
 /implement         →    ao ratchet check           Gate verified before work starts
-/post-mortem       →    finding-compiler.sh        Findings become artifacts, checks, and constraints
+/post-mortem       →    ao compile                 Findings become artifacts, checks, and constraints
 /post-mortem       →    ao flywheel close-loop     Citation feedback and lifecycle updates applied
 ```
 
@@ -102,7 +102,7 @@ The closed-loop prevention path is file-native:
 .agents/findings/registry.jsonl
         │
         ▼
-hooks/finding-compiler.sh
+ao flywheel / compile  (explicit command — no auto-hook)
         │
         ├──> .agents/findings/<id>.md
         ├──> .agents/planning-rules/<id>.md
@@ -110,14 +110,14 @@ hooks/finding-compiler.sh
         └──> .agents/constraints/index.json   (mechanical + active only)
                                               │
                                               ▼
-                                   hooks/task-validation-gate.sh
+                              .github/workflows/validate.yml  (CI gate)
 ```
 
-`/plan`, `/pre-mortem`, `/vibe`, and `/post-mortem` load compiled planning and review artifacts first, then fall back to the registry when compiled outputs are missing. `task-validation-gate.sh` is the shift-left enforcement surface for active mechanical findings.
+`/plan`, `/pre-mortem`, `/vibe`, and `/post-mortem` load compiled planning and review artifacts first, then fall back to the registry when compiled outputs are missing. AgentOps 3.0 is hookless: enforcement of active mechanical findings is shift-left via the CI gates in `.github/workflows/validate.yml`, not an auto-firing hook.
 
 ---
 
-## CLI Command Groups (38 commands, 121 including subcommands)
+## CLI Command Groups (76 commands including subcommands)
 
 ```
 KNOWLEDGE FLYWHEEL          VALIDATION GATES         SESSION / LIFECYCLE
@@ -125,7 +125,7 @@ KNOWLEDGE FLYWHEEL          VALIDATION GATES         SESSION / LIFECYCLE
 ao forge                    ao gate pending          ao session close
 ao pool ingest              ao gate approve          ao rpi status
 ao pool promote             ao gate reject           ao rpi cancel
-ao lookup                   ao ratchet status        ao hooks list
+ao lookup                   ao ratchet status        ao session bootstrap
 ao lookup                   ao ratchet record        ao config
 ao search                   ao ratchet check
 ao dedup                    ao ratchet promote       METRICS / HEALTH
@@ -147,24 +147,19 @@ ao extract                  ao goals drift           UTILITIES
 
 ---
 
-## Hooks — Automatic Enforcement (13 hook entries across 7 trigger points)
+## Enforcement — Hookless, CI-Gated
 
-Hooks fire without human involvement. The AI cannot bypass them.
+AgentOps 3.0 is hookless: it ships zero hooks by default and nothing auto-injects or auto-enforces at session boundaries. Validation that used to live in shell hooks is now the authoritative CI gate in `.github/workflows/validate.yml` (T0/T1/T2 tiers, all required), with explicit `ao` commands and skills doing the in-session work. An opt-in `hooks-authoring` skill lets you add your own hooks if you want always-on local signals, but the corpus carries none.
 
 ```
-TRIGGER                   HOOK                        WHAT IT DOES
-───────                   ────                        ────────────
-Session starts         session-start.sh            Stage runtime state and briefing pointers
-Session ends           session-end-maintenance.sh  Harvest learnings, run maintenance
-Agent stops            ao-flywheel-close.sh        Close the learning loop
-Task completes         task-validation-gate.sh     Execute active compiled constraints and metadata checks
-Every tool call        go-complexity-precommit.sh  Block functions over complexity budget
-Pre-commit             skill-lint-gate.sh          Reject malformed skills
-Pre-commit             dangerous-git-guard.sh      Block force-pushes to main
-Pre-commit             pre-mortem-gate.sh          Require pre-mortem for large changes
-Worker stop            subagent-stop.sh            Clean up parallel agent state
-Worktree created       worktree-setup.sh           Initialize isolated workspace
-Worktree merged        worktree-cleanup.sh         Remove stale branches
+WAS A HOOK                  NOW
+──────────                  ───
+Session-boundary staging    ao session bootstrap / ao inject (explicit, run on demand)
+Learning-loop close         ao flywheel close-loop (called by /post-mortem)
+Task/constraint validation   .github/workflows/validate.yml CI gates
+Complexity budget            golangci-lint + validate.yml
+Skill / git / pre-mortem     validate.yml gates + /pre-mortem skill
+checks                       (re-author as opt-in via hooks-authoring skill)
 ```
 
 ---
@@ -194,4 +189,4 @@ post-mortem          crank                  goals               standards
 
 ---
 
-*52 skills · 121 CLI commands · 13 hook entries · 0 telemetry · everything in plain files*
+*173 skills · 76 CLI commands · hookless (CI-gated) · 0 telemetry · everything in plain files*
