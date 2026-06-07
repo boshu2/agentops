@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-07T13:38:11Z",
+  "generated_at": "2026-06-07T16:26:25Z",
   "summary": {
     "skills": 171,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 82,
-    "capabilities": 266
+    "cli_commands": 83,
+    "capabilities": 267
   },
   "surfaces": {
     "skills": [
@@ -2047,6 +2047,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao refinery",
+        "path": "cli/cmd/ao/",
+        "purpose": "Continuous main-validation backstop (run on bushido)",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao registry",
         "path": "cli/cmd/ao/",
         "purpose": "Query the unified registry",
@@ -2214,9 +2221,9 @@
     ]
   },
   "capability_summary": {
-    "total": 266,
+    "total": 267,
     "skills": 171,
-    "cli_commands": 82,
+    "cli_commands": 83,
     "gates": 13,
     "reference_impls": 0
   },
@@ -2283,6 +2290,7 @@
     "ready",
     "reconcile",
     "redact",
+    "refinery",
     "registry",
     "retrieval-bench",
     "robot-docs",
@@ -7170,6 +7178,24 @@
       "flags": [
         "--config",
         "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.refinery",
+      "name": "ao refinery",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Continuous main-validation backstop (run on bushido)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--interval",
         "--json",
         "--output",
         "--verbose"

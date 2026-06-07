@@ -29,7 +29,7 @@ assert_eq "valid JSON" "true" "$(jq empty "$REPO_ROOT/lib/schemas/team-spec.json
 assert_eq "additionalProperties false" "false" "$(jq -r '.additionalProperties' "$REPO_ROOT/lib/schemas/team-spec.json")"
 assert_eq "has team_id property" "string" "$(jq -r '.properties.team_id.type' "$REPO_ROOT/lib/schemas/team-spec.json")"
 assert_eq "has runtime property" "string" "$(jq -r '.properties.runtime.type' "$REPO_ROOT/lib/schemas/team-spec.json")"
-assert_eq "runtime enum" "codex,claude" "$(jq -r '.properties.runtime.enum | join(",")' "$REPO_ROOT/lib/schemas/team-spec.json")"
+assert_eq "runtime enum" "codex" "$(jq -r '.properties.runtime.enum | join(",")' "$REPO_ROOT/lib/schemas/team-spec.json")"
 assert_eq "has repo_path property" "string" "$(jq -r '.properties.repo_path.type' "$REPO_ROOT/lib/schemas/team-spec.json")"
 assert_eq "has agents property" "array" "$(jq -r '.properties.agents.type' "$REPO_ROOT/lib/schemas/team-spec.json")"
 assert_eq "agents additionalProperties false" "false" "$(jq -r '.properties.agents.items.additionalProperties' "$REPO_ROOT/lib/schemas/team-spec.json")"

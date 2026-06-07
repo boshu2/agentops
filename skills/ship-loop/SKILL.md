@@ -48,9 +48,18 @@ output_contract: merged PR on origin/main + closed bead
 
 # /ship-loop — Bot-paired fast lane PR cycle
 
-> **Lane choice:** use this skill for **coherent-arc internal PRs** — one closable bead, or one small-epic slice (≤5 child beads of the same surface), with paired tests. The PR is the *atomic-revert unit*: bundle scenarios that ship-or-revert together; split scenarios with independent rollback. For fork-based OSS contributions, use the `/pr-*` family (`pr-research`, `plan`, `pr-implement`, etc.; tier `contribute`). For large epics (15+ child beads) or multi-wave work, use `/crank`. See `CLAUDE.md ## Workflow` for the canonical unit-of-PR rule.
+> **Lane choice:** use this skill for **coherent-arc internal PRs**.
+> Pick one closable bead, or one small-epic slice of one surface, with paired tests.
+> The PR is the *atomic-revert unit*: bundle scenarios that ship or revert together.
+> Split scenarios with independent rollback.
+> For fork-based OSS contributions, use the `/pr-*` family.
+> For large epics or multi-wave work, use `/crank`.
+> See `CLAUDE.md ## Workflow` for the canonical unit-of-PR rule.
 
-Capture of the discipline that landed 8/9 internal PRs in the 2026-05-18 session at 19.5-min median time-to-merge. Five named failure modes (F1–F5); four closed mechanically. The full rationale lives in [`docs/learnings/2026-05-18-xp-bdd-tdd-workflow-synthesis.md`](https://github.com/boshu2/agentops/blob/main/docs/learnings/2026-05-18-xp-bdd-tdd-workflow-synthesis.md).
+Capture of the discipline that landed 8/9 internal PRs in the 2026-05-18 session.
+Median time-to-merge was 19.5 minutes.
+Five named failure modes were found; four closed mechanically.
+The rationale lives in the 2026-05-18 workflow synthesis note under `docs/learnings`.
 
 ## Overview / When to Use
 
@@ -64,11 +73,20 @@ Run this skill at the START of each PR you intend to ship to your own `main` bra
 2. **Branch off fresh main.** `git checkout main && git pull --rebase`. Then `git checkout -b <type>/<slug>-<bead-id>`. NEVER stack off a sibling branch; auto-merge handles serialization via update-branch.
 3. **Write the FIRST FAILING TEST.** BDD scenario (Gherkin) for behavior; unit test for invariants. The test must fail for the *right reason* (asserting expected behavior, not just "doesn't crash"). See [references/test-shape.md](references/test-shape.md).
 4. **Minimal implementation.** Smallest code change that makes the test green. Resist scope creep. Refer to the project's standards (`.claude/rules/{go,python}.md`).
-5. **`scripts/ship.sh`** (recommended) — auto-detects inventory-touching changes and runs the regen sweep (sync-skill-counts, codex-hashes, domain-map, context-map, registry, sync-hooks) preemptively. **This is the mechanical fix for anti-pattern #1** — removes the operator's choice to skip the rule. CI (`.github/workflows/validate.yml`) is the sole authoritative push gate per `docs/contracts/local-pre-push-gate-retirement.md` (soc-g2r9, PR #357); the previous `scripts/pre-push-gate.sh` local mirror was retired because per-incident drift cost dominated the per-push wait. For per-tool sanity before push, run only what your diff touches: `cd cli && make test`, `bats tests/scripts/<file>.bats`, `scripts/regen-codex-hashes.sh`. If a pre-existing blocker appears in unchanged-from-base content (visible in CI now), **file an atomic side-quest fix PR first** — don't bundle. See [references/anti-patterns.md](references/anti-patterns.md). **For PRs that change gate/validator/CI behavior**: capture the targeted output line and include it verbatim in the PR body as `Evidence:`; the `validate-pr-evidence-claims` CI job (`scripts/verify-gate-claim.sh`, soc-o5kq + soc-eqjd) verifies each Evidence line against the workflow run's logs and blocks the PR if any claim is absent (mechanical enforcement of anti-pattern #7).
+5. **`scripts/ship.sh`** (recommended).
+   It detects inventory-touching changes and runs the regen sweep preemptively.
+   That is the mechanical fix for anti-pattern #1.
+   CI is the sole authoritative push gate.
+   The old local mirror was retired because drift cost dominated per-push wait.
+   For per-tool sanity before push, run only what your diff touches:
+   `cd cli && make test`, targeted Bats tests, or codex hash regeneration.
+   If unchanged-from-base content blocks CI, file an atomic side-quest PR first.
+   For gate, validator, or CI changes, capture the target output line in the PR body as `Evidence:`.
+   The evidence-claim CI job verifies that line against workflow logs.
 6. **Commit with conventional-commit scope.** `feat(<scope>):`, `fix(<scope>):`, `docs(<scope>):`. Body explains the failure mode the test reproduces and how the fix removes it.
 7. **Push + `gh pr create`.** Body cites the bead, the validation results, and links to the learning anchor in the script body (NOT a `.agents/learnings/` file existence — that breaks in CI's fresh clone).
 8. **`gh pr merge <num> --squash --auto`.** Immediately. The bot fires `claude-review` automatically on PR open. When all required checks pass, merge fires without operator action.
-9. **Close the bead.** `bd close <id> --reason "Merged via PR #<num>"`. The coherent-arc rule should keep concurrent PR count low (typically 1-2); when a large-epic split puts multiple PRs in flight against the same main, invoke [`scripts/gh-merge-chain.sh`](references/gh-merge-chain.md) on the chain.
+9. **Close the bead.** `bd close <id> --reason "Merged via PR #<num>"`. The coherent-arc rule should keep concurrent PR count low (typically 1-2); when a large-epic split puts multiple PRs in flight against the same main, serialize them by waiting for each predecessor to merge, then call `gh api repos/<owner>/<repo>/pulls/<num>/update-branch -X PUT` on each BEHIND successor.
 
 ## Gate sequence (what each enforces)
 
@@ -78,18 +96,16 @@ Run this skill at the START of each PR you intend to ship to your own `main` bra
 | `claude-review` (auto on PR open) | Reviewer pair — the bot half |
 | `.github/workflows/validate.yml` | **Sole authoritative push gate** (soc-g2r9, PR #357). 60+ job suite on PR head: cli-docs-parity, embedded-sync, skill-frontmatter, registry-check, security-toolchain, validate-pr-evidence-claims (AP#7), plus the F-mode closures |
 | `gh pr merge --squash --auto` | Auto-merge when all required checks pass |
-| `scripts/gh-merge-chain.sh` (optional) | Chain N PRs through auto-merge with `update-branch` on each successor when a predecessor merges (closes F3) |
+| Manual update-branch fallback | Chain N PRs by enabling auto-merge, waiting for each predecessor, then calling `gh api repos/<owner>/<repo>/pulls/<num>/update-branch -X PUT` on BEHIND successors (closes F3) |
 
 ## Failure-mode mapping
 
-| ID | Failure | Mechanical guard |
-|---|---|---|
-| **F1** | Script rewrite leaves dead variables; `--fast` shellcheck misses them | Unconditional shellcheck on staged `.sh` (PR #326) |
-| **F2** | Pre-existing blocker compounds across concurrent branches | **Open.** Rule: fix as an atomic side-quest PR FIRST; don't bundle. See [references/anti-patterns.md](references/anti-patterns.md). |
-| **F3** | `gh pr merge --auto` doesn't auto-rebase BEHIND branches | `scripts/gh-merge-chain.sh` (PR #329) |
-| **F4** | Bot trigger doc claimed mention-only; actual trigger is auto on PR open | Doc corrected (PR #327) |
-| **F5** | Stale `~/.config/evolve/KILL` silently blocks /evolve | `EVOLVE_KILL_TTL_DAYS=7` auto-expire (PR #328) |
-| **meta** | Tests assert local-only file existence; fail in CI | `grep -q '<slug>' "$SCRIPT"` instead of `[ -f .agents/learnings/<x>.md ]`. See [references/test-shape.md](references/test-shape.md). |
+- **F1:** Run ShellCheck after shell edits.
+- **F2:** Split unrelated blockers into their own PRs.
+- **F3:** Update BEHIND successor branches by API.
+- **F4:** Keep review-bot docs aligned with workflow reality.
+- **F5:** Expire stale evolve stop files.
+- **meta:** Assert durable text, not local files.
 
 ## Anti-patterns
 
@@ -110,7 +126,14 @@ Coherent-arc governs the *shape* of a single PR; session-scope governs the *coun
 - **≥5 PRs in flight or merged in one session triggers a mandatory post-mortem before continuing.** Diminishing returns and reactive-PR spirals (PR-fixes-fallout-from-prior-PR) are the dominant failure mode in the back-half of long sessions.
 - **Post-mortem shape (1-2 sentences each):** Which PRs were planned vs reactive? How many self-corrections? Was the marginal PR discovery or churn?
 
-**Derivation:** the 2026-05-19 cron-loop session shipped 6 PRs with 3 self-corrections; PRs #5–#6 each fixed fallout from #1–3. Visible reactivity by PR #5; the cron-loop kept nudging "keep going" without surfacing the post-mortem signal. Mechanical enforcement is the mandatory `/evolve` post-mortem checkpoint (the evolve skill's `postmortem-checkpoint` reference), which reads the count from `scripts/session-pr-scope.sh`. The pre-creation Bash hook `hooks/session-pr-counter.sh` (PR #362) was **removed** in the 3.0 hookless teardown (#511); re-author it as an **opt-in** hook via the hooks-authoring skill — AgentOps ships none (soc-1aou). (soc-waxr, ag-o5xp)
+**Derivation:** the 2026-05-19 cron-loop session shipped 6 PRs with 3 self-corrections.
+PRs #5-#6 fixed fallout from PRs #1-#3.
+Visible reactivity began by PR #5.
+The cron loop kept nudging "keep going" without surfacing the post-mortem signal.
+Mechanical enforcement is the mandatory `/evolve` post-mortem checkpoint.
+That checkpoint reads the count from `scripts/session-pr-scope.sh`.
+The old pre-creation Bash hook was removed in the 3.0 hookless teardown.
+Re-author that check as an opt-in hook via the hooks-authoring skill.
 
 ## Pair mechanics (claude-review)
 
@@ -138,9 +161,8 @@ Coherent-arc governs the *shape* of a single PR; session-scope governs the *coun
 
 ```
 1-9. Run the cycle for each PR (off main, not stacked)
-10. After all PRs are open with auto-merge enabled:
-    scripts/gh-merge-chain.sh <pr1> <pr2> <pr3>
-11. Helper polls + update-branches each successor as the predecessor merges
+10. After all PRs are open with auto-merge enabled, wait for the predecessor PR to merge.
+11. If a successor becomes BEHIND, run `gh api repos/<owner>/<repo>/pulls/<num>/update-branch -X PUT`; repeat until the chain is merged.
 ```
 
 See [references/examples.md](references/examples.md) for full walkthroughs.
@@ -149,7 +171,7 @@ See [references/examples.md](references/examples.md) for full walkthroughs.
 
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| Auto-merge stalls | `claude-review` IN_PROGRESS or branch BEHIND | Wait for review; if BEHIND, `gh api repos/<o>/<r>/pulls/<n>/update-branch -X PUT` or use `gh-merge-chain.sh` |
+| Auto-merge stalls | `claude-review` IN_PROGRESS or branch BEHIND | Wait for review; if BEHIND, `gh api repos/<o>/<r>/pulls/<n>/update-branch -X PUT` |
 | `claude-review` never fires | Workflow lacks trigger or perms | Check `.github/workflows/claude.yml` `on:` block and permissions; may require `workflows: write` upgrade |
 | Pre-push --fast blocks on unchanged content | Pre-existing F2-class blocker | File the fix as an atomic side-quest PR first; rebase your branch onto the side-quest's merge |
 | Self-revert loop on a stale branch | Bot reverting its own forward-port | Rebase locally onto fresh main; force-push with `--force-with-lease` |
@@ -169,7 +191,7 @@ See [references/examples.md](references/examples.md) for full walkthroughs.
 - [references/examples.md](references/examples.md)
 - [references/gh-merge-chain.md](references/gh-merge-chain.md)
 - [references/test-shape.md](references/test-shape.md)
-- Durable rationale: [docs/learnings/2026-05-18-xp-bdd-tdd-workflow-synthesis.md](https://github.com/boshu2/agentops/blob/main/docs/learnings/2026-05-18-xp-bdd-tdd-workflow-synthesis.md)
+- Durable rationale: the 2026-05-18 workflow synthesis note under `docs/learnings`.
 
 ## Reference Documents
 

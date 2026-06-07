@@ -1,131 +1,139 @@
 # Headless Invocation Standards
 
-Standards for running Claude Code and Codex CLI non-interactively in scripts, tests, and CI/CD.
+Standards for non-interactive worker execution in scripts, tests, and CI/CD.
 
-## Required Flags
+## LAW 0: No Claude Print-Mode Workers
 
-Every headless Claude invocation MUST include:
+AgentOps scripts, tests, and CI must not invoke `claude -p` or
+`claude --print` as a worker runtime. On Bo's machine that path bills the API
+per token and has a known local process-spawn failure mode. Use one of these
+lanes instead:
 
-| Flag | Purpose | Required? |
-|------|---------|-----------|
-| `-p` | Enable non-interactive (print) mode | Always |
-| `--dangerously-skip-permissions` | Allow all tools without prompting | When skills chain skills |
-| `--allowedTools "..."` | Scope tool access (least privilege) | When you control the exact prompt |
-| `--max-turns N` | Prevent runaway turns | Always |
-| `--no-session-persistence` | Don't save session to disk | Always for tests/CI |
-| `--max-budget-usd N` | Cost guardrail | Always |
+| Need | Runtime |
+|------|---------|
+| Headless local worker from a script | `codex exec` |
+| Claude worker concurrency | NTM interactive panes or in-harness subagents |
+| Deterministic local processing | Go or local shell without an LLM runtime |
 
-### When to use `--allowedTools` vs `--dangerously-skip-permissions`
+`lib/scripts/team-runner.sh` is therefore Codex-only. A team spec with
+`runtime: "claude"` must fail before spawning workers.
 
-**Default to `--dangerously-skip-permissions`** for any invocation that involves skills. Skills chain into sub-skills that use unpredictable tools (WebFetch, WebSearch, Agent sub-agents, council judges, etc.). `--allowedTools` is session-level — it constrains the entire session including tools used inside skill execution. Scoping too tightly causes silent tool failures deep in the skill chain.
+`lib/scripts/watch-claude-stream.sh` is retained only as a passive parser for
+archived stream fixtures; it is not an approved executor path.
 
-Use `--allowedTools` only when **all of these are true**:
-1. Your prompt does NOT invoke any skills (no `/research`, `/vibe`, etc.)
-2. You know the exact set of tools needed
-3. You want defense-in-depth beyond timeouts and budget limits
+## Codex CLI Contract
 
-| Scenario | Permission strategy |
-|----------|---------------------|
-| RPI phases (skills chain skills) | `--dangerously-skip-permissions` |
-| Smoke tests (invoke skills) | `--dangerously-skip-permissions` |
-| Test helpers (generic skill testing) | `--dangerously-skip-permissions` |
-| Simple query ("list available skills") | `--allowedTools "Skill,Read,Glob,Grep"` |
-| Single-purpose script ("read X, write Y") | `--allowedTools "Read,Write"` |
+Every headless Codex worker invocation should preserve these properties:
 
-## Tool Allowlists
-
-Only applicable when using `--allowedTools` (no skill invocation):
-
-| Context | Allowlist |
-|---------|-----------|
-| Read-only analysis | `Read,Grep,Glob` |
-| Listing / querying | `Skill,Read,Glob,Grep` |
-| Research (no skills) | `Read,Grep,Glob,Bash,Write,Agent` |
-| Implementation (no skills) | `Read,Write,Edit,Grep,Glob,Bash,Agent` |
-
-## Timeout Strategy
-
-Three layers prevent stalls:
-
-1. **Shell `timeout`** — Hard kill after N seconds (exit code 124)
-2. **`--max-turns`** — Limit agentic conversation turns
-3. **`--max-budget-usd`** — Cost ceiling per invocation
-
-Recommended defaults:
-
-| Context | Shell timeout | Max turns | Max budget |
-|---------|---------------|-----------|------------|
-| Quick test | 45s | 3 | $0.50 |
-| Skill test | 120s | 5 | $1.00 |
-| Discovery phase | 600s | 15 | $5.00 |
-| Implementation phase | 900s | 30 | $5.00 |
-| Validation phase | 600s | 15 | $5.00 |
-
-## Output Format
-
-| Use case | Flag | Notes |
-|----------|------|-------|
-| Human-readable | `--output-format text` (default) | Simple scripts |
-| Structured processing | `--output-format json` | Parse with `jq -r '.result'` |
-| Streaming / debugging | `--output-format stream-json --verbose` | JSONL events; final success event carries `structured_output` when `--json-schema` is used |
-| Schema-validated | `--output-format json --json-schema '...'` | Typed output |
-
-## Claude Team-Runner Contract
-
-When Codex is orchestrating a headless Claude team through
-`lib/scripts/team-runner.sh`, the Claude worker command must preserve four
-properties:
-
-1. Run from `repo_path` so the worker sees the intended worktree.
-2. Use `--dangerously-skip-permissions` because worker prompts may invoke
-   skills.
-3. Use `--output-format stream-json --verbose` so the watcher can detect stalls
-   and completion.
-4. Use `--json-schema` with `lib/schemas/worker-output.json` so the final
-   `structured_output` object matches the shared worker contract.
+1. Run from the intended repo path with `-C`.
+2. Use an explicit sandbox level: `-s read-only`, `-s workspace-write`,
+   `-s danger-full-access`, or the existing `--full-auto` compatibility path.
+3. Emit JSONL with `--json` so the watcher can detect completion and stalls.
+4. Use `--output-schema` with `lib/schemas/worker-output.json`.
+5. Write the final structured artifact with `-o`.
+6. Wrap the process in shell `timeout`.
 
 Reference shape:
 
 ```bash
+sandbox_args=(-s read-only)
 (
-  cd "$REPO_PATH" && timeout "$TIMEOUT_S" claude -p "$PROMPT" \
-    --model "$CLAUDE_MODEL" \
-    --plugin-dir "$REPO_PATH" \
-    --dangerously-skip-permissions \
-    --max-turns "$CLAUDE_MAX_TURNS" \
-    --no-session-persistence \
-    --max-budget-usd "$CLAUDE_MAX_BUDGET_USD" \
-    --output-format stream-json \
-    --verbose \
-    --json-schema "$(jq -c . lib/schemas/worker-output.json)"
-) | CLAUDE_IDLE_TIMEOUT="$CLAUDE_IDLE_TIMEOUT" \
-    bash lib/scripts/watch-claude-stream.sh "$STATUS_FILE" "$OUTPUT_FILE"
+  AGENTOPS_INTENT_ECHO_DISABLED=1 timeout "$TIMEOUT_S" \
+    codex exec "${sandbox_args[@]}" --json \
+      -m "$CODEX_MODEL" \
+      -C "$REPO_PATH" \
+      --output-schema "$SCHEMA_PATH" \
+      -o "$OUTPUT_FILE" \
+      "$PROMPT"
+  echo $? > "$EXIT_FILE"
+) | CODEX_IDLE_TIMEOUT="$CODEX_IDLE_TIMEOUT" \
+    bash lib/scripts/watch-codex-stream.sh "$STATUS_FILE"
 ```
 
-`watch-claude-stream.sh` must treat the final `type=="result"` success event as
-the completion signal and write `.structured_output` to `output.json`.
+## Sandbox Levels
 
-`sandbox_level` in `lib/schemas/team-spec.json` is a Codex worker control. Claude
-team-runner workers ignore it and use the full-permission contract above.
+`sandbox_level` in `lib/schemas/team-spec.json` is a Codex worker control:
+
+| `sandbox_level` | Codex flag |
+|-----------------|------------|
+| `read-only` | `-s read-only` |
+| `workspace-write` | `--full-auto` |
+| `danger-full-access` | `-s danger-full-access` |
+
+The `workspace-write` mapping is the historical team-runner behavior. Tighten it
+only with a separate compatibility PR and fixture update.
+
+## Timeout Strategy
+
+Two layers prevent stalls:
+
+1. **Shell `timeout`**: hard kill after N seconds.
+2. **Watcher idle timeout**: fails when JSONL stops flowing.
+
+Recommended defaults:
+
+| Context | Shell timeout | Idle timeout |
+|---------|---------------|--------------|
+| Quick test | 45s | 15s |
+| Skill test | 120s | 30s |
+| Discovery phase | 600s | 60s |
+| Implementation phase | 900s | 60s |
+| Validation phase | 600s | 60s |
+
+## Output Contract
+
+Workers must write `lib/schemas/worker-output.json`:
+
+```json
+{
+  "status": "done",
+  "summary": "short result",
+  "artifacts": ["path/to/artifact.md"],
+  "errors": [],
+  "token_usage": {"input": 0, "output": 0},
+  "duration_ms": 0
+}
+```
+
+The watcher writes a separate status file with process-level state:
+
+```json
+{
+  "status": "completed",
+  "token_usage": {"input": 0, "output": 0},
+  "duration_ms": 0,
+  "events_count": 0
+}
+```
+
+## Team-Runner Contract
+
+When a script uses `lib/scripts/team-runner.sh`, it must preserve:
+
+1. `runtime` omitted or set to `codex`.
+2. One output directory per agent under `.agents/teams/<team_id>/`.
+3. `BEADS_NO_DAEMON=1` during the run to avoid tracker daemon conflicts.
+4. Lead-owned validation and reporting after all workers finish.
+5. Retry context capped and sanitized before being added to the next prompt.
 
 ## Session Chaining
 
-For multi-phase workflows, use filesystem artifacts instead of session resumption:
+For multi-phase workflows, use filesystem artifacts instead of session
+resumption:
 
 ```bash
-# Phase 1 writes artifacts
-claude -p "Research X. Write findings to .agents/rpi/phase-1.md" \
-  --no-session-persistence ...
+codex exec -C "$REPO_PATH" -s workspace-write \
+  "Research X. Write findings to .agents/rpi/phase-1.md"
 
-# Phase 2 reads those artifacts
-claude -p "Read .agents/rpi/phase-1.md for context. Implement..." \
-  --no-session-persistence ...
+codex exec -C "$REPO_PATH" -s workspace-write \
+  "Read .agents/rpi/phase-1.md for context. Implement the next slice."
 ```
 
-Filesystem-based chaining is more reliable than `--resume` because:
-- Each phase gets a fresh context window
-- No risk of context overflow from accumulated turns
-- Artifacts survive auth expiration or process crashes
+Filesystem-based chaining is more reliable than session resumption because:
+
+- Each phase gets a fresh context window.
+- Artifacts survive auth expiration or process crashes.
+- The lead can inspect and validate each phase boundary.
 
 ## Retry Logic
 
@@ -133,51 +141,30 @@ Filesystem-based chaining is more reliable than `--resume` because:
 max_attempts=3
 attempt=1
 while [[ $attempt -le $max_attempts ]]; do
-    if timeout 120 claude -p "..." --allowedTools "..." ...; then
-        break
-    fi
-    exit_code=$?
-    if [[ $exit_code -eq 124 ]]; then
-        echo "Timeout on attempt $attempt" >&2
-    fi
-    attempt=$((attempt + 1))
+  if timeout 120 codex exec -C "$REPO_PATH" -s workspace-write "$PROMPT"; then
+    break
+  fi
+  exit_code=$?
+  if [[ $exit_code -eq 124 ]]; then
+    echo "Timeout on attempt $attempt" >&2
+  fi
+  attempt=$((attempt + 1))
 done
 ```
-
-## Codex CLI
-
-Codex uses different flags but the same principles apply:
-
-| Claude flag | Codex equivalent |
-|-------------|-----------------|
-| `-p` | `exec` subcommand |
-| `--allowedTools` | `-s read-only` or `-s danger-full-access` or `--full-auto` |
-| `--max-turns` | N/A (single turn) |
-| `--output-format json` | `--json` |
-| `--no-session-persistence` | Default (no sessions) |
-| `--max-budget-usd` | N/A |
 
 ## Reference Implementations
 
 | Script | Purpose |
 |--------|---------|
-| `tests/claude-code/test-helpers.sh` | Reusable test helpers with configurable tools |
-| `tests/release-smoke-test.sh` | Release gate with scoped tools |
-| `ao rpi` | Multi-phase RPI orchestrator (CLI command, not a script) |
-| `lib/scripts/team-runner.sh` | Parallel Codex/Claude team orchestrator |
+| `lib/scripts/team-runner.sh` | Parallel Codex team orchestrator |
+| `lib/scripts/watch-codex-stream.sh` | Codex JSONL watcher |
+| `tests/team-runner/` | Static fixture tests for the runner contract |
 
 ## Environment Variables
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `ALLOWED_TOOLS` | empty | Comma-separated tool list for test helpers (empty = `--dangerously-skip-permissions`) |
-| `MAX_TURNS` | 3 | Max agentic turns for test helpers |
-| `MAX_BUDGET_USD` | 1.00 | Per-invocation cost guardrail |
-| `DEFAULT_TIMEOUT` | 120 | Shell timeout in seconds |
-| `CLAUDE_MODEL` | (default) | Model override |
-| `CLAUDE_IDLE_TIMEOUT` | 60 | Claude stream idle timeout for `watch-claude-stream.sh` |
-| `CLAUDE_MAX_TURNS` | 6 | Max turns per Claude team-runner worker |
-| `CLAUDE_MAX_BUDGET_USD` | 5 | Max budget per Claude team-runner worker |
-| `CODEX_MODEL` | gpt-5.3-codex | Codex model |
-| `RPI_DRY_RUN` | unset | Print commands without executing |
-| `RPI_VERBOSE` | unset | Enable verbose stream-json output |
+| `CODEX_MODEL` | `gpt-5.3-codex` | Codex model |
+| `CODEX_IDLE_TIMEOUT` | `60` | Codex stream idle timeout |
+| `TEAM_RUNNER_MAX_AGENTS` | `6` | Max concurrent agents |
+| `TEAM_RUNNER_DRY_RUN` | unset | Print Codex commands without executing |
