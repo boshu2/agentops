@@ -38,11 +38,11 @@ Current inventory count:
 
 | Bucket | Files |
 |---|---:|
-| KEEP | 461 |
-| RELOCATE | 122 |
+| KEEP | 462 |
+| RELOCATE | 120 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
-| Total | 622 |
+| Total | 621 |
 
 Validation command:
 
@@ -157,6 +157,14 @@ holdout-denial policy, and real executor in place, while newline-delimited
 JSON-RPC serving, dispatch, initialize response handling, tools/list response
 handling, tools/call response handling, and protocol error shaping now live
 under `cli/internal/adapters/mcptransport`.
+
+## Extracted Session Spawn Adapter Surface
+
+The `ao session spawn` template launcher moved behind the `mto-fleet` adapter
+boundary. AO keeps the public command wrapper and flags in place, while TOML
+template loading, required-field validation, variable expansion, hostname
+sanitization, init-step execution, tmux session creation, dry-run rendering, and
+no-tmux behavior now live under `cli/internal/adapters/sessionspawn`.
 
 ## Reversibility
 

@@ -567,8 +567,7 @@ cli/cmd/ao/session_intelligence_telemetry.go	KEEP	self-contained AO image surfac
 cli/cmd/ao/session_intelligence_telemetry_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	internal/types,testing,time
 cli/cmd/ao/session_outcome.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	bufio,encoding/...,fmt,github.com/...,os,path/...,regexp,strings,time
 cli/cmd/ao/session_outcome_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	os,path/...,testing
-cli/cmd/ao/session_spawn.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	context,fmt,github.com/...,internal/shellutil,os,os/...,path/...,strings,time
-cli/cmd/ao/session_spawn_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	os,path/...,strings,testing
+cli/cmd/ao/session_spawn.go	KEEP	public compatibility wrapper for `ao session spawn`; launcher moved to the mto-fleet adapter boundary	github.com/...,internal/adapters
 cli/cmd/ao/sessions.go	RESEARCH	unclear ownership from filename/import shape; inspect before cut, relocate, or archive	encoding/...,fmt,github.com/...,io,os,path/...,strings
 cli/cmd/ao/sessions_test.go	KEEP	test coverage follows the command surface under review; keep while the source file remains	encoding/...,os,path/...,strings,testing
 cli/cmd/ao/shell_quote.go	RESEARCH	unclear ownership from filename/import shape; inspect before cut, relocate, or archive	strings
