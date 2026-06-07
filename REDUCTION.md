@@ -39,10 +39,10 @@ Current inventory count:
 | Bucket | Files |
 |---|---:|
 | KEEP | 460 |
-| RELOCATE | 128 |
+| RELOCATE | 126 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
-| Total | 627 |
+| Total | 625 |
 
 Validation command:
 
@@ -132,6 +132,14 @@ The root pre-run Git worktree repair moved behind the `mto-fleet` adapter
 boundary. AO still runs the startup repair for local safety, but the Git
 environment sanitizer and shared `core.worktree` migration now live under
 `cli/internal/adapters/worktreeconfig` instead of `cli/cmd/ao`.
+
+## Extracted Agents Lint Adapter Surface
+
+The `.agents/` write-surface lint script runner moved behind the `mto-fleet`
+adapter boundary. AO keeps the `ao agents lint` public command wrapper and
+exit-code contract in place, while script invocation, stdout/stderr forwarding,
+JSON flag forwarding, and non-zero exit mapping now live under
+`cli/internal/adapters/agentslint`.
 
 ## Reversibility
 
