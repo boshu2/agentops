@@ -45,10 +45,16 @@ command -v agy >/dev/null || fail "agy is required for plugin validation"
 [[ -f "$PLUGIN_DIR/plugin.json" ]] || fail "missing .agy-plugin/plugin.json"
 [[ -f "$PLUGIN_DIR/mcp_config.json" ]] || fail "missing .agy-plugin/mcp_config.json"
 [[ -f "$PLUGIN_DIR/hooks.json" ]] || fail "missing .agy-plugin/hooks.json"
+[[ -f "$PLUGIN_DIR/hooks/hooks.json" ]] || fail "missing .agy-plugin/hooks/hooks.json"
+[[ -d "$PLUGIN_DIR/agents" ]] || fail "missing .agy-plugin/agents"
+[[ -d "$PLUGIN_DIR/rules" ]] || fail "missing .agy-plugin/rules"
 
 jq -e '
   .name == "agentops-antigravity-core"
   and .skills == "./skills"
+  and .agents == "./agents"
+  and .rules == "./rules"
+  and .hooks == "./hooks/hooks.json"
   and .mcpServers["agent-mail"].command == "am"
   and .mcpServers["agent-mail"].args == ["serve-stdio"]
 ' "$PLUGIN_DIR/plugin.json" >/dev/null || fail "plugin.json does not expose the expected skills and Agent Mail MCP"
@@ -59,11 +65,26 @@ jq -e '
 ' "$PLUGIN_DIR/mcp_config.json" >/dev/null || fail "mcp_config.json does not expose Agent Mail over stdio"
 
 jq -e '
-  .hooks.BeforeTool[0].matcher == "run_shell_command"
-  and .hooks.BeforeTool[0].hooks[0].name == "agentops-dcg"
-  and .hooks.BeforeTool[0].hooks[0].command == "dcg"
-  and .hooks.Stop[0].hooks[0].name == "agentops-evidence-surface"
+  .["agentops-dcg"].PreToolUse[0].matcher == "run_command"
+  and .["agentops-dcg"].PreToolUse[0].hooks[0].command == "dcg"
+  and .["agentops-evidence-surface"].Stop[0].command == "ao handoff --help >/dev/null 2>&1 || true"
 ' "$PLUGIN_DIR/hooks.json" >/dev/null || fail "hooks.json does not expose the expected guard/evidence hooks"
+
+cmp -s "$PLUGIN_DIR/hooks.json" "$PLUGIN_DIR/hooks/hooks.json" || fail "root hooks.json and hooks/hooks.json drifted"
+
+agent_count="$(
+  find "$PLUGIN_DIR/agents" -maxdepth 1 -type f -name '*.md' -print |
+    wc -l |
+    tr -d ' '
+)"
+[[ "$agent_count" -ge 2 ]] || fail "expected at least 2 AGY agent templates, found $agent_count"
+
+rule_count="$(
+  find "$PLUGIN_DIR/rules" -maxdepth 1 -type f -name '*.md' -print |
+    wc -l |
+    tr -d ' '
+)"
+[[ "$rule_count" -ge 2 ]] || fail "expected at least 2 AGY rules, found $rule_count"
 
 actual_count="$(
   find "$PLUGIN_DIR/skills" -mindepth 2 -maxdepth 2 -name SKILL.md -print |

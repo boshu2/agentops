@@ -3,6 +3,9 @@
   "version": "3.0.1",
   "description": "AgentOps core operator skills packaged for Google Antigravity with Agent Mail MCP and AgentOps guard hooks.",
   "skills": "./skills",
+  "agents": "./agents",
+  "rules": "./rules",
+  "hooks": "./hooks/hooks.json",
   "mcpServers": {
     "agent-mail": {
       "command": "am",
