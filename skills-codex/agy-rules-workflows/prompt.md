@@ -27,8 +27,9 @@ must stay AGY-native per the base skill.
   author!=judge as **two separate `codex exec` invocations** (distinct processes
   = distinct contexts). Do NOT reuse one Codex session for both author and judge.
   The *produced* AGY Workflow still dispatches an AGY subagent as judge.
-- **Scheduling the tick** → a bushido timer / cron calling `agy -p "/agy-loop …"`
-  (the AGY turnout's tick), never an in-session loop that reuses context.
+- **Scheduling the tick** → prefer AGY's native **`/schedule`** (`agy -p "/schedule
+  agy-loop --every 15m"`) with the objective pinned via **`/goal`**; fall back to a
+  bushido timer calling `agy -p "/agy-loop …"`. Never an in-session loop that reuses context.
 
 ## Steps
 
