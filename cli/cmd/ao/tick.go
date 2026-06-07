@@ -221,10 +221,30 @@ var chaosTestCmd = &cobra.Command{
 	},
 }
 
+var readyCmd = &cobra.Command{
+	Use:   "ready",
+	Short: "Print harness-neutral ready bead state as JSON",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		return tickReady(newTickRuntime(cmd))
+	},
+}
+
+var closeCmd = &cobra.Command{
+	Use:   "close <id> <commit-message> <evidence-ref> [paths...]",
+	Short: "Close a bead and persist the explicit ledger/evidence paths",
+	Args:  cobra.MinimumNArgs(3),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return tickClosePort(newTickRuntime(cmd), args[0], args[1], args[2], args[3:])
+	},
+}
+
 func init() {
 	tickCmd.GroupID = "workflow"
 	rootCmd.AddCommand(tickCmd)
 	rootCmd.AddCommand(
+		readyCmd,
+		closeCmd,
 		verdictGateCmd,
 		councilGateCmd,
 		installGuardsCmd,
@@ -257,8 +277,51 @@ func tickPassthrough(rt tickRuntime, name string, args ...string) error {
 }
 
 type tickBead struct {
-	ID     string `json:"id"`
-	Status string `json:"status"`
+	ID       string `json:"id"`
+	Title    string `json:"title,omitempty"`
+	Status   string `json:"status"`
+	Priority int    `json:"priority,omitempty"`
+}
+
+type tickReadyState struct {
+	StateSource string     `json:"state_source"`
+	GitHead     string     `json:"git_head,omitempty"`
+	Next        string     `json:"next,omitempty"`
+	Ready       []tickBead `json:"ready"`
+	Counts      tickCounts `json:"counts"`
+}
+
+type tickCounts struct {
+	Ready      int `json:"ready"`
+	Open       int `json:"open"`
+	InProgress int `json:"in_progress"`
+	Closed     int `json:"closed"`
+}
+
+func tickReady(rt tickRuntime) error {
+	readyOut, code, err := rt.run("br", "ready", "--json")
+	if err != nil || code != 0 {
+		return &tickExitError{code: code, msg: "br ready --json failed"}
+	}
+	ready := tickParseBeads(readyOut)
+
+	allOut, code, err := rt.run("br", "list", "--all", "--json")
+	if err != nil || code != 0 {
+		return &tickExitError{code: code, msg: "br list --all --json failed"}
+	}
+	all := tickParseBeads(allOut)
+	state := tickReadyState{
+		StateSource: "br",
+		GitHead:     tickGitRevParse(rt),
+		Ready:       ready,
+		Counts:      tickCountBeads(ready, all),
+	}
+	if len(ready) > 0 {
+		state.Next = ready[0].ID
+	}
+	enc := json.NewEncoder(rt.stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(state)
 }
 
 func tickNextReady(rt tickRuntime) string {
@@ -272,17 +335,39 @@ func tickNextReady(rt tickRuntime) string {
 }
 
 func tickFirstReadyFromJSON(out []byte) string {
-	var list []tickBead
-	if err := json.Unmarshal(out, &list); err == nil && len(list) > 0 {
+	if list := tickParseBeads(out); len(list) > 0 {
 		return list[0].ID
+	}
+	return ""
+}
+
+func tickParseBeads(out []byte) []tickBead {
+	var list []tickBead
+	if err := json.Unmarshal(out, &list); err == nil {
+		return list
 	}
 	var wrapped struct {
 		Issues []tickBead `json:"issues"`
 	}
-	if err := json.Unmarshal(out, &wrapped); err == nil && len(wrapped.Issues) > 0 {
-		return wrapped.Issues[0].ID
+	if err := json.Unmarshal(out, &wrapped); err == nil {
+		return wrapped.Issues
 	}
-	return ""
+	return nil
+}
+
+func tickCountBeads(ready, all []tickBead) tickCounts {
+	counts := tickCounts{Ready: len(ready)}
+	for _, item := range all {
+		switch item.Status {
+		case "open":
+			counts.Open++
+		case "in_progress":
+			counts.InProgress++
+		case "closed":
+			counts.Closed++
+		}
+	}
+	return counts
 }
 
 func tickStatus(rt tickRuntime) error {
@@ -376,6 +461,18 @@ func tickClose(rt tickRuntime, id, msg, evidence string, paths []string) error {
 	}
 	fmt.Fprintf(rt.stdout, "closed %s @ %s\n", id, tickShortSHA(after))
 	return nil
+}
+
+func tickClosePort(rt tickRuntime, id, msg, evidence string, paths []string) error {
+	if tickLedgerShowsClosed(filepath.Join(rt.workDir, ".beads", "issues.jsonl"), id) {
+		after := tickGitRevParse(rt)
+		if after == "" {
+			after = "none"
+		}
+		fmt.Fprintf(rt.stdout, "already closed %s @ %s\n", id, tickShortSHA(after))
+		return nil
+	}
+	return tickClose(rt, id, msg, evidence, paths)
 }
 
 func tickFirstEvidenceToken(evidence string) string {
