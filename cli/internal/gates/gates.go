@@ -65,8 +65,9 @@ type Check struct {
 	// Blocking determines failure semantics: a FAIL on a blocking check fails
 	// the run (exit 1); a FAIL on a non-blocking check is advisory.
 	Blocking bool
-	// Backing is the scripts/check-<Backing>.sh script run via the
-	// GateRunnerPort. Exactly one of Backing or Run must be set.
+	// Backing is the scripts/<Backing> basename (e.g. "check-x.sh" or
+	// "validate-y.sh") run via the GateRunnerPort. Exactly one of Backing or
+	// Run must be set.
 	Backing string
 	// Run is a native-Go implementation. Exactly one of Backing or Run must be
 	// set.

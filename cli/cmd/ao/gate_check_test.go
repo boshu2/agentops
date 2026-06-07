@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -12,6 +14,19 @@ import (
 	"github.com/boshu2/agentops/cli/internal/gates"
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
+
+func TestGateRepoRoot_ResolvesToScriptsParent(t *testing.T) {
+	root, err := gateRepoRoot()
+	if err != nil {
+		t.Fatalf("gateRepoRoot: %v", err)
+	}
+	if root == "" {
+		t.Fatal("gateRepoRoot returned empty root")
+	}
+	if _, err := os.Stat(filepath.Join(root, "scripts")); err != nil {
+		t.Errorf("resolved root %q has no scripts/ dir: %v (orchestrator joins scripts/ off this)", root, err)
+	}
+}
 
 func nativeCheck(id string, status ports.GateStatus, blocking bool) gates.Check {
 	return gates.Check{
