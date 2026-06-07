@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "ad756e87eb30839067cb4a24ee7c837ced361f82a463c5ad7c6aaf13c810f7b0",
+  "codex_override_catalog_hash": "fc5b6dc9eb4df97ebafa00f26abbc3c3cabd50f1c9334b3d54adc3dd738e8c73",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -1188,6 +1188,30 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "gemini-native",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for Gemini image operator skill."
+      },
+      {
+        "name": "gemini-headless-evidence",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for Gemini image operator skill."
+      },
+      {
+        "name": "gemini-skills-extensions",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for Gemini image operator skill."
+      },
+      {
+        "name": "gemini-mcp-hooks",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for Gemini image operator skill."
       }
     ]
   },
@@ -1575,6 +1599,30 @@
       "source_skill": "skills/gcloud",
       "source_hash": "4285d48973b418c4528167454ea8d04411df57581b0c73014f822ed419a913a3",
       "generated_hash": "f7de48001901856a58054979492643fd35f739ebd64140892ac1489c65695905"
+    },
+    {
+      "name": "gemini-headless-evidence",
+      "source_skill": "skills/gemini-headless-evidence",
+      "source_hash": "9ea8e192f6600da4af69a3b69236e46dfe4b35c2973345b4a05910ca31bbb00a",
+      "generated_hash": "a38701907b1b15f8ff667bc75ab58b0c5c50475dc33b32d06a2e55c1a17e4a00"
+    },
+    {
+      "name": "gemini-mcp-hooks",
+      "source_skill": "skills/gemini-mcp-hooks",
+      "source_hash": "6e3c9995c5fa641155bd7e94729e0baea56e2fc3f5fc5b2e621f2155ff5e96df",
+      "generated_hash": "90f02856594dfd81d2e0b97d4e6fcc8334f16af5dc2379332cf715ab0255a4c6"
+    },
+    {
+      "name": "gemini-native",
+      "source_skill": "skills/gemini-native",
+      "source_hash": "5cc3ed0b8a3e591160162d0c6dfbf89e8e4c7ca10c8652806c3eee8481c1648c",
+      "generated_hash": "403412c06bf2e94ebbdbb24ca8c4af5c639f8b4c9174e46fff4a59e2f7d67a81"
+    },
+    {
+      "name": "gemini-skills-extensions",
+      "source_skill": "skills/gemini-skills-extensions",
+      "source_hash": "e2daa334ecec6a805ae1b6ba51be3ccd01e2678f1616777ebfe4f95c416c9252",
+      "generated_hash": "f7837126eb1f74715e6b94e3da3cf0bb6b3ebcf89623629ac3abb0ba7707ad3c"
     },
     {
       "name": "gh-actions",
