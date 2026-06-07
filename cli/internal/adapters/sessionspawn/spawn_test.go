@@ -1,14 +1,15 @@
 // practices: [event-sourcing-cqrs, distributed-tracing]
-package main
+package sessionspawn
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-func TestLoadSessionTemplate(t *testing.T) {
+func TestLoadTemplate(t *testing.T) {
 	dir := t.TempDir()
 	tmplPath := filepath.Join(dir, "test.toml")
 	content := `
@@ -53,7 +54,7 @@ handoff_command = "ao handoff --collect"
 		t.Fatalf("write template: %v", err)
 	}
 
-	tmpl, err := loadSessionTemplate(tmplPath)
+	tmpl, err := LoadTemplate(tmplPath)
 	if err != nil {
 		t.Fatalf("load template: %v", err)
 	}
@@ -80,7 +81,7 @@ handoff_command = "ao handoff --collect"
 	}
 }
 
-func TestLoadSessionTemplateRejectsInvalid(t *testing.T) {
+func TestLoadTemplateRejectsInvalid(t *testing.T) {
 	dir := t.TempDir()
 
 	cases := []struct {
@@ -110,7 +111,7 @@ func TestLoadSessionTemplateRejectsInvalid(t *testing.T) {
 		if err := os.WriteFile(p, []byte(tc.content), 0o644); err != nil {
 			t.Fatalf("%s: write: %v", tc.name, err)
 		}
-		_, err := loadSessionTemplate(p)
+		_, err := LoadTemplate(p)
 		if err == nil {
 			t.Fatalf("%s: expected error, got nil", tc.name)
 		}
@@ -121,12 +122,12 @@ func TestLoadSessionTemplateRejectsInvalid(t *testing.T) {
 }
 
 func TestBuildTemplateVars(t *testing.T) {
-	tmpl := &SessionTemplate{
-		Identity: SessionIdentity{
+	tmpl := &Template{
+		Identity: Identity{
 			SessionNameTemplate: "validator-{{date}}-{{hostname}}",
 		},
 	}
-	vars := buildTemplateVars(tmpl, "2026-05-05")
+	vars := BuildTemplateVars(tmpl, "2026-05-05")
 
 	if vars["{{date}}"] != "2026-05-05" {
 		t.Fatalf("date = %q, want 2026-05-05", vars["{{date}}"])
@@ -158,21 +159,21 @@ func TestExpandVars(t *testing.T) {
 		{"no-vars-here", "no-vars-here"},
 	}
 	for _, tc := range cases {
-		got := expandVars(tc.input, vars)
+		got := ExpandVars(tc.input, vars)
 		if got != tc.want {
-			t.Fatalf("expandVars(%q) = %q, want %q", tc.input, got, tc.want)
+			t.Fatalf("ExpandVars(%q) = %q, want %q", tc.input, got, tc.want)
 		}
 	}
 }
 
 func TestRunInitStepsDryRun(t *testing.T) {
-	steps := []SessionInitStep{
+	steps := []InitStep{
 		{Name: "first", Cmd: "echo {{date}}", Note: "test note"},
 		{Name: "second", Cmd: "echo done"},
 	}
 	vars := map[string]string{"{{date}}": "2026-05-05"}
 
-	err := runInitSteps(steps, vars, t.TempDir(), "", true)
+	err := RunInitSteps(steps, vars, t.TempDir(), "", true, io.Discard)
 	if err != nil {
 		t.Fatalf("dry-run init steps: %v", err)
 	}
@@ -181,12 +182,12 @@ func TestRunInitStepsDryRun(t *testing.T) {
 func TestRunInitStepsExecutes(t *testing.T) {
 	dir := t.TempDir()
 	marker := filepath.Join(dir, "marker.txt")
-	steps := []SessionInitStep{
+	steps := []InitStep{
 		{Name: "create-marker", Cmd: "echo hello > " + marker},
 	}
 	vars := map[string]string{}
 
-	if err := runInitSteps(steps, vars, dir, "", false); err != nil {
+	if err := RunInitSteps(steps, vars, dir, "", false, io.Discard); err != nil {
 		t.Fatalf("init steps: %v", err)
 	}
 	data, err := os.ReadFile(marker)
@@ -199,10 +200,10 @@ func TestRunInitStepsExecutes(t *testing.T) {
 }
 
 func TestRunInitStepsFailsOnError(t *testing.T) {
-	steps := []SessionInitStep{
+	steps := []InitStep{
 		{Name: "will-fail", Cmd: "exit 1"},
 	}
-	err := runInitSteps(steps, map[string]string{}, t.TempDir(), "", false)
+	err := RunInitSteps(steps, map[string]string{}, t.TempDir(), "", false, io.Discard)
 	if err == nil {
 		t.Fatal("expected error from failing init step")
 	}
@@ -214,12 +215,12 @@ func TestRunInitStepsFailsOnError(t *testing.T) {
 func TestRunInitStepsSetsBeadsActor(t *testing.T) {
 	dir := t.TempDir()
 	actorFile := filepath.Join(dir, "actor.txt")
-	steps := []SessionInitStep{
+	steps := []InitStep{
 		{Name: "first-step", Cmd: "true"},
 		{Name: "record-actor", Cmd: `printf '%s' "$BEADS_ACTOR" > ` + actorFile},
 	}
 
-	if err := runInitSteps(steps, map[string]string{}, dir, "claude-validator", false); err != nil {
+	if err := RunInitSteps(steps, map[string]string{}, dir, "claude-validator", false, io.Discard); err != nil {
 		t.Fatalf("init steps: %v", err)
 	}
 	data, err := os.ReadFile(actorFile)
@@ -246,24 +247,24 @@ func TestSanitizeHostname(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := sanitizeHostname(tc.in); got != tc.want {
-				t.Fatalf("sanitizeHostname(%q) = %q, want %q", tc.in, got, tc.want)
+			if got := SanitizeHostname(tc.in); got != tc.want {
+				t.Fatalf("SanitizeHostname(%q) = %q, want %q", tc.in, got, tc.want)
 			}
 		})
 	}
 }
 
 func TestCreateTmuxSessionDryRun(t *testing.T) {
-	cfg := SessionTmux{
+	cfg := Tmux{
 		SessionName: "test-{{date}}",
-		Panes: []SessionPane{
+		Panes: []Pane{
 			{Position: "main", Cmd: "echo main"},
 			{Position: "right-30%", Cmd: "echo side"},
 		},
 	}
 	vars := map[string]string{"{{date}}": "2026-05-05"}
 
-	err := createTmuxSession(cfg, vars, t.TempDir(), true)
+	err := CreateTmuxSession(cfg, vars, t.TempDir(), true, io.Discard)
 	if err != nil {
 		t.Fatalf("dry-run tmux session: %v", err)
 	}
