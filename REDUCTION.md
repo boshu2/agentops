@@ -38,8 +38,8 @@ Current inventory count:
 
 | Bucket | Files |
 |---|---:|
-| KEEP | 458 |
-| RELOCATE | 132 |
+| KEEP | 460 |
+| RELOCATE | 130 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
 | Total | 629 |
@@ -118,6 +118,13 @@ The GitHub Actions-backed `CIStatusPort` adapter moved behind the `mto-fleet`
 route. AO keeps the `ao ci` public command wrapper and JSON-lines contract in
 place, while the production `gh run list` adapter now lives under
 `cli/internal/adapters/ci_status`.
+
+## Extracted Orchestration Select Surface
+
+The `ao orchestrate select` production selector moved behind the `mto-fleet`
+route. AO keeps the public command wrapper and backend-selection contract in
+place, while the exec-backed NTM probe adapter and trace renderer now live
+under `cli/internal/adapters/mto/orchestrationselect`.
 
 ## Reversibility
 
