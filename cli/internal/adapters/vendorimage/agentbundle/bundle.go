@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, design-by-contract]
-package main
+package agentbundle
 
 import (
 	"fmt"
@@ -20,44 +20,44 @@ const defaultAgentModel = "claude-opus-4-8"
 // Managed Agents are NOT ZDR — see ~/.agents/evals/SCHEMA.md (LOCKED).
 var holdoutMarkers = []string{"private_holdout", "ground_truth", "holdout target"}
 
-// bundleOptions is the resolved input to buildAgentBundle.
-type bundleOptions struct {
+// Options is the resolved input to Build.
+type Options struct {
 	Runtime   string   // "managed" | "codex-ntm"
 	Skills    []string // nil => defaultBundleSkills
 	Sandbox   string   // "self-hosted" | "cloud" | ""
 	SkillsDir string   // root to resolve+scan skills (default: "skills")
 }
 
-// bundleTool is an MCP tool descriptor the hosted loop can call to self-check.
-type bundleTool struct {
+// Tool is an MCP tool descriptor the hosted loop can call to self-check.
+type Tool struct {
 	Type   string `json:"type"`
 	Server string `json:"server"`
 	Cmd    string `json:"cmd"`
 }
 
-// sandboxBlock describes where a self-hosted loop runs.
-type sandboxBlock struct {
+// Sandbox describes where a self-hosted loop runs.
+type Sandbox struct {
 	Kind string `json:"kind"`
 	Note string `json:"note"`
 }
 
-// agentBundle is the runtime-specific Agent definition emitted by `ao agent bundle`.
-type agentBundle struct {
-	Runtime      string        `json:"runtime"`
-	Model        string        `json:"model,omitempty"`
-	Instructions string        `json:"instructions"`
-	Skills       []string      `json:"skills"`
-	Tools        []bundleTool  `json:"tools,omitempty"`
-	Sandbox      *sandboxBlock `json:"sandbox,omitempty"`
-	Bootstrap    string        `json:"bootstrap,omitempty"` // codex-ntm pane snippet
-	Reference    string        `json:"reference,omitempty"` // codex-ntm skill reference
+// Bundle is the runtime-specific Agent definition emitted by `ao agent bundle`.
+type Bundle struct {
+	Runtime      string   `json:"runtime"`
+	Model        string   `json:"model,omitempty"`
+	Instructions string   `json:"instructions"`
+	Skills       []string `json:"skills"`
+	Tools        []Tool   `json:"tools,omitempty"`
+	Sandbox      *Sandbox `json:"sandbox,omitempty"`
+	Bootstrap    string   `json:"bootstrap,omitempty"` // codex-ntm pane snippet
+	Reference    string   `json:"reference,omitempty"` // codex-ntm skill reference
 }
 
-// buildAgentBundle resolves the skill set, enforces the NOT-ZDR holdout
+// Build resolves the skill set, enforces the NOT-ZDR holdout
 // refusal, and dispatches to the runtime-specific builder.
-func buildAgentBundle(opts bundleOptions) (agentBundle, error) {
+func Build(opts Options) (Bundle, error) {
 	if opts.Runtime != "managed" && opts.Runtime != "codex-ntm" {
-		return agentBundle{}, fmt.Errorf("unknown --runtime %q (want managed|codex-ntm)", opts.Runtime)
+		return Bundle{}, fmt.Errorf("unknown --runtime %q (want managed|codex-ntm)", opts.Runtime)
 	}
 	skills := opts.Skills
 	if len(skills) == 0 {
@@ -68,7 +68,7 @@ func buildAgentBundle(opts bundleOptions) (agentBundle, error) {
 		skillsDir = "skills"
 	}
 	if leak, why := selectionInlinesHoldout(skills, skillsDir); leak {
-		return agentBundle{}, fmt.Errorf(
+		return Bundle{}, fmt.Errorf(
 			"refusing to bundle %s — Managed Agents are NOT ZDR; %s would inline holdout/eval content (the eval substrate is LOCKED). "+
 				"AGENTOPS_HOLDOUT_EVALUATOR does not authorize leaking holdout data to a cloud agent", opts.Runtime, why)
 	}
@@ -79,20 +79,20 @@ func buildAgentBundle(opts bundleOptions) (agentBundle, error) {
 }
 
 // buildManagedBundle emits a Managed Agents Agent-definition payload.
-func buildManagedBundle(skills []string, sandbox string) agentBundle {
-	b := agentBundle{
+func buildManagedBundle(skills []string, sandbox string) Bundle {
+	b := Bundle{
 		Runtime:      "managed",
 		Model:        defaultAgentModel,
 		Instructions: stitchInstructions(skills),
 		Skills:       skills,
-		Tools: []bundleTool{{
+		Tools: []Tool{{
 			Type:   "mcp",
 			Server: "ao",
 			Cmd:    "ao mcp serve",
 		}},
 	}
 	if sandbox == "self-hosted" {
-		b.Sandbox = &sandboxBlock{
+		b.Sandbox = &Sandbox{
 			Kind: "self-hosted",
 			Note: "MCP server runs inside the sandbox boundary (e.g. bushido) with tailnet access to Dolt; holdout-touching work stays here, never the cloud",
 		}
@@ -101,8 +101,8 @@ func buildManagedBundle(skills []string, sandbox string) agentBundle {
 }
 
 // buildCodexNTMBundle emits an NTM-consumable bundle (Codex shells ao directly).
-func buildCodexNTMBundle(skills []string) agentBundle {
-	return agentBundle{
+func buildCodexNTMBundle(skills []string) Bundle {
+	return Bundle{
 		Runtime:      "codex-ntm",
 		Instructions: stitchInstructions(skills),
 		Skills:       skills,

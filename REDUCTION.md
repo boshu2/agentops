@@ -38,11 +38,11 @@ Current inventory count:
 
 | Bucket | Files |
 |---|---:|
-| KEEP | 453 |
-| RELOCATE | 143 |
+| KEEP | 454 |
+| RELOCATE | 140 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
-| Total | 635 |
+| Total | 633 |
 
 Validation command:
 
@@ -97,6 +97,13 @@ The cron-fire scheduling renderer moved behind the `mto-fleet` route. AO keeps
 `ao cron self-adjust` as a compatibility shim that emits a structured route
 notice, but it no longer renders CronCreate prompts, verifies cron templates,
 or writes `.agents/evolve/cron-history.jsonl` from the lean local image.
+
+## Extracted Vendor-Image Bundle Surface
+
+The `ao agent bundle` pure builder moved behind the `vendor-image-adapter`
+route. AO keeps the public command wrapper and JSON contract in place for
+compatibility, while the runtime-specific bundle construction now lives under
+`cli/internal/adapters/vendorimage/agentbundle`.
 
 ## Reversibility
 

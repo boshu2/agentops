@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/adapters/vendorimage/agentbundle"
 	"github.com/spf13/cobra"
 )
 
@@ -69,7 +70,7 @@ func runAgentBundle(cmd *cobra.Command, _ []string) error {
 			}
 		}
 	}
-	bundle, err := buildAgentBundle(bundleOptions{
+	bundle, err := agentbundle.Build(agentbundle.Options{
 		Runtime: agentBundleRuntime,
 		Skills:  skills,
 		Sandbox: agentBundleSandbox,
