@@ -1557,6 +1557,76 @@
     },
     {
       "category": "public-tested",
+      "command": "tick claim",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "tick close",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "tick council-gate",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "tick guard-status",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "tick install-guards",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "tick next",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "tick reopen",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "tick smoke",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "tick status",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "tick verdict-gate",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "trace",
       "coverage_status": "covered",
       "kind": "leaf",
