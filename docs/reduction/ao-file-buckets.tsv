@@ -437,7 +437,7 @@ cli/cmd/ao/retrieval_search_backends_test.go	KEEP	self-contained AO image surfac
 cli/cmd/ao/retrieval_search_eval.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	encoding/...,fmt,internal/storage,os,path/...,strings
 cli/cmd/ao/retrieval_search_eval_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	encoding/...,os,path/...,strings,testing
 cli/cmd/ao/robot_docs.go	RESEARCH	unclear ownership from filename/import shape; inspect before cut, relocate, or archive	fmt,github.com/...,strings
-cli/cmd/ao/root.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	context,errors,fmt,github.com/...,internal/doctor,os,os/...,strings
+cli/cmd/ao/root.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	context,errors,fmt,github.com/...,internal/adapters,internal/doctor,os,os/...,strings
 cli/cmd/ao/round4_misc_test.go	KEEP	test coverage follows the command surface under review; keep while the source file remains	internal/types,testing
 cli/cmd/ao/round5_test.go	KEEP	test coverage follows the command surface under review; keep while the source file remains	context,encoding/...,errors,fmt,internal/storage,internal/types,io,os,os/...,path/...,testing,time
 cli/cmd/ao/rpi.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	github.com/...
@@ -624,7 +624,5 @@ cli/cmd/ao/wiki.go	KEEP	self-contained AO image surface: loop, mind, local Themi
 cli/cmd/ao/wiki_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	internal/ports,os,path/...,strings,testing
 cli/cmd/ao/workflow_integration_test.go	KEEP	test coverage follows the command surface under review; keep while the source file remains	encoding/...,fmt,internal/ratchet,os,path/...,strings,testing,time
 cli/cmd/ao/worktree.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	cmp,context,fmt,github.com/...,os,os/...,path/...,regexp,slices,sort,strconv,strings,time
-cli/cmd/ao/worktree_config.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	fmt,os,os/...,path/...,strings
-cli/cmd/ao/worktree_config_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	os,os/...,path/...,strings,testing
 cli/cmd/ao/worktree_gc_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	path/...,strconv,testing,time
 cli/cmd/ao/worktree_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,fmt,os,os/...,path/...,strings,testing,time

@@ -39,10 +39,10 @@ Current inventory count:
 | Bucket | Files |
 |---|---:|
 | KEEP | 460 |
-| RELOCATE | 130 |
+| RELOCATE | 128 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
-| Total | 629 |
+| Total | 627 |
 
 Validation command:
 
@@ -125,6 +125,13 @@ The `ao orchestrate select` production selector moved behind the `mto-fleet`
 route. AO keeps the public command wrapper and backend-selection contract in
 place, while the exec-backed NTM probe adapter and trace renderer now live
 under `cli/internal/adapters/mto/orchestrationselect`.
+
+## Extracted Worktree Config Surface
+
+The root pre-run Git worktree repair moved behind the `mto-fleet` adapter
+boundary. AO still runs the startup repair for local safety, but the Git
+environment sanitizer and shared `core.worktree` migration now live under
+`cli/internal/adapters/worktreeconfig` instead of `cli/cmd/ao`.
 
 ## Reversibility
 

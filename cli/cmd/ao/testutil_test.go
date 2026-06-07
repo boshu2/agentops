@@ -633,6 +633,21 @@ func initTestRepo(t *testing.T) string {
 	}})
 }
 
+// realPathForTest resolves symlinks when possible and falls back to an absolute
+// path. Useful for Git worktree tests on hosts where temp dirs may be symlinked.
+func realPathForTest(t *testing.T, path string) string {
+	t.Helper()
+	resolved, err := filepath.EvalSymlinks(path)
+	if err == nil {
+		return resolved
+	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		t.Fatalf("filepath.Abs(%q): %v", path, err)
+	}
+	return abs
+}
+
 // initMinimalGitRepo creates a git repo with one empty commit. Use this when
 // you need a valid git repo but don't care about file history.
 // Origin: uat_smoke_test.go (was initGitRepo)
