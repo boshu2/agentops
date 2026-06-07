@@ -8,6 +8,8 @@ metadata:
 description: >-
   Google Cloud Platform CLI - manage GCP resources. Use when working with Compute
   Engine, Cloud Run, GKE, Cloud Functions, Storage, BigQuery, or other GCP services.
+practices:
+- pragmatic-programmer
 ---
 <!-- TOC: Quick Start | THE EXACT PROMPT | Services | Output Formatting | AGENTS.md Blurb | When to Use | References -->
 

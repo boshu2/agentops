@@ -8,6 +8,8 @@ metadata:
 description: >-
   Cross-validate decisions using multiple AI models (Codex, Gemini, Grok).
   Use when "get a second opinion", evaluating approaches, or high-stakes decisions.
+practices:
+- pragmatic-programmer
 ---
 <!-- TOC: Core | Workflow | Quick Prompts | Synthesis | Model Strengths | Anti-Patterns | References -->
 

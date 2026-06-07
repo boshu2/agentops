@@ -3,6 +3,8 @@ name: metamorphic-test-design
 description: |-
   Use when designing metamorphic tests for oracle-poor behavior using invariants and input relations.
   Triggers:
+practices:
+- pragmatic-programmer
 skill_api_version: 1
 hexagonal_role: supporting
 metadata:

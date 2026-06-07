@@ -19,7 +19,7 @@ context:
 metadata:
   tier: execution
   stability: experimental
-  dependencies:
+  external_dependencies:
   - git
 output_contract: >-
   a staging branch carrying the harvested best content, a worktree+branch

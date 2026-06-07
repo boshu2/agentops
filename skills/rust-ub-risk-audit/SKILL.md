@@ -28,7 +28,7 @@ context:
 metadata:
   tier: judgment
   stability: experimental
-  dependencies:
+  external_dependencies:
   - rust-toolchain
   - cargo
 output_contract: "A Rust UB risk audit report with unsafe/FFI inventory, risk-ranked findings, evidence, recommended fixes, and verification commands or gaps."

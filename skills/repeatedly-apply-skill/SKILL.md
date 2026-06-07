@@ -6,6 +6,8 @@ hexagonal_role: supporting
 metadata:
   tier: execution
 description: "Use when applying a skill repeatedly with progressive deepening for iterative improvement."
+practices:
+- pragmatic-programmer
 ---
 # Repeatedly Apply Skill
 

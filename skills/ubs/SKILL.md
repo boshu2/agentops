@@ -6,6 +6,8 @@ hexagonal_role: supporting
 metadata:
   tier: execution
 description: "Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks."
+practices:
+- pragmatic-programmer
 ---
 <!-- TOC: Core Insight | THE EXACT PROMPT | Quick Reference | When to Use | Critical Rules | Suppression | Triage | Troubleshooting | AI Validation | References -->
 

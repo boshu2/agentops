@@ -6,6 +6,8 @@ hexagonal_role: supporting
 metadata:
   tier: execution
 description: "Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues."
+practices:
+- pragmatic-programmer
 ---
 # RCH — Remote Compilation Helper
 
@@ -32,7 +34,7 @@ The summary line is a contract:
 | `[RCH] remote <worker> (...)` | Healthy. Done. |
 | `[RCH] remote <worker> failed [RCH-Exxx] ...` | Real build/env failure. See `references/ERROR_CODES.md`. |
 | `[RCH] local (<reason>)` | **Fail-open.** See `references/FAIL_OPEN.md` and look up the reason verbatim. |
-| _no `[RCH]` line at all_ | Hook didn't fire. Run `scripts/protocol_test.sh "<your-command>"`. |
+| *no `[RCH]` line at all* | Hook didn't fire. Run `scripts/protocol_test.sh "<your-command>"`. |
 
 If you can't see why offload isn't happening, **prove the path works in isolation** before doing anything else:
 

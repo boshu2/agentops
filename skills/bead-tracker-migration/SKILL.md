@@ -12,6 +12,8 @@ metadata:
 description: |-
   Use when migrating an issue tracker workspace from bd to br with loss-free verification.
   Triggers:
+practices:
+- pragmatic-programmer
 context:
   window: inherit
 output_contract: A br-backed .beads/ workspace with verified-equal issue counts plus a migration report.

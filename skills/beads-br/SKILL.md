@@ -8,6 +8,8 @@ metadata:
 description: >-
   Local-first issue tracker (beads_rust) for AI agents. Use when tracking tasks,
   managing dependencies, finding ready work, or syncing issues to git via JSONL.
+practices:
+- pragmatic-programmer
 ---
 <!-- TOC: Critical Rules | Quick Workflow | Essential Commands | bv Integration | References -->
 

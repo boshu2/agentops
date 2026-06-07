@@ -9,6 +9,8 @@ description: >-
   Comprehensive markdown planning methodology for software projects. Use when
   starting a new project, creating implementation plans, or refining architecture
   before coding.
+practices:
+- pragmatic-programmer
 ---
 <!-- TOC: Philosophy | THE EXACT PROMPT | Process Overview | References -->
 

@@ -3,6 +3,8 @@ name: legacy-codebase-recon
 description: |-
   Investigate unfamiliar legacy code before edits. Triggers: legacy module, unknown repo, risky refactor, trace ownership.
   Triggers:
+practices:
+- pragmatic-programmer
 skill_api_version: 1
 metadata:
   tier: judgment

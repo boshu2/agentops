@@ -3,6 +3,8 @@ name: changelog-quality-pass
 description: |-
   Use when writing or auditing changelogs and release notes for user-facing, semver-aware clarity.
   Triggers:
+practices:
+- pragmatic-programmer
 skill_api_version: 1
 user-invocable: false
 hexagonal_role: supporting

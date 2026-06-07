@@ -6,6 +6,8 @@ hexagonal_role: supporting
 metadata:
   tier: execution
 description: "Use when diagnosing runaway processes with the pt wrapper and choosing safe remediation."
+practices:
+- pragmatic-programmer
 ---
 # process-triage
 

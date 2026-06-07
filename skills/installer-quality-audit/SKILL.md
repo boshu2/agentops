@@ -3,6 +3,8 @@ name: installer-quality-audit
 description: |-
   Use when auditing install, setup, bootstrap, or update scripts for safe, idempotent behavior.
   Triggers:
+practices:
+- pragmatic-programmer
 skill_api_version: 1
 user-invocable: false
 hexagonal_role: supporting

@@ -6,6 +6,8 @@ hexagonal_role: supporting
 metadata:
   tier: execution
 description: "Use when starting non-trivial work, mining lessons, or preventing repeated mistakes with cm procedural memory."
+practices:
+- pragmatic-programmer
 ---
 <!-- TOC: Quick Start | THE EXACT PROMPT | Architecture | Commands | References -->
 

@@ -8,6 +8,8 @@ metadata:
 description: >-
   Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification.
   Use when blocking commands, auto-formatting, custom permissions, or writing hooks.
+practices:
+- pragmatic-programmer
 ---
 # Claude Code Hooks
 

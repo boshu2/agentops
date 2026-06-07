@@ -6,6 +6,8 @@ hexagonal_role: supporting
 metadata:
   tier: execution
 description: "Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence."
+practices:
+- pragmatic-programmer
 ---
 <!-- TOC: One Rule | Cold Start | Tick Loop | Intervention Score Matrix | Operator Proof Card | Swarm Pathology Triggers | Pattern Tiers | Metrics | Checklist | Decision Tree | Quick Start | Attention-Feed Loop | Marching Orders | Swarm Loop | Operator Loop | Autonomous Unstick | Observability | Steady-State Cadence | Quality Loops | Coordination | Anti-Patterns | Troubleshooting | References | Related Skills -->
 

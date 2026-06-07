@@ -6,6 +6,8 @@ hexagonal_role: supporting
 metadata:
   tier: execution
 description: "Use when creating GitHub Actions workflows, release automation, checksums, signing, or CI/CD."
+practices:
+- pragmatic-programmer
 ---
 # Optimal GitHub Actions
 

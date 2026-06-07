@@ -31,7 +31,7 @@ context:
 metadata:
   tier: judgment
   stability: stable
-  dependencies:
+  external_dependencies:
   - Rust toolchain
   - SQLite
 output_contract: "A Rust SQLite CLI architecture plan covering command boundaries, schema ownership, migrations, transaction policy, tests, backups, recovery, and data-safety checks."

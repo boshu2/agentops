@@ -3,6 +3,8 @@ name: behavior-preserving-simplification
 description: |-
   Use when simplifying code, reducing duplication, or clarifying flow while preserving behavior with tests.
   Triggers:
+practices:
+- pragmatic-programmer
 skill_api_version: 1
 user-invocable: false
 hexagonal_role: supporting

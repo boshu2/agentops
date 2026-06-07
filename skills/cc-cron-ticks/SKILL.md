@@ -27,7 +27,7 @@ context:
   intel_scope: topic
 metadata:
   tier: orchestration
-  dependencies: [agentops:evolve, agentops:autodev]
+  dependencies: [evolve, autodev]
   stability: stable
 output_contract: A live cron job (job ID returned) plus a tick-design note; no files unless durable:true persists .claude/scheduled_tasks.json
 ---

@@ -153,7 +153,7 @@ scenario (S7: "client retries on 503") now composes safely on top of S4.
 **Downstream outage (clause S9).**
 Spec S9: "If the payment provider is unavailable, return 503 and do not create a
 pending charge." Scenario injects a provider outage, asserts 503 + no charge row
-+ a logged correlation id. Without the circuit breaker + boundary check, the
+and a logged correlation id. Without the circuit breaker + boundary check, the
 scenario fails (leaks a pending charge) — proving the property is real.
 
 ## Troubleshooting

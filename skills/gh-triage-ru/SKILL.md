@@ -8,6 +8,8 @@ metadata:
 description: >-
   GitHub issue/PR triage via ru and gh. Use when processing issues, closing PRs
   (no-contributions policy), or bulk triage. Independent verification required.
+practices:
+- pragmatic-programmer
 ---
 # gh-triage-ru — GitHub Issues/PRs with ru
 

@@ -35,7 +35,7 @@ There are five summary forms:
 | `[RCH] remote <worker> failed (exit <N>)` | Build ran remotely and the build itself failed. Treat as a normal compiler error. |
 | `[RCH] remote <worker> failed [RCH-Exxx] <summary>` | Build environment failure on the worker (missing system package, etc.). See `ERROR_CODES.md`. |
 | `[RCH] local (<reason>)` | **Fail-open.** Compilation ran locally instead of remotely. Read the reason. |
-| _(no summary)_ | Visibility is `none` or RCH never engaged. Re-run with `RCH_VISIBILITY=summary` to confirm. |
+| *(no summary)* | Visibility is `none` or RCH never engaged. Re-run with `RCH_VISIBILITY=summary` to confirm. |
 
 To force a summary banner without changing config:
 

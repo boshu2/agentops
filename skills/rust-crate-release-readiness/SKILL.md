@@ -32,7 +32,7 @@ context:
 metadata:
   tier: judgment
   stability: stable
-  dependencies:
+  external_dependencies:
   - cargo
   - rustup
   - git

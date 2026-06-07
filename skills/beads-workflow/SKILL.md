@@ -6,6 +6,8 @@ hexagonal_role: supporting
 metadata:
   tier: execution
 description: "Use when converting markdown plans into br beads with dependencies for implementation or swarm execution."
+practices:
+- pragmatic-programmer
 ---
 <!-- TOC: Quick Start | THE EXACT PROMPT | Polishing | br Commands | bd → br Migration | Quality Checklist | Troubleshooting | References -->
 

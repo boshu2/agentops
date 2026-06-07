@@ -29,7 +29,7 @@ context:
   intel_scope: topic
 metadata:
   tier: execution
-  dependencies: [rg, git]
+  external_dependencies: [rg, git]
   stability: stable
   user_invocable: false
   platforms: [any]

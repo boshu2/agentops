@@ -8,6 +8,8 @@ metadata:
 description: >-
   Graph-aware task triage with bv and br. Use when prioritizing work, finding
   bottlenecks, tracking dependencies, or managing local issues across projects.
+practices:
+- pragmatic-programmer
 ---
 # beads-bv — Graph-Aware Triage
 

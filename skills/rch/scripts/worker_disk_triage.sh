@@ -99,7 +99,7 @@ Next steps (NEVER delete anything yet):
   • If a /tmp/rch_target_* dir is large AND lsof is empty, it is safe:
         ssh ubuntu@<host> 'sudo lsof +D /tmp/rch_target_<name> 2>/dev/null | head'
         # If the lsof output is empty:
-        ssh ubuntu@<host> 'rm -rf /tmp/rch_target_<name>'   # require explicit user OK first
+        ssh ubuntu@<host> 'rm -r -- /tmp/rch_target_<name>'   # require explicit user OK first
 
   • Prefer letting sbh handle it (if installed on the worker):
         ssh ubuntu@<host> 'sbh scan'

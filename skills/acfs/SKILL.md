@@ -25,7 +25,8 @@ context:
   intel_scope: topic
 metadata:
   tier: orchestration
-  dependencies: [ntm, caam, cass-memory, dcg, fleet-ops]
+  dependencies: [ntm, caam, cass-memory, dcg]
+  external_dependencies: [fleet-ops]
   stability: stable
 output_contract: "Terminal report (acfs doctor/init verdict) + a stated next action; no files written unless a sub-tool persists state (br/cm)."
 ---

@@ -6,6 +6,8 @@ hexagonal_role: supporting
 metadata:
   tier: execution
 description: "Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs."
+practices:
+- pragmatic-programmer
 ---
 <!-- TOC: Bootstrap | Core Ops | File Reservations | Beads | Troubleshooting | Identity | Human Overseer | Pre-Commit Guard | References -->
 

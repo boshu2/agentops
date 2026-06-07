@@ -6,7 +6,7 @@ hexagonal_role: supporting
 metadata:
   tier: library
   stability: stable
-  dependencies:
+  external_dependencies:
     - ripgrep
 context:
   window: inherit
@@ -19,6 +19,8 @@ output_contract: "A concise ripgrep search plan or command sequence that uses fa
 description: |-
   Use when searching code with rg using precise, fast flags instead of slow grep or find patterns.
   Triggers:
+practices:
+- pragmatic-programmer
 ---
 <!-- TOC: Critical Constraints | Why This Exists | Quick Start | Flag Reference | Strategy Decision Tree | Robot Mode | Exit Codes | Slow Patterns | Quality Rubric | Examples | Troubleshooting | See Also -->
 

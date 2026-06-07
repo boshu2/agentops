@@ -25,6 +25,7 @@ metadata:
   tier: judgment
   dependencies:
   - beads
+  external_dependencies:
   - codebase-archaeology
   stability: experimental
 output_contract: reality-check-report.md

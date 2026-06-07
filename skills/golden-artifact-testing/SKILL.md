@@ -3,6 +3,8 @@ name: golden-artifact-testing
 description: |-
   Use when designing or repairing golden-file, snapshot, fixture, or generated-artifact tests.
   Triggers:
+practices:
+- pragmatic-programmer
 skill_api_version: 1
 user-invocable: false
 hexagonal_role: supporting

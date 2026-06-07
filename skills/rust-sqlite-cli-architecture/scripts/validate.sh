@@ -46,7 +46,7 @@ checks = [
     (r"(?m)^metadata:\s*$", "metadata"),
     (r"(?m)^\s+tier:\s*\S+", "metadata.tier"),
     (r"(?m)^\s+stability:\s*\S+", "metadata.stability"),
-    (r"(?m)^\s+dependencies:\s*(\[.*\]|$)", "metadata.dependencies"),
+    (r"(?m)^\s+(?:dependencies|external_dependencies):\s*(\[.*\]|$)", "metadata.dependencies/external_dependencies"),
     (r"(?m)^output_contract:\s*", "output_contract"),
 ]
 for pattern, label in checks:

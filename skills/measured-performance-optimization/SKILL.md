@@ -27,7 +27,7 @@ context:
 metadata:
   tier: execution
   stability: experimental
-  dependencies:
+  external_dependencies:
   - code
   - benchmark
 output_contract: 'artifacts: optimization-report.md + profile/baseline + negative-evidence ledger'

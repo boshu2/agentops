@@ -1,12 +1,14 @@
 ---
 name: cass
 description: Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history.
+practices:
+- pragmatic-programmer
 skill_api_version: 1
 user-invocable: false
 hexagonal_role: supporting
 metadata:
   tier: execution
-  dependencies:
+  external_dependencies:
   - "cass binary (>=0.3.6 recommended; some commands require HEAD \u2014 see Version Pinning)"
   - jq (required for parsing --json output)
   - GNU coreutils 'timeout' (recommended; cass index can hang under contention)

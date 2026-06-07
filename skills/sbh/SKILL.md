@@ -8,6 +8,8 @@ metadata:
 description: >-
   Disk-pressure defense for AI coding workloads. Use when: disk full, low
   space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status.
+practices:
+- pragmatic-programmer
 ---
 # SBH — Storage Ballast Helper
 

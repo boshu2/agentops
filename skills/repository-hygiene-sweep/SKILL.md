@@ -1,7 +1,7 @@
 ---
 name: repository-hygiene-sweep
 description: |-
-  Use when cleaning repository branches, worktrees, gc state, large objects, and ignore rules safely.
+  Use when cleaning repository branches, worktrees, gc state, large objects, and exclusion rules safely.
   Triggers:
 skill_api_version: 1
 user-invocable: false
@@ -150,7 +150,7 @@ Produce a report named `repo-cleanup-report.md` (or inline if small) with:
 | `git branch -d` refuses ("not fully merged") | Branch has unique commits | Do NOT use `-D`. Investigate the commits; keep the branch and flag it. |
 | `.git` size unchanged after `gc` | Large objects still reachable from history/reflog | Confirm intent; only then Phase 5 history rewrite, not blind `--prune=now`. |
 | `gc --prune=now` lost a stash/commit | Reflog was expired, removing the only ref | Recover from the mirror backup; this is why the backup is mandatory. |
-| Force-push rejected after rewrite | Remote protects the branch / others pushed | Coordinate with collaborators; do not bypass protections unilaterally. |
+| Force-push rejected after rewrite | Remote protects the branch / others pushed | Coordinate with collaborators; do not work around branch protections unilaterally. |
 | Adding to `.gitignore` had no effect | File is already tracked | `git rm --cached <path>` (confirm separately), then commit. |
 
 ## See Also

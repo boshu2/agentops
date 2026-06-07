@@ -1,6 +1,8 @@
 ---
 name: ru-multi-repo-workflow
 description: Use when using ru for multi-repo commits, sync, GitHub review, or maintenance automation.
+practices:
+- pragmatic-programmer
 skill_api_version: 1
 user-invocable: false
 hexagonal_role: supporting

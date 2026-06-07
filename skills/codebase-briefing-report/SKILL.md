@@ -3,6 +3,8 @@ name: codebase-briefing-report
 description: |-
   Use when producing a shareable architecture, module, metrics, and health report for a codebase.
   Triggers:
+practices:
+- pragmatic-programmer
 skill_api_version: 1
 hexagonal_role: supporting
 consumes: []

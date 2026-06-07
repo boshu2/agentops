@@ -25,7 +25,8 @@ context:
   intel_scope: topic
 metadata:
   tier: orchestration
-  dependencies: [ntm, cc-hooks, agent-fungibility-philosophy]
+  dependencies: [ntm, cc-hooks]
+  external_dependencies: [agent-fungibility-philosophy]
   stability: stable
 output_contract: "Spawn plan (table of role → model/tools/effort/isolation/background) + per-worker Task invocations + SubagentStop gate; no client-facing artifacts."
 ---
@@ -144,7 +145,7 @@ Never emit client-facing artifacts; this skill drives the harness. Apply `jargon
 - `ntm` skill — when you outgrow Task and need persistent tmux panes (out-of-session workers).
 - `cc-hooks` skill — authoring the SubagentStop / TaskCompleted gate.
 - `agent-fungibility-philosophy` skill — why interchangeable workers beat bespoke ones.
-- Upstream: `https://code.claude.com/docs/en/sub-agents`, `.../hooks`, `.../cli-reference`.
+- Upstream: `https://code.claude.com/docs/en/sub-agents`, `https://code.claude.com/docs/en/hooks`, `https://code.claude.com/docs/en/cli-reference`.
 
 ## References
 - [agent-profiles](references/agent-profiles.md)

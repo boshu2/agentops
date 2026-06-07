@@ -160,7 +160,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `release` — Run release validation.
 - `release-readiness-gate` — Use when preparing releases with versioning, changelog, artifacts, smoke tests, tags, and go/no-go. Triggers:
 - `repeatedly-apply-skill` — Use when applying a skill repeatedly with progressive deepening for iterative improvement.
-- `repository-hygiene-sweep` — Use when cleaning repository branches, worktrees, gc state, large objects, and ignore rules safely. Triggers:
+- `repository-hygiene-sweep` — Use when cleaning repository branches, worktrees, gc state, large objects, and exclusion rules safely. Triggers:
 - `research-software` — Research software tools via source code, GitHub, web. Use when creating skills, learning new tools, finding undocumented features, or bleeding-edge patterns.
 - `reverse-engineer-rpi` — Reverse-engineer product specs.
 - `ripgrep-search-discipline` — Use when searching code with rg using precise, fast flags instead of slow grep or find patterns. Triggers:

@@ -3,6 +3,8 @@ name: release-readiness-gate
 description: |-
   Use when preparing releases with versioning, changelog, artifacts, smoke tests, tags, and go/no-go.
   Triggers:
+practices:
+- pragmatic-programmer
 skill_api_version: 1
 user-invocable: false
 hexagonal_role: supporting

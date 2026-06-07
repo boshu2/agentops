@@ -3,6 +3,8 @@ name: external-search-triage
 description: |-
   Use when deciding whether external research is needed and turning cited findings into repo actions.
   Triggers:
+practices:
+- pragmatic-programmer
 hexagonal_role: supporting
 consumes:
 - repo-context

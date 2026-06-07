@@ -6,6 +6,8 @@ hexagonal_role: supporting
 metadata:
   tier: execution
 description: "Use when switching AI coding CLI accounts quickly to recover from subscription rate limits or OAuth friction."
+practices:
+- pragmatic-programmer
 ---
 <!-- TOC: Quick Start | THE EXACT PROMPT | Smart Rotation | TUI | Isolated Profiles | References -->
 

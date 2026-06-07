@@ -6,6 +6,8 @@ hexagonal_role: supporting
 metadata:
   tier: execution
 description: "Use when configuring SSH access, keys, tunnels, host diagnostics, or safe remote command workflows."
+practices:
+- pragmatic-programmer
 ---
 <!-- TOC: Quick Start | THE EXACT PROMPT | Essential Commands | Config | AGENTS.md Blurb | References -->
 

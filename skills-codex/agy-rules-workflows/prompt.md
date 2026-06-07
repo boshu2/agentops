@@ -86,7 +86,7 @@ must stay AGY-native per the base skill.
 - **Scoped commits.** Each commit touches only the bead's declared write scope;
   the scope guard rejects drive-by edits. (Base Rule 4.)
 - **Persist before done.** Write evidence + learning to the bead + `.agents/ratchet/`
-  + an AGY artifact before the turn is marked done. (Base Rule 5.)
+  and an AGY artifact before the turn is marked done. (Base Rule 5.)
 - **`dcg` guard stays on.** Merge hooks into `~/.gemini/settings.json` without
   clobbering the existing `BeforeTool` `dcg` entry. Under Codex's own
   `danger-full-access` sandbox, still route destructive commands through `dcg`.

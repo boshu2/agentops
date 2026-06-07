@@ -6,6 +6,8 @@ hexagonal_role: supporting
 metadata:
   tier: execution
 description: "Use when restoring machine responsiveness from high CPU, memory, IO, cache, or runaway process pressure."
+practices:
+- pragmatic-programmer
 ---
 <!-- TOC: Quick Reference | VM Tuning & Cache Bloat | systemd-oomd Protection | Kill Hierarchy | Diagnosis | Swap & zram | Disk Cleanup | Zellij/Tmux Cleanup | Orphans | Agent Swarm Fix | Fleet Triage | Emergency | References -->
 

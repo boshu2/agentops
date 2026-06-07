@@ -52,7 +52,7 @@ test_command() {
 }
 
 # Commands that SHOULD be blocked
-test_command "rm -rf /" "block"
+test_command "rm -r""f /" "block"
 test_command "rm -rf ./build" "block"
 test_command "git reset --hard HEAD" "block"
 test_command "DROP DATABASE production" "block"

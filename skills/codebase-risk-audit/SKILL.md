@@ -32,7 +32,7 @@ context:
 metadata:
   tier: execution
   stability: experimental
-  dependencies:
+  external_dependencies:
   - shell
   - git
   - rg

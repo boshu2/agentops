@@ -3,6 +3,8 @@ name: automation-loop-hardening
 description: |-
   Use when turning repeated manual operations into safer, observable, reusable automation loops.
   Triggers:
+practices:
+- pragmatic-programmer
 skill_api_version: 1
 user-invocable: false
 context:

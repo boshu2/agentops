@@ -9,6 +9,8 @@ description: >-
   Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending
   panes, reading robot state, triaging work, locks/mail, safety, pipelines,
   serve, or NTM errors.
+practices:
+- pragmatic-programmer
 ---
 <!-- TOC: One Rule | Cold Start | Mandatory Loop | NTM Action Card | Command Selection Matrix | Pattern Tiers | Anti-Patterns | Pre-Flight Checklist | Quick Start | Mental Model | Session Orchestration | Dispatch & Reusable Assets | Work Intelligence | Coordination | Safety | Robot Mode | Controller Agents | Serve API | Project Resolution | Gotchas | References | Related Skills -->
 
