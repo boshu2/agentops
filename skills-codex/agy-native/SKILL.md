@@ -1,6 +1,6 @@
 ---
 name: agy-native
-description: "Run AGY native."
+description: "Drive AgentOps natively in Google Antigravity: loop, plugins, memory, headless evidence, scoped worktrees, and skill/plugin distribution."
 ---
 
 # agy-native (Codex)

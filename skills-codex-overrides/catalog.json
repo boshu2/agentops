@@ -1218,28 +1218,16 @@
       "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
     },
     {
-      "name": "gemini-native",
+      "name": "agy-headless-evidence",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for Gemini image operator skill."
+      "reason": "Codex parity wrapper for AGY image operator skill."
     },
     {
-      "name": "gemini-headless-evidence",
+      "name": "agy-mcp-plugins",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for Gemini image operator skill."
-    },
-    {
-      "name": "gemini-skills-extensions",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for Gemini image operator skill."
-    },
-    {
-      "name": "gemini-mcp-hooks",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for Gemini image operator skill."
+      "reason": "Codex parity wrapper for AGY image operator skill."
     }
   ]
 }

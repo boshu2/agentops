@@ -1,9 +1,14 @@
 # agy-native — Codex Execution Profile
 
-Runtime adapter for Codex CLI. The doctrine, the five workflow phases, and the
-six critical rules are defined in the Codex wrapper [`SKILL.md`](./SKILL.md) and
-the source skill [`../../skills/agy-native/SKILL.md`](../../skills/agy-native/SKILL.md). **Read the base skill first**; this file only maps
-that skill onto Codex-native tooling and restates the load-bearing guardrails.
+Runtime adapter for Codex CLI. The doctrine, the five workflow phases, the
+**seven** critical rules, and the **Distribution** surface (exposing
+skills/plugins to AGY) are defined in the Codex wrapper [`SKILL.md`](./SKILL.md)
+and the source skill [`../../skills/agy-native/SKILL.md`](../../skills/agy-native/SKILL.md) (depth in
+[`../../skills/agy-native/references/distribution-and-run-control.md`](../../skills/agy-native/references/distribution-and-run-control.md)).
+**Read the base skill first**; this file only maps that skill onto Codex-native
+tooling and restates the load-bearing guardrails. AGY ≠ gemini-cli — use `agy`
+affordances (`agy plugin`, `agy --print`, `--add-dir`, `--sandbox`), never the
+retired `gemini` CLI lane.
 
 ## Codex tool mapping
 
@@ -28,11 +33,15 @@ that skill onto Codex-native tooling and restates the load-bearing guardrails.
    `~/.gemini/antigravity-cli/{brain,knowledge}` exists; `agy plugin list`.
    Stop if `agy` does not resolve or no model lists.
 
-3. **Package + import the laws.** Lay out the `agy-control-plane/` plugin tree
+3. **Package + expose the laws.** Lay out the `agy-control-plane/` plugin tree
    (plugin.json, rules/, workflows/, subagents/, hooks.json, skills/), then
-   `agy plugin validate ./agy-control-plane` and `agy plugin install` +
-   `enable`. A bare `SKILL.md` under `~/.gemini/skills/` is portable — no
-   plugin.json needed just to expose a skill.
+   `agy plugin validate ./agy-control-plane` and `agy plugin link` (dev) or
+   `install` (released) + `enable`; `agy plugin list` to confirm and record a
+   rollback (`disable`/`uninstall`). A bare `SKILL.md` under `~/.gemini/skills/`
+   is portable — no plugin.json needed just to expose a skill. The retired
+   gemini `skills`+`extensions` split collapses into the single AGY **plugin**
+   unit (no `agy extensions`). Source of truth stays in AgentOps; don't
+   hand-edit managed runtime copies.
 
 4. **Author tick (context A).** Drive the worker with `agy --print --add-dir
    "$REPO" --dangerously-skip-permissions` (or `codex exec` against the repo):
@@ -74,6 +83,10 @@ that skill onto Codex-native tooling and restates the load-bearing guardrails.
   `~/.gemini/settings.json` even under `--dangerously-skip-permissions`. Under
   Codex's own `danger-full-access` sandbox, still route destructive commands
   through `dcg`. (Base Rule 5.)
+- **Match permission to role.** Author = `--dangerously-skip-permissions` with a
+  tight `--add-dir`; judge = default (no auto-approve), read-mostly scope;
+  full-auto only inside `--sandbox`. A validator that can edit is a false-close
+  path. (Base Rule 6.)
 - **Operator-side; invoke-never-rebuild.** Do not write under `~/dev/agentops`,
   do not push agentops, do not re-author AGY — own a thin adapter only. Never
-  emit this skill's content into client-facing material. (Base Rule 6.)
+  emit this skill's content into client-facing material. (Base Rule 7.)

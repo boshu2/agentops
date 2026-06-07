@@ -46,15 +46,14 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 ### driving-adapter
 
 - `acfs` — Use when operating ACFS flywheel health checks, init, and agent loop tooling from ~/acfs/bin/acfs. Triggers:
-- `agy-native` — Use when driving AgentOps work natively in Google Antigravity with claims, validation, closeout, and persistence. Triggers:
-- `agy-rules-workflows` — Use when installing or validating AgentOps rules and workflows for Google Antigravity. Triggers:
+- `agy-native` — Drive AgentOps in AGY: loop, plugins, memory, evidence, scoped worktrees. Triggers: agy, antigravity, agy plugin, AGY evidence.
+- `agy-rules-workflows` — Install AGY rules, workflow, goal, and schedule controls for AgentOps loop law. Triggers: AGY rules, agy-loop, AGY schedule.
 - `bd-first-memory-migration` — Consolidate fragmented agent-memory layers into one bd-canonical store, then GC/retire the rest. Triggers: "memory migration", "consolidate agent memory", "beads-first memory".
 - `bootstrap` — Initialize AgentOps project files.
 - `cc-cron-ticks` — Use when scheduling autonomous in-session flywheel ticks with Claude Code cron routines. Triggers:
 - `cc-loop-driver` — Use when running a Claude-native control-plane tick loop with worker and separate-validator subagents. Triggers:
 - `codex-exec` — Use when running Codex workers or validators non-interactively through codex exec with evidence. Triggers:
 - `codex-goals` — Use when using Codex Goals to define an objective once and let Codex iterate until done. Triggers:
-- `gemini-native` — Use when driving AgentOps natively on Gemini CLI with skills, MCP, hooks, worktrees, and structured output. Triggers:
 - `implement` — Implement one tracked issue.
 - `inject` — Load relevant .agents context.
 - `operating-loop-workflow` — Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users.
@@ -75,12 +74,11 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### driven-adapter
 
+- `agy-mcp-plugins` — Wire MCP servers and AgentOps plugin bundles into the AGY image with least-privilege tool access and rollback evidence.
 - `beads` — Track issues with bd/br, triage with bv, and convert plans to beads.
 - `codex-mcp-plugins` — Use when wiring MCP servers or plugins into Codex CLI and the AgentOps Codex skill bundle. Triggers:
 - `dependency-update-safety` — Use when updating dependencies safely with changelog review, small batches, tests, and rollback. Triggers:
 - `deps` — Audit dependency risks and updates.
-- `gemini-mcp-hooks` — Use when wiring MCP servers, hooks, and scoped tool policy into the Gemini CLI image. Triggers:
-- `gemini-skills-extensions` — Use when installing, linking, enabling, disabling, or validating AgentOps skills for Gemini. Triggers:
 - `grafana-platform-dashboard` — Validate OpenShift Grafana dashboards.
 - `openai-docs` — Use official OpenAI docs.
 - `pr-research` — Research an upstream repo.
@@ -93,6 +91,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 - `agent-mail` — Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs.
 - `agent-native` — Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native — via skills + the ao CLI + CI, not hooks.
+- `agy-headless-evidence` — Run AGY headlessly via scheduled ticks or `agy -p`, capturing agentapi JSONL evidence for validation.
 - `autodev` — Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.
 - `automation-loop-hardening` — Use when turning repeated manual operations into safer, observable, reusable automation loops. Triggers:
 - `automation-shape-routing` — Front door for agent automation — decide the SHAPE (Workflow vs NTM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".
@@ -129,7 +128,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `external-search-triage` — Use when deciding whether external research is needed and turning cited findings into repo actions. Triggers:
 - `fuzz-test-design` — Use when designing fuzz, property, randomized, or corpus-based tests and replaying failures. Triggers:
 - `gcloud` — Google Cloud Platform CLI - manage GCP resources. Use when working with Compute Engine, Cloud Run, GKE, Cloud Functions, Storage, BigQuery, or other GCP services.
-- `gemini-headless-evidence` — Use when running Gemini CLI headlessly and capturing structured, machine-checkable evidence. Triggers:
 - `gh-actions` — Use when creating GitHub Actions workflows, release automation, checksums, signing, or CI/CD.
 - `gh-cli` — GitHub CLI (gh) for repos, issues, PRs, actions, releases. Use when working with GitHub or running gh commands.
 - `gh-triage-ru` — GitHub issue/PR triage via ru and gh. Use when processing issues, closing PRs (no-contributions policy), or bulk triage. Independent verification required.
@@ -204,6 +202,9 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 ```mermaid
 graph LR
   acfs -- "supplier-to" --> operating-loop-skill
+  agy-headless-evidence -- "customer-of" --> agy-native
+  agy-headless-evidence -- "supplier-to" --> validate
+  agy-mcp-plugins -- "supplier-to" --> agy-native
   agy-native -- "customer-of" --> operating-loop-skill
   agy-rules-workflows -- "conformist-to" --> operating-loop-workflow
   artifact-clarity-pass -- "shared-kernel" --> standards
@@ -240,10 +241,6 @@ graph LR
   expertise-to-procedure -- "customer-of" --> skill-builder
   flywheel -- "shared-kernel" --> standards
   forge -- "shared-kernel" --> standards
-  gemini-headless-evidence -- "supplier-to" --> gemini-native
-  gemini-mcp-hooks -- "customer-of" --> gemini-native
-  gemini-native -- "customer-of" --> operating-loop-skill
-  gemini-skills-extensions -- "customer-of" --> gemini-native
   goals -- "shared-kernel" --> standards
   heal-skill -- "customer-of" --> skill-auditor
   hooks-authoring -- "shared-kernel" --> standards
@@ -317,6 +314,12 @@ graph LR
 | `agent-native` | consumes | standards |
 | `agent-native` | consumes | validation |
 | `agent-native` | produces | docs/contracts/agent-runtime-profile.md |
+| `agy-headless-evidence` | consumes | agy-native |
+| `agy-headless-evidence` | produces | agy-evidence-dir |
+| `agy-mcp-plugins` | consumes | mcp-server |
+| `agy-mcp-plugins` | consumes | skill-bundle |
+| `agy-mcp-plugins` | produces | agy-mcp-config |
+| `agy-mcp-plugins` | produces | agy-plugin-install |
 | `agy-native` | consumes | operating-loop-skill |
 | `agy-native` | produces | agy-run-evidence |
 | `agy-rules-workflows` | consumes | operating-loop-workflow |
@@ -455,20 +458,6 @@ graph LR
 | `fuzz-test-design` | produces | fuzz-test-plan |
 | `fuzz-test-design` | produces | minimized-repro |
 | `fuzz-test-design` | produces | regression-test |
-| `gemini-headless-evidence` | consumes | gemini-native |
-| `gemini-headless-evidence` | produces | gemini-evidence-dir |
-| `gemini-mcp-hooks` | consumes | hook-policy |
-| `gemini-mcp-hooks` | consumes | mcp-server |
-| `gemini-mcp-hooks` | produces | gemini-hook-config |
-| `gemini-mcp-hooks` | produces | gemini-mcp-config |
-| `gemini-native` | consumes | beads-br |
-| `gemini-native` | consumes | operating-loop-skill |
-| `gemini-native` | produces | gemini-run-evidence |
-| `gemini-native` | produces | scoped-commit |
-| `gemini-skills-extensions` | consumes | gemini-extension |
-| `gemini-skills-extensions` | consumes | skill-bundle |
-| `gemini-skills-extensions` | produces | gemini-extension-install |
-| `gemini-skills-extensions` | produces | gemini-skill-install |
 | `goals` | produces | result.json |
 | `grafana-platform-dashboard` | produces | dashboard-validation-report |
 | `handoff` | produces | .agents/research/*.md |
