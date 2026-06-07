@@ -1,6 +1,6 @@
 # Executable spec for the /skill-auditor skill — skill template audit (BC1 Corpus / Skill Catalog).
-# /skill-auditor audits an existing SKILL.md against the unified template: Pass 1 delegates
-# to heal-skill for hygiene, Pass 2 runs additional structural checks, then it emits a
+# /skill-auditor audits an existing SKILL.md against the unified template: Pass 1 gates
+# through heal-skill --strict, Pass 2 runs additional structural checks, then it emits a
 # density report and a productization score. Hexagon: supporting; consumes: a SKILL.md +
 # the template; produces: audit-report.json. (soc-qk4b)
 
@@ -14,7 +14,7 @@ Feature: Skill-auditor scores a skill against the unified template
 
   Scenario: Pass 1 delegates hygiene to heal-skill
     When /skill-auditor runs
-    Then Pass 1 delegates the hygiene checks to heal-skill
+    Then Pass 1 delegates the hygiene checks to heal-skill --strict by exit code
 
   Scenario: Pass 2 runs the additional structural checks
     When Pass 1 completes
