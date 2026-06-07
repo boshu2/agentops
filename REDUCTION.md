@@ -229,6 +229,24 @@ Shared raw next-work JSONL walk/rewrite primitives now live in
 `cli/internal/rpi`. They preserve the existing parseable-index behavior and do
 not normalize legacy flat entries, matching the old materialize semantics.
 
+## Deferred Load-Bearing RPI/Worktree Cluster
+
+The remaining RELOCATE rows are now explicitly routed to `defer-load-bearing`
+instead of being immediate move targets for the lean-image reduction:
+
+- `cli/cmd/ao/rpi*.go`
+- `cli/cmd/ao/worktree*.go`
+
+This cluster owns runtime state, phase lifecycle, worktree safety, tmux/session
+cleanup, and generated command/skill contracts. MTO may schedule a whole AO
+loop, but it must not reimplement RPI phase logic. Moving this cluster requires
+a stable AO RPI/worktree port, generated CLI docs, command-surface inventory,
+and skill callers to migrate together.
+
+Follow-up `cp-nkk` owns that phase-2 split. It is deliberately not a blocker
+for fleet aggregation: the lean AO image remains self-contained and the
+residual cluster is explicitly deferred rather than half-moved.
+
 ## Reversibility
 
 This is a plan artifact. The next beads may move or remove code, but each move
