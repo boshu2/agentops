@@ -38,11 +38,11 @@ Current inventory count:
 
 | Bucket | Files |
 |---|---:|
-| KEEP | 467 |
-| RELOCATE | 108 |
+| KEEP | 468 |
+| RELOCATE | 106 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
-| Total | 614 |
+| Total | 613 |
 
 Validation command:
 
@@ -215,6 +215,19 @@ The duplicate command-package RPI complexity shim was removed. Complexity
 classification already lives in `cli/internal/rpi`; `cli/cmd/ao/rpi.go` now
 keeps only the package-level compatibility aliases and `classifyComplexity`
 delegate needed by the remaining RPI command files.
+
+## Extracted Next-Work Materialize Adapter
+
+The `ao next-work materialize` bead-creation runner moved behind the
+`mto-fleet` adapter boundary. AO keeps the public command wrapper and flags in
+`cli/cmd/ao/next_work_materialize.go`, while candidate enumeration, bd-create
+argument construction, provenance metadata rendering, bead-id stamping, and
+text/JSON summaries now live under
+`cli/internal/adapters/mto/nextworkmaterialize`.
+
+Shared raw next-work JSONL walk/rewrite primitives now live in
+`cli/internal/rpi`. They preserve the existing parseable-index behavior and do
+not normalize legacy flat entries, matching the old materialize semantics.
 
 ## Reversibility
 

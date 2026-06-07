@@ -1,4 +1,4 @@
-package main
+package nextworkmaterialize
 
 import (
 	"bytes"
@@ -48,25 +48,14 @@ type matOpts struct {
 	dryRun     bool
 }
 
-// runMaterialize sets command globals, installs a fake bd, invokes the RunE
-// directly (cobra's Execute() walks to the root command, so we call RunE to
-// keep the test isolated), and returns combined output plus the captured
-// bd-create argv list.
+// runMaterialize installs a fake bd port, invokes Run, and returns combined
+// output plus the captured bd-create argv list.
 func runMaterialize(t *testing.T, beadIDs []string, o matOpts) (string, [][]string, error) {
 	t.Helper()
-	nextWorkMaterializeFile = o.file
-	nextWorkMaterializeDryRun = o.dryRun
-	nextWorkMaterializeJSON = false
-	nextWorkMaterializeSourceEpic = o.sourceEpic
-	nextWorkMaterializeMaterialBy = defaultMaterializedBy
-
-	origExec, origAvail := execBD, bdAvailable
-	t.Cleanup(func() { execBD = origExec; bdAvailable = origAvail })
 
 	var calls [][]string
 	idx := 0
-	bdAvailable = func() bool { return true }
-	execBD = func(a ...string) ([]byte, error) {
+	execBD := func(a ...string) ([]byte, error) {
 		calls = append(calls, a)
 		id := fmt.Sprintf("ag-mat%d", idx)
 		if idx < len(beadIDs) {
@@ -77,10 +66,16 @@ func runMaterialize(t *testing.T, beadIDs []string, o matOpts) (string, [][]stri
 	}
 
 	var out bytes.Buffer
-	cmd := nextWorkMaterializeCmd
-	cmd.SetOut(&out)
-	cmd.SetErr(&out)
-	err := runNextWorkMaterialize(cmd, nil)
+	err := Run(Options{
+		File:           o.file,
+		DryRun:         o.dryRun,
+		SourceEpic:     o.sourceEpic,
+		MaterializedBy: DefaultMaterializedBy,
+		Out:            &out,
+		ErrOut:         &out,
+		BDAvailable:    func() bool { return true },
+		ExecBD:         execBD,
+	})
 	return out.String(), calls, err
 }
 
@@ -151,7 +146,7 @@ func TestNextWorkMaterialize_CreatesDurableBeadWithProvenance(t *testing.T) {
 		t.Errorf("metadata missing proof_ref: %s", meta)
 	}
 
-	// The item is stamped with its durable bead_id (back-reference) — proving
+	// The item is stamped with its durable bead_id (back-reference), proving
 	// the queue line is no longer the only record of the work.
 	items := readQueueItems(t, path)
 	if len(items) != 1 || items[0].BeadID != "ag-real1" {
@@ -215,18 +210,13 @@ func TestNextWorkMaterialize_SkipsConsumedAndHeld(t *testing.T) {
 
 // TestNextWorkMaterialize_SkipsBatchConsumedEntry is the ag-mjlg regression
 // contract. The real next-work.jsonl marks consumption at the BATCH level
-// (entry.consumed / consumed_by), not per item — so an entry can be fully
+// (entry.consumed / consumed_by), not per item, so an entry can be fully
 // consumed while its items carry no item-level consumed flag.
-//
-//	Given a next-work.jsonl entry whose batch-level consumed is true with an
-//	     item that has no item-level consumed flag
-//	When materialize enumerates candidates
-//	Then that entry's items are skipped and produce zero bd-create calls.
 func TestNextWorkMaterialize_SkipsBatchConsumedEntry(t *testing.T) {
 	consumedBy := "soc-xlw8"
 	consumedAt := "2026-05-08T09:30:00-04:00"
-	// Item itself looks fresh — no item-level consumed flag, no bead_id —
-	// exactly how historical queue entries store their items.
+	// Item itself looks fresh: no item-level consumed flag, no bead_id; exactly
+	// how historical queue entries store their items.
 	freshLooking := rpi.NextWorkItem{
 		Title: "Historical work already handled by soc-xlw8", Type: "task",
 		Severity: "medium", Source: "post-mortem-finding", Description: "Done long ago.",
@@ -305,8 +295,8 @@ func TestMapNextWorkTypeToBeadType(t *testing.T) {
 		"process-improvement": "task", "docs": "task", "": "task",
 	}
 	for in, want := range cases {
-		if got := mapNextWorkTypeToBeadType(in); got != want {
-			t.Errorf("mapNextWorkTypeToBeadType(%q) = %q, want %q", in, got, want)
+		if got := MapNextWorkTypeToBeadType(in); got != want {
+			t.Errorf("MapNextWorkTypeToBeadType(%q) = %q, want %q", in, got, want)
 		}
 	}
 }
@@ -314,8 +304,8 @@ func TestMapNextWorkTypeToBeadType(t *testing.T) {
 func TestMapSeverityToPriority(t *testing.T) {
 	cases := map[string]string{"high": "1", "medium": "2", "low": "3", "": "2", "bogus": "2"}
 	for in, want := range cases {
-		if got := mapSeverityToPriority(in); got != want {
-			t.Errorf("mapSeverityToPriority(%q) = %q, want %q", in, got, want)
+		if got := MapSeverityToPriority(in); got != want {
+			t.Errorf("MapSeverityToPriority(%q) = %q, want %q", in, got, want)
 		}
 	}
 }
