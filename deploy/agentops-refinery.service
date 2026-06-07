@@ -1,0 +1,24 @@
+# AgentOps Refinery — continuous main-validation backstop (ag-qidx P2.4).
+# Install on bushido as a user service:
+#   cp deploy/agentops-refinery.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now agentops-refinery
+# Backstop-not-gatekeeper: if this is down, merges still succeed; on restart it
+# resumes from .refinery-state. It NEVER reverts — it beacons + files fix-beads.
+[Unit]
+Description=AgentOps Refinery (continuous main-validation backstop)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/dev/agentops
+ExecStart=%h/go/bin/ao refinery run --interval 5m
+Restart=on-failure
+RestartSec=30
+# Resilience: a single bad tick must not kill the daemon (the loop already
+# swallows tick errors; this is belt-and-suspenders).
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=default.target
