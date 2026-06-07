@@ -19,6 +19,18 @@ import (
 	"github.com/spf13/pflag"
 )
 
+func equalStringSlices(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // packageDir holds the absolute path to the test package directory, captured
 // at init time before any test can call os.Chdir. Use this as the base for
 // resolving testdata/ paths so that concurrent os.Chdir calls in other tests
