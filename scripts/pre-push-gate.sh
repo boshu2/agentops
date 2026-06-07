@@ -1703,6 +1703,14 @@ if needs_check docs || needs_check skill; then
     elif [[ -x scripts/docs-build.sh ]] && command -v python3 >/dev/null 2>&1; then
         if mkdocs_output="$(scripts/docs-build.sh --check 2>&1)"; then
             pass "mkdocs strict build"
+        elif [[ "$FAST_MODE" == "true" ]] && ! is_ci_env && ! truthy "${PRE_PUSH_STRICT_MKDOCS:-0}"; then
+            # Layered gate (ag-qidx): the fast cockpit lane must not block a push
+            # on whole-site strict-build failures in files the change didn't touch
+            # (e.g. pre-existing broken anchors elsewhere). The full strict build
+            # stays BLOCKING in CI and the bushido refinery. Force-block locally
+            # with PRE_PUSH_STRICT_MKDOCS=1.
+            warn "mkdocs strict build (advisory in fast mode; blocking in CI/refinery — run: scripts/docs-build.sh --check)"
+            indent_output "$mkdocs_output"
         else
             fail "mkdocs strict build (run: scripts/docs-build.sh --check)"
             indent_output "$mkdocs_output"
