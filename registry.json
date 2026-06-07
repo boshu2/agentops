@@ -1,7 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-07T20:47:50Z",
-  "generated_at": "2026-06-07T21:38:12Z",
+  "generated_at": "2026-06-07T22:32:25Z",
   "summary": {
     "skills": 158,
     "hooks": 0,
@@ -9,8 +8,7 @@
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 83,
-    "capabilities": 254
-    "capabilities": 268
+    "capabilities": 255
   },
   "surfaces": {
     "skills": [
@@ -2110,10 +2108,8 @@
     ]
   },
   "capability_summary": {
-    "total": 254,
+    "total": 255,
     "skills": 158,
-    "total": 268,
-    "skills": 171,
     "cli_commands": 83,
     "gates": 14,
     "reference_impls": 0

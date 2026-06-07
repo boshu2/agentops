@@ -202,10 +202,11 @@ jobs:
         run: |
           set +e
           WORKTREE_DISPOSITION_CI_SKIP=1 \
-            ./bin/ao gate check --full --json --github-annotations \
+            ./bin/ao gate check --full --json --github-annotations --workflow-coverage \
             > ao-gate-report.json
           rc=$?
           jq '.run.summary' ao-gate-report.json
+          jq '.coverage | {workflow_script_count, registry_script_count, missing_script_count, registry_only_script_count, missing_scripts}' ao-gate-report.json
           echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
           exit "$rc"
 

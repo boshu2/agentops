@@ -19,6 +19,7 @@ type Report struct {
 	StartedAt    time.Time
 	Elapsed      time.Duration
 	Results      []CheckResult
+	Coverage     *WorkflowCoverage
 }
 
 // ExitCode is 1 if any blocking check FAILed, else 0. WARN/SKIP and
@@ -66,8 +67,9 @@ type Summary struct {
 // ---- JSON wire format (the contract the refinery + CI consume) ----
 
 type jsonReport struct {
-	Run   jsonRun    `json:"run"`
-	Gates []jsonGate `json:"gates"`
+	Run      jsonRun           `json:"run"`
+	Gates    []jsonGate        `json:"gates"`
+	Coverage *WorkflowCoverage `json:"coverage,omitempty"`
 }
 
 type jsonRun struct {
@@ -102,6 +104,9 @@ func (r *Report) JSON() ([]byte, error) {
 		},
 		Gates: make([]jsonGate, 0, len(r.Results)),
 	}
+	if r.Coverage != nil {
+		jr.Coverage = r.Coverage
+	}
 	for _, res := range r.Results {
 		reason := res.Verdict.Reason
 		if res.Err != nil {
@@ -133,6 +138,14 @@ func (r *Report) Human(w io.Writer) {
 	}
 	fmt.Fprintf(w, "\n%s/%s: %d checks — %d pass, %d warn, %d fail, %d skip (%dms)\n",
 		modeString(r.Mode), r.Scope, s.Total, s.Passed, s.Warned, s.Failed, s.Skipped, r.Elapsed.Milliseconds())
+	if r.Coverage != nil {
+		fmt.Fprintf(w, "workflow coverage: %d workflow scripts, %d registry scripts, %d missing, %d registry-only\n",
+			r.Coverage.WorkflowScriptCount,
+			r.Coverage.RegistryScriptCount,
+			r.Coverage.MissingScriptCount,
+			r.Coverage.RegistryOnlyScriptCount,
+		)
+	}
 }
 
 // GitHubAnnotations writes GitHub Actions log annotations for failing or
@@ -165,6 +178,9 @@ func (r *Report) GitHubAnnotations(w io.Writer) {
 			escapeGitHubAnnotation(res.Check.ID),
 			escapeGitHubAnnotation(msg),
 		)
+	}
+	if r.Coverage != nil {
+		r.Coverage.GitHubAnnotations(w)
 	}
 }
 

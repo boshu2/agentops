@@ -43,12 +43,15 @@ func runGateCheckWith(t *testing.T, reg *gates.Registry, full, jsonOut bool) (st
 	t.Helper()
 	save := func() func() {
 		r, fl, j, ff, sc := gateCheckRegistry, gateCheckFull, gateCheckJSON, gateCheckFailFast, gateCheckScope
+		wc, req, wp := gateCheckWorkflowCoverage, gateCheckRequireWorkflowParity, gateCheckWorkflowPath
 		return func() {
 			gateCheckRegistry, gateCheckFull, gateCheckJSON, gateCheckFailFast, gateCheckScope = r, fl, j, ff, sc
+			gateCheckWorkflowCoverage, gateCheckRequireWorkflowParity, gateCheckWorkflowPath = wc, req, wp
 		}
 	}()
 	defer save()
 	gateCheckRegistry, gateCheckFull, gateCheckJSON, gateCheckFailFast, gateCheckScope = reg, full, jsonOut, false, "head"
+	gateCheckWorkflowCoverage, gateCheckRequireWorkflowParity, gateCheckWorkflowPath = false, false, ".github/workflows/validate.yml"
 
 	var buf bytes.Buffer
 	c := &cobra.Command{}
@@ -80,7 +83,17 @@ func TestGateCheck_RegisteredUnderGate(t *testing.T) {
 }
 
 func TestGateCheck_HasModeFlags(t *testing.T) {
-	for _, name := range []string{"fast", "full", "json", "github-annotations", "fail-fast", "scope"} {
+	for _, name := range []string{
+		"fast",
+		"full",
+		"json",
+		"github-annotations",
+		"fail-fast",
+		"scope",
+		"workflow-coverage",
+		"require-workflow-parity",
+		"workflow-path",
+	} {
 		if gateCheckCmd.Flags().Lookup(name) == nil {
 			t.Errorf("ao gate check missing --%s flag", name)
 		}
