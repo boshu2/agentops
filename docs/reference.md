@@ -26,7 +26,7 @@ Deep documentation for AgentOps. For quick start, see [README](https://github.co
 
 | Property | How it works |
 |----------|-------------|
-| **Backends** | Auto-detected at runtime: `spawn_agent` (Codex) → `TeamCreate` (Claude) → `Task(run_in_background=true)` (fallback). For headless cross-runtime execution, `lib/scripts/team-runner.sh` now lets Codex launch Codex or Claude workers from the same team spec. |
+| **Backends** | Auto-detected at runtime: `spawn_agent` (Codex) → `TeamCreate` (Claude) → `Task(run_in_background=true)` (fallback). For headless batch execution, `lib/scripts/team-runner.sh` launches Codex workers from a team spec. Claude workers run through NTM panes or in-harness subagents, not print-mode shell workers. |
 | **Dependencies** | None (runtime-native) |
 | **Context** | Fresh per agent (team-per-wave) |
 | **Coordination** | `wait`/`SendMessage`/`TaskOutput` + `TaskList` |
@@ -34,10 +34,10 @@ Deep documentation for AgentOps. For quick start, see [README](https://github.co
 
 The headless team backend preserves a shared worker artifact contract:
 
-- team spec selects `runtime: codex` or `runtime: claude`
-- both backends write the same `lib/schemas/worker-output.json` artifact
+- team spec selects `runtime: codex` or omits `runtime`
+- Codex workers write the shared `lib/schemas/worker-output.json` artifact
 - Codex streams are watched by `lib/scripts/watch-codex-stream.sh`
-- Claude streams are watched by `lib/scripts/watch-claude-stream.sh`
+- Claude concurrency belongs in NTM panes or in-harness subagents, outside `team-runner.sh`
 
 ---
 

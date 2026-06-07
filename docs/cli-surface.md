@@ -103,6 +103,7 @@
 | `ao forge transcript` | `public-tested` | `allowlisted` | Covered by forge helper tests. |
 | `ao gate approve` | `public-tested` | `allowlisted` | Covered by gate command tests. |
 | `ao gate bulk-approve` | `public-tested` | `allowlisted` | Covered by gate command tests. |
+| `ao gate check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao gate pending` | `public-tested` | `allowlisted` | Covered by gate command tests. |
 | `ao gate reject` | `public-tested` | `allowlisted` | Covered by gate command tests. |
 | `ao gate run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -197,6 +198,8 @@
 | `ao ready` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao reconcile` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao redact` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao refinery once` | `unsafe-live` | `allowlisted` | Runs the full refinery against live repo state; command registration and subcommands are covered by refinery tests. |
+| `ao refinery run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao registry list` | `public-stateful-fixture-needed` | `allowlisted` | Reads generated registry state and needs a representative registry fixture. |
 | `ao retrieval-bench` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao robot-docs` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |

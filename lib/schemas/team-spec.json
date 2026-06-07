@@ -7,8 +7,8 @@
     },
     "runtime": {
       "type": "string",
-      "enum": ["codex", "claude"],
-      "description": "Worker runtime for this team (defaults to codex when omitted)"
+      "enum": ["codex"],
+      "description": "Worker runtime for this team. Defaults to codex when omitted; Claude print-mode workers are intentionally unsupported."
     },
     "repo_path": {
       "type": "string",
@@ -39,7 +39,7 @@
           "sandbox_level": {
             "type": "string",
             "enum": ["read-only", "workspace-write", "danger-full-access"],
-            "description": "Codex sandbox level for this agent. Claude runtime ignores this field and uses the Claude team-runner permission contract."
+            "description": "Codex sandbox level for this agent."
           },
           "timeout_ms": {
             "type": "integer",
