@@ -1,7 +1,7 @@
 {
   "name": "agentops-core-gemini",
   "version": "1.0.0",
-  "description": "AgentOps 61-skill CORE image packaged for Google Antigravity (AGY) / Gemini. Portable SKILL.md set (identical to the Claude image — zero conversion) wrapped in an Antigravity plugin, with Agent Mail MCP and AgentOps guard/evidence hooks.",
+  "description": "AgentOps 65-skill image (61 CORE + 4 AGY operator) packaged for Google Antigravity (AGY) / Gemini. Portable SKILL.md set (identical to the Claude image — zero conversion) wrapped in an Antigravity plugin, with Agent Mail MCP and AgentOps guard/evidence hooks.",
   "skills": "./skills",
   "agents": "./agents",
   "rules": "./rules",

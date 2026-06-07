@@ -1,6 +1,7 @@
 # AgentOps CORE — Gemini / Antigravity (AGY) Image
 
-The **61-skill AgentOps CORE** packaged for **Google Antigravity (AGY) / Gemini**.
+The **65-skill AgentOps image** — the 61-skill CORE plus the 4 Gemini/AGY operator
+skills (IMAGE-CORE.md §3c) — packaged for **Google Antigravity (AGY) / Gemini**.
 
 > **KEY FINDING (IMAGE-CORE.md §2):** `SKILL.md` is **portable across all vendors**.
 > The skill content shipped here is the **same** `skills/<slug>/SKILL.md` the Claude
@@ -19,8 +20,8 @@ Modeled on the **proven** AgentOps Antigravity plugin package green at agentops
 commit **`ed8f573e6`** (`.agy-plugin/`, bead `cp-c6k.3.1` / `.3.5`). The wrapper
 shape — `plugin.json` + `skills/` + `agents/` + `rules/` + `hooks/hooks.json` +
 `mcp_config.json`, validated by `agy plugin validate` — is reused directly; only
-the packaged skill set (full 61-slug CORE vs. the proven package's 27 tool-op
-skills) and the manifest `name`/`version` differ.
+the packaged skill set (the 61-slug CORE + 4 AGY operator skills, vs. the proven
+package's 27 tool-op skills) and the manifest `name`/`version` differ.
 
 ## Layout
 
@@ -32,12 +33,12 @@ images/gemini/
   hooks/hooks.json     # AGY plugin hook payload layout processed by `agy plugin validate` (== hooks.json)
   agents/*.md          # AGY subagent templates (worker, validator)
   rules/*.md           # AGY rules (AgentOps loop law, Door-9 no-API-print)
-  skills/<slug>/SKILL.md   # the 61 portable CORE SKILL.md files (verbatim copy of agentops/skills/<slug>/)
+  skills/<slug>/SKILL.md   # the 65 portable SKILL.md files (61 CORE + 4 AGY operator; verbatim copy of agentops/skills/<slug>/)
   verify.sh            # self-check: JSON validity + slug presence/identity + (if present) agy plugin validate
   README.md            # this file
 ```
 
-## The 61 CORE slugs packaged
+## The 65 slugs packaged (61 CORE + 4 AGY operator)
 
 ### Method-core (35) — the operating loop
 
@@ -62,14 +63,25 @@ vibing-with-ntm
 (`slb` from the pruning target list is `~/.claude`-only and was never ingested into
 the corpus, so it is not in the image CORE — see IMAGE-CORE.md §1c.)
 
+### Gemini/AGY operator (4) — drive AGY's first-class control surface
+
+```
+agy-native  agy-rules-workflows  agy-mcp-plugins  agy-headless-evidence
+```
+
+These are the IMAGE-CORE.md §3c vendor-native operator skills the Unit-3 consumer
+note ("operator skills from §3c") requires in the Gemini image. They are packaged
+the same way as the CORE — direct, byte-identical `SKILL.md` copies, zero conversion.
+
 ## Verify
 
 ```bash
 bash images/gemini/verify.sh
 ```
 
-Confirms all manifest JSON is valid, every CORE slug resolves to a bundled
-`skills/<slug>/SKILL.md` that is byte-identical to the canonical source, the
+Confirms all manifest JSON is valid, every one of the 65 slugs (61 CORE + 4 AGY
+operator) resolves to a bundled `skills/<slug>/SKILL.md` that is byte-identical to
+the canonical source, the
 agents/rules templates are present, and — if the `agy` CLI is installed —
 `agy plugin validate` passes.
 

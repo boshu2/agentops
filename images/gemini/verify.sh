@@ -5,8 +5,9 @@
 #   1. plugin.json / mcp_config.json / hooks.json / hooks/hooks.json are valid JSON
 #      and expose the expected manifest shape (modeled on the proven .agy-plugin
 #      package at agentops ed8f573e6).
-#   2. each of the 61 CORE slugs resolves to skills/<slug>/SKILL.md inside the bundle
-#      AND is byte-identical to the canonical source skills/<slug>/SKILL.md
+#   2. each of the 65 slugs (61 CORE + 4 AGY operator) resolves to
+#      skills/<slug>/SKILL.md inside the bundle AND is byte-identical to the
+#      canonical source skills/<slug>/SKILL.md
 #      (the KEY FINDING: zero content conversion — only the wrapper differs).
 #   3. agents/ and rules/ each carry >=2 AGY-native control templates.
 #   4. if the `agy` CLI is present, `agy plugin validate` passes; otherwise the
@@ -32,6 +33,17 @@ core_skills=(
   multi-model-triangulation research-software repeatedly-apply-skill cc-hooks
   vibing-with-ntm
 )
+
+# The 4 Gemini/AGY operator skills (IMAGE-CORE.md §3c) — drive AGY's first-class
+# control surface. Unit-3 (cp-7uih) bundles these alongside the CORE so Unit-3's
+# "operator skills from §3c" consumer note is satisfied. Same packaging recipe:
+# direct, byte-identical SKILL.md copies, zero conversion.
+operator_skills=(
+  agy-native agy-rules-workflows agy-mcp-plugins agy-headless-evidence
+)
+
+# Full bundled set = CORE + AGY operator.
+all_skills=( "${core_skills[@]}" "${operator_skills[@]}" )
 
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 pass() { printf 'PASS: %s\n' "$*"; }
@@ -86,21 +98,21 @@ rule_count="$(find "$PLUGIN_DIR/rules" -maxdepth 1 -type f -name '*.md' | wc -l 
 [[ "$rule_count" -ge 2 ]] || fail "expected >=2 AGY rules, found $rule_count"
 pass "agents ($agent_count) + rules ($rule_count) present"
 
-# --- 3. CORE slug presence + byte-identity to source -------------------------
+# --- 3. slug presence + byte-identity to source (61 CORE + 4 AGY operator) ----
 bundled_count="$(find "$PLUGIN_DIR/skills" -mindepth 2 -maxdepth 2 -name SKILL.md | wc -l | tr -d ' ')"
-expected_count="${#core_skills[@]}"
+expected_count="${#all_skills[@]}"
 [[ "$bundled_count" == "$expected_count" ]] \
-  || fail "expected $expected_count bundled CORE skills, found $bundled_count"
+  || fail "expected $expected_count bundled skills, found $bundled_count"
 
-for skill in "${core_skills[@]}"; do
+for skill in "${all_skills[@]}"; do
   bundled="$PLUGIN_DIR/skills/$skill/SKILL.md"
   source_file="$REPO_ROOT/skills/$skill/SKILL.md"
-  [[ -f "$bundled" ]]     || fail "missing bundled CORE skill: $skill"
+  [[ -f "$bundled" ]]     || fail "missing bundled skill: $skill"
   [[ -f "$source_file" ]] || fail "missing canonical source skill: skills/$skill/SKILL.md"
   cmp -s "$bundled" "$source_file" \
     || fail "bundled skill drifted from source (NOT zero-conversion): $skill"
 done
-pass "all $expected_count CORE slugs resolve to skills/<slug>/SKILL.md and match source byte-for-byte"
+pass "all $expected_count slugs (${#core_skills[@]} CORE + ${#operator_skills[@]} AGY operator) resolve to skills/<slug>/SKILL.md and match source byte-for-byte"
 
 # --- 4. agy plugin validate (if available) -----------------------------------
 if command -v agy >/dev/null; then
@@ -114,4 +126,4 @@ else
   printf 'NOTE: agy CLI not found — skipping `agy plugin validate`; relied on JSON-validity + slug-presence.\n'
 fi
 
-printf 'OK: Gemini/AGY CORE image bundle is valid (%s skills, direct+wrapped, zero conversion)\n' "$expected_count"
+printf 'OK: Gemini/AGY CORE image bundle is valid (%s skills = %s CORE + %s AGY operator, direct+wrapped, zero conversion)\n' "$expected_count" "${#core_skills[@]}" "${#operator_skills[@]}"
