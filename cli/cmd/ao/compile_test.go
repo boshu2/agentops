@@ -218,10 +218,10 @@ func TestResolveCompileRuntime(t *testing.T) {
 
 	// env wins over config file + auto-detect
 	t.Setenv("AGENTOPS_COMPILE_RUNTIME", "openai")
-	loadCompileConfigFn = func() (string, error) { return "claude-cli", nil }
+	loadCompileConfigFn = func() (string, error) { return "codex-cli", nil }
 	lookPathFn = func(name string) (string, error) {
-		if name == "claude" {
-			return "/usr/local/bin/claude", nil
+		if name == "codex" {
+			return "/usr/local/bin/codex", nil
 		}
 		return "", os.ErrNotExist
 	}
@@ -229,13 +229,13 @@ func TestResolveCompileRuntime(t *testing.T) {
 		t.Fatalf("env var precedence: got %q want openai", got)
 	}
 
-	// config file wins over auto-detect (na-pmx1.9 core case: user has claude
+	// config file wins over auto-detect (na-pmx1.9 core case: user has codex
 	// installed but prefers ollama for privacy)
 	t.Setenv("AGENTOPS_COMPILE_RUNTIME", "")
 	loadCompileConfigFn = func() (string, error) { return "ollama", nil }
 	lookPathFn = func(name string) (string, error) {
-		if name == "claude" {
-			return "/usr/local/bin/claude", nil
+		if name == "codex" {
+			return "/usr/local/bin/codex", nil
 		}
 		return "", os.ErrNotExist
 	}
@@ -243,13 +243,13 @@ func TestResolveCompileRuntime(t *testing.T) {
 		t.Fatalf("config file precedence: got %q want ollama", got)
 	}
 
-	// auto-detect claude-cli when claude binary is present and nothing else set
+	// auto-detect codex-cli when codex binary is present and nothing else set
 	loadCompileConfigFn = func() (string, error) { return "", nil }
-	if got := resolveCompileRuntime(""); got != "claude-cli" {
-		t.Fatalf("auto-detect: got %q want claude-cli", got)
+	if got := resolveCompileRuntime(""); got != "codex-cli" {
+		t.Fatalf("auto-detect: got %q want codex-cli", got)
 	}
 
-	// no config and no claude → empty (preflight will fail with actionable error)
+	// no config and no codex -> empty (preflight will fail with actionable error)
 	lookPathFn = func(string) (string, error) { return "", os.ErrNotExist }
 	if got := resolveCompileRuntime(""); got != "" {
 		t.Fatalf("no config: got %q want empty", got)
@@ -258,13 +258,13 @@ func TestResolveCompileRuntime(t *testing.T) {
 	// config load error falls through to auto-detect gracefully
 	loadCompileConfigFn = func() (string, error) { return "", os.ErrNotExist }
 	lookPathFn = func(name string) (string, error) {
-		if name == "claude" {
-			return "/usr/local/bin/claude", nil
+		if name == "codex" {
+			return "/usr/local/bin/codex", nil
 		}
 		return "", os.ErrNotExist
 	}
-	if got := resolveCompileRuntime(""); got != "claude-cli" {
-		t.Fatalf("config error fallback: got %q want claude-cli", got)
+	if got := resolveCompileRuntime(""); got != "codex-cli" {
+		t.Fatalf("config error fallback: got %q want codex-cli", got)
 	}
 }
 
@@ -282,13 +282,13 @@ func TestPreflightCompileRuntimeErrors(t *testing.T) {
 		{
 			name:    "empty runtime names actionable env vars",
 			runtime: "",
-			wantErr: "AGENTOPS_COMPILE_RUNTIME=claude-cli",
+			wantErr: "AGENTOPS_COMPILE_RUNTIME=codex-cli",
 		},
 		{
-			name:    "claude-cli missing binary",
-			runtime: "claude-cli",
+			name:    "codex-cli missing binary",
+			runtime: "codex-cli",
 			lookup:  func(string) (string, error) { return "", os.ErrNotExist },
-			wantErr: "'claude' binary is not on PATH",
+			wantErr: "'codex' binary is not on PATH",
 		},
 		{
 			name:    "claude runtime missing API key",
@@ -334,15 +334,15 @@ func TestPreflightCompileRuntimeSuccess(t *testing.T) {
 	t.Cleanup(func() { lookPathFn = origLookPath })
 
 	lookPathFn = func(name string) (string, error) {
-		if name == "claude" {
-			return "/usr/local/bin/claude", nil
+		if name == "codex" {
+			return "/usr/local/bin/codex", nil
 		}
 		return "", os.ErrNotExist
 	}
 	t.Setenv("ANTHROPIC_API_KEY", "sk-fake")
 	t.Setenv("OPENAI_API_KEY", "sk-fake")
 
-	for _, rt := range []string{"claude-cli", "claude", "openai", "ollama"} {
+	for _, rt := range []string{"codex-cli", "claude", "openai", "ollama"} {
 		if err := preflightCompileRuntime(rt); err != nil {
 			t.Fatalf("%s: unexpected error %v", rt, err)
 		}
@@ -370,11 +370,11 @@ func TestCompileScriptOptionsPassesBatchFlags(t *testing.T) {
 	compileFull = true
 	compileBatchSize = 50
 	compileMaxBatches = 3
-	compileRuntime = "claude-cli"
+	compileRuntime = "codex-cli"
 	origLookPath := lookPathFn
 	lookPathFn = func(name string) (string, error) {
-		if name == "claude" {
-			return "/usr/local/bin/claude", nil
+		if name == "codex" {
+			return "/usr/local/bin/codex", nil
 		}
 		return "", os.ErrNotExist
 	}

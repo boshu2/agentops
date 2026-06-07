@@ -7,13 +7,13 @@ WORKBENCH="$REPO_ROOT/evals/workbench"
 
 usage() {
   cat <<'USAGE'
-Usage: scripts/eval-agent-harness.sh --task <task-id> --agent <claude|codex> [options]
+Usage: scripts/eval-agent-harness.sh --task <task-id> --agent <codex> [options]
 
 Run an agent against a workbench task and score the result.
 
 Options:
   --task <id>          Task ID (e.g., go-01, py-04, ops-01)
-  --agent <name>       Agent CLI to use: claude or codex
+  --agent <name>       Agent CLI to use: codex
   --prompt <text>      Override the default prompt (ignores prompt.md)
   --generic-prompt     Force generic prompt even when prompt.md exists
   --timeout <secs>     Agent invocation timeout (default: 120)
@@ -102,22 +102,15 @@ run_agent() {
   fi
 
   case "$AGENT" in
-    claude)
-      if [[ ${#agent_env[@]} -gt 0 ]]; then
-        env "${agent_env[@]}" timeout "$TIMEOUT" claude -p "$prompt" --allowedTools "Edit,Write,Read,Bash" >/dev/null 2>&1 || true
-      else
-        timeout "$TIMEOUT" claude -p "$prompt" --allowedTools "Edit,Write,Read,Bash" >/dev/null 2>&1 || true
-      fi
-      ;;
     codex)
       if [[ ${#agent_env[@]} -gt 0 ]]; then
-        env "${agent_env[@]}" timeout "$TIMEOUT" codex exec "$prompt" >/dev/null 2>&1 || true
+        env "${agent_env[@]}" timeout "$TIMEOUT" codex exec -C "$workspace" -s workspace-write "$prompt" >/dev/null 2>&1 || true
       else
-        timeout "$TIMEOUT" codex exec "$prompt" >/dev/null 2>&1 || true
+        timeout "$TIMEOUT" codex exec -C "$workspace" -s workspace-write "$prompt" >/dev/null 2>&1 || true
       fi
       ;;
     *)
-      echo "error: unsupported agent: $AGENT (use claude or codex)" >&2
+      echo "error: unsupported agent: $AGENT (use codex)" >&2
       exit 1
       ;;
   esac

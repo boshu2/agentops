@@ -12,7 +12,7 @@ HASH_FILE=""
 RUNTIME="${AGENTOPS_COMPILE_RUNTIME:-}"
 OLLAMA_MODEL="${AGENTOPS_COMPILE_MODEL:-gemma3:27b}"
 CLAUDE_MODEL="${AGENTOPS_COMPILE_CLAUDE_MODEL:-claude-sonnet-4-20250514}"
-CLAUDE_CLI_MODEL="${AGENTOPS_COMPILE_CLAUDE_CLI_MODEL:-}"
+CODEX_CLI_MODEL="${AGENTOPS_COMPILE_CODEX_CLI_MODEL:-}"
 OLLAMA_API="${OLLAMA_HOST:-http://localhost:11434}"
 BATCH_SIZE="${AGENTOPS_COMPILE_BATCH_SIZE:-25}"
 MAX_BATCHES="${AGENTOPS_COMPILE_MAX_BATCHES:-0}"  # 0 = unlimited
@@ -119,21 +119,20 @@ print(json.dumps({
         -H "anthropic-version: 2023-06-01" \
         -d "$payload" | python3 -c "import sys,json; print(json.load(sys.stdin)['content'][0]['text'])"
       ;;
-    claude-cli)
-      # Use the locally installed `claude` binary in headless (-p) mode.
-      # No API key required; inherits the user's Claude Code auth.
-      if ! command -v claude &>/dev/null; then
-        echo "ERROR: claude-cli runtime requested but 'claude' binary not on PATH." >&2
+    codex|codex-cli)
+      # Use the local Codex CLI subscription runtime for headless compilation.
+      if ! command -v codex &>/dev/null; then
+        echo "ERROR: codex-cli runtime requested but 'codex' binary not on PATH." >&2
         exit 1
       fi
       local combined="${system_prompt}
 
 ${user_prompt}"
-      if [[ -n "$CLAUDE_CLI_MODEL" ]]; then
-        printf '%s' "$combined" | claude -p --model "$CLAUDE_CLI_MODEL" 2>/dev/null
-      else
-        printf '%s' "$combined" | claude -p 2>/dev/null
+      local -a codex_cmd=(codex exec -C "$(pwd)" -s read-only)
+      if [[ -n "$CODEX_CLI_MODEL" ]]; then
+        codex_cmd+=(-m "$CODEX_CLI_MODEL")
       fi
+      printf '%s' "$combined" | "${codex_cmd[@]}" -
       ;;
     openai)
       local payload
@@ -153,10 +152,10 @@ print(json.dumps({
         -d "$payload" | python3 -c "import sys,json; print(json.load(sys.stdin)['choices'][0]['message']['content'])"
       ;;
     *)
-      echo "ERROR: AGENTOPS_COMPILE_RUNTIME must be set to one of: ollama, claude, claude-cli, openai." >&2
+      echo "ERROR: AGENTOPS_COMPILE_RUNTIME must be set to one of: codex-cli, ollama, claude, openai." >&2
       echo "" >&2
       echo "Pick one of these that matches what you have installed:" >&2
-      echo "  export AGENTOPS_COMPILE_RUNTIME=claude-cli   # uses local 'claude' binary, no API key needed" >&2
+      echo "  export AGENTOPS_COMPILE_RUNTIME=codex-cli   # uses local 'codex' binary, no API key needed" >&2
       echo "  export AGENTOPS_COMPILE_RUNTIME=ollama       # needs OLLAMA_HOST (default http://localhost:11434)" >&2
       echo "  export AGENTOPS_COMPILE_RUNTIME=claude       # needs ANTHROPIC_API_KEY" >&2
       echo "  export AGENTOPS_COMPILE_RUNTIME=openai       # needs OPENAI_API_KEY" >&2
@@ -171,17 +170,17 @@ print(json.dumps({
 
 preflight_runtime() {
   case "$RUNTIME" in
-    claude-cli)
-      if ! command -v claude &>/dev/null; then
-        echo "ERROR: runtime=claude-cli but 'claude' binary is not on PATH." >&2
-        echo "Install Claude Code or switch runtime: export AGENTOPS_COMPILE_RUNTIME=ollama" >&2
+    codex|codex-cli)
+      if ! command -v codex &>/dev/null; then
+        echo "ERROR: runtime=codex-cli but 'codex' binary is not on PATH." >&2
+        echo "Install Codex CLI or switch runtime: export AGENTOPS_COMPILE_RUNTIME=ollama" >&2
         return 1
       fi
       ;;
     claude)
       if [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
         echo "ERROR: runtime=claude but ANTHROPIC_API_KEY is not set." >&2
-        echo "Either export ANTHROPIC_API_KEY=... or switch: export AGENTOPS_COMPILE_RUNTIME=claude-cli" >&2
+        echo "Either export ANTHROPIC_API_KEY=... or switch: export AGENTOPS_COMPILE_RUNTIME=codex-cli" >&2
         return 1
       fi
       ;;
@@ -205,7 +204,7 @@ preflight_runtime() {
       return 1
       ;;
     *)
-      echo "ERROR: unknown runtime '$RUNTIME'. Expected one of: ollama, claude, claude-cli, openai." >&2
+      echo "ERROR: unknown runtime '$RUNTIME'. Expected one of: codex-cli, ollama, claude, openai." >&2
       return 1
       ;;
   esac

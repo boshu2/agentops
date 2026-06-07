@@ -22,10 +22,10 @@ esac
 
 # Extract the bead id (best-effort: first token after 'close').
 bead="$(printf '%s\n' "$cmd" | sed -nE 's/.*(br|bd) close[[:space:]]+([A-Za-z0-9_-]+).*/\2/p' | head -1)"
+[ -n "$bead" ] || exit 0
 
 # --- IMPLEMENT: confirm the bead carries captured evidence before allowing close
 # Example shape (uncomment + adapt to your tracker):
-#   [ -n "$bead" ] || exit 0
 #   ev="$(br show "$bead" --json 2>/dev/null | jq -r '.evidence // empty' || true)"
 #   [ -n "$ev" ] || { echo "close-guard: bead $bead has no captured evidence (Rule 2)" >&2; exit 1; }
 #   [ -f ".agents/ratchet/$bead.md" ] || { echo "close-guard: bead $bead not persisted (Rule 5)" >&2; exit 1; }
