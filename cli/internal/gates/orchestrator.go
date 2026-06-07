@@ -83,6 +83,14 @@ func (o *Orchestrator) Run(ctx context.Context, opts RunOptions) (*Report, error
 	}, nil
 }
 
+// Select returns the checks that would run for opts (and the routed change set)
+// WITHOUT executing them. It is the dry-run/introspection surface and the basis
+// of the predicate-parity guard (ag-qidx GA7): a check must route on the change
+// class it guards, never a different one (the #634 silent-drop class).
+func (o *Orchestrator) Select(ctx context.Context, opts RunOptions) ([]Check, []string, error) {
+	return o.selectChecks(ctx, opts)
+}
+
 // selectChecks applies the tier filter, then (Fast mode only) changed-file
 // routing with the full-run invalidation escape hatch.
 func (o *Orchestrator) selectChecks(ctx context.Context, opts RunOptions) ([]Check, []string, error) {
