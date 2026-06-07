@@ -1,0 +1,20 @@
+{
+  "name": "mcp-interface-design",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Design MCP (Model Context Protocol) servers that agents can actually use reliably — sharp tool definitions, strict JSON Schemas, self-correcting error messages, scoped resources, least-privilege auth, and ergonomics that keep tool calls che",
+  "triggers": [
+
+  ],
+  "inputs": [
+
+  ],
+  "outputs": [
+    "mcp-interface-design-spec",
+    "tool-surface-audit"
+  ],
+  "validation": {
+    "command": "bash skills/mcp-interface-design/scripts/validate.sh"
+  }
+}

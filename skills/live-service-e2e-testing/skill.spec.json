@@ -1,0 +1,23 @@
+{
+  "name": "live-service-e2e-testing",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "\"Build real-service end-to-end tests without mocks, using isolated accounts, explicit fixtures, cleanup, rate-limit controls, and evidence.",
+  "triggers": [
+
+  ],
+  "inputs": [
+    "service-contract",
+    "environment-contract",
+    "test-plan"
+  ],
+  "outputs": [
+    "real-service-e2e-suite",
+    "evidence-packet",
+    "cleanup-report"
+  ],
+  "validation": {
+    "command": "bash skills/live-service-e2e-testing/scripts/validate.sh"
+  }
+}

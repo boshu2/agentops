@@ -1,6 +1,6 @@
 ---
 name: using-ntm
-description: Use NTM as the out-of-session substrate for unattended AgentOps loops.
+description: "Run using NTM."
 ---
 
 # Using NTM as the Out-of-Session Substrate

@@ -1,6 +1,6 @@
 ---
 name: knowledge-activation
-description: 'Activate mature .agents knowledge.'
+description: "Run knowledge activation."
 ---
 # Knowledge Activation
 

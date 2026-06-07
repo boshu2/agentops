@@ -1,6 +1,6 @@
 ---
 name: session-bootstrap
-description: Agent init prompt.
+description: "Run session bootstrap."
 ---
 
 # `ao session bootstrap` — the universal init prompt

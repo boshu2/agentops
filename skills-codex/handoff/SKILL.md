@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: 'Write compact session handoffs.'
+description: "Run handoff."
 ---
 # Handoff Skill
 

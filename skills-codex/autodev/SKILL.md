@@ -1,6 +1,6 @@
 ---
 name: autodev
-description: 'Manage the PROGRAM.md/AUTODEV.md loop-driving contract.'
+description: "Run autodev."
 ---
 # $autodev
 

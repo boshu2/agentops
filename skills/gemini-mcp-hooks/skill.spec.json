@@ -1,0 +1,21 @@
+{
+  "name": "gemini-mcp-hooks",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Wire MCP servers and hook policy into Gemini CLI for AgentOps: add/list/enable MCP servers, migrate hooks, and keep tool access scoped to the Gemini image.",
+  "triggers": [
+
+  ],
+  "inputs": [
+    "mcp-server",
+    "hook-policy"
+  ],
+  "outputs": [
+    "gemini-mcp-config",
+    "gemini-hook-config"
+  ],
+  "validation": {
+    "command": "bash skills/gemini-mcp-hooks/scripts/validate.sh"
+  }
+}

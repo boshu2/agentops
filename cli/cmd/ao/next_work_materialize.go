@@ -170,9 +170,8 @@ func resolveNextWorkPath(explicit string) (string, error) {
 }
 
 // enumerateMaterializeCandidates reads the queue and returns items eligible for
-// materialization. Index assignment MIRRORS rewriteNextWorkFile exactly: blank
-// and malformed lines receive no index; only successfully-parsed entries
-// increment the parseable index. Legacy flat entries (no items[]) are skipped —
+// materialization. Parseable entry indices come from forEachParseableNextWorkEntry
+// (same rules as rewriteNextWorkFile). Legacy flat entries (no items[]) are skipped —
 // the bead_id stamp writes into entry.Items by index, which requires items[].
 func enumerateMaterializeCandidates(path, sourceEpicFilter string) ([]materializeCandidate, error) {
 	data, err := os.ReadFile(path)
@@ -180,19 +179,9 @@ func enumerateMaterializeCandidates(path, sourceEpicFilter string) ([]materializ
 		return nil, fmt.Errorf("read %s: %w", path, err)
 	}
 	var candidates []materializeCandidate
-	parseableIndex := 0
-	for _, line := range strings.Split(string(data), "\n") {
-		if strings.TrimSpace(line) == "" {
-			continue
-		}
-		var entry nextWorkEntry
-		if json.Unmarshal([]byte(line), &entry) != nil {
-			continue // malformed lines get no index (matches rewriteNextWorkFile)
-		}
-		idx := parseableIndex
-		parseableIndex++
+	err = forEachParseableNextWorkEntry(data, func(idx int, entry nextWorkEntry) error {
 		if sourceEpicFilter != "" && entry.SourceEpic != sourceEpicFilter {
-			continue
+			return nil
 		}
 		// Consumption is recorded at the BATCH level in the real queue
 		// (entry.consumed / consumed_by set after the items[] array); the
@@ -200,7 +189,7 @@ func enumerateMaterializeCandidates(path, sourceEpicFilter string) ([]materializ
 		// entry wholesale so historically-consumed work is not re-materialized
 		// into stale duplicate beads.
 		if isEntryConsumed(&entry) {
-			continue
+			return nil
 		}
 		for itemIdx, item := range entry.Items {
 			if !isMaterializable(item) {
@@ -213,8 +202,9 @@ func enumerateMaterializeCandidates(path, sourceEpicFilter string) ([]materializ
 				Item:       item,
 			})
 		}
-	}
-	return candidates, nil
+		return nil
+	})
+	return candidates, err
 }
 
 // isEntryConsumed reports whether a batch entry is already consumed at the

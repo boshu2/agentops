@@ -1,0 +1,22 @@
+{
+  "name": "spec-reliability-implementation",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Turn a written specification into a reliable, running service: derive acceptance examples (BDD) from the spec, implement against gates, build in error handling, retries, idempotency, and observability, then verify behavior matches the spec ",
+  "triggers": [
+
+  ],
+  "inputs": [
+    "specification",
+    "repo-context"
+  ],
+  "outputs": [
+    "acceptance-examples.feature",
+    "running-service",
+    "conformance-report.md"
+  ],
+  "validation": {
+    "command": "bash skills/spec-reliability-implementation/scripts/validate.sh"
+  }
+}

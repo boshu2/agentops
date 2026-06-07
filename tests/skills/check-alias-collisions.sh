@@ -16,8 +16,6 @@ ALLOWLIST=(
   "where was i|recover|status"
 )
 
-errors=0
-
 # Extract triggers from all SKILL.md files into a temp file: trigger\tskill
 TRIGGER_MAP=$(mktemp)
 trap 'rm -f "$TRIGGER_MAP"' EXIT
@@ -62,6 +60,13 @@ for skill_file in "$REPO_ROOT"/skills/*/SKILL.md; do
   fi
 done
 
+skill_count=0
+for counted_skill_file in "$REPO_ROOT"/skills/*/SKILL.md; do
+  counted_skill_name=$(basename "$(dirname "$counted_skill_file")")
+  case "$counted_skill_name" in _*) continue ;; esac
+  skill_count=$((skill_count + 1))
+done
+
 # Find duplicates: triggers that map to multiple skills
 COLLISIONS=$(sort "$TRIGGER_MAP" | awk -F'\t' '
 {
@@ -82,7 +87,7 @@ END {
 }' | sort)
 
 if [[ -z "$COLLISIONS" ]]; then
-  echo "PASS: No trigger collisions found ($(wc -l < "$TRIGGER_MAP" | tr -d ' ') triggers across $(ls -d "$REPO_ROOT"/skills/*/SKILL.md | wc -l | tr -d ' ') skills)"
+  echo "PASS: No trigger collisions found ($(wc -l < "$TRIGGER_MAP" | tr -d ' ') triggers across $skill_count skills)"
   exit 0
 fi
 

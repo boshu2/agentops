@@ -4,7 +4,7 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/boshu2/agentops?style=social)](https://github.com/boshu2/agentops/stargazers)
 
-### The SDLC control plane for agentic software development.
+### The in-session operating loop + context compiler for coding agents — the part that makes them compound.
 
 Coding agents don't do their own bookkeeping. AgentOps does. It sits on top of the agent you already use (Claude Code, Codex, Cursor, OpenCode) and adds the parts an engineering team would notice missing: a record of what was tried, gates between phases, and a corpus of learnings that survives the next session. Plain markdown in `.agents/` next to your code; mix any model per phase.
 

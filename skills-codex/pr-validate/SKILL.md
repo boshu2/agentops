@@ -1,6 +1,6 @@
 ---
 name: pr-validate
-description: 'Validate PR scope and quality.'
+description: "Run pr validate."
 ---
 # PR Validate Skill
 

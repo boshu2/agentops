@@ -41,12 +41,69 @@ Anything else is a typo or an undeclared dependency and fails the gate.
 
 | Token | What it is |
 |-------|-----------|
-| `repo-context` | the repository working tree / source under analysis |
-| `external-api` | an upstream API or doc site outside the corpus |
+| `Cargo.lock` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `Cargo.toml` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
 | `bd` | the beads issue store |
+| `build-config` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `cargo-metadata` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `cli-source` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `closed-beads` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `code` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `code-under-review` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `codebase` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `codex-plugin` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `command-help` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `command-map` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `convention-target` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `crate-docs` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `crate-source` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `data-model` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `environment-contract` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `error-reports` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `evidence` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `existing-docs` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `existing-tracked-work` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `external-api` | an upstream API or doc site outside the corpus |
+| `external-source-candidates` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `failure-report` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `ffi-bindings` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `ffi-contracts` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `gemini-extension` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `git` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `git-worktree` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
 | `github-pr` | a GitHub pull request under review |
+| `hook-policy` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `implementation-examples` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `installation-docs` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `manifest-and-lockfile` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `mcp-server` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
 | `onboard` | the session onboarding handshake |
-
+| `operational-constraints` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `package-metadata` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `product-requirements` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `profiler-output` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `project-context` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `project-goals` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `project-source` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `release-notes` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `repo-context` | the repository working tree / source under analysis |
+| `repo-tree` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `repository` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `runtime-configuration` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `runtime-metrics` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `rust-source` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `service-contract` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `skill-bundle` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `source-code` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `specification` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `support-history` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `task-intent` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `task-question` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `test-plan` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `test-results` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `test-suite` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `test-target` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
+| `tests` | declared external input supplied by the user, repository, runtime, or upstream toolchain |
 ### 2. `metadata.dependencies` resolution
 
 Every `metadata.dependencies` entry MUST name an existing skill slug.

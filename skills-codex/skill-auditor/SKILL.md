@@ -1,6 +1,6 @@
 ---
 name: skill-auditor
-description: 'Audit a SKILL.md (15 checks).'
+description: "Run skill auditor."
 ---
 # $skill-auditor — Three-pass skill quality audit
 

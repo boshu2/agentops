@@ -1,0 +1,19 @@
+{
+  "name": "concurrency-deadlock-remediation",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Find and fix concurrency deadlocks: analyze lock ordering, detect circular waits, reliably reproduce the hang, then fix it with a consistent global lock order, timeouts, or a lock-free alternative. Language-agnostic with concrete examples (",
+  "triggers": [
+
+  ],
+  "inputs": [
+
+  ],
+  "outputs": [
+
+  ],
+  "validation": {
+    "command": "bash skills/concurrency-deadlock-remediation/scripts/validate.sh"
+  }
+}

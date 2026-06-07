@@ -1,0 +1,20 @@
+{
+  "name": "dependency-update-safety",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Safely update project dependencies without breaking the build — audit current vs latest, read changelogs for breaking changes, update in small batches, run the test suite between batches, and roll back cleanly on regression. Keeps deps curr",
+  "triggers": [
+
+  ],
+  "inputs": [
+    "repo-context",
+    "manifest-and-lockfile"
+  ],
+  "outputs": [
+    "dependency-update-report.md"
+  ],
+  "validation": {
+    "command": "bash skills/dependency-update-safety/scripts/validate.sh"
+  }
+}

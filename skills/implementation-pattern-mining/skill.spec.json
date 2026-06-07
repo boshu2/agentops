@@ -1,0 +1,23 @@
+{
+  "name": "implementation-pattern-mining",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Identify repeated implementation patterns in a codebase, extract reusable conventions, and turn them into guidance without overfitting to incidental examples.",
+  "triggers": [
+
+  ],
+  "inputs": [
+    "codebase",
+    "implementation-examples",
+    "tests"
+  ],
+  "outputs": [
+    "pattern-inventory",
+    "implementation-guidance",
+    "convention-candidates"
+  ],
+  "validation": {
+    "command": "bash skills/implementation-pattern-mining/scripts/validate.sh"
+  }
+}

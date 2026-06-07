@@ -1,0 +1,19 @@
+{
+  "name": "artifact-clarity-pass",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Strip \"AI slop\" — verbose generic output, filler comments, hedge-words, redundant boilerplate, over-explanation — from code and prose, tightening to real signal without losing meaning. Detects slop patterns and cuts them while preserving th",
+  "triggers": [
+
+  ],
+  "inputs": [
+
+  ],
+  "outputs": [
+
+  ],
+  "validation": {
+    "command": "bash skills/artifact-clarity-pass/scripts/validate.sh"
+  }
+}

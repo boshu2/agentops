@@ -1,6 +1,6 @@
 # Skills Reference
 
-Complete reference for all 82 AgentOps skills (73 user-facing + 9 internal).
+Complete reference for all 173 AgentOps skills (164 user-facing + 9 internal).
 
 Skills are the primitive layer of AgentOps. Higher-level entry points like
 `/implement`, `/validation`, `/rpi`, and `/evolve` compose those primitives

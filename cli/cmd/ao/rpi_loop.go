@@ -943,6 +943,27 @@ func requireQueueClaimOwner(currentClaimedBy *string, expectedClaimedBy string) 
 	return rpi.RequireQueueClaimOwner(currentClaimedBy, expectedClaimedBy)
 }
 
+// forEachParseableNextWorkEntry walks successfully-parsed JSONL entries in data,
+// assigning parseable indices with the same rules as rewriteNextWorkFile: blank
+// lines and malformed JSON receive no index.
+func forEachParseableNextWorkEntry(data []byte, fn func(idx int, entry nextWorkEntry) error) error {
+	parseableIndex := 0
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		var entry nextWorkEntry
+		if json.Unmarshal([]byte(line), &entry) != nil {
+			continue
+		}
+		if err := fn(parseableIndex, entry); err != nil {
+			return err
+		}
+		parseableIndex++
+	}
+	return nil
+}
+
 // rewriteNextWorkFile rewrites the JSONL file with updated entries applied via
 // the transform function. The full read-modify-write runs under an exclusive
 // flock so concurrent queue consumers cannot interleave updates. Entries that

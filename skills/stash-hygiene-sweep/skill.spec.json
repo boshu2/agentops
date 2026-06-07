@@ -1,0 +1,19 @@
+{
+  "name": "stash-hygiene-sweep",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Safely audit and clear a backlog of git stashes — list every stash, inspect each one's diff and provenance, decide keep vs. drop per-stash, apply or archive the useful ones to a branch, and drop only what is confirmed redundant. Refuses to ",
+  "triggers": [
+
+  ],
+  "inputs": [
+
+  ],
+  "outputs": [
+
+  ],
+  "validation": {
+    "command": "bash skills/stash-hygiene-sweep/scripts/validate.sh"
+  }
+}

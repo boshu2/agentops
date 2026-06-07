@@ -1,6 +1,6 @@
 ---
 name: research
-description: 'Explore and write findings.'
+description: "Run research."
 ---
 
 # Research Skill

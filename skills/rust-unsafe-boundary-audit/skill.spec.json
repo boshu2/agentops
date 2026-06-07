@@ -1,0 +1,22 @@
+{
+  "name": "rust-unsafe-boundary-audit",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Audit Rust unsafe blocks and FFI boundaries by inventorying unsafe surfaces, stating required invariants, shrinking unsafe scope, and validating tests and tooling around unsafe contracts.",
+  "triggers": [
+
+  ],
+  "inputs": [
+    "rust-source",
+    "ffi-bindings",
+    "test-results"
+  ],
+  "outputs": [
+    "unsafe-boundary-audit",
+    "safety-invariant-inventory"
+  ],
+  "validation": {
+    "command": "bash skills/rust-unsafe-boundary-audit/scripts/validate.sh"
+  }
+}

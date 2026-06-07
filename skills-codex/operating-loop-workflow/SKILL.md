@@ -1,6 +1,6 @@
 ---
 name: operating-loop-workflow
-description: 'Install and run the operating-loop multi-agent Workflow.'
+description: "Run operating loop workflow."
 ---
 # $operating-loop-workflow
 

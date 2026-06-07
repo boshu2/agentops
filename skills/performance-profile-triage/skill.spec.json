@@ -1,0 +1,22 @@
+{
+  "name": "performance-profile-triage",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "\"Profile-driven performance analysis with reproducible baselines, profiler or trace evidence, ranked bottlenecks, and verified improvements.",
+  "triggers": [
+
+  ],
+  "inputs": [
+    "source-code",
+    "runtime-metrics",
+    "profiler-output"
+  ],
+  "outputs": [
+    "performance-report",
+    "validation-evidence"
+  ],
+  "validation": {
+    "command": "bash skills/performance-profile-triage/scripts/validate.sh"
+  }
+}

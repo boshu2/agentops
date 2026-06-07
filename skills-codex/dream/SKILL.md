@@ -1,6 +1,6 @@
 ---
 name: dream
-description: 'Retired pointer — out-of-session compounding moved to the substrate (NTM + MCP + managed-agents).'
+description: "Run dream."
 ---
 # Dream Skill - Retired (out-of-session compounding moved to the substrate)
 

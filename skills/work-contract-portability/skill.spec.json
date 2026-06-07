@@ -1,0 +1,22 @@
+{
+  "name": "work-contract-portability",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "'",
+  "triggers": [
+
+  ],
+  "inputs": [
+    "task-intent",
+    "evidence",
+    "handoff"
+  ],
+  "outputs": [
+    "portability-guidance",
+    "role-boundary-notes"
+  ],
+  "validation": {
+    "command": "bash skills/work-contract-portability/scripts/validate.sh"
+  }
+}
