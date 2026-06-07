@@ -354,3 +354,19 @@ func nextBlockedCycleID(cwd string, now time.Time) string {
 
 // countCronHistoryRows returns the number of non-blank lines in path; 0 on
 // missing or unreadable file (the cycle counter is a soft default).
+func countCronHistoryRows(path string) int {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer func() { _ = f.Close() }()
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	n := 0
+	for scanner.Scan() {
+		if strings.TrimSpace(scanner.Text()) != "" {
+			n++
+		}
+	}
+	return n
+}

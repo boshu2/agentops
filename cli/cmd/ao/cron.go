@@ -5,24 +5,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// cronCmd is the parent command for cron-loop helpers used by the /evolve
-// loop's cron-fire continuity primitive. Today it carries `self-adjust`
-// (soc-un0m); future subcommands belong on this same parent so the operator
-// surface stays consistent ("manage the cron contract").
+// cronCmd is the compatibility parent for cron-loop helpers that moved behind
+// the MTO/factory boundary during lean-image distillation.
 var cronCmd = &cobra.Command{
 	Use:   "cron",
-	Short: "Cron-fire loop helpers (used by /evolve --mode=loop)",
-	Long: `Helpers for the /evolve --mode=loop cron-fire continuity primitive.
-
-The /evolve loop runs as a recurring cron-fire that the agent re-arms each
-cycle. These subcommands are the mechanical surfaces the agent calls to
-participate in that contract:
-
-  ao cron self-adjust ...   Render the next cycle's cron prompt from the
-                            versioned template + last-cycle context, and emit
-                            a JSON spec the harness uses to re-arm the cron.
-
-See docs/plans/2026-05-21-evolve-loop-epic-design.md §A4 for the full design.`,
+	Short: "Compatibility shims for relocated cron-fire scheduling",
+	Long: `Compatibility shims for cron-fire scheduling surfaces that now belong
+behind the MTO/factory boundary. AO keeps command discovery and route notices;
+fleet cadence and prompt re-arming are owned by MTO.`,
 }
 
 func init() {
