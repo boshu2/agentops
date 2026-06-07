@@ -1,3 +1,13 @@
+# ⛔ LAW 0 — NEVER `claude -p` / `claude --print`
+
+No agent runs `claude -p` or `claude --print`, **ever** — not as a worker, not to "test", not "it's
+only the sub", not buried in a tool's config. It bills the API / burns the Claude Max weekly quota.
+**No rationalization makes it OK; do not reason past it.** Use `codex exec` (Codex Pro sub), the local
+bushido llama, or an interactive NTM Claude pane (NOT `gemini -p` — not a sub-path, not AGY).
+Mechanically enforced by `~/.claude/hooks/no-claude-p-guard.sh`.
+
+---
+
 # Agent Instructions
 
 **AgentOps compiles and compounds the context that feeds your software factory.** It automates the bookkeeping agents do not reliably do for themselves — attempts, decisions, citations, verdicts, handoffs, learnings — then encodes the DevSecOps CDLC and multi-agent operating practices into a portable corpus that compounds across sessions and runtimes. Plugin + CLI (hookless — skills + the `ao` CLI, with CI as the authoritative gate), runs on your hardware against your subscription; out-of-session scheduling is delegated to a substrate, not an in-repo daemon (ADR-0009). Humans choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled compounding.
