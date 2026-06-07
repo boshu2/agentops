@@ -203,6 +203,42 @@ When `/crank` invokes `/swarm`: Crank bridges beads to TaskList, swarm executes 
 
 ---
 
+## Codex-Specific Coordination (folded from codex-team)
+
+When the selected backend is **Codex** (Codex CLI on PATH or Codex sub-agents), swarm follows the same wave model, but Codex agents are **headless** — they cannot negotiate locks or wait turns. **The orchestrator IS the lock manager:** all conflict prevention happens before spawning, via file-target analysis.
+
+**Backend selection (Codex path), in order:**
+1. `spawn_agent` available → Codex experimental sub-agents (preferred)
+2. Codex CLI available → Codex CLI via Bash (`codex exec ...`)
+3. `skill` tool read-only (OpenCode) → OpenCode subagents (`task(subagent_type="general", ...)`)
+4. None → fall back to the runtime-native swarm backend / sequential
+
+**Pre-flight (CLI backend only):** verify `which codex`, then test the configured default model with `codex exec --full-auto -C "$(pwd)" "echo ok"`. If either fails, fall back to another backend.
+
+**Canonical command + flag order:**
+```bash
+codex exec --full-auto -C "$(pwd)" -o <output-file> "<prompt>"
+```
+Flag order: `--full-auto` → `-C` → `-o` → prompt (insert `-m "<model>"` before `-C` only when intentionally pinning a model; otherwise the user's default is used). **Valid flags:** `--full-auto`, `-m`, `-C`, `-o`, `--json`, `--output-schema`, `--add-dir`, `-s`. **Do NOT use** `-q` / `--quiet` (don't exist).
+
+- **Cross-project tasks:** `--add-dir /path/to/other/repo` (repeatable) grants access beyond `-C`.
+- **Progress monitoring:** add `--json` to stream JSONL events (`turn.started` / `turn.completed` with token `usage`). No events for 60s → agent likely stuck.
+- **Sandbox levels (`-s`):** `read-only` for judges/reviewers, `workspace-write` (default with `--full-auto`), `danger-full-access` only in externally-sandboxed environments. Prefer `-s read-only` for review/analysis tasks.
+
+**File-target strategy (apply before spawning Codex agents):**
+
+| File Overlap | Strategy | Action |
+|-------------|----------|--------|
+| All tasks touch same file | **Merge** | Combine into 1 agent with all fixes |
+| Some tasks share files | **Multi-wave** | Shared-file tasks go sequential across waves |
+| No overlap | **Parallel** | Spawn all agents at once |
+
+For multi-wave Codex runs, the lead reads prior-wave results, then injects a *summary* of what changed (not raw diffs) into the next wave's prompts. **Limits:** ≤6 agents/wave, 120s default timeout, ≤3 waves (reconsider decomposition beyond that). Output dir: `.agents/codex-team/` (or the standard `.agents/swarm/results/`). Concrete tool calls: [references/backend-codex-subagents.md](references/backend-codex-subagents.md).
+
+**Codex troubleshooting:** `codex` not found → `npm i -g @openai/codex` or fall back; default model unavailable → verify the `echo ok` pre-flight or pin with `-m`; empty/missing output → ensure the `-o` directory exists and is writable.
+
+---
+
 ## OL Wave Integration
 
 Read [references/ol-wave-integration.md](references/ol-wave-integration.md) when you invoke `/swarm --from-wave <json-file>` — covers pre-flight `ol` CLI check, input JSON format, task creation from wave entries, completion backflow via `ol hero ratchet`, and example flow.
