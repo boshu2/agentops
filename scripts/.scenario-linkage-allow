@@ -46,7 +46,7 @@ skills/harvest/references/harvest.feature
 skills/heal-skill/references/heal-skill.feature
 skills/hooks-authoring/references/hooks-authoring.feature
 skills/implement/references/implement.feature
-skills/knowledge-activation/references/knowledge-activation.feature
+skills/inject/references/knowledge-activation.feature
 skills/openai-docs/references/openai-docs.feature
 skills/perf/references/perf.feature
 skills/plan/references/plan.feature
