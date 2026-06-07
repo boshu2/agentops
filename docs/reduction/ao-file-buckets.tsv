@@ -351,8 +351,7 @@ cli/cmd/ao/mind_test.go	KEEP	self-contained AO image surface: loop, mind, local 
 cli/cmd/ao/mine.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	encoding/...,fmt,github.com/...,internal/mine,io,os,strings,time
 cli/cmd/ao/mine_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	bytes,encoding/...,os,path/...,strings,testing,time
 cli/cmd/ao/negative_path_test.go	KEEP	test coverage follows the command surface under review; keep while the source file remains	os,path/...,strings,testing
-cli/cmd/ao/next_work_materialize.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,fmt,github.com/...,internal/rpi,io,os,path/...,strings
-cli/cmd/ao/next_work_materialize_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	bytes,encoding/...,fmt,internal/rpi,os,path/...,strings,testing
+cli/cmd/ao/next_work_materialize.go	KEEP	public compatibility wrapper for `ao next-work materialize`; materializer moved to the mto-fleet adapter boundary	github.com/...,internal/adapters
 cli/cmd/ao/notebook.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	fmt,github.com/...,internal/notebook,io,os,path/...,strings
 cli/cmd/ao/notebook_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	bytes,encoding/...,os,path/...,strings,testing,time
 cli/cmd/ao/operator_adapter.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	bufio,context,encoding/...,errors,fmt,internal/ports,os,sync
