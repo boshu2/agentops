@@ -1,0 +1,7 @@
+{
+  "generator": "manual-maintained",
+  "source_skill": "skills/rust-unsafe-boundary-audit",
+  "layout": "modular",
+  "source_hash": "628fdaec16733fc2491a865e0d5c6f4d848045d5817cad67f02f7450d0cc9325",
+  "generated_hash": "be46b300e6f68ebeff1e2e7d200e75246f20eb8c22a689bc32c0b450a6e56a7f"
+}

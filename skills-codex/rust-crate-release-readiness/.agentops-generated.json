@@ -1,0 +1,7 @@
+{
+  "generator": "manual-maintained",
+  "source_skill": "skills/rust-crate-release-readiness",
+  "layout": "modular",
+  "source_hash": "39a176a1a8567faf5b490ba240006234bc7584b08c8a73939a36bbbd0287c67d",
+  "generated_hash": "b17cd5fe82df980507036b4ae1462d8105f9b16109721a22ee8320c69e7f5892"
+}

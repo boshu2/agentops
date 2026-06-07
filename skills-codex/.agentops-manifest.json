@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "13b3f8a56f0e235e460d310811a7b17adc2e38533057af3ff7d51e3070247b58",
+  "codex_override_catalog_hash": "ad756e87eb30839067cb4a24ee7c837ced361f82a463c5ad7c6aaf13c810f7b0",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -900,6 +900,294 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "cli-agent-ux-audit",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "artifact-clarity-pass",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "measured-performance-optimization",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "installer-quality-audit",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "dependency-update-safety",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "production-placeholder-audit",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "layered-defect-hunt",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "performance-profile-triage",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "project-readme-craft",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "release-readiness-gate",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "behavior-preserving-simplification",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "contract-conformance-testing",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "fuzz-test-design",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "golden-artifact-testing",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "metamorphic-test-design",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "live-service-e2e-testing",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "work-contract-portability",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "automation-loop-hardening",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "ntm-review-worker-orchestration",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "ntm-browser-test-coordination",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "legacy-codebase-recon",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "codebase-risk-audit",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "implementation-pattern-mining",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "codebase-briefing-report",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "concurrency-deadlock-remediation",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "native-debugger-triage",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "mcp-interface-design",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "project-reasoning-lens-analysis",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "expertise-to-procedure",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "project-reality-check",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "spec-reliability-implementation",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "bead-tracker-migration",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "bead-completion-audit",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "changelog-quality-pass",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "repository-hygiene-sweep",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "stash-hygiene-sweep",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "worktree-branch-rationalization",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "idea-option-forge",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "filesystem-path-rationalization",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "ripgrep-search-discipline",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "rust-search-integration",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "rust-port-validation-gauntlet",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "external-search-triage",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "cli-doctoring-workflow",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "rust-sqlite-cli-architecture",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "rust-crate-release-readiness",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "rust-ub-risk-audit",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
+      },
+      {
+        "name": "rust-unsafe-boundary-audit",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
       }
     ]
   },
@@ -935,16 +1223,40 @@
       "generated_hash": "a1e709c91aa2646c61432fc66ca31b93adcf602e13044f987435c35a033e10da"
     },
     {
+      "name": "artifact-clarity-pass",
+      "source_skill": "skills/artifact-clarity-pass",
+      "source_hash": "d63917c96ad47c9cb6d01743168ea53108a85c9e265ac4e93ebfea98ca98b795",
+      "generated_hash": "a3ffc36f857feb9166713d5a775440a1a73bbcbc9d7a504438ea0b1bd3bb9f7b"
+    },
+    {
       "name": "autodev",
       "source_skill": "skills/autodev",
       "source_hash": "9b4ecf0399c67b1d55675b293ec382b7b7e4e6cafccec40eda2c7b6da16437b6",
       "generated_hash": "ba2a82dc22e5bcead7f9e2ef899601c4235604092a1bf1362e2c546608880c7b"
     },
     {
+      "name": "automation-loop-hardening",
+      "source_skill": "skills/automation-loop-hardening",
+      "source_hash": "ee39781b31e09782de9fa65b26b87ed41e59a7f8c6af35e9d2d572e7af694fa2",
+      "generated_hash": "4df89ad7874d81c9c6063d84d865ae1406fc8a6f4a30da756df0f53c6d43b572"
+    },
+    {
       "name": "automation-shape-routing",
       "source_skill": "skills/automation-shape-routing",
       "source_hash": "48310b535e3a04b7ba8dd34b451029473ce21b86d10620b39d1796cd829ac4a4",
       "generated_hash": "9ec15ab56100ce6cb590ee64047c229b19ca0587b91448cbdbd4dbce66294c5b"
+    },
+    {
+      "name": "bead-completion-audit",
+      "source_skill": "skills/bead-completion-audit",
+      "source_hash": "aeb5d09c44d364d137bc2a10f63ec43e257c6af1d60e248ac8520ec31aef67e6",
+      "generated_hash": "32612d6e2c30a417bd46f2aa4d4b2ab5b02b979970baa723ea18609dcb63ae3c"
+    },
+    {
+      "name": "bead-tracker-migration",
+      "source_skill": "skills/bead-tracker-migration",
+      "source_hash": "365bdb7921c0eb10385003739eb6655c3f1eb4bc571bc5ff1bd22ce922dd90b9",
+      "generated_hash": "e3f2caeea2a83e543063e2fedcff7416ccfa3af521a0c6405777e0b96c336a0d"
     },
     {
       "name": "beads",
@@ -969,6 +1281,12 @@
       "source_skill": "skills/beads-workflow",
       "source_hash": "4f93550371cf84830e8be0a501f3603d4f84f2ca33eaa8b466367ea7e6592147",
       "generated_hash": "311a8067034c00754447f087e62d2377ab8edbd88c97f4d8a94b40afbbd11ff0"
+    },
+    {
+      "name": "behavior-preserving-simplification",
+      "source_skill": "skills/behavior-preserving-simplification",
+      "source_hash": "17aead11a44b4e150c0354f15efa180350b485723bd1a48b8d3fc1a44130041a",
+      "generated_hash": "dceae86d9f140b7b322f2d5ddf056109d1ae2a883fa6145b64a170d6a796584b"
     },
     {
       "name": "bootstrap",
@@ -1046,7 +1364,37 @@
       "name": "cc-worktree-isolation",
       "source_skill": "skills/cc-worktree-isolation",
       "source_hash": "7e8cb3808ebd0d8d4dc25f7b42cb05beb116198216f8ed854134c9caa8677a43",
-      "generated_hash": "6309ed6e0a478e493c6df23555de9bc4322a82bb6f26cb0a8a29303c0b30a392"
+      "generated_hash": "3e1b75934bdfed24da7c5478853241a36d8b25bad0d07bec4526aa0f4a52f305"
+    },
+    {
+      "name": "changelog-quality-pass",
+      "source_skill": "skills/changelog-quality-pass",
+      "source_hash": "16140ae620dc66a31d6723f347c8d8b3a64681e7934e8df1376e40f5d494f93f",
+      "generated_hash": "6d2afb1699c82ae9a3ed5fa92a60db55ab8b9c819f9f85512d7d293f2da4f538"
+    },
+    {
+      "name": "cli-agent-ux-audit",
+      "source_skill": "skills/cli-agent-ux-audit",
+      "source_hash": "633a653f44248cdc3fe49342c4cac827707643bb9624cfbe3168c49257003c1d",
+      "generated_hash": "ed899a364d90bc8d82e0c903cd57f898a41f11e0e879615c04e718826a3e9ec3"
+    },
+    {
+      "name": "cli-doctoring-workflow",
+      "source_skill": "skills/cli-doctoring-workflow",
+      "source_hash": "14939f435c0de05f680188d5a2fea0706d4df06e11980873ab7745b3586b0617",
+      "generated_hash": "43f4f0769d1a1632b3b7c0e4f15014fafe2e3697b46c1bde572d4e97bbf83891"
+    },
+    {
+      "name": "codebase-briefing-report",
+      "source_skill": "skills/codebase-briefing-report",
+      "source_hash": "dc269763871e16ce847506720cfa1a892cd264d319ac7758923277847131afb4",
+      "generated_hash": "4ef670e8c16529f5b1216d5790da3df9b85ddbe642ab7e7d9095a5e2abf873a7"
+    },
+    {
+      "name": "codebase-risk-audit",
+      "source_skill": "skills/codebase-risk-audit",
+      "source_hash": "f698c7ebbaccfd13946ddcd998a937af613c7c2c581966561c1015c6080e6077",
+      "generated_hash": "355b14f37e5c0c6462d0221b076b524350ca1df5361612c75af58e082340030f"
     },
     {
       "name": "codex-exec",
@@ -1091,6 +1439,18 @@
       "generated_hash": "3b82646905d8303aab277e62a66b767d80e08d8e080eb40dad28c44837564972"
     },
     {
+      "name": "concurrency-deadlock-remediation",
+      "source_skill": "skills/concurrency-deadlock-remediation",
+      "source_hash": "6b5aa31fc20e4f819fb7da61927acefc2ee38084b7de5eaaa47398ee4654cbe0",
+      "generated_hash": "d241325125a00379b5c432294ad5fe1539d1f7d7dba8b5c5c19bd356e37d5655"
+    },
+    {
+      "name": "contract-conformance-testing",
+      "source_skill": "skills/contract-conformance-testing",
+      "source_hash": "f96328b1bf94c7620d3a4597f48575a4fb91ad686019abb4b9584711abb869d4",
+      "generated_hash": "aa7582fd8b768b5da74f0aef70d5884cff9f12a977251c5a0ab04664b16d6c44"
+    },
+    {
       "name": "converter",
       "source_skill": "skills/converter",
       "source_hash": "188685d5bc22609bdd3aeb0828a0d289465afdba90a035ccacb9c124bc3b6e71",
@@ -1119,6 +1479,12 @@
       "source_skill": "skills/dcg",
       "source_hash": "4d219865631fea9ed93a37842e00bc730fbbdf1ffbe8997ec15f4accabaa7900",
       "generated_hash": "867adca5624147c743d083f92b3fb879f72c55f94376005945905a38b23c6a2e"
+    },
+    {
+      "name": "dependency-update-safety",
+      "source_skill": "skills/dependency-update-safety",
+      "source_hash": "49a8141585c9aaa6a0a83f3168fcbb7c0da7cd30abd1595c6c2060dc65ac3873",
+      "generated_hash": "f311dc255acf8be702440021d3c6b740c98c0637c3b6335fdbc5bd03f73a8b86"
     },
     {
       "name": "deps",
@@ -1169,6 +1535,24 @@
       "generated_hash": "4c291f25cfc6e9ee2547e8140488a75097c6fa38615282742d375f603f5daae5"
     },
     {
+      "name": "expertise-to-procedure",
+      "source_skill": "skills/expertise-to-procedure",
+      "source_hash": "168cf0d14839d7b590e8a355e6e1118e5b056d31e6e8adf2d9df178238b0c010",
+      "generated_hash": "b2992257ed8cd4409ba6ce86a4d143b12b7cd75100838f106e50b920a1019b7a"
+    },
+    {
+      "name": "external-search-triage",
+      "source_skill": "skills/external-search-triage",
+      "source_hash": "631dc60c50a4786c8decf882700f92e7240761e0ae49e2a219d56d331c66a5e7",
+      "generated_hash": "59fd5333cf74d17f4def9fe5e0a950a2ba4846eb5b1f05df39c01f9dea1f2d9e"
+    },
+    {
+      "name": "filesystem-path-rationalization",
+      "source_skill": "skills/filesystem-path-rationalization",
+      "source_hash": "3e2f9d22143c9811767aa5abf988f415fa435a2b7c7e1f8f625cb849a9ccfe95",
+      "generated_hash": "27b29f387699b8a1415f7a1a8518ce1baa7120eb4ac4f844fb8303ceebd973d1"
+    },
+    {
       "name": "flywheel",
       "source_skill": "skills/flywheel",
       "source_hash": "52cdad7e9e2d83dbb5fb43fb163b0c14a2b20bde7e7af904f08e4712b2804f68",
@@ -1179,6 +1563,12 @@
       "source_skill": "skills/forge",
       "source_hash": "cea35b58bc86259e28792b8a8f5d0392f6d453b81c753a2e7971aafbf984ba9e",
       "generated_hash": "904e242f85fd5256c578b5c559d23845d6fc934dfafeb9215f4971c0293d5cb6"
+    },
+    {
+      "name": "fuzz-test-design",
+      "source_skill": "skills/fuzz-test-design",
+      "source_hash": "62fa13478b818ac7cdfd8153540fcab99ff975e78900ba8a1a79ff84aa3ddf2f",
+      "generated_hash": "c2bfdf997601940562eb8f0990a87af244eac700735bb133d3aee5aef9dec263"
     },
     {
       "name": "gcloud",
@@ -1211,6 +1601,12 @@
       "generated_hash": "dc9b388da75af17c85440fa0481c9c69b16b9641b1832269e302856dd48ded8d"
     },
     {
+      "name": "golden-artifact-testing",
+      "source_skill": "skills/golden-artifact-testing",
+      "source_hash": "d4a7c192ace144a7c64002ac36fb1a9892a41bdd4487e08a75176af78b23713e",
+      "generated_hash": "9c467ccf72475463489f1a7c6e68f1b0c862549f1482a186995f4739f7b665a5"
+    },
+    {
       "name": "grafana-platform-dashboard",
       "source_skill": "skills/grafana-platform-dashboard",
       "source_hash": "d2338cda8b41b92bfbb492707aab498fdbbce231e2d0cc5a6fb8ec63cc45f271",
@@ -1241,10 +1637,22 @@
       "generated_hash": "d94123e8bff5f45114552743edf7334c61db5e2b61f192c2d012fb5b44c5834a"
     },
     {
+      "name": "idea-option-forge",
+      "source_skill": "skills/idea-option-forge",
+      "source_hash": "53761134a046bd62860ad4b0a1c9316cf23ae8eac64c871a64edeaf02131f213",
+      "generated_hash": "0a363136e39025f9569defd9cc26893c6f9740ef8d8edd60408bb9b2b76095a3"
+    },
+    {
       "name": "implement",
       "source_skill": "skills/implement",
       "source_hash": "8f72272440a4fa4df69bf41d370a7dfe7feab10c956c800fbfa2ca33577a8cd8",
       "generated_hash": "a71a281c6d41263fcaff338a910a92d44fd72ba15e6d37b1e483e5af0c0ce732"
+    },
+    {
+      "name": "implementation-pattern-mining",
+      "source_skill": "skills/implementation-pattern-mining",
+      "source_hash": "e0c76d19f5aac044837f8dd892b59b0d192ca37df93592b2223908dee86ab5ae",
+      "generated_hash": "93feb7193cf1eebd08526fcb9df1b720c227223bd162b0ecc9bad1ddc651c409"
     },
     {
       "name": "inject",
@@ -1253,10 +1661,34 @@
       "generated_hash": "83cab58f9a4d16c57dd24557584a5ce74d0ded271b9e9994ec056c1879793d6c"
     },
     {
+      "name": "installer-quality-audit",
+      "source_skill": "skills/installer-quality-audit",
+      "source_hash": "3f78347ca7aa2f3495173d150da9de3ca055ee2c1544680b9aaacb728dff7b64",
+      "generated_hash": "6ca56fe09a9e2814f4bed5a73567fc59535f8b02af617db552cc6d1c14fd0342"
+    },
+    {
       "name": "knowledge-activation",
       "source_skill": "skills/knowledge-activation",
       "source_hash": "a60f83683eb88ce0a8dfee30e8cf65f37bb304ba2f31d813cb40168dccb11db2",
       "generated_hash": "324bf2ac895f58b1acabf292353c8a1d980ce1147883df4b2ea7d487111883f6"
+    },
+    {
+      "name": "layered-defect-hunt",
+      "source_skill": "skills/layered-defect-hunt",
+      "source_hash": "a6dbfe3282deacd19fdc995e504baf9c34b85d446c0d9b36eecdd76bb77b0f32",
+      "generated_hash": "fec5fbbc349b9e0375386f5226541d5f4abd954b352bd1b03cef512aa6410035"
+    },
+    {
+      "name": "legacy-codebase-recon",
+      "source_skill": "skills/legacy-codebase-recon",
+      "source_hash": "c4b0e6a616e0b3bb31a63e7fc6a9e531fe595568537a913635071486b8e65f4f",
+      "generated_hash": "a2598e5c36fb7272a44fcc652b52575a5ae4f8f9b40468e358a14975e3ea663b"
+    },
+    {
+      "name": "live-service-e2e-testing",
+      "source_skill": "skills/live-service-e2e-testing",
+      "source_hash": "82dd0d19ee04e0b32bb2b1c0485ca3cda5b16ccbb5f8fdeee913d79609fa8c88",
+      "generated_hash": "68ef8821b8d680af9eb116192a84ee3c7359cf9efde0542cd2a189abd19708bb"
     },
     {
       "name": "llm-wiki",
@@ -1265,16 +1697,52 @@
       "generated_hash": "22677f82b2ce9e7abe491484ae6294a8ba4607253789fc13d0b2d9a6da23f8e7"
     },
     {
+      "name": "mcp-interface-design",
+      "source_skill": "skills/mcp-interface-design",
+      "source_hash": "b9a8f802e9a335c57093ef3c303bcd6764f27272d5d904c455fb77a31ca69130",
+      "generated_hash": "b4036b736192d48d73eeabdbc522833eb10ef0813f46f0d9b892f535ae837ff4"
+    },
+    {
+      "name": "measured-performance-optimization",
+      "source_skill": "skills/measured-performance-optimization",
+      "source_hash": "8a4c15b2e7e0232c9afaa852c3e00ae5f681cd03ea3b781227994827b52aa261",
+      "generated_hash": "33a171fb6b92106b332d61c1ccdb251558744c47e6cdc4b8bcdc632c20558a59"
+    },
+    {
+      "name": "metamorphic-test-design",
+      "source_skill": "skills/metamorphic-test-design",
+      "source_hash": "76bda429dddc37f66b9363d7cbf6027150e3dc90734a85f2e16394ec3ff061c9",
+      "generated_hash": "58948448d1fa2fe90cb10dad4dbbcc44ed8a6a3b18b702887f86bedef87ad574"
+    },
+    {
       "name": "multi-model-triangulation",
       "source_skill": "skills/multi-model-triangulation",
       "source_hash": "b23dbd4401f7646623ff3a1e0e51ebc944824e04e00672061d3b9d1ba8589f65",
       "generated_hash": "f0db26889c048493e462d0a1bb7519be8cbe4a6981ae4da17c59c3c600e2bc14"
     },
     {
+      "name": "native-debugger-triage",
+      "source_skill": "skills/native-debugger-triage",
+      "source_hash": "984b209f7b172b832b36dcfb2153e9649f45ebf9956ff364c1b96d92bbcae80a",
+      "generated_hash": "adf17680d097f17ef5fd4b98c79b76988e0d36e78995968f8d123bfa8970f4b0"
+    },
+    {
       "name": "ntm",
       "source_skill": "skills/ntm",
       "source_hash": "3a0016f272f05ad516220c8fe3de2357a64aa9ace477881f32d1fb2f5b896859",
       "generated_hash": "ca9715f18f20b08e3489f03f7c3ae94f9db01da82c996749576eb13619931497"
+    },
+    {
+      "name": "ntm-browser-test-coordination",
+      "source_skill": "skills/ntm-browser-test-coordination",
+      "source_hash": "eaf0920ac1f588147607da9b6b65de6b3d326d028306767970c441c548f3db6c",
+      "generated_hash": "fa343fb4127742a9dce2654695ad7876073f4547012d6b90342c0ab081df67fa"
+    },
+    {
+      "name": "ntm-review-worker-orchestration",
+      "source_skill": "skills/ntm-review-worker-orchestration",
+      "source_hash": "21aefcb1e1fb9b3c6612c1d9b24c0c174db9464184fb7bf79a75d7e128046ac7",
+      "generated_hash": "59954091802cef7bf064e21b41a2354ee95c458707dd62034e8f0e3397e79f38"
     },
     {
       "name": "openai-docs",
@@ -1299,6 +1767,12 @@
       "source_skill": "skills/perf",
       "source_hash": "76369d06999ce6adb4b4f37e62fecf0663bf10c8a22337299a91132486b53dee",
       "generated_hash": "e20f6d8b4c1d6f273072dde3aaa8b952c30a747517dc7e3bf8232559ffc206dd"
+    },
+    {
+      "name": "performance-profile-triage",
+      "source_skill": "skills/performance-profile-triage",
+      "source_hash": "cd0f50be65a0166c112828ec37932ff28d0444b311ffe60716d884b54ef70777",
+      "generated_hash": "8a468de3f379720f267e629616d5bab7a1e0385a595cb8b1f8bfb899fb650418"
     },
     {
       "name": "plan",
@@ -1361,6 +1835,30 @@
       "generated_hash": "3c2a4840bedac960a309c4e9a68e5691a654f1d0e610be4379762abf14aafb45"
     },
     {
+      "name": "production-placeholder-audit",
+      "source_skill": "skills/production-placeholder-audit",
+      "source_hash": "7a686cb2afc6c2513d16f56fb4dc4646b71a0bde3b72f1be1a835d54545b7158",
+      "generated_hash": "0b754ec761a3bd5e946ea549e18fa9d2b5a6b4328eaf9a23637b7af60678a8c0"
+    },
+    {
+      "name": "project-readme-craft",
+      "source_skill": "skills/project-readme-craft",
+      "source_hash": "dfe6cf51b316b7fd21ff664a2cb214f2367f5a05af651c7b1030e732b6e4930d",
+      "generated_hash": "8ba1c03d3ad1d23b9110e57196ab156ed0798b3acf09889ccd302be70f8d3200"
+    },
+    {
+      "name": "project-reality-check",
+      "source_skill": "skills/project-reality-check",
+      "source_hash": "708c27a27ba875cd2f2dea84e2f9cb7c5c8cee55bcb613dd2ad019956be201a5",
+      "generated_hash": "2d4cdf6a290044bd77e55bed6197527fc27340f95bce010b95d879dd329395d9"
+    },
+    {
+      "name": "project-reasoning-lens-analysis",
+      "source_skill": "skills/project-reasoning-lens-analysis",
+      "source_hash": "8cd849176c4c3abd82b46cdf66dbae20f048f11e7cbddee8154ce3bea7b521b6",
+      "generated_hash": "dc4f2b47d75c77678e8f8e80035491fbd8a28e2bf4886448d49cbdd1eee486b5"
+    },
+    {
       "name": "provenance",
       "source_skill": "skills/provenance",
       "source_hash": "9f27ae854232be88a9b3924e85eecbd5a18f67dcf8b176785affd72af6b86fc4",
@@ -1415,10 +1913,22 @@
       "generated_hash": "5b3075bdee6aeed794ad7841e990f0cc94dbad414506c57f8cb4f42515c4e465"
     },
     {
+      "name": "release-readiness-gate",
+      "source_skill": "skills/release-readiness-gate",
+      "source_hash": "f068198b42cc21c87166cb9c18a9320f47a218f6e83ff5e1526e554f28ebfe2f",
+      "generated_hash": "309770166012c5b9385c61bd578185bcdf015c1fac70326a772b65ad877502c7"
+    },
+    {
       "name": "repeatedly-apply-skill",
       "source_skill": "skills/repeatedly-apply-skill",
       "source_hash": "72f32379d11130de02a2d8cbf9292554ebb99f368e6b088460de457799cafae6",
       "generated_hash": "5f54c433ea10fa6fed258ab7280ee49be00b64e707da6b9fc36c9ab9a7e113d2"
+    },
+    {
+      "name": "repository-hygiene-sweep",
+      "source_skill": "skills/repository-hygiene-sweep",
+      "source_hash": "367f439a5af8af31b599bf0390388271a5aba552dddaba26d2101f01a822f29c",
+      "generated_hash": "019531774fd5b87b75e55f691cba37d1758e536d283c639c4b496eb4cd528b5b"
     },
     {
       "name": "research",
@@ -1451,6 +1961,12 @@
       "generated_hash": "a547f8e2a60f2ce1b63aa565cad148e62b7dbbd991fc6335ea16e37acdd0e428"
     },
     {
+      "name": "ripgrep-search-discipline",
+      "source_skill": "skills/ripgrep-search-discipline",
+      "source_hash": "deb55429a313570f8f878762231f1ca54c5d04ec26076b847dc4e1b6303cd448",
+      "generated_hash": "b545ace64e6cffa4c40254cb7de29ad635396ec2d76004235027ed50a24dee29"
+    },
+    {
       "name": "rpi",
       "source_skill": "skills/rpi",
       "source_hash": "7dbe89ba71c87f5648a55ebd7ccd0c334a8f75add99d4e64bba781d44b81b090",
@@ -1461,6 +1977,42 @@
       "source_skill": "skills/ru-multi-repo-workflow",
       "source_hash": "53e60a529455c4bf51fc707e53eec50180026bee4ec583060b68f577e6c6e70e",
       "generated_hash": "8a63a9799cc75e74ffff1b3cc56c4c2def1c806b92a7821fe0a464b41aa013a9"
+    },
+    {
+      "name": "rust-crate-release-readiness",
+      "source_skill": "skills/rust-crate-release-readiness",
+      "source_hash": "39a176a1a8567faf5b490ba240006234bc7584b08c8a73939a36bbbd0287c67d",
+      "generated_hash": "b17cd5fe82df980507036b4ae1462d8105f9b16109721a22ee8320c69e7f5892"
+    },
+    {
+      "name": "rust-port-validation-gauntlet",
+      "source_skill": "skills/rust-port-validation-gauntlet",
+      "source_hash": "817ad379302c9fddf0a7d0f0ca5407d1f3b311a160f245a0e33a95fc8e3e4899",
+      "generated_hash": "f69006b155a6c4540eaf1b179e7396c0c909e8a074bd8bb8f0bd19a471c62744"
+    },
+    {
+      "name": "rust-search-integration",
+      "source_skill": "skills/rust-search-integration",
+      "source_hash": "b24ecba07f1f37e876917542522786f6565ec931df3e96506ab726a02ab5c5c9",
+      "generated_hash": "b6ffe9af63eda01a17c1e0c2b41a96c65aaf41f7f3283fa795bc026df866e398"
+    },
+    {
+      "name": "rust-sqlite-cli-architecture",
+      "source_skill": "skills/rust-sqlite-cli-architecture",
+      "source_hash": "17a674081399b40fa672aa2183847a57b854b79bc556ddf88845ad26e45265d6",
+      "generated_hash": "abaaf2dec17800a53f411439b27d0f4e5fe4993491a9d9bd32be52ea294c9c48"
+    },
+    {
+      "name": "rust-ub-risk-audit",
+      "source_skill": "skills/rust-ub-risk-audit",
+      "source_hash": "b9427f58c63b6c740aac3f98f4eb9ac2353068df24e60824bbd8a2ffb0ddff8b",
+      "generated_hash": "4d7ec8546e721c9acd54edafbe8c794d783e244a26a7073d842d2b35a2ab5524"
+    },
+    {
+      "name": "rust-unsafe-boundary-audit",
+      "source_skill": "skills/rust-unsafe-boundary-audit",
+      "source_hash": "628fdaec16733fc2491a865e0d5c6f4d848045d5817cad67f02f7450d0cc9325",
+      "generated_hash": "be46b300e6f68ebeff1e2e7d200e75246f20eb8c22a689bc32c0b450a6e56a7f"
     },
     {
       "name": "sbh",
@@ -1529,6 +2081,12 @@
       "generated_hash": "4d8b01766df9b10099f4f669e60c74dede37bd604e70d7b6a9a732cb5b2a5c05"
     },
     {
+      "name": "spec-reliability-implementation",
+      "source_skill": "skills/spec-reliability-implementation",
+      "source_hash": "ee4ada672f1567add2fbc3a94aafc7272a83540e12de3ef275d93f2b18f5f4b2",
+      "generated_hash": "77726528fcf24b2e0665d01b4afd3ade29111c087bf2d48d443a12ed322d2f27"
+    },
+    {
       "name": "ssh",
       "source_skill": "skills/ssh",
       "source_hash": "bb847db8561049b2ec7572263849f4a395c125d0a4374746af3a1aeb41558e59",
@@ -1539,6 +2097,12 @@
       "source_skill": "skills/standards",
       "source_hash": "f9046b2822250f82670fd93ccdf60deb96a81bd1299150a5c74ddc052a05d1eb",
       "generated_hash": "f6a7cadda9928b92bb1a59da3a34c6b9d5aa9132d5bc17a1bd770ebd3efc220c"
+    },
+    {
+      "name": "stash-hygiene-sweep",
+      "source_skill": "skills/stash-hygiene-sweep",
+      "source_hash": "5192f63c405576dd372033861e0d896be104cf7e42a31affd1d31090a2f82aed",
+      "generated_hash": "c5b1266213455aec319ff6bf11642334ae8953dd48cfea05f1ad95dc896e03c6"
     },
     {
       "name": "status",
@@ -1619,10 +2183,22 @@
       "generated_hash": "14890998e6d0029bd3aeed127feb06d8bb9e53e3913641f71d75657d767c0ffc"
     },
     {
+      "name": "work-contract-portability",
+      "source_skill": "skills/work-contract-portability",
+      "source_hash": "88944ef2938ca7dcb0c3b907e3983c3c842ad31bc82878584e940fa6b46aef7c",
+      "generated_hash": "b9e57f37cc8699946808de0d46003cb8654b306a068bf6b9473b44690756f8c9"
+    },
+    {
       "name": "workflow-builder",
       "source_skill": "skills/workflow-builder",
       "source_hash": "d7851c1a9bed2cb411e09605e85044751ebc241cdfcffe6df363b5f02aa5bd64",
       "generated_hash": "848f4a712e120e56a09fbd146eebbab85adc89e59fc1466a4b4e51a46be9c3dd"
+    },
+    {
+      "name": "worktree-branch-rationalization",
+      "source_skill": "skills/worktree-branch-rationalization",
+      "source_hash": "0507e02000145d79d7f1a446bdbaba6f64873984c585a7079911e367a960582c",
+      "generated_hash": "74b465d318d5813a9646d4cdbcef83995545c4c644b7483efb9c2005ca71f05d"
     }
   ]
 }
