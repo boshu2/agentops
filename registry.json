@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-07T06:25:22Z",
+  "generated_at": "2026-06-07T07:08:58Z",
   "summary": {
     "skills": 173,
     "hooks": 0,
@@ -1671,7 +1671,7 @@
       {
         "name": "ao cron",
         "path": "cli/cmd/ao/",
-        "purpose": "Cron-fire loop helpers (used by /evolve --mode=loop)",
+        "purpose": "Compatibility shims for relocated cron-fire scheduling",
         "bounded_context": "BC3",
         "driven_by_skills": []
       },
@@ -6329,14 +6329,13 @@
       "name": "ao cron",
       "type": "cli-command",
       "bounded_context": "BC3",
-      "purpose": "Cron-fire loop helpers (used by /evolve --mode=loop)",
+      "purpose": "Compatibility shims for relocated cron-fire scheduling",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
         "--config",
         "--dry-run",
         "--json",
-        "--mode",
         "--output",
         "--verbose"
       ],
