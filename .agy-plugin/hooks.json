@@ -1,29 +1,35 @@
 {
-  "hooks": {
-    "BeforeTool": [
+  "agentops-dcg": {
+    "PreToolUse": [
       {
-        "matcher": "run_shell_command",
+        "matcher": "run_command",
         "hooks": [
           {
-            "name": "agentops-dcg",
             "type": "command",
             "command": "dcg",
-            "timeout": 5000
+            "timeout": 10
           }
         ]
       }
     ],
-    "Stop": [
+    "PostToolUse": [
       {
-        "matcher": "",
         "hooks": [
           {
-            "name": "agentops-evidence-surface",
             "type": "command",
             "command": "ao handoff --help >/dev/null 2>&1 || true",
-            "timeout": 5000
+            "timeout": 10
           }
         ]
+      }
+    ]
+  },
+  "agentops-evidence-surface": {
+    "Stop": [
+      {
+        "type": "command",
+        "command": "ao handoff --help >/dev/null 2>&1 || true",
+        "timeout": 10
       }
     ]
   }

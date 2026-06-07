@@ -8,11 +8,16 @@ is the installable AGY bundle.
 Contents:
 
 - `plugin.json`: AGY plugin manifest. The `skills` field points to the bundled
-  portable `SKILL.md` set, and `mcpServers.agent-mail` points at
-  `am serve-stdio`.
+  portable `SKILL.md` set, `agents` and `rules` point at AGY-native control
+  templates, `hooks` points at the validator-discovered hook payload, and
+  `mcpServers.agent-mail` points at `am serve-stdio`.
 - `mcp_config.json`: sidecar MCP payload for Antigravity/Gemini config import.
 - `hooks.json`: sidecar hooks payload carrying the AgentOps destructive-command
   guard and a non-mutating closeout/evidence surface check.
+- `hooks/hooks.json`: AGY plugin hook payload layout processed by
+  `agy plugin validate`.
+- `agents/*.md`: AGY subagent templates for worker and validator contexts.
+- `rules/*.md`: shared AgentOps loop and Door-9 rules for AGY.
 - `skills/*/SKILL.md`: the core AgentOps tool/operator skills copied from the
   canonical source tree.
 
