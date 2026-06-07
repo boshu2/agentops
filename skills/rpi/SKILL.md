@@ -78,7 +78,7 @@ Codex direct checks before declaring a source-level regression.
 ## Core Contract
 
 RPI delegates via `Skill(skill="discovery", ...)`,
-`Skill(skill="crank", ...)`, and `Skill(skill="validation", ...)` as separate
+`Skill(skill="crank", ...)`, and `Skill(skill="validate", ...)` as separate
 tool invocations. Keep strict delegation on by default; do not compress phases,
 replace phase skills with direct agent spawns, or skip validation. Read
 [../shared/references/strict-delegation-contract.md](../shared/references/strict-delegation-contract.md)

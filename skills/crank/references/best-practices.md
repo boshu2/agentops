@@ -1,6 +1,6 @@
 # RPI lifecycle best practices
 
-Citation table extracted during research for `soc-bcrn` (RPI lifecycle sharpening). The lifecycle skills (`/rpi`, `/discovery`, `/crank`, `/validation`) MUST reference principles by `#` from this file — they MUST NOT duplicate the body content here. When a principle is wrong or stale, update this file and the citations fix themselves.
+Citation table extracted during research for `soc-bcrn` (RPI lifecycle sharpening). The lifecycle skills (`/rpi`, `/discovery`, `/crank`, `/validate`) MUST reference principles by `#` from this file — they MUST NOT duplicate the body content here. When a principle is wrong or stale, update this file and the citations fix themselves.
 
 Source research: `.agents/research/2026-05-07-rpi-lifecycle-sharpening.md` §Objective 4.
 

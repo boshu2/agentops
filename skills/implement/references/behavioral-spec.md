@@ -3,7 +3,7 @@
 **Skip if:** `--no-spec` flag, or issue type is `docs`/`chore`/`ci`.
 
 After verification passes, produce a behavioral spec documenting what the implementation
-does. This feeds Stage 4 behavioral validation (STEP 1.8 in /validation).
+does. This feeds Stage 4 behavioral validation (STEP 1.8 in /validate).
 
 ```bash
 mkdir -p .agents/specs

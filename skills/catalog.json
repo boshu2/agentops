@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-07T20:14:11Z",
+  "generated_at": "2026-06-07T20:37:01Z",
   "skill_count": 158,
   "skills": [
     {
@@ -1938,12 +1938,12 @@
       "practices": [
         "code-complete",
         "empirical-performance",
-        "validation"
+        "validate"
       ],
       "context_rel": [
         {
           "kind": "customer-of",
-          "with": "validation"
+          "with": "validate"
         }
       ],
       "references_count": 0,
@@ -2812,7 +2812,7 @@
       "context_rel": [
         {
           "kind": "supplier-to",
-          "with": "validation"
+          "with": "validate"
         }
       ],
       "references_count": 1,

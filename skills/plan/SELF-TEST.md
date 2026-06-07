@@ -17,7 +17,7 @@
   - Expected: route to `/research`, not `plan`.
 
 - User asks to validate already-implemented work or run gates.
-  - Expected: route to `/validation`, not `plan`.
+  - Expected: route to `/validate`, not `plan`.
 
 ## Behavior Checks
 

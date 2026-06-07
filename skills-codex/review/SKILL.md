@@ -307,7 +307,7 @@ Merge council findings into the review document under a "## Council Findings" se
 | `$council` | Optional second opinion via `--deep` flag. |
 | `$standards` | Auto-loaded for language-specific rules. |
 | `$bug-hunt` | `$review` does a structured pass; `$bug-hunt` does deep investigation of suspected bugs. |
-| `$pr-validate` | PR-specific validation (isolation, scope creep). Complementary to `$review`. |
+| `$validate --mode=pr` | PR-specific validation (isolation, scope creep). Complementary to `$review`. |
 
 ---
 

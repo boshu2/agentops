@@ -241,7 +241,7 @@ graph LR
   operating-loop-skill -- "customer-of" --> beads
   operating-loop-skill -- "supplier-to" --> cc-loop-driver
   perf -- "shared-kernel" --> standards
-  performance-profile-triage -- "customer-of" --> validation
+  performance-profile-triage -- "customer-of" --> validate
   plan -- "shared-kernel" --> standards
   post-mortem -- "shared-kernel" --> standards
   pr-implement -- "customer-of" --> crank
@@ -262,7 +262,7 @@ graph LR
   rpi -- "customer-of" --> validate
   rust-search-integration -- "partnership" --> cli-agent-ux-audit
   rust-search-integration -- "partnership" --> legacy-codebase-recon
-  scenario -- "supplier-to" --> validation
+  scenario -- "supplier-to" --> validate
   scope -- "supplier-to" --> domain
   security -- "supplier-to" --> vibe
   session-bootstrap -- "customer-of" --> AGENTS-CI.md

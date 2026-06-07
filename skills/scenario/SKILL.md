@@ -11,7 +11,7 @@ produces:
 - result.json
 context_rel:
 - kind: supplier-to
-  with: validation
+  with: validate
 skill_api_version: 1
 metadata:
   tier: execution

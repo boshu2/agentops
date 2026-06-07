@@ -33,9 +33,9 @@ It gives your coding agent four things it doesn't have by default:
   Bookkeeping — sessions capture learnings, findings, and reusable context in .agents/
   Validation  — $council, $pre-mortem, and $vibe challenge plans and code before shipping
   Primitives  — skills, execution packets, and the ao CLI give you building blocks for almost any interaction
-  Flows       — $research, $implement, $validation, and $rpi can run alone or compose end to end
+  Flows       — $research, $implement, $validate, and $rpi can run alone or compose end to end
 
-Key skills: $rpi  $research  $validation  $implement  $council  $pre-mortem  $swarm  $status
+Key skills: $rpi  $research  $validate  $implement  $council  $pre-mortem  $swarm  $status
 Fresh-session orientation: `ao session bootstrap`, then `ao inject` / `ao corpus inject --query "<topic>"`
 Full reference: $quickstart --catalog
 ```
@@ -53,7 +53,7 @@ Match the first row that applies. Output that message.
 | AGENTS=false + CODEX=true | "🌱 ao is installed but not initialized here.\n  Run `ao quick-start` to apply the repeatable core seed. `ao quickstart` is the stable alias.\n  Then run `$bootstrap` only if you want the product/operations layer: PRODUCT.md, README.md, PROGRAM.md/AUTODEV.md, and optional hooks.\nThen: `$rpi \"a small goal\"` to run your first cycle." |
 | AGENTS=false | "🌱 ao is installed but not initialized here.\n  Run `ao quick-start` to apply the repeatable core seed. `ao quickstart` is the stable alias.\n  Then run `$bootstrap` only if you want the product/operations layer: PRODUCT.md, README.md, PROGRAM.md/AUTODEV.md, and optional hooks.\nThen: `$rpi \"a small goal\"` to run your first cycle." |
 | BD=false + CODEX=true | "✅ Codex plugin path ready.\n  Start with `$rpi \"your goal\"`, `$research <topic>`, or `$status`\n  Default installs are hookless; native hooks are optional with `install-codex.sh --with-hooks`.\n  Legacy explicit fallback commands remain `ao codex ensure-start` once per thread and `ao codex ensure-stop` during closeout when needed.\n  Manual escape hatch: `ao codex status`\n  Want issue tracking? `brew install boshu2/agentops/beads && bd init --prefix <prefix>`" |
-| BD=false | "✅ Flywheel active. Start now:\n  `$rpi \"your goal\"` — full $discovery → $crank → $validation pipeline\n  `$validation` — close out recent work and capture learnings\n  `$research <topic>` — explore the codebase\n  Want issue tracking? `brew install boshu2/agentops/beads && bd init --prefix <prefix>`" |
+| BD=false | "✅ Flywheel active. Start now:\n  `$rpi \"your goal\"` — full $discovery → $crank → $validate pipeline\n  `$validate` — close out recent work and capture learnings\n  `$research <topic>` — explore the codebase\n  Want issue tracking? `brew install boshu2/agentops/beads && bd init --prefix <prefix>`" |
 | BD=true + CODEX=true | "✅ Codex full stack ready.\n  `bd ready` — see open work\n  Start with `$rpi \"your goal\"`, `$research <topic>`, or `$status`\n  Default installs are hookless; native hooks are optional with `install-codex.sh --with-hooks`.\n  Legacy explicit fallback commands remain `ao codex ensure-start` once per thread and `ao codex ensure-stop` during closeout when needed.\n  Manual escape hatch: `ao codex status`" |
 | BD=true | "✅ Full stack ready.\n  `bd ready` — see open work\n  `$rpi \"your goal\"` — start a new goal from scratch\n  `$status` — see current session state" |
 

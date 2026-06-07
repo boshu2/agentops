@@ -1,13 +1,13 @@
 # Executable spec for the /scenario skill — holdout scenario management (BC4 Evidence & Trust).
 # /scenario creates, validates, and lists holdout scenarios under .agents/holdout/, links
-# them to GOALS.md directives, and feeds them into /validation's behavioral checks. Hexagon:
+# them to GOALS.md directives, and feeds them into /validate's behavioral checks. Hexagon:
 # supporting; consumes: scenario definitions + the scenario schema; produces: validated
 # holdout scenario artifacts in .agents/holdout/*.json. (soc-qk4b)
 
 Feature: Scenario manages holdout scenarios for behavioral validation
   As an agent guarding against regressions
   I want holdout scenarios authored, schema-validated, and linked to goals
-  So that /validation can score behavior against a held-out set
+  So that /validate can score behavior against a held-out set
 
   Background:
     Given a holdout directory under .agents/holdout/
@@ -29,5 +29,5 @@ Feature: Scenario manages holdout scenarios for behavioral validation
 
   @covered-by:tests/e2e/goals-scenarios-link.sh
   Scenario: Holdout scenarios feed validation
-    When /validation runs
+    When /validate runs
     Then it consumes the holdout scenarios for behavioral scoring
