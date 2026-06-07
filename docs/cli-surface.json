@@ -11,9 +11,9 @@
     {
       "category": "public-tested",
       "command": "agent bundle",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by vendorimage agentbundle adapter tests and command registration tests."
     },
     {
       "category": "public-tested",
@@ -1670,9 +1670,9 @@
     {
       "category": "public-tested",
       "command": "turn verify",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by turnverify adapter tests and command registration tests."
     },
     {
       "category": "public-tested",

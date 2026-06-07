@@ -76,6 +76,8 @@ public-tested|flywheel nudge|Covered by flywheel status smoke behavior.
 public-tested|metrics baseline|Covered by metrics command tests.
 public-tested|metrics cite|Covered by metrics command tests.
 public-tested|session close|Covered by session close tests.
+public-tested|agent bundle|Covered by vendorimage agentbundle adapter tests and command registration tests.
+public-tested|turn verify|Covered by turnverify adapter tests and command registration tests.
 
 public-tested|hooks init|Covered by hook helper tests.
 public-tested|hooks install|Covered by hook helper tests.
