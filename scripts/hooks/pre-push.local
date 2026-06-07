@@ -28,33 +28,29 @@ if [ "${AGENTOPS_GATE_DISABLED:-0}" = "1" ]; then
     exit 0
 fi
 
-# --- Go gate (opt-in until the registry reaches parity) ----------------------
-# AGENTOPS_GATE_GO=1 routes the push through the Go orchestrator `ao gate check
-# --fast` instead of the bash gate. It uses the from-source bootstrap so the
-# gate that checks Go compiles can never run a stale `ao` (ag-qidx GA6 /
-# pre-mortem BLOCKER-3): prove compilation first (block with the build error if
-# broken), then build a fresh ao and exec it. Default stays the bash gate —
-# the Go registry is a subset until Phase B reaches parity, and flipping the
-# default before then would regress coverage on the only pre-merge wall.
-if [ "${AGENTOPS_GATE_GO:-0}" = "1" ]; then
-    if ! ( cd "${toplevel}/cli" && go build ./... ); then
-        echo >&2 "✗ go build ./... failed — fix compilation before pushing (ao gate cannot run on broken Go)"
-        exit 1
-    fi
-    if ! ( cd "${toplevel}/cli" && go build -o /tmp/ao-gate ./cmd/ao ); then
-        echo >&2 "✗ could not build ao for the gate"
-        exit 1
-    fi
-    exec /tmp/ao-gate gate check --fast
-fi
-
-# --- default: bash gate (authoritative until parity) -------------------------
-gate="${toplevel}/scripts/pre-push-gate.sh"
-if [ ! -x "$gate" ]; then
-    echo >&2 "AgentOps pre-push gate: ${gate} not found/executable — skipping (no gate to run)"
+# --- bash gate (escape hatch) ------------------------------------------------
+# AGENTOPS_GATE_BASH=1 routes through the legacy bash gate (scripts/pre-push-gate.sh)
+# instead of the Go orchestrator. Kept during the transition; remove once the bash
+# gate is retired (ag-3n71 PB2 tail).
+if [ "${AGENTOPS_GATE_BASH:-0}" = "1" ]; then
+    gate="${toplevel}/scripts/pre-push-gate.sh"
+    [ -x "$gate" ] && exec "$gate" --fast
+    echo >&2 "AgentOps: bash gate requested but ${gate} missing — skipping"
     exit 0
 fi
 
-# Exec directly (NOT via `sh`): the gate is a bash script and uses bash-only
-# constructs (process substitution, arrays). Its shebang selects bash.
-exec "$gate" --fast
+# --- DEFAULT: Go gate (ao gate check) ----------------------------------------
+# Flipped to default in PB2 once the registry reached coverage parity (gated by
+# the coverage-equivalence test). From-source bootstrap so the gate that checks
+# Go compiles can never run a stale `ao` (pre-mortem BLOCKER-3): prove
+# compilation first (block with the build error if broken), then build a fresh
+# ao and exec it.
+if ! ( cd "${toplevel}/cli" && go build ./... ); then
+    echo >&2 "✗ go build ./... failed — fix compilation before pushing (ao gate cannot run on broken Go)"
+    exit 1
+fi
+if ! ( cd "${toplevel}/cli" && go build -o /tmp/ao-gate ./cmd/ao ); then
+    echo >&2 "✗ could not build ao for the gate"
+    exit 1
+fi
+exec /tmp/ao-gate gate check --fast
