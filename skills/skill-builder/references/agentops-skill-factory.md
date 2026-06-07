@@ -34,10 +34,25 @@ only.
    - add a focused validation script;
    - add an output contract or explicit quality rubric;
    - tighten trigger language in frontmatter and body.
-4. Re-run `skill-auditor`, `heal-skill`, and any target-specific validation.
+4. Re-run `skill-auditor`, `heal-skill --check --strict`, and any target-specific
+   validation by exit code, not by grepping output text.
 5. Mirror behavior into `skills-codex/<name>/` or
    `skills-codex-overrides/<name>/` when the Codex runtime needs different
    phrasing or execution instructions.
+
+## Scale Run Discipline
+
+When authoring multiple skills, protect file ownership before parallelism:
+
+- One skill equals one worker equals one source directory plus its Codex mirror.
+- Run create-only work first; mutate existing skills only after the source corpus
+  is settled.
+- Use deterministic scripts or NTM/Agent Mail lanes for batch work. Do not use
+  the Workflow tool as the skill factory.
+- Trust `git status`, generated hashes, final file contents, and gate exit codes
+  over worker self-reports.
+- Clean-room review includes exact names. Rename third-party-derived labels into
+  AgentOps-owned names before source skills, Codex mirrors, or wrappers are keyed.
 
 ## Productization Rule
 
