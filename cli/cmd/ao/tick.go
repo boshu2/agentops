@@ -518,7 +518,7 @@ func tickLedgerShowsClosed(path, id string) bool {
 	if err != nil {
 		return false
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		var item tickBead
@@ -698,7 +698,7 @@ func tickSmoke(rt tickRuntime) error {
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(tmp)
+	defer func() { _ = os.RemoveAll(tmp) }()
 	write := func(name, body string) string {
 		path := filepath.Join(tmp, name)
 		_ = os.WriteFile(path, []byte(body), 0o644)
