@@ -50,7 +50,7 @@ type workflowStep struct {
 	ContinueOnError any    `yaml:"continue-on-error"`
 }
 
-var workflowScriptPattern = regexp.MustCompile("(?:^|[\\s\"'`])((?:scripts|skills/[A-Za-z0-9._/-]+/scripts)/[A-Za-z0-9._/-]+\\.(?:sh|py))")
+var workflowScriptPattern = regexp.MustCompile("(?:^|[\\s\"'`])(?:\\./)?((?:scripts|skills/[A-Za-z0-9._/-]+/scripts)/[A-Za-z0-9._/-]+\\.(?:sh|py))")
 
 // RegistryWorkflowCoverage returns workflow-vs-registry script coverage.
 func RegistryWorkflowCoverage(reg *Registry, repoRoot, workflowRel string) (*WorkflowCoverage, error) {
@@ -151,16 +151,34 @@ func workflowScriptRefs(path string) ([]WorkflowScriptRef, map[string]struct{}, 
 }
 
 func scriptsInRunBlock(run string) []string {
-	matches := workflowScriptPattern.FindAllStringSubmatch(run, -1)
 	seen := map[string]struct{}{}
-	for _, m := range matches {
-		if len(m) < 2 {
+	for _, line := range strings.Split(run, "\n") {
+		if !workflowLineMayInvokeScript(line) {
 			continue
 		}
-		script := strings.TrimPrefix(m[1], "./")
-		seen[script] = struct{}{}
+		matches := workflowScriptPattern.FindAllStringSubmatch(line, -1)
+		for _, m := range matches {
+			if len(m) < 2 {
+				continue
+			}
+			script := strings.TrimPrefix(m[1], "./")
+			seen[script] = struct{}{}
+		}
 	}
 	return setToSortedSlice(seen)
+}
+
+func workflowLineMayInvokeScript(line string) bool {
+	trimmed := strings.TrimSpace(line)
+	if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+		return false
+	}
+	if strings.HasPrefix(trimmed, "chmod ") ||
+		strings.HasPrefix(trimmed, "echo ") ||
+		strings.HasPrefix(trimmed, "printf ") {
+		return false
+	}
+	return workflowScriptPattern.MatchString(trimmed)
 }
 
 func registryBackingScripts(reg *Registry) map[string]struct{} {
