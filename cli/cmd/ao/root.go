@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/adapters/worktreeconfig"
 	"github.com/boshu2/agentops/cli/internal/doctor"
 )
 
@@ -53,14 +54,14 @@ Use "ao <command> --help" for more information about a command.`,
 			output = "json"
 		}
 		syncConfigFlagToEnv()
-		if err := sanitizeGitProcessEnv(); err != nil {
+		if err := worktreeconfig.SanitizeGitProcessEnv(); err != nil {
 			return err
 		}
 		cwd, err := os.Getwd()
 		if err != nil {
 			return err
 		}
-		if err := repairSharedCoreWorktreeConfig(cwd); err != nil {
+		if err := worktreeconfig.RepairSharedCoreWorktreeConfig(cwd); err != nil {
 			return err
 		}
 

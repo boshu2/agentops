@@ -1,5 +1,5 @@
 // practices: [microservices, team-topologies]
-package main
+package worktreeconfig
 
 import (
 	"os"
@@ -30,11 +30,11 @@ func TestRepairSharedCoreWorktreeConfig_MigratesLinkedWorktrees(t *testing.T) {
 		t.Fatalf("broken linked worktree reproduction failed: got toplevel %q, want %q", got, repoRealPath)
 	}
 
-	if err := repairSharedCoreWorktreeConfig(nestedDir); err != nil {
-		t.Fatalf("repairSharedCoreWorktreeConfig: %v", err)
+	if err := RepairSharedCoreWorktreeConfig(nestedDir); err != nil {
+		t.Fatalf("RepairSharedCoreWorktreeConfig: %v", err)
 	}
-	if err := sanitizeGitProcessEnv(); err != nil {
-		t.Fatalf("sanitizeGitProcessEnv: %v", err)
+	if err := SanitizeGitProcessEnv(); err != nil {
+		t.Fatalf("SanitizeGitProcessEnv: %v", err)
 	}
 
 	if got := realPathForTest(t, strings.TrimSpace(runGitOutputCommand(t, worktreePath, "rev-parse", "--show-toplevel"))); got != worktreeRealPath {
@@ -54,6 +54,45 @@ func TestRepairSharedCoreWorktreeConfig_MigratesLinkedWorktrees(t *testing.T) {
 	if perWorktree != worktreeRealPath {
 		t.Fatalf("linked worktree core.worktree = %q, want %q", perWorktree, worktreeRealPath)
 	}
+}
+
+func TestRepairSharedCoreWorktreeConfig_NoOpOutsideGitRepo(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "note.txt"), []byte("hello\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := RepairSharedCoreWorktreeConfig(dir); err != nil {
+		t.Fatalf("expected no-op outside repo, got %v", err)
+	}
+}
+
+// initTestRepo creates a real git repo with one commit in a temp dir and
+// returns its root. It skips the test when git is unavailable.
+func initTestRepo(t *testing.T) string {
+	t.Helper()
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	root := t.TempDir()
+	runGit := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = root
+		cmd.Env = append(os.Environ(),
+			"GIT_AUTHOR_NAME=test", "GIT_AUTHOR_EMAIL=test@example.com",
+			"GIT_COMMITTER_NAME=test", "GIT_COMMITTER_EMAIL=test@example.com",
+		)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %s: %v", args, out, err)
+		}
+	}
+	runGit("init", "-b", "main")
+	if err := os.WriteFile(filepath.Join(root, "README.md"), []byte("seed\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	runGit("add", ".")
+	runGit("commit", "-m", "seed")
+	return root
 }
 
 func runGitCommand(t *testing.T, cwd string, args ...string) {
@@ -102,14 +141,4 @@ func realPathForTest(t *testing.T, path string) string {
 		t.Fatalf("filepath.Abs(%q): %v", path, err)
 	}
 	return abs
-}
-
-func TestRepairSharedCoreWorktreeConfig_NoOpOutsideGitRepo(t *testing.T) {
-	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "note.txt"), []byte("hello\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := repairSharedCoreWorktreeConfig(dir); err != nil {
-		t.Fatalf("expected no-op outside repo, got %v", err)
-	}
 }
