@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/adapters/vendorimage/harnesssync"
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
@@ -25,7 +26,7 @@ var harnessStatusCmd = &cobra.Command{
 	Use:   "status [--skill <name>] [--out-of-sync-only]",
 	Short: "Emit (skill, harness) sync state via BC5 HarnessPort",
 	Long: `Emit HarnessSkillSync entries via the typed BC5 HarnessPort
-(productionHarness, cycle 111). Each entry names one (skill, harness)
+(harnesssync adapter, cycle 111). Each entry names one (skill, harness)
 pair with its SHA-256 content hash and OutOfSync flag.
 
 Useful as a drift-detection surface that future audit gates can
@@ -89,15 +90,15 @@ func harnessStatusRun(ctx context.Context, opts harnessStatusOptions) error {
 	return nil
 }
 
-// harnessStatusViaPort wires productionHarness (cycle 111) rooted at
-// the project root. The adapter walks skills/ and skills-codex/
-// relative to that root.
+// harnessStatusViaPort wires the vendor-image harness sync adapter rooted at
+// the project root. The adapter walks skills/ and skills-codex/ relative to
+// that root.
 func harnessStatusViaPort(ctx context.Context, opts harnessStatusOptions) ([]ports.HarnessSkillSync, error) {
 	cwd, err := resolveProjectDir()
 	if err != nil {
 		return nil, err
 	}
-	h := newProductionHarness(cwd)
+	h := harnesssync.New(cwd)
 	if opts.skill != "" {
 		return h.StatusForSkill(ctx, opts.skill)
 	}

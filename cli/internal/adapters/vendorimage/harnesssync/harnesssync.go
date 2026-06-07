@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, ddd-bounded-context]
-package main
+package harnesssync
 
 import (
 	"context"
@@ -27,8 +27,8 @@ type productionHarness struct {
 	rootDir string
 }
 
-// newProductionHarness returns an adapter rooted at rootDir.
-func newProductionHarness(rootDir string) *productionHarness {
+// New returns an adapter rooted at rootDir.
+func New(rootDir string) *productionHarness {
 	return &productionHarness{rootDir: rootDir}
 }
 
