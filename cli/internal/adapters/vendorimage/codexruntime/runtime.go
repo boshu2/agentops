@@ -1,5 +1,5 @@
 // practices: [microservices, design-by-contract]
-package main
+package codexruntime
 
 import (
 	"bufio"
@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/bridge"
+	"github.com/boshu2/agentops/cli/internal/types/quest"
 )
 
 const (
@@ -28,7 +29,24 @@ const (
 	codexNativeHooksMinVersion = "0.115.0"
 )
 
-var codexArchivedSessionPattern = regexp.MustCompile(`([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\.jsonl$`)
+const (
+	RuntimeKindClaude   = runtimeKindClaude
+	RuntimeKindCodex    = runtimeKindCodex
+	RuntimeKindOpenCode = runtimeKindOpenCode
+	RuntimeKindUnknown  = runtimeKindUnknown
+
+	LifecycleModeHookCapable   = lifecycleModeHookCapable
+	LifecycleModeCodexHookless = lifecycleModeCodexHookless
+	LifecycleModeManual        = lifecycleModeManual
+
+	CodexNativeHooksMinVersion = codexNativeHooksMinVersion
+)
+
+var (
+	codexArchivedSessionPattern = regexp.MustCompile(`([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\.jsonl$`)
+	timestampSessionPattern     = regexp.MustCompile(`^\d{8}-\d{6}$`)
+	uuidSessionPattern          = regexp.MustCompile(`^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$`)
+)
 
 type lifecycleRuntimeProfile struct {
 	Runtime          string `json:"runtime"`
@@ -58,12 +76,24 @@ type runtimeTranscriptCandidate struct {
 	modTime time.Time
 }
 
+type LifecycleRuntimeProfile = lifecycleRuntimeProfile
+type HistoryEntry = codexHistoryEntry
+type SessionIndexEntry = codexSessionIndexEntry
+
 func detectLifecycleRuntimeProfile() lifecycleRuntimeProfile {
 	return detectLifecycleRuntimeProfileWithOptions(false)
 }
 
 func detectCodexLifecycleProfile() lifecycleRuntimeProfile {
 	return detectLifecycleRuntimeProfileWithOptions(true)
+}
+
+func DetectLifecycleRuntimeProfile() LifecycleRuntimeProfile {
+	return detectLifecycleRuntimeProfile()
+}
+
+func DetectCodexLifecycleProfile() LifecycleRuntimeProfile {
+	return detectCodexLifecycleProfile()
 }
 
 func detectLifecycleRuntimeProfileWithOptions(forceCodex bool) lifecycleRuntimeProfile {
@@ -78,7 +108,6 @@ func detectLifecycleRuntimeProfileWithOptions(forceCodex bool) lifecycleRuntimeP
 
 	claudeManifest := filepath.Join(homeDir, ".agentops", "hooks.json")
 	legacyClaudeManifest := filepath.Join(homeDir, ".claude", "hooks.json")
-	codexConfig := filepath.Join(homeDir, ".codex", "config.toml")
 	codexManifest := filepath.Join(homeDir, ".codex", "hooks.json")
 	openCodeManifest := filepath.Join(homeDir, ".config", "opencode", "agentops", "hooks", "hooks.json")
 
@@ -97,8 +126,8 @@ func detectLifecycleRuntimeProfileWithOptions(forceCodex bool) lifecycleRuntimeP
 		}
 		profile.HookCapable = codexSupportsNativeHooks(homeDir)
 		if profile.HookCapable {
-			manifestConfigured, manifestReason := codexHooksManifestConfigured(codexManifest)
-			featureEnabled := codexHooksFeatureEnabled(codexConfig)
+			manifestConfigured, manifestReason := codexHooksManifestConfigured(homeDir)
+			featureEnabled := codexHooksFeatureEnabled(homeDir)
 			switch {
 			case featureEnabled && manifestConfigured:
 				profile.Mode = lifecycleModeHookCapable
@@ -160,13 +189,12 @@ func codexSupportsNativeHooks(homeDir string) bool {
 	if version, ok := readCodexLatestVersion(homeDir); ok {
 		return bridge.CompareSemver(version, codexNativeHooksMinVersion) >= 0
 	}
-	return codexHooksFeatureEnabled(filepath.Join(homeDir, ".codex", "config.toml")) ||
+	return codexHooksFeatureEnabled(homeDir) ||
 		fileExists(filepath.Join(homeDir, ".codex", "hooks.json"))
 }
 
 func readCodexLatestVersion(homeDir string) (string, bool) {
-	path := filepath.Join(homeDir, ".codex", "version.json")
-	data, err := os.ReadFile(path)
+	data, err := readCodexFile(homeDir, "version.json")
 	if err != nil {
 		return "", false
 	}
@@ -185,8 +213,26 @@ func readCodexLatestVersion(homeDir string) (string, bool) {
 	return version, true
 }
 
-func codexHooksFeatureEnabled(path string) bool {
-	data, err := os.ReadFile(path)
+func readCodexFile(homeDir, name string) ([]byte, error) {
+	root, err := os.OpenRoot(filepath.Join(homeDir, ".codex"))
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = root.Close() }()
+	return root.ReadFile(name)
+}
+
+func openCodexFile(homeDir, name string) (*os.File, error) {
+	root, err := os.OpenRoot(filepath.Join(homeDir, ".codex"))
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = root.Close() }()
+	return root.Open(name)
+}
+
+func codexHooksFeatureEnabled(homeDir string) bool {
+	data, err := readCodexFile(homeDir, "config.toml")
 	if err != nil {
 		return false
 	}
@@ -231,8 +277,8 @@ func codexHooksFeatureEnabled(path string) bool {
 	return legacyHooksSeen && legacyHooksEnabled
 }
 
-func codexHooksManifestConfigured(path string) (bool, string) {
-	data, err := os.ReadFile(path)
+func codexHooksManifestConfigured(homeDir string) (bool, string) {
+	data, err := readCodexFile(homeDir, "hooks.json")
 	if err != nil {
 		return false, "Codex native hooks are supported, but ~/.codex/hooks.json is missing; use ao codex start/stop until hooks are installed."
 	}
@@ -302,9 +348,12 @@ func resolveCodexSessionID(homeDir string) string {
 	return strings.TrimSpace(entries[len(entries)-1].SessionID)
 }
 
+func ResolveCodexSessionID(homeDir string) string {
+	return resolveCodexSessionID(homeDir)
+}
+
 func readLatestCodexSessionIndexEntry(homeDir string) (*codexSessionIndexEntry, error) {
-	path := filepath.Join(homeDir, ".codex", "session_index.jsonl")
-	f, err := os.Open(path)
+	f, err := openCodexFile(homeDir, "session_index.jsonl")
 	if err != nil {
 		return nil, err
 	}
@@ -344,8 +393,7 @@ func readCodexSessionIndexEntry(homeDir, sessionID string) (*codexSessionIndexEn
 	if sessionID == "" {
 		return nil, nil
 	}
-	path := filepath.Join(homeDir, ".codex", "session_index.jsonl")
-	f, err := os.Open(path)
+	f, err := openCodexFile(homeDir, "session_index.jsonl")
 	if err != nil {
 		return nil, err
 	}
@@ -374,8 +422,7 @@ func readCodexSessionIndexEntry(homeDir, sessionID string) (*codexSessionIndexEn
 }
 
 func readAllCodexHistoryEntries(homeDir string) ([]codexHistoryEntry, error) {
-	path := filepath.Join(homeDir, ".codex", "history.jsonl")
-	f, err := os.Open(path)
+	f, err := openCodexFile(homeDir, "history.jsonl")
 	if err != nil {
 		return nil, err
 	}
@@ -523,6 +570,10 @@ func synthesizeCodexHistoryTranscript(cwd, sessionID string) (string, error) {
 	return path, nil
 }
 
+func SynthesizeCodexHistoryTranscript(cwd, sessionID string) (string, error) {
+	return synthesizeCodexHistoryTranscript(cwd, sessionID)
+}
+
 func findTranscriptBySessionID(sessionID string) (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -555,12 +606,20 @@ func findTranscriptBySessionID(sessionID string) (string, error) {
 	return "", fmt.Errorf("no transcript found for session %s", sessionID)
 }
 
+func FindTranscriptBySessionID(sessionID string) (string, error) {
+	return findTranscriptBySessionID(sessionID)
+}
+
 func findLastCodexArchivedTranscript() (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("get home directory: %w", err)
 	}
 	return findLastTranscriptInDir(filepath.Join(homeDir, ".codex", "archived_sessions"), "no Codex archived sessions found")
+}
+
+func FindLastCodexArchivedTranscript() (string, error) {
+	return findLastCodexArchivedTranscript()
 }
 
 func findLastSession() (string, error) {
@@ -587,6 +646,10 @@ func findLastSession() (string, error) {
 	})
 
 	return candidates[0].path, nil
+}
+
+func FindLastSession() (string, error) {
+	return findLastSession()
 }
 
 func collectClaudeTranscriptCandidates(projectsDir string) ([]runtimeTranscriptCandidate, error) {
@@ -656,4 +719,79 @@ func findLastTranscriptInDir(dir, emptyMessage string) (string, error) {
 		return b.modTime.Compare(a.modTime)
 	})
 	return candidates[0].path, nil
+}
+
+func extractSessionIDFromCodexArchivedPath(path string) string {
+	match := codexArchivedSessionPattern.FindStringSubmatch(filepath.Base(path))
+	if len(match) == 2 {
+		return match[1]
+	}
+	return ""
+}
+
+func ExtractSessionIDFromCodexArchivedPath(path string) string {
+	return extractSessionIDFromCodexArchivedPath(path)
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func atomicWriteFile(path string, data []byte, perm os.FileMode) error {
+	return quest.AtomicWriteFileWithPerm(path, data, perm)
+}
+
+func sanitizePathComponent(s string) string {
+	s = strings.ReplaceAll(s, "/", "-")
+	s = strings.ReplaceAll(s, "\\", "-")
+	s = strings.ReplaceAll(s, "..", "-")
+	s = strings.ReplaceAll(s, "\x00", "")
+	return s
+}
+
+func sessionIDAliases(raw string) []string {
+	aliases := make(map[string]struct{})
+	trimmed := strings.TrimSpace(raw)
+	if trimmed != "" {
+		aliases[trimmed] = struct{}{}
+	}
+
+	canonical := canonicalSessionID(trimmed)
+	if canonical != "" {
+		aliases[canonical] = struct{}{}
+	}
+
+	if strings.HasPrefix(trimmed, "session-") {
+		suffix := strings.TrimPrefix(trimmed, "session-")
+		if timestampSessionPattern.MatchString(suffix) {
+			aliases[suffix] = struct{}{}
+		}
+	}
+	if timestampSessionPattern.MatchString(trimmed) {
+		aliases["session-"+trimmed] = struct{}{}
+	}
+
+	result := make([]string, 0, len(aliases))
+	for id := range aliases {
+		result = append(result, id)
+	}
+	return result
+}
+
+func canonicalSessionID(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return fmt.Sprintf("session-%s", time.Now().Format("20060102-150405"))
+	}
+	if strings.HasPrefix(trimmed, "session-") {
+		return trimmed
+	}
+	if timestampSessionPattern.MatchString(trimmed) {
+		return "session-" + trimmed
+	}
+	if uuidSessionPattern.MatchString(strings.ToLower(trimmed)) {
+		return "session-uuid-" + strings.ToLower(trimmed)
+	}
+	return trimmed
 }

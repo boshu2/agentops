@@ -39,10 +39,10 @@ Current inventory count:
 | Bucket | Files |
 |---|---:|
 | KEEP | 467 |
-| RELOCATE | 112 |
+| RELOCATE | 110 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
-| Total | 618 |
+| Total | 616 |
 
 Validation command:
 
@@ -199,6 +199,15 @@ moved behind the `mto-fleet` adapter boundary. AO keeps the public `ao agents`
 wrappers focused on command registration and flags, while the read-side
 write-surface scanner now lives under
 `cli/internal/adapters/agentsreferences`.
+
+## Extracted Codex Runtime Adapter
+
+The Codex runtime detection, hook-capability probing, session-index lookup,
+history fallback transcript synthesis, and archived transcript discovery moved
+behind the `vendor-image-adapter` boundary. AO keeps the public `ao codex`
+command/state machine in `cli/cmd/ao/codex.go`, while runtime-specific
+discovery now lives under
+`cli/internal/adapters/vendorimage/codexruntime`.
 
 ## Reversibility
 
