@@ -11,18 +11,15 @@ CODEX_BIN="${CODEX_BIN:-codex}"
 CODEX_PROFILE="${CODEX_VALIDATE_PROFILE:-}"
 SOURCE_CODEX_HOME="${HEADLESS_RUNTIME_SOURCE_CODEX_HOME:-$HOME/.codex}"
 TIMEOUT_SECONDS="${HEADLESS_RUNTIME_SKILL_TIMEOUT_SECONDS:-120}"
-MAX_BUDGET_USD="${HEADLESS_RUNTIME_SKILL_MAX_BUDGET_USD:-2.00}"
 INVENTORY_RETRIES="${HEADLESS_RUNTIME_SKILL_INVENTORY_RETRIES:-2}"
 SKIP_ENV="${AGENTOPS_SKIP_HEADLESS_RUNTIME_SKILLS:-0}"
-CLAUDE_STRICT="${HEADLESS_RUNTIME_SKILL_CLAUDE_STRICT:-0}"
 CODEX_STRICT="${HEADLESS_RUNTIME_SKILL_CODEX_STRICT:-0}"
-CLAUDE_USED_FALLBACK=0
 CODEX_USED_FALLBACK=0
 
 print_runtime_proof_matrix() {
     cat <<'EOF'
 Runtime proof tiers:
-  Claude Code: Tier S via tests/skills/test-runtime-claude-code-smoke.sh; Tier I here when claude/auth are available; Tier E opt-in only.
+  Claude Code: Tier S via tests/skills/test-runtime-claude-code-smoke.sh; Tier I here is non-print load-check only.
   Codex: Tier S via tests/skills/test-runtime-codex-smoke.sh; Tier I here when codex/auth are available; Tier E opt-in only.
   Cursor: Tier S via tests/skills/test-runtime-cursor-smoke.sh; Tier I not implemented; Tier E not implemented.
   OpenCode: Tier S via tests/skills/test-runtime-opencode-smoke.sh; Tier I not implemented; Tier E not implemented.
@@ -33,9 +30,9 @@ usage() {
     cat <<'EOF'
 validate-headless-runtime-skills.sh
 
-Open fresh headless Claude and/or Codex sessions, ask each runtime to return the
-visible AgentOps skill inventory as JSON, then compare that inventory against
-the repo skill definitions.
+Validate Claude Code and/or Codex runtime skill loading. Claude Code is checked
+with non-print plugin-load smoke only; Codex performs the headless inventory
+comparison against the repo skill definitions.
 
 Options:
   --runtime <all|claude|codex>  Which runtime(s) to validate (default: all)
@@ -45,12 +42,11 @@ Options:
   --codex-bin <path>            Codex CLI binary (default: codex)
   --codex-profile <name>        Codex profile for headless exec (default: none)
   --timeout <seconds>           Per-runtime timeout (default: 120)
-  --max-budget-usd <amount>     Claude budget cap (default: 2.00)
+  --max-budget-usd <amount>     Accepted for old callers; ignored (Claude print is forbidden)
   --help                        Show this help
 
 Environment:
   AGENTOPS_SKIP_HEADLESS_RUNTIME_SKILLS=1  Skip the validation entirely
-  HEADLESS_RUNTIME_SKILL_CLAUDE_STRICT=1   Fail when Claude inventory cannot be collected
   HEADLESS_RUNTIME_SKILL_CODEX_STRICT=1    Fail when Codex inventory cannot be collected
   HEADLESS_RUNTIME_SKILL_INVENTORY_RETRIES Number of inventory compare attempts (default: 2)
   HEADLESS_RUNTIME_SOURCE_CODEX_HOME=/path Reuse auth.json from a real Codex home
@@ -88,7 +84,6 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --max-budget-usd)
-            MAX_BUDGET_USD="${2:-}"
             shift 2
             ;;
         -h|--help)
@@ -137,9 +132,7 @@ if [[ -z "$WORKDIR" ]]; then
 fi
 mkdir -p "$WORKDIR"
 
-EXPECTED_CLAUDE_JSON="$TMP_DIR/expected-claude.json"
 EXPECTED_CODEX_JSON="$TMP_DIR/expected-codex.json"
-ACTUAL_CLAUDE_JSON="$TMP_DIR/actual-claude.json"
 ACTUAL_CODEX_JSON="$TMP_DIR/actual-codex.json"
 CODEX_STREAM_JSON="$TMP_DIR/codex-stream.jsonl"
 CODEX_HOME_ROOT="$TMP_DIR/codex-home"
@@ -225,33 +218,6 @@ for skill_file in sorted(skills_root.glob("*/SKILL.md")):
 
 out_file.write_text(json.dumps(inventory, indent=2) + "\n")
 PY
-}
-
-claude_has_openai_docs_mcp() {
-    local settings_path="${CLAUDE_SETTINGS_PATH:-$HOME/.claude/settings.json}"
-    [[ -f "$settings_path" ]] || return 1
-    grep -q '"openaiDeveloperDocs"' "$settings_path"
-}
-
-prune_optional_claude_skills() {
-    local inventory_file="$1"
-
-    if claude_has_openai_docs_mcp; then
-        return 0
-    fi
-
-    python3 - "$inventory_file" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-path = Path(sys.argv[1])
-inventory = json.loads(path.read_text())
-filtered = [item for item in inventory if item.get("name") != "openai-docs"]
-path.write_text(json.dumps(filtered, indent=2) + "\n")
-PY
-
-    echo "WARN: Claude MCP server openaiDeveloperDocs not configured; excluding openai-docs from expected headless inventory." >&2
 }
 
 extract_json_array() {
@@ -363,12 +329,9 @@ print(f"{runtime}: validated {len(expected_map)} skills")
 PY
 }
 
-CLAUDE_PROMPT="List the available AgentOps skills in this session. Return ONLY a compact JSON array of skill names. Use the exact visible AgentOps skill names and exclude any built-in or non-AgentOps system skills."
 CODEX_PROMPT="List the available AgentOps skills in this session. Return ONLY a compact JSON array of skill names. Use the exact visible AgentOps skill names and exclude built-in OpenAI system skills such as skill-creator, skill-installer, slides, and spreadsheets."
 
-build_expected_inventory "$REPO_ROOT/skills" "$EXPECTED_CLAUDE_JSON"
 build_expected_inventory "$REPO_ROOT/skills-codex" "$EXPECTED_CODEX_JSON"
-prune_optional_claude_skills "$EXPECTED_CLAUDE_JSON"
 
 run_claude_load_check() {
     if timeout 20 "$CLAUDE_BIN" --plugin-dir "$REPO_ROOT" --help >/dev/null 2>&1; then
@@ -380,30 +343,6 @@ run_claude_load_check() {
         return $?
     fi
 
-    return 1
-}
-
-claude_inventory_failed() {
-    local reason="$1"
-    local raw_output="${2:-}"
-
-    echo "WARN: Claude inventory verification failed ($reason)." >&2
-    if [[ -n "$raw_output" && -f "$raw_output" ]]; then
-        sed -n '1,20p' "$raw_output" >&2 || true
-    fi
-
-    if run_claude_load_check; then
-        echo "WARN: Claude load check passed; using load-check fallback instead of verified inventory." >&2
-        if [[ "$CLAUDE_STRICT" == "1" ]]; then
-            echo "FAIL: HEADLESS_RUNTIME_SKILL_CLAUDE_STRICT=1 requires verified Claude inventory." >&2
-            return 1
-        fi
-        CLAUDE_USED_FALLBACK=1
-        echo "claude: load-check fallback passed"
-        return 0
-    fi
-
-    echo "Claude load check failed" >&2
     return 1
 }
 
@@ -437,103 +376,19 @@ codex_inventory_failed() {
     return 1
 }
 
-collect_claude_inventory_once() {
-    local raw_output="$TMP_DIR/claude-stream.jsonl"
-    CLAUDE_USED_FALLBACK=0
-
-    if (
-        cd "$REPO_ROOT"
-        AGENTOPS_HOOKS_DISABLED=1 timeout "$TIMEOUT_SECONDS" \
-            "$CLAUDE_BIN" -p "$CLAUDE_PROMPT" \
-            --plugin-dir "$REPO_ROOT" \
-            --dangerously-skip-permissions \
-            --max-turns 1 \
-            --no-session-persistence \
-            --max-budget-usd "$MAX_BUDGET_USD" \
-            --output-format stream-json \
-            --verbose
-    ) >"$raw_output" 2>&1; then
-        :
-    else
-        local rc=$?
-        claude_inventory_failed "headless command exit $rc" "$raw_output"
-        return $?
-    fi
-
-    if ! python3 - "$raw_output" "$TMP_DIR/claude-output.txt" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-messages = []
-for line in Path(sys.argv[1]).read_text().splitlines():
-    line = line.strip()
-    if not line:
-        continue
-    try:
-        payload = json.loads(line)
-    except json.JSONDecodeError:
-        continue
-    if payload.get("type") != "assistant":
-        continue
-    message = payload.get("message", {})
-    for item in message.get("content", []):
-        if item.get("type") == "text":
-            text = item.get("text", "").strip()
-            if text:
-                messages.append(text)
-
-if not messages:
-    print("No assistant text found in Claude stream-json output", file=sys.stderr)
-    sys.exit(1)
-
-Path(sys.argv[2]).write_text(messages[-1] + "\n")
-PY
-    then
-        claude_inventory_failed "stream-json parse error" "$raw_output"
-        return $?
-    fi
-
-    if ! extract_json_array "$TMP_DIR/claude-output.txt" "$ACTUAL_CLAUDE_JSON"; then
-        claude_inventory_failed "assistant output was not a JSON array" "$TMP_DIR/claude-output.txt"
-        return $?
-    fi
-}
-
 run_claude_validation() {
     if ! command -v "$CLAUDE_BIN" >/dev/null 2>&1; then
         echo "SKIP: Claude CLI not found in PATH"
         return 0
     fi
 
-    local compare_output
-    local attempt=1
-    while (( attempt <= INVENTORY_RETRIES )); do
-        if collect_claude_inventory_once; then
-            :
-        else
-            local rc=$?
-            return "$rc"
-        fi
-        if [[ "$CLAUDE_USED_FALLBACK" == "1" ]]; then
-            return 0
-        fi
+    if run_claude_load_check; then
+        echo "claude: non-print load check passed"
+        return 0
+    fi
 
-        if compare_output="$(compare_inventory "$EXPECTED_CLAUDE_JSON" "$ACTUAL_CLAUDE_JSON" "claude" "names-only-invocable" 2>&1)"; then
-            echo "claude: inventory verified"
-            printf '%s\n' "$compare_output"
-            return 0
-        fi
-
-        if (( attempt == INVENTORY_RETRIES )); then
-            printf '%s\n' "$compare_output" >&2
-            return 1
-        fi
-
-        echo "WARN: Claude inventory mismatch on attempt $attempt/$INVENTORY_RETRIES; retrying." >&2
-        printf '%s\n' "$compare_output" >&2
-        attempt=$((attempt + 1))
-    done
+    echo "Claude non-print load check failed" >&2
+    return 1
 }
 
 run_codex_validation() {
