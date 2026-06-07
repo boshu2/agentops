@@ -67,7 +67,7 @@ Anthropic's Managed Agents (and peers like Cursor and Factory) appear to converg
 | Anthropic Concept | AgentOps Equivalent | Status |
 |---|---|---|
 | **Learning Loop** — memory extraction, dream cycle consolidation, future session context | Knowledge Flywheel — `/retro` → `/forge` → `/harvest` → `ao lookup` / `ao context assemble`, tiered promotion (learning → pattern → rule), plus bounded Dream via `/dream` | Live with bounds. On-demand capture/promotion works, and Dream provides an operator-started compounding lane. GitHub nightly is the public proof harness for the contracts, not the user's private runtime. |
-| **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 165 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Prototype built. `ao flywheel close-loop` now drafts review-only skills from repeated patterns; promotion polish is the remaining gap. |
+| **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 158 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Prototype built. `ao flywheel close-loop` now drafts review-only skills from repeated patterns; promotion polish is the remaining gap. |
 | **Verification Agent** — adversarial AI auditing AI, VERDICT system for human review | Council architecture — `/council`, `/pre-mortem`, `/vibe`, `/post-mortem` with multi-model consensus, prediction tracking. Stage 4 behavioral validation adds holdout scenarios + satisfaction scoring in STEP 1.8. | Live on demand. STEP 1.8 fires automatically inside `/validation` when that skill is invoked. |
 | **Managed Agents Dreaming** (May 2026) — scheduled session review, pattern extraction, memory curation between sessions | `/dream` + `.github/workflows/nightly.yml` proof jobs + substrate-driven scheduling when needed | Live with operator setup. The bounded private Dream lane runs harvest → forge → close-loop → defrag when the operator or substrate starts it. AgentOps itself no longer ships the daemon executor. |
 | **Managed Agents Outcomes** (May 2026) — rubric-driven separate-context grader with iterate-until-pass | Live at three scopes: project — `GOALS.md` (rubric) + `ao goals measure` (each gate runs as separate subprocess; `cli/internal/goals/measure.go:132-164`) + `/evolve` (can iterate a worst-failing gate under operator limits; `skills/evolve/SKILL.md:379-388`); plan — `/pre-mortem` council judges as separate-context graders; code — `/vibe` council judges. An internal council review (2026-05-06) found these capabilities present across rubric authoring, separate-context grading, iterate-until-pass, and pinpoint-what-changed; this is an internal finding, not an audited external-parity claim. | Live at the capability layer. Empirical workbench A/B (2026-05-06): Δ=+0.0000 across 12 cases at v1 difficulty (both legs 12/12) — task difficulty floor exhausted; v2 substrate (realistic agent tasks where the hook layer differentiates) is roadmap. Counter-stat artifact: `evals/workbench/results/2026-05-06-yjzp9-counterstat.json`. |
@@ -176,7 +176,7 @@ The same model used in the README: bookkeeping records the work, the context com
 - `ao lookup` — decay-ranked retrieval for on-demand knowledge
 - `ao context assemble` — phase-scoped context packets
 - `ao compile` — rebuild the knowledge wiki (mine, grow, defrag, lint)
-- 165 skills — reusable context packages across Claude Code, Codex, and OpenCode
+- 158 skills — reusable context packages across Claude Code, Codex, and OpenCode
 - `bash <(curl -fsSL .../install.sh)` — 30 seconds, zero config
 
 #### Layer 3: Validation Gates
@@ -261,7 +261,7 @@ As of 2026-05-10:
 
 - GitHub repo: 341 stars, 33 forks, 2 open issues, last pushed 2026-05-10T03:24:01Z
 - Public surface: GitHub Pages mkdocs site live at boshu2.github.io/agentops/; doctrine site live at 12factoragentops.com
-- Distribution/runtime reach: 165 shared skills, 165 checked-in Codex artifacts, and 31 Codex overrides. `/validate` and `/curate` are additive in this train; legacy validation and mining skills remain until their shim/retirement gates are resolved.
+- Distribution/runtime reach: 158 shared skills, 158 checked-in Codex artifacts, and 27 Codex overrides. `/validate` and `/curate` are additive in this train; legacy validation and mining skills remain until their shim/retirement gates are resolved.
 
 **Measured operational proof:**
 

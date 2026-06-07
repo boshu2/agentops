@@ -32,7 +32,7 @@ The core execution model: spawn parallel agents (chaos), validate their output w
 ## C
 
 ### Codex Team
-A skill (`/codex-team`) that spawns parallel Codex (OpenAI) execution agents orchestrated by Claude, enabling cross-vendor parallel task execution. [Full documentation](../skills/codex-team/SKILL.md)
+Parallel Codex (OpenAI) execution agents orchestrated by Claude for cross-vendor parallel task execution — folded into `/swarm` (the retired `/codex-team`, cp-bi2). [Full documentation](../skills/swarm/SKILL.md)
 
 ### Compact / PreCompact
 Runtime event fired when an agent prunes its conversation history. AgentOps 3.0 is hookless — capture context before compaction with `ao handoff` / `ao inject` rather than a runtime hook.
@@ -150,7 +150,7 @@ A mechanism that locks progress forward so it cannot regress. Once a gate is pas
 The first phase of the RPI lifecycle. Deep codebase exploration using Explore agents that produce structured findings in `.agents/research/`. [Full documentation](../skills/research/SKILL.md)
 
 ### Retro
-A skill (`/retro`) that extracts learnings from completed work — decisions made, patterns discovered, and failures encountered — and feeds them into the knowledge flywheel. Learnings are scored for specificity, actionability, and novelty. [Full documentation](../skills/retro/SKILL.md)
+Quick-capture of learnings from completed work — decisions made, patterns discovered, and failures encountered — fed into the knowledge flywheel and scored for specificity, actionability, and novelty. Folded into `/post-mortem --quick` (the retired `/retro`, cp-bzj). [Full documentation](../skills/post-mortem/SKILL.md)
 
 ### RPI (Research-Plan-Implement)
 The historical name for AgentOps' full lifecycle workflow. In current runtime terms, `/rpi` orchestrates **Discovery -> Implementation -> Validation** while `ao rpi phased` enforces fresh context windows between those phases. The older acronym persists in product language and command names, but validation and loop closure are now first-class parts of the executable lifecycle. [Full documentation](ARCHITECTURE.md#the-phased-lifecycle)
@@ -164,7 +164,7 @@ One of the three named stages inside an RPI run: **Discovery**, **Implementation
 The full arc of a coding-agent session: `SessionStart` → many `UserPromptSubmit` / `PreToolUse` / `PostToolUse` cycles → `Stop` → `SessionEnd`. AgentOps 3.0 is hookless — it works the lifecycle through skills + the `ao` CLI rather than attaching runtime hooks. See [`workflows/session-lifecycle.md`](workflows/session-lifecycle.md).
 
 ### Skill
-A self-contained capability defined by a `SKILL.md` file with YAML frontmatter. Skills are the primary unit of functionality in AgentOps — each one has triggers, instructions, and optional reference docs loaded just-in-time. AgentOps currently ships 165 shared skills, with runtime-specific artifacts maintained alongside them. [Full documentation](SKILLS.md)
+A self-contained capability defined by a `SKILL.md` file with YAML frontmatter. Skills are the primary unit of functionality in AgentOps — each one has triggers, instructions, and optional reference docs loaded just-in-time. AgentOps currently ships 158 shared skills, with runtime-specific artifacts maintained alongside them. [Full documentation](SKILLS.md)
 
 ### Swarm
 A skill (`/swarm`) that spawns parallel worker agents with fresh context. Each wave gets a new team; the lead validates and commits. Workers never commit directly. [Full documentation](../skills/swarm/SKILL.md)

@@ -33,7 +33,7 @@ markdown wiki. Inspired by [Karpathy's LLM Knowledge Bases](https://gist.github.
 
 ## What This Skill Does
 
-The knowledge flywheel captures signal reactively (via `/retro`, `/post-mortem`,
+The knowledge flywheel captures signal reactively (via `/post-mortem`,
 `/forge`). `/compile` closes the loop by:
 
 1. **Mining** unextracted signal from git and `.agents/` (existing)

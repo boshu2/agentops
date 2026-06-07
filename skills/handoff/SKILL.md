@@ -357,5 +357,4 @@ If ao CLI not available:
 
 ## See Also
 
-- `skills/post-mortem/SKILL.md` — Full validation + knowledge lifecycle (council + extraction + activation + retirement)
-- `skills/retro/SKILL.md` — Quick-capture a learning
+- `skills/post-mortem/SKILL.md` — Full validation + knowledge lifecycle (council + extraction + activation + retirement); `--quick` quick-captures a single learning (folded the retired `/retro`)

@@ -40,7 +40,7 @@ output_contract: code changes across wave execution, .agents/swarm/results/*.jso
 ---
 # Crank Skill
 
-> **Quick Ref:** Autonomous epic execution. `/swarm` for each wave with runtime-native spawning. Output: closed issues + phase-2 handoff for `/validation`.
+> **Quick Ref:** Autonomous epic execution. `/swarm` for each wave with runtime-native spawning. Output: closed issues + phase-2 handoff for `/validate`.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
@@ -124,7 +124,7 @@ Tell the user:
 3. Total iterations used (of 50 max)
 4. Final vibe results
 5. Flywheel status (if ao available)
-6. Suggest running `/validation` to complete closeout and promote learnings
+6. Suggest running `/validate` to complete closeout and promote learnings
 
 **Output completion marker:**
 ```

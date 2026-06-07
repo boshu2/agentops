@@ -220,7 +220,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (157)
+### User-Facing Skills (150)
 
 **Judgment:**
 
@@ -245,7 +245,6 @@ These are how skills chain in practice:
 | **implement** | execution | Full lifecycle for one task |
 | **crank** | execution | Autonomous epic execution — parallel waves |
 | **discovery** | meta | Discovery phase orchestrator — brainstorm → search → research → plan → pre-mortem |
-| **validation** | meta | Validation phase orchestrator — vibe → post-mortem → retro → forge |
 | **swarm** | execution | Parallelize any skill — fresh context per agent |
 | **using-ntm** | execution | Run AgentOps loops out of session on an NTM tmux swarm — the NTM leg of the substrate |
 | **rpi** | meta | Thin wrapper: /discovery → /crank → /validation with complexity classification and loop |
@@ -274,9 +273,6 @@ These are how skills chain in practice:
 | **compile** | knowledge | Active knowledge intelligence — Mine → Grow → Defrag cycle |
 | **domain** | knowledge | Shared vocabulary for human-AI software building (tracer-bullet shape; loaded JIT when terms like vertical slice, tracer bullet, primitive need a canonical definition) |
 | **curate** | knowledge | Canonical miner role — mine transcripts, `.agents/`, bd, and git for skill diffs, bd updates, and rare wiki entries |
-| **harvest** | knowledge | Cross-rig knowledge consolidation — sweep, dedup, promote |
-| **knowledge-activation** | knowledge | Outer-loop corpus operationalization — beliefs, playbooks, briefings, and gap surfaces |
-| **retro** | knowledge | Quick-capture wrapper (full retro → /post-mortem) |
 | **trace** | knowledge | Trace design decisions through history |
 
 **Product & Release:**
@@ -307,14 +303,12 @@ These are how skills chain in practice:
 |-------|------|-------------|
 | **pr-research** | contribute | Upstream repository research before contribution |
 | **pr-implement** | contribute | Fork-based implementation for external PRs |
-| **pr-validate** | contribute | PR-specific isolation and scope validation |
 | **pr-prep** | contribute | PR preparation and structured PR body generation |
 
 **Cross-Vendor & Meta:**
 
 | Skill | Tier | Description |
 |-------|------|-------------|
-| **codex-team** | cross-vendor | Spawn parallel Codex execution agents |
 | **converter** | cross-vendor | Cross-platform skill converter (Codex, Cursor) |
 | **reverse-engineer-rpi** | execution | Reverse-engineer a product into feature catalog + code map + specs |
 | **heal-skill** | meta | Detect and fix skill hygiene issues |

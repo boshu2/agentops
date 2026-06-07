@@ -34,10 +34,8 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `pre-mortem` — Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
 - `product` — Create or refine PRODUCT.md.
 - `ratchet` — Record Brownian Ratchet gates.
-- `retro` — Capture a session learning.
 - `shared` — Shared AgentOps skill contracts.
 - `standards` — Provide repo coding standards.
-- `validation` — Run post-implementation validation.
 - `vibe` — Validate code readiness. Use when: doing a quick readiness or sanity check that code is ready to commit or ship, short of a full review.
 - `work-contract-portability` — Use when designing agent work contracts, handoffs, evidence, and role boundaries across runtimes. Triggers:
 - `worktree-branch-rationalization` — Use when rationalizing git worktrees and branches into a canonical line without losing useful work. Triggers:
@@ -59,7 +57,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `performance-profile-triage` — Use when investigating slowness with baselines, profiler evidence, and ranked bottlenecks. Triggers:
 - `pr-implement` — Implement a scoped OSS PR.
 - `pr-prep` — Prepare PR commits and body.
-- `pr-validate` — Validate PR scope and quality.
 - `push` — Validate, commit, and push.
 - `quickstart` — Show AgentOps next action.
 - `recover` — Recover session context.
@@ -80,8 +77,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `deps` — Audit dependency risks and updates.
 - `pr-research` — Research an upstream repo.
 - `scope` — Hard-block edits outside declared frozen directories via PreToolUse hook.
-- `security` — Run repository security scans.
-- `security-suite` — Run composable security analysis.
+- `security` — Run repository security scans and composable security analysis.
 
 ### supporting
 
@@ -110,7 +106,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `codebase-briefing-report` — Use when producing a shareable architecture, module, metrics, and health report for a codebase. Triggers:
 - `codebase-risk-audit` — Use when auditing codebase risks with evidence and prioritized remediation. Triggers:
 - `codex-sandbox-evidence` — Use when running codex exec in a least-privilege sandbox with machine-checkable proof. Triggers:
-- `codex-team` — Coordinate multiple Codex agents.
 - `compile` — Compile .agents knowledge wiki.
 - `concurrency-deadlock-remediation` — Use when finding and fixing deadlocks with lock ordering, reproduction, timeouts, or lock-free alternatives. Triggers:
 - `contract-conformance-testing` — Use when building conformance tests from specs, contracts, examples, or compatibility matrices. Triggers:
@@ -128,11 +123,9 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `gh-triage-ru` — GitHub issue/PR triage via ru and gh. Use when processing issues, closing PRs (no-contributions policy), or bulk triage. Independent verification required.
 - `golden-artifact-testing` — Use when designing or repairing golden-file, snapshot, fixture, or generated-artifact tests. Triggers:
 - `handoff` — Write compact session handoffs.
-- `harvest` — Promote .agents knowledge.
 - `heal-skill` — Repair skill hygiene.
 - `implementation-pattern-mining` — Use when mining repeated codebase patterns and turning them into reusable implementation guidance. Triggers:
 - `installer-quality-audit` — Use when auditing install, setup, bootstrap, or update scripts for safe, idempotent behavior. Triggers:
-- `knowledge-activation` — Activate mature .agents knowledge.
 - `layered-defect-hunt` — Use when running systematic multi-pass bug hunting across correctness, edges, concurrency, and failures. Triggers:
 - `live-service-e2e-testing` — Use when building real-service end-to-end tests with fixtures, cleanup, rate limits, and evidence. Triggers:
 - `metamorphic-test-design` — Use when designing metamorphic tests for oracle-poor behavior using invariants and input relations. Triggers:
@@ -253,7 +246,6 @@ graph LR
   post-mortem -- "shared-kernel" --> standards
   pr-implement -- "customer-of" --> crank
   pr-prep -- "customer-of" --> domain
-  pr-validate -- "customer-of" --> validation
   pre-mortem -- "shared-kernel" --> standards
   product -- "shared-kernel" --> standards
   production-placeholder-audit -- "supplier-to" --> review
@@ -264,7 +256,6 @@ graph LR
   ratchet -- "shared-kernel" --> standards
   red-team -- "supplier-to" --> vibe
   release -- "supplier-to" --> ship-loop
-  retro -- "shared-kernel" --> standards
   review -- "customer-of" --> validation
   rpi -- "customer-of" --> crank
   rpi -- "customer-of" --> discovery
@@ -274,7 +265,6 @@ graph LR
   scenario -- "supplier-to" --> validation
   scope -- "supplier-to" --> domain
   security -- "supplier-to" --> vibe
-  security-suite -- "supplier-to" --> vibe
   session-bootstrap -- "customer-of" --> AGENTS-CI.md
   session-bootstrap -- "customer-of" --> AGENTS-CODEX.md
   session-bootstrap -- "customer-of" --> AGENTS-RUNTIME.md
@@ -291,7 +281,6 @@ graph LR
   trace -- "customer-of" --> provenance
   using-ntm -- "customer-of" --> swarm
   validate -- "customer-of" --> validation
-  validation -- "shared-kernel" --> standards
   vibe -- "shared-kernel" --> standards
   workflow-builder -- "customer-of" --> automation-shape-routing
   workflow-builder -- "shared-kernel" --> operating-loop-workflow
@@ -374,7 +363,6 @@ graph LR
 | `codex-mcp-plugins` | produces | codex-config |
 | `codex-sandbox-evidence` | consumes | codex-exec |
 | `codex-sandbox-evidence` | produces | codex-evidence-jsonl |
-| `codex-team` | produces | .agents/swarm/results/*.json |
 | `compile` | produces | .agents/compiled/lint-report.md |
 | `complexity` | consumes | doc |
 | `complexity` | consumes | standards |
@@ -451,7 +439,6 @@ graph LR
 | `fuzz-test-design` | produces | regression-test |
 | `goals` | produces | result.json |
 | `handoff` | produces | .agents/research/*.md |
-| `harvest` | produces | .agents/research/*.md |
 | `idea-option-forge` | consumes | existing-tracked-work |
 | `idea-option-forge` | produces | tracked-issues-with-deps-and-tests |
 | `idea-option-forge` | produces | vetted-idea-backlog |
@@ -514,8 +501,6 @@ graph LR
 | `pr-prep` | produces | git-changes |
 | `pr-research` | consumes | external-api |
 | `pr-research` | produces | result.json |
-| `pr-validate` | consumes | validation |
-| `pr-validate` | produces | result.json |
 | `pre-mortem` | consumes | standards |
 | `pre-mortem` | produces | result.json |
 | `pre-mortem` | produces | verdict.json |
@@ -557,8 +542,6 @@ graph LR
 | `research` | consumes | repo-context |
 | `research` | produces | .agents/research/*.md |
 | `research` | produces | result.json |
-| `retro` | consumes | standards |
-| `retro` | produces | result.json |
 | `reverse-engineer-rpi` | produces | .agents/research/*.md |
 | `review` | consumes | github-pr |
 | `review` | consumes | validation |
@@ -603,8 +586,6 @@ graph LR
 | `scope` | produces | filesystem-gate |
 | `security` | consumes | repo-context |
 | `security` | produces | security-report.json |
-| `security-suite` | consumes | repo-context |
-| `security-suite` | produces | security-report.json |
 | `session-bootstrap` | consumes | bd |
 | `session-bootstrap` | consumes | onboard |
 | `session-bootstrap` | produces | json |
@@ -636,14 +617,6 @@ graph LR
 | `using-ntm` | produces | documentation |
 | `validate` | consumes | validation |
 | `validate` | produces | result.json |
-| `validation` | consumes | forge |
-| `validation` | consumes | post-mortem |
-| `validation` | consumes | retro |
-| `validation` | consumes | shared |
-| `validation` | consumes | vibe |
-| `validation` | produces | .agents/research/*.md |
-| `validation` | produces | result.json |
-| `validation` | produces | verdict.json |
 | `vibe` | consumes | standards |
 | `vibe` | produces | result.json |
 | `vibe` | produces | verdict.json |

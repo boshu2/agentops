@@ -324,5 +324,5 @@ Merge council findings into the review document under a "## Council Findings" se
 - [council](../council/SKILL.md) — Multi-model consensus council
 - [standards](../standards/SKILL.md) — Language-specific coding conventions
 - [bug-hunt](../bug-hunt/SKILL.md) — Deep bug investigation
-- [pr-validate](../pr-validate/SKILL.md) — PR scope and isolation checks
+- [validate --mode=pr](../validate/SKILL.md) — PR scope and isolation checks
 - [references/audit-and-mock-sweeps.md](references/audit-and-mock-sweeps.md)

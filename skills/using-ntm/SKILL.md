@@ -71,7 +71,7 @@ dispatch and tend AgentOps loops on an NTM swarm.
    substrate-side steps duplicates the loop shape and pits the substrate's retry
    machinery against the ratchet rules. Dispatch the skill; don't reimplement it.
 2. **Agents inherit the skills via overlay.** Each pane is a Claude or Codex
-   agent with the AgentOps skills installed, so `rpi`, `evolve`, `/validation`,
+   agent with the AgentOps skills installed, so `rpi`, `evolve`, `/validate`,
    etc. resolve in-pane.
 3. **The bead queue is the work source.** A lead (operator or a lead pane) runs
    `bd ready`, picks the next bead, and dispatches it to a free worker pane.

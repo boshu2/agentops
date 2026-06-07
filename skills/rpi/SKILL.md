@@ -50,7 +50,7 @@ output_contract: .agents/rpi/YYYY-MM-DD-*.md
 
 # /rpi - Full Lifecycle Orchestrator
 
-> Quick ref: `/discovery` -> `/crank` -> `/validation`, then report.
+> Quick ref: `/discovery` -> `/crank` -> `/validate`, then report.
 
 **Execute this workflow. Do not only describe it.** RPI is autonomous unless
 `--interactive` is set. The user touchpoint is after validation, or after a
@@ -64,7 +64,7 @@ Codex direct checks before declaring a source-level regression.
 
 ## Loop position
 
-`/rpi` is the orchestrator across **every move** of the [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence + learning capture. It delegates each move to the skill that owns it (`/discovery`, `/plan`, `/crank`, `/validation`, `/forge`/`/retro`), and enforces three loop-level invariants:
+`/rpi` is the orchestrator across **every move** of the [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence + learning capture. It delegates each move to the skill that owns it (`/discovery`, `/plan`, `/crank`, `/validate`, `/forge`/`/post-mortem`), and enforces three loop-level invariants:
 
 - **No move-skipping.** Strict delegation is on by default; phases never compress, and validation cannot be skipped. The lifecycle objective is preserved across the whole loop.
 - **The first failing test is the bead's contract.** With `--test-first` on (the default), `/crank` is invoked with the TDD-per-slice discipline; `--no-test-first` is an explicit opt-out, not a fast path.
@@ -151,11 +151,11 @@ Enter at the routed phase and run every phase after it.
    `--no-test-first` through. On DONE, record `ao ratchet record implement
    2>/dev/null || true` and continue. On PARTIAL or BLOCKED, retry the same
    objective up to 3 total attempts.
-3. **Validation:** invoke `/validation <epic-id> --complexity=<level>` when an
-   epic exists; otherwise invoke `/validation --complexity=<level>`, directly
+3. **Validation:** invoke `/validate <epic-id> --complexity=<level>` when an
+   epic exists; otherwise invoke `/validate --complexity=<level>`, directly
    or through phase-isolated skill transport. Add `--strict-surfaces` when
    `--quality` is set. On FAIL, extract findings, re-run `/crank` on the same
-   objective, then re-run `/validation`, up to 3 total validation attempts. On
+   objective, then re-run `/validate`, up to 3 total validation attempts. On
    DONE, record `ao ratchet record vibe 2>/dev/null || true`.
 4. **Report:** summarize phase verdicts and epic status using
    [references/report-template.md](references/report-template.md). With
@@ -196,7 +196,7 @@ schemas and archive paths.
 |------|---------|---------|
 | `--from=<phase>` | discovery | Start at discovery, implementation, or validation |
 | `--discovery-artifact=<path>` | unset | With implementation start, convert an existing artifact into the handoff packet |
-| `--interactive` | off | Human gates in discovery/validation |
+| `--interactive` | off | Human gates in discovery/validate |
 | `--auto` | on | Fully autonomous default |
 | `--loop --max-cycles=<n>` | off / 3 | Iterate when validation fails |
 | `--spawn-next` | off | Surface follow-up work after reporting |

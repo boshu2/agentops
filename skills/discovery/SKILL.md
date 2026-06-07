@@ -48,7 +48,7 @@ output_contract: .agents/plans/YYYY-MM-DD-*.md, beads, epic-id
 > **Loop position:** move 1 (shape intent as BDD) plus the seed for move 3
 > (slice candidates) of the [operating loop](../../docs/architecture/operating-loop.md).
 > Discovery turns a goal plus delegated child artifacts into one dense execution
-> packet for `/crank` and `/validation`.
+> packet for `/crank` and `/validate`.
 
 ## Strict Delegation Contract (default)
 

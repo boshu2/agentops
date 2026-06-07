@@ -249,7 +249,7 @@ ao flywheel status --json       # machine-readable
 | Verdict | Action |
 |---------|--------|
 | **decaying** | Run `/compile` cycle, archive stale artifacts, increase citation via `ao lookup` |
-| **accumulating** | Review orphaned research (`/research`→`/retro` pipeline), improve forge quality |
+| **accumulating** | Review orphaned research (`/research`→`/post-mortem --quick` pipeline), improve forge quality |
 | **compounding** | Maintain cadence. Consider capturing baselines (`ao metrics baseline`) for trend tracking |
 
 ## Cache Eviction
@@ -274,8 +274,8 @@ Phase 4 (soc-ytpq) governance for `~/.agents/learnings/` — all advisory, none 
 ## Troubleshooting
 | Problem | Cause | Solution |
 |---------|-------|----------|
-| All pool counts zero | `.agents/` directory missing or empty | Run `/post-mortem` or `/retro` to seed knowledge pools |
-| Velocity always zero | No recent extractions (last 7 days) | Run `/retro` or `/post-mortem` to extract and index learnings |
+| All pool counts zero | `.agents/` directory missing or empty | Run `/post-mortem` (or `--quick`) to seed knowledge pools |
+| Velocity always zero | No recent extractions (last 7 days) | Run `/post-mortem` (or `--quick`) to extract and index learnings |
 | "ao CLI not available" | ao command not installed or not in PATH | Install ao CLI or use manual pool counting fallback |
 | Stale artifacts >50% | Long time since last session or inactive repo | Run `/provenance --stale` to audit and archive old artifacts |
 

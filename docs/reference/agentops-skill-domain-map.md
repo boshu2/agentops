@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-165 checked-in AgentOps skills before any broad rewrite, using current
+158 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 165 |
+| Skills audited | 158 |
 | Domains classified | 5 of 5 (BC1-BC5) |
-| Dispositions assigned | 165 / 165 |
+| Dispositions assigned | 158 / 158 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -100,7 +100,6 @@ Disposition meanings:
 | `codex-goals` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `codex-mcp-plugins` | BC5 Runtime | driven-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `codex-sandbox-evidence` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `codex-team` | BC5 Runtime | supporting | update | Runtime coordination adapter; align with worktree/wave rules. |
 | `compile` | BC1 Corpus | supporting | refactor | Corpus compiler is core; align read/write flows to Corpus ports. |
 | `complexity` | BC2 Validation | domain | update | Generator for refactor work; add self-test and threshold evidence. |
 | `concurrency-deadlock-remediation` | BC2 Validation | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
@@ -131,14 +130,12 @@ Disposition meanings:
 | `goals` | BC3 Loop | domain | keep | Fitness source; use as evolution selection input. |
 | `golden-artifact-testing` | BC2 Validation | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `handoff` | BC1 Corpus | supporting | update | Session continuity artifact; clarify promotion vs local-only notes. |
-| `harvest` | BC1 Corpus | supporting | update | Promotion adapter; tie to CorpusWriter/Citation behavior. |
 | `heal-skill` | BC4 Factory | supporting | update | Skill hygiene gate; should consume the new domain map. |
 | `idea-option-forge` | BC2 Validation | domain | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `implement` | BC3 Loop | driving-adapter | update | Slice executor; enforce first-failing-test language. |
 | `implementation-pattern-mining` | BC2 Validation | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `inject` | BC1 Corpus | driving-adapter | refactor | Context injection should be explicit CorpusReader adapter use. |
 | `installer-quality-audit` | BC2 Validation | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `knowledge-activation` | BC1 Corpus | supporting | keep | Outer-loop operationalization (beliefs/playbooks/briefings) — write/promote surface downstream of inject/compile/flywheel, not a duplicate (resolved KEEP 2026-05-24). |
 | `layered-defect-hunt` | BC2 Validation | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `legacy-codebase-recon` | BC2 Validation | generic | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `live-service-e2e-testing` | BC2 Validation | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
@@ -160,7 +157,6 @@ Disposition meanings:
 | `pr-implement` | BC5 Runtime | driving-adapter | update | GitHub PR implementation adapter; map to loop slices. |
 | `pr-prep` | BC5 Runtime | driving-adapter | update | PR publication adapter; align to evidence and release discipline. |
 | `pr-research` | BC5 Runtime | driven-adapter | update | Upstream repo research adapter; add clean source/citation self-test. |
-| `pr-validate` | BC5 Runtime | driving-adapter | update | PR validation adapter; should reuse BC2 validation contracts. |
 | `pre-mortem` | BC2 Validation | domain | update | Plan risk gate; add scenario/verdict self-test. |
 | `process-triage` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `product` | BC3 Loop | domain | keep | Product intent source; important for loop work selection. |
@@ -181,7 +177,6 @@ Disposition meanings:
 | `repository-hygiene-sweep` | BC4 Factory | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `research` | BC1 Corpus | driving-adapter | update | Knowledge acquisition entrypoint; add source/citation self-test. |
 | `research-software` | BC1 Corpus | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `retro` | BC1 Corpus | domain | update | Learning capture kernel; align to promotion ratchet. |
 | `reverse-engineer-rpi` | BC1 Corpus | supporting | update | External product-spec extraction; ensure clean-room rules stay explicit. |
 | `review` | BC2 Validation | driving-adapter | update | Human-facing review gate; align to validator output contract. |
 | `ripgrep-search-discipline` | BC1 Corpus | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
@@ -197,8 +192,7 @@ Disposition meanings:
 | `scaffold` | BC4 Factory | supporting | update | Code/artifact scaffolder; add non-goal and validation examples. |
 | `scenario` | BC2 Validation | supporting | update | Holdout scenario manager; important for behavioral evals. |
 | `scope` | BC5 Runtime | driven-adapter | keep | Runtime filesystem gate; hard boundary skill. |
-| `security` | BC2 Validation | driven-adapter | keep | Continuous release-gate driver (security-gate.sh); distinct cadence role from security-suite's composable primitive library (resolved KEEP 2026-05-24). |
-| `security-suite` | BC2 Validation | driven-adapter | update | Composable scanner; likely canonical security validation lane. |
+| `security` | BC2 Validation | driven-adapter | keep | Canonical security skill: continuous release-gate driver (security-gate.sh) PLUS the composable primitive library (security_suite.py / prompt_redteam.py) collapsed in from security-suite (cp-qqq, 2026-06-07). |
 | `session-bootstrap` | BC5 Runtime | driving-adapter | keep | Universal init prompt; the fungibility contract for any-agent spawn (soc-vuu6.25). |
 | `shared` | BC4 Factory | domain | keep | Shared contracts; avoid broad edits. |
 | `ship-loop` | BC5 Runtime | driving-adapter | keep | Bot-paired internal-ship PR cycle; distinct from pr-* contribute family. |
@@ -218,7 +212,6 @@ Disposition meanings:
 | `using-agentops` | BC4 Factory | generic | update | Operator education; align to 3.0 first-value path. |
 | `using-ntm` | BC4 Factory | supporting | keep | Shippable AgentOps-scoped guide for the NTM leg of the out-of-session substrate (NTM+MCP+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill.. |
 | `validate` | BC2 Validation | driving-adapter | keep | Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24). |
-| `validation` | BC2 Validation | domain | update | Canonical post-implementation validation; strengthen self-test first. |
 | `vibe` | BC2 Validation | domain | update | Code-readiness validator; add self-test and tighten result contract. |
 | `vibing-with-ntm` | BC4 Factory | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `work-contract-portability` | BC1 Corpus | domain | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |

@@ -73,7 +73,7 @@ here so no capability is lost:
   self-grade that is stamped as *waived, not independently validated*. Apply the
   [Completion-Claim Kernel](../shared/validation-contract.md#completion-claim-kernel)
   before accepting any DONE/closed/green claim. For epic-scope close-out this mode may
-  delegate to `/vibe`, `/post-mortem`, `/retro`, and `/forge` rather than inlining them.
+  delegate to `/vibe`, `/post-mortem`, and `/forge` rather than inlining them.
 - **`--mode=pr` (was `/pr-validate`) — submission-readiness checks.** In addition to the
   diff/acceptance verdict, run, in order: (1) **upstream alignment FIRST** (BLOCKING —
   `git rev-list --count HEAD..origin/main`; fail if many commits behind or merge would

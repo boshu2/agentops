@@ -44,6 +44,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `findings` | persistent | scripts, skills | promotion-inbox | Mined findings awaiting promotion |
 | `git` | persistent | cli | git-cache | Git-derived state cached for the runtime |
 | `handoffs` | persistent | cli | durable-replay-artifact | Content-addressed handoff artifacts keyed by sha256 for job replay |
+| `harvest` | persistent | cli | promotion-artifact | Cross-rig promotion sweep output (`.agents/harvest/latest.json`) written by `ao harvest`; formerly covered by the retired `harvest` skill (folded into `curate --mode=harvest`, cp-dxa) |
 | `holdout` | persistent | cli, skills | scenario-store | Holdout scenarios stored outside the codebase view |
 | `INDEX.md` | persistent | operators, scripts | corpus-index | Human-readable index for tracked `.agents/` knowledge surfaces |
 | `knowledge` | persistent | cli | promoted-knowledge | Promoted knowledge artifacts |
@@ -71,6 +72,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `quarantine` | rolling | cli | failure-quarantine | Failed worker payloads and retry/quarantine evidence for operator review |
 | `reconcile` | persistent | scripts, operators | reconciliation-artifact | Reconciliation engine artifacts: observation log aggregated from `factory-claim-ledger-strict (advisory)` CI runs, promotion-decision template, and related Wave-1E gate evidence (epic soc-e4ulx) |
 | `releases` | rolling | scripts | release-evidence | Local CI release evidence |
+| `retro` | persistent | cli | retro-artifact | Quick-capture learning index (`.agents/retro/index.jsonl`) written by the ratchet/index/init CLI; formerly covered by the retired `retro` skill (folded into `post-mortem --quick`, cp-bzj) |
 | `retros` | persistent | skills | retro-artifact | Retrospectives |
 | `schedule` | persistent | cli, scripts | schedule-store | Legacy schedule entries from the retired in-tree scheduler; out-of-session scheduling is now the substrate's job (NTM / MCP / managed-agents) |
 | `schedule.yaml.example` | persistent | scripts, operators | schedule-example | Checked-in example schedule retained for the legacy/registry reader; out-of-session scheduling runs on the substrate (NTM / MCP / managed-agents) |
@@ -88,6 +90,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `tests` | regenerated | scripts, tests | test-output | Official local/CI test artifacts, including contract-canary run records |
 | `triage` | persistent | operators, scripts | triage-artifact | Tracked triage packets and operator review notes not owned by a single active skill |
 | `topics` | rolling | cli | topic-packet-cache | Topic-packets surface inputs |
+| `validation` | persistent | scripts | proof-evidence | Local pre-push proof file (`.agents/validation/pre-push-success.tsv`) written by `scripts/pre-push-proof.sh`; formerly covered by the retired `validation` skill (folded into `validate --mode=post-impl`, cp-ki8) |
 | `wiki` | regenerated | cli | generated-output | Wiki source artifacts written by Dream / forge pipelines (sources/) |
 
 ### Skill-owned subdirs
@@ -115,6 +118,7 @@ evals
 findings
 git
 handoffs
+harvest
 holdout
 knowledge
 learnings
@@ -140,6 +144,7 @@ provenance
 quarantine
 reconcile
 releases
+retro
 retros
 schedule
 schedules
@@ -155,6 +160,7 @@ tasks
 teams
 tests
 topics
+validation
 wiki
 <!-- END agents-write-surfaces-allowlist -->
 

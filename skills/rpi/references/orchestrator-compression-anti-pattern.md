@@ -75,7 +75,7 @@ rationalization is the smell.
 
 - `skills/rpi/SKILL.md` — the phased contract this anti-pattern violates
 - `skills/discovery/SKILL.md`
-- `skills/validation/SKILL.md`
+- `skills/validate/SKILL.md`
 - `skills/shared/references/strict-delegation-contract.md` (if present)
 - `skills/evolve/references/long-loop-discipline.md` — the same
   disk-truth principle applied to long-running loops; compression is
