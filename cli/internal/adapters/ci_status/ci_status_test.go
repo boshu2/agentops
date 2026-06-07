@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, tdd]
-package main
+package cistatus
 
 import (
 	"context"

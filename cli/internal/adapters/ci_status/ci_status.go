@@ -1,5 +1,6 @@
 // practices: [hexagonal-architecture, ddd-bounded-context]
-package main
+// Package cistatus adapts GitHub Actions run history to ports.CIStatusPort.
+package cistatus
 
 import (
 	"bytes"
@@ -31,6 +32,11 @@ type productionCIStatus struct {
 
 func newProductionCIStatus() *productionCIStatus {
 	return &productionCIStatus{runGH: defaultRunGH}
+}
+
+// NewProduction returns a GitHub CLI-backed CIStatusPort adapter.
+func NewProduction() ports.CIStatusPort {
+	return newProductionCIStatus()
 }
 
 // defaultRunGH is the real gh-invocation. exposed for testing as a

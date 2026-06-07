@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	cistatus "github.com/boshu2/agentops/cli/internal/adapters/ci_status"
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
@@ -112,7 +113,7 @@ func ciStatusRun(ctx context.Context, opts ciStatusOptions) error {
 // ciStatusViaPort wires productionCIStatus (cycle 117) to gh. If
 // opts.sha is non-empty, calls Latest; otherwise Recent.
 func ciStatusViaPort(ctx context.Context, opts ciStatusOptions) ([]ports.CIRun, error) {
-	c := newProductionCIStatus()
+	c := cistatus.NewProduction()
 	if opts.sha != "" {
 		run, err := c.Latest(ctx, opts.sha)
 		if err != nil {

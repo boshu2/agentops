@@ -38,11 +38,11 @@ Current inventory count:
 
 | Bucket | Files |
 |---|---:|
-| KEEP | 456 |
-| RELOCATE | 136 |
+| KEEP | 458 |
+| RELOCATE | 132 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
-| Total | 631 |
+| Total | 629 |
 
 Validation command:
 
@@ -111,6 +111,13 @@ The `ao harness status` filesystem sync adapter moved behind the
 `vendor-image-adapter` route. AO keeps the public command wrapper and JSONL
 contract in place, while the skill/skills-codex hash scanner now lives under
 `cli/internal/adapters/vendorimage/harnesssync`.
+
+## Extracted CI Status Adapter Surface
+
+The GitHub Actions-backed `CIStatusPort` adapter moved behind the `mto-fleet`
+route. AO keeps the `ao ci` public command wrapper and JSON-lines contract in
+place, while the production `gh run list` adapter now lives under
+`cli/internal/adapters/ci_status`.
 
 ## Reversibility
 
