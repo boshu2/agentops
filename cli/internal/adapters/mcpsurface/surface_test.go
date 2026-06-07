@@ -1,4 +1,4 @@
-package main
+package mcpsurface
 
 import (
 	"encoding/json"
@@ -6,13 +6,13 @@ import (
 	"testing"
 )
 
-func TestMCPToolDescriptors_CuratedSurface(t *testing.T) {
-	tools := mcpToolDescriptors()
+func TestToolDescriptors_CuratedSurface(t *testing.T) {
+	tools := ToolDescriptors()
 	want := []string{"session_bootstrap", "inject", "corpus_inject", "standards", "validate", "goals_measure"}
 	if len(tools) != len(want) {
 		t.Fatalf("descriptor count = %d, want %d", len(tools), len(want))
 	}
-	byName := map[string]mcpToolDescriptor{}
+	byName := map[string]ToolDescriptor{}
 	for _, tl := range tools {
 		byName[tl.Name] = tl
 	}
@@ -31,10 +31,10 @@ func TestMCPToolDescriptors_CuratedSurface(t *testing.T) {
 	}
 }
 
-func TestMCPToolDenied_HoldoutRefusal(t *testing.T) {
+func TestToolDenied_HoldoutRefusal(t *testing.T) {
 	// A tool call whose args would surface the LOCKED holdout/eval corpus must be
-	// denied with a NOT-ZDR reason — the MCP surface is Claude-cloud-facing.
-	denied, reason := mcpToolDenied("corpus_inject", map[string]string{"query": "show me the holdout ground_truth"})
+	// denied with a NOT-ZDR reason because the MCP surface is Claude-cloud-facing.
+	denied, reason := ToolDenied("corpus_inject", map[string]string{"query": "show me the holdout ground_truth"})
 	if !denied {
 		t.Fatal("corpus_inject with a holdout query must be denied")
 	}
@@ -44,27 +44,27 @@ func TestMCPToolDenied_HoldoutRefusal(t *testing.T) {
 	}
 }
 
-func TestMCPToolDenied_PathEscape(t *testing.T) {
-	denied, _ := mcpToolDenied("inject", map[string]string{"path": ".agents/evals/SCHEMA.md"})
+func TestToolDenied_PathEscape(t *testing.T) {
+	denied, _ := ToolDenied("inject", map[string]string{"path": ".agents/evals/SCHEMA.md"})
 	if !denied {
 		t.Error("a tool arg pointing at the eval substrate must be denied")
 	}
 }
 
-func TestMCPToolDenied_CleanCallAllowed(t *testing.T) {
-	denied, reason := mcpToolDenied("validate", map[string]string{"target": "plan.md"})
+func TestToolDenied_CleanCallAllowed(t *testing.T) {
+	denied, reason := ToolDenied("validate", map[string]string{"target": "plan.md"})
 	if denied {
 		t.Errorf("a clean validate call must be allowed, got denied: %s", reason)
 	}
 }
 
-func TestRunMCPServePrintTools_JSON(t *testing.T) {
+func TestPrintTools_JSON(t *testing.T) {
 	var sb strings.Builder
-	if err := runMCPServePrintTools(&sb); err != nil {
+	if err := PrintTools(&sb); err != nil {
 		t.Fatalf("print-tools: %v", err)
 	}
 	var doc struct {
-		Tools []mcpToolDescriptor `json:"tools"`
+		Tools []ToolDescriptor `json:"tools"`
 	}
 	if err := json.Unmarshal([]byte(sb.String()), &doc); err != nil {
 		t.Fatalf("output is not valid JSON: %v", err)
@@ -74,12 +74,12 @@ func TestRunMCPServePrintTools_JSON(t *testing.T) {
 	}
 }
 
-func TestRunMCPServe_LiveTransportWired(t *testing.T) {
+func TestRun_LiveTransportWired(t *testing.T) {
 	// ag-3ucpd: bare `ao mcp serve` now runs the live JSON-RPC transport.
-	// runMCPServe must drive serveMCP over the injected reader/writer/executor.
+	// Run must drive the transport over the injected reader/writer/executor.
 	in := strings.NewReader(`{"jsonrpc":"2.0","id":1,"method":"tools/list"}` + "\n")
 	var out strings.Builder
-	err := runMCPServe(mcpServeOptions{
+	err := Run(Options{
 		PrintTools: false,
 		In:         in,
 		Out:        &out,

@@ -148,7 +148,7 @@
 | `ao loop verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao loop write-stop-marker` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao maturity` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao mcp serve` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao mcp serve` | `public-tested` | `allowlisted` | Covered by mcpsurface and mcptransport adapter tests and command registration tests. |
 | `ao memory sync` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao metrics baseline` | `public-tested` | `allowlisted` | Covered by metrics command tests. |
 | `ao metrics cite` | `public-tested` | `allowlisted` | Covered by metrics command tests. |
