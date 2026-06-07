@@ -35,11 +35,59 @@ Operator decisions must be grounded in observable artifacts, never in agent self
 
 - **Pane truth:** `ntm --robot-tail=<session> --lines=N`. What the agent says it's doing is a hypothesis; what the pane shows is the data.
 - **Work graph:** `br ready --json`, `br show <id> --json`. "Ready" status is canonical; if the agent thinks something is ready that br disagrees with, the agent is wrong.
-- **Mail / coordination:** the Agent Mail inbox and threads — not Slack screenshots, not summary cards. The thread is the source.
+- **Mail / coordination:** Agent Mail carries leases, notices, acks, and handoffs.
+  It is not the durable bus. If mail and `br` disagree, reconcile `br` first.
 - **Git state:** `git log --since=`, `git status` on the project worktrees. Commits and uncommitted changes are ground truth for "is real work being produced."
 - **Snapshot deltas:** compare two `--robot-snapshot` outputs N seconds apart. The diff is what actually changed; everything else is narrative.
 
 Never base an intervention on a swarm participant's self-report when one of these grounding sources can confirm or refute it. If they disagree, the artifact wins.
+
+## BR Bus And Side Channels
+
+BR is the coordination bus for work, evidence, state, and closure. Use `br` and
+`bv --robot-*` to pick work, claim/assign ownership, record blockers, attach
+evidence, and decide whether the graph has converged. Agent Mail is a side
+channel for active collision prevention and notification only: reserve hot paths,
+notify peers, request an ack, then put the durable result back into `br`.
+
+Operator rule: never let a mail thread, pane summary, dashboard card, or human
+memory override the bead graph. If a lane changes scope, closes work, or finds a
+blocker, update the bead first and link the mail thread only when the discussion
+adds useful context.
+
+## Lane Launch Verification
+
+A launched lane is not proven by a tmux pane, an Agent Mail identity, or a
+successful `ntm spawn` line alone. Before assigning real work, verify the agent
+runtime is actually alive inside the pane:
+
+1. Check the process: `tmux list-panes -t <session> -F '#{pane_index} #{pane_current_command} #{pane_pid}'`.
+2. Check the prompt/body: `tmux capture-pane -pt <session>:0.<pane> -S -20`.
+3. Send a tiny identity ping through the same channel the harness will use.
+4. Confirm the expected agent UI or reply appears; a bare `zsh` prompt is a failed
+   lane, even if the pane and mail registration exist.
+
+Record launch proof in the bead or run log before fan-out. This specifically
+catches the `ntm --cod` failure mode where the pane exists but Codex never
+started; a working `--cc` lane does not prove sibling runtimes launched.
+
+## Author/Judge Split
+
+Do not let the authoring vendor judge its own lane. Workers publish only durable
+artifacts: commits, diffs, evidence files, test output, bead updates, and CI/run
+links. Judges and orchestrators read those artifacts, not pane claims or mail
+summaries.
+
+Default split:
+
+- Claude-authored work gets Codex or AGY validation.
+- Codex-authored work gets Claude or AGY validation.
+- AGY-authored work gets Claude or Codex validation.
+- Mixed-vendor work gets a validator that did not author the touched files.
+
+When validators disagree, keep both verdicts on the bead and send a fresh
+tie-break validator. The orchestrator closes only after durable evidence proves
+PASS.
 
 ## Cold Start For Operators
 
