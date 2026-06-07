@@ -69,6 +69,12 @@ type Check struct {
 	// "validate-y.sh") run via the GateRunnerPort. Exactly one of Backing or
 	// Run must be set.
 	Backing string
+	// Args are extra CLI arguments passed to a Backing script (e.g.
+	// "--mode", "changed"). Ignored for native Run checks.
+	Args []string
+	// Env are extra environment variables passed to a Backing script.
+	// Ignored for native Run checks.
+	Env map[string]string
 	// Run is a native-Go implementation. Exactly one of Backing or Run must be
 	// set.
 	Run CheckFunc

@@ -41,7 +41,8 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 		return ports.GateVerdict{Status: ports.GateStatusUnknown, Reason: fmt.Sprintf("no script %s", script)}, nil
 	}
 
-	cmd := exec.CommandContext(ctx, resolveBash(), script)
+	bashArgs := append([]string{script}, req.Args...)
+	cmd := exec.CommandContext(ctx, resolveBash(), bashArgs...)
 	cmd.Dir = s.repoRoot
 	if len(req.Env) > 0 {
 		env := cmd.Environ()
