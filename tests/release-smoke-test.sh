@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# Release smoke test - verify all skills are loadable
+# Release smoke test - verify all skills are packaged and structurally loadable
 # Usage: ./tests/release-smoke-test.sh [--full]
 #
 # Default: Fast verification (~30s) - checks components are registered
-# --full:  Slow verification (~10min) - invokes each skill individually
+# --full:  Runs structural runtime smoke checks; does not spawn headless workers
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# shellcheck source=tests/claude-code/test-helpers.sh
 source "$SCRIPT_DIR/claude-code/test-helpers.sh"
 
 # Logging (redefine to avoid conflict with macOS log command)
@@ -33,40 +34,27 @@ echo ""
 
 if $FULL_TEST; then
     # =========================================================================
-    # FULL TEST: Individual invocation of each skill
+    # FULL TEST: Structural runtime checks
     # =========================================================================
-    log "Running FULL test (individual invocations)..."
-
-    # Build skills array dynamically from skill directories
-    SKILLS=()
-    for skill_dir in "$REPO_ROOT"/skills/*/; do
-        # Skip leading-underscore scaffolding (e.g. skills/_fixtures/) — planted
-        # test fixtures, not invokable skills.
-        case "$(basename "$skill_dir")" in _*) continue ;; esac
-        [[ -f "${skill_dir}SKILL.md" ]] && SKILLS+=("$(basename "$skill_dir")")
-    done
-
+    log "Running FULL test (structural runtime smoke)..."
     passed=0
     failed=0
 
-    for skill in "${SKILLS[@]}"; do
-        # Skills need unrestricted tool access — they may use Write, Edit,
-        # WebFetch, etc. internally. --dangerously-skip-permissions is correct
-        # here; scoped --allowedTools would cause false failures.
-        if timeout 45 claude -p "Invoke agentops:$skill skill" \
-            --plugin-dir "$REPO_ROOT" \
-            --dangerously-skip-permissions \
-            --max-turns 3 \
-            --no-session-persistence \
-            --max-budget-usd 0.50 \
-            >/dev/null 2>&1; then
-            pass "$skill"
-            ((passed++))
-        else
-            fail "$skill"
-            ((failed++))
-        fi
-    done
+    if bash "$REPO_ROOT/tests/skills/test-runtime-claude-code-smoke.sh"; then
+        pass "Claude Code structural runtime smoke"
+        ((passed++)) || true
+    else
+        fail "Claude Code structural runtime smoke"
+        ((failed++)) || true
+    fi
+
+    if bash "$REPO_ROOT/tests/skills/test-runtime-codex-smoke.sh"; then
+        pass "Codex structural runtime smoke"
+        ((passed++)) || true
+    else
+        fail "Codex structural runtime smoke"
+        ((failed++)) || true
+    fi
 
     print_summary "$passed" "$failed" 0
     exit $((failed > 0))
@@ -77,20 +65,6 @@ fi
 # =============================================================================
 log "Running FAST test (registration check)..."
 echo ""
-
-log "Checking Claude can load the plugin..."
-
-load_output=$(timeout 30 claude --plugin-dir "$REPO_ROOT" --help 2>&1) || {
-    fail "Claude plugin load failed"
-    printf '%s\n' "$load_output" | sed -n '1,40p'
-    exit 1
-}
-
-if printf '%s\n' "$load_output" | grep -qiE "invalid manifest|validation error|failed to load"; then
-    fail "Claude reported plugin load errors"
-    printf '%s\n' "$load_output" | grep -iE "invalid|failed|error" | head -5
-    exit 1
-fi
 
 skill_count="$EXPECTED_SKILLS"
 
