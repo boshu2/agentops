@@ -1134,22 +1134,6 @@ ao pool list [flags]
   -w, --wide            Show full IDs without truncation
 ```
 
-#### `ao pool migrate-legacy`
-
-Move legacy knowledge captures from .agents/knowledge/*.md into
-
-```
-ao pool migrate-legacy [flags]
-```
-
-**Flags:**
-
-```
-  -h, --help                 help for migrate-legacy
-      --pending-dir string   Pending directory for migrated captures (default ".agents/knowledge/pending")
-      --source-dir string    Source directory containing legacy markdown captures (default ".agents/knowledge")
-```
-
 #### `ao pool promote`
 
 Move a staged candidate to the knowledge base (.agents/learnings/ or .agents/patterns/).

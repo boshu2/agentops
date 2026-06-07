@@ -172,7 +172,6 @@
 | `ao pool batch-promote` | `public-tested` | `allowlisted` | Covered by batch promote tests. |
 | `ao pool ingest` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao pool list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao pool migrate-legacy` | `public-tested` | `allowlisted` | Covered by pool legacy migration tests. |
 | `ao pool promote` | `public-tested` | `allowlisted` | Covered by pool command tests. |
 | `ao pool reindex` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao pool reject` | `public-tested` | `allowlisted` | Covered by pool command tests. |

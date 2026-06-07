@@ -14,7 +14,7 @@ import (
 
 func TestLegacyCaptureToInjectAndFeedbackE2E(t *testing.T) {
 	fixture := setupLegacyCaptureKnowledgeLoopFixture(t)
-	p, pendingPath := migrateAndIngestLegacyCapture(t, fixture)
+	p, pendingPath := ingestLegacyCapture(t, fixture)
 	recordLegacyCapturePromotionCitation(t, fixture.tmp, pendingPath)
 	artifactPath := autoPromoteLegacyCaptureArtifact(t, p)
 
@@ -26,7 +26,7 @@ func TestLegacyCaptureToInjectAndFeedbackE2E(t *testing.T) {
 type legacyCaptureKnowledgeLoopFixture struct {
 	tmp        string
 	sourceDir  string
-	pendingDir string
+	legacyPath string
 }
 
 func setupLegacyCaptureKnowledgeLoopFixture(t *testing.T) legacyCaptureKnowledgeLoopFixture {
@@ -34,7 +34,6 @@ func setupLegacyCaptureKnowledgeLoopFixture(t *testing.T) legacyCaptureKnowledge
 
 	tmp := t.TempDir()
 	sourceDir := filepath.Join(tmp, ".agents", "knowledge")
-	pendingDir := filepath.Join(sourceDir, "pending")
 	if err := os.MkdirAll(sourceDir, 0o700); err != nil {
 		t.Fatalf("mkdir source: %v", err)
 	}
@@ -58,24 +57,16 @@ Use command -v before assuming a binary is missing from PATH.
 	return legacyCaptureKnowledgeLoopFixture{
 		tmp:        tmp,
 		sourceDir:  sourceDir,
-		pendingDir: pendingDir,
+		legacyPath: legacyPath,
 	}
 }
 
-func migrateAndIngestLegacyCapture(t *testing.T, fixture legacyCaptureKnowledgeLoopFixture) (*pool.Pool, string) {
+func ingestLegacyCapture(t *testing.T, fixture legacyCaptureKnowledgeLoopFixture) (*pool.Pool, string) {
 	t.Helper()
 
-	migrateRes, err := migrateLegacyKnowledgeFiles(fixture.sourceDir, fixture.pendingDir)
+	ingestRes, err := ingestPendingFilesToPool(fixture.tmp, []string{fixture.legacyPath})
 	if err != nil {
-		t.Fatalf("migrate legacy captures: %v", err)
-	}
-	if migrateRes.Moved != 1 || len(migrateRes.Moves) != 1 {
-		t.Fatalf("unexpected migrate result: %+v", migrateRes)
-	}
-
-	ingestRes, err := ingestPendingFilesToPool(fixture.tmp, []string{migrateRes.Moves[0].To})
-	if err != nil {
-		t.Fatalf("ingest pending: %v", err)
+		t.Fatalf("ingest legacy capture: %v", err)
 	}
 	if ingestRes.Added != 1 {
 		t.Fatalf("expected one candidate ingested, got %+v", ingestRes)

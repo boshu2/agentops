@@ -1179,13 +1179,6 @@
     },
     {
       "category": "public-tested",
-      "command": "pool migrate-legacy",
-      "coverage_status": "allowlisted",
-      "kind": "leaf",
-      "reason": "Covered by pool legacy migration tests."
-    },
-    {
-      "category": "public-tested",
       "command": "pool promote",
       "coverage_status": "allowlisted",
       "kind": "leaf",

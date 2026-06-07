@@ -59,7 +59,6 @@ Production code calls `os.Getwd()` directly, forcing tests to use `os.Chdir()` (
 | mind.go | 1 | P3 | Low coverage |
 | notebook.go | 1 | P3 | Low coverage |
 | pool_ingest.go | 1 | P3 | Low coverage |
-| pool_migrate_legacy.go | 1 | P3 | Low coverage |
 | quickstart.go | 1 | P3 | Low coverage |
 | ratchet_check.go | 1 | P3 | Low coverage |
 | ratchet_find.go | 1 | P3 | Low coverage |
