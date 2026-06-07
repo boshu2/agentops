@@ -42,6 +42,17 @@ assert_contains() {
     fi
 }
 
+assert_not_contains() {
+    local desc="$1" pattern="$2" text="$3"
+    if echo "$text" | grep -q "$pattern"; then
+        echo "  FAIL: $desc (unexpected pattern '$pattern' found)"
+        FAIL=$((FAIL + 1))
+    else
+        echo "  PASS: $desc"
+        PASS=$((PASS + 1))
+    fi
+}
+
 echo "=== Test: team-runner.sh dry-run ==="
 rm -rf "$REPO_ROOT/.agents/teams/test-run-001" \
     "$REPO_ROOT/.agents/teams/test-run-claude-001"
@@ -71,50 +82,29 @@ echo "Test 4: Sandbox level mapping"
 assert_contains "full-auto for workspace-write" "full-auto" "$OUTPUT"
 assert_contains "read-only for read-only agent" "read-only" "$OUTPUT"
 
-# Test 5: Claude dry run execution
-echo "Test 5: Claude dry run execution"
+# Test 5: Deprecated Claude runtime is rejected before dry-run command assembly
+echo "Test 5: Deprecated Claude runtime rejection"
 CLAUDE_OUTPUT=$(cd "$REPO_ROOT" && TEAM_RUNNER_DRY_RUN=1 bash "$RUNNER" "$FIXTURES/sample-team-spec-claude.json" 2>&1)
-assert_eq "claude exit code 0" "0" "$?"
-assert_contains "shows claude command" "claude -p" "$CLAUDE_OUTPUT"
-assert_contains "shows stream-json" "stream-json" "$CLAUDE_OUTPUT"
-assert_contains "shows json-schema" "json-schema" "$CLAUDE_OUTPUT"
-assert_contains "claude uses full skill permissions" "dangerously-skip-permissions" "$CLAUDE_OUTPUT"
-assert_contains "shows claude runtime" "Runtime: claude" "$CLAUDE_OUTPUT"
-assert_contains "shows claude agent name" "claude-agent-1" "$CLAUDE_OUTPUT"
+assert_eq "claude runtime rejected" "1" "$?"
+assert_contains "explains LAW 0 rejection" "runtime \"claude\" is disabled by LAW 0" "$CLAUDE_OUTPUT"
+assert_not_contains "does not print claude command" "claude -p" "$CLAUDE_OUTPUT"
+assert_not_contains "does not print stream invocation" "stream-json" "$CLAUDE_OUTPUT"
 
-# Test 6: Claude subprocess crash is reported before watcher EOF
-echo "Test 6: Claude process crash reporting"
+# Test 6: Deprecated Claude runtime is rejected before binary lookup/spawn
+echo "Test 6: Deprecated Claude runtime does not invoke fake binary"
 mkdir -p "$TMPDIR/bin"
-cat > "$TMPDIR/bin/claude" <<'CLAUDEEOF'
+cat > "$TMPDIR/bin/claude" <<CLAUDEEOF
 #!/usr/bin/env bash
-printf '%s\n' '{"type":"system","subtype":"init"}'
+touch "$TMPDIR/claude-invoked"
 exit 42
 CLAUDEEOF
 chmod +x "$TMPDIR/bin/claude"
 
-cat > "$TMPDIR/sample-team-spec-claude-crash.json" <<'JSON'
-{
-  "team_id": "test-run-claude-crash",
-  "runtime": "claude",
-  "repo_path": ".",
-  "agents": [
-    {
-      "name": "claude-crash-agent",
-      "prompt": "Crash after one event",
-      "files": ["claude-output.txt"],
-      "output_file": "result.json",
-      "sandbox_level": "workspace-write",
-      "timeout_ms": 30000
-    }
-  ]
-}
-JSON
-
-CLAUDE_CRASH_OUTPUT=$(cd "$REPO_ROOT" && PATH="$TMPDIR/bin:$PATH" bash "$RUNNER" "$TMPDIR/sample-team-spec-claude-crash.json" 2>&1)
+CLAUDE_CRASH_OUTPUT=$(cd "$REPO_ROOT" && PATH="$TMPDIR/bin:$PATH" bash "$RUNNER" "$FIXTURES/sample-team-spec-claude.json" 2>&1)
 CLAUDE_CRASH_EXIT=$?
-assert_eq "claude crash exit code 1" "1" "$CLAUDE_CRASH_EXIT"
-assert_contains "reports claude exit" "FAIL:claude_exit_42" "$CLAUDE_CRASH_OUTPUT"
-assert_contains "report shows eof" "| claude-crash-agent | eof |" "$(cat "$REPO_ROOT/.agents/teams/test-run-claude-crash/team-report.md")"
+assert_eq "claude rejection exit code 1" "1" "$CLAUDE_CRASH_EXIT"
+assert_contains "reports law0 rejection" "runtime \"claude\" is disabled by LAW 0" "$CLAUDE_CRASH_OUTPUT"
+assert_eq "fake claude binary not invoked" "false" "$(test -f "$TMPDIR/claude-invoked" && echo true || echo false)"
 
 echo ""
 echo "Results: $PASS passed, $FAIL failed"

@@ -45,10 +45,10 @@ journalctl --user -u agentops-refinery -f   # logs
 ```
 
 State + beacon (repo-root, gitignored runtime):
-- `.refinery-state` — `{last_checked_sha, poison[]}`
-- `.refinery-poison` — present iff `main` is currently poisoned
++ `.refinery-state` — `{last_checked_sha, poison[]}`
++ `.refinery-poison` — present iff `main` is currently poisoned
 
 ## Tuning
 
-- `--interval` — poll cadence (default 5m).
-- Re-run count is 3 (deterministic = fails all 3). Raise for noisier suites.
++ `--interval` — poll cadence (default 5m).
++ Re-run count is 3 (deterministic = fails all 3). Raise for noisier suites.

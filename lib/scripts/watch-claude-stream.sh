@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# watch-claude-stream.sh — JSONL event stream watcher for claude -p
+# watch-claude-stream.sh — JSONL event stream watcher for archived Claude stream fixtures
 #
 # Usage: watch-claude-stream.sh <status-file> <output-file>
 #   Reads Claude stream-json events from stdin, writes structured status JSON

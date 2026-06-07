@@ -696,6 +696,13 @@
     },
     {
       "category": "public-tested",
+      "command": "gate check",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "gate pending",
       "coverage_status": "allowlisted",
       "kind": "leaf",
@@ -1348,6 +1355,20 @@
     {
       "category": "public-tested",
       "command": "redact",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "unsafe-live",
+      "command": "refinery once",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Runs the full refinery against live repo state; command registration and subcommands are covered by refinery tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "refinery run",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."

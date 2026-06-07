@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# team-runner.sh — Headless Codex/Claude team orchestrator
+# team-runner.sh — Headless Codex team orchestrator
 #
 # Usage: team-runner.sh <team-spec.json>
 #   Reads a team spec, spawns parallel headless workers for the selected
@@ -9,10 +9,6 @@
 # Environment:
 #   CODEX_MODEL           — Codex model (default: gpt-5.3-codex)
 #   CODEX_IDLE_TIMEOUT    — Per-agent idle timeout in seconds (default: 60)
-#   CLAUDE_MODEL          — Claude model (default: sonnet)
-#   CLAUDE_IDLE_TIMEOUT   — Per-agent idle timeout in seconds (default: 60)
-#   CLAUDE_MAX_TURNS      — Max turns per Claude worker (default: 6)
-#   CLAUDE_MAX_BUDGET_USD — Max budget per Claude worker (default: 5)
 #   TEAM_RUNNER_MAX_AGENTS — Max concurrent agents (default: 6)
 #   TEAM_RUNNER_DRY_RUN   — If set, print commands without executing
 #   BEADS_NO_DAEMON       — Set automatically to prevent beads conflicts
@@ -22,10 +18,6 @@ set -uo pipefail
 SPEC_FILE="${1:?Usage: team-runner.sh <team-spec.json>}"
 CODEX_MODEL="${CODEX_MODEL:-gpt-5.3-codex}"
 CODEX_IDLE_TIMEOUT="${CODEX_IDLE_TIMEOUT:-60}"
-CLAUDE_MODEL="${CLAUDE_MODEL:-sonnet}"
-CLAUDE_IDLE_TIMEOUT="${CLAUDE_IDLE_TIMEOUT:-60}"
-CLAUDE_MAX_TURNS="${CLAUDE_MAX_TURNS:-6}"
-CLAUDE_MAX_BUDGET_USD="${CLAUDE_MAX_BUDGET_USD:-5}"
 MAX_AGENTS="${TEAM_RUNNER_MAX_AGENTS:-6}"
 MAX_RETRIES=3
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -81,13 +73,9 @@ preflight() {
             fi
             ;;
         claude)
-            WATCHER="${SCRIPT_DIR}/watch-claude-stream.sh"
-            PROCESS_LABEL="claude"
-            MODEL_LABEL="${CLAUDE_MODEL}"
-            if ! command -v claude &>/dev/null; then
-                echo "ERROR: claude not found on PATH" >&2
-                fail=1
-            fi
+            echo "ERROR: runtime \"claude\" is disabled by LAW 0; team-runner must not spawn Claude print-mode workers." >&2
+            echo "Use runtime \"codex\" here, or dispatch Claude through NTM panes / in-harness subagents." >&2
+            fail=1
             ;;
         *)
             echo "ERROR: Unsupported runtime in spec: $TEAM_RUNTIME" >&2
@@ -95,7 +83,7 @@ preflight() {
             ;;
     esac
 
-    if [[ ! -f "$WATCHER" ]]; then
+    if [[ $fail -eq 0 && ! -f "$WATCHER" ]]; then
         echo "ERROR: Watcher not found at $WATCHER" >&2
         fail=1
     fi
@@ -185,15 +173,9 @@ ${sanitized_context}"
     # Resolve schema path (absolute so it works regardless of -C)
     local schema_path
     schema_path="$(cd "$REPO_PATH" && pwd)/lib/schemas/worker-output.json"
-    local schema_json
-    schema_json=$(jq -c . "$schema_path")
 
     if [[ -n "${TEAM_RUNNER_DRY_RUN:-}" ]]; then
-        if [[ "$TEAM_RUNTIME" == "claude" ]]; then
-            echo "[DRY RUN] (cd ${REPO_PATH} && claude -p --model ${CLAUDE_MODEL} --plugin-dir ${REPO_PATH} --dangerously-skip-permissions --max-turns ${CLAUDE_MAX_TURNS} --no-session-persistence --max-budget-usd ${CLAUDE_MAX_BUDGET_USD} --output-format stream-json --verbose --json-schema '${schema_json}' \"${prompt:0:80}...\")" >&2
-        else
-            echo "[DRY RUN] AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec ${sandbox_args[*]} --json -m ${CODEX_MODEL} -C ${REPO_PATH} --output-schema ${schema_path} -o ${output_file} \"${prompt:0:80}...\"" >&2
-        fi
+        echo "[DRY RUN] AGENTOPS_INTENT_ECHO_DISABLED=1 codex exec ${sandbox_args[*]} --json -m ${CODEX_MODEL} -C ${REPO_PATH} --output-schema ${schema_path} -o ${output_file} \"${prompt:0:80}...\"" >&2
         echo 0 > "$exit_file"
         echo '{"status":"completed","token_usage":{"input":0,"output":0},"duration_ms":0,"events_count":0}' > "$status_file"
         echo '{"status":"done","summary":"dry run","artifacts":[],"errors":[],"token_usage":{"input":0,"output":0},"duration_ms":0}' > "$output_file"
@@ -203,35 +185,17 @@ ${sanitized_context}"
     local timeout_s=$(( timeout_ms / 1000 ))
     [[ $timeout_s -lt 10 ]] && timeout_s=120
 
-    # Spawn the selected runtime with JSONL piped to its watcher.
+    # Spawn Codex with JSONL piped to its watcher.
     # Sidecar pattern: capture process exit code separately.
-    if [[ "$TEAM_RUNTIME" == "claude" ]]; then
-        (
-            (
-                cd "$REPO_PATH" && timeout "$timeout_s" claude -p "$prompt" \
-                    --model "$CLAUDE_MODEL" \
-                    --plugin-dir "$REPO_PATH" \
-                    --dangerously-skip-permissions \
-                    --max-turns "$CLAUDE_MAX_TURNS" \
-                    --no-session-persistence \
-                    --max-budget-usd "$CLAUDE_MAX_BUDGET_USD" \
-                    --output-format stream-json \
-                    --verbose \
-                    --json-schema "$schema_json" 2>/dev/null
-            )
-            echo $? > "$exit_file"
-        ) | CLAUDE_IDLE_TIMEOUT="$CLAUDE_IDLE_TIMEOUT" bash "$WATCHER" "$status_file" "$output_file" &
-    else
-        (
-            AGENTOPS_INTENT_ECHO_DISABLED=1 timeout "$timeout_s" codex exec "${sandbox_args[@]}" --json \
-                -m "$CODEX_MODEL" \
-                -C "$REPO_PATH" \
-                --output-schema "$schema_path" \
-                -o "$output_file" \
-                "$prompt" 2>/dev/null
-            echo $? > "$exit_file"
-        ) | CODEX_IDLE_TIMEOUT="$CODEX_IDLE_TIMEOUT" bash "$WATCHER" "$status_file" &
-    fi
+    (
+        AGENTOPS_INTENT_ECHO_DISABLED=1 timeout "$timeout_s" codex exec "${sandbox_args[@]}" --json \
+            -m "$CODEX_MODEL" \
+            -C "$REPO_PATH" \
+            --output-schema "$schema_path" \
+            -o "$output_file" \
+            "$prompt" 2>/dev/null
+        echo $? > "$exit_file"
+    ) | CODEX_IDLE_TIMEOUT="$CODEX_IDLE_TIMEOUT" bash "$WATCHER" "$status_file" &
 
     echo $!
 }

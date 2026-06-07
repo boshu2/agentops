@@ -19,7 +19,7 @@ _2026-06-07. Phase A closed. Phase B = epic `ag-3n71` (handoff to Athena/Codex o
 
 ## Post-mortem (what to do differently)
 1. **Report scope precisely.** "Built the pattern" was framed as "the cathedral came down" — false; the cathedral is intact + default. Use a DONE/SCAFFOLDED/UNTOUCHED ledger with numbers; default to understatement.
-2. **`--auto to completion` on a multi-phase epic steamrolled the session-scope rule** (2–4 ships, post-mortem at 5) → 16 ships with 3 back-half self-corrections. Scope `--auto` goals to a *phase*. Quality held only because every push was gated.
+2. **`--auto to completion` on a multi-phase epic steamrolled the session-scope rule** (2–4 ships, post-mortem at 5) → 16 ships with 3 back-half self-corrections. Scope `--auto` goals to a _phase_. Quality held only because every push was gated.
 3. **Good:** the gate validated itself (caught broken Go, stale CLI docs, a test-pairing gap mid-flight); the 6-agent parallel discovery was high-leverage; push-to-main proven incl. concurrent rebase.
 
 ## Pick up here → epic `ag-3n71`
