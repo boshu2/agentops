@@ -38,11 +38,11 @@ Current inventory count:
 
 | Bucket | Files |
 |---|---:|
-| KEEP | 462 |
-| RELOCATE | 120 |
+| KEEP | 463 |
+| RELOCATE | 118 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
-| Total | 621 |
+| Total | 620 |
 
 Validation command:
 
@@ -165,6 +165,14 @@ boundary. AO keeps the public command wrapper and flags in place, while TOML
 template loading, required-field validation, variable expansion, hostname
 sanitization, init-step execution, tmux session creation, dry-run rendering, and
 no-tmux behavior now live under `cli/internal/adapters/sessionspawn`.
+
+## Extracted MCP Surface Adapter
+
+The curated `ao mcp serve` tool catalog, holdout-denial policy, print-tools JSON
+renderer, shell-backed executor, and transport wiring moved behind the
+`mto-fleet` adapter boundary. AO keeps the public `ao mcp serve` wrapper and
+flags in place, while MCP surface behavior now lives under
+`cli/internal/adapters/mcpsurface`.
 
 ## Reversibility
 
