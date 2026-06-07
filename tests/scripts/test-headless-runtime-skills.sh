@@ -94,18 +94,16 @@ EOF
 
 make_mock_claude() {
     local bin_dir="$1"
-    local mode="${2:-pass}"
     cat > "$bin_dir/claude" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 
-prompt=""
 saw_help=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -p)
-      prompt="${2:-}"
-      shift 2
+    -p|--print)
+      echo "mock claude refuses print invocation" >&2
+      exit 99
       ;;
     *)
       if [[ "$1" == "--help" ]]; then
@@ -116,83 +114,14 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-mode="__MODE__"
-state_file="__STATE_FILE__"
 if [[ "$saw_help" == "1" ]]; then
   echo "Claude help"
   exit 0
 fi
-if [[ "$mode" == "fallback" ]]; then
-  exit 124
-fi
-if [[ "$mode" == "malformed" ]]; then
-  python3 - <<'PY'
-import json
 
-for payload in (
-    {"type": "assistant", "message": {"content": [{"type": "text", "text": 'not-json'}]}},
-    {"type": "result"},
-):
-    print(json.dumps(payload))
-PY
-  exit 0
-fi
-
-if [[ "$prompt" == *"compact JSON array of skill names"* ]]; then
-  text='["compile","research"]'
-  if [[ "$mode" == "retry-missing" ]]; then
-    count=0
-    if [[ -f "$state_file" ]]; then
-      count="$(cat "$state_file")"
-    fi
-    count=$((count + 1))
-    printf '%s' "$count" > "$state_file"
-    if [[ "$count" -eq 1 ]]; then
-      text='["compile"]'
-    fi
-  fi
-  if [[ "$mode" == "malformed" ]]; then
-    python3 - <<'PY'
-import json
-
-for payload in (
-    {"type": "assistant", "message": {"content": [{"type": "text", "text": 'not-json'}]}},
-    {"type": "result"},
-):
-    print(json.dumps(payload))
-PY
-    exit 0
-  fi
-  MOCK_CLAUDE_TEXT="$text" python3 - <<'PY'
-import json
-import os
-
-text = os.environ["MOCK_CLAUDE_TEXT"]
-for payload in (
-    {"type": "assistant", "message": {"content": [{"type": "text", "text": text}]}},
-    {"type": "result"},
-):
-    print(json.dumps(payload))
-PY
-  exit 0
-fi
-
-echo "unexpected Claude prompt: $prompt" >&2
+echo "unexpected Claude args: $*" >&2
 exit 1
 EOF
-    python3 - <<'PY' "$bin_dir/claude" "$mode" "$bin_dir/.claude-state"
-from pathlib import Path
-import sys
-
-path = Path(sys.argv[1])
-mode = sys.argv[2]
-state_file = sys.argv[3]
-path.write_text(
-    path.read_text()
-    .replace("__MODE__", mode)
-    .replace("__STATE_FILE__", state_file)
-)
-PY
     chmod +x "$bin_dir/claude"
 }
 
@@ -249,9 +178,9 @@ test_passes_with_mocked_runtimes() {
     make_mock_codex "$bin_dir" pass
 
     if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --workdir "$TMP_DIR/workdir-pass" >"$TMP_DIR/pass.log" 2>&1; then
-        pass "passes with mocked Claude and Codex inventories"
+        pass "passes with mocked Claude load check and Codex inventory"
     else
-        fail "passes with mocked Claude and Codex inventories"
+        fail "passes with mocked Claude load check and Codex inventory"
         sed -n '1,80p' "$TMP_DIR/pass.log" >&2
     fi
 }
@@ -261,7 +190,6 @@ test_fails_when_codex_inventory_is_missing_skill() {
     local bin_dir="$TMP_DIR/fail-bin"
     mkdir -p "$bin_dir"
     make_fixture "$repo"
-    make_mock_claude "$bin_dir"
     make_mock_codex "$bin_dir" missing
 
     if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime codex --workdir "$TMP_DIR/workdir-fail" >"$TMP_DIR/fail.log" 2>&1; then
@@ -279,7 +207,6 @@ test_retries_when_codex_inventory_omits_skill_once() {
     local bin_dir="$TMP_DIR/codex-retry-bin"
     mkdir -p "$bin_dir"
     make_fixture "$repo"
-    make_mock_claude "$bin_dir"
     make_mock_codex "$bin_dir" retry-missing
 
     if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime codex --workdir "$TMP_DIR/workdir-codex-retry" \
@@ -297,85 +224,23 @@ test_retries_when_codex_inventory_omits_skill_once() {
     fi
 }
 
-test_warns_and_passes_when_claude_inventory_falls_back_to_help() {
-    local repo="$TMP_DIR/fallback-repo"
-    local bin_dir="$TMP_DIR/fallback-bin"
+test_claude_runtime_uses_non_print_load_check_only() {
+    local repo="$TMP_DIR/claude-load-repo"
+    local bin_dir="$TMP_DIR/claude-load-bin"
     mkdir -p "$bin_dir"
     make_fixture "$repo"
-    make_mock_claude "$bin_dir" fallback
+    make_mock_claude "$bin_dir"
 
-    if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime claude --workdir "$TMP_DIR/workdir-fallback" >"$TMP_DIR/fallback.log" 2>&1; then
-        if contains_text 'load-check fallback passed' "$TMP_DIR/fallback.log"; then
-            pass "warns and passes when Claude inventory falls back to explicit load-check fallback"
+    if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime claude --workdir "$TMP_DIR/workdir-claude-load" >"$TMP_DIR/claude-load.log" 2>&1; then
+        if contains_text 'claude: non-print load check passed' "$TMP_DIR/claude-load.log"; then
+            pass "Claude runtime uses non-print load check only"
         else
-            fail "warns and passes when Claude inventory falls back to explicit load-check fallback"
-            sed -n '1,80p' "$TMP_DIR/fallback.log" >&2
+            fail "Claude runtime uses non-print load check only"
+            sed -n '1,80p' "$TMP_DIR/claude-load.log" >&2
         fi
     else
-        fail "warns and passes when Claude inventory falls back to explicit load-check fallback"
-        sed -n '1,80p' "$TMP_DIR/fallback.log" >&2
-    fi
-}
-
-test_warns_and_passes_when_claude_output_is_malformed() {
-    local repo="$TMP_DIR/malformed-repo"
-    local bin_dir="$TMP_DIR/malformed-bin"
-    mkdir -p "$bin_dir"
-    make_fixture "$repo"
-    make_mock_claude "$bin_dir" malformed
-
-    if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime claude --workdir "$TMP_DIR/workdir-malformed" >"$TMP_DIR/malformed.log" 2>&1; then
-        if contains_text 'assistant output was not a JSON array' "$TMP_DIR/malformed.log" && \
-            contains_text 'load-check fallback passed' "$TMP_DIR/malformed.log"; then
-            pass "warns and passes when Claude output is malformed but load check succeeds"
-        else
-            fail "warns and passes when Claude output is malformed but load check succeeds"
-            sed -n '1,80p' "$TMP_DIR/malformed.log" >&2
-        fi
-    else
-        fail "warns and passes when Claude output is malformed but load check succeeds"
-        sed -n '1,80p' "$TMP_DIR/malformed.log" >&2
-    fi
-}
-
-test_retries_when_claude_inventory_omits_skill_once() {
-    local repo="$TMP_DIR/retry-repo"
-    local bin_dir="$TMP_DIR/retry-bin"
-    mkdir -p "$bin_dir"
-    make_fixture "$repo"
-    make_mock_claude "$bin_dir" retry-missing
-
-    if PATH="$bin_dir:$PATH" bash "$SCRIPT" --repo-root "$repo" --runtime claude --workdir "$TMP_DIR/workdir-retry" \
-        >"$TMP_DIR/retry.log" 2>&1; then
-        if contains_text 'inventory mismatch on attempt 1/2; retrying' "$TMP_DIR/retry.log" && \
-            contains_text 'claude: inventory verified' "$TMP_DIR/retry.log"; then
-            pass "retries when Claude inventory omits a skill once"
-        else
-            fail "retries when Claude inventory omits a skill once"
-            sed -n '1,80p' "$TMP_DIR/retry.log" >&2
-        fi
-    else
-        fail "retries when Claude inventory omits a skill once"
-        sed -n '1,80p' "$TMP_DIR/retry.log" >&2
-    fi
-}
-
-test_fails_in_strict_mode_when_claude_uses_load_check_fallback() {
-    local repo="$TMP_DIR/strict-repo"
-    local bin_dir="$TMP_DIR/strict-bin"
-    mkdir -p "$bin_dir"
-    make_fixture "$repo"
-    make_mock_claude "$bin_dir" fallback
-
-    if HEADLESS_RUNTIME_SKILL_CLAUDE_STRICT=1 PATH="$bin_dir:$PATH" \
-        bash "$SCRIPT" --repo-root "$repo" --runtime claude --workdir "$TMP_DIR/workdir-strict" \
-        >"$TMP_DIR/strict.log" 2>&1; then
-        fail "fails in strict mode when Claude falls back to load-check"
-    elif contains_text 'requires verified Claude inventory' "$TMP_DIR/strict.log"; then
-        pass "fails in strict mode when Claude falls back to load-check"
-    else
-        fail "fails in strict mode when Claude falls back to load-check"
-        sed -n '1,80p' "$TMP_DIR/strict.log" >&2
+        fail "Claude runtime uses non-print load check only"
+        sed -n '1,80p' "$TMP_DIR/claude-load.log" >&2
     fi
 }
 
@@ -383,10 +248,7 @@ echo "== test-headless-runtime-skills =="
 test_passes_with_mocked_runtimes
 test_fails_when_codex_inventory_is_missing_skill
 test_retries_when_codex_inventory_omits_skill_once
-test_warns_and_passes_when_claude_inventory_falls_back_to_help
-test_warns_and_passes_when_claude_output_is_malformed
-test_retries_when_claude_inventory_omits_skill_once
-test_fails_in_strict_mode_when_claude_uses_load_check_fallback
+test_claude_runtime_uses_non_print_load_check_only
 
 echo ""
 echo "Results: $PASS PASS, $FAIL FAIL"

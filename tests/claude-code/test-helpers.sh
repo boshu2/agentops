@@ -29,84 +29,21 @@ NC='\033[0m'
 # Create log directory
 mkdir -p "$LOG_DIR"
 
-# Run Claude Code with a prompt and capture output as plain text
-# Usage: run_claude "prompt text" [timeout_seconds]
-# Environment:
-#   ALLOWED_TOOLS — comma-separated tool list (default: empty = --dangerously-skip-permissions)
-#   MAX_BUDGET_USD — cost guardrail in dollars (default: 1.00)
-#   MAX_TURNS — max agentic turns (default: 3)
+# Archived live Claude Code functional helpers. LAW 0 forbids AgentOps tests
+# from spawning Claude print workers; use tests/skills/test-runtime-claude-code-smoke.sh
+# for maintained Claude Code proof.
 run_claude() {
-    local prompt="$1"
-    local timeout="${2:-$DEFAULT_TIMEOUT}"
-    local output_file
-    output_file="$(mktemp)"
-
-    # Build permission flags: prefer --allowedTools over --dangerously-skip-permissions
-    local -a perm_flags
-    if [[ -n "${ALLOWED_TOOLS:-}" ]]; then
-        perm_flags=(--allowedTools "$ALLOWED_TOOLS")
-    else
-        perm_flags=(--dangerously-skip-permissions)
-    fi
-
-    if AGENTOPS_HOOKS_DISABLED="${AGENTOPS_HOOKS_DISABLED:-1}" \
-        timeout "$timeout" claude -p "$prompt" \
-        --plugin-dir "$REPO_ROOT" \
-        "${perm_flags[@]}" \
-        --max-turns "$MAX_TURNS" \
-        --no-session-persistence \
-        --max-budget-usd "$MAX_BUDGET_USD" \
-        > "$output_file" 2>&1; then
-        cat "$output_file"
-        rm -f "$output_file"
-        return 0
-    else
-        local exit_code=$?
-        cat "$output_file" >&2
-        rm -f "$output_file"
-        return $exit_code
-    fi
+    : "${1:-}" "${2:-$DEFAULT_TIMEOUT}"
+    echo "SKIP: live Claude Code print functional tests are archived; run tests/skills/test-runtime-claude-code-smoke.sh" >&2
+    return 2
 }
 
-# Run Claude Code with stream-json output for skill detection
-# Usage: run_claude_json "prompt text" [timeout_seconds]
-# Returns: path to JSON log file
-# Environment:
-#   ALLOWED_TOOLS — comma-separated tool list (default: empty = --dangerously-skip-permissions)
-#   MAX_BUDGET_USD — cost guardrail in dollars (default: 1.00)
-#   MAX_TURNS — max agentic turns (default: 3)
+# Archived stream-json helper; kept only so old test files fail closed if run
+# directly.
 run_claude_json() {
-    local prompt="$1"
-    local timeout="${2:-$DEFAULT_TIMEOUT}"
-    local ts
-    ts="$(date +%s)"
-    local log_file="$LOG_DIR/claude-${ts}-$$.jsonl"
-
-    # Build permission flags: prefer --allowedTools over --dangerously-skip-permissions
-    local -a perm_flags
-    if [[ -n "${ALLOWED_TOOLS:-}" ]]; then
-        perm_flags=(--allowedTools "$ALLOWED_TOOLS")
-    else
-        perm_flags=(--dangerously-skip-permissions)
-    fi
-
-    if AGENTOPS_HOOKS_DISABLED="${AGENTOPS_HOOKS_DISABLED:-1}" \
-        timeout "$timeout" claude -p "$prompt" \
-        --plugin-dir "$REPO_ROOT" \
-        "${perm_flags[@]}" \
-        --max-turns "$MAX_TURNS" \
-        --no-session-persistence \
-        --max-budget-usd "$MAX_BUDGET_USD" \
-        --output-format stream-json \
-        --verbose \
-        > "$log_file" 2>&1; then
-        echo "$log_file"
-        return 0
-    else
-        local exit_code=$?
-        echo "$log_file"
-        return $exit_code
-    fi
+    : "${1:-}" "${2:-$DEFAULT_TIMEOUT}"
+    echo "SKIP: live Claude Code print functional tests are archived; run tests/skills/test-runtime-claude-code-smoke.sh" >&2
+    return 2
 }
 
 # Check if a skill was triggered (looks in stream-json output)

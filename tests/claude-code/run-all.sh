@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Functional test runner for AgentOps skills
-# Tests skills by invoking Claude Code CLI and verifying behavior
+# Archived functional test runner for AgentOps skills.
+# The maintained Claude Code proof is tests/skills/test-runtime-claude-code-smoke.sh.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -13,6 +13,12 @@ echo ""
 echo "Repository: $(cd ../.. && pwd)"
 echo "Test time: $(date)"
 echo ""
+
+if [[ "${AGENTOPS_ENABLE_CLAUDE_CODE_FUNCTIONAL_TESTS:-0}" != "1" ]]; then
+    echo "SKIPPED: live Claude Code functional tests are archived."
+    echo "Run tests/skills/test-runtime-claude-code-smoke.sh for the maintained non-print proof."
+    exit 0
+fi
 
 # Check if Claude Code is available
 if ! command -v claude &> /dev/null; then
