@@ -39,10 +39,10 @@ Current inventory count:
 | Bucket | Files |
 |---|---:|
 | KEEP | 467 |
-| RELOCATE | 114 |
+| RELOCATE | 112 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
-| Total | 620 |
+| Total | 618 |
 
 Validation command:
 
@@ -191,6 +191,14 @@ place, while the report builder, lint subprocess contract, orphan skill scan,
 undocumented-dir scan, strict-mode error, and text/JSON rendering now live under
 `cli/internal/adapters/agentsdoctor`. Shared `.agents` surface parsing now lives
 under `cli/internal/adapters/agentsurface`.
+
+## Extracted Agents Reference Scanner
+
+The `.agents/` production-reference scanner and shell-parity contract tests
+moved behind the `mto-fleet` adapter boundary. AO keeps the public `ao agents`
+wrappers focused on command registration and flags, while the read-side
+write-surface scanner now lives under
+`cli/internal/adapters/agentsreferences`.
 
 ## Reversibility
 
