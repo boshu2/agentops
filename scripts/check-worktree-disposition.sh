@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Uses `declare -A` (lines ~156, 271) — bash 4+. macOS /bin/bash is 3.2 and would
+# silently misbehave, turning this gate into a false green (ag-qidx TX2).
+# shellcheck disable=SC1091
+. "$(dirname "$0")/../lib/bash4-guard.sh"
 set -euo pipefail
 
 if [[ -n "${GIT_DIR:-}" && -z "${GIT_WORK_TREE:-}" ]]; then
