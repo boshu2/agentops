@@ -39,9 +39,9 @@ Current inventory count:
 |---|---:|
 | KEEP | 450 |
 | RELOCATE | 146 |
-| ARCHIVE | 2 |
+| ARCHIVE | 0 |
 | RESEARCH | 39 |
-| Total | 637 |
+| Total | 635 |
 
 Validation command:
 
@@ -75,8 +75,16 @@ RELOCATE is the default for outer orchestration and fleet-like surfaces:
 serving surfaces. These are valuable, but they sit one altitude up from the
 lean local image.
 
-ARCHIVE is limited to explicitly legacy or deprecated surfaces in this pass.
-Anything not confidently classified is marked RESEARCH rather than cut.
+The initial ARCHIVE rows were retired in the first reduction slice. Anything
+not confidently classified is marked RESEARCH rather than cut.
+
+## Retired Archive Surface
+
+The first reduction slice removed `ao pool migrate-legacy` and its dedicated
+helpers. Legacy knowledge captures remain supported through the lean local
+flywheel path: `ao pool ingest` already scans `.agents/knowledge/*.md` when no
+explicit files are provided, and the legacy-capture e2e now exercises that
+direct ingest route.
 
 ## Reversibility
 

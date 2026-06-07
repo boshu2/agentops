@@ -1021,57 +1021,7 @@ func TestHelper3_findStaleRunsWithMinAge(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// 9. pool_migrate_legacy.go — nextLegacyDestination
-// ---------------------------------------------------------------------------
-
-func TestHelper3_nextLegacyDestination(t *testing.T) {
-	t.Run("no collision", func(t *testing.T) {
-		dir := t.TempDir()
-		got, err := nextLegacyDestination(dir, "capture.md")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if filepath.Base(got) != "capture.md" {
-			t.Errorf("base = %q, want 'capture.md'", filepath.Base(got))
-		}
-	})
-
-	t.Run("collision increments suffix", func(t *testing.T) {
-		dir := t.TempDir()
-		// Create the existing file to cause collision
-		existing := filepath.Join(dir, "capture.md")
-		if err := os.WriteFile(existing, []byte("exists"), 0644); err != nil {
-			t.Fatal(err)
-		}
-		got, err := nextLegacyDestination(dir, "capture.md")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if filepath.Base(got) != "capture-migrated-1.md" {
-			t.Errorf("base = %q, want 'capture-migrated-1.md'", filepath.Base(got))
-		}
-	})
-
-	t.Run("multiple collisions", func(t *testing.T) {
-		dir := t.TempDir()
-		if err := os.WriteFile(filepath.Join(dir, "data.md"), []byte("x"), 0644); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(filepath.Join(dir, "data-migrated-1.md"), []byte("x"), 0644); err != nil {
-			t.Fatal(err)
-		}
-		got, err := nextLegacyDestination(dir, "data.md")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if filepath.Base(got) != "data-migrated-2.md" {
-			t.Errorf("base = %q, want 'data-migrated-2.md'", filepath.Base(got))
-		}
-	})
-}
-
-// ---------------------------------------------------------------------------
-// 10. session_close.go — computeVelocityDelta, classifyFlywheelStatus,
+// 9. session_close.go — computeVelocityDelta, classifyFlywheelStatus,
 //     shortenPath
 // ---------------------------------------------------------------------------
 

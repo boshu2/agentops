@@ -56,7 +56,6 @@ public-tested|rpi cleanup|Covered by rpi cleanup tests.
 
 public-tested|pool auto-promote|Covered by pool command tests.
 public-tested|pool batch-promote|Covered by batch promote tests.
-public-tested|pool migrate-legacy|Covered by pool legacy migration tests.
 public-tested|pool promote|Covered by pool command tests.
 public-tested|pool reject|Covered by pool command tests.
 public-tested|pool show|Covered by pool command tests.

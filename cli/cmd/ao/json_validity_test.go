@@ -1105,32 +1105,6 @@ func TestJSONValidity_PoolIngest(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Tests: Pool migrate-legacy
-// ---------------------------------------------------------------------------
-
-func TestJSONValidity_PoolMigrateLegacy(t *testing.T) {
-	// The migrate-legacy command outputs a result structure.
-	result := map[string]any{
-		"migrated":    5,
-		"skipped":     2,
-		"errors":      0,
-		"dry_run":     true,
-		"source_dir":  ".agents/knowledge/pending",
-		"target_pool": ".agents/pool",
-	}
-
-	out := captureJSONStdout(t, func() {
-		enc := json.NewEncoder(os.Stdout)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(result); err != nil {
-			t.Fatalf("encode: %v", err)
-		}
-	})
-
-	assertValidJSON(t, "pool migrate-legacy --json", out)
-}
-
-// ---------------------------------------------------------------------------
 // Tests: Session outcome
 // ---------------------------------------------------------------------------
 
