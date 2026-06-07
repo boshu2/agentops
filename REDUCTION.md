@@ -38,11 +38,11 @@ Current inventory count:
 
 | Bucket | Files |
 |---|---:|
-| KEEP | 454 |
-| RELOCATE | 140 |
+| KEEP | 456 |
+| RELOCATE | 136 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
-| Total | 633 |
+| Total | 631 |
 
 Validation command:
 
@@ -104,6 +104,13 @@ The `ao agent bundle` pure builder moved behind the `vendor-image-adapter`
 route. AO keeps the public command wrapper and JSON contract in place for
 compatibility, while the runtime-specific bundle construction now lives under
 `cli/internal/adapters/vendorimage/agentbundle`.
+
+## Extracted Harness Sync Surface
+
+The `ao harness status` filesystem sync adapter moved behind the
+`vendor-image-adapter` route. AO keeps the public command wrapper and JSONL
+contract in place, while the skill/skills-codex hash scanner now lives under
+`cli/internal/adapters/vendorimage/harnesssync`.
 
 ## Reversibility
 

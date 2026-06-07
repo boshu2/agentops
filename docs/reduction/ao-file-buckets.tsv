@@ -235,10 +235,8 @@ cli/cmd/ao/handoff.go	KEEP	self-contained AO image surface: loop, mind, local Th
 cli/cmd/ao/handoff_bridge.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	fmt,os,path/...,time
 cli/cmd/ao/handoff_bridge_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	os,path/...,strings,testing
 cli/cmd/ao/handoff_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	encoding/...,os,path/...,strings,testing
-cli/cmd/ao/harness_adapter.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	context,crypto/...,encoding/...,fmt,internal/ports,os,path/...,sort
-cli/cmd/ao/harness_adapter_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	context,errors,internal/ports,os,path/...,testing
-cli/cmd/ao/harness_cmd.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	context,encoding/...,fmt,github.com/...,internal/ports,io,os
-cli/cmd/ao/harness_cmd_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	bytes,context,errors,internal/ports,strings,testing
+cli/cmd/ao/harness_cmd.go	KEEP	public compatibility wrapper for `ao harness status`; sync adapter moved to vendor-image adapter boundary	context,encoding/...,fmt,github.com/...,internal/ports,io,os
+cli/cmd/ao/harness_cmd_test.go	KEEP	test coverage follows the public harness command wrapper	bytes,context,errors,internal/ports,strings,testing
 cli/cmd/ao/harvest.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	encoding/...,errors,fmt,github.com/...,internal/harvest,internal/lockfile,internal/wiki,os,path/...,strconv,strings,time
 cli/cmd/ao/harvest_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	encoding/...,internal/harvest,io,os,path/...,strconv,strings,testing,time
 cli/cmd/ao/harvest_volume_gate_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	io,os,path/...,strconv,strings,testing

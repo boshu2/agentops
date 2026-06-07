@@ -1,5 +1,5 @@
 // practices: [hexagonal-architecture, tdd]
-package main
+package harnesssync
 
 import (
 	"context"
@@ -28,7 +28,7 @@ func TestProductionHarness_StatusReportsBothTrees(t *testing.T) {
 	root := t.TempDir()
 	mustWriteSkill(t, root, "skills", "evolve", "claude evolve")
 	mustWriteSkill(t, root, "skills-codex", "evolve", "codex evolve")
-	h := newProductionHarness(root)
+	h := New(root)
 	all, err := h.Status(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -46,7 +46,7 @@ func TestProductionHarness_OutOfSyncDetected(t *testing.T) {
 	root := t.TempDir()
 	mustWriteSkill(t, root, "skills", "evolve", "canonical body v1")
 	mustWriteSkill(t, root, "skills-codex", "evolve", "codex body DIFFERENT")
-	h := newProductionHarness(root)
+	h := New(root)
 	codex, err := h.StatusForSkill(context.Background(), "evolve")
 	if err != nil {
 		t.Fatal(err)
@@ -76,7 +76,7 @@ func TestProductionHarness_InSyncWhenHashesMatch(t *testing.T) {
 	body := "same content for both"
 	mustWriteSkill(t, root, "skills", "evolve", body)
 	mustWriteSkill(t, root, "skills-codex", "evolve", body)
-	h := newProductionHarness(root)
+	h := New(root)
 	codex, _ := h.StatusForSkill(context.Background(), "evolve")
 	for _, e := range codex {
 		if e.OutOfSync {
@@ -89,7 +89,7 @@ func TestProductionHarness_MissingTreeIsNotError(t *testing.T) {
 	root := t.TempDir()
 	mustWriteSkill(t, root, "skills", "evolve", "claude only")
 	// no skills-codex/ at all
-	h := newProductionHarness(root)
+	h := New(root)
 	all, err := h.Status(context.Background())
 	if err != nil {
 		t.Fatalf("missing skills-codex/ should be tolerated, got: %v", err)
@@ -106,7 +106,7 @@ func TestProductionHarness_SkillWithoutSKILLMDIsSkipped(t *testing.T) {
 		t.Fatal(err)
 	}
 	mustWriteSkill(t, root, "skills", "real", "body")
-	h := newProductionHarness(root)
+	h := New(root)
 	all, _ := h.Status(context.Background())
 	if len(all) != 1 || all[0].Skill != "real" {
 		t.Fatalf("got %+v, want only 'real' skill", all)
@@ -114,21 +114,21 @@ func TestProductionHarness_SkillWithoutSKILLMDIsSkipped(t *testing.T) {
 }
 
 func TestProductionHarness_StatusForSkillEmptyNameErrors(t *testing.T) {
-	h := newProductionHarness(t.TempDir())
+	h := New(t.TempDir())
 	if _, err := h.StatusForSkill(context.Background(), ""); err == nil {
 		t.Fatal("expected error on empty skill name, got nil")
 	}
 }
 
 func TestProductionHarness_EmptyRootErrors(t *testing.T) {
-	h := newProductionHarness("")
+	h := New("")
 	if _, err := h.Status(context.Background()); err == nil {
 		t.Fatal("expected error on empty rootDir, got nil")
 	}
 }
 
 func TestProductionHarness_HonorsContextCancellation(t *testing.T) {
-	h := newProductionHarness(t.TempDir())
+	h := New(t.TempDir())
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	if _, err := h.Status(ctx); err == nil {
