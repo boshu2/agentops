@@ -4,7 +4,7 @@ No agent runs `claude -p` or `claude --print`, **ever** — not as a worker, not
 only the sub", not buried in a tool's config. It bills the API / burns the Claude Max weekly quota.
 **No rationalization makes it OK; do not reason past it.** Use `codex exec` (Codex Pro sub), the local
 bushido llama, or an interactive NTM Claude pane (NOT `gemini -p` — not a sub-path, not AGY).
-Mechanically enforced by `~/.claude/hooks/no-claude-p-guard.sh`.
+Mechanically enforced on Bo's machine by the local opt-in guard `~/.claude/hooks/no-claude-p-guard.sh`.
 
 ---
 

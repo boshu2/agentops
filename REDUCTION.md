@@ -39,10 +39,10 @@ Current inventory count:
 | Bucket | Files |
 |---|---:|
 | KEEP | 467 |
-| RELOCATE | 110 |
+| RELOCATE | 108 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
-| Total | 616 |
+| Total | 614 |
 
 Validation command:
 
@@ -208,6 +208,13 @@ behind the `vendor-image-adapter` boundary. AO keeps the public `ao codex`
 command/state machine in `cli/cmd/ao/codex.go`, while runtime-specific
 discovery now lives under
 `cli/internal/adapters/vendorimage/codexruntime`.
+
+## Collapsed RPI Complexity Shim
+
+The duplicate command-package RPI complexity shim was removed. Complexity
+classification already lives in `cli/internal/rpi`; `cli/cmd/ao/rpi.go` now
+keeps only the package-level compatibility aliases and `classifyComplexity`
+delegate needed by the remaining RPI command files.
 
 ## Reversibility
 

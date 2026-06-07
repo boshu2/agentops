@@ -442,8 +442,6 @@ cli/cmd/ao/rpi_cancel.go	RELOCATE	outer orchestration, runtime supervision, or f
 cli/cmd/ao/rpi_cancel_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,internal/rpi,os,path/...,strings,syscall,testing,time
 cli/cmd/ao/rpi_cleanup.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	context,fmt,github.com/...,internal/adapters,internal/ports,internal/rpi,os,os/...,path/...,strings,time
 cli/cmd/ao/rpi_cleanup_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,os,os/...,path/...,strings,testing,time
-cli/cmd/ao/rpi_complexity.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	internal/rpi
-cli/cmd/ao/rpi_complexity_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	testing
 cli/cmd/ao/rpi_discovery_artifact.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,fmt,os,path/...,regexp,strings,time
 cli/cmd/ao/rpi_discovery_artifact_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,os,path/...,strings,testing
 cli/cmd/ao/rpi_evaluator.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,fmt,internal/rpi,os,path/...,strings,time
