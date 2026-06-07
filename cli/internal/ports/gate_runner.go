@@ -41,6 +41,10 @@ const (
 // ignore it.
 type GateRunRequest struct {
 	Name GateName
+	// Args are extra CLI arguments passed to the gate script (e.g.
+	// "--mode", "changed"). Optional; adapters that don't model args MAY
+	// ignore them.
+	Args []string
 	Env  map[string]string
 }
 

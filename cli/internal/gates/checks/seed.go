@@ -45,7 +45,7 @@ func init() {
 		{ID: "skill.runtime-formats", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-runtime-formats.sh"},
 		{ID: "skill.runtime-parity", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-runtime-parity.sh"},
 		{ID: "skill.cli-snippets", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-cli-snippets.sh"},
-		{ID: "skill.manifests", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-manifests.sh"},
+		{ID: "skill.manifests", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-manifests.sh", Args: []string{"--repo-root", "."}},
 		{ID: "skill.next-work-contract", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-next-work-contract-parity.sh"},
 		{ID: "skill.codex-parity-drift", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "check-codex-parity-drift.sh"},
 		{ID: "skill.codex-runtime-sections", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-runtime-sections.sh"},
@@ -84,14 +84,13 @@ func init() {
 		{ID: "always.test-fixture-parity", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-test-fixture-parity.sh"},
 		{ID: "go.race-fast", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "validate-go-fast.sh"},
 		{ID: "full.headless-runtime-skills", Tiers: gates.Full, Blocking: false, Backing: "validate-headless-runtime-skills.sh"},
-		// DEFERRED (PB1 model gaps, not flaky checks):
-		//  - validate-release-audit-artifacts.sh needs `--mode changed` + a narrow
-		//    release-file Match + RELEASE_AUDIT_CHANGED_PATHS env. The Check model
-		//    must grow Args/Env fields for checks the bash gate parameterizes
-		//    (also: validate-manifests --repo-root, codex-* --scope). Until then
-		//    wrapping them risks behavior drift.
-		//  - check-agents-hash-snapshot.sh is a stateful capture/diff pair — needs
-		//    a native Go port, not a single wrapper.
+		// release-audit: narrow Match (only release files) + --mode changed, mirroring
+		// the bash gate's needs_release_audit_artifact_check (PB1a Args support).
+		{ID: "release.audit-artifacts", Tiers: gates.Fast | gates.Full, Blocking: true,
+			Backing: "validate-release-audit-artifacts.sh", Args: []string{"--mode", "changed"},
+			Match: []string{"docs/releases/**", "scripts/ci-local-release.sh", "scripts/resolve-release-artifacts.sh", "scripts/validate-release-audit-artifacts.sh", "tests/scripts/release-artifacts.bats"}},
+		// DEFERRED: check-agents-hash-snapshot.sh is a stateful capture/diff pair —
+		// needs a native Go port, not a single wrapper.
 	}
 	for _, c := range seed {
 		gates.Register(c)

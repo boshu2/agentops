@@ -125,7 +125,7 @@ func (o *Orchestrator) runOne(ctx context.Context, c Check, rc RunContext) (port
 	if c.Run != nil {
 		return c.Run(ctx, rc)
 	}
-	return o.runner.Run(ctx, ports.GateRunRequest{Name: ports.GateName(c.Backing)})
+	return o.runner.Run(ctx, ports.GateRunRequest{Name: ports.GateName(c.Backing), Args: c.Args, Env: c.Env})
 }
 
 // isBlockingFail reports whether a verdict should fail the run: only a FAIL on a
