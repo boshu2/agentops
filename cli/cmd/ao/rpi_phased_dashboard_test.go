@@ -13,7 +13,7 @@ func TestStartEmbeddedDashboard_ServesOnEphemeralPort(t *testing.T) {
 	root := t.TempDir()
 	runID := "test-run-abc123"
 
-	srv, dashURL := startEmbeddedDashboard(root, runID, false)
+	srv, dashURL := startEmbeddedDashboard(root, runID, true)
 	if srv == nil {
 		t.Fatal("expected non-nil server")
 	}
@@ -58,7 +58,7 @@ func TestDash_StartEmbeddedDashboard_ReturnsServer(t *testing.T) {
 	root := t.TempDir()
 	runID := "dash-returns-server"
 
-	srv, dashURL := startEmbeddedDashboard(root, runID, false)
+	srv, dashURL := startEmbeddedDashboard(root, runID, true)
 	if srv == nil {
 		t.Fatal("expected non-nil server from startEmbeddedDashboard")
 	}
@@ -91,7 +91,7 @@ func TestDash_ShutdownDashboard_GracefulClose(t *testing.T) {
 	root := t.TempDir()
 	runID := "dash-graceful"
 
-	srv, dashURL := startEmbeddedDashboard(root, runID, false)
+	srv, dashURL := startEmbeddedDashboard(root, runID, true)
 	if srv == nil {
 		t.Fatal("server is nil")
 	}
