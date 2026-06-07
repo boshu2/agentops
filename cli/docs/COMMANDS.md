@@ -658,6 +658,24 @@ ao gate bulk-approve [flags]
       --tier string         Tier to bulk approve (default: silver) (default "silver")
 ```
 
+#### `ao gate check`
+
+Run the declarative gate registry.
+
+```
+ao gate check [flags]
+```
+
+**Flags:**
+
+```
+      --fail-fast      stop after the first blocking failure
+      --full           run every check (routing ignored); default is the fast changed-file subset
+  -h, --help           help for check
+      --json           emit the machine-readable JSON report
+      --scope string   fast-mode changed-file scope: head|staged|worktree|upstream (default "head")
+```
+
 #### `ao gate pending`
 
 List bronze-tier candidates awaiting human review.
