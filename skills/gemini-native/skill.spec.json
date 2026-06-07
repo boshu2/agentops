@@ -1,0 +1,21 @@
+{
+  "name": "gemini-native",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Drive the AgentOps claim->work->validate->close->persist loop natively on Gemini CLI, using `gemini -p`, worktrees, skills, MCP, hooks, and structured output instead of Claude or Codex runtime wrappers.",
+  "triggers": [
+
+  ],
+  "inputs": [
+    "operating-loop-skill",
+    "beads-br"
+  ],
+  "outputs": [
+    "gemini-run-evidence",
+    "scoped-commit"
+  ],
+  "validation": {
+    "command": "bash skills/gemini-native/scripts/validate.sh"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "native-debugger-triage",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Debug native programs (C/C++/Rust/Go-cgo and any ELF binary) with GNU gdb — set breakpoints and watchpoints, capture backtraces, inspect memory and variables, run conditional/temporary breakpoints, drive the TUI, and analyze core dumps. Inc",
+  "triggers": [
+
+  ],
+  "inputs": [
+
+  ],
+  "outputs": [
+    "backtrace",
+    "core-dump-analysis"
+  ],
+  "validation": {
+    "command": "bash skills/native-debugger-triage/scripts/validate.sh"
+  }
+}

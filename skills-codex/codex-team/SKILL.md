@@ -1,6 +1,6 @@
 ---
 name: codex-team
-description: 'Coordinate multiple Codex agents.'
+description: "Run codex team."
 ---
 # Codex Team
 

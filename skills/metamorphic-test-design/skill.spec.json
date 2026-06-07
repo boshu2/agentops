@@ -1,0 +1,19 @@
+{
+  "name": "metamorphic-test-design",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "\"Design metamorphic tests using invariants and input relations when exact expected outputs are hard.",
+  "triggers": [
+
+  ],
+  "inputs": [
+
+  ],
+  "outputs": [
+
+  ],
+  "validation": {
+    "command": "bash skills/metamorphic-test-design/scripts/validate.sh"
+  }
+}

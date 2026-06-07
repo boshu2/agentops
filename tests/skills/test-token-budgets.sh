@@ -86,7 +86,9 @@ done
 # Print top-5 largest skills
 echo ""
 echo -e "${BLUE}Top 5 largest skills:${NC}"
-printf '%s\n' "${skill_sizes[@]}" | sort -rn | head -5 | while read -r tokens name; do
+mapfile -t sorted_skill_sizes < <(printf '%s\n' "${skill_sizes[@]}" | sort -rn)
+for entry in "${sorted_skill_sizes[@]:0:5}"; do
+    read -r tokens name <<< "$entry"
     pct=$(( tokens * 100 / SKILL_FAIL_LIMIT ))
     echo "  ${tokens} tokens (${pct}% of limit) — ${name}"
 done

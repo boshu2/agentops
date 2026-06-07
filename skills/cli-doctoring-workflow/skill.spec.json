@@ -1,0 +1,26 @@
+{
+  "name": "cli-doctoring-workflow",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Design or audit CLI doctor commands, health checks, repair hints, and user-centered diagnostics that help users move from failure symptoms to confident next actions.",
+  "triggers": [
+
+  ],
+  "inputs": [
+    "cli-source",
+    "command-help",
+    "error-reports",
+    "installation-docs",
+    "support-history"
+  ],
+  "outputs": [
+    "doctor-command-design",
+    "diagnostic-audit",
+    "repair-hint-plan",
+    "health-check-contract"
+  ],
+  "validation": {
+    "command": "bash skills/cli-doctoring-workflow/scripts/validate.sh"
+  }
+}

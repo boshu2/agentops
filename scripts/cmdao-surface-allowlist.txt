@@ -106,3 +106,33 @@ public-stateful-fixture-needed|overnight curator event|Appends events to a confi
 manual-only|overnight curator status|Depends on local curator, runner, and Ollama environment.
 public-stateful-fixture-needed|eval outcomes compile|Holdout-safe rubric projection; core logic unit-tested (eval_outcomes_test.go compileOutcomesRubric); CLI smoke needs an input.json fixture (follow-up).
 public-stateful-fixture-needed|eval outcomes ingest|Maps an Outcomes score to the council verdict record; core logic unit-tested (eval_outcomes_ingest_test.go ingestOutcomesScore); CLI smoke needs a score.json fixture (follow-up).
+public-stateful-fixture-needed|canon cite|Requires an isolated canon ledger and citation fixture.
+public-stateful-fixture-needed|canon promote|Mutates canon promotion state and needs a disposable canon fixture.
+public-stateful-fixture-needed|canon verify|Verifies canon evidence against repo-local canon fixtures not present in release smoke.
+manual-only|ci latest|Depends on live remote CI state; command smoke coverage needs a mocked GitHub/CI fixture.
+manual-only|ci recent|Depends on live remote CI state; command smoke coverage needs a mocked GitHub/CI fixture.
+public-stateful-fixture-needed|claim list|Reads claim-evidence stores and needs an isolated claim fixture.
+public-stateful-fixture-needed|corpus restore|Restores corpus snapshots and needs a disposable corpus fixture.
+public-stateful-fixture-needed|doctor capabilities|Inspects local installation capabilities and needs a controlled home/repo fixture.
+public-stateful-fixture-needed|doctor diff|Compares local installation state and needs a controlled home/repo fixture.
+public-stateful-fixture-needed|doctor explain|Explains doctor findings from local state and needs a controlled findings fixture.
+public-stateful-fixture-needed|doctor fix|Mutates local installation state and needs an isolated repair fixture.
+public-stateful-fixture-needed|doctor gc|Prunes local doctor artifacts and needs an isolated artifact fixture.
+public-stateful-fixture-needed|doctor health|Inspects local health state and needs a controlled home/repo fixture.
+public-stateful-fixture-needed|doctor ls|Lists local doctor-managed artifacts and needs a controlled home/repo fixture.
+public-stateful-fixture-needed|doctor robot-docs|Generates robot docs from local state and needs a controlled output fixture.
+public-stateful-fixture-needed|doctor undo|Reverts doctor fixes and needs an isolated undo fixture.
+public-stateful-fixture-needed|eval suite n-required|Computes eval-suite thresholds and needs a representative suite fixture.
+public-stateful-fixture-needed|eval suite verdict|Projects eval-suite verdicts and needs a representative suite fixture.
+public-stateful-fixture-needed|eval task add|Mutates eval task manifests and needs a disposable eval fixture.
+public-stateful-fixture-needed|eval task list|Reads eval task manifests and needs a representative eval fixture.
+public-stateful-fixture-needed|eval task show|Reads eval task manifests and needs a representative eval fixture.
+public-stateful-fixture-needed|goals steer apply|Mutates GOALS.md from steering recommendations and needs an isolated goal fixture.
+public-stateful-fixture-needed|goals steer recommend|Reads goal history and needs a representative goal fixture.
+public-stateful-fixture-needed|loop hypothesis append|Appends loop hypotheses and needs an isolated loop ledger fixture.
+public-stateful-fixture-needed|loop hypothesis list|Reads loop hypotheses and needs a representative loop ledger fixture.
+public-stateful-fixture-needed|orchestrate select|Selects work from repo-local orchestration state and needs a controlled queue fixture.
+public-stateful-fixture-needed|registry list|Reads generated registry state and needs a representative registry fixture.
+manual-only|sessions spawn|Spawns runtime sessions and requires live terminal/runtime state.
+public-stateful-fixture-needed|wiki inject|Reads and writes wiki/corpus state and needs an isolated wiki fixture.
+public-stateful-fixture-needed|wiki query|Queries wiki/corpus indexes and needs a representative wiki fixture.

@@ -1,6 +1,6 @@
 ---
 name: inject
-description: 'Load relevant .agents context.'
+description: "Run inject."
 ---
 > **DEPRECATED (removal target: v3.0.0)** — Use `ao lookup --query "topic"` for on-demand learnings retrieval and phase-scoped context packets. This skill and the `ao inject` CLI command still work as compatibility adapters, but they are not the canonical context path and are not called from default hooks or other skills.
 

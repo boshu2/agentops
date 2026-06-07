@@ -1,0 +1,19 @@
+{
+  "name": "behavior-preserving-simplification",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "",
+  "triggers": [
+
+  ],
+  "inputs": [
+
+  ],
+  "outputs": [
+
+  ],
+  "validation": {
+    "command": "bash skills/behavior-preserving-simplification/scripts/validate.sh"
+  }
+}

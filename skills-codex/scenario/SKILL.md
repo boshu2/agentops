@@ -1,6 +1,6 @@
 ---
 name: scenario
-description: 'Manage holdout scenarios.'
+description: "Run scenario."
 ---
 # Scenario Skill
 

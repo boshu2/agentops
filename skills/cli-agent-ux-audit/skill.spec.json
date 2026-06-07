@@ -1,0 +1,20 @@
+{
+  "name": "cli-agent-ux-audit",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Score and aggressively improve CLI ergonomics for AI agents — predictable flags, greppable --help, machine-readable (JSON/NDJSON) output modes, stable exit codes, and low-friction robot surfaces — then apply the fixes in-tree.",
+  "triggers": [
+
+  ],
+  "inputs": [
+
+  ],
+  "outputs": [
+    "ergonomics-scorecard",
+    "remediation-plan"
+  ],
+  "validation": {
+    "command": "bash skills/cli-agent-ux-audit/scripts/validate.sh"
+  }
+}

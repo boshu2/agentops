@@ -1,0 +1,55 @@
+{
+  "name": "cc-loop-driver",
+  "skill_api_version": 1,
+  "form": "A",
+  "quality_score": 0.95,
+  "sections": [
+    { "id": "title",        "title": "cc-loop-driver",            "type": "intro",        "priority": "required" },
+    { "id": "overview",     "title": "Overview / When to Use",    "type": "overview",     "priority": "required" },
+    { "id": "constraints",  "title": "⚠️ Critical Constraints",   "type": "constraints",  "priority": "required" },
+    { "id": "workflow",     "title": "Workflow / Methodology",    "type": "procedure",    "priority": "required" },
+    { "id": "output",       "title": "Output Specification",      "type": "contract",     "priority": "required" },
+    { "id": "rubric",       "title": "Quality Rubric",            "type": "rubric",       "priority": "required" },
+    { "id": "examples",     "title": "Examples",                  "type": "examples",     "priority": "standard" },
+    { "id": "troubleshoot", "title": "Troubleshooting",           "type": "table",        "priority": "standard" },
+    { "id": "seealso",      "title": "See Also / References",     "type": "routing",      "priority": "required" }
+  ],
+  "references": [
+    { "file": "references/tick-helper.md",       "topic": "tick.sh close-cannot-lie + scoped-stage mechanics + council-gate logic" },
+    { "file": "references/dispatch-templates.md", "topic": "verbatim worker / validator / tie-break Task prompts" }
+  ],
+  "metadata": {
+    "tier": "orchestration",
+    "stability": "experimental",
+    "dependencies": ["beads-br", "beads", "cc-hooks"],
+    "hexagonal_role": "driving-adapter",
+    "context_window": "inherit",
+    "triggers": [
+      "drive the loop",
+      "cc-loop-driver",
+      "Claude-native tick loop",
+      "run the control plane in Claude",
+      "assured loop without NTM",
+      "bd ready -> claim -> worker -> validate -> close",
+      "single-writer close loop",
+      "all-Claude factory loop"
+    ],
+    "token_estimate": {
+      "minimal": 60,
+      "overview": 280,
+      "standard": 1500,
+      "full": 3200
+    }
+  },
+  "output_contract": "Per-bead evidence file at evidence/<id>.md + validator verdict(s); a conventional-commit git commit per closed bead; a published shared-state artifact (Agent Mail summary or committed .agents note). The loop returns NO_READY or CONVERGED when drained.",
+  "evidence": {
+    "sources": [
+      "~/dev/control-plane/ORCHESTRATOR.md",
+      "~/dev/control-plane/WORKER.md",
+      "~/dev/control-plane/VALIDATOR.md",
+      "~/dev/control-plane/tick.sh",
+      "~/dev/control-plane/LEARNINGS.md",
+      "~/dev/agentops/skills/shared/references/claude-code-latest-features.md"
+    ]
+  }
+}

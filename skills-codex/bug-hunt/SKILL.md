@@ -1,6 +1,6 @@
 ---
 name: bug-hunt
-description: 'Investigate bugs and root causes.'
+description: "Run bug hunt."
 ---
 # Bug Hunt Skill
 

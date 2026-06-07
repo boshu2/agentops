@@ -1,0 +1,19 @@
+{
+  "name": "ripgrep-search-discipline",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "CLI-reference contract for using ripgrep (rg) optimally — the flags that make code search fast and precise, the slow patterns to avoid, and the search strategy an agent should default to instead of grep -r / find.",
+  "triggers": [
+
+  ],
+  "inputs": [
+
+  ],
+  "outputs": [
+
+  ],
+  "validation": {
+    "command": "bash skills/ripgrep-search-discipline/scripts/validate.sh"
+  }
+}

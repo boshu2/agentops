@@ -1,6 +1,6 @@
 ---
 name: harvest
-description: 'Promote .agents knowledge.'
+description: "Run harvest."
 ---
 # Harvest — Cross-Rig Knowledge Consolidation
 

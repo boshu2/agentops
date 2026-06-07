@@ -1,6 +1,6 @@
 ---
 name: curate
-description: 'Mine agent work into durable knowledge.'
+description: "Run curate."
 ---
 
 # $curate — Canonical Miner Skill

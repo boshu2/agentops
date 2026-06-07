@@ -1,6 +1,6 @@
 ---
 name: skill-builder
-description: 'Scaffold a new SKILL.md.'
+description: "Run skill builder."
 ---
 # $skill-builder — Scaffold or absorb a new SKILL.md
 

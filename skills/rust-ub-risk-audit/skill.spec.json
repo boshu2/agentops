@@ -1,0 +1,23 @@
+{
+  "name": "rust-ub-risk-audit",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Audit Rust code for undefined behavior risk around unsafe blocks, FFI, raw pointers, pointer aliasing, lifetimes, layout assumptions, concurrency, and dependency boundaries.",
+  "triggers": [
+
+  ],
+  "inputs": [
+    "rust-source",
+    "cargo-metadata",
+    "ffi-contracts",
+    "test-results"
+  ],
+  "outputs": [
+    "ub-risk-audit-report",
+    "unsafe-inventory"
+  ],
+  "validation": {
+    "command": "bash skills/rust-ub-risk-audit/scripts/validate.sh"
+  }
+}

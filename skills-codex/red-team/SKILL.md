@@ -1,6 +1,6 @@
 ---
 name: red-team
-description: 'Probe docs and skills.'
+description: "Run red team."
 ---
 # $red-team — Persona-Based Adversarial Validation
 

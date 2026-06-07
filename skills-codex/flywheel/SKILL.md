@@ -1,6 +1,6 @@
 ---
 name: flywheel
-description: 'Check knowledge flywheel health.'
+description: "Run flywheel."
 ---
 # Flywheel Skill
 Monitor the knowledge flywheel health.

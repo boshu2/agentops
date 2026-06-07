@@ -1,6 +1,6 @@
 ---
 name: shared
-description: 'Shared AgentOps skill contracts.'
+description: "Run shared."
 ---
 # Shared References
 

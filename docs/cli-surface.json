@@ -135,18 +135,18 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "canon cite",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Requires an isolated canon ledger and citation fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "canon promote",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Mutates canon promotion state and needs a disposable canon fixture."
     },
     {
       "category": "public-tested",
@@ -156,11 +156,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "canon verify",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Verifies canon evidence against repo-local canon fixtures not present in release smoke."
     },
     {
       "category": "public-tested",
@@ -172,16 +172,16 @@
     {
       "category": "manual-only",
       "command": "ci latest",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Depends on live remote CI state; command smoke coverage needs a mocked GitHub/CI fixture."
     },
     {
       "category": "manual-only",
       "command": "ci recent",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Depends on live remote CI state; command smoke coverage needs a mocked GitHub/CI fixture."
     },
     {
       "category": "public-tested",
@@ -198,11 +198,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "claim list",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Reads claim-evidence stores and needs an isolated claim fixture."
     },
     {
       "category": "public-tested",
@@ -317,11 +317,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "corpus restore",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Restores corpus snapshots and needs a disposable corpus fixture."
     },
     {
       "category": "public-tested",
@@ -380,67 +380,67 @@
       "reason": "Interactive demonstration requires a TTY."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "doctor capabilities",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Inspects local installation capabilities and needs a controlled home/repo fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "doctor diff",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Compares local installation state and needs a controlled home/repo fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "doctor explain",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Explains doctor findings from local state and needs a controlled findings fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "doctor fix",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Mutates local installation state and needs an isolated repair fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "doctor gc",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Prunes local doctor artifacts and needs an isolated artifact fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "doctor health",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Inspects local health state and needs a controlled home/repo fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "doctor ls",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Lists local doctor-managed artifacts and needs a controlled home/repo fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "doctor robot-docs",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Generates robot docs from local state and needs a controlled output fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "doctor undo",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Reverts doctor fixes and needs an isolated undo fixture."
     },
     {
       "category": "public-tested",
@@ -506,32 +506,32 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "eval suite n-required",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Computes eval-suite thresholds and needs a representative suite fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "eval suite verdict",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Projects eval-suite verdicts and needs a representative suite fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "eval task add",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Mutates eval task manifests and needs a disposable eval fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "eval task list",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Reads eval task manifests and needs a representative eval fixture."
     },
     {
       "category": "public-tested",
@@ -541,11 +541,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "eval task show",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Reads eval task manifests and needs a representative eval fixture."
     },
     {
       "category": "public-tested",
@@ -779,11 +779,11 @@
       "reason": "Writes GOALS.md and needs an isolated goal fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "goals steer apply",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Mutates GOALS.md from steering recommendations and needs an isolated goal fixture."
     },
     {
       "category": "public-stateful-fixture-needed",
@@ -793,11 +793,11 @@
       "reason": "Writes GOALS.md and needs an isolated goal fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "goals steer recommend",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Reads goal history and needs a representative goal fixture."
     },
     {
       "category": "public-stateful-fixture-needed",
@@ -933,18 +933,18 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "loop hypothesis append",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Appends loop hypotheses and needs an isolated loop ledger fixture."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "loop hypothesis list",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Reads loop hypotheses and needs a representative loop ledger fixture."
     },
     {
       "category": "public-tested",
@@ -1101,11 +1101,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "orchestrate select",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Selects work from repo-local orchestration state and needs a controlled queue fixture."
     },
     {
       "category": "public-tested",
@@ -1318,11 +1318,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "registry list",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Reads generated registry state and needs a representative registry fixture."
     },
     {
       "category": "public-tested",
@@ -1502,9 +1502,9 @@
     {
       "category": "manual-only",
       "command": "sessions spawn",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Spawns runtime sessions and requires live terminal/runtime state."
     },
     {
       "category": "public-tested",
@@ -1605,11 +1605,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "wiki inject",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Reads and writes wiki/corpus state and needs an isolated wiki fixture."
     },
     {
       "category": "public-tested",
@@ -1626,11 +1626,11 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
-      "category": "manual-only",
+      "category": "public-stateful-fixture-needed",
       "command": "wiki query",
-      "coverage_status": "missing",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "No smoke, direct test, or allowlist coverage found."
+      "reason": "Queries wiki/corpus indexes and needs a representative wiki fixture."
     },
     {
       "category": "public-tested",

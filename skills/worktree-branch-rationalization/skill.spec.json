@@ -1,0 +1,20 @@
+{
+  "name": "worktree-branch-rationalization",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Rationalize a repo's accumulated git worktrees and local branches down to a canonical line plus a small set of protected branches, harvesting the strongest content from every variant onto a staging branch BEFORE any destructive cleanup. Bui",
+  "triggers": [
+
+  ],
+  "inputs": [
+    "git"
+  ],
+  "outputs": [
+    "git-branches",
+    ".agents/worktree-rationalization/report.md"
+  ],
+  "validation": {
+    "command": "bash skills/worktree-branch-rationalization/scripts/validate.sh"
+  }
+}

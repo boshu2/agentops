@@ -1,6 +1,6 @@
 ---
 name: status
-description: 'Show AgentOps work status.'
+description: "Run status."
 ---
 # $status — Workflow Dashboard
 

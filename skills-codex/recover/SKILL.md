@@ -1,6 +1,6 @@
 ---
 name: recover
-description: 'Recover session context.'
+description: "Run recover."
 ---
 # $recover — Context Recovery After Compaction
 

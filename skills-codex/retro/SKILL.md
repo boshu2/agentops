@@ -1,6 +1,6 @@
 ---
 name: retro
-description: 'Capture a session learning.'
+description: "Run retro."
 ---
 # Retro Skill
 

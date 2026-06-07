@@ -1,6 +1,6 @@
 ---
 name: compile
-description: 'Compile .agents knowledge wiki.'
+description: "Run compile."
 ---
 # Compile — Knowledge Compiler
 

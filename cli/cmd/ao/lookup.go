@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -415,14 +414,9 @@ func outputResults(cwd string, learnings []learning, patterns []pattern, finding
 	return nil
 }
 
-// outputJSON marshals any value to indented JSON and prints it.
+// outputJSON prints an indented JSON value to stdout (same encoding as emitJSON).
 func outputJSON(v any) error {
-	data, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshal json: %w", err)
-	}
-	fmt.Println(string(data))
-	return nil
+	return emitJSON(os.Stdout, v)
 }
 
 // relPath returns a relative path from cwd, or the original if it fails.

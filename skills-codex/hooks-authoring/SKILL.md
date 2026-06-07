@@ -1,6 +1,6 @@
 ---
 name: hooks-authoring
-description: 'Author AgentOps runtime hooks.'
+description: "Run hooks authoring."
 ---
 # $hooks-authoring - Hook Authoring Workflow
 

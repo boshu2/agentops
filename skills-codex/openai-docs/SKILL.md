@@ -1,6 +1,6 @@
 ---
 name: openai-docs
-description: 'Use official OpenAI docs.'
+description: "Run openai docs."
 ---
 # OpenAI Docs
 

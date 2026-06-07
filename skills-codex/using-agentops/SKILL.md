@@ -1,6 +1,6 @@
 ---
 name: using-agentops
-description: 'Explain AgentOps workflows.'
+description: "Run using agentops."
 ---
 # AgentOps Operating Model
 

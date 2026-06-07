@@ -1,0 +1,19 @@
+{
+  "name": "project-reasoning-lens-analysis",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Analyze a project through multiple distinct reasoning lenses — first-principles, systems-thinking, adversarial/red-team, economic/cost, user-centric, and historical — so each angle surfaces insights the others structurally miss, then synthe",
+  "triggers": [
+
+  ],
+  "inputs": [
+    "project-context"
+  ],
+  "outputs": [
+    "multi-lens-analysis.md"
+  ],
+  "validation": {
+    "command": "bash skills/project-reasoning-lens-analysis/scripts/validate.sh"
+  }
+}
