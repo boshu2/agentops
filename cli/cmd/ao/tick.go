@@ -136,17 +136,7 @@ var tickVerdictGateCmd = &cobra.Command{
 	Short: "Reject verdicts without a non-empty COMMANDS RUN body",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		rt := newTickRuntime(cmd)
-		text, err := tickReadVerdict(rt, args[0])
-		if err != nil {
-			return err
-		}
-		if tickVerdictHasCommandsRun(text) {
-			fmt.Fprintln(rt.stdout, "VERIFIED: verdict cites the commands it ran")
-			return nil
-		}
-		fmt.Fprintln(rt.stderr, "REJECTED: verdict has no non-empty 'COMMANDS RUN' body - unverified; route to tie-break")
-		return &tickExitError{code: tickExitUnverified}
+		return tickRunVerdictGate(newTickRuntime(cmd), args[0])
 	},
 }
 
@@ -186,9 +176,61 @@ var tickSmokeCmd = &cobra.Command{
 	},
 }
 
+var verdictGateCmd = &cobra.Command{
+	Use:   "verdict-gate <file|->",
+	Short: "Reject verdicts without a non-empty COMMANDS RUN body",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return tickRunVerdictGate(newTickRuntime(cmd), args[0])
+	},
+}
+
+var councilGateCmd = &cobra.Command{
+	Use:   "council-gate <verdict1> <verdict2> [...]",
+	Short: "Fail-closed two-plus judge verdict aggregation",
+	Args:  cobra.MinimumNArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return tickCouncilGate(newTickRuntime(cmd), args)
+	},
+}
+
+var installGuardsCmd = &cobra.Command{
+	Use:   "install-guards",
+	Short: "Install repo-local git guard hooks",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		return tickInstallGuards(newTickRuntime(cmd))
+	},
+}
+
+var guardStatusCmd = &cobra.Command{
+	Use:   "guard-status",
+	Short: "Verify guard hook and validator launcher installation",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		return tickGuardStatus(newTickRuntime(cmd))
+	},
+}
+
+var chaosTestCmd = &cobra.Command{
+	Use:   "chaos-test",
+	Short: "Run a read-only smoke test of the tick membrane",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		return tickSmoke(newTickRuntime(cmd))
+	},
+}
+
 func init() {
 	tickCmd.GroupID = "workflow"
 	rootCmd.AddCommand(tickCmd)
+	rootCmd.AddCommand(
+		verdictGateCmd,
+		councilGateCmd,
+		installGuardsCmd,
+		guardStatusCmd,
+		chaosTestCmd,
+	)
 	tickCmd.AddCommand(
 		tickNextCmd,
 		tickStatusCmd,
@@ -402,6 +444,19 @@ func tickReadVerdict(rt tickRuntime, path string) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+func tickRunVerdictGate(rt tickRuntime, path string) error {
+	text, err := tickReadVerdict(rt, path)
+	if err != nil {
+		return err
+	}
+	if tickVerdictHasCommandsRun(text) {
+		fmt.Fprintln(rt.stdout, "VERIFIED: verdict cites the commands it ran")
+		return nil
+	}
+	fmt.Fprintln(rt.stderr, "REJECTED: verdict has no non-empty 'COMMANDS RUN' body - unverified; route to tie-break")
+	return &tickExitError{code: tickExitUnverified}
 }
 
 func tickVerdictHasCommandsRun(text string) bool {

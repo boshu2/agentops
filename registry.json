@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-07T05:09:49Z",
+  "generated_at": "2026-06-07T05:29:43Z",
   "summary": {
     "skills": 173,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 75,
-    "capabilities": 261
+    "cli_commands": 80,
+    "capabilities": 266
   },
   "surfaces": {
     "skills": [
@@ -1577,6 +1577,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao chaos-test",
+        "path": "cli/cmd/ao/",
+        "purpose": "Run a read-only smoke test of the tick membrane",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao ci",
         "path": "cli/cmd/ao/",
         "purpose": "BC2 CI status operations (latest run by SHA, recent runs)",
@@ -1645,6 +1652,13 @@
         "path": "cli/cmd/ao/",
         "purpose": "Corpus-quality probes for Dream and the knowledge flywheel",
         "bounded_context": "BC1",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao council-gate",
+        "path": "cli/cmd/ao/",
+        "purpose": "Fail-closed two-plus judge verdict aggregation",
+        "bounded_context": "",
         "driven_by_skills": []
       },
       {
@@ -1773,6 +1787,13 @@
         ]
       },
       {
+        "name": "ao guard-status",
+        "path": "cli/cmd/ao/",
+        "purpose": "Verify guard hook and validator launcher installation",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao handoff",
         "path": "cli/cmd/ao/",
         "purpose": "Write a structured handoff artifact for session boundary isolation",
@@ -1821,6 +1842,13 @@
           "quickstart",
           "using-agentops"
         ]
+      },
+      {
+        "name": "ao install-guards",
+        "path": "cli/cmd/ao/",
+        "purpose": "Install repo-local git guard hooks",
+        "bounded_context": "",
+        "driven_by_skills": []
       },
       {
         "name": "ao knowledge",
@@ -2155,6 +2183,13 @@
         ]
       },
       {
+        "name": "ao verdict-gate",
+        "path": "cli/cmd/ao/",
+        "purpose": "Reject verdicts without a non-empty COMMANDS RUN body",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao version",
         "path": "cli/cmd/ao/",
         "purpose": "Show version information",
@@ -2181,9 +2216,9 @@
     ]
   },
   "capability_summary": {
-    "total": 261,
+    "total": 266,
     "skills": 173,
-    "cli_commands": 75,
+    "cli_commands": 80,
     "gates": 13,
     "reference_impls": 0
   },
@@ -2196,6 +2231,7 @@
     "beads",
     "canon",
     "capabilities",
+    "chaos-test",
     "ci",
     "citation",
     "claim",
@@ -2205,6 +2241,7 @@
     "constraint",
     "contradict",
     "corpus",
+    "council-gate",
     "cron",
     "curate",
     "dedup",
@@ -2219,11 +2256,13 @@
     "forge",
     "gate",
     "goals",
+    "guard-status",
     "handoff",
     "harness",
     "harvest",
     "init",
     "inject",
+    "install-guards",
     "knowledge",
     "lookup",
     "loop",
@@ -2260,6 +2299,7 @@
     "trace",
     "turn",
     "validate",
+    "verdict-gate",
     "version",
     "vibe-check",
     "wiki"
@@ -6035,6 +6075,23 @@
       "path": "cli/cmd/ao/"
     },
     {
+      "sku": "cmd:ao.chaos-test",
+      "name": "ao chaos-test",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Run a read-only smoke test of the tick membrane",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
       "sku": "cmd:ao.ci",
       "name": "ao ci",
       "type": "cli-command",
@@ -6203,6 +6260,23 @@
       "type": "cli-command",
       "bounded_context": "BC1",
       "purpose": "Corpus-quality probes for Dream and the knowledge flywheel",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.council-gate",
+      "name": "ao council-gate",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Fail-closed two-plus judge verdict aggregation",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
@@ -6520,6 +6594,23 @@
       "path": "cli/cmd/ao/"
     },
     {
+      "sku": "cmd:ao.guard-status",
+      "name": "ao guard-status",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Verify guard hook and validator launcher installation",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
       "sku": "cmd:ao.handoff",
       "name": "ao handoff",
       "type": "cli-command",
@@ -6644,6 +6735,23 @@
         "--session",
         "--session-type",
         "--utility-weight",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.install-guards",
+      "name": "ao install-guards",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Install repo-local git guard hooks",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"
@@ -7398,6 +7506,23 @@
         "--strict",
         "--verbose",
         "--warn-as-fail"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.verdict-gate",
+      "name": "ao verdict-gate",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Reject verdicts without a non-empty COMMANDS RUN body",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
       ],
       "path": "cli/cmd/ao/"
     },

@@ -3934,6 +3934,26 @@ ao agents lint [flags]
 
 ---
 
+### `ao chaos-test`
+
+Run a read-only smoke test of the tick membrane
+
+```
+ao chaos-test [flags]
+```
+
+---
+
+### `ao council-gate`
+
+Fail-closed two-plus judge verdict aggregation
+
+```
+ao council-gate <verdict1> <verdict2> [...] [flags]
+```
+
+---
+
 ### `ao extract`
 
 Check for pending session extractions and output a prompt for Claude to process.
@@ -3954,12 +3974,32 @@ ao extract [flags]
 
 ---
 
+### `ao guard-status`
+
+Verify guard hook and validator launcher installation
+
+```
+ao guard-status [flags]
+```
+
+---
+
 ### `ao help`
 
 Help provides help for any command in the application.
 
 ```
 ao help [command] [flags]
+```
+
+---
+
+### `ao install-guards`
+
+Install repo-local git guard hooks
+
+```
+ao install-guards [flags]
 ```
 
 ---
@@ -4377,6 +4417,16 @@ ao turn verify <bead> [flags]
       --input string    Path to the turn-input JSON file (state log + scenario coverage) (required)
       --json            Emit the full Verdict object as JSON
       --ledger string   Path to the provenance EDGE ledger JSONL (default: docs/provenance/ledger.jsonl)
+```
+
+---
+
+### `ao verdict-gate`
+
+Reject verdicts without a non-empty COMMANDS RUN body
+
+```
+ao verdict-gate <file|-> [flags]
 ```
 
 ---
