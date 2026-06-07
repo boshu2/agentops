@@ -16,9 +16,23 @@
     },
     "pass1": {
       "type": "object",
-      "description": "heal-skill structural results (delegated to bash skills/heal-skill/scripts/heal.sh --check <target>).",
-      "required": ["findings"],
+      "description": "heal-skill structural results (delegated to bash skills/heal-skill/scripts/heal.sh --check --strict <target>).",
+      "required": ["status", "exit_code", "findings"],
       "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pass", "fail"],
+          "description": "Strict heal-skill verdict based on process exit code, not parsed finding text."
+        },
+        "exit_code": {
+          "type": "integer",
+          "description": "Actual exit code from heal.sh --check --strict. Non-zero forces aggregate FAIL."
+        },
+        "strict": {
+          "type": "boolean",
+          "const": true,
+          "description": "Always true: Pass 1 uses heal-skill strict mode."
+        },
         "findings": {
           "type": "array",
           "items": {

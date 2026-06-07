@@ -26,6 +26,8 @@ setup() {
 ---
 name: sample-skill
 description: 'Do a thing. Use when you need to validate a sample.'
+metadata:
+  tier: meta
 ---
 # /sample-skill — sample
 
