@@ -15,6 +15,9 @@ Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending pan
 
 - Do not use Claude Code, `claude -p`, or Claude-only tools as the executor from Codex.
 - Do not invent command flags. Verify with `--help` or checked-in references.
+- If `ntm spawn ... --cod` opens a bare shell instead of an active Codex runtime,
+  treat it as launcher failure. Use `codex exec -s danger-full-access --skip-git-repo-check -C <gitdir> "<contract>"`
+  from the repo or isolated worktree; do not send the contract into zsh.
 - Do not broaden scope beyond the requested operator action.
 - Do not land source files into `~/dev/agentops`; staged generation belongs under `$HOME/acfs` until the orchestrator lands the batch.
 - Keep backstage/operator terminology out of client-facing artifacts.

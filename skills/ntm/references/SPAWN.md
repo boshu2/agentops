@@ -61,6 +61,30 @@ Ollama specifics:
 - `--local-fallback` converts local agents to cloud if preflight fails (`spawn.go:1218`).
 - `--local-fallback-provider` `cc|cod|gmi`, default `cod` (`spawn.go:1219`).
 
+### Codex launcher verification and fallback
+
+`--cod` creates Codex-typed panes, but treat the launcher as verified only after
+robot observation. If `ntm spawn <project> --cod=1` leaves the pane at a bare `zsh`
+prompt, the next prompt will be parsed by the shell rather than Codex.
+
+Verify before dispatch:
+
+```bash
+ntm spawn myproject --cod=1
+ntm --robot-tail=myproject --panes=2 --lines=20
+ntm --robot-snapshot
+```
+
+If the pane is not an active Codex session, use Codex directly from the target repo
+or isolated worktree:
+
+```bash
+codex exec -s danger-full-access --skip-git-repo-check -C /path/to/gitdir \
+  "Read AGENTS.md, claim bead <id>, implement only that scope, run the gate, and report evidence."
+```
+
+Do not paste or send the worker contract into a bare shell pane.
+
 ## Pane layout
 
 | Flag | Effect | Source |
