@@ -90,7 +90,7 @@ By default it runs the repo-local compiled knowledge cycle:
 
 Headless compilation uses skills/compile/scripts/compile.sh. Set
 AGENTOPS_COMPILE_RUNTIME or pass --runtime to choose an LLM backend
-(ollama, claude, or openai).`,
+(codex-cli, ollama, claude, or openai).`,
 	Args: cobra.NoArgs,
 	RunE: runCompile,
 }
@@ -102,7 +102,7 @@ func init() {
 	compileCmd.Flags().StringVar(&compileSourcesDir, "sources", ".agents", "Source .agents root to compile")
 	compileCmd.Flags().StringVar(&compileOutputDir, "output-dir", ".agents/compiled", "Compiled wiki output directory")
 	compileCmd.Flags().StringVar(&compileSince, "since", "26h", "Mine lookback window for full and mine-only modes")
-	compileCmd.Flags().StringVar(&compileRuntime, "runtime", "", "LLM runtime override for headless compilation (ollama, claude, openai)")
+	compileCmd.Flags().StringVar(&compileRuntime, "runtime", "", "LLM runtime override for headless compilation (codex-cli, ollama, claude, openai)")
 	compileCmd.Flags().BoolVar(&compileIncremental, "incremental", true, "Compile only changed source artifacts")
 	compileCmd.Flags().BoolVar(&compileForce, "force", false, "Recompile all source artifacts regardless of hashes")
 	compileCmd.Flags().BoolVar(&compileOnly, "compile-only", false, "Skip mine and defrag; run compile plus lint")
@@ -613,7 +613,7 @@ var loadCompileConfigFn = func() (string, error) {
 //  3. compile.preferred_runtime in ~/.agentops/config.yaml or
 //     .agents/config.yaml (so privacy-preferring users can force Ollama
 //     even when `claude` is installed)
-//  4. auto-detect: if 'claude' binary is on PATH, use claude-cli
+//  4. auto-detect: if 'codex' binary is on PATH, use codex-cli
 //  5. empty (preflight will fail with an actionable error)
 func resolveCompileRuntime(flagValue string) string {
 	if v := strings.TrimSpace(flagValue); v != "" {
@@ -625,9 +625,9 @@ func resolveCompileRuntime(flagValue string) string {
 	if v, _ := loadCompileConfigFn(); strings.TrimSpace(v) != "" {
 		return strings.TrimSpace(v)
 	}
-	// Auto-detect local Claude Code CLI as a zero-config backend.
-	if _, err := lookPathFn("claude"); err == nil {
-		return "claude-cli"
+	// Auto-detect local Codex CLI as a zero-config backend.
+	if _, err := lookPathFn("codex"); err == nil {
+		return "codex-cli"
 	}
 	return ""
 }
@@ -642,20 +642,20 @@ func preflightCompileRuntime(runtime string) error {
 		return fmt.Errorf(`no LLM runtime configured for headless compile
 
 Pick one:
-  export AGENTOPS_COMPILE_RUNTIME=claude-cli   # uses local 'claude' binary, no API key needed
+  export AGENTOPS_COMPILE_RUNTIME=codex-cli   # uses local 'codex' binary, no API key needed
   export AGENTOPS_COMPILE_RUNTIME=ollama       # needs OLLAMA_HOST (fallback http://localhost:11434)
   export AGENTOPS_COMPILE_RUNTIME=claude       # needs ANTHROPIC_API_KEY
   export AGENTOPS_COMPILE_RUNTIME=openai       # needs OPENAI_API_KEY
 
 Or pass --runtime=<name> on this command.
 Or invoke /compile interactively inside a Claude Code session`)
-	case "claude-cli":
-		if _, err := lookPathFn("claude"); err != nil {
-			return fmt.Errorf("runtime=claude-cli but 'claude' binary is not on PATH; install Claude Code or switch: --runtime=ollama")
+	case "codex", "codex-cli":
+		if _, err := lookPathFn("codex"); err != nil {
+			return fmt.Errorf("runtime=codex-cli but 'codex' binary is not on PATH; install Codex CLI or switch: --runtime=ollama")
 		}
 	case "claude":
 		if strings.TrimSpace(os.Getenv("ANTHROPIC_API_KEY")) == "" {
-			return fmt.Errorf("runtime=claude but ANTHROPIC_API_KEY is not set; export it or switch: --runtime=claude-cli (uses local claude binary, no key needed)")
+			return fmt.Errorf("runtime=claude but ANTHROPIC_API_KEY is not set; export it or switch: --runtime=codex-cli (uses local codex binary, no key needed)")
 		}
 	case "openai":
 		if strings.TrimSpace(os.Getenv("OPENAI_API_KEY")) == "" {
@@ -664,7 +664,7 @@ Or invoke /compile interactively inside a Claude Code session`)
 	case "ollama":
 		// curl/ollama connectivity is best-effort; compile.sh will warn.
 	default:
-		return fmt.Errorf("unknown runtime %q; expected one of: ollama, claude, claude-cli, openai", runtime)
+		return fmt.Errorf("unknown runtime %q; expected one of: codex-cli, ollama, claude, openai", runtime)
 	}
 	return nil
 }

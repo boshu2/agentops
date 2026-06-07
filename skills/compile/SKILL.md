@@ -54,14 +54,14 @@ Set `AGENTOPS_COMPILE_RUNTIME` to choose the LLM backend:
 
 | Value | Backend | Notes |
 |-------|---------|-------|
-| `claude-cli` | Local `claude` binary | Zero-config. Inherits your Claude Code auth — no API key needed. Auto-selected if `claude` is on PATH and nothing else is set. |
+| `codex-cli` | Local `codex` binary | Zero-config. Inherits your Codex CLI auth — no API key needed. Auto-selected if `codex` is on PATH and nothing else is set. |
 | `ollama` | Ollama API | Default model: `gemma3:27b`. Set `OLLAMA_HOST` for remote (e.g., `ssh -L 11435:localhost:11435 bushido-windows`). |
 | `claude` | Claude API (HTTP) | Uses `ANTHROPIC_API_KEY`. Model: `claude-sonnet-4-20250514`. |
 | `openai` | OpenAI-compatible | Uses `OPENAI_API_KEY` + `OPENAI_BASE_URL`. |
 | (unset) | Claude Code session | Compilation happens inline via the current session's LLM. |
 
 When `AGENTOPS_COMPILE_RUNTIME` is unset, `ao compile` first tries to
-auto-detect a local `claude` binary (claude-cli runtime). If that is also
+auto-detect a local `codex` binary (codex-cli runtime). If that is also
 absent, headless compile fails fast with an explicit error naming the env var
 to set. Interactive `/compile` invocations still run compilation prompts
 inline — the agent reading this SKILL.md IS the compiler.
@@ -78,7 +78,7 @@ compile:
 ```
 
 Precedence (high → low): `--runtime` flag, `AGENTOPS_COMPILE_RUNTIME`
-env, `compile.preferred_runtime` config, `claude`-binary auto-detect,
+env, `compile.preferred_runtime` config, `codex`-binary auto-detect,
 empty (error).
 
 ### Large-corpus batching
