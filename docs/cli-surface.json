@@ -1110,9 +1110,9 @@
     {
       "category": "public-tested",
       "command": "next-work materialize",
-      "coverage_status": "covered",
+      "coverage_status": "allowlisted",
       "kind": "leaf",
-      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+      "reason": "Covered by nextworkmaterialize adapter tests and command registration tests."
     },
     {
       "category": "public-tested",

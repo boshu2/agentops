@@ -623,22 +623,12 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          gemini-headless-evidence
+  - skill:          agy-headless-evidence
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          gemini-mcp-hooks
-    domain:         "BC5 Runtime"
-    hexagonal_role: driven-adapter
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          gemini-native
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          gemini-skills-extensions
+  - skill:          agy-mcp-plugins
     domain:         "BC5 Runtime"
     hexagonal_role: driven-adapter
     disposition:    keep

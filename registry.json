@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-07T11:53:09Z",
+  "generated_at": "2026-06-07T13:38:11Z",
   "summary": {
-    "skills": 173,
+    "skills": 171,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 82,
-    "capabilities": 268
+    "capabilities": 266
   },
   "surfaces": {
     "skills": [
@@ -89,8 +89,8 @@
         "tier": "cross-vendor",
         "path": "skills/agy-native/",
         "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
+        "has_references": true,
+        "reference_count": 1
       },
       {
         "name": "codex-team",
@@ -109,14 +109,6 @@
         "reference_count": 1
       },
       {
-        "name": "gemini-native",
-        "tier": "cross-vendor",
-        "path": "skills/gemini-native/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
         "name": "openai-docs",
         "tier": "cross-vendor",
         "path": "skills/openai-docs/",
@@ -131,6 +123,22 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 8
+      },
+      {
+        "name": "agy-headless-evidence",
+        "tier": "execution",
+        "path": "skills/agy-headless-evidence/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "agy-mcp-plugins",
+        "tier": "execution",
+        "path": "skills/agy-mcp-plugins/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "autodev",
@@ -355,30 +363,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 2
-      },
-      {
-        "name": "gemini-headless-evidence",
-        "tier": "execution",
-        "path": "skills/gemini-headless-evidence/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "gemini-mcp-hooks",
-        "tier": "execution",
-        "path": "skills/gemini-mcp-hooks/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "gemini-skills-extensions",
-        "tier": "execution",
-        "path": "skills/gemini-skills-extensions/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
       },
       {
         "name": "gh-actions",
@@ -2230,8 +2214,8 @@
     ]
   },
   "capability_summary": {
-    "total": 268,
-    "skills": 173,
+    "total": 266,
+    "skills": 171,
     "cli_commands": 82,
     "gates": 13,
     "reference_impls": 0
@@ -2387,6 +2371,48 @@
       "references": 3
     },
     {
+      "sku": "skill:agy-headless-evidence",
+      "name": "agy-headless-evidence",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": "|-",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "agy-native"
+      ],
+      "produces": [
+        "agy-evidence-dir"
+      ],
+      "drives_commands": [],
+      "path": "skills/agy-headless-evidence/",
+      "references": 0
+    },
+    {
+      "sku": "skill:agy-mcp-plugins",
+      "name": "agy-mcp-plugins",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "driven-adapter",
+      "tier": "execution",
+      "purpose": "|-",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "mcp-server",
+        "skill-bundle"
+      ],
+      "produces": [
+        "agy-mcp-config",
+        "agy-plugin-install"
+      ],
+      "drives_commands": [],
+      "path": "skills/agy-mcp-plugins/",
+      "references": 0
+    },
+    {
       "sku": "skill:agy-native",
       "name": "agy-native",
       "type": "skill",
@@ -2404,7 +2430,7 @@
       ],
       "drives_commands": [],
       "path": "skills/agy-native/",
-      "references": 0
+      "references": 1
     },
     {
       "sku": "skill:agy-rules-workflows",
@@ -3685,92 +3711,6 @@
       "drives_commands": [],
       "path": "skills/gcloud/",
       "references": 2
-    },
-    {
-      "sku": "skill:gemini-headless-evidence",
-      "name": "gemini-headless-evidence",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "gemini-native"
-      ],
-      "produces": [
-        "gemini-evidence-dir"
-      ],
-      "drives_commands": [],
-      "path": "skills/gemini-headless-evidence/",
-      "references": 0
-    },
-    {
-      "sku": "skill:gemini-mcp-hooks",
-      "name": "gemini-mcp-hooks",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driven-adapter",
-      "tier": "execution",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "mcp-server",
-        "hook-policy"
-      ],
-      "produces": [
-        "gemini-mcp-config",
-        "gemini-hook-config"
-      ],
-      "drives_commands": [],
-      "path": "skills/gemini-mcp-hooks/",
-      "references": 0
-    },
-    {
-      "sku": "skill:gemini-native",
-      "name": "gemini-native",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "cross-vendor",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "operating-loop-skill",
-        "beads-br"
-      ],
-      "produces": [
-        "gemini-run-evidence",
-        "scoped-commit"
-      ],
-      "drives_commands": [],
-      "path": "skills/gemini-native/",
-      "references": 0
-    },
-    {
-      "sku": "skill:gemini-skills-extensions",
-      "name": "gemini-skills-extensions",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driven-adapter",
-      "tier": "execution",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "skill-bundle",
-        "gemini-extension"
-      ],
-      "produces": [
-        "gemini-skill-install",
-        "gemini-extension-install"
-      ],
-      "drives_commands": [],
-      "path": "skills/gemini-skills-extensions/",
-      "references": 0
     },
     {
       "sku": "skill:gh-actions",

@@ -162,7 +162,7 @@
 | `ao mind normalize` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao mind scan` | `public-tested` | `allowlisted` | Covered by mind command argument construction tests. |
 | `ao mine` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao next-work materialize` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao next-work materialize` | `public-tested` | `allowlisted` | Covered by nextworkmaterialize adapter tests and command registration tests. |
 | `ao notebook update` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao operator list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao operator record` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
