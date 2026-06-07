@@ -10,5 +10,12 @@ check "name is inject" "grep -q '^name: inject' '$SKILL_DIR/SKILL.md'"
 check "mentions knowledge" "grep -qi 'knowledge' '$SKILL_DIR/SKILL.md'"
 check "mentions .agents/ or session" "grep -qiE '\\.agents/|session' '$SKILL_DIR/SKILL.md'"
 
+# Folded from knowledge-activation (cp-auc): assert activation capability survives
+check "mentions ao knowledge activate" "grep -q 'ao knowledge activate' '$SKILL_DIR/SKILL.md'"
+check "mentions ao knowledge gaps" "grep -q 'ao knowledge gaps' '$SKILL_DIR/SKILL.md'"
+check "mentions belief book output" "grep -q 'book-of-beliefs.md' '$SKILL_DIR/SKILL.md'"
+check "mentions briefings output" "grep -q '\\.agents/briefings/' '$SKILL_DIR/SKILL.md'"
+check "activation references exist" "[ -f '$SKILL_DIR/references/knowledge-activation-dag.md' ] && [ -f '$SKILL_DIR/references/knowledge-activation-output-surfaces.md' ] && [ -f '$SKILL_DIR/references/knowledge-activation-script-contracts.md' ]"
+
 echo ""; echo "Results: $PASS passed, $FAIL failed"
 [ $FAIL -eq 0 ] && exit 0 || exit 1

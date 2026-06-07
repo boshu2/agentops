@@ -104,7 +104,7 @@ Packet-side JSON shape (excerpt):
 }
 ```
 
-`/crank` and `/validation` read these slots; v1 packets without them fall back to the legacy `done_criteria` array.
+`/crank` and `/validate` read these slots; v1 packets without them fall back to the legacy `done_criteria` array.
 
 ## Phase Summary
 

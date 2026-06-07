@@ -202,7 +202,7 @@ def emit_skills_index(skills: list[dict[str, str]]) -> None:
         ("Bookkeeping", ["retro", "forge", "flywheel", "compile", "harvest", "inject", "provenance"]),
         ("Session", ["handoff", "recover", "status", "trace", "dream", "using-agentops"]),
         ("Product", ["product", "goals", "release", "readme", "doc", "oss-docs"]),
-        ("Utility", ["brainstorm", "bug-hunt", "complexity", "scaffold", "push", "refactor", "test", "deps", "perf", "review", "security", "security-suite"]),
+        ("Utility", ["brainstorm", "bug-hunt", "complexity", "scaffold", "push", "refactor", "test", "deps", "perf", "review", "security"]),
         ("Platform", ["beads", "ratchet", "heal-skill", "update", "converter", "codex-team", "scenario", "bootstrap", "autodev"]),
         ("PR workflow", ["pr-research", "pr-plan", "pr-implement", "pr-validate", "pr-prep", "pr-retro"]),
     ]

@@ -98,7 +98,7 @@
         {"type": "artifact_contains", "target": "../../skills-codex/crank/SKILL.md", "value": "ao codex ensure-start 2>/dev/null || true"},
         {"type": "artifact_contains", "target": "../../skills-codex/status/SKILL.md", "value": "ao codex ensure-start 2>/dev/null || true"},
         {"type": "artifact_contains", "target": "../../skills-codex/recover/SKILL.md", "value": "ao codex ensure-start 2>/dev/null || true"},
-        {"type": "artifact_contains", "target": "../../skills-codex/validation/SKILL.md", "value": "ao codex ensure-stop --auto-extract 2>/dev/null || true"}
+        {"type": "artifact_contains", "target": "../../skills-codex/handoff/SKILL.md", "value": "ao codex ensure-stop --auto-extract 2>/dev/null || true"}
       ],
       "dimensions": ["process_adherence", "runtime_compatibility", "safety"],
       "critical": true

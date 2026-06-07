@@ -92,14 +92,14 @@ Always-on autonomous loop over `rpi`. Work selection order:
 /evolve --no-test-first      # Explicit opt-out from test-first mode
 ```
 
-## Delineation vs /dream
+## Delineation vs Nightly Knowledge Compounding
 
 | Lane | Runs | Mutates code? | Mutates corpus? | Outer loop? | Budget |
 |------|------|---------------|-----------------|-------------|--------|
-| `/dream` | nightly, private local | **No** | **Yes (heavy)** | **Yes (convergence)** | wall-clock + plateau |
+| `$curate --mode=dream` | nightly, private local | **No** | **Yes (heavy)** | **Yes (convergence)** | wall-clock + plateau |
 | `evolve` | daytime, operator-driven | Yes (via `rpi`) | Yes (light) | Yes | cycle cap |
 
-**`/dream` is retired** (out-of-session compounding moved to Gas City — see `skills/dream/SKILL.md`); the table above is historical. `/evolve` owns the live daytime code-compounding lane; the nightly knowledge-compounding it once contrasted against now runs out-of-session on the substrate, not via `/dream`. Both still share the fitness-measurement substrate via `corpus.Compute` / `ao goals measure`.
+**The old dream skill is retired**; out-of-session compounding moved to Gas City and the current skill surface is `$curate --mode=dream`. `/evolve` owns the live daytime code-compounding lane. Both still share the fitness-measurement substrate via `corpus.Compute` / `ao goals measure`.
 
 ## Flags
 
@@ -484,7 +484,7 @@ See `references/cycle-history.md` for advanced troubleshooting.
 
 ## See Also
 
-- `skills/dream/SKILL.md` — the nightly knowledge compounder; absorbs /harvest and runs the compounding loop overnight
+- `skills/curate/SKILL.md` — the knowledge compounder; `--mode=harvest` gathers artifacts and `--mode=dream` runs the compounding loop overnight
 - `skills/rpi/SKILL.md` — Full lifecycle orchestrator (called per cycle)
 - `skills/crank/SKILL.md` — Epic execution (called for beads epics)
 - `docs/contracts/autodev-program.md` — Repo-local operational contract for bounded autonomous development

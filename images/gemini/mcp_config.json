@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "agent-mail": {
+      "command": "am",
+      "args": [
+        "serve-stdio"
+      ]
+    }
+  }
+}

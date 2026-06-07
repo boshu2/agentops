@@ -406,7 +406,7 @@ build_cadence_recommendations() {
       "cron": "0 3 * * *",
       "job_type": "dream.run",
       "description": "Full knowledge consolidation: harvest → forge → inject → defrag",
-      "skills": ["dream", "harvest", "forge", "compile", "inject"]
+      "skills": ["curate", "forge", "compile", "inject"]
     },
     {
       "name": "knowledge-forge",

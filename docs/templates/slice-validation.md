@@ -1,6 +1,6 @@
 # Slice Validation Plan Template
 
-> Copy this file when planning the validation surface for a bead. One row per vertical slice; the roll-up at the bottom proves the bead's acceptance examples. Skill that produces this artifact: [`/plan`](../../skills/plan/SKILL.md) (drafts) and [`/validation`](../../skills/validation/SKILL.md) (executes and rolls up).
+> Copy this file when planning the validation surface for a bead. One row per vertical slice; the roll-up at the bottom proves the bead's acceptance examples. Skill that produces this artifact: [`/plan`](../../skills/plan/SKILL.md) (drafts) and [`/validate`](../../skills/validate/SKILL.md) (executes and rolls up).
 >
 > See [`docs/architecture/operating-loop.md`](../architecture/operating-loop.md) for the loop position and [`docs/templates/intent-issue.md`](intent-issue.md) for the upstream artifact this validation plan checks against.
 

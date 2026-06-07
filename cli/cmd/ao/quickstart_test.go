@@ -32,9 +32,9 @@ func TestQuickstartSkillCoversGlobalCorpus(t *testing.T) {
 			wantMarkers: []string{
 				"GLOBAL_AGENTS=true",
 				"GIT=false + AO=true + GLOBAL_AGENTS=true",
-				"/harvest",
+				"/curate",
 				"/compile",
-				"/knowledge-activation",
+				"/inject",
 			},
 			description: "Claude skill",
 		},
@@ -43,9 +43,9 @@ func TestQuickstartSkillCoversGlobalCorpus(t *testing.T) {
 			wantMarkers: []string{
 				"GLOBAL_AGENTS=true",
 				"GIT=false + AO=true + GLOBAL_AGENTS=true",
-				"$harvest",
+				"$curate",
 				"$compile",
-				"$knowledge-activation",
+				"$inject",
 			},
 			description: "Codex skill",
 		},

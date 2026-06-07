@@ -1,8 +1,8 @@
 # Skills Decision Tree
 
 > Single source of truth for "which skill do I need next?"
-> Linked from `skills/harvest/SKILL.md`, `skills/compile/SKILL.md`,
-> `skills/knowledge-activation/SKILL.md`, `skills/quickstart/SKILL.md`,
+> Linked from `skills/curate/SKILL.md`, `skills/compile/SKILL.md`,
+> `skills/inject/SKILL.md`, `skills/quickstart/SKILL.md`,
 > and their `skills-codex/` mirrors.
 
 ## Decision-Tree Naming Convention
@@ -13,9 +13,9 @@ Rationale: groups by subject alphabetically in file listings; matches the existi
 
 ## Global corpus flow (new users with `~/.agents/`)
 
-1. **`$harvest`** — gather artifacts from many `.agents/` directories
-   across your rigs, deduplicate cross-rig, promote high-value items
-   into `~/.agents/learnings/`. Not a verbatim copy — an
+1. **`$curate --mode=harvest`** — gather artifacts from many `.agents/`
+   directories across your rigs, deduplicate cross-rig, promote
+   high-value items into `~/.agents/learnings/`. Not a verbatim copy — an
    opinionated promotion of the unique, high-confidence artifacts.
 2. **`$compile`** — synthesize the raw corpus into an interlinked
    wiki at `.agents/compiled/`. Large corpora are split into
@@ -24,7 +24,7 @@ Rationale: groups by subject alphabetically in file listings; matches the existi
 3. _(optional)_ **`$dream`** — overnight bounded compounding loop
    on top of the compiled corpus. Not interactive; runs to
    convergence or wall-clock, whichever comes first.
-4. **`$knowledge-activation`** — lift compiled knowledge into
+4. **`$inject`** — lift compiled knowledge into
    playbooks, a belief book, and runtime briefings that future
    sessions read at bootstrap.
 
@@ -32,10 +32,10 @@ Rationale: groups by subject alphabetically in file listings; matches the existi
 
 | I want to… | Use |
 |------------|-----|
-| Consolidate artifacts from many repos into one place | `$harvest` (writes `~/.agents/learnings/`) |
+| Consolidate artifacts from many repos into one place | `$curate --mode=harvest` (writes `~/.agents/learnings/`) |
 | Synthesize the raw corpus into an interlinked wiki | `$compile` (writes `.agents/compiled/`) |
 | Overnight compounding + fitness-driven corpus improvement | `$dream` |
-| Turn compiled knowledge into playbooks + beliefs for future sessions | `$knowledge-activation` |
+| Turn compiled knowledge into playbooks + beliefs for future sessions | `$inject` |
 | Copy raw `.md` files verbatim without dedup | `rsync` (not AgentOps) |
 | New project / new repo / first-time AgentOps setup | `ao quick-start`, then `$quickstart` |
 | Full research → plan → implement → validate cycle | `$rpi` |
@@ -56,10 +56,11 @@ to `~/.agents`" and mean the promotion hub. The promotion hub is the
 also contains `compiled/`, `playbooks/`, `packets/`, `knowledge/`,
 `harvest/`, `mine/`, and `defrag/` — each owned by a different skill.
 
-**compile vs knowledge-activation.** Compile builds the wiki.
-Knowledge-activation turns the wiki into usable operator context
-(beliefs, playbooks, briefings). Run compile first, then activation.
-Running activation against an empty compiled dir is a no-op.
+**compile vs inject (activation).** Compile builds the wiki.
+`inject` (the folded knowledge-activation surface) turns the wiki into
+usable operator context (beliefs, playbooks, briefings). Run compile
+first, then activation. Running activation against an empty compiled
+dir is a no-op.
 
 **compile vs dream.** Compile is interactive and bounded. Dream is
 overnight and runs a compounding loop (harvest → compile → lint →
@@ -68,8 +69,8 @@ terminal, use compile. If you're going to bed, use dream.
 
 ## See also
 
-- `skills/harvest/SKILL.md` — full harvest invocation
+- `skills/curate/SKILL.md` — full harvest invocation (`--mode=harvest`)
 - `skills/compile/SKILL.md` — compile flags and runtimes
-- `skills/knowledge-activation/SKILL.md` — activation surfaces
+- `skills/inject/SKILL.md` — activation surfaces (folded knowledge-activation)
 - `skills/dream/SKILL.md` — overnight compounding
 - `skills/quickstart/SKILL.md` — first-time setup

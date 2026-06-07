@@ -113,7 +113,7 @@ JSON
 }
 
 run_security_suite() {
-  python3 "$REPO_ROOT/skills/security-suite/scripts/security_suite.py" run "$@"
+  python3 "$REPO_ROOT/skills/security/scripts/security_suite.py" run "$@"
 }
 
 case "${1:-}" in
@@ -190,9 +190,9 @@ JSON
     echo "security-suite-baseline-removed-ok"
     ;;
   redteam-repo)
-    python3 "$REPO_ROOT/skills/security-suite/scripts/prompt_redteam.py" scan \
+    python3 "$REPO_ROOT/skills/security/scripts/prompt_redteam.py" scan \
       --repo-root "$REPO_ROOT" \
-      --pack-file "$REPO_ROOT/skills/security-suite/references/agentops-redteam-pack.json" \
+      --pack-file "$REPO_ROOT/skills/security/references/agentops-redteam-pack.json" \
       --out-dir "$TMP_ROOT/redteam" >/dev/null
     jq -e '.verdict == "PASS" and .case_count == 6 and (.results[].id | select(. == "policy-gated-security-suite"))' "$TMP_ROOT/redteam/redteam/redteam-results.json" >/dev/null
     test -s "$TMP_ROOT/redteam/redteam/redteam-results.md"

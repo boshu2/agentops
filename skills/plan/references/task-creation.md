@@ -73,7 +73,7 @@ bd create --title "<task>" --body "Description...
 
 **`bd ready` returns the current wave** — all unblocked issues that can run in parallel.
 
-Beads-backed issues are the preferred path because they give `/crank` richer dependency data and make ratchet progress easier to inspect. When bd is unavailable or degraded, keep the plan file + execution packet path accurate and continue in file-backed mode for `/crank` and `/validation`.
+Beads-backed issues are the preferred path because they give `/crank` richer dependency data and make ratchet progress easier to inspect. When bd is unavailable or degraded, keep the plan file + execution packet path accurate and continue in file-backed mode for `/crank` and `/validate`.
 
 ## Step 7b: Verify Validation Blocks (Post-Creation Check)
 

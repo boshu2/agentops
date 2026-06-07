@@ -37,7 +37,7 @@ Publicly, it gives you four things:
 - **Bookkeeping** — captured learnings, findings, and reusable context
 - **Validation** — plan and code review before work ships
 - **Primitives** — single skills, hooks, and CLI surfaces
-- **Flows** — named compositions like `/research`, `/validation`, and `rpi`
+- **Flows** — named compositions like `/research`, `/validate`, and `rpi`
 
 Technically, AgentOps acts as a context compiler: raw session signal becomes reusable knowledge, compiled prevention, and better next work.
 
@@ -85,7 +85,7 @@ ao lookup --query "x"  # Search knowledge by relevance
 ```bash
 /vibe [target]         # Code validation (finding classification + suppression + domain checklists)
 /post-mortem           # Validation + streak tracking + prediction accuracy + retro history
-/retro                 # Quick-capture a single learning
+/post-mortem --quick   # Quick-capture a single learning (folded the retired retro lane)
 ```
 
 **Output:** `.agents/learnings/`, `.agents/patterns/`
@@ -96,14 +96,14 @@ ao lookup --query "x"  # Search knowledge by relevance
 |-------|---------------|-------------------|
 | **Discovery** | `/discovery` | `/brainstorm`, `/research`, `/plan`, `/pre-mortem` |
 | **Implement** | `/crank` | `/implement` (single issue), `/swarm` (parallel execution) |
-| **Validate** | `/validation` | `/vibe`, `/post-mortem`, `/retro`, `/forge` |
+| **Validate** | `/validate` | `/vibe`, `/post-mortem`, `/forge` |
 
 **Choosing the skill:**
 - Use `/implement` for **single issue** execution. **Now defaults to TDD-first** — writes failing tests before implementing. Skip with `--no-tdd`.
 - Use `/crank` for **autonomous epic execution** (loops waves via swarm until done). Auto-generates file-ownership maps to prevent worker conflicts.
 - Use `/discovery` for the **discovery phase only** (brainstorm → search → research → plan → pre-mortem).
-- Use `/validation` for the **validation phase only** (vibe → post-mortem → retro → forge).
-- Use `rpi` for **full lifecycle** — delegates to `/discovery` → `/crank` → `/validation`.
+- Use `/validate` for the **validation phase only** (vibe → post-mortem → forge).
+- Use `rpi` for **full lifecycle** — delegates to `/discovery` → `/crank` → `/validate`.
 - Use `/ratchet` to **gate/record progress** through RPI.
 
 ## Start Here (12 starters)
@@ -118,9 +118,9 @@ These are the skills every user needs first. Everything else is available when y
 | `/council` | Multi-model consensus review + finding auto-extraction |
 | `/validate` | Canonical PASS/WARN/FAIL verdict over an artifact, plan, code change, PR, or gate |
 | `/vibe` | Code validation (classification + suppression + domain checklists) |
-| `rpi` | Full RPI lifecycle orchestrator (`/discovery` → `/crank` → `/validation`) |
+| `rpi` | Full RPI lifecycle orchestrator (`/discovery` → `/crank` → `/validate`) |
 | `/implement` | Execute single issue |
-| `/retro --quick` | Quick-capture a single learning into the flywheel |
+| `/post-mortem --quick` | Quick-capture a single learning into the flywheel |
 | `/status` | Single-screen dashboard of current work and suggested next action |
 | `/goals` | Maintain GOALS.yaml fitness specification |
 | `/push` | Atomic test-commit-push workflow |
@@ -131,9 +131,9 @@ These are the skills every user needs first. Everything else is available when y
 |-------|---------|
 | `/compile`, `/flywheel` | Active knowledge intelligence and flywheel health — Mine → Grow → Defrag cycle |
 | `/curate` | Canonical miner role for transcripts, `.agents/`, bd, git, skill diffs, and rare wiki entries |
-| `/llm-wiki` | External reading wiki proposal — raw sources to compiled wiki |
-| `/harvest` | Cross-rig knowledge consolidation — sweep, dedup, promote to global hub |
-| `/knowledge-activation` | Operationalize a mature `.agents` corpus into beliefs, playbooks, briefings, and gap surfaces |
+| `/research-software` | External reading and research synthesis for software topics |
+| `/curate --mode=harvest` | Cross-rig knowledge consolidation — sweep, dedup, promote to global hub (folded the retired harvest lane) |
+| `/inject` | Operationalize a mature `.agents` corpus into beliefs, playbooks, briefings, and gap surfaces (folded the retired knowledge-activation lane) |
 | `/bd-first-memory-migration` | Consolidate fragmented agent-memory layers onto a bd-canonical store, then GC/retire the rest |
 | `/brainstorm` | Structured idea exploration before planning |
 | `/discovery` | Full discovery phase orchestrator (brainstorm → search → research → plan → pre-mortem) |
@@ -152,16 +152,15 @@ These are the skills every user needs first. Everything else is available when y
 | `/operating-loop-workflow` | Install + run the operating-loop multi-agent Workflow (seven-move loop) |
 | `/autodev` | PROGRAM.md autonomous development contract setup and validation |
 | `agy-rules-workflows` | Install AGY-native rules, loop workflow, and scheduled goal controls |
-| `/dream` | **Retired** — out-of-session compounding moved to Gas City; pointer skill only |
+| `/curate --mode=dream` | Out-of-session knowledge compounding lane |
 | `/doc` | Documentation generation — repo docs (default), gold-standard README (`--mode=readme`), OSS doc packs (`--mode=oss`) |
-| `/retro` | Quick-capture a learning (full retro → /post-mortem) |
-| `/validation` | Full validation phase orchestrator (vibe → post-mortem → retro → forge) |
+| `/post-mortem --quick` | Quick-capture a learning (folded the retired retro lane) |
+| `/validate` | Full validation phase orchestrator (vibe → post-mortem → forge) |
 | `/ratchet` | Brownian Ratchet progress gates for RPI workflow |
 | `/forge` | Mine transcripts for knowledge — decisions, learnings, patterns |
-| `/security` | Continuous repository security scanning and release gating |
-| `/security-suite` | Binary and prompt-surface security suite — static analysis, dynamic tracing, offline redteam, policy gating |
+| `/security` | Repository security scanning and release gating, plus the composable binary/prompt-surface suite — static analysis, dynamic tracing, offline redteam, policy gating |
 | `/test` | Test generation, coverage analysis, and TDD workflow |
-| `/hooks-authoring` | Author and validate AgentOps runtime hooks |
+| `/cc-hooks` | Author and validate AgentOps runtime hook behavior |
 | `/red-team` | Persona-based adversarial validation — probe docs and skills from constrained user perspectives |
 | `/review` | Review incoming PRs, agent output, or diffs — SCORED checklist |
 | `/refactor` | Safe, verified refactoring with regression testing at each step |
@@ -180,13 +179,12 @@ These are the skills every user needs first. Everything else is available when y
 
 | Skill | Purpose |
 |-------|---------|
-| `/grafana-platform-dashboard` | Build Grafana platform dashboards from templates/contracts |
-| `/codex-team` | Parallel Codex agent execution |
-| `/openai-docs` | Official OpenAI docs lookup with citations |
+| `/swarm` | Parallel Codex agent execution (folded the retired codex-team lane) |
+| `/external-search-triage` | External docs and source lookup with citations |
 | `/reverse-engineer-rpi` | Reverse-engineer a product into feature catalog and specs |
 | `/pr-research` | Upstream repository research before contribution |
 | `/pr-implement` | Fork-based PR implementation |
-| `/pr-validate` | PR-specific validation and isolation checks |
+| `/validate --mode=pr` | PR-specific validation and isolation checks (folded the retired pr-validate lane) |
 | `/pr-prep` | PR preparation and structured body generation |
 | `/ship-loop` | Bot-paired internal-PR fast-lane cycle |
 | `/complexity` | Code complexity analysis |
@@ -195,7 +193,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/recover` | Post-compaction context recovery |
 | `/session-bootstrap` | Universal init prompt — every agent runs this first (soc-vuu6.25) |
 | `/trace` | Trace design decisions through history |
-| `/provenance` | Trace artifact lineage to sources |
+| `/curate --mode=provenance` | Trace artifact lineage to sources |
 | `/beads` | Issue tracking operations |
 | `/heal-skill` | Detect and fix skill hygiene issues |
 | `/converter` | Convert skills to Codex/Cursor formats |

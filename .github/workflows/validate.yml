@@ -110,8 +110,8 @@ jobs:
               - 'schemas/**'
               - 'docs/contracts/**'
               # redteam-pack target globs (ag-nl1u): every file the
-              # security-suite redteam pack
-              # (skills/security-suite/references/agentops-redteam-pack.json)
+              # security redteam pack
+              # (skills/security/references/agentops-redteam-pack.json)
               # asserts behavioral contracts against MUST re-run the
               # contracts-sync canaries when edited — otherwise a break to a
               # guarded file lands without the canary that guards it (the #634
@@ -124,7 +124,6 @@ jobs:
               - 'docs/strategic-direction.md'
               - 'docs/standards/shell-script-standards.md'
               - 'skills/security/**'
-              - 'skills/security-suite/**'
               # AGENTS tiered-split siblings (ag-g9ex): scripts/validate-agents-split.sh
               # validates AGENTS.md AND these four siblings (size cap, existence,
               # bidirectional links). The gate triggers on contracts (added with

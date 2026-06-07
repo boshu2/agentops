@@ -105,7 +105,7 @@
       "objective": "Keep compile, harvest, forge, and flywheel skills tied to the implemented CLI surfaces and knowledge lifecycle.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../skills/compile/SKILL.md", "value": "ao compile"},
-        {"type": "artifact_contains", "target": "../../skills/harvest/SKILL.md", "value": "ao harvest"},
+        {"type": "artifact_contains", "target": "../../skills/curate/SKILL.md", "value": "ao harvest"},
         {"type": "artifact_contains", "target": "../../skills/forge/SKILL.md", "value": "ao forge"},
         {"type": "artifact_contains", "target": "../../skills/flywheel/SKILL.md", "value": "ao flywheel"},
         {"type": "artifact_contains", "target": "../../docs/knowledge-flywheel.md", "value": "At closeout, `ao forge transcript` or `ao codex stop` parses the transcript and extracts structured knowledge"},

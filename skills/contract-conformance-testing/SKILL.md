@@ -13,7 +13,7 @@ hexagonal_role: supporting
 consumes:
 - standards
 - test
-- validation
+- validate
 produces:
 - conformance harness plan
 - executable conformance cases
@@ -33,7 +33,7 @@ metadata:
   dependencies:
   - standards
   - test
-  - validation
+  - validate
 output_contract: "A conformance harness design with executable cases, fixtures, expected verdicts, version matrix coverage, and validation commands."
 ---
 

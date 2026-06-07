@@ -61,7 +61,6 @@ core_multi_agent_skills=(
     "skills/swarm/SKILL.md"
     "skills/research/SKILL.md"
     "skills/crank/SKILL.md"
-    "skills/codex-team/SKILL.md"
 )
 
 for rel in "${core_multi_agent_skills[@]}"; do

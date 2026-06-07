@@ -10,8 +10,8 @@ consumes: []
 produces:
 - result.json
 context_rel:
-- kind: customer-of
-  with: provenance
+- kind: shared-kernel
+  with: curate
 skill_api_version: 1
 allowed-tools: Read, Grep, Glob, Bash
 context:
@@ -25,7 +25,7 @@ context:
 metadata:
   tier: knowledge
   dependencies:
-  - provenance
+  - curate
 output_contract: 'stdout: decision provenance chain'
 ---
 # Trace Skill
@@ -41,7 +41,7 @@ output_contract: 'stdout: decision provenance chain'
 - Understand WHY something was designed a certain way
 - Build provenance chain for design decisions
 
-For knowledge artifact lineage (learnings, patterns, tiers), use `/provenance` instead.
+For knowledge artifact lineage (learnings, patterns, tiers), use `$curate --mode=provenance` instead.
 
 **CLI dependencies:** cass (session search). If cass is unavailable, skip transcript search and rely on git log, handoff docs, and `.agents/` artifacts for decision tracing.
 
@@ -55,7 +55,7 @@ Determine what kind of provenance to trace:
 
 ```
 IF target is a file path (contains "/" or "."):
-  → Use /provenance (artifact lineage)
+  → Use `$curate --mode=provenance` (artifact lineage)
 
 IF target is a git ref (sha, branch, tag):
   → Use git-based tracing (Step 2b)
@@ -115,14 +115,14 @@ Read `references/edge-cases.md` for handling: no CASS results, no handoffs, ambi
 - **Handle gaps gracefully** - not all concepts are in all sources
 - **Write report** - trace must produce `.agents/research/` artifact
 
-## Relationship to /provenance
+## Relationship to Artifact Provenance
 
 | Skill | Purpose | Input | Output |
 |-------|---------|-------|--------|
-| `/provenance` | Artifact lineage | File path | Tier/promotion history |
+| `$curate --mode=provenance` | Artifact lineage | File path | Tier/promotion history |
 | `/trace` | Design decisions | Concept/keyword | Timeline of evolution |
 
-Use `/provenance` for: "Where did this learning come from?"
+Use `$curate --mode=provenance` for: "Where did this learning come from?"
 Use `/trace` for: "How did we decide on this architecture?"
 
 ## Examples

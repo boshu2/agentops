@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-07T17:18:04Z",
+  "generated_at": "2026-06-07T20:47:50Z",
   "summary": {
-    "skills": 171,
+    "skills": 158,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 83,
-    "capabilities": 267
+    "capabilities": 254
   },
   "surfaces": {
     "skills": [
@@ -34,15 +34,7 @@
         "path": "skills/inject/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "provenance",
-        "tier": "background",
-        "path": "skills/provenance/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
+        "reference_count": 3
       },
       {
         "name": "ratchet",
@@ -77,14 +69,6 @@
         "reference_count": 1
       },
       {
-        "name": "pr-validate",
-        "tier": "contribute",
-        "path": "skills/pr-validate/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
         "name": "agy-native",
         "tier": "cross-vendor",
         "path": "skills/agy-native/",
@@ -93,28 +77,12 @@
         "reference_count": 1
       },
       {
-        "name": "codex-team",
-        "tier": "cross-vendor",
-        "path": "skills/codex-team/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 2
-      },
-      {
         "name": "converter",
         "tier": "cross-vendor",
         "path": "skills/converter/",
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 1
-      },
-      {
-        "name": "openai-docs",
-        "tier": "cross-vendor",
-        "path": "skills/openai-docs/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
       },
       {
         "name": "agent-mail",
@@ -389,22 +357,6 @@
         "reference_count": 6
       },
       {
-        "name": "grafana-platform-dashboard",
-        "tier": "execution",
-        "path": "skills/grafana-platform-dashboard/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
-        "name": "hooks-authoring",
-        "tier": "execution",
-        "path": "skills/hooks-authoring/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
         "name": "implement",
         "tier": "execution",
         "path": "skills/implement/",
@@ -619,14 +571,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 3
-      },
-      {
-        "name": "security-suite",
-        "tier": "execution",
-        "path": "skills/security-suite/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 1
       },
       {
         "name": "ship-loop",
@@ -954,7 +898,7 @@
         "path": "skills/curate/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 0
+        "reference_count": 1
       },
       {
         "name": "domain",
@@ -970,38 +914,6 @@
         "path": "skills/expertise-to-procedure/",
         "has_skill_md": true,
         "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "harvest",
-        "tier": "knowledge",
-        "path": "skills/harvest/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 1
-      },
-      {
-        "name": "knowledge-activation",
-        "tier": "knowledge",
-        "path": "skills/knowledge-activation/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
-        "name": "llm-wiki",
-        "tier": "knowledge",
-        "path": "skills/llm-wiki/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 2
-      },
-      {
-        "name": "retro",
-        "tier": "knowledge",
-        "path": "skills/retro/",
-        "has_skill_md": true,
-        "has_references": true,
         "reference_count": 0
       },
       {
@@ -1173,14 +1085,6 @@
         "reference_count": 0
       },
       {
-        "name": "validation",
-        "tier": "meta",
-        "path": "skills/validation/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 13
-      },
-      {
         "name": "workflow-builder",
         "tier": "meta",
         "path": "skills/workflow-builder/",
@@ -1226,7 +1130,7 @@
         "path": "skills/security/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 0
+        "reference_count": 1
       },
       {
         "name": "bootstrap",
@@ -1235,14 +1139,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 1
-      },
-      {
-        "name": "dream",
-        "tier": "session",
-        "path": "skills/dream/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
       },
       {
         "name": "handoff",
@@ -1673,8 +1569,8 @@
         "bounded_context": "BC1",
         "driven_by_skills": [
           "compile",
-          "flywheel",
-          "harvest"
+          "curate",
+          "flywheel"
         ]
       },
       {
@@ -1685,9 +1581,8 @@
         "driven_by_skills": [
           "compile",
           "crank",
-          "evolve",
-          "harvest",
-          "validation"
+          "curate",
+          "evolve"
         ]
       },
       {
@@ -1749,8 +1644,7 @@
         "purpose": "Extract knowledge from sources",
         "bounded_context": "BC1",
         "driven_by_skills": [
-          "post-mortem",
-          "validation"
+          "post-mortem"
         ]
       },
       {
@@ -1767,7 +1661,6 @@
         "bounded_context": "BC3",
         "driven_by_skills": [
           "agent-native",
-          "dream",
           "evolve",
           "goals",
           "post-mortem",
@@ -1804,10 +1697,10 @@
         "name": "ao harvest",
         "path": "cli/cmd/ao/",
         "purpose": "Sweep all rigs, extract and deduplicate cross-rig knowledge",
-        "bounded_context": "BC1",
+        "bounded_context": "",
         "driven_by_skills": [
-          "flywheel",
-          "harvest"
+          "curate",
+          "flywheel"
         ]
       },
       {
@@ -1828,7 +1721,6 @@
           "agent-native",
           "beads",
           "domain",
-          "harvest",
           "inject",
           "quickstart",
           "using-agentops"
@@ -1847,7 +1739,7 @@
         "purpose": "Operationalize a mature .agents corpus into reusable operator surfaces",
         "bounded_context": "BC1",
         "driven_by_skills": [
-          "knowledge-activation"
+          "inject"
         ]
       },
       {
@@ -1861,17 +1753,14 @@
           "discovery",
           "evolve",
           "flywheel",
-          "hooks-authoring",
           "implement",
           "inject",
-          "knowledge-activation",
           "plan",
           "pre-mortem",
           "recover",
           "review",
           "swarm",
           "using-agentops",
-          "validation",
           "vibe"
         ]
       },
@@ -1916,8 +1805,8 @@
         "bounded_context": "BC2",
         "driven_by_skills": [
           "crank",
+          "curate",
           "flywheel",
-          "harvest",
           "quickstart",
           "status"
         ]
@@ -1986,7 +1875,7 @@
         "name": "ao provenance",
         "path": "cli/cmd/ao/",
         "purpose": "Write and read the SDLC provenance edge ledger",
-        "bounded_context": "BC1",
+        "bounded_context": "",
         "driven_by_skills": []
       },
       {
@@ -2016,7 +1905,6 @@
           "rpi",
           "status",
           "validate",
-          "validation",
           "vibe"
         ]
       },
@@ -2115,7 +2003,6 @@
           "discovery",
           "plan",
           "pre-mortem",
-          "provenance",
           "using-agentops",
           "vibe"
         ]
@@ -2221,8 +2108,8 @@
     ]
   },
   "capability_summary": {
-    "total": 267,
-    "skills": 171,
+    "total": 254,
+    "skills": 158,
     "cli_commands": 83,
     "gates": 13,
     "reference_impls": 0
@@ -2360,7 +2247,7 @@
       "consumes": [
         "standards",
         "converter",
-        "validation"
+        "validate"
       ],
       "produces": [
         "docs/contracts/agent-runtime-profile.md"
@@ -3110,24 +2997,6 @@
       "references": 0
     },
     {
-      "sku": "skill:codex-team",
-      "name": "codex-team",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "cross-vendor",
-      "purpose": "Coordinate multiple Codex agents.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [],
-      "produces": [
-        ".agents/swarm/results/*.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/codex-team/",
-      "references": 2
-    },
-    {
       "sku": "skill:compile",
       "name": "compile",
       "type": "skill",
@@ -3201,7 +3070,7 @@
       "consumes": [
         "standards",
         "test",
-        "validation"
+        "validate"
       ],
       "produces": [
         "conformance harness plan",
@@ -3305,9 +3174,14 @@
       "produces": [
         ".agents/research/*.md"
       ],
-      "drives_commands": [],
+      "drives_commands": [
+        "ao dedup",
+        "ao defrag",
+        "ao harvest",
+        "ao metrics"
+      ],
       "path": "skills/curate/",
-      "references": 0
+      "references": 1
     },
     {
       "sku": "skill:dcg",
@@ -3466,26 +3340,6 @@
       "references": 19
     },
     {
-      "sku": "skill:dream",
-      "name": "dream",
-      "type": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "session",
-      "purpose": "Retired pointer — out-of-session compounding moved to the substrate (NTM + MCP + managed-agents).",
-      "status": "active",
-      "disposition": "refactor",
-      "consumes": [],
-      "produces": [
-        ".agents/research/*.md"
-      ],
-      "drives_commands": [
-        "ao goals"
-      ],
-      "path": "skills/dream/",
-      "references": 0
-    },
-    {
       "sku": "skill:eval-outcomes",
       "name": "eval-outcomes",
       "type": "skill",
@@ -3496,7 +3350,7 @@
       "status": "active",
       "disposition": "keep",
       "consumes": [
-        "validation",
+        "validate",
         "ratchet",
         "council"
       ],
@@ -3807,24 +3661,6 @@
       "references": 0
     },
     {
-      "sku": "skill:grafana-platform-dashboard",
-      "name": "grafana-platform-dashboard",
-      "type": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "driven-adapter",
-      "tier": "execution",
-      "purpose": "Validate OpenShift Grafana dashboards.",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [],
-      "produces": [
-        "dashboard-validation-report"
-      ],
-      "drives_commands": [],
-      "path": "skills/grafana-platform-dashboard/",
-      "references": 3
-    },
-    {
       "sku": "skill:handoff",
       "name": "handoff",
       "type": "skill",
@@ -3845,30 +3681,6 @@
       "references": 0
     },
     {
-      "sku": "skill:harvest",
-      "name": "harvest",
-      "type": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "knowledge",
-      "purpose": "Promote .agents knowledge.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [],
-      "produces": [
-        ".agents/research/*.md"
-      ],
-      "drives_commands": [
-        "ao dedup",
-        "ao defrag",
-        "ao harvest",
-        "ao inject",
-        "ao metrics"
-      ],
-      "path": "skills/harvest/",
-      "references": 1
-    },
-    {
       "sku": "skill:heal-skill",
       "name": "heal-skill",
       "type": "skill",
@@ -3883,27 +3695,6 @@
       "drives_commands": [],
       "path": "skills/heal-skill/",
       "references": 2
-    },
-    {
-      "sku": "skill:hooks-authoring",
-      "name": "hooks-authoring",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "domain",
-      "tier": "execution",
-      "purpose": "Author AgentOps runtime hooks.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [
-        "ao lookup",
-        "ao metrics cite"
-      ],
-      "path": "skills/hooks-authoring/",
-      "references": 3
     },
     {
       "sku": "skill:idea-option-forge",
@@ -3987,12 +3778,20 @@
       "consumes": [],
       "produces": [],
       "drives_commands": [
+        "ao codex start",
         "ao inject",
+        "ao knowledge",
+        "ao knowledge activate",
+        "ao knowledge beliefs",
+        "ao knowledge brief",
+        "ao knowledge gaps",
+        "ao knowledge playbooks",
         "ao lookup",
+        "ao metrics cite",
         "ao session bootstrap"
       ],
       "path": "skills/inject/",
-      "references": 0
+      "references": 3
     },
     {
       "sku": "skill:installer-quality-audit",
@@ -4009,32 +3808,6 @@
       "drives_commands": [],
       "path": "skills/installer-quality-audit/",
       "references": 0
-    },
-    {
-      "sku": "skill:knowledge-activation",
-      "name": "knowledge-activation",
-      "type": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "knowledge",
-      "purpose": "Activate mature .agents knowledge.",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [
-        "ao codex start",
-        "ao knowledge",
-        "ao knowledge activate",
-        "ao knowledge beliefs",
-        "ao knowledge brief",
-        "ao knowledge gaps",
-        "ao knowledge playbooks",
-        "ao lookup",
-        "ao metrics cite"
-      ],
-      "path": "skills/knowledge-activation/",
-      "references": 3
     },
     {
       "sku": "skill:layered-defect-hunt",
@@ -4095,24 +3868,6 @@
       "drives_commands": [],
       "path": "skills/live-service-e2e-testing/",
       "references": 0
-    },
-    {
-      "sku": "skill:llm-wiki",
-      "name": "llm-wiki",
-      "type": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "knowledge",
-      "purpose": "Build external-knowledge wikis.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [],
-      "produces": [
-        "documentation"
-      ],
-      "drives_commands": [],
-      "path": "skills/llm-wiki/",
-      "references": 2
     },
     {
       "sku": "skill:mcp-interface-design",
@@ -4261,24 +4016,6 @@
       "produces": [],
       "drives_commands": [],
       "path": "skills/ntm-review-worker-orchestration/",
-      "references": 0
-    },
-    {
-      "sku": "skill:openai-docs",
-      "name": "openai-docs",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driven-adapter",
-      "tier": "cross-vendor",
-      "purpose": "Use official OpenAI docs.",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "external-api"
-      ],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/openai-docs/",
       "references": 0
     },
     {
@@ -4503,26 +4240,6 @@
       "references": 1
     },
     {
-      "sku": "skill:pr-validate",
-      "name": "pr-validate",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "contribute",
-      "purpose": "Validate PR scope and quality.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [
-        "validation"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/pr-validate/",
-      "references": 0
-    },
-    {
       "sku": "skill:pre-mortem",
       "name": "pre-mortem",
       "type": "skill",
@@ -4673,26 +4390,6 @@
       "references": 0
     },
     {
-      "sku": "skill:provenance",
-      "name": "provenance",
-      "type": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "driven-adapter",
-      "tier": "background",
-      "purpose": "Trace artifact provenance.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [
-        "ao search"
-      ],
-      "path": "skills/provenance/",
-      "references": 0
-    },
-    {
       "sku": "skill:push",
       "name": "push",
       "type": "skill",
@@ -4755,7 +4452,7 @@
       "status": "active",
       "disposition": "update",
       "consumes": [
-        "validation",
+        "validate",
         "vibe",
         "post-mortem"
       ],
@@ -4966,26 +4663,6 @@
       "references": 3
     },
     {
-      "sku": "skill:retro",
-      "name": "retro",
-      "type": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "domain",
-      "tier": "knowledge",
-      "purpose": "Capture a session learning.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [
-        "standards"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/retro/",
-      "references": 0
-    },
-    {
       "sku": "skill:reverse-engineer-rpi",
       "name": "reverse-engineer-rpi",
       "type": "skill",
@@ -5015,7 +4692,7 @@
       "disposition": "update",
       "consumes": [
         "github-pr",
-        "validation"
+        "validate"
       ],
       "produces": [
         "result.json"
@@ -5058,7 +4735,7 @@
         "discovery",
         "domain",
         "ratchet",
-        "validation"
+        "validate"
       ],
       "produces": [
         ".agents/rpi/*.md"
@@ -5309,7 +4986,7 @@
       "bounded_context": "BC2",
       "hex_role": "driven-adapter",
       "tier": "product",
-      "purpose": "Run repository security scans.",
+      "purpose": "Run repository security scans and composable security analysis.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -5320,26 +4997,6 @@
       ],
       "drives_commands": [],
       "path": "skills/security/",
-      "references": 0
-    },
-    {
-      "sku": "skill:security-suite",
-      "name": "security-suite",
-      "type": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "driven-adapter",
-      "tier": "execution",
-      "purpose": "Run composable security analysis.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [
-        "repo-context"
-      ],
-      "produces": [
-        "security-report.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/security-suite/",
       "references": 1
     },
     {
@@ -5732,9 +5389,7 @@
       "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured verdict on an artifact, plan, code, PR, or CI gate before proceeding.",
       "status": "active",
       "disposition": "keep",
-      "consumes": [
-        "validation"
-      ],
+      "consumes": [],
       "produces": [
         "result.json"
       ],
@@ -5746,42 +5401,6 @@
       ],
       "path": "skills/validate/",
       "references": 0
-    },
-    {
-      "sku": "skill:validation",
-      "name": "validation",
-      "type": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "domain",
-      "tier": "meta",
-      "purpose": "Run post-implementation validation.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [
-        "forge",
-        "post-mortem",
-        "retro",
-        "shared",
-        "vibe"
-      ],
-      "produces": [
-        ".agents/research/*.md",
-        "result.json",
-        "verdict.json"
-      ],
-      "drives_commands": [
-        "ao codex stop",
-        "ao defrag",
-        "ao forge",
-        "ao forge transcript",
-        "ao lookup",
-        "ao metrics cite",
-        "ao ratchet",
-        "ao scenario list",
-        "ao turn verify"
-      ],
-      "path": "skills/validation/",
-      "references": 13
     },
     {
       "sku": "skill:vibe",
@@ -6315,8 +5934,8 @@
       "status": "active",
       "driven_by_skills": [
         "compile",
-        "flywheel",
-        "harvest"
+        "curate",
+        "flywheel"
       ],
       "flags": [
         "--config",
@@ -6339,9 +5958,8 @@
       "driven_by_skills": [
         "compile",
         "crank",
-        "evolve",
-        "harvest",
-        "validation"
+        "curate",
+        "evolve"
       ],
       "flags": [
         "--config",
@@ -6517,8 +6135,7 @@
       "purpose": "Extract knowledge from sources",
       "status": "active",
       "driven_by_skills": [
-        "post-mortem",
-        "validation"
+        "post-mortem"
       ],
       "flags": [
         "--config",
@@ -6556,7 +6173,6 @@
       "status": "active",
       "driven_by_skills": [
         "agent-native",
-        "dream",
         "evolve",
         "goals",
         "post-mortem",
@@ -6639,12 +6255,12 @@
       "sku": "cmd:ao.harvest",
       "name": "ao harvest",
       "type": "cli-command",
-      "bounded_context": "BC1",
+      "bounded_context": "",
       "purpose": "Sweep all rigs, extract and deduplicate cross-rig knowledge",
       "status": "active",
       "driven_by_skills": [
-        "flywheel",
-        "harvest"
+        "curate",
+        "flywheel"
       ],
       "flags": [
         "--config",
@@ -6694,7 +6310,6 @@
         "agent-native",
         "beads",
         "domain",
-        "harvest",
         "inject",
         "quickstart",
         "using-agentops"
@@ -6747,7 +6362,7 @@
       "purpose": "Operationalize a mature .agents corpus into reusable operator surfaces",
       "status": "active",
       "driven_by_skills": [
-        "knowledge-activation"
+        "inject"
       ],
       "flags": [
         "--config",
@@ -6771,17 +6386,14 @@
         "discovery",
         "evolve",
         "flywheel",
-        "hooks-authoring",
         "implement",
         "inject",
-        "knowledge-activation",
         "plan",
         "pre-mortem",
         "recover",
         "review",
         "swarm",
         "using-agentops",
-        "validation",
         "vibe"
       ],
       "flags": [
@@ -6894,8 +6506,8 @@
       "status": "active",
       "driven_by_skills": [
         "crank",
+        "curate",
         "flywheel",
-        "harvest",
         "quickstart",
         "status"
       ],
@@ -7059,7 +6671,7 @@
       "sku": "cmd:ao.provenance",
       "name": "ao provenance",
       "type": "cli-command",
-      "bounded_context": "BC1",
+      "bounded_context": "",
       "purpose": "Write and read the SDLC provenance edge ledger",
       "status": "active",
       "driven_by_skills": [],
@@ -7113,7 +6725,6 @@
         "rpi",
         "status",
         "validate",
-        "validation",
         "vibe"
       ],
       "flags": [
@@ -7337,7 +6948,6 @@
         "discovery",
         "plan",
         "pre-mortem",
-        "provenance",
         "using-agentops",
         "vibe"
       ],
@@ -7728,8 +7338,7 @@
       "job_type": "dream.run",
       "description": "Full knowledge consolidation: harvest → forge → inject → defrag",
       "skills": [
-        "dream",
-        "harvest",
+        "curate",
         "forge",
         "compile",
         "inject"

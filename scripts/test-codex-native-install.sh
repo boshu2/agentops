@@ -236,13 +236,16 @@ info "Checking openai-docs Codex install flow for duplicate setup drift"
 openai_skill="$REPO_ROOT/skills-codex/openai-docs/SKILL.md"
 legacy_codex_settings_pattern="~"
 legacy_codex_settings_pattern="${legacy_codex_settings_pattern}/.codex/settings.json"
-require_file "$openai_skill"
-[[ "$(rg -c '^\*\*In Codex:\*\*$' "$openai_skill")" == "1" ]] \
-  || fail "Expected exactly one '**In Codex:**' section in $openai_skill"
-rg -q 'codex mcp add openaiDeveloperDocs --url https://developers.openai.com/mcp' "$openai_skill" \
-  || fail "Missing Codex MCP install command in $openai_skill"
-if rg -q "$legacy_codex_settings_pattern" "$openai_skill"; then
-  fail "Found duplicate Codex settings-file install flow in $openai_skill"
+if [[ -f "$openai_skill" ]]; then
+  [[ "$(rg -c '^\*\*In Codex:\*\*$' "$openai_skill")" == "1" ]] \
+    || fail "Expected exactly one '**In Codex:**' section in $openai_skill"
+  rg -q 'codex mcp add openaiDeveloperDocs --url https://developers.openai.com/mcp' "$openai_skill" \
+    || fail "Missing Codex MCP install command in $openai_skill"
+  if rg -q "$legacy_codex_settings_pattern" "$openai_skill"; then
+    fail "Found duplicate Codex settings-file install flow in $openai_skill"
+  fi
+else
+  info "Skipping openai-docs duplicate setup drift check; optional Codex skill is absent"
 fi
 
 info "Checking shared Codex backend references"

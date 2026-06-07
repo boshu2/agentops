@@ -37,7 +37,7 @@
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "bash skills/security-suite/scripts/validate.sh && bash skills-codex/security-suite/scripts/validate.sh && bash tests/scripts/test-security-suite-redteam.sh"
+        "shell": "bash skills/security/scripts/validate.sh && bash skills-codex/security/scripts/validate.sh && bash tests/scripts/test-security-suite-redteam.sh"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
@@ -125,18 +125,18 @@
       "kind": "artifact_check",
       "objective": "Lock the operator-facing contract for composable primitives, machine-readable artifacts, policy checks, Codex guidance, and redteam pack coverage.",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "collect-static"},
-        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "compare-baseline"},
-        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "enforce-policy"},
-        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "collect-redteam"},
-        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "suite-summary.json"},
-        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "deny_network_endpoint_patterns"},
-        {"type": "artifact_contains", "target": "../../skills/security-suite/scripts/security_suite.py", "value": "policy-verdict.json"},
-        {"type": "artifact_contains", "target": "../../skills/security-suite/scripts/security_suite.py", "value": "baseline-diff.json"},
-        {"type": "artifact_contains", "target": "../../skills/security-suite/scripts/security_suite.py", "value": "fail-on-policy-fail"},
-        {"type": "artifact_contains", "target": "../../skills-codex/security-suite/prompt.md", "value": "Separate raw evidence from the final security judgment."},
-        {"type": "artifact_contains", "target": "../../skills/security-suite/references/agentops-redteam-pack.json", "value": "policy-gated-security-suite"},
-        {"type": "artifact_contains", "target": "../../skills/security-suite/references/policy-example.json", "value": "block_if_removed_commands"}
+        {"type": "artifact_contains", "target": "../../skills/security/SKILL.md", "value": "collect-static"},
+        {"type": "artifact_contains", "target": "../../skills/security/SKILL.md", "value": "compare-baseline"},
+        {"type": "artifact_contains", "target": "../../skills/security/SKILL.md", "value": "enforce-policy"},
+        {"type": "artifact_contains", "target": "../../skills/security/SKILL.md", "value": "collect-redteam"},
+        {"type": "artifact_contains", "target": "../../skills/security/SKILL.md", "value": "suite-summary.json"},
+        {"type": "artifact_contains", "target": "../../skills/security/SKILL.md", "value": "deny_network_endpoint_patterns"},
+        {"type": "artifact_contains", "target": "../../skills/security/scripts/security_suite.py", "value": "policy-verdict.json"},
+        {"type": "artifact_contains", "target": "../../skills/security/scripts/security_suite.py", "value": "baseline-diff.json"},
+        {"type": "artifact_contains", "target": "../../skills/security/scripts/security_suite.py", "value": "fail-on-policy-fail"},
+        {"type": "artifact_contains", "target": "../../skills-codex/security/prompt.md", "value": "Separate raw evidence from the final security judgment."},
+        {"type": "artifact_contains", "target": "../../skills/security/references/agentops-redteam-pack.json", "value": "policy-gated-security-suite"},
+        {"type": "artifact_contains", "target": "../../skills/security/references/policy-example.json", "value": "block_if_removed_commands"}
       ],
       "dimensions": ["process_adherence", "artifact_quality", "safety"],
       "critical": true

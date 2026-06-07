@@ -80,7 +80,7 @@ mkdir -p "$RESULTS_DIR"
 # Extracted from skill body analysis (see .agents/handoff/2026-03-14-codex-api-alignment.md)
 # Format: LAYER[n]="skill1 skill2 ..."
 
-LAYER0="standards shared beads brainstorm inject forge retro ratchet provenance compile handoff recover quickstart goals flywheel openai-docs oss-docs product security security-suite release converter update using-agentops status heal-skill codex-team pr-research pr-plan pr-implement pr-validate pr-prep pr-retro grafana-platform-dashboard reverse-engineer-rpi push"
+LAYER0="standards shared beads brainstorm inject forge retro ratchet provenance compile handoff recover quickstart goals flywheel openai-docs oss-docs product security release converter update using-agentops status heal-skill codex-team pr-research pr-plan pr-implement pr-validate pr-prep pr-retro grafana-platform-dashboard reverse-engineer-rpi push"
 LAYER1="council research doc implement bug-hunt trace readme"
 LAYER2="pre-mortem post-mortem vibe complexity"
 LAYER3="swarm validation plan"
@@ -91,7 +91,7 @@ LAYER5="rpi evolve"
 CHAIN1="standards council pre-mortem plan research inject brainstorm discovery implement beads swarm vibe complexity bug-hunt crank post-mortem validation retro forge rpi ratchet"
 CHAIN2="pr-research pr-plan pr-implement pr-validate pr-prep pr-retro"
 CHAIN3="compile evolve flywheel provenance trace"
-CHAIN4="doc readme handoff recover status quickstart goals product oss-docs release security security-suite heal-skill codex-team update converter using-agentops grafana-platform-dashboard reverse-engineer-rpi push openai-docs shared"
+CHAIN4="doc readme handoff recover status quickstart goals product oss-docs release security heal-skill codex-team update converter using-agentops grafana-platform-dashboard reverse-engineer-rpi push openai-docs shared"
 
 # --- Static Validation ---
 static_check() {
