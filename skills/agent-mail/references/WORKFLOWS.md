@@ -11,13 +11,13 @@
 
 ## Standard Bead Workflow
 
-The canonical workflow for working on a bead with coordination.
+The canonical workflow for working on a bead with coordination. BR/beads is the durable bus for status, ownership, priority, dependencies, and completion evidence. Agent Mail is the side channel for file reservations, lane notifications, acknowledgements, and handoff messages.
 
 ### Steps
 
 ```
 1. Bootstrap session
-   macro_start_session(human_key="/abs/path", program="claude-code", model="YOUR_MODEL")
+   macro_start_session(human_key="/abs/path", program="codex-cli", model="YOUR_MODEL")
 
 2. Pick work
    br ready --json → select bd-123
@@ -45,8 +45,10 @@ The canonical workflow for working on a bead with coordination.
    - Make changes
    - Periodically check inbox
    - Reply in thread with progress updates
+   - Keep durable state/evidence on the bead, not only in mail
 
 6. Complete
+   br update bd-123 --notes "Validation: npm test, CI run 123, commit abc123"
    br close bd-123 --reason "Implemented OAuth flow"
    release_file_reservations(project_key="/abs/path", agent_name="GreenCastle")
    send_message(
@@ -55,6 +57,12 @@ The canonical workflow for working on a bead with coordination.
      body_md="OAuth flow implemented. Ready for review."
    )
 ```
+
+If the mail thread and BR disagree, fix BR first. Treat the mail thread as context that may be cited from the bead, not as the work record itself.
+
+### One-Writer Rule
+
+Before editing any hot path, acquire an exclusive Agent Mail reservation for the exact directory or file set. If the reservation conflicts, do not write there. Message the holder in the bead thread, split the scope, or wait for the lease to expire. This is the lane boundary that keeps parallel workers from corrupting each other's files.
 
 ---
 
@@ -170,7 +178,7 @@ release_file_reservations(project_key="/abs/path", agent_name="GreenCastle")
 macro_prepare_thread(
   project_key="/abs/path",
   thread_id="bd-123",
-  program="claude-code",
+  program="codex-cli",
   model="YOUR_MODEL"
 )
 

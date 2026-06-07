@@ -9,11 +9,24 @@ description: "Use when coordinating agents with Agent Mail locks, inboxes, threa
 practices:
 - pragmatic-programmer
 ---
-<!-- TOC: Bootstrap | Core Ops | File Reservations | Beads | Troubleshooting | Identity | Human Overseer | Pre-Commit Guard | References -->
+<!-- TOC: Boundary | Bootstrap | Core Ops | File Reservations | Beads | Troubleshooting | Identity | Human Overseer | Pre-Commit Guard | References -->
 
 # Using MCP Agent Mail
 
-> **Core Insight:** Without coordination, multiple agents overwrite each other's work. Agent Mail provides identities, messaging, and file reservations to prevent conflicts.
+> **Core Insight:** Agent Mail is the side channel for leases, notifications, acknowledgements, and handoffs. BR/beads is the durable coordination bus and source of truth for work state, evidence, and decisions.
+
+## Coordination Boundary
+
+| Need | Source of truth |
+|------|-----------------|
+| Work queue, status, dependencies, priority, closure evidence | BR/beads (`br`/`bv`) |
+| File ownership, active edit leases, lane notifications, acks | Agent Mail |
+| Final proof that work is done | Bead notes/closure plus git/CI evidence |
+| "Who may write this hot path right now?" | Agent Mail file reservation |
+
+Use Agent Mail to prevent collisions and notify active agents. Do not use it as the durable task queue, audit log, or final evidence store. If a mail thread and BR disagree, reconcile the bead first and link the mail thread from the bead note if the conversation matters.
+
+One-writer-per-hot-dir rule: reserve the path before editing it. If the reservation conflicts, do not write into that path; coordinate with the holder, narrow scope, or wait for the lease to clear.
 
 ## When to Use What
 
@@ -23,6 +36,7 @@ practices:
 | About to edit files | `file_reservation_paths` → edit → `release_file_reservations` |
 | Need to tell another agent something | `send_message` with `thread_id` |
 | Picking up someone else's work | `macro_prepare_thread` |
+| Need durable work state or evidence | Update BR/beads, then link the mail thread if useful |
 | Can't message an agent | `request_contact` → wait for approval |
 | Server seems broken | Use `health_check()` first; CLI-only: `doctor check --verbose` → `doctor repair --yes` |
 
@@ -35,7 +49,7 @@ practices:
 ```
 macro_start_session(
   human_key="/abs/path/to/project",
-  program="claude-code",
+  program="codex-cli",
   model="YOUR_MODEL",
   task_description="Working on auth module"
 )
@@ -113,17 +127,20 @@ release_file_reservations(project_key="/abs/path/project", agent_name="GreenCast
 
 ## Beads Integration
 
-Use bead IDs as your threading anchor:
+Use bead IDs as your threading anchor. BR remains authoritative; mail carries the lease, notification, and discussion side channel.
 
 ```
 1. Pick work:        br ready --json → choose bd-123
 2. Reserve files:    file_reservation_paths(..., reason="bd-123")
 3. Announce:         send_message(..., thread_id="bd-123", subject="[bd-123] Starting...")
 4. Work:             Reply in thread with progress
-5. Complete:         br close bd-123, release_file_reservations(...), final message
+5. Record evidence:  br update bd-123 --notes "Validation: tests, commit, CI, or handoff proof"
+6. Complete:         br close bd-123, release_file_reservations(...), final message
 ```
 
 **Bead ID (often bd-###) goes in:** thread_id, subject prefix, reservation reason, commit message
+
+**Do not infer durable state from mail silence.** A missing reply is not proof that a bead is abandoned, blocked, or complete. Check `br show <id> --json`, `bv --robot-insights`, git state, and CI evidence before changing work state.
 
 ---
 
@@ -165,7 +182,7 @@ Agents get adjective+noun names: GreenCastle, BlueLake, RedBear.
 ```
 register_agent(
   project_key="/abs/path/project",
-  program="claude-code",
+  program="codex-cli",
   model="YOUR_MODEL",
   task_description="Auth refactor"
 )  # name auto-generated

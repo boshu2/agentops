@@ -30,7 +30,7 @@ Register identity in project.
 ```
 register_agent(
   project_key="/abs/path/project",
-  program="claude-code",
+  program="codex-cli",
   model="YOUR_MODEL",
   name="GreenCastle",        # Optional, auto-generates if omitted
   task_description="Auth work"
@@ -64,7 +64,7 @@ Always create new unique agent (never updates existing).
 ```
 create_agent_identity(
   project_key="/abs/path/project",
-  program="claude-code",
+  program="codex-cli",
   model="YOUR_MODEL",
   name_hint="GreenCastle"    # Optional
 )
@@ -301,7 +301,7 @@ One-call bootstrap.
 ```
 macro_start_session(
   human_key="/abs/path/project",
-  program="claude-code",
+  program="codex-cli",
   model="YOUR_MODEL",
   task_description="Auth refactor",
   file_reservation_paths=["src/auth/**"],
@@ -319,7 +319,7 @@ Join existing thread with context.
 macro_prepare_thread(
   project_key="/abs/path/project",
   thread_id="bd-123",
-  program="claude-code",
+  program="codex-cli",
   model="YOUR_MODEL",
   include_examples=true,
   inbox_limit=10
