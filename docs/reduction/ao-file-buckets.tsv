@@ -40,10 +40,8 @@ cli/cmd/ao/canonical_identity.go	RESEARCH	unclear ownership from filename/import
 cli/cmd/ao/canonical_identity_test.go	KEEP	test coverage follows the command surface under review; keep while the source file remains	path/...,testing
 cli/cmd/ao/capabilities.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	encoding/...,github.com/...,runtime,sort
 cli/cmd/ao/capabilities_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	encoding/...,strings,testing
-cli/cmd/ao/ci.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	context,encoding/...,fmt,github.com/...,internal/ports,io,os
-cli/cmd/ao/ci_status_adapter.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	bytes,context,encoding/...,errors,fmt,internal/ports,os/...
-cli/cmd/ao/ci_status_adapter_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	context,errors,internal/ports,strings,testing
-cli/cmd/ao/ci_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	bytes,context,errors,internal/ports,strings,testing
+cli/cmd/ao/ci.go	KEEP	public compatibility wrapper for `ao ci`; GitHub Actions adapter moved to the mto-fleet route	context,encoding/...,fmt,github.com/...,internal/adapters,internal/ports,io,os
+cli/cmd/ao/ci_test.go	KEEP	wrapper test for the retained `ao ci` public JSON-lines command surface	bytes,context,errors,internal/ports,strings,testing
 cli/cmd/ao/citation_cmd.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	context,encoding/...,errors,fmt,github.com/...,internal/ports,io,os
 cli/cmd/ao/citation_cmd_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	bytes,context,errors,internal/ports,strings,testing
 cli/cmd/ao/citation_namespace.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	internal/types,os,strings
