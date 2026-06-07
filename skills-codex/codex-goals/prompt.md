@@ -20,7 +20,7 @@ machine-checkable done-condition, or it loops forever.**
    scope, what not to touch). If you cannot name a verifying command, STOP and
    tighten the objective — a vibe is not a done-condition.
 3. **Pick the launch form.** Interactive/supervised: `codex -C <repo> -a never`,
-   then inside the TUI `/goals` → state objective + done-condition (interactive
+   then inside the TUI, use the goals slash command to state the objective and done-condition (interactive
    `codex` DOES take `-a`/`--ask-for-approval`). Unattended worker: `codex exec
    -C <repo> -s workspace-write -o /tmp/codex-goal-result.md "GOAL: <objective>.
    ITERATE UNTIL DONE. Done-condition: <gate>. Guardrails: only touch <paths>. On

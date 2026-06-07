@@ -6,7 +6,7 @@ Codex-native, step-ordered execution path; the base SKILL.md is the source of tr
 
 ## Steps
 
-1. **Health — know the ground truth.** Run `~/acfs/bin/acfs doctor`. It reads four
+1. **Health — know the ground truth.** Run `$HOME/acfs/bin/acfs doctor`. It reads four
    bands: **lanes** (claude/codex/agy/gemini auth), **core flywheel**
    (br, bv, am, ntm, dcg, cass, cm, ubs), **extras** (caam, ru, rch, fsfs, casr,
    sbh, pt), and **wiring** (cm rule count, cass model, ntm `projects_base`, dcg
@@ -14,12 +14,12 @@ Codex-native, step-ordered execution path; the base SKILL.md is the source of tr
 2. **Read past the binary check.** A ✓ means the binary is on PATH, NOT that it's
    fed. Read the **wiring** lines: `cm store (0 rules)`, a stale cass index, or a
    dead `am` daemon mean the loop is present but starved. Verify by use, not presence.
-3. **Init — wire what's installed.** Run `~/acfs/bin/acfs init` (idempotent +
+3. **Init — wire what's installed.** Run `$HOME/acfs/bin/acfs init` (idempotent +
    additive: `cm init`, sets `ntm config projects_base` default `~/dev`, reports
    cass freshness, reminds you to validate auth lanes). Override the swarm root per
-   host with `ACFS_PROJECTS_BASE=~/dev ~/acfs/bin/acfs init`.
-4. **Confirm zero gaps.** Re-run `~/acfs/bin/acfs doctor` and confirm
-   `0 blocking gap(s)` before real work. `~/acfs/bin/acfs up` chains doctor → init
+   host with `ACFS_PROJECTS_BASE=~/dev $HOME/acfs/bin/acfs init`.
+4. **Confirm zero gaps.** Re-run `$HOME/acfs/bin/acfs doctor` and confirm
+   `0 blocking gap(s)` before real work. `$HOME/acfs/bin/acfs up` chains doctor → init
    → doctor in one shot.
 5. **Validate auth lanes.** `caam doctor --validate`. An expired lane needs
    interactive `caam login <lane>` — never dispatch a worker on a dead lane.

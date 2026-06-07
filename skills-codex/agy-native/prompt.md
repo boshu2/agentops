@@ -47,7 +47,7 @@ that skill onto Codex-native tooling and restates the load-bearing guardrails.
    verdict, edit no code. On a split/false-FAIL, spawn a third tie-break
    context. `br close <id>` **only on PASS**.
 
-6. **Persist + tick.** Scoped `git commit`/push for the repo; the brain artifact
+6. **Persist + tick.** Scoped `git commit` and push for the repo; the brain artifact
    is the durable memory. Re-enter step 4 with the next ready bead. State lives
    on the bus/artifact, never in a live session.
 

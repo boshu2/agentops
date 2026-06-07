@@ -16,5 +16,5 @@ Manage AI coding CLI accounts with sub-100ms switching. Use when hitting rate li
 - Do not use a different agent CLI as the executor from Codex.
 - Do not invent command flags. Verify with `--help` or checked-in references.
 - Do not broaden scope beyond the requested operator action.
-- Do not land source files into `~/dev/agentops`; staged generation belongs under `~/acfs` until the orchestrator lands the batch.
+- Do not land source files into `~/dev/agentops`; staged generation belongs under `$HOME/acfs` until the orchestrator lands the batch.
 - Keep backstage/operator terminology out of client-facing artifacts.

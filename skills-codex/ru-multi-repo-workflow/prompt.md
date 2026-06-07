@@ -16,5 +16,5 @@ Orchestrate multi-repo maintenance with ru: smart commits, careful sync, issue/P
 - Do not use Claude Code, `claude -p`, or Claude-only tools as the executor from Codex.
 - Do not invent command flags. Verify with `--help` or checked-in references.
 - Do not broaden scope beyond the requested operator action.
-- Do not land source files into `~/dev/agentops`; staged generation belongs under `~/acfs` until the orchestrator lands the batch.
+- Do not land source files into `~/dev/agentops`; staged generation belongs under `$HOME/acfs` until the orchestrator lands the batch.
 - Keep backstage/operator terminology out of client-facing artifacts.
