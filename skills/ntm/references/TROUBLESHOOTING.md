@@ -7,6 +7,7 @@ Grouped by family, most common first.
 
 - [Project resolution](#project-resolution) — `project not found`, agent-mail key drift
 - [`ntm send` surprises](#ntm-send-surprises) — broadcast to user pane, CASS dedup, missing `--pane`
+- [Codex spawn fallback](#codex-spawn-fallback) — `--cod` pane opened as bare shell
 - [Rate limits and pane state](#rate-limits-and-pane-state) — `resets 3pm`, `RATE_LIMITED`
 - [Approvals and tokens](#approvals-and-tokens) — `ntm approve` takes token, not bead id
 - [Commands that don't exist / migrated](#commands-that-dont-exist--migrated) — `timeline`, `changes conflicts`, `--mail-project` scope
@@ -98,6 +99,34 @@ ntm send myproject --pane=2 "..."
 # or
 ntm send myproject --cc "..."   # all Claude panes, excludes user pane by default
 ```
+
+## Codex spawn fallback
+
+### `ntm spawn --cod=1` opened a bare `zsh` shell
+
+**Symptom** — The pane is titled/registered as a Codex agent, but the visible prompt
+is a normal shell. A sent worker contract then hits `zsh` and fails with parse errors
+or `command not found`.
+
+**Root cause** — The Codex pane was created and registered, but the local launcher did
+not start the `codex` runtime inside it. The NTM control-plane state alone is not proof
+that the pane is executing Codex.
+
+**Fix** — Verify `--cod` panes before dispatch and fall back to a Codex-native worker
+when the pane is a shell:
+
+```bash
+ntm spawn myproject --cod=1
+ntm --robot-tail=myproject --panes=2 --lines=20
+ntm --robot-snapshot
+
+codex exec -s danger-full-access --skip-git-repo-check -C /path/to/gitdir \
+  "Read AGENTS.md, claim bead <id>, implement only that scope, run the gate, and report evidence."
+```
+
+Do not keep using `ntm send` against the bare shell pane. For concurrent Codex lanes,
+use one isolated worktree per `codex exec -C <worktree>` worker until `--cod` is
+verified fixed by robot-tail evidence.
 
 ## Rate limits and pane state
 

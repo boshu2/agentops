@@ -193,6 +193,10 @@ ntm quick myproject --template=go
 # Launch a mixed swarm
 ntm spawn myproject --cc=2 --cod=1 --gmi=1
 
+# Codex fallback when --cod opens a bare shell instead of Codex
+codex exec -s danger-full-access --skip-git-repo-check -C "$PWD" \
+  "Read AGENTS.md, claim the assigned bead, implement only that scope, and report evidence."
+
 # Dispatch work
 ntm send myproject --cc "Map the auth layer and propose a refactor plan."
 
@@ -281,6 +285,33 @@ ntm swarm stop <pattern>                  # stop sessions by name pattern
 ntm respawn myproject                     # recover dead agents in place
 ntm adopt <tmux-session>                  # bring an existing tmux session under ntm
 ```
+
+### Codex spawn fallback
+
+Treat `ntm spawn <project> --cod=N` as **provisional until observed**. Some local
+NTM builds have created and registered the `cod` pane but left it at a bare `zsh`
+prompt; the next sent "contract" then executes as shell text and fails with parse or
+`command not found` noise.
+
+Verification:
+
+```bash
+ntm spawn myproject --cod=1
+ntm --robot-tail=myproject --panes=2 --lines=20
+ntm --robot-snapshot
+```
+
+If the Codex pane is a shell instead of an active `codex` session, **do not** keep
+sending prompts to that pane. Use a Codex-native one-shot worker from the repo root
+or the intended worktree:
+
+```bash
+codex exec -s danger-full-access --skip-git-repo-check -C /path/to/gitdir \
+  "Read AGENTS.md, claim bead <id>, implement only that scope, run the gate, and report evidence."
+```
+
+For parallel lanes, prefer one `codex exec -C <isolated-worktree>` per worker until
+the live NTM `--cod` launcher is verified fixed by `--robot-tail` evidence.
 
 ## Dispatch and Reusable Assets
 
@@ -564,6 +595,8 @@ These are the NTM-specific trip-wires most commonly hit in practice. Each has a 
 15. **Agent Mail can be degraded without blocking work** — if the mail/reservation source in `sources` is stale/unavailable or reservations time out, stop retry loops and use bead assignee/status notes as the temporary soft lock.
 16. **`locks check` is for wrappers and commit guards** — it returns `free|held|blocked` for one path and caller context; use it instead of inventing per-wrapper reservation ledgers.
 17. **`--oc` is opencode** — if a prompt or profile says "opencode" but no agent appears, check `[agents] oc` config or that `opencode` is on PATH.
+18. **`--cod` must be observed before use** — if a Codex pane is just a bare shell,
+    stop sending prompts to it and run `codex exec -s danger-full-access --skip-git-repo-check -C <gitdir> "<contract>"` from an isolated repo/worktree instead.
 
 ## Reference Index
 
