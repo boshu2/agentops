@@ -115,6 +115,13 @@ func Execute() {
 			// nothing more to surface here — just map to the process exit code.
 			os.Exit(beadsErr.ExitCode())
 		}
+		var tickErr *tickExitError
+		if errors.As(err, &tickErr) {
+			if tickErr.Error() != "" {
+				fmt.Fprintln(os.Stderr, tickErr.Error())
+			}
+			os.Exit(tickErr.ExitCode())
+		}
 		printRequiredFlagHint(executedCmd, err)
 		os.Exit(1)
 	}

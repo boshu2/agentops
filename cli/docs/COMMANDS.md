@@ -2645,6 +2645,98 @@ ao session close [flags]
 
 ---
 
+### `ao tick`
+
+Run the typed AgentOps port of the control-plane tick helper.
+
+```
+ao tick [command]
+```
+
+**Subcommands:**
+
+#### `ao tick claim`
+
+Claim a bead through br
+
+```
+ao tick claim <id> [flags]
+```
+
+#### `ao tick close`
+
+Close a bead and persist the explicit ledger/evidence paths
+
+```
+ao tick close <id> <commit-message> <evidence-ref> [paths...] [flags]
+```
+
+#### `ao tick council-gate`
+
+Fail-closed two-plus judge verdict aggregation
+
+```
+ao tick council-gate <verdict1> <verdict2> [...] [flags]
+```
+
+#### `ao tick guard-status`
+
+Verify guard hook and validator launcher installation
+
+```
+ao tick guard-status [flags]
+```
+
+#### `ao tick install-guards`
+
+Install repo-local git guard hooks
+
+```
+ao tick install-guards [flags]
+```
+
+#### `ao tick next`
+
+Print the next ready bead id
+
+```
+ao tick next [flags]
+```
+
+#### `ao tick reopen`
+
+Reopen a bead after failed validation
+
+```
+ao tick reopen <id> [flags]
+```
+
+#### `ao tick smoke`
+
+Run a read-only smoke test of the tick membrane
+
+```
+ao tick smoke [flags]
+```
+
+#### `ao tick status`
+
+Print ready-work status or convergence state
+
+```
+ao tick status [flags]
+```
+
+#### `ao tick verdict-gate`
+
+Reject verdicts without a non-empty COMMANDS RUN body
+
+```
+ao tick verdict-gate <file|-> [flags]
+```
+
+---
+
 ### `ao validate`
 
 Run a deterministic validation gate over RPI artifacts and emit a single
