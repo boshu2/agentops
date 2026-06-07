@@ -38,8 +38,8 @@ Current inventory count:
 
 | Bucket | Files |
 |---|---:|
-| KEEP | 465 |
-| RELOCATE | 116 |
+| KEEP | 467 |
+| RELOCATE | 114 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
 | Total | 620 |
@@ -140,6 +140,15 @@ adapter boundary. AO keeps the `ao agents lint` public command wrapper and
 exit-code contract in place, while script invocation, stdout/stderr forwarding,
 JSON flag forwarding, and non-zero exit mapping now live under
 `cli/internal/adapters/agentslint`.
+
+## Extracted Agents Inspect Adapter
+
+The `.agents/` write-surface inventory renderer moved behind the `mto-fleet`
+adapter boundary. AO keeps the `ao agents inspect` public command wrapper,
+default repo-root path resolution, and flags in place, while contract loading,
+inventory construction, and text/JSON rendering now live under
+`cli/internal/adapters/agentsinspect`. Shared `.agents` allowlist parsing and
+active skill discovery remain under `cli/internal/adapters/agentsurface`.
 
 ## Extracted Turn Verify Adapter Surface
 
