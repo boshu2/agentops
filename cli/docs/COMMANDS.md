@@ -1436,7 +1436,7 @@ ao codex stop [flags]
 
 ### `ao cron`
 
-Helpers for the /evolve --mode=loop cron-fire continuity primitive.
+Compatibility shims for cron-fire scheduling surfaces that now belong
 
 ```
 ao cron [command]
@@ -1446,7 +1446,7 @@ ao cron [command]
 
 #### `ao cron self-adjust`
 
-Render the next /evolve loop-mode cron prompt and emit JSON for the harness.
+Compatibility shim for the retired local cron self-adjust renderer.
 
 ```
 ao cron self-adjust [flags]
@@ -1456,12 +1456,12 @@ ao cron self-adjust [flags]
 
 ```
   -h, --help                 help for self-adjust
-      --next string          Optional recommended next bead
-      --on string            Trigger marker: 'cycle-close' for default loop usage (default "cycle-close")
-      --shipped string       Comma-separated commit:bead entries shipped this cycle
-      --sub-beads string     Comma-separated bead ids filed this cycle
-      --template string      Path to the cron-loop-mode template (default ".agents/evolve/cron-template.md")
-      --tests-delta string   Human-readable tests delta summary
+      --next string          Accepted for compatibility; MTO owns next-cycle selection
+      --on string            Accepted for compatibility; MTO owns cron scheduling (default "cycle-close")
+      --shipped string       Accepted for compatibility; MTO owns shipped-cycle context
+      --sub-beads string     Accepted for compatibility; MTO owns sub-bead fan-out context
+      --template string      Accepted for compatibility; MTO owns prompt rendering
+      --tests-delta string   Accepted for compatibility; MTO owns test-delta context
 ```
 
 ---

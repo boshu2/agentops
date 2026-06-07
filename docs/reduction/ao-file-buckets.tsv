@@ -105,9 +105,9 @@ cli/cmd/ao/corpus_inject.go	KEEP	self-contained AO image surface: loop, mind, lo
 cli/cmd/ao/corpus_inject_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	bytes,context,errors,internal/ports,os,path/...,strings,testing
 cli/cmd/ao/corpus_snapshot.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	archive/...,compress/...,crypto/...,encoding/...,fmt,github.com/...,io,os,path/...,sort,strings,time
 cli/cmd/ao/corpus_snapshot_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	archive/...,compress/...,encoding/...,io,os,path/...,strings,testing,time
-cli/cmd/ao/cron.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	github.com/...
-cli/cmd/ao/cron_self_adjust.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	bufio,encoding/...,errors,fmt,github.com/...,internal/evolve,io,os,path/...,strings,time
-cli/cmd/ao/cron_self_adjust_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,internal/evolve,os,path/...,strings,testing,time
+cli/cmd/ao/cron.go	KEEP	compatibility shim retained in the lean AO image after cron-fire scheduling moved to the mto-fleet route	github.com/...
+cli/cmd/ao/cron_self_adjust.go	KEEP	compatibility shim retained in the lean AO image after cron-fire scheduling moved to the mto-fleet route	encoding/...,fmt,github.com/...,io
+cli/cmd/ao/cron_self_adjust_test.go	KEEP	compatibility shim test for the mto-fleet route notice; no local CronCreate renderer remains	encoding/...,strings,testing
 cli/cmd/ao/curate.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	encoding/...,fmt,github.com/...,internal/goals,internal/lifecycle,io,os,os/...,path/...,strings,time
 cli/cmd/ao/curate_integration_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	bytes,encoding/...,path/...,strings,testing,time
 cli/cmd/ao/curate_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	encoding/...,os,path/...,strings,testing,time

@@ -38,8 +38,8 @@ Current inventory count:
 
 | Bucket | Files |
 |---|---:|
-| KEEP | 450 |
-| RELOCATE | 146 |
+| KEEP | 453 |
+| RELOCATE | 143 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
 | Total | 635 |
@@ -90,6 +90,13 @@ helpers. Legacy knowledge captures remain supported through the lean local
 flywheel path: `ao pool ingest` already scans `.agents/knowledge/*.md` when no
 explicit files are provided, and the legacy-capture e2e now exercises that
 direct ingest route.
+
+## Relocated Cron-Fire Surface
+
+The cron-fire scheduling renderer moved behind the `mto-fleet` route. AO keeps
+`ao cron self-adjust` as a compatibility shim that emits a structured route
+notice, but it no longer renders CronCreate prompts, verifies cron templates,
+or writes `.agents/evolve/cron-history.jsonl` from the lean local image.
 
 ## Reversibility
 
