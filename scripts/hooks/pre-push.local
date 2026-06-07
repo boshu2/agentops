@@ -1,0 +1,39 @@
+#!/usr/bin/env sh
+# AgentOps cockpit pre-push gate (P1.2 / ag-qidx.2)
+#
+# Source of truth: scripts/hooks/pre-push.local (tracked).
+# Installed copy: $(git rev-parse --git-common-dir)/hooks/pre-push.local
+# Install / reinstall: scripts/install-pre-push-gate.sh
+#
+# Runs the fast cockpit smoke (scripts/pre-push-gate.sh --fast, ~10-20s:
+# go build/vet + race tests on changed packages + eval canaries + changed-file
+# shell-lint) before every push. BLOCKS the push on failure (gate exits 1).
+#
+# Mechanical enforcement (pre-mortem HIGH "discipline is not a mechanism"):
+# the ONLY bypass is the audited AGENTOPS_GATE_DISABLED=1, which is logged.
+# This mirrors the LAW 0 no-claude-p guard pattern.
+set -u
+
+toplevel=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+common=$(git rev-parse --git-common-dir 2>/dev/null)
+
+if [ "${AGENTOPS_GATE_DISABLED:-0}" = "1" ]; then
+    ts=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
+    sha=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
+    branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)
+    printf '%s\t%s\t%s\t%s\tpre-push-gate-bypassed\n' \
+        "$ts" "${USER:-unknown}" "$branch" "$sha" \
+        >> "${common}/agentops-gate-bypass.log" 2>/dev/null || true
+    echo >&2 "⚠ AgentOps pre-push gate BYPASSED (AGENTOPS_GATE_DISABLED=1) — logged to agentops-gate-bypass.log"
+    exit 0
+fi
+
+gate="${toplevel}/scripts/pre-push-gate.sh"
+if [ ! -x "$gate" ]; then
+    echo >&2 "AgentOps pre-push gate: ${gate} not found/executable — skipping (no gate to run)"
+    exit 0
+fi
+
+# Exec directly (NOT via `sh`): the gate is a bash script and uses bash-only
+# constructs (process substitution, arrays). Its shebang selects bash.
+exec "$gate" --fast
