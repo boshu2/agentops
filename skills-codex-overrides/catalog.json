@@ -760,6 +760,168 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+    },
+    {
+      "name": "agent-mail",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "beads-br",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "beads-bv",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "beads-workflow",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "caam",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "casr",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "cass",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "cass-memory",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "cc-hooks",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "dcg",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "gcloud",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "gh-actions",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "gh-cli",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "gh-triage-ru",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "multi-model-triangulation",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "ntm",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "planning-workflow",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "process-triage",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "rch",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "repeatedly-apply-skill",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "research-software",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "ru-multi-repo-workflow",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "sbh",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "ssh",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "system-performance-remediation",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "ubs",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "vibing-with-ntm",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     }
   ]
 }

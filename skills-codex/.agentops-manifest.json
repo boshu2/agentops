@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "6f98755d97030a8bfb83c379162d4a1b9a4b5a6caebb5b38a4e940d8217f6b23",
+  "codex_override_catalog_hash": "13b3f8a56f0e235e460d310811a7b17adc2e38533057af3ff7d51e3070247b58",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -738,6 +738,168 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+      },
+      {
+        "name": "agent-mail",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "beads-br",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "beads-bv",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "beads-workflow",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "caam",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "casr",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "cass",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "cass-memory",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "cc-hooks",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "dcg",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "gcloud",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "gh-actions",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "gh-cli",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "gh-triage-ru",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "multi-model-triangulation",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "ntm",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "planning-workflow",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "process-triage",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "rch",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "repeatedly-apply-skill",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "research-software",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "ru-multi-repo-workflow",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "sbh",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "ssh",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "system-performance-remediation",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "ubs",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      },
+      {
+        "name": "vibing-with-ntm",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
       }
     ]
   },
@@ -747,6 +909,12 @@
       "source_skill": "skills/acfs",
       "source_hash": "462ee8ee0005326d522fbbab8ffb61ddadd0528e3bbec5c12b34e8f2ac580cb5",
       "generated_hash": "f3c2557dd40ac6e00e9813543ef598e23de5f2a913422c6c7fe2d5f17e98d068"
+    },
+    {
+      "name": "agent-mail",
+      "source_skill": "skills/agent-mail",
+      "source_hash": "a0e7bc7714896ad09109ee305f1e658dcc16435d808e6312f7b0992e659e21aa",
+      "generated_hash": "1bdccc4ad385f8403b1202c24dc501f55dca767db1bbb30c70f6f4fa95d52780"
     },
     {
       "name": "agent-native",
@@ -785,6 +953,24 @@
       "generated_hash": "51db26466d4646eddfc2132ea521508fe2ced556ef0ab69db41acd363afba770"
     },
     {
+      "name": "beads-br",
+      "source_skill": "skills/beads-br",
+      "source_hash": "409742e064d51ddaa5f1444f792061851252ec20bd664b2a6909d51cc9303fdc",
+      "generated_hash": "6e0d0756f04967aaa69d0b59b83ce23751d6a58f8c14b60e551cb8aa8d538a51"
+    },
+    {
+      "name": "beads-bv",
+      "source_skill": "skills/beads-bv",
+      "source_hash": "c207c62f36812db3605a497134f937a1e932a9e58e1641cb40b96bd293cc141f",
+      "generated_hash": "854a7064a41ac8a130b90e6446f783ca5dcf77ae9cf6354ad79b16b38c1cd1e4"
+    },
+    {
+      "name": "beads-workflow",
+      "source_skill": "skills/beads-workflow",
+      "source_hash": "c887271b85ee9d12c37be3545fad65a69fd6b36a5965853e76e6074e387aa5de",
+      "generated_hash": "ab0216388d8e1a5bf70e1100915d8db69b0214c8b64f9a8173e19c4f5c1a7fa1"
+    },
+    {
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
       "source_hash": "c490abfe896c2f3dc2eb61dbb00214d7b652605a80e31624f0d4d2b19b546f57",
@@ -809,10 +995,40 @@
       "generated_hash": "ef6c65f7053775a2f7cf6c3111adca2ca1d630eece87d43bf620cc89a51fd748"
     },
     {
+      "name": "caam",
+      "source_skill": "skills/caam",
+      "source_hash": "dc378d769439e0ed5a3c74a2221f021089183864b90853528d6bbfaab2953e17",
+      "generated_hash": "9e8675eb2aa6a11896d35b5ff014390046de1a124e5c69ac31226cbe5b6bb6c8"
+    },
+    {
+      "name": "casr",
+      "source_skill": "skills/casr",
+      "source_hash": "36966032714b8f5fb2a0058c77d9e49e00fba14fb4ce8296b2b5e790439ac594",
+      "generated_hash": "f71885b321acab80bf2ee0241dfb019f1f38a1fba58338db67a60f3222176a35"
+    },
+    {
+      "name": "cass",
+      "source_skill": "skills/cass",
+      "source_hash": "81da72e23fb3b4d5d360db3450ab9326ba0c5a1df9bd250b20a3966abac56251",
+      "generated_hash": "37b54cef934f437c644e8983eee45f9affc6916c3eb5ce44130228d49a547abb"
+    },
+    {
+      "name": "cass-memory",
+      "source_skill": "skills/cass-memory",
+      "source_hash": "e6371d10f2b388aa02e21f275272adc19e93071b49c77875ac4b902d55f42ef7",
+      "generated_hash": "0c2c9a920a285d6f8c7c08d7918c25469f44325067c694ad1d4c5380c8dc064a"
+    },
+    {
       "name": "cc-cron-ticks",
       "source_skill": "skills/cc-cron-ticks",
       "source_hash": "73bde4f06a0e28d0ce258cb8fcf0d5d9dea5720a86be3b0077f6aef39c5b66b4",
       "generated_hash": "2cbd2a8fa0051ee5854fef77133ab0e093a1ac8009f47fa1dca64f1bc92cdd8a"
+    },
+    {
+      "name": "cc-hooks",
+      "source_skill": "skills/cc-hooks",
+      "source_hash": "fcf83cb6e06386ba1065e9fea4cb6a7dba171f5c9a03b806d5f8f18507ea367c",
+      "generated_hash": "59cc3bda893052e8a1e507ac0be1d67956f1836070e7d2718af28b0aa1e8a58a"
     },
     {
       "name": "cc-loop-driver",
@@ -899,6 +1115,12 @@
       "generated_hash": "e591a74578afc525c4eb284f36ee3e6f9efa103070505cf32e5c3b494fb7c490"
     },
     {
+      "name": "dcg",
+      "source_skill": "skills/dcg",
+      "source_hash": "48595fe0908b24636a75d17cdf2213b8dc140127135256904ee547be7fb10d3d",
+      "generated_hash": "47b43c87feec1e6f5426501838678a782217e227df43bb786d49a54df8ef645f"
+    },
+    {
       "name": "deps",
       "source_skill": "skills/deps",
       "source_hash": "e5c4620db781e66c8512a23f1db425fd33b99e857d351f35d507a8e32daac7fb",
@@ -957,6 +1179,30 @@
       "source_skill": "skills/forge",
       "source_hash": "cea35b58bc86259e28792b8a8f5d0392f6d453b81c753a2e7971aafbf984ba9e",
       "generated_hash": "904e242f85fd5256c578b5c559d23845d6fc934dfafeb9215f4971c0293d5cb6"
+    },
+    {
+      "name": "gcloud",
+      "source_skill": "skills/gcloud",
+      "source_hash": "9c71c2df6fd07fa0055b2999ee752ccad7c2fb64723e044007d7ddbf3955c5f6",
+      "generated_hash": "7c1f7644fbcae75b1e8182df034b64abb4dde0fe0c4c86facc29550daa95e4d0"
+    },
+    {
+      "name": "gh-actions",
+      "source_skill": "skills/gh-actions",
+      "source_hash": "31573dc5919563482cd346bfb8c028189b058a2f933406848034cd51dd138a71",
+      "generated_hash": "1e743c0786e39b25acc4cdb080eda57655b6ed26561244e825db0feb8ce6df20"
+    },
+    {
+      "name": "gh-cli",
+      "source_skill": "skills/gh-cli",
+      "source_hash": "13a7f47a2d355f52b131e31a0e796d0d3cee287d6acbdc8e32278aaa2b39fc9a",
+      "generated_hash": "5fea5f63f32dfd10d67c4accd44c487680cc4cc8d27f702edffe7793484dd915"
+    },
+    {
+      "name": "gh-triage-ru",
+      "source_skill": "skills/gh-triage-ru",
+      "source_hash": "75f6a13032e476bc224295cbd2fff2dc8457bc33777d1afa19757dab9f6182fc",
+      "generated_hash": "d2f96077bb480c362638b4d7a001e4b37d0b20a0de0f9231066cdae17a510178"
     },
     {
       "name": "goals",
@@ -1019,6 +1265,18 @@
       "generated_hash": "22677f82b2ce9e7abe491484ae6294a8ba4607253789fc13d0b2d9a6da23f8e7"
     },
     {
+      "name": "multi-model-triangulation",
+      "source_skill": "skills/multi-model-triangulation",
+      "source_hash": "ba0dccdd07fc1f9a94a63a0c1d104a097b3da0da0c766527baf08ad4801f4364",
+      "generated_hash": "bbbacb4e2bbccdceffa33d8f8c2d046d41fbce5c3a178b2dc0a86a744aa79155"
+    },
+    {
+      "name": "ntm",
+      "source_skill": "skills/ntm",
+      "source_hash": "e462fbb41420baef05561549ebbafd4b948296636ae15bd9c3a1df9ccebe976d",
+      "generated_hash": "6b10bb73642323e9026ccd908b920b5aee37c390e1296924d297936407b9c91b"
+    },
+    {
       "name": "openai-docs",
       "source_skill": "skills/openai-docs",
       "source_hash": "e0f575f3da7521aa976736a7e31e78bccec4509027ac268d6c23f9410bff6b7d",
@@ -1047,6 +1305,12 @@
       "source_skill": "skills/plan",
       "source_hash": "a5892f446e959fe8e08eea92432b99da6c2474986849dfab4a16c0b6c74e598c",
       "generated_hash": "d988d0f966aaccacd94b0a0a9eb9dc5e3ecc27648a8805d1569059d4c2c1c063"
+    },
+    {
+      "name": "planning-workflow",
+      "source_skill": "skills/planning-workflow",
+      "source_hash": "fb2e2d84a3dcc21899187320beeacc4fef6e8482bb8a377b2827650f87806089",
+      "generated_hash": "6440d93af8cc468dbb540e4c2a9bb621eb890fd65ad9b18245be0cc5f8f99a9d"
     },
     {
       "name": "post-mortem",
@@ -1085,6 +1349,12 @@
       "generated_hash": "f98f6d4ad93124bdbe08cf728f218626e59ae4538621b03351138f593ee17b42"
     },
     {
+      "name": "process-triage",
+      "source_skill": "skills/process-triage",
+      "source_hash": "7bf2f88bbcedd617eda4310441b179b20a3ec378f2deefc244b4af344c70f3e3",
+      "generated_hash": "5e068e9511b4985170cae6f8cf91ac834d82ceaaf2f32e629a976f2da62ecbad"
+    },
+    {
       "name": "product",
       "source_skill": "skills/product",
       "source_hash": "a2f51a7e71f2ff23025dc6b6cf806096cd6c2fb4324d426bd180ab256061e9d5",
@@ -1115,6 +1385,12 @@
       "generated_hash": "2b62557007d2bd62d15db827a4f1a148ebb0e7d6f66035bfddb30f1f6bf08455"
     },
     {
+      "name": "rch",
+      "source_skill": "skills/rch",
+      "source_hash": "7ee9c8335ada71bfff869363f5ddcb5fea3b3c165a8b8c5f5e7e46de232053f8",
+      "generated_hash": "5fc963f6284852041a8e66ff4224c2b465bce72987145dbf7696cff5e7a94425"
+    },
+    {
       "name": "recover",
       "source_skill": "skills/recover",
       "source_hash": "706e8f620cd75317a0a5decc29d17e7d98aa4d82623ff4211219845bf63e2d25",
@@ -1139,10 +1415,22 @@
       "generated_hash": "5b3075bdee6aeed794ad7841e990f0cc94dbad414506c57f8cb4f42515c4e465"
     },
     {
+      "name": "repeatedly-apply-skill",
+      "source_skill": "skills/repeatedly-apply-skill",
+      "source_hash": "074aa4c25a1e2dcbfbec220cd7da696a5b8d76e1977615e5016a81e5e3caadda",
+      "generated_hash": "48106c261a00881e6f022ac81335383fc48ba62ec01e90e9e537266d8e6bc68a"
+    },
+    {
       "name": "research",
       "source_skill": "skills/research",
       "source_hash": "78cea42c2fd8f49bd3142dad2109c2ac5507ddbe0b7ba67adb6b19198a65cff4",
       "generated_hash": "2b9ef43496748524a8ae696eb422fa2dec67fee61c57c354856c8fbd1740b00a"
+    },
+    {
+      "name": "research-software",
+      "source_skill": "skills/research-software",
+      "source_hash": "feac866246f2dcc9284b7835b0e46376363d38484ab8e056f0d00d463035ccda",
+      "generated_hash": "0a69a6b3414bb99c69d5f5fed505e92db3dbf7b953148c1881c08eb34f5cd645"
     },
     {
       "name": "retro",
@@ -1167,6 +1455,18 @@
       "source_skill": "skills/rpi",
       "source_hash": "7dbe89ba71c87f5648a55ebd7ccd0c334a8f75add99d4e64bba781d44b81b090",
       "generated_hash": "c8f439c27965aa992f1dd9c94d0f80ddc8c2aff5f8b864c8a2a6d0820c1c814d"
+    },
+    {
+      "name": "ru-multi-repo-workflow",
+      "source_skill": "skills/ru-multi-repo-workflow",
+      "source_hash": "fac1b554acb6226b10c0eedc29df1e1bbaf90a5b9b7b8ce0343d02503ad9bd76",
+      "generated_hash": "f7b1d1a93be19c475b24ca9d75cf0ea286d817f31721f9695debfad4aff46e34"
+    },
+    {
+      "name": "sbh",
+      "source_skill": "skills/sbh",
+      "source_hash": "c991466302fd8ff5e6872bb94b62548da4caf17e3f243ce947d596396c8da289",
+      "generated_hash": "deade7f58165539bbaad35ca20c0fb97655789656190dceb8a63e02e6d48659d"
     },
     {
       "name": "scaffold",
@@ -1229,6 +1529,12 @@
       "generated_hash": "4d8b01766df9b10099f4f669e60c74dede37bd604e70d7b6a9a732cb5b2a5c05"
     },
     {
+      "name": "ssh",
+      "source_skill": "skills/ssh",
+      "source_hash": "07103f7e1e35808ff1ec5ce0639b5dce0f445e9a78ca913b58119031a4b18a95",
+      "generated_hash": "0402b6f7548ecad88ca42b7a365dd70fc537647302f5e4df4e94021021324594"
+    },
+    {
       "name": "standards",
       "source_skill": "skills/standards",
       "source_hash": "f9046b2822250f82670fd93ccdf60deb96a81bd1299150a5c74ddc052a05d1eb",
@@ -1247,6 +1553,12 @@
       "generated_hash": "093b9bb120ff3b2804b753ff69c80430d8738095ced1ef0e7a03c1fc8ca112d6"
     },
     {
+      "name": "system-performance-remediation",
+      "source_skill": "skills/system-performance-remediation",
+      "source_hash": "366553498571f8c8ca0308bbd8b4ab340067998f2720495c1de173e8f03d9368",
+      "generated_hash": "3db46b8d83e57debbc140fdc08d6b739653db42b0ae55b46450f82d6c5f9245d"
+    },
+    {
       "name": "system-tuning",
       "source_skill": "skills/system-tuning",
       "source_hash": "eb0e7c8dbffccae4f305cd92792ccbeab7d4310ff24d534d70c5ecb3527fcc6d",
@@ -1263,6 +1575,12 @@
       "source_skill": "skills/trace",
       "source_hash": "f13d70a293bccbea9a5fd55922c2df28b37d9af1f0a668c9ba306caa1bccaaf8",
       "generated_hash": "c0a7ce3beb038f142c9ad8ef0eef4a9072eb2a2c6c90b4f1e0f39699462f4cec"
+    },
+    {
+      "name": "ubs",
+      "source_skill": "skills/ubs",
+      "source_hash": "5fee14fb6809b1fb75da3cc9b8426a75e6088ea401fd192ae3d78f4f9c399d81",
+      "generated_hash": "12b9e50217865cefd11f27d8479811cd6c940bd69d3ecdc90eecdeca5e9e1882"
     },
     {
       "name": "using-agentops",
@@ -1293,6 +1611,12 @@
       "source_skill": "skills/vibe",
       "source_hash": "d862c33eba293de05b479d8daae4bf2f18eafaf6d611e2913fbf045a835cb5fc",
       "generated_hash": "271f92ad96a487577489f1e233a7a8121b132590d6aa1c49c8275230f67f221a"
+    },
+    {
+      "name": "vibing-with-ntm",
+      "source_skill": "skills/vibing-with-ntm",
+      "source_hash": "cd1035f24f630f92cc19628b4f069eb2952e8bd7da094d4922a2ca4d3d786233",
+      "generated_hash": "cbb2f281dbf5e0b074252ee05daf603baeeea2eb8f1a4cddc8471b8b11d82318"
     },
     {
       "name": "workflow-builder",
