@@ -12,16 +12,20 @@ func TestTickCommandSurfaceCovered(t *testing.T) {
 	// surface parity gate scans *_test.go for this coverage.
 	_ = []string{
 		"ao chaos-test",
+		"ao close",
 		"ao council-gate",
 		"ao guard-status",
 		"ao install-guards",
+		"ao ready",
 		"ao verdict-gate",
 	}
 	covered := []string{
 		"chaos-test",
+		"close",
 		"council-gate",
 		"guard-status",
 		"install-guards",
+		"ready",
 		"tick claim",
 		"tick close",
 		"tick council-gate",
@@ -45,6 +49,39 @@ func TestTickCommandSurfaceCovered(t *testing.T) {
 		if !registered[name] {
 			t.Fatalf("expected registered command %q", name)
 		}
+	}
+}
+
+func TestTickReadyStateCounts(t *testing.T) {
+	ready := []tickBead{{ID: "cp-ready", Status: "open"}}
+	all := []tickBead{
+		{ID: "cp-ready", Status: "open"},
+		{ID: "cp-open", Status: "open"},
+		{ID: "cp-work", Status: "in_progress"},
+		{ID: "cp-done", Status: "closed"},
+	}
+	counts := tickCountBeads(ready, all)
+	if counts.Ready != 1 || counts.Open != 2 || counts.InProgress != 1 || counts.Closed != 1 {
+		t.Fatalf("tickCountBeads() = %+v, want ready=1 open=2 in_progress=1 closed=1", counts)
+	}
+}
+
+func TestTickClosePortAlreadyClosedIsIdempotent(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, ".beads"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	body := `{"id":"cp-done","status":"closed"}` + "\n"
+	if err := os.WriteFile(filepath.Join(dir, ".beads", "issues.jsonl"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var stdout bytes.Buffer
+	rt := tickRuntime{workDir: dir, stdout: &stdout, stderr: &bytes.Buffer{}}
+	if err := tickClosePort(rt, "cp-done", "msg", "missing-evidence.md", nil); err != nil {
+		t.Fatalf("tickClosePort() unexpected error: %v", err)
+	}
+	if got := stdout.String(); got != "already closed cp-done @ none\n" {
+		t.Fatalf("tickClosePort() stdout = %q", got)
 	}
 }
 

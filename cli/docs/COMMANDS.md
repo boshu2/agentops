@@ -263,7 +263,7 @@ ao citation verify --kind <file|function|symbol> --raw <text> [flags]
 
 ### `ao claim`
 
-Bind claims to evidence files at a promotion level (PG1-PG4) and list existing bindings, via the typed BC2 ClaimEvidenceBinderPort.
+Claim a BR bead for harness-neutral AgentOps loops, or bind/list claim evidence via the typed BC2 ClaimEvidenceBinderPort.
 
 ```
 ao claim [command]
@@ -3944,6 +3944,16 @@ ao chaos-test [flags]
 
 ---
 
+### `ao close`
+
+Close a bead and persist the explicit ledger/evidence paths
+
+```
+ao close <id> <commit-message> <evidence-ref> [paths...] [flags]
+```
+
+---
+
 ### `ao council-gate`
 
 Fail-closed two-plus judge verdict aggregation
@@ -4143,6 +4153,16 @@ ao provenance trace [flags]
       --json           Emit each finding as one JSON object per line
       --orphans        Audit for artifact nodes with no inbound provenance edge
       --strict         Exit non-zero when any orphan exists
+```
+
+---
+
+### `ao ready`
+
+Print harness-neutral ready bead state as JSON
+
+```
+ao ready [flags]
 ```
 
 ---

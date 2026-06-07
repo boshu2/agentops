@@ -19,9 +19,15 @@ import (
 // claimCmd is the parent for BC2 ClaimEvidenceBinderPort CLI
 // surfaces. Built using the cycle-147 cli-wiring template.
 var claimCmd = &cobra.Command{
-	Use:   "claim",
-	Short: "BC2 ClaimEvidenceBinderPort operations (bind/list claim-evidence)",
-	Long:  `Bind claims to evidence files at a promotion level (PG1-PG4) and list existing bindings, via the typed BC2 ClaimEvidenceBinderPort.`,
+	Use:   "claim [id]",
+	Short: "Claim a BR bead or manage claim-evidence bindings",
+	Long: `Claim a BR bead for harness-neutral AgentOps loops, or bind/list claim evidence via the typed BC2 ClaimEvidenceBinderPort.
+
+Examples:
+  ao claim cp-123
+  ao claim bind --claim AOP-CLAIM-X --path .agents/findings/x.md --level PG2
+  ao claim list`,
+	RunE: runClaim,
 }
 
 var claimBindCmd = &cobra.Command{
@@ -75,6 +81,13 @@ func init() {
 	claimCmd.AddCommand(claimBindCmd)
 
 	claimCmd.AddCommand(claimListCmd)
+}
+
+func runClaim(cmd *cobra.Command, args []string) error {
+	if len(args) != 1 {
+		return cmd.Help()
+	}
+	return tickPassthrough(newTickRuntime(cmd), "br", "update", args[0], "--claim")
 }
 
 func runClaimBind(cmd *cobra.Command, _ []string) error {
