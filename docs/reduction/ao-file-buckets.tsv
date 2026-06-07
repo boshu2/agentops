@@ -328,10 +328,8 @@ cli/cmd/ao/maturity_inject_test.go	KEEP	self-contained AO image surface: loop, m
 cli/cmd/ao/maturity_integration_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	os,path/...,strings,testing
 cli/cmd/ao/maturity_target_size_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	fmt,os,path/...,sort,testing
 cli/cmd/ao/maturity_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	encoding/...,github.com/...,internal/ratchet,internal/types,os,path/...,strings,testing,time
-cli/cmd/ao/mcp_serve.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,fmt,github.com/...,io,os,os/...,strings
+cli/cmd/ao/mcp_serve.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,fmt,github.com/...,internal/adapters,io,os,os/...,strings
 cli/cmd/ao/mcp_serve_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,strings,testing
-cli/cmd/ao/mcp_transport.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	bufio,encoding/...,fmt,io
-cli/cmd/ao/mcp_transport_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	bytes,encoding/...,strings,testing
 cli/cmd/ao/memory.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	fmt,github.com/...,os,path/...,sort,strings
 cli/cmd/ao/memory_test.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	encoding/...,fmt,os,path/...,strings,testing,time
 cli/cmd/ao/metrics.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	github.com/...,internal/quality,internal/ratchet,internal/storage,internal/types,path/...,strings,time

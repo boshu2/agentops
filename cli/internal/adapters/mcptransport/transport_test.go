@@ -1,4 +1,4 @@
-package main
+package mcptransport
 
 import (
 	"bytes"
@@ -7,21 +7,21 @@ import (
 	"testing"
 )
 
-// driveMCP feeds newline-delimited JSON-RPC requests through serveMCP with the
+// driveMCP feeds newline-delimited JSON-RPC requests through Serve with the
 // given executor and returns the decoded responses, one per request line.
-func driveMCP(t *testing.T, exec mcpToolExecutor, requests ...string) []mcpResponse {
+func driveMCP(t *testing.T, opts Options, requests ...string) []Response {
 	t.Helper()
 	in := strings.NewReader(strings.Join(requests, "\n") + "\n")
 	var out bytes.Buffer
-	if err := serveMCP(in, &out, exec); err != nil {
-		t.Fatalf("serveMCP: %v", err)
+	if err := Serve(in, &out, opts); err != nil {
+		t.Fatalf("Serve: %v", err)
 	}
-	var resps []mcpResponse
+	var resps []Response
 	for _, line := range strings.Split(strings.TrimSpace(out.String()), "\n") {
 		if line == "" {
 			continue
 		}
-		var r mcpResponse
+		var r Response
 		if err := json.Unmarshal([]byte(line), &r); err != nil {
 			t.Fatalf("decoding response %q: %v", line, err)
 		}
@@ -30,12 +30,38 @@ func driveMCP(t *testing.T, exec mcpToolExecutor, requests ...string) []mcpRespo
 	return resps
 }
 
-func okExec(name string, _ map[string]string) (string, error) {
-	return "RESULT:" + name, nil
+func fixtureOptions(exec ToolExecutor) Options {
+	if exec == nil {
+		exec = func(name string, _ map[string]string) (string, error) {
+			return "RESULT:" + name, nil
+		}
+	}
+	return Options{
+		ToolDescriptors: func() []ToolDescriptor {
+			return []ToolDescriptor{
+				{Name: "session_bootstrap"},
+				{Name: "inject"},
+				{Name: "corpus_inject"},
+				{Name: "standards"},
+				{Name: "validate"},
+				{Name: "goals_measure"},
+			}
+		},
+		Deny: func(_ string, args map[string]string) (bool, string) {
+			for _, val := range args {
+				low := strings.ToLower(val)
+				if strings.Contains(low, "holdout") || strings.Contains(low, "ground_truth") {
+					return true, "refusing holdout/ZDR boundary crossing"
+				}
+			}
+			return false, ""
+		},
+		Exec: exec,
+	}
 }
 
-func TestServeMCP_Initialize(t *testing.T) {
-	resps := driveMCP(t, okExec, `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`)
+func TestServe_Initialize(t *testing.T) {
+	resps := driveMCP(t, fixtureOptions(nil), `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`)
 	if len(resps) != 1 {
 		t.Fatalf("got %d responses, want 1", len(resps))
 	}
@@ -48,11 +74,11 @@ func TestServeMCP_Initialize(t *testing.T) {
 	}
 }
 
-func TestServeMCP_ToolsList(t *testing.T) {
-	resps := driveMCP(t, okExec, `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
+func TestServe_ToolsList(t *testing.T) {
+	resps := driveMCP(t, fixtureOptions(nil), `{"jsonrpc":"2.0","id":2,"method":"tools/list"}`)
 	res, _ := json.Marshal(resps[0].Result)
 	var doc struct {
-		Tools []mcpToolDescriptor `json:"tools"`
+		Tools []ToolDescriptor `json:"tools"`
 	}
 	if err := json.Unmarshal(res, &doc); err != nil {
 		t.Fatalf("tools/list result not decodable: %v", err)
@@ -62,13 +88,13 @@ func TestServeMCP_ToolsList(t *testing.T) {
 	}
 }
 
-func TestServeMCP_ToolsCall_DispatchesToExecutor(t *testing.T) {
+func TestServe_ToolsCall_DispatchesToExecutor(t *testing.T) {
 	var calledWith string
 	exec := func(name string, args map[string]string) (string, error) {
 		calledWith = name + ":" + args["target"]
 		return "PASS", nil
 	}
-	resps := driveMCP(t, exec,
+	resps := driveMCP(t, fixtureOptions(exec),
 		`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"validate","arguments":{"target":"plan.md"}}}`)
 	if resps[0].Error != nil {
 		t.Fatalf("tools/call errored: %v", resps[0].Error)
@@ -82,16 +108,16 @@ func TestServeMCP_ToolsCall_DispatchesToExecutor(t *testing.T) {
 	}
 }
 
-func TestServeMCP_ToolsCall_HoldoutDenied(t *testing.T) {
+func TestServe_ToolsCall_HoldoutDenied(t *testing.T) {
 	called := false
 	exec := func(string, map[string]string) (string, error) { called = true; return "", nil }
-	resps := driveMCP(t, exec,
+	resps := driveMCP(t, fixtureOptions(exec),
 		`{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"corpus_inject","arguments":{"query":"the holdout ground_truth"}}}`)
 	if resps[0].Error == nil {
 		t.Fatal("a holdout-surfacing tool call must return a JSON-RPC error")
 	}
 	if called {
-		t.Error("executor must NOT run for a denied holdout call (NOT-ZDR)")
+		t.Error("executor must NOT run for a denied holdout call")
 	}
 	low := strings.ToLower(resps[0].Error.Message)
 	if !strings.Contains(low, "holdout") && !strings.Contains(low, "zdr") {
@@ -99,17 +125,15 @@ func TestServeMCP_ToolsCall_HoldoutDenied(t *testing.T) {
 	}
 }
 
-func TestServeMCP_UnknownMethod(t *testing.T) {
-	resps := driveMCP(t, okExec, `{"jsonrpc":"2.0","id":5,"method":"does/not/exist"}`)
+func TestServe_UnknownMethod(t *testing.T) {
+	resps := driveMCP(t, fixtureOptions(nil), `{"jsonrpc":"2.0","id":5,"method":"does/not/exist"}`)
 	if resps[0].Error == nil || resps[0].Error.Code != -32601 {
 		t.Errorf("unknown method must return JSON-RPC -32601, got %+v", resps[0].Error)
 	}
 }
 
-func TestServeMCP_MultiRequestRoundTrip(t *testing.T) {
-	// The acceptance: a session round-trips initialize + tool calls over the
-	// transport and gets structured responses back.
-	resps := driveMCP(t, okExec,
+func TestServe_MultiRequestRoundTrip(t *testing.T) {
+	resps := driveMCP(t, fixtureOptions(nil),
 		`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}`,
 		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"session_bootstrap","arguments":{}}}`,
 		`{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"validate","arguments":{"target":"x"}}}`,

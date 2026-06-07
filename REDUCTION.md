@@ -39,10 +39,10 @@ Current inventory count:
 | Bucket | Files |
 |---|---:|
 | KEEP | 461 |
-| RELOCATE | 124 |
+| RELOCATE | 122 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
-| Total | 624 |
+| Total | 622 |
 
 Validation command:
 
@@ -148,6 +148,15 @@ adapter boundary. AO keeps the `ao turn verify` public command wrapper and
 verdict contract in place, while input decoding, provenance ledger loading,
 trace-graph orphan checks, predicate evaluation, and verdict rendering now live
 under `cli/internal/adapters/turnverify`.
+
+## Extracted MCP Transport Adapter Surface
+
+The MCP JSON-RPC stdio transport moved behind the `mto-fleet` adapter boundary.
+AO keeps the `ao mcp serve` public command wrapper, curated tool descriptors,
+holdout-denial policy, and real executor in place, while newline-delimited
+JSON-RPC serving, dispatch, initialize response handling, tools/list response
+handling, tools/call response handling, and protocol error shaping now live
+under `cli/internal/adapters/mcptransport`.
 
 ## Reversibility
 
