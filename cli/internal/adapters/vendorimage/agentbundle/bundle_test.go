@@ -1,4 +1,4 @@
-package main
+package agentbundle
 
 import (
 	"encoding/json"
@@ -42,7 +42,7 @@ func writeFixtureSkill(t *testing.T, dir, name, body string) {
 }
 
 func TestBuildAgentBundle_ManagedDefaults(t *testing.T) {
-	b, err := buildAgentBundle(bundleOptions{Runtime: "managed", SkillsDir: fixtureSkills(t)})
+	b, err := Build(Options{Runtime: "managed", SkillsDir: fixtureSkills(t)})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -71,7 +71,7 @@ func TestBuildAgentBundle_ManagedDefaults(t *testing.T) {
 }
 
 func TestBuildAgentBundle_SelfHostedSandbox(t *testing.T) {
-	b, err := buildAgentBundle(bundleOptions{Runtime: "managed", Sandbox: "self-hosted", SkillsDir: fixtureSkills(t)})
+	b, err := Build(Options{Runtime: "managed", Sandbox: "self-hosted", SkillsDir: fixtureSkills(t)})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestBuildAgentBundle_SelfHostedSandbox(t *testing.T) {
 }
 
 func TestBuildAgentBundle_CodexNTM(t *testing.T) {
-	b, err := buildAgentBundle(bundleOptions{Runtime: "codex-ntm", SkillsDir: fixtureSkills(t)})
+	b, err := Build(Options{Runtime: "codex-ntm", SkillsDir: fixtureSkills(t)})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -115,7 +115,7 @@ func TestBuildAgentBundle_CodexNTM(t *testing.T) {
 }
 
 func TestBuildAgentBundle_HoldoutRefusal(t *testing.T) {
-	_, err := buildAgentBundle(bundleOptions{
+	_, err := Build(Options{
 		Runtime:   "managed",
 		Skills:    []string{"standards", "leaky-eval"},
 		SkillsDir: fixtureSkills(t),
@@ -130,14 +130,14 @@ func TestBuildAgentBundle_HoldoutRefusal(t *testing.T) {
 }
 
 func TestBuildAgentBundle_UnknownRuntime(t *testing.T) {
-	_, err := buildAgentBundle(bundleOptions{Runtime: "wat", SkillsDir: fixtureSkills(t)})
+	_, err := Build(Options{Runtime: "wat", SkillsDir: fixtureSkills(t)})
 	if err == nil {
 		t.Fatal("unknown --runtime must error")
 	}
 }
 
 func TestBuildAgentBundle_ManagedJSONShape(t *testing.T) {
-	b, err := buildAgentBundle(bundleOptions{Runtime: "managed", SkillsDir: fixtureSkills(t)})
+	b, err := Build(Options{Runtime: "managed", SkillsDir: fixtureSkills(t)})
 	if err != nil {
 		t.Fatal(err)
 	}
