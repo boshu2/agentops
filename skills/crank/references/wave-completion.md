@@ -106,7 +106,7 @@ If hooks or `lib/hook-helpers.sh` were modified, verify embedded copies are in s
 
 ### Step 8: Write Phase-2 Summary
 
-Before extracting learnings, write a phase-2 summary for downstream `/validation` consumption:
+Before extracting learnings, write a phase-2 summary for downstream `/validate` consumption:
 
 ```bash
 mkdir -p .agents/rpi
@@ -123,11 +123,11 @@ cat > ".agents/rpi/phase-2-summary-$(date +%Y-%m-%d)-crank.md" <<PHASE2
 PHASE2
 ```
 
-This summary is consumed by `/validation` closeout (and its internal `/post-mortem`) for scope reconciliation.
+This summary is consumed by `/validate` closeout (and its internal `/post-mortem`) for scope reconciliation.
 
 ### Step 8.5: Extract Learnings (ao Integration)
 
-If ao CLI available: run `ao forge transcript`, `ao flywheel close-loop --quiet`, `ao metrics flywheel status`, and `ao pool list --status=pending` to extract and review learnings. If ao unavailable, skip and recommend `/validation` manually.
+If ao CLI available: run `ao forge transcript`, `ao flywheel close-loop --quiet`, `ao metrics flywheel status`, and `ao pool list --status=pending` to extract and review learnings. If ao unavailable, skip and recommend `/validate` manually.
 
 ### Step 8.6: Archive Shared Task Notes
 

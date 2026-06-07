@@ -6,12 +6,12 @@
 
 ## Summary
 
-Top-level orchestrator skills (`/rpi`, `/discovery`, `/validation`) are
+Top-level orchestrator skills (`/rpi`, `/discovery`, `/validate`) are
 vulnerable to compression: the agent inlines sub-skill work instead of
 delegating via separate `Skill()` calls. This happened live in the
 2026-04-19 MkDocs rebuild session: the agent explicitly chose to compress
 RPI into three direct phases, then never called `Skill(skill="discovery")`,
-`Skill(skill="crank")`, or `Skill(skill="validation")`. Phase 3 validation
+`Skill(skill="crank")`, or `Skill(skill="validate")`. Phase 3 validation
 was skipped entirely until the user asked whether post-mortem validation
 had happened.
 
@@ -40,7 +40,7 @@ Anything less is compressed.
 
 1. Delegate to `Skill(skill="discovery", args=...)`, wait for completion,
    then delegate to `Skill(skill="crank", ...)`, then delegate to
-   `Skill(skill="validation", ...)`.
+   `Skill(skill="validate", ...)`.
 2. Do not substitute `Agent()` for `Skill()`. `Agent()` spawns parallel
    work; `Skill()` invokes a declared workflow contract.
 3. Honor phase gates. Phase 2 to Phase 3 is mandatory. Phase 3 failure
@@ -63,7 +63,7 @@ Anything less is compressed.
 
 `/rpi` is the most-compressed orchestrator surface in practice. The
 2026-04-19 session was an `/rpi` invocation that compressed all three
-phases. The other orchestrators (`/discovery`, `/validation`) face the
+phases. The other orchestrators (`/discovery`, `/validate`) face the
 same risk but are usually invoked AS sub-skills of `/rpi`, so the
 compression happens at the `/rpi` layer.
 
@@ -75,7 +75,7 @@ rationalization is the smell.
 
 - `skills/rpi/SKILL.md` — the phased contract this anti-pattern violates
 - `skills/discovery/SKILL.md`
-- `skills/validation/SKILL.md`
+- `skills/validate/SKILL.md`
 - `skills/shared/references/strict-delegation-contract.md` (if present)
 - `skills/evolve/references/long-loop-discipline.md` — the same
   disk-truth principle applied to long-running loops; compression is

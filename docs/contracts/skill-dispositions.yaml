@@ -47,11 +47,6 @@ dispositions:
     hexagonal_role: domain
     disposition:    update
     rationale:      "Validation generator; needs acceptance examples and result contract"
-  - skill:          codex-team
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Runtime coordination adapter; align with worktree/wave rules"
   - skill:          compile
     domain:         "BC1 Corpus"
     hexagonal_role: supporting
@@ -112,11 +107,6 @@ dispositions:
     hexagonal_role: domain
     disposition:    keep
     rationale:      "Ubiquitous-language kernel; central to DDD"
-  - skill:          dream
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    refactor
-    rationale:      "Scheduled compounding lane; align with Corpus ports and convergence proof"
   - skill:          evolve
     domain:         "BC3 Loop"
     hexagonal_role: supporting
@@ -137,31 +127,16 @@ dispositions:
     hexagonal_role: domain
     disposition:    keep
     rationale:      "Fitness source; use as evolution selection input"
-  - skill:          grafana-platform-dashboard
-    domain:         "BC2 Validation"
-    hexagonal_role: driven-adapter
-    disposition:    keep
-    rationale:      "Domain-specific validator with no overlap; marketplace specialization is intended — operator decision (resolved KEEP 2026-05-24)"
   - skill:          handoff
     domain:         "BC1 Corpus"
     hexagonal_role: supporting
     disposition:    update
     rationale:      "Session continuity artifact; clarify promotion vs local-only notes"
-  - skill:          harvest
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Promotion adapter; tie to CorpusWriter/Citation behavior"
   - skill:          heal-skill
     domain:         "BC4 Factory"
     hexagonal_role: supporting
     disposition:    update
     rationale:      "Skill hygiene gate; should consume the new domain map"
-  - skill:          hooks-authoring
-    domain:         "BC5 Runtime"
-    hexagonal_role: domain
-    disposition:    update
-    rationale:      "Hook adapter authoring; align with Runtime/EventBus domain"
   - skill:          implement
     domain:         "BC3 Loop"
     hexagonal_role: driving-adapter
@@ -172,21 +147,6 @@ dispositions:
     hexagonal_role: driving-adapter
     disposition:    refactor
     rationale:      "Context injection should be explicit CorpusReader adapter use"
-  - skill:          knowledge-activation
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Outer-loop operationalization (beliefs/playbooks/briefings) — write/promote surface downstream of inject/compile/flywheel, not a duplicate (resolved KEEP 2026-05-24)"
-  - skill:          llm-wiki
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "External wiki builder; align with Corpus compiler contracts"
-  - skill:          openai-docs
-    domain:         "BC5 Runtime"
-    hexagonal_role: driven-adapter
-    disposition:    keep
-    rationale:      "External API documentation adapter with clear scope"
   - skill:          operating-loop-workflow
     domain:         "BC3 Loop"
     hexagonal_role: driving-adapter
@@ -222,11 +182,6 @@ dispositions:
     hexagonal_role: driven-adapter
     disposition:    update
     rationale:      "Upstream repo research adapter; add clean source/citation self-test"
-  - skill:          pr-validate
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    update
-    rationale:      "PR validation adapter; should reuse BC2 validation contracts"
   - skill:          pre-mortem
     domain:         "BC2 Validation"
     hexagonal_role: domain
@@ -237,11 +192,6 @@ dispositions:
     hexagonal_role: domain
     disposition:    keep
     rationale:      "Product intent source; important for loop work selection"
-  - skill:          provenance
-    domain:         "BC1 Corpus"
-    hexagonal_role: driven-adapter
-    disposition:    update
-    rationale:      "Evidence lineage adapter; align with CitationPort/ClaimEvidence"
   - skill:          push
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
@@ -282,11 +232,6 @@ dispositions:
     hexagonal_role: driving-adapter
     disposition:    update
     rationale:      "Knowledge acquisition entrypoint; add source/citation self-test"
-  - skill:          retro
-    domain:         "BC1 Corpus"
-    hexagonal_role: domain
-    disposition:    update
-    rationale:      "Learning capture kernel; align to promotion ratchet"
   - skill:          reverse-engineer-rpi
     domain:         "BC1 Corpus"
     hexagonal_role: supporting
@@ -326,12 +271,7 @@ dispositions:
     domain:         "BC2 Validation"
     hexagonal_role: driven-adapter
     disposition:    keep
-    rationale:      "Continuous release-gate driver (security-gate.sh); distinct cadence role from security-suite's composable primitive library (resolved KEEP 2026-05-24)"
-  - skill:          security-suite
-    domain:         "BC2 Validation"
-    hexagonal_role: driven-adapter
-    disposition:    update
-    rationale:      "Composable scanner; likely canonical security validation lane"
+    rationale:      "Canonical security skill: continuous release-gate driver (security-gate.sh) PLUS the composable primitive library (security_suite.py / prompt_redteam.py) collapsed in from security-suite (cp-qqq, 2026-06-07)"
   - skill:          shared
     domain:         "BC4 Factory"
     hexagonal_role: domain
@@ -402,11 +342,6 @@ dispositions:
     hexagonal_role: driving-adapter
     disposition:    keep
     rationale:      "Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24)"
-  - skill:          validation
-    domain:         "BC2 Validation"
-    hexagonal_role: domain
-    disposition:    update
-    rationale:      "Canonical post-implementation validation; strengthen self-test first"
   - skill:          vibe
     domain:         "BC2 Validation"
     hexagonal_role: domain

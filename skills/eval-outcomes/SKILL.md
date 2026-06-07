@@ -7,7 +7,7 @@ practices:
 - ddd
 hexagonal_role: supporting
 consumes:
-- validation
+- validate
 - ratchet
 - council
 produces:
@@ -21,7 +21,7 @@ context:
   intel_scope: topic
 metadata:
   tier: execution
-  dependencies: [validation, ratchet]
+  dependencies: [validate, ratchet]
   stability: experimental
 output_contract: "skills/council/schemas/verdict.json (one council verdict record)"
 ---
@@ -39,7 +39,7 @@ Outcomes (Anthropic, May 2026) closes the loop "agent runs → grader scores aga
 - **`ao eval outcomes ingest <score.json> --json`** — converts the returned score into one council verdict record (`skills/council/schemas/verdict.json` shape), closing the Outcomes → Knowledge Flywheel loop.
 
 It **extends** two existing skills, rewriting neither:
-- [validation](../validation/SKILL.md) — Outcomes is an additional grading transport for the existing per-criterion rubric; the verdict output stays the council verdict schema.
+- [validate](../validate/SKILL.md) — Outcomes is an additional grading transport for the existing per-criterion rubric; the verdict output stays the council verdict schema.
 - [ratchet](../ratchet/SKILL.md) — Outcomes-derived deltas feed the same Brownian-Ratchet gate records; no new gate semantics.
 
 ## ⚠️ Critical Constraints
@@ -108,7 +108,7 @@ ao eval outcomes ingest score.json --json
 
 ## See Also
 
-- [validation](../validation/SKILL.md) — the per-criterion rubric Outcomes transports
+- [validate](../validate/SKILL.md) — the per-criterion rubric Outcomes transports
 - [ratchet](../ratchet/SKILL.md) — gate records Outcomes deltas feed
 - [council](../council/SKILL.md) — the verdict schema ingest emits
 - [skill-auditor](../skill-auditor/SKILL.md) — audit this skill before declaring stable

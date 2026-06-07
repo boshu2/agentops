@@ -11,7 +11,7 @@ produces:
 - result.json
 context_rel:
 - kind: supplier-to
-  with: validation
+  with: validate
 skill_api_version: 1
 metadata:
   tier: execution
@@ -123,7 +123,7 @@ audits it for orphans. See the `/goals` skill for both surfaces.
 
 ### Step 5: Integration with Validation
 
-Scenarios are consumed by **STEP 1.8** in the `/validation` skill. During
+Scenarios are consumed by **STEP 1.8** in the `/validate` skill. During
 validation, the evaluator agent:
 1. Loads all active scenarios from `.agents/holdout/`
 2. Runs each acceptance vector's check command
@@ -141,7 +141,7 @@ building correct general behavior.
 
 - Scenarios live in `.agents/holdout/`, which is outside the codebase
 - A hook enforces that implementing agents cannot read holdout files
-- Only evaluator agents, humans, or the `/validation` skill access scenarios
+- Only evaluator agents, humans, or the `/validate` skill access scenarios
 
 ### Satisfaction Scoring
 
@@ -175,7 +175,7 @@ is the weighted average across all vectors.
 
 - [Scenario Schema Reference](references/scenario-schema.md) -- full field
   documentation and example JSON for the scenario schema
-- [references/scenario.feature](references/scenario.feature) — Executable spec: author holdout scenarios, schema-validate, list + link to GOALS directives, feed /validation (soc-qk4b)
+- [references/scenario.feature](references/scenario.feature) — Executable spec: author holdout scenarios, schema-validate, list + link to GOALS directives, feed /validate (soc-qk4b)
 
 ## Troubleshooting
 
@@ -190,6 +190,6 @@ is the weighted average across all vectors.
 
 ## See Also
 
-- `/validation` -- consumes scenarios at STEP 1.8 for holdout evaluation
+- `/validate` -- consumes scenarios at STEP 1.8 for holdout evaluation
 - `/council` -- multi-model review can generate scenario suggestions
 - `/vibe` -- code quality validation (complementary to behavioral scenarios)

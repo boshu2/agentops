@@ -9,7 +9,7 @@ hexagonal_role: supporting
 consumes:
 - standards
 - converter
-- validation
+- validate
 produces:
 - docs/contracts/agent-runtime-profile.md
 context:

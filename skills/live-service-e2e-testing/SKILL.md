@@ -34,7 +34,7 @@ metadata:
   stability: stable
   dependencies:
   - test
-  - validation
+  - validate
   - standards
 output_contract: "Real-service E2E suite with env contract, isolation plan, cleanup proof, rate-limit policy, and redacted evidence packet."
 ---
@@ -95,4 +95,3 @@ Use this skill when a test must prove behavior against the actual external servi
 - Assertions verify service-observable outcomes rather than only local return values.
 - Retries are bounded and tied to documented eventual consistency or transient service errors.
 - Evidence includes run id, service request/resource ids, assertion summary, and cleanup result.
-

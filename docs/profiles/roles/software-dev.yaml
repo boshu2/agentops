@@ -22,7 +22,7 @@ skills:
     description: Code review, improvement, test generation
     knowledge_areas: 3
 
-  - path: skills/validation/SKILL.md
+  - path: skills/validate/SKILL.md
     description: Assumption validation, test strategies
     knowledge_areas: 4
 

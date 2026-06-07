@@ -6,7 +6,7 @@ description: |-
 practices:
 - code-complete
 - empirical-performance
-- validation
+- validate
 hexagonal_role: driving-adapter
 consumes:
 - source-code
@@ -17,7 +17,7 @@ produces:
 - validation-evidence
 context_rel:
 - kind: customer-of
-  with: validation
+  with: validate
 skill_api_version: 1
 context:
   window: fork
@@ -31,7 +31,7 @@ metadata:
   tier: execution
   stability: stable
   dependencies:
-  - validation
+  - validate
 output_contract: "performance report with baseline, profiler evidence, ranked bottlenecks, change plan, and verification results"
 user-invocable: false
 ---

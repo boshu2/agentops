@@ -32,17 +32,16 @@
       "id": "parallel-execution-skill-validators",
       "title": "swarm and codex-team validators pass across runtimes",
       "kind": "command",
-      "objective": "Keep shared and Codex parallel execution skills healthy, including swarm metadata/file-manifest rules and codex-team multi-wave output contracts.",
+      "objective": "Keep shared and Codex parallel execution skills healthy, including swarm metadata/file-manifest rules and the folded codex-team multi-wave output contracts (now in swarm).",
       "runtime": "shell",
       "timeout_seconds": 120,
       "inputs": {
         "cwd": "../..",
-        "shell": "bash skills/swarm/scripts/validate.sh && bash skills-codex/swarm/scripts/validate.sh && bash skills/codex-team/scripts/validate.sh && bash skills-codex/codex-team/scripts/validate.sh"
+        "shell": "bash skills/swarm/scripts/validate.sh && bash skills-codex/swarm/scripts/validate.sh"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},
-        {"type": "stdout_contains", "value": "Results: 8 passed, 0 failed"},
-        {"type": "stdout_contains", "value": "Results: 9 passed, 0 failed"}
+        {"type": "stdout_contains", "value": "Results: 8 passed, 0 failed"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "process_adherence"],
       "critical": true
@@ -120,9 +119,9 @@
         {"type": "artifact_contains", "target": "../../skills-codex/swarm/SKILL.md", "value": "Pre-spawn conflict check (file ownership)"},
         {"type": "artifact_contains", "target": "../../skills-codex/swarm/SKILL.md", "value": "worktreePath"},
         {"type": "artifact_contains", "target": "../../skills-codex/swarm/references/local-mode.md", "value": "the lead must verify each spawned worker reports a `worktreePath`"},
-        {"type": "artifact_contains", "target": "../../skills/codex-team/SKILL.md", "value": "the orchestrator IS the lock manager"},
-        {"type": "artifact_contains", "target": "../../skills/codex-team/SKILL.md", "value": "MULTI-WAVE"},
-        {"type": "artifact_contains", "target": "../../skills-codex/codex-team/SKILL.md", "value": "`$swarm` (runtime-native)"}
+        {"type": "artifact_contains", "target": "../../skills/swarm/SKILL.md", "value": "orchestrator IS the lock manager"},
+        {"type": "artifact_contains", "target": "../../skills/swarm/SKILL.md", "value": "Multi-wave"},
+        {"type": "artifact_contains", "target": "../../skills-codex/swarm/SKILL.md", "value": "runtime-native"}
       ],
       "dimensions": ["process_adherence", "runtime_compatibility", "safety"],
       "critical": true

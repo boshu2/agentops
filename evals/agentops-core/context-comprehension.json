@@ -60,13 +60,13 @@
       "dimensions": ["context_comprehension"]
     },
     {
-      "id": "minimal-skill-retro",
-      "title": "retro SKILL.md produces valid JSON with word count",
+      "id": "minimal-skill-post-mortem",
+      "title": "post-mortem SKILL.md produces valid JSON with word count",
       "kind": "command",
       "objective": "Verify the fixture runs against a minimal skill and produces valid structured output regardless of score.",
       "runtime": "shell",
       "inputs": {
-        "shell": "bash fixtures/check-skill-comprehension.sh ../../skills/retro/SKILL.md"
+        "shell": "bash fixtures/check-skill-comprehension.sh ../../skills/post-mortem/SKILL.md"
       },
       "expectations": [
         {"type": "exit_code", "value": 0},

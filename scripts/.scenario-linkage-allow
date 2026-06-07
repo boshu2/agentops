@@ -24,7 +24,6 @@ skills/beads/references/beads.feature
 skills/bootstrap/references/bootstrap.feature
 skills/brainstorm/references/brainstorm.feature
 skills/bug-hunt/references/bug-hunt.feature
-skills/codex-team/references/codex-team.feature
 skills/compile/references/compile.feature
 skills/complexity/references/complexity.feature
 skills/council/references/council-modes.feature
@@ -37,17 +36,12 @@ skills/doc/references/doc.feature
 skills/doc/references/oss-docs.feature
 skills/doc/references/readme.feature
 skills/domain/references/domain.feature
-skills/dream/references/dream.feature
 skills/evolve/references/evolve.feature
 skills/forge/references/forge.feature
-skills/grafana-platform-dashboard/references/grafana-platform-dashboard.feature
 skills/handoff/references/handoff.feature
-skills/harvest/references/harvest.feature
 skills/heal-skill/references/heal-skill.feature
-skills/hooks-authoring/references/hooks-authoring.feature
 skills/implement/references/implement.feature
-skills/knowledge-activation/references/knowledge-activation.feature
-skills/openai-docs/references/openai-docs.feature
+skills/inject/references/knowledge-activation.feature
 skills/perf/references/perf.feature
 skills/plan/references/plan.feature
 skills/post-mortem/references/post-mortem.feature
@@ -55,7 +49,6 @@ skills/post-mortem/references/pr-retro.feature
 skills/pr-implement/references/pr-implement.feature
 skills/pr-prep/references/pr-prep.feature
 skills/pr-research/references/pr-research.feature
-skills/pr-validate/references/pr-validate.feature
 skills/pre-mortem/references/pre-mortem.feature
 skills/product/references/product.feature
 skills/push/references/push.feature
@@ -66,12 +59,11 @@ skills/red-team/references/red-team.feature
 skills/refactor/references/refactor.feature
 skills/release/references/release.feature
 skills/research/references/research.feature
-skills/retro/references/retro.feature
 skills/reverse-engineer-rpi/references/reverse-engineer-rpi.feature
 skills/review/references/review.feature
 skills/scaffold/references/scaffold.feature
 skills/scope/references/scope.feature
-skills/security-suite/references/security-suite.feature
+skills/security/references/security-suite.feature
 skills/security/references/security.feature
 skills/session-bootstrap/references/session-bootstrap.feature
 skills/ship-loop/references/ship-loop.feature
@@ -83,5 +75,4 @@ skills/system-tuning/references/system-tuning.feature
 skills/test/references/test.feature
 skills/trace/references/trace.feature
 skills/validate/references/validate.feature
-skills/validation/references/validation.feature
 skills/vibe/references/vibe.feature

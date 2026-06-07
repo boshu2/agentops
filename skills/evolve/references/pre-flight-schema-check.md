@@ -41,7 +41,7 @@ A migration cycle costs ~15-30 minutes of /rpi (discovery + crank + validation).
 
 ## What this does NOT replace
 
-This is a *cycle-selection* gate, not a code-quality gate. Validating the actual migration code still belongs to `/rpi` → `/validation`. The pre-flight only answers "is this migration even shaped right for the current port?"
+This is a *cycle-selection* gate, not a code-quality gate. Validating the actual migration code still belongs to `/rpi` → `/validate`. The pre-flight only answers "is this migration even shaped right for the current port?"
 
 ## Worked example — cycle 157 (soc-0pku)
 

@@ -35,12 +35,6 @@
       "reason": "The canonical knowledge-cycle contract is already operationally specific; a bespoke Codex prompt is not justified yet."
     },
     {
-      "name": "llm-wiki",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "The proposal is a procedural external-knowledge workflow with no Codex-only runtime divergence yet."
-    },
-    {
       "name": "autodev",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -71,12 +65,6 @@
       "reason": "Bug audits need Codex-specific findings structure, repro discipline, and validation expectations."
     },
     {
-      "name": "codex-team",
-      "treatment": "bespoke",
-      "wave": "backbone",
-      "reason": "This skill is inherently runtime-native and must speak directly to Codex sub-agent orchestration."
-    },
-    {
       "name": "complexity",
       "treatment": "bespoke",
       "wave": "analysis-authoring",
@@ -105,12 +93,6 @@
       "treatment": "parity_only",
       "wave": "backbone",
       "reason": "Discovery delegates to sub-skills; default generated prompt is enough."
-    },
-    {
-      "name": "dream",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "The first Dream skill is a thin interactive layer over the shipped ao overnight contracts, so converter parity is sufficient."
     },
     {
       "name": "design",
@@ -161,12 +143,6 @@
       }
     },
     {
-      "name": "grafana-platform-dashboard",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "The canonical dashboard workflow is already highly domain-specific, so converter parity is sufficient for now."
-    },
-    {
       "name": "handoff",
       "treatment": "bespoke",
       "wave": "core-execution",
@@ -184,18 +160,6 @@
           "Do not leave the next session guessing what to do first."
         ]
       }
-    },
-    {
-      "name": "harvest",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "New lifecycle skill; converter parity is acceptable."
-    },
-    {
-      "name": "knowledge-activation",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "The canonical outer-loop contract is already Codex-ready for the first productized rollout."
     },
     {
       "name": "heal-skill",
@@ -227,12 +191,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "This deprecated background skill has minimal user-facing surface and does not justify bespoke Codex phrasing."
-    },
-    {
-      "name": "openai-docs",
-      "treatment": "bespoke",
-      "wave": "backbone",
-      "reason": "Official-doc retrieval and citation behavior need explicit Codex tooling guidance."
     },
     {
       "name": "plan",
@@ -291,12 +249,6 @@
       "reason": "Upstream research works better in Codex with explicit evidence capture and maintainer-pattern extraction."
     },
     {
-      "name": "pr-validate",
-      "treatment": "bespoke",
-      "wave": "contribution-workflow",
-      "reason": "PR validation in Codex should lead with isolation, regression, and scope-creep findings."
-    },
-    {
       "name": "pre-mortem",
       "treatment": "bespoke",
       "wave": "core-execution",
@@ -307,12 +259,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "The canonical interview-and-synthesis loop already defines the interaction strongly enough for Codex."
-    },
-    {
-      "name": "provenance",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Knowledge-lineage tracing is largely read-only and does not yet need Codex-specific prompt shaping."
     },
     {
       "name": "push",
@@ -410,12 +356,6 @@
       }
     },
     {
-      "name": "retro",
-      "treatment": "bespoke",
-      "wave": "backbone",
-      "reason": "Quick learning capture should reflect Codex session habits and artifact-first closure."
-    },
-    {
       "name": "reverse-engineer-rpi",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -436,7 +376,7 @@
           "In Codex hookless mode, run `ao codex ensure-start` before phase orchestration; the CLI records startup once per thread and skips duplicates automatically.",
           "When beads are present, resolve bead IDs before routing; when beads are absent, preserve the current goal or execution-packet objective across phases.",
           "Keep a single lifecycle objective spine across discovery, crank, and validation. Never replace it with a child issue ID or one ready slice from `bd ready`, `bd show`, or `.agents/rpi/next-work.jsonl`.",
-          "If discovery does not yield an epic id, invoke `$crank .agents/rpi/execution-packet.json` and standalone `$validation` instead of inventing one.",
+          "If discovery does not yield an epic id, invoke `$crank .agents/rpi/execution-packet.json` and standalone `$validate` instead of inventing one.",
           "If `$crank` returns `<promise>PARTIAL</promise>`, rerun `$crank` on the same lifecycle objective until the work is done, blocked, or the retry budget is exhausted.",
           "Orchestrate phases directly in the current session; do not hand RPI orchestration to wrapper commands.",
           "For Nightly, evolve, or auto-prompt goals, inspect the last 14 days of Nightly PRs and scheduled Nightly runs before choosing the implementation slice.",
@@ -453,12 +393,6 @@
       "treatment": "bespoke",
       "wave": "security-focused",
       "reason": "Security review needs findings-first Codex output and clear release-gate semantics."
-    },
-    {
-      "name": "security-suite",
-      "treatment": "bespoke",
-      "wave": "security-focused",
-      "reason": "Composable security tooling benefits from Codex-specific artifact discipline and policy-oriented reporting."
     },
     {
       "name": "shared",
@@ -552,12 +486,6 @@
       "reason": "The meta-skill already serves as explanatory reference material, so converter parity is acceptable."
     },
     {
-      "name": "validation",
-      "treatment": "parity_only",
-      "wave": "backbone",
-      "reason": "Validation delegates to sub-skills; default generated prompt is enough."
-    },
-    {
       "name": "vibe",
       "treatment": "bespoke",
       "wave": "backbone",
@@ -628,12 +556,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "New utility skill for restoring system responsiveness; converter parity is acceptable."
-    },
-    {
-      "name": "hooks-authoring",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Hook authoring is documentation-led and portable across runtimes; converter parity is sufficient until a Codex-only hook workflow diverges."
     },
     {
       "name": "curate",

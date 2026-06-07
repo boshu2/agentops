@@ -74,7 +74,7 @@ The optional `scope` object contains:
 
 ## Scoring
 
-During validation (STEP 1.8 of `/validation`), each acceptance vector's
+During validation (STEP 1.8 of `/validate`), each acceptance vector's
 `check` command runs against the implementation. The vector scores 1.0 if
 the command exits 0, and 0.0 otherwise. The scenario's overall satisfaction
 score is the average across all vectors, weighted equally.

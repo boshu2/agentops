@@ -451,7 +451,7 @@ if command -v ao &>/dev/null; then
 fi
 ```
 
-Tell user: "Implementation complete. Run /validation to validate before pushing."
+Tell user: "Implementation complete. Run /validate to validate before pushing."
 
 ## Step 8: Report to User
 

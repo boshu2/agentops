@@ -87,4 +87,4 @@ Acceptance scenarios: [references/audit.feature](references/audit.feature) (Phas
 ## See also
 
 - `skills/beads/SKILL.md` — the bd issue/memory substrate this skill writes to
-- `skills/harvest/SKILL.md` — promoting `.agents` knowledge (the *authored* keepers this skill salvages)
+- `skills/curate/SKILL.md` (`--mode=harvest`) — promoting `.agents` knowledge (the *authored* keepers this skill salvages)

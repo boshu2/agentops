@@ -1,6 +1,6 @@
 # RPI lifecycle best practices
 
-Citation table extracted during research for `soc-bcrn` (RPI lifecycle sharpening). The lifecycle skills (`/rpi`, `/discovery`, `/crank`, `/validation`) MUST reference principles by `#` from this file — they MUST NOT duplicate the body content here. When a principle is wrong or stale, update this file and the citations fix themselves.
+Citation table extracted during research for `soc-bcrn` (RPI lifecycle sharpening). The lifecycle skills (`/rpi`, `/discovery`, `/crank`, `/validate`) MUST reference principles by `#` from this file — they MUST NOT duplicate the body content here. When a principle is wrong or stale, update this file and the citations fix themselves.
 
 Source research: `.agents/research/2026-05-07-rpi-lifecycle-sharpening.md` §Objective 4.
 
@@ -47,5 +47,5 @@ Do not paste the principle body. Citations stay short; the source-of-truth is he
 ## Mechanical enforcement
 
 - Principle #2 + Anti-pattern #1: `scripts/check-skill-isolation.sh` lints phase-skill SKILL.md bodies for compression patterns (introduced in `soc-bcrn` UW2).
-- Principle #5 + Anti-pattern #4: `skills/validation/references/per-criterion-rubric.md` defines the per-criterion verdict shape (introduced in `soc-bcrn` UW1).
+- Principle #5 + Anti-pattern #4: `skills/validate/SKILL.md` defines the per-criterion verdict shape (introduced in `soc-bcrn` UW1; folded from the retired `validation` skill).
 - Principle #11: `schemas/execution-packet.schema.json` (`$defs/Criterion`) is the canonical handoff shape.

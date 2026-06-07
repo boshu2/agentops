@@ -23,7 +23,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `flywheel` — Check knowledge flywheel health.
 - `forge` — Mine transcripts into learnings.
 - `goals` — Maintain AgentOps goals.
-- `hooks-authoring` — Author AgentOps runtime hooks.
 - `idea-option-forge` — Use when generating, winnowing, and operationalizing many project improvement options. Triggers:
 - `mcp-interface-design` — Use when designing MCP servers with clear tools, strict schemas, scoped resources, and useful errors. Triggers:
 - `measured-performance-optimization` — Use when optimizing a hot path from saved profiles, measurements, and verified improvements. Triggers:
@@ -35,10 +34,8 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `pre-mortem` — Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
 - `product` — Create or refine PRODUCT.md.
 - `ratchet` — Record Brownian Ratchet gates.
-- `retro` — Capture a session learning.
 - `shared` — Shared AgentOps skill contracts.
 - `standards` — Provide repo coding standards.
-- `validation` — Run post-implementation validation.
 - `vibe` — Validate code readiness. Use when: doing a quick readiness or sanity check that code is ready to commit or ship, short of a full review.
 - `work-contract-portability` — Use when designing agent work contracts, handoffs, evidence, and role boundaries across runtimes. Triggers:
 - `worktree-branch-rationalization` — Use when rationalizing git worktrees and branches into a canonical line without losing useful work. Triggers:
@@ -60,7 +57,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `performance-profile-triage` — Use when investigating slowness with baselines, profiler evidence, and ranked bottlenecks. Triggers:
 - `pr-implement` — Implement a scoped OSS PR.
 - `pr-prep` — Prepare PR commits and body.
-- `pr-validate` — Validate PR scope and quality.
 - `push` — Validate, commit, and push.
 - `quickstart` — Show AgentOps next action.
 - `recover` — Recover session context.
@@ -79,13 +75,9 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `codex-mcp-plugins` — Use when wiring MCP servers or plugins into Codex CLI and the AgentOps Codex skill bundle. Triggers:
 - `dependency-update-safety` — Use when updating dependencies safely with changelog review, small batches, tests, and rollback. Triggers:
 - `deps` — Audit dependency risks and updates.
-- `grafana-platform-dashboard` — Validate OpenShift Grafana dashboards.
-- `openai-docs` — Use official OpenAI docs.
 - `pr-research` — Research an upstream repo.
-- `provenance` — Trace artifact provenance.
 - `scope` — Hard-block edits outside declared frozen directories via PreToolUse hook.
-- `security` — Run repository security scans.
-- `security-suite` — Run composable security analysis.
+- `security` — Run repository security scans and composable security analysis.
 
 ### supporting
 
@@ -114,14 +106,12 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `codebase-briefing-report` — Use when producing a shareable architecture, module, metrics, and health report for a codebase. Triggers:
 - `codebase-risk-audit` — Use when auditing codebase risks with evidence and prioritized remediation. Triggers:
 - `codex-sandbox-evidence` — Use when running codex exec in a least-privilege sandbox with machine-checkable proof. Triggers:
-- `codex-team` — Coordinate multiple Codex agents.
 - `compile` — Compile .agents knowledge wiki.
 - `concurrency-deadlock-remediation` — Use when finding and fixing deadlocks with lock ordering, reproduction, timeouts, or lock-free alternatives. Triggers:
 - `contract-conformance-testing` — Use when building conformance tests from specs, contracts, examples, or compatibility matrices. Triggers:
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.
 - `dcg` — Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails.
 - `doc` — Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss).
-- `dream` — Retired pointer — out-of-session compounding moved to the substrate (NTM + MCP + managed-agents).
 - `eval-outcomes` — Grade against Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes.
 - `evolve` — Run autonomous improvement loops.
 - `expertise-to-procedure` — Use when turning tacit expert know-how into a durable skill, playbook, or checklist. Triggers:
@@ -133,14 +123,11 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `gh-triage-ru` — GitHub issue/PR triage via ru and gh. Use when processing issues, closing PRs (no-contributions policy), or bulk triage. Independent verification required.
 - `golden-artifact-testing` — Use when designing or repairing golden-file, snapshot, fixture, or generated-artifact tests. Triggers:
 - `handoff` — Write compact session handoffs.
-- `harvest` — Promote .agents knowledge.
 - `heal-skill` — Repair skill hygiene.
 - `implementation-pattern-mining` — Use when mining repeated codebase patterns and turning them into reusable implementation guidance. Triggers:
 - `installer-quality-audit` — Use when auditing install, setup, bootstrap, or update scripts for safe, idempotent behavior. Triggers:
-- `knowledge-activation` — Activate mature .agents knowledge.
 - `layered-defect-hunt` — Use when running systematic multi-pass bug hunting across correctness, edges, concurrency, and failures. Triggers:
 - `live-service-e2e-testing` — Use when building real-service end-to-end tests with fixtures, cleanup, rate limits, and evidence. Triggers:
-- `llm-wiki` — Build external-knowledge wikis.
 - `metamorphic-test-design` — Use when designing metamorphic tests for oracle-poor behavior using invariants and input relations. Triggers:
 - `multi-model-triangulation` — Cross-validate decisions using multiple AI models (Codex, Gemini, Grok). Use when "get a second opinion", evaluating approaches, or high-stakes decisions.
 - `ntm` — Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors.
@@ -243,7 +230,6 @@ graph LR
   forge -- "shared-kernel" --> standards
   goals -- "shared-kernel" --> standards
   heal-skill -- "customer-of" --> skill-auditor
-  hooks-authoring -- "shared-kernel" --> standards
   idea-option-forge -- "shared-kernel" --> brainstorm
   implement -- "customer-of" --> domain
   implementation-pattern-mining -- "partnership" --> research
@@ -255,34 +241,30 @@ graph LR
   operating-loop-skill -- "customer-of" --> beads
   operating-loop-skill -- "supplier-to" --> cc-loop-driver
   perf -- "shared-kernel" --> standards
-  performance-profile-triage -- "customer-of" --> validation
+  performance-profile-triage -- "customer-of" --> validate
   plan -- "shared-kernel" --> standards
   post-mortem -- "shared-kernel" --> standards
   pr-implement -- "customer-of" --> crank
   pr-prep -- "customer-of" --> domain
-  pr-validate -- "customer-of" --> validation
   pre-mortem -- "shared-kernel" --> standards
   product -- "shared-kernel" --> standards
   production-placeholder-audit -- "supplier-to" --> review
   production-placeholder-audit -- "supplier-to" --> security
   project-reality-check -- "supplier-to" --> beads
   project-reality-check -- "customer-of" --> legacy-codebase-recon
-  provenance -- "supplier-to" --> trace
   quickstart -- "customer-of" --> rpi
   ratchet -- "shared-kernel" --> standards
   red-team -- "supplier-to" --> vibe
   release -- "supplier-to" --> ship-loop
-  retro -- "shared-kernel" --> standards
-  review -- "customer-of" --> validation
+  review -- "customer-of" --> validate
   rpi -- "customer-of" --> crank
   rpi -- "customer-of" --> discovery
-  rpi -- "customer-of" --> validation
+  rpi -- "customer-of" --> validate
   rust-search-integration -- "partnership" --> cli-agent-ux-audit
   rust-search-integration -- "partnership" --> legacy-codebase-recon
-  scenario -- "supplier-to" --> validation
+  scenario -- "supplier-to" --> validate
   scope -- "supplier-to" --> domain
   security -- "supplier-to" --> vibe
-  security-suite -- "supplier-to" --> vibe
   session-bootstrap -- "customer-of" --> AGENTS-CI.md
   session-bootstrap -- "customer-of" --> AGENTS-CODEX.md
   session-bootstrap -- "customer-of" --> AGENTS-RUNTIME.md
@@ -296,10 +278,8 @@ graph LR
   skill-builder -- "supplier-to" --> skill-auditor
   spec-reliability-implementation -- "customer-of" --> validate
   swarm -- "customer-of" --> crank
-  trace -- "customer-of" --> provenance
+  trace -- "shared-kernel" --> curate
   using-ntm -- "customer-of" --> swarm
-  validate -- "customer-of" --> validation
-  validation -- "shared-kernel" --> standards
   vibe -- "shared-kernel" --> standards
   workflow-builder -- "customer-of" --> automation-shape-routing
   workflow-builder -- "shared-kernel" --> operating-loop-workflow
@@ -312,7 +292,7 @@ graph LR
 | `acfs` | produces | substrate-health-report |
 | `agent-native` | consumes | converter |
 | `agent-native` | consumes | standards |
-| `agent-native` | consumes | validation |
+| `agent-native` | consumes | validate |
 | `agent-native` | produces | docs/contracts/agent-runtime-profile.md |
 | `agy-headless-evidence` | consumes | agy-native |
 | `agy-headless-evidence` | produces | agy-evidence-dir |
@@ -382,14 +362,13 @@ graph LR
 | `codex-mcp-plugins` | produces | codex-config |
 | `codex-sandbox-evidence` | consumes | codex-exec |
 | `codex-sandbox-evidence` | produces | codex-evidence-jsonl |
-| `codex-team` | produces | .agents/swarm/results/*.json |
 | `compile` | produces | .agents/compiled/lint-report.md |
 | `complexity` | consumes | doc |
 | `complexity` | consumes | standards |
 | `complexity` | produces | stdout |
 | `contract-conformance-testing` | consumes | standards |
 | `contract-conformance-testing` | consumes | test |
-| `contract-conformance-testing` | consumes | validation |
+| `contract-conformance-testing` | consumes | validate |
 | `contract-conformance-testing` | produces | compatibility verdict matrix |
 | `contract-conformance-testing` | produces | conformance harness plan |
 | `contract-conformance-testing` | produces | executable conformance cases |
@@ -424,10 +403,9 @@ graph LR
 | `doc` | consumes | repo-context |
 | `doc` | produces | documentation |
 | `domain` | produces | stdout |
-| `dream` | produces | .agents/research/*.md |
 | `eval-outcomes` | consumes | council |
 | `eval-outcomes` | consumes | ratchet |
-| `eval-outcomes` | consumes | validation |
+| `eval-outcomes` | consumes | validate |
 | `eval-outcomes` | produces | skills/council/schemas/verdict.json |
 | `evolve` | consumes | compile |
 | `evolve` | consumes | goals |
@@ -459,10 +437,7 @@ graph LR
 | `fuzz-test-design` | produces | minimized-repro |
 | `fuzz-test-design` | produces | regression-test |
 | `goals` | produces | result.json |
-| `grafana-platform-dashboard` | produces | dashboard-validation-report |
 | `handoff` | produces | .agents/research/*.md |
-| `harvest` | produces | .agents/research/*.md |
-| `hooks-authoring` | produces | result.json |
 | `idea-option-forge` | consumes | existing-tracked-work |
 | `idea-option-forge` | produces | tracked-issues-with-deps-and-tests |
 | `idea-option-forge` | produces | vetted-idea-backlog |
@@ -484,7 +459,6 @@ graph LR
 | `live-service-e2e-testing` | produces | cleanup-report |
 | `live-service-e2e-testing` | produces | evidence-packet |
 | `live-service-e2e-testing` | produces | real-service-e2e-suite |
-| `llm-wiki` | produces | documentation |
 | `mcp-interface-design` | produces | mcp-interface-design-spec |
 | `mcp-interface-design` | produces | tool-surface-audit |
 | `measured-performance-optimization` | consumes | benchmark |
@@ -500,7 +474,6 @@ graph LR
 | `ntm-browser-test-coordination` | produces | browser-test-coordination-packet |
 | `ntm-browser-test-coordination` | produces | browser-test-evidence-index |
 | `ntm-browser-test-coordination` | produces | browser-test-handoff |
-| `openai-docs` | consumes | external-api |
 | `operating-loop-skill` | consumes | beads |
 | `operating-loop-skill` | consumes | git |
 | `operating-loop-skill` | produces | closed-bead |
@@ -527,8 +500,6 @@ graph LR
 | `pr-prep` | produces | git-changes |
 | `pr-research` | consumes | external-api |
 | `pr-research` | produces | result.json |
-| `pr-validate` | consumes | validation |
-| `pr-validate` | produces | result.json |
 | `pre-mortem` | consumes | standards |
 | `pre-mortem` | produces | result.json |
 | `pre-mortem` | produces | verdict.json |
@@ -548,13 +519,12 @@ graph LR
 | `project-reality-check` | produces | reality-check-report |
 | `project-reasoning-lens-analysis` | consumes | project-context |
 | `project-reasoning-lens-analysis` | produces | multi-lens-analysis.md |
-| `provenance` | produces | result.json |
 | `push` | consumes | git-changes |
 | `push` | produces | git-changes |
 | `quickstart` | consumes | rpi |
 | `quickstart` | produces | stdout |
 | `ratchet` | consumes | post-mortem |
-| `ratchet` | consumes | validation |
+| `ratchet` | consumes | validate |
 | `ratchet` | consumes | vibe |
 | `ratchet` | produces | .agents/rpi/*.md |
 | `recover` | consumes | bd |
@@ -571,17 +541,15 @@ graph LR
 | `research` | consumes | repo-context |
 | `research` | produces | .agents/research/*.md |
 | `research` | produces | result.json |
-| `retro` | consumes | standards |
-| `retro` | produces | result.json |
 | `reverse-engineer-rpi` | produces | .agents/research/*.md |
 | `review` | consumes | github-pr |
-| `review` | consumes | validation |
+| `review` | consumes | validate |
 | `review` | produces | result.json |
 | `rpi` | consumes | crank |
 | `rpi` | consumes | discovery |
 | `rpi` | consumes | domain |
 | `rpi` | consumes | ratchet |
-| `rpi` | consumes | validation |
+| `rpi` | consumes | validate |
 | `rpi` | produces | .agents/rpi/*.md |
 | `rust-crate-release-readiness` | consumes | Cargo.lock |
 | `rust-crate-release-readiness` | consumes | Cargo.toml |
@@ -617,8 +585,6 @@ graph LR
 | `scope` | produces | filesystem-gate |
 | `security` | consumes | repo-context |
 | `security` | produces | security-report.json |
-| `security-suite` | consumes | repo-context |
-| `security-suite` | produces | security-report.json |
 | `session-bootstrap` | consumes | bd |
 | `session-bootstrap` | consumes | onboard |
 | `session-bootstrap` | produces | json |
@@ -648,16 +614,7 @@ graph LR
 | `trace` | produces | result.json |
 | `using-agentops` | produces | documentation |
 | `using-ntm` | produces | documentation |
-| `validate` | consumes | validation |
 | `validate` | produces | result.json |
-| `validation` | consumes | forge |
-| `validation` | consumes | post-mortem |
-| `validation` | consumes | retro |
-| `validation` | consumes | shared |
-| `validation` | consumes | vibe |
-| `validation` | produces | .agents/research/*.md |
-| `validation` | produces | result.json |
-| `validation` | produces | verdict.json |
 | `vibe` | consumes | standards |
 | `vibe` | produces | result.json |
 | `vibe` | produces | verdict.json |

@@ -35,7 +35,7 @@ echo "=== Codex RPI contract validation ==="
 
 require_contains "skills-codex/rpi/SKILL.md" '$crank .agents/rpi/execution-packet.json' \
   'rpi must define the no-beads implementation handoff through execution-packet.json'
-require_contains "skills-codex/rpi/SKILL.md" '$validation --complexity=<level>' \
+require_contains "skills-codex/rpi/SKILL.md" '$validate --complexity=<level>' \
   'rpi must define standalone validation when no epic_id exists'
 require_not_contains "skills-codex/rpi/SKILL.md" '$crank <objective-id>' \
   'rpi must not use an undefined objective-id handoff'
@@ -47,7 +47,7 @@ require_contains "skills-codex/crank/SKILL.md" '**Execution-packet/file mode:**'
 
 require_contains "skills-codex/rpi/references/phase-data-contracts.md" '$crank .agents/rpi/execution-packet.json' \
   'phase-data contracts must document the no-beads discovery-to-implementation handoff'
-require_contains "skills-codex/rpi/references/phase-data-contracts.md" 'standalone `$validation`' \
+require_contains "skills-codex/rpi/references/phase-data-contracts.md" 'standalone `$validate`' \
   'phase-data contracts must document standalone validation when no epic exists'
 
 require_contains "skills-codex/discovery/references/output-templates.md" 'this execution packet becomes the' \
@@ -55,12 +55,12 @@ require_contains "skills-codex/discovery/references/output-templates.md" 'this e
 
 echo "=== Codex skill chaining defaults ==="
 
-require_contains "skills-codex/rpi/SKILL.md" 'RPI delegates via `$discovery`, `$crank`, `$validation` as **separate skill invocations**' \
+require_contains "skills-codex/rpi/SKILL.md" 'RPI delegates via `$discovery`, `$crank`, `$validate` as **separate skill invocations**' \
   'rpi must default to Codex skill chaining across phases'
 require_contains "skills-codex/discovery/SKILL.md" 'Discovery delegates to `$brainstorm` (conditional), `$design` (conditional), `$research`, `$plan`, and `$pre-mortem` as **separate skill invocations**' \
   'discovery must default to Codex skill chaining across discovery sub-skills'
-require_contains "skills-codex/validation/SKILL.md" 'Validation delegates to `$vibe`, `$post-mortem`, `$retro`, and `$forge`' \
-  'validation must default to Codex skill chaining across validation sub-skills'
+require_contains "skills-codex/validate/SKILL.md" '`$vibe`' \
+  'validate (folded validation) must default to Codex skill chaining across validation sub-skills'
 require_contains "skills-codex/rpi/prompt.md" 'do not hand RPI orchestration to wrapper commands' \
   'rpi Codex prompt must reject wrapper-command orchestration'
 
