@@ -273,6 +273,7 @@ Bridge / framing docs:
 - [Autonomy Runtime Cycle-1 Runbook](runbooks/autonomy-runtime-cycle-1.md) — Safe activation/rollback/evidence checks for RPI, evolve, and daemon-backed autonomy work
 - [bd Server-Mode Tracker Closeout](runbooks/bd-server-mode-closeout.md) — Distinguish Git push, local bd durability, and conditional Dolt remote push for server-mode trackers
 - [Release Process Runbook](runbooks/release-process.md) — Step-by-step release runbook for gates, version injection, goreleaser, and post-release checks; complements `RELEASING.md`
+- [PR Creation From Linked Worktrees](runbooks/pr-creation-from-linked-worktrees.md) — Root-cause + verified fix for "No branch name available for PR creation" from `git worktree`/`bd worktree create` branches (upstream inherits `main`); three-tier PR-creation path that never relies on head inference
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
 - [Lesson Format](contracts/lesson-format.md) — Schema for `.agents/learnings/` entries with frontmatter (id/severity/trigger/verifiable/rule/falsified_by/practice/related) and graduation path (unassigned → proposed → accepted → encoded)
