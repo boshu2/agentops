@@ -1,8 +1,8 @@
 file	bucket	rationale	imports
 cli/cmd/ao/agent.go	KEEP	public compatibility wrapper for `ao agent bundle`; pure builder moved to vendor-image adapter boundary	encoding/...,fmt,github.com/...,os,strings
 cli/cmd/ao/agents.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,errors,fmt,github.com/...,internal/adapters,os,path/...,sort,strings
-cli/cmd/ao/agents_doctor.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,fmt,github.com/...,io,os,os/...,path/...,sort
-cli/cmd/ao/agents_doctor_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	bytes,encoding/...,errors,os,path/...,strings,testing
+cli/cmd/ao/agents_doctor.go	KEEP	public compatibility wrapper for `ao agents doctor`; doctor runner moved to the mto-fleet adapter boundary	errors,github.com/...,internal/adapters
+cli/cmd/ao/agents_doctor_test.go	KEEP	public command registration coverage for `ao agents doctor`; substantive doctor tests moved to adapter package	testing
 cli/cmd/ao/agents_smoke_parity_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,os,os/...,path/...,sort,testing
 cli/cmd/ao/agents_smoke_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	io/...,os,path/...,regexp,strings,testing
 cli/cmd/ao/agents_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	bytes,encoding/...,os,os/...,path/...,reflect,strings,testing

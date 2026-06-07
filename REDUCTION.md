@@ -38,8 +38,8 @@ Current inventory count:
 
 | Bucket | Files |
 |---|---:|
-| KEEP | 463 |
-| RELOCATE | 118 |
+| KEEP | 465 |
+| RELOCATE | 116 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
 | Total | 620 |
@@ -173,6 +173,15 @@ renderer, shell-backed executor, and transport wiring moved behind the
 `mto-fleet` adapter boundary. AO keeps the public `ao mcp serve` wrapper and
 flags in place, while MCP surface behavior now lives under
 `cli/internal/adapters/mcpsurface`.
+
+## Extracted Agents Doctor Adapter
+
+The combined `.agents/` inspect/lint/orphan report moved behind the `mto-fleet`
+adapter boundary. AO keeps the public `ao agents doctor` wrapper and flags in
+place, while the report builder, lint subprocess contract, orphan skill scan,
+undocumented-dir scan, strict-mode error, and text/JSON rendering now live under
+`cli/internal/adapters/agentsdoctor`. Shared `.agents` surface parsing now lives
+under `cli/internal/adapters/agentsurface`.
 
 ## Reversibility
 
