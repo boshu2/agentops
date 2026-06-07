@@ -37,14 +37,14 @@ output_contract: .agents/research/*.md (synthesis), bd notes, skill diffs (rare)
 
 | Mode | Purpose | Replaces (post-Phase 3) |
 |---|---|---|
-| `--mode=dream` | Overnight bounded INGEST→REDUCE→MEASURE on `.agents/` | `/dream` |
-| `--mode=harvest` | Cross-rig promotion + post-mortem mining + flywheel rollup | `/harvest`, `/post-mortem` (mining half), `/flywheel` |
+| `--mode=dream` | Overnight bounded INGEST→REDUCE→MEASURE on `.agents/` | retired dream lane |
+| `--mode=harvest` | Cross-rig promotion + post-mortem mining + flywheel rollup | retired harvest lane, `/post-mortem` mining half, `/flywheel` |
 | `--mode=forge` | Per-session transcript mining (SessionEnd cadence) | `/forge` |
 | `--mode=compile` | Mine→Grow→Defrag→Lint corpus pipeline | `/compile` |
-| `--mode=retro` | Single-session learning capture | `/retro` |
+| `--mode=retro` | Single-session learning capture | retired retro lane |
 | `--mode=defrag` | Knowledge defragmentation (overnight) | `compile-session-defrag.sh` hook |
 | `--mode=watch` | In-session drift / loop detection (15-min cadence) | `research-loop-detector.sh` hook |
-| `--mode=provenance` | Decision-trace + artifact-provenance walk | `/provenance`, `/trace` |
+| `--mode=provenance` | Decision-trace + artifact-provenance walk | artifact lineage plus `/trace` |
 
 **Mode-budget assertion:** 8 modes. Adding a 9th requires demoting an existing one OR refusing the addition (per Fix-F § continuous CI gate).
 
@@ -138,7 +138,7 @@ Detailed body remains inline until Phase 2 extraction.
 
 ### --mode=harvest
 
-Cross-rig promotion sweep (folds the retired `/harvest` skill, cp-dxa):
+Cross-rig promotion sweep (folds the retired harvest skill, cp-dxa):
 - Walk `.agents/` across all rigs (paths from `~/.agents/rigs.yaml` or fleet config; default roots `~/gt/`)
 - Extract learnings/patterns/research artifacts
 - Dedupe by content hash (SHA256 after normalization)
@@ -241,4 +241,4 @@ Detailed body remains inline until Phase 2 extraction.
 ## Reference Documents
 
 - [references/curate.feature](references/curate.feature) — Executable spec: resolve mode + scope, acquire lock when writing shared state, mine into synthesis + bd notes (soc-qk4b)
-- [references/harvest-governance.md](references/harvest-governance.md) — Governance model for `--mode=harvest`: sweep frequency, size budgets, staleness thresholds, cross-rig synthesis triggers, dedup policy (folded from retired `/harvest`, cp-dxa)
+- [references/harvest-governance.md](references/harvest-governance.md) — Governance model for `--mode=harvest`: sweep frequency, size budgets, staleness thresholds, cross-rig synthesis triggers, dedup policy (folded from retired harvest, cp-dxa)

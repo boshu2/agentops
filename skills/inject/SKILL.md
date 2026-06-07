@@ -22,7 +22,7 @@ metadata:
   tier: background
   dependencies:
   - compile
-  - harvest
+  - curate
   - flywheel
   internal: true
 output_contract: 'stdout: injected knowledge summary; .agents/knowledge/book-of-beliefs.md, .agents/playbooks/*.md, .agents/briefings/*.md (knowledge activation)'
@@ -206,9 +206,9 @@ Knowledge relevance decays over time (~17%/week). More recent learnings are weig
 
 `inject` and `ao lookup` *retrieve* knowledge for the current session. **Activation** is the complementary capability — folded in here from the former `knowledge-activation` skill — that *operationalizes* a mature `.agents` corpus into durable operator surfaces (beliefs, playbooks, briefings, gaps). Where `inject` reads, activation promotes; the two are the read and write-to-surface halves of the same flywheel. Activation is the **fourth step** of the global-corpus workflow:
 
-1. `$harvest` — gather artifacts from many rigs into `~/.agents/learnings/`
+1. `$curate --mode=harvest` — gather artifacts from many rigs into `~/.agents/learnings/`
 2. `$compile` — synthesize raw artifacts into `.agents/compiled/`
-3. _(optional)_ `$dream` overnight — bounded compounding loop
+3. *(optional)* `$curate --mode=dream` overnight — bounded compounding loop
 4. **knowledge activation** — lift compiled knowledge into playbooks, beliefs, and runtime briefings
 
 `$compile` remains the hygiene loop; activation owns corpus operationalization. Use it when the problem is no longer "capture more knowledge" but: promote the strongest recurring claims into a belief system, turn healthy topics into reusable playbooks, compile a small goal-time briefing, and surface thin topics and promotion gaps before they calcify.

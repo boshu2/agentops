@@ -22,7 +22,7 @@ metadata:
   dependencies:
   - standards
   - refactor
-  - validation
+  - validate
 output_contract: 'refactor_result with sections: behavior_baseline, invariants, changes, verification, rollback_plan.'
 ---
 # Simplify And Refactor Code Isomorphically

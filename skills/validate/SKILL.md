@@ -29,7 +29,7 @@ output_contract: schemas/verdict.v1.schema.json
 
 > **Role:** validator. Input = artifact (plan, spec, code, PR, fitness gate). Output = `verdict.v1` (PASS / WARN / FAIL with rationale + findings).
 
-> **Status (2026-05-08):** introduced ADDITIVE in Phase 1 (m6v5.D.1 / soc-78s2v). Existing validators (council/vibe/pre-mortem/red-team/pr-validate/validation/review/scenario) stay until Phase 2 shim conversion (m6v5.D.2). Fix-C smoke (`soc-wb2aa`) gates Phase 2.
+> **Status (2026-05-08):** introduced ADDITIVE in Phase 1 (m6v5.D.1 / soc-78s2v). Existing validators (council/vibe/pre-mortem/red-team/review/scenario plus retired pr-validate and validation lanes) stayed until Phase 2 shim conversion (m6v5.D.2). Fix-C smoke (`soc-wb2aa`) gates Phase 2.
 
 `/validate` is a driving adapter for the `validate_acceptance` port in the
 [Intent-to-Loop Hexagon](../../docs/architecture/intent-to-loop-hexagon.md).
@@ -50,17 +50,17 @@ before returning PASS.
 | `--debate` | Adversarial 2-round refinement | `/council --debate`, `/red-team` |
 | `--mode=post-impl` | Code-readiness pipeline (complexity → bug-hunt → council) | `/vibe` |
 | `--mode=pre-impl [--target=X]` | Plan/spec validation; target ∈ {scenario,fitness,ratchet,scope,skill,health} | `/pre-mortem`, `/scenario`, `/goals measure`, `/ratchet`, `/scope`, `/skill-auditor`, `ao doctor` |
-| `--mode=pr` | PR-shape verdict (diff review + acceptance check) | `/pr-validate`, `/review` |
+| `--mode=pr` | PR-shape verdict (diff review + acceptance check) | `/review` |
 
 **Mode-budget assertion:** 8 modes. Adding a 9th requires demoting an existing one OR refusing the addition (per Fix-F § continuous CI gate).
 
 ### Folded skills (cp-ki8): `validation` + `pr-validate` retired into these modes
 
-`/validation` and `/pr-validate` were the Phase-1 placeholders for `--mode=post-impl`
+The retired validation and pr-validate lanes were the Phase-1 placeholders for `--mode=post-impl`
 and `--mode=pr`; both are now retired (cp-ki8) and their load-bearing contract folded
 here so no capability is lost:
 
-- **`--mode=post-impl` (was `/validation`) — full close-out + no-self-grading invariant.**
+- **`--mode=post-impl` (was the validation lane) — full close-out + no-self-grading invariant.**
   Beyond the inline `complexity → bug-hunt → council` pipeline, this mode owns the
   `validate_acceptance` port: every Given/When/Then from the intent issue must map to a
   passing test (criterion→test roll-up; activity logs do not close beads), and the
@@ -71,7 +71,7 @@ here so no capability is lost:
   [Completion-Claim Kernel](../shared/validation-contract.md#completion-claim-kernel)
   before accepting any DONE/closed/green claim. For epic-scope close-out this mode may
   delegate to `/vibe`, `/post-mortem`, and `/forge` rather than inlining them.
-- **`--mode=pr` (was `/pr-validate`) — submission-readiness checks.** In addition to the
+- **`--mode=pr` (was the pr-validate lane) — submission-readiness checks.** In addition to the
   diff/acceptance verdict, run, in order: (1) **upstream alignment FIRST** (BLOCKING —
   `git rev-list --count HEAD..origin/main`; fail if many commits behind or merge would
   conflict), (2) CONTRIBUTING.md compliance (BLOCKING), (3) **isolation** — single commit

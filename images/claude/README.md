@@ -31,7 +31,7 @@ Claude ships the source tree directly.
 ## The skill set — 66 skills
 
 - **61 CORE** (the "image mind"): **35 method-core** (the operating loop, AgentOps-owned)
-  + **26 tool-op-core** (operating the substrate). Exact slugs in `IMAGE-CORE.md` §1.
+  - **26 tool-op-core** (operating the substrate). Exact slugs in `IMAGE-CORE.md` §1.
 - **5 Claude operator skills** (§3a): thin skills that teach the worker to drive
   Claude's first-class control surface — `workflow-builder`, `cc-subagents`,
   `cc-worktree-isolation`, `cc-cron-ticks`, `cc-loop-driver`.

@@ -85,7 +85,7 @@ ao lookup --query "x"  # Search knowledge by relevance
 ```bash
 /vibe [target]         # Code validation (finding classification + suppression + domain checklists)
 /post-mortem           # Validation + streak tracking + prediction accuracy + retro history
-/post-mortem --quick   # Quick-capture a single learning (folded the retired /retro)
+/post-mortem --quick   # Quick-capture a single learning (folded the retired retro lane)
 ```
 
 **Output:** `.agents/learnings/`, `.agents/patterns/`
@@ -131,9 +131,9 @@ These are the skills every user needs first. Everything else is available when y
 |-------|---------|
 | `/compile`, `/flywheel` | Active knowledge intelligence and flywheel health — Mine → Grow → Defrag cycle |
 | `/curate` | Canonical miner role for transcripts, `.agents/`, bd, git, skill diffs, and rare wiki entries |
-| `/llm-wiki` | External reading wiki proposal — raw sources to compiled wiki |
-| `/curate --mode=harvest` | Cross-rig knowledge consolidation — sweep, dedup, promote to global hub (folded the retired `/harvest`) |
-| `/inject` | Operationalize a mature `.agents` corpus into beliefs, playbooks, briefings, and gap surfaces (folded the retired `/knowledge-activation`) |
+| `/research-software` | External reading and research synthesis for software topics |
+| `/curate --mode=harvest` | Cross-rig knowledge consolidation — sweep, dedup, promote to global hub (folded the retired harvest lane) |
+| `/inject` | Operationalize a mature `.agents` corpus into beliefs, playbooks, briefings, and gap surfaces (folded the retired knowledge-activation lane) |
 | `/bd-first-memory-migration` | Consolidate fragmented agent-memory layers onto a bd-canonical store, then GC/retire the rest |
 | `/brainstorm` | Structured idea exploration before planning |
 | `/discovery` | Full discovery phase orchestrator (brainstorm → search → research → plan → pre-mortem) |
@@ -152,15 +152,15 @@ These are the skills every user needs first. Everything else is available when y
 | `/operating-loop-workflow` | Install + run the operating-loop multi-agent Workflow (seven-move loop) |
 | `/autodev` | PROGRAM.md autonomous development contract setup and validation |
 | `agy-rules-workflows` | Install AGY-native rules, loop workflow, and scheduled goal controls |
-| `/dream` | **Retired** — out-of-session compounding moved to Gas City; pointer skill only |
+| `/curate --mode=dream` | Out-of-session knowledge compounding lane |
 | `/doc` | Documentation generation — repo docs (default), gold-standard README (`--mode=readme`), OSS doc packs (`--mode=oss`) |
-| `/post-mortem --quick` | Quick-capture a learning (folded the retired `/retro`) |
+| `/post-mortem --quick` | Quick-capture a learning (folded the retired retro lane) |
 | `/validate` | Full validation phase orchestrator (vibe → post-mortem → forge) |
 | `/ratchet` | Brownian Ratchet progress gates for RPI workflow |
 | `/forge` | Mine transcripts for knowledge — decisions, learnings, patterns |
 | `/security` | Repository security scanning and release gating, plus the composable binary/prompt-surface suite — static analysis, dynamic tracing, offline redteam, policy gating |
 | `/test` | Test generation, coverage analysis, and TDD workflow |
-| `/hooks-authoring` | Author and validate AgentOps runtime hooks |
+| `/cc-hooks` | Author and validate AgentOps runtime hook behavior |
 | `/red-team` | Persona-based adversarial validation — probe docs and skills from constrained user perspectives |
 | `/review` | Review incoming PRs, agent output, or diffs — SCORED checklist |
 | `/refactor` | Safe, verified refactoring with regression testing at each step |
@@ -179,13 +179,12 @@ These are the skills every user needs first. Everything else is available when y
 
 | Skill | Purpose |
 |-------|---------|
-| `/grafana-platform-dashboard` | Build Grafana platform dashboards from templates/contracts |
-| `/swarm` | Parallel Codex agent execution (folded the retired `/codex-team`) |
-| `/openai-docs` | Official OpenAI docs lookup with citations |
+| `/swarm` | Parallel Codex agent execution (folded the retired codex-team lane) |
+| `/external-search-triage` | External docs and source lookup with citations |
 | `/reverse-engineer-rpi` | Reverse-engineer a product into feature catalog and specs |
 | `/pr-research` | Upstream repository research before contribution |
 | `/pr-implement` | Fork-based PR implementation |
-| `/validate --mode=pr` | PR-specific validation and isolation checks (folded the retired `/pr-validate`) |
+| `/validate --mode=pr` | PR-specific validation and isolation checks (folded the retired pr-validate lane) |
 | `/pr-prep` | PR preparation and structured body generation |
 | `/ship-loop` | Bot-paired internal-PR fast-lane cycle |
 | `/complexity` | Code complexity analysis |
@@ -194,7 +193,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/recover` | Post-compaction context recovery |
 | `/session-bootstrap` | Universal init prompt — every agent runs this first (soc-vuu6.25) |
 | `/trace` | Trace design decisions through history |
-| `/provenance` | Trace artifact lineage to sources |
+| `/curate --mode=provenance` | Trace artifact lineage to sources |
 | `/beads` | Issue tracking operations |
 | `/heal-skill` | Detect and fix skill hygiene issues |
 | `/converter` | Convert skills to Codex/Cursor formats |

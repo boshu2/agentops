@@ -278,7 +278,7 @@ graph LR
   skill-builder -- "supplier-to" --> skill-auditor
   spec-reliability-implementation -- "customer-of" --> validate
   swarm -- "customer-of" --> crank
-  trace -- "customer-of" --> provenance
+  trace -- "shared-kernel" --> curate
   using-ntm -- "customer-of" --> swarm
   vibe -- "shared-kernel" --> standards
   workflow-builder -- "customer-of" --> automation-shape-routing
