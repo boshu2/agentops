@@ -283,6 +283,7 @@ These are how skills chain in practice:
 | **goals** | product | Maintain GOALS.yaml fitness specification |
 | **release** | product | Pre-flight, changelog, version bumps, tag |
 | **security** | product | Continuous security scanning and release gating, plus the composable binary/prompt-surface suite (offline redteam, policy gating) |
+| **security-suite** | product | Composable security suite (offline redteam, policy/binary/prompt-surface gating); sibling of **security** — a standing ME-overlap candidate for future prune review |
 | **doc** | product | Generate repo docs (default), gold-standard README (`--mode=readme`, council-validated), and OSS doc packs (`--mode=oss`) |
 
 **Session & Status:**
