@@ -19,6 +19,7 @@ var (
 	evalPaths       = []string{"evals/**", "schemas/eval-*", "cli/internal/eval/**"}
 	contextMapPaths = []string{"skills/**", "docs/contracts/context-map.md"}
 	swarmPaths      = []string{".agents/swarm/**", "schemas/swarm-*"}
+	docsPaths       = []string{"docs/**", "README.md", "CHANGELOG.md", "PRODUCT.md", "SKILL-TIERS.md"}
 )
 
 func init() {
@@ -77,6 +78,20 @@ func init() {
 		{ID: "full.worktree-disposition", Tiers: gates.Full, Blocking: true, Backing: "check-worktree-disposition.sh"},
 		{ID: "full.retrieval-quality-ratchet", Tiers: gates.Full, Blocking: false, Backing: "check-retrieval-quality-ratchet.sh"},
 		{ID: "always.loop-shape", Tiers: gates.Fast | gates.Full, Blocking: false, Backing: "check-loop-shape.sh"},
+
+		// final backing-script batch (PB1)
+		{ID: "always.quarantine-empty", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-quarantine-empty.sh"},
+		{ID: "always.test-fixture-parity", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-test-fixture-parity.sh"},
+		{ID: "go.race-fast", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "validate-go-fast.sh"},
+		{ID: "full.headless-runtime-skills", Tiers: gates.Full, Blocking: false, Backing: "validate-headless-runtime-skills.sh"},
+		// DEFERRED (PB1 model gaps, not flaky checks):
+		//  - validate-release-audit-artifacts.sh needs `--mode changed` + a narrow
+		//    release-file Match + RELEASE_AUDIT_CHANGED_PATHS env. The Check model
+		//    must grow Args/Env fields for checks the bash gate parameterizes
+		//    (also: validate-manifests --repo-root, codex-* --scope). Until then
+		//    wrapping them risks behavior drift.
+		//  - check-agents-hash-snapshot.sh is a stateful capture/diff pair — needs
+		//    a native Go port, not a single wrapper.
 	}
 	for _, c := range seed {
 		gates.Register(c)
