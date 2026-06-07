@@ -4170,6 +4170,41 @@ ao ready [flags]
 
 ---
 
+### `ao refinery`
+
+Watch main, run the full gate on each new commit, and on a
+
+```
+ao refinery [command]
+```
+
+**Subcommands:**
+
+#### `ao refinery once`
+
+Evaluate main HEAD once
+
+```
+ao refinery once [flags]
+```
+
+#### `ao refinery run`
+
+Run the refinery loop until interrupted
+
+```
+ao refinery run [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                help for run
+      --interval duration   poll interval (default 5m0s)
+```
+
+---
+
 ### `ao registry`
 
 Query the unified registry
