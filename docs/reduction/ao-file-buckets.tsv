@@ -1,11 +1,11 @@
 file	bucket	rationale	imports
 cli/cmd/ao/agent.go	KEEP	public compatibility wrapper for `ao agent bundle`; pure builder moved to vendor-image adapter boundary	encoding/...,fmt,github.com/...,os,strings
-cli/cmd/ao/agents.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,errors,fmt,github.com/...,internal/adapters,os,path/...,sort,strings
+cli/cmd/ao/agents.go	KEEP	public compatibility wrapper for `ao agents inspect` and `ao agents lint`; inspect and lint behavior moved to adapter boundaries	errors,fmt,github.com/...,internal/adapters,os,path/...
 cli/cmd/ao/agents_doctor.go	KEEP	public compatibility wrapper for `ao agents doctor`; doctor runner moved to the mto-fleet adapter boundary	errors,github.com/...,internal/adapters
 cli/cmd/ao/agents_doctor_test.go	KEEP	public command registration coverage for `ao agents doctor`; substantive doctor tests moved to adapter package	testing
 cli/cmd/ao/agents_smoke_parity_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	encoding/...,os,os/...,path/...,sort,testing
 cli/cmd/ao/agents_smoke_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	io/...,os,path/...,regexp,strings,testing
-cli/cmd/ao/agents_test.go	RELOCATE	outer orchestration, runtime supervision, or fleet/adapter control; move toward MTO or vendor-image adapter boundary	bytes,encoding/...,os,os/...,path/...,reflect,strings,testing
+cli/cmd/ao/agents_test.go	KEEP	public command registration and default-path wrapper coverage for `ao agents`; substantive inspect/lint tests moved to adapter packages	bytes,encoding/...,os,path/...,reflect,strings,testing
 cli/cmd/ao/app.go	KEEP	self-contained AO image surface: loop, mind, local Themis, local flywheel, corpus, or operator ergonomics	context,crypto/...,io,os,os/...
 cli/cmd/ao/autodev.go	RESEARCH	unclear ownership from filename/import shape; inspect before cut, relocate, or archive	encoding/...,fmt,github.com/...,internal/autodev,os,path/...,strings
 cli/cmd/ao/autodev_integration_test.go	KEEP	test coverage follows the command surface under review; keep while the source file remains	encoding/...,os,path/...,strings,testing

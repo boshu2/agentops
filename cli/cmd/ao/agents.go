@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/adapters/agentsinspect"
 	"github.com/boshu2/agentops/cli/internal/adapters/agentslint"
 	"github.com/boshu2/agentops/cli/internal/adapters/agentsurface"
 )
@@ -85,46 +85,12 @@ func runAgentsInspect(cmd *cobra.Command, args []string) error {
 	} else if shouldResolveAgentsDefaultPath(cmd, "contract", agentsInspectContract, defaultAgentsContract) {
 		return rootErr
 	}
-	data, err := os.ReadFile(contract)
-	if err != nil {
-		return fmt.Errorf("reading contract %s: %w", contract, err)
-	}
-
-	inv := AgentsInventory{
+	return agentsinspect.Run(agentsinspect.Options{
 		Contract:  contract,
-		Allowlist: parseAgentsAllowlist(string(data)),
-		Skills:    discoverActiveSkills(skillsDir),
-	}
-
-	if agentsInspectJSON {
-		enc := json.NewEncoder(cmd.OutOrStdout())
-		enc.SetIndent("", "  ")
-		return enc.Encode(inv)
-	}
-
-	out := cmd.OutOrStdout()
-	fmt.Fprintf(out, "Contract: %s\n", inv.Contract)
-	fmt.Fprintf(out, "Catalogued surfaces: %d\n", len(inv.Allowlist))
-	fmt.Fprintf(out, "Skill-owned subdirs: %d\n", len(inv.Skills))
-	fmt.Fprintln(out)
-
-	fmt.Fprintln(out, "Catalogued surfaces (allowlist):")
-	for _, e := range inv.Allowlist {
-		fmt.Fprintf(out, "  .agents/%s/\n", e)
-	}
-	if len(inv.Allowlist) == 0 {
-		fmt.Fprintln(out, "  (none)")
-	}
-	fmt.Fprintln(out)
-
-	fmt.Fprintln(out, "Skill-owned subdirs (auto-allowed):")
-	for _, e := range inv.Skills {
-		fmt.Fprintf(out, "  .agents/%s/\n", e)
-	}
-	if len(inv.Skills) == 0 {
-		fmt.Fprintln(out, "  (none)")
-	}
-	return nil
+		SkillsDir: skillsDir,
+		JSON:      agentsInspectJSON,
+		Stdout:    cmd.OutOrStdout(),
+	})
 }
 
 func runAgentsLint(cmd *cobra.Command, args []string) error {
