@@ -14,9 +14,11 @@ import "github.com/boshu2/agentops/cli/internal/gates"
 var (
 	goPaths       = []string{"cli/**", "go.mod", "go.sum"}
 	skillPaths    = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
-	contractPaths = []string{"docs/contracts/**", "schemas/**"}
-	ciPolicyPaths = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
-	evalPaths     = []string{"evals/**", "schemas/eval-*", "cli/internal/eval/**"}
+	contractPaths   = []string{"docs/contracts/**", "schemas/**"}
+	ciPolicyPaths   = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
+	evalPaths       = []string{"evals/**", "schemas/eval-*", "cli/internal/eval/**"}
+	contextMapPaths = []string{"skills/**", "docs/contracts/context-map.md"}
+	swarmPaths      = []string{".agents/swarm/**", "schemas/swarm-*"}
 )
 
 func init() {
@@ -51,6 +53,30 @@ func init() {
 		{ID: "skill.codex-rpi-contract", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-rpi-contract.sh"},
 		{ID: "skill.codex-lifecycle-guards", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-lifecycle-guards.sh"},
 		{ID: "skill.codex-generated-artifacts", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-generated-artifacts.sh"},
+
+		// go class
+		{ID: "go.home-isolation", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-home-isolation.sh"},
+		{ID: "go.test-home-isolation", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-test-home-isolation.sh"},
+
+		// contract / context-map / swarm classes
+		{ID: "contract.compatibility", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-contract-compatibility.sh"},
+		{ID: "contract.context-map-drift", Tiers: gates.Fast | gates.Full, Match: contextMapPaths, Blocking: true, Backing: "validate-context-map-drift.sh"},
+		{ID: "swarm.evidence", Tiers: gates.Fast | gates.Full, Match: swarmPaths, Blocking: true, Backing: "validate-swarm-evidence.sh"},
+
+		// always-run structural invariants (no Match)
+		{ID: "always.author-judge-convergence", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-author-judge-convergence.sh"},
+		{ID: "always.contracts-structural-floor", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-contracts-structural-floor.sh"},
+		{ID: "always.docs-learning-references", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-docs-learning-references.sh"},
+		{ID: "always.flywheel-compounding-snapshot", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-flywheel-compounding-snapshot.sh"},
+		{ID: "always.retrieval-manifest-paths", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-retrieval-manifest-paths.sh"},
+		{ID: "always.wiring-closure", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-wiring-closure.sh"},
+		{ID: "always.bd-closeout-contract", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-bd-closeout-contract.sh"},
+		{ID: "always.domain-evolution-plan", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-agentops-domain-evolution-plan.sh"},
+
+		// full-mode-only / advisory (mirror the bash gate: these skip in fast or warn)
+		{ID: "full.worktree-disposition", Tiers: gates.Full, Blocking: true, Backing: "check-worktree-disposition.sh"},
+		{ID: "full.retrieval-quality-ratchet", Tiers: gates.Full, Blocking: false, Backing: "check-retrieval-quality-ratchet.sh"},
+		{ID: "always.loop-shape", Tiers: gates.Fast | gates.Full, Blocking: false, Backing: "check-loop-shape.sh"},
 	}
 	for _, c := range seed {
 		gates.Register(c)
