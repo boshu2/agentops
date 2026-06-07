@@ -1,5 +1,5 @@
 // practices: [microservices, team-topologies]
-package main
+package worktreeconfig
 
 import (
 	"fmt"
@@ -9,7 +9,9 @@ import (
 	"strings"
 )
 
-func sanitizeGitProcessEnv() error {
+// SanitizeGitProcessEnv removes repository-discovery variables that can pin
+// Git commands to the wrong worktree when ao starts inside nested sessions.
+func SanitizeGitProcessEnv() error {
 	for _, key := range []string{"GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR"} {
 		if err := os.Unsetenv(key); err != nil {
 			return fmt.Errorf("unset %s: %w", key, err)
@@ -18,7 +20,9 @@ func sanitizeGitProcessEnv() error {
 	return nil
 }
 
-func repairSharedCoreWorktreeConfig(cwd string) error {
+// RepairSharedCoreWorktreeConfig migrates a shared core.worktree setting into
+// per-worktree config when a linked worktree has inherited a stale top-level.
+func RepairSharedCoreWorktreeConfig(cwd string) error {
 	if strings.TrimSpace(cwd) == "" {
 		return nil
 	}
@@ -129,4 +133,21 @@ func runGitWithConfigFile(configPath string, args ...string) error {
 		return fmt.Errorf("git config --file %s %s: %w (%s)", configPath, strings.Join(args, " "), err, strings.TrimSpace(string(out)))
 	}
 	return nil
+}
+
+func gitDiscoveryEnv() []string {
+	env := make([]string, 0, len(os.Environ()))
+	for _, entry := range os.Environ() {
+		switch {
+		case strings.HasPrefix(entry, "GIT_DIR="):
+			continue
+		case strings.HasPrefix(entry, "GIT_WORK_TREE="):
+			continue
+		case strings.HasPrefix(entry, "GIT_COMMON_DIR="):
+			continue
+		default:
+			env = append(env, entry)
+		}
+	}
+	return env
 }
