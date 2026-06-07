@@ -106,15 +106,15 @@
       "critical": true
     },
     {
-      "id": "red-team-catalog-and-security-suite-positioning",
-      "title": "Catalog and security-suite docs preserve red-team positioning",
+      "id": "red-team-catalog-and-security-positioning",
+      "title": "Catalog and security docs preserve red-team positioning",
       "kind": "artifact_check",
-      "objective": "Keep red-team discoverable as usability validation while security-suite owns deterministic prompt-surface security redteam scans.",
+      "objective": "Keep red-team discoverable as usability validation while the canonical security skill owns deterministic prompt-surface security redteam scans.",
       "expectations": [
         {"type": "artifact_contains", "target": "../../docs/SKILLS.md", "value": "| `/red-team` | Persona-based adversarial validation"},
-        {"type": "artifact_contains", "target": "../../docs/SKILLS.md", "value": "| `/security-suite` | Composable security suite"},
-        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "repo-surface redteam checks for prompt and operator-contract regressions"},
-        {"type": "artifact_contains", "target": "../../skills/security-suite/SKILL.md", "value": "without needing hosted model scanning"},
+        {"type": "artifact_contains", "target": "../../docs/SKILLS.md", "value": "| `/security` |"},
+        {"type": "artifact_contains", "target": "../../skills/security/SKILL.md", "value": "repo-surface redteam checks for prompt and operator-contract regressions"},
+        {"type": "artifact_contains", "target": "../../skills/security/SKILL.md", "value": "without needing hosted model scanning"},
         {"type": "artifact_contains", "target": "../../skills/using-agentops/SKILL.md", "value": "| `/red-team` | Persona-based adversarial validation"},
         {"type": "artifact_contains", "target": "../../docs/CHANGELOG.md", "value": "`/red-team` adversarial validation"}
       ],

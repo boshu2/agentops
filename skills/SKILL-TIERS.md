@@ -286,8 +286,7 @@ These are how skills chain in practice:
 | **product** | product | Interactive PRODUCT.md generation |
 | **goals** | product | Maintain GOALS.yaml fitness specification |
 | **release** | product | Pre-flight, changelog, version bumps, tag |
-| **security** | product | Continuous security scanning and release gating |
-| **security-suite** | execution | Composable security suite for binary and prompt-surface assurance, offline redteam, and policy gating |
+| **security** | product | Continuous security scanning and release gating, plus the composable binary/prompt-surface suite (offline redteam, policy gating) |
 | **doc** | product | Generate repo docs (default), gold-standard README (`--mode=readme`, council-validated), and OSS doc packs (`--mode=oss`) |
 
 **Session & Status:**
@@ -480,7 +479,6 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **autodev** | evolve, rpi | required |
 | **release** | - | - (standalone) |
 | **security** | - | - (standalone) |
-| **security-suite** | - | - (standalone) |
 | ratchet | - | - |
 | **recover** | - | - (standalone) |
 | **reverse-engineer-rpi** | - | - (standalone) |

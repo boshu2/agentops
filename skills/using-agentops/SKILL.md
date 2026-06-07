@@ -158,8 +158,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/validation` | Full validation phase orchestrator (vibe → post-mortem → retro → forge) |
 | `/ratchet` | Brownian Ratchet progress gates for RPI workflow |
 | `/forge` | Mine transcripts for knowledge — decisions, learnings, patterns |
-| `/security` | Continuous repository security scanning and release gating |
-| `/security-suite` | Binary and prompt-surface security suite — static analysis, dynamic tracing, offline redteam, policy gating |
+| `/security` | Repository security scanning and release gating, plus the composable binary/prompt-surface suite — static analysis, dynamic tracing, offline redteam, policy gating |
 | `/test` | Test generation, coverage analysis, and TDD workflow |
 | `/hooks-authoring` | Author and validate AgentOps runtime hooks |
 | `/red-team` | Persona-based adversarial validation — probe docs and skills from constrained user perspectives |

@@ -60,7 +60,7 @@ JSON
 }
 
 test_help() {
-  if python3 skills/security-suite/scripts/prompt_redteam.py scan --help >/dev/null 2>&1; then
+  if python3 skills/security/scripts/prompt_redteam.py scan --help >/dev/null 2>&1; then
     pass "prompt_redteam.py help works"
   else
     fail "prompt_redteam.py help failed"
@@ -76,7 +76,7 @@ Executable code and generated artifacts are the source of truth.
 EOF_FIXTURE
   write_pack "$work/pack.json"
 
-  if python3 skills/security-suite/scripts/prompt_redteam.py scan \
+  if python3 skills/security/scripts/prompt_redteam.py scan \
     --repo-root "$work" \
     --pack-file "$work/pack.json" \
     --out-dir "$work/out" >/dev/null 2>&1; then
@@ -107,7 +107,7 @@ Use source-of-truth precedence when docs disagree.
 EOF_FIXTURE
   write_pack "$work/pack.json"
 
-  if python3 skills/security-suite/scripts/prompt_redteam.py scan \
+  if python3 skills/security/scripts/prompt_redteam.py scan \
     --repo-root "$work" \
     --pack-file "$work/pack.json" \
     --out-dir "$work/out" >/dev/null 2>&1; then
@@ -127,9 +127,9 @@ test_repo_pack_smoke() {
   local work="$TMP_ROOT/repo-smoke"
   mkdir -p "$work"
 
-  if python3 skills/security-suite/scripts/prompt_redteam.py scan \
+  if python3 skills/security/scripts/prompt_redteam.py scan \
     --repo-root "$REPO_ROOT" \
-    --pack-file "$REPO_ROOT/skills/security-suite/references/agentops-redteam-pack.json" \
+    --pack-file "$REPO_ROOT/skills/security/references/agentops-redteam-pack.json" \
     --out-dir "$work" >/dev/null 2>&1; then
     pass "repo-native pack smoke exits zero"
   else

@@ -174,7 +174,7 @@
       "targets": [
         {
           "globs": [
-            "skills/security-suite/SKILL.md"
+            "skills/security/SKILL.md"
           ],
           "label": "security-suite contract",
           "require_groups": [
