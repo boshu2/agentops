@@ -3,6 +3,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -10,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/boshu2/agentops/cli/internal/adapters/agentslint"
 )
 
 var agentsCmd = &cobra.Command{
@@ -24,9 +27,12 @@ migration helpers.`,
 var (
 	agentsInspectJSON     bool
 	agentsInspectContract string
+	agentsLintScript      string
+	agentsLintJSON        bool
 )
 
 const defaultAgentsContract = "docs/contracts/agents-write-surfaces.md"
+const defaultAgentsLintScript = "scripts/check-agents-write-surfaces.sh"
 
 var agentsInspectCmd = &cobra.Command{
 	Use:   "inspect",
@@ -38,14 +44,34 @@ scripts/check-agents-write-surfaces.sh.`,
 	RunE: runAgentsInspect,
 }
 
+var agentsLintCmd = &cobra.Command{
+	Use:   "lint",
+	Short: "Run the .agents/ write-surfaces contract lint",
+	Long: `Wrap scripts/check-agents-write-surfaces.sh and surface its
+result through the ao agents namespace. Exits 0 on a clean contract;
+non-zero on a contract violation or invocation error. With --json the
+script's machine-readable output is forwarded verbatim.`,
+	RunE: runAgentsLint,
+}
+
 func init() {
 	rootCmd.AddCommand(agentsCmd)
 	agentsCmd.AddCommand(agentsInspectCmd)
+	agentsCmd.AddCommand(agentsLintCmd)
 	agentsInspectCmd.Flags().BoolVar(&agentsInspectJSON, "json", false, "Emit machine-readable JSON")
 	agentsInspectCmd.Flags().StringVar(&agentsInspectContract, "contract",
 		defaultAgentsContract,
 		"Path to the .agents/ write-surfaces contract doc")
+	agentsLintCmd.Flags().StringVar(&agentsLintScript, "script",
+		defaultAgentsLintScript,
+		"Path to the lint script")
+	agentsLintCmd.Flags().BoolVar(&agentsLintJSON, "json", false,
+		"Forward --json to the lint script")
 }
+
+// AgentsLintError is returned when the underlying lint script exits non-zero.
+// It remains in the cmd package as an alias for root-level exit-code handling.
+type AgentsLintError = agentslint.Error
 
 // AgentsInventory is the shape returned by `ao agents inspect --json`.
 type AgentsInventory struct {
@@ -104,6 +130,32 @@ func runAgentsInspect(cmd *cobra.Command, args []string) error {
 		fmt.Fprintln(out, "  (none)")
 	}
 	return nil
+}
+
+func runAgentsLint(cmd *cobra.Command, args []string) error {
+	script := agentsLintScript
+	if shouldResolveAgentsDefaultPath(cmd, "script", agentsLintScript, defaultAgentsLintScript) {
+		repoRoot, err := resolveAgentsRepoRoot()
+		if err != nil {
+			return err
+		}
+		script = resolveAgentsDefaultPath(cmd, "script", agentsLintScript, defaultAgentsLintScript, repoRoot)
+	}
+
+	err := agentslint.Run(agentslint.Options{
+		Script: script,
+		JSON:   agentsLintJSON,
+		Stdout: cmd.OutOrStdout(),
+		Stderr: cmd.ErrOrStderr(),
+	})
+	if err == nil {
+		return nil
+	}
+	var lintErr *agentslint.Error
+	if errors.As(err, &lintErr) {
+		cmd.SilenceUsage = true
+	}
+	return err
 }
 
 func resolveAgentsRepoRoot() (string, error) {
