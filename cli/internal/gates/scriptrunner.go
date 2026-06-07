@@ -41,7 +41,7 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 		return ports.GateVerdict{Status: ports.GateStatusUnknown, Reason: fmt.Sprintf("no script %s", script)}, nil
 	}
 
-	cmd := exec.CommandContext(ctx, "bash", script)
+	cmd := exec.CommandContext(ctx, resolveBash(), script)
 	cmd.Dir = s.repoRoot
 	if len(req.Env) > 0 {
 		env := cmd.Environ()
@@ -68,6 +68,19 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 	v := exitCodeToVerdict(code)
 	v.LogTail = tailBytes(out.Bytes(), 4096)
 	return v, nil
+}
+
+// resolveBash returns a bash interpreter, preferring a Homebrew bash (>= 4) on
+// macOS so check scripts that use bash-4 features (declare -A, mapfile) don't
+// silently misbehave under the system /bin/bash 3.2 (ag-qidx TX2). On Linux
+// (bushido) these paths are absent and it falls back to PATH "bash" (5.x).
+func resolveBash() string {
+	for _, p := range []string{"/opt/homebrew/bin/bash", "/usr/local/bin/bash"} {
+		if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
+			return p
+		}
+	}
+	return "bash"
 }
 
 // exitCodeToVerdict maps a script exit code to a GateVerdict (the canonical
