@@ -2,16 +2,9 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
-	"strings"
-
 	"github.com/spf13/cobra"
 
-	"github.com/boshu2/agentops/cli/internal/evidencedturn"
-	"github.com/boshu2/agentops/cli/internal/provenancegraph"
-	"github.com/boshu2/agentops/cli/internal/turnstate"
+	"github.com/boshu2/agentops/cli/internal/adapters/turnverify"
 )
 
 var (
@@ -31,25 +24,6 @@ var turnCmd = &cobra.Command{
 unit of work. An Evidenced Turn is the assurance contract that lets a bead
 legally transition validated->closed: a hash-chained state log, covered
 scenarios, resolving Evidence, a provenance event, and no orphan.`,
-}
-
-// turnInputFile is the on-disk shape consumed by `ao turn verify --input`. It
-// carries the facts that are NOT in the committed provenance ledger: the bead's
-// state_transition log and its Closes-scenario coverage. Provenance edges and
-// orphans are read from the ledger (or --ledger) so they stay the audit
-// authority, not a hand-supplied claim.
-type turnInputFile struct {
-	BeadID      string                   `json:"bead_id"`
-	Transitions []turnstate.Transition   `json:"transitions"`
-	Scenarios   []evidencedturn.Scenario `json:"scenarios"`
-	// AuthorID and JudgeID carry the no-self-grading invariant (ag-lmdx.4):
-	// the identity of the context that AUTHORED the artifact vs. the context
-	// that PRODUCED the acceptance verdict. The author_neq_validator predicate
-	// fails when they are equal (a self-graded, autocorrelated verdict) unless
-	// --allow-self waives it. Empty judge_id also fails: independence that was
-	// never recorded cannot be asserted.
-	AuthorID string `json:"author_id,omitempty"`
-	JudgeID  string `json:"judge_id,omitempty"`
 }
 
 var turnVerifyCmd = &cobra.Command{
@@ -121,133 +95,17 @@ func init() {
 func runTurnVerify(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
-	beadID := strings.TrimSpace(args[0])
-	if beadID == "" {
-		return fmt.Errorf("a non-empty <bead> is required")
-	}
-	if turnVerifyInput == "" {
-		return fmt.Errorf("ao turn verify requires --input <turn-input.json>")
-	}
-
-	tf, err := readTurnInputFile(turnVerifyInput)
-	if err != nil {
-		return err
-	}
-	// The positional bead is authoritative; an input file declaring a different
-	// bead is a mistake worth surfacing rather than silently overriding.
-	if tf.BeadID != "" && tf.BeadID != beadID {
-		return fmt.Errorf("input file bead_id %q does not match <bead> %q", tf.BeadID, beadID)
-	}
-
 	ledgerPath := turnVerifyLedger
 	if ledgerPath == "" {
 		ledgerPath = resolveLedgerPath()
 	}
-	edges, err := readLedgerEdges(ledgerPath)
-	if err != nil {
-		return err
-	}
-
-	var orphans []provenancegraph.OrphanFinding
-	orphanChecked := false
-	if turnVerifyGraph != "" {
-		graph, gerr := provenancegraph.ReadGraphRecords(turnVerifyGraph)
-		if gerr != nil {
-			return fmt.Errorf("read provenance trace-graph: %w", gerr)
-		}
-		// Any orphan in the turn's trace-graph means its provenance is
-		// incomplete — mirrors the repo-wide `ao provenance trace --orphans`
-		// no-orphan gate. A turn with a dangling artifact is not provably done.
-		orphans = provenancegraph.FindOrphans(graph)
-		orphanChecked = true
-	}
-
-	v, err := evidencedturn.Evaluate(evidencedturn.Input{
-		BeadID:          beadID,
-		Transitions:     tf.Transitions,
-		Scenarios:       tf.Scenarios,
-		ProvenanceEdges: edges,
-		OrphanFindings:  orphans,
-		OrphanChecked:   orphanChecked,
-		AuthorID:        tf.AuthorID,
-		JudgeID:         tf.JudgeID,
-		AllowSelf:       turnVerifyAllowSelf,
+	return turnverify.Run(turnverify.Options{
+		BeadID:     args[0],
+		InputPath:  turnVerifyInput,
+		LedgerPath: ledgerPath,
+		GraphPath:  turnVerifyGraph,
+		JSON:       turnVerifyJSON,
+		AllowSelf:  turnVerifyAllowSelf,
+		Stdout:     cmd.OutOrStdout(),
 	})
-	if err != nil {
-		return err
-	}
-
-	if err := renderVerdict(cmd, v); err != nil {
-		return err
-	}
-	if !v.Done {
-		// Non-zero exit makes this usable as a validated->closed transition
-		// guard. SilenceUsage is set, so cobra won't print usage on this.
-		return fmt.Errorf("turn %s is NOT done: %d gap(s)", v.BeadID, len(v.Gaps))
-	}
-	return nil
-}
-
-// readTurnInputFile loads and decodes the turn-input JSON file, rejecting
-// unknown fields so a malformed contract fails loudly.
-func readTurnInputFile(path string) (turnInputFile, error) {
-	b, err := os.ReadFile(path) // #nosec G304 -- operator-supplied input path, same trust model as --graph
-	if err != nil {
-		return turnInputFile{}, fmt.Errorf("read turn-input file %q: %w", path, err)
-	}
-	dec := json.NewDecoder(strings.NewReader(string(b)))
-	dec.DisallowUnknownFields()
-	var tf turnInputFile
-	if err := dec.Decode(&tf); err != nil {
-		return turnInputFile{}, fmt.Errorf("parse turn-input file %q: %w", path, err)
-	}
-	return tf, nil
-}
-
-// readLedgerEdges reads the provenance ledger edges. A missing ledger is not a
-// hard error here: the evidencedturn evaluator will simply fail the
-// provenance_event predicate with a legible reason rather than crash.
-func readLedgerEdges(path string) ([]provenancegraph.Edge, error) {
-	if _, err := os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("stat provenance ledger %q: %w", path, err)
-	}
-	store := provenancegraph.NewStore(path)
-	edges, err := store.Read()
-	if err != nil {
-		return nil, fmt.Errorf("read provenance ledger: %w", err)
-	}
-	return edges, nil
-}
-
-// renderVerdict prints the legible checklist (or JSON). The text form is the
-// agent-facing default: a status glyph, the predicate, and its reason.
-func renderVerdict(cmd *cobra.Command, v evidencedturn.Verdict) error {
-	out := cmd.OutOrStdout()
-	if turnVerifyJSON {
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		return enc.Encode(v)
-	}
-
-	fmt.Fprintf(out, "Evidenced-Turn DoD for %s\n", v.BeadID)
-	for _, p := range v.Predicates {
-		glyph := "FAIL"
-		if p.Passed {
-			glyph = "PASS"
-		}
-		fmt.Fprintf(out, "  [%s] %-18s %s\n", glyph, p.Name, p.Reason)
-	}
-	fmt.Fprintln(out)
-	if v.Done {
-		fmt.Fprintf(out, "VERDICT: DONE — validated->closed is legal for %s\n", v.BeadID)
-	} else {
-		fmt.Fprintf(out, "VERDICT: NOT DONE — %d gap(s):\n", len(v.Gaps))
-		for _, g := range v.Gaps {
-			fmt.Fprintf(out, "  - %s\n", g)
-		}
-	}
-	return nil
 }

@@ -1,7 +1,8 @@
 // practices: [design-by-contract, in-toto-provenance]
-package main
+package turnverify
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -12,16 +13,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/turnstate"
 )
 
-// resetTurnVerifyFlags restores the turn-verify flags to a known baseline so
-// flag state does not leak across tests.
-func resetTurnVerifyFlags() {
-	turnVerifyInput = ""
-	turnVerifyLedger = ""
-	turnVerifyJSON = false
-	turnVerifyAllowSelf = false
-}
-
-// closedTransitionsJSON builds a sealed ""->in_progress->validated->closed log
+// closedTransitions builds a sealed ""->in_progress->validated->closed log
 // for the bead and returns it as the transitions field for the input file.
 func closedTransitions(t *testing.T, bead string) []turnstate.Transition {
 	t.Helper()
@@ -45,9 +37,7 @@ func closedTransitions(t *testing.T, bead string) []turnstate.Transition {
 
 // writeTurnInput marshals a turn-input file to a temp path and returns it. It
 // records a distinct author/judge by default so the no-self-grading invariant
-// (author_neq_validator, ag-lmdx.4) passes for the otherwise-complete fixtures;
-// tests exercising the guard set author_id/judge_id explicitly via
-// writeTurnInputGraded.
+// passes for otherwise-complete fixtures.
 func writeTurnInput(t *testing.T, bead string, transitions []turnstate.Transition, scenarios []evidencedturn.Scenario) string {
 	t.Helper()
 	return writeTurnInputGraded(t, bead, transitions, scenarios, "session:author", "session:judge")
@@ -57,7 +47,7 @@ func writeTurnInput(t *testing.T, bead string, transitions []turnstate.Transitio
 // for tests of the author_neq_validator predicate.
 func writeTurnInputGraded(t *testing.T, bead string, transitions []turnstate.Transition, scenarios []evidencedturn.Scenario, authorID, judgeID string) string {
 	t.Helper()
-	tf := turnInputFile{BeadID: bead, Transitions: transitions, Scenarios: scenarios, AuthorID: authorID, JudgeID: judgeID}
+	tf := InputFile{BeadID: bead, Transitions: transitions, Scenarios: scenarios, AuthorID: authorID, JudgeID: judgeID}
 	b, err := json.Marshal(tf)
 	if err != nil {
 		t.Fatalf("marshal turn input: %v", err)
@@ -85,15 +75,9 @@ func writeLedger(t *testing.T, lines []string) string {
 }
 
 // beadEdgeLine builds a sealed provenance-edge ledger line referencing the bead
-// as to_id (a "commit implements" edge). It is a node/edge graph line too:
-// FindOrphans reads "record"-tagged lines, while the Edge store reads the
-// schema_version-tagged form. We emit the schema_version Edge form for the
-// provenance_event predicate; orphan tests use the record/graph form separately.
+// as to_id (a "commit implements" edge).
 func beadEdgeLine(t *testing.T, bead string) string {
 	t.Helper()
-	// A minimal valid Edge JSON (the store only needs to parse + the evaluator
-	// only matches from_id/to_id). We bypass Seal here and hand-write a line
-	// the store reads; the evaluator does not re-verify the ledger chain.
 	obj := map[string]any{
 		"schema_version": "agentops-sdlc-provenance.v1",
 		"from_id":        "commit:abc123",
@@ -115,8 +99,6 @@ func beadEdgeLine(t *testing.T, bead string) string {
 	return string(b)
 }
 
-// writeCleanGraph writes a node/edge trace-graph where the bead's produced
-// artifact HAS an inbound edge (so it is not an orphan).
 func writeCleanGraph(t *testing.T, bead string) string {
 	t.Helper()
 	artifact := "cli/internal/evidencedturn/evidencedturn.go"
@@ -125,11 +107,9 @@ func writeCleanGraph(t *testing.T, bead string) string {
 		`{"record":"node","id":"` + artifact + `","type":"artifact","path":"` + artifact + `"}`,
 		`{"record":"edge","edge_type":"bead_produces_artifact","from_id":"` + bead + `","to_id":"` + artifact + `"}`,
 	}
-	return writeLedger(t, lines) // same JSONL writer; distinct temp dir per call
+	return writeLedger(t, lines)
 }
 
-// writeOrphanGraph writes a node/edge trace-graph containing an artifact node
-// with NO inbound edge (an orphan).
 func writeOrphanGraph(t *testing.T, bead string) string {
 	t.Helper()
 	artifact := "cli/orphan.go"
@@ -140,15 +120,28 @@ func writeOrphanGraph(t *testing.T, bead string) string {
 	return writeLedger(t, lines)
 }
 
-func TestTurnVerify_CompleteTurnVerifies(t *testing.T) {
-	resetTurnVerifyFlags()
+func runForTest(bead, input, ledger, graph string, jsonOut, allowSelf bool) (string, error) {
+	var out bytes.Buffer
+	err := Run(Options{
+		BeadID:     bead,
+		InputPath:  input,
+		LedgerPath: ledger,
+		GraphPath:  graph,
+		JSON:       jsonOut,
+		AllowSelf:  allowSelf,
+		Stdout:     &out,
+	})
+	return out.String(), err
+}
+
+func TestRun_CompleteTurnVerifies(t *testing.T) {
 	bead := "ag-lmdx.5"
 	input := writeTurnInput(t, bead, closedTransitions(t, bead),
 		[]evidencedturn.Scenario{{Slug: "ao-turn-verify", HasPassingTest: true, EvidenceResolved: true}})
 	ledger := writeLedger(t, []string{beadEdgeLine(t, bead)})
 	graph := writeCleanGraph(t, bead)
 
-	out, err := executeCommand("turn", "verify", bead, "--input", input, "--ledger", ledger, "--graph", graph)
+	out, err := runForTest(bead, input, ledger, graph, false, false)
 	if err != nil {
 		t.Fatalf("turn verify of a complete turn should succeed, got err=%v\noutput=%s", err, out)
 	}
@@ -160,15 +153,13 @@ func TestTurnVerify_CompleteTurnVerifies(t *testing.T) {
 	}
 }
 
-func TestTurnVerify_IncompleteTurnIsNotDone(t *testing.T) {
-	resetTurnVerifyFlags()
+func TestRun_IncompleteTurnIsNotDone(t *testing.T) {
 	bead := "ag-lmdx.5"
-	// Scenario has no passing test -> not done; the uncovered scenario is named.
 	input := writeTurnInput(t, bead, closedTransitions(t, bead),
 		[]evidencedturn.Scenario{{Slug: "ao-turn-verify", HasPassingTest: false, EvidenceResolved: true}})
 	ledger := writeLedger(t, []string{beadEdgeLine(t, bead)})
 
-	out, err := executeCommand("turn", "verify", bead, "--input", input, "--ledger", ledger)
+	out, err := runForTest(bead, input, ledger, "", false, false)
 	if err == nil {
 		t.Fatalf("turn verify of an incomplete turn must exit non-zero\noutput=%s", out)
 	}
@@ -183,19 +174,17 @@ func TestTurnVerify_IncompleteTurnIsNotDone(t *testing.T) {
 	}
 }
 
-func TestTurnVerify_JSONShape(t *testing.T) {
-	resetTurnVerifyFlags()
+func TestRun_JSONShape(t *testing.T) {
 	bead := "ag-lmdx.5"
 	input := writeTurnInput(t, bead, closedTransitions(t, bead),
 		[]evidencedturn.Scenario{{Slug: "ao-turn-verify", HasPassingTest: true, EvidenceResolved: true}})
 	ledger := writeLedger(t, []string{beadEdgeLine(t, bead)})
 	graph := writeCleanGraph(t, bead)
 
-	out, err := executeCommand("turn", "verify", bead, "--input", input, "--ledger", ledger, "--graph", graph, "--json")
+	out, err := runForTest(bead, input, ledger, graph, true, false)
 	if err != nil {
 		t.Fatalf("turn verify --json should succeed, got err=%v\noutput=%s", err, out)
 	}
-	// The JSON object may be preceded by nothing; find the first '{'.
 	idx := strings.Index(out, "{")
 	if idx < 0 {
 		t.Fatalf("no JSON object in output:\n%s", out)
@@ -218,10 +207,7 @@ func TestTurnVerify_JSONShape(t *testing.T) {
 	}
 }
 
-// TestTurnVerify_SelfGradedRefused: a verdict whose judge_id equals author_id
-// is refused (the no-self-grading invariant, ag-lmdx.4) and exits non-zero.
-func TestTurnVerify_SelfGradedRefused(t *testing.T) {
-	resetTurnVerifyFlags()
+func TestRun_SelfGradedRefused(t *testing.T) {
 	bead := "ag-lmdx.5"
 	input := writeTurnInputGraded(t, bead, closedTransitions(t, bead),
 		[]evidencedturn.Scenario{{Slug: "ao-turn-verify", HasPassingTest: true, EvidenceResolved: true}},
@@ -229,7 +215,7 @@ func TestTurnVerify_SelfGradedRefused(t *testing.T) {
 	ledger := writeLedger(t, []string{beadEdgeLine(t, bead)})
 	graph := writeCleanGraph(t, bead)
 
-	out, err := executeCommand("turn", "verify", bead, "--input", input, "--ledger", ledger, "--graph", graph)
+	out, err := runForTest(bead, input, ledger, graph, false, false)
 	if err == nil {
 		t.Fatalf("self-graded verdict must exit non-zero\noutput=%s", out)
 	}
@@ -238,10 +224,7 @@ func TestTurnVerify_SelfGradedRefused(t *testing.T) {
 	}
 }
 
-// TestTurnVerify_AllowSelfPasses: --allow-self waives the no-self-grading guard
-// for the inline fallback path; an otherwise-complete self-graded turn is DONE.
-func TestTurnVerify_AllowSelfPasses(t *testing.T) {
-	resetTurnVerifyFlags()
+func TestRun_AllowSelfPasses(t *testing.T) {
 	bead := "ag-lmdx.5"
 	input := writeTurnInputGraded(t, bead, closedTransitions(t, bead),
 		[]evidencedturn.Scenario{{Slug: "ao-turn-verify", HasPassingTest: true, EvidenceResolved: true}},
@@ -249,7 +232,7 @@ func TestTurnVerify_AllowSelfPasses(t *testing.T) {
 	ledger := writeLedger(t, []string{beadEdgeLine(t, bead)})
 	graph := writeCleanGraph(t, bead)
 
-	out, err := executeCommand("turn", "verify", bead, "--input", input, "--ledger", ledger, "--graph", graph, "--allow-self")
+	out, err := runForTest(bead, input, ledger, graph, false, true)
 	if err != nil {
 		t.Fatalf("turn verify --allow-self should succeed, got err=%v\noutput=%s", err, out)
 	}
@@ -258,15 +241,13 @@ func TestTurnVerify_AllowSelfPasses(t *testing.T) {
 	}
 }
 
-func TestTurnVerify_NoProvenanceEventFails(t *testing.T) {
-	resetTurnVerifyFlags()
+func TestRun_NoProvenanceEventFails(t *testing.T) {
 	bead := "ag-lmdx.5"
 	input := writeTurnInput(t, bead, closedTransitions(t, bead),
 		[]evidencedturn.Scenario{{Slug: "ao-turn-verify", HasPassingTest: true, EvidenceResolved: true}})
-	// Empty ledger -> no provenance edge references the bead.
 	ledger := writeLedger(t, nil)
 
-	out, err := executeCommand("turn", "verify", bead, "--input", input, "--ledger", ledger)
+	out, err := runForTest(bead, input, ledger, "", false, false)
 	if err == nil {
 		t.Fatalf("missing provenance event must exit non-zero\noutput=%s", out)
 	}
@@ -275,15 +256,14 @@ func TestTurnVerify_NoProvenanceEventFails(t *testing.T) {
 	}
 }
 
-func TestTurnVerify_OrphanArtifactFails(t *testing.T) {
-	resetTurnVerifyFlags()
+func TestRun_OrphanArtifactFails(t *testing.T) {
 	bead := "ag-lmdx.5"
 	input := writeTurnInput(t, bead, closedTransitions(t, bead),
 		[]evidencedturn.Scenario{{Slug: "ao-turn-verify", HasPassingTest: true, EvidenceResolved: true}})
 	ledger := writeLedger(t, []string{beadEdgeLine(t, bead)})
 	graph := writeOrphanGraph(t, bead)
 
-	out, err := executeCommand("turn", "verify", bead, "--input", input, "--ledger", ledger, "--graph", graph)
+	out, err := runForTest(bead, input, ledger, graph, false, false)
 	if err == nil {
 		t.Fatalf("orphan artifact must exit non-zero\noutput=%s", out)
 	}
@@ -295,14 +275,13 @@ func TestTurnVerify_OrphanArtifactFails(t *testing.T) {
 	}
 }
 
-func TestTurnVerify_NoGraphLeavesOrphanUnchecked(t *testing.T) {
-	resetTurnVerifyFlags()
+func TestRun_NoGraphLeavesOrphanUnchecked(t *testing.T) {
 	bead := "ag-lmdx.5"
 	input := writeTurnInput(t, bead, closedTransitions(t, bead),
 		[]evidencedturn.Scenario{{Slug: "ao-turn-verify", HasPassingTest: true, EvidenceResolved: true}})
 	ledger := writeLedger(t, []string{beadEdgeLine(t, bead)})
 
-	out, err := executeCommand("turn", "verify", bead, "--input", input, "--ledger", ledger)
+	out, err := runForTest(bead, input, ledger, "", false, false)
 	if err == nil {
 		t.Fatalf("missing --graph leaves no_orphan unchecked -> not done\noutput=%s", out)
 	}
@@ -314,9 +293,8 @@ func TestTurnVerify_NoGraphLeavesOrphanUnchecked(t *testing.T) {
 	}
 }
 
-func TestTurnVerify_RequiresInputFlag(t *testing.T) {
-	resetTurnVerifyFlags()
-	out, err := executeCommand("turn", "verify", "ag-lmdx.5")
+func TestRun_RequiresInputFlag(t *testing.T) {
+	out, err := runForTest("ag-lmdx.5", "", "", "", false, false)
 	if err == nil {
 		t.Fatalf("turn verify without --input must error\noutput=%s", out)
 	}
@@ -325,13 +303,11 @@ func TestTurnVerify_RequiresInputFlag(t *testing.T) {
 	}
 }
 
-func TestTurnVerify_InputBeadMismatchErrors(t *testing.T) {
-	resetTurnVerifyFlags()
+func TestRun_InputBeadMismatchErrors(t *testing.T) {
 	input := writeTurnInput(t, "ag-other", closedTransitions(t, "ag-other"),
 		[]evidencedturn.Scenario{{Slug: "s", HasPassingTest: true, EvidenceResolved: true}})
-	ledger := writeLedger(t, nil)
 
-	out, err := executeCommand("turn", "verify", "ag-lmdx.5", "--input", input, "--ledger", ledger)
+	out, err := runForTest("ag-lmdx.5", input, "", "", false, false)
 	if err == nil {
 		t.Fatalf("mismatched bead must error\noutput=%s", out)
 	}

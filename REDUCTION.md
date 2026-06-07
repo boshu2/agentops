@@ -38,11 +38,11 @@ Current inventory count:
 
 | Bucket | Files |
 |---|---:|
-| KEEP | 460 |
-| RELOCATE | 126 |
+| KEEP | 461 |
+| RELOCATE | 124 |
 | ARCHIVE | 0 |
 | RESEARCH | 39 |
-| Total | 625 |
+| Total | 624 |
 
 Validation command:
 
@@ -140,6 +140,14 @@ adapter boundary. AO keeps the `ao agents lint` public command wrapper and
 exit-code contract in place, while script invocation, stdout/stderr forwarding,
 JSON flag forwarding, and non-zero exit mapping now live under
 `cli/internal/adapters/agentslint`.
+
+## Extracted Turn Verify Adapter Surface
+
+The Evidenced-Turn verification evaluator moved behind a local assurance
+adapter boundary. AO keeps the `ao turn verify` public command wrapper and
+verdict contract in place, while input decoding, provenance ledger loading,
+trace-graph orphan checks, predicate evaluation, and verdict rendering now live
+under `cli/internal/adapters/turnverify`.
 
 ## Reversibility
 
