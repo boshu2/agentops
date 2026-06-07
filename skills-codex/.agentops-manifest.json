@@ -1828,7 +1828,7 @@
     {
       "name": "cass",
       "source_skill": "skills/cass",
-      "source_hash": "ac12a14bdde4e1ab460ddbc89eaca4e60131fa5a875ba491e519dc8212882760",
+      "source_hash": "9ea78fd5b09210291835b4da6138aeadddf71cb57ebc0d642b10ba190f717cb5",
       "generated_hash": "706afeb3d60f98ab855f5bfa741c5b8e4204f768b5abea1063e4dbcb4eff543c"
     },
     {
@@ -1912,7 +1912,7 @@
     {
       "name": "codex-mcp-plugins",
       "source_skill": "skills/codex-mcp-plugins",
-      "source_hash": "8780db0c3500538a0f0ab82443527fb512ca7e7ea867b8adf5338bbe41d5e3bb",
+      "source_hash": "f1187f0c5ff96e2a017c4e410adaad531a0337bf1ca11bcdb127b682e9a9b241",
       "generated_hash": "f1ba0ca36eee76172d29c88235a5df2ff37eb55391ff0792ed8c2a0dbd6a4c55"
     },
     {
@@ -2194,7 +2194,7 @@
     {
       "name": "ru-multi-repo-workflow",
       "source_skill": "skills/ru-multi-repo-workflow",
-      "source_hash": "a35ea1d96aa0a590db39e0d79f5f347773968898d49d498d29ec35b5e0376c93",
+      "source_hash": "89effb5822e93733b8a9b43dec961a282adbb7db1b2b59b57c81cafd08dc7a17",
       "generated_hash": "a237b81c9fe45851fd125dfa5ed1b00e23d0d676b214b40d42bc31c5fb472fe3"
     },
     {

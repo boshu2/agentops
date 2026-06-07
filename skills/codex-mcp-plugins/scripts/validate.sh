@@ -58,7 +58,7 @@ if [ "$lines" -le 250 ]; then ok "line budget $lines/250"; else err "line budget
 
 # --- 5. Referenced skills resolve (See Also currency) ---------------------------
 for s in agent-mail beads-br caam; do
-  [ -d "$HOME/.claude/skills/$s" ] || err "referenced global skill not found: $s"
+  [ -d "$SKILL_DIR/../$s" ] || err "referenced sibling skill not found: $s"
 done
 [ -d "$SKILL_DIR/../codex-exec" ] || err "referenced sibling skill not found: codex-exec"
 
