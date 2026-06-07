@@ -15,7 +15,7 @@ import (
 )
 
 // TestRunCompile_EndToEnd_FixtureCorpus exercises `ao compile --full`
-// against a tiny .agents/ fixture with a PATH-shimmed `claude` binary
+// against a tiny .agents/ fixture with a PATH-shimmed `codex` binary
 // that echoes a canned wiki response. This catches the 2026-04-15
 // regression class (embed miss, runtime preflight silently skipped,
 // single-giant-prompt on large corpora) at integration level. It would
@@ -24,13 +24,13 @@ import (
 // The test creates a self-contained environment:
 //   - fresh tmp dir with .agents/{learnings,patterns,research}
 //   - 8 source .md files spread across the three dirs
-//   - a shell "claude" shim on PATH that returns a canned article response
-//   - runtime=claude-cli so the shim is invoked
+//   - a shell "codex" shim on PATH that returns a canned article response
+//   - runtime=codex-cli so the shim is invoked
 //   - batch-size=3 so the 8 files split across multiple batches
 //
 // Assertions:
 //   - ao compile --full succeeds
-//   - claude shim was invoked (batches > 0)
+//   - codex shim was invoked (batches > 0)
 //   - .agents/compiled/ contains >=1 compiled article
 //   - lint-report.md is generated
 //   - no "file does not exist" errors
@@ -65,7 +65,7 @@ func TestRunCompile_EndToEnd_FixtureCorpus(t *testing.T) {
 		}
 	}
 
-	// Create a PATH-shim claude binary in a bin/ dir under tmp. The shim
+	// Create a PATH-shim codex binary in a bin/ dir under tmp. The shim
 	// reads stdin and prints a canned response in the = ARTICLE = format
 	// compile.sh expects, regardless of input. This proves the runtime
 	// preflight passes, the script resolves, the batching logic fires,
@@ -74,7 +74,7 @@ func TestRunCompile_EndToEnd_FixtureCorpus(t *testing.T) {
 	if err := os.MkdirAll(shimDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	shimPath := filepath.Join(shimDir, "claude")
+	shimPath := filepath.Join(shimDir, "codex")
 	shimScript := `#!/usr/bin/env bash
 # Consume stdin so the pipe closes cleanly.
 cat >/dev/null
@@ -116,14 +116,14 @@ title: Index
 CANNED
 `
 	if err := os.WriteFile(shimPath, []byte(shimScript), 0o755); err != nil {
-		t.Fatalf("write claude shim: %v", err)
+		t.Fatalf("write codex shim: %v", err)
 	}
 
 	// Put the shim first on PATH and restore after test.
 	t.Setenv("PATH", shimDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	// Make sure we don't accidentally pick up an API key that would
 	// route the bash script down the HTTP path.
-	t.Setenv("AGENTOPS_COMPILE_RUNTIME", "claude-cli")
+	t.Setenv("AGENTOPS_COMPILE_RUNTIME", "codex-cli")
 	t.Setenv("ANTHROPIC_API_KEY", "")
 	t.Setenv("OPENAI_API_KEY", "")
 
@@ -132,7 +132,7 @@ CANNED
 	t.Cleanup(func() { testProjectDir = "" })
 
 	// Use the real runCompileScript (no stub) so we exercise the full
-	// materialize → exec bash → compile.sh → claude shim path. Keep mine
+	// materialize -> exec bash -> compile.sh -> codex shim path. Keep mine
 	// and defrag stubbed so they don't touch real git or lifecycle code.
 	origMine := runCompileMineFn
 	origDefrag := runCompileDefragFn

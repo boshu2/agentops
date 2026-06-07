@@ -28,15 +28,15 @@ require() { command -v "$1" >/dev/null 2>&1 || { echo "missing: $1" >&2; exit 12
 require rg
 
 ROOTS=(
-  "\$HOME/.claude/projects"
-  "\$HOME/.codex/sessions"
-  "\$HOME/.gemini/tmp"
-  "\$HOME/.cursor/logs"
+  "$HOME/.claude/projects"
+  "$HOME/.codex/sessions"
+  "$HOME/.gemini/tmp"
+  "$HOME/.cursor/logs"
 )
 
 run_search_local() {
   for r in "${ROOTS[@]}"; do
-    eval "real=$r"
+    local real="$r"
     [[ -d "$real" ]] || continue
     printf '\n## %s\n' "$real"
     rg --type-add 'jsonl:*.jsonl' --type jsonl --type json -l --no-messages "$PATTERN" "$real" 2>/dev/null \
