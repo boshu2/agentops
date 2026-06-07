@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "BeforeTool": [
+      {
+        "matcher": "run_shell_command",
+        "hooks": [
+          {
+            "name": "agentops-dcg",
+            "type": "command",
+            "command": "dcg",
+            "timeout": 5000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "name": "agentops-evidence-surface",
+            "type": "command",
+            "command": "ao handoff --help >/dev/null 2>&1 || true",
+            "timeout": 5000
+          }
+        ]
+      }
+    ]
+  }
+}
