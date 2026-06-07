@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
@@ -132,6 +133,48 @@ func (r *Report) Human(w io.Writer) {
 	}
 	fmt.Fprintf(w, "\n%s/%s: %d checks — %d pass, %d warn, %d fail, %d skip (%dms)\n",
 		modeString(r.Mode), r.Scope, s.Total, s.Passed, s.Warned, s.Failed, s.Skipped, r.Elapsed.Milliseconds())
+}
+
+// GitHubAnnotations writes GitHub Actions log annotations for failing or
+// advisory checks. Human/JSON output remains the primary report; annotations
+// preserve per-check CI ergonomics when validate.yml delegates to ao gate check.
+func (r *Report) GitHubAnnotations(w io.Writer) {
+	for _, res := range r.Results {
+		level := ""
+		switch res.Verdict.Status {
+		case ports.GateStatusFail:
+			if res.Check.Blocking {
+				level = "error"
+			} else {
+				level = "warning"
+			}
+		case ports.GateStatusWarn:
+			level = "warning"
+		default:
+			continue
+		}
+		msg := res.Verdict.Reason
+		if res.Err != nil {
+			msg = "evaluation error: " + res.Err.Error()
+		}
+		if res.Verdict.LogTail != "" {
+			msg += "\n" + res.Verdict.LogTail
+		}
+		fmt.Fprintf(w, "::%s title=%s::%s\n",
+			level,
+			escapeGitHubAnnotation(res.Check.ID),
+			escapeGitHubAnnotation(msg),
+		)
+	}
+}
+
+func escapeGitHubAnnotation(s string) string {
+	replacer := strings.NewReplacer(
+		"%", "%25",
+		"\r", "%0D",
+		"\n", "%0A",
+	)
+	return replacer.Replace(s)
 }
 
 func modeString(t Tier) string {

@@ -14,6 +14,11 @@ repo_root="$(git rev-parse --show-toplevel)"
 current_branch="$(git branch --show-current)"
 common_dir="$(git rev-parse --git-common-dir)"
 
+if [[ "${WORKTREE_DISPOSITION_CI_SKIP:-0}" == "1" ]]; then
+    echo "SKIP: worktree disposition is a local canonical-root gate; disabled for detached CI checkout"
+    exit 0
+fi
+
 run_git_external() {
     local target_root="$1"
     shift

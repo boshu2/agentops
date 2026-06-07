@@ -80,7 +80,7 @@ func TestGateCheck_RegisteredUnderGate(t *testing.T) {
 }
 
 func TestGateCheck_HasModeFlags(t *testing.T) {
-	for _, name := range []string{"fast", "full", "json", "fail-fast", "scope"} {
+	for _, name := range []string{"fast", "full", "json", "github-annotations", "fail-fast", "scope"} {
 		if gateCheckCmd.Flags().Lookup(name) == nil {
 			t.Errorf("ao gate check missing --%s flag", name)
 		}

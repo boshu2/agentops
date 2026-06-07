@@ -669,12 +669,13 @@ ao gate check [flags]
 **Flags:**
 
 ```
-      --fail-fast      stop after the first blocking failure
-      --fast           fast cockpit subset routed to changed files (the default; explicit flag for clarity in hooks)
-      --full           run every check (routing ignored); default is the fast changed-file subset
-  -h, --help           help for check
-      --json           emit the machine-readable JSON report
-      --scope string   fast-mode changed-file scope: head|staged|worktree|upstream (default "head")
+      --fail-fast            stop after the first blocking failure
+      --fast                 fast cockpit subset routed to changed files (the default; explicit flag for clarity in hooks)
+      --full                 run every check (routing ignored); default is the fast changed-file subset
+      --github-annotations   emit GitHub Actions annotations for WARN/FAIL checks
+  -h, --help                 help for check
+      --json                 emit the machine-readable JSON report
+      --scope string         fast-mode changed-file scope: head|staged|worktree|upstream (default "head")
 ```
 
 #### `ao gate pending`

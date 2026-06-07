@@ -26,6 +26,7 @@ var (
 	gateCheckFast     bool
 	gateCheckFull     bool
 	gateCheckJSON     bool
+	gateCheckGitHub   bool
 	gateCheckFailFast bool
 	gateCheckScope    string
 )
@@ -54,6 +55,7 @@ func init() {
 	f.BoolVar(&gateCheckFast, "fast", false, "fast cockpit subset routed to changed files (the default; explicit flag for clarity in hooks)")
 	f.BoolVar(&gateCheckFull, "full", false, "run every check (routing ignored); default is the fast changed-file subset")
 	f.BoolVar(&gateCheckJSON, "json", false, "emit the machine-readable JSON report")
+	f.BoolVar(&gateCheckGitHub, "github-annotations", false, "emit GitHub Actions annotations for WARN/FAIL checks")
 	f.BoolVar(&gateCheckFailFast, "fail-fast", false, "stop after the first blocking failure")
 	f.StringVar(&gateCheckScope, "scope", "head", "fast-mode changed-file scope: head|staged|worktree|upstream")
 	gateCmd.AddCommand(gateCheckCmd)
@@ -111,6 +113,9 @@ func runGateCheck(cmd *cobra.Command, _ []string) error {
 		fmt.Fprintln(out, string(raw))
 	} else {
 		report.Human(out)
+	}
+	if gateCheckGitHub {
+		report.GitHubAnnotations(cmd.ErrOrStderr())
 	}
 
 	if code := report.ExitCode(); code != 0 {
