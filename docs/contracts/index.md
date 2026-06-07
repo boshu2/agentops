@@ -19,6 +19,12 @@ skills, the runtime, and external integrations.
 
     Repo-local operational contract for bounded autonomous development.
 
+-   :material-call-merge: **[AO / MTO Seam](ao-mto-seam.md)**
+
+    ---
+
+    Reduction contract separating the lean AO image from the outer MTO factory.
+
 -   :material-database: **[RPI Run Registry](rpi-run-registry.md)**
 
     ---

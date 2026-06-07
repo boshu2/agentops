@@ -5,6 +5,7 @@ distillation. It does not remove code by itself; it defines the reversible
 KEEP / RELOCATE / ARCHIVE / RESEARCH decision surface for the next beads.
 
 Source boundary: `/Users/bo/dev/control-plane/AO-MTO-BOUNDARY.md`.
+AgentOps-side relocation gate: [`docs/contracts/ao-mto-seam.md`](docs/contracts/ao-mto-seam.md).
 
 ## Boundary Rule
 
@@ -77,6 +78,10 @@ lean local image.
 
 The initial ARCHIVE rows were retired in the first reduction slice. Anything
 not confidently classified is marked RESEARCH rather than cut.
+
+RELOCATE rows are gated by `docs/contracts/ao-mto-seam.md`. A relocation PR
+must route each moved surface to `mto-fleet`, `vendor-image-adapter`, or
+`defer-load-bearing`, and must keep the local AO flywheel self-contained.
 
 ## Retired Archive Surface
 
