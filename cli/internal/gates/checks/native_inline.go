@@ -1,0 +1,116 @@
+package checks
+
+import (
+	"bytes"
+	"context"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+
+	"github.com/boshu2/agentops/cli/internal/gates"
+	"github.com/boshu2/agentops/cli/internal/ports"
+)
+
+// Native ports of the bash gate's INLINE checks (no backing script). ag-3n71 PB1.
+
+func init() {
+	gates.Register(gates.Check{ID: "go.vet", Tiers: gates.Fast | gates.Full, Match: []string{"cli/**", "go.mod", "go.sum"}, Blocking: true, Run: runGoVet})
+	gates.Register(gates.Check{ID: "changelog.sync", Tiers: gates.Fast | gates.Full, Match: []string{"CHANGELOG.md", "docs/CHANGELOG.md"}, Blocking: true, Run: runChangelogSync})
+	gates.Register(gates.Check{ID: "shell.shellcheck-changed", Tiers: gates.Fast | gates.Full, Match: []string{"**/*.sh"}, Blocking: true, Run: runShellcheckChanged})
+	gates.Register(gates.Check{ID: "learning.coherence", Tiers: gates.Fast | gates.Full, Match: []string{".agents/learnings/**"}, Blocking: true, Run: runLearningCoherence})
+}
+
+// changedFilesFor returns the routed change set, falling back to the diff vs
+// origin/main when the orchestrator didn't route (Full mode).
+func changedFilesFor(ctx context.Context, rc gates.RunContext) []string {
+	if len(rc.ChangedFiles) > 0 {
+		return rc.ChangedFiles
+	}
+	cmd := exec.CommandContext(ctx, "git", "diff", "--name-only", "origin/main...HEAD")
+	cmd.Dir = rc.RepoRoot
+	out, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+	var files []string
+	for _, l := range strings.Split(string(out), "\n") {
+		if l = strings.TrimSpace(l); l != "" {
+			files = append(files, l)
+		}
+	}
+	return files
+}
+
+func runGoVet(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
+	cmd := exec.CommandContext(ctx, "go", "vet", "./...")
+	cmd.Dir = filepath.Join(rc.RepoRoot, "cli")
+	var out bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &out, &out
+	if err := cmd.Run(); err != nil {
+		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: "go vet ./... failed", LogTail: tail(out.String(), 4096)}, nil
+	}
+	return ports.GateVerdict{Status: ports.GateStatusPass, Reason: "go vet ./... ok"}, nil
+}
+
+func runChangelogSync(_ context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
+	root := filepath.Join(rc.RepoRoot, "CHANGELOG.md")
+	docs := filepath.Join(rc.RepoRoot, "docs", "CHANGELOG.md")
+	rb, rerr := os.ReadFile(root)
+	db, derr := os.ReadFile(docs)
+	if rerr != nil || derr != nil {
+		return ports.GateVerdict{Status: ports.GateStatusSkip, Reason: "CHANGELOG.md or docs/CHANGELOG.md missing"}, nil
+	}
+	if !bytes.Equal(rb, db) {
+		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: "CHANGELOG.md != docs/CHANGELOG.md (run: cp CHANGELOG.md docs/CHANGELOG.md)"}, nil
+	}
+	return ports.GateVerdict{Status: ports.GateStatusPass, Reason: "CHANGELOG in sync"}, nil
+}
+
+func runShellcheckChanged(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
+	if _, err := exec.LookPath("shellcheck"); err != nil {
+		return ports.GateVerdict{Status: ports.GateStatusSkip, Reason: "shellcheck not installed"}, nil
+	}
+	var failed []string
+	var logs bytes.Buffer
+	for _, f := range changedFilesFor(ctx, rc) {
+		if !strings.HasSuffix(f, ".sh") {
+			continue
+		}
+		if _, err := os.Stat(filepath.Join(rc.RepoRoot, f)); err != nil {
+			continue // deleted
+		}
+		cmd := exec.CommandContext(ctx, "shellcheck", "-S", "warning", f)
+		cmd.Dir = rc.RepoRoot
+		var out bytes.Buffer
+		cmd.Stdout, cmd.Stderr = &out, &out
+		if err := cmd.Run(); err != nil {
+			failed = append(failed, f)
+			logs.WriteString(out.String())
+		}
+	}
+	if len(failed) > 0 {
+		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: "shellcheck failed: " + strings.Join(failed, ", "), LogTail: tail(logs.String(), 4096)}, nil
+	}
+	return ports.GateVerdict{Status: ports.GateStatusPass, Reason: "shellcheck clean (changed .sh)"}, nil
+}
+
+func runLearningCoherence(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
+	var missing []string
+	for _, f := range changedFilesFor(ctx, rc) {
+		if !strings.HasPrefix(f, ".agents/learnings/") || !strings.HasSuffix(f, ".md") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(rc.RepoRoot, f))
+		if err != nil {
+			continue // deleted
+		}
+		if !bytes.HasPrefix(data, []byte("---")) {
+			missing = append(missing, f)
+		}
+	}
+	if len(missing) > 0 {
+		return ports.GateVerdict{Status: ports.GateStatusFail, Reason: "learnings missing frontmatter: " + strings.Join(missing, ", ")}, nil
+	}
+	return ports.GateVerdict{Status: ports.GateStatusPass, Reason: "learning frontmatter ok"}, nil
+}
