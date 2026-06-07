@@ -194,7 +194,7 @@ jobs:
       - name: Build ao
         run: |
           mkdir -p bin
-          go build -o bin/ao ./cli/cmd/ao
+          (cd cli && go build -o ../bin/ao ./cmd/ao)
 
       - name: Run Go gate shadow
         id: go_gate
