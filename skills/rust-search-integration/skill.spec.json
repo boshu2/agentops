@@ -1,0 +1,19 @@
+{
+  "name": "rust-search-integration",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Add a fast, hybrid (lexical + semantic) code-search capability to a Rust project so agents and developers can query the codebase in milliseconds — choose an indexing strategy, design an ergonomic query API, keep the index fresh with increme",
+  "triggers": [
+
+  ],
+  "inputs": [
+
+  ],
+  "outputs": [
+    "SEARCH-INTEGRATION-PLAN.md"
+  ],
+  "validation": {
+    "command": "bash skills/rust-search-integration/scripts/validate.sh"
+  }
+}

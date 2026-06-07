@@ -1,0 +1,19 @@
+{
+  "name": "golden-artifact-testing",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "",
+  "triggers": [
+
+  ],
+  "inputs": [
+
+  ],
+  "outputs": [
+
+  ],
+  "validation": {
+    "command": "bash skills/golden-artifact-testing/scripts/validate.sh"
+  }
+}
