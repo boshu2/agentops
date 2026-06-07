@@ -79,6 +79,7 @@ public-tested|session close|Covered by session close tests.
 public-tested|agent bundle|Covered by vendorimage agentbundle adapter tests and command registration tests.
 public-tested|mcp serve|Covered by mcpsurface and mcptransport adapter tests and command registration tests.
 public-tested|turn verify|Covered by turnverify adapter tests and command registration tests.
+public-tested|next-work materialize|Covered by nextworkmaterialize adapter tests and command registration tests.
 
 public-tested|hooks init|Covered by hook helper tests.
 public-tested|hooks install|Covered by hook helper tests.

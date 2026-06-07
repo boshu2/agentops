@@ -2,18 +2,14 @@
 name: agy-mcp-plugins
 user-invocable: false
 description: |-
-  Use when wiring MCP servers and packaging/installing plugins into the Antigravity (AGY) image so an AGY worker reaches the AgentOps tool substrate.
-  Triggers:
-  - "wire MCP into AGY" / "agy plugin" / "antigravity MCP server"
-  - "package the laws as an AGY plugin" / "install an AGY plugin bundle"
-  - "scope AGY's tool surface" / "least-privilege AGY tools"
+  Wire MCP servers and AgentOps plugin bundles into the AGY image with least-privilege tool access and rollback evidence.
 practices:
 - data-contracts
 - least-privilege
 hexagonal_role: driven-adapter
 consumes:
 - mcp-server
-- agy-plugin
+- skill-bundle
 produces:
 - agy-mcp-config
 - agy-plugin-install

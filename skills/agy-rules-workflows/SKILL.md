@@ -1,9 +1,8 @@
 ---
 name: agy-rules-workflows
 description: |-
-  Install or validate the flywheel's invariant laws + operating loop as Google Antigravity (AGY) native Rules and Workflows.
-  Triggers: "AGY rules", "AGY workflow", "agy-loop", "Antigravity rules/workflows", "flywheel laws on AGY", "wire the loop into agy", "/goal /schedule loop", bootstrap/repair the AGY turnout's membrane.
-  Use when bootstrapping or repairing the AGY node so an `agy` crank obeys the same laws as the Claude/Codex turnouts.
+  Install AGY rules, workflow, goal, and schedule controls for AgentOps loop law.
+  Triggers: AGY rules, agy-loop, AGY schedule.
 practices:
 - design-by-contract
 - continuous-delivery
@@ -45,7 +44,7 @@ The flywheel runs the same five laws on every harness; only the *skin* changes p
 
 The `agy` CLI is real and headless-capable: `agy -p "<prompt>"` (or `--print`) runs one prompt non-interactively; `agy plugin {list,import,install,validate}` packages skills/rules/hooks/subagents; config lives under `~/.gemini/` (Antigravity's on-disk root — `settings.json` for hooks/permissions, `skills/` for skills, `antigravity-cli/{brain,knowledge}/` for durable memory). Project rules live in `.agents/rules/`; loop workflows in `.agents/workflows/` invoked as slash commands.
 
-AGY also exposes two **native loop controls** the contract targets: **`/goal`** pins a durable objective the agent steers toward across turns (the loop's north-star — set it to the bead/epic intent), and **`/schedule`** registers a recurring tick so the loop self-cranks headless without an external cron. Express the trajectory as a Workflow (`/agy-loop`), set the objective with `/goal`, and drive the cadence with `/schedule` — these three AGY-native primitives replace the gemini-cli wrappers the legacy lane used.
+AGY also exposes two **native loop controls** the contract targets: the AGY goal command pins a durable objective the agent steers toward across turns (the loop's north-star — set it to the bead/epic intent), and the AGY schedule command registers a recurring tick so the loop self-cranks headless without an external cron. Express the trajectory as the `agy-loop` workflow, set the objective with the goal command, and drive the cadence with the schedule command — these three AGY-native primitives replace the gemini-cli wrappers the legacy lane used.
 
 ## ⚠️ Critical Constraints
 
@@ -89,9 +88,9 @@ Create `.agents/workflows/agy-loop.md` — a slash workflow expressing claim->wo
 4. **Close** — only on judge PASS with evidence mapped to each acceptance example (Rule 2). Otherwise reopen with the gap.
 5. **Persist** — write evidence + learning to the bead + `.agents/ratchet/` + an AGY artifact, then commit the scoped change (Rule 5).
 
-Bind the trajectory to AGY's native controls: set the durable objective with **`/goal "<epic/bead intent>"`** so every turn steers toward the same north-star, and register the recurring tick with **`/schedule`** (e.g. `agy -p "/schedule agy-loop --every 15m"`) so the turnout self-cranks headless instead of relying on an external cron. `/goal` carries the *what*, the Workflow carries the *how*, `/schedule` carries the *when*.
+Bind the trajectory to AGY's native controls: set the durable objective with the goal command so every turn steers toward the same north-star, and register the recurring tick with the schedule command (e.g. `agy -p "/schedule agy-loop --every 15m"`) so the turnout self-cranks headless instead of relying on an external cron. The goal command carries the *what*, the Workflow carries the *how*, and the schedule command carries the *when*.
 
-**Checkpoint:** the workflow is invocable (/agy-loop or via `agy -p "/agy-loop <intent>"`), `/goal` holds the loop's objective, `/schedule` is registered for the tick, and its steps name a *separate* validator agent — re-read it and confirm the author never appears as the judge.
+**Checkpoint:** the workflow is invocable as `agy-loop` or via `agy -p "/agy-loop <intent>"`, the goal command holds the loop's objective, the schedule command is registered for the tick, and its steps name a *separate* validator agent — re-read it and confirm the author never appears as the judge.
 
 ### Phase 4: Wire the mechanical guardrails (hooks)
 Add close/scope guards to `~/.gemini/settings.json` under `hooks` (the file already carries a `BeforeTool` `dcg` guard — extend, do not clobber). Add an `AfterTool` hook that blocks a `bd close`/`br close` lacking captured evidence, and a `BeforeTool` `run_shell_command` matcher that rejects commits outside the bead scope. See `references/agy-loop-workflow.md` for the hook stanza. This skill ships the two guards as executable stubs — `scripts/scope-guard.sh` (Rule 4) and `scripts/close-guard.sh` (Rules 2/5) — wired and safe (they no-op until you implement the marked tracker-read section, then they ENFORCE).

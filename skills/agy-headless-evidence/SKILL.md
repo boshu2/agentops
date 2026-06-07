@@ -2,10 +2,7 @@
 name: agy-headless-evidence
 user-invocable: false
 description: |-
-  Use when running Antigravity (AGY) headlessly — scheduled ticks or one-shot `agy -p` via the
-  agentapi sidecar — and capturing durable, machine-checkable JSONL evidence of each run.
-  Triggers: "agy headless", "agy -p evidence", "agentapi sidecar", "scheduled AGY tick",
-  "AGY run proof", "headless Antigravity worker".
+  Run AGY headlessly via scheduled ticks or `agy -p`, capturing agentapi JSONL evidence for validation.
 practices:
 - design-by-contract
 - evidence-over-assertion

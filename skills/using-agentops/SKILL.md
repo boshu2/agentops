@@ -151,6 +151,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/eval-outcomes` | Grade via Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes |
 | `/operating-loop-workflow` | Install + run the operating-loop multi-agent Workflow (seven-move loop) |
 | `/autodev` | PROGRAM.md autonomous development contract setup and validation |
+| `agy-rules-workflows` | Install AGY-native rules, loop workflow, and scheduled goal controls |
 | `/dream` | **Retired** — out-of-session compounding moved to Gas City; pointer skill only |
 | `/doc` | Documentation generation — repo docs (default), gold-standard README (`--mode=readme`), OSS doc packs (`--mode=oss`) |
 | `/retro` | Quick-capture a learning (full retro → /post-mortem) |

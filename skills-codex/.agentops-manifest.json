@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "13315c78da495184911db35792d282ed9e13694fa3c418ed25306297a9b230a0",
+  "codex_override_catalog_hash": "617c731e428a28ef3440dedaae01a883b4dc457bd979e0d550d4820c79f04317",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -1223,28 +1223,16 @@
         "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
       },
       {
-        "name": "gemini-native",
+        "name": "agy-headless-evidence",
         "treatment": "parity_only",
         "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for Gemini image operator skill."
+        "reason": "Codex parity wrapper for AGY image operator skill."
       },
       {
-        "name": "gemini-headless-evidence",
+        "name": "agy-mcp-plugins",
         "treatment": "parity_only",
         "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for Gemini image operator skill."
-      },
-      {
-        "name": "gemini-skills-extensions",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for Gemini image operator skill."
-      },
-      {
-        "name": "gemini-mcp-hooks",
-        "treatment": "parity_only",
-        "wave": "catalog-parity",
-        "reason": "Codex parity wrapper for Gemini image operator skill."
+        "reason": "Codex parity wrapper for AGY image operator skill."
       }
     ]
   },
@@ -1708,7 +1696,7 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "5945f18eb9355fedab47caa16482994b1364bcf1d5dbe81f9622910c36a9708d",
+      "source_hash": "3a3fc07e4a6c0e6619d5b6530ba4a23ed8280e3991d54e7bee13131ffacc6f9d",
       "generated_hash": "735b597064004bb405fff1199a12bf163eddccfe5b53155a4f55d6459a84c364"
     },
     {
@@ -1754,16 +1742,28 @@
       "generated_hash": "e66befdbae502fe31a8b1094e7ff90c6779abfdd6ec01723c65cfa641a346ae6"
     },
     {
+      "name": "agy-headless-evidence",
+      "source_skill": "skills/agy-headless-evidence",
+      "source_hash": "b7716f8e09598c7111722b768fd4728b1b0cfcd42a02ce49c6960f70df83bc81",
+      "generated_hash": "370fa02209ccdef1e3a2383e2671275dcf4c9e5c93ae2b22a958f3e5bc2b4aa4"
+    },
+    {
+      "name": "agy-mcp-plugins",
+      "source_skill": "skills/agy-mcp-plugins",
+      "source_hash": "283657b15f12da3781823a47eaa4cde8e147d772bf52203a20eb62aab3f7ba43",
+      "generated_hash": "169e9f7e8acde4ee71ed7f959a52cfb241a3dd3780a649ba69ee6d984e722825"
+    },
+    {
       "name": "agy-native",
       "source_skill": "skills/agy-native",
-      "source_hash": "e53e7993b79b89d65dc3aeca1eb2d0230d6f2e1a4988442a5dba88841258fe5b",
-      "generated_hash": "3fe609c7031139a18553e6e28e36cb72aed5114a037fdee2266c69a9dbd4a421"
+      "source_hash": "7ebdb7677b145f744babdec6451233d751b9fabe864eb91955d83b86e429fa78",
+      "generated_hash": "191740cb1747708f350a619f3595e720aa25e7f393ae741dd3e248b6325ae411"
     },
     {
       "name": "agy-rules-workflows",
       "source_skill": "skills/agy-rules-workflows",
-      "source_hash": "480777fe167ec38c824016fbb51de26cafdfc800005d3f5cc3eaf56eba1e1732",
-      "generated_hash": "932e320aaa5e56888fd1a8e63d22a3f5bbe16b7208823129ce99784b135f6000"
+      "source_hash": "3dffe963ee4f75a09b310866bc1909c9467cf96237e59ce4fc3565927933956e",
+      "generated_hash": "43e8906db0f9a6e9ea7d24e55282d3bac2ac53d2fa0bad4cec30a98c700efef2"
     },
     {
       "name": "artifact-clarity-pass",
@@ -1974,30 +1974,6 @@
       "source_skill": "skills/gcloud",
       "source_hash": "08b68072d2f2a109837ee071b1111bae9b925367c68e3e863bff065c77381694",
       "generated_hash": "45a54450c1d2b502b5d98efce412362e785ba25f14758023c78b30e3e49a5ee0"
-    },
-    {
-      "name": "gemini-headless-evidence",
-      "source_skill": "skills/gemini-headless-evidence",
-      "source_hash": "61fc0c89202fb661d88b4f63a82a529286a183fec3242625eb566bf58c9b811e",
-      "generated_hash": "1aa189ff1052bed37cb48cb5a8c7d3d383855f27da399199ef35785352dff9e1"
-    },
-    {
-      "name": "gemini-mcp-hooks",
-      "source_skill": "skills/gemini-mcp-hooks",
-      "source_hash": "60ddd1f714b27c845b0ae9724ad32a6a7bffe25db0ea8f8e569e256473eddc8e",
-      "generated_hash": "b91f40b8e4755040b1892025decd76ab4b8b8753f79d2a56a57c543be0f19d41"
-    },
-    {
-      "name": "gemini-native",
-      "source_skill": "skills/gemini-native",
-      "source_hash": "34f84ae81e2075014594da33bb922d87bb59eeeaa033a22df45948763f48b5c5",
-      "generated_hash": "947a4454ed3e409cb4fd55a90e2178842561af2ba2da9cbed74f1fe3b71a80bc"
-    },
-    {
-      "name": "gemini-skills-extensions",
-      "source_skill": "skills/gemini-skills-extensions",
-      "source_hash": "869b3b5d6ef8250962011d1bdb80e1df46a558a92e0e63b3cf5aa36a33b336d8",
-      "generated_hash": "1fe15b0147be55459be2826186fdc9698e04dc825b0ff3f4aa83aa178ffddea8"
     },
     {
       "name": "gh-actions",

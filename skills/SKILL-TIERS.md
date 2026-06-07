@@ -221,7 +221,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (164)
+### User-Facing Skills (162)
 
 **Judgment:**
 
@@ -338,6 +338,8 @@ These are how skills chain in practice:
 |-------|------|-------------|
 | **acfs** | orchestration | Use when operating ACFS flywheel health checks, init, and agent loop tooling from ~/acfs/bin/acfs. |
 | **agent-mail** | execution | Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. |
+| **agy-headless-evidence** | execution | Use when running Antigravity (AGY) headlessly and capturing durable, machine-checkable JSONL evidence of each run. |
+| **agy-mcp-plugins** | execution | Use when wiring MCP servers and packaging/installing plugins into the Antigravity (AGY) image so an AGY worker reaches the AgentOps tool substrate. |
 | **agy-native** | cross-vendor | Use when driving AgentOps work natively in Google Antigravity with claims, validation, closeout, and persistence. |
 | **agy-rules-workflows** | orchestration | Use when installing or validating AgentOps rules and workflows for Google Antigravity. |
 | **artifact-clarity-pass** | judgment | Use when removing generic filler from code, docs, or handoffs while preserving every load-bearing fact. |
@@ -375,10 +377,6 @@ These are how skills chain in practice:
 | **filesystem-path-rationalization** | execution | Use when rationalizing file or directory layout and updating references without breaking builds. |
 | **fuzz-test-design** | execution | Use when designing fuzz, property, randomized, or corpus-based tests and replaying failures. |
 | **gcloud** | execution | Google Cloud Platform CLI - manage GCP resources. Use when working with Compute Engine, Cloud Run, GKE, Cloud Functions, Storage, BigQuery, or other GCP services. |
-| **gemini-headless-evidence** | execution | Use when running Gemini CLI headlessly and capturing structured, machine-checkable evidence. |
-| **gemini-mcp-hooks** | execution | Use when wiring MCP servers, hooks, and scoped tool policy into the Gemini CLI image. |
-| **gemini-native** | cross-vendor | Use when driving AgentOps natively on Gemini CLI with skills, MCP, hooks, worktrees, and structured output. |
-| **gemini-skills-extensions** | execution | Use when installing, linking, enabling, disabling, or validating AgentOps skills for Gemini. |
 | **gh-actions** | execution | Use when creating GitHub Actions workflows, release automation, checksums, signing, or CI/CD. |
 | **gh-cli** | execution | GitHub CLI (gh) for repos, issues, PRs, actions, releases. Use when working with GitHub or running gh commands. |
 | **gh-triage-ru** | execution | GitHub issue/PR triage via ru and gh. Use when processing issues, closing PRs (no-contributions policy), or bulk triage. Independent verification required. |

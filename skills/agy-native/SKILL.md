@@ -1,12 +1,8 @@
 ---
 name: agy-native
 description: |-
-  Use when driving AgentOps work natively in Google Antigravity (AGY) — the loop (claim/work/validate/close/persist) plus the AGY plugin, brain/memory, headless, scoped-worktree, and skill/plugin distribution surfaces.
-  Triggers:
-  - "agy" / "antigravity" / "drive the loop on Antigravity"
-  - "agy plugin import/install/link" / "expose a skill to AGY"
-  - "agy --print headless tick" / "author!=judge on Antigravity"
-  - "AGY brain / knowledge store" / "third image after Claude and Codex"
+  Drive AgentOps in AGY: loop, plugins, memory, evidence, scoped worktrees.
+  Triggers: agy, antigravity, agy plugin, AGY evidence.
 practices:
 - team-topologies
 - continuous-delivery
@@ -162,7 +158,7 @@ On a split or false-FAIL, spawn a third **tie-break** subagent. Close the bead (
 
 - **[references/distribution-and-run-control.md](references/distribution-and-run-control.md)** — full plugin verb list, install-vs-link discipline, mutation protocol, the permission×output×scope matrix (AGY equivalents for retired gemini flags), and the brain evidence layout.
 - Research input: `~/.agents/research/agy-native-harness-2026-06-06.md` (AGY primitives, official docs index, open questions).
-- Sibling AGY skills: `agy-rules-workflows` (`/goal`,`/schedule` loop law), `agy-mcp-plugins` (MCP servers + plugin packaging), `agy-headless-evidence` (agentapi sidecar + JSONL evidence).
+- Sibling AGY skills: `agy-rules-workflows` (goal/schedule loop law), `agy-mcp-plugins` (MCP servers + plugin packaging), `agy-headless-evidence` (agentapi sidecar + JSONL evidence).
 - Sibling images / loop substrate: `ntm` (tmux swarms), `beads-br` (br tracker), `agent-mail` (coordination), `dcg` (destructive-command guard), `caam` (account lanes).
 - Loop doctrine: control-plane LEARNINGS (author!=judge, evidence-gated close); memory `never claude -p for workers`; ACFS invoke-never-rebuild + fork-and-own doctrine.
 - Official Antigravity docs: cli-overview, cli-plugins, subagents, hooks, ide-workflows, ide-rules (see research file for URLs).
