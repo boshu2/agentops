@@ -22,6 +22,7 @@ jobs:
         continue-on-error: true
         run: |
           chmod +x scripts/check-missing.sh
+          echo "run scripts/check-echo-only.sh if this fails"
           ./scripts/check-missing.sh
 `)
 	if err := os.WriteFile(filepath.Join(root, ".github", "workflows", "validate.yml"), workflow, 0o644); err != nil {

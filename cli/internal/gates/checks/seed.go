@@ -12,14 +12,18 @@ import "github.com/boshu2/agentops/cli/internal/gates"
 
 // Change-class path globs (ported from the bash gate's HAS_<CLASS> regexes).
 var (
-	goPaths       = []string{"cli/**", "go.mod", "go.sum"}
-	skillPaths    = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
+	goPaths         = []string{"cli/**", "go.mod", "go.sum"}
+	skillPaths      = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
 	contractPaths   = []string{"docs/contracts/**", "schemas/**"}
 	ciPolicyPaths   = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
 	evalPaths       = []string{"evals/**", "schemas/eval-*", "cli/internal/eval/**"}
 	contextMapPaths = []string{"skills/**", "docs/contracts/context-map.md"}
 	swarmPaths      = []string{".agents/swarm/**", "schemas/swarm-*"}
 	docsPaths       = []string{"docs/**", "README.md", "CHANGELOG.md", "PRODUCT.md", "SKILL-TIERS.md"}
+	agentsDocPaths  = []string{"AGENTS.md", "AGENTS-WORKFLOW.md", "AGENTS-CI.md", "AGENTS-CODEX.md", "AGENTS-RUNTIME.md", ".github/workflows/validate.yml"}
+	corpusPaths     = []string{".agents/**", "docs/canon/**", "canon/**"}
+	goalsPaths      = []string{"GOALS.md", "spec/scenarios/**", "docs/adr/ADR-0003*"}
+	registryPaths   = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}
 )
 
 func init() {
@@ -54,25 +58,47 @@ func init() {
 		{ID: "skill.codex-rpi-contract", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-rpi-contract.sh"},
 		{ID: "skill.codex-lifecycle-guards", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-lifecycle-guards.sh"},
 		{ID: "skill.codex-generated-artifacts", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-codex-generated-artifacts.sh"},
+		{ID: "skill.heal-strict", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "skills/heal-skill/scripts/heal.sh", Args: []string{"--strict"}},
+		{ID: "skill.frontmatter-v2", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-frontmatter.sh"},
+		{ID: "skill.body-refs", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-body-refs.sh"},
+		{ID: "skill.flow", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-flow.sh"},
+		{ID: "skill.domain-map-golden", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "generate-skill-domain-map.sh", Args: []string{"--check"}},
+		{ID: "skill.scenario-test-linkage", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "check-scenario-test-linkage.sh"},
 
 		// go class
 		{ID: "go.home-isolation", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-home-isolation.sh"},
 		{ID: "go.test-home-isolation", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-test-home-isolation.sh"},
+		{ID: "go.complexity", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "check-go-complexity.sh"},
+		{ID: "go.cli-reference", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "generate-cli-reference.sh", Args: []string{"--check"}},
+		{ID: "go.cli-surface-counts", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "update-cli-surface-counts.sh"},
+		{ID: "go.test-count-regression", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "check-test-count-regression.sh"},
+		{ID: "go.test-isolation", Tiers: gates.Full, Match: goPaths, Blocking: true, Backing: "check-test-isolation.sh"},
+		{ID: "go.test-staleness", Tiers: gates.Full, Match: goPaths, Blocking: false, Backing: "check-test-staleness.sh"},
 
 		// contract / context-map / swarm classes
 		{ID: "contract.compatibility", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-contract-compatibility.sh"},
 		{ID: "contract.context-map-drift", Tiers: gates.Fast | gates.Full, Match: contextMapPaths, Blocking: true, Backing: "validate-context-map-drift.sh"},
+		{ID: "contract.registry-json", Tiers: gates.Full, Match: registryPaths, Blocking: true, Backing: "generate-registry.sh", Args: []string{"--check"}},
+		{ID: "contract.sku-catalog-drift", Tiers: gates.Full, Match: registryPaths, Blocking: true, Backing: "validate-sku-catalog-drift.sh"},
+		{ID: "docs.agents-split", Tiers: gates.Full, Match: agentsDocPaths, Blocking: true, Backing: "validate-agents-split.sh"},
 		{ID: "swarm.evidence", Tiers: gates.Fast | gates.Full, Match: swarmPaths, Blocking: true, Backing: "validate-swarm-evidence.sh"},
 
 		// always-run structural invariants (no Match)
 		{ID: "always.author-judge-convergence", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-author-judge-convergence.sh"},
 		{ID: "always.contracts-structural-floor", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-contracts-structural-floor.sh"},
 		{ID: "always.docs-learning-references", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-docs-learning-references.sh"},
+		{ID: "always.docs-hookless", Tiers: gates.Full, Blocking: true, Backing: "check-doc-hooks-drift.sh"},
 		{ID: "always.flywheel-compounding-snapshot", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-flywheel-compounding-snapshot.sh"},
 		{ID: "always.retrieval-manifest-paths", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-retrieval-manifest-paths.sh"},
 		{ID: "always.wiring-closure", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-wiring-closure.sh"},
 		{ID: "always.bd-closeout-contract", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-bd-closeout-contract.sh"},
 		{ID: "always.domain-evolution-plan", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-agentops-domain-evolution-plan.sh"},
+		{ID: "always.file-manifest-overlap", Tiers: gates.Full, Blocking: true, Backing: "check-file-manifest-overlap.sh"},
+		{ID: "always.regen-all", Tiers: gates.Full, Blocking: true, Backing: "regen-all.sh", Args: []string{"--check"}},
+		{ID: "always.three-gap-supergate", Tiers: gates.Full, Match: goalsPaths, Blocking: true, Backing: "check-three-gap-supergate.sh"},
+		{ID: "always.sovereignty-proof-citations", Tiers: gates.Full, Match: docsPaths, Blocking: true, Backing: "validate-sovereignty-proof-citations.sh"},
+		{ID: "corpus.secret-scan", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "check-corpus-secret-scan.sh"},
+		{ID: "corpus.witness-dolt-jsonl-crosscheck", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "witness-dolt-jsonl-crosscheck.sh"},
 
 		// full-mode-only / advisory (mirror the bash gate: these skip in fast or warn)
 		{ID: "full.worktree-disposition", Tiers: gates.Full, Blocking: true, Backing: "check-worktree-disposition.sh"},

@@ -12,9 +12,10 @@ import (
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
-// ScriptRunner runs scripts/<name> (name is the full basename including the
-// prefix and .sh suffix, e.g. "check-registry-drift.sh" or
-// "validate-skill-schema.sh") and maps its exit code to a GateVerdict.
+// ScriptRunner runs a shell-backed check and maps its exit code to a
+// GateVerdict. Basename backings resolve under scripts/ (for example
+// "check-registry-drift.sh"). Path backings resolve from the repo root (for
+// example "skills/heal-skill/scripts/heal.sh").
 //
 // It satisfies ports.GateRunnerPort, so the orchestrator can shell to ANY
 // scripts/* gate — both check-*.sh and validate-*.sh — not only the check-*
@@ -27,7 +28,7 @@ type ScriptRunner struct {
 // NewScriptRunner returns a ScriptRunner rooted at repoRoot.
 func NewScriptRunner(repoRoot string) *ScriptRunner { return &ScriptRunner{repoRoot: repoRoot} }
 
-// Run executes scripts/<req.Name> and returns its verdict.
+// Run executes the requested backing and returns its verdict.
 func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports.GateVerdict, error) {
 	if err := ctx.Err(); err != nil {
 		return ports.GateVerdict{}, err
@@ -37,6 +38,9 @@ func (s *ScriptRunner) Run(ctx context.Context, req ports.GateRunRequest) (ports
 		return ports.GateVerdict{Status: ports.GateStatusUnknown, Reason: "empty gate name"}, nil
 	}
 	script := filepath.Join(s.repoRoot, "scripts", name)
+	if strings.Contains(name, "/") {
+		script = filepath.Join(s.repoRoot, name)
+	}
 	if fi, err := os.Stat(script); err != nil || fi.IsDir() {
 		return ports.GateVerdict{Status: ports.GateStatusUnknown, Reason: fmt.Sprintf("no script %s", script)}, nil
 	}
