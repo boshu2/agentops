@@ -101,7 +101,7 @@ Append-only ledger in `.agents/`. Every session writes. Freshness decay prunes. 
      └──────────────│ flywheel │◄──────────────────────┘
                     └──────────┘
 
-User-facing: /compile (query + grow), /retro (quick-capture), /post-mortem (full), /flywheel
+User-facing: /compile (query + grow), /post-mortem --quick (quick-capture), /post-mortem (full), /flywheel
 Background:  inject, forge, ratchet
 CLI:         ao lookup, ao extract, ao forge, ao maturity
 ```
@@ -135,7 +135,7 @@ What are you trying to do?
 │
 ├─ "Learn from past work"
 │   ├─ What do we know about X? ──► /compile <query>
-│   ├─ Save this insight ─────────► /retro --quick "insight"
+│   ├─ Save this insight ─────────► /post-mortem --quick "insight"
 │   ├─ Full retrospective ────────► /post-mortem
 │   └─ Trace a decision ─────────► /trace <concept>
 │
@@ -179,7 +179,7 @@ What are you trying to do?
 │
 ├─ "Parallelize work"
 │   ├─ Multiple independent tasks ► /swarm
-│   ├─ Codex agents specifically ─► /codex-team
+│   ├─ Codex agents specifically ─► /swarm
 │   └─ Full epic with waves ──────► /crank <epic-id>
 │
 ├─ "Session management"
@@ -203,7 +203,7 @@ These are how skills chain in practice:
 | **Planned epic** | `/plan` → `/pre-mortem` → `/crank` → `/post-mortem` | Multi-issue, structured |
 | **Full pipeline** | `/rpi` (chains all above) | End-to-end, autonomous |
 | **Evolve loop** | `/evolve` (chains `/rpi` repeatedly) | Fitness-scored improvement |
-| **PR contribution** | `/pr-research` → `/plan` → `/pr-implement` → `/pr-validate` → `/pr-prep` | External repo |
+| **PR contribution** | `/pr-research` → `/plan` → `/pr-implement` → `/validate --mode=pr` → `/pr-prep` | External repo |
 | **Knowledge query** | `/compile` → `/research` (if gaps) | Understanding before building |
 | **Standalone review** | `/council validate <target>` | Ad-hoc multi-judge review |
 | **Time-boxed pipeline** | `/rpi --budget=research:180,plan:120` | Prevent research/plan stalls |

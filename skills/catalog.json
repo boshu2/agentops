@@ -1,8 +1,44 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-02T23:56:18Z",
-  "skill_count": 82,
+  "generated_at": "2026-06-07T20:14:11Z",
+  "skill_count": 158,
   "skills": [
+    {
+      "name": "acfs",
+      "description": "|-",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [
+        "substrate-health-report"
+      ],
+      "practices": [
+        "pragmatic-programmer",
+        "continuous-delivery"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "operating-loop-skill"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "agent-mail",
+      "description": "Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 8,
+      "codex_override_present": true
+    },
     {
       "name": "agent-native",
       "description": "Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native — via skills + the ao CLI + CI, not hooks.",
@@ -11,7 +47,7 @@
       "consumes": [
         "standards",
         "converter",
-        "validation"
+        "validate"
       ],
       "produces": [
         "docs/contracts/agent-runtime-profile.md"
@@ -21,7 +57,130 @@
         "ddd"
       ],
       "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "agy-headless-evidence",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "agy-native"
+      ],
+      "produces": [
+        "agy-evidence-dir"
+      ],
+      "practices": [
+        "design-by-contract",
+        "evidence-over-assertion"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "agy-native"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "validate"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "agy-mcp-plugins",
+      "description": "|-",
+      "hexagonal_role": "driven-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "mcp-server",
+        "skill-bundle"
+      ],
+      "produces": [
+        "agy-mcp-config",
+        "agy-plugin-install"
+      ],
+      "practices": [
+        "data-contracts",
+        "least-privilege"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "agy-native"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "agy-native",
+      "description": "|-",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "operating-loop-skill"
+      ],
+      "produces": [
+        "agy-run-evidence"
+      ],
+      "practices": [
+        "team-topologies",
+        "continuous-delivery"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "operating-loop-skill"
+        }
+      ],
       "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "agy-rules-workflows",
+      "description": "|-",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": true,
+      "consumes": [
+        "operating-loop-workflow"
+      ],
+      "produces": [
+        "agy-rules",
+        "agy-workflows"
+      ],
+      "practices": [
+        "design-by-contract",
+        "continuous-delivery"
+      ],
+      "context_rel": [
+        {
+          "kind": "conformist-to",
+          "with": "operating-loop-workflow"
+        }
+      ],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "artifact-clarity-pass",
+      "description": "|-",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "code-complete",
+        "refactoring"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "standards"
+        }
+      ],
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -38,6 +197,20 @@
         "cmm-process-maturity",
         "ai-assisted-dev",
         "dora-metrics"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "automation-loop-hardening",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
       ],
       "context_rel": [],
       "references_count": 0,
@@ -89,6 +262,91 @@
       "codex_override_present": true
     },
     {
+      "name": "bead-completion-audit",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "closed-beads"
+      ],
+      "produces": [
+        "compliance-report.md"
+      ],
+      "practices": [
+        "design-by-contract",
+        "evidence-over-assertion",
+        "cmm-process-maturity"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "beads-br"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "post-mortem"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "bead-tracker-migration",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "beads-br",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 4,
+      "codex_override_present": true
+    },
+    {
+      "name": "beads-bv",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "beads-workflow",
+      "description": "Use when converting markdown plans into br beads with dependencies for implementation or swarm execution.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
       "name": "beads",
       "description": "Track issues with bd/br, triage with bv, and convert plans to beads.",
       "hexagonal_role": "driven-adapter",
@@ -114,6 +372,20 @@
         }
       ],
       "references_count": 19,
+      "codex_override_present": true
+    },
+    {
+      "name": "behavior-preserving-simplification",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -216,20 +488,383 @@
       "codex_override_present": true
     },
     {
-      "name": "codex-team",
-      "description": "Coordinate multiple Codex agents.",
+      "name": "caam",
+      "description": "Use when switching AI coding CLI accounts quickly to recover from subscription rate limits or OAuth friction.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "casr",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "cass-memory",
+      "description": "Use when starting non-trivial work, mining lessons, or preventing repeated mistakes with cm procedural memory.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 5,
+      "codex_override_present": true
+    },
+    {
+      "name": "cass",
+      "description": "Mine past agent sessions for working prompts, decisions, and patterns. Use when \"what did I ask?\", \"find that prompt\", session archaeology, or agent history.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 16,
+      "codex_override_present": true
+    },
+    {
+      "name": "cc-cron-ticks",
+      "description": "|-",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": true,
+      "consumes": [
+        "evolve",
+        "autodev"
+      ],
+      "produces": [
+        "scheduled-tick"
+      ],
+      "practices": [
+        "agile-manifesto",
+        "continuous-delivery"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "evolve"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "cc-hooks",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 4,
+      "codex_override_present": true
+    },
+    {
+      "name": "cc-loop-driver",
+      "description": "|-",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": true,
+      "consumes": [
+        "beads",
+        "validate"
+      ],
+      "produces": [
+        "evidence/<id>.md",
+        "git-commit"
+      ],
+      "practices": [
+        "design-by-contract",
+        "continuous-delivery",
+        "agile-manifesto"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "beads"
+        },
+        {
+          "kind": "customer-of",
+          "with": "validate"
+        }
+      ],
+      "references_count": 2,
+      "codex_override_present": true
+    },
+    {
+      "name": "cc-subagents",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [
+        "subagent-dispatch-plan"
+      ],
+      "practices": [
+        "team-topologies",
+        "mythical-man-month"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "cc-loop-driver"
+        }
+      ],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "cc-worktree-isolation",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "git-worktree"
+      ],
+      "produces": [
+        "isolated-worktree-plan"
+      ],
+      "practices": [
+        "team-topologies",
+        "continuous-delivery"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "cc-subagents"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "changelog-quality-pass",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "cli-agent-ux-audit",
+      "description": "|-",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
       "produces": [
-        ".agents/swarm/results/*.json"
+        "ergonomics-scorecard",
+        "remediation-plan"
       ],
       "practices": [
-        "team-topologies",
-        "ai-assisted-dev"
+        "hexagonal-architecture",
+        "pragmatic-programmer",
+        "design-for-the-machine"
+      ],
+      "context_rel": [
+        {
+          "kind": "partnership",
+          "with": "installer-workmanship"
+        },
+        {
+          "kind": "partnership",
+          "with": "readme-writing"
+        }
+      ],
+      "references_count": 2,
+      "codex_override_present": true
+    },
+    {
+      "name": "cli-doctoring-workflow",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "cli-source",
+        "command-help",
+        "error-reports",
+        "installation-docs",
+        "support-history"
+      ],
+      "produces": [
+        "doctor-command-design",
+        "diagnostic-audit",
+        "repair-hint-plan",
+        "health-check-contract"
+      ],
+      "practices": [
+        "pragmatic-programmer",
+        "docs-as-code",
+        "operational-diagnostics"
       ],
       "context_rel": [],
-      "references_count": 2,
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "codebase-briefing-report",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "codebase-briefing-report"
+      ],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "codebase-risk-audit",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "repository",
+        "test-results",
+        "runtime-configuration"
+      ],
+      "produces": [
+        "codebase-risk-audit-report"
+      ],
+      "practices": [
+        "code-review",
+        "threat-modeling",
+        "operational-readiness"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "plan"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "validate"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "codex-exec",
+      "description": "|-",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "codex-run-output"
+      ],
+      "practices": [
+        "pragmatic-programmer",
+        "continuous-delivery"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "codex-sandbox-evidence"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "codex-goals",
+      "description": "|-",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [
+        "codex-goal-state"
+      ],
+      "practices": [
+        "agile-manifesto",
+        "continuous-delivery"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "codex-mcp-plugins",
+      "description": "|-",
+      "hexagonal_role": "driven-adapter",
+      "user_invocable": true,
+      "consumes": [
+        "mcp-server",
+        "codex-plugin"
+      ],
+      "produces": [
+        "codex-config"
+      ],
+      "practices": [
+        "data-contracts",
+        "twelve-factor-app"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "codex-exec"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "codex-sandbox-evidence",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [
+        "codex-exec"
+      ],
+      "produces": [
+        "codex-evidence-jsonl"
+      ],
+      "practices": [
+        "design-by-contract",
+        "data-contracts"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "codex-exec"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "validate"
+        }
+      ],
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -275,6 +910,46 @@
       "codex_override_present": true
     },
     {
+      "name": "concurrency-deadlock-remediation",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "debugging",
+        "defensive-programming",
+        "root-cause-analysis"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "contract-conformance-testing",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "standards",
+        "test",
+        "validate"
+      ],
+      "produces": [
+        "conformance harness plan",
+        "executable conformance cases",
+        "compatibility verdict matrix"
+      ],
+      "practices": [
+        "tdd",
+        "bdd-gherkin",
+        "continuous-delivery"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "converter",
       "description": "Convert AgentOps skill formats.",
       "hexagonal_role": "generic",
@@ -293,7 +968,7 @@
     },
     {
       "name": "council",
-      "description": "Run multi-judge consensus.",
+      "description": "Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [
@@ -361,6 +1036,46 @@
         "lean-startup"
       ],
       "context_rel": [],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "dcg",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 6,
+      "codex_override_present": true
+    },
+    {
+      "name": "dependency-update-safety",
+      "description": "|-",
+      "hexagonal_role": "driven-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "repo-context",
+        "manifest-and-lockfile"
+      ],
+      "produces": [
+        "dependency-update-report.md"
+      ],
+      "practices": [
+        "evidence-driven",
+        "supply-chain-integrity",
+        "incremental-change"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "validate"
+        }
+      ],
       "references_count": 0,
       "codex_override_present": true
     },
@@ -391,7 +1106,7 @@
     },
     {
       "name": "design",
-      "description": "Validate product fit before discovery.",
+      "description": "Validate product fit before discovery. Use when: framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.",
       "hexagonal_role": "domain",
       "user_invocable": true,
       "consumes": [
@@ -481,25 +1196,7 @@
         "pragmatic-programmer"
       ],
       "context_rel": [],
-      "references_count": 17,
-      "codex_override_present": true
-    },
-    {
-      "name": "dream",
-      "description": "Retired pointer — out-of-session compounding moved to the substrate (NTM + MCP + managed-agents).",
-      "hexagonal_role": "supporting",
-      "user_invocable": true,
-      "consumes": [],
-      "produces": [
-        ".agents/research/*.md"
-      ],
-      "practices": [
-        "lean-startup",
-        "wiki-knowledge-surface",
-        "sre"
-      ],
-      "context_rel": [],
-      "references_count": 0,
+      "references_count": 19,
       "codex_override_present": true
     },
     {
@@ -508,7 +1205,7 @@
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
-        "validation",
+        "validate",
         "ratchet",
         "council"
       ],
@@ -549,7 +1246,77 @@
           "with": "rpi"
         }
       ],
-      "references_count": 26,
+      "references_count": 27,
+      "codex_override_present": true
+    },
+    {
+      "name": "expertise-to-procedure",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "playbook",
+        "checklist",
+        "skill"
+      ],
+      "practices": [
+        "code-complete",
+        "refactoring"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "skill-builder"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "external-search-triage",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "repo-context",
+        "task-question",
+        "external-source-candidates"
+      ],
+      "produces": [
+        "search-triage-note",
+        "citation-log",
+        "grounded-next-actions"
+      ],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "filesystem-path-rationalization",
+      "description": "|-",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        "repo-tree",
+        "convention-target"
+      ],
+      "produces": [
+        "layout-plan",
+        "move-map",
+        "verified-tree"
+      ],
+      "practices": [
+        "inventory-before-action",
+        "one-convention",
+        "reference-graph-first",
+        "atomic-move-then-fix"
+      ],
+      "context_rel": [],
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -598,6 +1365,87 @@
       "codex_override_present": true
     },
     {
+      "name": "fuzz-test-design",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "repo-context",
+        "test-target",
+        "failure-report"
+      ],
+      "produces": [
+        "fuzz-test-plan",
+        "minimized-repro",
+        "regression-test",
+        "ci-budget"
+      ],
+      "practices": [
+        "property-based-testing",
+        "chaos-testing",
+        "tdd"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "gcloud",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 2,
+      "codex_override_present": true
+    },
+    {
+      "name": "gh-actions",
+      "description": "Use when creating GitHub Actions workflows, release automation, checksums, signing, or CI/CD.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 20,
+      "codex_override_present": true
+    },
+    {
+      "name": "gh-cli",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
+      "name": "gh-triage-ru",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 6,
+      "codex_override_present": true
+    },
+    {
       "name": "goals",
       "description": "Maintain AgentOps goals.",
       "hexagonal_role": "domain",
@@ -621,21 +1469,17 @@
       "codex_override_present": true
     },
     {
-      "name": "grafana-platform-dashboard",
-      "description": "Validate OpenShift Grafana dashboards.",
-      "hexagonal_role": "driven-adapter",
+      "name": "golden-artifact-testing",
+      "description": "|-",
+      "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
-      "produces": [
-        "dashboard-validation-report"
-      ],
+      "produces": [],
       "practices": [
-        "sre",
-        "distributed-tracing",
-        "dora-metrics"
+        "pragmatic-programmer"
       ],
       "context_rel": [],
-      "references_count": 3,
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -654,23 +1498,6 @@
       ],
       "context_rel": [],
       "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "harvest",
-      "description": "Promote .agents knowledge.",
-      "hexagonal_role": "supporting",
-      "user_invocable": true,
-      "consumes": [],
-      "produces": [
-        ".agents/research/*.md"
-      ],
-      "practices": [
-        "wiki-knowledge-surface",
-        "lean-startup"
-      ],
-      "context_rel": [],
-      "references_count": 1,
       "codex_override_present": true
     },
     {
@@ -694,26 +1521,28 @@
       "codex_override_present": true
     },
     {
-      "name": "hooks-authoring",
-      "description": "Author AgentOps runtime hooks.",
+      "name": "idea-option-forge",
+      "description": "|-",
       "hexagonal_role": "domain",
       "user_invocable": false,
-      "consumes": [],
+      "consumes": [
+        "existing-tracked-work"
+      ],
       "produces": [
-        "result.json"
+        "vetted-idea-backlog",
+        "tracked-issues-with-deps-and-tests"
       ],
       "practices": [
-        "design-by-contract",
-        "code-complete",
+        "lean-startup",
         "pragmatic-programmer"
       ],
       "context_rel": [
         {
           "kind": "shared-kernel",
-          "with": "standards"
+          "with": "brainstorm"
         }
       ],
-      "references_count": 3,
+      "references_count": 2,
       "codex_override_present": true
     },
     {
@@ -742,24 +1571,42 @@
       "codex_override_present": true
     },
     {
-      "name": "inject",
-      "description": "Load relevant .agents context.",
-      "hexagonal_role": "driving-adapter",
+      "name": "implementation-pattern-mining",
+      "description": "|-",
+      "hexagonal_role": "supporting",
       "user_invocable": false,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "wiki-knowledge-surface",
-        "pragmatic-programmer"
+      "consumes": [
+        "codebase",
+        "implementation-examples",
+        "tests"
       ],
-      "context_rel": [],
+      "produces": [
+        "pattern-inventory",
+        "implementation-guidance",
+        "convention-candidates"
+      ],
+      "practices": [
+        "pragmatic-programmer",
+        "docs-as-code",
+        "hexagonal-architecture"
+      ],
+      "context_rel": [
+        {
+          "kind": "partnership",
+          "with": "research"
+        },
+        {
+          "kind": "partnership",
+          "with": "standards"
+        }
+      ],
       "references_count": 0,
       "codex_override_present": true
     },
     {
-      "name": "knowledge-activation",
-      "description": "Activate mature .agents knowledge.",
-      "hexagonal_role": "supporting",
+      "name": "inject",
+      "description": "Load relevant .agents context.",
+      "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "consumes": [],
       "produces": [],
@@ -772,37 +1619,263 @@
       "codex_override_present": true
     },
     {
-      "name": "llm-wiki",
-      "description": "Build external-knowledge wikis.",
+      "name": "installer-quality-audit",
+      "description": "|-",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "layered-defect-hunt",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "code-under-review"
+      ],
       "produces": [
-        "documentation"
+        "bug-findings.md"
       ],
       "practices": [
-        "wiki-knowledge-surface",
-        "ddd-bounded-context",
-        "prompt-as-spec"
+        "code-review",
+        "root-cause-analysis",
+        "evidence-driven"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "legacy-codebase-recon",
+      "description": "|-",
+      "hexagonal_role": "generic",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "live-service-e2e-testing",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "service-contract",
+        "environment-contract",
+        "test-plan"
+      ],
+      "produces": [
+        "real-service-e2e-suite",
+        "evidence-packet",
+        "cleanup-report"
+      ],
+      "practices": [
+        "tdd",
+        "bdd-gherkin",
+        "sre"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "test"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "mcp-interface-design",
+      "description": "|-",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "mcp-interface-design-spec",
+        "tool-surface-audit"
+      ],
+      "practices": [
+        "pragmatic-programmer",
+        "twelve-factor"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "cli-agent-ux-audit"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "measured-performance-optimization",
+      "description": "|-",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        "code",
+        "benchmark"
+      ],
+      "produces": [
+        "profile",
+        "benchmark",
+        "stdout"
+      ],
+      "practices": [
+        "profile-before-optimize",
+        "correctness-preserving-refactor",
+        "evidence-driven-iteration"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "complexity"
+        }
+      ],
+      "references_count": 2,
+      "codex_override_present": true
+    },
+    {
+      "name": "metamorphic-test-design",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "multi-model-triangulation",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
       ],
       "context_rel": [],
       "references_count": 2,
       "codex_override_present": true
     },
     {
-      "name": "openai-docs",
-      "description": "Use official OpenAI docs.",
-      "hexagonal_role": "driven-adapter",
+      "name": "native-debugger-triage",
+      "description": "|-",
+      "hexagonal_role": "domain",
       "user_invocable": false,
-      "consumes": [
-        "external-api"
+      "consumes": [],
+      "produces": [
+        "backtrace",
+        "core-dump-analysis"
       ],
-      "produces": [],
       "practices": [
-        "prompt-as-spec",
-        "ai-assisted-dev"
+        "root-cause-analysis",
+        "evidence-first-debugging"
       ],
       "context_rel": [],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "ntm-browser-test-coordination",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "ntm",
+        "agent-mail",
+        "test"
+      ],
+      "produces": [
+        "browser-test-coordination-packet",
+        "browser-test-evidence-index",
+        "browser-test-handoff"
+      ],
+      "practices": [
+        "continuous-delivery",
+        "bdd-gherkin",
+        "team-topologies"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "ntm-review-worker-orchestration",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "ntm",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 16,
+      "codex_override_present": true
+    },
+    {
+      "name": "operating-loop-skill",
+      "description": "|-",
+      "hexagonal_role": "domain",
+      "user_invocable": true,
+      "consumes": [
+        "beads",
+        "git"
+      ],
+      "produces": [
+        "evidence/<id>.md",
+        "git-commit",
+        "closed-bead"
+      ],
+      "practices": [
+        "design-by-contract",
+        "agile-manifesto"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "beads"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "agy-native"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "cc-loop-driver"
+        }
+      ],
       "references_count": 0,
       "codex_override_present": true
     },
@@ -849,6 +1922,34 @@
       "codex_override_present": true
     },
     {
+      "name": "performance-profile-triage",
+      "description": "|-",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "source-code",
+        "runtime-metrics",
+        "profiler-output"
+      ],
+      "produces": [
+        "performance-report",
+        "validation-evidence"
+      ],
+      "practices": [
+        "code-complete",
+        "empirical-performance",
+        "validation"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "validation"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "plan",
       "description": "Decompose goals into issue plans.",
       "hexagonal_role": "domain",
@@ -875,8 +1976,22 @@
       "codex_override_present": true
     },
     {
+      "name": "planning-workflow",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
       "name": "post-mortem",
-      "description": "Review completed work and learn.",
+      "description": "Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [
@@ -972,33 +2087,8 @@
       "codex_override_present": true
     },
     {
-      "name": "pr-validate",
-      "description": "Validate PR scope and quality.",
-      "hexagonal_role": "driving-adapter",
-      "user_invocable": false,
-      "consumes": [
-        "validation"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "practices": [
-        "continuous-integration",
-        "code-complete",
-        "pragmatic-programmer"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "validation"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
       "name": "pre-mortem",
-      "description": "Stress-test plans before work.",
+      "description": "Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [
@@ -1020,6 +2110,20 @@
         }
       ],
       "references_count": 14,
+      "codex_override_present": true
+    },
+    {
+      "name": "process-triage",
+      "description": "Use when diagnosing runaway processes with the pt wrapper and choosing safe remediation.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -1046,25 +2150,103 @@
       "codex_override_present": true
     },
     {
-      "name": "provenance",
-      "description": "Trace artifact provenance.",
-      "hexagonal_role": "driven-adapter",
+      "name": "production-placeholder-audit",
+      "description": "|-",
+      "hexagonal_role": "supporting",
       "user_invocable": false,
-      "consumes": [],
+      "consumes": [
+        "source-code",
+        "build-config",
+        "test-suite"
+      ],
       "produces": [
-        "result.json"
+        "mock-code-findings"
       ],
       "practices": [
-        "supply-chain-integrity",
-        "adr",
-        "hermetic-builds"
+        "design-by-contract",
+        "testability"
       ],
       "context_rel": [
         {
           "kind": "supplier-to",
-          "with": "trace"
+          "with": "review"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "security"
         }
       ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "project-readme-craft",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "project-source",
+        "package-metadata",
+        "existing-docs"
+      ],
+      "produces": [
+        "README.md",
+        "README-review"
+      ],
+      "practices": [
+        "pragmatic-programmer",
+        "docs-as-code"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "project-reality-check",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "codebase",
+        "project-goals"
+      ],
+      "produces": [
+        "reality-check-report",
+        "gap-beads"
+      ],
+      "practices": [
+        "pragmatic-programmer",
+        "code-complete"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "legacy-codebase-recon"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "beads"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "project-reasoning-lens-analysis",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "project-context"
+      ],
+      "produces": [
+        "multi-lens-analysis.md"
+      ],
+      "practices": [
+        "ai-assisted-dev",
+        "design-by-contract"
+      ],
+      "context_rel": [],
       "references_count": 0,
       "codex_override_present": true
     },
@@ -1118,7 +2300,7 @@
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [
-        "validation",
+        "validate",
         "vibe",
         "post-mortem"
       ],
@@ -1137,6 +2319,20 @@
         }
       ],
       "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "rch",
+      "description": "Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 16,
       "codex_override_present": true
     },
     {
@@ -1162,7 +2358,7 @@
     },
     {
       "name": "red-team",
-      "description": "Probe docs and skills.",
+      "description": "Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -1207,6 +2403,20 @@
       "codex_override_present": true
     },
     {
+      "name": "release-readiness-gate",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "release",
       "description": "Run release validation.",
       "hexagonal_role": "supporting",
@@ -1227,6 +2437,51 @@
         }
       ],
       "references_count": 8,
+      "codex_override_present": true
+    },
+    {
+      "name": "repeatedly-apply-skill",
+      "description": "Use when applying a skill repeatedly with progressive deepening for iterative improvement.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "repository-hygiene-sweep",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "repo-cleanup-report"
+      ],
+      "practices": [
+        "pragmatic-programmer",
+        "twelve-factor"
+      ],
+      "context_rel": [],
+      "references_count": 2,
+      "codex_override_present": true
+    },
+    {
+      "name": "research-software",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 3,
       "codex_override_present": true
     },
     {
@@ -1252,31 +2507,6 @@
       "codex_override_present": true
     },
     {
-      "name": "retro",
-      "description": "Capture a session learning.",
-      "hexagonal_role": "domain",
-      "user_invocable": false,
-      "consumes": [
-        "standards"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "practices": [
-        "sre",
-        "lean-startup",
-        "dora-metrics"
-      ],
-      "context_rel": [
-        {
-          "kind": "shared-kernel",
-          "with": "standards"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
       "name": "reverse-engineer-rpi",
       "description": "Reverse-engineer product specs.",
       "hexagonal_role": "supporting",
@@ -1296,12 +2526,12 @@
     },
     {
       "name": "review",
-      "description": "Review diffs for risk, find mocks, scan for bugs, and audit codebases.",
+      "description": "Review diffs for risk, find mocks, scan for bugs, audit codebases. Use when: reviewing a diff/PR for bugs and risk, hunting mocks/stubs/placeholders, or auditing for quality.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [
         "github-pr",
-        "validation"
+        "validate"
       ],
       "produces": [
         "result.json"
@@ -1314,10 +2544,24 @@
       "context_rel": [
         {
           "kind": "customer-of",
-          "with": "validation"
+          "with": "validate"
         }
       ],
       "references_count": 5,
+      "codex_override_present": true
+    },
+    {
+      "name": "ripgrep-search-discipline",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 1,
       "codex_override_present": true
     },
     {
@@ -1330,7 +2574,7 @@
         "discovery",
         "domain",
         "ratchet",
-        "validation"
+        "validate"
       ],
       "produces": [
         ".agents/rpi/*.md"
@@ -1356,10 +2600,181 @@
         },
         {
           "kind": "customer-of",
-          "with": "validation"
+          "with": "validate"
         }
       ],
       "references_count": 17,
+      "codex_override_present": true
+    },
+    {
+      "name": "ru-multi-repo-workflow",
+      "description": "Use when using ru for multi-repo commits, sync, GitHub review, or maintenance automation.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 7,
+      "codex_override_present": true
+    },
+    {
+      "name": "rust-crate-release-readiness",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "Cargo.toml",
+        "Cargo.lock",
+        "crate-source",
+        "crate-docs",
+        "release-notes"
+      ],
+      "produces": [
+        "crate-release-readiness-report",
+        "package-dry-run-evidence",
+        "rollback-note"
+      ],
+      "practices": [
+        "evidence-over-confidence",
+        "release-readiness",
+        "docs-as-code"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "rust-port-validation-gauntlet",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "gauntlet-ledger"
+      ],
+      "practices": [
+        "evidence-over-confidence",
+        "iterate-to-green",
+        "negative-evidence-ledger"
+      ],
+      "context_rel": [],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "rust-search-integration",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "SEARCH-INTEGRATION-PLAN.md"
+      ],
+      "practices": [
+        "hexagonal-architecture",
+        "design-for-the-machine",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [
+        {
+          "kind": "partnership",
+          "with": "legacy-codebase-recon"
+        },
+        {
+          "kind": "partnership",
+          "with": "cli-agent-ux-audit"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "rust-sqlite-cli-architecture",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "product-requirements",
+        "command-map",
+        "data-model",
+        "operational-constraints"
+      ],
+      "produces": [
+        "architecture-plan",
+        "migration-plan",
+        "transaction-policy",
+        "test-strategy"
+      ],
+      "practices": [
+        "pragmatic-programmer",
+        "devsecops-cdlc",
+        "testable-architecture"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "rust-ub-risk-audit",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "rust-source",
+        "cargo-metadata",
+        "ffi-contracts",
+        "test-results"
+      ],
+      "produces": [
+        "ub-risk-audit-report",
+        "unsafe-inventory"
+      ],
+      "practices": [
+        "secure-coding",
+        "defense-in-depth"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "rust-unsafe-boundary-audit",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "rust-source",
+        "ffi-bindings",
+        "test-results"
+      ],
+      "produces": [
+        "unsafe-boundary-audit",
+        "safety-invariant-inventory"
+      ],
+      "practices": [
+        "secure-by-design",
+        "defense-in-depth",
+        "docs-as-code"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "sbh",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -1427,8 +2842,8 @@
       "codex_override_present": true
     },
     {
-      "name": "security-suite",
-      "description": "Run composable security analysis.",
+      "name": "security",
+      "description": "Run repository security scans and composable security analysis.",
       "hexagonal_role": "driven-adapter",
       "user_invocable": false,
       "consumes": [
@@ -1449,30 +2864,6 @@
         }
       ],
       "references_count": 1,
-      "codex_override_present": true
-    },
-    {
-      "name": "security",
-      "description": "Run repository security scans.",
-      "hexagonal_role": "driven-adapter",
-      "user_invocable": false,
-      "consumes": [
-        "repo-context"
-      ],
-      "produces": [
-        "security-report.json"
-      ],
-      "practices": [
-        "supply-chain-integrity",
-        "sre"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "vibe"
-        }
-      ],
-      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -1625,6 +3016,49 @@
       "codex_override_present": true
     },
     {
+      "name": "spec-reliability-implementation",
+      "description": "|-",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "specification",
+        "repo-context"
+      ],
+      "produces": [
+        "acceptance-examples.feature",
+        "running-service",
+        "conformance-report.md"
+      ],
+      "practices": [
+        "behavior-driven-development",
+        "design-by-contract",
+        "defensive-programming",
+        "evidence-driven"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "validate"
+        }
+      ],
+      "references_count": 1,
+      "codex_override_present": true
+    },
+    {
+      "name": "ssh",
+      "description": "Use when configuring SSH access, keys, tunnels, host diagnostics, or safe remote command workflows.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
       "name": "standards",
       "description": "Provide repo coding standards.",
       "hexagonal_role": "domain",
@@ -1640,6 +3074,21 @@
       ],
       "context_rel": [],
       "references_count": 23,
+      "codex_override_present": true
+    },
+    {
+      "name": "stash-hygiene-sweep",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "defensive-programming",
+        "code-complete"
+      ],
+      "context_rel": [],
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -1685,6 +3134,20 @@
         }
       ],
       "references_count": 21,
+      "codex_override_present": true
+    },
+    {
+      "name": "system-performance-remediation",
+      "description": "Use when restoring machine responsiveness from high CPU, memory, IO, cache, or runaway process pressure.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 9,
       "codex_override_present": true
     },
     {
@@ -1748,6 +3211,20 @@
       "codex_override_present": true
     },
     {
+      "name": "ubs",
+      "description": "Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": true
+    },
+    {
       "name": "using-agentops",
       "description": "Explain AgentOps workflows.",
       "hexagonal_role": "generic",
@@ -1790,12 +3267,10 @@
     },
     {
       "name": "validate",
-      "description": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates.",
+      "description": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured verdict on an artifact, plan, code, PR, or CI gate before proceeding.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
-      "consumes": [
-        "validation"
-      ],
+      "consumes": [],
       "produces": [
         "result.json"
       ],
@@ -1803,49 +3278,13 @@
         "design-by-contract",
         "llm-eval-harness"
       ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "validation"
-        }
-      ],
+      "context_rel": [],
       "references_count": 0,
       "codex_override_present": true
     },
     {
-      "name": "validation",
-      "description": "Run post-implementation validation.",
-      "hexagonal_role": "domain",
-      "user_invocable": true,
-      "consumes": [
-        "forge",
-        "post-mortem",
-        "retro",
-        "shared",
-        "vibe"
-      ],
-      "produces": [
-        ".agents/research/*.md",
-        "result.json",
-        "verdict.json"
-      ],
-      "practices": [
-        "llm-eval-harness",
-        "dora-metrics",
-        "sre"
-      ],
-      "context_rel": [
-        {
-          "kind": "shared-kernel",
-          "with": "standards"
-        }
-      ],
-      "references_count": 13,
-      "codex_override_present": true
-    },
-    {
       "name": "vibe",
-      "description": "Validate code readiness.",
+      "description": "Validate code readiness. Use when: doing a quick readiness or sanity check that code is ready to commit or ship, short of a full review.",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [
@@ -1868,6 +3307,43 @@
         }
       ],
       "references_count": 22,
+      "codex_override_present": true
+    },
+    {
+      "name": "vibing-with-ntm",
+      "description": "Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 9,
+      "codex_override_present": true
+    },
+    {
+      "name": "work-contract-portability",
+      "description": "|-",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        "task-intent",
+        "evidence",
+        "handoff"
+      ],
+      "produces": [
+        "portability-guidance",
+        "role-boundary-notes"
+      ],
+      "practices": [
+        "design-by-contract",
+        "ddd-bounded-context",
+        "wiki-knowledge-surface"
+      ],
+      "context_rel": [],
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -1895,6 +3371,26 @@
         }
       ],
       "references_count": 0,
+      "codex_override_present": true
+    },
+    {
+      "name": "worktree-branch-rationalization",
+      "description": "|-",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        "git"
+      ],
+      "produces": [
+        "git-branches",
+        ".agents/worktree-rationalization/report.md"
+      ],
+      "practices": [
+        "continuous-delivery",
+        "trunk-based-development"
+      ],
+      "context_rel": [],
+      "references_count": 3,
       "codex_override_present": true
     }
   ]

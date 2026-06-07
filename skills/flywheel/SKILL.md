@@ -266,7 +266,7 @@ Phase 4 (soc-ytpq) governance for `~/.agents/learnings/` — all advisory, none 
 
 ## Key Rules
 - **Monitor regularly** - flywheel needs attention; address bottlenecks early
-- **Feed the flywheel** - run /retro and /post-mortem
+- **Feed the flywheel** - run /post-mortem (or /post-mortem --quick)
 - **Prune stale knowledge** - archive old artifacts
 ## Examples
 **User says:** `/flywheel` — Counts pool depths, checks recent activity, validates artifact consistency, writes health report to `.agents/flywheel-status.md`.
