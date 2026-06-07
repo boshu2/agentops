@@ -7,7 +7,7 @@ practices:
 - continuous-integration
 hexagonal_role: domain
 consumes:
-- validation
+- validate
 - vibe
 - post-mortem
 produces:

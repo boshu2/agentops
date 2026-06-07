@@ -47,5 +47,5 @@ Do not paste the principle body. Citations stay short; the source-of-truth is he
 ## Mechanical enforcement
 
 - Principle #2 + Anti-pattern #1: `scripts/check-skill-isolation.sh` lints phase-skill SKILL.md bodies for compression patterns (introduced in `soc-bcrn` UW2).
-- Principle #5 + Anti-pattern #4: `skills/validation/references/per-criterion-rubric.md` defines the per-criterion verdict shape (introduced in `soc-bcrn` UW1).
+- Principle #5 + Anti-pattern #4: `skills/validate/SKILL.md` defines the per-criterion verdict shape (introduced in `soc-bcrn` UW1; folded from the retired `validation` skill).
 - Principle #11: `schemas/execution-packet.schema.json` (`$defs/Criterion`) is the canonical handoff shape.

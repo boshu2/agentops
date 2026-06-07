@@ -25,7 +25,7 @@ Defined in `.github/workflows/validate.yml`, `changes.steps[id=filter].with.filt
 | `shell` | `**/*.sh`, `scripts/**` |
 | `bats` | `**/*.bats` |
 | `ci` | `.github/**` |
-| `contracts` | `schemas/**`, `docs/contracts/**`, `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/CI-CD.md`, `docs/strategic-direction.md`, `docs/standards/shell-script-standards.md`, `skills/security/**`, `skills/security-suite/**` |
+| `contracts` | `schemas/**`, `docs/contracts/**`, `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/CI-CD.md`, `docs/strategic-direction.md`, `docs/standards/shell-script-standards.md`, `skills/security/**` |
 | `goals` | `GOALS.md`, `spec/scenarios/**`, `docs/adr/ADR-0003*` |
 | `learning` | `.agents/learnings/**` |
 | `markdown` | `**/*.md` |
@@ -38,7 +38,7 @@ For each gate that reads specific files, the **trigger** column is the union of 
 
 | Gate (job → step) | Files it reads | Trigger filters | Verdict |
 |---|---|---|---|
-| `contracts-sync` → Run official AgentOps contract canaries | redteam-pack target globs: `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/CI-CD.md`, `docs/strategic-direction.md`, `docs/standards/shell-script-standards.md`, `skills/security/SKILL.md`, `skills/security-suite/SKILL.md` | `ci, contracts, go, skills` | COVERED (closed by #638 — `contracts` is now a superset; guarded by `tests/scripts/test-pathfilter-gate-coverage.bats`) |
+| `contracts-sync` → Run official AgentOps contract canaries | redteam-pack target globs: `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/CI-CD.md`, `docs/strategic-direction.md`, `docs/standards/shell-script-standards.md`, `skills/security/SKILL.md` | `ci, contracts, go, skills` | COVERED (closed by #638 — `contracts` is now a superset; guarded by `tests/scripts/test-pathfilter-gate-coverage.bats`) |
 | `doctrine-proof` → F1/F2 executable-spec link e2e | `GOALS.md`, `spec/scenarios/**`, `.feature` files | `ci, docs, go, goals` | COVERED (`goals` added by #638) |
 | `doctrine-proof` → Scenario→test linkage | `skills/*/references/*.feature`, `spec/scenarios/**` | `ci, goals, shell, skills` | COVERED |
 | `doctrine-proof` → Validate AGENTS.md tiered-split contract | `AGENTS.md`, `AGENTS-WORKFLOW.md`, `AGENTS-CI.md`, `AGENTS-CODEX.md`, `AGENTS-RUNTIME.md` | `ci, docs, shell` | **GAP → FIXED** (this PR) |

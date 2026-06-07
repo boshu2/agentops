@@ -16,7 +16,7 @@ consumes:
 - discovery
 - domain
 - ratchet
-- validation
+- validate
 produces:
 - .agents/rpi/*.md
 context_rel:
@@ -25,7 +25,7 @@ context_rel:
 - kind: customer-of
   with: discovery
 - kind: customer-of
-  with: validation
+  with: validate
 skill_api_version: 1
 user-invocable: true
 context:
@@ -42,7 +42,7 @@ metadata:
   - domain
   - discovery
   - crank
-  - validation
+  - validate
   - ratchet
   internal: false
 output_contract: .agents/rpi/YYYY-MM-DD-*.md

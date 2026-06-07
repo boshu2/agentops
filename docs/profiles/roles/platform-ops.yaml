@@ -22,7 +22,7 @@ skills:
     description: Penetration testing, network engineering
     knowledge_areas: 2
 
-  - path: skills/validation/SKILL.md
+  - path: skills/validate/SKILL.md
     description: Assumption validation, tracer bullets
     knowledge_areas: 4
 
@@ -34,7 +34,7 @@ skills:
 commands:
   - /research
   - /implement
-  - /retro
+  - /post-mortem
   - /session-start
   - /session-end
 

@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-07T19:05:13Z",
+  "generated_at": "2026-06-07T19:27:13Z",
   "summary": {
     "skills": 158,
     "hooks": 0,
@@ -2247,7 +2247,7 @@
       "consumes": [
         "standards",
         "converter",
-        "validation"
+        "validate"
       ],
       "produces": [
         "docs/contracts/agent-runtime-profile.md"
@@ -3070,7 +3070,7 @@
       "consumes": [
         "standards",
         "test",
-        "validation"
+        "validate"
       ],
       "produces": [
         "conformance harness plan",
@@ -3350,7 +3350,7 @@
       "status": "active",
       "disposition": "keep",
       "consumes": [
-        "validation",
+        "validate",
         "ratchet",
         "council"
       ],
@@ -4452,7 +4452,7 @@
       "status": "active",
       "disposition": "update",
       "consumes": [
-        "validation",
+        "validate",
         "vibe",
         "post-mortem"
       ],
@@ -4692,7 +4692,7 @@
       "disposition": "update",
       "consumes": [
         "github-pr",
-        "validation"
+        "validate"
       ],
       "produces": [
         "result.json"
@@ -4735,7 +4735,7 @@
         "discovery",
         "domain",
         "ratchet",
-        "validation"
+        "validate"
       ],
       "produces": [
         ".agents/rpi/*.md"
@@ -5389,9 +5389,7 @@
       "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured verdict on an artifact, plan, code, PR, or CI gate before proceeding.",
       "status": "active",
       "disposition": "keep",
-      "consumes": [
-        "validation"
-      ],
+      "consumes": [],
       "produces": [
         "result.json"
       ],
@@ -7340,7 +7338,7 @@
       "job_type": "dream.run",
       "description": "Full knowledge consolidation: harvest → forge → inject → defrag",
       "skills": [
-        "harvest",
+        "curate",
         "forge",
         "compile",
         "inject"

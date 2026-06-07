@@ -56,10 +56,8 @@ entry_files=(
 )
 
 closeout_files=(
-  "skills-codex/validation/SKILL.md"
   "skills-codex/post-mortem/SKILL.md"
   "skills-codex/handoff/SKILL.md"
-  "skills-codex/validation/prompt.md"
   "skills-codex/post-mortem/prompt.md"
   "skills-codex/handoff/prompt.md"
 )

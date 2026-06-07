@@ -256,10 +256,10 @@ graph LR
   ratchet -- "shared-kernel" --> standards
   red-team -- "supplier-to" --> vibe
   release -- "supplier-to" --> ship-loop
-  review -- "customer-of" --> validation
+  review -- "customer-of" --> validate
   rpi -- "customer-of" --> crank
   rpi -- "customer-of" --> discovery
-  rpi -- "customer-of" --> validation
+  rpi -- "customer-of" --> validate
   rust-search-integration -- "partnership" --> cli-agent-ux-audit
   rust-search-integration -- "partnership" --> legacy-codebase-recon
   scenario -- "supplier-to" --> validation
@@ -280,7 +280,6 @@ graph LR
   swarm -- "customer-of" --> crank
   trace -- "customer-of" --> provenance
   using-ntm -- "customer-of" --> swarm
-  validate -- "customer-of" --> validation
   vibe -- "shared-kernel" --> standards
   workflow-builder -- "customer-of" --> automation-shape-routing
   workflow-builder -- "shared-kernel" --> operating-loop-workflow
@@ -293,7 +292,7 @@ graph LR
 | `acfs` | produces | substrate-health-report |
 | `agent-native` | consumes | converter |
 | `agent-native` | consumes | standards |
-| `agent-native` | consumes | validation |
+| `agent-native` | consumes | validate |
 | `agent-native` | produces | docs/contracts/agent-runtime-profile.md |
 | `agy-headless-evidence` | consumes | agy-native |
 | `agy-headless-evidence` | produces | agy-evidence-dir |
@@ -369,7 +368,7 @@ graph LR
 | `complexity` | produces | stdout |
 | `contract-conformance-testing` | consumes | standards |
 | `contract-conformance-testing` | consumes | test |
-| `contract-conformance-testing` | consumes | validation |
+| `contract-conformance-testing` | consumes | validate |
 | `contract-conformance-testing` | produces | compatibility verdict matrix |
 | `contract-conformance-testing` | produces | conformance harness plan |
 | `contract-conformance-testing` | produces | executable conformance cases |
@@ -406,7 +405,7 @@ graph LR
 | `domain` | produces | stdout |
 | `eval-outcomes` | consumes | council |
 | `eval-outcomes` | consumes | ratchet |
-| `eval-outcomes` | consumes | validation |
+| `eval-outcomes` | consumes | validate |
 | `eval-outcomes` | produces | skills/council/schemas/verdict.json |
 | `evolve` | consumes | compile |
 | `evolve` | consumes | goals |
@@ -525,7 +524,7 @@ graph LR
 | `quickstart` | consumes | rpi |
 | `quickstart` | produces | stdout |
 | `ratchet` | consumes | post-mortem |
-| `ratchet` | consumes | validation |
+| `ratchet` | consumes | validate |
 | `ratchet` | consumes | vibe |
 | `ratchet` | produces | .agents/rpi/*.md |
 | `recover` | consumes | bd |
@@ -544,13 +543,13 @@ graph LR
 | `research` | produces | result.json |
 | `reverse-engineer-rpi` | produces | .agents/research/*.md |
 | `review` | consumes | github-pr |
-| `review` | consumes | validation |
+| `review` | consumes | validate |
 | `review` | produces | result.json |
 | `rpi` | consumes | crank |
 | `rpi` | consumes | discovery |
 | `rpi` | consumes | domain |
 | `rpi` | consumes | ratchet |
-| `rpi` | consumes | validation |
+| `rpi` | consumes | validate |
 | `rpi` | produces | .agents/rpi/*.md |
 | `rust-crate-release-readiness` | consumes | Cargo.lock |
 | `rust-crate-release-readiness` | consumes | Cargo.toml |
@@ -615,7 +614,6 @@ graph LR
 | `trace` | produces | result.json |
 | `using-agentops` | produces | documentation |
 | `using-ntm` | produces | documentation |
-| `validate` | consumes | validation |
 | `validate` | produces | result.json |
 | `vibe` | consumes | standards |
 | `vibe` | produces | result.json |

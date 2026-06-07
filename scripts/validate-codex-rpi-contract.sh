@@ -59,8 +59,8 @@ require_contains "skills-codex/rpi/SKILL.md" 'RPI delegates via `$discovery`, `$
   'rpi must default to Codex skill chaining across phases'
 require_contains "skills-codex/discovery/SKILL.md" 'Discovery delegates to `$brainstorm` (conditional), `$design` (conditional), `$research`, `$plan`, and `$pre-mortem` as **separate skill invocations**' \
   'discovery must default to Codex skill chaining across discovery sub-skills'
-require_contains "skills-codex/validation/SKILL.md" 'Validation delegates to `$vibe`, `$post-mortem`, `$retro`, and `$forge`' \
-  'validation must default to Codex skill chaining across validation sub-skills'
+require_contains "skills-codex/validate/SKILL.md" '`$vibe`' \
+  'validate (folded validation) must default to Codex skill chaining across validation sub-skills'
 require_contains "skills-codex/rpi/prompt.md" 'do not hand RPI orchestration to wrapper commands' \
   'rpi Codex prompt must reject wrapper-command orchestration'
 

@@ -1162,7 +1162,7 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "b0fefef959b557677066d5a4f9fd6e94b13787b242665fd83c514479baf2ae9a",
+      "source_hash": "d02f74b1520efe96f2e28aea31c3a73596dd0738aee0f65845f8d53ad4b172e4",
       "generated_hash": "4278d76d9c0b6093157ae0f52b306c9081a0f12d35a66c34f5e56e337e876e9c"
     },
     {
@@ -1240,7 +1240,7 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "6b6408789f728c18e70364e331d2a27dd322ae6eb8213e7da9c522af5916c2f3",
+      "source_hash": "6eb1b16f60c8b66695cbb95f9f1d3f41f945dced99a84c1ffd111e73b5e1dd81",
       "generated_hash": "9e38e58d662659888c3b43bbe7e0328a74e75450fa25aa573e83055ea429d4c5"
     },
     {
@@ -1264,7 +1264,7 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "3bd9333566d69dedc319af841b94b40c99bde00a38904c02d09fa06a4bb5f90c",
+      "source_hash": "d28c864e6bfbbb39446236234cdf9d01f5695022a88eb6f9d9b0a06376773cde",
       "generated_hash": "73b3f6d37bfc1891f71fa6fb8b842aded890da972bba6ed0fc0b5fea746420b4"
     },
     {
@@ -1282,7 +1282,7 @@
     {
       "name": "eval-outcomes",
       "source_skill": "skills/eval-outcomes",
-      "source_hash": "b58ba6395a96ad1ec6ba006bb049bdf09033bace24c71671b3a26478ed97cab9",
+      "source_hash": "950b886d88badfedc3b044f4fb3ec947a659bce698b27ea13d0fbc442f524645",
       "generated_hash": "6f6ed5eba59ea419db5214b7a5dee0641723eb7c2a6699386b7427e90d2442fc"
     },
     {
@@ -1402,7 +1402,7 @@
     {
       "name": "ratchet",
       "source_skill": "skills/ratchet",
-      "source_hash": "7cf8abefd68edfd5a0570dd3503acc1b4b97c5e86bf8a339086fbdfe389ed9df",
+      "source_hash": "30bd3b25b32283072db79de49e7cfd3ea12eb188363aba3b38cdab8e8bd9b216",
       "generated_hash": "9cb929f145ff8791efd451f9235c62df4e2121d9f33298894c94085f1b7b59fd"
     },
     {
@@ -1444,13 +1444,13 @@
     {
       "name": "review",
       "source_skill": "skills/review",
-      "source_hash": "30febb8817634a39eeba244ef005cbe05c5cc3273186cd1919d5bb359898549c",
+      "source_hash": "25bce137d83b43dab3a55b1812b361fad5f4c06cc9d5fdd664f42e72f3db1430",
       "generated_hash": "99355cb433569863cc4b7a24063c4331a098841d437882cb6eed784c14dd8984"
     },
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "b2ddefec61f06b3e53b20a44b8a7e85da9327fc896d2586e6df8d7dabda13b2d",
+      "source_hash": "c35dcde8d5231b261e52c794dc5023abf7c4a4e33e38165c61b2debfe4c9f978",
       "generated_hash": "67a11f9067678c87fe049e9bf4c865cd78ad68cdecb81b15513ad29b6f9cd2f0"
     },
     {
@@ -1558,7 +1558,7 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "39ee3815da3fe7abd41b25206cfcdb0c398f8bb22bc4fa2974278970a2ad5010",
+      "source_hash": "b159b8ac37198692bb080576cd6ae6b861d19b8a5d63537aaf56da5c5457779b",
       "generated_hash": "7dbdcbb47198ac587b4cc5998b15c572a5e901452d62e7099905ddae968a3862"
     },
     {
@@ -1774,7 +1774,7 @@
     {
       "name": "contract-conformance-testing",
       "source_skill": "skills/contract-conformance-testing",
-      "source_hash": "9c906ee8e11ba0e84daf72534f098c8d6c3cf3ee5a91c34cb4d1347984ca9b98",
+      "source_hash": "1562286f205525fef1ffcc7144e7a22feb652a72141a25c8bb37e28a74029bf2",
       "generated_hash": "ba3f3a05255c2edced5eed28c0d2b1e0bf4f274856da7a755a0343733938a957"
     },
     {

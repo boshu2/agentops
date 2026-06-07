@@ -8,12 +8,12 @@ practices:
 hexagonal_role: driving-adapter
 consumes:
 - github-pr
-- validation
+- validate
 produces:
 - result.json
 context_rel:
 - kind: customer-of
-  with: validation
+  with: validate
 skill_api_version: 1
 context:
   window: fork
