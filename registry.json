@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-07T20:47:50Z",
+  "generated_at": "2026-06-07T22:32:25Z",
   "summary": {
     "skills": 158,
     "hooks": 0,
@@ -8,7 +8,7 @@
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 83,
-    "capabilities": 254
+    "capabilities": 255
   },
   "surfaces": {
     "skills": [
@@ -2108,10 +2108,10 @@
     ]
   },
   "capability_summary": {
-    "total": 254,
+    "total": 255,
     "skills": 158,
     "cli_commands": 83,
-    "gates": 13,
+    "gates": 14,
     "reference_impls": 0
   },
   "cli_top_level_commands": [
@@ -7215,6 +7215,15 @@
     {
       "sku": "gate:changes",
       "name": "changes",
+      "type": "gate",
+      "bounded_context": "BC2",
+      "purpose": "CI validation gate (.github/workflows/validate.yml).",
+      "status": "active",
+      "path": ".github/workflows/validate.yml"
+    },
+    {
+      "sku": "gate:go-gate-shadow",
+      "name": "go-gate-shadow",
       "type": "gate",
       "bounded_context": "BC2",
       "purpose": "CI validation gate (.github/workflows/validate.yml).",

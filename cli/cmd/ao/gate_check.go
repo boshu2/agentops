@@ -23,11 +23,15 @@ import (
 // `--full`, refinery `--full --json` — so local and CI run the identical binary.
 
 var (
-	gateCheckFast     bool
-	gateCheckFull     bool
-	gateCheckJSON     bool
-	gateCheckFailFast bool
-	gateCheckScope    string
+	gateCheckFast                  bool
+	gateCheckFull                  bool
+	gateCheckJSON                  bool
+	gateCheckGitHub                bool
+	gateCheckFailFast              bool
+	gateCheckScope                 string
+	gateCheckWorkflowCoverage      bool
+	gateCheckRequireWorkflowParity bool
+	gateCheckWorkflowPath          string
 )
 
 // gateCheckRegistry is the registry the command runs; a seam so tests can swap
@@ -54,8 +58,12 @@ func init() {
 	f.BoolVar(&gateCheckFast, "fast", false, "fast cockpit subset routed to changed files (the default; explicit flag for clarity in hooks)")
 	f.BoolVar(&gateCheckFull, "full", false, "run every check (routing ignored); default is the fast changed-file subset")
 	f.BoolVar(&gateCheckJSON, "json", false, "emit the machine-readable JSON report")
+	f.BoolVar(&gateCheckGitHub, "github-annotations", false, "emit GitHub Actions annotations for WARN/FAIL checks")
 	f.BoolVar(&gateCheckFailFast, "fail-fast", false, "stop after the first blocking failure")
 	f.StringVar(&gateCheckScope, "scope", "head", "fast-mode changed-file scope: head|staged|worktree|upstream")
+	f.BoolVar(&gateCheckWorkflowCoverage, "workflow-coverage", false, "include validate.yml-vs-registry script coverage in the report")
+	f.BoolVar(&gateCheckRequireWorkflowParity, "require-workflow-parity", false, "fail if validate.yml references scripts missing from the Go gate registry")
+	f.StringVar(&gateCheckWorkflowPath, "workflow-path", ".github/workflows/validate.yml", "workflow path used by --workflow-coverage and --require-workflow-parity")
 	gateCmd.AddCommand(gateCheckCmd)
 }
 
@@ -101,6 +109,13 @@ func runGateCheck(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return &gateExitError{code: gateExitInternal, msg: err.Error()}
 	}
+	if gateCheckWorkflowCoverage || gateCheckRequireWorkflowParity {
+		coverage, cerr := gates.RegistryWorkflowCoverage(gateCheckRegistry, root, gateCheckWorkflowPath)
+		if cerr != nil {
+			return &gateExitError{code: gateExitInternal, msg: cerr.Error()}
+		}
+		report.Coverage = coverage
+	}
 
 	out := cmd.OutOrStdout()
 	if gateCheckJSON {
@@ -112,9 +127,18 @@ func runGateCheck(cmd *cobra.Command, _ []string) error {
 	} else {
 		report.Human(out)
 	}
+	if gateCheckGitHub {
+		report.GitHubAnnotations(cmd.ErrOrStderr())
+	}
 
 	if code := report.ExitCode(); code != 0 {
 		return &gateExitError{code: code}
+	}
+	if gateCheckRequireWorkflowParity && report.Coverage != nil && report.Coverage.MissingScriptCount > 0 {
+		return &gateExitError{
+			code: gateExitFail,
+			msg:  fmt.Sprintf("workflow parity missing %d script(s)", report.Coverage.MissingScriptCount),
+		}
 	}
 	return nil
 }

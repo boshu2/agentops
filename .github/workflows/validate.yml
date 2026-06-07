@@ -155,6 +155,70 @@ jobs:
               - '.agents/**/*.jsonl'
 
   # ─────────────────────────────────────────────────────────────────────────
+  # go-gate-shadow — PB3 migration shadow lane.
+  #
+  # Runs the single Go gate entrypoint in CI and emits per-check GitHub
+  # annotations + JSON evidence while the legacy purpose jobs remain the
+  # blocking authority. This makes validate.yml exercise `ao gate check --full`
+  # without silently dropping the checks that are not yet registered in Go.
+  # Remove continue-on-error only after the registry coverage guard proves
+  # validate.yml parity.
+  # ─────────────────────────────────────────────────────────────────────────
+  go-gate-shadow:
+    needs: [changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: cli/go.sum
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Install gate dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq shellcheck
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          pip install jsonschema pyyaml
+
+      - name: Build ao
+        run: |
+          mkdir -p bin
+          (cd cli && go build -o ../bin/ao ./cmd/ao)
+
+      - name: Run Go gate shadow
+        id: go_gate
+        shell: bash
+        run: |
+          set +e
+          WORKTREE_DISPOSITION_CI_SKIP=1 \
+            ./bin/ao gate check --full --json --github-annotations --workflow-coverage \
+            > ao-gate-report.json
+          rc=$?
+          jq '.run.summary' ao-gate-report.json
+          jq '.coverage | {workflow_script_count, registry_script_count, missing_script_count, registry_only_script_count, missing_scripts}' ao-gate-report.json
+          echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
+          exit "$rc"
+
+      - name: Upload Go gate report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: ao-gate-shadow-report
+          path: ao-gate-report.json
+          if-no-files-found: error
+
+  # ─────────────────────────────────────────────────────────────────────────
   # skill-gates — REQUIRED. The consolidated skill-authoring gate surface:
   # every check that guards a SKILL.md / .feature / derived-skill-surface edit,
   # grouped into one named job (ag-87sv). Pure regroup of already-live gates —
@@ -1710,7 +1774,10 @@ jobs:
           trap 'rm -f "$OVERLAP_TMP" "$CLEAN_TMP"' EXIT
           # Self-test: overlapping manifests should fail
           echo '[{"id":"1","subject":"A","files":["a.go"]},{"id":"2","subject":"B","files":["a.go"]}]' > "$OVERLAP_TMP"
-          ! scripts/check-file-manifest-overlap.sh "$OVERLAP_TMP"
+          if scripts/check-file-manifest-overlap.sh "$OVERLAP_TMP"; then
+            echo "expected overlapping manifests to fail" >&2
+            exit 1
+          fi
           # Self-test: non-overlapping should pass
           echo '[{"id":"1","subject":"A","files":["a.go"]},{"id":"2","subject":"B","files":["b.go"]}]' > "$CLEAN_TMP"
           scripts/check-file-manifest-overlap.sh "$CLEAN_TMP"
