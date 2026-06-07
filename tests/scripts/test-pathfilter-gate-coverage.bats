@@ -8,8 +8,8 @@
 #
 # Two concrete gaps this guards (both real regressions):
 #
-#  ag-nl1u (#634): the security-suite redteam pack
-#    (skills/security-suite/references/agentops-redteam-pack.json) asserts
+#  ag-nl1u (#634): the security redteam pack
+#    (skills/security/references/agentops-redteam-pack.json) asserts
 #    behavioral contracts against AGENTS.md + several docs/ + skills/security*
 #    files via the contracts-sync canaries. The `contracts` filter previously
 #    only matched schemas/** + docs/contracts/**, so editing a guarded file
@@ -37,7 +37,7 @@
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     WORKFLOW_PATH="$REPO_ROOT/.github/workflows/validate.yml"
-    PACK_PATH="$REPO_ROOT/skills/security-suite/references/agentops-redteam-pack.json"
+    PACK_PATH="$REPO_ROOT/skills/security/references/agentops-redteam-pack.json"
 }
 
 # ── ag-nl1u: redteam-pack targets are all covered by the `contracts` filter ──

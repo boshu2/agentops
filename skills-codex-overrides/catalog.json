@@ -425,12 +425,6 @@
       "reason": "Security review needs findings-first Codex output and clear release-gate semantics."
     },
     {
-      "name": "security-suite",
-      "treatment": "bespoke",
-      "wave": "security-focused",
-      "reason": "Composable security tooling benefits from Codex-specific artifact discipline and policy-oriented reporting."
-    },
-    {
       "name": "shared",
       "treatment": "parity_only",
       "wave": "catalog-parity",

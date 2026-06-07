@@ -1,5 +1,5 @@
-# Executable spec for the /security-suite skill — composable security primitives (driven-adapter).
-# /security-suite provides repeatable, composable security/internal-testing primitives over
+# Executable spec for the /security skill's composable suite primitives (driven-adapter).
+# /security provides repeatable, composable security/internal-testing primitives over
 # AUTHORIZED targets — separated into testable steps (collect-static, collect-dynamic,
 # collect-contract) that compose into a security report. Hexagon: driven-adapter; consumes
 # repo-context; produces security-report.json; supplier-to vibe. (soc-qk4b)
@@ -10,13 +10,13 @@ Feature: Security-suite runs composable security primitives
   So that security workflows stay testable, reusable, and authorization-bounded
 
   Scenario: composable primitives produce a security report
-    When /security-suite runs over a target
+    When /security runs the composable suite over a target
     Then it composes primitives (collect-static, collect-dynamic, collect-contract)
     And it writes a security-report.json
 
   Scenario: analysis is authorization-bounded
     When the target is a binary or surface
-    Then /security-suite is used only on owned or explicitly authorized targets
+    Then /security suite primitives are used only on owned or explicitly authorized targets
     And it is not used to bypass legal restrictions or extract third-party proprietary content
 
   Scenario: the report feeds the validator

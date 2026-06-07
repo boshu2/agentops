@@ -296,12 +296,7 @@ dispositions:
     domain:         "BC2 Validation"
     hexagonal_role: driven-adapter
     disposition:    keep
-    rationale:      "Continuous release-gate driver (security-gate.sh); distinct cadence role from security-suite's composable primitive library (resolved KEEP 2026-05-24)"
-  - skill:          security-suite
-    domain:         "BC2 Validation"
-    hexagonal_role: driven-adapter
-    disposition:    update
-    rationale:      "Composable scanner; likely canonical security validation lane"
+    rationale:      "Canonical security skill: continuous release-gate driver (security-gate.sh) PLUS the composable primitive library (security_suite.py / prompt_redteam.py) collapsed in from security-suite (cp-qqq, 2026-06-07)"
   - skill:          shared
     domain:         "BC4 Factory"
     hexagonal_role: domain
