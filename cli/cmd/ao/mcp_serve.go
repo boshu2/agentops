@@ -9,20 +9,19 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/adapters/mcptransport"
 	"github.com/spf13/cobra"
 )
 
 // mcpToolDescriptor is one curated tool the MCP surface exposes to a hosted /
 // SDK Claude loop. Slice 1 (ag-h1mk) ships the descriptors + the holdout
 // refusal policy; the live JSON-RPC transport is the ag-3ucpd follow-up.
-type mcpToolDescriptor struct {
-	Name        string         `json:"name"`
-	Description string         `json:"description"`
-	InputSchema map[string]any `json:"input_schema"`
-	// HoldoutSensitive marks a tool whose args can reference corpus paths and
-	// therefore must be run through mcpToolDenied before a real call.
-	HoldoutSensitive bool `json:"holdout_sensitive"`
-}
+type mcpToolDescriptor = mcptransport.ToolDescriptor
+
+// mcpToolExecutor runs a curated tool by name and returns its structured text
+// output. The production executor shells the wrapped `ao` subcommand; tests
+// inject a deterministic fake.
+type mcpToolExecutor = mcptransport.ToolExecutor
 
 // mcpHoldoutMarkers are substrings in a tool-call arg that would surface the
 // LOCKED eval/holdout substrate to a cloud agent (Managed Agents are NOT ZDR).
@@ -85,8 +84,8 @@ type mcpServeOptions struct {
 	Exec       mcpToolExecutor // tool executor (default realMCPExecutor)
 }
 
-// runMCPServe handles `ao mcp serve`. Slice 1 supports --print-tools only; the
-// live JSON-RPC transport is the ag-3ucpd follow-up and errors loudly until then.
+// runMCPServe handles `ao mcp serve`, including --print-tools and the live
+// JSON-RPC stdio transport.
 func runMCPServe(opts mcpServeOptions) error {
 	if opts.PrintTools {
 		out := opts.Out
@@ -108,7 +107,11 @@ func runMCPServe(opts mcpServeOptions) error {
 	if exec == nil {
 		exec = realMCPExecutor
 	}
-	return serveMCP(in, out, exec)
+	return mcptransport.Serve(in, out, mcptransport.Options{
+		ToolDescriptors: mcpToolDescriptors,
+		Deny:            mcpToolDenied,
+		Exec:            exec,
+	})
 }
 
 // realMCPExecutor shells the curated tool's underlying `ao` subcommand. Each
@@ -158,8 +161,8 @@ var mcpServeCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Serve (or print) the curated ao MCP tool surface",
 	Long: `Emit the curated MCP tool surface (--print-tools) consumable by
-` + "`ao agent bundle --runtime managed`" + `, or (future) run the live MCP
-JSON-RPC transport.
+` + "`ao agent bundle --runtime managed`" + `, or run the live MCP JSON-RPC
+transport.
 
   ao mcp serve --print-tools --json    # list the tool schemas
 

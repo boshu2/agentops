@@ -5,7 +5,7 @@
 
 | Command | Category | Coverage | Reason |
 |---------|----------|----------|--------|
-| `ao agent bundle` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao agent bundle` | `public-tested` | `allowlisted` | Covered by vendorimage agentbundle adapter tests and command registration tests. |
 | `ao agents doctor` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao agents inspect` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao agents lint` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
@@ -242,7 +242,7 @@
 | `ao tick status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao tick verdict-gate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao trace` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
-| `ao turn verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao turn verify` | `public-tested` | `allowlisted` | Covered by turnverify adapter tests and command registration tests. |
 | `ao validate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao verdict-gate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao version` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
