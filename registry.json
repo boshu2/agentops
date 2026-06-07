@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-07T05:29:43Z",
+  "generated_at": "2026-06-07T05:53:16Z",
   "summary": {
     "skills": 173,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 80,
-    "capabilities": 266
+    "cli_commands": 82,
+    "capabilities": 268
   },
   "surfaces": {
     "skills": [
@@ -1602,8 +1602,15 @@
       {
         "name": "ao claim",
         "path": "cli/cmd/ao/",
-        "purpose": "BC2 ClaimEvidenceBinderPort operations (bind/list claim-evidence)",
+        "purpose": "Claim a BR bead or manage claim-evidence bindings",
         "bounded_context": "BC3",
+        "driven_by_skills": []
+      },
+      {
+        "name": "ao close",
+        "path": "cli/cmd/ao/",
+        "purpose": "Close a bead and persist the explicit ledger/evidence paths",
+        "bounded_context": "",
         "driven_by_skills": []
       },
       {
@@ -2030,6 +2037,13 @@
         ]
       },
       {
+        "name": "ao ready",
+        "path": "cli/cmd/ao/",
+        "purpose": "Print harness-neutral ready bead state as JSON",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao reconcile",
         "path": "cli/cmd/ao/",
         "purpose": "Join git, CI, release, beads, and .agents truth into one report",
@@ -2216,9 +2230,9 @@
     ]
   },
   "capability_summary": {
-    "total": 266,
+    "total": 268,
     "skills": 173,
-    "cli_commands": 80,
+    "cli_commands": 82,
     "gates": 13,
     "reference_impls": 0
   },
@@ -2235,6 +2249,7 @@
     "ci",
     "citation",
     "claim",
+    "close",
     "codex",
     "compile",
     "config",
@@ -2281,6 +2296,7 @@
     "provenance",
     "quick-start",
     "ratchet",
+    "ready",
     "reconcile",
     "redact",
     "registry",
@@ -6133,7 +6149,27 @@
       "name": "ao claim",
       "type": "cli-command",
       "bounded_context": "BC3",
-      "purpose": "BC2 ClaimEvidenceBinderPort operations (bind/list claim-evidence)",
+      "purpose": "Claim a BR bead or manage claim-evidence bindings",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--claim",
+        "--config",
+        "--dry-run",
+        "--json",
+        "--level",
+        "--output",
+        "--path",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.close",
+      "name": "ao close",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Close a bead and persist the explicit ledger/evidence paths",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
@@ -7133,6 +7169,23 @@
         "validation",
         "vibe"
       ],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.ready",
+      "name": "ao ready",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Print harness-neutral ready bead state as JSON",
+      "status": "active",
+      "driven_by_skills": [],
       "flags": [
         "--config",
         "--dry-run",

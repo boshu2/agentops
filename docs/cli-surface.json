@@ -213,6 +213,13 @@
     },
     {
       "category": "public-tested",
+      "command": "close",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "codex ensure-start",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -1327,6 +1334,13 @@
     {
       "category": "public-tested",
       "command": "ratchet validate",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
+      "command": "ready",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
