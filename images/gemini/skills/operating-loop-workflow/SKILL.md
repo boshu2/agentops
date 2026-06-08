@@ -1,6 +1,6 @@
 ---
 name: operating-loop-workflow
-description: Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users.
+description: Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users. Use when installing the seven-move workflow, running the operating-loop script, or orchestrating multi-agent tasks via Workflow tool.
 practices:
 - pragmatic-programmer
 - agile-manifesto

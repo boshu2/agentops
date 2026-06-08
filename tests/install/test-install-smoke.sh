@@ -45,7 +45,9 @@ no_hardcoded_user_paths() {
 
 INSTALL_SCRIPTS=(
     "scripts/install.sh"
+    "scripts/install-claude.sh"
     "scripts/install-codex.sh"
+    "scripts/install-agy.sh"
     "scripts/install-opencode.sh"
 )
 
@@ -111,11 +113,27 @@ check "install-codex.sh delegates to install-codex-plugin.sh" \
 check "install-opencode.sh references agentops repo" \
     grep -q 'boshu2/agentops' "$REPO_ROOT/scripts/install-opencode.sh"
 
+# install-claude.sh must use the Claude marketplace plugin path
+check "install-claude.sh uses Claude marketplace plugin" \
+    grep -q 'claude plugin marketplace' "$REPO_ROOT/scripts/install-claude.sh"
+
+# install-agy.sh must use the Gemini/Antigravity image bundle path
+check "install-agy.sh installs Gemini image bundle" \
+    grep -q 'images/gemini' "$REPO_ROOT/scripts/install-agy.sh"
+
 # All install scripts should have a usage comment
 for script in "${INSTALL_SCRIPTS[@]}"; do
     check "$script has usage documentation" \
         grep -qi 'usage\|Usage' "$REPO_ROOT/$script"
 done
+
+echo ""
+
+# Dry-run paths must not require vendor CLIs or mutate local state.
+check "install-claude.sh dry-run exits cleanly" \
+    bash "$REPO_ROOT/scripts/install-claude.sh" --dry-run --quiet
+check "install-agy.sh dry-run exits cleanly" \
+    bash "$REPO_ROOT/scripts/install-agy.sh" --dry-run --quiet
 
 echo ""
 

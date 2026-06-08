@@ -87,6 +87,14 @@ agents/rules templates are present, and — if the `agy` CLI is installed —
 
 ## Import path (AGY / Gemini)
 
+Fresh install:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash
+```
+
+Local source install:
+
 ```bash
 agy plugin validate images/gemini       # validate the bundle
 agy plugin install  images/gemini       # install locally

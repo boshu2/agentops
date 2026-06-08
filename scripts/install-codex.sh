@@ -99,9 +99,20 @@ fi
 
 # skills-codex/ is pre-built in the bundle (manually maintained, no sync needed)
 
+BUNDLE_VERSION="$INSTALL_REF"
+if [[ -f "$SRC_ROOT/.codex-plugin/plugin.json" ]]; then
+  parsed_version="$(
+    sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$SRC_ROOT/.codex-plugin/plugin.json" |
+      head -1
+  )"
+  if [[ -n "$parsed_version" ]]; then
+    BUNDLE_VERSION="$parsed_version"
+  fi
+fi
+
 plugin_args=(
   --repo-root "$SRC_ROOT"
-  --version "$INSTALL_REF"
+  --version "$BUNDLE_VERSION"
   --update-command "$UPDATE_CMD"
 )
 

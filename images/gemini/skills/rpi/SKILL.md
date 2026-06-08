@@ -58,10 +58,6 @@ real blocked state exhausts retries. Read
 [references/autonomous-execution.md](references/autonomous-execution.md) when
 you need the full autonomy contract.
 
-When an external executor fails but the code surface may still be valid, read
-[references/codex-executor.md](references/codex-executor.md) and recover through
-Codex direct checks before declaring a source-level regression.
-
 ## Loop position
 
 `/rpi` is the orchestrator across **every move** of the [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence + learning capture. It delegates each move to the skill that owns it (`/discovery`, `/plan`, `/crank`, `/validate`, `/forge`/`/post-mortem`), and enforces three loop-level invariants:
@@ -229,6 +225,10 @@ interactive, loop, and artifact-mode examples.
 | Validation FAIL | Re-crank with findings, then re-validate, up to 3 total attempts |
 | Packet shape unclear | Read [references/phase-data-contracts.md](references/phase-data-contracts.md) |
 | External executor fails | Read [references/codex-executor.md](references/codex-executor.md), run direct Codex validation, and only create follow-up work for reproducible source failures |
+
+## Related skills
+
+- [`/using-atm`](../using-atm/SKILL.md) — out-of-session ATM substrate for running whole `/rpi` loops over a bead queue.
 
 ## Reference Documents
 

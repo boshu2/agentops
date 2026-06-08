@@ -62,8 +62,7 @@ Pick the runtime you use.
 === "Claude Code"
 
     ```bash
-    claude plugin marketplace add boshu2/agentops
-    claude plugin install agentops@agentops-marketplace
+    curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash
     ```
 
 === "Codex CLI (macOS / Linux / WSL)"
@@ -84,7 +83,16 @@ Pick the runtime you use.
     curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-opencode.sh | bash
     ```
 
+=== "Gemini / Antigravity"
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash
+    ```
+
 Restart your agent after install, then type `/quickstart` in your agent chat.
+
+Day-2 install, update, backup, permission, recovery, and escalation paths:
+[Install And Day-2 Operations](install-day2-ops.md).
 
 The `ao` CLI is optional but recommended. It unlocks repo-native bookkeeping, retrieval, health checks, and terminal workflows.
 

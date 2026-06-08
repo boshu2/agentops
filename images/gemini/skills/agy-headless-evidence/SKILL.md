@@ -2,7 +2,7 @@
 name: agy-headless-evidence
 user-invocable: false
 description: |-
-  Run AGY headlessly via scheduled ticks or `agy -p`, capturing agentapi JSONL evidence for validation.
+  Run AGY headlessly via scheduled ticks or `agy -p`, capturing agentapi JSONL evidence for validation. Use when running AGY in an automated loop, testing headless execution, or capturing agent event streams for validation.
 practices:
 - design-by-contract
 - evidence-over-assertion

@@ -7,7 +7,7 @@ metadata:
   tier: execution
 description: >-
   Cross Agent Session Resumer. Convert and resume sessions across Claude Code,
-  Codex, Gemini, and other providers.
+  Codex, Gemini, and other providers. Use when switching AI agent providers mid-session or migrating an active chat history to a new tool.
 practices:
 - pragmatic-programmer
 ---

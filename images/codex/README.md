@@ -79,6 +79,12 @@ are *converted and in sync*, not just present.
 
 ## Verify
 
+Fresh install:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
+```
+
 ```bash
 # from the agentops repo root (or anywhere — verify.sh resolves the root itself)
 bash images/codex/verify.sh          # presence of all 61 twins + hash drift gate -> exit 0

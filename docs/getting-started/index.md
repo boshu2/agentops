@@ -52,8 +52,7 @@ Pick the installer for your runtime.
 === "Claude Code"
 
     ```bash
-    claude plugin marketplace add boshu2/agentops
-    claude plugin install agentops@agentops-marketplace
+    curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash
     ```
 
 === "Codex CLI"
@@ -69,6 +68,12 @@ Pick the installer for your runtime.
 
     ```bash
     curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-opencode.sh | bash
+    ```
+
+=== "Gemini / Antigravity"
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash
     ```
 
 Then install the `ao` CLI for repo seeding, health checks, and terminal
@@ -92,6 +97,9 @@ For other skills-compatible agents, install selected skills with:
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)
 ```
+
+Day-2 install, update, backup, permission, recovery, and escalation paths are in
+[Install And Day-2 Operations](../install-day2-ops.md).
 
 ## Verify the install
 
