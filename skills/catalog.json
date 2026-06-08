@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-08T03:49:42Z",
+  "generated_at": "2026-06-08T04:49:08Z",
   "skill_count": 162,
   "skills": [
     {
@@ -41,7 +41,7 @@
     },
     {
       "name": "agent-native",
-      "description": "Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native via skills plus the ao CLI and CI, not hooks. Use when wiring a Managed Agent or Agent SDK loop to AgentOps, or making an out-of-session agent AgentOps-native.",
+      "description": "Make an out-of-session agent AgentOps-native with skills, the ao CLI, and CI instead of hooks.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -140,7 +140,7 @@
     },
     {
       "name": "agy-project-worktree-permissions",
-      "description": "|-",
+      "description": "Prove AGY project/worktree isolation with scoped --add-dir permissions, role tiers, dcg guardrails, and persisted evidence.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -1077,7 +1077,7 @@
     },
     {
       "name": "cross-vendor-trust-gate",
-      "description": "|-",
+      "description": "Run the skill-factory final trust gate: operate trust-gate.sh, read skill.trust.json, and enforce --require-cross.",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [
@@ -1242,7 +1242,7 @@
     },
     {
       "name": "doc",
-      "description": "Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss). Use when writing or refreshing repo documentation, a README, or an open-source doc set.",
+      "description": "Generate and validate repo docs, READMEs, and OSS doc packs.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -1280,7 +1280,7 @@
     },
     {
       "name": "eval-outcomes",
-      "description": "Grade agent or model output against Outcomes as a holdout-safe projection of the locked eval substrate. Use when scoring output against outcomes, running a holdout-safe eval, or comparing runtimes on one bar.",
+      "description": "Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -2899,7 +2899,7 @@
     },
     {
       "name": "scope",
-      "description": "Hard-block edits outside declared frozen directories via PreToolUse hook. Use when freezing files or dirs from agent edits, enforcing edit boundaries, or protecting paths during a risky change.",
+      "description": "Hard-block edits outside declared frozen directories and protect paths during risky changes.",
       "hexagonal_role": "driven-adapter",
       "user_invocable": false,
       "consumes": [],
@@ -2922,7 +2922,7 @@
     },
     {
       "name": "security",
-      "description": "Run repository security scans and composable security analysis. Use when auditing a repo for vulnerabilities, scanning dependencies or secrets, or gating a release on security checks.",
+      "description": "Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates.",
       "hexagonal_role": "driven-adapter",
       "user_invocable": false,
       "consumes": [
@@ -2947,7 +2947,7 @@
     },
     {
       "name": "session-bootstrap",
-      "description": "Universal init prompt; every agent spawned into an AgentOps repo runs ao session bootstrap first. Use when starting or onboarding a fresh agent session in an AgentOps repo, or defining the first-turn init prompt.",
+      "description": "Universal AgentOps init prompt for starting or onboarding a fresh agent session.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [

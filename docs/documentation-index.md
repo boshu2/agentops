@@ -78,6 +78,7 @@ Bridge / framing docs:
 - [Skills Reference](SKILLS.md) — Complete reference for all AgentOps skills
 - [Skills Decision Tree](skills-decision-tree.md) — "Which skill do I need next?" — single source of truth linked from harvest, compile, knowledge-activation, and quickstart SKILL.md
 - [Skill API](SKILL-API.md) — Frontmatter fields, context declarations, enforcement status
+- [Critical Skills Policy](contracts/critical-skills.txt) — Human-supervised skill-edit denylist consumed by `ao skills edit seal`
 - [Skill Quality Rubric](reference/skill-quality-rubric.md) — Scoring rubric for repo-runtime, export, and mega-skill readiness
 - [AgentOps Domain Evolution BDD](reference/agentops-domain-evolution-bdd.md) — Gherkin acceptance contract for skill, CLI, and hook evolution
 - [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 162 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
