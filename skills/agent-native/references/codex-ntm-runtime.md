@@ -1,9 +1,9 @@
-# Codex/NTM runtime path — tmux pane swarms + agent-mail + direct `ao`
+# Codex/ATM runtime path — tmux pane swarms + agent-mail + direct `ao`
 
 > The Codex-side recipe behind the three-phase workflow in
 > [`../SKILL.md`](../SKILL.md). Same doctrine, different runtime: Codex
 > (gpt-5.3-codex) has **no Managed Agents API, no Workflow tool, no Task
-> subagent**. It orchestrates through **NTM** (tmux pane swarms + agent-mail) +
+> subagent**. It orchestrates through **ATM** (tmux pane swarms + agent-mail) +
 > skills + the `ao` CLI + `ssh bushido`. So the path is the same — bundle skills
 > → expose `ao` → gate via CI — but every Claude-only primitive is replaced by
 > its Codex equivalent.
@@ -12,17 +12,21 @@
 
 A **Codex** loop (or any non-Claude headless runtime) running out-of-session:
 
-- a Codex CLI loop driven by NTM tmux panes on bushido,
+- a Codex CLI loop driven by ATM tmux panes on bushido,
 - an OpenClaw / cron-scheduled Codex job, or
 - any agent that shells out rather than calling MCP tools.
 
+ATM is Bo's fork/alias of upstream NTM: `atm` points at
+`~/dev/ntm/dist/atm-darwin-arm64` and preserves the upstream `ntm` command
+surface while giving AgentOps a local name.
+
 ## The substitutions (Claude → Codex)
 
-| Claude primitive | Codex/NTM equivalent |
+| Claude primitive | Codex/ATM equivalent |
 |---|---|
-| Managed Agents API (`ao agent bundle --runtime managed`) | NTM swarm definition; load skills into the pane's instructions |
+| Managed Agents API (`ao agent bundle --runtime managed`) | ATM swarm definition; load skills into the pane's instructions |
 | `ao mcp serve` (MCP tool surface) | **direct `ao` shell calls** — Codex shells out, no MCP needed |
-| Workflow / Task subagent fan-out | tmux **pane swarm** (NTM), coordinated via **agent-mail** |
+| Workflow / Task subagent fan-out | tmux **pane swarm** (ATM), coordinated via **agent-mail** |
 | `PreToolUse` / `Stop` SDK adapter | not applicable — CI is the only gate |
 | in-loop MCP descriptor | a documented shell-tool spec invoking `ao <verb>` |
 
@@ -57,10 +61,10 @@ ssh bushido 'cd ~/dev/agentops && ao validate --gate --changes <files>'
 ```
 
 For a **whole out-of-session loop** (a swarm of panes, not a single pane),
-orchestration routes through the NTM substrate — `ao` does not own or wrap a
+orchestration routes through the ATM substrate — `ao` does not own or wrap a
 substrate; each pane dispatches its own `ao rpi` loop. See
-[`../../using-ntm/SKILL.md`](../../using-ntm/SKILL.md). Multi-pane coordination
-(file locks, inboxes, handoffs) uses **agent-mail**; see the `using-ntm` and
+[`../../using-atm/SKILL.md`](../../using-atm/SKILL.md). Multi-pane coordination
+(file locks, inboxes, handoffs) uses **agent-mail**; see the `using-atm` and
 `agent-mail` skills.
 
 **Checkpoint:** the pane can call `ao session bootstrap` + `ao inject` itself
@@ -70,12 +74,12 @@ before doing any work.
 
 Identical to the Claude path: the swarm's output (a PR branch) is gated by the
 **same** `agent-output-validate.yml` CI workflow running `ao validate` + the
-standards/scenario gates. Green CI is the merge gate. NTM panes do not get a
+standards/scenario gates. Green CI is the merge gate. ATM panes do not get a
 private gate — CI is the shared boundary for both runtimes.
 
 **Checkpoint:** the swarm's PR passed the identical CI gate as interactive work.
 
-## Boundaries (Codex/NTM-specific)
+## Boundaries (Codex/ATM-specific)
 
 - **No skill fork.** Panes load the `skills-codex/` artifact, which the converter
   keeps in parity with `skills/`. Editing the Codex body by hand without the

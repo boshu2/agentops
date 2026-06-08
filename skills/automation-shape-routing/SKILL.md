@@ -1,6 +1,6 @@
 ---
 name: automation-shape-routing
-description: 'Front door for agent automation — decide the SHAPE (Workflow vs NTM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".'
+description: 'Front door for agent automation — decide the SHAPE (Workflow vs ATM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".'
 practices:
 - hexagonal-architecture
 - team-topologies
@@ -22,14 +22,14 @@ context:
 metadata:
   tier: meta
   dependencies: []
-output_contract: 'a routing verdict — Workflow | NTM swarm | plain skill — with the deciding axis named'
+output_contract: 'a routing verdict — Workflow | ATM swarm | plain skill — with the deciding axis named'
 ---
 
-# Automation Shape Routing — Workflow vs NTM vs Skill
+# Automation Shape Routing — Workflow vs ATM vs Skill
 
 > **The trap this kills:** "I built a lot of skills; they should become
 > workflows." Mostly false. Most orchestration-looking skills are either
-> long-lived/human-attachable (stay NTM) or hard-sequential (stay skills). The
+> long-lived/human-attachable (stay ATM) or hard-sequential (stay skills). The
 > win is the routing rule, not a migration project.
 
 ## The three shapes
@@ -37,7 +37,7 @@ output_contract: 'a routing verdict — Workflow | NTM swarm | plain skill — w
 | Shape | What it is | Mechanism |
 |---|---|---|
 | **Workflow** | Deterministic, reproducible orchestration of subagents | Claude `Workflow` tool — `agent({schema})`, `parallel()`, `pipeline()`, `phase()`, loop-until-budget. In-process, headless, ~16 concurrent. |
-| **NTM swarm** | Long-lived, human-in-the-loop multi-agent run | `ntm` (the CLI) driven by [`/using-ntm`](../using-ntm/SKILL.md) — persistent tmux panes running whole `/rpi`/`/evolve` loops over a bead queue, with attach + nudge + kill/relaunch and mail/locks coordination. |
+| **ATM swarm** | Long-lived, human-in-the-loop multi-agent run | `atm` (the CLI) driven by [`/using-atm`](../using-atm/SKILL.md) — persistent tmux panes running whole `/rpi`/`/evolve` loops over a bead queue, with attach + nudge + kill/relaunch and mail/locks coordination. |
 | **Plain skill** | One model reasoning through a procedure or knowledge | A single `SKILL.md`. No fan-out, or a strictly sequential edit-loop. |
 
 ## The decision rule (three axes)
@@ -49,14 +49,14 @@ Ask in order:
 2. **Must a human attach and steer mid-run?** Or does it run for *hours*, do
    open-ended *file edits*, juggle a *fluid population* (rate limits, kill/
    relaunch, prompt-cache rounds), or relay between *cross-model* panes? — if
-   **yes** → **NTM swarm**.
+   **yes** → **ATM swarm**.
 3. Otherwise — fixed DAG, agents return **structured JSON** (not free-form edits
    needing review), no attach needed, you want it **reproducible + headless** →
    **Workflow**.
 
 **One-line litmus:**
 > deterministic DAG + structured JSON + no human-attach + headless-wanted → **Workflow**
-> long-lived + attachable + open-ended file edits / fluid population → **NTM**
+> long-lived + attachable + open-ended file edits / fluid population → **ATM**
 > no fan-out, or hard-sequential edit loop → **plain skill**
 
 ## Spike-validated nuances (2026-05-29)
@@ -65,8 +65,8 @@ A live three-legged spike (`~/dev/agentops-3cat-spike/`) measured the same task 
 all three backends. Two findings refine the rule:
 
 1. **The primary axis is control-plane vs in-session, not "parallel vs serial."**
-   **NTM is a control-plane** that *runs Claude/Codex/Gemini as panes* — it is not a
-   peer of the native runtimes, it is the supervisor tier above them. Choose NTM when
+   **ATM is a control-plane** that *runs Claude/Codex/Gemini as panes* — it is not a
+   peer of the native runtimes, it is the supervisor tier above them. Choose ATM when
    you need the control plane (attach/steer, persistence, multi-vendor); choose
    in-session native (Workflow/Task) when you don't.
 2. **Parallel buys quality/independence, NOT wall-clock — at small N.** Measured: a
@@ -77,7 +77,7 @@ all three backends. Two findings refine the rule:
    want *independent verification / fresh eyes*, not for speed. For speed, you need
    large N **and** no barrier — use `pipeline()` (no barrier), not `parallel()`.
 
-Degradation (NTM → Claude-native → beads floor) is governed by the
+Degradation (ATM → Claude-native → beads floor) is governed by the
 `OrchestrationPort` selector; opt out entirely with `AGENTOPS_ORCHESTRATION=off` →
 beads floor, which always works.
 
@@ -89,8 +89,8 @@ beads floor, which always works.
   *Exception:* it graduates to a `loop-until-budget` Workflow only once each step
   returns **structured output** instead of free-form edits, and you want it
   headless/reproducible.
-- **Don't NTM-ify a clean fan-out, and don't Workflow-ify an attach-and-steer
-  run.** The Workflow tool is in-process and cannot be tmux-attached; NTM is
+- **Don't ATM-ify a clean fan-out, and don't Workflow-ify an attach-and-steer
+  run.** The Workflow tool is in-process and cannot be tmux-attached; ATM is
   built for exactly the live-steering Workflow can't do. Picking wrong fights the
   tool the whole way.
 
@@ -100,8 +100,8 @@ beads floor, which always works.
 `council` (N judges → consensus — near-trivial port), the **planning half** of
 `rpi`, judge/refutation panels, any "fan out N analyses → triangulate" task.
 
-**→ Stay NTM** (long-lived, attachable, open-ended edits, fluid population):
-the `*-with-ntm` family (hypothesis research, cross-model review swarms, browser
+**→ Stay ATM** (long-lived, attachable, open-ended edits, fluid population):
+the `*-with-atm` family (hypothesis research, cross-model review swarms, browser
 testing), plus `swarm`/`crank` in full epic-execution mode — they touch the
 working tree and need wave-validity gating + human review.
 
@@ -129,7 +129,7 @@ decided, hand off:
 |---|---|---|
 | **plain skill** | `skill-builder` | Scaffold a new `SKILL.md` against the unified template → then `skill-auditor` → `heal-skill`. |
 | **Workflow** | `workflow-builder` | Scaffold a new `.claude/workflows/*.js` from the operating-loop.js template. |
-| **NTM swarm** | `ntm` + [`/using-ntm`](../using-ntm/SKILL.md) | Stand up + tend an NTM swarm running AgentOps loops (`/rpi`/`/evolve`) over a bead queue. |
+| **ATM swarm** | `atm` + [`/using-atm`](../using-atm/SKILL.md) | Stand up + tend an ATM swarm running AgentOps loops (`/rpi`/`/evolve`) over a bead queue. |
 
 State the verdict and the deciding axis in one line, then invoke the chosen
 builder. Do not scaffold here.

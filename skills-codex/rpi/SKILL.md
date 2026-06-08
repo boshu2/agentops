@@ -182,6 +182,10 @@ interactive, and loop examples.
 | Packet shape unclear | Read [references/phase-data-contracts.md](references/phase-data-contracts.md) |
 | External executor fails | Read [references/codex-executor.md](references/codex-executor.md), run direct Codex validation, and only create follow-up work for reproducible source failures |
 
+## Related skills
+
+- $using-atm — out-of-session ATM substrate for running whole $rpi loops over a bead queue.
+
 ## Reference Documents
 
 - [references/autonomous-execution.md](references/autonomous-execution.md)

@@ -309,6 +309,10 @@ Read [references/troubleshooting.md](references/troubleshooting.md) for full dia
 | gc backend detected but workers unresponsive | [references/troubleshooting.md](references/troubleshooting.md) |
 | Tasks assigned but workers never spawn | [references/troubleshooting.md](references/troubleshooting.md) |
 
+## Related skills
+
+- [`/using-atm`](../using-atm/SKILL.md) — out-of-session ATM substrate when a swarm needs persistent panes and human attach/steer.
+
 ## Reference Documents
 
 - [references/shared-checkout-discipline.md](references/shared-checkout-discipline.md)
