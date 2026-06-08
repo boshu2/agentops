@@ -1,6 +1,6 @@
 ---
 name: autodev
-description: Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself. Use when defining the autonomous improvement loop rules, repairing PROGRAM.md, or setting boundaries for evolve.
+description: Manage the PROGRAM.md/AUTODEV.md contract consumed by evolve/factory ticks. Use for loop rules, boundaries, or PROGRAM.md repair.
 practices:
 - cmm-process-maturity
 - ai-assisted-dev

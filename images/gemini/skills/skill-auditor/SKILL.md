@@ -1,6 +1,6 @@
 ---
 name: skill-auditor
-description: 'Audit an existing SKILL.md against the unified AgentOps template (15 checks). Use when running a skill quality review, checking if a skill is ready, or auditing skill template compliance.'
+description: 'Audit SKILL.md files against the AgentOps template and readiness checks. Use for quality reviews or template compliance.'
 practices:
 - code-complete
 - cmm-process-maturity
