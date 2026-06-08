@@ -31,9 +31,9 @@ cd cli && make sync-hooks   # Sync embedded lib/skills into cli/embedded/
 | `scripts/regen-codex-hashes.sh` | Regenerate hashes after changing skills-codex/ files |
 | `scripts/verify-gate-claim.sh` | AP#7 mechanical enforcement — verify `Evidence:` claims against gate logs |
 
-## CI Validation
+## Local Validation
 
-All pushes to `main` run `.github/workflows/validate.yml` (65 jobs). **CI is the sole authoritative push gate** per `docs/contracts/local-pre-push-gate-retirement.md` (soc-g2r9). The previous `scripts/pre-push-gate.sh` local mirror was retired in PR #357 because it drifted from CI and cost a self-correction PR per drift incident.
+Routine AgentOps changes land by local validation plus direct push to `main`. `scripts/pre-push-gate.sh --fast` is the cockpit gate for normal pushes; `ao gate check --full --workflow-coverage --require-workflow-parity` is the local full-gate parity proof for release-sensitive work. GitHub Actions remain available for explicit/manual backstop runs, external PR contexts, and release tags, but they are not the normal push authority.
 
 ### Quick Local Sanity Checks (per-tool, not omnibus)
 

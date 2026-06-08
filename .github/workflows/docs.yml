@@ -1,17 +1,8 @@
 name: Deploy Docs (MkDocs Material)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'docs/**'
-      - 'mkdocs.yml'
-      - 'requirements-docs.txt'
-      - 'skills/**/SKILL.md'
-      - 'cli/docs/**'
-      - 'README.md'
-      - 'CHANGELOG.md'
-      - '.github/workflows/docs.yml'
+  # Docs deploys are manual while Actions quota is not part of the release
+  # path. Routine direct-main pushes must not trigger Pages builds.
   workflow_dispatch:
 
 permissions:

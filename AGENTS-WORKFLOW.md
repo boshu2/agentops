@@ -4,26 +4,26 @@
 
 ## Workflow
 
-**Every change to `main` cites a bead and passes the cockpit gate before it lands. As of ag-qidx (2026-06-07) the model is PUSH-TO-MAIN: branch protection is OFF, and the pre-push gate is the pre-merge wall — `scripts/pre-push-gate.sh --fast` (default), or the Go orchestrator `ao gate check --fast` via `AGENTOPS_GATE_GO=1`. Run it before every push; rebase-on-reject (git serializes concurrent pushers); on a red `main`, fix forward. The unit of a change is still one *coherent arc* — a closable bead (or small-epic slice) with a single rollback semantic.** This SUPERSEDES the prior PR-per-change model **and** the `local-pre-push-gate-retirement.md` ADR (the "CI is the sole gate" decision is reversed — the local gate is now load-bearing). Rationale: `.agents/plans/2026-06-07-ao-gate-architecture.md` + the two pre-mortems — the GitHub PR serialization was self-inflicted and bought ~nothing for this solo+own-swarm repo, while the 20-slot free-plan CI was the bottleneck. Historical: the retired PR flow derived from `.agents/council/sdlc-shape-2026-05-17/DUEL.md`; the `gh-merge-chain` update-branch dance it required (`soc-1lp1`) is exactly what push-to-main removes.
+**Every change to `main` cites a bead and passes the cockpit gate before it lands. As of ag-qidx (2026-06-07) the model is PUSH-TO-MAIN: branch protection is OFF, and the pre-push gate is the pre-merge wall — `scripts/pre-push-gate.sh --fast` (default), or the Go orchestrator `ao gate check --fast` via `AGENTOPS_GATE_GO=1`. Run it before every push; rebase-on-reject (git serializes concurrent pushers); on a red `main`, fix forward. The unit of a change is still one *coherent arc* — a closable bead (or small-epic slice) with a single rollback semantic.** This SUPERSEDES the prior PR-per-change model **and** the `local-pre-push-gate-retirement.md` ADR (the old Actions-only authority decision is reversed — the local gate is now load-bearing). Rationale: `.agents/plans/2026-06-07-ao-gate-architecture.md` + the two pre-mortems — the GitHub PR serialization was self-inflicted and bought ~nothing for this solo+own-swarm repo, while the 20-slot free-plan CI was the bottleneck. Historical: the retired PR flow derived from `.agents/council/sdlc-shape-2026-05-17/DUEL.md`; the `gh-merge-chain` update-branch dance it required (`soc-1lp1`) is exactly what push-to-main removes.
 
-**Autonomous-session scope (sister rule to coherent-arc).** Coherent-arc governs the *shape* of a single PR; session-scope governs the *count* of consecutive PRs. **Default: 2-4 PRs per autonomous session.** At ≥5 PRs shipped or in-flight in one session, **stop and run a post-mortem before continuing** — diminishing returns and reactive-PR spirals (PR-fixes-fallout-from-prior-PR) are the dominant failure mode in the back-half of long sessions. Derivation: the 2026-05-19 cron-loop session shipped 6 PRs with 3 self-corrections; PRs #5–#6 each fixed fallout from #1–3. Visible reactivity by PR #5 but the loop kept nudging "keep going" without surfacing the post-mortem signal. Mechanical enforcement is the mandatory `/evolve` post-mortem checkpoint (council-gated, cannot be bypassed; `skills/evolve/references/postmortem-checkpoint.md`), which reads the session-PR count from `scripts/session-pr-scope.sh`. The pre-creation Bash hook `hooks/session-pr-counter.sh` (PR #362) was **removed** in the 3.0 hookless teardown (#511); re-author it as an **opt-in** hook via the hooks-authoring skill for the always-on pre-creation signal — AgentOps ships none. (soc-waxr, ag-o5xp)
+**Autonomous-session scope (sister rule to coherent-arc).** Coherent-arc governs the *shape* of one shipped arc; session-scope governs the *count* of consecutive arcs. **Default: 2-4 arcs per autonomous session.** At >=5 shipped or in-flight arcs in one session, **stop and run a post-mortem before continuing**. The old PR-count signal is now interpreted as arc count because the repo no longer uses PRs as the normal landing path. Derivation: the 2026-05-19 cron-loop session shipped 6 PRs with 3 self-corrections; items #5-#6 each fixed fallout from #1-3. Mechanical enforcement is the mandatory `/evolve` post-mortem checkpoint (council-gated, cannot be bypassed; `skills/evolve/references/postmortem-checkpoint.md`). (soc-waxr, ag-o5xp)
 
 ### Phases
 
-1. **Claim.** `bd ready` → pick a bead → `bd update <id> --claim`. **No bead, no PR.** If the work is genuinely new, `bd create` first.
-2. **Scope.** Read the bead's acceptance: a `.feature` file (canonical when present) or an embedded `## Scenarios` block in the bead description. Free-text acceptance is invalid — promote it to scenarios before work begins. Default: **one PR per coherent arc** — bundle scenarios that ship-or-revert together; split scenarios with independent rollback. The PR is the *atomic-revert unit*. Carve-out: `type=chore` with `#trivial` label for tiny work.
+1. **Claim.** `bd ready` → pick a bead → `bd update <id> --claim`. **No bead, no push.** If the work is genuinely new, `bd create` first.
+2. **Scope.** Read the bead's acceptance: a `.feature` file (canonical when present) or an embedded `## Scenarios` block in the bead description. Free-text acceptance is invalid — promote it to scenarios before work begins. Default: **one coherent arc per push** — bundle scenarios that ship-or-revert together; split scenarios with independent rollback. The direct-main commit range is the atomic revert unit. Carve-out: `type=chore` with `#trivial` label for tiny work.
 3. **Ship.** `bd worktree create wt-<bead-id> --branch <type>/<bead-id>-<scenario-token>-<short-slug>` (the worktree dir name is the required positional arg) — worktree-mandatory; do not edit in the shared checkout. Implement. The pre-push gate runs automatically on push (the hook); run `scripts/pre-push-gate.sh --fast` manually first to fail fast.
-4. **Land.** Push to `main` (the gate runs in the hook; rebase-on-reject). `validate.yml` runs on `main` as a post-push backstop. The bead closes when its arc is on `main` (or explicitly cancelled in bead metadata).
+4. **Land.** Push to `main` (the gate runs in the hook; rebase-on-reject). GitHub Actions are not part of the routine landing path; run them manually or through release tags only when explicitly needed. The bead closes when its arc is on `main` (or explicitly cancelled in bead metadata).
 
-### Branch + PR shape
+### Branch + Direct-Main Shape
 
 | Element | Format |
 |---|---|
 | Branch | `<type>/<bead-id>-<scenario-token>-<short-slug>` · ≤80 chars · `<scenario-token>` = full slug if it fits, else `<slug-prefix>-<hash8>` |
-| PR title | `<type>(<scope>): <subject> (<bead-id> #<scenario-slug>)` — full slug here |
-| Required PR body trailers | `Closes-scenario: <bead-id>#<slug>` · `Bounded-context: BC<N>-<name>` · `Evidence: <path>` |
+| Commit title | `<type>(<scope>): <subject> (<bead-id>)` |
+| Required evidence | bead id in commit message or close reason · local gate output path or summary · bounded context when relevant |
 | Land | Push to `main` after the cockpit gate passes · rebase-on-reject (git serializes concurrent pushers) · no force-push · no deletes |
-| Gate | cockpit pre-push gate (blocking, in the hook) + `validate.yml` on `main` (post-push backstop). No PR review (PR flow retired — ag-qidx) |
+| Gate | cockpit pre-push gate (blocking, in the hook) + optional/manual Actions backstop. No PR review (PR flow retired — ag-qidx) |
 
 ### Multi-agent discipline (shared checkout)
 
@@ -55,7 +55,7 @@ Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `ag
 ## Local Pre-Push Checklist
 
 
-Run `scripts/pre-push-gate.sh --fast` for a smart conditional gate that only checks what changed. Or run individual checks below. If any fail, CI will fail too.
+Run `scripts/pre-push-gate.sh --fast` for a smart conditional gate that only checks what changed, or `ao gate check --full --workflow-coverage --require-workflow-parity` for full local release evidence. Or run individual checks below.
 
 ```bash
 # Recommended: smart conditional gate

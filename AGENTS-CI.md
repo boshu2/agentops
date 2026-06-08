@@ -2,14 +2,14 @@
 
 > Sibling of [`AGENTS.md`](AGENTS.md), [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md), [`AGENTS-CODEX.md`](AGENTS-CODEX.md), [`AGENTS-RUNTIME.md`](AGENTS-RUNTIME.md). Split out of the monolithic AGENTS.md per soc-vuu6.3.
 
-## CI Validation — Passing the Pipeline
+## Actions Backstop
 
-All pushes to `main`, `v*` release tag pushes, and PRs run `.github/workflows/validate.yml`. Release tag pushes force every path-filtered release lane on, and the summary fails if any release lane is skipped unexpectedly. PR-only evidence jobs are allowlisted on tag pushes because tag events have no PR body; other skipped jobs are not treated as release verdicts. **Run checks locally before pushing.** The summary job gates on all jobs that are not marked non-blocking or advisory in the table below. `executable-spec-link-integrity` is now blocking (T1, soc-x7y9f): its directive↔scenario link lint fails the summary on any broken edge.
-Blocking policy list (must match the validate summary failset): every job in the CI table below except jobs marked `(non-blocking)`, including the seven `validate-codex-*` and `validate-headless-runtime-skills` jobs (split from the previous aggregated `codex-runtime-sections` job, soc-ltp2).
+Routine changes land by local gate plus direct push to `main`. GitHub Actions are optional/manual or release-tag backstops, not the release authority for normal AgentOps work. `.github/workflows/validate.yml` remains useful for explicit workflow dispatch, PRs from external collaboration, merge-queue experiments, and `v*` release tags. Release tag pushes force every path-filtered release lane on, and the summary fails if any release lane is skipped unexpectedly. PR-only evidence jobs are allowlisted on tag pushes because tag events have no PR body; other skipped jobs are not treated as release verdicts. **Run checks locally before pushing.** The local Go gate with workflow coverage is the parity guard that prevents blocking workflow scripts from drifting outside the local contract.
+Blocking policy list for optional Actions runs (must match the validate summary failset): every job in the CI table below except jobs marked `(non-blocking)`, including the seven `validate-codex-*` and `validate-headless-runtime-skills` jobs (split from the previous aggregated `codex-runtime-sections` job, soc-ltp2).
 
 #### Advisory Job Triage SLAs (post-merge advisory policy, soc-z7qq)
 
-Advisory and warn-only jobs run on every PR but their failure does NOT block merge. Most surface a `(advisory)` suffix on the GitHub check name. (`executable-spec-link-integrity` was promoted to blocking in soc-x7y9f; only its inner `ao goals trace --orphans` step remains warn-only inside the now-required job.) Each listed job has a triage SLA or explicit info-only handling — when the job has been red for longer than its SLA, follow the escalation rule.
+Advisory and warn-only jobs can run in optional Actions contexts, but their failure does NOT block a locally validated direct-main landing. Most surface a `(advisory)` suffix on the GitHub check name. (`executable-spec-link-integrity` was promoted to blocking in soc-x7y9f; only its inner `ao goals trace --orphans` step remains warn-only inside the now-required job.) Each listed job has a triage SLA or explicit info-only handling — when the job has been red for longer than its SLA, follow the escalation rule.
 
 | Job | Triage SLA | Escalation rule |
 |---|---|---|
