@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# ship.sh — single-command bot-paired fast-lane PR cycle.
+# ship.sh — single-command local-gated direct-main ship cycle.
 #
 # Removes the choice to skip the discipline encoded in
 # skills/ship-loop/SKILL.md.  In particular, anti-pattern #1 of that skill
-# ("Running --fast pre-push on an inventory-touching PR") is enforced
+# ("Running --fast pre-push on an inventory-touching inventory diff") is enforced
 # mechanically here: this script DETECTS inventory-touching changes and
 # routes through the FULL pre-push gate (no --fast) automatically.  The
 # operator no longer chooses; the script chooses.
@@ -13,14 +13,14 @@
 #   2. If inventory: run the regen scripts (sync-skill-counts, codex-hashes,
 #      domain-map, context-map, registry, sync-hooks) preemptively so the
 #      gates see consistent state
-#   3. Run pre-push-gate.sh in full mode (inventory PR) or --fast (routine)
+#   3. Run pre-push-gate.sh in full mode (inventory diff) or --fast (routine)
 #   4. On green: stage all changes (regens included), exit 0 with a clean
 #      "ready to commit + push" next-step report
 #   5. On red: exit 2 with a clear reason — same as the gate itself
 #
 # What it does NOT do (yet):
 #   - commit (operator writes the message; tracked separately)
-#   - push or open PR (one extra command after green)
+#   - push (one extra command after green)
 #   - close the bead
 #
 # Usage:
@@ -200,13 +200,13 @@ if bash scripts/pre-push-gate.sh "${gate_args[@]}"; then
     echo "Next steps (operator):"
     echo "  1. Review changes:           git status && git diff"
     echo "  2. Commit:                   git add -A && git commit -m '...'"
-    echo "  3. Push + auto-merge:        git push && gh pr create + gh pr merge <num> --squash --auto"
-    echo "  4. Close bead on merge:      bd close <bead-id> --reason 'Merged via PR #<num>'"
+    echo "  3. Push to main:             git push origin HEAD:refs/heads/main"
+    echo "  4. Close bead on main:       bd close <bead-id> --reason 'Landed on main at <sha>'"
     exit 0
 else
     rc=$?
     echo "" >&2
     echo "ship: pre-push gate BLOCKED. Address the failing check(s) above and re-run." >&2
-    echo "ship: in inventory-PR mode, --fast skips ~15 validators — DO NOT use --force-fast to bypass." >&2
+    echo "ship: in inventory mode, --fast skips ~15 validators — DO NOT use --force-fast to bypass." >&2
     exit "$rc"
 fi

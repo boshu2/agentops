@@ -10,10 +10,7 @@ on:
     paths:
       - '.claude/workflows/*.js'
       - '.github/workflows/workflow-scripts-syntax.yml'
-  push:
-    branches: [main]
-    paths:
-      - '.claude/workflows/*.js'
+  workflow_dispatch:
 
 jobs:
   node-check:

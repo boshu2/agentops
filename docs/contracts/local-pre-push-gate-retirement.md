@@ -1,16 +1,22 @@
-# Local Pre-Push Gate Retirement — CI Is Sole Source-of-Truth
+# Historical ADR: Local Pre-Push Gate Retirement
+
+> Superseded on 2026-06-08 by `ag-3l86`: GitHub Actions became a quota SPOF,
+> so AgentOps returned release authority to the local cockpit gate and direct
+> pushes to `main`. Keep this document as historical context for the older
+> CI-only experiment, not as current workflow doctrine.
 
 `scripts/pre-push-gate.sh` is the local mirror of `.github/workflows/validate.yml`.
 The mirror has drifted three times in observable ways during the 2026-05-19
 session alone, each costing a self-correction PR. This document is the
-architecture decision to retire the local mirror and treat CI as the sole
-source-of-truth for push-gate enforcement.
+architecture decision to retire the local mirror and treat GitHub Actions as
+the push-gate enforcement point. That decision is no longer current.
 
 ## Decision
 
-The local pre-push gate is retired. CI (the GitHub Actions workflows under
-`.github/workflows/`) is the sole authoritative gate for whether a change is
-fit to land on `main`.
+The historical decision retired the local pre-push gate and moved authority to
+GitHub Actions workflows under `.github/workflows/`. Current doctrine reverses
+that: the local cockpit gate is the release authority for normal direct-main
+work.
 
 Authoritative gate:
 

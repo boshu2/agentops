@@ -221,12 +221,13 @@ One CI check is intentionally **not** wired into the local gate:
 |--------|--------|
 | `validate-learning-coherence.sh` | Fails on pre-existing frontmatter-only learning files; needs repo cleanup before local enforcement |
 
-## Hookless by default — CI is the authoritative gate
+## Hookless by default - local gate is the release authority
 
 AgentOps 3.0 ships **zero hooks**. The hooks were deleted, not demoted. What a
-pre-commit, pre-push, or session hook used to enforce locally is now enforced by
-a CI job on push (`.github/workflows/validate.yml`) — complexity budgets, ratchet
-non-regression, pre-mortem and task-metadata checks all run as required CI gates.
+pre-commit, pre-push, or session hook used to enforce implicitly is now enforced
+by explicit local commands, primarily `scripts/pre-push-gate.sh` and
+`ao gate check`. GitHub Actions remain available as manual or release-tag
+backstops, but they are not the routine release authority.
 The workflow is guided by skills plus the `ao` CLI; context flows through explicit
 channels (`ao inject` / context packets through ports), not hook side effects.
 

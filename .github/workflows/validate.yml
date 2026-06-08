@@ -16,10 +16,13 @@ name: Validate
 # MUST be empty.
 
 on:
+  # Local validation is the release authority for routine direct-main work.
+  # Keep Actions as an explicit/manual or release-tag backstop so push-to-main
+  # does not consume Actions quota or become a serialization bottleneck.
   push:
-    branches: [main]
     tags:
       - 'v*'
+  workflow_dispatch:
   pull_request:
     branches: [main]
   # Merge queue: GitHub validates queued PRs on the combined merge_group ref.

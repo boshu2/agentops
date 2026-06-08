@@ -10,7 +10,7 @@ Mechanically enforced on Bo's machine by the local opt-in guard `~/.claude/hooks
 
 # Agent Instructions
 
-**AgentOps compiles and compounds the context that feeds your software factory.** It automates the bookkeeping agents do not reliably do for themselves — attempts, decisions, citations, verdicts, handoffs, learnings — then encodes the DevSecOps CDLC and multi-agent operating practices into a portable corpus that compounds across sessions and runtimes. Plugin + CLI (hookless — skills + the `ao` CLI, with CI as the authoritative gate), runs on your hardware against your subscription; out-of-session scheduling is delegated to a substrate, not an in-repo daemon (ADR-0009). Humans choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled compounding.
+**AgentOps compiles and compounds the context that feeds your software factory.** It automates the bookkeeping agents do not reliably do for themselves — attempts, decisions, citations, verdicts, handoffs, learnings — then encodes the DevSecOps CDLC and multi-agent operating practices into a portable corpus that compounds across sessions and runtimes. Plugin + CLI (hookless — skills + the `ao` CLI, with the local cockpit gate as release authority), runs on your hardware against your subscription; out-of-session scheduling is delegated to a substrate, not an in-repo daemon (ADR-0009). Humans choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled compounding.
 
 This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
 
@@ -62,7 +62,7 @@ cd cli && make test   # Run tests
 cd cli && make lint   # Run linter
 ```
 
-Push, let CI validate (it is the authoritative gate — no local omnibus gate). Per-tool sanity checks + the full release gate live in [`docs/agent-workflow-reference.md`](docs/agent-workflow-reference.md).
+Run the local cockpit gate before pushing, then push the coherent bead arc directly to `main`. GitHub Actions are optional/manual or release-tag backstops, not the routine release authority. Per-tool sanity checks + the local gate bundle live in [`docs/agent-workflow-reference.md`](docs/agent-workflow-reference.md).
 
 ## What's where (tiered AGENTS.md split, soc-vuu6.3)
 

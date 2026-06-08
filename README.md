@@ -87,7 +87,7 @@ brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops && brew ins
 # Or release binaries / build from source (cli/README.md).
 ```
 
-Installs hookless: skills and the `ao` CLI guide the workflow, and CI is the authoritative gate. The only hard requirement is an agent runtime and `git`; everything else degrades gracefully. Full dependency matrix: [docs/dependencies.md](docs/dependencies.md). Day-2 install, update, backup, permission, recovery, and escalation paths are in [docs/install-day2-ops.md](docs/install-day2-ops.md).
+Installs hookless: skills and the `ao` CLI guide the workflow, and the local cockpit gate is the release authority. GitHub Actions are an optional/manual backstop, not the routine shipping path. The only hard requirement is an agent runtime and `git`; everything else degrades gracefully. Full dependency matrix: [docs/dependencies.md](docs/dependencies.md). Day-2 install, update, backup, permission, recovery, and escalation paths are in [docs/install-day2-ops.md](docs/install-day2-ops.md).
 
 ---
 
