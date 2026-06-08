@@ -1,6 +1,6 @@
 ---
 name: burndown
-description: Drive a finite epic set to all-merged, then stop.
+description: "Drive a finite epic set to all-merged, then stop. Use when driving a finite set of epics to all-merged and then stopping."
 practices:
 - continuous-delivery
 - xp

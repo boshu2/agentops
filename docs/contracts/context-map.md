@@ -12,7 +12,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `artifact-clarity-pass` — Use when removing generic filler from code, docs, or handoffs while preserving every load-bearing fact. Triggers:
 - `brainstorm` — Separate goals from implementation.
 - `bug-hunt` — Investigate bugs and root causes.
-- `burndown` — Drive a finite epic set to all-merged, then stop.
+- `burndown` — Drive a finite epic set to all-merged, then stop. Use when driving a finite set of epics to all-merged and then stopping.
 - `complexity` — Find focused refactor hotspots.
 - `council` — Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.
 - `crank` — Execute epics through waves.
@@ -54,7 +54,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `codex-goals` — Use when using Codex Goals to define an objective once and let Codex iterate until done. Triggers:
 - `implement` — Implement one tracked issue.
 - `inject` — Load relevant .agents context.
-- `operating-loop-workflow` — Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users.
+- `operating-loop-workflow` — Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users. Use when installing or running the operating-loop multi-agent Workflow for AgentOps plugin users.
 - `performance-profile-triage` — Use when investigating slowness with baselines, profiler evidence, and ranked bottlenecks. Triggers:
 - `pr-implement` — Implement a scoped OSS PR.
 - `pr-prep` — Prepare PR commits and body.
@@ -64,7 +64,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `research` — Explore and write findings.
 - `review` — Review diffs for risk, find mocks, scan for bugs, audit codebases. Use when: reviewing a diff/PR for bugs and risk, hunting mocks/stubs/placeholders, or auditing for quality.
 - `session-bootstrap` — Universal init prompt; every agent spawned into an AgentOps repo runs ao session bootstrap first. Use when starting or onboarding a fresh agent session in an AgentOps repo, or defining the first-turn init prompt.
-- `ship-loop` — Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close.
+- `ship-loop` — Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close. Use when shipping one closable bead or small-epic slice through the fast-lane bot-paired cycle.
 - `spec-reliability-implementation` — Use when implementing a written spec into a reliable service with acceptance examples and observability. Triggers:
 - `status` — Show AgentOps work status.
 - `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured verdict on an artifact, plan, code, PR, or CI gate before proceeding.
@@ -87,7 +87,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `agy-headless-evidence` — Run AGY headlessly via scheduled ticks or `agy -p`, capturing agentapi JSONL evidence for validation.
 - `agy-project-worktree-permissions` — Prove scoped project/worktree isolation on the AGY (Antigravity) image before a bead can join the quorum: pin each role to a non-overlapping --add-dir scope, a permission tier matched to author vs judge, and the dcg guard, then capture the isolation evidence. Triggers: agy, worktree, permissions, project.
 - `agy-sidecar-scheduled-tick` — Run a recurring AgentOps loop tick on AGY via an Antigravity sidecar (schedule builtin + agentapi), capturing agentapi runtime evidence a validator can read back. Triggers: agy, sidecar, schedule, agentapi, AGY scheduled tick, Antigravity sidecar, recurring AGY loop.
-- `autodev` — Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.
+- `autodev` — Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself. Use when configuring the PROGRAM.md/AUTODEV.md contract the evolve and factory loop read each tick.
 - `automation-loop-hardening` — Use when turning repeated manual operations into safer, observable, reusable automation loops. Triggers:
 - `automation-shape-routing` — Front door for agent automation — decide the SHAPE (Workflow vs NTM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".
 - `bead-completion-audit` — Use when auditing closed beads for real shipped evidence, acceptance proof, and truthful closeout. Triggers:

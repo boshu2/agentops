@@ -1,6 +1,6 @@
 ---
 name: autodev
-description: Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.
+description: "Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself. Use when configuring the PROGRAM.md/AUTODEV.md contract the evolve and factory loop read each tick."
 practices:
 - cmm-process-maturity
 - ai-assisted-dev

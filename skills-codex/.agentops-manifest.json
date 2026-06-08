@@ -1246,7 +1246,7 @@
     {
       "name": "autodev",
       "source_skill": "skills/autodev",
-      "source_hash": "350a9f3c5d80fee1be48f8f52aee30d8146fd217289848e57a360fb57dda9311",
+      "source_hash": "96c3f6dcb38bc888b77ceec603039c21ed12afb60021ab49995c7ad1b9597bf8",
       "generated_hash": "4868b97e436c7650ae194e5eeefe11ae867c62aeb603d55de5c846d8a9975200"
     },
     {
@@ -1330,7 +1330,7 @@
     {
       "name": "burndown",
       "source_skill": "skills/burndown",
-      "source_hash": "fadfa15eba36f207bc5bfe5a417549a49702c9b793e319a336f93e79358a9018",
+      "source_hash": "a8907c7704ee31b902c430253eee44b3eced178468a440b20fa5af8c035e5a3a",
       "generated_hash": "408431e51b7b1e89e25aff9ec5dc525fcad40a368bdbb6d150554ccfcaeac5ad"
     },
     {
@@ -1738,7 +1738,7 @@
     {
       "name": "operating-loop-workflow",
       "source_skill": "skills/operating-loop-workflow",
-      "source_hash": "a5101f268118143a999e8b95601e71a9fa844bf53d0b65572730c9fd928966cb",
+      "source_hash": "51831fa88bbca35e06ea7f0d03dc9ed431d36d65a1981253e9a473836a7b1a22",
       "generated_hash": "c69a6b78385374c2dc58fdd7fe4a743c32b34c07dfef89510f3d3a9951c5aa02"
     },
     {
@@ -2020,7 +2020,7 @@
     {
       "name": "ship-loop",
       "source_skill": "skills/ship-loop",
-      "source_hash": "98f33d46a03b2f8d52e8cdfc17a38844d6371efdcc264202f332f404803ddfff",
+      "source_hash": "456d3c59697e0f6bd49f6de0a6deefd9e9e61b75597945b5e259f2557d2b69cf",
       "generated_hash": "34755a5fc0f099b82e93f69b57436da6ff34d59b3e82d8984c78e461360cb8f3"
     },
     {

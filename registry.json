@@ -1,7 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-08T02:16:17Z",
-  "generated_at": "2026-06-08T01:35:05Z",
+  "generated_at": "2026-06-08T03:02:37Z",
   "summary": {
     "skills": 162,
     "hooks": 0,
@@ -2445,7 +2444,7 @@
       "bounded_context": "BC3",
       "hex_role": "supporting",
       "tier": "execution",
-      "purpose": "Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.",
+      "purpose": "Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself. Use when configuring the PROGRAM.md/AUTODEV.md contract the evolve and factory loop read each tick.",
       "status": "active",
       "disposition": "refactor",
       "consumes": [
@@ -2713,7 +2712,7 @@
       "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "execution",
-      "purpose": "Drive a finite epic set to all-merged, then stop.",
+      "purpose": "Drive a finite epic set to all-merged, then stop. Use when driving a finite set of epics to all-merged and then stopping.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -4143,7 +4142,7 @@
       "bounded_context": "BC3",
       "hex_role": "driving-adapter",
       "tier": "execution",
-      "purpose": "Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users.",
+      "purpose": "Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users. Use when installing or running the operating-loop multi-agent Workflow for AgentOps plugin users.",
       "status": "active",
       "disposition": "keep",
       "consumes": [],
@@ -5149,7 +5148,7 @@
       "bounded_context": "BC5",
       "hex_role": "driving-adapter",
       "tier": "execution",
-      "purpose": "Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close.",
+      "purpose": "Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close. Use when shipping one closable bead or small-epic slice through the fast-lane bot-paired cycle.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
