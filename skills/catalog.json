@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-07T20:37:01Z",
+  "generated_at": "2026-06-08T01:20:42Z",
   "skill_count": 158,
   "skills": [
     {
@@ -218,7 +218,7 @@
     },
     {
       "name": "automation-shape-routing",
-      "description": "Front door for agent automation — decide the SHAPE (Workflow vs NTM vs skill), then hand off. Triggers: \"build automation\", \"convert skills to workflows\", \"which shape\".",
+      "description": "Front door for agent automation — decide the SHAPE (Workflow vs ATM vs skill), then hand off. Triggers: \"build automation\", \"convert skills to workflows\", \"which shape\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -3203,8 +3203,8 @@
       ],
       "context_rel": [
         {
-          "kind": "customer-of",
-          "with": "provenance"
+          "kind": "shared-kernel",
+          "with": "curate"
         }
       ],
       "references_count": 3,
@@ -3243,8 +3243,8 @@
       "codex_override_present": true
     },
     {
-      "name": "using-ntm",
-      "description": "Use NTM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.",
+      "name": "using-atm",
+      "description": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],

@@ -612,10 +612,10 @@
       "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for bd-first-memory-migration"
     },
     {
-      "name": "using-ntm",
+      "name": "using-atm",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "NTM substrate guidance is documentation-led and portable across runtimes; Codex parity is sufficient"
+      "reason": "ATM substrate guidance is documentation-led and portable across runtimes; Codex parity is sufficient"
     },
     {
       "name": "acfs",

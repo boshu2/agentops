@@ -133,6 +133,7 @@ These are the skills every user needs first. Everything else is available when y
 |-------|---------|
 | `$grafana-platform-dashboard` | Build Grafana platform dashboards from templates/contracts |
 | `$swarm` | Parallel Codex agent execution (folded the retired `$codex-team`) |
+| `$using-atm` | Run AgentOps loops out of session on an ATM tmux swarm (the ATM leg of the substrate) |
 | `$openai-docs` | Official OpenAI docs lookup with citations |
 | `$reverse-engineer-rpi` | Reverse-engineer a product into feature catalog and specs |
 | `$pr-research` | Upstream repository research before contribution |
@@ -165,7 +166,7 @@ AgentOps has several runtime modes. Do not assume hook automation exists everywh
 
 | Mode | When it applies | Start path | Closeout path | Guarantees |
 |------|-----------------|------------|---------------|------------|
-| `substrate` (out-of-session) | A swappable orchestration substrate available out-of-session: an NTM tmux swarm, MCP (`ao mcp serve`), or managed-agents (`ao agent`) | The operator or a lead agent runs `bd ready` and dispatches a whole loop per bead (`ao rpi <bead>`); cron / managed triggers run maintenance | The substrate owns the merge gate (CI-green is the signal) and triggers the knowledge-flywheel feedback | The substrate orchestrates *whole* `ao rpi` loops — it never sees the loop's insides; the seam is substrate → `ao` as a subprocess. There is no in-CLI `runtime=gc` executor. Codex skills still chain `$skill` invocations for lead orchestration. See [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md). |
+| `substrate` (out-of-session) | A swappable orchestration substrate available out-of-session: an ATM tmux swarm, MCP (`ao mcp serve`), or managed-agents (`ao agent`) | The operator or a lead agent runs `bd ready` and dispatches a whole loop per bead — an agent that runs the `$rpi` skill; cron / managed triggers run maintenance | The substrate owns the merge gate (CI-green is the signal) and triggers the knowledge-flywheel feedback | The substrate orchestrates *whole* `$rpi`/`$evolve` loops (each an agent running the skill) — it never sees the loop's insides; the seam is substrate → agent-running-the-skill. There is no in-CLI `runtime=gc` executor. See `$agent-native` and [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md). |
 | `codex-hookless-fallback` | Codex Desktop / Codex CLI without hook surfaces | `ao codex start` or `ao codex ensure-start` | `ao codex stop` or `ao codex ensure-stop` | Explicit startup context, citation tracking, transcript fallback, and close-loop metrics without hooks |
 | `manual` | Codex cannot resolve repo/runtime state automatically | `ao inject` / `ao lookup` | `ao forge transcript` + `ao flywheel close-loop` | Works everywhere, but lifecycle actions are operator-driven |
 

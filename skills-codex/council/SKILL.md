@@ -215,6 +215,10 @@ When validating plans/specs, judges must check:
 
 Missing gate item → minimum WARN. Critical unverifiable invariant → FAIL.
 
+## Related skills
+
+- $using-atm — out-of-session ATM substrate for long-running multi-agent review swarms.
+
 ## Reference Documents
 
 - [references/modes.md](references/modes.md)

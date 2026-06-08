@@ -145,7 +145,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/release` | Pre-flight, changelog, version bumps, tag |
 | `/crank` | Autonomous epic loop (uses swarm for each wave) |
 | `/swarm` | Fresh-context parallel execution (Ralph pattern) |
-| `/using-ntm` | Run AgentOps loops out of session on an NTM tmux swarm (the NTM leg of the substrate) |
+| `/using-atm` | Run AgentOps loops out of session on an ATM tmux swarm (the ATM leg of the substrate) |
 | `evolve` | Goal-driven fitness-scored improvement loop |
 | `/burndown` | Bounded epic-completion loop — drive a finite target to all-merged, then stop |
 | `/eval-outcomes` | Grade via Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes |
@@ -171,7 +171,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/scenario` | Author and manage holdout scenarios for behavioral validation |
 | `/skill-auditor` | Two-pass audit of an existing SKILL.md against the unified template (15 checks) |
 | `/skill-builder` | Scaffold or absorb new SKILL.md files against the unified template |
-| `/automation-shape-routing` | Front door for building agent automation — decide the SHAPE (Workflow vs NTM swarm vs plain skill), then hand off to the right builder |
+| `/automation-shape-routing` | Front door for building agent automation — decide the SHAPE (Workflow vs ATM swarm vs plain skill), then hand off to the right builder |
 | `/workflow-builder` | Scaffold a new Claude Workflow script (`.claude/workflows/*.js`) — deterministic multi-agent orchestration |
 | `/agent-native` | Make out-of-session agents AgentOps-native via skills + ao CLI + CI, not hooks |
 
@@ -212,7 +212,7 @@ AgentOps has several runtime modes. Do not assume hook automation exists everywh
 
 | Mode | When it applies | Start path | Closeout path | Guarantees |
 |------|-----------------|------------|---------------|------------|
-| `substrate` (out-of-session) | A swappable orchestration substrate available out-of-session: an NTM tmux swarm, MCP (`ao mcp serve`), or managed-agents (`ao agent`) | The operator or a lead agent runs `bd ready` and dispatches a whole loop per bead — an agent that runs the `rpi` skill; cron / managed triggers run maintenance | The substrate owns the merge gate (CI-green is the signal) and triggers the knowledge-flywheel feedback | The substrate orchestrates *whole* `rpi`/`evolve` loops (each an agent running the skill) — it never sees the loop's insides; the seam is substrate → agent-running-the-skill. There is no in-CLI `runtime=gc` executor. See [agent-native](../agent-native/SKILL.md) and [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md). |
+| `substrate` (out-of-session) | A swappable orchestration substrate available out-of-session: an ATM tmux swarm, MCP (`ao mcp serve`), or managed-agents (`ao agent`) | The operator or a lead agent runs `bd ready` and dispatches a whole loop per bead — an agent that runs the `rpi` skill; cron / managed triggers run maintenance | The substrate owns the merge gate (CI-green is the signal) and triggers the knowledge-flywheel feedback | The substrate orchestrates *whole* `rpi`/`evolve` loops (each an agent running the skill) — it never sees the loop's insides; the seam is substrate → agent-running-the-skill. There is no in-CLI `runtime=gc` executor. See [agent-native](../agent-native/SKILL.md) and [docs/3.0.md](https://github.com/boshu2/agentops/blob/main/docs/3.0.md). |
 | `hook-capable` | Claude/OpenCode with lifecycle hooks installed (no gc) | Runtime hook or `ao inject` / `ao lookup` | Runtime hook or `ao forge transcript` + `ao flywheel close-loop` | Automatic startup/context injection and session-end maintenance when hooks are installed |
 | `codex-native-hooks` | Codex CLI v0.115.0+ with native hook support (March 2026) | Runtime hooks (same as hook-capable) | Runtime hooks (same as hook-capable) | Native lifecycle hooks — same guarantees as hook-capable mode |
 | `codex-hookless-fallback` | Codex Desktop / Codex CLI pre-v0.115.0 without hook surfaces | `ao codex start` | `ao codex stop` | Explicit startup context, citation tracking, transcript fallback, and close-loop metrics without hooks |

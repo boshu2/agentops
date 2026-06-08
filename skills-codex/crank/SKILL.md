@@ -529,6 +529,10 @@ fi
 | All workers fail | `<promise>BLOCKED</promise>` with diagnostics |
 | File conflict detected | Split into sub-waves, re-run |
 
+## Related skills
+
+- $using-atm — out-of-session ATM substrate for long-running $crank waves over a bead queue.
+
 ## Reference Documents
 
 - [references/de-sloppify.md](references/de-sloppify.md) - cleanup pass after implementation waves

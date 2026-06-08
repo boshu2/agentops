@@ -1,36 +1,38 @@
 ---
-name: using-ntm
-description: "Run using NTM."
+name: using-atm
+description: "Run using ATM."
 ---
 
-# Using NTM as the Out-of-Session Substrate
+# Using ATM as the Out-of-Session Substrate
 
 AgentOps 3.0 runs its loops **in session** and ships **no** daemon, scheduler, or
 overnight runner. To run the loop **unattended** — always-on, scheduled,
 queue-driven — you hand it to an orchestration **substrate**. The reference
-substrate is **NTM + MCP + managed-agents**; this skill covers the **NTM leg**: a
-local Named Tmux Manager swarm of Claude/Codex agent panes. NTM is an adopted
-external tool (`ntm` on `PATH`), **not** an AgentOps-owned surface.
+substrate is **ATM + Agent Mail (`am`) + managed-agents**; this skill covers the **ATM leg**: a
+local Named Tmux Manager swarm of Claude/Codex agent panes. ATM is an adopted
+external tool (`atm` on `PATH`), **not** an AgentOps-owned surface.
+ATM is Bo's fork/alias of upstream NTM: `atm` points at
+`~/dev/ntm/dist/atm-darwin-arm64` and keeps the upstream `ntm` command surface.
 
 > **Skills are the runtime, not the CLI.** The substrate dispatches a *whole
 > loop* by spawning an agent that **runs the $rpi or $evolve skill** — it does
 > **not** shell out to a retired CLI subprocess. Those terminal
 > wrappers are retired; the loop lives as a skill an agent executes. The seam is
-> **NTM pane → agent → $rpi <bead>**, one bead dispatched as one invocable unit.
+> **ATM pane → agent → $rpi <bead>**, one bead dispatched as one invocable unit.
 
 ## When to use / when to skip
 
 **Use it when:** you want a bead queue worked unattended out of session; you're
-standing up or tending an NTM swarm that runs AgentOps loops; a pane is stuck,
+standing up or tending an ATM swarm that runs AgentOps loops; a pane is stuck,
 rate-limited, or wedged; you need to know whether the swarm has converged.
 
 **Skip it when:** the work fits a single in-session run (run $rpi or $evolve
 yourself); you want in-session parallel fan-out across worktrees (use $swarm);
 you're choosing between automation shapes (start at $automation-shape-routing).
 
-This skill does **not** re-document the full `ntm` command surface — run
-`ntm help`. It covers the **AgentOps substrate contract**: how to dispatch and
-tend AgentOps loops on an NTM swarm.
+This skill does **not** re-document the full `atm` command surface — run
+`atm help`. It covers the **AgentOps substrate contract**: how to dispatch and
+tend AgentOps loops on an ATM swarm.
 
 ## The dispatch contract
 
@@ -50,23 +52,23 @@ tend AgentOps loops on an NTM swarm.
 
 ```bash
 # 1. Spawn a swarm of agent panes against the repo (2 Claude + 1 Codex worker).
-ntm spawn agentops --cc=2 --cod=1
+atm spawn agentops --cc=2 --cod=1
 
 # 2. Dispatch a whole loop to a pane — the SKILL, not a CLI subprocess.
-ntm send agentops --pane=1 "$rpi ag-1234"
-ntm send agentops --pane=2 "$evolve --beads-only"
+atm send agentops --pane=1 "$rpi ag-1234"
+atm send agentops --pane=2 "$evolve --beads-only"
 
 # 3. Watch / attach.
-ntm activity agentops          # per-pane agent state
-ntm attach agentops            # drop into the swarm
+atm activity agentops          # per-pane agent state
+atm attach agentops            # drop into the swarm
 
 # 4. Health + dependencies (run before a long unattended session).
-ntm doctor                     # validate the NTM ecosystem
-ntm deps                       # required agent CLIs present
+atm doctor                     # validate the ATM ecosystem
+atm deps                       # required agent CLIs present
 ```
 
 Scheduled cadence (e.g. a nightly $evolve pass) is driven by host-OS timing (a
-systemd user timer or cron) that runs `ntm send … "$evolve"`, or by a
+systemd user timer or cron) that runs `atm send … "$evolve"`, or by a
 managed-agent driver — **not** an AgentOps daemon.
 
 ## Tending the swarm (operator loop)
@@ -80,17 +82,17 @@ Run one tick at a time; take the first action whose trigger fires:
 - **Many review beads open, few closing** → flip to review-only, drain the backlog.
 - **Otherwise** → observe; do not nudge a healthy working pane.
 
-## Coordination (the MCP leg)
+## Coordination (the Agent Mail leg)
 
 - **Beads (`bd`)** — shared work queue + state source: `bd ready`, `bd update --claim`, `bd close`.
-- **MCP Agent Mail** (`ao mcp serve`) — cross-pane messages + **file reservations** (reserve before edit, release on commit).
+- **Agent Mail (`am`)** (its own daemon at `127.0.0.1:8765` — the `am` CLI, **not** an `ao` subcommand; old "MCP Agent Mail" name retired) — register with `am macros start-session`, then cross-pane messages + **file reservations** (reserve before edit, release on commit).
 - **Worktree-per-bead** is mandatory: no pane edits the shared checkout.
 
 ## Convergence + shutdown
 
 Done when `bd ready` is empty, no pane has an in-flight bead, and the last few CI
-runs are green. Confirm with `ntm activity` (all idle) + `bd ready` (empty) before
-`ntm kill <session>`. Don't shut down on a transient quiet patch — a rate-limited
+runs are green. Confirm with `atm activity` (all idle) + `bd ready` (empty) before
+`atm kill <session>`. Don't shut down on a transient quiet patch — a rate-limited
 pane also looks idle.
 
 ## Anti-patterns
@@ -98,11 +100,11 @@ pane also looks idle.
 - ❌ Shelling out to a retired CLI; dispatch the `$rpi` / `$evolve` skill instead.
 - ❌ Decomposing the loop into substrate steps — dispatch the whole loop as one invocable unit.
 - ❌ Editing the shared checkout from a pane — worktree-per-bead, always.
-- ❌ Treating NTM as AgentOps-owned — it is an adopted external substrate; a managed-agents driver (`ao agent`) or a plain in-session run are equally valid legs. Choose via $automation-shape-routing.
+- ❌ Treating ATM as AgentOps-owned — it is an adopted external substrate; a managed-agents driver (`ao agent`) or a plain in-session run are equally valid legs. Choose via $automation-shape-routing.
 
 ## Related skills
 
-- $automation-shape-routing — decide Workflow vs NTM swarm vs plain skill before standing up a swarm.
+- $automation-shape-routing — decide Workflow vs ATM swarm vs plain skill before standing up a swarm.
 - $swarm — in-session parallel fan-out across worktrees (the in-session sibling).
 - $agent-native — `ao agent bundle` produces the loop definition a managed-agents substrate runs.
 - $rpi · $evolve — the loops the substrate dispatches.

@@ -1,6 +1,6 @@
-# using-ntm
+# using-atm
 
-Use NTM as the out-of-session substrate for unattended AgentOps loops.
+Use ATM as the out-of-session substrate for unattended AgentOps loops.
 
 ## Instructions
 
