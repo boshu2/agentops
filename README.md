@@ -64,7 +64,8 @@ Pick your runtime, then type `/quickstart` in the agent.
 
 ```bash
 # Claude Code
-curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash
+claude plugin marketplace add boshu2/agentops
+claude plugin install agentops@agentops-marketplace
 
 # Codex CLI (macOS/Linux/WSL).  OpenCode: install-opencode.sh
 curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
