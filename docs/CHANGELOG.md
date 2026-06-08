@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-06-08
+
+### Added
+
+- **Installable image artifacts for the 3.1 runtime set.** Claude Code now has a dedicated marketplace installer wrapper, Codex keeps the native plugin curl installer, and Gemini/Antigravity now has a curl installer that validates and installs `images/gemini` through `agy plugin`.
+- **Day-2 install operations are productized.** Added operator guidance for install, update, backup, permission repair, recovery, and escalation across Claude, Codex, and Gemini/AGY.
+- **Installer smoke proof covers all three image paths.** The install smoke suite now checks the Claude, Codex, and Gemini/AGY one-liners without invoking vendor runtimes.
+
+### Fixed
+
+- **Gemini image bundle drift.** Refreshed the bundled Gemini/AGY `SKILL.md` copies so `images/gemini/verify.sh` again proves byte identity against the canonical source corpus.
+
 ## [3.0.1] - 2026-05-25
 
 Patch release. No runtime behavior change — it advances the plugin/marketplace version so existing `3.0.0` installs can `claude plugin update` cleanly (the `3.0.0` version label never moved across the 15 commits that landed the skill consolidation and doc reconciliation, so a plain update reported "already latest"). Also reconciles two release-engineering surfaces the per-PR gate did not exercise:

@@ -64,12 +64,15 @@ Pick your runtime, then type `/quickstart` in the agent.
 
 ```bash
 # Claude Code
-claude plugin marketplace add boshu2/agentops && claude plugin install agentops@agentops-marketplace
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash
 
 # Codex CLI (macOS/Linux/WSL).  OpenCode: install-opencode.sh
 curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
 # Codex CLI (Windows):
 irm https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.ps1 | iex
+
+# Gemini / Antigravity
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash
 
 # Other skills-compatible agents
 npx skills@latest add boshu2/agentops --cursor -g
@@ -83,7 +86,7 @@ brew tap boshu2/agentops https://github.com/boshu2/homebrew-agentops && brew ins
 # Or release binaries / build from source (cli/README.md).
 ```
 
-Installs hookless: skills and the `ao` CLI guide the workflow, and CI is the authoritative gate. The only hard requirement is an agent runtime and `git`; everything else degrades gracefully. Full dependency matrix: [docs/dependencies.md](docs/dependencies.md).
+Installs hookless: skills and the `ao` CLI guide the workflow, and CI is the authoritative gate. The only hard requirement is an agent runtime and `git`; everything else degrades gracefully. Full dependency matrix: [docs/dependencies.md](docs/dependencies.md). Day-2 install, update, backup, permission, recovery, and escalation paths are in [docs/install-day2-ops.md](docs/install-day2-ops.md).
 
 ---
 

@@ -195,6 +195,10 @@ If unsure whether a step is orchestrator-owned or delegatable, the default is **
 
 Crank runs as an isolated phase-2 execution context — discovery and validation are sealed off from this skill. See [references/isolation-contract.md](references/isolation-contract.md) for the four-lever enforcement model and the compression patterns `scripts/check-skill-isolation.sh` flags. See [references/best-practices.md](references/best-practices.md) for the lifecycle principle + anti-pattern citation table (cite by number; do not duplicate body content).
 
+## Related skills
+
+- [`/using-atm`](../using-atm/SKILL.md) — out-of-session ATM substrate for long-running `/crank` waves over a bead queue.
+
 ## Reference Documents
 
 - [references/crank.feature](references/crank.feature) — Executable spec: wave-validity hard gate, FIRE loop, mandatory completion marker, 50-wave cap (soc-qk4b.2)

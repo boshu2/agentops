@@ -129,7 +129,7 @@ That wiki is the substrate underneath a software factory with three surfaces and
 
 The same substrate, reached three ways:
 
-- **In-harness plugin** — skills for Claude Code, Codex, Cursor, OpenCode. Context moves through explicit packets and skill workflows first. Runtime hooks are not an AgentOps default; teams that want custom hooks author them separately with the `hooks-authoring` skill. Install via `claude plugin install`, `install-codex.sh`, or the skills.sh package.
+- **In-harness plugin** — skills for Claude Code, Codex, Gemini/Antigravity, Cursor, OpenCode. Context moves through explicit packets and skill workflows first. Runtime hooks are not an AgentOps default; teams that want custom hooks author them separately with the `hooks-authoring` skill. Install via `install-claude.sh`, `install-codex.sh`, `install-agy.sh`, or the skills.sh package.
 - **`ao` CLI** — the terminal and CI control plane. `ao context assemble`, `ao lookup`, `ao compile`, `ao goals measure`, `ao flywheel close-loop` — the same compiler, scriptable. Repo-native, with no required AgentOps cloud control plane.
 - **Out-of-session substrate** — optional, off-API, off-vendor orchestration outside the AgentOps product core. Gas City is the reference substrate: it dispatches agents that run whole AgentOps loops (`ao rpi`, compile/maturity jobs) while AgentOps stays daemonless and schedulerless.
 
@@ -176,8 +176,8 @@ The same model used in the README: bookkeeping records the work, the context com
 - `ao lookup` — decay-ranked retrieval for on-demand knowledge
 - `ao context assemble` — phase-scoped context packets
 - `ao compile` — rebuild the knowledge wiki (mine, grow, defrag, lint)
-- 162 skills — reusable context packages across Claude Code, Codex, and OpenCode
-- `bash <(curl -fsSL .../install.sh)` — 30 seconds, zero config
+- 162 skills — reusable context packages across Claude Code, Codex, Gemini/Antigravity, and OpenCode
+- Runtime install one-liners plus Day-2 operations — install, update, backup, permission repair, recovery, and escalation are product surfaces, not afterthoughts
 
 #### Layer 3: Validation Gates
 

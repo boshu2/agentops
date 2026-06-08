@@ -186,12 +186,8 @@ For the science behind the flywheel, see [`knowledge-flywheel.md`](knowledge-fly
 
 ```bash
 # Add/update marketplace source
-claude plugin marketplace add boshu2/agentops
-claude plugin marketplace update agentops-marketplace
-
-# Install/update plugin
-claude plugin install agentops@agentops-marketplace
-claude plugin update agentops
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash -s -- --update
 ```
 
 ### Per-Runtime Install (non-Claude plugin path)
@@ -199,6 +195,9 @@ claude plugin update agentops
 ```bash
 # Codex CLI (installs the native plugin, archives stale raw mirrors when needed, then open a fresh session)
 curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
+
+# Gemini / Antigravity
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash
 
 # OpenCode
 curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-opencode.sh | bash

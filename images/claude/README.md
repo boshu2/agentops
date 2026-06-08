@@ -45,6 +45,19 @@ harness — either via the **skills path** the harness scans, or as a **marketpl
 plugin** that registers `skills/<slug>/SKILL.md` entries. Either way the discovery
 unit is the verbatim `skills/<slug>/` directory; no per-skill packaging step runs.
 
+## Install path
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash
+```
+
+The installer uses the Claude marketplace plugin path:
+
+```bash
+claude plugin marketplace add boshu2/agentops
+claude plugin install agentops@agentops-marketplace
+```
+
 ## Primitives wrap usage, not files
 
 Claude's first-class primitives — **Workflows**, **Agent subagents**, and
