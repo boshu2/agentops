@@ -209,6 +209,7 @@ See [references/multi-agent-architecture.md](references/multi-agent-architecture
 - `skills/pre-mortem/SKILL.md` — Plan validation (uses `--preset=plan-review`, always 3 judges)
 - `skills/post-mortem/SKILL.md` — Work wrap-up (uses `--preset=retrospective`, always 3 judges + retro)
 - `skills/swarm/SKILL.md` — Multi-agent orchestration
+- `skills/using-atm/SKILL.md` — Out-of-session ATM substrate for long-running multi-agent review swarms
 - `skills/standards/SKILL.md` — Language-specific coding standards
 - `skills/research/SKILL.md` — Codebase exploration (complementary to `--mode=brainstorm --focus=research`)
 

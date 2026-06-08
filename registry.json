@@ -1,7 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-08T02:16:17Z",
-  "generated_at": "2026-06-08T01:35:05Z",
+  "generated_at": "2026-06-08T02:50:25Z",
   "summary": {
     "skills": 162,
     "hooks": 0,
@@ -662,9 +661,9 @@
         "reference_count": 3
       },
       {
-        "name": "using-ntm",
+        "name": "using-atm",
         "tier": "execution",
-        "path": "skills/using-ntm/",
+        "path": "skills/using-atm/",
         "has_skill_md": true,
         "has_references": false,
         "reference_count": 0
@@ -1430,7 +1429,7 @@
           "domain",
           "shared",
           "using-agentops",
-          "using-ntm"
+          "using-atm"
         ]
       },
       {
@@ -2485,7 +2484,7 @@
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "meta",
-      "purpose": "Front door for agent automation — decide the SHAPE (Workflow vs NTM vs skill), then hand off. Triggers: \"build automation\", \"convert skills to workflows\", \"which shape\".",
+      "purpose": "Front door for agent automation — decide the SHAPE (Workflow vs ATM vs skill), then hand off. Triggers: \"build automation\", \"convert skills to workflows\", \"which shape\".",
       "status": "active",
       "disposition": "keep",
       "consumes": [],
@@ -5321,9 +5320,9 @@
       "status": "active",
       "disposition": "keep",
       "consumes": [
-        "incident-symptom",
-        "host-state",
-        "daemon-config"
+        "error-reports",
+        "runtime-metrics",
+        "runtime-configuration"
       ],
       "produces": [
         "triage-finding",
@@ -5477,13 +5476,13 @@
       "references": 0
     },
     {
-      "sku": "skill:using-ntm",
-      "name": "using-ntm",
+      "sku": "skill:using-atm",
+      "name": "using-atm",
       "type": "skill",
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "execution",
-      "purpose": "Use NTM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.",
+      "purpose": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.",
       "status": "active",
       "disposition": "keep",
       "consumes": [],
@@ -5492,10 +5491,9 @@
       ],
       "drives_commands": [
         "ao agent",
-        "ao agent bundle",
-        "ao mcp serve"
+        "ao agent bundle"
       ],
-      "path": "skills/using-ntm/",
+      "path": "skills/using-atm/",
       "references": 0
     },
     {
@@ -5637,7 +5635,7 @@
         "domain",
         "shared",
         "using-agentops",
-        "using-ntm"
+        "using-atm"
       ],
       "flags": [
         "--config",

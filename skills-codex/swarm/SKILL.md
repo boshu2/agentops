@@ -206,6 +206,10 @@ for task in wave_tasks:
 
 This is slower but functionally identical.
 
+## Related skills
+
+- $using-atm — out-of-session ATM substrate when a swarm needs persistent panes and human attach/steer.
+
 ## Reference Documents
 
 - [references/conflict-recovery.md](references/conflict-recovery.md)

@@ -246,7 +246,7 @@ These are how skills chain in practice:
 | **crank** | execution | Autonomous epic execution — parallel waves |
 | **discovery** | meta | Discovery phase orchestrator — brainstorm → search → research → plan → pre-mortem |
 | **swarm** | execution | Parallelize any skill — fresh context per agent |
-| **using-ntm** | execution | Run AgentOps loops out of session on an NTM tmux swarm — the NTM leg of the substrate |
+| **using-atm** | execution | Run AgentOps loops out of session on an ATM tmux swarm — the ATM leg of the substrate |
 | **rpi** | meta | Thin wrapper: /discovery → /crank → /validate with complexity classification and loop |
 | **evolve** | execution | Autonomous fitness-scored improvement loop |
 | **burndown** | execution | Bounded epic-completion loop — drive a finite target to all-merged, then stop |

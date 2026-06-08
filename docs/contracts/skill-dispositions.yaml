@@ -357,11 +357,11 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "Hookless reframe: makes out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI; extends standards+converter, never a hook revival"
-  - skill:          using-ntm
+  - skill:          using-atm
     domain:         "BC4 Factory"
     hexagonal_role: supporting
     disposition:    keep
-    rationale:      "Shippable AgentOps-scoped guide for the NTM leg of the out-of-session substrate (NTM+MCP+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill."
+    rationale:      "Shippable AgentOps-scoped guide for the ATM leg of the out-of-session substrate (ATM+Agent Mail+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill."
 
   - skill:          acfs
     domain:         "BC5 Runtime"

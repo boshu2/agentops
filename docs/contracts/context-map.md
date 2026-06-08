@@ -89,7 +89,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `agy-sidecar-scheduled-tick` — Run a recurring AgentOps loop tick on AGY via an Antigravity sidecar (schedule builtin + agentapi), capturing agentapi runtime evidence a validator can read back. Triggers: agy, sidecar, schedule, agentapi, AGY scheduled tick, Antigravity sidecar, recurring AGY loop.
 - `autodev` — Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.
 - `automation-loop-hardening` — Use when turning repeated manual operations into safer, observable, reusable automation loops. Triggers:
-- `automation-shape-routing` — Front door for agent automation — decide the SHAPE (Workflow vs NTM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".
+- `automation-shape-routing` — Front door for agent automation — decide the SHAPE (Workflow vs ATM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".
 - `bead-completion-audit` — Use when auditing closed beads for real shipped evidence, acceptance proof, and truthful closeout. Triggers:
 - `bead-tracker-migration` — Use when migrating an issue tracker workspace from bd to br with loss-free verification. Triggers:
 - `beads-br` — Local-first issue tracker (beads_rust) for AI agents. Use when tracking tasks, managing dependencies, finding ready work, or syncing issues to git via JSONL.
@@ -174,7 +174,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `test` — Generate tests and coverage plans.
 - `trace` — Trace decisions through artifacts.
 - `ubs` — Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks.
-- `using-ntm` — Use NTM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.
+- `using-atm` — Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.
 - `vibing-with-ntm` — Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence.
 - `workflow-builder` — Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: "build a workflow", "create a workflow", "scaffold workflow", "author a workflow".
 
@@ -285,9 +285,10 @@ graph LR
   skill-builder -- "customer-of" --> automation-shape-routing
   skill-builder -- "supplier-to" --> skill-auditor
   spec-reliability-implementation -- "customer-of" --> validate
+  storage-watchdog-ops -- "partnership" --> system-performance-remediation
   swarm -- "customer-of" --> crank
   trace -- "shared-kernel" --> curate
-  using-ntm -- "customer-of" --> swarm
+  using-atm -- "customer-of" --> swarm
   vibe -- "shared-kernel" --> standards
   workflow-builder -- "customer-of" --> automation-shape-routing
   workflow-builder -- "shared-kernel" --> operating-loop-workflow
@@ -621,9 +622,9 @@ graph LR
 | `standards` | produces | stdout |
 | `status` | consumes | bd |
 | `status` | produces | stdout |
-| `storage-watchdog-ops` | consumes | daemon-config |
-| `storage-watchdog-ops` | consumes | host-state |
-| `storage-watchdog-ops` | consumes | incident-symptom |
+| `storage-watchdog-ops` | consumes | error-reports |
+| `storage-watchdog-ops` | consumes | runtime-configuration |
+| `storage-watchdog-ops` | consumes | runtime-metrics |
 | `storage-watchdog-ops` | produces | escalation-note |
 | `storage-watchdog-ops` | produces | remediation-action |
 | `storage-watchdog-ops` | produces | triage-finding |
@@ -635,7 +636,7 @@ graph LR
 | `test` | produces | result.json |
 | `trace` | produces | result.json |
 | `using-agentops` | produces | documentation |
-| `using-ntm` | produces | documentation |
+| `using-atm` | produces | documentation |
 | `validate` | produces | result.json |
 | `vibe` | consumes | standards |
 | `vibe` | produces | result.json |

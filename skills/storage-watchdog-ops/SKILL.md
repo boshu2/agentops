@@ -9,14 +9,16 @@ practices:
 - testable-architecture
 hexagonal_role: supporting
 consumes:
-- incident-symptom
-- host-state
-- daemon-config
+- error-reports
+- runtime-metrics
+- runtime-configuration
 produces:
 - triage-finding
 - remediation-action
 - escalation-note
-context_rel: []
+context_rel:
+- kind: partnership
+  with: system-performance-remediation
 skill_api_version: 1
 user-invocable: false
 context:

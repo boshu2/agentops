@@ -74,7 +74,6 @@ rust-unsafe-boundary-audit       # standalone external-boundary or library/analy
 sbh                              # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 ssh                              # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 stash-hygiene-sweep              # standalone external-boundary or library/analyzer skill; no peer skill edge by design
-system-performance-remediation   # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 ubs                              # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 vibing-with-ntm                  # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 worktree-branch-rationalization  # standalone external-boundary or library/analyzer skill; no peer skill edge by design
