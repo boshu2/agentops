@@ -1612,13 +1612,13 @@
     {
       "name": "agy-headless-evidence",
       "source_skill": "skills/agy-headless-evidence",
-      "source_hash": "585ff68ce9094f74f137b7a6c24cbde4b2b94723f1f80351b7ee599e2319ab6d",
+      "source_hash": "07ac48ce3de0947e16646531ce63cf478f68d91743f7963e1e4aef37240c545c",
       "generated_hash": "370fa02209ccdef1e3a2383e2671275dcf4c9e5c93ae2b22a958f3e5bc2b4aa4"
     },
     {
       "name": "agy-mcp-plugins",
       "source_skill": "skills/agy-mcp-plugins",
-      "source_hash": "5855344f70c2e5ba01b7a8e9400fb0720d6a7cca947960293e5e9b511a9ae76e",
+      "source_hash": "7ed681a1ebaf3eaec45926952c8deda028201eb0991bd8a7eaba1b076284250d",
       "generated_hash": "169e9f7e8acde4ee71ed7f959a52cfb241a3dd3780a649ba69ee6d984e722825"
     },
     {
@@ -1654,7 +1654,7 @@
     {
       "name": "autodev",
       "source_skill": "skills/autodev",
-      "source_hash": "350a9f3c5d80fee1be48f8f52aee30d8146fd217289848e57a360fb57dda9311",
+      "source_hash": "784fccb394271679e7667e6be128521a34b46be25e0ce55de0258031ca6f7f8a",
       "generated_hash": "4868b97e436c7650ae194e5eeefe11ae867c62aeb603d55de5c846d8a9975200"
     },
     {
@@ -1738,7 +1738,7 @@
     {
       "name": "burndown",
       "source_skill": "skills/burndown",
-      "source_hash": "fadfa15eba36f207bc5bfe5a417549a49702c9b793e319a336f93e79358a9018",
+      "source_hash": "ac4b903a16a0d8bb793d8fae5cb63a2e6eb8b008232ee9f3148b50e108da9f03",
       "generated_hash": "408431e51b7b1e89e25aff9ec5dc525fcad40a368bdbb6d150554ccfcaeac5ad"
     },
     {
@@ -1750,7 +1750,7 @@
     {
       "name": "casr",
       "source_skill": "skills/casr",
-      "source_hash": "d886eef784ff36559ce073e328b8a8df936d96939a9f9eb400d352022939a623",
+      "source_hash": "f289d623414a70692572e67ddf7bd82c45557a8242413b5ad41f833f1bc72e79",
       "generated_hash": "da2f7f21120f6208e0a8494814dbc3ccadbb855efa7693c70fa492428b5afa2a"
     },
     {
@@ -2146,7 +2146,7 @@
     {
       "name": "operating-loop-workflow",
       "source_skill": "skills/operating-loop-workflow",
-      "source_hash": "a5101f268118143a999e8b95601e71a9fa844bf53d0b65572730c9fd928966cb",
+      "source_hash": "426a05259f602d2a2dc0ad025e441946c319d6d904a0780e348ce4cd4d753cbe",
       "generated_hash": "c69a6b78385374c2dc58fdd7fe4a743c32b34c07dfef89510f3d3a9951c5aa02"
     },
     {
@@ -2428,13 +2428,13 @@
     {
       "name": "ship-loop",
       "source_skill": "skills/ship-loop",
-      "source_hash": "98f33d46a03b2f8d52e8cdfc17a38844d6371efdcc264202f332f404803ddfff",
+      "source_hash": "88ddb1cd294ba2ffa5e0d825744844be4b341f64ced44c96cbff214ee5524100",
       "generated_hash": "34755a5fc0f099b82e93f69b57436da6ff34d59b3e82d8984c78e461360cb8f3"
     },
     {
       "name": "skill-auditor",
       "source_skill": "skills/skill-auditor",
-      "source_hash": "314de8417241d574543518f96c0be458feaf32fdcbb05ef4daf8c87cab06a786",
+      "source_hash": "f9108c24d15708b576ae927c9c3221850168b66657541f0fbc94a8565c8f01f2",
       "generated_hash": "586d228b2817c1e4dc0b1abdb7b8cbaf568754da747bd1fe669531ee2542b026"
     },
     {
@@ -2494,7 +2494,7 @@
     {
       "name": "system-tuning",
       "source_skill": "skills/system-tuning",
-      "source_hash": "6d340c15f61d023e1d87faaf576d9317756448ab30aaeacbcf566da895cf4486",
+      "source_hash": "d56fb9e52ae2524543c7e485e824795422b2fa2dc8220870c287e18cc4af9ddc",
       "generated_hash": "91c58bb3f192f4aeb34d96047c53b1288bfa908e5886df8c9e5ba5bbb6e77a75"
     },
     {

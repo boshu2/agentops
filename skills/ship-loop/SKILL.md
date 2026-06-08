@@ -1,6 +1,6 @@
 ---
 name: ship-loop
-description: 'Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close.'
+description: 'Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close. Use when shipping a fast-lane internal PR, landing a small fix, or closing a single harvested bead.'
 practices:
 - continuous-delivery
 - xp
