@@ -151,3 +151,79 @@ func TestGateCheck_BlockingFailReturnsExitOne(t *testing.T) {
 		t.Errorf("ExitCode = %d, want 1", ge.ExitCode())
 	}
 }
+
+func TestGateCheck_RequireWorkflowParityIgnoresDeferredAndAdvisoryMissing(t *testing.T) {
+	root := t.TempDir()
+	workflowDir := filepath.Join(root, ".github", "workflows")
+	if err := os.MkdirAll(workflowDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	workflowPath := filepath.Join(workflowDir, "validate.yml")
+	workflow := []byte(`name: Validate
+jobs:
+  advisory:
+    runs-on: ubuntu-latest
+    steps:
+      - name: advisory missing
+        continue-on-error: true
+        run: scripts/lint-evidence-lines.sh 123
+  deferred:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ap7
+        run: scripts/verify-gate-claim.sh --log /tmp/run.log pr-1 "claim"
+`)
+	if err := os.WriteFile(workflowPath, workflow, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	reg := gates.NewRegistry()
+	if err := reg.Add(nativeCheck("n.pass", ports.GateStatusPass, true)); err != nil {
+		t.Fatal(err)
+	}
+
+	save := func() func() {
+		r, fl, j, ff, sc := gateCheckRegistry, gateCheckFull, gateCheckJSON, gateCheckFailFast, gateCheckScope
+		wc, req, wp := gateCheckWorkflowCoverage, gateCheckRequireWorkflowParity, gateCheckWorkflowPath
+		return func() {
+			gateCheckRegistry, gateCheckFull, gateCheckJSON, gateCheckFailFast, gateCheckScope = r, fl, j, ff, sc
+			gateCheckWorkflowCoverage, gateCheckRequireWorkflowParity, gateCheckWorkflowPath = wc, req, wp
+		}
+	}()
+	defer save()
+	gateCheckRegistry = reg
+	gateCheckFull = true
+	gateCheckJSON = true
+	gateCheckFailFast = false
+	gateCheckScope = "head"
+	gateCheckWorkflowCoverage = true
+	gateCheckRequireWorkflowParity = true
+	gateCheckWorkflowPath = workflowPath
+
+	var buf bytes.Buffer
+	c := &cobra.Command{}
+	c.SetOut(&buf)
+	c.SetContext(context.Background())
+	if err := runGateCheck(c, nil); err != nil {
+		t.Fatalf("runGateCheck returned error for deferred/advisory-only parity gaps: %v", err)
+	}
+	var parsed struct {
+		Coverage struct {
+			MissingBlockingCount int `json:"missing_blocking_count"`
+			MissingAdvisoryCount int `json:"missing_advisory_count"`
+			MissingDeferredCount int `json:"missing_deferred_count"`
+		} `json:"coverage"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &parsed); err != nil {
+		t.Fatalf("unmarshal %q: %v", buf.String(), err)
+	}
+	if parsed.Coverage.MissingBlockingCount != 0 {
+		t.Fatalf("MissingBlockingCount = %d, want 0", parsed.Coverage.MissingBlockingCount)
+	}
+	if parsed.Coverage.MissingAdvisoryCount != 0 {
+		t.Fatalf("MissingAdvisoryCount = %d, want 0; lint-evidence-lines is deferred by workflow context", parsed.Coverage.MissingAdvisoryCount)
+	}
+	if parsed.Coverage.MissingDeferredCount != 2 {
+		t.Fatalf("MissingDeferredCount = %d, want 2", parsed.Coverage.MissingDeferredCount)
+	}
+}

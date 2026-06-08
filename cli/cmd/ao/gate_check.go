@@ -134,10 +134,10 @@ func runGateCheck(cmd *cobra.Command, _ []string) error {
 	if code := report.ExitCode(); code != 0 {
 		return &gateExitError{code: code}
 	}
-	if gateCheckRequireWorkflowParity && report.Coverage != nil && report.Coverage.MissingScriptCount > 0 {
+	if gateCheckRequireWorkflowParity && report.Coverage != nil && report.Coverage.MissingBlockingCount > 0 {
 		return &gateExitError{
 			code: gateExitFail,
-			msg:  fmt.Sprintf("workflow parity missing %d script(s)", report.Coverage.MissingScriptCount),
+			msg:  fmt.Sprintf("workflow parity missing %d blocking script(s)", report.Coverage.MissingBlockingCount),
 		}
 	}
 	return nil

@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-08T01:20:42Z",
-  "skill_count": 158,
+  "generated_at": "2026-06-08T03:49:42Z",
+  "skill_count": 162,
   "skills": [
     {
       "name": "acfs",
@@ -41,7 +41,7 @@
     },
     {
       "name": "agent-native",
-      "description": "Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native — via skills + the ao CLI + CI, not hooks.",
+      "description": "Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native via skills plus the ao CLI and CI, not hooks. Use when wiring a Managed Agent or Agent SDK loop to AgentOps, or making an out-of-session agent AgentOps-native.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -139,6 +139,30 @@
       "codex_override_present": true
     },
     {
+      "name": "agy-project-worktree-permissions",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "agy-native"
+      ],
+      "produces": [
+        "agy-isolation-evidence"
+      ],
+      "practices": [
+        "team-topologies",
+        "continuous-delivery"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "agy-native"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "agy-rules-workflows",
       "description": "|-",
       "hexagonal_role": "driving-adapter",
@@ -164,6 +188,35 @@
       "codex_override_present": true
     },
     {
+      "name": "agy-sidecar-scheduled-tick",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "agy-native",
+        "agy-headless-evidence"
+      ],
+      "produces": [
+        "agy-sidecar-tick-evidence"
+      ],
+      "practices": [
+        "design-by-contract",
+        "evidence-over-assertion"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "agy-native"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "validate"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "artifact-clarity-pass",
       "description": "|-",
       "hexagonal_role": "domain",
@@ -185,7 +238,7 @@
     },
     {
       "name": "autodev",
-      "description": "Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.",
+      "description": "Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself. Use when defining the autonomous improvement loop rules, repairing PROGRAM.md, or setting boundaries for evolve.",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [
@@ -460,7 +513,7 @@
     },
     {
       "name": "burndown",
-      "description": "Drive a finite epic set to all-merged, then stop.",
+      "description": "Drive a finite epic set to all-merged, then stop. Use when finishing a specific list of tasks, burning down a backlog epic, or executing a bounded set of beads until done.",
       "hexagonal_role": "domain",
       "user_invocable": true,
       "consumes": [
@@ -1023,6 +1076,32 @@
       "codex_override_present": true
     },
     {
+      "name": "cross-vendor-trust-gate",
+      "description": "|-",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        "skill"
+      ],
+      "produces": [
+        "trust-artifact",
+        "stdout"
+      ],
+      "practices": [
+        "measure-before-land",
+        "evidence-driven-iteration",
+        "cross-vendor-parity-as-a-gate"
+      ],
+      "context_rel": [
+        {
+          "kind": "shared-kernel",
+          "with": "heal-skill"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "curate",
       "description": "Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or",
       "hexagonal_role": "supporting",
@@ -1163,7 +1242,7 @@
     },
     {
       "name": "doc",
-      "description": "Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss).",
+      "description": "Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss). Use when writing or refreshing repo documentation, a README, or an open-source doc set.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -1183,7 +1262,7 @@
     },
     {
       "name": "domain",
-      "description": "Canonical vocabulary for human-AI software work.",
+      "description": "Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs.",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [],
@@ -1201,7 +1280,7 @@
     },
     {
       "name": "eval-outcomes",
-      "description": "Grade against Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes.",
+      "description": "Grade agent or model output against Outcomes as a holdout-safe projection of the locked eval substrate. Use when scoring output against outcomes, running a holdout-safe eval, or comparing runtimes on one bar.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -1881,7 +1960,7 @@
     },
     {
       "name": "operating-loop-workflow",
-      "description": "Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users.",
+      "description": "Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users. Use when installing the seven-move workflow, running the operating-loop script, or orchestrating multi-agent tasks via Workflow tool.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [],
@@ -2779,7 +2858,7 @@
     },
     {
       "name": "scaffold",
-      "description": "Create project, component, or boilerplate scaffolds.",
+      "description": "Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -2820,7 +2899,7 @@
     },
     {
       "name": "scope",
-      "description": "Hard-block edits outside declared frozen directories via PreToolUse hook.",
+      "description": "Hard-block edits outside declared frozen directories via PreToolUse hook. Use when freezing files or dirs from agent edits, enforcing edit boundaries, or protecting paths during a risky change.",
       "hexagonal_role": "driven-adapter",
       "user_invocable": false,
       "consumes": [],
@@ -2843,7 +2922,7 @@
     },
     {
       "name": "security",
-      "description": "Run repository security scans and composable security analysis.",
+      "description": "Run repository security scans and composable security analysis. Use when auditing a repo for vulnerabilities, scanning dependencies or secrets, or gating a release on security checks.",
       "hexagonal_role": "driven-adapter",
       "user_invocable": false,
       "consumes": [
@@ -2868,7 +2947,7 @@
     },
     {
       "name": "session-bootstrap",
-      "description": "Universal init prompt — every agent spawned into an AgentOps repo runs `ao session bootstrap` first.",
+      "description": "Universal init prompt; every agent spawned into an AgentOps repo runs ao session bootstrap first. Use when starting or onboarding a fresh agent session in an AgentOps repo, or defining the first-turn init prompt.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [
@@ -2929,7 +3008,7 @@
     },
     {
       "name": "ship-loop",
-      "description": "Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close.",
+      "description": "Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close. Use when shipping a fast-lane internal PR, landing a small fix, or closing a single harvested bead.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "consumes": [
@@ -2963,7 +3042,7 @@
     },
     {
       "name": "skill-auditor",
-      "description": "'Audit an existing SKILL.md against the unified AgentOps template (15",
+      "description": "Audit an existing SKILL.md against the unified AgentOps template (15 checks). Use when running a skill quality review, checking if a skill is ready, or auditing skill template compliance.",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],
@@ -3111,6 +3190,35 @@
       "codex_override_present": true
     },
     {
+      "name": "storage-watchdog-ops",
+      "description": "|-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "error-reports",
+        "runtime-metrics",
+        "runtime-configuration"
+      ],
+      "produces": [
+        "triage-finding",
+        "remediation-action",
+        "escalation-note"
+      ],
+      "practices": [
+        "devsecops-cdlc",
+        "pragmatic-programmer",
+        "testable-architecture"
+      ],
+      "context_rel": [
+        {
+          "kind": "partnership",
+          "with": "system-performance-remediation"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "swarm",
       "description": "Dispatch parallel agents.",
       "hexagonal_role": "supporting",
@@ -3152,7 +3260,7 @@
     },
     {
       "name": "system-tuning",
-      "description": "Restore system responsiveness via safe, ordered process cleanup and agent-swarm",
+      "description": "Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene. Use when the system is slow, load average is high, or cleaning up stuck agents and background processes.",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],
