@@ -1,6 +1,6 @@
 ---
 name: agent-native
-description: Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native via skills plus the ao CLI and CI, not hooks. Use when wiring a Managed Agent or Agent SDK loop to AgentOps, or making an out-of-session agent AgentOps-native.
+description: Make an out-of-session agent AgentOps-native with skills, the ao CLI, and CI instead of hooks.
 skill_api_version: 1
 practices:
 - continuous-delivery

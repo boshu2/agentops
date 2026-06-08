@@ -1,11 +1,6 @@
 ---
 name: agy-project-worktree-permissions
-description: |-
-  Prove scoped project/worktree isolation on the AGY (Antigravity) image before a
-  bead can join the quorum: pin each role to a non-overlapping --add-dir scope, a
-  permission tier matched to author vs judge, and the dcg guard, then capture the
-  isolation evidence.
-  Triggers: agy, worktree, permissions, project.
+description: "Prove AGY project/worktree isolation with scoped --add-dir permissions, role tiers, dcg guardrails, and persisted evidence."
 practices:
 - team-topologies
 - continuous-delivery

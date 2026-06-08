@@ -1,8 +1,6 @@
 ---
 name: cross-vendor-trust-gate
-description: |-
-  Use when running the skill-factory final trust gate to grade a skill's cross-vendor trust before landing it.
-  Triggers: trust gate, cross-vendor parity, skill factory final gate, --require-cross, skill.trust.json, is this skill cross-validated.
+description: "Run the skill-factory final trust gate: operate trust-gate.sh, read skill.trust.json, and enforce --require-cross."
 practices:
 - measure-before-land
 - evidence-driven-iteration

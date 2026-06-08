@@ -1,6 +1,7 @@
 {
   "schema_version": 2,
   "generated_at": "2026-06-08T03:16:50Z",
+  "generated_at": "2026-06-08T03:07:09Z",
   "summary": {
     "skills": 162,
     "hooks": 0,
@@ -2273,7 +2274,7 @@
       "bounded_context": "BC5",
       "hex_role": "supporting",
       "tier": "meta",
-      "purpose": "Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native via skills plus the ao CLI and CI, not hooks. Use when wiring a Managed Agent or Agent SDK loop to AgentOps, or making an out-of-session agent AgentOps-native.",
+      "purpose": "Make an out-of-session agent AgentOps-native with skills, the ao CLI, and CI instead of hooks.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -2366,7 +2367,7 @@
       "bounded_context": "BC5",
       "hex_role": "supporting",
       "tier": "cross-vendor",
-      "purpose": "|-",
+      "purpose": "Prove AGY project/worktree isolation with scoped --add-dir permissions, role tiers, dcg guardrails, and persisted evidence.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -3240,7 +3241,7 @@
       "bounded_context": "BC4",
       "hex_role": "domain",
       "tier": "execution",
-      "purpose": "|-",
+      "purpose": "Run the skill-factory final trust gate: operate trust-gate.sh, read skill.trust.json, and enforce --require-cross.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -3392,7 +3393,7 @@
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "product",
-      "purpose": "Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss). Use when writing or refreshing repo documentation, a README, or an open-source doc set.",
+      "purpose": "Generate and validate repo docs, READMEs, and OSS doc packs.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -3440,7 +3441,7 @@
       "bounded_context": "BC2",
       "hex_role": "supporting",
       "tier": "execution",
-      "purpose": "Grade agent or model output against Outcomes as a holdout-safe projection of the locked eval substrate. Use when scoring output against outcomes, running a holdout-safe eval, or comparing runtimes on one bar.",
+      "purpose": "Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -5059,7 +5060,7 @@
       "bounded_context": "BC5",
       "hex_role": "driven-adapter",
       "tier": "execution",
-      "purpose": "Hard-block edits outside declared frozen directories via PreToolUse hook. Use when freezing files or dirs from agent edits, enforcing edit boundaries, or protecting paths during a risky change.",
+      "purpose": "Hard-block edits outside declared frozen directories and protect paths during risky changes.",
       "status": "active",
       "disposition": "keep",
       "consumes": [],
@@ -5080,7 +5081,7 @@
       "bounded_context": "BC2",
       "hex_role": "driven-adapter",
       "tier": "product",
-      "purpose": "Run repository security scans and composable security analysis. Use when auditing a repo for vulnerabilities, scanning dependencies or secrets, or gating a release on security checks.",
+      "purpose": "Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -5100,7 +5101,7 @@
       "bounded_context": "BC5",
       "hex_role": "driving-adapter",
       "tier": "session",
-      "purpose": "Universal init prompt; every agent spawned into an AgentOps repo runs ao session bootstrap first. Use when starting or onboarding a fresh agent session in an AgentOps repo, or defining the first-turn init prompt.",
+      "purpose": "Universal AgentOps init prompt for starting or onboarding a fresh agent session.",
       "status": "active",
       "disposition": "keep",
       "consumes": [

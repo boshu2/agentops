@@ -1,8 +1,8 @@
 ---
 name: agy-sidecar-scheduled-tick
 description: |-
-  Run a recurring AgentOps loop tick on AGY via an Antigravity sidecar (schedule builtin + agentapi), capturing agentapi runtime evidence a validator can read back.
-  Triggers: agy, sidecar, schedule, agentapi, AGY scheduled tick, Antigravity sidecar, recurring AGY loop.
+  Run a recurring AGY sidecar loop tick and capture agentapi evidence.
+  Triggers: agy, sidecar, schedule, agentapi.
 practices:
 - design-by-contract
 - evidence-over-assertion

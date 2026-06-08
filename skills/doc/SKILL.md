@@ -1,6 +1,6 @@
 ---
 name: doc
-description: Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss). Use when writing or refreshing repo documentation, a README, or an open-source doc set.
+description: Generate and validate repo docs, READMEs, and OSS doc packs.
 practices:
 - wiki-knowledge-surface
 - code-complete
