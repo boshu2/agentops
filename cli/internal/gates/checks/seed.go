@@ -99,11 +99,15 @@ func init() {
 		{ID: "always.sovereignty-proof-citations", Tiers: gates.Full, Match: docsPaths, Blocking: true, Backing: "validate-sovereignty-proof-citations.sh"},
 		{ID: "corpus.secret-scan", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "check-corpus-secret-scan.sh"},
 		{ID: "corpus.witness-dolt-jsonl-crosscheck", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "witness-dolt-jsonl-crosscheck.sh"},
+		{ID: "doctrine.memrl-health", Tiers: gates.Full, Blocking: true, Backing: "check-memrl-health.sh"},
+		{ID: "doctrine.flywheel-proof", Tiers: gates.Full, Blocking: true, Backing: "proof-run.sh"},
+		{ID: "eval.retrieval-quality-smoke", Tiers: gates.Full, Blocking: true, Backing: "retrieval-quality-smoke.sh"},
 
 		// full-mode-only / advisory (mirror the bash gate: these skip in fast or warn)
 		{ID: "full.worktree-disposition", Tiers: gates.Full, Blocking: true, Backing: "check-worktree-disposition.sh"},
 		{ID: "full.retrieval-quality-ratchet", Tiers: gates.Full, Blocking: false, Backing: "check-retrieval-quality-ratchet.sh"},
 		{ID: "always.loop-shape", Tiers: gates.Fast | gates.Full, Blocking: false, Backing: "check-loop-shape.sh"},
+		{ID: "skill.catalog-drift", Tiers: gates.Full, Blocking: false, Backing: "check-skill-catalog-drift.sh"},
 
 		// final backing-script batch (PB1)
 		{ID: "always.quarantine-empty", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-quarantine-empty.sh"},

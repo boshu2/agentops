@@ -155,20 +155,17 @@ jobs:
               - '.agents/**/*.jsonl'
 
   # ─────────────────────────────────────────────────────────────────────────
-  # go-gate-shadow — PB3 migration shadow lane.
+  # go-gate-shadow — PB3 migration authority lane.
   #
   # Runs the single Go gate entrypoint in CI and emits per-check GitHub
-  # annotations + JSON evidence while the legacy purpose jobs remain the
-  # blocking authority. This makes validate.yml exercise `ao gate check --full`
-  # without silently dropping the checks that are not yet registered in Go.
-  # Remove continue-on-error only after the registry coverage guard proves
-  # validate.yml parity.
+  # annotations + JSON evidence. The job is required and enforces workflow
+  # parity for non-deferred blocking scripts, while the legacy purpose jobs
+  # remain blocking until the final dual-orchestration collapse.
   # ─────────────────────────────────────────────────────────────────────────
   go-gate-shadow:
     needs: [changes]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v6
 
@@ -202,11 +199,11 @@ jobs:
         run: |
           set +e
           WORKTREE_DISPOSITION_CI_SKIP=1 \
-            ./bin/ao gate check --full --json --github-annotations --workflow-coverage \
+            ./bin/ao gate check --full --json --github-annotations --workflow-coverage --require-workflow-parity \
             > ao-gate-report.json
           rc=$?
           jq '.run.summary' ao-gate-report.json
-          jq '.coverage | {workflow_script_count, registry_script_count, missing_script_count, registry_only_script_count, missing_scripts}' ao-gate-report.json
+          jq '.coverage | {workflow_script_count, registry_script_count, missing_script_count, missing_blocking_count, missing_advisory_count, missing_deferred_count, registry_only_script_count, missing_blocking_scripts, missing_advisory_scripts, missing_deferred_scripts, registry_only_scripts}' ao-gate-report.json
           echo "exit_code=$rc" >> "$GITHUB_OUTPUT"
           exit "$rc"
 
@@ -1855,7 +1852,7 @@ jobs:
   # here rather than in process-hygiene. Invokes scripts/verify-gate-claim.sh.
   # ─────────────────────────────────────────────────────────────────────────
   summary:
-    needs: [changes, correctness, lint, security, skill-gates, skills-integrity, contracts-sync, codex-parity, doctrine-proof, eval, skill-eval, process-hygiene]
+    needs: [changes, go-gate-shadow, correctness, lint, security, skill-gates, skills-integrity, contracts-sync, codex-parity, doctrine-proof, eval, skill-eval, process-hygiene]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -1864,6 +1861,7 @@ jobs:
       - name: Check results
         run: |
           echo "=== CI Summary ==="
+          echo "go-gate-shadow: ${{ needs.go-gate-shadow.result }}"
           echo "correctness: ${{ needs.correctness.result }}"
           echo "lint: ${{ needs.lint.result }}"
           echo "security: ${{ needs.security.result }}"

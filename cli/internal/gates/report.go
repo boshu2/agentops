@@ -139,10 +139,13 @@ func (r *Report) Human(w io.Writer) {
 	fmt.Fprintf(w, "\n%s/%s: %d checks — %d pass, %d warn, %d fail, %d skip (%dms)\n",
 		modeString(r.Mode), r.Scope, s.Total, s.Passed, s.Warned, s.Failed, s.Skipped, r.Elapsed.Milliseconds())
 	if r.Coverage != nil {
-		fmt.Fprintf(w, "workflow coverage: %d workflow scripts, %d registry scripts, %d missing, %d registry-only\n",
+		fmt.Fprintf(w, "workflow coverage: %d workflow scripts, %d registry scripts, %d missing (%d blocking, %d advisory, %d deferred), %d registry-only\n",
 			r.Coverage.WorkflowScriptCount,
 			r.Coverage.RegistryScriptCount,
 			r.Coverage.MissingScriptCount,
+			r.Coverage.MissingBlockingCount,
+			r.Coverage.MissingAdvisoryCount,
+			r.Coverage.MissingDeferredCount,
 			r.Coverage.RegistryOnlyScriptCount,
 		)
 	}

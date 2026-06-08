@@ -10,6 +10,9 @@
 # `continue-on-error: true` at the step level (so no job is whole-job
 # non-blocking). Design: spec/teardown-2026-05-28/gate-rebuild-first-principles.md
 jobs:
+- name: go-gate-shadow
+  reason: Required Go-gate authority lane for the migration to `ao gate check --full`; runs the single Go registry with GitHub annotations, JSON evidence, workflow coverage, and `--require-workflow-parity` so blocking validate.yml scripts cannot drift outside the Go gate contract
+  failure: A blocking Go-gate check failure, a workflow coverage parity gap for a non-deferred blocking script, or an inability to produce/upload the `ao-gate-shadow-report` JSON artifact
 - name: correctness
   reason: '`ao` builds (Linux + native Windows smoke via matrix); Go tests pass with `-race`/coverage floor; embedded lib/skills in sync; Go complexity budget; CLI + v2.18 integration; release smoke; JSON-flag consistency; bats; Python smoke; advisory `ao doctor` dead-reference check'
   failure: Build/test failure, race, coverage-floor regression, embedded drift, a function exceeding cyclomatic complexity 25, integration/smoke/bats/JSON-flag breakage, or Windows-smoke regression
