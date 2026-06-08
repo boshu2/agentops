@@ -1,6 +1,6 @@
 ---
 name: session-bootstrap
-description: Universal init prompt; every agent spawned into an AgentOps repo runs ao session bootstrap first. Use when starting or onboarding a fresh agent session in an AgentOps repo, or defining the first-turn init prompt.
+description: Universal AgentOps init prompt for starting or onboarding a fresh agent session.
 skill_api_version: 1
 metadata:
   tier: session

@@ -1,6 +1,6 @@
 ---
 name: scope
-description: Hard-block edits outside declared frozen directories via PreToolUse hook. Use when freezing files or dirs from agent edits, enforcing edit boundaries, or protecting paths during a risky change.
+description: Hard-block edits outside declared frozen directories and protect paths during risky changes.
 practices:
 - ddd-bounded-context
 - design-by-contract
