@@ -4384,6 +4384,51 @@ ao skills consumers <skill> [flags]
       --json   Emit machine-readable JSON
 ```
 
+#### `ao skills edit`
+
+Immune-system commands for the live skill tier.
+
+```
+ao skills edit [command]
+```
+
+##### `ao skills edit digest`
+
+Summarize recent committed skill edits
+
+```
+ao skills edit digest [flags]
+```
+
+**Flags:**
+
+```
+      --critical-policy string   Critical skills policy file (default: docs/contracts/critical-skills.txt)
+  -h, --help                     help for digest
+      --json                     Emit JSON
+      --since string             git log --since value (default "24 hours ago")
+```
+
+##### `ao skills edit seal`
+
+Commit one live skill edit with critical-skill protection
+
+```
+ao skills edit seal [flags]
+```
+
+**Flags:**
+
+```
+      --actor string             Agent/operator name recorded in the commit body
+      --allow-critical           Allow a critical skill edit; use only for human-supervised edits
+      --critical-policy string   Critical skills policy file (default: docs/contracts/critical-skills.txt)
+      --dry-run                  Check policy and print the commit action without staging or committing
+  -h, --help                     help for seal
+      --message string           Commit subject (default: chore(skills): update <skill> via live edit)
+      --skill string             Skill slug under skills/<slug> to seal
+```
+
 #### `ao skills find`
 
 Score every skills/<name>/SKILL.md against a free-text intent and

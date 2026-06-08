@@ -1,0 +1,16 @@
+# Critical skills require human-supervised edits.
+#
+# ao skills edit seal refuses these slugs unless the caller passes
+# --allow-critical. Keep this list small: it covers the orchestration,
+# factory, recovery, and coordination surfaces where an unattended bad edit can
+# strand the agent fleet.
+
+agent-mail
+beads-br
+beads-bv
+evolve
+heal-skill
+operating-loop-workflow
+rpi
+skill-builder
+using-agentops
