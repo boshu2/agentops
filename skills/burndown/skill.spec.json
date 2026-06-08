@@ -1,0 +1,50 @@
+{
+  "name": "burndown",
+  "form": "A",
+  "summary": "Bounded epic-completion loop: take a finite target (epic, epic set, or explicit bead list), drive every in-scope bead to merged on main one PR at a time (idempotent, resumable), then STOP. The terminating counterpart to /evolve.",
+  "sections": [
+    { "id": "title", "title": "/burndown — Bounded Epic-Completion Loop", "type": "header", "priority": "high" },
+    { "id": "when-to-use", "title": "When to use which", "type": "overview", "priority": "high" },
+    { "id": "invocation", "title": "Invocation", "type": "overview", "priority": "high" },
+    { "id": "per-cycle-algorithm", "title": "Per-cycle algorithm", "type": "methodology", "priority": "high" },
+    { "id": "finite-stop", "title": "Finite stop conditions", "type": "constraints", "priority": "high" },
+    { "id": "self-perpetuation", "title": "Self-perpetuation", "type": "methodology", "priority": "medium" },
+    { "id": "hard-constraints", "title": "Hard constraints", "type": "constraints", "priority": "critical" },
+    { "id": "example", "title": "Example", "type": "examples", "priority": "medium" },
+    { "id": "see-also", "title": "See Also", "type": "routing", "priority": "low" }
+  ],
+  "references": [],
+  "scripts": [],
+  "metadata": {
+    "tier": "execution",
+    "stability": "stable",
+    "hexagonal_role": "domain",
+    "dependencies": ["beads", "rpi", "implement", "post-mortem"],
+    "triggers": [
+      "/burndown",
+      "drive this epic to merged",
+      "finish this epic set then stop",
+      "burn down these beads",
+      "/burndown --max-cycles",
+      "/burndown --beads",
+      "/burndown --hold-merges"
+    ],
+    "token_estimate": {
+      "minimal": 110,
+      "overview": 340,
+      "standard": 1100,
+      "full": 1400
+    }
+  },
+  "produces": [".agents/burndown/*.json", "merged PRs", "completion report"],
+  "consumes": ["beads", "rpi", "implement", "post-mortem"],
+  "context_rel": [
+    { "kind": "shared-kernel", "with": "standards" }
+  ],
+  "quality_score": 0.93,
+  "evidence": {
+    "sources": [
+      "skills/burndown/SKILL.md"
+    ]
+  }
+}

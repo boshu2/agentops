@@ -1150,6 +1150,30 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex parity wrapper for AGY image operator skill."
+    },
+    {
+      "name": "cross-vendor-trust-gate",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Operates the skill-factory trust-gate.sh final gate; codex-native shell + jq verdict reading."
+    },
+    {
+      "name": "storage-watchdog-ops",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Operator runbook for the ACFS storage watchdog Go daemon; codex-native shell/systemctl idioms."
+    },
+    {
+      "name": "agy-sidecar-scheduled-tick",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Recurring AGY loop tick via Antigravity sidecar + agentapi; codex-native evidence capture."
+    },
+    {
+      "name": "agy-project-worktree-permissions",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Proof skill asserting AGY project/worktree isolation invariants; codex-native agy --print orchestration."
     }
   ]
 }

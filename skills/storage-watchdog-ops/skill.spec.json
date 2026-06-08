@@ -1,0 +1,31 @@
+{
+  "name": "storage-watchdog-ops",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Operator runbook for the ACFS storage watchdog daemon: check disk pressure and daemon health, interpret its log, and remediate safely (let it run, force a dry-run/one-shot tick, hand-clean a Rust target/, adjust thresholds, or escalate) without widening its narrow Rust-target deletion policy.",
+  "triggers": [
+    "storage",
+    "watchdog",
+    "disk",
+    "target",
+    "disk pressure",
+    "free space",
+    "target cleanup",
+    "acfs-storage-watchdog",
+    "disk full"
+  ],
+  "inputs": [
+    "incident-symptom",
+    "host-state",
+    "daemon-config"
+  ],
+  "outputs": [
+    "triage-finding",
+    "remediation-action",
+    "escalation-note"
+  ],
+  "validation": {
+    "command": "bash skills/storage-watchdog-ops/scripts/validate.sh"
+  }
+}

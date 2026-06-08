@@ -1,0 +1,57 @@
+{
+  "name": "agy-sidecar-scheduled-tick",
+  "skill_api_version": 1,
+  "form": "A",
+  "quality_score": 0.92,
+  "sections": [
+    { "id": "title",        "title": "agy-sidecar-scheduled-tick",          "type": "intro",       "priority": "required" },
+    { "id": "overview",     "title": "Overview / When to Use",              "type": "overview",    "priority": "required" },
+    { "id": "constraints",  "title": "⚠️ Critical Constraints",              "type": "constraints", "priority": "required" },
+    { "id": "distribution", "title": "Distribution — where the sidecar lives","type": "routing",    "priority": "standard" },
+    { "id": "workflow",     "title": "Workflow / Methodology",              "type": "procedure",   "priority": "required" },
+    { "id": "output",       "title": "Output Specification",                "type": "contract",    "priority": "required" },
+    { "id": "rubric",       "title": "Quality Rubric",                      "type": "rubric",      "priority": "required" },
+    { "id": "examples",     "title": "Examples",                            "type": "examples",    "priority": "standard" },
+    { "id": "troubleshoot", "title": "Troubleshooting",                     "type": "table",       "priority": "standard" },
+    { "id": "seealso",      "title": "See Also / References",               "type": "routing",     "priority": "required" }
+  ],
+  "references": [],
+  "metadata": {
+    "tier": "execution",
+    "stability": "experimental",
+    "dependencies": ["agy-native", "agy-headless-evidence", "dcg", "beads-br"],
+    "hexagonal_role": "supporting",
+    "context_window": "inherit",
+    "consumes": ["agy-native", "agy-headless-evidence"],
+    "produces": ["agy-sidecar-tick-evidence"],
+    "triggers": [
+      "agy",
+      "sidecar",
+      "schedule",
+      "agentapi",
+      "AGY scheduled tick",
+      "Antigravity sidecar",
+      "recurring AGY loop",
+      "schedule builtin",
+      "daemon-style recurring tick on AGY",
+      "agentapi runtime evidence"
+    ],
+    "token_estimate": {
+      "minimal": 60,
+      "overview": 320,
+      "standard": 1500,
+      "full": 2700
+    }
+  },
+  "output_contract": "A registered AGY sidecar (sidecar.json with the schedule builtin) plus a per-fire timestamped evidence directory holding events.jsonl (the agentapi event stream), agentapi-health.json (the runtime liveness probe), schedule.txt (cron/interval + builtin), exit-code (captured $?), and command.txt (argv/cwd/scopes) — the proof surface a distinct-context validator reads to confirm the recurring tick fired and did work, never trusting worker prose.",
+  "evidence": {
+    "sources": [
+      "~/dev/control-plane/IMAGE-AGY.md (scheduled-tick row: Antigravity sidecars + schedule builtin + agentapi for daemon-style recurring ticks; cp-c6k.3.2 proof child)",
+      "~/.local/bin/agy (agy --version 1.0.6, agy models — verified 2026-06-07 per IMAGE-AGY.md baseline)",
+      "~/.gemini/settings.json (dcg BeforeTool hook on run_shell_command — the unattended floor)",
+      "~/.gemini/antigravity-cli/brain/<id>/*.md.metadata.json ({summary,updatedAt,userFacing} verdict mirror)",
+      "skills/agy-headless-evidence/SKILL.md (one-shot agy -p evidence pattern this skill extends to recurrence)",
+      "skills/agy-native/SKILL.md (AGY image loop laws, author!=judge, scoped worktrees)"
+    ]
+  }
+}

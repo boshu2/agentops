@@ -1,0 +1,62 @@
+{
+  "name": "bug-hunt",
+  "form": "A",
+  "summary": "Systematic 4-phase bug investigation (Root Cause → Pattern → Hypothesis → Fix) or proactive --audit sweep for hidden bugs; fixes at the root not the symptom and writes a cited diagnosis report to .agents/research/.",
+  "sections": [
+    { "id": "title", "title": "Bug Hunt Skill", "type": "header", "priority": "high" },
+    { "id": "modes", "title": "Modes", "type": "overview", "priority": "high" },
+    { "id": "four-phase", "title": "The 4-Phase Structure (Investigation Mode)", "type": "methodology", "priority": "high" },
+    { "id": "execution-steps", "title": "Execution Steps", "type": "methodology", "priority": "high" },
+    { "id": "audit-mode", "title": "Audit Mode", "type": "methodology", "priority": "medium" },
+    { "id": "examples", "title": "Examples", "type": "examples", "priority": "medium" },
+    { "id": "troubleshooting", "title": "Troubleshooting", "type": "troubleshooting", "priority": "medium" },
+    { "id": "reference-documents", "title": "Reference Documents", "type": "routing", "priority": "low" },
+    { "id": "see-also", "title": "See Also", "type": "routing", "priority": "low" }
+  ],
+  "references": [
+    { "path": "references/failure-categories.md", "intent": "read", "description": "Failure-category taxonomy and the 3-failure rule." },
+    { "path": "references/audit-fix-rescan-cycle.md", "intent": "read", "description": "Multi-pass audit-fix-rescan methodology." },
+    { "path": "references/convergence-criteria.md", "intent": "read", "description": "When to stop multi-pass sweeps." },
+    { "path": "references/multi-pass-bug-hunting.md", "intent": "read", "description": "Fresh-eyes rescan methodology." },
+    { "path": "references/deadlock-and-hang-triage.md", "intent": "read", "description": "Triage for hangs, deadlocks, retry storms before changing code." },
+    { "path": "references/debugger-attach-triage.md", "intent": "read", "description": "Live/hung process debugger-attach triage." },
+    { "path": "references/audit-report-template.md", "intent": "read", "description": "Audit report template." },
+    { "path": "references/bug-report-template.md", "intent": "read", "description": "Bug report template." },
+    { "path": "references/bug-hunt.feature", "intent": "read", "description": "Executable spec: 4-phase root-cause investigation, fix-the-cause, --audit sweep." }
+  ],
+  "scripts": [],
+  "metadata": {
+    "tier": "execution",
+    "stability": "stable",
+    "hexagonal_role": "domain",
+    "dependencies": ["beads", "standards"],
+    "triggers": [
+      "/bug-hunt",
+      "find the root cause",
+      "investigate this bug",
+      "why is this failing",
+      "/bug-hunt --audit",
+      "proactive bug sweep",
+      "find all bugs before release"
+    ],
+    "token_estimate": {
+      "minimal": 140,
+      "overview": 450,
+      "standard": 1500,
+      "full": 2800
+    }
+  },
+  "produces": ["diagnosis report", "fix commits"],
+  "consumes": ["beads", "standards"],
+  "context_rel": [
+    { "kind": "shared-kernel", "with": "standards" }
+  ],
+  "quality_score": 0.94,
+  "evidence": {
+    "sources": [
+      "skills/bug-hunt/SKILL.md",
+      "skills/bug-hunt/references/failure-categories.md",
+      "skills/bug-hunt/references/audit-fix-rescan-cycle.md"
+    ]
+  }
+}
