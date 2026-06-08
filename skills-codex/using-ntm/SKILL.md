@@ -8,7 +8,7 @@ description: "Run using NTM."
 AgentOps 3.0 runs its loops **in session** and ships **no** daemon, scheduler, or
 overnight runner. To run the loop **unattended** — always-on, scheduled,
 queue-driven — you hand it to an orchestration **substrate**. The reference
-substrate is **NTM + MCP + managed-agents**; this skill covers the **NTM leg**: a
+substrate is **NTM + Agent Mail (`am`) + managed-agents**; this skill covers the **NTM leg**: a
 local Named Tmux Manager swarm of Claude/Codex agent panes. NTM is an adopted
 external tool (`ntm` on `PATH`), **not** an AgentOps-owned surface.
 
@@ -80,10 +80,10 @@ Run one tick at a time; take the first action whose trigger fires:
 - **Many review beads open, few closing** → flip to review-only, drain the backlog.
 - **Otherwise** → observe; do not nudge a healthy working pane.
 
-## Coordination (the MCP leg)
+## Coordination (the Agent Mail leg)
 
 - **Beads (`bd`)** — shared work queue + state source: `bd ready`, `bd update --claim`, `bd close`.
-- **MCP Agent Mail** (`ao mcp serve`) — cross-pane messages + **file reservations** (reserve before edit, release on commit).
+- **Agent Mail (`am`)** (its own daemon at `127.0.0.1:8765` — the `am` CLI, **not** an `ao` subcommand; old "MCP Agent Mail" name retired) — register with `am macros start-session`, then cross-pane messages + **file reservations** (reserve before edit, release on commit).
 - **Worktree-per-bead** is mandatory: no pane edits the shared checkout.
 
 ## Convergence + shutdown

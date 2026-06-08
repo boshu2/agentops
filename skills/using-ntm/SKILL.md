@@ -34,7 +34,7 @@ output_contract: 'stdout: NTM-substrate operating guide'
 AgentOps 3.0 runs its loops **in session** and ships **no** daemon, scheduler, or
 overnight runner. To run the loop **unattended** — always-on, scheduled,
 queue-driven — you hand it to an orchestration **substrate**. The reference
-substrate is **NTM + MCP + managed-agents**; this skill covers the **NTM leg**:
+substrate is **NTM + Agent Mail (`am`) + managed-agents**; this skill covers the **NTM leg**:
 a local [Named Tmux Manager](https://github.com/) swarm of Claude/Codex agent
 panes. NTM is an adopted external tool (`ntm` on `PATH`), **not** an
 AgentOps-owned surface — AgentOps adopts it, it does not vendor it.
@@ -118,16 +118,17 @@ Run one tick at a time; take the first action whose trigger fires:
   drain the backlog before taking new feature work.
 - **Otherwise** → observe; do not nudge a healthy working pane.
 
-## Coordination (the MCP leg)
+## Coordination (the Agent Mail leg)
 
 NTM panes coordinate through the other substrate legs, not bespoke glue:
 
 - **Beads (`bd`)** is the shared work queue and the source of truth for state —
   `bd ready` to pick, `bd update --claim` to claim, `bd close` when merged.
-- **MCP Agent Mail** (`ao mcp serve` exposes the AgentOps tool surface across the
-  seam) carries cross-pane messages and **file reservations** — the swarm's
-  defense against two panes editing the same path. Reserve before editing;
-  release on commit.
+- **Agent Mail (`am`)** (its own daemon at `127.0.0.1:8765` — the `am` CLI,
+  **not** an `ao` subcommand; the old "MCP Agent Mail" name is retired) carries cross-pane messages and
+  **file reservations** — the swarm's defense against two panes editing the same
+  path. Each pane registers once with `am macros start-session`, reserves before
+  editing (`am file_reservations reserve`), and releases on commit.
 - **Worktree-per-bead** is mandatory: no pane edits the shared checkout. See
   [../swarm/references/shared-checkout-discipline.md](../swarm/references/shared-checkout-discipline.md).
 
