@@ -1,6 +1,6 @@
 ---
 name: burndown
-description: Drive a finite epic set to all-merged, then stop.
+description: Drive a finite epic set to all-merged, then stop. Use when finishing a specific list of tasks, burning down a backlog epic, or executing a bounded set of beads until done.
 practices:
 - continuous-delivery
 - xp

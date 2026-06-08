@@ -1,7 +1,6 @@
 ---
 name: skill-auditor
-description: 'Audit an existing SKILL.md against the unified AgentOps template (15
-  checks). Triggers: "audit skill", "skill quality review", "is this skill ready".'
+description: 'Audit an existing SKILL.md against the unified AgentOps template (15 checks). Use when running a skill quality review, checking if a skill is ready, or auditing skill template compliance.'
 practices:
 - code-complete
 - cmm-process-maturity
