@@ -508,7 +508,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: runner.os == 'Linux' && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           files: ./cli/coverage.out
           flags: cli
