@@ -285,6 +285,7 @@ graph LR
   skill-builder -- "customer-of" --> automation-shape-routing
   skill-builder -- "supplier-to" --> skill-auditor
   spec-reliability-implementation -- "customer-of" --> validate
+  storage-watchdog-ops -- "partnership" --> system-performance-remediation
   swarm -- "customer-of" --> crank
   trace -- "shared-kernel" --> curate
   using-atm -- "customer-of" --> swarm
@@ -621,9 +622,9 @@ graph LR
 | `standards` | produces | stdout |
 | `status` | consumes | bd |
 | `status` | produces | stdout |
-| `storage-watchdog-ops` | consumes | daemon-config |
-| `storage-watchdog-ops` | consumes | host-state |
-| `storage-watchdog-ops` | consumes | incident-symptom |
+| `storage-watchdog-ops` | consumes | error-reports |
+| `storage-watchdog-ops` | consumes | runtime-configuration |
+| `storage-watchdog-ops` | consumes | runtime-metrics |
 | `storage-watchdog-ops` | produces | escalation-note |
 | `storage-watchdog-ops` | produces | remediation-action |
 | `storage-watchdog-ops` | produces | triage-finding |

@@ -1,11 +1,8 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-08T02:16:17Z",
-  "generated_at": "2026-06-08T01:35:05Z",
-  "generated_at": "2026-06-08T01:20:40Z",
+  "generated_at": "2026-06-08T02:50:25Z",
   "summary": {
     "skills": 162,
-    "skills": 159,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
@@ -1300,14 +1297,6 @@
         "tier": "unknown",
         "path": "skills/operating-loop-skill/",
         "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "security-suite",
-        "tier": "unknown",
-        "path": "skills/security-suite/",
-        "has_skill_md": false,
         "has_references": false,
         "reference_count": 0
       },
@@ -5331,9 +5320,9 @@
       "status": "active",
       "disposition": "keep",
       "consumes": [
-        "incident-symptom",
-        "host-state",
-        "daemon-config"
+        "error-reports",
+        "runtime-metrics",
+        "runtime-configuration"
       ],
       "produces": [
         "triage-finding",
