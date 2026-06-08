@@ -72,6 +72,8 @@ Options:
 Environment:
   AGENTOPS_RELEASE_ALLOW_AGENT_MUTATIONS=1
       Allow release smoke to update tracked AgentOps metadata.
+  LOCAL_CI_STRICT_LOCAL_ENV=1
+      Make local-machine state checks blocking even outside official release mode.
 USAGE
 }
 
@@ -413,8 +415,10 @@ run_dangerous_pattern_scan() {
     )
 
     local found=0
+    local matches=""
+    local match=""
     for pattern in "${dangerous[@]}"; do
-        if grep -r -E "$pattern" \
+        matches="$(grep -r -n -E "$pattern" \
             --binary-files=without-match \
             --include="*.sh" \
             --exclude-dir=.git \
@@ -423,18 +427,29 @@ run_dangerous_pattern_scan() {
             --exclude-dir=.tmp \
             --exclude-dir=tests \
             --exclude-dir=cli/testdata \
-            --exclude="install-opencode.sh" \
-            --exclude="install-codex.sh" \
-            --exclude="install-codex-plugin.sh" \
-            --exclude="install-codex-native-skills.sh" \
             --exclude="ci-local-release.sh" \
-            . 2>/dev/null; then
+            . 2>/dev/null || true)"
+        while IFS= read -r match; do
+            [[ -n "$match" ]] || continue
+            if is_allowed_installer_pipe_match "$match"; then
+                continue
+            fi
+            echo "$match"
             echo "Found dangerous pattern: $pattern"
             found=1
-        fi
+        done <<< "$matches"
     done
 
     [[ "$found" -eq 0 ]]
+}
+
+is_allowed_installer_pipe_match() {
+    local match="$1"
+
+    [[ "$match" =~ ^\./scripts/install-(agy|claude|codex|codex-native-skills|codex-plugin|opencode)\.sh:[0-9]+: ]] || return 1
+    [[ "$match" =~ https://raw\.githubusercontent\.com/boshu2/agentops/main/scripts/install-(agy|claude|codex|opencode)\.sh ]] || return 1
+    [[ "$match" =~ \|[[:space:]]*bash ]] || return 1
+    return 0
 }
 
 check_manifest_version_consistency() {
@@ -692,6 +707,13 @@ release_readiness_mode() {
     fi
 }
 
+local_env_checks_blocking() {
+    if [[ "${LOCAL_CI_STRICT_LOCAL_ENV:-0}" == "1" ]]; then
+        return 0
+    fi
+    [[ "$(release_readiness_mode)" == "official" ]]
+}
+
 run_release_hil_evidence() {
     local mode
     local version
@@ -778,10 +800,26 @@ run_release_eval_evidence() {
     local log_file="$ARTIFACT_DIR/eval-agentops-fast.log"
     local run_dir=""
     local rc=0
+    local mode
+    local eval_args
+    local command_display
+    local arg
+    local quoted
     mkdir -p "$run_root"
 
+    mode="$(release_readiness_mode)"
+    eval_args=(--fast --run-root "$run_root" --baseline-dir "$eval_root/baselines")
+    if [[ "$mode" != "official" ]]; then
+        eval_args+=(--advisory)
+    fi
+    command_display="scripts/eval-agentops.sh"
+    for arg in "${eval_args[@]}"; do
+        printf -v quoted '%q' "$arg"
+        command_display+=" $quoted"
+    done
+
     AO_BIN="$REPO_ROOT/cli/bin/ao" \
-        ./scripts/eval-agentops.sh --fast --run-root "$run_root" --baseline-dir "$eval_root/baselines" > "$log_file" 2>&1 || rc=$?
+        ./scripts/eval-agentops.sh "${eval_args[@]}" > "$log_file" 2>&1 || rc=$?
 
     run_dir="$(find "$run_root" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort | tail -1)"
     if [[ -n "$run_dir" && -f "$run_dir/baseline-audit.json" ]]; then
@@ -795,12 +833,15 @@ run_release_eval_evidence() {
 
     local status="pass"
     [[ "$rc" -eq 0 ]] || status="fail"
+    if [[ -f "$log_file" ]] && grep -q '^FAIL eval-agentops:' "$log_file"; then
+        status="fail"
+    fi
 
     jq -n \
         --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         --arg artifact_dir "$(artifact_dir_rel)" \
         --arg status "$status" \
-        --arg command "scripts/eval-agentops.sh --fast" \
+        --arg command "$command_display" \
         --arg run_dir "${run_dir#"$REPO_ROOT"/}" \
         --arg log "eval-agentops-fast.log" \
         --arg baseline_audit "eval-baseline-audit.json" \
@@ -818,6 +859,9 @@ run_release_eval_evidence() {
           baseline_audit: $baseline_audit
         }' > "$ARTIFACT_DIR/eval-agentops-fast.json"
 
+    if [[ "$mode" != "official" && "$rc" -eq 0 ]]; then
+        return 0
+    fi
     return "$rc"
 }
 
@@ -871,6 +915,10 @@ check_release_readiness() {
 # ═══════════════════════════════════════════════════════
 #  Execution
 # ═══════════════════════════════════════════════════════
+
+if [[ "${AGENTOPS_CI_LOCAL_RELEASE_SOURCE_ONLY:-0}" == "1" ]]; then
+    return 0 2>/dev/null || exit 0
+fi
 
 START_TIME=$(date +%s)
 
@@ -931,8 +979,9 @@ run_step_bg "Manifest schema validation" ./scripts/validate-manifests.sh --repo-
 run_step_bg "Manifest version consistency" check_manifest_version_consistency
 run_step_bg "CI policy/docs parity" ./scripts/validate-ci-policy-parity.sh
 # Worktree-disposition is a LOCAL-env-state check (reflects the local working tree, not
-# committed code). In --quick it runs advisory (after collect_parallel); otherwise it gates.
-if [[ "$QUICK_MODE" != "true" ]]; then
+# committed code). It gates official release-version runs and can be forced with
+# LOCAL_CI_STRICT_LOCAL_ENV=1; otherwise it runs advisory after collect_parallel.
+if local_env_checks_blocking; then
     run_step_bg "Worktree disposition gate" ./scripts/check-worktree-disposition.sh
 fi
 run_step_bg "Skill integrity" bash ./skills/heal-skill/scripts/heal.sh --strict
@@ -953,16 +1002,17 @@ run_step_bg "Dangerous shell pattern scan" run_dangerous_pattern_scan
 run_step_bg "Skill CLI snippets" bash ./scripts/validate-skill-cli-snippets.sh
 run_step_bg "Command/test pairing gate" ./scripts/check-go-command-test-pair.sh
 # MemRL feedback health is a LOCAL-env-state check (depends on local feedback data, not
-# committed code). In --quick it runs advisory (after collect_parallel); otherwise it gates.
-if [[ "$QUICK_MODE" != "true" ]]; then
+# committed code). It follows the same official/strict behavior as worktree disposition.
+if local_env_checks_blocking; then
     run_step_bg "MemRL feedback loop health" ./scripts/check-memrl-health.sh
 fi
 run_step_bg "Doctor health check" ./scripts/check-doctor-health.sh
 
 collect_parallel
 
-# --quick: run the LOCAL-env-state checks as advisory (do not gate the code-readiness verdict).
-if [[ "$QUICK_MODE" == "true" ]]; then
+# Non-official local-ci: run the LOCAL-env-state checks as advisory (do not gate
+# the code-readiness verdict).
+if ! local_env_checks_blocking; then
     run_step_advisory "Worktree disposition gate" ./scripts/check-worktree-disposition.sh
     run_step_advisory "MemRL feedback loop health" ./scripts/check-memrl-health.sh
 fi

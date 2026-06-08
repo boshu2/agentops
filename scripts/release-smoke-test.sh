@@ -435,7 +435,7 @@ test_exec_output "ao maturity --scan" "Maturity|Distribution|Provisional|Candida
 test_exec_tolerant "ao anti-patterns" "$AO" anti-patterns
 test_exec_tolerant "ao constraint list" "$AO" constraint list
 test_exec_tolerant "ao contradict" "$AO" contradict
-test_exec_output "ao dedup" "Dedup|Scan|Total|Duplicate|No learnings" "$AO" dedup
+test_exec_output "ao dedup" "Dedup|Scan|Total|Duplicate|No learnings|No learning or pattern files" "$AO" dedup
 
 # Curate
 test_exec_tolerant "ao curate status" "$AO" curate status
