@@ -18,7 +18,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `crank` — Execute epics through waves.
 - `design` — Validate product fit before discovery. Use when: framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.
 - `discovery` — Create dense execution packets.
-- `domain` — Canonical vocabulary for human-AI software work.
+- `domain` — Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs.
 - `filesystem-path-rationalization` — Use when rationalizing file or directory layout and updating references without breaking builds. Triggers:
 - `flywheel` — Check knowledge flywheel health.
 - `forge` — Mine transcripts into learnings.
@@ -62,7 +62,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `recover` — Recover session context.
 - `research` — Explore and write findings.
 - `review` — Review diffs for risk, find mocks, scan for bugs, audit codebases. Use when: reviewing a diff/PR for bugs and risk, hunting mocks/stubs/placeholders, or auditing for quality.
-- `session-bootstrap` — Universal init prompt — every agent spawned into an AgentOps repo runs `ao session bootstrap` first.
+- `session-bootstrap` — Universal init prompt; every agent spawned into an AgentOps repo runs ao session bootstrap first. Use when starting or onboarding a fresh agent session in an AgentOps repo, or defining the first-turn init prompt.
 - `ship-loop` — Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close.
 - `spec-reliability-implementation` — Use when implementing a written spec into a reliable service with acceptance examples and observability. Triggers:
 - `status` — Show AgentOps work status.
@@ -76,13 +76,13 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `dependency-update-safety` — Use when updating dependencies safely with changelog review, small batches, tests, and rollback. Triggers:
 - `deps` — Audit dependency risks and updates.
 - `pr-research` — Research an upstream repo.
-- `scope` — Hard-block edits outside declared frozen directories via PreToolUse hook.
-- `security` — Run repository security scans and composable security analysis.
+- `scope` — Hard-block edits outside declared frozen directories via PreToolUse hook. Use when freezing files or dirs from agent edits, enforcing edit boundaries, or protecting paths during a risky change.
+- `security` — Run repository security scans and composable security analysis. Use when auditing a repo for vulnerabilities, scanning dependencies or secrets, or gating a release on security checks.
 
 ### supporting
 
 - `agent-mail` — Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs.
-- `agent-native` — Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native — via skills + the ao CLI + CI, not hooks.
+- `agent-native` — Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native via skills plus the ao CLI and CI, not hooks. Use when wiring a Managed Agent or Agent SDK loop to AgentOps, or making an out-of-session agent AgentOps-native.
 - `agy-headless-evidence` — Run AGY headlessly via scheduled ticks or `agy -p`, capturing agentapi JSONL evidence for validation.
 - `autodev` — Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.
 - `automation-loop-hardening` — Use when turning repeated manual operations into safer, observable, reusable automation loops. Triggers:
@@ -111,8 +111,8 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `contract-conformance-testing` — Use when building conformance tests from specs, contracts, examples, or compatibility matrices. Triggers:
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.
 - `dcg` — Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails.
-- `doc` — Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss).
-- `eval-outcomes` — Grade against Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes.
+- `doc` — Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss). Use when writing or refreshing repo documentation, a README, or an open-source doc set.
+- `eval-outcomes` — Grade agent or model output against Outcomes as a holdout-safe projection of the locked eval substrate. Use when scoring output against outcomes, running a holdout-safe eval, or comparing runtimes on one bar.
 - `evolve` — Run autonomous improvement loops.
 - `expertise-to-procedure` — Use when turning tacit expert know-how into a durable skill, playbook, or checklist. Triggers:
 - `external-search-triage` — Use when deciding whether external research is needed and turning cited findings into repo actions. Triggers:
@@ -158,7 +158,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `rust-ub-risk-audit` — Use when auditing Rust UB risks in unsafe, FFI, raw pointers, layout, or concurrency. Triggers:
 - `rust-unsafe-boundary-audit` — Use when auditing Rust unsafe blocks and FFI boundaries, invariants, tests, and tooling. Triggers:
 - `sbh` — Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status.
-- `scaffold` — Create project, component, or boilerplate scaffolds.
+- `scaffold` — Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure.
 - `scenario` — Manage holdout scenarios.
 - `skill-auditor` — Audit an existing SKILL.md against the unified AgentOps template (15 checks). Triggers: "audit skill", "skill quality review", "is this skill ready".
 - `skill-builder` — Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill".

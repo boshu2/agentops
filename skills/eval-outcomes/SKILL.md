@@ -1,6 +1,6 @@
 ---
 name: eval-outcomes
-description: Grade against Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes.
+description: Grade agent or model output against Outcomes as a holdout-safe projection of the locked eval substrate. Use when scoring output against outcomes, running a holdout-safe eval, or comparing runtimes on one bar.
 skill_api_version: 1
 practices:
 - continuous-delivery

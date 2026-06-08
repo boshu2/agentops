@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-08T00:43:36Z",
+  "generated_at": "2026-06-08T02:16:17Z",
   "summary": {
     "skills": 158,
     "hooks": 0,
@@ -2241,7 +2241,7 @@
       "bounded_context": "BC5",
       "hex_role": "supporting",
       "tier": "meta",
-      "purpose": "Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native — via skills + the ao CLI + CI, not hooks.",
+      "purpose": "Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native via skills plus the ao CLI and CI, not hooks. Use when wiring a Managed Agent or Agent SDK loop to AgentOps, or making an out-of-session agent AgentOps-native.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -3298,7 +3298,7 @@
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "product",
-      "purpose": "Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss).",
+      "purpose": "Generate and validate repo docs (default), READMEs (--mode=readme), and OSS doc packs (--mode=oss). Use when writing or refreshing repo documentation, a README, or an open-source doc set.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -3318,7 +3318,7 @@
       "bounded_context": "BC4",
       "hex_role": "domain",
       "tier": "knowledge",
-      "purpose": "Canonical vocabulary for human-AI software work.",
+      "purpose": "Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs.",
       "status": "active",
       "disposition": "keep",
       "consumes": [],
@@ -3346,7 +3346,7 @@
       "bounded_context": "BC2",
       "hex_role": "supporting",
       "tier": "execution",
-      "purpose": "Grade against Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes.",
+      "purpose": "Grade agent or model output against Outcomes as a holdout-safe projection of the locked eval substrate. Use when scoring output against outcomes, running a holdout-safe eval, or comparing runtimes on one bar.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -4920,7 +4920,7 @@
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "execution",
-      "purpose": "Create project, component, or boilerplate scaffolds.",
+      "purpose": "Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure.",
       "status": "active",
       "disposition": "update",
       "consumes": [],
@@ -4965,7 +4965,7 @@
       "bounded_context": "BC5",
       "hex_role": "driven-adapter",
       "tier": "execution",
-      "purpose": "Hard-block edits outside declared frozen directories via PreToolUse hook.",
+      "purpose": "Hard-block edits outside declared frozen directories via PreToolUse hook. Use when freezing files or dirs from agent edits, enforcing edit boundaries, or protecting paths during a risky change.",
       "status": "active",
       "disposition": "keep",
       "consumes": [],
@@ -4986,7 +4986,7 @@
       "bounded_context": "BC2",
       "hex_role": "driven-adapter",
       "tier": "product",
-      "purpose": "Run repository security scans and composable security analysis.",
+      "purpose": "Run repository security scans and composable security analysis. Use when auditing a repo for vulnerabilities, scanning dependencies or secrets, or gating a release on security checks.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -5006,7 +5006,7 @@
       "bounded_context": "BC5",
       "hex_role": "driving-adapter",
       "tier": "session",
-      "purpose": "Universal init prompt — every agent spawned into an AgentOps repo runs `ao session bootstrap` first.",
+      "purpose": "Universal init prompt; every agent spawned into an AgentOps repo runs ao session bootstrap first. Use when starting or onboarding a fresh agent session in an AgentOps repo, or defining the first-turn init prompt.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
