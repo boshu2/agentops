@@ -10,12 +10,16 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/boshu2/agentops/cli/internal/skillshealth"
+	"github.com/boshu2/agentops/cli/internal/skillsresolve"
 )
 
 var (
 	skillsCheckJSON   bool
 	skillsCheckStrict bool
 	skillsCheckOnly   string
+
+	skillsResolveJSON   bool
+	skillsResolveStrict bool
 )
 
 var skillsCmd = &cobra.Command{
@@ -41,12 +45,85 @@ CI gating.`,
 	RunE: runSkillsCheck,
 }
 
+var skillsResolveCmd = &cobra.Command{
+	Use:   "resolve",
+	Short: "MECE audit: flag overlapping skills (merge candidates) and coverage gaps",
+	Long: `Walk skills/ and resolve the corpus toward MECE:
+
+  - Mutually Exclusive (ME): cluster skills by name-family stem and
+    description-token Jaccard, surfacing overlapping/near-duplicate skills as
+    merge candidates (the prune queue, cp-dkf).
+  - Collectively Exhaustive (CE): flag thin or description-less SKILL.md files
+    as coverage-quality gaps.
+
+Read-only; mutates nothing. The deployment-DRY half (which live-tier symlink
+backs each name) is an operator-side concern handled by
+control-plane/bin/skill-resolve, not this command.
+
+Exits 0 by default. With --strict, exits 1 when any ME overlap is reported,
+suitable for a CI dedup gate.`,
+	RunE: runSkillsResolve,
+}
+
 func init() {
 	rootCmd.AddCommand(skillsCmd)
 	skillsCmd.AddCommand(skillsCheckCmd)
 	skillsCheckCmd.Flags().BoolVar(&skillsCheckJSON, "json", false, "Emit machine-readable JSON")
 	skillsCheckCmd.Flags().BoolVar(&skillsCheckStrict, "strict", false, "Exit non-zero on any finding (CI mode)")
 	skillsCheckCmd.Flags().StringVar(&skillsCheckOnly, "skill", "", "Restrict the audit to a single skill name")
+
+	skillsCmd.AddCommand(skillsResolveCmd)
+	skillsResolveCmd.Flags().BoolVar(&skillsResolveJSON, "json", false, "Emit machine-readable JSON")
+	skillsResolveCmd.Flags().BoolVar(&skillsResolveStrict, "strict", false, "Exit non-zero when ME overlaps are found (CI dedup gate)")
+}
+
+func runSkillsResolve(cmd *cobra.Command, args []string) error {
+	skillsDir, _ := resolveSkillsRoots()
+	report, err := skillsresolve.Resolve(skillsresolve.Options{SkillsDir: skillsDir})
+	if err != nil {
+		return err
+	}
+
+	out := cmd.OutOrStdout()
+	if skillsResolveJSON {
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(report); err != nil {
+			return err
+		}
+	} else {
+		fmt.Fprintf(out, "Skills MECE resolve (%s)\n", report.Generated)
+		fmt.Fprintf(out, "===================\n")
+		fmt.Fprintf(out, "Skills:               %d\n", report.SkillsCount)
+		fmt.Fprintf(out, "ME candidate overlaps: %d  (review/merge -> cp-dkf)\n", len(report.Overlaps))
+		fmt.Fprintf(out, "CE coverage flags:     %d  (thin/triggerless)\n\n", len(report.CoverageGaps))
+		if len(report.Overlaps) > 0 {
+			fmt.Fprintln(out, "Overlap candidates:")
+			for _, o := range report.Overlaps {
+				stem := ""
+				if o.SharedStem {
+					stem = "  [name-family]"
+				}
+				fmt.Fprintf(out, "  %.2f  %s <-> %s%s\n", o.Jaccard, o.A, o.B, stem)
+			}
+			fmt.Fprintln(out)
+		}
+		if len(report.CoverageGaps) > 0 {
+			fmt.Fprintln(out, "Coverage flags:")
+			for _, g := range report.CoverageGaps {
+				fmt.Fprintf(out, "  - %s (%d bytes, desc=%t)\n", g.Name, g.Size, g.HasDesc)
+			}
+		}
+		if len(report.Overlaps) == 0 && len(report.CoverageGaps) == 0 {
+			fmt.Fprintln(out, "Corpus is MECE-clean: no overlaps, no coverage gaps.")
+		}
+	}
+
+	if skillsResolveStrict && len(report.Overlaps) > 0 {
+		cmd.SilenceUsage = true
+		return fmt.Errorf("skills resolve: %d ME overlap candidate(s) need merge review", len(report.Overlaps))
+	}
+	return nil
 }
 
 func runSkillsCheck(cmd *cobra.Command, args []string) error {
