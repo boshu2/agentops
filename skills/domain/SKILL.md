@@ -1,6 +1,6 @@
 ---
 name: domain
-description: Canonical vocabulary for human-AI software work.
+description: Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs.
 practices:
 - ddd-bounded-context
 - wiki-knowledge-surface
