@@ -1612,13 +1612,13 @@
     {
       "name": "agy-headless-evidence",
       "source_skill": "skills/agy-headless-evidence",
-      "source_hash": "07ac48ce3de0947e16646531ce63cf478f68d91743f7963e1e4aef37240c545c",
+      "source_hash": "ed15fc269dac8548e876a407f3179318e7d9fe204dd18bdc32a7800512b02e20",
       "generated_hash": "370fa02209ccdef1e3a2383e2671275dcf4c9e5c93ae2b22a958f3e5bc2b4aa4"
     },
     {
       "name": "agy-mcp-plugins",
       "source_skill": "skills/agy-mcp-plugins",
-      "source_hash": "7ed681a1ebaf3eaec45926952c8deda028201eb0991bd8a7eaba1b076284250d",
+      "source_hash": "d9e2873e7a11885194e915b0f194191dcf11930fb0e2ce1e832cfc3eaec8b609",
       "generated_hash": "169e9f7e8acde4ee71ed7f959a52cfb241a3dd3780a649ba69ee6d984e722825"
     },
     {
@@ -1654,7 +1654,7 @@
     {
       "name": "autodev",
       "source_skill": "skills/autodev",
-      "source_hash": "784fccb394271679e7667e6be128521a34b46be25e0ce55de0258031ca6f7f8a",
+      "source_hash": "d44c2509f7ab36b182ef4874b67b7d17bae67a779a442f319c81c55d69e73b62",
       "generated_hash": "4868b97e436c7650ae194e5eeefe11ae867c62aeb603d55de5c846d8a9975200"
     },
     {
@@ -1750,7 +1750,7 @@
     {
       "name": "casr",
       "source_skill": "skills/casr",
-      "source_hash": "f289d623414a70692572e67ddf7bd82c45557a8242413b5ad41f833f1bc72e79",
+      "source_hash": "9d5a9f6b3f7dfe94e89dc065426370d1044b9916ae83c116dbd9dc1c7e7cb637",
       "generated_hash": "da2f7f21120f6208e0a8494814dbc3ccadbb855efa7693c70fa492428b5afa2a"
     },
     {
@@ -2146,7 +2146,7 @@
     {
       "name": "operating-loop-workflow",
       "source_skill": "skills/operating-loop-workflow",
-      "source_hash": "426a05259f602d2a2dc0ad025e441946c319d6d904a0780e348ce4cd4d753cbe",
+      "source_hash": "79f4fd5330d0739ee3a3a1ba558170184d9085be433888136471dc68198b0d9f",
       "generated_hash": "c69a6b78385374c2dc58fdd7fe4a743c32b34c07dfef89510f3d3a9951c5aa02"
     },
     {
@@ -2428,13 +2428,13 @@
     {
       "name": "ship-loop",
       "source_skill": "skills/ship-loop",
-      "source_hash": "88ddb1cd294ba2ffa5e0d825744844be4b341f64ced44c96cbff214ee5524100",
+      "source_hash": "f6457fe71f4ada70a646bfc307a571c21b2afab1b2798517ac1e164cf7090d75",
       "generated_hash": "34755a5fc0f099b82e93f69b57436da6ff34d59b3e82d8984c78e461360cb8f3"
     },
     {
       "name": "skill-auditor",
       "source_skill": "skills/skill-auditor",
-      "source_hash": "f9108c24d15708b576ae927c9c3221850168b66657541f0fbc94a8565c8f01f2",
+      "source_hash": "02ef8d1cea7aa98c54fc416fc56b179e3fc70b3853087f283fb602b71832d577",
       "generated_hash": "586d228b2817c1e4dc0b1abdb7b8cbaf568754da747bd1fe669531ee2542b026"
     },
     {
@@ -2494,7 +2494,7 @@
     {
       "name": "system-tuning",
       "source_skill": "skills/system-tuning",
-      "source_hash": "d56fb9e52ae2524543c7e485e824795422b2fa2dc8220870c287e18cc4af9ddc",
+      "source_hash": "9889f2bdd1d85c7213cd68366282f083d5a656a891d6c4ea376a224c8b74bab0",
       "generated_hash": "91c58bb3f192f4aeb34d96047c53b1288bfa908e5886df8c9e5ba5bbb6e77a75"
     },
     {

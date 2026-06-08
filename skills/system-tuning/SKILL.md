@@ -1,6 +1,6 @@
 ---
 name: system-tuning
-description: Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene. Use when the system is slow, load average is high, or cleaning up stuck agents and background processes.
+description: Restore system responsiveness with ordered process cleanup and agent-swarm hygiene when load is high or agents are stuck.
 practices:
 - sre
 - resilience-patterns

@@ -54,7 +54,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `codex-goals` — Use when using Codex Goals to define an objective once and let Codex iterate until done. Triggers:
 - `implement` — Implement one tracked issue.
 - `inject` — Load relevant .agents context.
-- `operating-loop-workflow` — Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users. Use when installing the seven-move workflow, running the operating-loop script, or orchestrating multi-agent tasks via Workflow tool.
+- `operating-loop-workflow` — Install or run the seven-move operating-loop Workflow for AgentOps plugin users and multi-agent orchestration.
 - `performance-profile-triage` — Use when investigating slowness with baselines, profiler evidence, and ranked bottlenecks. Triggers:
 - `pr-implement` — Implement a scoped OSS PR.
 - `pr-prep` — Prepare PR commits and body.
@@ -64,14 +64,14 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `research` — Explore and write findings.
 - `review` — Review diffs for risk, find mocks, scan for bugs, audit codebases. Use when: reviewing a diff/PR for bugs and risk, hunting mocks/stubs/placeholders, or auditing for quality.
 - `session-bootstrap` — Universal AgentOps init prompt for starting or onboarding a fresh agent session.
-- `ship-loop` — Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close. Use when shipping a fast-lane internal PR, landing a small fix, or closing a single harvested bead.
+- `ship-loop` — Run the fast-lane internal ship cycle for one closable bead or small slice: claim, test, implement, push, merge, close.
 - `spec-reliability-implementation` — Use when implementing a written spec into a reliable service with acceptance examples and observability. Triggers:
 - `status` — Show AgentOps work status.
 - `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured verdict on an artifact, plan, code, PR, or CI gate before proceeding.
 
 ### driven-adapter
 
-- `agy-mcp-plugins` — Wire MCP servers and AgentOps plugin bundles into the AGY image with least-privilege tool access and rollback evidence. Use when setting up AGY tool surfaces, wiring new MCP servers, or distributing AgentOps plugins.
+- `agy-mcp-plugins` — Wire MCP servers and AgentOps plugin bundles into the AGY image with least-privilege access, rollback evidence, and validation hooks.
 - `beads` — Track issues with bd/br, triage with bv, and convert plans to beads.
 - `codex-mcp-plugins` — Use when wiring MCP servers or plugins into Codex CLI and the AgentOps Codex skill bundle. Triggers:
 - `dependency-update-safety` — Use when updating dependencies safely with changelog review, small batches, tests, and rollback. Triggers:
@@ -84,10 +84,10 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 - `agent-mail` — Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs.
 - `agent-native` — Make an out-of-session agent AgentOps-native with skills, the ao CLI, and CI instead of hooks.
-- `agy-headless-evidence` — Run AGY headlessly via scheduled ticks or `agy -p`, capturing agentapi JSONL evidence for validation. Use when running AGY in an automated loop, testing headless execution, or capturing agent event streams for validation.
+- `agy-headless-evidence` — Run AGY headlessly via scheduled ticks or `agy -p`, capture agentapi JSONL evidence, and validate automated AGY loops or event streams.
 - `agy-project-worktree-permissions` — Prove AGY project/worktree isolation with scoped --add-dir permissions, role tiers, dcg guardrails, and persisted evidence.
 - `agy-sidecar-scheduled-tick` — Run a recurring AGY sidecar loop tick and capture agentapi evidence. Triggers: agy, sidecar, schedule, agentapi.
-- `autodev` — Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself. Use when defining the autonomous improvement loop rules, repairing PROGRAM.md, or setting boundaries for evolve.
+- `autodev` — Manage the PROGRAM.md/AUTODEV.md contract consumed by evolve/factory ticks. Use for loop rules, boundaries, or PROGRAM.md repair.
 - `automation-loop-hardening` — Use when turning repeated manual operations into safer, observable, reusable automation loops. Triggers:
 - `automation-shape-routing` — Front door for agent automation — decide the SHAPE (Workflow vs ATM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".
 - `bead-completion-audit` — Use when auditing closed beads for real shipped evidence, acceptance proof, and truthful closeout. Triggers:
@@ -97,7 +97,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `beads-workflow` — Use when converting markdown plans into br beads with dependencies for implementation or swarm execution.
 - `behavior-preserving-simplification` — Use when simplifying code, reducing duplication, or clarifying flow while preserving behavior with tests. Triggers:
 - `caam` — Use when switching AI coding CLI accounts quickly to recover from subscription rate limits or OAuth friction.
-- `casr` — Cross Agent Session Resumer. Convert and resume sessions across Claude Code, Codex, Gemini, and other providers. Use when switching AI agent providers mid-session or migrating an active chat history to a new tool.
+- `casr` — Resume sessions across Claude Code, Codex, Gemini, and other providers when switching agents or migrating active chat history.
 - `cass` — Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history.
 - `cass-memory` — Use when starting non-trivial work, mining lessons, or preventing repeated mistakes with cm procedural memory.
 - `cc-hooks` — Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification. Use when blocking commands, auto-formatting, custom permissions, or writing hooks.
@@ -163,14 +163,14 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `sbh` — Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status.
 - `scaffold` — Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure.
 - `scenario` — Manage holdout scenarios.
-- `skill-auditor` — Audit an existing SKILL.md against the unified AgentOps template (15 checks). Use when running a skill quality review, checking if a skill is ready, or auditing skill template compliance.
+- `skill-auditor` — Audit SKILL.md files against the AgentOps template and readiness checks. Use for quality reviews or template compliance.
 - `skill-builder` — Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill".
 - `ssh` — Use when configuring SSH access, keys, tunnels, host diagnostics, or safe remote command workflows.
 - `stash-hygiene-sweep` — Use when auditing git stashes, deciding keep/drop/apply/archive, and clearing confirmed stale entries. Triggers:
 - `storage-watchdog-ops` — Operate ACFS storage watchdog: inspect disk pressure, logs, and Rust target cleanup. Triggers: storage, watchdog, disk pressure, target cleanup.
 - `swarm` — Dispatch parallel agents.
 - `system-performance-remediation` — Use when restoring machine responsiveness from high CPU, memory, IO, cache, or runaway process pressure.
-- `system-tuning` — Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene. Use when the system is slow, load average is high, or cleaning up stuck agents and background processes.
+- `system-tuning` — Restore system responsiveness with ordered process cleanup and agent-swarm hygiene when load is high or agents are stuck.
 - `test` — Generate tests and coverage plans.
 - `trace` — Trace decisions through artifacts.
 - `ubs` — Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks.
