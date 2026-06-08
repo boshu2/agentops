@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-08T02:50:25Z",
+  "generated_at": "2026-06-08T03:16:50Z",
   "summary": {
     "skills": 162,
     "hooks": 0,
@@ -2444,7 +2444,7 @@
       "bounded_context": "BC3",
       "hex_role": "supporting",
       "tier": "execution",
-      "purpose": "Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.",
+      "purpose": "Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself. Use when defining the autonomous improvement loop rules, repairing PROGRAM.md, or setting boundaries for evolve.",
       "status": "active",
       "disposition": "refactor",
       "consumes": [
@@ -2712,7 +2712,7 @@
       "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "execution",
-      "purpose": "Drive a finite epic set to all-merged, then stop.",
+      "purpose": "Drive a finite epic set to all-merged, then stop. Use when finishing a specific list of tasks, burning down a backlog epic, or executing a bounded set of beads until done.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -4142,7 +4142,7 @@
       "bounded_context": "BC3",
       "hex_role": "driving-adapter",
       "tier": "execution",
-      "purpose": "Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users.",
+      "purpose": "Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users. Use when installing the seven-move workflow, running the operating-loop script, or orchestrating multi-agent tasks via Workflow tool.",
       "status": "active",
       "disposition": "keep",
       "consumes": [],
@@ -5148,7 +5148,7 @@
       "bounded_context": "BC5",
       "hex_role": "driving-adapter",
       "tier": "execution",
-      "purpose": "Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close.",
+      "purpose": "Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close. Use when shipping a fast-lane internal PR, landing a small fix, or closing a single harvested bead.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -5171,7 +5171,7 @@
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "meta",
-      "purpose": "Audit an existing SKILL.md against the unified AgentOps template (15",
+      "purpose": "Audit an existing SKILL.md against the unified AgentOps template (15 checks). Use when running a skill quality review, checking if a skill is ready, or auditing skill template compliance.",
       "status": "active",
       "disposition": "update",
       "consumes": [],
@@ -5381,7 +5381,7 @@
       "bounded_context": "BC5",
       "hex_role": "supporting",
       "tier": "utility",
-      "purpose": "Restore system responsiveness via safe, ordered process cleanup and agent-swarm",
+      "purpose": "Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene. Use when the system is slow, load average is high, or cleaning up stuck agents and background processes.",
       "status": "active",
       "disposition": "keep",
       "consumes": [],
