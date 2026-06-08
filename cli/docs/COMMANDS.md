@@ -4450,6 +4450,22 @@ ao skills producers <output> [flags]
       --json   Emit machine-readable JSON
 ```
 
+#### `ao skills resolve`
+
+Walk skills/ and resolve the corpus toward MECE:
+
+```
+ao skills resolve [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help     help for resolve
+      --json     Emit machine-readable JSON
+      --strict   Exit non-zero when ME overlaps are found (CI dedup gate)
+```
+
 ---
 
 ### `ao turn`
