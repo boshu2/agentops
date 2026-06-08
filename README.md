@@ -4,11 +4,9 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/boshu2/agentops?style=social)](https://github.com/boshu2/agentops/stargazers)
 
-### The in-session operating loop + context compiler for coding agents — the part that makes them compound.
+### The in-session operating loop + context compiler for coding agents
 
 Coding agents don't do their own bookkeeping. AgentOps does. It sits on top of the agent you already use (Claude Code, Codex, Cursor, OpenCode) and adds the parts an engineering team would notice missing: a record of what was tried, gates between phases, and a corpus of learnings that survives the next session. Plain markdown in `.agents/` next to your code; mix any model per phase.
-
-<sub>Built with AgentOps: this repo's own `.agents/` holds ~1,842 learnings and ~3,867 cited decisions (`bash scripts/corpus-stats.sh`). Browse it to see the corpus a real project builds. New here? Start with [what AgentOps 3.0 is](docs/3.0.md), or read the doctrine at [12factoragentops.com](https://12factoragentops.com).</sub>
 
 </div>
 
@@ -24,7 +22,7 @@ Coding agents don't do their own bookkeeping. AgentOps does. It sits on top of t
 
 </div>
 
-Most teams run coding agents as isolated chats. Prior attempts, decisions, and fixes scatter, so the same mistakes recur and nothing leaves a reviewable trail. AgentOps breaks intent into bounded slices, gives each a failing test and a write scope, and makes every phase boundary a gate that records evidence. The agent starts loaded with prior decisions and learnings instead of cold:
+AgentOps breaks intent into bounded slices, gives each a failing test and a write scope, and makes every phase boundary a gate that records evidence. The agent starts loaded with prior decisions and learnings instead of cold:
 
 ```text
 > /council --mixed validate this PR
@@ -116,7 +114,7 @@ Every skill works alone; flows compose them. Full catalog: [docs/SKILLS.md](docs
 | `/pre-mortem` | you want to pressure-test a plan before building |
 | `/rpi` | you want discovery, build, validation, and bookkeeping in one flow |
 | `/council` | you want independent judges (optionally Claude and Codex) to return one verdict |
-| `/vibe` | you want a code-quality and risk review before shipping |
+| `/validate` | you want a code-quality and risk review before shipping |
 | `/evolve` | a goal-driven improvement loop that compounds knowledge without mutating source |
 
 ---
