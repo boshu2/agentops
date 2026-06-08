@@ -228,7 +228,11 @@ if [[ "${#entrypoint_files[@]}" -eq 0 ]]; then
   fail "No Codex entrypoint files found for slash-command check"
 fi
 
-if rg --pcre2 -n "(^|[^A-Za-z0-9_./])/(${skill_pattern})(?![A-Za-z0-9-])" "${entrypoint_files[@]}" >/dev/null 2>&1; then
+# Slash commands appear as prose/code tokens (`/vibe`, `(/plan)`, etc.). Do not
+# treat filesystem paths or URLs such as `~/acfs/...` or `${HOST}/status` as
+# commands just because a path segment matches a skill name.
+slash_command_prefix='(^|[[:space:]`"'\''([{<])'
+if rg --pcre2 -n "${slash_command_prefix}/(${skill_pattern})(?![A-Za-z0-9-])" "${entrypoint_files[@]}" >/dev/null 2>&1; then
   fail "Found known /skill command references in skills-codex output"
 fi
 
