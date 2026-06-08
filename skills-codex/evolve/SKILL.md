@@ -29,6 +29,14 @@ Always-on autonomous loop over `$rpi`. Work selection order:
 
 **Dormancy is last resort.** Empty current queues mean "run the generator layers", not "stop". Only go dormant after the queue layers and generator layers come up empty across multiple consecutive passes.
 
+**Live skill edit immune system:** if an evolve cycle edits
+`skills/<slug>/SKILL.md`, run
+`ao skills edit seal --skill <slug> --actor "${AGENT_NAME:-agent}"` before the
+cycle hands off. The seal creates the rollback commit and records the
+`Skill-Edit` trailers used by the daily digest. Critical skills listed in
+`docs/contracts/critical-skills.txt` reject unattended edits; use
+`--allow-critical` only when Bo is supervising that critical edit.
+
 ```bash
 $evolve                      # Run until kill switch, max-cycles, or real dormancy
 $evolve --max-cycles=5       # Cap at 5 cycles

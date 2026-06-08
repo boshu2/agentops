@@ -6,6 +6,32 @@ Adding or modifying a skill regenerates **six derived surfaces**, each gated by 
 
 `scripts/regen-all.sh` covers surfaces 1–3 + the CLI reference in one pass — prefer it over running the generators individually. Then run the codex + count steps below.
 
+## Live skill edits
+
+When an agent edits an existing live skill at `skills/<slug>/SKILL.md`, seal the
+edit before the next cycle hands off:
+
+```bash
+ao skills edit seal --skill <slug> --actor "${AGENT_NAME:-agent}"
+```
+
+That command stages the skill's source directory and any matching Codex skill
+directory, creates a git rollback point, and records `Skill-Edit` trailers in
+the commit body. Critical skills listed in
+`docs/contracts/critical-skills.txt` reject unattended edits; rerun with
+`--allow-critical` only for a human-supervised critical edit.
+
+Daily operator review uses:
+
+```bash
+ao skills edit digest --since "24 hours ago"
+```
+
+The digest is the lightweight immune-system surface for "what did agents teach
+the runtime today?" A live edit seal does not replace the derived-surface work
+below: new skills, renames, metadata changes, and publication-bound edits still
+need the full six-surface regeneration.
+
 ## The six surfaces
 
 1. **registry.json (SKU catalog)** — `scripts/generate-registry.sh` (verify with `--check`). **The most-missed surface**: a stale `registry.json` trips `contracts-sync` ("registry.json is stale") AND `correctness(ubuntu)` ("SKU_CATALOG: DRIFT") *together*. As of ag-ekyq, `skills/skill-builder/scripts/init.sh` regenerates it automatically during scaffold; regenerate by hand for any out-of-band skill edit.
