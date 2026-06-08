@@ -44,6 +44,12 @@ EOF
 fi
 ```
 
+## Harness re-arm is MANDATORY (the survival step)
+
+The bash block above ends in `exit 0` — that is the **terminal-mode** path, which assumes an external cron will re-fire. In the **Claude-Code harness there is no external cron**: the loop only survives if it re-arms itself. So on context-handoff the agent MUST, **as the last action of the turn, call `ScheduleWakeup` (delaySeconds≈900–1800, prompt = the same `/evolve …` invocation)** before ending the turn. `CONTEXT_BUDGET_EXHAUSTED` is explicitly NOT in the "hard stops that skip ScheduleWakeup" list (`references/autonomous-execution.md`) — it is the one handoff that re-arms.
+
+**NEVER** end the turn without re-arming, and **NEVER `CronDelete`/cancel the loop**, for context reasons. Stopping the loop because "this session is full" is the exact category error this protocol exists to prevent: the loop runs *through* compaction, it does not end on it. (Observed live 2026-06-08: an agent wrote the handoff, then stopped and cancelled its own loop — the survival mechanism was advisory prose it skipped. This edit makes it mechanical.)
+
 **Critical:** the HANDOFF marker does NOT block future cron-fires. Step 1 of the next /evolve turn clears it and continues normal work selection.
 
 ## Handoff message (logged, not gated)
