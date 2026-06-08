@@ -1,0 +1,55 @@
+{
+  "name": "agy-mcp-plugins",
+  "skill_api_version": 1,
+  "form": "A",
+  "quality_score": 0.93,
+  "sections": [
+    { "id": "title",        "title": "agy-mcp-plugins",             "type": "intro",       "priority": "required" },
+    { "id": "overview",     "title": "Overview / When to Use",      "type": "overview",    "priority": "required" },
+    { "id": "constraints",  "title": "⚠️ Critical Constraints",     "type": "constraints", "priority": "required" },
+    { "id": "workflow",     "title": "Workflow / Methodology",      "type": "procedure",   "priority": "required" },
+    { "id": "output",       "title": "Output Specification",        "type": "contract",    "priority": "required" },
+    { "id": "rubric",       "title": "Quality Rubric",              "type": "rubric",      "priority": "required" },
+    { "id": "examples",     "title": "Examples",                    "type": "examples",    "priority": "standard" },
+    { "id": "troubleshoot", "title": "Troubleshooting",             "type": "table",       "priority": "standard" },
+    { "id": "seealso",      "title": "See Also / References",       "type": "routing",     "priority": "required" }
+  ],
+  "references": [
+    { "file": "../agy-native/SKILL.md",          "topic": "drives the loop this skill supplies tools to (sibling AGY skill)" },
+    { "file": "~/.gemini/settings.json",          "topic": "AGY-global MCP/hook settings backing the image" }
+  ],
+  "metadata": {
+    "tier": "execution",
+    "stability": "experimental",
+    "dependencies": ["agy-native", "agent-mail", "beads-br", "dcg"],
+    "hexagonal_role": "driven-adapter",
+    "context_window": "inherit",
+    "triggers": [
+      "agy plugin",
+      "AGY MCP server",
+      "agy plugin install",
+      "agy plugin validate",
+      "wire MCP into AGY",
+      "AGY plugin bundle",
+      "antigravity plugin",
+      "mcpServers AGY",
+      "least-privilege AGY tools",
+      "ship AgentOps bundle to AGY"
+    ],
+    "token_estimate": {
+      "minimal": 90,
+      "overview": 420,
+      "standard": 2000,
+      "full": 4000
+    }
+  },
+  "output_contract": "Idempotent MCP-server + plugin wiring on the AGY image, verified by `agy plugin list` and `agy plugin validate`, plus before/after tool-surface lists and explicit rollback commands (agy plugin disable/uninstall). For each change report: before/after plugin list, names imported/installed/enabled/disabled, smoke-test command + exit code, and the reversible rollback path — with no secrets inlined (tokens by env-var reference) and the dcg BeforeTool guard preserved.",
+  "evidence": {
+    "sources": [
+      "skills/agy-mcp-plugins/SKILL.md (verified: agy plugin {import,validate,install,enable,disable,uninstall,link,list}; plugin.json mcpServers model; ~/.gemini/settings.json MCP/hook settings)",
+      "AGY != gemini-cli: no gemini mcp/extensions/-p; extension unit is the plugin",
+      "~/.gemini/settings.json BeforeTool->dcg hook on run_shell_command (Rule 6 floor)",
+      "Operator-side; invoke-never-rebuild — own a thin AGY adapter, no writes under ~/dev/agentops (Rule 7)"
+    ]
+  }
+}

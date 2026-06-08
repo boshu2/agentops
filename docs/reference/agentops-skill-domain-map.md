@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-158 checked-in AgentOps skills before any broad rewrite, using current
+162 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 158 |
+| Skills audited | 162 |
 | Domains classified | 5 of 5 (BC1-BC5) |
-| Dispositions assigned | 158 / 158 |
+| Dispositions assigned | 162 / 162 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -65,7 +65,9 @@ Disposition meanings:
 | `agy-headless-evidence` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `agy-mcp-plugins` | BC5 Runtime | driven-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `agy-native` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `agy-project-worktree-permissions` | BC5 Runtime | supporting | keep | Coverage-gap skill proving AGY project/worktree isolation invariants before the image joins quorum; clean-room AgentOps-owned.. |
 | `agy-rules-workflows` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `agy-sidecar-scheduled-tick` | BC5 Runtime | supporting | keep | Coverage-gap skill for recurring AGY loop ticks via Antigravity sidecar + agentapi evidence; clean-room AgentOps-owned.. |
 | `artifact-clarity-pass` | BC2 Validation | domain | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `autodev` | BC3 Loop | supporting | refactor | Must compose with PROGRAM.md and RPI as one vertical-slice executor. |
 | `automation-loop-hardening` | BC4 Factory | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
@@ -107,6 +109,7 @@ Disposition meanings:
 | `converter` | BC4 Factory | generic | keep | Cross-runtime packaging adapter (Codex/Cursor twins); skill-builder consumes it — live producer→consumer edge (resolved 2026-05-24). |
 | `council` | BC2 Validation | domain | update | Core judgment gate; strengthen scenario and verdict self-test. |
 | `crank` | BC3 Loop | domain | refactor | Wave executor; align with vertical-slice and conflict-free wave contract. |
+| `cross-vendor-trust-gate` | BC4 Factory | domain | keep | Coverage-gap skill operating the skill-factory final trust gate (cross-vendor parity); shared kernel with heal-skill.. |
 | `curate` | BC1 Corpus | supporting | keep | Designed-future canonical unified miner (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24). |
 | `dcg` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `dependency-update-safety` | BC4 Factory | driven-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
@@ -203,6 +206,7 @@ Disposition meanings:
 | `standards` | BC4 Factory | domain | keep | Current pilot upgraded with SELF-TEST; continue incremental patches. |
 | `stash-hygiene-sweep` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `status` | BC3 Loop | driving-adapter | update | Operator state surface; should show loop/domain/evidence status. |
+| `storage-watchdog-ops` | BC5 Runtime | supporting | keep | Coverage-gap operator runbook for the ACFS storage watchdog daemon; clean-room AgentOps-owned capability.. |
 | `swarm` | BC5 Runtime | supporting | update | Multi-agent runtime adapter; align with conflict-free wave rules. |
 | `system-performance-remediation` | BC2 Validation | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `system-tuning` | BC5 Runtime | supporting | keep | Machine-health adapter; keep separate from product loop. |

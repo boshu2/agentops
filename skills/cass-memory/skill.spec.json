@@ -1,0 +1,71 @@
+{
+  "name": "cass-memory",
+  "skill_api_version": 1,
+  "form": "A",
+  "quality_score": 0.92,
+  "sections": [
+    { "id": "title",       "title": "cass-memory — CASS Memory System (cm)",       "type": "intro",       "priority": "required" },
+    { "id": "quickstart",  "title": "Quick Start",                                  "type": "procedure",   "priority": "required" },
+    { "id": "sessionstart","title": "THE EXACT PROMPT — Session Start",             "type": "procedure",   "priority": "required" },
+    { "id": "feedback",    "title": "THE EXACT PROMPT — Rule Feedback",             "type": "procedure",   "priority": "required" },
+    { "id": "traumaguard", "title": "THE EXACT PROMPT — Trauma Guard Setup",        "type": "procedure",   "priority": "standard" },
+    { "id": "architecture","title": "Three-Layer Architecture",                     "type": "overview",    "priority": "required" },
+    { "id": "commands",    "title": "Essential Commands",                           "type": "table",       "priority": "required" },
+    { "id": "protocol",    "title": "Agent Protocol",                               "type": "procedure",   "priority": "required" },
+    { "id": "decay",       "title": "Confidence Decay",                             "type": "overview",    "priority": "standard" },
+    { "id": "antipattern", "title": "Anti-Pattern Learning",                        "type": "overview",    "priority": "standard" },
+    { "id": "starters",    "title": "Starter Playbooks",                            "type": "table",       "priority": "standard" },
+    { "id": "tokenbudget", "title": "Token Budget Management",                      "type": "table",       "priority": "standard" },
+    { "id": "degradation", "title": "Graceful Degradation",                         "type": "table",       "priority": "standard" },
+    { "id": "install",     "title": "Installation",                                 "type": "procedure",   "priority": "standard" },
+    { "id": "troubleshoot","title": "Troubleshooting",                              "type": "table",       "priority": "standard" },
+    { "id": "references",  "title": "References",                                   "type": "routing",     "priority": "required" }
+  ],
+  "references": [
+    { "file": "references/COMMANDS.md",     "topic": "full cm command reference" },
+    { "file": "references/ARCHITECTURE.md", "topic": "cognitive three-layer memory architecture" },
+    { "file": "references/TRAUMA-GUARD.md", "topic": "trauma guard safety-hook system" },
+    { "file": "references/MCP-SERVER.md",   "topic": "MCP server integration" },
+    { "file": "references/ONBOARDING.md",   "topic": "onboarding workflow" }
+  ],
+  "metadata": {
+    "tier": "execution",
+    "stability": "stable",
+    "dependencies": ["cass", "cc-hooks"],
+    "hexagonal_role": "supporting",
+    "context_window": "inherit",
+    "practices": ["pragmatic-programmer"],
+    "external_dependencies": [
+      "cm (cass-memory) binary",
+      "cass (optional; episodic history layer)",
+      "ANTHROPIC_API_KEY (optional; LLM-assisted reflection)"
+    ],
+    "triggers": [
+      "cm",
+      "cass-memory",
+      "procedural memory",
+      "before non-trivial work",
+      "mine lessons",
+      "prevent repeated mistakes",
+      "cm context",
+      "playbook rules",
+      "anti-pattern learning",
+      "trauma guard"
+    ],
+    "token_estimate": {
+      "minimal": 70,
+      "overview": 300,
+      "standard": 1000,
+      "full": 1900
+    }
+  },
+  "output_contract": "Task-scoped procedural memory from `cm context --json` (relevant rules, anti-patterns, history snippets, suggested cass queries), rule feedback recorded via `cm mark`/inline comments, or `cm doctor` health. Learning is automated; the agent reads rules in and marks them helpful/harmful.",
+  "evidence": {
+    "sources": [
+      "skills/cass-memory/SKILL.md",
+      "skills/cass-memory/references/ARCHITECTURE.md",
+      "skills/cass-memory/references/COMMANDS.md",
+      "skills/cass-memory/references/TRAUMA-GUARD.md"
+    ]
+  }
+}

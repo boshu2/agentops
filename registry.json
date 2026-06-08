@@ -1,14 +1,15 @@
 {
   "schema_version": 2,
   "generated_at": "2026-06-08T02:16:17Z",
+  "generated_at": "2026-06-08T01:35:05Z",
   "summary": {
-    "skills": 158,
+    "skills": 162,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 83,
-    "capabilities": 255
+    "capabilities": 259
   },
   "surfaces": {
     "skills": [
@@ -77,6 +78,14 @@
         "reference_count": 1
       },
       {
+        "name": "agy-project-worktree-permissions",
+        "tier": "cross-vendor",
+        "path": "skills/agy-project-worktree-permissions/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
         "name": "converter",
         "tier": "cross-vendor",
         "path": "skills/converter/",
@@ -104,6 +113,14 @@
         "name": "agy-mcp-plugins",
         "tier": "execution",
         "path": "skills/agy-mcp-plugins/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "agy-sidecar-scheduled-tick",
+        "tier": "execution",
+        "path": "skills/agy-sidecar-scheduled-tick/",
         "has_skill_md": true,
         "has_references": false,
         "reference_count": 0
@@ -275,6 +292,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 30
+      },
+      {
+        "name": "cross-vendor-trust-gate",
+        "tier": "execution",
+        "path": "skills/cross-vendor-trust-gate/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "dcg",
@@ -848,6 +873,14 @@
         "name": "rust-ub-risk-audit",
         "tier": "judgment",
         "path": "skills/rust-ub-risk-audit/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "storage-watchdog-ops",
+        "tier": "judgment",
+        "path": "skills/storage-watchdog-ops/",
         "has_skill_md": true,
         "has_references": false,
         "reference_count": 0
@@ -2108,8 +2141,8 @@
     ]
   },
   "capability_summary": {
-    "total": 255,
-    "skills": 158,
+    "total": 259,
+    "skills": 162,
     "cli_commands": 83,
     "gates": 14,
     "reference_impls": 0
@@ -2328,6 +2361,26 @@
       "references": 1
     },
     {
+      "sku": "skill:agy-project-worktree-permissions",
+      "name": "agy-project-worktree-permissions",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "supporting",
+      "tier": "cross-vendor",
+      "purpose": "|-",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "agy-native"
+      ],
+      "produces": [
+        "agy-isolation-evidence"
+      ],
+      "drives_commands": [],
+      "path": "skills/agy-project-worktree-permissions/",
+      "references": 0
+    },
+    {
       "sku": "skill:agy-rules-workflows",
       "name": "agy-rules-workflows",
       "type": "skill",
@@ -2347,6 +2400,27 @@
       "drives_commands": [],
       "path": "skills/agy-rules-workflows/",
       "references": 1
+    },
+    {
+      "sku": "skill:agy-sidecar-scheduled-tick",
+      "name": "agy-sidecar-scheduled-tick",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": "|-",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "agy-native",
+        "agy-headless-evidence"
+      ],
+      "produces": [
+        "agy-sidecar-tick-evidence"
+      ],
+      "drives_commands": [],
+      "path": "skills/agy-sidecar-scheduled-tick/",
+      "references": 0
     },
     {
       "sku": "skill:artifact-clarity-pass",
@@ -3159,6 +3233,27 @@
       ],
       "path": "skills/crank/",
       "references": 30
+    },
+    {
+      "sku": "skill:cross-vendor-trust-gate",
+      "name": "cross-vendor-trust-gate",
+      "type": "skill",
+      "bounded_context": "BC4",
+      "hex_role": "domain",
+      "tier": "execution",
+      "purpose": "|-",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "skill"
+      ],
+      "produces": [
+        "trust-artifact",
+        "stdout"
+      ],
+      "drives_commands": [],
+      "path": "skills/cross-vendor-trust-gate/",
+      "references": 0
     },
     {
       "sku": "skill:curate",
@@ -5213,6 +5308,30 @@
         "ao reconcile"
       ],
       "path": "skills/status/",
+      "references": 0
+    },
+    {
+      "sku": "skill:storage-watchdog-ops",
+      "name": "storage-watchdog-ops",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "supporting",
+      "tier": "judgment",
+      "purpose": "|-",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "incident-symptom",
+        "host-state",
+        "daemon-config"
+      ],
+      "produces": [
+        "triage-finding",
+        "remediation-action",
+        "escalation-note"
+      ],
+      "drives_commands": [],
+      "path": "skills/storage-watchdog-ops/",
       "references": 0
     },
     {

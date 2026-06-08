@@ -1,0 +1,59 @@
+{
+  "name": "caam",
+  "skill_api_version": 1,
+  "form": "A",
+  "quality_score": 0.9,
+  "sections": [
+    { "id": "title",      "title": "CAAM — Coding Agent Account Manager", "type": "intro",     "priority": "required" },
+    { "id": "quickstart", "title": "Quick Start",                          "type": "procedure", "priority": "required" },
+    { "id": "commands",   "title": "THE EXACT PROMPT — Daily Commands",    "type": "procedure", "priority": "required" },
+    { "id": "howitworks", "title": "How It Works",                         "type": "overview",  "priority": "required" },
+    { "id": "tools",      "title": "Supported Tools",                      "type": "table",     "priority": "standard" },
+    { "id": "rotation",   "title": "Smart Rotation",                       "type": "procedure", "priority": "standard" },
+    { "id": "cooldown",   "title": "Cooldown Tracking",                    "type": "procedure", "priority": "standard" },
+    { "id": "tui",        "title": "TUI Dashboard",                        "type": "table",     "priority": "standard" },
+    { "id": "cmdref",     "title": "Command Reference",                    "type": "table",     "priority": "required" },
+    { "id": "flywheel",   "title": "Flywheel Integration",                 "type": "routing",   "priority": "standard" },
+    { "id": "references", "title": "References",                           "type": "routing",   "priority": "required" },
+    { "id": "validation", "title": "Validation",                          "type": "procedure", "priority": "required" }
+  ],
+  "references": [
+    { "file": "references/COMMANDS.md",          "topic": "complete caam command reference" },
+    { "file": "references/ISOLATED-PROFILES.md", "topic": "per-pane isolated profiles for NTM swarms" },
+    { "file": "references/VAULT.md",             "topic": "auth-file vault structure and layout" }
+  ],
+  "metadata": {
+    "tier": "execution",
+    "stability": "stable",
+    "dependencies": ["ntm", "agent-mail", "cass"],
+    "hexagonal_role": "supporting",
+    "context_window": "inherit",
+    "practices": ["pragmatic-programmer"],
+    "triggers": [
+      "caam",
+      "switch AI CLI account",
+      "rate limit recovery",
+      "rotate Claude Max accounts",
+      "swap codex/gemini auth",
+      "account activate",
+      "OAuth friction",
+      "cooldown rate-limited profile",
+      "multi-account agent CLI"
+    ],
+    "token_estimate": {
+      "minimal": 60,
+      "overview": 260,
+      "standard": 900,
+      "full": 1700
+    }
+  },
+  "output_contract": "An activated CLI auth profile (~50ms swap from the vault), a cooldown/rotation state update, or `caam status` showing the active profile per tool. No browser OAuth round-trip.",
+  "evidence": {
+    "sources": [
+      "skills/caam/SKILL.md",
+      "skills/caam/references/COMMANDS.md",
+      "skills/caam/references/ISOLATED-PROFILES.md",
+      "skills/caam/references/VAULT.md"
+    ]
+  }
+}

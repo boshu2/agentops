@@ -220,7 +220,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (150)
+### User-Facing Skills (154)
 
 **Judgment:**
 
@@ -328,7 +328,9 @@ These are how skills chain in practice:
 | **agy-headless-evidence** | execution | Use when running Antigravity (AGY) headlessly and capturing durable, machine-checkable JSONL evidence of each run. |
 | **agy-mcp-plugins** | execution | Use when wiring MCP servers and packaging/installing plugins into the Antigravity (AGY) image so an AGY worker reaches the AgentOps tool substrate. |
 | **agy-native** | cross-vendor | Use when driving AgentOps work natively in Google Antigravity with claims, validation, closeout, and persistence. |
+| **agy-project-worktree-permissions** | cross-vendor | Use when proving scoped project/worktree isolation on the AGY (Antigravity) image before a bead can join the quorum. |
 | **agy-rules-workflows** | orchestration | Use when installing or validating AgentOps rules and workflows for Google Antigravity. |
+| **agy-sidecar-scheduled-tick** | execution | Use when running a recurring AgentOps loop tick on AGY via an Antigravity sidecar, capturing agentapi runtime evidence. |
 | **artifact-clarity-pass** | judgment | Use when removing generic filler from code, docs, or handoffs while preserving every load-bearing fact. |
 | **automation-loop-hardening** | execution | Use when turning repeated manual operations into safer, observable, reusable automation loops. |
 | **bead-completion-audit** | judgment | Use when auditing closed beads for real shipped evidence, acceptance proof, and truthful closeout. |
@@ -357,6 +359,7 @@ These are how skills chain in practice:
 | **codex-sandbox-evidence** | execution | Use when running codex exec in a least-privilege sandbox with machine-checkable proof. |
 | **concurrency-deadlock-remediation** | judgment | Use when finding and fixing deadlocks with lock ordering, reproduction, timeouts, or lock-free alternatives. |
 | **contract-conformance-testing** | execution | Use when building conformance tests from specs, contracts, examples, or compatibility matrices. |
+| **cross-vendor-trust-gate** | execution | Use when running the skill-factory final trust gate to grade a skill's cross-vendor trust before landing it. |
 | **dcg** | execution | Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. |
 | **dependency-update-safety** | library | Use when updating dependencies safely with changelog review, small batches, tests, and rollback. |
 | **expertise-to-procedure** | knowledge | Use when turning tacit expert know-how into a durable skill, playbook, or checklist. |
@@ -407,6 +410,7 @@ These are how skills chain in practice:
 | **spec-reliability-implementation** | execution | Use when implementing a written spec into a reliable service with acceptance examples and observability. |
 | **ssh** | execution | Use when configuring SSH access, keys, tunnels, host diagnostics, or safe remote command workflows. |
 | **stash-hygiene-sweep** | execution | Use when auditing git stashes, deciding keep/drop/apply/archive, and clearing confirmed stale entries. |
+| **storage-watchdog-ops** | judgment | Use when operating or remediating the ACFS storage watchdog daemon — checking disk pressure, reading its log, and intervening safely. |
 | **system-performance-remediation** | execution | Use when restoring machine responsiveness from high CPU, memory, IO, cache, or runaway process pressure. |
 | **ubs** | execution | Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks. |
 | **vibing-with-ntm** | execution | Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence. |

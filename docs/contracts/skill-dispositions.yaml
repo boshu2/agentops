@@ -568,6 +568,26 @@ dispositions:
     hexagonal_role: driven-adapter
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          agy-project-worktree-permissions
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Coverage-gap skill proving AGY project/worktree isolation invariants before the image joins quorum; clean-room AgentOps-owned."
+  - skill:          agy-sidecar-scheduled-tick
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Coverage-gap skill for recurring AGY loop ticks via Antigravity sidecar + agentapi evidence; clean-room AgentOps-owned."
+  - skill:          cross-vendor-trust-gate
+    domain:         "BC4 Factory"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "Coverage-gap skill operating the skill-factory final trust gate (cross-vendor parity); shared kernel with heal-skill."
+  - skill:          storage-watchdog-ops
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Coverage-gap operator runbook for the ACFS storage watchdog daemon; clean-room AgentOps-owned capability."
   - skill:          gh-actions
     domain:         "BC5 Runtime"
     hexagonal_role: supporting

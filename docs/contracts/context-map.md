@@ -16,6 +16,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `complexity` — Find focused refactor hotspots.
 - `council` — Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.
 - `crank` — Execute epics through waves.
+- `cross-vendor-trust-gate` — Use when running the skill-factory final trust gate to grade a skill's cross-vendor trust before landing it. Triggers: trust gate, cross-vendor parity, skill factory final gate, --require-cross, skill.trust.json, is this skill cross-validated.
 - `design` — Validate product fit before discovery. Use when: framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.
 - `discovery` — Create dense execution packets.
 - `domain` — Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs.
@@ -84,6 +85,8 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `agent-mail` — Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs.
 - `agent-native` — Make an out-of-session Claude (Managed Agent or Agent SDK loop) AgentOps-native via skills plus the ao CLI and CI, not hooks. Use when wiring a Managed Agent or Agent SDK loop to AgentOps, or making an out-of-session agent AgentOps-native.
 - `agy-headless-evidence` — Run AGY headlessly via scheduled ticks or `agy -p`, capturing agentapi JSONL evidence for validation.
+- `agy-project-worktree-permissions` — Prove scoped project/worktree isolation on the AGY (Antigravity) image before a bead can join the quorum: pin each role to a non-overlapping --add-dir scope, a permission tier matched to author vs judge, and the dcg guard, then capture the isolation evidence. Triggers: agy, worktree, permissions, project.
+- `agy-sidecar-scheduled-tick` — Run a recurring AgentOps loop tick on AGY via an Antigravity sidecar (schedule builtin + agentapi), capturing agentapi runtime evidence a validator can read back. Triggers: agy, sidecar, schedule, agentapi, AGY scheduled tick, Antigravity sidecar, recurring AGY loop.
 - `autodev` — Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself.
 - `automation-loop-hardening` — Use when turning repeated manual operations into safer, observable, reusable automation loops. Triggers:
 - `automation-shape-routing` — Front door for agent automation — decide the SHAPE (Workflow vs NTM vs skill), then hand off. Triggers: "build automation", "convert skills to workflows", "which shape".
@@ -164,6 +167,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `skill-builder` — Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill".
 - `ssh` — Use when configuring SSH access, keys, tunnels, host diagnostics, or safe remote command workflows.
 - `stash-hygiene-sweep` — Use when auditing git stashes, deciding keep/drop/apply/archive, and clearing confirmed stale entries. Triggers:
+- `storage-watchdog-ops` — Use when operating or remediating the ACFS storage watchdog daemon — checking disk pressure, reading its log, deciding whether automatic Rust target/ cleanup ran, and intervening safely when the disk is still under pressure. Triggers: storage, watchdog, disk, target, disk pressure, free space, target cleanup, acfs-storage-watchdog, disk full
 - `swarm` — Dispatch parallel agents.
 - `system-performance-remediation` — Use when restoring machine responsiveness from high CPU, memory, IO, cache, or runaway process pressure.
 - `system-tuning` — Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene.
@@ -193,7 +197,10 @@ graph LR
   agy-headless-evidence -- "supplier-to" --> validate
   agy-mcp-plugins -- "supplier-to" --> agy-native
   agy-native -- "customer-of" --> operating-loop-skill
+  agy-project-worktree-permissions -- "customer-of" --> agy-native
   agy-rules-workflows -- "conformist-to" --> operating-loop-workflow
+  agy-sidecar-scheduled-tick -- "customer-of" --> agy-native
+  agy-sidecar-scheduled-tick -- "supplier-to" --> validate
   artifact-clarity-pass -- "shared-kernel" --> standards
   automation-shape-routing -- "supplier-to" --> skill-builder
   automation-shape-routing -- "supplier-to" --> workflow-builder
@@ -220,6 +227,7 @@ graph LR
   complexity -- "shared-kernel" --> standards
   council -- "shared-kernel" --> standards
   crank -- "shared-kernel" --> standards
+  cross-vendor-trust-gate -- "shared-kernel" --> heal-skill
   dependency-update-safety -- "supplier-to" --> validate
   deps -- "supplier-to" --> vibe
   design -- "shared-kernel" --> standards
@@ -302,9 +310,14 @@ graph LR
 | `agy-mcp-plugins` | produces | agy-plugin-install |
 | `agy-native` | consumes | operating-loop-skill |
 | `agy-native` | produces | agy-run-evidence |
+| `agy-project-worktree-permissions` | consumes | agy-native |
+| `agy-project-worktree-permissions` | produces | agy-isolation-evidence |
 | `agy-rules-workflows` | consumes | operating-loop-workflow |
 | `agy-rules-workflows` | produces | agy-rules |
 | `agy-rules-workflows` | produces | agy-workflows |
+| `agy-sidecar-scheduled-tick` | consumes | agy-headless-evidence |
+| `agy-sidecar-scheduled-tick` | consumes | agy-native |
+| `agy-sidecar-scheduled-tick` | produces | agy-sidecar-tick-evidence |
 | `autodev` | consumes | evolve |
 | `autodev` | consumes | rpi |
 | `bd-first-memory-migration` | consumes | repo-context |
@@ -383,6 +396,9 @@ graph LR
 | `crank` | consumes | vibe |
 | `crank` | produces | .agents/swarm/results/*.json |
 | `crank` | produces | git-changes |
+| `cross-vendor-trust-gate` | consumes | skill |
+| `cross-vendor-trust-gate` | produces | stdout |
+| `cross-vendor-trust-gate` | produces | trust-artifact |
 | `curate` | produces | .agents/research/*.md |
 | `dependency-update-safety` | consumes | manifest-and-lockfile |
 | `dependency-update-safety` | consumes | repo-context |
@@ -605,6 +621,12 @@ graph LR
 | `standards` | produces | stdout |
 | `status` | consumes | bd |
 | `status` | produces | stdout |
+| `storage-watchdog-ops` | consumes | daemon-config |
+| `storage-watchdog-ops` | consumes | host-state |
+| `storage-watchdog-ops` | consumes | incident-symptom |
+| `storage-watchdog-ops` | produces | escalation-note |
+| `storage-watchdog-ops` | produces | remediation-action |
+| `storage-watchdog-ops` | produces | triage-finding |
 | `swarm` | consumes | implement |
 | `swarm` | consumes | vibe |
 | `swarm` | produces | .agents/swarm/results/*.json |

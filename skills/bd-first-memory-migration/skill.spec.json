@@ -1,0 +1,75 @@
+{
+  "name": "bd-first-memory-migration",
+  "form": "A",
+  "skill_api_version": 1,
+  "summary": "Consolidate fragmented agent-memory layers into one bd-canonical store, then GC/retire the rest. Three phases (Audit → Migrate → GC/Retire) gated between destructive steps; idempotent, reversible, backup-aware.",
+  "sections": [
+    { "id": "title", "title": "bd-first-memory-migration", "type": "header", "priority": "high" },
+    { "id": "problem", "title": "The problem this solves", "type": "rationale", "priority": "high" },
+    { "id": "when-to-use", "title": "When to use / when not", "type": "overview", "priority": "high" },
+    { "id": "quick-start", "title": "Quick start", "type": "quickstart", "priority": "high" },
+    { "id": "three-phases", "title": "The three phases", "type": "methodology", "priority": "high" },
+    { "id": "anti-patterns", "title": "Anti-patterns", "type": "constraints", "priority": "medium" },
+    { "id": "guardrails", "title": "Guardrails (load-bearing)", "type": "constraints", "priority": "critical" },
+    { "id": "see-also", "title": "See also", "type": "routing", "priority": "low" }
+  ],
+  "references": [
+    { "path": "references/PHASES.md", "intent": "read", "description": "Full per-phase contract" },
+    { "path": "references/DATA-MODEL.md", "intent": "read", "description": "Memory data model + type taxonomy" },
+    { "path": "references/ROLLBACK.md", "intent": "read", "description": "Reversibility/rollback contract" },
+    { "path": "references/EXAMPLES.md", "intent": "read", "description": "Worked examples" },
+    { "path": "references/audit.feature", "intent": "read", "description": "Phase 1 acceptance scenarios" },
+    { "path": "references/migrate.feature", "intent": "read", "description": "Phase 2 acceptance scenarios" }
+  ],
+  "scripts": [
+    { "path": "scripts/audit_scan.py", "intent": "execute", "description": "Phase 1 — inventory every memory layer (read-only)." },
+    { "path": "scripts/classify.py", "intent": "execute", "description": "Phase 1 — classify keepers vs junk (dry-run)." },
+    { "path": "scripts/import_memories.py", "intent": "execute", "description": "Phase 2 — salvage keepers into bd; supports --dry-run." },
+    { "path": "scripts/recall.py", "intent": "execute", "description": "Phase 2 — decay-ranked typed recall." },
+    { "path": "scripts/gen_memory_md.py", "intent": "execute", "description": "Phase 2 — regenerate the thin MEMORY.md cache from bd." },
+    { "path": "scripts/audit_report.py", "intent": "execute", "description": "Produce the audit/KEEP-DROP manifest report." }
+  ],
+  "metadata": {
+    "tier": "knowledge",
+    "stability": "stable",
+    "user_invocable": false,
+    "hexagonal_role": "driving-adapter",
+    "dependencies": ["beads"],
+    "consumes": ["repo-context"],
+    "produces": ["migration-report", "bd-memories"],
+    "context_rel": [
+      { "kind": "consumer-of", "with": "beads" },
+      { "kind": "consumer-of", "with": "curate" }
+    ],
+    "triggers": [
+      "memory migration",
+      "consolidate agent memory",
+      "beads-first memory",
+      "bd-canonical memory",
+      "fragmented memory stores",
+      "garbage-collect agent memory",
+      "retire memory store",
+      "unify MEMORY.md and bd"
+    ],
+    "token_estimate": {
+      "minimal": 110,
+      "overview": 340,
+      "standard": 900,
+      "full": 1300
+    }
+  },
+  "produces": ["migration-report", "bd-memories"],
+  "consumes": ["repo-context"],
+  "context_rel": [
+    { "kind": "consumer-of", "with": "beads" }
+  ],
+  "quality_score": 0.9,
+  "evidence": {
+    "sources": [
+      "skills/bd-first-memory-migration/SKILL.md",
+      "skills/bd-first-memory-migration/references/PHASES.md",
+      "skills/bd-first-memory-migration/references/ROLLBACK.md",
+      "skills/bd-first-memory-migration/scripts/"
+    ]
+  }
+}

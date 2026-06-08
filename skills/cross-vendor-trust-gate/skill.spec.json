@@ -1,0 +1,25 @@
+{
+  "name": "cross-vendor-trust-gate",
+  "skill_api_version": 1,
+  "entrypoint": "SKILL.md",
+  "user_invocable": false,
+  "summary": "Run the skill-factory final trust gate (trust-gate.sh) to grade one skill's cross-vendor trust before landing: validate the portable source side and the Codex parity side, write a queryable skill.trust.json (fresh / single-validated / cross-validated), and enforce --require-cross by exit code.",
+  "triggers": [
+    "trust gate",
+    "cross-vendor parity",
+    "skill factory final gate",
+    "require-cross",
+    "skill.trust.json",
+    "cross-validated skill"
+  ],
+  "inputs": [
+    "skill"
+  ],
+  "outputs": [
+    "trust-artifact",
+    "stdout"
+  ],
+  "validation": {
+    "command": "bash skills/cross-vendor-trust-gate/scripts/validate.sh"
+  }
+}
