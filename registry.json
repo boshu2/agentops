@@ -1,7 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-08T03:16:50Z",
-  "generated_at": "2026-06-08T03:07:09Z",
+  "generated_at": "2026-06-08T04:40:08Z",
   "summary": {
     "skills": 162,
     "hooks": 0,
@@ -3499,7 +3498,9 @@
         "ao mine",
         "ao ratchet",
         "ao rpi",
-        "ao rpi loop"
+        "ao rpi loop",
+        "ao skills edit digest",
+        "ao skills edit seal"
       ],
       "path": "skills/evolve/",
       "references": 27

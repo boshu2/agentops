@@ -107,6 +107,15 @@ func executeCommand(args ...string) (string, error) {
 	origCompileMineOnly := compileMineOnly
 	origCompileFull := compileFull
 	origCompileQuiet := compileQuiet
+	origSkillsEditSealSkill := skillsEditSealSkill
+	origSkillsEditSealMessage := skillsEditSealMessage
+	origSkillsEditSealActor := skillsEditSealActor
+	origSkillsEditSealCriticalPolicy := skillsEditSealCriticalPolicy
+	origSkillsEditSealAllowCritical := skillsEditSealAllowCritical
+	origSkillsEditSealDryRun := skillsEditSealDryRun
+	origSkillsEditDigestSince := skillsEditDigestSince
+	origSkillsEditDigestCriticalPolicy := skillsEditDigestCriticalPolicy
+	origSkillsEditDigestJSON := skillsEditDigestJSON
 	defer func() {
 		dryRun = origDryRun
 		verbose = origVerbose
@@ -179,6 +188,15 @@ func executeCommand(args ...string) (string, error) {
 		compileMineOnly = origCompileMineOnly
 		compileFull = origCompileFull
 		compileQuiet = origCompileQuiet
+		skillsEditSealSkill = origSkillsEditSealSkill
+		skillsEditSealMessage = origSkillsEditSealMessage
+		skillsEditSealActor = origSkillsEditSealActor
+		skillsEditSealCriticalPolicy = origSkillsEditSealCriticalPolicy
+		skillsEditSealAllowCritical = origSkillsEditSealAllowCritical
+		skillsEditSealDryRun = origSkillsEditSealDryRun
+		skillsEditDigestSince = origSkillsEditDigestSince
+		skillsEditDigestCriticalPolicy = origSkillsEditDigestCriticalPolicy
+		skillsEditDigestJSON = origSkillsEditDigestJSON
 	}()
 
 	// Reset all command-local flags to defaults before execution.
@@ -264,6 +282,15 @@ func executeCommand(args ...string) (string, error) {
 	compileMineOnly = false
 	compileFull = false
 	compileQuiet = false
+	skillsEditSealSkill = ""
+	skillsEditSealMessage = ""
+	skillsEditSealActor = ""
+	skillsEditSealCriticalPolicy = ""
+	skillsEditSealAllowCritical = false
+	skillsEditSealDryRun = false
+	skillsEditDigestSince = "24 hours ago"
+	skillsEditDigestCriticalPolicy = ""
+	skillsEditDigestJSON = false
 	contextPacketFlags = struct {
 		goal  string
 		epic  string

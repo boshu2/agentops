@@ -111,6 +111,53 @@ func TestDigestSkillEditsSurfacesRecentSkillChanges(t *testing.T) {
 	}
 }
 
+func TestSkillsEditSealCommandDryRun(t *testing.T) {
+	repo := setupSkillEditRepo(t)
+	t.Chdir(repo)
+	writeSkillEditFile(t, repo, "skills/evolve/SKILL.md", "---\nname: evolve\ndescription: evolve\n---\nold\n")
+	writeSkillEditFile(t, repo, "docs/contracts/critical-skills.txt", "evolve\n")
+	gitSkillEdit(t, repo, "add", ".")
+	gitSkillEdit(t, repo, "commit", "-m", "initial")
+
+	writeSkillEditFile(t, repo, "skills/evolve/SKILL.md", "---\nname: evolve\ndescription: evolve\n---\nnew\n")
+	out, err := executeCommand("skills", "edit", "seal", "--skill", "evolve", "--allow-critical", "--dry-run", "--actor", "test-agent")
+	if err != nil {
+		t.Fatalf("ao skills edit seal dry-run: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "DRY-RUN: would commit evolve") {
+		t.Fatalf("unexpected dry-run output:\n%s", out)
+	}
+	status := gitSkillEdit(t, repo, "status", "--porcelain")
+	if !strings.Contains(status, "skills/evolve/SKILL.md") {
+		t.Fatalf("expected dry-run to leave edit uncommitted, got:\n%s", status)
+	}
+}
+
+func TestSkillsEditDigestCommandJSON(t *testing.T) {
+	repo := setupSkillEditRepo(t)
+	t.Chdir(repo)
+	writeSkillEditFile(t, repo, "skills/alpha/SKILL.md", "---\nname: alpha\ndescription: alpha\n---\nold\n")
+	gitSkillEdit(t, repo, "add", ".")
+	gitSkillEdit(t, repo, "commit", "-m", "initial")
+
+	writeSkillEditFile(t, repo, "skills/alpha/SKILL.md", "---\nname: alpha\ndescription: alpha\n---\nnew\n")
+	if _, err := sealSkillEdit(skillEditSealOptions{
+		RepoRoot: repo,
+		Skill:    "alpha",
+		Actor:    "test-agent",
+	}); err != nil {
+		t.Fatalf("sealSkillEdit error: %v", err)
+	}
+
+	out, err := executeCommand("skills", "edit", "digest", "--since", "1 year ago", "--json")
+	if err != nil {
+		t.Fatalf("ao skills edit digest: %v\n%s", err, out)
+	}
+	if !strings.Contains(out, "\"skills\"") || !strings.Contains(out, "\"alpha\"") {
+		t.Fatalf("expected digest JSON to include alpha skill, got:\n%s", out)
+	}
+}
+
 func setupSkillEditRepo(t *testing.T) string {
 	t.Helper()
 	repo := t.TempDir()
