@@ -1,6 +1,6 @@
 ---
 name: cross-vendor-trust-gate
-description: "Run the skill-factory final trust gate to grade a skill's cross-vendor trust before it lands — operate trust-gate.sh, read the skill.trust.json verdict, and enforce --require-cross. Never hand-wave parity."
+description: "Run the skill-factory final trust gate: operate trust-gate.sh, read skill.trust.json, and enforce --require-cross."
 ---
 
 # cross-vendor-trust-gate (Codex)

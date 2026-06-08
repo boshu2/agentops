@@ -1606,7 +1606,7 @@
     {
       "name": "agent-native",
       "source_skill": "skills/agent-native",
-      "source_hash": "72c4e6eb5472d79ad7c1d1bb4678a315f3181cbcfbb2fa252b26a535ca22633c",
+      "source_hash": "adc1872c745243dcc2ed47db8ef793a1b894959b9ff76518c51e3bf08d42734b",
       "generated_hash": "1bbe19f6087257e2d92b30d437a63a8b34e116379a2cf99184aad0d618824b9e"
     },
     {
@@ -1630,8 +1630,8 @@
     {
       "name": "agy-project-worktree-permissions",
       "source_skill": "skills/agy-project-worktree-permissions",
-      "source_hash": "0ae1d306fc66d90d74ff27fad5974dbabfa966c9d77604405e045c1e31ff8d00",
-      "generated_hash": "8c48f3b419a74800a229be709386b534e95e1edef247a6e786693ad02ce7ba86"
+      "source_hash": "67a0ae3e76310f8b7746b69b8aebfca44196338fe2a521ffe022ef192f17b515",
+      "generated_hash": "439f48d4d2f9c4478b005a00a38036e640587cab5d5bb3304eaf0285e7af2f81"
     },
     {
       "name": "agy-rules-workflows",
@@ -1642,7 +1642,7 @@
     {
       "name": "agy-sidecar-scheduled-tick",
       "source_skill": "skills/agy-sidecar-scheduled-tick",
-      "source_hash": "005701c5760e7f0a545cb2c4223755f496bbf6612f93e34c3afc5849ea6518cf",
+      "source_hash": "3d4d428d89b7948c5bb29250e669d4f0f376b61bcbdec96b90351bab2b682992",
       "generated_hash": "a55981cca30db4df0ba5bd3c9e74c6232a253c4f65f604120997298892074068"
     },
     {
@@ -1894,8 +1894,8 @@
     {
       "name": "cross-vendor-trust-gate",
       "source_skill": "skills/cross-vendor-trust-gate",
-      "source_hash": "12d6d4effc1c6a23ed8197c9d870cdaf67bb25f2918a065ddc587c9cf8b6917e",
-      "generated_hash": "36aabbb7cb753266d981aab26759aaceb598daef34fae1f8e2c72b69a37eee73"
+      "source_hash": "818a891e28813620457d0e8a2e83c021b8866a936313b1c62c983e57a2b5ce62",
+      "generated_hash": "b96e122feea75ed38555a3f102a7ced2603a5161d554985930a556f3ad3fdfd2"
     },
     {
       "name": "curate",
@@ -1936,7 +1936,7 @@
     {
       "name": "doc",
       "source_skill": "skills/doc",
-      "source_hash": "b1293c5a52a1b7e6487ca40fa0847e1fd1cacf65dc7fa7f3e658831333be88a0",
+      "source_hash": "d2e051d6284748582970bbd77953094c6ae98b5f59e1c1e3561f08f092630a9b",
       "generated_hash": "48cb7813be9336eb918943246af792b25766b2ea870c9163a7cde5dae187411f"
     },
     {
@@ -1948,7 +1948,7 @@
     {
       "name": "eval-outcomes",
       "source_skill": "skills/eval-outcomes",
-      "source_hash": "4e9f5e6bfefd0b196ce88ac439db26666da9c249335d140423f815d539b82dae",
+      "source_hash": "eba87bdf6e72b1d7c4a36a03b87163a43ecccc810aa7a53dbad6f8ffa6647931",
       "generated_hash": "6f6ed5eba59ea419db5214b7a5dee0641723eb7c2a6699386b7427e90d2442fc"
     },
     {
@@ -2404,19 +2404,19 @@
     {
       "name": "scope",
       "source_skill": "skills/scope",
-      "source_hash": "c71a44e4f7576900ce26383984d3e68eae5d7b29b9d07bc334858d062aa85768",
+      "source_hash": "c31e2e552051109e2b5f31cfcc692153a85d19e38839976a3a54e30f6de67002",
       "generated_hash": "47a0e3cbeff64e7fd40f4c76a756435443b1644859a00ab85e21318539f58734"
     },
     {
       "name": "security",
       "source_skill": "skills/security",
-      "source_hash": "5584c104eb15c2b4bf6322f16ef45407a02e53d594ada05fa9687bf9b48f75d4",
+      "source_hash": "6804973606b5fc74b260cd404560a81a08007448da0edd4cc63e9e4860c3cd52",
       "generated_hash": "0ba3d08ef58f6dc6e72d1d5b2290b2ffe400b8fde8b1289e0b2a54f0eeb4bf67"
     },
     {
       "name": "session-bootstrap",
       "source_skill": "skills/session-bootstrap",
-      "source_hash": "4687b43c39e3434ae1a0bb772248d867fb86070be855ef561cc3cd9e538cf51f",
+      "source_hash": "f83a2e7bad2dc3a8f1c530b6ed1b9b257eadfd2ba576140aaeca5a712ca22203",
       "generated_hash": "5eeb89272ce57b9e8adc01bb06ecc550fc0d6574bb0980a922508df3ed251224"
     },
     {
@@ -2476,8 +2476,8 @@
     {
       "name": "storage-watchdog-ops",
       "source_skill": "skills/storage-watchdog-ops",
-      "source_hash": "66de43babcd83537a640db65c6228ed3c7ab333cfcbf3f808d5841b44a548732",
-      "generated_hash": "55c3fdc7869c538124fd94e831178df9d1286ee606d8607d84afd520a01b195d"
+      "source_hash": "7926b782ef7ab912da0c44a3bf6978aad8a183148f41c57d5d020e05325148cc",
+      "generated_hash": "244be7bc4bedf2bd1acd6670d8e1cf85aa40cec1a7ed35fbdf29dd5df4193cab"
     },
     {
       "name": "swarm",

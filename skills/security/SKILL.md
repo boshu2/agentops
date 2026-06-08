@@ -1,6 +1,6 @@
 ---
 name: security
-description: Run repository security scans and composable security analysis. Use when auditing a repo for vulnerabilities, scanning dependencies or secrets, or gating a release on security checks.
+description: Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates.
 practices:
 - supply-chain-integrity
 - design-by-contract

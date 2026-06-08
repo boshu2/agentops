@@ -1,6 +1,6 @@
 ---
 name: storage-watchdog-ops
-description: "Operate or remediate the ACFS storage watchdog daemon — check disk pressure, read its log, decide whether automatic Rust target/ cleanup ran, and intervene safely when the disk is still under pressure."
+description: "Operate the ACFS storage watchdog: inspect disk pressure, read logs, verify Rust target cleanup, and escalate safely."
 ---
 
 # storage-watchdog-ops (Codex)
