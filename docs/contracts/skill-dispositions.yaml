@@ -828,3 +828,23 @@ dispositions:
     hexagonal_role: domain
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          codebase-archaeology
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Canonicalized from ~/.claude/skills ghost dir (cp-801l); systematic codebase exploration skill, AgentOps-owned."
+  - skill:          codebase-audit
+    domain:         "BC2 Validation"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Canonicalized from ~/.claude/skills ghost dir (cp-801l); domain-parameterized audit skill, AgentOps-owned."
+  - skill:          codebase-pattern-extraction
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Canonicalized from ~/.claude/skills ghost dir (cp-801l); cross-project pattern mining skill, AgentOps-owned."
+  - skill:          codebase-report
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Canonicalized from ~/.claude/skills ghost dir (cp-801l); architecture report skill, AgentOps-owned."

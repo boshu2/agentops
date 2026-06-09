@@ -220,7 +220,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (154)
+### User-Facing Skills (158)
 
 **Judgment:**
 
@@ -351,7 +351,11 @@ These are how skills chain in practice:
 | **changelog-quality-pass** | library | Use when writing or auditing changelogs and release notes for user-facing, semver-aware clarity. |
 | **cli-agent-ux-audit** | judgment | Use when improving CLI ergonomics for agents: flags, help, JSON output, exit codes, and robot surfaces. |
 | **cli-doctoring-workflow** | judgment | Use when designing or auditing CLI doctor commands, health checks, repair hints, and diagnostic UX. |
+| **codebase-archaeology** | knowledge | Systematically explore unfamiliar codebases to build working mental models. Use when onboarding to a new project or understanding legacy code. |
+| **codebase-audit** | knowledge | Domain-parameterized codebase auditing (security, UX, performance, API, copy, CLI). Use when auditing code or pre-launch review. |
 | **codebase-briefing-report** | knowledge | Use when producing a shareable architecture, module, metrics, and health report for a codebase. |
+| **codebase-pattern-extraction** | knowledge | Mine patterns that recur across multiple projects and generalize into reusable artifacts. |
+| **codebase-report** | knowledge | Produce reusable technical architecture documents from codebase exploration. Use when onboarding or handoff. |
 | **codebase-risk-audit** | execution | Use when auditing codebase risks with evidence and prioritized remediation. |
 | **codex-exec** | orchestration | Use when running Codex workers or validators non-interactively through codex exec with evidence. |
 | **codex-goals** | orchestration | Use when using Codex Goals to define an objective once and let Codex iterate until done. |
@@ -417,7 +421,7 @@ These are how skills chain in practice:
 | **work-contract-portability** | knowledge | Use when designing agent work contracts, handoffs, evidence, and role boundaries across runtimes. |
 | **worktree-branch-rationalization** | execution | Use when rationalizing git worktrees and branches into a canonical line without losing useful work. |
 
-### Internal Skills (8) — `metadata.internal: true`
+### Internal Skills (9) — `metadata.internal: true`
 
 Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hooks. Loaded JIT by other skills via Read or auto-triggered by hooks.
 
@@ -425,6 +429,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 |-------|------|----------|---------|
 | beads | library | Execution | Issue tracking reference (loaded by /implement, /plan) |
 | standards | library | Judgment | Coding standards (loaded by /vibe, /implement, /doc) |
+| security-suite | library | Judgment | Security scanning script suite (scripts-only backend for /security; no SKILL.md) |
 | shared | library | Execution | Shared reference documents (multi-agent backends) |
 | inject | background | Knowledge | Load knowledge at session start (hook-triggered) |
 | forge | background | Knowledge | Mine transcripts for knowledge (includes --promote for pending extraction) |

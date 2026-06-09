@@ -1174,6 +1174,30 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Proof skill asserting AGY project/worktree isolation invariants; codex-native agy --print orchestration."
+    },
+    {
+      "name": "codebase-archaeology",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex parity wrapper for canonicalized codebase-* skill (cp-801l)."
+    },
+    {
+      "name": "codebase-audit",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex parity wrapper for canonicalized codebase-* skill (cp-801l)."
+    },
+    {
+      "name": "codebase-pattern-extraction",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex parity wrapper for canonicalized codebase-* skill (cp-801l)."
+    },
+    {
+      "name": "codebase-report",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex parity wrapper for canonicalized codebase-* skill (cp-801l)."
     }
   ]
 }
