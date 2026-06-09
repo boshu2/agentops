@@ -133,7 +133,7 @@ var tickCloseCmd = &cobra.Command{
 
 var tickVerdictGateCmd = &cobra.Command{
 	Use:   "verdict-gate <file|->",
-	Short: "Reject verdicts without a non-empty COMMANDS RUN body",
+	Short: "Reject verdicts without commands and independent judge identity",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return tickRunVerdictGate(newTickRuntime(cmd), args[0])
@@ -178,7 +178,7 @@ var tickSmokeCmd = &cobra.Command{
 
 var verdictGateCmd = &cobra.Command{
 	Use:   "verdict-gate <file|->",
-	Short: "Reject verdicts without a non-empty COMMANDS RUN body",
+	Short: "Reject verdicts without commands and independent judge identity",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return tickRunVerdictGate(newTickRuntime(cmd), args[0])
@@ -548,12 +548,16 @@ func tickRunVerdictGate(rt tickRuntime, path string) error {
 	if err != nil {
 		return err
 	}
-	if tickVerdictHasCommandsRun(text) {
-		fmt.Fprintln(rt.stdout, "VERIFIED: verdict cites the commands it ran")
-		return nil
+	if !tickVerdictHasCommandsRun(text) {
+		fmt.Fprintln(rt.stderr, "REJECTED: verdict has no non-empty 'COMMANDS RUN' body - unverified; route to tie-break")
+		return &tickExitError{code: tickExitUnverified}
 	}
-	fmt.Fprintln(rt.stderr, "REJECTED: verdict has no non-empty 'COMMANDS RUN' body - unverified; route to tie-break")
-	return &tickExitError{code: tickExitUnverified}
+	if _, gaps := tickVerdictIdentity(text); len(gaps) > 0 {
+		fmt.Fprintf(rt.stderr, "REJECTED: verdict identity unproven: %s\n", strings.Join(gaps, "; "))
+		return &tickExitError{code: tickExitUnverified}
+	}
+	fmt.Fprintln(rt.stdout, "VERIFIED: verdict cites commands and independent judge identity")
+	return nil
 }
 
 func tickVerdictHasCommandsRun(text string) bool {
@@ -583,16 +587,25 @@ func tickVerdictHasCommandsRun(text string) bool {
 func tickCouncilGate(rt tickRuntime, paths []string) error {
 	n := len(paths)
 	pass, fail, unverified := 0, 0, 0
+	families := map[string]bool{}
+	judges := map[string]bool{}
 	for _, path := range paths {
 		text, err := tickReadVerdict(rt, path)
-		if err != nil || !tickVerdictHasCommandsRun(text) {
+		identity, identityGaps := tickVerdictIdentity(text)
+		if err != nil || !tickVerdictHasCommandsRun(text) || len(identityGaps) > 0 {
 			unverified++
 			continue
 		}
+		if judges[identity.JudgeName] {
+			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: duplicate judge %q does not count as an independent judge\n", identity.JudgeName)
+			return &tickExitError{code: tickExitCouncil}
+		}
+		judges[identity.JudgeName] = true
 		p, f := tickVerdictTokenCounts(text)
 		switch {
 		case p == 1 && f == 0:
 			pass++
+			families[identity.JudgeModelFamily] = true
 		case f == 1 && p == 0:
 			fail++
 		default:
@@ -604,7 +617,11 @@ func tickCouncilGate(rt tickRuntime, paths []string) error {
 		return &tickExitError{code: tickExitCouncil}
 	}
 	if pass == n {
-		fmt.Fprintf(rt.stdout, "COUNCIL PASS: %d/%d judges unanimous\n", pass, n)
+		if len(families) < 2 {
+			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: PASS quorum has %d model family; need at least 2 independent families\n", len(families))
+			return &tickExitError{code: tickExitCouncil}
+		}
+		fmt.Fprintf(rt.stdout, "COUNCIL PASS: %d/%d judges unanimous across %d model families\n", pass, n, len(families))
 		return nil
 	}
 	if fail == n {
@@ -613,6 +630,92 @@ func tickCouncilGate(rt tickRuntime, paths []string) error {
 	}
 	fmt.Fprintf(rt.stderr, "DISAGREEMENT: %d PASS / %d FAIL - fail-closed; dispatch tie-break\n", pass, fail)
 	return &tickExitError{code: tickExitDisagree}
+}
+
+type tickVerdictIdentityInfo struct {
+	Author           string
+	JudgeName        string
+	JudgeProgram     string
+	JudgeModelFamily string
+}
+
+func tickVerdictIdentity(text string) (tickVerdictIdentityInfo, []string) {
+	info := tickVerdictIdentityInfo{
+		Author:           tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "author", "author_id", "author-id", "author id", "author_name", "author-name", "author name")),
+		JudgeName:        tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "judge", "judge_name", "judge-name", "judge name", "judge_id", "judge-id", "judge id")),
+		JudgeProgram:     tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "judge_program", "judge-program", "judge program", "program", "validator_program", "validator-program", "validator program")),
+		JudgeModelFamily: tickNormalizeModelFamily(tickVerdictMetadataValue(text, "judge_model_family", "judge-model-family", "judge model family", "model_family", "model-family", "model family", "family")),
+	}
+	var gaps []string
+	if info.Author == "" {
+		gaps = append(gaps, "missing author")
+	}
+	if info.JudgeName == "" {
+		gaps = append(gaps, "missing judge.name")
+	}
+	if info.JudgeProgram == "" {
+		gaps = append(gaps, "missing judge.program")
+	}
+	if info.JudgeModelFamily == "" {
+		gaps = append(gaps, "missing judge.model_family")
+	} else if tickUnknownModelFamily(info.JudgeModelFamily) {
+		gaps = append(gaps, "judge.model_family is unknown")
+	}
+	if info.Author != "" && info.JudgeName != "" && info.Author == info.JudgeName {
+		gaps = append(gaps, "judge.name equals author")
+	}
+	if tickVerdictMetadataValue(text, "allow_self", "allow-self", "allow self", "self_waiver", "self-waiver", "self waiver") != "" {
+		gaps = append(gaps, "self-judge waiver must be external and principal-logged, not verdict-authored")
+	}
+	return info, gaps
+}
+
+func tickVerdictMetadataValue(text string, keys ...string) string {
+	wanted := map[string]bool{}
+	for _, key := range keys {
+		wanted[tickNormalizeMetadataKey(key)] = true
+	}
+	scanner := bufio.NewScanner(strings.NewReader(text))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		line = strings.TrimPrefix(line, "-")
+		line = strings.TrimPrefix(strings.TrimSpace(line), "*")
+		line = strings.TrimSpace(line)
+		i := strings.Index(line, ":")
+		if i < 0 {
+			continue
+		}
+		key := tickNormalizeMetadataKey(line[:i])
+		if !wanted[key] {
+			continue
+		}
+		return strings.Trim(strings.TrimSpace(line[i+1:]), "`\"'")
+	}
+	return ""
+}
+
+func tickNormalizeMetadataKey(key string) string {
+	key = strings.ToLower(strings.TrimSpace(key))
+	key = strings.ReplaceAll(key, "-", "_")
+	key = strings.ReplaceAll(key, " ", "_")
+	return key
+}
+
+func tickNormalizeIdentityValue(value string) string {
+	return strings.TrimSpace(value)
+}
+
+func tickNormalizeModelFamily(value string) string {
+	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func tickUnknownModelFamily(family string) bool {
+	switch strings.ToLower(strings.TrimSpace(family)) {
+	case "", "unknown", "none", "n/a", "na", "unset":
+		return true
+	default:
+		return false
+	}
 }
 
 func tickVerdictTokenCounts(text string) (pass, fail int) {
@@ -704,9 +807,9 @@ func tickSmoke(rt tickRuntime) error {
 		_ = os.WriteFile(path, []byte(body), 0o644)
 		return path
 	}
-	pass1 := write("pass1.md", "VERDICT: PASS\nCOMMANDS RUN:\n  ao tick guard-status\n")
-	pass2 := write("pass2.md", "VERDICT: PASS\nCOMMANDS RUN:\n  ao tick verdict-gate -\n")
-	fail1 := write("fail1.md", "VERDICT: FAIL\nCOMMANDS RUN:\n  ao tick guard-status\n")
+	pass1 := write("pass1.md", "author: codex\njudge: athena\njudge_program: claude-code\njudge_model_family: claude\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick guard-status\n")
+	pass2 := write("pass2.md", "author: codex\njudge: windyelm\njudge_program: gemini-cli\njudge_model_family: gemini\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick verdict-gate -\n")
+	fail1 := write("fail1.md", "author: codex\njudge: windyelm\njudge_program: gemini-cli\njudge_model_family: gemini\nVERDICT: FAIL\nCOMMANDS RUN:\n  ao tick guard-status\n")
 	unver := write("unver.md", "VERDICT: PASS\nthis verdict cites no commands\n")
 	contra := write("contra.md", "VERDICT: FAIL\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick guard-status\n")
 	quietRT := rt

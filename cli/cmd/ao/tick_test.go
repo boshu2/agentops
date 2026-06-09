@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -164,6 +165,46 @@ func TestTickVerdictTokenCounts(t *testing.T) {
 	}
 }
 
+func tickTestVerdict(author, judge, program, family, verdict, command string) string {
+	return fmt.Sprintf("author: %s\njudge: %s\njudge_program: %s\njudge_model_family: %s\nVERDICT: %s\nCOMMANDS RUN:\n  %s\n", author, judge, program, family, verdict, command)
+}
+
+func TestTickVerdictIdentityRequiresTypedIndependentJudge(t *testing.T) {
+	valid := tickTestVerdict("codex", "athena", "claude-code", "claude", "PASS", "ao tick guard-status")
+	identity, gaps := tickVerdictIdentity(valid)
+	if len(gaps) != 0 {
+		t.Fatalf("valid identity gaps = %v, want none", gaps)
+	}
+	if identity.Author != "codex" || identity.JudgeName != "athena" || identity.JudgeProgram != "claude-code" || identity.JudgeModelFamily != "claude" {
+		t.Fatalf("identity = %+v, want typed judge tuple", identity)
+	}
+
+	tests := []struct {
+		name string
+		body string
+	}{
+		{
+			name: "missing judge program",
+			body: "author: codex\njudge: athena\njudge_model_family: claude\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick guard-status\n",
+		},
+		{
+			name: "self judge rejected despite inline waiver",
+			body: "author: codex\njudge: codex\njudge_program: codex-cli\njudge_model_family: codex\nallow_self: true\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick guard-status\n",
+		},
+		{
+			name: "unknown family rejected",
+			body: tickTestVerdict("codex", "athena", "claude-code", "unknown", "PASS", "ao tick guard-status"),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, gaps := tickVerdictIdentity(tc.body); len(gaps) == 0 {
+				t.Fatal("tickVerdictIdentity() gaps = none, want fail-closed gap")
+			}
+		})
+	}
+}
+
 func TestTickCouncilGateMatrix(t *testing.T) {
 	dir := t.TempDir()
 	write := func(name, body string) string {
@@ -173,11 +214,11 @@ func TestTickCouncilGateMatrix(t *testing.T) {
 		}
 		return path
 	}
-	pass1 := write("pass1.md", "VERDICT: PASS\nCOMMANDS RUN:\n  ao tick guard-status\n")
-	pass2 := write("pass2.md", "VERDICT: PASS\nCOMMANDS RUN:\n  ao tick verdict-gate -\n")
-	fail1 := write("fail1.md", "VERDICT: FAIL\nCOMMANDS RUN:\n  ao tick guard-status\n")
+	pass1 := write("pass1.md", tickTestVerdict("codex", "athena", "claude-code", "claude", "PASS", "ao tick guard-status"))
+	pass2 := write("pass2.md", tickTestVerdict("codex", "windyelm", "gemini-cli", "gemini", "PASS", "ao tick verdict-gate -"))
+	fail1 := write("fail1.md", tickTestVerdict("codex", "windyelm", "gemini-cli", "gemini", "FAIL", "ao tick guard-status"))
 	unverified := write("unverified.md", "VERDICT: PASS\n")
-	contradictory := write("contradictory.md", "VERDICT: FAIL\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick guard-status\n")
+	contradictory := write("contradictory.md", "author: codex\njudge: athena\njudge_program: claude-code\njudge_model_family: claude\nVERDICT: FAIL\nVERDICT: PASS\nCOMMANDS RUN:\n  ao tick guard-status\n")
 
 	rt := tickRuntime{workDir: dir, stdout: &bytes.Buffer{}, stderr: &bytes.Buffer{}}
 	if code := tickExitCode(tickCouncilGate(rt, []string{pass1, pass2})); code != 0 {
@@ -191,6 +232,33 @@ func TestTickCouncilGateMatrix(t *testing.T) {
 	}
 	if code := tickExitCode(tickCouncilGate(rt, []string{pass1, contradictory})); code != tickExitCouncil {
 		t.Fatalf("contradictory council code = %d, want %d", code, tickExitCouncil)
+	}
+}
+
+func TestTickCouncilGateRejectsSameFamilyAndSelfJudgeQuorum(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, body string) string {
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	claude1 := write("claude1.md", tickTestVerdict("codex", "athena", "claude-code", "claude", "PASS", "ao tick guard-status"))
+	claude2 := write("claude2.md", tickTestVerdict("codex", "pr", "claude-code", "claude", "PASS", "ao tick verdict-gate -"))
+	selfJudge := write("self.md", tickTestVerdict("codex", "codex", "codex-cli", "codex", "PASS", "ao tick guard-status"))
+	gemini := write("gemini.md", tickTestVerdict("codex", "windyelm", "gemini-cli", "gemini", "PASS", "ao tick verdict-gate -"))
+	duplicateJudge := write("duplicate.md", tickTestVerdict("codex", "athena", "claude-code", "gemini", "PASS", "ao tick smoke"))
+
+	rt := tickRuntime{workDir: dir, stdout: &bytes.Buffer{}, stderr: &bytes.Buffer{}}
+	if code := tickExitCode(tickCouncilGate(rt, []string{claude1, claude2})); code != tickExitCouncil {
+		t.Fatalf("same-family council code = %d, want %d", code, tickExitCouncil)
+	}
+	if code := tickExitCode(tickCouncilGate(rt, []string{selfJudge, gemini})); code != tickExitCouncil {
+		t.Fatalf("self-judge council code = %d, want %d", code, tickExitCouncil)
+	}
+	if code := tickExitCode(tickCouncilGate(rt, []string{claude1, duplicateJudge})); code != tickExitCouncil {
+		t.Fatalf("duplicate judge council code = %d, want %d", code, tickExitCouncil)
 	}
 }
 
