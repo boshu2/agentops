@@ -1600,7 +1600,7 @@ jobs:
       # changes only when MS_REV changes, so the cache is correct-by-pinning.
       - name: Cache pinned ms binary
         id: ms-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.cargo/bin/ms
           key: ms-bin-b0bb6bd5-nightly-${{ runner.os }}
