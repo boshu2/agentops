@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-08T04:49:08Z",
-  "skill_count": 162,
+  "generated_at": "2026-06-09T23:29:15Z",
+  "skill_count": 166,
   "skills": [
     {
       "name": "acfs",
@@ -238,7 +238,7 @@
     },
     {
       "name": "autodev",
-      "description": "Manage the PROGRAM.md/AUTODEV.md contract that drives the loop — the config layer Evolve and Factory read each tick, not a loop itself. Use when defining the autonomous improvement loop rules, repairing PROGRAM.md, or setting boundaries for evolve.",
+      "description": "Manage the PROGRAM.md/AUTODEV.md contract consumed by evolve/factory ticks. Use for loop rules, boundaries, or PROGRAM.md repair.",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [
@@ -782,6 +782,38 @@
       "codex_override_present": true
     },
     {
+      "name": "codebase-archaeology",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [
+        "codebase-archaeology"
+      ],
+      "practices": [
+        "legacy-code-seams"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": false
+    },
+    {
+      "name": "codebase-audit",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [
+        "codebase-audit"
+      ],
+      "practices": [
+        "code-review"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": false
+    },
+    {
       "name": "codebase-briefing-report",
       "description": "|-",
       "hexagonal_role": "supporting",
@@ -796,6 +828,38 @@
       "context_rel": [],
       "references_count": 0,
       "codex_override_present": true
+    },
+    {
+      "name": "codebase-pattern-extraction",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [
+        "codebase-pattern-extraction"
+      ],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 3,
+      "codex_override_present": false
+    },
+    {
+      "name": "codebase-report",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": true,
+      "consumes": [],
+      "produces": [
+        "codebase-report"
+      ],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 2,
+      "codex_override_present": false
     },
     {
       "name": "codebase-risk-audit",
@@ -1960,7 +2024,7 @@
     },
     {
       "name": "operating-loop-workflow",
-      "description": "Install and run the operating-loop multi-agent Workflow (the seven-move loop) for AgentOps plugin users. Use when installing the seven-move workflow, running the operating-loop script, or orchestrating multi-agent tasks via Workflow tool.",
+      "description": "Install or run the seven-move operating-loop Workflow for AgentOps plugin users and multi-agent orchestration.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [],
@@ -3008,7 +3072,7 @@
     },
     {
       "name": "ship-loop",
-      "description": "Bot-paired fast-lane cycle for coherent-arc internal PRs (one closable bead or small-epic slice): claim → test → impl → pre-push → push → squash auto-merge → close. Use when shipping a fast-lane internal PR, landing a small fix, or closing a single harvested bead.",
+      "description": "Run the fast-lane internal ship cycle for one closable bead or small slice: claim, test, implement, push, merge, close.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "consumes": [
@@ -3042,7 +3106,7 @@
     },
     {
       "name": "skill-auditor",
-      "description": "Audit an existing SKILL.md against the unified AgentOps template (15 checks). Use when running a skill quality review, checking if a skill is ready, or auditing skill template compliance.",
+      "description": "Audit SKILL.md files against the AgentOps template and readiness checks. Use for quality reviews or template compliance.",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],
@@ -3260,7 +3324,7 @@
     },
     {
       "name": "system-tuning",
-      "description": "Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene. Use when the system is slow, load average is high, or cleaning up stuck agents and background processes.",
+      "description": "Restore system responsiveness with ordered process cleanup and agent-swarm hygiene when load is high or agents are stuck.",
       "hexagonal_role": "supporting",
       "user_invocable": true,
       "consumes": [],
