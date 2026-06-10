@@ -124,3 +124,13 @@ skills-codex/review/references/DEEP_SCAN.md:references/TOOLS.md
 GOALS.md:.agents/research/2026-05-15-cdlc-dojo-doctrine.md
 docs/architecture/operating-loop.md:../../.agents/research/2026-05-15-cdlc-dojo-doctrine.md
 docs/cdlc.md:../.agents/research/2026-05-15-cdlc-dojo-doctrine.md
+
+# docs/CHANGELOG.md is kept byte-identical to the repo-root CHANGELOG.md
+# (pre-push gate #36: diff -q CHANGELOG.md docs/CHANGELOG.md). Its links are
+# root-relative so they resolve correctly in the canonical root copy; in the
+# docs/ mirror they resolve one level too deep. The sync invariant forbids
+# rewriting them in the mirror, so the mirror's root-relative targets are
+# allowlisted here. Targets verified to exist at repo root.
+docs/CHANGELOG.md:docs/3.1.md
+docs/CHANGELOG.md:README.md
+docs/CHANGELOG.md:docs/install-day2-ops.md
