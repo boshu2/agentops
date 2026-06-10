@@ -11,9 +11,11 @@ practices:
 ---
 <!-- TOC: Boundary | Bootstrap | Core Ops | File Reservations | Beads | Troubleshooting | Identity | Human Overseer | Pre-Commit Guard | References -->
 
-# Using MCP Agent Mail
+# Using Agent Mail
 
 > **Core Insight:** Agent Mail is the side channel for leases, notifications, acknowledgements, and handoffs. BR/beads is the durable coordination bus and source of truth for work state, evidence, and decisions.
+
+> **⚠️ TWO SURFACES — read this first.** Every operation below has BOTH an MCP-tool form (`send_message`, `fetch_inbox`, …) AND a CLI form (`am mail send`, `am mail inbox`, …). The MCP tools are only present when the agent-mail MCP server is wired into your session's tool surface — **a plain CLI/shell agent (or a session where the MCP server didn't load) will NOT have them.** In that case use the `am` CLI, which works from any shell. **Discoverability trap (br cp-jgcl):** the send/reply verbs live under the `am mail` group, which `am --help` does NOT list, and the read commands have flat aliases (`am inbox`, `am status`) but **`am send` does not exist** — it is **`am mail send`**. When in doubt: `am mail --help`, `am macros --help`, `am file_reservations --help`.
 
 ## Coordination Boundary
 
@@ -63,15 +65,20 @@ This single call: ensures project exists → registers your identity → fetches
 
 ## Core Operations
 
-| Task | Tool |
-|------|------|
-| Bootstrap session | `macro_start_session(human_key, program, model, task_description)` |
-| Send message | `send_message(project_key, sender_name, to, subject, body_md)` |
-| Reply in thread | `reply_message(project_key, message_id, sender_name, body_md)` |
-| Check inbox | `fetch_inbox(project_key, agent_name, limit=20)` |
-| Reserve files | `file_reservation_paths(project_key, agent_name, paths, ttl_seconds)` |
-| Release files | `release_file_reservations(project_key, agent_name)` |
-| Search messages | `search_messages(project_key, "query")` |
+Both forms do the same thing. Use the MCP tool if it's in your tool surface; otherwise use the `am` CLI (always available from a shell).
+
+| Task | MCP tool | `am` CLI (works from any shell) |
+|------|----------|---------------------------------|
+| Bootstrap session | `macro_start_session(human_key, program, model, task_description)` | `am macros start-session --project <abs> --program <p> --model <m> --task "<desc>"` |
+| Send message | `send_message(project_key, sender_name, to, subject, body_md)` | `am mail send --project <abs> --from <me> --to <agent[,agent]> --subject "<s>" --body "<md>" [--thread-id <bead>] [--importance high]` |
+| Reply in thread | `reply_message(project_key, message_id, sender_name, body_md)` | `am mail reply --project <abs> --from <me> --message-id <id> --body "<md>"` |
+| Check inbox | `fetch_inbox(project_key, agent_name, limit=20)` | `am mail inbox --project <abs> --agent <me>` (or `am inbox …`) |
+| Reserve files | `file_reservation_paths(project_key, agent_name, paths, ttl_seconds)` | `am file_reservations reserve <abs> <me> "<path>" ["<path>"…] --ttl <s> --reason <bead>` (positional project+agent+paths) |
+| Release files | `release_file_reservations(project_key, agent_name)` | `am file_reservations release <abs> <me>` |
+| Search messages | `search_messages(project_key, "query")` | `am mail search --project <abs> "<query>"` |
+| List agents (who has an inbox) | `resource://agents/{project_key}` | `am robot agents --project <abs>` |
+
+> Note: `am macros start-session` auto-generates a fresh adjective+noun identity **per project** unless you pass `--name`; you will have a different name in each project. Confirm yours via `am agent start`.
 
 ### The Four Macros
 
