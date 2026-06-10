@@ -1444,7 +1444,7 @@
     {
       "name": "cc-loop-driver",
       "source_skill": "skills/cc-loop-driver",
-      "source_hash": "4caf227492eafdadc529a57dc390219053c93c2596132abe4cb6c4f80bff3be9",
+      "source_hash": "afc51f469e6df71a4e5ae355016f214de9e60d67fb8234038da53f7d389d546e",
       "generated_hash": "1fe027c5713c8aa6bfdea1735d8b33fdf1e6f38afded045b1cce6a7bf4231f4e"
     },
     {
@@ -1516,7 +1516,7 @@
     {
       "name": "codex-exec",
       "source_skill": "skills/codex-exec",
-      "source_hash": "54748258495d4a6f0bd272eed6fa9ae4bf2b68518f581400e0cff8f890f3705d",
+      "source_hash": "b6d871cffe2ac6713e1d0c88d9cb0f40ac21acb2e630b08c22730b60a7ed83f9",
       "generated_hash": "cb2586d6b8499ceb88d5b2ecc325a2ab6ceef367b314d956f704fa855af83aac"
     },
     {
@@ -2560,7 +2560,7 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "08e996eef817b7b913dcabfc7c5f9441aafd2bb03ab5b6c52b3e7c7cc034ae7b",
+      "source_hash": "3e059e59205d8c5fa0c74b46f1f6806f38a70ffcb67fade81fb086a6185d5c50",
       "generated_hash": "7dbdcbb47198ac587b4cc5998b15c572a5e901452d62e7099905ddae968a3862"
     },
     {
@@ -2578,7 +2578,7 @@
     {
       "name": "vibing-with-ntm",
       "source_skill": "skills/vibing-with-ntm",
-      "source_hash": "ccf623715a8c34bdf18e240cacd7e3580b3a13e11833bf6f653b412617cf717f",
+      "source_hash": "5bda8ecbb98403d513e8b2aba7f3588fd738c4470c234742b45838f59992ed72",
       "generated_hash": "cab51c9f71ee23eb6db3c6e70dd11a9c55087daf4b43885155bc4290781938bf"
     },
     {
