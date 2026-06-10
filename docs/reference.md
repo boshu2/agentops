@@ -188,6 +188,9 @@ For the science behind the flywheel, see [`knowledge-flywheel.md`](knowledge-fly
 # Add/update marketplace source
 curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash
 curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash -s -- --update
+
+# Pin to a tagged release instead of tracking the marketplace default branch
+curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-claude.sh | bash -s -- --ref v3.1.0
 ```
 
 ### Per-Runtime Install (non-Claude plugin path)
