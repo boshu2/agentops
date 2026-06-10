@@ -152,11 +152,30 @@ caam exec codex pro-2 -- exec -C "$REPO" -s workspace-write "Start ag-77."
 cd "$REPO" && codex exec resume --last "Fix the failing test from the prior turn."
 ```
 
-## Validator dispatch rules (learned 2026-06-10, cp-4jac/cp-801l)
+## Validator dispatch rules (learned 2026-06-10, cp-4jac/cp-801l; extended cp-hhd7 cards 6–10)
 
 - **Network-touching validators need `-s danger-full-access`.** A codex VALIDATOR that must read a Dolt-mode bd ledger, run `git fetch`, or reach any network MUST be dispatched with `-s danger-full-access`. `-s workspace-write` blocks network (`connect: operation not permitted`) and blocks FETCH_HEAD writes. A fail-closed FAIL caused purely by sandbox denial is an **infrastructure artifact, not a verdict**: fix the dispatch and re-run the judge. NEVER hand-verify the missing item yourself and upgrade the verdict — that breaks judge independence (author ≠ judge).
 - **Set TMPDIR inside the workspace for any run that commits.** The sandbox blocks git temp-object writes to `/var/folders`; export `TMPDIR` to a path inside the workspace (e.g. `TMPDIR="$REPO/.tmp"`) before any codex run that needs `git commit` to succeed.
 - **Verdict file contract.** Bare `VERDICT: PASS|FAIL` as the first line, then a blank line, then a bare `COMMANDS RUN:` line, then the commands + output verbatim. No `##` headings or parentheticals on those lines — the gate parses them anchored. Fail closed on anything unverifiable.
+- **Judge prompt pattern — publish the output contract from the prompt (card 10, cp-b2by).** A stated verdict spec drifts; the output shape must be derived from the prompt the judge reads. Minimal judge prompt:
+
+  ```
+  You are an INDEPENDENT VALIDATOR. Author != judge.
+  BEAD: <id> — <title>
+  ACCEPTANCE: <verbatim acceptance text>
+  Re-run the cited commands on the actual artifacts. Do not read the evidence and agree.
+  Attest identity: include "judge_source: codex-<model>" inside COMMANDS RUN.
+  Return EXACTLY (no ## headings on these lines):
+  VERDICT: PASS
+  (blank line)
+  COMMANDS RUN:
+  judge_source: codex-<model>
+  $ <cmd>
+  <output snippet>
+  REASONS:
+  - bullet citing a COMMANDS RUN line
+  ```
+- **Output-contract validation before acting on a verdict.** Programmatically confirm: `VERDICT:` is on its own line, `COMMANDS RUN:` follows, `judge_source:` is present. A verdict missing any element is **unverified — discard and re-dispatch**. A judge that ran nothing is a reader, not a verifier (the counterfeit-judge shape, card 8). Use `--output-schema FILE` to enforce shape at the harness level when verdict feeds automation.
 
 ## Troubleshooting
 
