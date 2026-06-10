@@ -9,17 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.1.0] - 2026-06-08
 
+AgentOps 3.1 is the **packaging-and-gate-discipline** minor on top of the hookless 3.0 core. The headline is not a new feature — it is that the release pipeline itself became the product. Three things hardened together: the **release gate moved native** (the inline bash checks were ported to a single Go gate that the pre-push hook runs as the release authority, with workflow-parity enforcement so a check can't pass locally while drifting in CI); **close-admission tightened** (the verdict gate now counts distinct validator *families* with author exclusion, so a self-graded "looks good" no longer admits a close); and the **skill corpus was canonicalized** (ghost skills materialized into the tree, registries/counts regenerated from one source, and bundled image copies forced back to byte identity with that source). On top of that discipline, the three IMAGE-CORE recipes (Claude / Codex / Gemini-AGY) ship as real, smoke-proven install paths. See [docs/3.1.md](docs/3.1.md) for the release narrative.
+
 ### Added
 
-- **Installable image artifacts for the 3.1 runtime set.** Claude Code now has a dedicated marketplace installer wrapper, Codex keeps the native plugin curl installer, and Gemini/Antigravity now has a curl installer that validates and installs `images/gemini` through `agy plugin`.
-- **Day-2 install operations are productized.** Added operator guidance for install, update, backup, permission repair, recovery, and escalation across Claude, Codex, and Gemini/AGY.
-- **Installer smoke proof covers all three image paths.** The install smoke suite now checks the Claude, Codex, and Gemini/AGY one-liners without invoking vendor runtimes.
+- **Installable image artifacts for the 3.1 runtime set.** Claude Code now has a dedicated marketplace installer wrapper, Codex keeps the native plugin curl installer, and Gemini/Antigravity now has a curl installer that validates and installs `images/gemini` through `agy plugin`. The three documented one-liners are in [README §Install](README.md#install); the recipes are materialized as `images/{claude,codex,gemini}/` (each with a manifest, `README.md`, and `verify.sh`).
+- **Day-2 install operations are productized.** Added [docs/install-day2-ops.md](docs/install-day2-ops.md) — operator guidance for install, update, backup, permission repair, recovery, and escalation across Claude, Codex, and Gemini/AGY (the AT&O "make Day-2 part of the product, not an afterthought" doctrine).
+- **Installer smoke proof covers all three image paths.** `tests/install/test-install-smoke.sh` checks the Claude, Codex, and Gemini/AGY one-liners without invoking vendor runtimes (measured: 41 passed, 0 failed).
 - **Claude installer release-pinning.** `scripts/install-claude.sh` now accepts `--ref <ref>` (or `AGENTOPS_INSTALL_REF`) to pin the marketplace source to a tagged release (e.g. `v3.1.0`), reaching parity with `install-agy.sh`.
 - **Claude image version guard.** `images/claude/verify.sh` now asserts `.claude-plugin/plugin.json` declares the expected release version (default `3.1.0`, override via `AGENTOPS_EXPECTED_VERSION`), so a stale-version drift in the marketplace manifest fails the gate.
+- **`ao skills resolve` — MECE corpus audit** (`c9c3e2706`). Reports skill overlap and coverage gaps so the corpus can be kept mutually-exclusive / collectively-exhaustive.
+- **`ao refinery` backstop daemon** (`cba058c6a`, ag-qidx) — a refinery surface for the gate/registry regen path, with a `cli-skills-map` regenerated for it.
+- **Go gate workflow coverage + parity reporting** (`390695b65`, `281d46d34`, `283e60e78`) — the gate now reports which CI workflows back each check and *requires* workflow parity, so a locally-green check that has drifted out of CI fails the gate.
+
+### Changed
+
+- **Pre-push gate flipped to the native Go gate** (`c97efcc36` PB2, `efbcf7e90`, `ca9366ccb`) — the inline bash checks were ported to native Go checks (`643e7ade1`, `b720a72cd`, `bcaae4b02`, `5b93b4814`, `6814e377c` — PB1 batches) and the pre-push hook now runs `ao gate check` as the release authority. Local validation is the routine shipping path; GitHub Actions is an optional/manual backstop.
+- **Push-to-main cockpit doctrine** (`d90ff1d09`, `0f501beae`, `a023dc4df`) — workflow rewritten for push-to-main with a concurrency-scoped push lock (`push-serial.sh`); dead merge-machinery scripts deleted.
+- **Local validation is the release authority** (`3d4fc1299`, `ac5664c56`, ag-3l86) — local-CI made viable as a DSR fallback when GitHub Actions quota is exhausted.
+- **Skill corpus canonicalized + triggers added.** 4 ghost `codebase-*` skills materialized into the tree and registered across catalog surfaces (`dd34f8688`, `584701af8`, `61421cdb9`, `0580f7303`, `cp-801l`); explicit "Use-when" triggers added to weak-trigger skills (`5cdd8e792`, `5895422cd`, `e0932310d`); `using-ntm` renamed to `using-atm` (`5c4e7f07a`); 2026-06-10 operational lessons encoded into 4 canonical skills (`d286a5fc2`).
 
 ### Fixed
 
-- **Gemini image bundle drift.** Refreshed the bundled Gemini/AGY `SKILL.md` copies so `images/gemini/verify.sh` again proves byte identity against the canonical source corpus.
+- **Verdict gate now enforces distinct families + author exclusion** (`cp-verdict-gate-family-author-enforcement-icb6`, `d6576b359`, `94181cc89`, `9c1398671`) — `council_judge` counted files, not distinct validator families, and did not exclude the author; a self-graded verdict could admit a close (LAW-3 gap). The gate now requires cross-family verdicts and excludes the author.
+- **Removed Claude `--print` probes from headless paths** (`267f378a0`, `dee7a3502`, ag-eli0) — the headless checks and the team-runner path no longer shell out to `claude --print` (LAW 0 compliance).
+- **Distribution install contract aligned** (`29b919f92`) — the `agentops-core.distribution-install-update` canary was failing on main; the contract was realigned so `claude plugin update` and the install/update path stay green.
+- **Gemini image bundle drift** (`3e0f8f4e8`, `0e5d07211`) — refreshed the bundled Gemini/AGY `SKILL.md` copies so `images/gemini/verify.sh` proves byte identity against the canonical source corpus. The residual `validate` and `vibing-with-ntm` drift left by the 2026-06-10 4-skill lesson encoding was resynced so both `images/gemini/verify.sh` and `scripts/validate-agy-plugin.sh` pass byte-identity.
+- **Skill-auditor pass-1 gated on heal-strict** (`dbc2a6466`); post-merge skill lint drift repaired (`f784d2842`).
 
 ## [3.0.1] - 2026-05-25
 
