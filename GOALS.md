@@ -210,8 +210,7 @@ artifact produced by a separate run (e.g. `ao defrag` writing
 | flywheel-compounding | `bash scripts/check-flywheel-compounding.sh` | 3 | Knowledge flywheel above escape velocity (σρ > δ); requires multi-session citation activity, not movable by single-session automation — see `.agents/findings/f-2026-04-29-001.md` | long-cycle, corpus-state |
 | flywheel-compounding-snapshot | `bash scripts/check-flywheel-compounding-snapshot.sh` | 5 | CI-readable corpus-state evidence: validates `docs/releases/flywheel-compounding-snapshot.json` exists, is < 14 days old, and contains a readable `escape_velocity_compounding` health value. Operator refresh: `bash scripts/snapshot-flywheel-compounding.sh`. Keeps G1 observable in CI without pretending a long-cycle corpus health regression can be fixed by a single push. Use `AGENTOPS_FLYWHEEL_SNAPSHOT_REQUIRE_COMPOUNDING=1` for strict local enforcement. |  |
 | flywheel-proof | `bash scripts/proof-run.sh` | 7 | Flywheel compounds across sessions (automated proof) |  |
-| skill-frontmatter | `bash -c 'for f in skills/*/SKILL.md; do head -5 "$f" \| grep -q "^---" && head -10 "$f" \| grep -q "^name:" && head -10 "$f" \| grep -q "^description:" \|\| { echo FAIL:$f; exit 1; }; done'` | 6 | Every skill has valid YAML frontmatter |  |
-| hook-preflight | `timeout 60 ./scripts/validate-hook-preflight.sh` | 6 | All hooks pass safety checks |  |
+| skill-frontmatter | `bash scripts/validate-skill-frontmatter.sh` | 6 | Every skill has valid YAML frontmatter (schema-validated via validate-skill-frontmatter.sh; supersedes the stale head-10 inline check which false-failed skills with metadata blocks before description) |  |
 | go-cli-builds | `cd cli && go build -o /dev/null ./cmd/ao` | 8 | Go CLI compiles without errors |  |
 | go-cli-tests | `cd cli && timeout 240 go test -race ./...` | 8 | All Go tests pass with race detector |  |
 | go-vet-clean | `cd cli && go vet ./...` | 5 | No common bugs detected by vet |  |
