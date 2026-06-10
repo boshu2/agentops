@@ -106,22 +106,39 @@ command -v curl >/dev/null 2>&1 || { echo "Error: curl required."; exit 1; }
 # (c) point single-runtime users at the install link for the other.
 HAS_CLAUDE=no
 HAS_CODEX=no
+HAS_AGY=no
 command -v claude >/dev/null 2>&1 && HAS_CLAUDE=yes
 command -v codex >/dev/null 2>&1 && HAS_CODEX=yes
-echo "Detected Claude Code: $HAS_CLAUDE. Detected Codex CLI: $HAS_CODEX."
-if [ "$HAS_CLAUDE" = "yes" ] && [ "$HAS_CODEX" = "yes" ]; then
+command -v agy >/dev/null 2>&1 && HAS_AGY=yes
+echo "Detected Claude Code: $HAS_CLAUDE. Detected Codex CLI: $HAS_CODEX. Detected Gemini/AGY: $HAS_AGY."
+
+# Count distinct runtimes so we can name single- vs mixed-model mode across all
+# three supported vendors (Claude, Codex, Gemini/AGY) — not just claude/codex.
+RUNTIME_COUNT=0
+[ "$HAS_CLAUDE" = "yes" ] && RUNTIME_COUNT=$((RUNTIME_COUNT + 1))
+[ "$HAS_CODEX" = "yes" ] && RUNTIME_COUNT=$((RUNTIME_COUNT + 1))
+[ "$HAS_AGY" = "yes" ] && RUNTIME_COUNT=$((RUNTIME_COUNT + 1))
+
+if [ "$RUNTIME_COUNT" -ge 2 ]; then
     echo "AgentOps will use mixed-model mode (cross-vendor council, parallel /rpi)."
-elif [ "$HAS_CLAUDE" = "yes" ]; then
-    echo "AgentOps will use single-runtime mode (Claude Code only)."
-    echo "To unlock mixed-model judging, install Codex CLI: https://github.com/openai/codex"
-elif [ "$HAS_CODEX" = "yes" ]; then
-    echo "AgentOps will use single-runtime mode (Codex CLI only)."
-    echo "To unlock mixed-model judging, install Claude Code: https://docs.anthropic.com/en/docs/claude-code"
+elif [ "$RUNTIME_COUNT" -eq 1 ]; then
+    if [ "$HAS_CLAUDE" = "yes" ]; then
+        echo "AgentOps will use single-runtime mode (Claude Code only)."
+    elif [ "$HAS_CODEX" = "yes" ]; then
+        echo "AgentOps will use single-runtime mode (Codex CLI only)."
+    else
+        echo "AgentOps will use single-runtime mode (Gemini/AGY only)."
+    fi
+    echo "To unlock mixed-model judging, install another runtime:"
+    [ "$HAS_CLAUDE" = "no" ] && echo "  Claude Code: https://docs.anthropic.com/en/docs/claude-code"
+    [ "$HAS_CODEX" = "no" ]  && echo "  Codex CLI:   https://github.com/openai/codex"
+    [ "$HAS_AGY" = "no" ]    && echo "  Gemini/AGY:  https://antigravity.google"
 else
-    echo "Warning: No supported coding agent found (claude, codex)."
-    echo "AgentOps requires Claude Code or Codex CLI. Install one first:"
+    echo "Warning: No supported coding agent found (claude, codex, agy)."
+    echo "AgentOps requires Claude Code, Codex CLI, or Gemini/AGY. Install one first:"
     echo "  Claude Code: https://docs.anthropic.com/en/docs/claude-code"
     echo "  Codex CLI:   https://github.com/openai/codex"
+    echo "  Gemini/AGY:  https://antigravity.google"
     echo "Continuing anyway — you can install an agent later."
 fi
 
@@ -142,6 +159,19 @@ else
     echo "Codex CLI not found. Skipping Codex plugin install."
     echo "For Claude Code, install skills via the plugin system:"
     echo "  npx skills@latest add boshu2/agentops --all -g"
+fi
+
+# Gemini/AGY plugin (reuses the already-extracted bundle in $TMP). jq is required
+# by install-agy.sh; skip with a pointer if it is missing rather than aborting the
+# whole install for Claude/Codex users.
+if command -v agy >/dev/null 2>&1; then
+    if command -v jq >/dev/null 2>&1; then
+        echo "Installing Gemini/AGY plugin..."
+        AGENTOPS_BUNDLE_ROOT="$TMP" bash "$TMP/scripts/install-agy.sh"
+    else
+        echo "Gemini/AGY detected but 'jq' is missing. Install jq, then run:"
+        echo "  curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-agy.sh | bash"
+    fi
 fi
 
 # Step 2: Install CLI (optional — enhances with knowledge flywheel)

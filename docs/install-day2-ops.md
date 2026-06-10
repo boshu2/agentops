@@ -74,6 +74,17 @@ If a write fails:
 
 ## Recover
 
+Start every recovery with the CLI self-check when `ao` is installed. It reports
+which pieces are healthy before you reinstall anything:
+
+```bash
+ao doctor          # health check: prints what is wired and what is broken
+ao version         # confirm the installed CLI version
+```
+
+If `ao doctor` reports a broken or missing plugin install, re-run the matching
+runtime installer below — the installers are idempotent and safe to re-run.
+
 ### Claude Code
 
 ```bash
