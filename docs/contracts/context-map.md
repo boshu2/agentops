@@ -106,7 +106,11 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `changelog-quality-pass` — Use when writing or auditing changelogs and release notes for user-facing, semver-aware clarity. Triggers:
 - `cli-agent-ux-audit` — Use when improving CLI ergonomics for agents: flags, help, JSON output, exit codes, and robot surfaces. Triggers:
 - `cli-doctoring-workflow` — Use when designing or auditing CLI doctor commands, health checks, repair hints, and diagnostic UX. Triggers:
+- `codebase-archaeology` — Systematically explore unfamiliar codebases to build working mental models. Use when onboarding to new project, "what does this do", or understanding legacy code.
+- `codebase-audit` — Domain-parameterized codebase auditing (security, UX, performance, API, copy, CLI). Use when auditing code, assessing quality, finding issues, or pre-launch review.
 - `codebase-briefing-report` — Use when producing a shareable architecture, module, metrics, and health report for a codebase. Triggers:
+- `codebase-pattern-extraction` — Mine patterns that recur across multiple projects and generalize into reusable artifacts. Use when "I've seen this before", DRY across repos, or building shared libraries.
+- `codebase-report` — Produce reusable technical architecture documents from codebase exploration. Use when onboarding, "write up what this does", architecture docs, or handoff.
 - `codebase-risk-audit` — Use when auditing codebase risks with evidence and prioritized remediation. Triggers:
 - `codex-sandbox-evidence` — Use when running codex exec in a least-privilege sandbox with machine-checkable proof. Triggers:
 - `compile` — Compile .agents knowledge wiki.
@@ -364,7 +368,11 @@ graph LR
 | `cli-doctoring-workflow` | produces | doctor-command-design |
 | `cli-doctoring-workflow` | produces | health-check-contract |
 | `cli-doctoring-workflow` | produces | repair-hint-plan |
+| `codebase-archaeology` | produces | codebase-archaeology |
+| `codebase-audit` | produces | codebase-audit |
 | `codebase-briefing-report` | produces | codebase-briefing-report |
+| `codebase-pattern-extraction` | produces | codebase-pattern-extraction |
+| `codebase-report` | produces | codebase-report |
 | `codebase-risk-audit` | consumes | repository |
 | `codebase-risk-audit` | consumes | runtime-configuration |
 | `codebase-risk-audit` | consumes | test-results |
