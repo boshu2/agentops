@@ -141,6 +141,21 @@ the last few CI runs are green. Confirm with `atm activity` (all panes idle) and
 `bd ready` (empty) before tearing down with `atm kill <session>`. Don't shut down
 on a transient quiet patch — a rate-limited pane also looks idle.
 
+## Single-writer + merged-before-close (cards 17–18, cp-4gj6; POLICY → gate cp-hxp6)
+
+For assurance-close contexts, the gate cp-hxp6 enforces: a bead is durable only
+when its branch is **merged to trunk** and the commit is visible on the canonical
+store. A pane that closes a bead before merging puts protection OFF — the split-brain
+incident of 2026-06-09 was caused by an unmerged trio. The fix is not behavioral:
+the gate enforces it structurally.
+
+**Read canonical, not shared main.** Every reader of bead/verdict state must target
+the canonical store (the bead's worktree branch or the trunk after merge). `main`
+in a shared checkout is stale relative to in-flight worktree branches. A reader that
+declares "stuck" or "closed" based on a stale `main` read is reporting on phantom
+state. Verify bead state on the bead's branch or via `br show` against the live
+server; do not declare convergence from a stale checkout.
+
 ## Anti-patterns
 
 - ❌ **Shelling out to retired RPI/evolve CLI subprocesses.**
@@ -151,6 +166,10 @@ on a transient quiet patch — a rate-limited pane also looks idle.
 - ❌ **Treating ATM as AgentOps-owned.** It is an adopted external substrate; a
   managed-agents driver (`ao agent`) or a plain in-session run are equally valid
   legs. Choose via [`/automation-shape-routing`](../automation-shape-routing/SKILL.md).
+- ❌ **Closing a bead before the branch is merged.** Closed-but-unmerged is
+  protection-off. Require merge confirmation before `bd close`.
+- ❌ **Reading state from a stale shared `main`.** Read canonical from the bead's
+  worktree branch or after merge; stale reads are the other half of the split-brain.
 
 ## Related skills
 
