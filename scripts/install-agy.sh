@@ -181,7 +181,16 @@ fi
 
 run agy plugin install "$PLUGIN_DIR"
 if [ "$NO_ENABLE" -eq 0 ]; then
-  run agy plugin enable "$PLUGIN_NAME"
+  # "agy plugin enable" exits 1 if the plugin is already enabled (idempotent install
+  # scenario); treat that as success so a clean fresh install exits 0.
+  enable_out="$(agy plugin enable "$PLUGIN_NAME" 2>&1)" || {
+    if printf '%s' "$enable_out" | grep -q "already enabled"; then
+      info "plugin $PLUGIN_NAME already enabled — skipping enable"
+    else
+      printf '%s\n' "$enable_out" >&2
+      exit 1
+    fi
+  }
 fi
 
 ok "AgentOps Gemini/Antigravity plugin is installed"
