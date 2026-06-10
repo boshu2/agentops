@@ -152,6 +152,19 @@ Repeat Phase 1–4 until `bd ready` is empty. Emit `NO_READY` (work blocked/in-p
 
 **Tie-break on a contested FAIL:** validator A returns FAIL but cites no commands -> rejected as unverified -> dispatch fresh validator B -> B returns verified PASS -> orchestrator closes (the false-FAIL was caught by the council gate, not acted on).
 
+## The meta-orchestrator tick pattern (proven 2026-06-09/10)
+
+When one session supervises a multi-lane fleet (rather than driving beads itself), run a **15-minute in-session cron tick**. Each tick performs, in order:
+
+1. **Loop-health log line** — append one line to an append-only evidence file (timestamp, lane states, queue depth, actions taken). The log IS the proof the loop ran.
+2. **Lane liveness — the TWO-TICK stall rule.** A lane is stalled only when it shows the *same task* AND *static token counts* across 2 consecutive ticks → nudge it. An armed monitor or a remote-build wait is NOT stalled — do not nudge waits.
+3. **Resource watch** — heavy compiles running on the orchestration node get redirected to the build host; the orchestration node stays responsive.
+4. **Gate watch** — spot-check every close: ≥2 cross-family typed verdicts, author family excluded, merged-before-close. A close that skipped the gate is reopened, not waved through.
+5. **P0 dispatch** — an unclaimed P0 older than 2h + an idle lane → drive the lane onto it; no idle lane → spawn one background worker.
+6. **Escalate to the human ONLY for:** gate violations, genuine decision forks, or a broken loop. Everything else the tick handles itself.
+
+Reference implementation: `~/dev/control-plane/evidence/meta-orchestrator-log.md`.
+
 ## Troubleshooting
 
 | Problem | Cause | Solution |
