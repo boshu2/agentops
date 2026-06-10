@@ -1758,6 +1758,12 @@ jobs:
           chmod +x tests/docs/validate-doc-release.sh
           ./tests/docs/validate-doc-release.sh
 
+      - name: Skill-count SSOT red-green acceptance (cp-9wvq)
+        if: needs.changes.outputs.docs == 'true' || needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x tests/docs/test-skill-count-ssot.sh
+          ./tests/docs/test-skill-count-ssot.sh
+
       - name: Check tests/_quarantine/ is empty (GOALS.md directive D3)
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.hooks == 'true' || needs.changes.outputs.ci == 'true'
         run: |

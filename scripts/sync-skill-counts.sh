@@ -22,6 +22,23 @@ elif [[ $# -gt 0 ]]; then
   exit 2
 fi
 
+# --- SSOT: ensure SKILL-TIERS.md has a row for every skill directory ---
+# The set of skill directories is the single source of truth. Before deriving
+# any count we auto-render a placeholder row for any skill dir that lacks one
+# (cp-9wvq) so a forgotten manual edit can no longer fail-close the count check
+# below and block the doc-release gate. Curated rows are never touched.
+if [[ -x "$REPO_ROOT/scripts/ensure-skill-tiers-rows.sh" ]]; then
+  if $CHECK_ONLY; then
+    if ! bash "$REPO_ROOT/scripts/ensure-skill-tiers-rows.sh" --check; then
+      echo "DRIFT: SKILL-TIERS.md is missing a row for a skill directory."
+      echo "       Run: scripts/sync-skill-counts.sh"
+      changes=$((changes + 1))
+    fi
+  else
+    bash "$REPO_ROOT/scripts/ensure-skill-tiers-rows.sh"
+  fi
+fi
+
 # --- Derive truth from disk ---
 
 # `-not -name '_*'` excludes non-skill scaffolding dirs (e.g. skills/_fixtures/,
@@ -209,13 +226,15 @@ patch_file "$REPO_ROOT/docs/GLOSSARY.md" \
   "s|ships [0-9]+ shared skills|ships ${TOTAL} shared skills|" \
   "docs/GLOSSARY.md shared-skills count"
 
-# --- ASCII-diagram skill-count guard (ag-c4wn) ---
+# --- ASCII-diagram skill-count guard (ag-c4wn, extended cp-9wvq) ---
 # docs/agentops-system-map.md and docs/agentops-brief.md hardcode the skill
 # count inside box-drawing borders whose column widths are alignment-sensitive.
-# patch_file deliberately does NOT rewrite them — a digit-width change (e.g.
-# 99 -> 100) would silently break the box. This is the "tolerant check" half:
-# VERIFY each "<N> [shared ]skills" token equals TOTAL and fail on drift so a
-# human re-pads the diagram by hand. Closes the drift class auto-patch leaves open.
+# A digit-width CHANGE (e.g. 99 -> 100) would shift the box and must be re-padded
+# by a human. But a SAME-WIDTH change (e.g. 166 -> 167) preserves alignment, so
+# we can safely auto-patch it — which is exactly the drift that stuck the 3.1
+# release. Rule: same width -> auto-patch (or report DRIFT in --check); width
+# change -> fail and ask for a hand re-pad. This closes the count-drift class for
+# the common case while keeping the alignment guarantee for the rare one.
 DIAGRAM_FILES=(
   "docs/agentops-system-map.md"
   "docs/agentops-brief.md"
@@ -225,9 +244,23 @@ for rel in "${DIAGRAM_FILES[@]}"; do
   [[ -f "$f" ]] || continue
   while IFS= read -r found; do
     [[ -n "$found" ]] || continue
-    if [[ "$found" != "$TOTAL" ]]; then
-      echo "ERROR: $rel ASCII diagram hardcodes skill count $found, expected $TOTAL (re-pad the box-drawing diagram by hand)"
+    [[ "$found" == "$TOTAL" ]] && continue
+    if [[ "${#found}" -ne "${#TOTAL}" ]]; then
+      echo "ERROR: $rel ASCII diagram hardcodes skill count $found, expected $TOTAL — digit width changed (${#found} -> ${#TOTAL}); re-pad the box-drawing diagram by hand"
       errors=$((errors + 1))
+      continue
+    fi
+    # Same-width drift: safe to auto-patch (alignment preserved).
+    if $CHECK_ONLY; then
+      echo "DRIFT: $rel ASCII diagram skill count $found -> $TOTAL (same width, auto-patchable)"
+      changes=$((changes + 1))
+    else
+      tmp_diag="$(mktemp)"
+      # Case-insensitive, BSD/GNU-portable (no \b): match "<found> <sp> [shared ]Skills".
+      sed -E "s/${found}( +(shared |Shared )?[Ss]kills)/${TOTAL}\\1/g" "$f" > "$tmp_diag"
+      mv "$tmp_diag" "$f"
+      echo "UPDATED: $rel ASCII diagram skill count $found -> $TOTAL (same width)"
+      changes=$((changes + 1))
     fi
   done < <(grep -oiE '[0-9]+ +(shared )?skills\b' "$f" | grep -oE '^[0-9]+')
 done
