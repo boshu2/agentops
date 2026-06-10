@@ -203,6 +203,26 @@ See [references/multi-agent-architecture.md](references/multi-agent-architecture
 
 ---
 
+## Cross-family floor — policy note (card 21, cp-hhd7)
+
+`council` is a **general mechanism**; a same-model council is valid for non-assurance
+decisions (design brainstorms, quick checks, research diverge). **The cross-family floor
+is a bounded-context policy, not a built-in council constraint.**
+
+For **assurance closes** in the control-plane context, the floor is enforced by the
+verdict-gate `icb6` (≥2 verdicts, ≥2 distinct model families, author family excluded,
+fail-closed). To invoke council in that mode, use `--mode=verdict --mixed` — this
+produces cross-vendor verdict pairs, which the gate can verify.
+
+**A7 ruling (CURRENT POLICY, 2026-06-09):** Gemini is **benched** for strict
+assurance validation. Use Codex + Fable (or Codex + non-author-Claude) for the
+cross-family floor. Do not present Gemini paths as live for tier A1/A2 until Bo
+graduates it. Graduation condition: Bo explicitly lifts the bench in memory
+`validation-family-policy-risk-tiered`.
+
+The mechanism (council) is general. The policy (family floor + gemini bench) lives in
+the gate and the bounded context that needs it, not here.
+
 ## See Also
 
 - `skills/vibe/SKILL.md` — Complexity + council for code validation (uses `--preset=code-review` when spec found)

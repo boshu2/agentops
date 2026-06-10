@@ -28,6 +28,39 @@ Use Agent Mail to prevent collisions and notify active agents. Do not use it as 
 
 One-writer-per-hot-dir rule: reserve the path before editing it. If the reservation conflicts, do not write into that path; coordinate with the holder, narrow scope, or wait for the lease to clear.
 
+## Coordination disciplines (2026-06-09, cards 1–5, cp-hhd7)
+
+### Durable lane identities (card 1, cp-9lrb)
+
+Register a **durable adjective+noun identity** at session start. Pane text and
+human relay are unauditable and load the operator. The ledger is the bus — both
+lanes must be registered to exchange auditable messages. Do not coordinate via
+informal pane text when `send_message` + `fetch_inbox` is available.
+
+### Content-push, not pointers (card 2, cp-9lrb)
+
+When sending a lane a message, **push the content** — include the actual text,
+diff, or decision. A pointer to a message-id the recipient cannot discover by
+inbox is still a relay. If the recipient's inbox is broken and they cannot read
+by-id, a pointer is a dead end. Short content fits in the body; long content goes
+to a committed artifact with an absolute path, not an AM-internal id.
+
+### Intent on the graph first — dedup (card 3, cp-hhtu)
+
+Before any actor acts on a bead (intake, admit, implement, validate, mutate),
+**update the bead status and set the actor on the graph first**, then check for an
+existing actor. Parallel pipelines are blind to each other at every tier — dedup
+via the ledger, not behavioral coordination. Five exhibits of same-bead parallel
+work hit the fleet in one day (impl/validation/admission/mutation/intake, cp-hhtu).
+The fix is structural: intent on the graph is the lock.
+
+### ACK-with-id on routed writes (card 5, cp-fmt8)
+
+When routing a write through a single writer (e.g. a beads-intake lane), require
+**ACK-with-id** back to the requester — the AM message id of the filed bead or the
+`br show <id>` output confirming the record exists. An unacknowledged routed write
+is invisible work. "Are these filed?" must not be a question — the ACK closes it.
+
 ## When to Use What
 
 | Situation | Action |

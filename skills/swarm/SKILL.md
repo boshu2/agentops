@@ -127,6 +127,37 @@ The lead reviews scope escapes after each wave and creates follow-up tasks as ne
 - **Atomic execution** - Each worker works until task done
 - **Graceful degradation** - If multi-agent unavailable, work executes sequentially in current session
 
+## Worker report contract + lane authority (cp-hhd7, cards 4 + 16)
+
+### Worker FINAL REPORT — what the orchestrator requires
+
+Workers write raw evidence; the orchestrator does not trust prose summaries.
+Each `.agents/swarm/results/<id>.json` or the worker's final message SHOULD include:
+
+```
+files_changed: [list of exact paths]
+commit_sha: <git rev-parse HEAD>   # or "no commit" + reason
+test_tail: <verbatim last N lines of test output>
+conflicts_surfaced: [list, or "none"]
+```
+
+A result missing `commit_sha` or `test_tail` is treated as **unverified** until the
+orchestrator independently confirms persistence and test passage. The audit cost of
+trusting summaries exceeds the cost of requiring the fields.
+
+### Lane authority (POLICY, card 4 — applies when running a two-lane swarm)
+
+In a multi-lane deployment (this is a **contextual policy**, not a universal swarm
+rule), a decision inside one lane's scope is decided by that lane with the other lane's
+view as input — not a vote, not an escalation. Escalate to the human operator only for:
+- genuine out-of-both-lanes decision forks
+- gate violations
+- a loop that cannot self-heal
+
+Escalating an in-lane sequencing call makes the operator a bottleneck. The lane
+authority rule is enforced by convention in the control-plane context; the mechanism
+(swarm) is general.
+
 ## Workflow Integration
 
 This ties into the full workflow:

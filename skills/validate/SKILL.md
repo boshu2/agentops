@@ -243,6 +243,62 @@ For `--mode=pre-impl` reusable findings: append to `.agents/findings/registry.js
 
 Each target has its own inline check rubric until Phase 2 extraction.
 
+## Validation discipline (2026-06-09, cards 6–10, cp-hhd7)
+
+### Verdict form — the gate parses these lines anchored
+
+```
+VERDICT: PASS
+(blank line)
+COMMANDS RUN:
+<actual commands + verbatim output snippets>
+REASONS:
+- bullet citing a COMMANDS RUN line
+```
+
+A verdict with no `COMMANDS RUN:` section is **unverified** — reject it and
+dispatch a fresh validator. A verdict whose `COMMANDS RUN:` lists only commands
+the **author** ran (not the judge) is a **counterfeit judge** — treat as FAIL and
+re-route to a genuinely independent validator. No `##` headings or parentheticals
+on `VERDICT:` or `COMMANDS RUN:` lines; the gate parses them anchored.
+
+### Cross-family floor (POLICY → gate icb6 enforces; this skill supports)
+
+For **assurance closes** (the control-plane verdict-gate, cp-icb6), the floor is
+≥2 verdicts from ≥2 distinct model families, author family excluded, fail-closed.
+**This skill supports that policy via `--mixed` mode and the verdict form above;
+the policy itself lives in the gate, not here.** A same-model council is valid for
+non-assurance decisions (design brainstorms, quick checks) — do not refuse those.
+Tier mapping:
+- **STRICT** (irreversible, security, production close): Codex + strong-Gemini (A1); or Fable + Codex (A2).
+- **ROUTINE** (everyday close): Codex + non-author-Claude (A3); or Fable + non-author (A4).
+
+The A7 ruling (2026-06-09, memory `validation-family-policy-risk-tiered`):
+Gemini is currently **benched** for STRICT validation — use Codex + Fable for A1/A2
+tiers. Gemini may return for STRICT when Bo graduates it from the bench. Do not
+present Gemini paths as live for tier A1/A2 until then.
+
+### Judge empirically on a differentiating fixture (card 9, cp-8720)
+
+When two implementations of the same intent exist, do NOT award based on
+authorship or surface aesthetics. Run both on a **differentiating fixture** (an
+input that exposes their behavioral difference), record the outputs verbatim, and
+graft the loser's unique assets onto the winner. "My worker wrote it" is not
+evidence.
+
+### Dispatch record first (card 3, cp-hhtu)
+
+Before dispatching a validator, register intent on the bead graph (update status,
+assign actor). **Two parallel validators on the same bead produce a dedup incident,
+not a cross-family quorum.** Check for an existing actor before spawning.
+
+### Judges re-measure; they do not read (card 8)
+
+A judge re-runs the cited commands on the actual artifacts. It does not read the
+author's evidence file and agree. Attest `judge_source: <model>` inside `COMMANDS RUN`
+so the gate can confirm the judge identity. A judge that ran nothing is a reader, not
+a verifier — discard its verdict.
+
 ## Evidence figures are measured, never inferred (the cp-801l lesson)
 
 A worker's evidence file may only contain numbers and outputs that were **captured** —
