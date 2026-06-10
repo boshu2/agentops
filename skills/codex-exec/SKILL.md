@@ -152,6 +152,12 @@ caam exec codex pro-2 -- exec -C "$REPO" -s workspace-write "Start ag-77."
 cd "$REPO" && codex exec resume --last "Fix the failing test from the prior turn."
 ```
 
+## Validator dispatch rules (learned 2026-06-10, cp-4jac/cp-801l)
+
+- **Network-touching validators need `-s danger-full-access`.** A codex VALIDATOR that must read a Dolt-mode bd ledger, run `git fetch`, or reach any network MUST be dispatched with `-s danger-full-access`. `-s workspace-write` blocks network (`connect: operation not permitted`) and blocks FETCH_HEAD writes. A fail-closed FAIL caused purely by sandbox denial is an **infrastructure artifact, not a verdict**: fix the dispatch and re-run the judge. NEVER hand-verify the missing item yourself and upgrade the verdict — that breaks judge independence (author ≠ judge).
+- **Set TMPDIR inside the workspace for any run that commits.** The sandbox blocks git temp-object writes to `/var/folders`; export `TMPDIR` to a path inside the workspace (e.g. `TMPDIR="$REPO/.tmp"`) before any codex run that needs `git commit` to succeed.
+- **Verdict file contract.** Bare `VERDICT: PASS|FAIL` as the first line, then a blank line, then a bare `COMMANDS RUN:` line, then the commands + output verbatim. No `##` headings or parentheticals on those lines — the gate parses them anchored. Fail closed on anything unverifiable.
+
 ## Troubleshooting
 
 | Problem | Cause | Solution |

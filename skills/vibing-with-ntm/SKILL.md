@@ -349,6 +349,14 @@ ntm --robot-restart-pane=<session> --panes=<pane> --restart-prompt="<fresh promp
 
 Use interactive dashboards for humans only. Agents should use `--robot-*`, `br`, `bv`, git, and Agent Mail evidence.
 
+### Pending-input etiquette (meta-orchestrator rule)
+
+A pane's input box may hold staged-but-unsent text. Submit it ONLY if it is clearly an
+agent/orchestrator-staged directive awaiting send (a complete marching order, a queued
+prompt from a prior dispatch). NEVER submit text that reads as the human operator's live
+composition — a question addressed to that pane, a partial sentence, anything mid-thought.
+When in doubt, leave it untouched and log the observation in the tick log.
+
 ## Recovery Shortcuts
 
 | State | First move | Escalation |
