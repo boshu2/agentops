@@ -421,7 +421,7 @@ These are how skills chain in practice:
 | **work-contract-portability** | knowledge | Use when designing agent work contracts, handoffs, evidence, and role boundaries across runtimes. |
 | **worktree-branch-rationalization** | execution | Use when rationalizing git worktrees and branches into a canonical line without losing useful work. |
 
-### Internal Skills (9) — `metadata.internal: true`
+### Internal Skills (8) — `metadata.internal: true`
 
 Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hooks. Loaded JIT by other skills via Read or auto-triggered by hooks.
 
@@ -429,7 +429,6 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 |-------|------|----------|---------|
 | beads | library | Execution | Issue tracking reference (loaded by /implement, /plan) |
 | standards | library | Judgment | Coding standards (loaded by /vibe, /implement, /doc) |
-| security-suite | library | Judgment | Security scanning script suite (scripts-only backend for /security; no SKILL.md) |
 | shared | library | Execution | Shared reference documents (multi-agent backends) |
 | inject | background | Knowledge | Load knowledge at session start (hook-triggered) |
 | forge | background | Knowledge | Mine transcripts for knowledge (includes --promote for pending extraction) |

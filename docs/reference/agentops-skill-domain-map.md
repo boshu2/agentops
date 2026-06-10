@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-162 checked-in AgentOps skills before any broad rewrite, using current
+166 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 162 |
+| Skills audited | 166 |
 | Domains classified | 5 of 5 (BC1-BC5) |
-| Dispositions assigned | 162 / 162 |
+| Dispositions assigned | 166 / 166 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -96,7 +96,11 @@ Disposition meanings:
 | `changelog-quality-pass` | BC4 Factory | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `cli-agent-ux-audit` | BC2 Validation | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `cli-doctoring-workflow` | BC3 Loop | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `codebase-archaeology` | BC1 Corpus | supporting | keep | Canonicalized from ~/.claude/skills ghost dir (cp-801l); systematic codebase exploration skill, AgentOps-owned.. |
+| `codebase-audit` | BC2 Validation | supporting | keep | Canonicalized from ~/.claude/skills ghost dir (cp-801l); domain-parameterized audit skill, AgentOps-owned.. |
 | `codebase-briefing-report` | BC1 Corpus | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `codebase-pattern-extraction` | BC1 Corpus | supporting | keep | Canonicalized from ~/.claude/skills ghost dir (cp-801l); cross-project pattern mining skill, AgentOps-owned.. |
+| `codebase-report` | BC1 Corpus | supporting | keep | Canonicalized from ~/.claude/skills ghost dir (cp-801l); architecture report skill, AgentOps-owned.. |
 | `codebase-risk-audit` | BC2 Validation | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `codex-exec` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `codex-goals` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
