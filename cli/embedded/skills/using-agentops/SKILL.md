@@ -182,6 +182,10 @@ These are the skills every user needs first. Everything else is available when y
 | `/swarm` | Parallel Codex agent execution (folded the retired codex-team lane) |
 | `/external-search-triage` | External docs and source lookup with citations |
 | `/reverse-engineer-rpi` | Reverse-engineer a product into feature catalog and specs |
+| `/codebase-archaeology` | Systematic exploration of unfamiliar codebases into working mental models |
+| `/codebase-audit` | Domain-parameterized codebase auditing (security, UX, performance, API, copy, CLI) |
+| `/codebase-pattern-extraction` | Mine recurring cross-project patterns into reusable artifacts |
+| `/codebase-report` | Reusable technical architecture documents from codebase exploration |
 | `/pr-research` | Upstream repository research before contribution |
 | `/pr-implement` | Fork-based PR implementation |
 | `/validate --mode=pr` | PR-specific validation and isolation checks (folded the retired pr-validate lane) |
