@@ -243,6 +243,19 @@ For `--mode=pre-impl` reusable findings: append to `.agents/findings/registry.js
 
 Each target has its own inline check rubric until Phase 2 extraction.
 
+## Evidence figures are measured, never inferred (the cp-801l lesson)
+
+A worker's evidence file may only contain numbers and outputs that were **captured** —
+pasted verbatim from a command's output — never reconstructed from memory. The
+canonical failure: "36 checks — 35 pass" stated with confidence was inference; the
+measured reality was 36 run / 34 pass / 1 fail / 1 skip, on a different commit.
+
+- **Validators:** treat any uncited figure (a count, a pass-rate, a timing, a commit
+  hash) as **unverifiable → FAIL** until a log is produced or the claim is corrected.
+- **Corrections happen by APPENDED erratum** — a dated erratum block crediting the
+  source measurement — never by silently editing the original figure. A silently
+  edited evidence file is indistinguishable from a fabricated one.
+
 ## Constraints (one-role-per-skill)
 
 - **One role: validator.** Output is always a verdict. Never mutates code (delegates to `/implement` for fixes).
