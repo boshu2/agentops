@@ -152,6 +152,47 @@ Repeat Phase 1–4 until `bd ready` is empty. Emit `NO_READY` (work blocked/in-p
 
 **Tie-break on a contested FAIL:** validator A returns FAIL but cites no commands -> rejected as unverified -> dispatch fresh validator B -> B returns verified PASS -> orchestrator closes (the false-FAIL was caught by the council gate, not acted on).
 
+## External event-loop shape — the port/adapter law (card 12, cp-dfwh)
+
+The loop is **external and role-scoped**. The orchestrator drives it; workers get nudged.
+This is a hexagonal port/adapter cut: the LAW names the port (what the loop must do),
+per-runtime docs name the adapter (how this harness does it). Keep harness nouns out of
+the law so orchestrators are hot-swappable across runtimes.
+
+- **No in-session heartbeat timers.** An idle wait armed with `sleep N; do_thing` is an
+  in-session heartbeat — it occupies the session and burns context. Use `CronCreate` (for
+  a scheduled re-tick) or `Monitor` (for an event watch) so the session is free between
+  ticks.
+- **Arm a watch, don't poll.** When a turn ends in a waiting state, arm a watch on the
+  unblocking surface before yielding. An unwatched wait makes the operator the scheduler.
+  Event-driven always beats timer-polling. (Memory: `arm-your-own-wakeups`.)
+- **The loop is the skill.** The substrate dispatches the `rpi` / `evolve` / `cc-loop-driver`
+  skill to an agent — it does not re-express the loop's phases as substrate-side steps.
+  Re-expressing the loop duplicates the invariants and pits the substrate's retry machinery
+  against the ratchet rules.
+
+## Watch authoring — failure modes to guard (card 13, cp-gib3)
+
+When authoring a Monitor or CronCreate watch within this loop:
+
+- **FM1 — false-fire on own writes.** Baseline the watch against your own writes before
+  arming it. A file-watch that matches a phrase the loop itself writes fires every tick.
+  Verify the baseline before deploying.
+- **FM2 — guard every poll call.** A poll that throws on a lock-contention or auth failure
+  exits 1 and kills the watch without emitting anything. Wrap every poll with error
+  handling; an exit-1 watcher is worse than no watcher.
+- **FM3 — enumerate failure states in the watch definition.** List explicitly: what does
+  "stuck" look like? What does "converged" look like? What does "error" look like?
+  A watch with only a success path is blind to all other outcomes.
+
+## Never send an editor to a running agent (card 14, cp-gib3 FM4)
+
+When messaging a running agent pane, use the harness channel (send_input / SendMessage)
+or stop-and-redispatch. **NEVER write to the agent's worktree to deliver instructions.**
+An agent improvises with the tools it has — if it finds unexpected content in its working
+files it will act on it, producing a two-writer collision. The messenger editing the
+worker's worktree is the exact failure mode that caused cp-hxp6 incident note.
+
 ## The meta-orchestrator tick pattern (proven 2026-06-09/10)
 
 When one session supervises a multi-lane fleet (rather than driving beads itself), run a **15-minute in-session cron tick**. Each tick performs, in order:
