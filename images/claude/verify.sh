@@ -56,5 +56,30 @@ if [ "$missing" -ne 0 ]; then
   echo "FAIL: $missing skill(s) missing from corpus" >&2
   exit 1
 fi
+
+# Version guard: the Claude marketplace plugin manifest is the install entrypoint
+# for this image. Assert .claude-plugin/plugin.json declares the expected version
+# so a stale-version drift (plugin.json behind the release) fails the gate.
+EXPECTED_VERSION="${AGENTOPS_EXPECTED_VERSION:-3.1.0}"
+plugin_manifest="$repo_root/.claude-plugin/plugin.json"
+if [ ! -f "$plugin_manifest" ]; then
+  echo "FAIL: Claude plugin manifest not found: $plugin_manifest" >&2
+  exit 1
+fi
+if command -v python3 >/dev/null 2>&1; then
+  plugin_version="$(python3 -c '
+import json, sys
+print(json.load(open(sys.argv[1])).get("version", ""))
+' "$plugin_manifest")"
+else
+  plugin_version="$(grep -oE '"version"[[:space:]]*:[[:space:]]*"[^"]+"' "$plugin_manifest" \
+                    | head -1 | sed -E 's/.*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')"
+fi
+if [ "$plugin_version" != "$EXPECTED_VERSION" ]; then
+  echo "FAIL: .claude-plugin/plugin.json version is '$plugin_version', expected '$EXPECTED_VERSION'" >&2
+  exit 1
+fi
+echo "OK: Claude plugin manifest version $plugin_version matches expected $EXPECTED_VERSION"
+
 echo "OK: all $count Claude-image skills present (61 CORE + operator)"
 exit 0

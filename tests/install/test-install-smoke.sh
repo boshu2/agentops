@@ -117,6 +117,10 @@ check "install-opencode.sh references agentops repo" \
 check "install-claude.sh uses Claude marketplace plugin" \
     grep -q 'claude plugin marketplace' "$REPO_ROOT/scripts/install-claude.sh"
 
+# install-claude.sh must support --ref pinning (parity with install-agy.sh)
+check "install-claude.sh supports --ref pinning" \
+    grep -q '\-\-ref' "$REPO_ROOT/scripts/install-claude.sh"
+
 # install-agy.sh must use the Gemini/Antigravity image bundle path
 check "install-agy.sh installs Gemini image bundle" \
     grep -q 'images/gemini' "$REPO_ROOT/scripts/install-agy.sh"
@@ -132,6 +136,10 @@ echo ""
 # Dry-run paths must not require vendor CLIs or mutate local state.
 check "install-claude.sh dry-run exits cleanly" \
     bash "$REPO_ROOT/scripts/install-claude.sh" --dry-run --quiet
+
+# --ref pins the marketplace source to a tagged release in the dry-run plan.
+check "install-claude.sh --ref pins marketplace source" \
+    bash -c "bash '$REPO_ROOT/scripts/install-claude.sh' --ref v3.1.0 --dry-run 2>&1 | grep -q 'marketplace add boshu2/agentops@v3.1.0'"
 check "install-agy.sh dry-run exits cleanly" \
     bash "$REPO_ROOT/scripts/install-agy.sh" --dry-run --quiet
 
