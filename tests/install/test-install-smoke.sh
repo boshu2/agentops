@@ -105,6 +105,15 @@ echo ""
 check "install.sh delegates to install-codex.sh" \
     grep -q 'install-codex' "$REPO_ROOT/scripts/install.sh"
 
+# install.sh must also wire the Gemini/AGY path (3-vendor spec gate: any of the
+# three vendors installable via the one documented unified one-liner).
+check "install.sh delegates to install-agy.sh" \
+    grep -q 'install-agy.sh' "$REPO_ROOT/scripts/install.sh"
+
+# install.sh must detect the agy runtime so single-runtime Gemini users are named.
+check "install.sh detects agy runtime" \
+    grep -q "command -v agy" "$REPO_ROOT/scripts/install.sh"
+
 # install-codex.sh must reference install-codex-plugin.sh
 check "install-codex.sh delegates to install-codex-plugin.sh" \
     grep -q 'install-codex-plugin.sh' "$REPO_ROOT/scripts/install-codex.sh"
