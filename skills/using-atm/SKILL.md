@@ -127,10 +127,16 @@ ATM panes coordinate through the other substrate legs, not bespoke glue:
 - **Beads (`bd`)** is the shared work queue and the source of truth for state —
   `bd ready` to pick, `bd update --claim` to claim, `bd close` when merged.
 - **Agent Mail (`am`)** (its own daemon at `127.0.0.1:8765` — the `am` CLI,
-  **not** an `ao` subcommand; the old "MCP Agent Mail" name is retired) carries cross-pane messages and
+  **not** an `ao` subcommand) carries cross-pane **messages** and
   **file reservations** — the swarm's defense against two panes editing the same
   path. Each pane registers once with `am macros start-session`, reserves before
-  editing (`am file_reservations reserve`), and releases on commit.
+  editing (`am file_reservations reserve <proj> <agent> "<path>"`), releases on
+  commit, and **messages other panes with `am mail send --from <me> --to <agent> --subject … --body …`**
+  (read with `am mail inbox`). The CLI form works from any shell even when the
+  MCP tool surface (`send_message` etc.) isn't wired into the session. **Trap:**
+  the verb is `am mail send`, **not** `am send` (which doesn't exist), and the
+  `mail` group isn't in `am --help` — see br cp-jgcl. List addressable agents
+  with `am robot agents --project <proj>`.
 - **Worktree-per-bead** is mandatory: no pane edits the shared checkout. See
   [../swarm/references/shared-checkout-discipline.md](../swarm/references/shared-checkout-discipline.md).
 
