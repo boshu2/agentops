@@ -223,6 +223,51 @@ Your beads are ready for implementation when:
 
 ---
 
+## Lifecycle disciplines (2026-06-09, cards 17–20, cp-hhd7)
+
+### Claim-verify before dispatch (card 3, cp-hhtu)
+
+Before claiming a bead for dispatch, confirm no other actor already holds it:
+```bash
+br show <id>        # check assignee/status
+```
+A race-claim on an already-claimed bead creates two workers on the same task — one
+of them will silently lose work. The ledger is the lock: if the bead is claimed,
+coordinate via Agent Mail, do not dispatch a second worker.
+
+### Merged-before-close (card 17, cp-4gj6; POLICY → gate cp-hxp6 enforces)
+
+A bead is durable only when its branch is **merged to trunk and the commit
+visible on the canonical store**. `br close` without a merge is a protection-off
+state — the work **will** recur as an incident (it did, 2026-06-09). For
+assurance-close contexts the gate cp-hxp6 enforces this; for other contexts,
+apply it as a practice: confirm `git log --oneline origin/main` includes the
+commit SHA before closing.
+
+### Close with residual routed (card 19, ag-67yy)
+
+When a close leaves a residual (un-merged work, deferred scope, a known gap),
+**route the residual to a successor bead in the same turn** — never accept-silently,
+never hold the parent open as a zombie. The pressure lives in the successor's
+priority, not in the open parent. Use `br close <id> --reason "Residual → <new-id>"`.
+Close-with-residual is honest; a zombie parent that never closes is the failure mode.
+
+### Append notes, never replace (card, cp-7fxr)
+
+`br update <id> --notes` is an **append** operation — it adds to the notes, it
+does NOT replace existing notes. When adding a progress note, pass only the new
+content; the flag accumulates. A `--notes` call that silently replaces prior notes
+erases audit history — the same silent-destruction class as the close-eater
+(cp-8720) and the split-brain (cp-4gkz).
+
+### Fuzzy intent → bead in the same turn (card 20, cp-honb)
+
+When a correction, idea, or complaint arrives mid-session, file the bead **in the
+same turn** with the verbatim words. Corrections that live only in chat evaporate.
+The feed IS the product.
+
+---
+
 ## References
 
 | Topic | Reference |

@@ -87,6 +87,10 @@ Map the role to frontmatter (see `references/agent-profiles.md` for full example
 - **Background:** set `background: true` so the orchestrator keeps working while the teammate runs; it re-engages when the worker finishes.
 - **Worktree:** `isolation: worktree` gives the worker its own git worktree (optionally `worktree.sparsePaths` to limit checkout in a big monorepo). Fall back to manual `git worktree` only on runtimes without native support.
 - Give each worker a **self-contained prompt**: the exact files it owns, the spec, and the acceptance check it must satisfy.
+- **Every worker prompt MUST include** (cp-hhd7, card 16 + LAW-0):
+  - `DO NOT use claude -p / --print.` (LAW-0 — billing invariant)
+  - Heavy compiles (Rust/C++/large Go) go to `rch` / `ssh bushido`, never the Mac.
+  - The worker's **FINAL REPORT contract** (see below).
 
 **Checkpoint:** All workers dispatched; orchestrator has the list of expected return artifacts per worker.
 
@@ -97,6 +101,32 @@ Map the role to frontmatter (see `references/agent-profiles.md` for full example
 - After **all** workers complete, run the repo's full validation gate once (not a remembered subset), then integrate worktree branches.
 
 **Checkpoint:** Every worker's output verified by evidence (test/read), not self-report, before integration.
+
+## Worker FINAL REPORT contract (card 16, cp-hhd7)
+
+Every worker's final message to the orchestrator MUST contain raw evidence — not a
+polished narrative. If a worker omits any of these, the orchestrator MUST treat the
+report as incomplete and request a re-report or a fresh validator.
+
+```
+FINAL REPORT — <bead-id> — <worker-id>
+
+FILES CHANGED:
+- path/to/file:line — one line per change (exact paths, no paraphrase)
+
+COMMIT SHA: <git rev-parse HEAD>   # or "no commit" + reason
+
+TEST TAIL (verbatim last 20 lines of test output):
+<paste>
+
+CONFLICTS SURFACED:
+- <any scope-escape, file conflict, or unresolved item the worker found>
+  (list "none" explicitly if none — do not omit the section)
+```
+
+The orchestrator uses `COMMIT SHA` to confirm persistence and `TEST TAIL` to verify
+the test runner actually ran. A report with synthesized summaries instead of verbatim
+output is honest-by-exception, not honest-by-default — budget the audit cost later.
 
 ## Output Specification
 
