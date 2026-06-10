@@ -103,12 +103,14 @@ func TestVersion_ExecuteOutputLineCount(t *testing.T) {
 }
 
 func TestVersion_DevVersionDefault(t *testing.T) {
-	// In test context (no ldflags), version should be "dev".
+	// In test context (no ldflags), version should be the source fallback.
+	// The source fallback is "3.1.0-rc" on the 3.1 branch; it becomes "3.1.0"
+	// at tag-cut time via goreleaser ldflags.
 	out, err := executeCommand("version")
 	if err != nil {
 		t.Fatalf("ao version returned error: %v", err)
 	}
-	if !strings.Contains(out, "ao version dev") {
-		t.Errorf("expected default 'ao version dev' in test context, got: %s", out)
+	if !strings.Contains(out, "ao version "+version) {
+		t.Errorf("expected default 'ao version %s' in test context, got: %s", version, out)
 	}
 }
