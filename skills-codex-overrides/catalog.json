@@ -552,12 +552,6 @@
       "reason": "Edit-scope guard behavior is already explicit in the generated Codex artifact; no bespoke override is needed yet."
     },
     {
-      "name": "system-tuning",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "New utility skill for restoring system responsiveness; converter parity is acceptable."
-    },
-    {
       "name": "curate",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -604,12 +598,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for agent-native"
-    },
-    {
-      "name": "bd-first-memory-migration",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for bd-first-memory-migration"
     },
     {
       "name": "using-atm",
@@ -750,30 +738,6 @@
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
-      "name": "gcloud",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "gh-actions",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "gh-cli",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "gh-triage-ru",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
       "name": "multi-model-triangulation",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -792,19 +756,7 @@
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
-      "name": "process-triage",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
       "name": "rch",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "repeatedly-apply-skill",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
@@ -816,25 +768,7 @@
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
-      "name": "ru-multi-repo-workflow",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
       "name": "sbh",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "ssh",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "system-performance-remediation",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
@@ -852,109 +786,7 @@
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
-      "name": "cli-agent-ux-audit",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "artifact-clarity-pass",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "measured-performance-optimization",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "installer-quality-audit",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "dependency-update-safety",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "production-placeholder-audit",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "layered-defect-hunt",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "performance-profile-triage",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "project-readme-craft",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
       "name": "release-readiness-gate",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "behavior-preserving-simplification",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "contract-conformance-testing",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "fuzz-test-design",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "golden-artifact-testing",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "metamorphic-test-design",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "live-service-e2e-testing",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "work-contract-portability",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "automation-loop-hardening",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
@@ -972,19 +804,7 @@
       "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
     },
     {
-      "name": "legacy-codebase-recon",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
       "name": "codebase-risk-audit",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "implementation-pattern-mining",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
@@ -996,49 +816,7 @@
       "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
     },
     {
-      "name": "concurrency-deadlock-remediation",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "native-debugger-triage",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "mcp-interface-design",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "project-reasoning-lens-analysis",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
       "name": "expertise-to-procedure",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "project-reality-check",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "spec-reliability-implementation",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "bead-tracker-migration",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
@@ -1050,91 +828,7 @@
       "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
     },
     {
-      "name": "changelog-quality-pass",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "repository-hygiene-sweep",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "stash-hygiene-sweep",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "worktree-branch-rationalization",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
       "name": "idea-option-forge",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "filesystem-path-rationalization",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "ripgrep-search-discipline",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "rust-search-integration",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "rust-port-validation-gauntlet",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "external-search-triage",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "cli-doctoring-workflow",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "rust-sqlite-cli-architecture",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "rust-crate-release-readiness",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "rust-ub-risk-audit",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "rust-unsafe-boundary-audit",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
@@ -1156,12 +850,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Operates the skill-factory trust-gate.sh final gate; codex-native shell + jq verdict reading."
-    },
-    {
-      "name": "storage-watchdog-ops",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Operator runbook for the ACFS storage watchdog Go daemon; codex-native shell/systemctl idioms."
     },
     {
       "name": "agy-sidecar-scheduled-tick",
