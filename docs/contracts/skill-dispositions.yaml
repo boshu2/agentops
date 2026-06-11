@@ -438,16 +438,6 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          codebase-briefing-report
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          codebase-risk-audit
-    domain:         "BC2 Validation"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
   - skill:          codex-exec
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
@@ -470,11 +460,6 @@ dispositions:
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
   - skill:          dcg
     domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          expertise-to-procedure
-    domain:         "BC1 Corpus"
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
@@ -503,11 +488,6 @@ dispositions:
     hexagonal_role: domain
     disposition:    keep
     rationale:      "Coverage-gap skill operating the skill-factory final trust gate (cross-vendor parity); shared kernel with heal-skill."
-  - skill:          idea-option-forge
-    domain:         "BC2 Validation"
-    hexagonal_role: domain
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
   - skill:          multi-model-triangulation
     domain:         "BC4 Factory"
     hexagonal_role: supporting
@@ -543,16 +523,6 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          release-readiness-gate
-    domain:         "BC2 Validation"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          research-software
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
   - skill:          sbh
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
@@ -568,23 +538,8 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          codebase-archaeology
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Canonicalized from ~/.claude/skills ghost dir (cp-801l); systematic codebase exploration skill, AgentOps-owned."
   - skill:          codebase-audit
     domain:         "BC2 Validation"
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "Canonicalized from ~/.claude/skills ghost dir (cp-801l); domain-parameterized audit skill, AgentOps-owned."
-  - skill:          codebase-pattern-extraction
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Canonicalized from ~/.claude/skills ghost dir (cp-801l); cross-project pattern mining skill, AgentOps-owned."
-  - skill:          codebase-report
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Canonicalized from ~/.claude/skills ghost dir (cp-801l); architecture report skill, AgentOps-owned."

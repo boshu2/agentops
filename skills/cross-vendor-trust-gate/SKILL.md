@@ -7,7 +7,7 @@ practices:
 - cross-vendor-parity-as-a-gate
 hexagonal_role: domain
 consumes:
-- skill
+- converted-skill
 produces:
 - trust-artifact
 - stdout

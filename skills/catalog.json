@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-09T23:29:15Z",
-  "skill_count": 166,
+  "generated_at": "2026-06-11T12:39:45Z",
+  "skill_count": 105,
   "skills": [
     {
       "name": "acfs",
@@ -237,7 +237,7 @@
     },
     {
       "name": "automation-shape-routing",
-      "description": "Front door for agent automation \u2014 decide the SHAPE (Workflow vs ATM vs skill), then hand off. Triggers: \"build automation\", \"convert skills to workflows\", \"which shape\".",
+      "description": "Front door for agent automation — decide the SHAPE (Workflow vs ATM vs skill), then hand off. Triggers: \"build automation\", \"convert skills to workflows\", \"which shape\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -631,22 +631,6 @@
       "codex_override_present": true
     },
     {
-      "name": "codebase-archaeology",
-      "description": ">-",
-      "hexagonal_role": "supporting",
-      "user_invocable": true,
-      "consumes": [],
-      "produces": [
-        "codebase-archaeology"
-      ],
-      "practices": [
-        "legacy-code-seams"
-      ],
-      "context_rel": [],
-      "references_count": 3,
-      "codex_override_present": false
-    },
-    {
       "name": "codebase-audit",
       "description": ">-",
       "hexagonal_role": "supporting",
@@ -658,76 +642,6 @@
       "practices": [
         "code-review"
       ],
-      "context_rel": [],
-      "references_count": 3,
-      "codex_override_present": false
-    },
-    {
-      "name": "codebase-briefing-report",
-      "description": "|-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [
-        "codebase-briefing-report"
-      ],
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "codebase-pattern-extraction",
-      "description": ">-",
-      "hexagonal_role": "supporting",
-      "user_invocable": true,
-      "consumes": [],
-      "produces": [
-        "codebase-pattern-extraction"
-      ],
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 3,
-      "codex_override_present": false
-    },
-    {
-      "name": "codebase-report",
-      "description": ">-",
-      "hexagonal_role": "supporting",
-      "user_invocable": true,
-      "consumes": [],
-      "produces": [
-        "codebase-report"
-      ],
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 2,
-      "codex_override_present": false
-    },
-    {
-      "name": "codebase-risk-audit",
-      "description": "|-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [
-        "repository",
-        "test-results",
-        "runtime-configuration"
-      ],
-      "produces": [
-        "codebase-risk-audit-report"
-      ],
-      "practices": [
-        "code-review",
-        "threat-modeling",
-        "operational-readiness"
-      ],
       "context_rel": [
         {
           "kind": "supplier-to",
@@ -738,7 +652,7 @@
           "with": "validate"
         }
       ],
-      "references_count": 0,
+      "references_count": 4,
       "codex_override_present": true
     },
     {
@@ -894,7 +808,7 @@
     },
     {
       "name": "council",
-      "description": "Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing \u2014 architecture forks, one-way doors, scoring options.",
+      "description": "Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [
@@ -915,7 +829,7 @@
           "with": "standards"
         }
       ],
-      "references_count": 33,
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -954,7 +868,7 @@
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [
-        "skill"
+        "converted-skill"
       ],
       "produces": [
         "trust-artifact",
@@ -1176,30 +1090,6 @@
       "codex_override_present": true
     },
     {
-      "name": "expertise-to-procedure",
-      "description": "|-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [
-        "playbook",
-        "checklist",
-        "skill"
-      ],
-      "practices": [
-        "code-complete",
-        "refactoring"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "skill-builder"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
       "name": "flywheel",
       "description": "Check knowledge flywheel health.",
       "hexagonal_role": "domain",
@@ -1306,31 +1196,6 @@
       "codex_override_present": true
     },
     {
-      "name": "idea-option-forge",
-      "description": "|-",
-      "hexagonal_role": "domain",
-      "user_invocable": false,
-      "consumes": [
-        "existing-tracked-work"
-      ],
-      "produces": [
-        "vetted-idea-backlog",
-        "tracked-issues-with-deps-and-tests"
-      ],
-      "practices": [
-        "lean-startup",
-        "pragmatic-programmer"
-      ],
-      "context_rel": [
-        {
-          "kind": "shared-kernel",
-          "with": "brainstorm"
-        }
-      ],
-      "references_count": 2,
-      "codex_override_present": true
-    },
-    {
       "name": "implement",
       "description": "Implement one tracked issue.",
       "hexagonal_role": "driving-adapter",
@@ -1381,7 +1246,7 @@
         "pragmatic-programmer"
       ],
       "context_rel": [],
-      "references_count": 2,
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -1555,7 +1420,7 @@
     },
     {
       "name": "post-mortem",
-      "description": "Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after \u22655 PRs (the scope checkpoint).",
+      "description": "Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [
@@ -1827,7 +1692,7 @@
           "with": "vibe"
         }
       ],
-      "references_count": 4,
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -1852,20 +1717,6 @@
       "codex_override_present": true
     },
     {
-      "name": "release-readiness-gate",
-      "description": "|-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
       "name": "release",
       "description": "Run release validation.",
       "hexagonal_role": "supporting",
@@ -1886,20 +1737,6 @@
         }
       ],
       "references_count": 8,
-      "codex_override_present": true
-    },
-    {
-      "name": "research-software",
-      "description": ">-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 3,
       "codex_override_present": true
     },
     {
@@ -2479,12 +2316,12 @@
         "pragmatic-programmer"
       ],
       "context_rel": [],
-      "references_count": 9,
+      "references_count": 10,
       "codex_override_present": true
     },
     {
       "name": "workflow-builder",
-      "description": "Scaffold a new Claude Workflow script \u2014 deterministic multi-agent orchestration. Triggers: \"build a workflow\", \"create a workflow\", \"scaffold workflow\", \"author a workflow\".",
+      "description": "Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: \"build a workflow\", \"create a workflow\", \"scaffold workflow\", \"author a workflow\".",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],

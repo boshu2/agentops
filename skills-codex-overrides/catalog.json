@@ -762,12 +762,6 @@
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
-      "name": "research-software",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
       "name": "sbh",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -786,12 +780,6 @@
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
-      "name": "release-readiness-gate",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
       "name": "ntm-review-worker-orchestration",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -804,31 +792,7 @@
       "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
     },
     {
-      "name": "codebase-risk-audit",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "codebase-briefing-report",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "expertise-to-procedure",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
       "name": "bead-completion-audit",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "idea-option-forge",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
@@ -864,25 +828,7 @@
       "reason": "Proof skill asserting AGY project/worktree isolation invariants; codex-native agy --print orchestration."
     },
     {
-      "name": "codebase-archaeology",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for canonicalized codebase-* skill (cp-801l)."
-    },
-    {
       "name": "codebase-audit",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for canonicalized codebase-* skill (cp-801l)."
-    },
-    {
-      "name": "codebase-pattern-extraction",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for canonicalized codebase-* skill (cp-801l)."
-    },
-    {
-      "name": "codebase-report",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex parity wrapper for canonicalized codebase-* skill (cp-801l)."

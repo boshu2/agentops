@@ -30,6 +30,7 @@ session-bootstrap         # universal init entry point (customer-of AGENTS*.md d
 system-tuning             # restore system responsiveness (process/host hygiene)
 
 # --- human-facing explainers (documentation skills, no pipeline role) ---
+handoff                   # writes .agents/handoffs session-continuity artifacts; read out-of-band by the next session, no declared peer edge
 using-agentops            # explain AgentOps workflows
 bd-first-memory-migration
 
@@ -40,7 +41,6 @@ casr                             # standalone external-boundary or library/analy
 cass                             # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 changelog-quality-pass           # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 cli-doctoring-workflow           # standalone external-boundary or library/analyzer skill; no peer skill edge by design
-codebase-briefing-report         # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 concurrency-deadlock-remediation # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 external-search-triage           # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 filesystem-path-rationalization  # standalone external-boundary or library/analyzer skill; no peer skill edge by design
@@ -60,10 +60,8 @@ process-triage                   # standalone external-boundary or library/analy
 project-readme-craft             # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 project-reasoning-lens-analysis  # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 rch                              # standalone external-boundary or library/analyzer skill; no peer skill edge by design
-release-readiness-gate           # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 repeatedly-apply-skill           # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 repository-hygiene-sweep         # standalone external-boundary or library/analyzer skill; no peer skill edge by design
-research-software                # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 ripgrep-search-discipline        # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 ru-multi-repo-workflow           # standalone external-boundary or library/analyzer skill; no peer skill edge by design
 rust-crate-release-readiness     # standalone external-boundary or library/analyzer skill; no peer skill edge by design

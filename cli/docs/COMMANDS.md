@@ -2736,7 +2736,7 @@ ao tick status [flags]
 
 #### `ao tick verdict-gate`
 
-Reject verdicts without a non-empty COMMANDS RUN body
+Reject verdicts without commands and independent judge identity
 
 ```
 ao tick verdict-gate <file|-> [flags]
@@ -4546,7 +4546,7 @@ ao turn verify <bead> [flags]
 
 ### `ao verdict-gate`
 
-Reject verdicts without a non-empty COMMANDS RUN body
+Reject verdicts without commands and independent judge identity
 
 ```
 ao verdict-gate <file|-> [flags]

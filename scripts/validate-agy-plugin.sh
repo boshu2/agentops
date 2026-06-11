@@ -17,20 +17,10 @@ core_skills=(
   caam
   casr
   ubs
-  ru-multi-repo-workflow
-  gh-triage-ru
   rch
   sbh
-  process-triage
-  system-performance-remediation
-  ssh
-  gcloud
-  gh-cli
-  gh-actions
   planning-workflow
   multi-model-triangulation
-  research-software
-  repeatedly-apply-skill
   cc-hooks
 )
 
