@@ -70,6 +70,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### supporting
 
+- `account-rotation` — Use when you hit a usage/rate limit on a coding-agent subscription and need to switch accounts, or to spread swarm lanes across accounts. Routes by host+agent: macOS+Claude → claude-acct (Keychain swap); macOS+Codex/Gemini or any Linux/WSL → caam (file swap). One symptom, the right tool per host.
 - `agent-mail` — Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs.
 - `agent-native` — Make an out-of-session agent AgentOps-native with skills, the ao CLI, and CI instead of hooks.
 - `agy-headless-evidence` — Run AGY headlessly via scheduled ticks or `agy -p`, capture agentapi JSONL evidence, and validate automated AGY loops or event streams.
@@ -81,7 +82,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `beads-br` — Local-first issue tracker (beads_rust) for AI agents. Use when tracking tasks, managing dependencies, finding ready work, or syncing issues to git via JSONL.
 - `beads-bv` — Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects.
 - `beads-workflow` — Use when converting markdown plans into br beads with dependencies for implementation or swarm execution.
-- `caam` — Use when switching AI coding CLI accounts quickly to recover from subscription rate limits or OAuth friction.
 - `casr` — Resume sessions across Claude Code, Codex, Gemini, and other providers when switching agents or migrating active chat history.
 - `cass` — Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history.
 - `cass-memory` — Use when starting non-trivial work, mining lessons, or preventing repeated mistakes with cm procedural memory.

@@ -359,6 +359,7 @@ These are how skills chain in practice:
 | **sbh** | execution | Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status. |
 | **ubs** | execution | Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks. |
 | **vibing-with-ntm** | execution | Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence. |
+| **account-rotation** | execution | "Use when you hit a usage/rate limit on a coding-agent subscription and need to switch accounts, or to spread swarm lanes across accounts. Routes by host+agent: macOS+Claude → claude-acct (Keychain swap); macOS+Codex/Gemini or any Linux/WSL → caam (file swap). One symptom, the right tool per host." |
 
 ### Internal Skills (8) — `metadata.internal: true`
 
