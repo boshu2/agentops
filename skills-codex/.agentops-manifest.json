@@ -1210,7 +1210,6 @@
     {
       "name": "agent-mail",
       "source_skill": "skills/agent-mail",
-      "source_hash": "216b531f2750eb5b416d78e4188a6aa563ee8056134f8176c333d147b76a9ad2",
       "source_hash": "d9c3019481888dfd78dac7d9d3395b6989af33e6213d265df9987af60e558821",
       "generated_hash": "e66befdbae502fe31a8b1094e7ff90c6779abfdd6ec01723c65cfa641a346ae6"
     },
@@ -1349,7 +1348,6 @@
     {
       "name": "beads-workflow",
       "source_skill": "skills/beads-workflow",
-      "source_hash": "0d9e0e93c95b42ca4c763c1d124947df395836385480a8a1258062948d0f7b68",
       "source_hash": "e84b03d73c71a80a30e00490aab507b13bdf53bdc4787a106bf5a0ef122fe165",
       "generated_hash": "85127e19267aa6f5ade2b70b9bfb8d5183b7cc1e779867ca03dfb1693cd03fb4"
     },
@@ -1596,10 +1594,8 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "49490660b54b2b0685dbb4369131668fdd831c8dd5d444da8a2ebfda43b5cb78",
+      "source_hash": "150fab58d6520a9f91b5b00b7eb7d34205eb3af3909bf69c5123c9c844c7f786",
       "generated_hash": "4ef82a83d08cb7f5cb12556dfc67d48bb1593f30e4de15345fd1058d008a1c39"
-      "source_hash": "b6b0b579d21060650726a4cb739a4d47575583c57969dfe87cd7c943b2b65545",
-      "generated_hash": "811ab60278e0f8cfc6aee26fb8cfa6196212813a30d76f587f83c095fcbf4359"
     },
     {
       "name": "crank",
