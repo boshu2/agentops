@@ -27,7 +27,7 @@
 #  17. Codex backbone prompts
 #  18. Codex override coverage
 #  19. Next-work contract parity
-#  19b. bd closeout contract parity
+#  19b. br closeout contract parity
 #  19c. Retrieval quality ratchet (warn-only until 500 indexed turns)
 #  20. Skill runtime formats
 #  21. Codex RPI contract validation
@@ -1042,13 +1042,13 @@ else
     fail "missing executable: scripts/validate-next-work-contract-parity.sh"
 fi
 
-# --- 19b. bd closeout contract parity ---
+# --- 19b. br closeout contract parity ---
 if [[ -x scripts/validate-bd-closeout-contract.sh ]]; then
-    if bd_closeout_output="$(scripts/validate-bd-closeout-contract.sh 2>&1)"; then
-        pass "bd closeout contract parity"
+    if br_closeout_output="$(scripts/validate-bd-closeout-contract.sh 2>&1)"; then
+        pass "br closeout contract parity"
     else
-        fail "bd closeout contract parity"
-        indent_output "$bd_closeout_output"
+        fail "br closeout contract parity"
+        indent_output "$br_closeout_output"
     fi
 else
     fail "missing executable: scripts/validate-bd-closeout-contract.sh"

@@ -13,7 +13,7 @@ Advisory and warn-only jobs can run in optional Actions contexts, but their fail
 
 | Job | Triage SLA | Escalation rule |
 |---|---|---|
-| **doctor-check** | 30d | Open a `bd` issue tracking the stale CLI reference; prioritize when the next `cli/cmd/ao/**` PR lands. Runs as an advisory step inside the consolidated `correctness` job, not a standalone GitHub job. |
+| **doctor-check** | 30d | Open a `br` issue tracking the stale CLI reference; prioritize when the next `cli/cmd/ao/**` PR lands. Runs as an advisory step inside the consolidated `correctness` job, not a standalone GitHub job. |
 | **check-test-staleness** | none (info-only) | Read the report; no merge or release impact. Item 33 — drift signal, not a gate. |
 | **swarm-evidence** | none (info-only) | Read the report; no merge or release impact. Item 34 — informational artifact validation. |
 | **executable-spec-link-integrity** (inner trace --orphans step) | none (warn-only) | The job is now blocking (soc-x7y9f) on the `ao goals scenarios --lint` link check; only the inner `ao goals trace --orphans` whole-chain audit stays warn-only. Read the trace output for orphan-chain defects (tracked under soc-gqhrz); no merge impact from that step. |

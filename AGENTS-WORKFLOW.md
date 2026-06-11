@@ -8,11 +8,13 @@
 
 **Autonomous-session scope (sister rule to coherent-arc).** Coherent-arc governs the *shape* of one shipped arc; session-scope governs the *count* of consecutive arcs. **Default: 2-4 arcs per autonomous session.** At >=5 shipped or in-flight arcs in one session, **stop and run a post-mortem before continuing**. The old PR-count signal is now interpreted as arc count because the repo no longer uses PRs as the normal landing path. Derivation: the 2026-05-19 cron-loop session shipped 6 PRs with 3 self-corrections; items #5-#6 each fixed fallout from #1-3. Mechanical enforcement is the mandatory `/evolve` post-mortem checkpoint (council-gated, cannot be bypassed; `skills/evolve/references/postmortem-checkpoint.md`). (soc-waxr, ag-o5xp)
 
+**Tracker = br (beads_rust) + bv, as of 2026-06-11.** Issue tracking is **br** — offline, git-JSONL-backed (`_beads/issues.jsonl` + a local SQLite cache; `br sync` never runs git). Interim: until legacy `.beads/` is retired, invoke as `BEADS_DIR=$PWD/_beads br <cmd>`. Triage with **bv** (`bv --robot-insights`, `--robot-plan`, `--robot-priority`). **bd/Dolt is RETIRED LEGACY (2026-06-11):** delivery was coupled to a remote single-host Dolt server — a SPOF with no offline lane; circuit breaker observed open in the 2026-06-11 recon (P1 finding, `docs/audits/codebase-skills-2026-06-11/codebase-risk-audit.md`). Do not run `bd` here. Legacy `.beads/` bd/Dolt data is preserved pending reconciliation; migration record: `.agents/swarm/results/br-migration.json`.
+
 ### Phases
 
-1. **Claim.** `bd ready` → pick a bead → `bd update <id> --claim`. **No bead, no push.** If the work is genuinely new, `bd create` first.
+1. **Claim.** `br ready` → pick a bead → `br update <id> --claim`. **No bead, no push.** If the work is genuinely new, `br create "Title" -t task -p 2 --body "..."` first (deps: `--deps blocks:<id>` or `br dep add <child> <parent>`).
 2. **Scope.** Read the bead's acceptance: a `.feature` file (canonical when present) or an embedded `## Scenarios` block in the bead description. Free-text acceptance is invalid — promote it to scenarios before work begins. Default: **one coherent arc per push** — bundle scenarios that ship-or-revert together; split scenarios with independent rollback. The direct-main commit range is the atomic revert unit. Carve-out: `type=chore` with `#trivial` label for tiny work.
-3. **Ship.** `bd worktree create wt-<bead-id> --branch <type>/<bead-id>-<scenario-token>-<short-slug>` (the worktree dir name is the required positional arg) — worktree-mandatory; do not edit in the shared checkout. Implement. The pre-push gate runs automatically on push (the hook); run `scripts/pre-push-gate.sh --fast` manually first to fail fast.
+3. **Ship.** `git worktree add wt-<bead-id> -b <type>/<bead-id>-<scenario-token>-<short-slug>` — worktree-mandatory; do not edit in the shared checkout (canonical-root rules: [`AGENTS-RUNTIME.md`](AGENTS-RUNTIME.md)). Implement. The pre-push gate runs automatically on push (the hook); run `scripts/pre-push-gate.sh --fast` manually first to fail fast.
 4. **Land.** Push to `main` (the gate runs in the hook; rebase-on-reject). GitHub Actions are not part of the routine landing path; run them manually or through release tags only when explicitly needed. The bead closes when its arc is on `main` (or explicitly cancelled in bead metadata).
 
 ### Branch + Direct-Main Shape
@@ -27,11 +29,11 @@
 
 ### Multi-agent discipline (shared checkout)
 
-The host `~/dev/agentops` is contended. **Agents do not edit it directly.** Use `bd worktree create <name> --branch <branch>` for every change. Cross-bead merge serialization: `bd merge-slot`. Foreign uncommitted files = quarantined; identify owner, attach to a bead, move into a worktree.
+The host `~/dev/agentops` is contended. **Agents do not edit it directly.** Use `git worktree add <name> -b <branch>` for every change. Cross-bead merge serialization: git itself (rebase-on-reject serializes concurrent pushers) plus Agent Mail coordination (`am` reservations / build slots) when multiple lanes are landing — `bd merge-slot` is retired with bd. Foreign uncommitted files = quarantined; identify owner, attach to a bead, move into a worktree.
 
 ### Provenance
 
-Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `agentops-sdlc-provenance.v1`). `bd update --metadata` is a derived projection — ledger wins on disagreement. Concurrent writes use `--set-metadata` / `--append-to` (never full-blob replacement) + dolt advisory locks. `claude-code-review` verdicts are first-class ledger events.
+Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `agentops-sdlc-provenance.v1`). Tracker state (`br` issue fields, notes, comments) is a derived projection — ledger wins on disagreement. The ledger is append-only: concurrent writers append events, never rewrite (the old `--set-metadata`/dolt-advisory-lock machinery is retired with bd). `claude-code-review` verdicts are first-class ledger events.
 
 ### Doctrine altitudes
 
@@ -141,13 +143,11 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
 2. **Run quality gates** (if code changed) - Tests, linters, builds
 3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - Git push is mandatory; bd push is conditional:
+4. **PUSH TO REMOTE** - Git push is mandatory; the tracker syncs through git, not a server:
    ```bash
    git pull --rebase
-   bd vc status
-   bd dolt commit -m "tracker: <summary>"  # if tracker changes are pending
-   bd dolt remote list
-   bd dolt push  # only if a real Dolt remote is configured
+   br sync --flush-only   # export DB → _beads JSONL (br never runs git itself)
+   git add _beads/*.jsonl && git commit -m "tracker: <summary>"  # if tracker changes are pending
    git push
    git status  # MUST show "up to date with origin"
    ```
@@ -163,20 +163,20 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 - NEVER leave a foreign branch-attached worktree without a recorded disposition
 - Keep the canonical root clean and attached to `main`.
 - Run `bash scripts/check-worktree-disposition.sh` before push and session close.
-- If `bd dolt push` says no remote is configured, do not treat that as a
-  session failure. Record it as unavailable, then continue with the mandatory
-  Git push. See [bd server-mode tracker closeout](docs/runbooks/bd-server-mode-closeout.md).
+- There is no remote tracker push beyond `git push` — `_beads/issues.jsonl`
+  committed via git IS the sync. If `br sync --flush-only` reports nothing to
+  export, that is fine; continue with the mandatory git push.
 
-<!-- BEGIN BEADS INTEGRATION v:1 profile:full hash:f65d5d33 -->
-## Issue Tracking with bd (beads)
+<!-- BEGIN BEADS INTEGRATION v:1 profile:full (hand-converted bd→br 2026-06-11; no longer generator-managed) -->
+## Issue Tracking with br (beads_rust)
 
-**IMPORTANT**: This project uses **bd (beads)** for ALL issue tracking. Do NOT use markdown TODOs, task lists, or other tracking methods.
+**IMPORTANT**: This project uses **br (beads_rust)** for ALL issue tracking. Do NOT use markdown TODOs, task lists, other tracking methods — or the retired `bd`.
 
-### Why bd?
+### Why br?
 
 - Dependency-aware: Track blockers and relationships between issues
-- Git-friendly: Dolt-powered version control with native sync
-- Agent-optimized: JSON output, ready work detection, discovered-from links
+- Git-native: SQLite cache + `_beads/issues.jsonl` ledger committed via git — offline, no server, no SPOF
+- Agent-optimized: JSON output, ready work detection, discovered-from links, `br robot-docs guide`
 - Prevents duplicate tracking systems and confusion
 
 ### Quick Start
@@ -184,27 +184,27 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 **Check for ready work:**
 
 ```bash
-bd ready --json
+br ready --json
 ```
 
 **Create new issues:**
 
 ```bash
-bd create "Issue title" --description="Detailed context" -t bug|feature|task -p 0-4 --json
-bd create "Issue title" --description="What this issue is about" -p 1 --deps discovered-from:bd-123 --json
+br create "Issue title" --body "Detailed context" -t bug|feature|task -p 0-4 --json
+br create "Issue title" --body "What this issue is about" -p 1 --deps discovered-from:<parent-id> --json
 ```
 
 **Claim and update:**
 
 ```bash
-bd update <id> --claim --json
-bd update bd-42 --priority 1 --json
+br update <id> --claim --json
+br update <id> --priority 1 --json
 ```
 
 **Complete work:**
 
 ```bash
-bd close bd-42 --reason "Completed" --json
+br close <id> --reason "Completed" --json
 ```
 
 ### Issue Types
@@ -225,40 +225,40 @@ bd close bd-42 --reason "Completed" --json
 
 ### Workflow for AI Agents
 
-1. **Check ready work**: `bd ready` shows unblocked issues
-2. **Claim your task atomically**: `bd update <id> --claim`
+1. **Check ready work**: `br ready` shows unblocked issues (graph triage: `bv --robot-insights` / `bv --robot-plan`)
+2. **Claim your task atomically**: `br update <id> --claim`
 3. **Work on it**: Implement, test, document
 4. **Discover new work?** Create linked issue:
-   - `bd create "Found bug" --description="Details about what was found" -p 1 --deps discovered-from:<parent-id>`
-5. **Complete**: `bd close <id> --reason "Done"`
+   - `br create "Found bug" --body "Details about what was found" -p 1 --deps discovered-from:<parent-id>`
+5. **Complete**: `br close <id> --reason "Done"`
 
 ### Quality
-- Use `--acceptance` and `--design` fields when creating issues
-- Use `--validate` to check description completeness
+- Use `br update <id> --acceptance-criteria "..."` and `--design "..."` to fill structured fields
+- Use `br lint` to check issues for missing template sections
 
 ### Lifecycle
-- `bd defer <id>` / `bd supersede <id>` for issue management
-- `bd stale` / `bd orphans` / `bd lint` for hygiene
-- `bd human <id>` to flag for human decisions
-- `bd formula list` / `bd mol pour <name>` for structured workflows
+- `br defer <id>` / `br undefer <id>` for scheduling
+- `br stale` / `br orphans` / `br lint` for hygiene
+- `br epic` for epic management, `br dep tree <id>` / `br dep cycles` for graph health
 
 ### Auto-Sync
 
-bd automatically syncs via Dolt:
+br syncs through git, not a server:
 
-- Each write auto-commits to Dolt history
-- Use `bd dolt push`/`bd dolt pull` for remote sync
-- No manual export/import needed!
+- Each write auto-flushes the SQLite DB to `_beads/issues.jsonl` (disable with `--no-auto-flush`)
+- `br sync --flush-only` / `--import-only` / `--status` for explicit control; br NEVER runs git commands itself
+- Remote sync = commit `_beads/*.jsonl` and `git push`
 
 ### Important Rules
 
-- ✅ Use bd for ALL task tracking
+- ✅ Use br for ALL task tracking
 - ✅ Always use `--json` flag for programmatic use
 - ✅ Link discovered work with `discovered-from` dependencies
-- ✅ Check `bd ready` before asking "what should I work on?"
+- ✅ Check `br ready` before asking "what should I work on?"
 - ❌ Do NOT create markdown TODO lists
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
+- ❌ Do NOT run `bd` — retired legacy (2026-06-11); its Dolt server was a single-host SPOF (see the tracker note atop this file)
 
 For more details, see README.md and docs/QUICKSTART.md.
 
@@ -274,7 +274,7 @@ For more details, see README.md and docs/QUICKSTART.md.
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   bd dolt push   # only if a bd remote is configured (skip silently otherwise)
+   br sync --flush-only && git add _beads/*.jsonl  # commit if tracker changed
    git push
    git status  # MUST show "up to date with origin"
    ```
