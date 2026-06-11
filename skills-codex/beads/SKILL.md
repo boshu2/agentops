@@ -76,47 +76,11 @@ bd dolt push                        # only if a Dolt remote is configured
 
 ## br (beads_rust) Quick Reference
 
-br is the Rust rewrite of bd. Commands match bd except git handling is explicit.
-
-```bash
-# Lifecycle
-br create "Title" -p 1 -t task       # Create (priority 0-4)
-br update <id> --status in_progress  # Claim work
-br close <id> --reason "Done"        # Complete
-br ready --json                      # Actionable work (not blocked)
-br list --json                       # All issues
-br show <id> --json                  # Issue details
-
-# Dependencies
-br dep add <child> <parent>          # child depends on parent
-br dep cycles                        # MUST be empty
-br dep tree <id>                     # Visualize dependencies
-
-# Sync (EXPLICIT — never automatic)
-br sync --flush-only                 # DB → JSONL (before git commit)
-br sync --import-only                # JSONL → DB (after git pull)
-```
-
-**Session ending pattern (br):**
-```bash
-git pull --rebase
-br sync --flush-only
-git add .beads/ && git commit -m "Update issues"
-git push
-```
+br is the Rust rewrite of bd; the binary self-describes (`br --help`). Full command surface: [references/BR_REFERENCE.md](references/BR_REFERENCE.md). Doctrine: sync is EXPLICIT, never automatic — `br sync --flush-only` (DB → JSONL, before git commit) / `br sync --import-only` (JSONL → DB, after git pull); session ends with pull-rebase → flush → commit `.beads/` → push.
 
 ## bv Graph Triage
 
-NEVER run bare `bv`. Always use `--robot-*` flags.
-
-| Command | Use When |
-|---------|----------|
-| `bv --robot-triage` | What should I work on? Full recommendations + blockers + health |
-| `bv --robot-next` | Just the single top pick |
-| `bv --robot-plan` | What can run concurrently? Parallel execution tracks |
-| `bv --robot-insights` | Deep analysis: metrics, cycles, density, k-core |
-| `bv --robot-priority` | Am I prioritizing wrong? Misalignment detection |
-| `bv --robot-alerts` | Stale issues, blocking cascades, priority mismatches |
+NEVER run bare `bv`. Always use `--robot-*` flags (`--robot-triage`, `--robot-next`, `--robot-plan`, `--robot-insights`, `--robot-priority`, `--robot-alerts` — selection guide in [references/BV_TRIAGE.md](references/BV_TRIAGE.md)).
 
 **Key metrics:** PageRank = everything depends on this (fix first). Betweenness = bottleneck (blocks multiple paths). High both = critical bottleneck, drop everything.
 
@@ -149,15 +113,7 @@ logging expectations, a named done state, and no dependency cycles.
 
 ## Troubleshooting
 
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| bd/br command not found | CLI not installed or not in PATH | Install bd: `brew install bd` or check PATH |
-| "not a git repository" error | bd requires git repo, current dir not initialized | Run `git init` or navigate to git repo root |
-| "beads not initialized" error | .beads/ directory missing | Human runs `bd init --prefix <prefix>` once |
-| Issue ID format errors | Wrong prefix or malformed ID | Check rigs.json for correct prefix |
-| `bv` hangs | TUI launched without robot flag | Always use `--robot-*` flags |
-| Cycles detected | Circular dependency | `br dep remove` to break cycle |
-| br sync confusion | Missing `--flush-only` or `--import-only` | Always specify direction explicitly |
+Symptom → fix table (command not found, not-a-git-repo, init missing, ID prefix errors, `bv` hangs, dependency cycles, sync direction confusion): [references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md). The two most common: a hung `bv` means a robot flag was omitted; br sync confusion means the direction (`--flush-only` vs `--import-only`) wasn't specified.
 
 ## Reference Documents
 
