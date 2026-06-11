@@ -429,16 +429,19 @@ func tickClose(rt tickRuntime, id, msg, evidence string, paths []string) error {
 	if _, code, err := rt.run("br", "sync", "--flush-only"); err != nil || code != 0 {
 		_, _, _ = rt.run("br", "sync")
 	}
-	if !tickLedgerShowsClosed(filepath.Join(rt.workDir, ".beads", "issues.jsonl"), id) {
+	ledgerDir := tickLedgerDir(rt)
+	issuesPath := filepath.Join(ledgerDir, "issues.jsonl")
+	metadataPath := filepath.Join(ledgerDir, "metadata.json")
+	if !tickLedgerShowsClosed(issuesPath, id) {
 		_, _, _ = rt.run("br", "update", id, "--status", "open")
 		_, _, _ = rt.run("br", "sync", "--flush-only")
 		fmt.Fprintf(rt.stderr, "FAILED close %s: ledger does not show a closed bead after br close; bead reopened\n", id)
 		return &tickExitError{code: tickExitCloseFail}
 	}
 
-	stage := []string{"add", "--", ".beads/issues.jsonl"}
-	if tickPathExists(rt.workDir, ".beads/metadata.json") {
-		stage = append(stage, ".beads/metadata.json")
+	stage := []string{"add", "--", tickStagePath(rt.workDir, issuesPath)}
+	if tickPathExists(rt.workDir, metadataPath) {
+		stage = append(stage, tickStagePath(rt.workDir, metadataPath))
 	}
 	if tickPathExists(rt.workDir, evFirst) {
 		stage = append(stage, evFirst)
@@ -464,7 +467,7 @@ func tickClose(rt tickRuntime, id, msg, evidence string, paths []string) error {
 }
 
 func tickClosePort(rt tickRuntime, id, msg, evidence string, paths []string) error {
-	if tickLedgerShowsClosed(filepath.Join(rt.workDir, ".beads", "issues.jsonl"), id) {
+	if tickLedgerShowsClosed(filepath.Join(tickLedgerDir(rt), "issues.jsonl"), id) {
 		after := tickGitRevParse(rt)
 		if after == "" {
 			after = "none"
@@ -496,6 +499,44 @@ func tickResolvePath(root, path string) string {
 		return path
 	}
 	return filepath.Join(root, path)
+}
+
+// tickLedgerDir resolves the tracker ledger directory used for close
+// verification and staging. Resolution order matches what the spawned br
+// child processes see: an explicit BEADS_DIR (rt.env overrides the inherited
+// process environment, mirroring rt.run), then the br workspace `_beads/`
+// when it exists, then legacy `.beads/` (transition-safe fallback).
+func tickLedgerDir(rt tickRuntime) string {
+	if dir := tickEnvValue(rt, "BEADS_DIR"); dir != "" {
+		return tickResolvePath(rt.workDir, dir)
+	}
+	if info, err := os.Stat(filepath.Join(rt.workDir, "_beads")); err == nil && info.IsDir() {
+		return filepath.Join(rt.workDir, "_beads")
+	}
+	return filepath.Join(rt.workDir, ".beads")
+}
+
+// tickEnvValue mirrors the environment a tickRuntime child process receives:
+// rt.env entries are appended after os.Environ() in rt.run, so the last
+// rt.env match wins over the inherited process value.
+func tickEnvValue(rt tickRuntime, key string) string {
+	prefix := key + "="
+	for i := len(rt.env) - 1; i >= 0; i-- {
+		if strings.HasPrefix(rt.env[i], prefix) {
+			return strings.TrimPrefix(rt.env[i], prefix)
+		}
+	}
+	return os.Getenv(key)
+}
+
+// tickStagePath renders a ledger path for git add: repo-relative when the
+// path sits under the work dir, absolute otherwise.
+func tickStagePath(root, path string) string {
+	rel, err := filepath.Rel(root, path)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return path
+	}
+	return rel
 }
 
 func tickGitRevParse(rt tickRuntime) string {
