@@ -36,6 +36,19 @@ fail() {
     failed=$((failed + 1))
 }
 
+skip() {
+    echo -e "  ${YELLOW}-${NC} $1 (skipped: council extracted to mt-olympus)"
+}
+
+# council was extracted to mt-olympus (skill-prune Lane A, 2026-06-10); the
+# in-repo SKILL.md is a routing stub. Council tuning assertions follow the
+# canonical copy in ~/dev/mt-olympus and are skipped here when the stub marker
+# is present.
+COUNCIL_EXTRACTED=""
+if grep -q 'moved to Mount Olympus' "$REPO_ROOT/skills/council/SKILL.md" 2>/dev/null; then
+    COUNCIL_EXTRACTED=1
+fi
+
 echo "=== Tuning Defaults Validation ==="
 echo ""
 
@@ -43,28 +56,36 @@ echo ""
 echo "--- Council Model Defaults ---"
 
 # T1: Council judges default to sonnet
-if grep -q 'COUNCIL_CLAUDE_MODEL.*|.*sonnet' "$REPO_ROOT/skills/council/SKILL.md"; then
+if [ -n "$COUNCIL_EXTRACTED" ]; then
+    skip "T1: Council judges default to sonnet"
+elif grep -q 'COUNCIL_CLAUDE_MODEL.*|.*sonnet' "$REPO_ROOT/skills/council/SKILL.md"; then
     pass "T1: Council judges default to sonnet"
 else
     fail "T1: Council judges should default to sonnet (not opus)"
 fi
 
 # T2: cli-spawning shows sonnet as Claude default
-if grep -q '| Claude | sonnet |' "$REPO_ROOT/skills/council/references/cli-spawning.md"; then
+if [ -n "$COUNCIL_EXTRACTED" ]; then
+    skip "T2: cli-spawning.md shows sonnet as Claude default"
+elif grep -q '| Claude | sonnet |' "$REPO_ROOT/skills/council/references/cli-spawning.md"; then
     pass "T2: cli-spawning.md shows sonnet as Claude default"
 else
     fail "T2: cli-spawning.md should show sonnet as Claude default"
 fi
 
 # T3: Explorer model still sonnet
-if grep -q 'COUNCIL_EXPLORER_MODEL.*|.*sonnet' "$REPO_ROOT/skills/council/SKILL.md"; then
+if [ -n "$COUNCIL_EXTRACTED" ]; then
+    skip "T3: Explorer model remains sonnet"
+elif grep -q 'COUNCIL_EXPLORER_MODEL.*|.*sonnet' "$REPO_ROOT/skills/council/SKILL.md"; then
     pass "T3: Explorer model remains sonnet"
 else
     fail "T3: Explorer model should remain sonnet"
 fi
 
 # T4: Model profiles: balanced = sonnet, thorough = opus, fast = haiku
-if grep -q '| `thorough` | opus |' "$REPO_ROOT/skills/council/references/model-profiles.md" && \
+if [ -n "$COUNCIL_EXTRACTED" ]; then
+    skip "T4: Model profiles correct (thorough=opus, balanced=sonnet, fast=haiku)"
+elif grep -q '| `thorough` | opus |' "$REPO_ROOT/skills/council/references/model-profiles.md" && \
    grep -q '| `balanced` | sonnet |' "$REPO_ROOT/skills/council/references/model-profiles.md" && \
    grep -q '| `fast` | haiku |' "$REPO_ROOT/skills/council/references/model-profiles.md"; then
     pass "T4: Model profiles correct (thorough=opus, balanced=sonnet, fast=haiku)"
@@ -305,12 +326,16 @@ else
 fi
 
 # T25: Council SKILL.md and cli-spawning.md both say sonnet as default
-council_has_sonnet=$(grep 'COUNCIL_CLAUDE_MODEL' "$REPO_ROOT/skills/council/SKILL.md" | head -1 | grep -c 'sonnet' || true)
-cli_has_sonnet=$(grep '| Claude |' "$REPO_ROOT/skills/council/references/cli-spawning.md" | head -1 | grep -c 'sonnet' || true)
-if [ "$council_has_sonnet" -ge 1 ] && [ "$cli_has_sonnet" -ge 1 ]; then
-    pass "T25: Council SKILL.md and cli-spawning.md both default to sonnet"
+if [ -n "$COUNCIL_EXTRACTED" ]; then
+    skip "T25: Council SKILL.md and cli-spawning.md both default to sonnet"
 else
-    fail "T25: Council SKILL.md (sonnet: $council_has_sonnet) and cli-spawning.md (sonnet: $cli_has_sonnet) should both say sonnet"
+    council_has_sonnet=$(grep 'COUNCIL_CLAUDE_MODEL' "$REPO_ROOT/skills/council/SKILL.md" | head -1 | grep -c 'sonnet' || true)
+    cli_has_sonnet=$(grep '| Claude |' "$REPO_ROOT/skills/council/references/cli-spawning.md" | head -1 | grep -c 'sonnet' || true)
+    if [ "$council_has_sonnet" -ge 1 ] && [ "$cli_has_sonnet" -ge 1 ]; then
+        pass "T25: Council SKILL.md and cli-spawning.md both default to sonnet"
+    else
+        fail "T25: Council SKILL.md (sonnet: $council_has_sonnet) and cli-spawning.md (sonnet: $cli_has_sonnet) should both say sonnet"
+    fi
 fi
 
 # T26: Pre-mortem Step 1a marked "Skip if --quick"
@@ -334,21 +359,27 @@ echo ""
 echo "--- Section 7: Timeout Defaults ---"
 
 # T28: Council default timeout is 120s
-if grep -q 'COUNCIL_TIMEOUT.*120' "$REPO_ROOT/skills/council/SKILL.md"; then
+if [ -n "$COUNCIL_EXTRACTED" ]; then
+    skip "T28: Council default timeout is 120s"
+elif grep -q 'COUNCIL_TIMEOUT.*120' "$REPO_ROOT/skills/council/SKILL.md"; then
     pass "T28: Council default timeout is 120s"
 else
     fail "T28: Council SKILL.md should define COUNCIL_TIMEOUT default as 120"
 fi
 
 # T29: Explorer timeout is 60s
-if grep -q 'COUNCIL_EXPLORER_TIMEOUT.*60' "$REPO_ROOT/skills/council/SKILL.md"; then
+if [ -n "$COUNCIL_EXTRACTED" ]; then
+    skip "T29: Explorer timeout is 60s"
+elif grep -q 'COUNCIL_EXPLORER_TIMEOUT.*60' "$REPO_ROOT/skills/council/SKILL.md"; then
     pass "T29: Explorer timeout is 60s"
 else
     fail "T29: Council SKILL.md should define COUNCIL_EXPLORER_TIMEOUT default as 60"
 fi
 
 # T30: R2 debate timeout is 90s
-if grep -q 'COUNCIL_R2_TIMEOUT.*90' "$REPO_ROOT/skills/council/SKILL.md"; then
+if [ -n "$COUNCIL_EXTRACTED" ]; then
+    skip "T30: R2 debate timeout is 90s"
+elif grep -q 'COUNCIL_R2_TIMEOUT.*90' "$REPO_ROOT/skills/council/SKILL.md"; then
     pass "T30: R2 debate timeout is 90s"
 else
     fail "T30: Council SKILL.md should define COUNCIL_R2_TIMEOUT default as 90"
@@ -396,7 +427,9 @@ echo ""
 echo "--- Section 9: Codex Model ---"
 
 # T35: Codex model is gpt-5.3-codex
-if grep -q 'gpt-5.3-codex' "$REPO_ROOT/skills/council/SKILL.md"; then
+if [ -n "$COUNCIL_EXTRACTED" ]; then
+    skip "T35: Council Codex model default is gpt-5.3-codex"
+elif grep -q 'gpt-5.3-codex' "$REPO_ROOT/skills/council/SKILL.md"; then
     pass "T35: Council Codex model default is gpt-5.3-codex"
 else
     fail "T35: Council SKILL.md should reference gpt-5.3-codex as Codex model"
@@ -409,7 +442,9 @@ echo ""
 echo "--- Section 10: Output Paths ---"
 
 # T36: Council outputs to .agents/council/
-if grep -q '\.agents/council/' "$REPO_ROOT/skills/council/SKILL.md"; then
+if [ -n "$COUNCIL_EXTRACTED" ]; then
+    skip "T36: Council outputs to .agents/council/"
+elif grep -q '\.agents/council/' "$REPO_ROOT/skills/council/SKILL.md"; then
     pass "T36: Council outputs to .agents/council/"
 else
     fail "T36: Council SKILL.md should output to .agents/council/"
