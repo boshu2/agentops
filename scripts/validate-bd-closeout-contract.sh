@@ -37,8 +37,12 @@ else
         fail "$workflow_doc must document the br flush discipline (br sync --flush-only)"
     fi
 
-    if ! grep -Fq 'git add _beads/*.jsonl' "$workflow_doc"; then
-        fail "$workflow_doc must document staging the br ledger (git add _beads/*.jsonl)"
+    if ! grep -Fq 'git -C _beads' "$workflow_doc"; then
+        fail "$workflow_doc must document the private-ledger sync (git -C _beads add/commit/push)"
+    fi
+
+    if grep -Fq 'git add _beads' "$workflow_doc"; then
+        fail "$workflow_doc stages _beads/ into the PUBLIC repo — the ledger is a private nested repo; use git -C _beads"
     fi
 
     bd_matches="$(grep -nE 'bd dolt (push|commit)' "$workflow_doc" || true)"

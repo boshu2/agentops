@@ -143,11 +143,11 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
 2. **Run quality gates** (if code changed) - Tests, linters, builds
 3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - Git push is mandatory; the tracker syncs through git, not a server:
+4. **PUSH TO REMOTE** - Git push is mandatory; the tracker syncs through its own PRIVATE repo, never this public one:
    ```bash
    git pull --rebase
    br sync --flush-only   # export DB → _beads JSONL (br never runs git itself)
-   git add _beads/*.jsonl && git commit -m "tracker: <summary>"  # if tracker changes are pending
+   git -C _beads add -A && git -C _beads commit -m "tracker: <summary>" && git -C _beads push  # if tracker changes are pending
    git push
    git status  # MUST show "up to date with origin"
    ```
@@ -163,9 +163,11 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 - NEVER leave a foreign branch-attached worktree without a recorded disposition
 - Keep the canonical root clean and attached to `main`.
 - Run `bash scripts/check-worktree-disposition.sh` before push and session close.
-- There is no remote tracker push beyond `git push` — `_beads/issues.jsonl`
-  committed via git IS the sync. If `br sync --flush-only` reports nothing to
-  export, that is fine; continue with the mandatory git push.
+- The tracker ledger is a PRIVATE nested git repo (`_beads/` → `boshu2/agentops-beads`),
+  gitignored by this PUBLIC repo — bead bodies carry private fleet/client context and must
+  NEVER land on the public remote. `git -C _beads push` IS the tracker sync. If
+  `br sync --flush-only` reports nothing to export, that is fine; continue with the
+  mandatory git push.
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:full (hand-converted bd→br 2026-06-11; no longer generator-managed) -->
 ## Issue Tracking with br (beads_rust)
@@ -175,7 +177,7 @@ This moves the tag to HEAD, pushes, rebuilds the GitHub release, updates the Hom
 ### Why br?
 
 - Dependency-aware: Track blockers and relationships between issues
-- Git-native: SQLite cache + `_beads/issues.jsonl` ledger committed via git — offline, no server, no SPOF
+- Git-native: SQLite cache + `_beads/issues.jsonl` ledger committed in its own private repo — offline, no server, no SPOF, no public leak
 - Agent-optimized: JSON output, ready work detection, discovered-from links, `br robot-docs guide`
 - Prevents duplicate tracking systems and confusion
 
@@ -247,7 +249,7 @@ br syncs through git, not a server:
 
 - Each write auto-flushes the SQLite DB to `_beads/issues.jsonl` (disable with `--no-auto-flush`)
 - `br sync --flush-only` / `--import-only` / `--status` for explicit control; br NEVER runs git commands itself
-- Remote sync = commit `_beads/*.jsonl` and `git push`
+- Remote sync = `git -C _beads add -A && git -C _beads commit && git -C _beads push` (private remote `boshu2/agentops-beads`)
 
 ### Important Rules
 
@@ -274,7 +276,7 @@ For more details, see README.md and docs/QUICKSTART.md.
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   br sync --flush-only && git add _beads/*.jsonl  # commit if tracker changed
+   br sync --flush-only && git -C _beads add -A && git -C _beads commit -m "tracker: <summary>" && git -C _beads push  # if tracker changed
    git push
    git status  # MUST show "up to date with origin"
    ```

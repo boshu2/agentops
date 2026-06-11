@@ -213,3 +213,11 @@ wt-ag-ddrb/
 wt-ag-ni1b/
 wt-ag-y4ac/
 wt-gofmt/
+# bd worktree
+wt-ag-pj51/
+# bd worktree
+wt-ag-if7p/
+# br tracker ledger — PRIVATE nested repo (boshu2/agentops-beads); never commit to the public repo
+_beads/
+# foreign nested worktree (recon F5)
+wt-ag-qidx/
