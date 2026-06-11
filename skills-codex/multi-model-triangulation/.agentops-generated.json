@@ -1,7 +1,7 @@
 {
   "generator": "manual-maintained",
   "source_skill": "skills/multi-model-triangulation",
-  "layout": "modular",
-  "source_hash": "d4ceacd5ae4012bad7a0172de657cd0d1be4f22b55a32e19c46b5e61a05dc055",
-  "generated_hash": "77b5b8033d1fc2df7e62f62dfa0456194ddc588685bafec78e4e3e759efd337b"
+  "layout": "stub",
+  "source_hash": "2fdaf054a3576bb85aca048a19a37df3ec42ddd4964fc314c120c2fd6bcc32fc",
+  "generated_hash": "da1263f6cff981b3aaae547296cee428a42e8ffc8ff4ba995f7c4cb6fe2e8b45"
 }

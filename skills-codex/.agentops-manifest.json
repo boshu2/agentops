@@ -1210,7 +1210,7 @@
     {
       "name": "agent-mail",
       "source_skill": "skills/agent-mail",
-      "source_hash": "4df918b91cbb782dd0601514c4de1a8bdcba68df9ee4a44a87f69cdd0c07f23c",
+      "source_hash": "216b531f2750eb5b416d78e4188a6aa563ee8056134f8176c333d147b76a9ad2",
       "generated_hash": "e66befdbae502fe31a8b1094e7ff90c6779abfdd6ec01723c65cfa641a346ae6"
     },
     {
@@ -1312,8 +1312,8 @@
     {
       "name": "bead-completion-audit",
       "source_skill": "skills/bead-completion-audit",
-      "source_hash": "cf98e94e111e20829159bab15bdd7a27108d046fd7d16be8fa673fbd086e294d",
-      "generated_hash": "57e8adbae5ae41901b5f141e7832ffc661dd026a8604dc82d9d2f20f1421d14a"
+      "source_hash": "5c828c8e3eaff4c248b4fd14468b953c5ad2b3db80b42a8a9ce7ed9d3010d44f",
+      "generated_hash": "81a641dc5ec9c64429f73c095e46d0d83d715291871a1789ca894de4decdb4ac"
     },
     {
       "name": "bead-tracker-migration",
@@ -1348,7 +1348,7 @@
     {
       "name": "beads-workflow",
       "source_skill": "skills/beads-workflow",
-      "source_hash": "d43ad225b5163356703f2cdc214b2d043352b5fd74f34f45cfa208a3c623a610",
+      "source_hash": "0d9e0e93c95b42ca4c763c1d124947df395836385480a8a1258062948d0f7b68",
       "generated_hash": "85127e19267aa6f5ade2b70b9bfb8d5183b7cc1e779867ca03dfb1693cd03fb4"
     },
     {
@@ -1444,13 +1444,13 @@
     {
       "name": "cc-loop-driver",
       "source_skill": "skills/cc-loop-driver",
-      "source_hash": "afc51f469e6df71a4e5ae355016f214de9e60d67fb8234038da53f7d389d546e",
+      "source_hash": "b7aa29d3e6a25796902493170bfbf2305f66bc07a2e264e87a2795d520a3b46e",
       "generated_hash": "1fe027c5713c8aa6bfdea1735d8b33fdf1e6f38afded045b1cce6a7bf4231f4e"
     },
     {
       "name": "cc-subagents",
       "source_skill": "skills/cc-subagents",
-      "source_hash": "8caf920e14389aff93fce782f3a48857bf861880bf9b4fa36c472de943f9b5a4",
+      "source_hash": "b43008b9f10eb62d99aa0ed3f2995bdf80b8773cc9a425e7373252b1aaec1ca0",
       "generated_hash": "e9a359067f53c07d0ebad919eddd184cc9be3104aaced379db8e4e4908b60085"
     },
     {
@@ -1516,7 +1516,7 @@
     {
       "name": "codex-exec",
       "source_skill": "skills/codex-exec",
-      "source_hash": "b6d871cffe2ac6713e1d0c88d9cb0f40ac21acb2e630b08c22730b60a7ed83f9",
+      "source_hash": "5c7e07d1ff5ba88da1059d4a01b71526d771c7185f0cd5e4b3bb047e709606c2",
       "generated_hash": "cb2586d6b8499ceb88d5b2ecc325a2ab6ceef367b314d956f704fa855af83aac"
     },
     {
@@ -1594,8 +1594,8 @@
     {
       "name": "council",
       "source_skill": "skills/council",
-      "source_hash": "325ef84388d48f1ddbb115a89f09f75d354541889af7dc297a728dfbcf0d150f",
-      "generated_hash": "811ab60278e0f8cfc6aee26fb8cfa6196212813a30d76f587f83c095fcbf4359"
+      "source_hash": "49490660b54b2b0685dbb4369131668fdd831c8dd5d444da8a2ebfda43b5cb78",
+      "generated_hash": "4ef82a83d08cb7f5cb12556dfc67d48bb1593f30e4de15345fd1058d008a1c39"
     },
     {
       "name": "crank",
@@ -1612,8 +1612,8 @@
     {
       "name": "cross-vendor-trust-gate",
       "source_skill": "skills/cross-vendor-trust-gate",
-      "source_hash": "818a891e28813620457d0e8a2e83c021b8866a936313b1c62c983e57a2b5ce62",
-      "generated_hash": "b96e122feea75ed38555a3f102a7ced2603a5161d554985930a556f3ad3fdfd2"
+      "source_hash": "e2715626313810a64f6fa83731ae870659beebba7cb6566b1ee02385245c0c2e",
+      "generated_hash": "1b57ae96817a0fb12d7ed13c5d0b3b294f99c82bbde5e01de29e0e2f3d668bbe"
     },
     {
       "name": "curate",
@@ -1708,8 +1708,8 @@
     {
       "name": "eval-outcomes",
       "source_skill": "skills/eval-outcomes",
-      "source_hash": "eba87bdf6e72b1d7c4a36a03b87163a43ecccc810aa7a53dbad6f8ffa6647931",
-      "generated_hash": "6f6ed5eba59ea419db5214b7a5dee0641723eb7c2a6699386b7427e90d2442fc"
+      "source_hash": "33a93f3f8ae093ab9ee76b3e249919ef2881f65a1fb8312184fd26b779defbfe",
+      "generated_hash": "12c00924eed26917b33461214dc8d55a46d8dd6f866fb0544fd30f30e6aaeb10"
     },
     {
       "name": "evolve",
@@ -1918,8 +1918,8 @@
     {
       "name": "multi-model-triangulation",
       "source_skill": "skills/multi-model-triangulation",
-      "source_hash": "d4ceacd5ae4012bad7a0172de657cd0d1be4f22b55a32e19c46b5e61a05dc055",
-      "generated_hash": "77b5b8033d1fc2df7e62f62dfa0456194ddc588685bafec78e4e3e759efd337b"
+      "source_hash": "2fdaf054a3576bb85aca048a19a37df3ec42ddd4964fc314c120c2fd6bcc32fc",
+      "generated_hash": "da1263f6cff981b3aaae547296cee428a42e8ffc8ff4ba995f7c4cb6fe2e8b45"
     },
     {
       "name": "native-debugger-triage",
@@ -2164,8 +2164,8 @@
     {
       "name": "red-team",
       "source_skill": "skills/red-team",
-      "source_hash": "6a100fe5fc59fdd24d360730d4fb3f6944b04502e0d39cb405771da9b20270f4",
-      "generated_hash": "4ba26755ae541432c64e24f119e44499d72418f73e2d27427b1bf32229f03161"
+      "source_hash": "f01108d36a70b502102ee4d78f88b18e77d08d56f2c18620d21fcb1554118cd8",
+      "generated_hash": "600006faac579f32c6e5ff137e46cf987d278eab3d9cee27ec99469acc45c142"
     },
     {
       "name": "refactor",
@@ -2482,7 +2482,7 @@
     {
       "name": "swarm",
       "source_skill": "skills/swarm",
-      "source_hash": "5c483aea88223216ea00c22cd2f1bebb3ba1d3d995c7a4bf8f977800a6035e96",
+      "source_hash": "72f2a83a42292fc97297fe64cf0d182efd4645c747c71ff4af403fc778df763c",
       "generated_hash": "6a66e8bb7dd85f3addce4632f443351925d888fff74fb0b161533f473e88d8ac"
     },
     {
@@ -2548,7 +2548,7 @@
     {
       "name": "using-atm",
       "source_skill": "skills/using-atm",
-      "source_hash": "57747503518c7456df23580dd9ddb3fbd72aeec07743b6647f6e979182fb8cf0",
+      "source_hash": "793a5692fb23b9fd6f3aa4a712d84a74d8b9cbbdcf489fbdc34a651ab025abc4",
       "generated_hash": "bae77030f0dd2d6830ea06734fdd31665e1700152b77c8a03ef0331c91ba539b"
     },
     {
@@ -2560,7 +2560,7 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "3e059e59205d8c5fa0c74b46f1f6806f38a70ffcb67fade81fb086a6185d5c50",
+      "source_hash": "c094fd8b29098f976f665bbc55e28eea0a14edb0fb800922cb6df9e5b54883b9",
       "generated_hash": "7dbdcbb47198ac587b4cc5998b15c572a5e901452d62e7099905ddae968a3862"
     },
     {

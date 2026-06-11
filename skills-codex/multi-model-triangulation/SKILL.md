@@ -3,18 +3,10 @@ name: multi-model-triangulation
 description: "Run multi model triangulation."
 ---
 
-# multi-model-triangulation (Codex)
+# multi-model-triangulation — moved to Mount Olympus (2026-06-10)
 
-Codex-native entry point for the `multi-model-triangulation` operator skill.
-
-The AgentOps source skill `../../skills/multi-model-triangulation/SKILL.md` is the source of truth
-for domain behavior, commands, examples, references, and output expectations.
-Read it first, then use `prompt.md` for the Codex runtime profile.
-
-## Codex Runtime Contract
-
-- Use Codex plus the local shell. Do not invoke Claude Code as an executor.
-- Load only the relevant source references or scripts for the task.
-- Prefer robot/JSON/NDJSON command surfaces when the source skill exposes them.
-- Verify command syntax from local `--help` or checked-in references before acting.
-- Return concrete evidence: commands run, files touched, exit codes, and any remaining blocker.
+Canonical home: the mt-olympus repository, project skill `multi-model-triangulation`
+(`~/dev/mt-olympus/` repo, project skills directory). Read and follow the
+canonical SKILL.md there. This stub preserves routing and twin parity until
+the catalog closer updates the registry (skill-prune Lane A,
+evidence/skill-prune-recon.md).

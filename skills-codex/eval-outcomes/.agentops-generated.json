@@ -1,7 +1,7 @@
 {
   "generator": "manual-maintained",
   "source_skill": "skills/eval-outcomes",
-  "layout": "modular",
-  "source_hash": "eba87bdf6e72b1d7c4a36a03b87163a43ecccc810aa7a53dbad6f8ffa6647931",
-  "generated_hash": "6f6ed5eba59ea419db5214b7a5dee0641723eb7c2a6699386b7427e90d2442fc"
+  "layout": "stub",
+  "source_hash": "33a93f3f8ae093ab9ee76b3e249919ef2881f65a1fb8312184fd26b779defbfe",
+  "generated_hash": "12c00924eed26917b33461214dc8d55a46d8dd6f866fb0544fd30f30e6aaeb10"
 }
