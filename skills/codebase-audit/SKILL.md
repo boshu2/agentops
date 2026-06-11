@@ -1,8 +1,7 @@
 ---
 name: codebase-audit
 description: >-
-  Domain-parameterized codebase auditing (security, UX, performance, API, copy, CLI).
-  Use when auditing code, assessing quality, finding issues, or pre-launch review.
+  Domain-parameterized codebase audits (security, UX, perf, API, copy, CLI) + report modes (archaeology, architecture/briefing, patterns, risk). Use when auditing or onboarding.
 practices:
 - code-review
 skill_api_version: 1
@@ -10,6 +9,11 @@ hexagonal_role: supporting
 consumes: []
 produces:
 - codebase-audit
+context_rel:
+- kind: supplier-to
+  with: plan
+- kind: supplier-to
+  with: validate
 context:
   window: fork
 metadata:
@@ -30,6 +34,7 @@ user-invocable: true
 | Need | Skill |
 |------|-------|
 | Find and **report** domain-specific issues | **codebase-audit** (this) |
+| Build a **mental model** / onboard, write an **architecture or stakeholder report**, mine **cross-repo patterns**, or run a **prioritized risk audit** | **codebase-audit** — [REPORT-MODES.md](references/REPORT-MODES.md) |
 | Find bugs and **fix them iteratively** | multi-pass-bug-hunting |
 | Evaluate **usability** specifically | ux-audit |
 | Make UI **visually polished** | ui-polish |
@@ -173,3 +178,4 @@ More patterns: [TOOLS.md](references/TOOLS.md)
 | Full domain checklists | [CHECKLISTS.md](references/CHECKLISTS.md) |
 | Example audit reports | [EXAMPLES.md](references/EXAMPLES.md) |
 | Tool commands by domain | [TOOLS.md](references/TOOLS.md) |
+| Report modes (archaeology, architecture, briefing, patterns, risk) | [REPORT-MODES.md](references/REPORT-MODES.md) |

@@ -9,11 +9,15 @@ description: "Use when coordinating agents with Agent Mail locks, inboxes, threa
 practices:
 - pragmatic-programmer
 ---
-<!-- TOC: Boundary | Bootstrap | Core Ops | File Reservations | Beads | Troubleshooting | Identity | Human Overseer | Pre-Commit Guard | References -->
+<!-- TOC: Boundary | Disciplines | When to Use What | Bootstrap | Reservations | Beads | Troubleshooting | References -->
 
-# Using MCP Agent Mail
+# Using Agent Mail
 
 > **Core Insight:** Agent Mail is the side channel for leases, notifications, acknowledgements, and handoffs. BR/beads is the durable coordination bus and source of truth for work state, evidence, and decisions.
+
+> **⚠️ TWO SURFACES — read this first.** Every operation has BOTH an MCP-tool form (`send_message`, `fetch_inbox`, …) AND a CLI form (`am mail send`, `am mail inbox`, …). The MCP tools are only present when the agent-mail MCP server is wired into your session's tool surface — **a plain CLI/shell agent (or a session where the MCP server didn't load) will NOT have them.** In that case use the `am` CLI, which works from any shell. **Discoverability trap (br cp-jgcl):** the send/reply verbs live under the `am mail` group, which `am --help` does NOT list, and the read commands have flat aliases (`am inbox`, `am status`) but **`am send` does not exist** — it is **`am mail send`**. When in doubt: `am mail --help`, `am macros --help`, `am file_reservations --help`.
+
+**Don't re-learn the command surface from this skill.** The MCP server self-describes its tools and resources in your tool list; the CLI self-describes via `am --help` and the group helps above. This skill carries only the operating doctrine: when to use mail, the reservation discipline, and the coordination boundaries. Full tool/parameter catalog: [TOOLS.md](references/TOOLS.md).
 
 ## Coordination Boundary
 
@@ -28,102 +32,68 @@ Use Agent Mail to prevent collisions and notify active agents. Do not use it as 
 
 One-writer-per-hot-dir rule: reserve the path before editing it. If the reservation conflicts, do not write into that path; coordinate with the holder, narrow scope, or wait for the lease to clear.
 
+## Coordination disciplines (2026-06-09, cards 1–5, cp-hhd7)
+
+### Durable lane identities (card 1, cp-9lrb)
+
+Register a **durable adjective+noun identity** at session start. Pane text and
+human relay are unauditable and load the operator. The ledger is the bus — both
+lanes must be registered to exchange auditable messages. Do not coordinate via
+informal pane text when `send_message` + `fetch_inbox` is available.
+
+### Content-push, not pointers (card 2, cp-9lrb)
+
+When sending a lane a message, **push the content** — include the actual text,
+diff, or decision. A pointer to a message-id the recipient cannot discover by
+inbox is still a relay. If the recipient's inbox is broken and they cannot read
+by-id, a pointer is a dead end. Short content fits in the body; long content goes
+to a committed artifact with an absolute path, not an AM-internal id.
+
+### Intent on the graph first — dedup (card 3, cp-hhtu)
+
+Before any actor acts on a bead (intake, admit, implement, validate, mutate),
+**update the bead status and set the actor on the graph first**, then check for an
+existing actor. Parallel pipelines are blind to each other at every tier — dedup
+via the ledger, not behavioral coordination. Five exhibits of same-bead parallel
+work hit the fleet in one day (impl/validation/admission/mutation/intake, cp-hhtu).
+The fix is structural: intent on the graph is the lock.
+
+### ACK-with-id on routed writes (card 5, cp-fmt8)
+
+When routing a write through a single writer (e.g. a beads-intake lane), require
+**ACK-with-id** back to the requester — the AM message id of the filed bead or the
+`br show <id>` output confirming the record exists. An unacknowledged routed write
+is invisible work. "Are these filed?" must not be a question — the ACK closes it.
+
 ## When to Use What
 
 | Situation | Action |
 |-----------|--------|
-| Starting any agent session | `macro_start_session` |
-| About to edit files | `file_reservation_paths` → edit → `release_file_reservations` |
-| Need to tell another agent something | `send_message` with `thread_id` |
+| Starting any agent session | `macro_start_session` (CLI: `am macros start-session`) |
+| About to edit files | reserve paths → edit → release reservations |
+| Need to tell another agent something | `send_message` with `thread_id` (CLI: `am mail send`) |
 | Picking up someone else's work | `macro_prepare_thread` |
 | Need durable work state or evidence | Update BR/beads, then link the mail thread if useful |
 | Can't message an agent | `request_contact` → wait for approval |
-| Server seems broken | Use `health_check()` first; CLI-only: `doctor check --verbose` → `doctor repair --yes` |
+| Server seems broken | `health_check()` first; CLI-only: `doctor check --verbose` → `doctor repair --yes` |
 
----
+## Session Bootstrap
 
-## THE EXACT PROMPT — Session Bootstrap
+**Call `macro_start_session` (or `am macros start-session --project <abs> --program <p> --model <m> --task "<desc>"`) at the start of every agent session.** One call: ensures project exists → registers your identity → fetches inbox. Returns `{project, agent, file_reservations, inbox}`.
 
-**Call this at the start of every agent session:**
+Identity notes:
 
-```
-macro_start_session(
-  human_key="/abs/path/to/project",
-  program="codex-cli",
-  model="YOUR_MODEL",
-  task_description="Working on auth module"
-)
-```
+- Agents get adjective+noun names (GreenCastle, BlueLake). Omit `name`/`--name` to auto-generate a valid one.
+- `am macros start-session` auto-generates a fresh identity **per project**; you will have a different name in each project. Confirm yours via `am agent start`.
+- The other macros (`macro_prepare_thread`, `macro_file_reservation_cycle`, `macro_contact_handshake`) and the fast `resource://` reads are self-described by the server; catalog in [TOOLS.md](references/TOOLS.md) and [RESOURCES.md](references/RESOURCES.md).
 
-Returns: `{project, agent, file_reservations, inbox}`
+## File Reservations — Reserve Before Editing
 
-This single call: ensures project exists → registers your identity → fetches inbox.
+The discipline, not the syntax (syntax: `am file_reservations --help` or the `file_reservation_paths` tool):
 
----
-
-## Core Operations
-
-| Task | Tool |
-|------|------|
-| Bootstrap session | `macro_start_session(human_key, program, model, task_description)` |
-| Send message | `send_message(project_key, sender_name, to, subject, body_md)` |
-| Reply in thread | `reply_message(project_key, message_id, sender_name, body_md)` |
-| Check inbox | `fetch_inbox(project_key, agent_name, limit=20)` |
-| Reserve files | `file_reservation_paths(project_key, agent_name, paths, ttl_seconds)` |
-| Release files | `release_file_reservations(project_key, agent_name)` |
-| Search messages | `search_messages(project_key, "query")` |
-
-### The Four Macros
-
-| Macro | When to Use |
-|-------|-------------|
-| `macro_start_session` | Bootstrap: project → agent → inbox |
-| `macro_prepare_thread` | Join existing thread with summary |
-| `macro_file_reservation_cycle` | Reserve → work → auto-release |
-| `macro_contact_handshake` | Cross-agent contact setup |
-
-### Fast Resource Reads (No Tool Call Required)
-
-| Need | Resource |
-|------|----------|
-| List agents | `resource://agents/{project_key}` |
-| Inbox | `resource://inbox/{agent}?project=/abs/path&limit=20` |
-| Thread | `resource://thread/{thread_id}?project=/abs/path&include_bodies=true` |
-| Ack-required | `resource://views/ack-required/{agent}?project=/abs/path` |
-
----
-
-## File Reservations
-
-### Reserve Before Editing
-
-```
-file_reservation_paths(
-  project_key="/abs/path/project",
-  agent_name="GreenCastle",
-  paths=["src/auth/**/*.ts"],
-  ttl_seconds=3600,
-  exclusive=true,
-  reason="bd-123"
-)
-```
-
-Returns: `{granted: [...], conflicts: [...]}`
-
-### Conflict Resolution
-
-If conflicts exist:
-1. **Wait** — TTL will expire
-2. **Coordinate** — Message the holder
-3. **Share** — Use `exclusive=false`
-
-### Release When Done
-
-```
-release_file_reservations(project_key="/abs/path/project", agent_name="GreenCastle")
-```
-
----
+1. **Reserve before the first write.** Glob patterns are fine (`src/auth/**/*.ts`). Set a real `ttl_seconds` and put the bead id in `reason`.
+2. **Check `conflicts` in the response.** On conflict: wait for TTL expiry, message the holder, or share with `exclusive=false`. Never write into a conflicted path.
+3. **Release when done** (`release_file_reservations` / `am file_reservations release <abs> <me>`). Don't squat on leases across unrelated work.
 
 ## Beads Integration
 
@@ -142,8 +112,6 @@ Use bead IDs as your threading anchor. BR remains authoritative; mail carries th
 
 **Do not infer durable state from mail silence.** A missing reply is not proof that a bead is abandoned, blocked, or complete. Check `br show <id> --json`, `bv --robot-insights`, git state, and CI evidence before changing work state.
 
----
-
 ## Quick Troubleshooting
 
 | Error | Fix |
@@ -151,80 +119,10 @@ Use bead IDs as your threading anchor. BR remains authoritative; mail carries th
 | "sender_name not registered" | Call `macro_start_session` first |
 | "FILE_RESERVATION_CONFLICT" | Wait, coordinate, or use `exclusive=false` |
 | "CONTACT_BLOCKED" | Use `request_contact`, wait for approval |
-| Empty inbox | Check `since_ts`, `urgent_only`, agent name spelling |
-| Server unreachable | Use `health_check()` or `resource://config/environment` to confirm MCP server is up; if CLI-only, check `curl http://127.0.0.1:8765/health` |
-| Guard blocks commit | Set `AGENT_NAME` env var; bypass: `AGENT_MAIL_BYPASS=1 git commit` |
+| Server unreachable | `health_check()` / `curl http://127.0.0.1:8765/health`; start with `am` |
+| Guard blocks commit | Set `AGENT_NAME` env var; emergency bypass: `AGENT_MAIL_BYPASS=1 git commit` |
 
-### Doctor Diagnostics (CLI-only, optional)
-
-```bash
-# Quick health check (CLI daemon)
-curl http://127.0.0.1:8765/health
-
-# Full diagnostics (CLI)
-uv run python -m mcp_agent_mail.cli doctor check --verbose
-
-# Preview repairs (dry run, CLI)
-uv run python -m mcp_agent_mail.cli doctor repair --dry-run
-
-# Apply repairs (CLI)
-uv run python -m mcp_agent_mail.cli doctor repair --yes
-```
-
----
-
-## Agent Identity
-
-Agents get adjective+noun names: GreenCastle, BlueLake, RedBear.
-
-**Best practice:** Omit `name` parameter to auto-generate valid names.
-
-```
-register_agent(
-  project_key="/abs/path/project",
-  program="codex-cli",
-  model="YOUR_MODEL",
-  task_description="Auth refactor"
-)  # name auto-generated
-```
-
----
-
-## Human Overseer
-
-Send urgent messages to agents from the web UI at `http://127.0.0.1:8765/mail`:
-
-1. Click "Human Overseer" mode
-2. Compose with `importance: urgent`
-3. Select target agents
-
-Agents see urgent messages via `fetch_inbox(..., urgent_only=true)`.
-
----
-
-## Pre-Commit Guard
-
-```
-install_precommit_guard(project_key="/abs/path", code_repo_path="/abs/path")
-```
-
-- Set `AGENT_NAME` env var so guard knows who you are
-- Bypass emergency: `AGENT_MAIL_BYPASS=1 git commit -m "fix"`
-- Warning mode: `AGENT_MAIL_GUARD_MODE=warn`
-
----
-
-## Search Syntax (FTS5)
-
-```
-"exact phrase"
-prefix*
-term1 AND term2
-term1 OR term2
-(auth OR login) AND NOT admin
-```
-
----
+Deeper diagnostics (doctor check/repair), the pre-commit guard (`install_precommit_guard`), the human-overseer web UI, and FTS5 search syntax are all self-described by the server/CLI — see [RECOVERY.md](references/RECOVERY.md) and [ADVANCED.md](references/ADVANCED.md).
 
 ## References
 
@@ -239,15 +137,9 @@ term1 OR term2
 | Fix MCP config | [FIX-MCP-CONFIG.md](references/FIX-MCP-CONFIG.md) |
 | Product bus, build slots, internals | [ADVANCED.md](references/ADVANCED.md) |
 
----
-
 ## Validation
 
 ```bash
-# Server health
-curl http://127.0.0.1:8765/health
-# → {"status": "healthy"}
-
-# Start server if needed
-am
+curl http://127.0.0.1:8765/health   # → {"status": "healthy"}
+am                                  # start server if needed
 ```

@@ -9,7 +9,7 @@ description: "Use when converting markdown plans into br beads with dependencies
 practices:
 - pragmatic-programmer
 ---
-<!-- TOC: Quick Start | THE EXACT PROMPT | Polishing | br Commands | bd → br Migration | Quality Checklist | Troubleshooting | References -->
+<!-- TOC: Quick Start | Conversion Prompt | Polishing | bd → br Migration | Quality Checklist | Lifecycle Disciplines | When Beads Are Ready | Validation | References -->
 
 # Beads Workflow — From Plan to Actionable Tasks
 
@@ -17,26 +17,18 @@ practices:
 >
 > Beads are so detailed and polished that you can mechanically unleash a big swarm of agents to implement them, and it will come out just about perfectly.
 
+This skill is the **conversion and shaping doctrine** — plan → beads, dependency/wave shaping, polish, lifecycle. It does NOT re-document the `br`/`bv` command surface: both binaries self-describe (`br --help`, `bv --help`, plus the beads_rust README and the `beads-br` / `beads-bv` skills). One hard rule worth front-loading: **never run bare `bv`** — it launches an interactive TUI; agents use `bv --robot-*` surfaces only.
+
 ## Quick Start
 
 ```bash
-# 1. Initialize beads in project
-br init
-
-# 2. Convert plan to beads (see THE EXACT PROMPT below)
-
-# 3. Polish iteratively
-# Run polish prompt 6-9 times until steady-state
-
-# 4. Validate
-br dep cycles        # Must be empty
-bv --robot-insights  # Check graph health
-
-# 5. Begin implementation
-bv --robot-next      # Get first bead
+br init              # 1. Initialize beads in project
+                     # 2. Convert plan to beads (THE EXACT PROMPT below)
+                     # 3. Polish iteratively, 6-9 rounds, until steady-state
+br dep cycles        # 4. Validate: must be empty
+bv --robot-insights  #    ...and check graph health
+bv --robot-next      # 5. Begin implementation: get first bead
 ```
-
----
 
 ## THE EXACT PROMPT — Plan to Beads Conversion
 
@@ -44,110 +36,25 @@ bv --robot-next      # Get first bead
 OK so now read ALL of [YOUR_PLAN_FILE].md; please take ALL of that and elaborate on it and use it to create a comprehensive and granular set of beads for all this with tasks, subtasks, and dependency structure overlaid, with detailed comments so that the whole thing is totally self-contained and self-documenting (including relevant background, reasoning/justification, considerations, etc.-- anything we'd want our "future self" to know about the goals and intentions and thought process and how it serves the over-arching goals of the project.). The beads should be so detailed that we never need to consult back to the original markdown plan document. Remember to ONLY use the `br` tool to create and modify the beads and add the dependencies. Use ultrathink.
 ```
 
-### Shorter Version
+**What this creates:** tasks and subtasks with clear scope, dependency links (what blocks what), detailed descriptions with background/reasoning/considerations — self-contained, so the original plan is never needed again.
 
-```
-OK so please take ALL of that and elaborate on it more and then create a comprehensive and granular set of beads for all this with tasks, subtasks, and dependency structure overlaid, with detailed comments so that the whole thing is totally self-contained and self-documenting (including relevant background, reasoning/justification, considerations, etc.-- anything we'd want our "future self" to know about the goals and intentions and thought process and how it serves the over-arching goals of the project.)  Use only the `br` tool to create and modify the beads and add the dependencies. Use ultrathink.
-```
+All other exact prompts — the short conversion variant, the polish prompts, and the fresh-session re-establish-context sequence — live in [PROMPTS.md](references/PROMPTS.md). What a well-formed bead looks like (required elements, description guidelines, anti-patterns) is [BEAD-ANATOMY.md](references/BEAD-ANATOMY.md).
 
-### What This Creates
+## Polishing Protocol
 
-- Tasks and subtasks with clear scope
-- Dependency links (what blocks what)
-- Detailed descriptions with background, reasoning, considerations
-- Self-contained (never need to consult original plan)
+Operating in "plan space" is far cheaper than correcting in implementation space — that is the rationale for the whole loop:
 
----
-
-## Polishing Beads
-
-### THE EXACT PROMPT — Polish (Standard)
-
-```
-Reread AGENTS dot md so it's still fresh in your mind. Check over each bead super carefully-- are you sure it makes sense? Is it optimal? Could we change anything to make the system work better for users? If so, revise the beads. It's a lot easier and faster to operate in "plan space" before we start implementing these things!
-
-DO NOT OVERSIMPLIFY THINGS! DO NOT LOSE ANY FEATURES OR FUNCTIONALITY!
-
-Also, make sure that as part of these beads, we include comprehensive unit tests and e2e test scripts with great, detailed logging so we can be sure that everything is working perfectly after implementation. Remember to ONLY use the `br` tool to create and modify the beads and to add the dependencies to beads. Use ultrathink.
-```
-
-### Polishing Protocol
-
-1. Run polish prompt
-2. Review changes
-3. Repeat until steady-state (typically 6-9 rounds)
-4. If it flatlines, start a fresh CC session
-5. Optionally have Codex/GPT 5.5 do a final round
-
----
-
-## Fresh Session Technique
-
-If polishing flatlines, start a new Claude Code session:
-
-### THE EXACT PROMPT — Re-establish Context
-
-```
-First read ALL of the AGENTS dot md file and README dot md file super carefully and understand ALL of both! Then use your code investigation agent mode to fully understand the code, and technical architecture and purpose of the project.  Use ultrathink.
-```
-
-### THE EXACT PROMPT — Then Review Beads
-
-```
-We recently transformed a markdown plan file into a bunch of new beads. I want you to very carefully review and analyze these using `br` and `bv`.
-```
-
-Then follow up with the standard polish prompt.
-
----
-
-## br Commands
-
-### Issue Lifecycle
-
-```bash
-br init                              # Initialize workspace
-br create "Title" -t feature -p 1    # Create bead
-br update <id> --status in_progress
-br close <id> --reason "Done"
-br reopen <id>                       # If needed
-```
-
-### Dependencies
-
-```bash
-br dep add br-child br-parent        # child depends on parent
-br dep remove br-child br-parent
-br dep list <id>
-br dep tree <id>
-br dep cycles                        # MUST be empty!
-```
-
-### Querying
-
-```bash
-br list                              # All beads
-br ready                             # Actionable (not blocked)
-br blocked                           # Blocked beads
-br search "authentication"
-br list --json                       # Machine-readable
-```
-
-### Sync to Git
-
-```bash
-br sync --flush-only                 # Export DB → JSONL
-git add .beads/ && git commit -m "Update beads"
-```
-
----
+1. Run the polish prompt ([PROMPTS.md](references/PROMPTS.md) — Polish (Standard)). Its non-negotiables: do not oversimplify, do not lose features, and ensure each bead includes comprehensive unit + e2e test scope.
+2. Review changes.
+3. Repeat until steady-state (typically 6-9 rounds).
+4. If it flatlines, start a fresh CC session: re-establish context (read AGENTS.md/README, investigate the code), then review the beads with `br`/`bv`, then resume polishing. Exact prompts in [PROMPTS.md](references/PROMPTS.md).
+5. Optionally have an alternative model (Codex/GPT) do a final cross-review round.
 
 ## bd → br Migration (Docs)
 
 Use this when you see legacy `bd` references in AGENTS.md or docs.
 
-**Behavioral difference (only one):**
-- **`br sync` never runs git commands**. After `br sync --flush-only`, you must `git add .beads/` and `git commit` (and `git push`) yourself.
+**Behavioral difference (only one):** `br sync` never runs git commands. After `br sync --flush-only`, you must `git add .beads/`, `git commit` (and `git push`) yourself.
 
 **Transform checklist (order matters):**
 1. `bd` commands → `br` commands
@@ -162,22 +69,6 @@ grep -c 'bd sync' file.md     # must be 0
 grep -c 'br sync --flush-only' file.md  # must be > 0
 ```
 
----
-
-## BV Robot Mode
-
-**CRITICAL:** Never run bare `bv` — it launches interactive TUI.
-
-```bash
-bv --robot-triage                    # Full triage
-bv --robot-next                      # Single top pick
-bv --robot-plan                      # Parallel execution tracks
-bv --robot-insights | jq '.Cycles'   # Check for cycles
-bv --robot-insights | jq '.bottlenecks'
-```
-
----
-
 ## Quality Checklist
 
 Before implementation, verify each bead:
@@ -191,25 +82,27 @@ Before implementation, verify each bead:
 - [ ] **Not oversimplified** — Complexity preserved where needed
 - [ ] **No cycles** — `br dep cycles` returns empty
 
----
+## Lifecycle disciplines (2026-06-09, cards 17–20, cp-hhd7)
 
-## Integration with Agent Mail
+### Claim-verify before dispatch (card 3, cp-hhtu)
 
-Use bead ID as the coordination thread:
+Before claiming a bead for dispatch, confirm no other actor already holds it (`br show <id>` — check assignee/status). A race-claim on an already-claimed bead creates two workers on the same task — one of them will silently lose work. The ledger is the lock: if the bead is claimed, coordinate via Agent Mail (use the bead ID as the thread ID and reservation reason), do not dispatch a second worker.
 
-```python
-# Reserve files for bead
-file_reservation_paths(..., reason="br-123")
+### Merged-before-close (card 17, cp-4gj6; POLICY → gate cp-hxp6 enforces)
 
-# Announce work in thread
-send_message(..., thread_id="br-123", subject="[br-123] Starting...")
+A bead is durable only when its branch is **merged to trunk and the commit visible on the canonical store**. `br close` without a merge is a protection-off state — the work **will** recur as an incident (it did, 2026-06-09). For assurance-close contexts the gate cp-hxp6 enforces this; for other contexts, apply it as a practice: confirm `git log --oneline origin/main` includes the commit SHA before closing.
 
-# Close bead when done
-br close br-123 --reason "Completed"
-release_file_reservations(...)
-```
+### Close with residual routed (card 19, ag-67yy)
 
----
+When a close leaves a residual (un-merged work, deferred scope, a known gap), **route the residual to a successor bead in the same turn** — never accept-silently, never hold the parent open as a zombie. The pressure lives in the successor's priority, not in the open parent. Use `br close <id> --reason "Residual → <new-id>"`. Close-with-residual is honest; a zombie parent that never closes is the failure mode.
+
+### Append notes, never replace (card, cp-7fxr)
+
+`br update <id> --notes` is an **append** operation — it adds to the notes, it does NOT replace existing notes. When adding a progress note, pass only the new content; the flag accumulates. A `--notes` call that silently replaces prior notes erases audit history — the same silent-destruction class as the close-eater (cp-8720) and the split-brain (cp-4gkz).
+
+### Fuzzy intent → bead in the same turn (card 20, cp-honb)
+
+When a correction, idea, or complaint arrives mid-session, file the bead **in the same turn** with the verbatim words. Corrections that live only in chat evaporate. The feed IS the product.
 
 ## When Beads Are Ready
 
@@ -221,55 +114,28 @@ Your beads are ready for implementation when:
 4. **Tests included** — Each feature has associated test beads
 5. **Dependencies clean** — Graph makes logical sense
 
----
+## Validation
+
+```bash
+br dep cycles                            # must be empty
+bv --robot-insights | jq '.Cycles'       # graph health
+bv --robot-insights | jq '.bottlenecks'  # wave shaping: what gates the most work
+br list --json | jq '.issues[]? | select(.description == "")'  # no empty descriptions
+```
+
+After any bead mutation session, flush and commit: `br sync --flush-only && git add .beads/ && git commit`.
+
+## Troubleshooting
+
+For worktree/sync-branch errors, health checks, and full diagnostics, see [TROUBLESHOOTING.md](references/TROUBLESHOOTING.md). Quick health check: `br config list`, `br dep cycles`, `which br`.
 
 ## References
 
 | Topic | Reference |
 |-------|-----------|
-| All prompts | [PROMPTS.md](references/PROMPTS.md) |
+| All prompts (conversion, polish, fresh-session) | [PROMPTS.md](references/PROMPTS.md) |
 | Bead structure | [BEAD-ANATOMY.md](references/BEAD-ANATOMY.md) |
 | Troubleshooting | [TROUBLESHOOTING.md](references/TROUBLESHOOTING.md) |
-| br command reference | See br --help or beads_rust README |
-| BV integration | See bv-graph-triage skill |
-
----
-
-## Troubleshooting
-
-### Worktree Error Fix
-
-If you get `failed to create worktree: 'main' is already checked out`:
-
-```bash
-git branch beads-sync main
-git push -u origin beads-sync
-br config set sync-branch beads-sync
-```
-
-Always use a dedicated sync branch that you never check out directly.
-
-### Quick Health Check
-
-```bash
-br config list        # All settings
-br dep cycles         # Must be empty
-which br              # Verify br is installed
-```
-
-See [TROUBLESHOOTING.md](references/TROUBLESHOOTING.md) for full diagnostics.
-
----
-
-## Validation
-
-```bash
-# Check for cycles (must be empty)
-br dep cycles
-
-# Check graph health
-bv --robot-insights | jq '.Cycles'
-
-# Verify all beads have descriptions
-br list --json | jq '.issues[]? | select(.description == "")'
-```
+| br command reference | `br --help` or beads_rust README |
+| BV triage / robot surfaces | `bv --help`; `beads-bv` skill |
+| Coordination (reservations, threads) | `agent-mail` skill |

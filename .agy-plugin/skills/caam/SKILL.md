@@ -9,13 +9,21 @@ description: "Use when switching AI coding CLI accounts quickly to recover from 
 practices:
 - pragmatic-programmer
 ---
-<!-- TOC: Quick Start | THE EXACT PROMPT | Smart Rotation | TUI | Isolated Profiles | References -->
+<!-- TOC: Quick Start | Daily Operations | Rotation Doctrine | Flywheel Integration | References -->
 
 # CAAM — Coding Agent Account Manager
 
 > **Core Problem:** You hit rate limits on your $200/mo Claude Max subscription. Browser OAuth takes 30-60 seconds. CAAM swaps accounts in ~50ms.
 
-## Quick Start
+**Don't re-learn the command surface here.** `caam --help` (and per-subcommand `--help`) self-describes every command and flag; the full catalog also lives in [COMMANDS.md](references/COMMANDS.md). This skill carries the operating doctrine: how to seed the vault, when to rotate vs cooldown, and how CAAM fits the agent fleet.
+
+## How It Works (why it's safe)
+
+Each AI CLI stores OAuth tokens in plain files (e.g. `~/.claude.json`, `~/.codex/auth.json`, `~/.gemini/oauth_credentials.json`). CAAM backs them up to a local vault and restores them on activate. **No daemons, no databases, no network calls** — just `cp` with extra steps. Vault layout: [VAULT.md](references/VAULT.md).
+
+Supported tools: Claude Code, Codex CLI, Gemini CLI (each on its own subscription).
+
+## Quick Start — Seeding the Vault
 
 ```bash
 # Install
@@ -30,45 +38,21 @@ claude  # /login with bob@gmail.com
 caam backup claude bob@gmail.com
 
 # Switch instantly forever
-caam activate claude alice@gmail.com   # ~50ms
-caam activate claude bob@gmail.com     # ~50ms
+caam activate claude alice@gmail.com   # ~50ms, no browser
 ```
 
----
+A profile must be **backed up once** before it can ever be activated. Seed every account you own up front — mid-rate-limit is the wrong time to discover an empty vault.
 
-## THE EXACT PROMPT — Daily Commands
+## Daily Operations
 
-### Check Status
+The four moves that cover almost every session:
 
 ```bash
-caam status
+caam status                    # which profile is active per tool (content-hash matched)
+caam activate claude --auto    # rotation picks best profile (health, recency, cooldowns)
+caam cooldown set claude       # mark current profile rate-limited (60min default); rotation skips it
+caam next claude               # preview what rotation would select, without switching
 ```
-
-Shows active profile for each tool based on content hash matching.
-
-### Instant Switch
-
-```bash
-caam activate claude bob@gmail.com
-```
-
-Restores auth files from vault. ~50ms, no browser.
-
-### Smart Auto-Switch
-
-```bash
-caam activate claude --auto
-```
-
-Rotation algorithm picks best profile based on health, recency, cooldowns.
-
-### Mark Rate Limited
-
-```bash
-caam cooldown set claude
-```
-
-Marks current profile for 60min. Rotation skips it.
 
 ### Zero-Friction Aliases
 
@@ -82,140 +66,30 @@ alias gemini='caam run gemini --'
 claude "explain this code"
 ```
 
----
+### Project Associations
 
-## How It Works
-
-Each AI CLI stores OAuth tokens in plain files. CAAM backs them up and restores them:
-
-```
-~/.claude.json ←→ ~/.local/share/caam/vault/claude/alice@gmail.com/
-~/.codex/auth.json ←→ ~/.local/share/caam/vault/codex/work@company.com/
-```
-
-**That's it.** No daemons, no databases, no network calls. Just `cp` with extra steps.
-
----
-
-## Supported Tools
-
-| Tool | Subscription | Auth Files |
-|------|--------------|------------|
-| **Claude Code** | Claude Max ($200/mo) | `~/.claude.json`, `~/.config/claude-code/auth.json` |
-| **Codex CLI** | GPT Pro ($200/mo) | `~/.codex/auth.json` |
-| **Gemini CLI** | Gemini Ultra (~$275/mo) | `~/.gemini/settings.json`, `~/.gemini/oauth_credentials.json` |
-
----
-
-## Smart Rotation
-
-When you have multiple accounts, rotation picks the best one:
-
-```bash
-# Preview what rotation would select
-caam next claude
-
-# Let it pick automatically
-caam activate claude --auto
-```
-
-### Health Indicators
-
-| Icon | Status | Meaning |
-|------|--------|---------|
-| 🟢 | Healthy | Token valid >1hr, no recent errors |
-| 🟡 | Warning | Token expiring <1hr, minor issues |
-| 🔴 | Critical | Token expired, repeated errors |
-| ⚪ | Unknown | No health data yet |
-
-### Rotation Algorithms
-
-| Algorithm | Description |
-|-----------|-------------|
-| `smart` (default) | Cooldown + health + recency + jitter |
-| `round_robin` | Sequential, skipping cooldowns |
-| `random` | Random among non-cooldown |
-
----
-
-## Cooldown Tracking
-
-```bash
-# Mark current profile (60min default)
-caam cooldown set claude
-
-# Specify profile and duration
-caam cooldown set claude/work@company.com --minutes 120
-
-# View active cooldowns
-caam cooldown list
-
-# Clear early
-caam cooldown clear claude/work@company.com
-```
-
----
-
-## TUI Dashboard
-
-```bash
-caam tui
-```
-
-### Keybindings
-
-| Key | Action |
-|-----|--------|
-| `↑/↓` | Navigate profiles |
-| `Enter` | Activate selected |
-| `p` | Set project association |
-| `c` | Mark/clear cooldown |
-| `r` | Refresh |
-| `q` | Quit |
-
----
-
-## Project Associations
-
-Link profiles to directories:
+Link profiles to directories so work and personal accounts never cross:
 
 ```bash
 cd ~/projects/work-app
 caam project set claude work@company.com
-
-# Now in this directory:
-caam activate claude  # Auto-uses work@company.com
+caam activate claude            # in this directory, auto-uses work@company.com
 ```
 
----
+## Rotation Doctrine
 
-## Command Reference
-
-| Command | Description |
-|---------|-------------|
-| `caam backup <tool> <email>` | Save current auth to vault |
-| `caam activate <tool> <email>` | Restore auth from vault |
-| `caam activate <tool> --auto` | Auto-select best profile |
-| `caam status [tool]` | Show active profiles |
-| `caam ls [tool]` | List saved profiles |
-| `caam clear <tool>` | Remove auth files (logout) |
-| `caam run <tool> [-- args]` | Wrap with auto-failover |
-| `caam cooldown set <profile>` | Mark as rate limited |
-| `caam cooldown list` | Show active cooldowns |
-| `caam next <tool>` | Preview rotation selection |
-| `caam tui` | Interactive dashboard |
-
----
+- **Hit a rate limit → `caam cooldown set <tool>` BEFORE switching.** Rotation can only skip profiles it knows are burned. Switching without marking the cooldown sends the next `--auto` right back into the limited account.
+- **Prefer `--auto` over hand-picking** once ≥2 profiles exist — the default `smart` algorithm weighs cooldown, health, recency, and jitter. (`round_robin`/`random` exist; details in [COMMANDS.md](references/COMMANDS.md).)
+- **Check `caam status` after any activate** — content-hash matching tells you what is actually live, not what you intended.
+- The interactive dashboard is `caam tui` (blocks the terminal — keybindings self-described in-app). Agents should stick to the non-interactive commands above.
 
 ## Flywheel Integration
 
 | Tool | Integration |
 |------|-------------|
-| **NTM** | Each tmux pane uses different account via isolated profiles |
+| **NTM** | Each tmux pane uses a different account via isolated profiles — see [ISOLATED-PROFILES.md](references/ISOLATED-PROFILES.md) |
 | **Agent Mail** | Agents coordinate account switching across sessions |
 | **CASS** | Search sessions by account for usage patterns |
-
----
 
 ## References
 
@@ -225,17 +99,10 @@ caam activate claude  # Auto-uses work@company.com
 | Isolated profiles | [ISOLATED-PROFILES.md](references/ISOLATED-PROFILES.md) |
 | Vault structure | [VAULT.md](references/VAULT.md) |
 
----
-
 ## Validation
 
 ```bash
-# Verify installation
-caam --version
-
-# Check all profiles
-caam status
-
-# Test switch
-caam activate claude --auto && caam status
+caam --version                          # verify installation
+caam status                             # check all profiles
+caam activate claude --auto && caam status   # test switch
 ```

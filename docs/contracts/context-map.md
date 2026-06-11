@@ -22,7 +22,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `flywheel` — Check knowledge flywheel health.
 - `forge` — Mine transcripts into learnings.
 - `goals` — Maintain AgentOps goals.
-- `idea-option-forge` — Use when generating, winnowing, and operationalizing many project improvement options. Triggers:
 - `operating-loop-skill` — Use when driving one bead end-to-end through claim, work, independent validation, closeout, and persistence. Triggers:
 - `perf` — Profile and optimize hotspots.
 - `plan` — Decompose goals into issue plans.
@@ -89,12 +88,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `cc-hooks` — Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification. Use when blocking commands, auto-formatting, custom permissions, or writing hooks.
 - `cc-subagents` — Use when dispatching scoped Claude Code subagents with worktrees, roles, tools, memory, and evidence gates. Triggers:
 - `cc-worktree-isolation` — Use when isolating parallel Claude Code workers in separate git worktrees to prevent file collisions. Triggers:
-- `codebase-archaeology` — Systematically explore unfamiliar codebases to build working mental models. Use when onboarding to new project, "what does this do", or understanding legacy code.
-- `codebase-audit` — Domain-parameterized codebase auditing (security, UX, performance, API, copy, CLI). Use when auditing code, assessing quality, finding issues, or pre-launch review.
-- `codebase-briefing-report` — Use when producing a shareable architecture, module, metrics, and health report for a codebase. Triggers:
-- `codebase-pattern-extraction` — Mine patterns that recur across multiple projects and generalize into reusable artifacts. Use when "I've seen this before", DRY across repos, or building shared libraries.
-- `codebase-report` — Produce reusable technical architecture documents from codebase exploration. Use when onboarding, "write up what this does", architecture docs, or handoff.
-- `codebase-risk-audit` — Use when auditing codebase risks with evidence and prioritized remediation. Triggers:
+- `codebase-audit` — Domain-parameterized codebase audits (security, UX, perf, API, copy, CLI) + report modes (archaeology, architecture/briefing, patterns, risk). Use when auditing or onboarding.
 - `codex-sandbox-evidence` — Use when running codex exec in a least-privilege sandbox with machine-checkable proof. Triggers:
 - `compile` — Compile .agents knowledge wiki.
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.
@@ -102,7 +96,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `doc` — Generate and validate repo docs, READMEs, and OSS doc packs.
 - `eval-outcomes` — Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons.
 - `evolve` — Run autonomous improvement loops.
-- `expertise-to-procedure` — Use when turning tacit expert know-how into a durable skill, playbook, or checklist. Triggers:
 - `handoff` — Write compact session handoffs.
 - `heal-skill` — Repair skill hygiene.
 - `multi-model-triangulation` — Cross-validate decisions using multiple AI models (Codex, Gemini, Grok). Use when "get a second opinion", evaluating approaches, or high-stakes decisions.
@@ -114,8 +107,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `red-team` — Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.
 - `refactor` — Execute safe refactors.
 - `release` — Run release validation.
-- `release-readiness-gate` — Use when preparing releases with versioning, changelog, artifacts, smoke tests, tags, and go/no-go. Triggers:
-- `research-software` — Research software tools via source code, GitHub, web. Use when creating skills, learning new tools, finding undocumented features, or bleeding-edge patterns.
 - `reverse-engineer-rpi` — Reverse-engineer product specs.
 - `rpi` — Run discovery, crank, validation.
 - `sbh` — Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status.
@@ -167,8 +158,8 @@ graph LR
   cc-loop-driver -- "customer-of" --> validate
   cc-subagents -- "supplier-to" --> cc-loop-driver
   cc-worktree-isolation -- "supplier-to" --> cc-subagents
-  codebase-risk-audit -- "supplier-to" --> plan
-  codebase-risk-audit -- "supplier-to" --> validate
+  codebase-audit -- "supplier-to" --> plan
+  codebase-audit -- "supplier-to" --> validate
   codex-exec -- "supplier-to" --> codex-sandbox-evidence
   codex-mcp-plugins -- "supplier-to" --> codex-exec
   codex-sandbox-evidence -- "customer-of" --> codex-exec
@@ -181,12 +172,10 @@ graph LR
   design -- "shared-kernel" --> standards
   discovery -- "shared-kernel" --> standards
   evolve -- "customer-of" --> rpi
-  expertise-to-procedure -- "customer-of" --> skill-builder
   flywheel -- "shared-kernel" --> standards
   forge -- "shared-kernel" --> standards
   goals -- "shared-kernel" --> standards
   heal-skill -- "customer-of" --> skill-auditor
-  idea-option-forge -- "shared-kernel" --> brainstorm
   implement -- "customer-of" --> domain
   operating-loop-skill -- "supplier-to" --> agy-native
   operating-loop-skill -- "customer-of" --> beads
@@ -284,15 +273,7 @@ graph LR
 | `cc-subagents` | produces | subagent-dispatch-plan |
 | `cc-worktree-isolation` | consumes | git-worktree |
 | `cc-worktree-isolation` | produces | isolated-worktree-plan |
-| `codebase-archaeology` | produces | codebase-archaeology |
 | `codebase-audit` | produces | codebase-audit |
-| `codebase-briefing-report` | produces | codebase-briefing-report |
-| `codebase-pattern-extraction` | produces | codebase-pattern-extraction |
-| `codebase-report` | produces | codebase-report |
-| `codebase-risk-audit` | consumes | repository |
-| `codebase-risk-audit` | consumes | runtime-configuration |
-| `codebase-risk-audit` | consumes | test-results |
-| `codebase-risk-audit` | produces | codebase-risk-audit-report |
 | `codex-exec` | produces | codex-run-output |
 | `codex-goals` | produces | codex-goal-state |
 | `codex-mcp-plugins` | consumes | codex-plugin |
@@ -315,7 +296,7 @@ graph LR
 | `crank` | consumes | vibe |
 | `crank` | produces | .agents/swarm/results/*.json |
 | `crank` | produces | git-changes |
-| `cross-vendor-trust-gate` | consumes | skill |
+| `cross-vendor-trust-gate` | consumes | converted-skill |
 | `cross-vendor-trust-gate` | produces | stdout |
 | `cross-vendor-trust-gate` | produces | trust-artifact |
 | `curate` | produces | .agents/research/*.md |
@@ -345,16 +326,10 @@ graph LR
 | `evolve` | consumes | rpi |
 | `evolve` | produces | git-changes |
 | `evolve` | produces | goals-fitness-delta |
-| `expertise-to-procedure` | produces | checklist |
-| `expertise-to-procedure` | produces | playbook |
-| `expertise-to-procedure` | produces | skill |
 | `flywheel` | produces | .agents/learnings/*.md |
 | `forge` | produces | .agents/research/*.md |
 | `goals` | produces | result.json |
 | `handoff` | produces | .agents/research/*.md |
-| `idea-option-forge` | consumes | existing-tracked-work |
-| `idea-option-forge` | produces | tracked-issues-with-deps-and-tests |
-| `idea-option-forge` | produces | vetted-idea-backlog |
 | `implement` | consumes | domain |
 | `implement` | produces | git-changes |
 | `ntm-browser-test-coordination` | consumes | agent-mail |

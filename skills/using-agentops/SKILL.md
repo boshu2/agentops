@@ -131,10 +131,8 @@ These are the skills every user needs first. Everything else is available when y
 |-------|---------|
 | `/compile`, `/flywheel` | Active knowledge intelligence and flywheel health — Mine → Grow → Defrag cycle |
 | `/curate` | Canonical miner role for transcripts, `.agents/`, bd, git, skill diffs, and rare wiki entries |
-| `/research-software` | External reading and research synthesis for software topics |
 | `/curate --mode=harvest` | Cross-rig knowledge consolidation — sweep, dedup, promote to global hub (folded the retired harvest lane) |
 | `/inject` | Operationalize a mature `.agents` corpus into beliefs, playbooks, briefings, and gap surfaces (folded the retired knowledge-activation lane) |
-| `/bd-first-memory-migration` | Consolidate fragmented agent-memory layers onto a bd-canonical store, then GC/retire the rest |
 | `/brainstorm` | Structured idea exploration before planning |
 | `/discovery` | Full discovery phase orchestrator (brainstorm → search → research → plan → pre-mortem) |
 | `/plan` | Epic decomposition into issues |
@@ -166,7 +164,6 @@ These are the skills every user needs first. Everything else is available when y
 | `/refactor` | Safe, verified refactoring with regression testing at each step |
 | `/deps` | Dependency audit, update, vulnerability scanning, and license compliance |
 | `/perf` | Performance profiling, benchmarking, regression detection, and optimization |
-| `/system-tuning` | Restore system responsiveness via safe, ordered process cleanup and agent-swarm hygiene |
 | `/scaffold` | Project scaffolding, component generation, and boilerplate setup |
 | `/scenario` | Author and manage holdout scenarios for behavioral validation |
 | `/skill-auditor` | Two-pass audit of an existing SKILL.md against the unified template (15 checks) |
@@ -180,12 +177,8 @@ These are the skills every user needs first. Everything else is available when y
 | Skill | Purpose |
 |-------|---------|
 | `/swarm` | Parallel Codex agent execution (folded the retired codex-team lane) |
-| `/external-search-triage` | External docs and source lookup with citations |
 | `/reverse-engineer-rpi` | Reverse-engineer a product into feature catalog and specs |
-| `/codebase-archaeology` | Systematic exploration of unfamiliar codebases into working mental models |
 | `/codebase-audit` | Domain-parameterized codebase auditing (security, UX, performance, API, copy, CLI) |
-| `/codebase-pattern-extraction` | Mine recurring cross-project patterns into reusable artifacts |
-| `/codebase-report` | Reusable technical architecture documents from codebase exploration |
 | `/pr-research` | Upstream repository research before contribution |
 | `/pr-implement` | Fork-based PR implementation |
 | `/validate --mode=pr` | PR-specific validation and isolation checks (folded the retired pr-validate lane) |
