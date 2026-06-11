@@ -9,26 +9,19 @@ description: "Use when starting non-trivial work, mining lessons, or preventing 
 practices:
 - pragmatic-programmer
 ---
-<!-- TOC: Quick Start | THE EXACT PROMPT | Architecture | Commands | References -->
-
 # cass-memory — CASS Memory System (cm)
 
 > **Core Capability:** Transforms scattered agent sessions into persistent, cross-agent procedural memory. A pattern discovered in Cursor **automatically** helps Claude Code on the next session.
 
-## Quick Start
+`cm` is an upstream (Dicklesworthstone) tool and is **self-describing** — discover its command surface from `cm --help` (and per-subcommand `--help`), not from this skill. Full catalog snapshot: [COMMANDS.md](references/COMMANDS.md). This skill carries only the AgentOps operating doctrine: the session protocol, feedback discipline, and boundaries.
 
-```bash
-# Initialize with a starter playbook
-cm init --starter typescript
+Architecture in one line: episodic memory (cass session logs) → working memory (diary summaries) → procedural memory (playbook rules with confidence tracking and decay). Full model: [ARCHITECTURE.md](references/ARCHITECTURE.md).
 
-# THE ONE COMMAND: run before any non-trivial task
-cm context "implement user authentication" --json
+## When to Use
 
-# Check system health
-cm doctor --json
-```
-
----
+- Starting any non-trivial task: pull prior rules and history first
+- After a mistake or rabbit hole: check whether a rule already warned about it
+- When a rule helped or hurt: record feedback so confidence tracking works
 
 ## THE EXACT PROMPT — Session Start
 
@@ -46,76 +39,7 @@ Read the output carefully:
 Reference rule IDs when following them (e.g., "Following b-8f3a2c...")
 ```
 
----
-
-## THE EXACT PROMPT — Rule Feedback
-
-```
-# When a rule helped
-cm mark b-8f3a2c --helpful
-
-# When a rule caused problems
-cm mark b-xyz789 --harmful --reason "Caused regression"
-
-# Or leave inline comments (parsed during reflection)
-// [cass: helpful b-8f3a2c] - this saved me from a rabbit hole
-// [cass: harmful b-x7k9p1] - wrong for our use case
-```
-
----
-
-## THE EXACT PROMPT — Trauma Guard Setup
-
-```
-# Install safety hooks to prevent dangerous commands
-cm guard --install       # Claude Code hook
-cm guard --git          # Git pre-commit hook
-cm guard --status       # Check installation
-
-# Add custom trauma patterns
-cm trauma add "DROP TABLE" --description "Mass deletion" --severity critical
-
-# Scan past sessions for trauma patterns
-cm trauma scan --days 30
-```
-
----
-
-## Three-Layer Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    EPISODIC MEMORY (cass)                           │
-│   Raw session logs from all agents — the "ground truth"             │
-└───────────────────────────┬─────────────────────────────────────────┘
-                            │ cass search
-                            ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    WORKING MEMORY (Diary)                           │
-│   Structured session summaries: accomplishments, decisions, etc.    │
-└───────────────────────────┬─────────────────────────────────────────┘
-                            │ reflect + curate (automated)
-                            ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                    PROCEDURAL MEMORY (Playbook)                     │
-│   Distilled rules with confidence tracking and decay                │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Essential Commands
-
-| Command | Purpose |
-|---------|---------|
-| `cm context "<task>" --json` | Get rules + history for task |
-| `cm mark <id> --helpful/--harmful` | Record feedback |
-| `cm playbook list` | View all rules |
-| `cm top 10` | Top effective rules |
-| `cm doctor --json` | System health |
-| `cm guard --install` | Install safety hooks |
-
----
+`cm context "<task>" --json` is THE ONE COMMAND — everything else is optional. Budget flags (`--limit`, `--min-score`, `--no-history`) exist when context is tight; see `cm context --help`.
 
 ## Agent Protocol
 
@@ -131,97 +55,29 @@ cm trauma scan --days 30
 - Run `cm mark` manually (use inline comments)
 - Manually add rules to the playbook
 
----
-
-## Confidence Decay
-
-Rules aren't immortal. Confidence decays without revalidation:
-
-| Mechanism | Effect |
-|-----------|--------|
-| **90-day half-life** | Confidence halves every 90 days without feedback |
-| **4x harmful multiplier** | One mistake counts 4x as much as one success |
-| **Maturity progression** | `candidate` → `established` → `proven` |
-
----
-
-## Anti-Pattern Learning
-
-Bad rules don't just get deleted. They become warnings:
-
-```
-"Cache auth tokens for performance"
-    ↓ (3 harmful marks)
-"PITFALL: Don't cache auth tokens without expiry validation"
-```
-
----
-
-## Starter Playbooks
+## Feedback Discipline
 
 ```bash
-cm starters                    # List available
-cm init --starter typescript   # Initialize with starter
-cm playbook bootstrap react    # Apply to existing playbook
+# When a rule helped / caused problems
+cm mark b-8f3a2c --helpful
+cm mark b-xyz789 --harmful --reason "Caused regression"
+
+# Or leave inline comments (parsed during reflection)
+// [cass: helpful b-8f3a2c] - this saved me from a rabbit hole
+// [cass: harmful b-x7k9p1] - wrong for our use case
 ```
 
-| Starter | Focus |
-|---------|-------|
-| **general** | Universal best practices |
-| **typescript** | TypeScript/Node.js |
-| **react** | React/Next.js |
-| **python** | Python/FastAPI/Django |
-| **rust** | Rust service patterns |
+Why feedback matters: rules aren't immortal. Confidence halves every 90 days without revalidation, one harmful mark counts 4x a helpful one, and repeatedly-harmful rules are inverted into explicit anti-pattern warnings rather than deleted. Skipping feedback starves the decay model.
 
----
+## Trauma Guard
 
-## Token Budget Management
+`cm guard --install` / `--git` / `--status` installs hooks that block known-dangerous commands; `cm trauma add` / `cm trauma scan` manage the pattern set. Doctrine, scope, and pattern design: [TRAUMA-GUARD.md](references/TRAUMA-GUARD.md).
 
-| Flag | Effect |
-|------|--------|
-| `--limit N` | Cap number of rules |
-| `--min-score N` | Only rules above threshold |
-| `--no-history` | Skip historical snippets |
-| `--json` | Structured output |
+## Safety Boundaries
 
----
-
-## Graceful Degradation
-
-| Condition | Behavior |
-|-----------|----------|
-| No cass | Playbook-only scoring, no history |
-| No playbook | Empty playbook, commands still work |
-| No LLM | Deterministic reflection |
-| Offline | Cached playbook + local diary |
-
----
-
-## Installation
-
-```bash
-# One-liner
-curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh \
-  | bash -s -- --easy-mode --verify
-
-# From source
-git clone https://github.com/Dicklesworthstone/cass_memory_system.git
-cd cass_memory_system
-bun install && bun run build
-sudo mv ./dist/cass-memory /usr/local/bin/cm
-```
-
----
-
-## Troubleshooting
-
-| Error | Solution |
-|-------|----------|
-| `cass not found` | Install cass first |
-| `API key missing` | Set `ANTHROPIC_API_KEY` |
-| `Playbook corrupt` | Run `cm doctor --fix` |
-
----
+- **LAW 0:** never configure `cm` reflection to shell out to `claude -p` (e.g. `provider: cli`) — that path is forbidden on this fleet. Use a compliant provider, or rely on deterministic reflection (cm degrades gracefully without an LLM).
+- Do not hand-edit the playbook to add rules; the reflect/curate pipeline owns it. Feedback marks are the only manual write you need.
+- `cm doctor --json` first when anything misbehaves; `cm doctor --fix` for a corrupt playbook. If `cass` is missing, cm still works playbook-only (no history).
 
 ## References
 

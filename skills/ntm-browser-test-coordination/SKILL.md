@@ -38,9 +38,7 @@ output_contract: "A browser-test coordination packet with scenario map, pane ass
 
 # NTM Browser Test Coordination
 
-Use this skill when browser or UI validation needs more coordination than a single local test command: multiple scenarios, parallel panes, visible browser evidence, failure triage, or a handoff that another operator can resume.
-
-This skill does not replace the browser test runner. It defines how the lead agent scopes scenarios, assigns NTM panes, requires evidence, records failures, and returns one verifiable verdict.
+Use this skill when browser or UI validation needs more coordination than a single local test command: multiple scenarios, parallel panes, visible browser evidence, failure triage, or a handoff that another operator can resume. It does not replace the browser test runner — it defines how the lead agent scopes scenarios, assigns NTM panes, requires evidence, records failures, and returns one verifiable verdict.
 
 ## Coordination Rules
 
@@ -71,7 +69,6 @@ Turn vague requests into named scenarios:
 | Scenario | User flow | Browser/device | Fixture slice | Expected evidence |
 |---|---|---|---|---|
 | S1 | Sign in and open dashboard | chromium desktop | user-01 | screenshot + trace |
-| S2 | Checkout happy path | chromium mobile | cart-02 | screenshot + test report |
 ```
 
 ### 2. Prepare pane assignments
@@ -99,8 +96,7 @@ Send each pane only its owned slice. Do not send a broad "run all browser tests"
 
 The dispatch message should include:
 
-- Scenario id and user-visible acceptance criteria.
-- Exact command, URL, environment variables, and fixture slice.
+- Scenario id, user-visible acceptance criteria, exact command, URL, environment variables, and fixture slice.
 - Evidence directory and artifact names.
 - Required verdict shape: `PASS`, `FAIL`, or `BLOCKED`.
 - Failure record fields and where to write them.
@@ -142,7 +138,6 @@ The evidence index should let a future operator reproduce the run without readin
 | Scenario | Pane | Verdict | Artifacts | Reproduction |
 |---|---:|---|---|---|
 | S1 | 2 | PASS | S1/final.png, S1/trace.zip | npm run e2e -- --grep @S1 |
-| S2 | 3 | FAIL | S2/error.png, S2/console.log | npm run e2e -- --grep @S2 |
 ```
 
 Minimum artifact expectations:
@@ -171,8 +166,7 @@ Record each failure in a stable format:
 
 Use failure records to decide reruns:
 
-- Rerun immediately when the failure is environmental and the rerun has changed setup.
-- Do not rerun repeatedly without changing evidence or hypothesis.
+- Rerun immediately when the failure is environmental and the rerun has changed setup; do not rerun repeatedly without changing evidence or hypothesis.
 - Split a broad scenario when one pane cannot isolate the failing step.
 - Escalate fixture conflicts by stopping affected panes, releasing reservations, and assigning new fixtures.
 
@@ -180,8 +174,7 @@ Use failure records to decide reruns:
 
 Close the run with a handoff that includes:
 
-- Target, run id, command, and NTM session.
-- Scenario table with final verdicts.
+- Target, run id, command, NTM session, and scenario table with final verdicts.
 - Evidence index path and failure log path.
 - Panes that were restarted, interrupted, or left blocked.
 - Any live servers, ports, fixtures, locks, or browser profiles that remain active.

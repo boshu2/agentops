@@ -1211,6 +1211,7 @@
       "name": "agent-mail",
       "source_skill": "skills/agent-mail",
       "source_hash": "216b531f2750eb5b416d78e4188a6aa563ee8056134f8176c333d147b76a9ad2",
+      "source_hash": "d9c3019481888dfd78dac7d9d3395b6989af33e6213d265df9987af60e558821",
       "generated_hash": "e66befdbae502fe31a8b1094e7ff90c6779abfdd6ec01723c65cfa641a346ae6"
     },
     {
@@ -1330,8 +1331,8 @@
     {
       "name": "beads",
       "source_skill": "skills/beads",
-      "source_hash": "59b4582f885d8ded2c4dd20414b2a7cf81d7dfb544d8b4d402756c6bebe77b42",
-      "generated_hash": "0960ad70dd5868ac65b387f98caab73f7b001449391d9d24a99b4cb10a8cb39a"
+      "source_hash": "55794982c804c5f483d856346b42bebe468f67f5d301f29ebca17ef8e11039ce",
+      "generated_hash": "73abaa62aa786a57253e0c8ab69937618d7d4a38e793ee7f1c1a39f4f25fc9d2"
     },
     {
       "name": "beads-br",
@@ -1349,6 +1350,7 @@
       "name": "beads-workflow",
       "source_skill": "skills/beads-workflow",
       "source_hash": "0d9e0e93c95b42ca4c763c1d124947df395836385480a8a1258062948d0f7b68",
+      "source_hash": "e84b03d73c71a80a30e00490aab507b13bdf53bdc4787a106bf5a0ef122fe165",
       "generated_hash": "85127e19267aa6f5ade2b70b9bfb8d5183b7cc1e779867ca03dfb1693cd03fb4"
     },
     {
@@ -1408,7 +1410,7 @@
     {
       "name": "caam",
       "source_skill": "skills/caam",
-      "source_hash": "99d1be0ebe5e9b993d1496bae00d0e423540255dcbb768fbb877fa800c3c50c7",
+      "source_hash": "2cdc3feb5e5069a0ee0a275925c8368098976a18cefda0b8a0930696e460232e",
       "generated_hash": "a440fed73384864b1aaa6fcb0718edc130508124909db55a632464de54d5da80"
     },
     {
@@ -1420,13 +1422,13 @@
     {
       "name": "cass",
       "source_skill": "skills/cass",
-      "source_hash": "5bece04d01fc4e8c8bdfc4e7091578aa658f06e03519c34571fa0f52bc982387",
+      "source_hash": "70b9b04253c9fe3518e154e53c0e5af65279028a05bc15754f212576811c9ba0",
       "generated_hash": "2366885f9e6870164074a6ecb0f61c52bde0bc65040682ca562c018d1c1cefc9"
     },
     {
       "name": "cass-memory",
       "source_skill": "skills/cass-memory",
-      "source_hash": "de232d6187f608558e4e281fef6cc7f00ee59001b7705b6644f58cf61eafd2b2",
+      "source_hash": "9f9d5f16adb9b8297617fda47e15a1b4c7476eddf2ce9e6407ed61af3d51fcfb",
       "generated_hash": "0de4bf229433ced817522fdd7b4252df81f392f14184f8e38ef1cfb9c342bee2"
     },
     {
@@ -1596,6 +1598,8 @@
       "source_skill": "skills/council",
       "source_hash": "49490660b54b2b0685dbb4369131668fdd831c8dd5d444da8a2ebfda43b5cb78",
       "generated_hash": "4ef82a83d08cb7f5cb12556dfc67d48bb1593f30e4de15345fd1058d008a1c39"
+      "source_hash": "b6b0b579d21060650726a4cb739a4d47575583c57969dfe87cd7c943b2b65545",
+      "generated_hash": "811ab60278e0f8cfc6aee26fb8cfa6196212813a30d76f587f83c095fcbf4359"
     },
     {
       "name": "crank",
@@ -1930,13 +1934,13 @@
     {
       "name": "ntm",
       "source_skill": "skills/ntm",
-      "source_hash": "872ce7c62890e6f8e3cb26a238121acb16bdcc36b2459c1b98af90657cf9c364",
+      "source_hash": "e162b82d2e6f985d07197006d16960fe4dbcd994022e366eb677a6682e8b1b3c",
       "generated_hash": "892e76dd5a98a33d79929db7af13610d836ba4377b4807b436a9b3171c3f051f"
     },
     {
       "name": "ntm-browser-test-coordination",
       "source_skill": "skills/ntm-browser-test-coordination",
-      "source_hash": "a8c7110cdf5a9a3adf0c92a2ed775a46bcbde4d3eeafcb0839f609731bb4aa5f",
+      "source_hash": "262b4899b66489e47691a803d1d69187c35f5cf39ac5d3771906554106645b92",
       "generated_hash": "191f9ab186497b72083d557dca78aa1849131221065c6f2e1316d290559751cf"
     },
     {
@@ -2140,7 +2144,7 @@
     {
       "name": "rch",
       "source_skill": "skills/rch",
-      "source_hash": "5766df695f6273f0f875aa21d8f4468d1bed773203cfcef7a0fb7af5e912b5e1",
+      "source_hash": "166dd4af5cb130f3c50e4703844bc17e86b971df8f2fafa08a93a39a62b08578",
       "generated_hash": "931a67d6b832fe9c2d8a957329ef23a7db99cc1720983a03574c1bd14f8134c4"
     },
     {
@@ -2578,7 +2582,7 @@
     {
       "name": "vibing-with-ntm",
       "source_skill": "skills/vibing-with-ntm",
-      "source_hash": "5bda8ecbb98403d513e8b2aba7f3588fd738c4470c234742b45838f59992ed72",
+      "source_hash": "fddb52e3171fb0f6bac5128175078891ed35d5c2958d876e7242ce68c304a3a3",
       "generated_hash": "cab51c9f71ee23eb6db3c6e70dd11a9c55087daf4b43885155bc4290781938bf"
     },
     {

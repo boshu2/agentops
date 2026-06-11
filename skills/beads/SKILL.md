@@ -48,6 +48,8 @@ Graph-based issue tracker that survives conversation compaction.
 
 **bv safety**: NEVER run bare `bv` — it launches interactive TUI and blocks the terminal. Always use `--robot-*` flags.
 
+**Don't re-learn the command surface here.** `bd --help` / `br --help` (and per-subcommand `--help`) self-describe every command and flag — run them before specifying enforcement commands; compose primitives, don't invent ([composition-over-invention.md](references/composition-over-invention.md)). Full catalogs ship in [CLI_REFERENCE.md](references/CLI_REFERENCE.md) (bd), [BR_REFERENCE.md](references/BR_REFERENCE.md) (br), and [BV_TRIAGE.md](references/BV_TRIAGE.md) (bv robot flags). This skill carries the operating doctrine.
+
 ## Operating Rules
 
 - Treat live `bd` reads as authoritative. Use `bd show`, `bd ready`, `bd list`, and `bd export` to inspect current tracker state. Do not treat `.beads/issues.jsonl` as the primary decision source when live `bd` data is available.
@@ -69,6 +71,15 @@ bd dolt commit -m "..."             # if tracker changes are pending
 bd dolt push                        # only if a Dolt remote is configured
 ```
 
+**Session ending pattern (br — sync is EXPLICIT, never automatic):**
+
+```bash
+git pull --rebase
+br sync --flush-only                # DB → JSONL (reverse: --import-only after pull)
+git add .beads/ && git commit -m "Update issues"
+git push
+```
+
 ## Prerequisites
 
 - **bd CLI**: Version 0.34.0+ installed and in PATH
@@ -77,73 +88,17 @@ bd dolt push                        # only if a Dolt remote is configured
 
 ## Examples
 
-### Skill Loading from /vibe
-
 **User says:** `/vibe`
 
-**What happens:**
-1. Agent loads beads skill automatically via dependency
-2. Agent calls `bd show <id>` to read issue metadata
-3. Agent links validation findings to the issue being checked
-4. Output references issue ID in validation report
-
-**Result:** Validation report includes issue context, no manual bd lookups needed.
-
-### Skill Loading from /implement
+This skill loads via dependency: the agent reads issue metadata with `bd show <id>`, links validation findings to the issue under check, and cites the issue ID in the validation report — no manual bd lookups.
 
 **User says:** `/implement ag-xyz-123`
 
-**What happens:**
-1. Agent loads beads skill to understand issue structure
-2. Agent calls `bd show ag-xyz-123` to read issue body
-3. Agent checks dependencies with bd output
-4. Agent closes issue with `bd close ag-xyz-123` after completion
-
-**Result:** Issue lifecycle managed automatically during implementation.
-
-## br (beads_rust) Quick Reference
-
-br is the Rust rewrite of bd. Commands match bd except git handling is explicit.
-
-```bash
-# Lifecycle
-br create "Title" -p 1 -t task       # Create (priority 0-4)
-br update <id> --status in_progress  # Claim work
-br close <id> --reason "Done"        # Complete
-br ready --json                      # Actionable work (not blocked)
-br list --json                       # All issues
-br show <id> --json                  # Issue details
-
-# Dependencies
-br dep add <child> <parent>          # child depends on parent
-br dep cycles                        # MUST be empty
-br dep tree <id>                     # Visualize dependencies
-
-# Sync (EXPLICIT — never automatic)
-br sync --flush-only                 # DB → JSONL (before git commit)
-br sync --import-only                # JSONL → DB (after git pull)
-```
-
-**Session ending pattern (br):**
-```bash
-git pull --rebase
-br sync --flush-only
-git add .beads/ && git commit -m "Update issues"
-git push
-```
+This skill loads to manage the issue lifecycle: `bd show ag-xyz-123` for the body, check dependencies, and `bd close ag-xyz-123` (with scoped closure proof) after completion.
 
 ## bv Graph Triage
 
-NEVER run bare `bv`. Always use `--robot-*` flags.
-
-| Command | Use When |
-|---------|----------|
-| `bv --robot-triage` | What should I work on? Full recommendations + blockers + health |
-| `bv --robot-next` | Just the single top pick |
-| `bv --robot-plan` | What can run concurrently? Parallel execution tracks |
-| `bv --robot-insights` | Deep analysis: metrics, cycles, density, k-core |
-| `bv --robot-priority` | Am I prioritizing wrong? Misalignment detection |
-| `bv --robot-alerts` | Stale issues, blocking cascades, priority mismatches |
+NEVER run bare `bv`. Always use `--robot-*` flags (`--robot-triage`, `--robot-next`, `--robot-plan`, `--robot-insights`, `--robot-priority`, `--robot-alerts` — selection guide in [BV_TRIAGE.md](references/BV_TRIAGE.md)).
 
 **Key metrics:** PageRank = everything depends on this (fix first). Betweenness = bottleneck (blocks multiple paths). High both = critical bottleneck, drop everything.
 
@@ -176,15 +131,7 @@ logging expectations, a named done state, and no dependency cycles.
 
 ## Troubleshooting
 
-| Problem | Cause | Solution |
-|---------|-------|----------|
-| bd/br command not found | CLI not installed or not in PATH | Install bd: `brew install bd` or check PATH |
-| "not a git repository" error | bd requires git repo, current dir not initialized | Run `git init` or navigate to git repo root |
-| "beads not initialized" error | .beads/ directory missing | Human runs `bd init --prefix <prefix>` once |
-| Issue ID format errors | Wrong prefix or malformed ID | Check rigs.json for correct prefix |
-| `bv` hangs | TUI launched without robot flag | Always use `--robot-*` flags |
-| Cycles detected | Circular dependency | `br dep remove` to break cycle |
-| br sync confusion | Missing `--flush-only` or `--import-only` | Always specify direction explicitly |
+Symptom → fix table (command not found, not-a-git-repo, init missing, ID prefix errors, `bv` hangs, dependency cycles, sync direction confusion): [TROUBLESHOOTING.md](references/TROUBLESHOOTING.md). The two most common: a hung `bv` means a robot flag was omitted; br sync confusion means the direction (`--flush-only` vs `--import-only`) wasn't specified.
 
 ## Reference Documents
 
