@@ -1,7 +1,7 @@
 {
   "generator": "manual-maintained",
   "source_skill": "skills/cross-vendor-trust-gate",
-  "layout": "modular",
-  "source_hash": "818a891e28813620457d0e8a2e83c021b8866a936313b1c62c983e57a2b5ce62",
-  "generated_hash": "b96e122feea75ed38555a3f102a7ced2603a5161d554985930a556f3ad3fdfd2"
+  "layout": "stub",
+  "source_hash": "e2715626313810a64f6fa83731ae870659beebba7cb6566b1ee02385245c0c2e",
+  "generated_hash": "1b57ae96817a0fb12d7ed13c5d0b3b294f99c82bbde5e01de29e0e2f3d668bbe"
 }
