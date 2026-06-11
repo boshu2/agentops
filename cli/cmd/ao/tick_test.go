@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -67,22 +68,222 @@ func TestTickReadyStateCounts(t *testing.T) {
 	}
 }
 
+// tickTestLedgerLine reproduces the real persisted br issues.jsonl line shape
+// (full field set as flushed by `br sync --flush-only`), not a minimal
+// hand-built marker — see standards test-pyramid "Fixture Fidelity".
+func tickTestLedgerLine(id, status string) string {
+	return `{"_type": "issue", "id": "` + id + `", "title": "Node 2", "status": "` + status + `", "priority": 2, "issue_type": "task", "created_at": "2026-05-08T12:09:00Z", "updated_at": "2026-05-30T12:57:05Z", "closed_at": "2026-05-08T12:09:11Z", "close_reason": "Closed", "dependency_count": 0, "dependent_count": 1, "comment_count": 0}` + "\n"
+}
+
 func TestTickClosePortAlreadyClosedIsIdempotent(t *testing.T) {
-	dir := t.TempDir()
-	if err := os.Mkdir(filepath.Join(dir, ".beads"), 0o755); err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		name      string
+		ledgerDir string
+	}{
+		{name: "br workspace _beads", ledgerDir: "_beads"},
+		{name: "legacy .beads fallback", ledgerDir: ".beads"},
 	}
-	body := `{"id":"cp-done","status":"closed"}` + "\n"
-	if err := os.WriteFile(filepath.Join(dir, ".beads", "issues.jsonl"), []byte(body), 0o644); err != nil {
-		t.Fatal(err)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("BEADS_DIR", "")
+			dir := t.TempDir()
+			if err := os.Mkdir(filepath.Join(dir, tc.ledgerDir), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			body := tickTestLedgerLine("cp-done", "closed")
+			if err := os.WriteFile(filepath.Join(dir, tc.ledgerDir, "issues.jsonl"), []byte(body), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			var stdout bytes.Buffer
+			rt := tickRuntime{workDir: dir, stdout: &stdout, stderr: &bytes.Buffer{}}
+			if err := tickClosePort(rt, "cp-done", "msg", "missing-evidence.md", nil); err != nil {
+				t.Fatalf("tickClosePort() unexpected error: %v", err)
+			}
+			if got := stdout.String(); got != "already closed cp-done @ none\n" {
+				t.Fatalf("tickClosePort() stdout = %q", got)
+			}
+		})
 	}
-	var stdout bytes.Buffer
-	rt := tickRuntime{workDir: dir, stdout: &stdout, stderr: &bytes.Buffer{}}
-	if err := tickClosePort(rt, "cp-done", "msg", "missing-evidence.md", nil); err != nil {
-		t.Fatalf("tickClosePort() unexpected error: %v", err)
+}
+
+func TestTickLedgerDirResolution(t *testing.T) {
+	tests := []struct {
+		name       string
+		processEnv string   // value for the BEADS_DIR process env ("" = unset)
+		rtEnv      []string // tickRuntime env overlay
+		mkdirs     []string // directories created under workDir
+		want       func(workDir string) string
+	}{
+		{
+			name:   "prefers _beads when it exists",
+			mkdirs: []string{"_beads", ".beads"},
+			want:   func(d string) string { return filepath.Join(d, "_beads") },
+		},
+		{
+			name:   "falls back to legacy .beads",
+			mkdirs: []string{".beads"},
+			want:   func(d string) string { return filepath.Join(d, ".beads") },
+		},
+		{
+			name: "defaults to .beads when nothing exists",
+			want: func(d string) string { return filepath.Join(d, ".beads") },
+		},
+		{
+			name:       "process BEADS_DIR wins over directory probe",
+			processEnv: "custom_beads",
+			mkdirs:     []string{"_beads"},
+			want:       func(d string) string { return filepath.Join(d, "custom_beads") },
+		},
+		{
+			name:       "rt.env BEADS_DIR wins over process env",
+			processEnv: "process_beads",
+			rtEnv:      []string{"BEADS_DIR=overlay_beads"},
+			mkdirs:     []string{"_beads"},
+			want:       func(d string) string { return filepath.Join(d, "overlay_beads") },
+		},
+		{
+			name:       "last rt.env entry wins",
+			rtEnv:      []string{"BEADS_DIR=first", "BEADS_DIR=second"},
+			want:       func(d string) string { return filepath.Join(d, "second") },
+		},
+		{
+			name:       "absolute BEADS_DIR used verbatim",
+			processEnv: "/abs/ledger",
+			want:       func(string) string { return "/abs/ledger" },
+		},
 	}
-	if got := stdout.String(); got != "already closed cp-done @ none\n" {
-		t.Fatalf("tickClosePort() stdout = %q", got)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("BEADS_DIR", tc.processEnv)
+			dir := t.TempDir()
+			for _, sub := range tc.mkdirs {
+				if err := os.Mkdir(filepath.Join(dir, sub), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			rt := tickRuntime{workDir: dir, env: tc.rtEnv}
+			if got, want := tickLedgerDir(rt), tc.want(dir); got != want {
+				t.Fatalf("tickLedgerDir() = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestTickStagePath(t *testing.T) {
+	tests := []struct {
+		name string
+		root string
+		path string
+		want string
+	}{
+		{name: "under root is relative", root: "/repo", path: "/repo/_beads/issues.jsonl", want: filepath.Join("_beads", "issues.jsonl")},
+		{name: "outside root stays absolute", root: "/repo", path: "/elsewhere/issues.jsonl", want: "/elsewhere/issues.jsonl"},
+		{name: "root itself stays absolute via dot", root: "/repo", path: "/repo", want: "."},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := tickStagePath(tc.root, tc.path); got != tc.want {
+				t.Fatalf("tickStagePath(%q, %q) = %q, want %q", tc.root, tc.path, got, tc.want)
+			}
+		})
+	}
+}
+
+// TestTickCloseStagesResolvedLedger is the L2 regression for the live bug
+// where tickClose verified and staged `.beads/` while br wrote `_beads/`:
+// it drives tickClose end-to-end against stub br/git binaries and asserts
+// the resolved ledger paths are what reach `git add`.
+func TestTickCloseStagesResolvedLedger(t *testing.T) {
+	tests := []struct {
+		name      string
+		ledgerDir string
+		rtEnv     bool // set BEADS_DIR in rt.env to the ledger dir
+		wantAdd   string
+	}{
+		{
+			name:      "br workspace _beads",
+			ledgerDir: "_beads",
+			wantAdd:   "-- _beads/issues.jsonl _beads/metadata.json evidence/proof.md",
+		},
+		{
+			name:      "legacy .beads fallback",
+			ledgerDir: ".beads",
+			wantAdd:   "-- .beads/issues.jsonl .beads/metadata.json evidence/proof.md",
+		},
+		{
+			name:      "explicit BEADS_DIR override",
+			ledgerDir: "custom_beads",
+			rtEnv:     true,
+			wantAdd:   "-- custom_beads/issues.jsonl custom_beads/metadata.json evidence/proof.md",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("BEADS_DIR", "")
+			dir := t.TempDir()
+			ledger := filepath.Join(dir, tc.ledgerDir)
+			if err := os.MkdirAll(ledger, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(ledger, "issues.jsonl"), []byte(tickTestLedgerLine("cp-ledger", "closed")), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(ledger, "metadata.json"), []byte(`{"database":"beads"}`), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.MkdirAll(filepath.Join(dir, "evidence"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(dir, "evidence", "proof.md"), []byte("proof"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+
+			fakebin := filepath.Join(dir, "fakebin")
+			if err := os.MkdirAll(fakebin, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			headFile := filepath.Join(dir, "fake-head")
+			addLog := filepath.Join(dir, "fake-add.log")
+			if err := os.WriteFile(headFile, []byte("head-before\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			fakeBR := "#!/usr/bin/env bash\ncase \"${1:-}\" in close|sync|update) exit 0 ;; *) echo \"unexpected br call: $*\" >&2; exit 43 ;; esac\n"
+			fakeGit := "#!/usr/bin/env bash\ncase \"${1:-}\" in\n  rev-parse) cat \"${TICK_TEST_HEAD_FILE:?}\" ;;\n  add) shift; printf '%s\\n' \"$*\" >> \"${TICK_TEST_ADD_LOG:?}\" ;;\n  commit) echo head-after > \"${TICK_TEST_HEAD_FILE:?}\" ;;\n  *) : ;;\nesac\n"
+			if err := os.WriteFile(filepath.Join(fakebin, "br"), []byte(fakeBR), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(fakebin, "git"), []byte(fakeGit), 0o755); err != nil {
+				t.Fatal(err)
+			}
+
+			// exec.Command resolves binaries via the parent process PATH
+			// (not c.Env), so the stub PATH must go through t.Setenv.
+			t.Setenv("PATH", fakebin+string(os.PathListSeparator)+os.Getenv("PATH"))
+			t.Setenv("TICK_TEST_HEAD_FILE", headFile)
+			t.Setenv("TICK_TEST_ADD_LOG", addLog)
+			var stdout, stderr bytes.Buffer
+			rt := tickRuntime{
+				workDir: dir,
+				stdout:  &stdout,
+				stderr:  &stderr,
+			}
+			if tc.rtEnv {
+				rt.env = []string{"BEADS_DIR=" + tc.ledgerDir}
+			}
+			if err := tickClose(rt, "cp-ledger", "close msg", "evidence/proof.md", nil); err != nil {
+				t.Fatalf("tickClose() error: %v (stderr=%q)", err, stderr.String())
+			}
+			got, err := os.ReadFile(addLog)
+			if err != nil {
+				t.Fatalf("git add was never invoked: %v", err)
+			}
+			if strings.TrimSpace(string(got)) != tc.wantAdd {
+				t.Fatalf("git add args = %q, want %q", strings.TrimSpace(string(got)), tc.wantAdd)
+			}
+			if want := "closed cp-ledger @ head-af\n"; stdout.String() != want {
+				t.Fatalf("tickClose() stdout = %q, want %q", stdout.String(), want)
+			}
+		})
 	}
 }
 
