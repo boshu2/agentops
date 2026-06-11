@@ -35,13 +35,13 @@ dispositions:
   - skill:          brainstorm
     domain:         "BC3 Loop"
     hexagonal_role: domain
-    disposition:    update
-    rationale:      "Intent-shaping skill; should emit BDD-ready language"
+    disposition:    merge-review
+    rationale:      "Intent-shaping; fold into discovery"
   - skill:          bug-hunt
     domain:         "BC2 Validation"
     hexagonal_role: domain
-    disposition:    update
-    rationale:      "Validation generator; needs acceptance examples and result contract"
+    disposition:    merge-review
+    rationale:      "Bug-finding generator; fold into review"
   - skill:          compile
     domain:         "BC1 Corpus"
     hexagonal_role: supporting
@@ -50,8 +50,8 @@ dispositions:
   - skill:          complexity
     domain:         "BC2 Validation"
     hexagonal_role: domain
-    disposition:    update
-    rationale:      "Generator for refactor work; add self-test and threshold evidence"
+    disposition:    merge-review
+    rationale:      "Refactor-hotspot finder; fold into refactor"
   - skill:          converter
     domain:         "BC4 Factory"
     hexagonal_role: generic
@@ -65,8 +65,8 @@ dispositions:
   - skill:          burndown
     domain:         "BC3 Loop"
     hexagonal_role: domain
-    disposition:    keep
-    rationale:      "Bounded epic-completion loop; terminating counterpart to evolve (finite target → all-merged → STOP)"
+    disposition:    merge-review
+    rationale:      "Bounded epic loop; fold into crank"
   - skill:          crank
     domain:         "BC3 Loop"
     hexagonal_role: domain
@@ -80,13 +80,13 @@ dispositions:
   - skill:          deps
     domain:         "BC2 Validation"
     hexagonal_role: driven-adapter
-    disposition:    update
-    rationale:      "Dependency risk generator; add threshold and no-network fallback tests"
+    disposition:    merge-review
+    rationale:      "Dependency risk audit; fold into security"
   - skill:          design
     domain:         "BC3 Loop"
     hexagonal_role: domain
-    disposition:    update
-    rationale:      "Product-fit pre-discovery gate; should produce BDD-ready intent"
+    disposition:    merge-review
+    rationale:      "Product-fit gate; fold into discovery"
   - skill:          discovery
     domain:         "BC3 Loop"
     hexagonal_role: domain
@@ -145,8 +145,8 @@ dispositions:
   - skill:          operating-loop-workflow
     domain:         "BC3 Loop"
     hexagonal_role: driving-adapter
-    disposition:    keep
-    rationale:      "Installs + invokes the operating-loop Workflow so plugin users get the seven-move loop"
+    disposition:    merge-review
+    rationale:      "Loop workflow installer; fold into rpi"
   - skill:          perf
     domain:         "BC2 Validation"
     hexagonal_role: domain
@@ -165,8 +165,8 @@ dispositions:
   - skill:          pr-implement
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
-    disposition:    update
-    rationale:      "GitHub PR implementation adapter; map to loop slices"
+    disposition:    merge-review
+    rationale:      "Scoped PR impl; fold into implement"
   - skill:          pr-prep
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
@@ -175,8 +175,8 @@ dispositions:
   - skill:          pr-research
     domain:         "BC5 Runtime"
     hexagonal_role: driven-adapter
-    disposition:    update
-    rationale:      "Upstream repo research adapter; add clean source/citation self-test"
+    disposition:    merge-review
+    rationale:      "Upstream research; fold into pr-prep"
   - skill:          pre-mortem
     domain:         "BC2 Validation"
     hexagonal_role: domain
@@ -195,13 +195,13 @@ dispositions:
   - skill:          quickstart
     domain:         "BC3 Loop"
     hexagonal_role: driving-adapter
-    disposition:    update
-    rationale:      "Operator routing entrypoint; align to current 3.0 first-value path"
+    disposition:    merge-review
+    rationale:      "Next-action shower; fold into status"
   - skill:          ratchet
     domain:         "BC3 Loop"
     hexagonal_role: domain
-    disposition:    update
-    rationale:      "Loop evidence ratchet; connect to cycle trace contract"
+    disposition:    merge-review
+    rationale:      "Brownian-ratchet gates; fold into flywheel"
   - skill:          recover
     domain:         "BC1 Corpus"
     hexagonal_role: driving-adapter
@@ -230,8 +230,8 @@ dispositions:
   - skill:          reverse-engineer-rpi
     domain:         "BC1 Corpus"
     hexagonal_role: supporting
-    disposition:    update
-    rationale:      "External product-spec extraction; ensure clean-room rules stay explicit"
+    disposition:    cut-review
+    rationale:      "Niche meta tool; rarely fires"
   - skill:          review
     domain:         "BC2 Validation"
     hexagonal_role: driving-adapter
@@ -250,8 +250,8 @@ dispositions:
   - skill:          scenario
     domain:         "BC2 Validation"
     hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Holdout scenario manager; important for behavioral evals"
+    disposition:    merge-review
+    rationale:      "Holdout scenarios; fold into eval-outcomes"
   - skill:          scope
     domain:         "BC5 Runtime"
     hexagonal_role: driven-adapter
@@ -260,8 +260,8 @@ dispositions:
   - skill:          session-bootstrap
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
-    disposition:    keep
-    rationale:      "Universal init prompt; the fungibility contract for any-agent spawn (soc-vuu6.25)"
+    disposition:    merge-review
+    rationale:      "Init prompt; fold into inject"
   - skill:          security
     domain:         "BC2 Validation"
     hexagonal_role: driven-adapter
@@ -275,8 +275,8 @@ dispositions:
   - skill:          ship-loop
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
-    disposition:    keep
-    rationale:      "Bot-paired internal-ship PR cycle; distinct from pr-* contribute family"
+    disposition:    merge-review
+    rationale:      "Fast-lane ship; fold into crank"
   - skill:          skill-auditor
     domain:         "BC4 Factory"
     hexagonal_role: supporting
@@ -320,13 +320,13 @@ dispositions:
   - skill:          trace
     domain:         "BC1 Corpus"
     hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Decision trace builder; align to provenance and cycle trace"
+    disposition:    merge-review
+    rationale:      "Decision tracing; fold into recover"
   - skill:          using-agentops
     domain:         "BC4 Factory"
     hexagonal_role: generic
-    disposition:    update
-    rationale:      "Operator education; align to 3.0 first-value path"
+    disposition:    merge-review
+    rationale:      "Workflow explainer; fold into inject"
   - skill:          validate
     domain:         "BC2 Validation"
     hexagonal_role: driving-adapter
@@ -335,8 +335,8 @@ dispositions:
   - skill:          vibe
     domain:         "BC2 Validation"
     hexagonal_role: domain
-    disposition:    update
-    rationale:      "Code-readiness validator; add self-test and tighten result contract"
+    disposition:    merge-review
+    rationale:      "Quick-readiness check; fold into validate as a --quick mode"
   - skill:          eval-outcomes
     domain:         "BC2 Validation"
     hexagonal_role: supporting
@@ -371,13 +371,13 @@ dispositions:
   - skill:          agy-rules-workflows
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Fold into agy-native"
   - skill:          bead-completion-audit
     domain:         "BC2 Validation"
     hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Closed-bead evidence audit; fold into validate"
   - skill:          beads-br
     domain:         "BC3 Loop"
     hexagonal_role: supporting
@@ -393,16 +393,16 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          caam
+  - skill:          account-rotation
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
     disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    rationale:      "Unified host-routed account rotation (macOS+Claude->claude-acct Keychain swap; else->caam file swap); supersedes the retired caam skill."
   - skill:          casr
     domain:         "BC4 Factory"
     hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Session resumer; fold into cass"
   - skill:          cass
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
@@ -411,13 +411,13 @@ dispositions:
   - skill:          cass-memory
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Procedural memory; fold into cass"
   - skill:          cc-cron-ticks
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Fold into cc-hooks"
   - skill:          cc-hooks
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
@@ -426,18 +426,18 @@ dispositions:
   - skill:          cc-loop-driver
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Fold into cc-hooks"
   - skill:          cc-subagents
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Fold into cc-hooks"
   - skill:          cc-worktree-isolation
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Fold into cc-hooks"
   - skill:          codex-exec
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
@@ -446,18 +446,18 @@ dispositions:
   - skill:          codex-goals
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Fold into codex-exec"
   - skill:          codex-mcp-plugins
     domain:         "BC5 Runtime"
     hexagonal_role: driven-adapter
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Fold into codex-exec"
   - skill:          codex-sandbox-evidence
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Fold into codex-exec"
   - skill:          dcg
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
@@ -471,28 +471,28 @@ dispositions:
   - skill:          agy-mcp-plugins
     domain:         "BC5 Runtime"
     hexagonal_role: driven-adapter
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Fold into agy-native"
   - skill:          agy-project-worktree-permissions
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Coverage-gap skill proving AGY project/worktree isolation invariants before the image joins quorum; clean-room AgentOps-owned."
+    disposition:    merge-review
+    rationale:      "Fold into agy-native"
   - skill:          agy-sidecar-scheduled-tick
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Coverage-gap skill for recurring AGY loop ticks via Antigravity sidecar + agentapi evidence; clean-room AgentOps-owned."
+    disposition:    merge-review
+    rationale:      "Fold into agy-native"
   - skill:          cross-vendor-trust-gate
     domain:         "BC4 Factory"
     hexagonal_role: domain
-    disposition:    keep
-    rationale:      "Coverage-gap skill operating the skill-factory final trust gate (cross-vendor parity); shared kernel with heal-skill."
+    disposition:    merge-review
+    rationale:      "Cross-family floor gate; fold into council/validate"
   - skill:          multi-model-triangulation
     domain:         "BC4 Factory"
     hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Cross-model second opinion; fold into council --mixed"
   - skill:          ntm
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
@@ -501,23 +501,23 @@ dispositions:
   - skill:          ntm-browser-test-coordination
     domain:         "BC2 Validation"
     hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Fold into ntm"
   - skill:          ntm-review-worker-orchestration
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Fold into ntm"
   - skill:          operating-loop-skill
     domain:         "BC5 Runtime"
     hexagonal_role: domain
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "The loop; fold into rpi"
   - skill:          planning-workflow
     domain:         "BC3 Loop"
     hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "Markdown planning; fold into plan"
   - skill:          rch
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
@@ -531,8 +531,8 @@ dispositions:
   - skill:          ubs
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    disposition:    merge-review
+    rationale:      "UBS bug/security review; fold into review"
   - skill:          vibing-with-ntm
     domain:         "BC4 Factory"
     hexagonal_role: supporting
@@ -541,5 +541,5 @@ dispositions:
   - skill:          codebase-audit
     domain:         "BC2 Validation"
     hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Canonicalized from ~/.claude/skills ghost dir (cp-801l); domain-parameterized audit skill, AgentOps-owned."
+    disposition:    merge-review
+    rationale:      "Domain-parameterized audit; fold into review report-modes"

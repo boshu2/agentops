@@ -59,50 +59,50 @@ Disposition meanings:
 <!-- BEGIN:full-skill-map -->
 | Skill | Domain | Hex role | First disposition | Rationale |
 |---|---|---|---|---|
+| `account-rotation` | BC5 Runtime | supporting | keep | Unified host-routed account rotation (macOS+Claude->claude-acct Keychain swap; else->caam file swap); supersedes the retired caam skill.. |
 | `acfs` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `agent-mail` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `agent-native` | BC5 Runtime | supporting | keep | Hookless reframe: makes out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI; extends standards+converter, never a hook revival. |
 | `agy-headless-evidence` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `agy-mcp-plugins` | BC5 Runtime | driven-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `agy-mcp-plugins` | BC5 Runtime | driven-adapter | merge-review | Fold into agy-native. |
 | `agy-native` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `agy-project-worktree-permissions` | BC5 Runtime | supporting | keep | Coverage-gap skill proving AGY project/worktree isolation invariants before the image joins quorum; clean-room AgentOps-owned.. |
-| `agy-rules-workflows` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `agy-sidecar-scheduled-tick` | BC5 Runtime | supporting | keep | Coverage-gap skill for recurring AGY loop ticks via Antigravity sidecar + agentapi evidence; clean-room AgentOps-owned.. |
+| `agy-project-worktree-permissions` | BC5 Runtime | supporting | merge-review | Fold into agy-native. |
+| `agy-rules-workflows` | BC5 Runtime | driving-adapter | merge-review | Fold into agy-native. |
+| `agy-sidecar-scheduled-tick` | BC5 Runtime | supporting | merge-review | Fold into agy-native. |
 | `autodev` | BC3 Loop | supporting | refactor | Must compose with PROGRAM.md and RPI as one vertical-slice executor. |
 | `automation-shape-routing` | BC4 Factory | supporting | keep | Front-door router: decides Workflow vs NTM swarm vs plain skill, hands off to the right builder. |
-| `bead-completion-audit` | BC2 Validation | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `bead-completion-audit` | BC2 Validation | supporting | merge-review | Closed-bead evidence audit; fold into validate. |
 | `beads` | BC3 Loop | driven-adapter | update | Tracker adapter is core; add BDD/slice acceptance self-test. |
 | `beads-br` | BC3 Loop | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `beads-bv` | BC3 Loop | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `beads-workflow` | BC3 Loop | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `bootstrap` | BC4 Factory | driving-adapter | update | First-run factory entrypoint; needs current 3.0/domain packet shape. |
-| `brainstorm` | BC3 Loop | domain | update | Intent-shaping skill; should emit BDD-ready language. |
-| `bug-hunt` | BC2 Validation | domain | update | Validation generator; needs acceptance examples and result contract. |
-| `burndown` | BC3 Loop | domain | keep | Bounded epic-completion loop; terminating counterpart to evolve (finite target → all-merged → STOP). |
-| `caam` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `casr` | BC4 Factory | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `brainstorm` | BC3 Loop | domain | merge-review | Intent-shaping; fold into discovery. |
+| `bug-hunt` | BC2 Validation | domain | merge-review | Bug-finding generator; fold into review. |
+| `burndown` | BC3 Loop | domain | merge-review | Bounded epic loop; fold into crank. |
+| `casr` | BC4 Factory | supporting | merge-review | Session resumer; fold into cass. |
 | `cass` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `cass-memory` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `cc-cron-ticks` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `cass-memory` | BC5 Runtime | supporting | merge-review | Procedural memory; fold into cass. |
+| `cc-cron-ticks` | BC5 Runtime | driving-adapter | merge-review | Fold into cc-hooks. |
 | `cc-hooks` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `cc-loop-driver` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `cc-subagents` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `cc-worktree-isolation` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `codebase-audit` | BC2 Validation | supporting | keep | Canonicalized from ~/.claude/skills ghost dir (cp-801l); domain-parameterized audit skill, AgentOps-owned.. |
+| `cc-loop-driver` | BC5 Runtime | driving-adapter | merge-review | Fold into cc-hooks. |
+| `cc-subagents` | BC5 Runtime | supporting | merge-review | Fold into cc-hooks. |
+| `cc-worktree-isolation` | BC5 Runtime | supporting | merge-review | Fold into cc-hooks. |
+| `codebase-audit` | BC2 Validation | supporting | merge-review | Domain-parameterized audit; fold into review report-modes. |
 | `codex-exec` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `codex-goals` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `codex-mcp-plugins` | BC5 Runtime | driven-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `codex-sandbox-evidence` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `codex-goals` | BC5 Runtime | driving-adapter | merge-review | Fold into codex-exec. |
+| `codex-mcp-plugins` | BC5 Runtime | driven-adapter | merge-review | Fold into codex-exec. |
+| `codex-sandbox-evidence` | BC5 Runtime | supporting | merge-review | Fold into codex-exec. |
 | `compile` | BC1 Corpus | supporting | refactor | Corpus compiler is core; align read/write flows to Corpus ports. |
-| `complexity` | BC2 Validation | domain | update | Generator for refactor work; add self-test and threshold evidence. |
+| `complexity` | BC2 Validation | domain | merge-review | Refactor-hotspot finder; fold into refactor. |
 | `converter` | BC4 Factory | generic | keep | Cross-runtime packaging adapter (Codex/Cursor twins); skill-builder consumes it — live producer→consumer edge (resolved 2026-05-24). |
 | `council` | BC2 Validation | domain | update | Core judgment gate; strengthen scenario and verdict self-test. |
 | `crank` | BC3 Loop | domain | refactor | Wave executor; align with vertical-slice and conflict-free wave contract. |
-| `cross-vendor-trust-gate` | BC4 Factory | domain | keep | Coverage-gap skill operating the skill-factory final trust gate (cross-vendor parity); shared kernel with heal-skill.. |
+| `cross-vendor-trust-gate` | BC4 Factory | domain | merge-review | Cross-family floor gate; fold into council/validate. |
 | `curate` | BC1 Corpus | supporting | keep | Designed-future canonical unified miner (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24). |
 | `dcg` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `deps` | BC2 Validation | driven-adapter | update | Dependency risk generator; add threshold and no-network fallback tests. |
-| `design` | BC3 Loop | domain | update | Product-fit pre-discovery gate; should produce BDD-ready intent. |
+| `deps` | BC2 Validation | driven-adapter | merge-review | Dependency risk audit; fold into security. |
+| `design` | BC3 Loop | domain | merge-review | Product-fit gate; fold into discovery. |
 | `discovery` | BC3 Loop | domain | update | Creates execution packets; add explicit loop-shape SELF-TEST. |
 | `doc` | BC4 Factory | supporting | update | Documentation factory adapter; keep tied to doc-release gates. |
 | `domain` | BC4 Factory | domain | keep | Ubiquitous-language kernel; central to DDD. |
@@ -115,53 +115,53 @@ Disposition meanings:
 | `heal-skill` | BC4 Factory | supporting | update | Skill hygiene gate; should consume the new domain map. |
 | `implement` | BC3 Loop | driving-adapter | update | Slice executor; enforce first-failing-test language. |
 | `inject` | BC1 Corpus | driving-adapter | refactor | Context injection should be explicit CorpusReader adapter use. |
-| `multi-model-triangulation` | BC4 Factory | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `multi-model-triangulation` | BC4 Factory | supporting | merge-review | Cross-model second opinion; fold into council --mixed. |
 | `ntm` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `ntm-browser-test-coordination` | BC2 Validation | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `ntm-review-worker-orchestration` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `operating-loop-skill` | BC5 Runtime | domain | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `operating-loop-workflow` | BC3 Loop | driving-adapter | keep | Installs + invokes the operating-loop Workflow so plugin users get the seven-move loop. |
+| `ntm-browser-test-coordination` | BC2 Validation | supporting | merge-review | Fold into ntm. |
+| `ntm-review-worker-orchestration` | BC5 Runtime | supporting | merge-review | Fold into ntm. |
+| `operating-loop-skill` | BC5 Runtime | domain | merge-review | The loop; fold into rpi. |
+| `operating-loop-workflow` | BC3 Loop | driving-adapter | merge-review | Loop workflow installer; fold into rpi. |
 | `perf` | BC2 Validation | domain | update | Performance generator; add thresholds and proof examples. |
 | `plan` | BC3 Loop | domain | update | Must output vertical slices and wave-validity checks. |
-| `planning-workflow` | BC3 Loop | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `planning-workflow` | BC3 Loop | supporting | merge-review | Markdown planning; fold into plan. |
 | `post-mortem` | BC3 Loop | domain | update | Loop closeout; connect to next-work and ratchet evidence. |
-| `pr-implement` | BC5 Runtime | driving-adapter | update | GitHub PR implementation adapter; map to loop slices. |
+| `pr-implement` | BC5 Runtime | driving-adapter | merge-review | Scoped PR impl; fold into implement. |
 | `pr-prep` | BC5 Runtime | driving-adapter | update | PR publication adapter; align to evidence and release discipline. |
-| `pr-research` | BC5 Runtime | driven-adapter | update | Upstream repo research adapter; add clean source/citation self-test. |
+| `pr-research` | BC5 Runtime | driven-adapter | merge-review | Upstream research; fold into pr-prep. |
 | `pre-mortem` | BC2 Validation | domain | update | Plan risk gate; add scenario/verdict self-test. |
 | `product` | BC3 Loop | domain | keep | Product intent source; important for loop work selection. |
 | `push` | BC5 Runtime | driving-adapter | update | Git adapter; add branch/worktree disposition self-test. |
-| `quickstart` | BC3 Loop | driving-adapter | update | Operator routing entrypoint; align to current 3.0 first-value path. |
-| `ratchet` | BC3 Loop | domain | update | Loop evidence ratchet; connect to cycle trace contract. |
+| `quickstart` | BC3 Loop | driving-adapter | merge-review | Next-action shower; fold into status. |
+| `ratchet` | BC3 Loop | domain | merge-review | Brownian-ratchet gates; fold into flywheel. |
 | `rch` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `recover` | BC1 Corpus | driving-adapter | refactor | Session recovery is valuable but currently structurally heavy. |
 | `red-team` | BC2 Validation | supporting | update | Probe generator; add severity/evidence contract. |
 | `refactor` | BC2 Validation | supporting | update | Refactor generator; align with complexity thresholds and TDD proof. |
 | `release` | BC2 Validation | supporting | update | Release gate driver; keep tied to local CI and evidence export. |
 | `research` | BC1 Corpus | driving-adapter | update | Knowledge acquisition entrypoint; add source/citation self-test. |
-| `reverse-engineer-rpi` | BC1 Corpus | supporting | update | External product-spec extraction; ensure clean-room rules stay explicit. |
+| `reverse-engineer-rpi` | BC1 Corpus | supporting | cut-review | Niche meta tool; rarely fires. |
 | `review` | BC2 Validation | driving-adapter | update | Human-facing review gate; align to validator output contract. |
 | `rpi` | BC3 Loop | supporting | refactor | Lifecycle orchestrator; should consume BDD intent and preserve objective spine. |
 | `sbh` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `scaffold` | BC4 Factory | supporting | update | Code/artifact scaffolder; add non-goal and validation examples. |
-| `scenario` | BC2 Validation | supporting | update | Holdout scenario manager; important for behavioral evals. |
+| `scenario` | BC2 Validation | supporting | merge-review | Holdout scenarios; fold into eval-outcomes. |
 | `scope` | BC5 Runtime | driven-adapter | keep | Runtime filesystem gate; hard boundary skill. |
 | `security` | BC2 Validation | driven-adapter | keep | Canonical security skill: continuous release-gate driver (security-gate.sh) PLUS the composable primitive library (security_suite.py / prompt_redteam.py) collapsed in from security-suite (cp-qqq, 2026-06-07). |
-| `session-bootstrap` | BC5 Runtime | driving-adapter | keep | Universal init prompt; the fungibility contract for any-agent spawn (soc-vuu6.25). |
+| `session-bootstrap` | BC5 Runtime | driving-adapter | merge-review | Init prompt; fold into inject. |
 | `shared` | BC4 Factory | domain | keep | Shared contracts; avoid broad edits. |
-| `ship-loop` | BC5 Runtime | driving-adapter | keep | Bot-paired internal-ship PR cycle; distinct from pr-* contribute family. |
+| `ship-loop` | BC5 Runtime | driving-adapter | merge-review | Fast-lane ship; fold into crank. |
 | `skill-auditor` | BC4 Factory | supporting | update | Audit role should consume new quality/domain rubrics. |
 | `skill-builder` | BC4 Factory | supporting | update | Builder should scaffold SELF-TEST and domain metadata by default. |
 | `standards` | BC4 Factory | domain | keep | Current pilot upgraded with SELF-TEST; continue incremental patches. |
 | `status` | BC3 Loop | driving-adapter | update | Operator state surface; should show loop/domain/evidence status. |
 | `swarm` | BC5 Runtime | supporting | update | Multi-agent runtime adapter; align with conflict-free wave rules. |
 | `test` | BC2 Validation | supporting | update | Test generator; central to first-failing-test loop. |
-| `trace` | BC1 Corpus | supporting | update | Decision trace builder; align to provenance and cycle trace. |
-| `ubs` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `using-agentops` | BC4 Factory | generic | update | Operator education; align to 3.0 first-value path. |
+| `trace` | BC1 Corpus | supporting | merge-review | Decision tracing; fold into recover. |
+| `ubs` | BC5 Runtime | supporting | merge-review | UBS bug/security review; fold into review. |
+| `using-agentops` | BC4 Factory | generic | merge-review | Workflow explainer; fold into inject. |
 | `using-atm` | BC4 Factory | supporting | keep | Shippable AgentOps-scoped guide for the ATM leg of the out-of-session substrate (ATM+Agent Mail+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill.. |
 | `validate` | BC2 Validation | driving-adapter | keep | Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24). |
-| `vibe` | BC2 Validation | domain | update | Code-readiness validator; add self-test and tighten result contract. |
+| `vibe` | BC2 Validation | domain | merge-review | Quick-readiness check; fold into validate as a --quick mode. |
 | `vibing-with-ntm` | BC4 Factory | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `workflow-builder` | BC4 Factory | supporting | keep | Scaffolds Claude Workflow scripts (composite capability); counterpart to skill-builder. |
 <!-- END:full-skill-map -->
