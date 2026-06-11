@@ -71,7 +71,6 @@ skills/skill-auditor/references/skill-auditor.feature
 skills/skill-builder/references/skill-builder.feature
 skills/status/references/status.feature
 skills/swarm/references/swarm.feature
-skills/system-tuning/references/system-tuning.feature
 skills/test/references/test.feature
 skills/trace/references/trace.feature
 skills/validate/references/validate.feature

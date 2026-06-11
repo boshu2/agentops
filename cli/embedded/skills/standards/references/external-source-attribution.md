@@ -17,7 +17,7 @@ Use when the skill is **primarily derived from a single external source**.
   - ✅ `See \`LICENSE.md\` in this skill directory for attribution.`
   - ❌ `See [LICENSE.md](LICENSE.md) for attribution.`
 - The relative-link form breaks `mkdocs --strict` because mkdocs flattens skill directories during build (`skills/<name>/SKILL.md` → `skills/<name>.md`), so the sibling-file link `[LICENSE.md](LICENSE.md)` resolves to `skills/LICENSE.md` which does not exist.
-- Example: `skills/system-tuning/LICENSE.md`.
+- Example path: `skills/<name>/LICENSE.md` (the former `system-tuning` skill used this pattern before its 2026-06 retirement).
 
 ## Pattern B — Per-reference footer
 
@@ -47,4 +47,4 @@ Use when the skill's `references/*.md` files draw from **two or more external so
 
 ## Cross-references
 
-- Example skill using Pattern A: `skills/system-tuning/`.
+- Pattern A example: any skill carrying a single-source `LICENSE.md` at its root (see the path rule above).
