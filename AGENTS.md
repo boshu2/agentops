@@ -12,9 +12,9 @@ Mechanically enforced on Bo's machine by the local opt-in guard `~/.claude/hooks
 
 **AgentOps compiles and compounds the context that feeds your software factory.** It automates the bookkeeping agents do not reliably do for themselves — attempts, decisions, citations, verdicts, handoffs, learnings — then encodes the DevSecOps CDLC and multi-agent operating practices into a portable corpus that compounds across sessions and runtimes. Plugin + CLI (hookless — skills + the `ao` CLI, with the local cockpit gate as release authority), runs on your hardware against your subscription; out-of-session scheduling is delegated to a substrate, not an in-repo daemon (ADR-0009). Humans choose the posture: in-the-loop for high-rigor work, on-the-loop for scheduled compounding.
 
-This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
+This project uses **br** (beads_rust) for issue tracking, with **bv** for graph-aware triage — offline, git-JSONL-backed (`_beads/issues.jsonl` + a local SQLite cache). Run `br robot-docs guide` to get oriented. Interim: until legacy `.beads/` is retired, invoke as `BEADS_DIR=$PWD/_beads br <cmd>`. **bd/Dolt is RETIRED LEGACY (2026-06-11):** delivery was coupled to a remote single-host Dolt server — a SPOF with no offline lane, circuit breaker observed open in the 2026-06-11 recon (P1, `docs/audits/codebase-skills-2026-06-11/codebase-risk-audit.md`). Do not run `bd` here. Legacy `.beads/` bd data is preserved pending reconciliation; migration record: `.agents/swarm/results/br-migration.json`.
 
-**Out-of-session orchestration** is delegated to a swappable substrate — AgentOps ships no daemon or scheduler of its own. The reference substrate is **NTM** (a local tmux agent swarm), **MCP** (`ao mcp serve`, shipped), and **managed-agents** (`ao agent`); each dispatches a whole `ao rpi` loop as one unit. `ao` does NOT own or wrap a substrate — always-on is opt-in, the way `bd` is. See [docs/3.0.md](docs/3.0.md) and [docs/dependencies.md](docs/dependencies.md).
+**Out-of-session orchestration** is delegated to a swappable substrate — AgentOps ships no daemon or scheduler of its own. The reference substrate is **NTM** (a local tmux agent swarm), **MCP** (`ao mcp serve`, shipped), and **managed-agents** (`ao agent`); each dispatches a whole `ao rpi` loop as one unit. `ao` does NOT own or wrap a substrate — always-on is opt-in, the way `br` is. See [docs/3.0.md](docs/3.0.md) and [docs/dependencies.md](docs/dependencies.md).
 
 > **Spawning an agent? Run this first:** `ao session bootstrap` — the universal init prompt that orients every agent identically regardless of model. AgentOps 3.0 is hookless, so nothing auto-injects this: run it explicitly, then `ao inject` / `ao corpus inject --query "<topic>"` to pull decay-ranked prior context.
 
@@ -51,10 +51,11 @@ bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts
 
 ```bash
 # Issue tracking
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --status in_progress  # Claim work
-bd close <id>         # Complete work
+br ready              # Find available work
+br show <id>          # View issue details
+br update <id> --claim  # Claim work (assignee + in_progress, atomic)
+br close <id> -r "Done"  # Complete work
+bv --robot-insights   # Graph triage: what's next / what's the bottleneck
 
 # CLI development
 cd cli && make build  # Build ao binary
@@ -68,7 +69,7 @@ Run the local cockpit gate before pushing, then push the coherent bead arc direc
 
 | If you need… | Read |
 |---|---|
-| Workflow phases · branch/PR shape · Local Pre-Push · Releasing · Landing the Plane · bd issue tracking · Session Completion | [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md) |
+| Workflow phases · branch/PR shape · Local Pre-Push · Releasing · Landing the Plane · br issue tracking · Session Completion | [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md) |
 | CI gate detail · Advisory triage SLAs · DEFERRED hardening matrix · per-job descriptions · Nightly workflow jobs | [`AGENTS-CI.md`](AGENTS-CI.md) |
 | CLI Skill-Map Refresh · Codex Skill Maintenance · audit scripts · override conventions | [`AGENTS-CODEX.md`](AGENTS-CODEX.md) |
 | Canonical Root and Worktrees · Key Constraints Agents Must Follow · no-tracked-`.agents` · no-symlinks · embedded-sync | [`AGENTS-RUNTIME.md`](AGENTS-RUNTIME.md) |
