@@ -50,3 +50,8 @@ evidence/skill-prune-recon.md).
 - **Skill seems empty / missing scripts:** the body moved to Mount Olympus
   (2026-06-10). Use the canonical path above; this stub exists only to keep
   fleet routing alive until the catalog closer updates the registry.
+
+## Runtime Contract
+
+Multi-judge runs still bind to the shared Claude runtime surface:
+[claude-code-latest-features.md](../shared/references/claude-code-latest-features.md).
