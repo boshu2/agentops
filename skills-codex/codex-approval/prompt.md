@@ -35,3 +35,10 @@ through ATM/NTM.
 - Treat a judge that ran/read nothing as unverified, not approved.
 - `WARN is not` a silent pass; unresolved warnings must be explicit in the
   `ApprovalEdge` before work proceeds.
+- Reserve the ceremony for one-way doors (architecture forks, cross-agent
+  contracts, product decisions); routine runtime/CLI slices take the
+  vertical-slice path in `$discovery` instead.
+- When the approval gates implementation, mirror the verdict artifact (or a
+  compact proof packet) to a tracked durable path before the gated bead/epic
+  closes; gitignored `.agents/` state in a temporary worktree is not a proof
+  surface.

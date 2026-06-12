@@ -1084,13 +1084,13 @@
     {
       "name": "codex-approval",
       "source_skill": "skills/codex-approval",
-      "source_hash": "ab4c6c03b95d434990708bdae12b21aff99d60e985d276814c97f5aa3a293fe8",
-      "generated_hash": "43580f236d06096608f79da9ee498b52733836a96bc945dcf6f94fe09aba9834"
+      "source_hash": "a5198778f490dc2d8b38911f2500d7663a91df77ef95fa91a97fff72afdb20f4",
+      "generated_hash": "a53005d4072152add5acb0b508ba140fe837283c5bce1ff5eb7b53d50765487f"
     },
     {
       "name": "codex-exec",
       "source_skill": "skills/codex-exec",
-      "source_hash": "1969f20ea3719c74f7c6d5bd87f34d7ffd41268e42205d2e66acf9a4eec82f7e",
+      "source_hash": "6ba1544b32285b89f4367a7bd3fa13d247cfc5df58d1cfc2d0182696e1a365b6",
       "generated_hash": "0e1778e7c62eb6d26fc7386d8302cc67430ab87740eebd1c15e701adca843c53"
     },
     {
@@ -1168,8 +1168,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "691cd439a98806331c3792fb5735a62bd09c78b1c80c33cae86338ad4182b6b0",
-      "generated_hash": "cd0571ddc4891dc58370ccba51806c3ba25cf2abc205b63af0b30ca6411f40b6"
+      "source_hash": "63c3356b41a602e3ae70b6144974e925269c687ffd833df804e5e6c734a3749e",
+      "generated_hash": "38ab1cbc2a714653d6d0a3c675d8336bc3f6e4dfe6f388016573a5d4f26f9491"
     },
     {
       "name": "doc",
@@ -1343,6 +1343,7 @@
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
       "source_hash": "07f5d1452b3a8f7ee26c5f48fcdbcca7a631b4fe0cae44f5ca3428fb8c31c6d9",
+      "source_hash": "fcb37c49f7cada76bc063810dde2110acccfb1b0993bbe36fdae868f5032550a",
       "generated_hash": "a2291ceda1dd75efd5313046d7265964671c17290fbdc5bf57a1c4432e4aa661"
     },
     {
