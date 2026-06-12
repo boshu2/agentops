@@ -13,6 +13,8 @@ context_rel:
   with: skill-builder
 - kind: supplier-to
   with: workflow-builder
+- kind: supplier-to
+  with: operationalize
 skill_api_version: 1
 context:
   window: inherit
@@ -22,7 +24,7 @@ context:
 metadata:
   tier: meta
   dependencies: []
-output_contract: 'a routing verdict — Workflow | ATM swarm | plain skill — with the deciding axis named'
+output_contract: 'a routing verdict — Workflow | ATM swarm | plain skill | gate — with the deciding axis named'
 ---
 
 # Automation Shape Routing — Workflow vs ATM vs Skill
@@ -58,6 +60,13 @@ Ask in order:
 > deterministic DAG + structured JSON + no human-attach + headless-wanted → **Workflow**
 > long-lived + attachable + open-ended file edits / fluid population → **ATM**
 > no fan-out, or hard-sequential edit loop → **plain skill**
+
+**Zeroth question, before the three axes:** is this an automation at all, or a
+*constraint* — a "must never regress" rule promoted from a learning? A constraint
+is not a process to run; it is a check that blocks. Shape = **gate**: a warn-only
+script under `scripts/` + a bats case, flipped to blocking after a soak (the
+ratchet ladder's rungs 3-4). Route it through `operationalize` (its `gate`
+route target), not through the three shapes below.
 
 ## Spike-validated nuances (2026-05-29)
 
@@ -130,6 +139,7 @@ decided, hand off:
 | **plain skill** | `skill-builder` | Scaffold a new `SKILL.md` against the unified template → then `skill-auditor` → `heal-skill`. |
 | **Workflow** | `workflow-builder` | Scaffold a new `.claude/workflows/*.js` from the operating-loop.js template. |
 | **ATM swarm** | `atm` + [`/using-atm`](../using-atm/SKILL.md) | Stand up + tend an ATM swarm running AgentOps loops (`/rpi`/`/evolve`) over a bead queue. |
+| **gate** | [`operationalize`](../operationalize/SKILL.md) (`gate` route) | Emit a warn-only check script + bats case + CI wiring; flip to blocking after soak. For promoted must-never-regress learnings. |
 
 State the verdict and the deciding axis in one line, then invoke the chosen
 builder. Do not scaffold here.

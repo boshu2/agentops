@@ -27,6 +27,23 @@ practices:
 | **Git is YOUR job** | br only touches `.beads/` directory |
 | **No cycles allowed** | `br dep cycles` must return empty |
 
+## Private-ledger repos — the persist_intent port contract
+
+Some repos declare a **private bead ledger** separated from the public source
+tree. The agentops repo is the canonical case; an agent that loads only this
+skill (without the repo CLAUDE.md) must still honor these invariants:
+
+| Invariant | Rule |
+|---|---|
+| **Indirection** | Invoke as `BEADS_DIR=$PWD/_beads br <cmd>` — the ledger lives at `_beads/`, not `.beads/` (legacy `.beads/` holds retired tracker config; `br init` there would clobber it). |
+| **Private repo** | `_beads/` is its **own git repository** (separate remote). Sync = `git -C _beads push`. |
+| **Never leak** | never run `git add _beads` in the host repo — bead bodies carry private context; the host repo is public and gitignores the ledger. |
+| **bd is retired** | because the bd/Dolt remote-server lane was retired (2026-06-11) — do not run `bd` in a br repo; it appears only in explicitly-marked legacy notes. |
+| **Prefix filter** | to prevent cross-project leakage in shared DBs, filter queries by the repo's issue prefix (e.g. `ag-`) before trusting `br ready` output. |
+
+This section is the `persist_intent` port contract: the skill that persists
+intent owns the rules that keep that intent private and uncorrupted.
+
 ## Quick Workflow
 
 ```bash
