@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-12T13:55:49Z",
-  "skill_count": 66,
+  "generated_at": "2026-06-12T14:25:54Z",
+  "skill_count": 70,
   "skills": [
     {
       "name": "account-rotation",
@@ -165,6 +165,10 @@
         {
           "kind": "supplier-to",
           "with": "workflow-builder"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "operationalize"
         }
       ],
       "references_count": 0,
@@ -355,6 +359,49 @@
       ],
       "context_rel": [],
       "references_count": 4,
+      "codex_override_present": true
+    },
+    {
+      "name": "continuity-loop",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [
+        "ntm",
+        "agent-mail"
+      ],
+      "produces": [
+        ".agents/continuity/state.json",
+        "escalation-message"
+      ],
+      "practices": [
+        "sre",
+        "team-topologies",
+        "design-by-contract"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "evolve"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "using-atm"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "recover"
+        },
+        {
+          "kind": "customer-of",
+          "with": "agent-mail"
+        },
+        {
+          "kind": "customer-of",
+          "with": "ntm"
+        }
+      ],
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -742,6 +789,58 @@
       "codex_override_present": true
     },
     {
+      "name": "operationalize",
+      "description": ">-",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        ".agents/research/*.md",
+        "audit-report",
+        "learning"
+      ],
+      "produces": [
+        ".agents/operationalize/*.md",
+        "routed-handoffs"
+      ],
+      "practices": [
+        "wiki-knowledge-surface",
+        "design-by-contract",
+        "pragmatic-programmer"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "research"
+        },
+        {
+          "kind": "customer-of",
+          "with": "automation-shape-routing"
+        },
+        {
+          "kind": "customer-of",
+          "with": "validate"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "skill-builder"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "workflow-builder"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "cc-hooks"
+        },
+        {
+          "kind": "supplier-to",
+          "with": "beads-workflow"
+        }
+      ],
+      "references_count": 0,
+      "codex_override_present": true
+    },
+    {
       "name": "perf",
       "description": "Profile and optimize hotspots.",
       "hexagonal_role": "domain",
@@ -925,6 +1024,30 @@
       ],
       "context_rel": [],
       "references_count": 16,
+      "codex_override_present": true
+    },
+    {
+      "name": "reality-check",
+      "description": ">-",
+      "hexagonal_role": "domain",
+      "user_invocable": false,
+      "consumes": [
+        "implement"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "lean-startup",
+        "dora-metrics"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "discovery"
+        }
+      ],
+      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -1341,6 +1464,28 @@
       ],
       "context_rel": [],
       "references_count": 6,
+      "codex_override_present": true
+    },
+    {
+      "name": "toil-mining",
+      "description": ">-",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "practices": [
+        "sre",
+        "lean-startup"
+      ],
+      "context_rel": [
+        {
+          "kind": "supplier-to",
+          "with": "automation-shape-routing"
+        }
+      ],
+      "references_count": 1,
       "codex_override_present": true
     },
     {
