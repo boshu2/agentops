@@ -79,7 +79,7 @@ The Traditional Pyramid          The AI-Native Shape
 | **Discovery** (`/discovery`, `/plan`) | L0–L3 scoping | Plan identifies which test levels apply. **Default: L2 required for all code-change issues.** Issues include `test_level` metadata. |
 | **Pre-mortem** (`/pre-mortem`) | L0–L3 coverage check | Validates plan covers appropriate test levels. **Flags L1-only coverage as WARN.** |
 | **Implementation** (`/implement`, `/crank`) | L0–L2 writing + execution | **TDD writes L2 integration tests first (RED).** L0 contracts from specs. L1 as regression guards. |
-| **Validation** (`/vibe`, `/post-mortem`) | L0–L3 coverage audit | Assesses test coverage. **L2+ coverage weighted 3-5x over L1 in vibe scoring.** |
+| **Validation** (`/validate`, `/post-mortem`) | L0–L3 coverage audit | Assesses test coverage. **L2+ coverage weighted 3-5x over L1 in vibe scoring.** |
 
 ## Test Level Selection Guide
 
@@ -400,10 +400,10 @@ After L0–L3 coverage is complete, run bug-finding levels:
 | `/plan` | Classify which BF levels apply per issue |
 | `/pre-mortem` | Verify BF levels are planned for boundary-touching code |
 | `/implement` | Write BF tests alongside L0–L3 (or as separate wave) |
-| `/vibe` | **Check BF coverage before council** — flag missing chaos/property tests on boundary code |
+| `/validate` | **Check BF coverage before council** — flag missing chaos/property tests on boundary code |
 | `/post-mortem` | Assess BF bug discovery count. If BF4 found 0 bugs → either code is solid or chaos tests are too weak |
 | `/implement` (bug fix) | **BF6 mandatory** — reproduce bug as failing test BEFORE writing fix |
-| `/vibe` (performance) | Check BF7 benchmarks if hot-path code changed |
+| `/validate` (performance) | Check BF7 benchmarks if hot-path code changed |
 | `/plan` (format changes) | Flag BF8 backward compat — add old format as fixture before changing |
 | `/pre-mortem` (security) | Verify BF9 tests planned for code handling secrets or user input |
 
@@ -424,7 +424,7 @@ After L0–L3 coverage is complete, run bug-finding levels:
 
 ## Coverage Assessment Template
 
-Used by `/post-mortem` and `/vibe` to assess test shape health:
+Used by `/post-mortem` and `/validate` to assess test shape health:
 
 ### Coverage Shape (L0–L3)
 

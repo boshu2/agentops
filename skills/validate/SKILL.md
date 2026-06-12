@@ -29,7 +29,7 @@ output_contract: schemas/verdict.v1.schema.json
 
 > **Role:** validator. Input = artifact (plan, spec, code, PR, fitness gate). Output = `verdict.v1` (PASS / WARN / FAIL with rationale + findings).
 
-> **Status (2026-05-08):** introduced ADDITIVE in Phase 1 (m6v5.D.1 / soc-78s2v). Existing validators (council/vibe/pre-mortem/red-team/review/scenario plus retired pr-validate and validation lanes) stayed until Phase 2 shim conversion (m6v5.D.2). Fix-C smoke (`soc-wb2aa`) gates Phase 2.
+> **Status (2026-05-08):** introduced ADDITIVE in Phase 1 (m6v5.D.1 / soc-78s2v). Existing validators (councilvibe/pre-mortem/red-team/review/eval-outcomes plus retired pr-validate and validation lanes) stayed until Phase 2 shim conversion (m6v5.D.2). Fix-C smoke (`soc-wb2aa`) gates Phase 2.
 
 `/validate` is a driving adapter for the `validate_acceptance` port in the
 [Intent-to-Loop Hexagon](../../docs/architecture/intent-to-loop-hexagon.md).
@@ -48,8 +48,8 @@ before returning PASS.
 | `--deep` | 4-judge thorough review | `/council --deep` |
 | `--mixed` | Cross-vendor (Claude + Codex), N×2 judges | `/council --mixed` |
 | `--debate` | Adversarial 2-round refinement | `/council --debate`, `/red-team` |
-| `--mode=post-impl` | Code-readiness pipeline (complexity → bug-hunt → council) | `/vibe` |
-| `--mode=pre-impl [--target=X]` | Plan/spec validation; target ∈ {scenario,fitness,ratchet,scope,skill,health} | `/pre-mortem`, `/scenario`, `/goals measure`, `/ratchet`, `/scope`, `/skill-auditor`, `ao doctor` |
+| `--mode=post-impl` | Code-readiness pipeline (complexity → bug-hunt → council) | `vibe` |
+| `--mode=pre-impl [--target=X]` | Plan/spec validation; target ∈ {scenario,fitness,ratchet,scope,skill,health} | `/pre-mortem`, `/eval-outcomes`, `/goals measure`, `/flywheel`, `/scope`, `/skill-auditor`, `ao doctor` |
 | `--mode=pr` | PR-shape verdict (diff review + acceptance check) | `/review` |
 
 **Mode-budget assertion:** 8 modes. Adding a 9th requires demoting an existing one OR refusing the addition (per Fix-F § continuous CI gate).
@@ -70,7 +70,7 @@ here so no capability is lost:
   self-grade that is stamped as *waived, not independently validated*. Apply the
   [Completion-Claim Kernel](../shared/validation-contract.md#completion-claim-kernel)
   before accepting any DONE/closed/green claim. For epic-scope close-out this mode may
-  delegate to `/vibe`, `/post-mortem`, and `/forge` rather than inlining them.
+  delegate to `vibe`, `/post-mortem`, and `/forge` rather than inlining them.
 - **`--mode=pr` (was the pr-validate lane) — submission-readiness checks.** In addition to the
   diff/acceptance verdict, run, in order: (1) **upstream alignment FIRST** (BLOCKING —
   `git rev-list --count HEAD..origin/main`; fail if many commits behind or merge would
@@ -81,10 +81,10 @@ here so no capability is lost:
 
 ### Folded triggers (ag-s43tg wave 1): `vibe` + `bead-completion-audit` route here
 
-- **`/vibe` → `--mode=post-impl`.** Use when doing a quick readiness or sanity check
+- **`vibe` → `--mode=post-impl`.** Use when doing a quick readiness or sanity check
   that code is ready to commit or ship, short of a full review — the post-impl
   pipeline (complexity → bug-hunt → council) is the vibe check.
-- **`/bead-completion-audit` → `--mode=post-impl` close-out.** Use when
+- **`bead-completion-audit` → `--mode=post-impl` close-out.** Use when
   auditing closed beads for real shipped evidence, acceptance proof, and truthful
   closeout — the Completion-Claim Kernel and the no-self-grading invariant above
   own this audit.
@@ -135,7 +135,7 @@ For `--mode=pre-impl`, also load:
 
 For `--mode=post-impl`, run pre-checks:
 - complexity audit (radon for python, gocyclo for go)
-- bug-hunt sweep (skill-body convention; no `/bug-hunt` skill needed)
+- bug-hunt sweep (skill-body convention; no `/review` skill needed)
 
 For `--mode=pr`, fetch the PR diff (`gh pr diff <id>` or path).
 
@@ -244,9 +244,9 @@ For `--mode=pre-impl` reusable findings: append to `.agents/findings/registry.js
 | `--target` | What gets graded | Replaces |
 |---|---|---|
 | (default) | Plan/spec for an upcoming `/implement` | `/pre-mortem` |
-| scenario | Holdout scenario gate | `/scenario` |
+| scenario | Holdout scenario gate | `/eval-outcomes` |
 | fitness | GOALS.md fitness gates | `/goals measure`, `ao goals measure` |
-| ratchet | Brownian Ratchet checkpoint | `/ratchet`, `ao ratchet status` |
+| ratchet | Brownian Ratchet checkpoint | `/flywheel`, `ao ratchet status` |
 | scope | Frozen-dirs declaration | `/scope` |
 | skill | SKILL.md hygiene + audit | `/skill-auditor`, `/heal-skill` (audit half) |
 | health | Repo health probe | `ao doctor` |
@@ -337,3 +337,32 @@ measured reality was 36 run / 34 pass / 1 fail / 1 skip, on a different commit.
 ## Reference Documents
 
 - [references/validate.feature](references/validate.feature) — Executable spec: verdict.v1 PASS/WARN/FAIL for any artifact, --mode selects shape, 8-mode budget (soc-qk4b)
+
+## Reference library (incl. rescued vibe references, ag-s43tg)
+
+- [references/complexity-analysis.md](references/complexity-analysis.md)
+- [references/deep-audit-protocol.md](references/deep-audit-protocol.md)
+- [references/deep-checks.md](references/deep-checks.md)
+- [references/examples.md](references/examples.md)
+- [references/go-patterns.md](references/go-patterns.md)
+- [references/go-standards.md](references/go-standards.md)
+- [references/json-standards.md](references/json-standards.md)
+- [references/markdown-standards.md](references/markdown-standards.md)
+- [references/patterns.md](references/patterns.md)
+- [references/post-verdict-actions.md](references/post-verdict-actions.md)
+- [references/python-standards.md](references/python-standards.md)
+- [references/quick-mode-vibe.md](references/quick-mode-vibe.md)
+- [references/report-format.md](references/report-format.md)
+- [references/rust-standards.md](references/rust-standards.md)
+- [references/shell-standards.md](references/shell-standards.md)
+- [references/test-pyramid-inventory.md](references/test-pyramid-inventory.md)
+- [references/test-pyramid-weighting.md](references/test-pyramid-weighting.md)
+- [references/typescript-standards.md](references/typescript-standards.md)
+- [references/verification-report.md](references/verification-report.md)
+- [references/vibe-coding.md](references/vibe-coding.md)
+- [references/vibe-suppressions.md](references/vibe-suppressions.md)
+- [references/write-time-quality.md](references/write-time-quality.md)
+- [references/yaml-standards.md](references/yaml-standards.md)
+- [references/validate.feature](references/validate.feature)
+- [references/vibe.feature](references/vibe.feature) — rescued vibe executable spec
+- [scripts/prescan.sh](scripts/prescan.sh) — rescued vibe pre-scan helper

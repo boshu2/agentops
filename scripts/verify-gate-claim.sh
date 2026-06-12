@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # verify-gate-claim.sh — mechanical enforcement of anti-pattern #7
 #
-# Anti-pattern #7 (skills/ship-loop/references/anti-patterns.md): claiming a
+# Anti-pattern #7 (skills/crank/references/ship-loop-anti-patterns.md): claiming a
 # gate fix landed without re-running the gate at canonical HEAD. This script
 # makes that mechanical. Given a ref (PR number or branch name, used for
 # logging only) and a claimed output line, it either:

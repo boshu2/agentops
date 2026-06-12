@@ -232,7 +232,7 @@ See [references/examples.md](references/examples.md) for the troubleshooting tab
 
 - `skills/council/SKILL.md` — Multi-model validation council
 - `skills/plan/SKILL.md` — Create implementation plans
-- `skills/vibe/SKILL.md` — Validate code after implementation
+- `skills/validate/SKILL.md` — Validate code after implementation
 
 ## Reference Documents
 

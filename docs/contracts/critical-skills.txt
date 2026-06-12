@@ -10,7 +10,5 @@ beads-br
 beads-bv
 evolve
 heal-skill
-operating-loop-workflow
 rpi
 skill-builder
-using-agentops

@@ -51,7 +51,7 @@ test coverage, and generating properly-formatted PR bodies.
 
 ### Folded trigger (ag-s43tg wave 1): `pr-research` routes here
 
-- **`/pr-research` → upstream research mode.** Use when you need to **Research an upstream repo**
+- **`pr-research` → upstream research mode.** Use when you need to **Research an upstream repo**
   before contributing — systematic exploration of an external codebase as the FIRST step before
   planning or implementing an open source contribution: prior-work check (existing issues/PRs),
   mandatory CONTRIBUTING.md discovery, guidelines/templates analysis, PR archaeology on merged

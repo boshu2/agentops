@@ -1,0 +1,1 @@
+Run /status to show the current AgentOps work status and next action

@@ -65,23 +65,13 @@ you need the full autonomy contract.
 - **No move-skipping.** Strict delegation is on by default; phases never compress, and validation cannot be skipped. The lifecycle objective is preserved across the whole loop.
 - **The first failing test is the bead's contract.** With `--test-first` on (the default), `/crank` is invoked with the TDD-per-slice discipline; `--no-test-first` is an explicit opt-out, not a fast path.
 - **Acceptance examples close the bead, not activity.** Validation FAIL re-cranks on the same objective up to 3 attempts; DONE requires the acceptance roll-up in the [slice-validation template](../../docs/templates/slice-validation.md) to be fully green.
-- **Ports stay visible.** Preserve the
-  [Intent-to-Loop Hexagon](../../docs/architecture/intent-to-loop-hexagon.md)
-  boundary as the objective crosses `shape_intent`, `persist_intent`,
-  `plan_slices`, `execute_wave`, `validate_acceptance`, and `record_evidence`.
+- **Ports stay visible.** Preserve the [Intent-to-Loop Hexagon](../../docs/architecture/intent-to-loop-hexagon.md) boundary as the objective crosses `shape_intent`, `persist_intent`, `plan_slices`, `execute_wave`, `validate_acceptance`, and `record_evidence`.
 - **Context density survives phase boundaries.** Apply the [Context Density Rule](../domain/references/context-density-rule.md) to every phase handoff and final report: keep intent, boundary, evidence, decision, constraint, and next action; omit or link anything else.
 
-### Folded triggers (ag-s43tg wave 1): `operating-loop-skill` + `operating-loop-workflow` route here
+### Folded triggers (ag-s43tg): `operating-loop-skill` + `operating-loop-workflow` route here
 
-- **`operating-loop-skill` → one bead through the loop.** Use when driving one bead
-  end-to-end through claim, work, independent validation, closeout, and persistence —
-  `/rpi <bead-id>` runs that exact arc: claim at discovery, work via `/crank`,
-  `/validate` as the independent gate, closeout on green acceptance, and evidence +
-  learning capture as the persistence move.
-- **`operating-loop-workflow` → the Workflow shape.** Use when you would install or
-  run the seven-move operating-loop Workflow for AgentOps plugin users and
-  multi-agent orchestration — `/rpi` is the in-session orchestrator of the same
-  seven moves ([operating loop doctrine](../../docs/architecture/operating-loop.md)).
+- **operating-loop-skill** — driving one bead end-to-end through claim, work, independent validation, closeout, and persistence: `/rpi <bead-id>` runs that exact arc.
+- **operating-loop-workflow** — installing or running the seven-move operating-loop Workflow for AgentOps plugin users and multi-agent orchestration: `/rpi` is the in-session orchestrator of the same seven moves.
 
 ## Core Contract
 
@@ -98,11 +88,8 @@ patterns `scripts/check-skill-isolation.sh` flags. See
 and anti-pattern citation table.
 
 When the runtime supports phase isolation, keep `/rpi` visible in the main
-session and run each phase contract through isolated transport: phase skill
-name in, bounded handoff artifact in, phase artifact/verdict/next action out.
-The transport may be a daemon job, process runner, or subagent wrapper, but it
-must execute the declared phase skill contract rather than doing phase work
-directly.
+session and run each phase contract through isolated transport: phase skill name in, bounded handoff artifact in, phase artifact/verdict/next action out.
+The transport may be a daemon job, process runner, or subagent wrapper, but it must execute the declared phase skill contract rather than doing phase work directly.
 
 RPI owns one lifecycle objective across all phases. Preserve the discovered
 `epic_id` when present; otherwise preserve the original goal and execution

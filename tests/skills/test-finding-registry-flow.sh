@@ -30,7 +30,7 @@ check_contains() {
 
 PLAN_SKILL="$REPO_ROOT/skills/plan/SKILL.md"
 PM_SKILL="$REPO_ROOT/skills/pre-mortem/SKILL.md"
-VIBE_SKILL="$REPO_ROOT/skills/vibe/SKILL.md"
+VIBE_SKILL="$REPO_ROOT/skills/validate/references/quick-mode-vibe.md"
 POST_MORTEM_SKILL="$REPO_ROOT/skills/post-mortem/SKILL.md"
 REGISTRY_CONTRACT="$REPO_ROOT/docs/contracts/finding-registry.md"
 REGISTRY_SCHEMA="$REPO_ROOT/docs/contracts/finding-registry.schema.json"

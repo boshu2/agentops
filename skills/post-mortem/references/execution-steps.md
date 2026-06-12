@@ -124,7 +124,7 @@ Read `references/metadata-verification.md` for the full verification procedure. 
 
 **Skip if `--quick` or `--skip-sweep`.**
 
-Before council runs, dispatch a deep audit sweep to systematically discover issues across all changed files. This uses the same protocol as `/vibe --deep` — see the deep audit protocol in the vibe skill (`skills/vibe/`) for the full specification.
+Before council runs, dispatch a deep audit sweep to systematically discover issues across all changed files. This uses the same protocol as `/validate --deep` — see the deep audit protocol in the vibe skill (`skills/validate/`) for the full specification.
 
 In summary:
 

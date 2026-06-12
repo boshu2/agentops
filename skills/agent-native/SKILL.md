@@ -36,14 +36,14 @@ Run a Claude loop *outside* an interactive Claude Code / Codex session — an An
 
 1. **Skills** — `skills/<name>/SKILL.md` progressive-disclosure contracts (standards, behavioral-discipline, council, validation, trace, provenance).
 2. **The `ao` CLI** — the deterministic tool surface (`ao session bootstrap`, `ao inject`, `ao corpus inject --query`, `ao validate`, `ao goals measure`) plus the `standards` skill loaded into the agent's instructions.
-3. **CI as the authoritative gate** — `.github/workflows/validate.yml` runs the standards/scenario checks as CI jobs, NOT as a PreToolUse hook.
+3. **CI as the authoritative gate** — `.github/workflows/validate.yml` runs the standards/eval-outcomes checks as CI jobs, NOT as a PreToolUse hook.
 
 So an out-of-session agent becomes AgentOps-native by: **(a)** loading AgentOps skills into the Agent definition, **(b)** exposing the `ao` CLI as a callable tool (MCP or shell-tool) so the agent can `ao session bootstrap` / `ao inject` / `ao validate` itself, and **(c)** running the same CI-style validation gate on its outputs before the work is accepted. The Agent SDK's own hooks become an **optional thin adapter** for teams wanting in-loop interception — never the primary mechanism.
 
 > **Mechanism status (planned, not yet shipped).** This skill is the **doctrine layer** and lands first; the two concrete commands it names — `ao agent bundle` (ag-jspr) and `ao mcp serve` (ag-higd) — are open, ready beads under epic ag-7s9fo, not yet in the live CLI. The `ao session bootstrap` / `ao inject` / `ao corpus inject` / `ao validate` / `ao goals measure` commands the bundled agent calls are real today. When ag-jspr and ag-higd land, remove this skill's entry from `scripts/skill-body-refs-allowlist.txt`.
 
 This is an **extension of two existing skills**, not a rewrite:
-- [standards](../standards/SKILL.md) — gains an Agent-runtime profile: how the standards/behavioral-discipline checklists get loaded by a non-interactive Claude and enforced via CI rather than `/vibe`.
+- [standards](../standards/SKILL.md) — gains an Agent-runtime profile: how the standards/behavioral-discipline checklists get loaded by a non-interactive Claude and enforced via CI rather than `/validate`.
 - [converter](../converter/SKILL.md) + the `skills/` ↔ `skills-codex/` parity machinery — reused as-is to keep the bundle dual-runtime.
 
 **Concrete runtime recipes** — the three-phase workflow below, one per runtime:
@@ -77,7 +77,7 @@ Run a thin MCP server (`ao mcp serve`) — or a documented shell-tool spec — e
 
 ### Phase 3: Gate the output via CI
 
-A reusable workflow (`agent-output-validate.yml`) runs `ao validate` + the standards/scenario gates against whatever the agent produced (PR branch or artifact bundle) — the **same** authoritative gate as interactive work. Green CI is the merge gate.
+A reusable workflow (`agent-output-validate.yml`) runs `ao validate` + the standards/eval-outcomes gates against whatever the agent produced (PR branch or artifact bundle) — the **same** authoritative gate as interactive work. Green CI is the merge gate.
 
 **Checkpoint:** the agent's output passed the identical CI gate; nothing merges red.
 

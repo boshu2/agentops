@@ -43,7 +43,7 @@ Sessions → Transcripts → Forge → Pool → Promote → Knowledge
 
 ### Folded triggers (ag-s43tg wave 1): `ratchet` routes here
 
-- **`/ratchet` → flywheel gate tracking.** Use when asked to record Brownian Ratchet gates —
+- **`ratchet` → flywheel gate tracking.** Use when asked to record Brownian Ratchet gates —
   tracking progress through the RPI workflow with permanent gates
   (`Progress = Chaos × Filter → Ratchet`; merged/closed/stored progress can't be un-ratcheted).
 - Gate surface: `ao ratchet status` / `ao ratchet check <step>` / `ao ratchet record <step>

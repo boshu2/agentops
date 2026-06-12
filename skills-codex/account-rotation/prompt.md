@@ -1,12 +1,8 @@
-# Execution Profile — account-rotation
+# account-rotation
 
-When the user hits a usage/rate limit and wants to switch accounts (or to spread
-swarm lanes across accounts):
+Use when you hit a usage/rate limit on a coding-agent subscription and need to switch accounts, or to spread swarm lanes across accounts. Routes by host+agent: macOS+Claude → claude-acct (Keychain swap); macOS+Codex/Gemini or any Linux/WSL → caam (file swap). One symptom, the right tool per host.
 
-1. Detect host (`uname`) and which agent CLI is being rotated.
-2. Route: macOS+Claude → `claude-acct`; macOS+Codex/Gemini or any Linux/WSL → `caam`.
-3. macOS+Claude only: a full account = Keychain token + `~/.claude.json` `.oauthAccount`;
-   `claude-acct use <name>` swaps both. caam is a no-op there (it swaps a file Claude ignores).
-4. Capturing a new account: log out / use Incognito first (the browser captures the
-   currently-signed-in account); verify by account email, not token hash.
-5. Rotation affects new processes, not the live session — relaunch to move yourself.
+## Instructions
+
+Load and follow the skill instructions from the sibling `SKILL.md` file for this skill.
+

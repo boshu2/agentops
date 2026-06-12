@@ -74,7 +74,7 @@ before doing any work.
 
 Identical to the Claude path: the swarm's output (a PR branch) is gated by the
 **same** `agent-output-validate.yml` CI workflow running `ao validate` + the
-standards/scenario gates. Green CI is the merge gate. ATM panes do not get a
+standards/eval-outcomes gates. Green CI is the merge gate. ATM panes do not get a
 private gate — CI is the shared boundary for both runtimes.
 
 **Checkpoint:** the swarm's PR passed the identical CI gate as interactive work.

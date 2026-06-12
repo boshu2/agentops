@@ -61,7 +61,7 @@ middleware with per-endpoint permissions enumerated in `serve/rbac.go`.
 
 ```
 GET  /api/v1/health          GET  /api/v1/version        GET  /api/v1/capabilities
-GET  /api/v1/deps            GET  /api/v1/doctor         GET  /api/v1/openapi.json
+GET  /api/v1/security            GET  /api/v1/doctor         GET  /api/v1/openapi.json
 GET  /docs  (Swagger UI, no auth)
 ```
 

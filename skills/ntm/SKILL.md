@@ -186,9 +186,9 @@ Keep depth out of this file. The binary's own docs (`ntm --robot-docs=...`) are 
 
 Drop-in examples live under `assets/`:
 
-- [`pipeline-example.yaml`](assets/pipeline-example.yaml) — a review pipeline with parallel step + retry
-- [`policy-example.yaml`](assets/policy-example.yaml) — opinionated `~/.ntm/policy.yaml` starter
-- [`envrc.example`](assets/envrc.example) — recommended `direnv`/shell env vars
+- [`pipeline-example.yaml`](https://github.com/boshu2/agentops/blob/main/skills/ntm/assets/pipeline-example.yaml) — a review pipeline with parallel step + retry
+- [`policy-example.yaml`](https://github.com/boshu2/agentops/blob/main/skills/ntm/assets/policy-example.yaml) — opinionated `~/.ntm/policy.yaml` starter
+- [`envrc.example`](https://github.com/boshu2/agentops/blob/main/skills/ntm/assets/envrc.example) — recommended `direnv`/shell env vars
 
 ## Related Skills
 

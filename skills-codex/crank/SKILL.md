@@ -499,7 +499,7 @@ fi
 When the epic is DONE:
 
 ```bash
-$vibe validate the completed epic
+$validate validate the completed epic
 ```
 
 ### Step 8.5: Archive Shared Task Notes

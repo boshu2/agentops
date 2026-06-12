@@ -99,7 +99,7 @@ Mayor: "Let's build a user auth system"
 
 5. Continue until #5 completes
 
-6. /vibe -> Validate everything
+6. /validate -> Validate everything
 ```
 
 ### Scope-Escape Protocol
@@ -167,7 +167,7 @@ This ties into the full workflow:
 /plan -> Decompose into beads issues
 /crank -> Autonomous epic loop
     +-- /swarm -> Execute each wave in parallel
-/vibe -> Validate results
+/validate -> Validate results
 /post-mortem -> Extract learnings
 ```
 
@@ -230,7 +230,7 @@ When `/crank` invokes `/swarm`: Crank bridges beads to TaskList, swarm executes 
 | Fresh-context parallel execution | `/swarm` | Each spawned agent is a clean slate |
 | Autonomous epic loop | `/crank` | Loops waves via swarm until epic closes |
 | Just swarm, no beads | `/swarm` directly | TaskList only, skip beads |
-| RPI progress gates | `/ratchet` | Tracks progress; does not execute work |
+| RPI progress gates | `/flywheel` | Tracks progress; does not execute work |
 
 ---
 

@@ -134,31 +134,31 @@ echo ""
 echo "--- Vibe Judge Count ---"
 
 # T9: Vibe default = 2 independent judges (not 3)
-if grep -q '2 independent judges' "$REPO_ROOT/skills/vibe/SKILL.md"; then
+if grep -q '2 independent judges' "$REPO_ROOT/skills/validate/references/quick-mode-vibe.md"; then
     pass "T9: Vibe default = 2 independent judges"
 else
     fail "T9: Vibe should default to 2 independent judges"
 fi
 
 # T10: Vibe PRODUCT.md adds 1 consolidated DX judge
-if grep -q '3 judges: 2 .* + 1 DX' "$REPO_ROOT/skills/vibe/SKILL.md" || \
-   grep -q '2 independent + 1 DX' "$REPO_ROOT/skills/vibe/SKILL.md"; then
+if grep -q '3 judges: 2 .* + 1 DX' "$REPO_ROOT/skills/validate/references/quick-mode-vibe.md" || \
+   grep -q '2 independent + 1 DX' "$REPO_ROOT/skills/validate/references/quick-mode-vibe.md"; then
     pass "T10: Vibe PRODUCT.md adds 1 consolidated DX judge"
 else
     fail "T10: Vibe PRODUCT.md should add 1 DX judge (3 total)"
 fi
 
 # T11: Codex review capped at 2000 chars
-if grep -q '2000 chars' "$REPO_ROOT/skills/vibe/SKILL.md" && \
-   grep -q 'first 2000 chars' "$REPO_ROOT/skills/vibe/SKILL.md"; then
+if grep -q '2000 chars' "$REPO_ROOT/skills/validate/references/quick-mode-vibe.md" && \
+   grep -q 'first 2000 chars' "$REPO_ROOT/skills/validate/references/quick-mode-vibe.md"; then
     pass "T11: Codex review capped at 2000 chars"
 else
     fail "T11: Codex review should be capped at 2000 chars"
 fi
 
 # T12: Vibe --quick fast path skips Steps 2a-2e
-if grep -q 'Step 1.5: Fast Path' "$REPO_ROOT/skills/vibe/SKILL.md" && \
-   grep -q 'skip Steps 2a.*2e' "$REPO_ROOT/skills/vibe/SKILL.md"; then
+if grep -q 'Step 1.5: Fast Path' "$REPO_ROOT/skills/validate/references/quick-mode-vibe.md" && \
+   grep -q 'skip Steps 2a.*2e' "$REPO_ROOT/skills/validate/references/quick-mode-vibe.md"; then
     pass "T12: Vibe --quick fast path documented (skip 2a-2e)"
 else
     fail "T12: Vibe should document --quick fast path skipping 2a-2e"
@@ -168,7 +168,7 @@ fi
 quick_skip_count=0
 for step in "Step 2a" "Step 2b" "Step 2c" "Step 2.5" "Step 2d" "Step 2e" "Step 3:"; do
     # Check that within 3 lines after the step header, "Skip if" appears
-    if grep -A3 "### $step" "$REPO_ROOT/skills/vibe/SKILL.md" | grep -q "Skip if"; then
+    if grep -A3 "### $step" "$REPO_ROOT/skills/validate/references/quick-mode-vibe.md" | grep -q "Skip if"; then
         quick_skip_count=$((quick_skip_count + 1))
     fi
 done
@@ -451,7 +451,7 @@ else
 fi
 
 # T37: Vibe outputs to .agents/council/ (same dir)
-if grep -q '\.agents/council/' "$REPO_ROOT/skills/vibe/SKILL.md"; then
+if grep -q '\.agents/council/' "$REPO_ROOT/skills/validate/references/quick-mode-vibe.md"; then
     pass "T37: Vibe outputs to .agents/council/"
 else
     fail "T37: Vibe SKILL.md should output to .agents/council/"

@@ -5,19 +5,18 @@ skill_api_version: 1
 hexagonal_role: supporting
 metadata:
   tier: execution
-description: >-
-  Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification.
-  Use when blocking commands, auto-formatting, custom permissions, or writing hooks.
-  Also: scheduling autonomous in-session flywheel ticks with Claude Code cron routines
-  (absorbs cc-cron-ticks); running a Claude-native control-plane tick loop with worker
-  and separate-validator subagents (absorbs cc-loop-driver); dispatching scoped Claude
-  Code subagents with worktrees, roles, tools, memory, and evidence gates (absorbs
-  cc-subagents); and isolating parallel Claude Code workers in
-  separate git worktrees to prevent file collisions (absorbs cc-worktree-isolation).
+description: Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills.
 practices:
 - pragmatic-programmer
 ---
 # Claude Code Hooks
+
+## Absorbed skills (ag-s43tg)
+
+- **cc-cron-ticks** — Scheduling autonomous in-session flywheel ticks with Claude Code cron routines.
+- **cc-loop-driver** — Running a Claude-native control-plane tick loop with worker and separate-validator subagents.
+- **cc-subagents** — Dispatching scoped Claude Code subagents with worktrees, roles, tools, memory, and evidence gates.
+- **cc-worktree-isolation** — Isolating parallel Claude Code workers in separate git worktrees to prevent file collisions.
 
 Shell commands that fire at specific points in Claude Code's lifecycle.
 

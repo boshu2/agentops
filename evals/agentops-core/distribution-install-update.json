@@ -43,7 +43,7 @@
         {"type": "exit_code", "value": 0},
         {"type": "stdout_contains", "value": "Install Script Smoke Tests"},
         {"type": "stdout_contains", "value": "Runtime Execution Tests"},
-        {"type": "stdout_contains", "value": "Results: 41 passed, 0 failed"}
+        {"type": "stdout_contains", "value": "Results: 45 passed, 0 failed"}
       ],
       "dimensions": ["correctness", "runtime_compatibility", "safety"],
       "critical": true
@@ -129,9 +129,9 @@
       "kind": "artifact_check",
       "objective": "Protect the supported latest-source installer and the operator-facing skill-refresh note after the standalone update skill was retired (refresh is an install-script concern).",
       "expectations": [
-        {"type": "artifact_contains", "target": "../../skills/using-agentops/SKILL.md", "value": "bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)"},
-        {"type": "artifact_contains", "target": "../../skills/using-agentops/SKILL.md", "value": "There is no update skill"},
-        {"type": "artifact_contains", "target": "../../skills-codex/using-agentops/SKILL.md", "value": "bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)"},
+        {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)"},
+        {"type": "artifact_contains", "target": "../../skills/inject/SKILL.md", "value": "There is no update skill"},
+        {"type": "artifact_contains", "target": "../../skills-codex/inject/SKILL.md", "value": "bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)"},
         {"type": "artifact_contains", "target": "../../scripts/install.sh", "value": "install-codex.sh"},
         {"type": "artifact_contains", "target": "../../scripts/install-opencode.sh", "value": "get_latest_tag"}
       ],

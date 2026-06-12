@@ -44,7 +44,7 @@ If no items were harvested, write: "Flywheel stable — no follow-up items ident
 /implement
     |
     v
-/vibe (council on code)
+/validate (council on code)
     |
     v
 Ship it

@@ -2,7 +2,7 @@
 # ship.sh — single-command local-gated direct-main ship cycle.
 #
 # Removes the choice to skip the discipline encoded in
-# skills/ship-loop/SKILL.md.  In particular, anti-pattern #1 of that skill
+# skills/crank/SKILL.md (absorbs ship-loop).  In particular, anti-pattern #1 of that skill
 # ("Running --fast pre-push on an inventory-touching inventory diff") is enforced
 # mechanically here: this script DETECTS inventory-touching changes and
 # routes through the FULL pre-push gate (no --fast) automatically.  The
@@ -82,7 +82,7 @@ fi
 
 # Inventory-touch detection patterns.  Each surface here triggers ~1-15
 # inventory validators that --fast mode would skip.  Anti-pattern #1 in
-# skills/ship-loop catalogs the empirical cost (PR #332 burned ~90 min
+# skills/crank/references/ship-loop-anti-patterns.md catalogs the empirical cost (PR #332 burned ~90 min
 # of CI cycles on this class).
 INVENTORY_PATTERNS=(
     '^skills/'

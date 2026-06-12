@@ -5,7 +5,7 @@ skill_api_version: 1
 hexagonal_role: supporting
 metadata:
   tier: execution
-description: "Use when you hit a usage/rate limit on a coding-agent subscription and need to switch accounts, or to spread swarm lanes across accounts. Routes by host+agent: macOS+Claude → claude-acct (Keychain swap); macOS+Codex/Gemini or any Linux/WSL → caam (file swap). One symptom, the right tool per host."
+description: "Switch coding-agent accounts on a usage/rate limit or to spread swarm lanes. Routes by host+agent: macOS+Claude via claude-acct; Codex/Gemini and Linux/WSL via caam."
 practices:
 - pragmatic-programmer
 ---

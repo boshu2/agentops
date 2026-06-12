@@ -506,4 +506,4 @@ The context packet unifies and structures what multiple components already provi
 - [Knowledge Flywheel](knowledge-flywheel.md) — How learnings compound across sessions
 - [How It Works](how-it-works.md) — Context windowing, Brownian Ratchet, Ralph Wiggum
 - [The Science](the-science.md) — Freshness decay model, MemRL two-phase retrieval
-- [CLI Reference](../cli/docs/COMMANDS.md) — `ao lookup` command documentation
+- [CLI Reference](https://github.com/boshu2/agentops/blob/main/cli/docs/COMMANDS.md) — `ao lookup` command documentation

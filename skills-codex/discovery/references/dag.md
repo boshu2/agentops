@@ -64,7 +64,7 @@ Classify complexity from explicit flag first, then goal shape:
 
 ### STEP 1 - Intent Clarification
 
-If the goal is vague and `--skip-brainstorm` is not set, run `$brainstorm`
+If the goal is vague and `--skip-brainstorm` is not set, run `brainstorm`
 with the current goal.
 
 Record only `brainstorm_path` and the refined objective. Do not carry the full
@@ -76,7 +76,7 @@ recent matching brainstorm artifact exists.
 ### STEP 1.5 - Product Design Gate
 
 When `PRODUCT.md` exists and the goal is a feature/capability rather than a
-bug, docs task, chore, dependency bump, lint, or format task, run `$design`
+bug, docs task, chore, dependency bump, lint, or format task, run `design`
 with the bounded objective and quick mode.
 
 Design FAIL blocks discovery. PASS/WARN records `design_path` and one

@@ -39,7 +39,7 @@ output_contract: skills/council/schemas/verdict.json
 
 ## Loop position
 
-Move **7 (capture evidence + learning, then ratchet)** of the [operating loop](../../docs/architecture/operating-loop.md). Two outputs per loop turn: evidence (test names, snapshot keys, council verdicts, citation events) recorded against the bead and `.agents/ratchet/`; learnings promoted only under the [ratchet rules](../../docs/architecture/operating-loop.md#the-promotion-ratchet) — noticed once stays in the handoff, repeats twice goes to `.agents/learnings/`, changes future behavior updates a SKILL.md or template, must-never-regress becomes a gate, core doctrine promotes into PRODUCT.md/GOALS.md/docs/cdlc.md. Most observations die at handoff. That is correct.
+Move **7 (capture evidence + learning, then ratchet)** of the [operating loop](../../docs/architecture/operating-loop.md). Two outputs per loop turn: evidence (test names, snapshot keys, council verdicts, citation events) recorded against the bead and `.agents/flywheel/`; learnings promoted only under the [ratchet rules](../../docs/architecture/operating-loop.md#the-promotion-ratchet) — noticed once stays in the handoff, repeats twice goes to `.agents/learnings/`, changes future behavior updates a SKILL.md or template, must-never-regress becomes a gate, core doctrine promotes into PRODUCT.md/GOALS.md/docs/cdlc.md. Most observations die at handoff. That is correct.
 
 Six phases:
 1. **Council** — Did we implement it correctly?
@@ -263,7 +263,7 @@ should change. See the `/goals` skill.
 ## See Also
 
 - `skills/council/SKILL.md` — Multi-model validation council
-- `skills/vibe/SKILL.md` — Council validates code (`/vibe` after coding)
+- `skills/validate/SKILL.md` — Council validates code (`/validate` after coding)
 - `skills/pre-mortem/SKILL.md` — Council validates plans (before implementation)
 
 

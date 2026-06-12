@@ -17,7 +17,7 @@
   - Expected: do not load `research`; route to `/implement` or `/plan`.
 
 - User asks for session/handoff history ("what did we decide last session?").
-  - Expected: use `/trace`, not `research` — `research` reads git commit history, not session history.
+  - Expected: use `/recover`, not `research` — `research` reads git commit history, not session history.
 
 ## Behavior Checks
 

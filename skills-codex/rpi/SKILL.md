@@ -148,7 +148,7 @@ schemas and archive paths.
 | Flag | Default | Purpose |
 |------|---------|---------|
 | `--from=<phase>` | discovery | Start at discovery, implementation, or validation |
-| `--interactive` | off | Human gates in discovery/validation |
+| `--interactive` | off | Human gates in discovery/validate |
 | `--auto` | on | Fully autonomous default |
 | `--loop --max-cycles=<n>` | off / 3 | Iterate when validation fails |
 | `--spawn-next` | off | Surface follow-up work after reporting |

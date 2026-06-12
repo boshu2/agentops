@@ -44,7 +44,7 @@ output_contract: .agents/research/*.md (synthesis), bd notes, skill diffs (rare)
 | `--mode=retro` | Single-session learning capture | retired retro lane |
 | `--mode=defrag` | Knowledge defragmentation (overnight) | `compile-session-defrag.sh` hook |
 | `--mode=watch` | In-session drift / loop detection (15-min cadence) | `research-loop-detector.sh` hook |
-| `--mode=provenance` | Decision-trace + artifact-provenance walk | artifact lineage plus `/trace` |
+| `--mode=provenance` | Decision-trace + artifact-provenance walk | artifact lineage plus `/recover` |
 
 **Mode-budget assertion:** 8 modes. Adding a 9th requires demoting an existing one OR refusing the addition (per Fix-F § continuous CI gate).
 

@@ -1,9 +1,6 @@
 ---
 name: eval-outcomes
-description: Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons.
-  Also the fold target for the retired scenario skill — Manage holdout scenarios; author and
-  manage holdout scenarios with measurable acceptance vectors and satisfaction scoring in
-  .agents/holdout/ for behavioral validation.
+description: Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario.
 skill_api_version: 1
 practices:
 - continuous-delivery
@@ -30,6 +27,18 @@ output_contract: "skills/council/schemas/verdict.json (one council verdict recor
 ---
 
 # eval-outcomes — moved to Mount Olympus (2026-06-10)
+
+## Holdout scenario management (absorbed from scenario, ag-s43tg)
+
+Author and manage holdout scenarios with the `ao` CLI: `ao scenario add "<title>"`
+creates a scenario in `.agents/holdout/` (ID `s-YYYY-MM-DD-NNN`, acceptance
+vectors, 0.8 default satisfaction threshold); `ao scenario validate` checks the
+holdout set's schema and link graph. Linked scenarios feed directive fitness via
+`ao goals scenarios` (see the `/goals` skill and `docs/adr/ADR-0003`).
+
+## Absorbed skills (ag-s43tg)
+
+- **scenario** — Manage holdout scenarios; author and manage holdout scenarios with measurable acceptance vectors and satisfaction scoring in `.agents/holdout/` for behavioral validation.
 
 This skill encodes independent-verdict machinery and now lives with the outer
 gate product. Canonical: `~/dev/mt-olympus/.claude/skills/eval-outcomes/SKILL.md` —

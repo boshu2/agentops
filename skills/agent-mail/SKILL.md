@@ -55,7 +55,7 @@ Before any actor acts on a bead (intake, admit, implement, validate, mutate),
 **update the bead status and set the actor on the graph first**, then check for an
 existing actor. Parallel pipelines are blind to each other at every tier — dedup
 via the ledger, not behavioral coordination. Five exhibits of same-bead parallel
-work hit the fleet in one day (impl/validation/admission/mutation/intake, cp-hhtu).
+work hit the fleet in one day (impl/validate/admission/mutation/intake, cp-hhtu).
 The fix is structural: intent on the graph is the lock.
 
 ### ACK-with-id on routed writes (card 5, cp-fmt8)

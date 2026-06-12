@@ -1,6 +1,6 @@
 # Self-Test — Trigger Phrases for /vibing-with-ntm
 
-Validate that the skill's description reliably triggers on realistic operator phrasings. For each phrase below, the skill should be chosen over sibling skills (`/ntm`, `/agent-mail`, `/beads-br`, `/beads-bv`, `/caam`).
+Validate that the skill's description reliably triggers on realistic operator phrasings. For each phrase below, the skill should be chosen over sibling skills (`/ntm`, `/agent-mail`, `/beads-br`, `/beads-bv`, `/account-rotation`).
 
 ## Should Trigger (operator context, tending verbs, recovery signals)
 
@@ -35,7 +35,7 @@ Validate that the skill's description reliably triggers on realistic operator ph
 | "register a new MCP Agent Mail identity" | `/agent-mail` |
 | "br ready is returning empty but I know work exists" | `/beads-br` or `/fixing-beads-problems` |
 | "compute betweenness centrality on my bead graph" | `/beads-bv` |
-| "add a new Claude Max account to CAAM" | `/caam` |
+| "add a new Claude Max account to CAAM" | `/account-rotation` |
 | "which Gemini model does the review swarm use" | `/code-review-gemini-swarm-with-ntm` |
 | "provision a fresh Ubuntu box for agents" | `/provision-new-machine` |
 

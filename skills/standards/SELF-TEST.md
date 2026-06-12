@@ -17,7 +17,7 @@
   - Expected: do not load every standards reference; wait until file types or risk patterns are known.
 
 - User asks for general product strategy.
-  - Expected: use product/design skills, not `standards`, unless code or skill standards become relevant.
+  - Expected: use product/discovery skills, not `standards`, unless code or skill standards become relevant.
 
 ## Behavior Checks
 

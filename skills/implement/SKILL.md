@@ -51,12 +51,12 @@ Execute a single issue from start to finish.
 
 ### Folded triggers (ag-s43tg wave 1): `pr-implement` routes here
 
-- **`/pr-implement` → OSS contribution mode.** Use when you need to implement a scoped OSS PR —
+- **`pr-implement` → OSS contribution mode.** Use when you need to implement a scoped OSS PR —
   fork-based implementation of an open source contribution with mandatory isolation checks.
   Same single-issue TDD discipline as internal work, plus the fork lane: ensure the fork exists
   and is current, create an isolated worktree, run an isolation pre-check (BLOCK on mixed
   concerns) and post-check (BLOCK on scope creep), check for competing PRs before starting, and
-  hand off to `/pr-prep` for commit/PR shaping. Input is the plan artifact from `/pr-research` +
+  hand off to `/pr-prep` for commit/PR shaping. Input is the plan artifact from `/pr-prep` +
   `/plan` (run those first if no plan exists).
 
 ## Examples

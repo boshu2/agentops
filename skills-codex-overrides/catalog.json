@@ -53,24 +53,6 @@
       "reason": "New lifecycle skill; converter parity is acceptable."
     },
     {
-      "name": "brainstorm",
-      "treatment": "bespoke",
-      "wave": "analysis-authoring",
-      "reason": "Codex benefits from a tighter WHAT-vs-HOW split and clearer decision-capture expectations during idea exploration."
-    },
-    {
-      "name": "bug-hunt",
-      "treatment": "bespoke",
-      "wave": "analysis-authoring",
-      "reason": "Bug audits need Codex-specific findings structure, repro discipline, and validation expectations."
-    },
-    {
-      "name": "complexity",
-      "treatment": "bespoke",
-      "wave": "analysis-authoring",
-      "reason": "Complexity analysis in Codex should bias toward ranked hotspots and issue-ready refactor follow-ups."
-    },
-    {
       "name": "converter",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -93,12 +75,6 @@
       "treatment": "parity_only",
       "wave": "backbone",
       "reason": "Discovery delegates to sub-skills; default generated prompt is enough."
-    },
-    {
-      "name": "design",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "New lifecycle skill; converter parity is acceptable."
     },
     {
       "name": "doc",
@@ -231,22 +207,10 @@
       }
     },
     {
-      "name": "pr-implement",
-      "treatment": "bespoke",
-      "wave": "contribution-workflow",
-      "reason": "Fork-based contribution work needs explicit Codex guidance around isolation, scope control, and proof of completion."
-    },
-    {
       "name": "pr-prep",
       "treatment": "bespoke",
       "wave": "contribution-workflow",
       "reason": "Preparing a PR in Codex needs a tighter artifact checklist and explicit user-review boundary."
-    },
-    {
-      "name": "pr-research",
-      "treatment": "bespoke",
-      "wave": "contribution-workflow",
-      "reason": "Upstream research works better in Codex with explicit evidence capture and maintainer-pattern extraction."
     },
     {
       "name": "pre-mortem",
@@ -278,18 +242,6 @@
           "If push fails, stay in recovery mode until it succeeds or a real blocker is identified"
         ]
       }
-    },
-    {
-      "name": "quickstart",
-      "treatment": "bespoke",
-      "wave": "backbone",
-      "reason": "First-run onboarding should reflect Codex runtime expectations rather than generic converted wording."
-    },
-    {
-      "name": "ratchet",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Ratchet commands are procedural and already map cleanly into the generated Codex prompt."
     },
     {
       "name": "red-team",
@@ -356,12 +308,6 @@
       }
     },
     {
-      "name": "reverse-engineer-rpi",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "The canonical reverse-engineering workflow is already prescriptive enough that converter parity is acceptable for now."
-    },
-    {
       "name": "rpi",
       "treatment": "bespoke",
       "wave": "backbone",
@@ -399,18 +345,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "This non-invocable shared-reference skill does not need bespoke Codex prompt wording."
-    },
-    {
-      "name": "ship-loop",
-      "treatment": "parity_only",
-      "wave": "core-execution",
-      "reason": "Vendor-neutral internal-PR cycle; Codex stays in parity with the Claude SKILL.md after slim-frontmatter conversion."
-    },
-    {
-      "name": "session-bootstrap",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Universal init prompt is identical across runtimes by design (fungibility contract, soc-vuu6.25); no bespoke Codex variant."
     },
     {
       "name": "standards",
@@ -462,12 +396,6 @@
       }
     },
     {
-      "name": "trace",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Current trace workflows are evidence-driven and remain sufficiently clear under converter parity."
-    },
-    {
       "name": "skill-auditor",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -478,36 +406,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Builder dispatcher (scripts/build.sh) drives all 4 modes (from-scratch, from-template, absorb-external, from-pattern); the prose is reference material with no Codex-specific runtime divergence."
-    },
-    {
-      "name": "using-agentops",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "The meta-skill already serves as explanatory reference material, so converter parity is acceptable."
-    },
-    {
-      "name": "vibe",
-      "treatment": "bespoke",
-      "wave": "backbone",
-      "reason": "Ship-readiness review output must match Codex findings-first review ergonomics and repo gates.",
-      "operator_contract_required": true,
-      "operator_contract": {
-        "required_sections": [
-          "## Codex Execution Profile",
-          "## Guardrails"
-        ],
-        "required_markers": [
-          "Prefer findings-first output with exact file references, regression risks, and missing-test callouts.",
-          "same gates that block `git push`",
-          "lead with defects, risks, and verification gaps"
-        ]
-      }
-    },
-    {
-      "name": "deps",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "New lifecycle skill; converter parity is acceptable."
     },
     {
       "name": "perf",
@@ -540,12 +438,6 @@
       "reason": "New lifecycle skill; converter parity is acceptable."
     },
     {
-      "name": "scenario",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Stage 4 behavioral validation skill; converter parity is acceptable."
-    },
-    {
       "name": "scope",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -564,12 +456,6 @@
       "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
     },
     {
-      "name": "operating-loop-workflow",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Ship operating-loop Workflow to plugin users via installer skill; Codex twin redirects to the $rpi chain since Codex lacks the Workflow tool"
-    },
-    {
       "name": "automation-shape-routing",
       "treatment": "parity_only",
       "wave": "catalog-parity",
@@ -580,12 +466,6 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Scaffolds a Claude Workflow JS script from the operating-loop.js template; the authoring guidance is tool-specific reference material with no Codex-specific runtime divergence."
-    },
-    {
-      "name": "burndown",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for burndown"
     },
     {
       "name": "eval-outcomes",
@@ -618,61 +498,7 @@
       "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
     },
     {
-      "name": "agy-rules-workflows",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-    },
-    {
-      "name": "cc-cron-ticks",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-    },
-    {
-      "name": "cc-loop-driver",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-    },
-    {
-      "name": "cc-subagents",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-    },
-    {
-      "name": "cc-worktree-isolation",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-    },
-    {
       "name": "codex-exec",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-    },
-    {
-      "name": "codex-goals",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-    },
-    {
-      "name": "codex-mcp-plugins",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-    },
-    {
-      "name": "codex-sandbox-evidence",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-    },
-    {
-      "name": "operating-loop-skill",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
@@ -702,25 +528,13 @@
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
-      "name": "caam",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "casr",
+      "name": "account-rotation",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
       "name": "cass",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "cass-memory",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
@@ -738,19 +552,7 @@
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
-      "name": "multi-model-triangulation",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
       "name": "ntm",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "planning-workflow",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
@@ -768,70 +570,16 @@
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
-      "name": "ubs",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
       "name": "vibing-with-ntm",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
-      "name": "ntm-review-worker-orchestration",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "ntm-browser-test-coordination",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
-      "name": "bead-completion-audit",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for clean-room AgentOps pack skill."
-    },
-    {
       "name": "agy-headless-evidence",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex parity wrapper for AGY image operator skill."
-    },
-    {
-      "name": "agy-mcp-plugins",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for AGY image operator skill."
-    },
-    {
-      "name": "cross-vendor-trust-gate",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Operates the skill-factory trust-gate.sh final gate; codex-native shell + jq verdict reading."
-    },
-    {
-      "name": "agy-sidecar-scheduled-tick",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Recurring AGY loop tick via Antigravity sidecar + agentapi; codex-native evidence capture."
-    },
-    {
-      "name": "agy-project-worktree-permissions",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Proof skill asserting AGY project/worktree isolation invariants; codex-native agy --print orchestration."
-    },
-    {
-      "name": "codebase-audit",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for canonicalized codebase-* skill (cp-801l)."
     }
   ]
 }

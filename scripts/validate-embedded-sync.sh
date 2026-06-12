@@ -26,9 +26,6 @@ for f in "$REPO_ROOT"/skills/standards/references/*; do
     check_file "$f" "$EMBEDDED/skills/standards/references/$basename"
 done
 
-# Check skills/using-agentops/SKILL.md
-check_file "$REPO_ROOT/skills/using-agentops/SKILL.md" "$EMBEDDED/skills/using-agentops/SKILL.md"
-
 # Check skills/compile runtime script
 check_file "$REPO_ROOT/skills/compile/scripts/compile.sh" "$EMBEDDED/skills/compile/scripts/compile.sh"
 

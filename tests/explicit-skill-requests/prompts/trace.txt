@@ -1,1 +1,0 @@
-Please use the /trace skill to trace the decision history for "parallel wave execution"

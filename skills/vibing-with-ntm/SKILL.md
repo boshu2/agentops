@@ -118,7 +118,7 @@ Every card (OC-###) and anti-pattern (AP-###) is documented with recipe, prompt 
 ## Command Surfaces (do not re-learn from here)
 
 - **Agents use robot surfaces** (`--robot-snapshot`, `--robot-attention`, `--robot-send`, `--robot-smart-restart`, …); interactive TUIs (`ntm dashboard`, `palette`, `view`) are for humans. The authoritative catalog is `ntm robot-docs` / `ntm --help` — re-query it; see [ROBOT-MODE.md](references/ROBOT-MODE.md) for lanes, transports, and deprecations.
-- **Marching orders:** copy-paste dispatch prompts (first dispatch, steady-state, wide-swarm domain assignment, review dispatch) live in [PROMPTS.md](references/PROMPTS.md); the fill-in template is [assets/marching-orders-template.md](assets/marching-orders-template.md). Keep one constraint live: first dispatch claims one scoped item and reserves files/worktree scope; steady-state asks for one commit or one explicit blocker per timebox.
+- **Marching orders:** copy-paste dispatch prompts (first dispatch, steady-state, wide-swarm domain assignment, review dispatch) live in [PROMPTS.md](references/PROMPTS.md); the fill-in template is [assets/marching-orders-template.md](https://github.com/boshu2/agentops/blob/main/skills/vibing-with-ntm/assets/marching-orders-template.md). Keep one constraint live: first dispatch claims one scoped item and reserves files/worktree scope; steady-state asks for one commit or one explicit blocker per timebox.
 - **Isolation:** default is Agent Mail file reservations + clear bead ownership; `--worktrees` when repo policy allows. Repo-local `AGENTS.md` always wins.
 - **Pending-input etiquette:** a pane's input box may hold staged-but-unsent text. Submit it ONLY if it is clearly an orchestrator-staged directive awaiting send. NEVER submit text that reads as the human's live composition — when in doubt, leave it and log the observation.
 - **Destructive dialogs:** decline by default; require explicit justification to accept.
@@ -158,7 +158,7 @@ At closeout, summarize the swarm in concrete deltas:
 
 **Use when:** you are the orchestrator of an NTM session with ≥2 panes — unsticking panes, rotating accounts, dispatching marching orders, switching implement↔review modes, judging convergence, or diagnosing cross-session contention.
 
-**Skip when:** you just need the `ntm` command catalog (`/ntm`), single-agent one-pane work, new-machine provisioning (`provision-new-machine`), Beads DB repair (`fixing-beads-problems`), or Gemini review tuning (`code-review-gemini-swarm-with-ntm`). MCP Agent Mail primitives are `/agent-mail`; bead mechanics are `/beads-br`; BV triage is `/beads-bv`; account management is `/caam`.
+**Skip when:** you just need the `ntm` command catalog (`/ntm`), single-agent one-pane work, new-machine provisioning (`provision-new-machine`), Beads DB repair (`fixing-beads-problems`), or Gemini review tuning (`code-review-gemini-swarm-with-ntm`). MCP Agent Mail primitives are `/agent-mail`; bead mechanics are `/beads-br`; BV triage is `/beads-bv`; account management is `/account-rotation`.
 
 **Degrees of freedom:** this is a medium-freedom methodology skill — prefer the specific OC/AP card when evidence fires its trigger; fall back to the decision tree otherwise. Following steps without the evidence their triggers require is worse than skipping the card.
 
@@ -177,8 +177,8 @@ At closeout, summarize the swarm in concrete deltas:
 | Marching orders, review prompts, ship-or-surface, close-backlog, autonomous unstick | [PROMPTS.md](references/PROMPTS.md) |
 | Spawn mixes, cadence, close/review ratio, convergence termination, domain assignment | [PLAYBOOK.md](references/PLAYBOOK.md) |
 | Operator helper scripts (tick snapshot, convergence check, pane liveness, contention sweep) | [scripts/](scripts/) and [scripts/README.md](scripts/README.md) |
-| Marching-orders template | [assets/marching-orders-template.md](assets/marching-orders-template.md) |
-| Trigger-phrase self-test | [SELF-TEST.md](SELF-TEST.md) |
+| Marching-orders template | [assets/marching-orders-template.md](https://github.com/boshu2/agentops/blob/main/skills/vibing-with-ntm/assets/marching-orders-template.md) |
+| Trigger-phrase self-test | [SELF-TEST.md](https://github.com/boshu2/agentops/blob/main/skills/vibing-with-ntm/SELF-TEST.md) |
 
 ## Related Skills
 

@@ -1,0 +1,1 @@
+Execute /validate to check the code quality before shipping

@@ -412,7 +412,7 @@ if command -v ao &>/dev/null; then
       --output "$COMMIT_HASH" \
       --files "$CHANGED_FILES" \
       --issue "<issue-id>" \
-      2>&1 | tee -a .agents/ratchet.log
+      2>&1 | tee -a .agents/flywheel.log
 
     if [ $? -eq 0 ]; then
       echo "Ratchet: Implementation recorded (commit: ${COMMIT_HASH:0:8})"
