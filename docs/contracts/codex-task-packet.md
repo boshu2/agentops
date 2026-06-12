@@ -134,3 +134,25 @@ Acceptance command:
 ```bash
 cd cli && go test ./cmd/ao ./internal/... -run 'Codex.*Packet|Codex.*Receipt'
 ```
+
+Fixture-backed smoke is the default CI/local proof because it does not require
+Codex billing, network, or live ChatGPT auth:
+
+```bash
+cd cli && go test ./cmd/ao ./internal/... -run 'Codex.*Smoke|Codex.*Receipt'
+cd cli && go test ./cmd/ao -run 'Codex.*(Stdin|Timeout|Background)'
+```
+
+The strict Codex smoke is opt-in for an operator machine with `codex` installed
+and ChatGPT subscription auth available:
+
+```bash
+HEADLESS_RUNTIME_SKILL_CODEX_STRICT=1 \
+  bash scripts/validate-headless-runtime-skills.sh --runtime codex
+```
+
+A skip means Codex CLI was unavailable in default non-strict mode. A warning
+with load-check fallback means the runtime loaded but did not provide verified
+inventory, so it is not a passing strict receipt-path proof. In strict mode,
+missing Codex auth, malformed stream JSON, inventory mismatch, timeout, or
+fallback all fail instead of manufacturing a `PASS`.
