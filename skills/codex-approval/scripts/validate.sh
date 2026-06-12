@@ -29,6 +29,9 @@ require_grep "tmux capture contract" 'ntm-captures'
 require_grep "council artifact contract" 'fable-approval'
 require_grep "print-mode Claude prohibition" 'Do not run `claude -p` or'
 require_grep "WARN handling" 'WARN is not a silent pass'
+require_grep "PerspectivePlan contract" 'PerspectivePlan'
+require_grep "SynthesisPacket contract" 'SynthesisPacket'
+require_grep "ApprovalEdge contract" 'ApprovalEdge'
 
 LINES="$(wc -l < "$SKILL" | tr -d ' ')"
 if [ "$LINES" -le 250 ]; then
