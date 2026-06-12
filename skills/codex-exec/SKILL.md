@@ -242,6 +242,6 @@ receipts, image-health). Full packet:
 ## See Also / References
 
 - `ntm` — Claude worker panes (the Claude-side lane; never `claude -p`)
-- `caam` — isolated multi-account profiles for the 4-lane flywheel (Claude Max ×2 + Codex Pro + Gemini)
+- `account-rotation` — host-routed account switching; on Codex/Gemini and Linux/WSL lanes the swap tool is `caam` (isolated multi-account profiles for the 4-lane flywheel: Claude Max ×2 + Codex Pro + Gemini)
 - `dcg` — destructive-command guard that can enforce the never-API-bill rule
 - Memory: "Never claude -p for workers 2026-06-06" — the Claude-side twin of this skill's core rule

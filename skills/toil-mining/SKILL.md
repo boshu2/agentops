@@ -1,6 +1,7 @@
 ---
 name: toil-mining
-description: 'Mine usage history (cass session archaeology, rtk analytics, shell history) for repeated toil, cluster it, score frequency x pain, and emit ranked automation candidates for automation-shape-routing. Use when: the same prompt keeps getting hand-pasted, "what should we automate next", or the scheduled compounding sweep fires.'
+description: >-
+  Mine usage history (cass, rtk, shell) for repeated toil, score frequency x pain, emit ranked candidates for automation-shape-routing. Use when rituals repeat by hand.
 practices:
 - sre
 - lean-startup
