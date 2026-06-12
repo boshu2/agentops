@@ -1214,6 +1214,11 @@ func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
 		return codexRunReceipt{}, err
 	}
 
+	var requiredResults []codexCommandResult
+	if !timedOut {
+		requiredResults = runCodexRequiredCommands(cwd, packet)
+	}
+
 	receipt := codexRunReceipt{
 		SchemaVersion:  1,
 		ReceiptID:      "codex-receipt-" + started.Format("20060102T150405Z") + "-" + sanitizeCodexReceiptID(packet.PacketID),
@@ -1236,11 +1241,11 @@ func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
 			ReceiptPath:      packet.Output.ReceiptPath,
 		},
 		ChangedFiles: collectCodexDispatchChangedFiles(cwd),
-		CommandsRun: []codexCommandResult{{
+		CommandsRun: append([]codexCommandResult{{
 			Command:       strings.Join(argv, " "),
 			ExitCode:      exitCode,
 			OutputExcerpt: codexDispatchOutputExcerpt(stdout.String(), stderr.String()),
-		}},
+		}}, requiredResults...),
 		Verdict:       codexDispatchVerdict(cwd, packet.AllowedPaths, packet.Output, exitCode, timedOut),
 		Evidence:      codexDispatchEvidence(packet),
 		FailureReason: failureReason,
@@ -1248,7 +1253,10 @@ func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
 	if packet.Resume != nil && packet.Resume.Policy == "session-id" {
 		receipt.ResumeFromSession = strings.TrimSpace(packet.Resume.SessionID)
 	}
-	receiptValidationErr := validateCodexRunReceipt(receipt)
+	receiptValidationErr := errors.Join(
+		validateCodexRunReceipt(receipt),
+		validateCodexReceiptRequiredCommands(packet.Evidence.RequiredCommands, receipt),
+	)
 	if receiptValidationErr != nil && receipt.FailureReason == "" {
 		receipt.FailureReason = receiptValidationErr.Error()
 	}
@@ -1581,6 +1589,74 @@ func validateCodexRunReceipt(receipt codexRunReceipt) error {
 	}
 	if len(gaps) > 0 {
 		return errors.New(strings.Join(gaps, "; "))
+	}
+	return nil
+}
+
+// runCodexRequiredCommands executes the packet's evidence.required_commands
+// acceptance commands in cwd and returns one result per command, so the
+// receipt carries machine-checkable acceptance evidence instead of only
+// proving that Codex itself ran. Each command runs via `sh -c` with the
+// packet execution timeout as its own budget; failures are recorded honestly
+// (non-zero exit codes do not abort the remaining commands).
+func runCodexRequiredCommands(cwd string, packet codexTaskPacket) []codexCommandResult {
+	var results []codexCommandResult
+	for _, raw := range packet.Evidence.RequiredCommands {
+		command := strings.TrimSpace(raw)
+		if command == "" {
+			continue
+		}
+		results = append(results, runCodexRequiredCommand(cwd, packet, command))
+	}
+	return results
+}
+
+func runCodexRequiredCommand(cwd string, packet codexTaskPacket, command string) codexCommandResult {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(packet.Execution.TimeoutSeconds)*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "sh", "-c", command)
+	cmd.Dir = cwd
+	cmd.Env = codexDispatchEnv(packet)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	runErr := cmd.Run()
+	timedOut := ctx.Err() == context.DeadlineExceeded
+	excerpt := codexDispatchOutputExcerpt(stdout.String(), stderr.String())
+	if timedOut {
+		excerpt = strings.TrimSpace("required command timed out\n" + excerpt)
+	}
+	return codexCommandResult{
+		Command:       command,
+		ExitCode:      codexDispatchExitCode(runErr, timedOut),
+		OutputExcerpt: excerpt,
+	}
+}
+
+// validateCodexReceiptRequiredCommands fails when the packet declares
+// evidence.required_commands whose results are absent from the receipt's
+// commands_run, so a receipt cannot claim acceptance evidence that was never
+// executed and recorded.
+func validateCodexReceiptRequiredCommands(required []string, receipt codexRunReceipt) error {
+	if len(required) == 0 {
+		return nil
+	}
+	recorded := make(map[string]bool, len(receipt.CommandsRun))
+	for _, result := range receipt.CommandsRun {
+		recorded[strings.TrimSpace(result.Command)] = true
+	}
+	var missing []string
+	for _, raw := range required {
+		command := strings.TrimSpace(raw)
+		if command == "" {
+			continue
+		}
+		if !recorded[command] {
+			missing = append(missing, command)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("receipt missing required command evidence in commands_run: %s", strings.Join(missing, "; "))
 	}
 	return nil
 }

@@ -80,7 +80,15 @@ terminal behavior.
 declared here so later audit code knows where to look before the run starts.
 
 `evidence.required_commands` lists the acceptance commands whose results must be
-copied into the receipt.
+copied into the receipt. This is **executed**, not guidance: after the Codex
+invocation completes, `ao codex dispatch` runs each command via `sh -c` in the
+packet `cwd` (each with the packet `execution.timeout_seconds` as its own
+budget) and records one `commands_run` entry per command with its exit code and
+an output excerpt. Failing commands are recorded honestly with their real exit
+codes. Receipt validation fails when a declared required command is absent from
+`commands_run`. When the Codex invocation itself times out, required commands
+are not executed and the receipt fails required-command validation (the timeout
+is reported as the failure reason).
 
 `resume` records whether a follow-up may resume a prior Codex session. A packet
 may use `none`, `session-id`, or `last-session-in-cwd`; if a session id is used,
