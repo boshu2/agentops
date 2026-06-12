@@ -221,3 +221,4 @@ wt-ag-if7p/
 _beads/
 # foreign nested worktree (recon F5)
 wt-ag-qidx/
+wt-*/
