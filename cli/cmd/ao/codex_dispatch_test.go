@@ -28,6 +28,120 @@ func TestCodexDispatchRefusesAPIKeyAuthBeforeWorkerExecution(t *testing.T) {
 	assertPathAbsent(t, receiptPath)
 }
 
+func TestCodexDispatchRejectsPacketInjectedAuthEnv(t *testing.T) {
+	tests := []struct {
+		name        string
+		rejectEnv   []string
+		environment map[string]string
+		wantErr     string
+	}{
+		{
+			name:        "packet injects OPENAI_API_KEY",
+			environment: map[string]string{"OPENAI_API_KEY": "sk-injected"},
+			wantErr:     "OPENAI_API_KEY in packet execution.environment",
+		},
+		{
+			name:        "packet injects OPENAI_API_KEY with empty value",
+			environment: map[string]string{"OPENAI_API_KEY": ""},
+			wantErr:     "OPENAI_API_KEY in packet execution.environment",
+		},
+		{
+			name:        "packet injects custom reject_env name",
+			rejectEnv:   []string{"OPENAI_API_KEY", "CUSTOM_AUTH_TOKEN"},
+			environment: map[string]string{"CUSTOM_AUTH_TOKEN": "secret"},
+			wantErr:     "CUSTOM_AUTH_TOKEN in packet execution.environment",
+		},
+		{
+			name:        "packet injects OPENAI_API_KEY even when reject_env omits it",
+			rejectEnv:   []string{"SOME_OTHER_VAR"},
+			environment: map[string]string{"OPENAI_API_KEY": "sk-injected"},
+			wantErr:     "OPENAI_API_KEY in packet execution.environment",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newCodexDispatchRepo(t)
+			marker := filepath.Join(repo, "worker-ran")
+			writeFakeCodexBinary(t)
+			t.Setenv("FAKE_CODEX_MARKER", marker)
+			t.Setenv("OPENAI_API_KEY", "")
+
+			packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+				RejectEnv:   tt.rejectEnv,
+				Environment: tt.environment,
+			})
+			_, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+			if err == nil {
+				t.Fatalf("codex dispatch succeeded, want packet env injection refusal")
+			}
+			if !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("dispatch error = %q, want to contain %q", err.Error(), tt.wantErr)
+			}
+			assertPathAbsent(t, marker)
+			assertPathAbsent(t, receiptPath)
+		})
+	}
+}
+
+func TestCodexDispatchRejectsAmbientRejectEnvNames(t *testing.T) {
+	repo := newCodexDispatchRepo(t)
+	marker := filepath.Join(repo, "worker-ran")
+	writeFakeCodexBinary(t)
+	t.Setenv("FAKE_CODEX_MARKER", marker)
+	t.Setenv("OPENAI_API_KEY", "")
+	t.Setenv("CUSTOM_AUTH_TOKEN", "ambient-secret")
+
+	packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+		RejectEnv: []string{"OPENAI_API_KEY", "CUSTOM_AUTH_TOKEN"},
+	})
+	_, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+	if err == nil {
+		t.Fatalf("codex dispatch succeeded, want ambient reject_env refusal")
+	}
+	if !strings.Contains(err.Error(), "CUSTOM_AUTH_TOKEN in environment") {
+		t.Fatalf("dispatch error = %q, want CUSTOM_AUTH_TOKEN ambient refusal", err.Error())
+	}
+	assertPathAbsent(t, marker)
+	assertPathAbsent(t, receiptPath)
+}
+
+func TestCodexDispatchForbiddenEnvNamesAlwaysIncludeAPIKey(t *testing.T) {
+	tests := []struct {
+		name string
+		auth codexTaskAuthGuard
+		want []string
+	}{
+		{
+			name: "empty guard still forbids OPENAI_API_KEY",
+			auth: codexTaskAuthGuard{},
+			want: []string{"OPENAI_API_KEY"},
+		},
+		{
+			name: "forbid_api_key false cannot opt out",
+			auth: codexTaskAuthGuard{ForbidAPIKey: false, RejectEnv: []string{"OTHER_TOKEN"}},
+			want: []string{"OTHER_TOKEN", "OPENAI_API_KEY"},
+		},
+		{
+			name: "reject_env deduplicated and blank entries dropped",
+			auth: codexTaskAuthGuard{RejectEnv: []string{"OPENAI_API_KEY", " ", "OPENAI_API_KEY", "EXTRA"}},
+			want: []string{"OPENAI_API_KEY", "EXTRA"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := codexDispatchForbiddenEnvNames(tt.auth)
+			if len(got) != len(tt.want) {
+				t.Fatalf("codexDispatchForbiddenEnvNames() = %v, want %v", got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Fatalf("codexDispatchForbiddenEnvNames()[%d] = %q, want %q (full: %v)", i, got[i], tt.want[i], got)
+				}
+			}
+		})
+	}
+}
+
 func TestCodexDispatchRequiresChatGPTStatus(t *testing.T) {
 	repo := newCodexDispatchRepo(t)
 	marker := filepath.Join(repo, "worker-ran")
@@ -218,6 +332,8 @@ type codexDispatchPacketOptions struct {
 	Resume         *codexTaskResume
 	Sandbox        string
 	ArgvSandbox    string
+	Environment    map[string]string
+	RejectEnv      []string
 }
 
 func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacketOptions) (packetPath string, receiptPath string) {
@@ -257,6 +373,10 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 		t.Fatalf("write prompt: %v", err)
 	}
 
+	rejectEnv := opts.RejectEnv
+	if len(rejectEnv) == 0 {
+		rejectEnv = []string{"OPENAI_API_KEY"}
+	}
 	packet := codexTaskPacket{
 		SchemaVersion: 1,
 		PacketID:      "codex-dispatch-test",
@@ -267,7 +387,7 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 		Sandbox:       sandbox,
 		Auth: codexTaskAuthGuard{
 			RequiredMode:           "chatgpt-subscription",
-			RejectEnv:              []string{"OPENAI_API_KEY"},
+			RejectEnv:              rejectEnv,
 			LoginStatusMustContain: "Logged in using ChatGPT",
 			ForbidAPIKey:           true,
 		},
@@ -281,6 +401,7 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 			Stdin:          codexTaskStdin{Mode: "pipe-prompt", CloseAfterPrompt: true},
 			TimeoutSeconds: opts.TimeoutSeconds,
 			PromptPath:     promptPath,
+			Environment:    opts.Environment,
 		},
 		Output: codexTaskOutputContract{
 			CaptureMode:      "output-last-message",
