@@ -20,7 +20,7 @@ description: "Run curate."
 | `--mode=retro` | Single-session learning capture | `$retro` |
 | `--mode=defrag` | Knowledge defragmentation (overnight) | `compile-session-defrag.sh` hook |
 | `--mode=watch` | In-session drift / loop detection (15-min cadence) | `research-loop-detector.sh` hook |
-| `--mode=provenance` | Decision-trace + artifact-provenance walk | `$provenance`, `$trace` |
+| `--mode=provenance` | Decision-trace + artifact-provenance walk | `$provenance`, `$recover` |
 
 **Mode-budget assertion:** 8 modes. Adding a 9th requires demoting an existing one OR refusing the addition (per Fix-F § continuous CI gate).
 

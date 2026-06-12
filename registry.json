@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-11T16:19:34Z",
+  "generated_at": "2026-06-12T13:08:55Z",
   "summary": {
-    "skills": 105,
+    "skills": 65,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 83,
-    "capabilities": 202
+    "capabilities": 162
   },
   "surfaces": {
     "skills": [
@@ -37,22 +37,6 @@
         "reference_count": 3
       },
       {
-        "name": "ratchet",
-        "tier": "background",
-        "path": "skills/ratchet/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "pr-implement",
-        "tier": "contribute",
-        "path": "skills/pr-implement/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
         "name": "pr-prep",
         "tier": "contribute",
         "path": "skills/pr-prep/",
@@ -61,28 +45,12 @@
         "reference_count": 4
       },
       {
-        "name": "pr-research",
-        "tier": "contribute",
-        "path": "skills/pr-research/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 1
-      },
-      {
         "name": "agy-native",
         "tier": "cross-vendor",
         "path": "skills/agy-native/",
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 1
-      },
-      {
-        "name": "agy-project-worktree-permissions",
-        "tier": "cross-vendor",
-        "path": "skills/agy-project-worktree-permissions/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
       },
       {
         "name": "converter",
@@ -112,22 +80,6 @@
         "name": "agy-headless-evidence",
         "tier": "execution",
         "path": "skills/agy-headless-evidence/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "agy-mcp-plugins",
-        "tier": "execution",
-        "path": "skills/agy-mcp-plugins/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "agy-sidecar-scheduled-tick",
-        "tier": "execution",
-        "path": "skills/agy-sidecar-scheduled-tick/",
         "has_skill_md": true,
         "has_references": false,
         "reference_count": 0
@@ -165,52 +117,12 @@
         "reference_count": 3
       },
       {
-        "name": "brainstorm",
-        "tier": "execution",
-        "path": "skills/brainstorm/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 4
-      },
-      {
-        "name": "bug-hunt",
-        "tier": "execution",
-        "path": "skills/bug-hunt/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 8
-      },
-      {
-        "name": "burndown",
-        "tier": "execution",
-        "path": "skills/burndown/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "casr",
-        "tier": "execution",
-        "path": "skills/casr/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
         "name": "cass",
         "tier": "execution",
         "path": "skills/cass/",
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 16
-      },
-      {
-        "name": "cass-memory",
-        "tier": "execution",
-        "path": "skills/cass-memory/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 5
       },
       {
         "name": "cc-hooks",
@@ -221,44 +133,12 @@
         "reference_count": 4
       },
       {
-        "name": "codex-mcp-plugins",
-        "tier": "execution",
-        "path": "skills/codex-mcp-plugins/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "codex-sandbox-evidence",
-        "tier": "execution",
-        "path": "skills/codex-sandbox-evidence/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "complexity",
-        "tier": "execution",
-        "path": "skills/complexity/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
         "name": "crank",
         "tier": "execution",
         "path": "skills/crank/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 30
-      },
-      {
-        "name": "cross-vendor-trust-gate",
-        "tier": "execution",
-        "path": "skills/cross-vendor-trust-gate/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
+        "reference_count": 31
       },
       {
         "name": "dcg",
@@ -267,14 +147,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 6
-      },
-      {
-        "name": "deps",
-        "tier": "execution",
-        "path": "skills/deps/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 1
       },
       {
         "name": "eval-outcomes",
@@ -301,28 +173,12 @@
         "reference_count": 7
       },
       {
-        "name": "multi-model-triangulation",
-        "tier": "execution",
-        "path": "skills/multi-model-triangulation/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
         "name": "ntm",
         "tier": "execution",
         "path": "skills/ntm/",
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 16
-      },
-      {
-        "name": "operating-loop-workflow",
-        "tier": "execution",
-        "path": "skills/operating-loop-workflow/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
       },
       {
         "name": "perf",
@@ -339,14 +195,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 14
-      },
-      {
-        "name": "planning-workflow",
-        "tier": "execution",
-        "path": "skills/planning-workflow/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
       },
       {
         "name": "push",
@@ -381,14 +229,6 @@
         "reference_count": 17
       },
       {
-        "name": "reverse-engineer-rpi",
-        "tier": "execution",
-        "path": "skills/reverse-engineer-rpi/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
         "name": "sbh",
         "tier": "execution",
         "path": "skills/sbh/",
@@ -405,28 +245,12 @@
         "reference_count": 2
       },
       {
-        "name": "scenario",
-        "tier": "execution",
-        "path": "skills/scenario/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 1
-      },
-      {
         "name": "scope",
         "tier": "execution",
         "path": "skills/scope/",
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 3
-      },
-      {
-        "name": "ship-loop",
-        "tier": "execution",
-        "path": "skills/ship-loop/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 4
       },
       {
         "name": "swarm",
@@ -445,14 +269,6 @@
         "reference_count": 6
       },
       {
-        "name": "ubs",
-        "tier": "execution",
-        "path": "skills/ubs/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
         "name": "using-atm",
         "tier": "execution",
         "path": "skills/using-atm/",
@@ -469,28 +285,12 @@
         "reference_count": 10
       },
       {
-        "name": "bead-completion-audit",
-        "tier": "judgment",
-        "path": "skills/bead-completion-audit/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
         "name": "council",
         "tier": "judgment",
         "path": "skills/council/",
         "has_skill_md": true,
         "has_references": false,
         "reference_count": 0
-      },
-      {
-        "name": "design",
-        "tier": "judgment",
-        "path": "skills/design/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
       },
       {
         "name": "post-mortem",
@@ -530,23 +330,7 @@
         "path": "skills/validate/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "vibe",
-        "tier": "judgment",
-        "path": "skills/vibe/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 22
-      },
-      {
-        "name": "codebase-audit",
-        "tier": "knowledge",
-        "path": "skills/codebase-audit/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 4
+        "reference_count": 23
       },
       {
         "name": "compile",
@@ -571,14 +355,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 19
-      },
-      {
-        "name": "trace",
-        "tier": "knowledge",
-        "path": "skills/trace/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
       },
       {
         "name": "beads",
@@ -626,7 +402,7 @@
         "path": "skills/discovery/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 9
+        "reference_count": 11
       },
       {
         "name": "heal-skill",
@@ -659,14 +435,6 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 3
-      },
-      {
-        "name": "using-agentops",
-        "tier": "meta",
-        "path": "skills/using-agentops/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
       },
       {
         "name": "workflow-builder",
@@ -733,25 +501,9 @@
         "reference_count": 0
       },
       {
-        "name": "quickstart",
-        "tier": "session",
-        "path": "skills/quickstart/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 3
-      },
-      {
         "name": "recover",
         "tier": "session",
         "path": "skills/recover/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 0
-      },
-      {
-        "name": "session-bootstrap",
-        "tier": "session",
-        "path": "skills/session-bootstrap/",
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 0
@@ -773,81 +525,9 @@
         "reference_count": 0
       },
       {
-        "name": "agy-rules-workflows",
-        "tier": "unknown",
-        "path": "skills/agy-rules-workflows/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 1
-      },
-      {
-        "name": "cc-cron-ticks",
-        "tier": "unknown",
-        "path": "skills/cc-cron-ticks/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "cc-loop-driver",
-        "tier": "unknown",
-        "path": "skills/cc-loop-driver/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 2
-      },
-      {
-        "name": "cc-subagents",
-        "tier": "unknown",
-        "path": "skills/cc-subagents/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 1
-      },
-      {
-        "name": "cc-worktree-isolation",
-        "tier": "unknown",
-        "path": "skills/cc-worktree-isolation/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
         "name": "codex-exec",
         "tier": "unknown",
         "path": "skills/codex-exec/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "codex-goals",
-        "tier": "unknown",
-        "path": "skills/codex-goals/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "ntm-browser-test-coordination",
-        "tier": "unknown",
-        "path": "skills/ntm-browser-test-coordination/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "ntm-review-worker-orchestration",
-        "tier": "unknown",
-        "path": "skills/ntm-review-worker-orchestration/",
-        "has_skill_md": true,
-        "has_references": false,
-        "reference_count": 0
-      },
-      {
-        "name": "operating-loop-skill",
-        "tier": "unknown",
-        "path": "skills/operating-loop-skill/",
         "has_skill_md": true,
         "has_references": false,
         "reference_count": 0
@@ -972,7 +652,6 @@
         "driven_by_skills": [
           "domain",
           "shared",
-          "using-agentops",
           "using-atm"
         ]
       },
@@ -1242,7 +921,6 @@
           "post-mortem",
           "release",
           "scaffold",
-          "scenario",
           "validate"
         ]
       },
@@ -1284,9 +962,7 @@
         "path": "cli/cmd/ao/",
         "purpose": "Initialize AgentOps in the current repository",
         "bounded_context": "BC4",
-        "driven_by_skills": [
-          "quickstart"
-        ]
+        "driven_by_skills": []
       },
       {
         "name": "ao inject",
@@ -1297,9 +973,7 @@
           "agent-native",
           "beads",
           "domain",
-          "inject",
-          "quickstart",
-          "using-agentops"
+          "inject"
         ]
       },
       {
@@ -1324,7 +998,6 @@
         "purpose": "Retrieve specific knowledge artifacts by ID or query",
         "bounded_context": "BC1",
         "driven_by_skills": [
-          "bug-hunt",
           "crank",
           "discovery",
           "evolve",
@@ -1336,8 +1009,7 @@
           "recover",
           "review",
           "swarm",
-          "using-agentops",
-          "vibe"
+          "validate"
         ]
       },
       {
@@ -1383,7 +1055,6 @@
           "crank",
           "curate",
           "flywheel",
-          "quickstart",
           "status"
         ]
       },
@@ -1460,28 +1131,26 @@
         "purpose": "Set up AgentOps in your project (5 minutes)",
         "bounded_context": "BC3",
         "driven_by_skills": [
-          "bootstrap",
-          "quickstart"
+          "bootstrap"
         ]
       },
       {
         "name": "ao ratchet",
         "path": "cli/cmd/ao/",
         "purpose": "Brownian Ratchet workflow tracking",
-        "bounded_context": "BC3",
+        "bounded_context": "",
         "driven_by_skills": [
           "crank",
           "discovery",
           "evolve",
+          "flywheel",
           "handoff",
           "implement",
           "plan",
           "pre-mortem",
-          "ratchet",
           "rpi",
           "status",
-          "validate",
-          "vibe"
+          "validate"
         ]
       },
       {
@@ -1498,7 +1167,6 @@
         "bounded_context": "",
         "driven_by_skills": [
           "beads",
-          "quickstart",
           "release",
           "status"
         ]
@@ -1558,7 +1226,7 @@
         "name": "ao scenario",
         "path": "cli/cmd/ao/",
         "purpose": "Manage holdout scenarios for behavioral validation",
-        "bounded_context": "BC2",
+        "bounded_context": "",
         "driven_by_skills": [
           "goals"
         ]
@@ -1579,8 +1247,7 @@
           "discovery",
           "plan",
           "pre-mortem",
-          "using-agentops",
-          "vibe"
+          "validate"
         ]
       },
       {
@@ -1631,7 +1298,7 @@
         "name": "ao trace",
         "path": "cli/cmd/ao/",
         "purpose": "Track artifact provenance",
-        "bounded_context": "BC1",
+        "bounded_context": "",
         "driven_by_skills": []
       },
       {
@@ -1684,8 +1351,8 @@
     ]
   },
   "capability_summary": {
-    "total": 202,
-    "skills": 105,
+    "total": 162,
+    "skills": 65,
     "cli_commands": 83,
     "gates": 14,
     "reference_impls": 0
@@ -1780,12 +1447,12 @@
       "sku": "skill:account-rotation",
       "name": "account-rotation",
       "type": "skill",
-      "bounded_context": "",
+      "bounded_context": "BC5",
       "hex_role": "supporting",
       "tier": "execution",
-      "purpose": "Use when you hit a usage/rate limit on a coding-agent subscription and need to switch accounts, or to spread swarm lanes across accounts. Routes by host+agent: macOS+Claude → claude-acct (Keychain swap); macOS+Codex/Gemini or any Linux/WSL → caam (file swap). One symptom, the right tool per host.",
+      "purpose": "Switch coding-agent accounts on a usage/rate limit or to spread swarm lanes. Routes by host+agent: macOS+Claude via claude-acct; Codex/Gemini and Linux/WSL via caam.",
       "status": "active",
-      "disposition": "",
+      "disposition": "keep",
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -1878,28 +1545,6 @@
       "references": 0
     },
     {
-      "sku": "skill:agy-mcp-plugins",
-      "name": "agy-mcp-plugins",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driven-adapter",
-      "tier": "execution",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "mcp-server",
-        "skill-bundle"
-      ],
-      "produces": [
-        "agy-mcp-config",
-        "agy-plugin-install"
-      ],
-      "drives_commands": [],
-      "path": "skills/agy-mcp-plugins/",
-      "references": 0
-    },
-    {
       "sku": "skill:agy-native",
       "name": "agy-native",
       "type": "skill",
@@ -1918,68 +1563,6 @@
       "drives_commands": [],
       "path": "skills/agy-native/",
       "references": 1
-    },
-    {
-      "sku": "skill:agy-project-worktree-permissions",
-      "name": "agy-project-worktree-permissions",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "cross-vendor",
-      "purpose": "Prove AGY project/worktree isolation with scoped --add-dir permissions, role tiers, dcg guardrails, and persisted evidence.",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "agy-native"
-      ],
-      "produces": [
-        "agy-isolation-evidence"
-      ],
-      "drives_commands": [],
-      "path": "skills/agy-project-worktree-permissions/",
-      "references": 0
-    },
-    {
-      "sku": "skill:agy-rules-workflows",
-      "name": "agy-rules-workflows",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "unknown",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "operating-loop-workflow"
-      ],
-      "produces": [
-        "agy-rules",
-        "agy-workflows"
-      ],
-      "drives_commands": [],
-      "path": "skills/agy-rules-workflows/",
-      "references": 1
-    },
-    {
-      "sku": "skill:agy-sidecar-scheduled-tick",
-      "name": "agy-sidecar-scheduled-tick",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "agy-native",
-        "agy-headless-evidence"
-      ],
-      "produces": [
-        "agy-sidecar-tick-evidence"
-      ],
-      "drives_commands": [],
-      "path": "skills/agy-sidecar-scheduled-tick/",
-      "references": 0
     },
     {
       "sku": "skill:autodev",
@@ -2019,26 +1602,6 @@
       "produces": [],
       "drives_commands": [],
       "path": "skills/automation-shape-routing/",
-      "references": 0
-    },
-    {
-      "sku": "skill:bead-completion-audit",
-      "name": "bead-completion-audit",
-      "type": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "supporting",
-      "tier": "judgment",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "closed-beads"
-      ],
-      "produces": [
-        "compliance-report.md"
-      ],
-      "drives_commands": [],
-      "path": "skills/bead-completion-audit/",
       "references": 0
     },
     {
@@ -2138,89 +1701,6 @@
       "references": 1
     },
     {
-      "sku": "skill:brainstorm",
-      "name": "brainstorm",
-      "type": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "execution",
-      "purpose": "Separate goals from implementation.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [
-        "standards"
-      ],
-      "produces": [
-        "result.json",
-        "verdict.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/brainstorm/",
-      "references": 4
-    },
-    {
-      "sku": "skill:bug-hunt",
-      "name": "bug-hunt",
-      "type": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "domain",
-      "tier": "execution",
-      "purpose": "Investigate bugs and root causes.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [
-        "beads",
-        "standards"
-      ],
-      "produces": [],
-      "drives_commands": [
-        "ao lookup",
-        "ao metrics cite"
-      ],
-      "path": "skills/bug-hunt/",
-      "references": 8
-    },
-    {
-      "sku": "skill:burndown",
-      "name": "burndown",
-      "type": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "execution",
-      "purpose": "Drive a finite epic set to all-merged, then stop. Use when finishing a specific list of tasks, burning down a backlog epic, or executing a bounded set of beads until done.",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "beads",
-        "rpi",
-        "implement",
-        "post-mortem"
-      ],
-      "produces": [
-        ".agents/burndown/*.json",
-        "git-changes"
-      ],
-      "drives_commands": [],
-      "path": "skills/burndown/",
-      "references": 0
-    },
-    {
-      "sku": "skill:casr",
-      "name": "casr",
-      "type": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "purpose": ">-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/casr/",
-      "references": 0
-    },
-    {
       "sku": "skill:cass",
       "name": "cass",
       "type": "skill",
@@ -2237,134 +1717,19 @@
       "references": 16
     },
     {
-      "sku": "skill:cass-memory",
-      "name": "cass-memory",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "purpose": "Use when starting non-trivial work, mining lessons, or preventing repeated mistakes with cm procedural memory.",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/cass-memory/",
-      "references": 5
-    },
-    {
-      "sku": "skill:cc-cron-ticks",
-      "name": "cc-cron-ticks",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "unknown",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "evolve",
-        "autodev"
-      ],
-      "produces": [
-        "scheduled-tick"
-      ],
-      "drives_commands": [],
-      "path": "skills/cc-cron-ticks/",
-      "references": 0
-    },
-    {
       "sku": "skill:cc-hooks",
       "name": "cc-hooks",
       "type": "skill",
       "bounded_context": "BC5",
       "hex_role": "supporting",
       "tier": "execution",
-      "purpose": ">-",
+      "purpose": "Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills.",
       "status": "active",
       "disposition": "keep",
       "consumes": [],
       "produces": [],
       "drives_commands": [],
       "path": "skills/cc-hooks/",
-      "references": 4
-    },
-    {
-      "sku": "skill:cc-loop-driver",
-      "name": "cc-loop-driver",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "unknown",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "beads",
-        "validate"
-      ],
-      "produces": [
-        "evidence/<id>.md",
-        "git-commit"
-      ],
-      "drives_commands": [],
-      "path": "skills/cc-loop-driver/",
-      "references": 2
-    },
-    {
-      "sku": "skill:cc-subagents",
-      "name": "cc-subagents",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "unknown",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [],
-      "produces": [
-        "subagent-dispatch-plan"
-      ],
-      "drives_commands": [],
-      "path": "skills/cc-subagents/",
-      "references": 1
-    },
-    {
-      "sku": "skill:cc-worktree-isolation",
-      "name": "cc-worktree-isolation",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "unknown",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "git-worktree"
-      ],
-      "produces": [
-        "isolated-worktree-plan"
-      ],
-      "drives_commands": [],
-      "path": "skills/cc-worktree-isolation/",
-      "references": 0
-    },
-    {
-      "sku": "skill:codebase-audit",
-      "name": "codebase-audit",
-      "type": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "supporting",
-      "tier": "knowledge",
-      "purpose": ">-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [],
-      "produces": [
-        "codebase-audit"
-      ],
-      "drives_commands": [],
-      "path": "skills/codebase-audit/",
       "references": 4
     },
     {
@@ -2383,65 +1748,6 @@
       ],
       "drives_commands": [],
       "path": "skills/codex-exec/",
-      "references": 0
-    },
-    {
-      "sku": "skill:codex-goals",
-      "name": "codex-goals",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "unknown",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [],
-      "produces": [
-        "codex-goal-state"
-      ],
-      "drives_commands": [],
-      "path": "skills/codex-goals/",
-      "references": 0
-    },
-    {
-      "sku": "skill:codex-mcp-plugins",
-      "name": "codex-mcp-plugins",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driven-adapter",
-      "tier": "execution",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "mcp-server",
-        "codex-plugin"
-      ],
-      "produces": [
-        "codex-config"
-      ],
-      "drives_commands": [],
-      "path": "skills/codex-mcp-plugins/",
-      "references": 0
-    },
-    {
-      "sku": "skill:codex-sandbox-evidence",
-      "name": "codex-sandbox-evidence",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "codex-exec"
-      ],
-      "produces": [
-        "codex-evidence-jsonl"
-      ],
-      "drives_commands": [],
-      "path": "skills/codex-sandbox-evidence/",
       "references": 0
     },
     {
@@ -2467,27 +1773,6 @@
       ],
       "path": "skills/compile/",
       "references": 4
-    },
-    {
-      "sku": "skill:complexity",
-      "name": "complexity",
-      "type": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "domain",
-      "tier": "execution",
-      "purpose": "Find focused refactor hotspots.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [
-        "doc",
-        "standards"
-      ],
-      "produces": [
-        "stdout"
-      ],
-      "drives_commands": [],
-      "path": "skills/complexity/",
-      "references": 0
     },
     {
       "sku": "skill:converter",
@@ -2564,28 +1849,7 @@
         "ao version"
       ],
       "path": "skills/crank/",
-      "references": 30
-    },
-    {
-      "sku": "skill:cross-vendor-trust-gate",
-      "name": "cross-vendor-trust-gate",
-      "type": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "domain",
-      "tier": "execution",
-      "purpose": "Run the skill-factory final trust gate: operate trust-gate.sh, read skill.trust.json, and enforce --require-cross.",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "converted-skill"
-      ],
-      "produces": [
-        "trust-artifact",
-        "stdout"
-      ],
-      "drives_commands": [],
-      "path": "skills/cross-vendor-trust-gate/",
-      "references": 0
+      "references": 31
     },
     {
       "sku": "skill:curate",
@@ -2627,53 +1891,13 @@
       "references": 6
     },
     {
-      "sku": "skill:deps",
-      "name": "deps",
-      "type": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "driven-adapter",
-      "tier": "execution",
-      "purpose": "Audit dependency risks and updates.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [
-        "repo-context"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/deps/",
-      "references": 1
-    },
-    {
-      "sku": "skill:design",
-      "name": "design",
-      "type": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "judgment",
-      "purpose": "Validate product fit before discovery. Use when: framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [
-        "standards"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/design/",
-      "references": 3
-    },
-    {
       "sku": "skill:discovery",
       "name": "discovery",
       "type": "skill",
       "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "meta",
-      "purpose": "Create dense execution packets.",
+      "purpose": "Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing).",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -2695,7 +1919,7 @@
         "ao search"
       ],
       "path": "skills/discovery/",
-      "references": 9
+      "references": 11
     },
     {
       "sku": "skill:doc",
@@ -2752,7 +1976,7 @@
       "bounded_context": "BC2",
       "hex_role": "supporting",
       "tier": "execution",
-      "purpose": "Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons.",
+      "purpose": "Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario.",
       "status": "active",
       "disposition": "keep",
       "consumes": [
@@ -2843,6 +2067,7 @@
         "ao metrics baseline",
         "ao metrics cite-report",
         "ao metrics health",
+        "ao ratchet",
         "ao retrieval-bench",
         "ao status"
       ],
@@ -2981,22 +2206,6 @@
       "references": 3
     },
     {
-      "sku": "skill:multi-model-triangulation",
-      "name": "multi-model-triangulation",
-      "type": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "purpose": ">-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/multi-model-triangulation/",
-      "references": 0
-    },
-    {
       "sku": "skill:ntm",
       "name": "ntm",
       "type": "skill",
@@ -3011,87 +2220,6 @@
       "drives_commands": [],
       "path": "skills/ntm/",
       "references": 16
-    },
-    {
-      "sku": "skill:ntm-browser-test-coordination",
-      "name": "ntm-browser-test-coordination",
-      "type": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "supporting",
-      "tier": "unknown",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "ntm",
-        "agent-mail",
-        "test"
-      ],
-      "produces": [
-        "browser-test-coordination-packet",
-        "browser-test-evidence-index",
-        "browser-test-handoff"
-      ],
-      "drives_commands": [],
-      "path": "skills/ntm-browser-test-coordination/",
-      "references": 0
-    },
-    {
-      "sku": "skill:ntm-review-worker-orchestration",
-      "name": "ntm-review-worker-orchestration",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "unknown",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/ntm-review-worker-orchestration/",
-      "references": 0
-    },
-    {
-      "sku": "skill:operating-loop-skill",
-      "name": "operating-loop-skill",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "domain",
-      "tier": "unknown",
-      "purpose": "|-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "beads",
-        "git"
-      ],
-      "produces": [
-        "evidence/<id>.md",
-        "git-commit",
-        "closed-bead"
-      ],
-      "drives_commands": [],
-      "path": "skills/operating-loop-skill/",
-      "references": 0
-    },
-    {
-      "sku": "skill:operating-loop-workflow",
-      "name": "operating-loop-workflow",
-      "type": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "driving-adapter",
-      "tier": "execution",
-      "purpose": "Install or run the seven-move operating-loop Workflow for AgentOps plugin users and multi-agent orchestration.",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [],
-      "produces": [
-        "git-changes"
-      ],
-      "drives_commands": [],
-      "path": "skills/operating-loop-workflow/",
-      "references": 0
     },
     {
       "sku": "skill:perf",
@@ -3143,22 +2271,6 @@
       "references": 14
     },
     {
-      "sku": "skill:planning-workflow",
-      "name": "planning-workflow",
-      "type": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "purpose": ">-",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/planning-workflow/",
-      "references": 3
-    },
-    {
       "sku": "skill:post-mortem",
       "name": "post-mortem",
       "type": "skill",
@@ -3191,26 +2303,6 @@
       "references": 22
     },
     {
-      "sku": "skill:pr-implement",
-      "name": "pr-implement",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "contribute",
-      "purpose": "Implement a scoped OSS PR.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [
-        "crank"
-      ],
-      "produces": [
-        "git-changes"
-      ],
-      "drives_commands": [],
-      "path": "skills/pr-implement/",
-      "references": 0
-    },
-    {
       "sku": "skill:pr-prep",
       "name": "pr-prep",
       "type": "skill",
@@ -3229,26 +2321,6 @@
       "drives_commands": [],
       "path": "skills/pr-prep/",
       "references": 4
-    },
-    {
-      "sku": "skill:pr-research",
-      "name": "pr-research",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driven-adapter",
-      "tier": "contribute",
-      "purpose": "Research an upstream repo.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [
-        "external-api"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/pr-research/",
-      "references": 1
     },
     {
       "sku": "skill:pre-mortem",
@@ -3315,62 +2387,6 @@
       ],
       "drives_commands": [],
       "path": "skills/push/",
-      "references": 0
-    },
-    {
-      "sku": "skill:quickstart",
-      "name": "quickstart",
-      "type": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "driving-adapter",
-      "tier": "session",
-      "purpose": "Show AgentOps next action.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [
-        "rpi"
-      ],
-      "produces": [
-        "stdout"
-      ],
-      "drives_commands": [
-        "ao codex ensure-start",
-        "ao codex ensure-stop",
-        "ao codex status",
-        "ao corpus inject",
-        "ao flywheel close-loop",
-        "ao init",
-        "ao inject",
-        "ao metrics",
-        "ao quick-start",
-        "ao reconcile",
-        "ao session bootstrap"
-      ],
-      "path": "skills/quickstart/",
-      "references": 3
-    },
-    {
-      "sku": "skill:ratchet",
-      "name": "ratchet",
-      "type": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "domain",
-      "tier": "background",
-      "purpose": "Record Brownian Ratchet gates.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [
-        "validate",
-        "vibe",
-        "post-mortem"
-      ],
-      "produces": [
-        ".agents/rpi/*.md"
-      ],
-      "drives_commands": [
-        "ao ratchet"
-      ],
-      "path": "skills/ratchet/",
       "references": 0
     },
     {
@@ -3505,31 +2521,13 @@
       "references": 17
     },
     {
-      "sku": "skill:reverse-engineer-rpi",
-      "name": "reverse-engineer-rpi",
-      "type": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "purpose": "Reverse-engineer product specs.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [],
-      "produces": [
-        ".agents/research/*.md"
-      ],
-      "drives_commands": [],
-      "path": "skills/reverse-engineer-rpi/",
-      "references": 0
-    },
-    {
       "sku": "skill:review",
       "name": "review",
       "type": "skill",
       "bounded_context": "BC2",
       "hex_role": "driving-adapter",
       "tier": "judgment",
-      "purpose": "Review diffs for risk, find mocks, scan for bugs, audit codebases. Use when: reviewing a diff/PR for bugs and risk, hunting mocks/stubs/placeholders, or auditing for quality.",
+      "purpose": "Review diffs for risk, find mocks, scan for bugs, audit codebases. Fold target for bug-hunt, codebase-audit, and ubs.",
       "status": "active",
       "disposition": "update",
       "consumes": [
@@ -3610,30 +2608,6 @@
       "references": 2
     },
     {
-      "sku": "skill:scenario",
-      "name": "scenario",
-      "type": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "purpose": "Manage holdout scenarios.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [
-        "ao goals",
-        "ao scenario add",
-        "ao scenario init",
-        "ao scenario list",
-        "ao scenario validate"
-      ],
-      "path": "skills/scenario/",
-      "references": 1
-    },
-    {
       "sku": "skill:scope",
       "name": "scope",
       "type": "skill",
@@ -3675,30 +2649,6 @@
       "references": 1
     },
     {
-      "sku": "skill:session-bootstrap",
-      "name": "session-bootstrap",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "session",
-      "purpose": "Universal AgentOps init prompt for starting or onboarding a fresh agent session.",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "bd",
-        "onboard"
-      ],
-      "produces": [
-        "stdout",
-        "json"
-      ],
-      "drives_commands": [
-        "ao session bootstrap"
-      ],
-      "path": "skills/session-bootstrap/",
-      "references": 0
-    },
-    {
       "sku": "skill:shared",
       "name": "shared",
       "type": "skill",
@@ -3721,29 +2671,6 @@
       ],
       "path": "skills/shared/",
       "references": 16
-    },
-    {
-      "sku": "skill:ship-loop",
-      "name": "ship-loop",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "driving-adapter",
-      "tier": "execution",
-      "purpose": "Run the fast-lane internal ship cycle for one closable bead or small slice: claim, test, implement, push, merge, close.",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [
-        "beads",
-        "rpi",
-        "post-mortem"
-      ],
-      "produces": [
-        "git-changes",
-        "merged-prs"
-      ],
-      "drives_commands": [],
-      "path": "skills/ship-loop/",
-      "references": 4
     },
     {
       "sku": "skill:skill-auditor",
@@ -3882,70 +2809,6 @@
       "references": 6
     },
     {
-      "sku": "skill:trace",
-      "name": "trace",
-      "type": "skill",
-      "bounded_context": "BC1",
-      "hex_role": "supporting",
-      "tier": "knowledge",
-      "purpose": "Trace decisions through artifacts.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "drives_commands": [],
-      "path": "skills/trace/",
-      "references": 3
-    },
-    {
-      "sku": "skill:ubs",
-      "name": "ubs",
-      "type": "skill",
-      "bounded_context": "BC5",
-      "hex_role": "supporting",
-      "tier": "execution",
-      "purpose": "Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks.",
-      "status": "active",
-      "disposition": "keep",
-      "consumes": [],
-      "produces": [],
-      "drives_commands": [],
-      "path": "skills/ubs/",
-      "references": 3
-    },
-    {
-      "sku": "skill:using-agentops",
-      "name": "using-agentops",
-      "type": "skill",
-      "bounded_context": "BC4",
-      "hex_role": "generic",
-      "tier": "meta",
-      "purpose": "Explain AgentOps workflows.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [],
-      "produces": [
-        "documentation"
-      ],
-      "drives_commands": [
-        "ao agent",
-        "ao agents inspect",
-        "ao codex start",
-        "ao codex stop",
-        "ao flywheel close-loop",
-        "ao forge transcript",
-        "ao inject",
-        "ao lookup",
-        "ao mcp serve",
-        "ao search",
-        "ao session bootstrap"
-      ],
-      "path": "skills/using-agentops/",
-      "references": 0
-    },
-    {
       "sku": "skill:using-atm",
       "name": "using-atm",
       "type": "skill",
@@ -3983,38 +2846,15 @@
       "drives_commands": [
         "ao doctor",
         "ao goals",
-        "ao ratchet",
-        "ao rpi phased"
-      ],
-      "path": "skills/validate/",
-      "references": 0
-    },
-    {
-      "sku": "skill:vibe",
-      "name": "vibe",
-      "type": "skill",
-      "bounded_context": "BC2",
-      "hex_role": "domain",
-      "tier": "judgment",
-      "purpose": "Validate code readiness. Use when: doing a quick readiness or sanity check that code is ready to commit or ship, short of a full review.",
-      "status": "active",
-      "disposition": "update",
-      "consumes": [
-        "standards"
-      ],
-      "produces": [
-        "result.json",
-        "verdict.json"
-      ],
-      "drives_commands": [
         "ao lookup",
         "ao metrics cite",
         "ao ratchet",
+        "ao rpi phased",
         "ao search",
         "ao turn verify"
       ],
-      "path": "skills/vibe/",
-      "references": 22
+      "path": "skills/validate/",
+      "references": 23
     },
     {
       "sku": "skill:vibing-with-ntm",
@@ -4060,7 +2900,6 @@
       "driven_by_skills": [
         "domain",
         "shared",
-        "using-agentops",
         "using-atm"
       ],
       "flags": [
@@ -4721,7 +3560,6 @@
         "post-mortem",
         "release",
         "scaffold",
-        "scenario",
         "validate"
       ],
       "flags": [
@@ -4829,9 +3667,7 @@
       "bounded_context": "BC4",
       "purpose": "Initialize AgentOps in the current repository",
       "status": "active",
-      "driven_by_skills": [
-        "quickstart"
-      ],
+      "driven_by_skills": [],
       "flags": [
         "--config",
         "--dry-run",
@@ -4853,9 +3689,7 @@
         "agent-native",
         "beads",
         "domain",
-        "inject",
-        "quickstart",
-        "using-agentops"
+        "inject"
       ],
       "flags": [
         "--apply-decay",
@@ -4924,7 +3758,6 @@
       "purpose": "Retrieve specific knowledge artifacts by ID or query",
       "status": "active",
       "driven_by_skills": [
-        "bug-hunt",
         "crank",
         "discovery",
         "evolve",
@@ -4936,8 +3769,7 @@
         "recover",
         "review",
         "swarm",
-        "using-agentops",
-        "vibe"
+        "validate"
       ],
       "flags": [
         "--bead",
@@ -5051,7 +3883,6 @@
         "crank",
         "curate",
         "flywheel",
-        "quickstart",
         "status"
       ],
       "flags": [
@@ -5235,8 +4066,7 @@
       "purpose": "Set up AgentOps in your project (5 minutes)",
       "status": "active",
       "driven_by_skills": [
-        "bootstrap",
-        "quickstart"
+        "bootstrap"
       ],
       "flags": [
         "--config",
@@ -5253,22 +4083,21 @@
       "sku": "cmd:ao.ratchet",
       "name": "ao ratchet",
       "type": "cli-command",
-      "bounded_context": "BC3",
+      "bounded_context": "",
       "purpose": "Brownian Ratchet workflow tracking",
       "status": "active",
       "driven_by_skills": [
         "crank",
         "discovery",
         "evolve",
+        "flywheel",
         "handoff",
         "implement",
         "plan",
         "pre-mortem",
-        "ratchet",
         "rpi",
         "status",
-        "validate",
-        "vibe"
+        "validate"
       ],
       "flags": [
         "--config",
@@ -5305,7 +4134,6 @@
       "status": "active",
       "driven_by_skills": [
         "beads",
-        "quickstart",
         "release",
         "status"
       ],
@@ -5447,7 +4275,7 @@
       "sku": "cmd:ao.scenario",
       "name": "ao scenario",
       "type": "cli-command",
-      "bounded_context": "BC2",
+      "bounded_context": "",
       "purpose": "Manage holdout scenarios for behavioral validation",
       "status": "active",
       "driven_by_skills": [
@@ -5491,8 +4319,7 @@
         "discovery",
         "plan",
         "pre-mortem",
-        "using-agentops",
-        "vibe"
+        "validate"
       ],
       "flags": [
         "--cass",
@@ -5623,7 +4450,7 @@
       "sku": "cmd:ao.trace",
       "name": "ao trace",
       "type": "cli-command",
-      "bounded_context": "BC1",
+      "bounded_context": "",
       "purpose": "Track artifact provenance",
       "status": "active",
       "driven_by_skills": [],

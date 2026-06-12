@@ -448,7 +448,7 @@ if [[ "$FAST_MODE" == "true" ]]; then
     else
         HAS_SKILL=0
     fi
-    if echo "$all_changed" | grep -qE '^hooks/|^cli/embedded/|^cli/Makefile$|^scripts/validate-embedded-sync\.sh$|^lib/|^skills/standards/references/|^skills/using-agentops/SKILL\.md$'; then
+    if echo "$all_changed" | grep -qE '^hooks/|^cli/embedded/|^cli/Makefile$|^scripts/validate-embedded-sync\.sh$|^lib/|^skills/standards/references/'; then
         HAS_HOOK=1
     else
         HAS_HOOK=0

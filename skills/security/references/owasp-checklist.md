@@ -1,6 +1,6 @@
 # OWASP Top 10 Security Checklist
 
-> Pre-deployment security audit checklist. Use as gate in `/vibe --preset=security-audit` or `/post-mortem --scope security`.
+> Pre-deployment security audit checklist. Use as gate in `/validate --preset=security-audit` or `/post-mortem --scope security`.
 
 ## Checklist
 
@@ -86,9 +86,9 @@ grep -rn 'password\s*=\s*"[^"]\+"\|api_key\s*=\s*"[^"]\+"\|secret\s*=\s*"[^"]\+"
 
 ## Integration
 
-### With /vibe
+### With /validate
 ```bash
-/vibe --preset=security-audit src/
+/validate --preset=security-audit src/
 ```
 Loads this checklist as judge context. Each judge evaluates against relevant checklist items.
 

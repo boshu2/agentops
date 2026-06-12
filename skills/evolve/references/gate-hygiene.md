@@ -55,7 +55,7 @@ Never use `--no-verify`. The pre-commit hook is a no-op for most diffs but the p
 
 ## Pre-push diff-scope check (mandatory before every commit)
 
-Two cheap pre-commit reads catch the failure modes that cost a full fix-and-repush round each (the 2026-05-29 `/burndown` + codex-budget reds):
+Two cheap pre-commit reads catch the failure modes that cost a full fix-and-repush round each (the 2026-05-29 `/crank` + codex-budget reds):
 
 1. **`git status --short` must show ALL intended files staged.** A half-staged commit — the feature gate-script left out while only its test was committed — let CI run the *old* code so the new assertion could not pass (the #612 red). A feature and its test are one commit, not the test alone.
 2. **`git diff origin/main --stat` must be SCOPE-ONLY.** Confirm: no collateral deletions (a `git checkout --theirs` conflict take silently dropped two *unrelated* skill rows in the #600 rebase), and no lossy whole-file reformats (a 252-line `catalog.json` round-trip — discard those and use the idempotent appender). For generated/narrative files, restore `origin/main`'s version and **re-run the generator** rather than hand-merging.

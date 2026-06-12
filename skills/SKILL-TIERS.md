@@ -115,7 +115,7 @@ What are you trying to do?
 │
 ├─ "Fix a bug"
 │   ├─ Know which file? ──────────► /implement <issue-id>
-│   └─ Need to investigate? ──────► /bug-hunt
+│   └─ Need to investigate? ──────► /review
 │
 ├─ "Build a feature"
 │   ├─ Small (1-2 files) ─────────► /implement
@@ -123,7 +123,7 @@ What are you trying to do?
 │   └─ Large (7+ issues) ─────────► /rpi (full pipeline)
 │
 ├─ "Validate something"
-│   ├─ Code ready to ship? ───────► /vibe
+│   ├─ Code ready to ship? ───────► /validate
 │   ├─ Plan ready to build? ──────► /pre-mortem
 │   ├─ Work ready to close? ──────► /post-mortem
 │   └─ Quick sanity check? ───────► /council --quick validate
@@ -131,13 +131,13 @@ What are you trying to do?
 ├─ "Explore or research"
 │   ├─ Understand this codebase ──► /research
 │   ├─ Compare approaches ────────► /council research <topic>
-│   └─ Generate ideas ────────────► /brainstorm
+│   └─ Generate ideas ────────────► /discovery
 │
 ├─ "Learn from past work"
 │   ├─ What do we know about X? ──► /compile <query>
 │   ├─ Save this insight ─────────► /post-mortem --quick "insight"
 │   ├─ Full retrospective ────────► /post-mortem
-│   └─ Trace a decision ─────────► /trace <concept>
+│   └─ Trace a decision ─────────► /recover <concept>
 │
 ├─ "Write or improve tests"
 │   ├─ Generate tests for code ───► /test <target>
@@ -155,10 +155,10 @@ What are you trying to do?
 │   └─ Extract method/module ─────► /refactor --extract <pattern>
 │
 ├─ "Manage dependencies"
-│   ├─ Full health check ────────► /deps audit
-│   ├─ Update dependencies ──────► /deps update
-│   ├─ Vulnerability scan ───────► /deps vuln
-│   └─ License compliance ───────► /deps license
+│   ├─ Full health check ────────► /security audit
+│   ├─ Update dependencies ──────► /security update
+│   ├─ Vulnerability scan ───────► /security vuln
+│   └─ License compliance ───────► /security license
 │
 ├─ "Performance work"
 │   ├─ Profile hotspots ─────────► /perf profile <target>
@@ -172,7 +172,7 @@ What are you trying to do?
 │   └─ Generate CI config ───────► /scaffold ci <platform>
 │
 ├─ "Contribute upstream"
-│   └─ Full PR workflow ──────────► /pr-research → /plan → /pr-implement
+│   └─ Full PR workflow ──────────► /pr-prep → /plan → /implement
 │
 ├─ "Ship a release"
 │   └─ Changelog + tag ──────────► /release <version>
@@ -188,7 +188,7 @@ What are you trying to do?
 │   └─ Recover after compaction ──► /recover
 │
 └─ "First time here"
-    └─ Interactive tour ──────────► /quickstart
+    └─ Interactive tour ──────────► /status
 ```
 
 ### Composition patterns
@@ -199,11 +199,11 @@ These are how skills chain in practice:
 |---------|-------|------|
 | **Quick fix** | `/implement` | One issue, clear scope |
 | **Quick ship** | `/implement` → `/push` | Implement, test, and push |
-| **Validated fix** | `/implement` → `/vibe` | One issue, want confidence |
+| **Validated fix** | `/implement` → `/validate` | One issue, want confidence |
 | **Planned epic** | `/plan` → `/pre-mortem` → `/crank` → `/post-mortem` | Multi-issue, structured |
 | **Full pipeline** | `/rpi` (chains all above) | End-to-end, autonomous |
 | **Evolve loop** | `/evolve` (chains `/rpi` repeatedly) | Fitness-scored improvement |
-| **PR contribution** | `/pr-research` → `/plan` → `/pr-implement` → `/validate --mode=pr` → `/pr-prep` | External repo |
+| **PR contribution** | `/pr-prep` → `/plan` → `/implement` → `/validate --mode=pr` → `/pr-prep` | External repo |
 | **Knowledge query** | `/compile` → `/research` (if gaps) | Understanding before building |
 | **Standalone review** | `/council validate <target>` | Ad-hoc multi-judge review |
 | **Time-boxed pipeline** | `/rpi --budget=research:180,plan:120` | Prevent research/plan stalls |
@@ -211,8 +211,8 @@ These are how skills chain in practice:
 | **Scoped parallel** | `/crank <epic>` | Auto file-ownership map prevents conflicts |
 | **Test-first build** | `/test --tdd` → `/implement` | Write tests before code |
 | **Reviewed PR** | `/review <PR>` → approve/request changes | Incoming PR review |
-| **Safe refactor** | `/complexity` → `/refactor` → `/test` | Find hotspots, refactor, verify |
-| **Dep hygiene** | `/deps audit` → `/deps update` → `/test` | Audit, update, verify |
+| **Safe refactor** | `/refactor` → `/refactor` → `/test` | Find hotspots, refactor, verify |
+| **Dep hygiene** | `/security audit` → `/security update` → `/test` | Audit, update, verify |
 | **Perf cycle** | `/perf profile` → `/perf optimize` → `/perf compare` | Profile, fix, verify |
 | **New project** | `/scaffold` → `/test` → `/push` | Bootstrap, verify, ship |
 
@@ -220,7 +220,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (97)
+### User-Facing Skills (59)
 
 **Judgment:**
 
@@ -228,11 +228,9 @@ These are how skills chain in practice:
 |-------|------|-------------|
 | **council** | judgment | Multi-model validation (core primitive) — independent judges debate and converge |
 | **validate** | judgment | Canonical validator role — produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, and gates |
-| **vibe** | judgment | Complexity analysis + council — code quality review |
 | **pre-mortem** | judgment | Council on plans — simulate failures before implementation |
 | **post-mortem** | judgment | Council + knowledge lifecycle — validate completed work, extract/activate/retire learnings |
 | **review** | judgment | Review incoming PRs, agent-generated changes, or diffs — SCORED checklist |
-| **design** | judgment | Product validation gate — checks goal alignment, persona fit, competitive differentiation before discovery |
 | **red-team** | judgment | Persona-based adversarial validation — probe docs and skills from constrained user perspectives |
 
 **Execution:**
@@ -240,7 +238,6 @@ These are how skills chain in practice:
 | Skill | Tier | Description |
 |-------|------|-------------|
 | **research** | execution | Deep codebase exploration |
-| **brainstorm** | execution | Structured idea exploration before planning |
 | **plan** | execution | Decompose epics into issues with dependency waves |
 | **implement** | execution | Full lifecycle for one task |
 | **crank** | execution | Autonomous epic execution — parallel waves |
@@ -249,20 +246,13 @@ These are how skills chain in practice:
 | **using-atm** | execution | Run AgentOps loops out of session on an ATM tmux swarm — the ATM leg of the substrate |
 | **rpi** | meta | Thin wrapper: /discovery → /crank → /validate with complexity classification and loop |
 | **evolve** | execution | Autonomous fitness-scored improvement loop |
-| **burndown** | execution | Bounded epic-completion loop — drive a finite target to all-merged, then stop |
 | **eval-outcomes** | execution | Grade via Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes |
-| **operating-loop-workflow** | execution | Install + run the operating-loop multi-agent Workflow (seven-move loop) for plugin users |
 | **autodev** | execution | PROGRAM.md autonomous development contract setup and validation |
-| **bug-hunt** | execution | Investigate bugs with git archaeology |
-| **complexity** | execution | Cyclomatic complexity analysis |
 | **push** | execution | Atomic test-commit-push workflow — tests, commits, rebases, pushes |
-| **ship-loop** | execution | Bot-paired fast lane PR cycle — single-scenario internal PR through auto-merge |
 | **test** | execution | Test generation, coverage analysis, and TDD workflow |
 | **refactor** | execution | Safe, verified refactoring with regression testing at each step |
-| **deps** | execution | Dependency audit, update, vulnerability scanning, and license compliance |
 | **perf** | execution | Performance profiling, benchmarking, regression detection, and optimization |
 | **scaffold** | execution | Project scaffolding, component generation, and boilerplate setup |
-| **scenario** | execution | Author and manage holdout scenarios for behavioral validation |
 | **scope** | execution | Edit-scope guard — freeze/unfreeze directories with hard-block PreToolUse hook |
 
 **Knowledge:**
@@ -272,7 +262,6 @@ These are how skills chain in practice:
 | **compile** | knowledge | Active knowledge intelligence — Mine → Grow → Defrag cycle |
 | **domain** | knowledge | Shared vocabulary for human-AI software building (tracer-bullet shape; loaded JIT when terms like vertical slice, tracer bullet, primitive need a canonical definition) |
 | **curate** | knowledge | Canonical miner role — mine transcripts, `.agents/`, bd, and git for skill diffs, bd updates, and rare wiki entries |
-| **trace** | knowledge | Trace design decisions through history |
 
 **Product & Release:**
 
@@ -291,16 +280,12 @@ These are how skills chain in practice:
 | **handoff** | session | Session handoff — save context for next session |
 | **recover** | session | Post-compaction context recovery |
 | **status** | session | Single-screen dashboard |
-| **quickstart** | session | Interactive onboarding |
 | **bootstrap** | session | One-command full AgentOps setup — fills gaps only |
-| **session-bootstrap** | session | Universal init prompt — every agent runs this first (soc-vuu6.25) |
 
 **Upstream Contributions:**
 
 | Skill | Tier | Description |
 |-------|------|-------------|
-| **pr-research** | contribute | Upstream repository research before contribution |
-| **pr-implement** | contribute | Fork-based implementation for external PRs |
 | **pr-prep** | contribute | PR preparation and structured PR body generation |
 
 **Cross-Vendor & Meta:**
@@ -308,7 +293,6 @@ These are how skills chain in practice:
 | Skill | Tier | Description |
 |-------|------|-------------|
 | **converter** | cross-vendor | Cross-platform skill converter (Codex, Cursor) |
-| **reverse-engineer-rpi** | execution | Reverse-engineer a product into feature catalog + code map + specs |
 | **heal-skill** | meta | Detect and fix skill hygiene issues |
 | **skill-auditor** | meta | Two-pass audit of an existing SKILL.md against the unified template (15 checks) |
 | **skill-builder** | meta | Scaffold or absorb new SKILL.md files against the unified template |
@@ -324,57 +308,32 @@ These are how skills chain in practice:
 | **acfs** | orchestration | Use when operating ACFS flywheel health checks, init, and agent loop tooling from ~/acfs/bin/acfs. |
 | **agent-mail** | execution | Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs. |
 | **agy-headless-evidence** | execution | Use when running Antigravity (AGY) headlessly and capturing durable, machine-checkable JSONL evidence of each run. |
-| **agy-mcp-plugins** | execution | Use when wiring MCP servers and packaging/installing plugins into the Antigravity (AGY) image so an AGY worker reaches the AgentOps tool substrate. |
 | **agy-native** | cross-vendor | Use when driving AgentOps work natively in Google Antigravity with claims, validation, closeout, and persistence. |
-| **agy-project-worktree-permissions** | cross-vendor | Use when proving scoped project/worktree isolation on the AGY (Antigravity) image before a bead can join the quorum. |
-| **agy-rules-workflows** | orchestration | Use when installing or validating AgentOps rules and workflows for Google Antigravity. |
-| **agy-sidecar-scheduled-tick** | execution | Use when running a recurring AgentOps loop tick on AGY via an Antigravity sidecar, capturing agentapi runtime evidence. |
-| **bead-completion-audit** | judgment | Use when auditing closed beads for real shipped evidence, acceptance proof, and truthful closeout. |
 | **beads-br** | execution | Local-first issue tracker (beads_rust) for AI agents. Use when tracking tasks, managing dependencies, finding ready work, or syncing issues to git via JSONL. |
 | **beads-bv** | execution | Graph-aware task triage with bv and br. Use when prioritizing work, finding bottlenecks, tracking dependencies, or managing local issues across projects. |
 | **beads-workflow** | execution | Use when converting markdown plans into br beads with dependencies for implementation or swarm execution. |
-| **caam** | execution | Use when switching AI coding CLI accounts quickly to recover from subscription rate limits or OAuth friction. |
-| **casr** | execution | Cross Agent Session Resumer. Convert and resume sessions across Claude Code, Codex, Gemini, and other providers. |
 | **cass** | execution | Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history. |
-| **cass-memory** | execution | Use when starting non-trivial work, mining lessons, or preventing repeated mistakes with cm procedural memory. |
-| **cc-cron-ticks** | orchestration | Use when scheduling autonomous in-session flywheel ticks with Claude Code cron routines. |
 | **cc-hooks** | execution | Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification. Use when blocking commands, auto-formatting, custom permissions, or writing hooks. |
-| **cc-loop-driver** | orchestration | Use when running a Claude-native control-plane tick loop with worker and separate-validator subagents. |
-| **cc-subagents** | orchestration | Use when dispatching scoped Claude Code subagents with worktrees, roles, tools, memory, and evidence gates. |
-| **cc-worktree-isolation** | orchestration | Use when isolating parallel Claude Code workers in separate git worktrees to prevent file collisions. |
-| **codebase-audit** | knowledge | Domain-parameterized codebase auditing (security, UX, performance, API, copy, CLI). Use when auditing code or pre-launch review. |
 | **codex-exec** | orchestration | Use when running Codex workers or validators non-interactively through codex exec with evidence. |
-| **codex-goals** | orchestration | Use when using Codex Goals to define an objective once and let Codex iterate until done. |
-| **codex-mcp-plugins** | execution | Use when wiring MCP servers or plugins into Codex CLI and the AgentOps Codex skill bundle. |
-| **codex-sandbox-evidence** | execution | Use when running codex exec in a least-privilege sandbox with machine-checkable proof. |
-| **cross-vendor-trust-gate** | execution | Use when running the skill-factory final trust gate to grade a skill's cross-vendor trust before landing it. |
 | **dcg** | execution | Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. |
-| **multi-model-triangulation** | execution | Cross-validate decisions using multiple AI models (Codex, Gemini, Grok). Use when "get a second opinion", evaluating approaches, or high-stakes decisions. |
 | **ntm** | execution | Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. |
-| **ntm-browser-test-coordination** | orchestration | Use when coordinating browser or UI tests through NTM panes with screenshots and handoffs. |
-| **ntm-review-worker-orchestration** | orchestration | Use when operating an NTM review or analysis worker with bounded inputs and evidence-backed output. |
-| **operating-loop-skill** | orchestration | Use when driving one bead end-to-end through claim, work, independent validation, closeout, and persistence. |
-| **planning-workflow** | execution | Comprehensive markdown planning methodology for software projects. Use when starting a new project, creating implementation plans, or refining architecture before coding. |
 | **rch** | execution | Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues. |
 | **sbh** | execution | Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status. |
-| **ubs** | execution | Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks. |
 | **vibing-with-ntm** | execution | Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence. |
 | **account-rotation** | execution | "Use when you hit a usage/rate limit on a coding-agent subscription and need to switch accounts, or to spread swarm lanes across accounts. Routes by host+agent: macOS+Claude → claude-acct (Keychain swap); macOS+Codex/Gemini or any Linux/WSL → caam (file swap). One symptom, the right tool per host." |
 
-### Internal Skills (8) — `metadata.internal: true`
+### Internal Skills (6) — `metadata.internal: true`
 
 Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hooks. Loaded JIT by other skills via Read or auto-triggered by hooks.
 
 | Skill | Tier | Category | Purpose |
 |-------|------|----------|---------|
 | beads | library | Execution | Issue tracking reference (loaded by /implement, /plan) |
-| standards | library | Judgment | Coding standards (loaded by /vibe, /implement, /doc) |
+| standards | library | Judgment | Coding standards (loaded by /validate, /implement, /doc) |
 | shared | library | Execution | Shared reference documents (multi-agent backends) |
 | inject | background | Knowledge | Load knowledge at session start (hook-triggered) |
 | forge | background | Knowledge | Mine transcripts for knowledge (includes --promote for pending extraction) |
-| ratchet | background | Execution | Progress gates |
 | flywheel | background | Knowledge | Knowledge health monitoring |
-| using-agentops | meta | Meta | AgentOps workflow guide (auto-injected) |
 
 ---
 
@@ -390,13 +349,10 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **knowledge-activation** | compile, harvest, flywheel | optional, optional, optional |
 | **council** | - | - (core primitive) |
 | **validate** | - | - (standalone validator role) |
-| **vibe** | council, complexity, standards | required, optional (graceful skip), optional |
 | **pre-mortem** | council | required |
 | **post-mortem** | council, beads | required, optional |
 | beads | - | - |
 | domain | - | - |
-| bug-hunt | beads | optional |
-| complexity | - | - |
 | **codex-team** | - | - (standalone, fallback to swarm) |
 | **crank** | swarm, vibe, implement, beads, post-mortem | required, required, required, optional, optional |
 | doc | standards | required |
@@ -408,11 +364,8 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **plan** | research, beads, pre-mortem, crank, implement | optional, optional, optional, optional, optional |
 | **push** | - | - (standalone) |
 | **product** | - | - (standalone) |
-| **pr-research** | - | - (standalone) |
-| **pr-implement** | plan, pr-validate | optional, optional |
 | **pr-validate** | - | - (standalone) |
 | **pr-prep** | pr-validate | optional |
-| **quickstart** | - | - (zero dependencies) |
 | **bootstrap** | goals, product, doc, shared | all optional (progressive — skips what exists) |
 | **discovery** | brainstorm, research, plan, pre-mortem, shared | brainstorm optional, rest required |
 | **validation** | vibe, post-mortem, retro, forge, shared | vibe+post-mortem required, retro+forge optional |
@@ -421,26 +374,19 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **autodev** | evolve, rpi | required |
 | **release** | - | - (standalone) |
 | **security** | - | - (standalone) |
-| ratchet | - | - |
 | **recover** | - | - (standalone) |
-| **reverse-engineer-rpi** | - | - (standalone) |
 | research | knowledge, inject | optional, optional |
 | retro | - | - |
 | standards | - | - |
 | **goals** | - | - (reads GOALS.yaml directly) |
 | **status** | - | - (all CLIs optional) |
 | **swarm** | implement, vibe | required, optional |
-| trace | - | - (standalone) |
 | **update** | - | - (standalone) |
-| using-agentops | - | - |
 | **test** | standards, complexity | required, optional |
 | **review** | standards, council | required, optional |
-| **design** | council, shared | required, optional |
 | **refactor** | standards, complexity, beads | required, optional, optional |
-| **deps** | standards | optional |
 | **perf** | standards, complexity | optional, optional |
 | **scaffold** | standards | required |
-| **scenario** | - | - (standalone) |
 | **system-tuning** | - | - (standalone) |
 
 ---
@@ -481,7 +427,7 @@ All council-based skills write to `.agents/council/`:
 | `/council validate` | `.agents/council/YYYY-MM-DD-<target>-report.md` |
 | `/council brainstorm` | `.agents/council/YYYY-MM-DD-brainstorm-<topic>.md` |
 | `/council research` | `.agents/council/YYYY-MM-DD-research-<topic>.md` |
-| `/vibe` | `.agents/council/YYYY-MM-DD-vibe-<target>.md` |
+| `/validate` | `.agents/council/YYYY-MM-DD-vibe-<target>.md` |
 | `/pre-mortem` | `.agents/council/YYYY-MM-DD-pre-mortem-<topic>.md` |
 | `/post-mortem` | `.agents/council/YYYY-MM-DD-post-mortem-<topic>.md` |
 
@@ -512,7 +458,6 @@ session so the operator can see progress, phase transitions, and intervene.
 | discovery | Direct orchestrator | Gate visibility when called directly |
 | validation | Direct orchestrator | Verdict visibility when called directly |
 | implement | Single-task | Single issue, medium duration |
-| bug-hunt | Investigator | Hypothesis loop, need to see reasoning |
 
 ### Tier 1.5: PHASE ISOLATION (declared phase contracts)
 
@@ -543,7 +488,6 @@ Judgment skills validate artifacts in isolation. Worker spawners fan out paralle
 
 | Skill | Role | Why |
 |-------|------|-----|
-| vibe | Judgment | Code validation, user wants verdict |
 | pre-mortem | Judgment | Plan validation, user wants verdict |
 | post-mortem | Judgment | Validation close-out + knowledge extraction |
 | council | Worker spawner | Parallel judges, merge verdicts |
@@ -572,7 +516,7 @@ transport and returns only bounded artifacts.
 ## See Also
 
 - `skills/council/SKILL.md` — Core judgment primitive
-- `skills/vibe/SKILL.md` — Complexity + council for code
+- `skills/validate/SKILL.md` — Complexity + council for code
 - `skills/pre-mortem/SKILL.md` — Council for plans
 - `skills/post-mortem/SKILL.md` — Council + retro for wrap-up
 - `skills/swarm/SKILL.md` — Parallelize any skill

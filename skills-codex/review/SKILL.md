@@ -9,7 +9,7 @@ description: "Run review."
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
-This skill is for reviewing OTHER people's or agents' changes. For validating your own code quality, use `$vibe` instead.
+This skill is for reviewing OTHER people's or agents' changes. For validating your own code quality, use `$validate` instead.
 
 ---
 
@@ -303,10 +303,10 @@ Merge council findings into the review document under a "## Council Findings" se
 
 | Skill | Relationship |
 |-------|-------------|
-| `$vibe` | Self-review (your own code). `$review` is for others' code. |
+| `$validate` | Self-review (your own code). `$review` is for others' code. |
 | `$council` | Optional second opinion via `--deep` flag. |
 | `$standards` | Auto-loaded for language-specific rules. |
-| `$bug-hunt` | `$review` does a structured pass; `$bug-hunt` does deep investigation of suspected bugs. |
+| `bug-hunt` | `$review` does a structured pass; `bug-hunt` does deep investigation of suspected bugs. |
 | `$validate --mode=pr` | PR-specific validation (isolation, scope creep). Complementary to `$review`. |
 
 ---
@@ -320,9 +320,9 @@ Merge council findings into the review document under a "## Council Findings" se
 
 ## See Also
 
-- [vibe](../vibe/SKILL.md) — Self-review and code quality validation
+- [validate](../validate/SKILL.md) — Self-review and code quality validation (absorbs vibe)
 - [council](../council/SKILL.md) — Multi-model consensus council
 - [standards](../standards/SKILL.md) — Language-specific coding conventions
-- [bug-hunt](../bug-hunt/SKILL.md) — Deep bug investigation
+- bug-hunt — Deep bug investigation (absorbed into this skill)
 - [validate --mode=pr](../validate/SKILL.md) — PR scope and isolation checks
 - [references/audit-and-mock-sweeps.md](references/audit-and-mock-sweeps.md)

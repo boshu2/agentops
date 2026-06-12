@@ -1,10 +1,6 @@
 ---
 name: discovery
-description: Create dense execution packets.
-  Also the fold target for brainstorm and design. Brainstorm — Separate goals from implementation;
-  clarify goals and explore the problem space before planning. Design — validate product fit
-  before discovery; use when framing a problem, checking product/market fit, or pressure-testing user value
-  before writing a discovery packet or any code.
+description: Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing).
 practices:
 - adr
 - lean-startup
@@ -47,6 +43,11 @@ output_contract: .agents/plans/YYYY-MM-DD-*.md, beads, epic-id
 ---
 # /discovery - Dense Discovery Phase Adapter
 
+## Absorbed skills (ag-s43tg)
+
+- **brainstorm** — Separate goals from implementation; clarify goals and explore the problem space before planning.
+- **design** — Validate product fit before discovery; use when framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.
+
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
 > **Loop position:** move 1 (shape intent as BDD) plus the seed for move 3
@@ -71,7 +72,7 @@ skills (skill-prune phase 2). Fire `/discovery` for their use-cases:
 
 ## Strict Delegation Contract (default)
 
-Discovery delegates to `/brainstorm` (conditional), `/design` (conditional),
+Discovery delegates to `brainstorm` (conditional), `design` (conditional),
 `/research`, `/plan`, and `/pre-mortem` via declared skill invocations.
 Strict delegation is the **default**.
 
@@ -119,14 +120,14 @@ Executable acceptance: [references/discovery.feature](references/discovery.featu
 
 > **Additive to the default flow — it does not replace the strict-delegation contract or the artifact-first DAG.** This path activates for open-ended "improve the project"-style goals (`"improve the project"`, `"what should we build next"`, `"make X more robust"`) OR when `--ideate` is passed. For a specific goal, the default flow (brainstorm-clarify → research → plan → pre-mortem) is unchanged.
 
-On the open-ended path, Discovery prepends the generate-winnow methodology before research/plan and adds two steps after planning. Full detail lives in [`../brainstorm/references/bead-operationalization.md`](../brainstorm/references/bead-operationalization.md) and [`../brainstorm/references/ideation-mode.md`](../brainstorm/references/ideation-mode.md).
+On the open-ended path, Discovery prepends the generate-winnow methodology before research/plan and adds two steps after planning. Full detail lives in [`references/bead-operationalization.md`](references/bead-operationalization.md) and [`references/ideation-mode.md`](references/ideation-mode.md).
 
-1. **Ideate (delegate to `/brainstorm --ideate`).** Invoke `/brainstorm` in **ideation mode** (a real skill invocation — strict delegation still applies; do NOT inline the 30-idea generation). It returns a ranked portfolio of **15** ideas (top 5 + next 10) with how/perceive/implement notes, rubric scores, and red-team findings.
+1. **Ideate (delegate to `brainstorm --ideate`).** Invoke `brainstorm` in **ideation mode** (a real skill invocation — strict delegation still applies; do NOT inline the 30-idea generation). It returns a ranked portfolio of **15** ideas (top 5 + next 10) with how/perceive/implement notes, rubric scores, and red-team findings.
 2. **Research + Plan + Pre-mortem.** Run the normal artifact-first DAG over the selected portfolio, scoped to the winnowed ideas rather than a single goal.
 3. **Operationalize.** Turn the ranked portfolio into a comprehensive, granular set of **self-documenting `bd` beads** — tasks, subtasks, dependency structure (`bd dep add`), and **explicit test tasks** (unit + e2e with detailed logging). Each bead carries what/why/how/risks/success so the original plan markdown never needs to be consulted again. Overlap-check against existing beads (`bd list --json`) before creating — merge, don't duplicate.
 4. **Refine in plan space (4-5 passes).** Before handing the packet to `/crank`, run **4-5 refinement passes** over the bead set. Each pass: **re-read AGENTS.md** (especially after compaction), check every bead for sense and optimality, and **DO NOT OVERSIMPLIFY / DO NOT LOSE FEATURES OR FUNCTIONALITY**. Validate between passes (no dependency cycles; every leaf actionable via `bd ready`).
 
-> Tracking is **`bd`**, never `br`/`bv` — this is AgentOps. The operationalize and refine steps consume `/brainstorm`'s ideation output; see [`../brainstorm/references/bead-operationalization.md`](../brainstorm/references/bead-operationalization.md).
+> Tracking is **`bd`**, never `br`/`bv` — this is AgentOps. The operationalize and refine steps consume `brainstorm`'s ideation output; see [`references/bead-operationalization.md`](references/bead-operationalization.md).
 
 Executable acceptance for this path: [references/discovery.feature](references/discovery.feature) (ideation/operationalize/refine scenarios, ag-yw0).
 
@@ -143,7 +144,7 @@ and the acceptance-criteria YAML contract.
 | `--auto` | on | Fully autonomous (no human gates). Inverse of `--interactive`. Passed through to `/research` and `/plan`. |
 | `--interactive` | off | Human gates in research and plan (STEP 3, STEP 4). Does NOT affect pre-mortem gate. |
 | `--skip-brainstorm` | auto | Skip STEP 1 brainstorm when goal is already specific |
-| `--ideate` | auto | Force the open-ended generate-winnow path: delegate to `/brainstorm --ideate` (30→5→15), then operationalize into self-documenting `bd` beads and refine 4-5x in plan space. Auto-on for open-ended goals. See [Open-Ended Path](#open-ended-path-generate-winnow--operationalize--refine). |
+| `--ideate` | auto | Force the open-ended generate-winnow path: delegate to `brainstorm --ideate` (30→5→15), then operationalize into self-documenting `bd` beads and refine 4-5x in plan space. Auto-on for open-ended goals. See [Open-Ended Path](#open-ended-path-generate-winnow--operationalize--refine). |
 | `--complexity=<level>` | auto | Force complexity level (`fast` / `standard` / `full`) |
 | `--no-budget` | off | Disable phase time budgets |
 | `--no-scaffold` | off | Skip scaffold auto-invocation in STEP 4.5 |
@@ -194,4 +195,4 @@ Read `references/troubleshooting.md` for common problems and solutions.
 - [references/output-templates.md](references/output-templates.md) — execution packet and phase summary formats
 - [references/phase-data-contracts.md](references/phase-data-contracts.md) — phase artifact data contracts (cited from references/isolation-contract.md)
 
-**See also:** [brainstorm](../brainstorm/SKILL.md), [design](../design/SKILL.md), [research](../research/SKILL.md), [plan](../plan/SKILL.md), [pre-mortem](../pre-mortem/SKILL.md), [crank](../crank/SKILL.md), [rpi](../rpi/SKILL.md), [scaffold](../scaffold/SKILL.md)
+**See also:** [research](../research/SKILL.md), [plan](../plan/SKILL.md), [pre-mortem](../pre-mortem/SKILL.md), [crank](../crank/SKILL.md), [rpi](../rpi/SKILL.md), [scaffold](../scaffold/SKILL.md)

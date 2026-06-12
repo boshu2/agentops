@@ -95,7 +95,7 @@ certainly over-reached. Lower N by restricting the file set, or use
 Renames where the substring is a noun that has BOTH a domain concept
 (BC1/2/etc.) AND an incidental code identifier:
 
-- **Gate vs Validator:** `cli/internal/ratchet.Validator` has nothing to do
+- **Gate vs Validator:** `cli/internal/flywheel.Validator` has nothing to do
   with `scripts/check-*.sh` validators. Mass `Validator → Gate` sed would
   break it.
 - **Run vs Cycle:** `CIRun` (BC2 port), `RPIRun` (rpi package),

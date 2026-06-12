@@ -15,16 +15,6 @@ docs/standards/markdown-style-guide.md:./images/diagram.png
 docs/standards/markdown-style-guide.md:image.png
 
 # Vibe markdown-standards example links (copy of style guide examples)
-skills/vibe/references/markdown-standards.md:./references/detail1.md
-skills/vibe/references/markdown-standards.md:./references/detail2.md
-skills/vibe/references/markdown-standards.md:url
-skills/vibe/references/markdown-standards.md:./other-doc.md
-skills/vibe/references/markdown-standards.md:/Users/me/project/docs/guide.md
-skills-codex/vibe/references/markdown-standards.md:./references/detail1.md
-skills-codex/vibe/references/markdown-standards.md:./references/detail2.md
-skills-codex/vibe/references/markdown-standards.md:url
-skills-codex/vibe/references/markdown-standards.md:./other-doc.md
-skills-codex/vibe/references/markdown-standards.md:/Users/me/project/docs/guide.md
 
 # Standards reference example links
 skills/standards/references/markdown.md:url

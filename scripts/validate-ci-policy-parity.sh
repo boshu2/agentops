@@ -28,6 +28,7 @@ if [[ ! -x "$GENERATOR" ]]; then
 fi
 
 if "$GENERATOR" --check; then
+    echo "CI_POLICY_PARITY: PASS"
     exit 0
 else
     rc=$?

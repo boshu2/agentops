@@ -189,7 +189,7 @@ SendMessage(
 
 ## Cleanup: Shutdown and Delete
 
-After consolidation/validation, shut down all teammates then delete the team.
+After consolidation/validate, shut down all teammates then delete the team.
 
 ```
 # Shutdown each teammate

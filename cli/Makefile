@@ -13,10 +13,9 @@ all: build
 
 # Sync lib helpers and skills into cli/embedded/ for Go embed
 sync-hooks:
-	@mkdir -p embedded/lib embedded/skills/standards/references embedded/skills/using-agentops embedded/skills/compile/scripts
+	@mkdir -p embedded/lib embedded/skills/standards/references embedded/skills/compile/scripts
 	@cp ../lib/chain-parser.sh embedded/lib/
 	@cp ../skills/standards/references/* embedded/skills/standards/references/
-	@cp ../skills/using-agentops/SKILL.md embedded/skills/using-agentops/SKILL.md
 	@cp ../skills/compile/scripts/compile.sh embedded/skills/compile/scripts/compile.sh
 
 # Build the binary

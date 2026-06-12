@@ -11,7 +11,7 @@ packet for `$crank` and `$validate`.
 
 ## Strict Delegation Contract
 
-Discovery delegates to `$brainstorm` (conditional), `$design` (conditional), `$research`, `$plan`, and `$pre-mortem` as **separate skill invocations**. Strict delegation is the default.
+Discovery runs brainstorm and design as internal modes (absorbed, ag-s43tg) and delegates to `$research`, `$plan`, and `$pre-mortem` as **separate skill invocations**. Strict delegation is the default.
 
 Reject these compression moves:
 
@@ -82,7 +82,7 @@ Feature: Discovery hands dense intent to planning
 
 On the open-ended path, Discovery prepends the generate-winnow methodology before research/plan and adds two steps after planning:
 
-1. **Ideate (delegate to `$brainstorm --ideate`).** Invoke `$brainstorm` in **ideation mode** as a separate skill invocation — strict delegation still applies; do NOT inline the 30-idea generation. It returns a ranked portfolio of **15** ideas (top 5 + next 10) with how/perceive/implement notes, rubric scores, and red-team findings.
+1. **Ideate (delegate to `brainstorm --ideate`).** Invoke `brainstorm` in **ideation mode** as a separate skill invocation — strict delegation still applies; do NOT inline the 30-idea generation. It returns a ranked portfolio of **15** ideas (top 5 + next 10) with how/perceive/implement notes, rubric scores, and red-team findings.
 2. **Research + Plan + Pre-mortem.** Run the normal artifact-first DAG over the selected portfolio, scoped to the winnowed ideas rather than a single goal.
 3. **Operationalize.** Turn the ranked portfolio into a comprehensive, granular set of **self-documenting `bd` beads** — tasks, subtasks, dependency structure (`bd dep add`), and **explicit test tasks** (unit + e2e with detailed logging). Each bead carries what/why/how/risks/success so the original plan markdown never needs to be consulted again. Overlap-check against existing beads (`bd list --json`) before creating — merge, don't duplicate.
 4. **Refine in plan space (4-5 passes).** Before handing the packet to `$crank`, run **4-5 refinement passes** over the bead set. Each pass: **re-read AGENTS.md** (especially after compaction), check every bead for sense and optimality, and **DO NOT OVERSIMPLIFY / DO NOT LOSE FEATURES OR FUNCTIONALITY**. Validate between passes (no dependency cycles; every leaf actionable via `bd ready`).
@@ -102,7 +102,7 @@ and the acceptance-criteria YAML contract.
 | `--auto` | on | Fully autonomous; inverse of `--interactive`. Passed through to `$research` and `$plan`. |
 | `--interactive` | off | Human gates in research and plan. Does not affect pre-mortem. |
 | `--skip-brainstorm` | auto | Skip brainstorm when the goal is already specific. |
-| `--ideate` | auto | Force the open-ended generate-winnow path: delegate to `$brainstorm --ideate` (30→5→15), then operationalize into self-documenting `bd` beads and refine 4-5x in plan space. Auto-on for open-ended goals. |
+| `--ideate` | auto | Force the open-ended generate-winnow path: delegate to `brainstorm --ideate` (30→5→15), then operationalize into self-documenting `bd` beads and refine 4-5x in plan space. Auto-on for open-ended goals. |
 | `--complexity=<level>` | auto | Force `fast`, `standard`, or `full`. |
 | `--no-budget` | off | Disable phase time budgets. |
 | `--no-scaffold` | off | Skip scaffold auto-invocation. |

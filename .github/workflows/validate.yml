@@ -1023,7 +1023,7 @@ jobs:
 
       - name: Verify embedded lib/skills are in sync
         # MUST include `skills`: the embedded copies mirror skills/standards/references/*,
-        # skills/using-agentops/SKILL.md and skills/compile/scripts/compile.sh, so a
+        # and skills/compile/scripts/compile.sh (using-agentops embed retired, ag-s43tg), so a
         # skills-only change can drift the embeds. Omitting `skills` here let #776's
         # standards edit reach main with empty embeds (main-red 2026-06-06). `contracts`
         # added for defense-in-depth.

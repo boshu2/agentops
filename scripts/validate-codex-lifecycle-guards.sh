@@ -37,7 +37,6 @@ require_not_contains() {
 echo "=== Codex lifecycle guard validation ==="
 
 entry_files=(
-  "skills-codex/brainstorm/SKILL.md"
   "skills-codex/discovery/SKILL.md"
   "skills-codex/research/SKILL.md"
   "skills-codex/implement/SKILL.md"
@@ -45,7 +44,6 @@ entry_files=(
   "skills-codex/recover/SKILL.md"
   "skills-codex/crank/SKILL.md"
   "skills-codex/rpi/SKILL.md"
-  "skills-codex/brainstorm/prompt.md"
   "skills-codex/discovery/prompt.md"
   "skills-codex/research/prompt.md"
   "skills-codex/implement/prompt.md"
@@ -73,10 +71,10 @@ for file in "${closeout_files[@]}"; do
   require_not_contains "$file" 'ao codex stop --auto-extract' "closeout skill must not call ao codex stop directly"
 done
 
-require_contains "skills-codex/quickstart/SKILL.md" 'ao codex ensure-start' "quickstart should describe ensure-start for Codex entry skills"
-require_contains "skills-codex/quickstart/SKILL.md" 'ao codex ensure-stop' "quickstart should describe ensure-stop for Codex closeout skills"
-require_contains "skills-codex/using-agentops/SKILL.md" 'ao codex ensure-start' "using-agentops should document ensure-start"
-require_contains "skills-codex/using-agentops/SKILL.md" 'ao codex ensure-stop' "using-agentops should document ensure-stop"
+# quickstart + using-agentops folded into status + inject (ag-s43tg, 2026-06-12);
+# status carries the entry/closeout lifecycle documentation for the Codex runtime.
+require_contains "skills-codex/status/SKILL.md" 'ao codex ensure-start' "status (absorbs quickstart) should describe ensure-start for Codex entry skills"
+require_contains "skills-codex/status/SKILL.md" 'ao codex ensure-stop' "status (absorbs quickstart) should describe ensure-stop for Codex closeout skills"
 require_contains "skills-codex-overrides/catalog.json" 'ao codex ensure-start' "Codex override catalog should reference ensure-start"
 require_contains "skills-codex-overrides/catalog.json" 'ao codex ensure-stop' "Codex override catalog should reference ensure-stop"
 

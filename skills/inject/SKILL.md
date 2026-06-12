@@ -31,6 +31,10 @@ output_contract: 'stdout: injected knowledge summary; .agents/knowledge/book-of-
 
 # Inject Skill
 
+## Install & refresh (absorbed from using-agentops, ag-s43tg)
+
+**To update installed skills:** re-run the install one-liner — `bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install.sh)`. (There is no update skill; skill refresh is an install-script concern.)
+
 **On-demand knowledge retrieval. Not run automatically at startup (since ag-8km).**
 
 It is read-only: it only reads knowledge for injection and never writes to `.agents/`.

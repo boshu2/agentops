@@ -19,7 +19,7 @@ Operant conditioning runs on **Antecedent → Behavior → Consequence**. Every 
 | **Antecedent** | the environment arranged *before* the behavior so the agreed one is the likely one — the highest-leverage lever | `CLAUDE.md`/`AGENTS.md`, `ao inject`, `GOALS.md`, the corpus, skill `consumes` |
 | **Discriminative stimulus** | the cue that signals *which* behavior to emit | skill trigger, the intent/issue, the loop's current move |
 | **Behavior** | a discrete, observable, composable action — added, never rewritten | a `.feature` scenario / bead `## Scenarios` (one Given/When/Then) |
-| **Reinforcement** | a consequence that strengthens the behavior | passing gates (`/vibe`, `validation`, CI green), merge; the **ratchet** locks it permanently |
+| **Reinforcement** | a consequence that strengthens the behavior | passing gates (`/validate`, `validation`, CI green), merge; the **ratchet** locks it permanently |
 | **Extinction / Stop** | a consequence that weakens or removes the behavior | hook denial, halt-check STOP/kill marker, revert; deleting a scenario or gate |
 | **Shaping** | reinforcing successive approximations toward the target | red→green iteration; the `/evolve` loop run continuously |
 

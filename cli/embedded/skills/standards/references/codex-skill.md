@@ -81,7 +81,7 @@ Codex orchestration uses:
 | `TaskCreate(subject=...)` | Claude primitive, doesn't exist | Use `bd create` via shell or `spawn_agent` |
 | `TeamCreate(team_name=...)` | Claude primitive, doesn't exist | Use agent roles in config |
 | `SendMessage(to=...)` | Claude primitive, doesn't exist | Use `send_input` for brief follow-up messages |
-| `Skill(skill="vibe")` | Claude Skill tool, doesn't exist | Use `$vibe` invocation syntax |
+| `Skill(skill="vibe")` | Claude Skill tool, doesn't exist | Use `$validate` invocation syntax |
 | `context.window: fork` | Claude frontmatter, ignored | Remove from Codex SKILL.md |
 | `~/.claude/skills/` | Wrong path | Use `.agents/skills/` |
 | `todo_write(...)` | Not available in Codex sessions | Use `bd` CLI or file-based tracking |

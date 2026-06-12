@@ -33,9 +33,9 @@ output_contract: 'stdout: dashboard'
 
 ### Folded triggers (ag-s43tg wave 1): `quickstart` routes here
 
-- **`/quickstart` → `/status` Step 3.** Use when asked to show the AgentOps next action
+- **`quickstart` → `/status` Step 3.** Use when asked to show the AgentOps next action
   or "what do I do first" — the state-aware SUGGESTED NEXT ACTION table (Step 3) is the
-  next-action surface. For a fresh/new-user setup, Priority 1 ("Start with `/quickstart`
+  next-action surface. For a fresh/new-user setup, Priority 1 ("Start with `quickstart`
   or `/research`") and Priority 12 (clean state) cover the onboarding walkthrough.
 
 ---
@@ -226,7 +226,7 @@ QUICK COMMANDS
   /implement    Execute a single issue
   /crank        Autonomous epic execution
   /validate   Full close-out and learnings
-  /vibe         Targeted code review
+  /validate         Targeted code review
   ao reconcile --json   Joined git/CI/release/beads/.agents truth
 ══════════════════════════════════════════════════
 ```
@@ -238,7 +238,7 @@ Evaluate state top-to-bottom. Use the FIRST matching condition:
 | Priority | Condition | Suggestion |
 |----------|-----------|------------|
 | 0 | `ao reconcile` reports a high-severity finding | "Resolve reconciliation blockers from `ao reconcile --json` before picking backlog work" |
-| 1 | No ratchet chain exists | "Start with `/quickstart` or `/research` to begin a workflow" |
+| 1 | No ratchet chain exists | "Start with `quickstart` or `/research` to begin a workflow" |
 | 2 | Research done, no plan | "Run `/plan` to decompose research into actionable issues" |
 | 3 | Plan done, no pre-mortem | "Run `/pre-mortem` to validate the plan before coding" |
 | 4 | Issues in-progress | "Continue working: `/implement <issue-id>` or `/crank` for autonomous execution" |

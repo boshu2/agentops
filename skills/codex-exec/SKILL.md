@@ -27,7 +27,7 @@ metadata:
   tier: orchestration
   dependencies:
   - ntm
-  - caam
+  - account-rotation
   stability: stable
   triggers:
   - codex exec

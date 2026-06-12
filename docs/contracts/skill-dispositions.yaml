@@ -16,6 +16,236 @@
 #   disposition     keep | update | refactor | merge-review | cut-review
 #   rationale       one-line justification for the disposition
 
+# Historical terminal-state rows — skills whose dirs are ALREADY ABSENT from
+# the repo when their ledger row was written, recorded here for history with
+# no removal precondition.  Ledger-wide policy: "resolve" means flipping a row
+# to a terminal state (merged-into: <target> / cut, with date) — rows are
+# NEVER removed (matches docs/plans/skill-prune-phase2.md final-pass step 2).
+#
+# This is a separate top-level mapping (NOT part of `dispositions:`) because:
+#   - scripts/generate-skill-domain-map.sh errors on any dispositions row
+#     whose skills/<slug>/ dir does not exist, and
+#   - scripts/lib/sku_catalog.py's flat-shape line parser only tracks
+#     `- skill:` items, so it skips this section (it precedes `dispositions:`
+#     deliberately — keep it ABOVE that key so stray field regexes can never
+#     attach to the last list item).
+#
+# Schema per row:
+#   state        terminal state: merged-into | cut
+#   merged-into  target skill slug (when state is merged-into)
+#   date         date the terminal state was reached
+#   rationale    one-line historical justification
+historical:
+  validation:
+    state:        merged-into
+    merged-into:  validate
+    date:         2026-06-07
+    rationale:    "Already absent from repo: post-implementation validation folded into validate 2026-06-07; historical row added 2026-06-11 with no removal precondition."
+  security-suite:
+    state:        merged-into
+    merged-into:  security
+    date:         2026-06-07
+    rationale:    "Already collapsed into security (cp-qqq, 2026-06-07); dir already absent when this row was written; historical row added 2026-06-11 with no removal precondition."
+  agy-mcp-plugins:
+    state:        merged-into
+    merged-into:  agy-native
+    date:         2026-06-12
+    rationale:    "Fold into agy-native (fold landed ag-s43tg S24, was merge-review)"
+  agy-project-worktree-permissions:
+    state:        merged-into
+    merged-into:  agy-native
+    date:         2026-06-12
+    rationale:    "Fold into agy-native (fold landed ag-s43tg S24, was merge-review)"
+  agy-rules-workflows:
+    state:        merged-into
+    merged-into:  agy-native
+    date:         2026-06-12
+    rationale:    "Fold into agy-native (fold landed ag-s43tg S24, was merge-review)"
+  agy-sidecar-scheduled-tick:
+    state:        merged-into
+    merged-into:  agy-native
+    date:         2026-06-12
+    rationale:    "Fold into agy-native (fold landed ag-s43tg S24, was merge-review)"
+  bead-completion-audit:
+    state:        merged-into
+    merged-into:  validate
+    date:         2026-06-12
+    rationale:    "Closed-bead evidence audit; fold into validate (fold landed ag-s43tg S24, was merge-review)"
+  brainstorm:
+    state:        merged-into
+    merged-into:  discovery
+    date:         2026-06-12
+    rationale:    "Intent-shaping; fold into discovery (fold landed ag-s43tg S24, was merge-review)"
+  bug-hunt:
+    state:        merged-into
+    merged-into:  review
+    date:         2026-06-12
+    rationale:    "Bug-finding generator; fold into review (fold landed ag-s43tg S24, was merge-review)"
+  burndown:
+    state:        merged-into
+    merged-into:  crank
+    date:         2026-06-12
+    rationale:    "Bounded epic loop; fold into crank (fold landed ag-s43tg S24, was merge-review)"
+  casr:
+    state:        merged-into
+    merged-into:  cass
+    date:         2026-06-12
+    rationale:    "Session resumer; fold into cass (fold landed ag-s43tg S24, was merge-review)"
+  cass-memory:
+    state:        merged-into
+    merged-into:  cass
+    date:         2026-06-12
+    rationale:    "Procedural memory; fold into cass (fold landed ag-s43tg S24, was merge-review)"
+  cc-cron-ticks:
+    state:        merged-into
+    merged-into:  cc-hooks
+    date:         2026-06-12
+    rationale:    "Fold into cc-hooks (fold landed ag-s43tg S24, was merge-review)"
+  cc-loop-driver:
+    state:        merged-into
+    merged-into:  cc-hooks
+    date:         2026-06-12
+    rationale:    "Fold into cc-hooks (fold landed ag-s43tg S24, was merge-review)"
+  cc-subagents:
+    state:        merged-into
+    merged-into:  cc-hooks
+    date:         2026-06-12
+    rationale:    "Fold into cc-hooks (fold landed ag-s43tg S24, was merge-review)"
+  cc-worktree-isolation:
+    state:        merged-into
+    merged-into:  cc-hooks
+    date:         2026-06-12
+    rationale:    "Fold into cc-hooks (fold landed ag-s43tg S24, was merge-review)"
+  codebase-audit:
+    state:        merged-into
+    merged-into:  review
+    date:         2026-06-12
+    rationale:    "Domain-parameterized audit; fold into review report-modes (fold landed ag-s43tg S24, was merge-review)"
+  codex-goals:
+    state:        merged-into
+    merged-into:  codex-exec
+    date:         2026-06-12
+    rationale:    "Fold into codex-exec (fold landed ag-s43tg S24, was merge-review)"
+  codex-mcp-plugins:
+    state:        merged-into
+    merged-into:  codex-exec
+    date:         2026-06-12
+    rationale:    "Fold into codex-exec (fold landed ag-s43tg S24, was merge-review)"
+  codex-sandbox-evidence:
+    state:        merged-into
+    merged-into:  codex-exec
+    date:         2026-06-12
+    rationale:    "Fold into codex-exec (fold landed ag-s43tg S24, was merge-review)"
+  complexity:
+    state:        merged-into
+    merged-into:  refactor
+    date:         2026-06-12
+    rationale:    "Refactor-hotspot finder; fold into refactor (fold landed ag-s43tg S24, was merge-review)"
+  cross-vendor-trust-gate:
+    state:        merged-into
+    merged-into:  council
+    date:         2026-06-12
+    rationale:    "Cross-family floor gate; fold into council/validate (fold landed ag-s43tg S24, was merge-review)"
+  deps:
+    state:        merged-into
+    merged-into:  security
+    date:         2026-06-12
+    rationale:    "Dependency risk audit; fold into security (fold landed ag-s43tg S24, was merge-review)"
+  design:
+    state:        merged-into
+    merged-into:  discovery
+    date:         2026-06-12
+    rationale:    "Product-fit gate; fold into discovery (fold landed ag-s43tg S24, was merge-review)"
+  multi-model-triangulation:
+    state:        merged-into
+    merged-into:  council
+    date:         2026-06-12
+    rationale:    "Cross-model second opinion; fold into council --mixed (fold landed ag-s43tg S24, was merge-review)"
+  ntm-browser-test-coordination:
+    state:        merged-into
+    merged-into:  ntm
+    date:         2026-06-12
+    rationale:    "Fold into ntm (fold landed ag-s43tg S24, was merge-review)"
+  ntm-review-worker-orchestration:
+    state:        merged-into
+    merged-into:  ntm
+    date:         2026-06-12
+    rationale:    "Fold into ntm (fold landed ag-s43tg S24, was merge-review)"
+  operating-loop-skill:
+    state:        merged-into
+    merged-into:  rpi
+    date:         2026-06-12
+    rationale:    "The loop; fold into rpi (fold landed ag-s43tg S24, was merge-review)"
+  operating-loop-workflow:
+    state:        merged-into
+    merged-into:  rpi
+    date:         2026-06-12
+    rationale:    "Loop workflow installer; fold into rpi (fold landed ag-s43tg S24, was merge-review)"
+  planning-workflow:
+    state:        merged-into
+    merged-into:  plan
+    date:         2026-06-12
+    rationale:    "Markdown planning; fold into plan (fold landed ag-s43tg S24, was merge-review)"
+  pr-implement:
+    state:        merged-into
+    merged-into:  implement
+    date:         2026-06-12
+    rationale:    "Scoped PR impl; fold into implement (fold landed ag-s43tg S24, was merge-review)"
+  pr-research:
+    state:        merged-into
+    merged-into:  pr-prep
+    date:         2026-06-12
+    rationale:    "Upstream research; fold into pr-prep (fold landed ag-s43tg S24, was merge-review)"
+  quickstart:
+    state:        merged-into
+    merged-into:  status
+    date:         2026-06-12
+    rationale:    "Next-action shower; fold into status (fold landed ag-s43tg S24, was merge-review)"
+  ratchet:
+    state:        merged-into
+    merged-into:  flywheel
+    date:         2026-06-12
+    rationale:    "Brownian-ratchet gates; fold into flywheel (fold landed ag-s43tg S24, was merge-review)"
+  reverse-engineer-rpi:
+    state:        cut
+    date:         2026-06-12
+    rationale:    "Niche meta tool; rarely fires (cut landed ag-s43tg S24, was cut-review)"
+  scenario:
+    state:        merged-into
+    merged-into:  eval-outcomes
+    date:         2026-06-12
+    rationale:    "Holdout scenarios; fold into eval-outcomes (fold landed ag-s43tg S24, was merge-review)"
+  session-bootstrap:
+    state:        merged-into
+    merged-into:  inject
+    date:         2026-06-12
+    rationale:    "Init prompt; fold into inject (fold landed ag-s43tg S24, was merge-review)"
+  ship-loop:
+    state:        merged-into
+    merged-into:  crank
+    date:         2026-06-12
+    rationale:    "Fast-lane ship; fold into crank (fold landed ag-s43tg S24, was merge-review)"
+  trace:
+    state:        merged-into
+    merged-into:  recover
+    date:         2026-06-12
+    rationale:    "Decision tracing; fold into recover (fold landed ag-s43tg S24, was merge-review)"
+  ubs:
+    state:        merged-into
+    merged-into:  review
+    date:         2026-06-12
+    rationale:    "UBS bug/security review; fold into review (fold landed ag-s43tg S24, was merge-review)"
+  using-agentops:
+    state:        merged-into
+    merged-into:  inject
+    date:         2026-06-12
+    rationale:    "Workflow explainer; fold into inject (fold landed ag-s43tg S24, was merge-review)"
+  vibe:
+    state:        merged-into
+    merged-into:  validate
+    date:         2026-06-12
+    rationale:    "Quick-readiness check; fold into validate as a --quick mode (fold landed ag-s43tg S24, was merge-review)"
+
 dispositions:
   - skill:          autodev
     domain:         "BC3 Loop"
@@ -32,26 +262,11 @@ dispositions:
     hexagonal_role: driving-adapter
     disposition:    update
     rationale:      "First-run factory entrypoint; needs current 3.0/domain packet shape"
-  - skill:          brainstorm
-    domain:         "BC3 Loop"
-    hexagonal_role: domain
-    disposition:    merge-review
-    rationale:      "Intent-shaping; fold into discovery"
-  - skill:          bug-hunt
-    domain:         "BC2 Validation"
-    hexagonal_role: domain
-    disposition:    merge-review
-    rationale:      "Bug-finding generator; fold into review"
   - skill:          compile
     domain:         "BC1 Corpus"
     hexagonal_role: supporting
     disposition:    refactor
     rationale:      "Corpus compiler is core; align read/write flows to Corpus ports"
-  - skill:          complexity
-    domain:         "BC2 Validation"
-    hexagonal_role: domain
-    disposition:    merge-review
-    rationale:      "Refactor-hotspot finder; fold into refactor"
   - skill:          converter
     domain:         "BC4 Factory"
     hexagonal_role: generic
@@ -62,11 +277,6 @@ dispositions:
     hexagonal_role: domain
     disposition:    update
     rationale:      "Core judgment gate; strengthen scenario and verdict self-test"
-  - skill:          burndown
-    domain:         "BC3 Loop"
-    hexagonal_role: domain
-    disposition:    merge-review
-    rationale:      "Bounded epic loop; fold into crank"
   - skill:          crank
     domain:         "BC3 Loop"
     hexagonal_role: domain
@@ -77,16 +287,6 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "Designed-future canonical unified miner (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24)"
-  - skill:          deps
-    domain:         "BC2 Validation"
-    hexagonal_role: driven-adapter
-    disposition:    merge-review
-    rationale:      "Dependency risk audit; fold into security"
-  - skill:          design
-    domain:         "BC3 Loop"
-    hexagonal_role: domain
-    disposition:    merge-review
-    rationale:      "Product-fit gate; fold into discovery"
   - skill:          discovery
     domain:         "BC3 Loop"
     hexagonal_role: domain
@@ -142,11 +342,6 @@ dispositions:
     hexagonal_role: driving-adapter
     disposition:    refactor
     rationale:      "Context injection should be explicit CorpusReader adapter use"
-  - skill:          operating-loop-workflow
-    domain:         "BC3 Loop"
-    hexagonal_role: driving-adapter
-    disposition:    merge-review
-    rationale:      "Loop workflow installer; fold into rpi"
   - skill:          perf
     domain:         "BC2 Validation"
     hexagonal_role: domain
@@ -162,21 +357,11 @@ dispositions:
     hexagonal_role: domain
     disposition:    update
     rationale:      "Loop closeout; connect to next-work and ratchet evidence"
-  - skill:          pr-implement
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    merge-review
-    rationale:      "Scoped PR impl; fold into implement"
   - skill:          pr-prep
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
     disposition:    update
     rationale:      "PR publication adapter; align to evidence and release discipline"
-  - skill:          pr-research
-    domain:         "BC5 Runtime"
-    hexagonal_role: driven-adapter
-    disposition:    merge-review
-    rationale:      "Upstream research; fold into pr-prep"
   - skill:          pre-mortem
     domain:         "BC2 Validation"
     hexagonal_role: domain
@@ -192,16 +377,6 @@ dispositions:
     hexagonal_role: driving-adapter
     disposition:    update
     rationale:      "Git adapter; add branch/worktree disposition self-test"
-  - skill:          quickstart
-    domain:         "BC3 Loop"
-    hexagonal_role: driving-adapter
-    disposition:    merge-review
-    rationale:      "Next-action shower; fold into status"
-  - skill:          ratchet
-    domain:         "BC3 Loop"
-    hexagonal_role: domain
-    disposition:    merge-review
-    rationale:      "Brownian-ratchet gates; fold into flywheel"
   - skill:          recover
     domain:         "BC1 Corpus"
     hexagonal_role: driving-adapter
@@ -227,11 +402,6 @@ dispositions:
     hexagonal_role: driving-adapter
     disposition:    update
     rationale:      "Knowledge acquisition entrypoint; add source/citation self-test"
-  - skill:          reverse-engineer-rpi
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    cut-review
-    rationale:      "Niche meta tool; rarely fires"
   - skill:          review
     domain:         "BC2 Validation"
     hexagonal_role: driving-adapter
@@ -247,21 +417,11 @@ dispositions:
     hexagonal_role: supporting
     disposition:    update
     rationale:      "Code/artifact scaffolder; add non-goal and validation examples"
-  - skill:          scenario
-    domain:         "BC2 Validation"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Holdout scenarios; fold into eval-outcomes"
   - skill:          scope
     domain:         "BC5 Runtime"
     hexagonal_role: driven-adapter
     disposition:    keep
     rationale:      "Runtime filesystem gate; hard boundary skill"
-  - skill:          session-bootstrap
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    merge-review
-    rationale:      "Init prompt; fold into inject"
   - skill:          security
     domain:         "BC2 Validation"
     hexagonal_role: driven-adapter
@@ -272,11 +432,6 @@ dispositions:
     hexagonal_role: domain
     disposition:    keep
     rationale:      "Shared contracts; avoid broad edits"
-  - skill:          ship-loop
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    merge-review
-    rationale:      "Fast-lane ship; fold into crank"
   - skill:          skill-auditor
     domain:         "BC4 Factory"
     hexagonal_role: supporting
@@ -317,26 +472,11 @@ dispositions:
     hexagonal_role: supporting
     disposition:    update
     rationale:      "Test generator; central to first-failing-test loop"
-  - skill:          trace
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Decision tracing; fold into recover"
-  - skill:          using-agentops
-    domain:         "BC4 Factory"
-    hexagonal_role: generic
-    disposition:    merge-review
-    rationale:      "Workflow explainer; fold into inject"
   - skill:          validate
     domain:         "BC2 Validation"
     hexagonal_role: driving-adapter
     disposition:    keep
     rationale:      "Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24)"
-  - skill:          vibe
-    domain:         "BC2 Validation"
-    hexagonal_role: domain
-    disposition:    merge-review
-    rationale:      "Quick-readiness check; fold into validate as a --quick mode"
   - skill:          eval-outcomes
     domain:         "BC2 Validation"
     hexagonal_role: supporting
@@ -368,16 +508,6 @@ dispositions:
     hexagonal_role: driving-adapter
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          agy-rules-workflows
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    merge-review
-    rationale:      "Fold into agy-native"
-  - skill:          bead-completion-audit
-    domain:         "BC2 Validation"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Closed-bead evidence audit; fold into validate"
   - skill:          beads-br
     domain:         "BC3 Loop"
     hexagonal_role: supporting
@@ -398,66 +528,21 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "Unified host-routed account rotation (macOS+Claude->claude-acct Keychain swap; else->caam file swap); supersedes the retired caam skill."
-  - skill:          casr
-    domain:         "BC4 Factory"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Session resumer; fold into cass"
   - skill:          cass
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          cass-memory
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Procedural memory; fold into cass"
-  - skill:          cc-cron-ticks
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    merge-review
-    rationale:      "Fold into cc-hooks"
   - skill:          cc-hooks
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          cc-loop-driver
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    merge-review
-    rationale:      "Fold into cc-hooks"
-  - skill:          cc-subagents
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Fold into cc-hooks"
-  - skill:          cc-worktree-isolation
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Fold into cc-hooks"
   - skill:          codex-exec
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          codex-goals
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    merge-review
-    rationale:      "Fold into codex-exec"
-  - skill:          codex-mcp-plugins
-    domain:         "BC5 Runtime"
-    hexagonal_role: driven-adapter
-    disposition:    merge-review
-    rationale:      "Fold into codex-exec"
-  - skill:          codex-sandbox-evidence
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Fold into codex-exec"
   - skill:          dcg
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
@@ -468,56 +553,11 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          agy-mcp-plugins
-    domain:         "BC5 Runtime"
-    hexagonal_role: driven-adapter
-    disposition:    merge-review
-    rationale:      "Fold into agy-native"
-  - skill:          agy-project-worktree-permissions
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Fold into agy-native"
-  - skill:          agy-sidecar-scheduled-tick
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Fold into agy-native"
-  - skill:          cross-vendor-trust-gate
-    domain:         "BC4 Factory"
-    hexagonal_role: domain
-    disposition:    merge-review
-    rationale:      "Cross-family floor gate; fold into council/validate"
-  - skill:          multi-model-triangulation
-    domain:         "BC4 Factory"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Cross-model second opinion; fold into council --mixed"
   - skill:          ntm
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          ntm-browser-test-coordination
-    domain:         "BC2 Validation"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Fold into ntm"
-  - skill:          ntm-review-worker-orchestration
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Fold into ntm"
-  - skill:          operating-loop-skill
-    domain:         "BC5 Runtime"
-    hexagonal_role: domain
-    disposition:    merge-review
-    rationale:      "The loop; fold into rpi"
-  - skill:          planning-workflow
-    domain:         "BC3 Loop"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Markdown planning; fold into plan"
   - skill:          rch
     domain:         "BC5 Runtime"
     hexagonal_role: supporting
@@ -528,18 +568,8 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          ubs
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "UBS bug/security review; fold into review"
   - skill:          vibing-with-ntm
     domain:         "BC4 Factory"
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          codebase-audit
-    domain:         "BC2 Validation"
-    hexagonal_role: supporting
-    disposition:    merge-review
-    rationale:      "Domain-parameterized audit; fold into review report-modes"

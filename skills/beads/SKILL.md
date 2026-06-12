@@ -88,7 +88,7 @@ git push
 
 ## Examples
 
-**User says:** `/vibe`
+**User says:** `/validate`
 
 This skill loads via dependency: the agent reads issue metadata with `bd show <id>`, links validation findings to the issue under check, and cites the issue ID in the validation report — no manual bd lookups.
 

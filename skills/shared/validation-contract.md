@@ -167,7 +167,7 @@ if result.returncode != 0:
 PASS
 ```
 
-**Use when:** Need custom build/validation step.
+**Use when:** Need custom build/validate step.
 
 ### content_check
 
@@ -535,4 +535,4 @@ TaskCreate(
 - `skills/swarm/SKILL.md` - Main swarm skill with validation integration
 - `skills/crank/SKILL.md` - Crank orchestration with validation loop
 - `skills/crank/failure-taxonomy.md` - Comprehensive failure handling
-- `skills/vibe/SKILL.md` - Comprehensive validation skill
+- `skills/validate/SKILL.md` - Comprehensive validation skill

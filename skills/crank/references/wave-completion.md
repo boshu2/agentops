@@ -38,7 +38,7 @@ The validator fails closed when `git_sha` does not resolve in the current repo, 
 
 ### Step 5.7b: Vibe Context Checkpoint
 
-Copy the wave checkpoint to `.agents/vibe-context/latest-crank-wave.json` for downstream `/vibe` consumption. Use file copy (not symlink) per repo conventions.
+Copy the wave checkpoint to `.agents/vibe-context/latest-crank-wave.json` for downstream `/validate` consumption. Use file copy (not symlink) per repo conventions.
 
 ### Step 5.7c: Update Shared Task Notes (After Wave)
 

@@ -73,7 +73,7 @@ before doing any work.
 ## Phase 3 — Gate the output via CI
 
 A reusable workflow (`agent-output-validate.yml`, ag-mptr) runs `ao validate` +
-the standards/scenario gates against whatever the agent produced — a PR branch
+the standards/eval-outcomes gates against whatever the agent produced — a PR branch
 or an artifact bundle — the **same** authoritative gate as interactive work.
 Green CI is the merge gate; nothing merges red.
 

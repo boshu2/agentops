@@ -50,9 +50,9 @@ bd dolt push                        # only if a Dolt remote is configured
 
 ## Examples
 
-### Skill Loading from $vibe
+### Skill Loading from $validate
 
-**User says:** `$vibe`
+**User says:** `$validate`
 
 **What happens:**
 1. Agent loads beads skill automatically via dependency

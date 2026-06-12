@@ -37,7 +37,7 @@ Generate and validate documentation for any project. `--mode` selects the artifa
 
 | `--mode` | Artifact | Read first |
 |----------|----------|-----------|
-| *(default)* | API docs, code-maps, doc coverage/validation | this file |
+| *(default)* | API docs, code-maps, doc coverage/validate | this file |
 | `readme` | Gold-standard README (interview → generate → council-validate) | [references/readme-craft.md](references/readme-craft.md) |
 | `oss` | OSS doc pack (CONTRIBUTING/CHANGELOG/AGENTS.md, audit + scaffold) | [references/oss-pack.md](references/oss-pack.md) |
 

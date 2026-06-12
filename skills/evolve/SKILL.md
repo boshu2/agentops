@@ -121,7 +121,7 @@ cycle hands off. The seal creates the rollback commit and records the
 | `--compile` | off | Run `ao mine` + `ao defrag` warmup before cycle 1 |
 | `--test-first` | on | Pass strict-quality defaults through to `rpi` |
 | `--no-test-first` | off | Explicitly disable test-first passthrough to `rpi` |
-| `--no-lifecycle` | off | Skip lifecycle work generators in Steps 3.4-3.6 (/test, /deps, /perf, /refactor). Falls back to manual scanning. |
+| `--no-lifecycle` | off | Skip lifecycle work generators in Steps 3.4-3.6 (/test, /security, /perf, /refactor). Falls back to manual scanning. |
 | `--mode=burst\|loop` | burst | Operator-loop; STOP refused. [loop-mode.md](references/loop-mode.md). |
 
 ## Execution Steps
@@ -265,7 +265,7 @@ Ladder order (standard mode):
 - **3.1 Harvested** — `.agents/rpi/next-work.jsonl`, highest-value unconsumed.
 - **3.2 Open ready beads** — `bd ready`, highest priority.
 - **3.3 Failing goals + directive gaps** — skip if `--beads-only`; skip quarantined oscillators.
-- **3.4–3.6 Generators** — `/test` coverage, `/deps`+`/perf`, `/refactor`; findings → beads/queue items.
+- **3.4–3.6 Generators** — `/test` coverage, `/security`+`/perf`, `/refactor`; findings → beads/queue items.
 - **3.7 Feature suggestions** grounded in repo purpose.
 
 `--quality` inverts the top (findings before goals/directives). The metronome gate blocks a rung that would repeat the trailing run's `mode` (streak ≥3).
@@ -499,5 +499,5 @@ See `references/cycle-history.md` for advanced troubleshooting.
 - `GOALS.yaml` — Fitness goals for this repo
 - [test](../test/SKILL.md) — Test generation and coverage analysis
 - [refactor](../refactor/SKILL.md) — Safe, verified refactoring
-- [deps](../deps/SKILL.md) — Dependency audit and vulnerability scanning
+- [security](../security/SKILL.md) — Dependency audit and vulnerability scanning (absorbs deps)
 - [perf](../perf/SKILL.md) — Performance profiling and benchmarking

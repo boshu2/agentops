@@ -81,8 +81,8 @@ step "Step 2: ao version" \
 # Step 3: rpi + quickstart skills present (the user-visible surface)
 step "Step 3: rpi skill present" \
     "test -f skills/rpi/SKILL.md && echo OK"
-step "Step 3: quickstart skill present" \
-    "test -f skills/quickstart/SKILL.md && echo OK"
+step "Step 3: status skill present (absorbs quickstart, ag-s43tg)" \
+    "test -f skills/status/SKILL.md && echo OK"
 
 # Step 4: ao quickstart subcommand wired
 step "Step 4: ao quickstart --help" \

@@ -57,10 +57,12 @@ echo "=== Codex skill chaining defaults ==="
 
 require_contains "skills-codex/rpi/SKILL.md" 'RPI delegates via `$discovery`, `$crank`, `$validate` as **separate skill invocations**' \
   'rpi must default to Codex skill chaining across phases'
-require_contains "skills-codex/discovery/SKILL.md" 'Discovery delegates to `$brainstorm` (conditional), `$design` (conditional), `$research`, `$plan`, and `$pre-mortem` as **separate skill invocations**' \
+# brainstorm/design folded into discovery, vibe into validate (ag-s43tg, 2026-06-12):
+# the chaining contract now names only surviving skills; absorbed modes are internal.
+require_contains "skills-codex/discovery/SKILL.md" 'Discovery runs brainstorm and design as internal modes (absorbed, ag-s43tg) and delegates to `$research`, `$plan`, and `$pre-mortem` as **separate skill invocations**' \
   'discovery must default to Codex skill chaining across discovery sub-skills'
-require_contains "skills-codex/validate/SKILL.md" '`$vibe`' \
-  'validate (folded validation) must default to Codex skill chaining across validation sub-skills'
+require_contains "skills-codex/validate/SKILL.md" 'absorbs vibe' \
+  'validate must document the absorbed vibe quick mode'
 require_contains "skills-codex/rpi/prompt.md" 'do not hand RPI orchestration to wrapper commands' \
   'rpi Codex prompt must reject wrapper-command orchestration'
 
@@ -75,8 +77,10 @@ require_contains "skills-codex/autodev/SKILL.md" 'In Codex, `$autodev` hands wor
   'autodev must hand off to Codex skills by default'
 require_contains "skills-codex/autodev/prompt.md" 'Do not shell out to a retired CLI wrapper as the Codex' \
   'autodev prompt must reject retired-CLI wrapper handoff (ag-llni: ao evolve deleted)'
-require_contains "skills-codex/using-agentops/SKILL.md" 'Codex skill orchestration default is `$skill` chaining.' \
-  'using-agentops must document $skill chaining as the Codex default'
+# using-agentops folded into inject (ag-s43tg, 2026-06-12); the $skill-chaining
+# doctrine sentence now lives in the inject twin.
+require_contains "skills-codex/inject/SKILL.md" 'Codex skill orchestration default is `$skill` chaining.' \
+  'inject (absorbs using-agentops) must document $skill chaining as the Codex default'
 
 require_not_contains "skills-codex/evolve/SKILL.md" 'through $rpi and ao evolve' \
   'evolve must not describe ao evolve as a peer default to $rpi'

@@ -169,11 +169,11 @@ Crank repeats FIRE (Find → Ignite → Reap → Vibe → Escalate) for each wav
 
 ### Folded triggers (ag-s43tg wave 1): `burndown` + `ship-loop` route here
 
-- **`/burndown` → bounded epic mode.** Use when you need to drive a finite epic set to all-merged,
+- **`burndown` → bounded epic mode.** Use when you need to drive a finite epic set to all-merged,
   then stop — finishing a specific list of tasks, burning down a backlog epic, or executing a
   bounded set of beads until done. Crank's per-wave loop with a fixed input set (epic-id or bead
   list) and the epic-close gate IS the burndown: no new-work discovery, terminate on all-closed.
-- **`/ship-loop` → single-bead fast lane.** Use when running the fast-lane internal ship cycle for
+- **`ship-loop` → single-bead fast lane.** Use when running the fast-lane internal ship cycle for
   one closable bead or small slice: claim, test, implement, push, merge, close. That is a one-issue,
   one-wave crank — the Orchestrator-Merge + Reconcile Loop above (confirmed-MERGED before close)
   owns the merge/close half.
@@ -239,3 +239,5 @@ Crank runs as an isolated phase-2 execution context — discovery and validation
 - [references/wave-patterns.md](references/wave-patterns.md)
 - [references/worker-verb-disambiguation.md](references/worker-verb-disambiguation.md)
 - [references/external-gate-protocol.md](references/external-gate-protocol.md)
+
+- [references/ship-loop-anti-patterns.md](references/ship-loop-anti-patterns.md) — absorbed ship-loop anti-pattern catalog (ag-s43tg)
