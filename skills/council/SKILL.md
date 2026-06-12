@@ -39,6 +39,20 @@ read and follow that file. This stub preserves fleet routing until the
 using-agentops catalog closer updates the registry (skill-prune Lane A,
 evidence/skill-prune-recon.md).
 
+## Absorbed trigger surfaces (skill-prune phase 2)
+
+Council also fires for the use-cases of two folded-in skills:
+
+- **multi-model-triangulation** — cross-validate decisions using multiple AI
+  models (Codex, Gemini, Grok). Use when asked to "get a second opinion",
+  when evaluating competing approaches, or for high-stakes decisions: run the
+  question through council's independent judges instead of a single model.
+- **cross-vendor-trust-gate** — run the skill-factory final trust gate:
+  operate `trust-gate.sh`, read `skill.trust.json` (trust_level + trust_score),
+  and enforce `--require-cross` so cross-vendor parity gates the verdict.
+  Canonical body:
+  `~/dev/mt-olympus/.claude/skills/cross-vendor-trust-gate/SKILL.md`.
+
 ## Examples
 
 - `/council should we swap the policy engine to Cedar?` — runs at the canonical
