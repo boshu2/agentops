@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-66 checked-in AgentOps skills before any broad rewrite, using current
+67 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 66 |
+| Skills audited | 67 |
 | Domains classified | 5 of 5 (BC1-BC5) |
-| Dispositions assigned | 66 / 66 |
+| Dispositions assigned | 67 / 67 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -99,6 +99,7 @@ Disposition meanings:
 | `plan` | BC3 Loop | domain | update | Must output vertical slices and wave-validity checks. |
 | `post-mortem` | BC3 Loop | domain | update | Loop closeout; connect to next-work and ratchet evidence. |
 | `pr-prep` | BC5 Runtime | driving-adapter | update | PR publication adapter; align to evidence and release discipline. |
+| `pre-land-refuters` | BC2 Validation | driving-adapter | keep | Unbiased dual-model refuter panel before landing large multi-surface changes; codified from the ag-s43tg landing where it caught 9 real misses.. |
 | `pre-mortem` | BC2 Validation | domain | update | Plan risk gate; add scenario/verdict self-test. |
 | `product` | BC3 Loop | domain | keep | Product intent source; important for loop work selection. |
 | `push` | BC5 Runtime | driving-adapter | update | Git adapter; add branch/worktree disposition self-test. |

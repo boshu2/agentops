@@ -34,6 +34,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `implement` — Implement one tracked issue.
 - `inject` — Load relevant .agents context.
 - `pr-prep` — Prepare PR commits and body.
+- `pre-land-refuters` — Dispatch unbiased parallel refuters before landing a large multi-surface change: a fresh-context Fable validator + a codex exec read-only validator try to REFUTE the completion claim; their findings are the work list. Use before pushing any 100+ file change, corpus prune, generated-surface regen, or contract-test repoint. Triggers: pre-land validation, unbiased review, refute before push, dual-model landing check.
 - `push` — Validate, commit, and push.
 - `recover` — Recover session context.
 - `research` — Explore and write findings.
@@ -120,6 +121,8 @@ graph LR
   plan -- "shared-kernel" --> standards
   post-mortem -- "shared-kernel" --> standards
   pr-prep -- "customer-of" --> domain
+  pre-land-refuters -- "customer-of" --> codex-exec
+  pre-land-refuters -- "customer-of" --> validate
   pre-mortem -- "shared-kernel" --> standards
   product -- "shared-kernel" --> standards
   red-team -- "supplier-to" --> validate
@@ -217,6 +220,9 @@ graph LR
 | `post-mortem` | produces | result.json |
 | `pr-prep` | consumes | domain |
 | `pr-prep` | produces | git-changes |
+| `pre-land-refuters` | consumes | codex-exec |
+| `pre-land-refuters` | consumes | validate |
+| `pre-land-refuters` | produces | .agents/council/*.md |
 | `pre-mortem` | consumes | standards |
 | `pre-mortem` | produces | result.json |
 | `pre-mortem` | produces | verdict.json |
