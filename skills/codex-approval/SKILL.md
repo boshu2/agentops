@@ -60,6 +60,23 @@ artifact with a tmux capture.
   plan, research, diff, or packet and ask the pane to read them directly.
 - **WARN is not a silent pass.** Either update the plan to address the warning,
   or record why the warning is accepted before continuing.
+- **Reserve the ceremony for one-way doors.** Fanout + Fable approval is for
+  architecture forks, cross-agent coordination contracts, and product
+  decisions. Routine runtime/CLI feature slices take the MVP vertical-slice
+  path instead (~15 min discovery, ~90 min slice — risk-class routing rule in
+  [`discovery`](../discovery/SKILL.md)). Approval ceremony does not substitute
+  for adversarial acceptance tests — it did not catch the auth-env bypass in
+  the 2026-06-12 Codex runtime review
+  ([`docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md`](../../docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md)).
+- **Gating approval needs a durable proof surface.** When this approval gates
+  implementation, mirror the council artifact (or a compact proof packet:
+  verdict, judge source, capture path, required changes) to a **tracked**
+  durable location — `docs/` or a tracked `.agents/` path in the canonical
+  checkout — before the gated bead/epic closes. `.agents/council/` inside a
+  temporary worktree is typically gitignored and is deleted with the worktree;
+  approval evidence that lives only there is stranded (finding 6 of the
+  2026-06-12 review). Verify with `git check-ignore <path>` — an ignored path
+  is not a proof surface.
 
 ## Fanout Packet Contract
 
@@ -177,6 +194,23 @@ required changes, and accepted risks.
 - `WARN`: apply the required plan edits or record an explicit accepted-risk note.
 - `FAIL`: stop implementation and fix the plan before trying again.
 
+### Phase 6: Closeout — make the proof durable
+
+Before the bead/epic this approval gated is closed, mirror the evidence out of
+ephemeral state:
+
+```bash
+# In the CANONICAL checkout (not the temp worktree):
+git check-ignore .agents/council/<date>-fable-approval-<slug>.md \
+  && echo "IGNORED — mirror to a tracked path" || echo "tracked — OK"
+```
+
+If the artifact path is ignored (or lives in a worktree that will be removed),
+copy the council artifact — or write a compact proof packet (verdict,
+judge_source, capture path, required changes/accepted risks) — to a tracked
+durable location and commit it with the arc. The tmux capture may stay local;
+the normalized verdict artifact may not.
+
 ## Quality Rubric
 
 - [ ] Validator is Claude-family/Fable and independent from the Codex author.
@@ -187,6 +221,11 @@ required changes, and accepted risks.
 - [ ] Council artifact includes verdict, judge source, commands/read operations,
   reasons, and capture path.
 - [ ] WARN/FAIL has required changes and blocks or updates the next step.
+- [ ] The work actually warranted the ceremony (one-way door / cross-agent /
+  product decision) — routine slices were routed to the vertical-slice path.
+- [ ] When the approval gated implementation, the verdict artifact (or compact
+  proof packet) is mirrored to a tracked durable path before the gated
+  bead/epic closes — not stranded in an ignored worktree `.agents/` dir.
 
 ## Troubleshooting
 

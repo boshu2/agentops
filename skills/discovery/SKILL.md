@@ -118,6 +118,26 @@ Executable acceptance: [references/discovery.feature](references/discovery.featu
 
 ## Codex Fanout Approval Gate
 
+### Risk-class routing: MVP vertical slice vs fanout (decide FIRST)
+
+The fanout/Fable ceremony is for one-way doors, not every slice. Route by risk
+class before invoking the gate:
+
+- **Fanout + Fable approval** (the gate below): architecture forks, one-way-door
+  decisions, cross-agent coordination contracts, product decisions.
+- **MVP vertical slice** (default for routine runtime/CLI feature work): skip
+  fanout. Run the normal discovery DAG under a hard time-box — **~15 minutes
+  discovery, ~90 minutes vertical slice**, then stop and decide whether to
+  continue. New work surfaced mid-slice becomes follow-up beads; do not absorb
+  it into the active bead.
+
+Ceremony is not a substitute for adversarial acceptance tests: the 2026-06-12
+Codex runtime post-review found a coherent fanout + approval artifact set that
+still missed an auth-bypass bug a single adversarial test would have caught.
+Source: [`docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md`](../../docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md).
+
+### The gate (fanout-class work only)
+
 For open-ended or high-risk Codex discovery, insert the fanout gate before
 `/plan` creates beads. The contract is
 [`docs/contracts/codex-fanout-approval-packet.md`](../../docs/contracts/codex-fanout-approval-packet.md).
@@ -138,6 +158,12 @@ Required artifact sequence:
 rerun approval, or record an explicit accepted-risk note in the `ApprovalEdge`.
 `FAIL` blocks bead creation and returns Discovery to fanout/synthesis, up to
 three approval attempts.
+
+Approval evidence must survive the worktree: before the gated bead/epic closes,
+the council artifact (or a compact proof packet) must be mirrored to a tracked
+durable surface — see the closeout rule in
+[`codex-approval`](../codex-approval/SKILL.md). `.agents/` state in a temporary
+worktree is ignored and strands the evidence.
 
 ## Open-Ended Path (generate-winnow → operationalize → refine)
 

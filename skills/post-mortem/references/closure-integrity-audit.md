@@ -2,12 +2,13 @@
 
 **Mechanically verify that closed beads represent real completed work, not premature or phantom closures.**
 
-This audit catches four failure modes discovered in production:
+This audit catches five failure modes discovered in production:
 
 1. **Multi-wave regressions** — A later wave's worker removes code that an earlier wave added. Each wave passes tests independently, but the net result is incomplete.
 2. **Phantom closures** — Beads closed with generic/empty descriptions ("task"), no spec, no git evidence.
 3. **Orphaned children** — Child beads exist in `bd list` but aren't linked to parent in `bd show <parent>`.
 4. **Stretch goals closed without work** — Items marked "stretch" bulk-closed when epic closes, with no implementation or documented deferral rationale.
+5. **Stranded approval evidence** — Fable/ATM/council approval gated implementation, but the verdict artifact lives only in an ignored `.agents/` dir inside a temporary worktree, so the proof disappears when the worktree is removed.
 
 For **evidence-only closures** that intentionally do not produce a code delta, require a proof artifact at `.agents/releases/evidence-only-closures/<target-id>.json` (or, for legacy artifacts, `.agents/council/evidence-only-closures/<target-id>.json`). The artifact is written with `bash skills/post-mortem/scripts/write-evidence-only-closure.sh` and gives later audits something durable to validate besides bead notes.
 
@@ -315,6 +316,38 @@ for child in $(bd children "$EPIC_ID" 2>/dev/null | grep -i 'stretch' | grep -oE
 done
 ```
 
+### Check 7: Approval-Artifact Durability
+
+When the epic/bead was gated on a Fable/ATM/council approval (a `codex-approval`
+verdict, fanout `ApprovalEdge`, or council PASS that permitted implementation),
+verify the approval evidence survived closeout on a durable tracked surface.
+
+```bash
+# For each approval artifact referenced in the bead text / ApprovalEdge:
+for artifact in $APPROVAL_ARTIFACTS; do
+  if [ ! -e "$artifact" ]; then
+    FAILURES="${FAILURES}\n- STRANDED APPROVAL: $artifact — referenced but missing (worktree removed?)"
+  elif git check-ignore -q "$artifact" 2>/dev/null; then
+    FAILURES="${FAILURES}\n- STRANDED APPROVAL: $artifact — exists but gitignored; mirror to a tracked path before close"
+  fi
+done
+```
+
+A passing closure requires the council artifact — or a compact proof packet
+(verdict, judge_source, capture path, required changes/accepted risks) — at a
+tracked path (`docs/` or a tracked `.agents/` location in the canonical
+checkout). Paths under a temporary worktree, and gitignored `.agents/` paths,
+are not proof surfaces.
+
+This check is **WARN-level** for ordinary beads and **FAIL-level** when the
+approval was the gate that authorized implementation of the epic.
+
+**Origin:** 2026-06-12 Codex runtime post-review (finding 6) — the Fable
+plan-approval artifacts for `ag-codex-runtime-enhancement-o0nds` lived only
+under an ignored `.agents/` dir in a since-removable worktree
+(`agentops-wt-codex-fanout-discovery`). See
+`docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md`.
+
 ## Output Format
 
 Write results into the post-mortem report under `## Closure Integrity`:
@@ -330,6 +363,7 @@ Write results into the post-mortem report under `## Closure Integrity`:
 | Multi-Wave Regression | PASS/FAIL | N regressions detected |
 | Acceptance Drift | PASS/WARN | N closed beads whose acceptance text references gates that the close-note does not confirm green |
 | Stretch Goals | PASS/WARN | N stretch goals closed without rationale |
+| Approval Durability | PASS/WARN/FAIL | N gating approval artifacts missing or gitignored (stranded evidence) |
 
 ### Findings
 - <specific findings from each check>

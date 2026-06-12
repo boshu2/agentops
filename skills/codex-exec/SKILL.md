@@ -194,6 +194,39 @@ cd "$REPO" && codex exec resume --last "Fix the failing test from the prior turn
   ```
 - **Output-contract validation before acting on a verdict.** Programmatically confirm: `VERDICT:` is on its own line, `COMMANDS RUN:` follows, `judge_source:` is present. A verdict missing any element is **unverified — discard and re-dispatch**. A judge that ran nothing is a reader, not a verifier (the counterfeit-judge shape, card 8). Use `--output-schema FILE` to enforce shape at the harness level when verdict feeds automation.
 
+## Codex runtime work rules (learned 2026-06-12, ag-codex-runtime-enhancement post-review)
+
+Compact rules for any work on the Codex worker/receipt path (dispatch, packets,
+receipts, image-health). Full packet:
+[`docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md`](../../docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md).
+
+1. **Make the first acceptance test adversarial.** Before any planner artifact:
+   test packet-injected `OPENAI_API_KEY`, disabled/missing auth guards, command
+   or sandbox mismatch, missing final verdict, missing required command
+   evidence, and path-escape attempts. The 2026-06-12 review found a
+   packet-provided env could re-inject `OPENAI_API_KEY` after the ambient-env
+   guard passed — ceremony missed it; one adversarial test would not have.
+2. **Contracts need executable validators.** If a JSON Schema is the contract,
+   the dispatch path must validate against it (or generated validation from
+   it). Hand-written partial checks + fixture inspection are documentary, not
+   enforcement.
+3. **Receipt means evidence, not presence.** A receipt proving "Codex ran" is
+   not a receipt proving "acceptance commands ran and passed." Run and record
+   `evidence.required_commands` results, or rename the field so it stops
+   implying acceptance evidence.
+4. **Keep the critical path small.** Worker-path MVP = packet validation,
+   dispatch, receipt on success/failure, timeout/stdin/auth tests, one
+   fixture-backed smoke. Image health, gate explainability, skill authoring,
+   and doc migrations are follow-up beads unless explicitly requested.
+5. **Time-box discovery for implementation slices.** ~15 minutes discovery,
+   ~90 minutes vertical slice, then decide. New work becomes follow-up beads,
+   not scope absorbed into the active bead (risk-class routing:
+   [`discovery`](../discovery/SKILL.md)).
+6. **Approval evidence needs a durable proof surface.** If Fable/ATM approval
+   gates implementation, mirror the council artifact or a compact proof packet
+   to a tracked durable path before the gating bead/epic closes (closeout rule:
+   [`codex-approval`](../codex-approval/SKILL.md)).
+
 ## Troubleshooting
 
 | Problem | Cause | Solution |

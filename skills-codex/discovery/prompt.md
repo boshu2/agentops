@@ -8,9 +8,13 @@ Full discovery phase orchestrator. Brainstorm + ao search + research + plan + pr
    this skill.
 2. In Codex hookless mode, run `ao codex ensure-start` before discovery begins;
    the CLI records startup once per thread and skips duplicates automatically.
-3. For open-ended or high-risk requests, fan out at least three
-   `PerspectivePlan` views, synthesize them into one `SynthesisPacket`, and get
-   a Fable `ApprovalEdge` through `$codex-approval` before creating beads.
+3. Route by risk class first: fanout is for one-way doors only (architecture
+   forks, cross-agent coordination contracts, product decisions). Routine
+   runtime/CLI feature work takes the MVP vertical-slice path — ~15 min
+   discovery, ~90 min slice, new work filed as follow-up beads, not absorbed.
+4. For fanout-class requests, fan out at least three `PerspectivePlan` views,
+   synthesize them into one `SynthesisPacket`, and get a Fable `ApprovalEdge`
+   through `$codex-approval` before creating beads.
 
 ## Guardrails
 
