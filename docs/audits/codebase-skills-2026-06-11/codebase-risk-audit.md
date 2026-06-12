@@ -19,7 +19,7 @@ Intentionally skipped (time-box): full read of `validate.yml` (103.7K, ~15 jobs 
 |---|-----|------|
 | 1 | P1 | The bead/Dolt control plane is a remote single-host SPOF and was **down at audit time** while doctrine requires a bead for every change — delivery blocks when bushido is unreachable. |
 | 2 | P1 | The fleet-wide live skill SSOT checkout is on a **detached HEAD, diverged from main** (1 ahead / 3 behind) — Claude/Codex/Gemini on this host are silently serving non-main skills, contradicting the "on-main checkout serves it" contract. |
-| 3 | P1 | With branch protection OFF, the entire pre-merge wall is one 2,210-line bash script with multiple fail-open edges (missing hook, beads timeout→continue, un-audited per-check skip env vars, `--no-verify`); the Go replacement is partial and opt-in. |
+| 3 | P1 | With branch protection OFF, the pre-merge wall depends on the local Go gate plus a retained 2,210-line bash fallback; remaining risk is gate drift, missing hook installation, beads timeout→continue history, un-audited per-check skip env vars, and `--no-verify`. |
 | 4 | P2 | `cli/cmd/ao` is a 620-file / 9.2MB single `main` package with documented symbol coupling that already blocks deletions — change risk concentrates in one namespace. |
 | 5 | P2 | ~140 registered worktrees, many in volatile `/private/tmp` and several nested inside the repo root with hand-edited `.gitignore` entries; one nested worktree (`wt-ag-qidx/`) is untracked and **not** ignored. |
 | 6 | P2 | `docs/provenance/ledger.jsonl` — declared in CLAUDE.md as the provenance source of truth ("ledger wins on disagreement") — **does not exist**. |
@@ -51,9 +51,9 @@ Counterweight (what is demonstrably healthy): full test suite green (12,155 test
 ### F3 — The pre-merge wall is a bash monolith with fail-open edges, and nothing behind it reviews (P1, Architecture/Delivery)
 
 - **Evidence:**
-  - Branch protection is OFF; push-to-main is the model (CLAUDE.md, ag-qidx). The wall is `scripts/pre-push-gate.sh`: **2,210 lines**, ~25 checks, single bash file (`set -euo pipefail`).
+  - Branch protection is OFF; push-to-main is the model (CLAUDE.md, ag-qidx). The wall is now `ao gate check`; `scripts/pre-push-gate.sh` remains as a **2,210 line** bash fallback with ~25 checks.
   - Fail-open edges observed in the wiring: (a) `.git/hooks/pre-push` runs the gate only `if [ -x pre-push.local ]` — a clone without `scripts/install-pre-push-gate.sh` run pushes ungated, silently; (b) the beads hook section converts timeout (exit 124/142) to `_bd_exit=0` — "continuing without beads"; (c) per-check `AGENTOPS_PREPUSH_SKIP_<NAME>=1` flags skip individual checks **without the audit logging** that the global `AGENTOPS_GATE_DISABLED=1` bypass gets (pre-push.local: "the ONLY bypass is the audited AGENTOPS_GATE_DISABLED=1" — not true given the skip flags and `git push --no-verify`); (d) checks #9/#10 are permanently "skipped — manually maintained" (script header, lines 19–20).
-  - The Go-native replacement (`ao gate check`) is opt-in via `AGENTOPS_GATE_GO=1` at ~12/79 check parity (CLAUDE.md / ag-3n71); the bash script remains the default.
+  - Current docs make `ao gate check` the default push gate and keep the bash script as `AGENTOPS_GATE_BASH=1`; the residual risk is dual-gate drift until the bash sunset criterion is satisfied.
   - `validate.yml` (103.7K, ~15 jobs) is a **post-push** backstop on main; doctrine on red main is "fix forward".
 - **Impact:** Broken or unreviewed work lands on main whenever the gate is absent, skipped, or bypassed — and because main is also the live skill SSOT (F2) and the install source (`curl … /main/scripts/install.sh`), a red main propagates to consumers, not just CI. The 2,210-line bash gate itself is hard to test and easy to regress (its own correctness is verified mostly by shellcheck and use).
 - **Likelihood:** Medium-high — multi-host pushers (Mac, bushido, codex worktrees) each need correct hook installation; env-var skips travel invisibly in agent environments.
@@ -95,7 +95,7 @@ Counterweight (what is demonstrably healthy): full test suite green (12,155 test
 
 ### F8 — Ambient env-var configuration steers critical flows without a registry (P3, Architecture)
 
-- **Evidence:** 50 distinct `AGENTOPS_*` variables referenced in `cli/**/*.go` (non-test grep) and 74 in `scripts/` — gate skips (`AGENTOPS_PREPUSH_SKIP_*`), gate disable, Go-gate opt-in (`AGENTOPS_GATE_GO`), hooks disable (`AGENTOPS_HOOKS_DISABLED`), canon verifier command (`AGENTOPS_CANON_VERIFIER_CMD`), etc.
+- **Evidence:** 50 distinct `AGENTOPS_*` variables referenced in `cli/**/*.go` (non-test grep) and 74 in `scripts/` — gate skips (`AGENTOPS_PREPUSH_SKIP_*`), gate disable, bash-gate fallback (`AGENTOPS_GATE_BASH`), hooks disable (`AGENTOPS_HOOKS_DISABLED`), canon verifier command (`AGENTOPS_CANON_VERIFIER_CMD`), etc.
 - **Impact:** Hidden ordering/ambient process configuration (a named skill-lens risk): two agents in the same repo can get different gate behavior from inherited shells, and there is no one place to see what a variable does or that it exists.
 - **Likelihood:** Medium — multi-agent tmux environments inherit and export liberally.
 - **Remediation:** Generate an env-var registry doc from grep (script it, gate drift in CI like the other generated contracts), and have `ao doctor` print non-default AGENTOPS_* vars in effect.

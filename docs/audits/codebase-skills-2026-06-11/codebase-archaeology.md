@@ -122,9 +122,9 @@ decentralized check registry (init() per check)
 
 This mirrors `scripts/pre-push-gate.sh` (39 numbered checks, scope modes
 auto/staged/worktree/head, `--fast` ~10-20s cached, verdict log for claim
-verification). Native-Go parity is **in progress, not done** — the shell gate is
-still the default wall; `ao gate check` is the opt-in Go orchestrator
-(`AGENTOPS_GATE_GO=1`).
+verification). Native-Go parity is **in progress, not done** — `ao gate check`
+is the default wall, with the legacy shell gate retained as the
+`AGENTOPS_GATE_BASH=1` fallback until the sunset criterion is met.
 
 ### Flow 3 — the flywheel (macro loop)
 

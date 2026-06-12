@@ -9,9 +9,9 @@ _2026-06-07. Phase A closed. Phase B = epic `ag-3n71` (handoff to Athena/Codex o
 - `push-serial.sh` (concurrency lock), `lib/bash4-guard.sh` (macOS 3.2), 2 dead scripts deleted.
 - 48 Go tests; ~16 gated pushes.
 
-## What did NOT happen (SCAFFOLDED / UNTOUCHED) — read this before assuming "we're on Go"
+## What did NOT happen (SCAFFOLDED / UNTOUCHED) — historical PB1 state, superseded by ag-3n71 PB2
 - **Migration is ~5%.** `ao gate check` seeds **12 of ~79** checks: **1 native Go** (`go.build`), 11 shell-wrap existing bash.
-- **`scripts/pre-push-gate.sh` (2,210 LOC) is still the default + authoritative.** The Go gate is opt-in (`AGENTOPS_GATE_GO=1`). Nothing was deleted/replaced.
+- **At handoff time, the 2,210 LOC bash gate was still authoritative.** Superseded by ag-3n71 PB2: the Go gate is now the default route, with the bash gate retained as `AGENTOPS_GATE_BASH=1`.
 - **13 orchestrators** (`ci-local-release.sh`, `toolchain-validate.sh`, …, ~8.5k LOC) — untouched.
 - **`validate.yml`** — still fully bash-orchestrated.
 - **38 of 39** macOS bash-3.2 offenders — unfixed.
