@@ -120,21 +120,19 @@ Executable acceptance: [references/discovery.feature](references/discovery.featu
 
 ### Risk-class routing: MVP vertical slice vs fanout (decide FIRST)
 
-The fanout/Fable ceremony is for one-way doors, not every slice. Route by risk
-class before invoking the gate:
+The fanout/Fable ceremony is for one-way doors, not every slice. Route first:
 
 - **Fanout + Fable approval** (the gate below): architecture forks, one-way-door
   decisions, cross-agent coordination contracts, product decisions.
 - **MVP vertical slice** (default for routine runtime/CLI feature work): skip
   fanout. Run the normal discovery DAG under a hard time-box — **~15 minutes
-  discovery, ~90 minutes vertical slice**, then stop and decide whether to
-  continue. New work surfaced mid-slice becomes follow-up beads; do not absorb
-  it into the active bead.
+  discovery, ~90 minutes vertical slice** — then stop and decide. New work
+  surfaced mid-slice becomes follow-up beads, never absorbed into the active bead.
 
 Ceremony is not a substitute for adversarial acceptance tests: the 2026-06-12
 Codex runtime post-review found a coherent fanout + approval artifact set that
-still missed an auth-bypass bug a single adversarial test would have caught.
-Source: [`docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md`](../../docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md).
+still missed an auth bypass one adversarial test would have caught. Source:
+[`docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md`](../../docs/learnings/2026-06-12-codex-runtime-review-auth-and-scope.md).
 
 ### The gate (fanout-class work only)
 
