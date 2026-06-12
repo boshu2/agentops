@@ -274,6 +274,7 @@ func resetCommandState(t *testing.T) {
 	origCodexStopNoHistoryFallback := codexStopNoHistoryFallback
 	origCodexStopNoCloseLoop := codexStopNoCloseLoop
 	origCodexStatusDays := codexStatusDays
+	origCodexDispatchPacketPath := codexDispatchPacketPath
 	origAutodevFile := autodevFile
 	origAutodevForce := autodevForce
 	origFindingsListLimit := findingsListLimit
@@ -356,6 +357,7 @@ func resetCommandState(t *testing.T) {
 		codexStopNoHistoryFallback = origCodexStopNoHistoryFallback
 		codexStopNoCloseLoop = origCodexStopNoCloseLoop
 		codexStatusDays = origCodexStatusDays
+		codexDispatchPacketPath = origCodexDispatchPacketPath
 		autodevFile = origAutodevFile
 		autodevForce = origAutodevForce
 		findingsListLimit = origFindingsListLimit
@@ -442,6 +444,7 @@ func resetCommandState(t *testing.T) {
 	codexStopNoHistoryFallback = false
 	codexStopNoCloseLoop = false
 	codexStatusDays = 7
+	codexDispatchPacketPath = ""
 	autodevFile = ""
 	autodevForce = false
 	findingsListLimit = 20
