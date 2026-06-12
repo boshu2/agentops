@@ -49,6 +49,17 @@ test coverage, and generating properly-formatted PR bodies.
 - Internal commits (use normal git workflow)
 - PRs to your own repositories
 
+### Folded trigger (ag-s43tg wave 1): `pr-research` routes here
+
+- **`/pr-research` → upstream research mode.** Use when you need to **Research an upstream repo**
+  before contributing — systematic exploration of an external codebase as the FIRST step before
+  planning or implementing an open source contribution: prior-work check (existing issues/PRs),
+  mandatory CONTRIBUTING.md discovery, guidelines/templates analysis, PR archaeology on merged
+  PRs and commit patterns, maintainer response-pattern research, and issue discovery for
+  contribution opportunities. That research lane now lives at the front of this skill's
+  workflow — Phase -1 (Prior Work Check) and Phase 1 (Context Discovery) absorb it; write the
+  findings to `.agents/research/YYYY-MM-DD-upstream-*.md` before moving to commit/body prep.
+
 ---
 
 ## Workflow
