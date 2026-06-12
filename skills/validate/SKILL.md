@@ -79,6 +79,16 @@ here so no capability is lost:
   (tests/lint, non-blocking). On FAIL, emit remediation steps (split-by-type cherry-pick,
   rebase-on-upstream) so the verdict is actionable.
 
+### Folded triggers (ag-s43tg wave 1): `vibe` + `bead-completion-audit` route here
+
+- **`/vibe` → `--mode=post-impl`.** Use when doing a quick readiness or sanity check
+  that code is ready to commit or ship, short of a full review — the post-impl
+  pipeline (complexity → bug-hunt → council) is the vibe check.
+- **`/bead-completion-audit` → `--mode=post-impl` close-out.** Use when
+  auditing closed beads for real shipped evidence, acceptance proof, and truthful
+  closeout — the Completion-Claim Kernel and the no-self-grading invariant above
+  own this audit.
+
 ## Quick Start
 
 ```bash
