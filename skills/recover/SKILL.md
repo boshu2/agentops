@@ -31,6 +31,15 @@ output_contract: 'stdout: recovered context summary'
 
 **CLI dependencies:** gt, ao, bd — all optional. Shows what's available, skips what isn't.
 
+### Folded trigger (ag-s43tg wave 1): `trace` routes here
+
+- **`/trace` → the recovery evidence walk.** Use when you need to trace decisions through artifacts —
+  reconstructing why a change happened by walking commits, beads,
+  plans, and `.agents/` evidence backwards from the artifact in question. The Step 1
+  parallel evidence sweep below (git log, work-queue state, knowledge artifacts) is the
+  trace surface; start from the artifact, follow its citations, and summarize the
+  decision chain in the dashboard.
+
 ---
 
 ## Quick Start
