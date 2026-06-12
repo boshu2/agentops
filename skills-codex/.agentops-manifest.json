@@ -1133,7 +1133,7 @@
       "name": "crank",
       "source_skill": "skills/crank",
       "source_hash": "3ef56851b3ab73e2704029ef687a656b79674ce7b7356ef4c5029fd35bd4b783",
-      "generated_hash": "601d462acf1f84863e05bebea9e539780315b097a73e49de914e58ebe8df36ed"
+      "generated_hash": "23dcc9ad55148815116337b9d53f2680df800c9df9eada11755fd073d5c2f3ed"
     },
     {
       "name": "curate",
@@ -1259,7 +1259,7 @@
       "name": "handoff",
       "source_skill": "skills/handoff",
       "source_hash": "11fbba1f4b78ccfd589fe3241f2528f2b13c0f3825b3ea88806a3f8721df2f05",
-      "generated_hash": "ae1ff5f0caf262d9003b219c3708732f1b36da9a28c443f111b71dabede3d2df"
+      "generated_hash": "1531684829a65e949ea69db71d8eb48de4e2fd0aa8a87a7ca05e78c8f92bd2b0"
     },
     {
       "name": "heal-skill",
@@ -1283,7 +1283,7 @@
       "name": "implement",
       "source_skill": "skills/implement",
       "source_hash": "2f62fbbd839e93ddeab2e22d325c93df55c4cf73093d0f5a7a04b029b54a2ebb",
-      "generated_hash": "d3df41937c561b058a0efcfd4fa16c578b872b53252dfa689424282dca2910de"
+      "generated_hash": "e54589082b4c6c6d4472deca727dab8c75a63f757a908785f2a772752444bcc7"
     },
     {
       "name": "inject",
@@ -1337,7 +1337,7 @@
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
       "source_hash": "6e9db3bc1703b17d9cc6014dea3efdcb356cfa0acc4bfabf60c9c1c7ab85a7ba",
-      "generated_hash": "875c1ad5c0a287fb25e65858ef21cdb67740b52b32c773a600b2a03a5c84ee07"
+      "generated_hash": "a2291ceda1dd75efd5313046d7265964671c17290fbdc5bf57a1c4432e4aa661"
     },
     {
       "name": "pr-prep",
@@ -1403,7 +1403,7 @@
       "name": "recover",
       "source_skill": "skills/recover",
       "source_hash": "07a1d62b1d865257a4fd4033687c2401563948927ce113f7740f25ef003a2406",
-      "generated_hash": "a1b9a683ad718daddc2a201135882a1af6999b1fa15577da53d9c0bac525e7d3"
+      "generated_hash": "d159b6bb51ccc92127b7b24107fa672bdf6c42725707ebc2ab8004077daa4cab"
     },
     {
       "name": "red-team",
@@ -1475,7 +1475,7 @@
       "name": "rpi",
       "source_skill": "skills/rpi",
       "source_hash": "2fbb5180e0f98fe7292d3a3e8165029e3579a75a4a64a6d0ec477fe62880aa6f",
-      "generated_hash": "cb3b6c945a24053ec2ddade563cf46df5f4689df878417204c47c54f8d5a1796"
+      "generated_hash": "9e1a058756851e44572b3992f93aa0377b60cdb8bff67c2ebb0310fb5db6f9bc"
     },
     {
       "name": "sbh",
@@ -1577,7 +1577,7 @@
       "name": "status",
       "source_skill": "skills/status",
       "source_hash": "d083ed917d71170d7d8ede5a0d1c6b7c2a23271a33f22ef5720e0edd850826fb",
-      "generated_hash": "99c4c23bac9b20759ce052572e8b935c96acee32df280c5ad480025e8e0a64a6"
+      "generated_hash": "dfb50ae36697ab1a471bbaca3ad8bf080974c5090b0d01816cccf3d840af015f"
     },
     {
       "name": "swarm",

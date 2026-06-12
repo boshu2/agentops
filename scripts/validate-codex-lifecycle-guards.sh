@@ -34,6 +34,28 @@ require_not_contains() {
   fi
 }
 
+require_regex() {
+  local file="$1"
+  local pattern="$2"
+  local message="$3"
+  if ! grep -Eq -- "$pattern" "$file"; then
+    fail "$message
+  missing pattern: $pattern
+  file: $file"
+  fi
+}
+
+require_not_regex() {
+  local file="$1"
+  local pattern="$2"
+  local message="$3"
+  if grep -Eq -- "$pattern" "$file"; then
+    fail "$message
+  unexpected pattern: $pattern
+  file: $file"
+  fi
+}
+
 echo "=== Codex lifecycle guard validation ==="
 
 entry_files=(
@@ -60,6 +82,17 @@ closeout_files=(
   "skills-codex/handoff/prompt.md"
 )
 
+tracker_guidance_files=(
+  "skills-codex/status/SKILL.md"
+  "skills-codex/recover/SKILL.md"
+  "skills-codex/implement/SKILL.md"
+  "skills-codex/crank/SKILL.md"
+  "skills-codex/post-mortem/SKILL.md"
+  "skills-codex/handoff/SKILL.md"
+  "skills-codex/rpi/prompt.md"
+  "skills-codex-overrides/catalog.json"
+)
+
 for file in "${entry_files[@]}"; do
   require_contains "$file" 'ao codex ensure-start' "entry skill must use ao codex ensure-start"
   require_not_contains "$file" 'ao codex start 2>/dev/null || true' "entry skill must not hand-roll ao codex start guards"
@@ -77,6 +110,11 @@ require_contains "skills-codex/status/SKILL.md" 'ao codex ensure-start' "status 
 require_contains "skills-codex/status/SKILL.md" 'ao codex ensure-stop' "status (absorbs quickstart) should describe ensure-stop for Codex closeout skills"
 require_contains "skills-codex-overrides/catalog.json" 'ao codex ensure-start' "Codex override catalog should reference ensure-start"
 require_contains "skills-codex-overrides/catalog.json" 'ao codex ensure-stop' "Codex override catalog should reference ensure-stop"
+
+for file in "${tracker_guidance_files[@]}"; do
+  require_regex "$file" '\bbr\b' "Codex tracker guidance should point at br/beads_rust"
+  require_not_regex "$file" '(^|[^[:alnum:]_-])`?bd([`[:space:]]|$)|BD_' "Codex tracker guidance must not default to legacy bd/Dolt"
+done
 
 if [[ $failures -ne 0 ]]; then
   echo "Codex lifecycle guard validation failed with $failures issue(s)." >&2

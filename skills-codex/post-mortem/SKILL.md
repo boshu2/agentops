@@ -168,7 +168,7 @@ Read `.agents/rpi/rpi-state.json` and extract session ID, phase, verdicts, and s
 
 Before invoking council, load the original plan for comparison:
 
-1. **If epic/issue ID provided:** `bd show <id>` to get the spec/description
+1. **If epic/issue ID provided:** `br show <id>` to get the spec/description
 2. **Search for plan doc:** `ls .agents/plans/ | grep <target-keyword>`
 3. **Check git log:** `git log --oneline | head -10` to find the relevant bead reference
 
@@ -210,7 +210,7 @@ If available, use the phase-2 summary to understand what was implemented, how ma
 Compare the original plan scope against what was actually delivered:
 
 1. Read the plan from `.agents/plans/` (most recent)
-2. Compare planned issues against closed issues (`bd children <epic-id>`)
+2. Compare planned issues against closed issues (`br dep tree <epic-id>` and `br list --status closed`)
 3. Note any scope additions, removals, or modifications
 4. Include scope delta in the post-mortem findings
 
@@ -220,7 +220,7 @@ Read `references/closure-integrity-audit.md` for the full procedure. Mechanicall
 
 1. **Evidence precedence per child** — every closed child resolves on the strongest available evidence in this order: `commit`, then `staged`, then `worktree`
 2. **Phantom bead detection** — flags children with generic titles ("task") or empty descriptions
-3. **Orphaned children** — beads in `br list` but not linked to parent in `bd show`
+3. **Orphaned children** — beads in `br list` but not linked to parent in `br dep tree`
 4. **Multi-wave regression detection** — for crank epics, checks if a later wave removed code added by an earlier wave
 5. **Stretch goal audit** — verifies deferred stretch goals have documented rationale
 
@@ -311,7 +311,7 @@ Inline extraction of learnings from the completed work (formerly delegated to th
 git log --oneline -20 --since="7 days ago"
 
 # Epic children (if epic ID provided)
-bd children <epic-id> 2>/dev/null | head -20
+br dep tree <epic-id> 2>/dev/null | head -20
 
 # Recent plans and research
 ls -lt .agents/plans/ .agents/research/ 2>/dev/null | head -10
