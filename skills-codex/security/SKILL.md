@@ -120,7 +120,7 @@ Actions:
 
 ## See Also
 
-- deps — Dependency audit, vulnerability scanning, and license compliance (absorbed into this skill)
+- deps — Audit dependency risks and updates: vulnerability scanning and license compliance (absorbed into this skill)
 
 ## Local Resources
 

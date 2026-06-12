@@ -71,8 +71,8 @@ for file in "${closeout_files[@]}"; do
   require_not_contains "$file" 'ao codex stop --auto-extract' "closeout skill must not call ao codex stop directly"
 done
 
-# quickstart + using-agentops folded into status + inject (ag-s43tg, 2026-06-12);
-# status carries the entry/closeout lifecycle documentation for the Codex runtime.
+# quickstart folded into status, using-agentops into inject (ag-s43tg, 2026-06-12);
+# the ensure-start/stop lifecycle assertions live on status (the Codex entry/closeout doc).
 require_contains "skills-codex/status/SKILL.md" 'ao codex ensure-start' "status (absorbs quickstart) should describe ensure-start for Codex entry skills"
 require_contains "skills-codex/status/SKILL.md" 'ao codex ensure-stop' "status (absorbs quickstart) should describe ensure-stop for Codex closeout skills"
 require_contains "skills-codex-overrides/catalog.json" 'ao codex ensure-start' "Codex override catalog should reference ensure-start"

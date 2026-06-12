@@ -225,22 +225,7 @@
         {
           "type": "artifact_contains",
           "target": "../../skills/beads/SKILL.md",
-          "value": "Treat live `bd` reads as authoritative."
-        },
-        {
-          "type": "artifact_contains",
-          "target": "../../skills/beads/SKILL.md",
           "value": "reconcile the open parent in the same session"
-        },
-        {
-          "type": "artifact_contains",
-          "target": "../../skills-codex/beads/prompt.md",
-          "value": "Treat live `bd` reads (`bd ready`, `bd show`, `bd export`) as authoritative"
-        },
-        {
-          "type": "artifact_contains",
-          "target": "../../docs/troubleshooting.md",
-          "value": "bd upgrade status --json"
         },
         {
           "type": "artifact_contains",

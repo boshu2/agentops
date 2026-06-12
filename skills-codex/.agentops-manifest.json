@@ -3,6 +3,7 @@
   "source_root": "skills",
   "layout": "modular",
   "codex_override_catalog_hash": "a26e3366f4865cf40d8daab66b45155fc316c997e3dab17dc0a592b225648198",
+  "codex_override_catalog_hash": "1bfd89daee3f272e97636fc440ce297f2d9ccce00b80478715a942eb0f1dc946",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -945,6 +946,10 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Unified host-routed account rotation; codex twin is a thin pointer stub (ag-s43tg factory-parity completion of 3384f5638)."
+        "name": "codex-approval",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-native approval bridge for ATM/Fable plan reviews; source contract and checked-in Codex wrapper are aligned, so no separate override layer is needed yet."
       }
     ]
   },
@@ -1068,6 +1073,12 @@
       "source_skill": "skills/cc-hooks",
       "source_hash": "eaa29efda265fbcd0dbde5f484fc84e309f0e25c430151f5a0dd16d953238c0f",
       "generated_hash": "7ebb1745ea3285f9622267403c2acf06eb5d35f07a25d7001a10e902b7dd24a6"
+    },
+    {
+      "name": "codex-approval",
+      "source_skill": "skills/codex-approval",
+      "source_hash": "d74283ad2a5eab82da20fc69581a05b33e11162dab63a301792773c587519ed0",
+      "generated_hash": "2347e9dbc0f914519751f12e126c1e2ba3ac0a089cb2f1812454aca7ea00f2ec"
     },
     {
       "name": "codex-exec",
@@ -1590,6 +1601,38 @@
       "source_skill": "skills/test",
       "source_hash": "42d71da899e066a34384dfef873a36c56789d4b1a45ae732b73945c516ff043f",
       "generated_hash": "82bfb16f9fbac7fce26a44c7cac7fd512fc4bb28464eda5adb7e2bd72b09a6be"
+      "source_hash": "c269a74fee173b40849ab3908e11715b1398b4b0a6a74eb9b9c87934cfda5566",
+      "generated_hash": "5c4db4e46a23dc0d8ce9d78f25ac4ee32a927dfd1b250862dc1acc64846fa9ed"
+    },
+    {
+      "name": "trace",
+      "source_skill": "skills/trace",
+      "source_hash": "c3ca50e4f2abe2c0b671be0b92c046be32725e2f8edc12017095652cdab4fb20",
+      "generated_hash": "2f33d40788ae0f05035dbf910dbe117c0828ad2593de15e47d614ab54ee1a7ec"
+    },
+    {
+      "name": "trace",
+      "source_skill": "skills/trace",
+      "source_hash": "c3ca50e4f2abe2c0b671be0b92c046be32725e2f8edc12017095652cdab4fb20",
+      "generated_hash": "2f33d40788ae0f05035dbf910dbe117c0828ad2593de15e47d614ab54ee1a7ec"
+    },
+    {
+      "name": "ubs",
+      "source_skill": "skills/ubs",
+      "source_hash": "ace3358b843a6b07d30b14ad0532831b722685084460ef0fa5a143966673f797",
+      "generated_hash": "6058ca0be6dd2d6586db2d66bed4448f8857ccf259b47e2f54709977202f3f0b"
+    },
+    {
+      "name": "using-agentops",
+      "source_skill": "skills/using-agentops",
+      "source_hash": "32c966e0cfa9ac896c448faad6436a6e46c40c041eaf6d6db6079944f4c552ae",
+      "generated_hash": "56246e0dc03ecac27a7bec56c73972f41fd9f8aa5ccc0660e55fa249c79ee0a0"
+    },
+    {
+      "name": "using-agentops",
+      "source_skill": "skills/using-agentops",
+      "source_hash": "9e4862a2cb4ceb0389c4f46c9905eda4e345ce2cbe4c795866d62e00035e849d",
+      "generated_hash": "27578fac83ada78b7e9417a69c83519c5da4357d1323270eb25f1e1c1a852978"
     },
     {
       "name": "using-atm",

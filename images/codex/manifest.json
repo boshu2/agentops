@@ -149,19 +149,6 @@
       "codex_treatment": "parity_only"
     },
     {
-      "slug": "vibe",
-      "kind": "method",
-      "twin_path": "skills-codex/vibe/",
-      "source_path": "skills/vibe/",
-      "twin_files": {
-        "skill": "skills-codex/vibe/SKILL.md",
-        "prompt": "skills-codex/vibe/prompt.md",
-        "drift_marker": "skills-codex/vibe/.agentops-generated.json"
-      },
-      "codex_wave": "backbone",
-      "codex_treatment": "bespoke"
-    },
-    {
       "slug": "council",
       "kind": "method",
       "twin_path": "skills-codex/council/",
@@ -196,19 +183,6 @@
         "skill": "skills-codex/red-team/SKILL.md",
         "prompt": "skills-codex/red-team/prompt.md",
         "drift_marker": "skills-codex/red-team/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "ratchet",
-      "kind": "method",
-      "twin_path": "skills-codex/ratchet/",
-      "source_path": "skills/ratchet/",
-      "twin_files": {
-        "skill": "skills-codex/ratchet/SKILL.md",
-        "prompt": "skills-codex/ratchet/prompt.md",
-        "drift_marker": "skills-codex/ratchet/.agentops-generated.json"
       },
       "codex_wave": "catalog-parity",
       "codex_treatment": "parity_only"
@@ -331,32 +305,6 @@
       "codex_treatment": "parity_only"
     },
     {
-      "slug": "brainstorm",
-      "kind": "method",
-      "twin_path": "skills-codex/brainstorm/",
-      "source_path": "skills/brainstorm/",
-      "twin_files": {
-        "skill": "skills-codex/brainstorm/SKILL.md",
-        "prompt": "skills-codex/brainstorm/prompt.md",
-        "drift_marker": "skills-codex/brainstorm/.agentops-generated.json"
-      },
-      "codex_wave": "analysis-authoring",
-      "codex_treatment": "bespoke"
-    },
-    {
-      "slug": "design",
-      "kind": "method",
-      "twin_path": "skills-codex/design/",
-      "source_path": "skills/design/",
-      "twin_files": {
-        "skill": "skills-codex/design/SKILL.md",
-        "prompt": "skills-codex/design/prompt.md",
-        "drift_marker": "skills-codex/design/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
       "slug": "handoff",
       "kind": "method",
       "twin_path": "skills-codex/handoff/",
@@ -422,19 +370,6 @@
       "codex_treatment": "parity_only"
     },
     {
-      "slug": "session-bootstrap",
-      "kind": "method",
-      "twin_path": "skills-codex/session-bootstrap/",
-      "source_path": "skills/session-bootstrap/",
-      "twin_files": {
-        "skill": "skills-codex/session-bootstrap/SKILL.md",
-        "prompt": "skills-codex/session-bootstrap/prompt.md",
-        "drift_marker": "skills-codex/session-bootstrap/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
       "slug": "status",
       "kind": "method",
       "twin_path": "skills-codex/status/",
@@ -456,19 +391,6 @@
         "skill": "skills-codex/test/SKILL.md",
         "prompt": "skills-codex/test/prompt.md",
         "drift_marker": "skills-codex/test/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "operating-loop-workflow",
-      "kind": "method",
-      "twin_path": "skills-codex/operating-loop-workflow/",
-      "source_path": "skills/operating-loop-workflow/",
-      "twin_files": {
-        "skill": "skills-codex/operating-loop-workflow/SKILL.md",
-        "prompt": "skills-codex/operating-loop-workflow/prompt.md",
-        "drift_marker": "skills-codex/operating-loop-workflow/.agentops-generated.json"
       },
       "codex_wave": "catalog-parity",
       "codex_treatment": "parity_only"
@@ -565,19 +487,6 @@
       "codex_treatment": "parity_only"
     },
     {
-      "slug": "cass-memory",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/cass-memory/",
-      "source_path": "skills/cass-memory/",
-      "twin_files": {
-        "skill": "skills-codex/cass-memory/SKILL.md",
-        "prompt": "skills-codex/cass-memory/prompt.md",
-        "drift_marker": "skills-codex/cass-memory/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
       "slug": "dcg",
       "kind": "tool-op",
       "twin_path": "skills-codex/dcg/",
@@ -604,23 +513,10 @@
       "codex_treatment": "parity_only"
     },
     {
-      "slug": "casr",
+      "slug": "review",
       "kind": "tool-op",
-      "twin_path": "skills-codex/casr/",
-      "source_path": "skills/casr/",
-      "twin_files": {
-        "skill": "skills-codex/casr/SKILL.md",
-        "prompt": "skills-codex/casr/prompt.md",
-        "drift_marker": "skills-codex/casr/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "ubs",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/ubs/",
-      "source_path": "skills/ubs/",
+      "twin_path": "skills-codex/review/",
+      "source_path": "skills/review/",
       "twin_files": {
         "skill": "skills-codex/ubs/SKILL.md",
         "prompt": "skills-codex/ubs/prompt.md",
@@ -760,32 +656,6 @@
       "codex_treatment": "parity_only"
     },
     {
-      "slug": "planning-workflow",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/planning-workflow/",
-      "source_path": "skills/planning-workflow/",
-      "twin_files": {
-        "skill": "skills-codex/planning-workflow/SKILL.md",
-        "prompt": "skills-codex/planning-workflow/prompt.md",
-        "drift_marker": "skills-codex/planning-workflow/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "multi-model-triangulation",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/multi-model-triangulation/",
-      "source_path": "skills/multi-model-triangulation/",
-      "twin_files": {
-        "skill": "skills-codex/multi-model-triangulation/SKILL.md",
-        "prompt": "skills-codex/multi-model-triangulation/prompt.md",
-        "drift_marker": "skills-codex/multi-model-triangulation/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
       "slug": "research-software",
       "kind": "tool-op",
       "twin_path": "skills-codex/research-software/",
@@ -840,24 +710,9 @@
   ],
   "codex_operator_skills": [
     {
-      "slug": "codex-goals",
-      "primitive": "Codex Goals",
-      "note": "express the loop as first-class Codex Goals"
-    },
-    {
       "slug": "codex-exec",
       "primitive": "codex exec",
       "note": "non-interactive worker/validator via codex exec (Pro sub; never API-print)"
-    },
-    {
-      "slug": "codex-mcp-plugins",
-      "primitive": "MCP + plugins",
-      "note": "wire Codex MCP servers + plugin bundle"
-    },
-    {
-      "slug": "codex-sandbox-evidence",
-      "primitive": "sandbox + evidence",
-      "note": "least-privilege codex exec sandbox + JSONL evidence capture"
     }
   ]
 }

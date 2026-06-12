@@ -1,0 +1,271 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/codex-task-packet.schema.json",
+  "title": "Codex Task Packet",
+  "description": "Dispatch contract for one non-mutating AgentOps handoff into Codex exec.",
+  "practices": ["design-by-contract", "pragmatic-programmer"],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "packet_id",
+    "created_at",
+    "objective",
+    "role",
+    "cwd",
+    "sandbox",
+    "auth",
+    "dispatch",
+    "execution",
+    "output",
+    "evidence",
+    "stop_condition"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "packet_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "role": {
+      "$ref": "#/$defs/Role"
+    },
+    "cwd": {
+      "type": "string",
+      "minLength": 1
+    },
+    "allowed_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "forbidden_actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "sandbox": {
+      "$ref": "#/$defs/Sandbox"
+    },
+    "auth": {
+      "$ref": "#/$defs/AuthGuard"
+    },
+    "dispatch": {
+      "$ref": "#/$defs/DispatchPolicy"
+    },
+    "execution": {
+      "$ref": "#/$defs/Execution"
+    },
+    "output": {
+      "$ref": "#/$defs/OutputContract"
+    },
+    "evidence": {
+      "$ref": "#/$defs/Evidence"
+    },
+    "resume": {
+      "$ref": "#/$defs/Resume"
+    },
+    "stop_condition": {
+      "type": "string",
+      "minLength": 1
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    }
+  },
+  "$defs": {
+    "Role": {
+      "type": "string",
+      "enum": ["worker", "validator", "reviewer", "explorer"]
+    },
+    "Sandbox": {
+      "type": "string",
+      "enum": ["read-only", "workspace-write", "danger-full-access"]
+    },
+    "AuthGuard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "required_mode",
+        "reject_env",
+        "login_status_must_contain",
+        "forbid_api_key"
+      ],
+      "properties": {
+        "required_mode": {
+          "type": "string",
+          "enum": ["chatgpt-subscription"]
+        },
+        "reject_env": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "login_status_must_contain": {
+          "type": "string",
+          "const": "Logged in using ChatGPT"
+        },
+        "forbid_api_key": {
+          "type": "boolean",
+          "const": true
+        }
+      }
+    },
+    "DispatchPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "mutates_repo", "command"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "const": "non-mutating"
+        },
+        "mutates_repo": {
+          "type": "boolean",
+          "const": false
+        },
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "Execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["argv", "stdin", "timeout_seconds"],
+      "properties": {
+        "argv": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "stdin": {
+          "$ref": "#/$defs/Stdin"
+        },
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "prompt_path": {
+          "type": "string"
+        },
+        "output_schema_path": {
+          "type": "string"
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Stdin": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "close_after_prompt"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["closed", "pipe-prompt", "inherit-interactive"]
+        },
+        "close_after_prompt": {
+          "type": "boolean"
+        }
+      }
+    },
+    "OutputContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capture_mode", "final_message_path", "receipt_path"],
+      "properties": {
+        "capture_mode": {
+          "type": "string",
+          "enum": ["output-last-message", "jsonl", "output-schema"]
+        },
+        "final_message_path": {
+          "type": "string"
+        },
+        "jsonl_path": {
+          "type": "string"
+        },
+        "schema_path": {
+          "type": "string"
+        },
+        "receipt_path": {
+          "type": "string"
+        }
+      }
+    },
+    "Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["receipt_path", "required_commands"],
+      "properties": {
+        "receipt_path": {
+          "type": "string"
+        },
+        "required_commands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        }
+      }
+    },
+    "Resume": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy", "allow_resume"],
+      "properties": {
+        "policy": {
+          "type": "string",
+          "enum": ["none", "session-id", "last-session-in-cwd"]
+        },
+        "session_id": {
+          "type": "string"
+        },
+        "allow_resume": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

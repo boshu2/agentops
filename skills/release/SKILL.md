@@ -11,7 +11,7 @@ produces:
 - result.json
 context_rel:
 - kind: supplier-to
-  with: ship-loop
+  with: crank
 skill_api_version: 1
 context:
   window: fork
