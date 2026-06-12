@@ -31,6 +31,13 @@ output_contract: 'stdout: dashboard'
 
 **CLI dependencies:** bd, ao, gt — all optional. Shows what's available, skips what isn't.
 
+### Folded triggers (ag-s43tg wave 1): `quickstart` routes here
+
+- **`/quickstart` → `/status` Step 3.** Use when asked to show the AgentOps next action
+  or "what do I do first" — the state-aware SUGGESTED NEXT ACTION table (Step 3) is the
+  next-action surface. For a fresh/new-user setup, Priority 1 ("Start with `/quickstart`
+  or `/research`") and Priority 12 (clean state) cover the onboarding walkthrough.
+
 ---
 
 ## Quick Start
