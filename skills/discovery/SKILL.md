@@ -1,6 +1,10 @@
 ---
 name: discovery
 description: Create dense execution packets.
+  Also the fold target for brainstorm and design. Brainstorm — Separate goals from implementation;
+  clarify goals and explore the problem space before planning. Design — validate product fit
+  before discovery; use when framing a problem, checking product/market fit, or pressure-testing user value
+  before writing a discovery packet or any code.
 practices:
 - adr
 - lean-startup
@@ -49,6 +53,21 @@ output_contract: .agents/plans/YYYY-MM-DD-*.md, beads, epic-id
 > (slice candidates) of the [operating loop](../../docs/architecture/operating-loop.md).
 > Discovery turns a goal plus delegated child artifacts into one dense execution
 > packet for `/crank` and `/validate`.
+
+## Folded-In Trigger Surface (brainstorm, design)
+
+Discovery is the fold target for the retired standalone `brainstorm` and `design`
+skills (skill-prune phase 2). Fire `/discovery` for their use-cases:
+
+- **Brainstorm — Separate goals from implementation.** Clarify goals before
+  planning: separate WHAT from HOW, explore the problem space before committing
+  to a solution, and capture Given/When/Then acceptance examples. Open-ended
+  ideation (generate-winnow, `--ideate`) is the [Open-Ended Path](#open-ended-path-generate-winnow--operationalize--refine) below.
+- **Design — Validate product fit before discovery.** Use when framing a
+  problem, checking product/market fit, or pressure-testing user value before
+  writing a discovery packet or any code. The product-validation gate
+  (PRODUCT.md alignment, council `--preset=product`) runs as discovery's
+  conditional design delegation step.
 
 ## Strict Delegation Contract (default)
 
