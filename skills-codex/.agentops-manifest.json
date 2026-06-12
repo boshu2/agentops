@@ -1177,7 +1177,6 @@
       "source_hash": "3ef56851b3ab73e2704029ef687a656b79674ce7b7356ef4c5029fd35bd4b783",
       "generated_hash": "23dcc9ad55148815116337b9d53f2680df800c9df9eada11755fd073d5c2f3ed"
       "generated_hash": "601d462acf1f84863e05bebea9e539780315b097a73e49de914e58ebe8df36ed"
-      "generated_hash": "3fb5963ad1a7129285a269625a0889856c46aae438ea623e7e5115317013cdbf"
     },
     {
       "name": "curate",
@@ -1212,8 +1211,6 @@
       "generated_hash": "cd0571ddc4891dc58370ccba51806c3ba25cf2abc205b63af0b30ca6411f40b6"
       "source_hash": "96a1ecbc9a4c51e8e65790f678137d17b355012106fe75f5a6ff421de7ccbcd7",
       "generated_hash": "3174a888415a393877a01dd661a50773e919cb4994c38b53c9c264a20db57050"
-      "source_hash": "66d6734eed1a5e67b18041dc9a675c19937f6ca8726cfbd283b351e70bd2f17d",
-      "generated_hash": "b00866ce313cadc45dafeceab0da4837161fd2d55256abfd6060e45c1b592f1c"
     },
     {
       "name": "doc",
@@ -1335,7 +1332,6 @@
       "source_hash": "2f62fbbd839e93ddeab2e22d325c93df55c4cf73093d0f5a7a04b029b54a2ebb",
       "generated_hash": "e54589082b4c6c6d4472deca727dab8c75a63f757a908785f2a772752444bcc7"
       "generated_hash": "d3df41937c561b058a0efcfd4fa16c578b872b53252dfa689424282dca2910de"
-      "generated_hash": "f34076591b2ff9f3db206301f0e8d473c398a89b15b874d2901b36e5a3d8ebec"
     },
     {
       "name": "inject",
@@ -1475,8 +1471,6 @@
       "source_hash": "07a1d62b1d865257a4fd4033687c2401563948927ce113f7740f25ef003a2406",
       "generated_hash": "d159b6bb51ccc92127b7b24107fa672bdf6c42725707ebc2ab8004077daa4cab"
       "generated_hash": "a1b9a683ad718daddc2a201135882a1af6999b1fa15577da53d9c0bac525e7d3"
-      "source_hash": "2449edb3ab455891baa6cf51dc6d954c15057994509bfa57ca17b2bc62820fa4",
-      "generated_hash": "c636916c453d94fc715d2b63b35c9864d2c714040c43010a91c702e7404908dd"
     },
     {
       "name": "red-team",
@@ -1537,7 +1531,6 @@
       "source_skill": "skills/review",
       "source_hash": "d5ae76af2c128350b637de412fed96681202895ddd4a3db917ef966e2124035e",
       "generated_hash": "92df19f8b3494da86cde872097670969636f264b962455eafdb578eb082a4b70"
-      "generated_hash": "af8f97c3abfb4faad0a84d498254016d50b0220cd0e16ba5f97995f5f51f3840"
     },
     {
       "name": "rpi",
@@ -1551,8 +1544,6 @@
       "source_hash": "5f79f7a1fd1e3a4b498e9c548e88737616a7e9f0bf90e4cfafc9419a11625b90",
       "generated_hash": "9e1a058756851e44572b3992f93aa0377b60cdb8bff67c2ebb0310fb5db6f9bc"
       "generated_hash": "cb3b6c945a24053ec2ddade563cf46df5f4689df878417204c47c54f8d5a1796"
-      "source_hash": "dd2e090bba070d94f414bda77c54677cf93d9fa448eefa06f7d2c6212514bfae",
-      "generated_hash": "79ed575ab854304995c661eff3a23a23aece25a0413b3d16b43f60a79b277ab4"
     },
     {
       "name": "sbh",
@@ -1656,7 +1647,6 @@
       "source_hash": "d083ed917d71170d7d8ede5a0d1c6b7c2a23271a33f22ef5720e0edd850826fb",
       "generated_hash": "dfb50ae36697ab1a471bbaca3ad8bf080974c5090b0d01816cccf3d840af015f"
       "generated_hash": "99c4c23bac9b20759ce052572e8b935c96acee32df280c5ad480025e8e0a64a6"
-      "generated_hash": "f42623c08daec75d92dd0e5f125776472970b2e58f63a74dbe1b017642e8f856"
     },
     {
       "name": "swarm",
