@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/codex-run-receipt.schema.json",
+  "title": "Codex Run Receipt",
+  "description": "Evidence contract emitted after an AgentOps Codex exec task packet runs.",
+  "practices": ["design-by-contract", "pragmatic-programmer"],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "packet_id",
+    "started_at",
+    "ended_at",
+    "cwd",
+    "sandbox",
+    "auth_mode",
+    "auth_status",
+    "command",
+    "stdin",
+    "timeout_seconds",
+    "timed_out",
+    "exit_code",
+    "outputs",
+    "changed_files",
+    "commands_run",
+    "verdict"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "receipt_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "packet_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "codex_session_id": {
+      "type": "string"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "cwd": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sandbox": {
+      "$ref": "#/$defs/Sandbox"
+    },
+    "auth_mode": {
+      "$ref": "#/$defs/AuthMode"
+    },
+    "auth_status": {
+      "type": "string"
+    },
+    "command": {
+      "$ref": "#/$defs/Command"
+    },
+    "stdin": {
+      "$ref": "#/$defs/StdinReceipt"
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "timed_out": {
+      "type": "boolean"
+    },
+    "exit_code": {
+      "type": "integer"
+    },
+    "outputs": {
+      "$ref": "#/$defs/Outputs"
+    },
+    "changed_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "commands_run": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/CommandResult"
+      }
+    },
+    "verdict": {
+      "$ref": "#/$defs/Verdict"
+    },
+    "resume_from_session": {
+      "type": "string"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/EvidenceArtifact"
+      },
+      "default": []
+    },
+    "failure_reason": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "Sandbox": {
+      "type": "string",
+      "enum": ["read-only", "workspace-write", "danger-full-access"]
+    },
+    "AuthMode": {
+      "type": "string",
+      "enum": ["chatgpt-subscription", "api-key", "unknown"]
+    },
+    "Command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["argv"],
+      "properties": {
+        "argv": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "StdinReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "closed_at", "bytes_written"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["closed", "pipe-prompt", "inherit-interactive"]
+        },
+        "closed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "bytes_written": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "Outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["final_message_path", "receipt_path"],
+      "properties": {
+        "final_message_path": {
+          "type": "string"
+        },
+        "jsonl_path": {
+          "type": "string"
+        },
+        "schema_path": {
+          "type": "string"
+        },
+        "receipt_path": {
+          "type": "string"
+        }
+      }
+    },
+    "CommandResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "exit_code"],
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "exit_code": {
+          "type": "integer"
+        },
+        "output_excerpt": {
+          "type": "string"
+        }
+      }
+    },
+    "Verdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "judge_source", "summary"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["PASS", "WARN", "FAIL", "ERROR", "NO_VERDICT"]
+        },
+        "judge_source": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "author_id": {
+          "type": "string"
+        },
+        "judge_name": {
+          "type": "string"
+        },
+        "judge_program": {
+          "type": "string"
+        },
+        "judge_model_family": {
+          "type": "string"
+        }
+      }
+    },
+    "EvidenceArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind"],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["schema", "contract", "fixture", "test-log", "final-message", "jsonl"]
+        }
+      }
+    }
+  }
+}

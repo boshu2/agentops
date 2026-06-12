@@ -135,6 +135,16 @@ bodies are rejected and recorded as failed receipt validation.
 
 ## Validation
 
+The schemas are **enforced at runtime**, not only documentary. `ao codex
+dispatch` validates every packet against the full task-packet JSON Schema
+(embedded in the `ao` binary at `cli/embedded/schemas/`; a parity test keeps
+the embedded copies byte-identical with `schemas/`) before any execution —
+covering `additionalProperties`, the auth constants, and the role, sandbox,
+stdin, capture-mode, and resume enums. A Go cross-check additionally requires
+`dispatch.command` to equal `execution.argv`. Receipts are validated against
+the run-receipt schema before they are persisted; violations are recorded as
+failed receipt validation.
+
 The schemas and examples are committed together:
 
 - `../../schemas/codex-task-packet.schema.json`
