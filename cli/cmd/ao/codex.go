@@ -1059,6 +1059,9 @@ func loadCodexTaskPacket(path string) (codexTaskPacket, error) {
 	if err != nil {
 		return codexTaskPacket{}, fmt.Errorf("read codex task packet: %w", err)
 	}
+	if err := validateCodexTaskPacketJSON(data); err != nil {
+		return codexTaskPacket{}, err
+	}
 	var packet codexTaskPacket
 	if err := json.Unmarshal(data, &packet); err != nil {
 		return codexTaskPacket{}, fmt.Errorf("parse codex task packet: %w", err)
@@ -1093,6 +1096,9 @@ func validateCodexTaskPacket(packet codexTaskPacket) error {
 	}
 	if packet.Dispatch.Mode != "non-mutating" || packet.Dispatch.MutatesRepo {
 		return fmt.Errorf("codex dispatch only accepts non-mutating packets")
+	}
+	if !slices.Equal(packet.Dispatch.Command, packet.Execution.Argv) {
+		return fmt.Errorf("codex task packet dispatch.command %q does not match execution.argv %q", packet.Dispatch.Command, packet.Execution.Argv)
 	}
 	if strings.TrimSpace(packet.Output.ReceiptPath) == "" {
 		return fmt.Errorf("codex task packet output.receipt_path is required")
@@ -1256,6 +1262,7 @@ func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
 	receiptValidationErr := errors.Join(
 		validateCodexRunReceipt(receipt),
 		validateCodexReceiptRequiredCommands(packet.Evidence.RequiredCommands, receipt),
+		validateCodexRunReceiptSchema(receipt),
 	)
 	if receiptValidationErr != nil && receipt.FailureReason == "" {
 		receipt.FailureReason = receiptValidationErr.Error()
@@ -1430,12 +1437,14 @@ func writeCodexDispatchOutputFiles(cwd string, allowedPaths []string, out codexT
 }
 
 func collectCodexDispatchChangedFiles(cwd string) []string {
+	// Always non-nil: the receipt schema requires changed_files to be an
+	// array, and a nil slice marshals to JSON null.
+	files := []string{}
 	cmd := exec.Command("git", "-C", cwd, "status", "--short", "--untracked-files=all")
 	out, err := cmd.Output()
 	if err != nil {
-		return nil
+		return files
 	}
-	var files []string
 	for _, line := range strings.Split(string(out), "\n") {
 		if len(line) < 4 {
 			continue

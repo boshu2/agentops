@@ -15,3 +15,10 @@ var HooksFS embed.FS
 //
 //go:embed all:templates
 var TemplatesFS embed.FS
+
+// SchemasFS contains embedded JSON Schemas enforced at runtime (Codex task
+// packet and run receipt). Canonical copies live at the repo root `schemas/`;
+// a parity test asserts the embedded copies stay byte-identical.
+//
+//go:embed all:schemas
+var SchemasFS embed.FS
