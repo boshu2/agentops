@@ -1172,11 +1172,14 @@ func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
 		return codexRunReceipt{}, fmt.Errorf("packet cwd is not a directory: %s", cwd)
 	}
 
+	if err := validateCodexDispatchPathBounds(cwd, packet); err != nil {
+		return codexRunReceipt{}, err
+	}
 	authStatus, err := validateCodexDispatchAuth(packet)
 	if err != nil {
 		return codexRunReceipt{}, err
 	}
-	if err := ensureCodexDispatchOutputDirs(cwd, packet.Output); err != nil {
+	if err := ensureCodexDispatchOutputDirs(cwd, packet.AllowedPaths, packet.Output); err != nil {
 		return codexRunReceipt{}, err
 	}
 
@@ -1207,7 +1210,7 @@ func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
 	exitCode := codexDispatchExitCode(runErr, timedOut)
 	failureReason := codexDispatchFailureReason(runErr, timedOut, stderr.String())
 
-	if err := writeCodexDispatchOutputFiles(cwd, packet.Output, stdout.Bytes()); err != nil {
+	if err := writeCodexDispatchOutputFiles(cwd, packet.AllowedPaths, packet.Output, stdout.Bytes()); err != nil {
 		return codexRunReceipt{}, err
 	}
 
@@ -1238,7 +1241,7 @@ func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
 			ExitCode:      exitCode,
 			OutputExcerpt: codexDispatchOutputExcerpt(stdout.String(), stderr.String()),
 		}},
-		Verdict:       codexDispatchVerdict(cwd, packet.Output, exitCode, timedOut),
+		Verdict:       codexDispatchVerdict(cwd, packet.AllowedPaths, packet.Output, exitCode, timedOut),
 		Evidence:      codexDispatchEvidence(packet),
 		FailureReason: failureReason,
 	}
@@ -1252,7 +1255,7 @@ func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
 	if receipt.Verdict.Status == "ERROR" && runErr == nil && !timedOut && receipt.FailureReason == "" {
 		receipt.FailureReason = receipt.Verdict.Summary
 	}
-	if err := writeCodexRunReceipt(cwd, packet.Output.ReceiptPath, receipt); err != nil {
+	if err := writeCodexRunReceipt(cwd, packet.AllowedPaths, packet.Output.ReceiptPath, receipt); err != nil {
 		return codexRunReceipt{}, err
 	}
 
@@ -1329,13 +1332,16 @@ func codexDispatchBinary(packet codexTaskPacket) string {
 	return packet.Execution.Argv[0]
 }
 
-func ensureCodexDispatchOutputDirs(cwd string, out codexTaskOutputContract) error {
+func ensureCodexDispatchOutputDirs(cwd string, allowedPaths []string, out codexTaskOutputContract) error {
 	for _, path := range []string{out.FinalMessagePath, out.JSONLPath, out.SchemaPath, out.ReceiptPath} {
 		path = strings.TrimSpace(path)
 		if path == "" {
 			continue
 		}
-		abs := resolveCodexDispatchPath(cwd, path)
+		abs, err := resolveCodexDispatchPath(cwd, allowedPaths, path)
+		if err != nil {
+			return err
+		}
 		if err := os.MkdirAll(filepath.Dir(abs), 0o750); err != nil {
 			return fmt.Errorf("create output dir for %s: %w", path, err)
 		}
@@ -1352,7 +1358,11 @@ func codexDispatchStdin(cwd string, packet codexTaskPacket) ([]byte, error) {
 		if promptPath == "" {
 			return []byte(packet.Objective), nil
 		}
-		data, err := os.ReadFile(resolveCodexDispatchPath(cwd, promptPath))
+		abs, err := resolveCodexDispatchPath(cwd, packet.AllowedPaths, promptPath)
+		if err != nil {
+			return nil, err
+		}
+		data, err := os.ReadFile(abs)
 		if err != nil {
 			return nil, fmt.Errorf("read Codex prompt path: %w", err)
 		}
@@ -1398,9 +1408,13 @@ func codexDispatchFailureReason(err error, timedOut bool, stderr string) string 
 	return err.Error()
 }
 
-func writeCodexDispatchOutputFiles(cwd string, out codexTaskOutputContract, stdout []byte) error {
+func writeCodexDispatchOutputFiles(cwd string, allowedPaths []string, out codexTaskOutputContract, stdout []byte) error {
 	if strings.TrimSpace(out.JSONLPath) != "" && len(stdout) > 0 {
-		if err := atomicWriteFile(resolveCodexDispatchPath(cwd, out.JSONLPath), stdout, 0o600); err != nil {
+		abs, err := resolveCodexDispatchPath(cwd, allowedPaths, out.JSONLPath)
+		if err != nil {
+			return err
+		}
+		if err := atomicWriteFile(abs, stdout, 0o600); err != nil {
 			return fmt.Errorf("write codex jsonl output: %w", err)
 		}
 	}
@@ -1430,7 +1444,7 @@ func collectCodexDispatchChangedFiles(cwd string) []string {
 	return files
 }
 
-func codexDispatchVerdict(cwd string, out codexTaskOutputContract, exitCode int, timedOut bool) codexReceiptVerdict {
+func codexDispatchVerdict(cwd string, allowedPaths []string, out codexTaskOutputContract, exitCode int, timedOut bool) codexReceiptVerdict {
 	if timedOut {
 		return codexReceiptVerdict{Status: "ERROR", JudgeSource: "codex-dispatch", Summary: "Codex dispatch timed out."}
 	}
@@ -1441,7 +1455,11 @@ func codexDispatchVerdict(cwd string, out codexTaskOutputContract, exitCode int,
 	if finalPath == "" {
 		return codexReceiptVerdict{Status: "NO_VERDICT", JudgeSource: "codex-dispatch", Summary: "No final message path was configured."}
 	}
-	data, err := os.ReadFile(resolveCodexDispatchPath(cwd, finalPath))
+	abs, err := resolveCodexDispatchPath(cwd, allowedPaths, finalPath)
+	if err != nil {
+		return codexReceiptVerdict{Status: "ERROR", JudgeSource: "codex-dispatch", Summary: err.Error()}
+	}
+	data, err := os.ReadFile(abs)
 	if err != nil {
 		return codexReceiptVerdict{Status: "NO_VERDICT", JudgeSource: "codex-dispatch", Summary: "Final message was not readable."}
 	}
@@ -1599,8 +1617,11 @@ func codexEvidenceKind(path string) string {
 	}
 }
 
-func writeCodexRunReceipt(cwd, path string, receipt codexRunReceipt) error {
-	abs := resolveCodexDispatchPath(cwd, path)
+func writeCodexRunReceipt(cwd string, allowedPaths []string, path string, receipt codexRunReceipt) error {
+	abs, err := resolveCodexDispatchPath(cwd, allowedPaths, path)
+	if err != nil {
+		return err
+	}
 	data, err := json.MarshalIndent(receipt, "", "  ")
 	if err != nil {
 		return fmt.Errorf("marshal codex run receipt: %w", err)
@@ -1611,11 +1632,66 @@ func writeCodexRunReceipt(cwd, path string, receipt codexRunReceipt) error {
 	return nil
 }
 
-func resolveCodexDispatchPath(cwd, path string) string {
-	if filepath.IsAbs(path) {
-		return path
+// resolveCodexDispatchPath resolves a packet-declared path against cwd and
+// enforces the dispatch path boundary: the resolved path must stay inside cwd
+// or inside one of the packet's allowed_paths roots (each resolved against cwd
+// when relative). Absolute paths and ".." traversal that escape every permitted
+// root are rejected so receipts, JSONL, prompts, and final messages cannot be
+// written or read outside the declared scope.
+func resolveCodexDispatchPath(cwd string, allowedPaths []string, path string) (string, error) {
+	cleanCwd := filepath.Clean(cwd)
+	candidate := path
+	if !filepath.IsAbs(candidate) {
+		candidate = filepath.Join(cleanCwd, candidate)
 	}
-	return filepath.Join(cwd, path)
+	candidate = filepath.Clean(candidate)
+
+	roots := []string{cleanCwd}
+	for _, root := range allowedPaths {
+		root = strings.TrimSpace(root)
+		if root == "" {
+			continue
+		}
+		if !filepath.IsAbs(root) {
+			root = filepath.Join(cleanCwd, root)
+		}
+		roots = append(roots, filepath.Clean(root))
+	}
+	for _, root := range roots {
+		if candidate == root || strings.HasPrefix(candidate, root+string(filepath.Separator)) {
+			return candidate, nil
+		}
+	}
+	return "", fmt.Errorf("codex dispatch path %q escapes cwd %s and the packet allowed_paths", path, cleanCwd)
+}
+
+// validateCodexDispatchPathBounds rejects a packet up front when any
+// dispatcher-managed path (outputs, prompt, schemas, receipts) escapes the
+// dispatch path boundary, before auth checks, worker execution, or receipt
+// creation.
+func validateCodexDispatchPathBounds(cwd string, packet codexTaskPacket) error {
+	bounded := []struct {
+		label string
+		path  string
+	}{
+		{"output.final_message_path", packet.Output.FinalMessagePath},
+		{"output.jsonl_path", packet.Output.JSONLPath},
+		{"output.schema_path", packet.Output.SchemaPath},
+		{"output.receipt_path", packet.Output.ReceiptPath},
+		{"execution.prompt_path", packet.Execution.PromptPath},
+		{"execution.output_schema_path", packet.Execution.OutputSchemaPath},
+		{"evidence.receipt_path", packet.Evidence.ReceiptPath},
+	}
+	for _, entry := range bounded {
+		path := strings.TrimSpace(entry.path)
+		if path == "" {
+			continue
+		}
+		if _, err := resolveCodexDispatchPath(cwd, packet.AllowedPaths, path); err != nil {
+			return fmt.Errorf("codex task packet %s: %w", entry.label, err)
+		}
+	}
+	return nil
 }
 
 func sanitizeCodexReceiptID(id string) string {
