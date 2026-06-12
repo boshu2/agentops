@@ -142,6 +142,127 @@ func TestCodexDispatchForbiddenEnvNamesAlwaysIncludeAPIKey(t *testing.T) {
 	}
 }
 
+func TestCodexDispatchRejectsPathEscapes(t *testing.T) {
+	outside := t.TempDir()
+	tests := []struct {
+		name    string
+		opts    codexDispatchPacketOptions
+		wantErr string
+	}{
+		{
+			name:    "absolute receipt path outside cwd",
+			opts:    codexDispatchPacketOptions{ReceiptPath: filepath.Join(outside, "receipt.json")},
+			wantErr: "output.receipt_path",
+		},
+		{
+			name:    "dot-dot final message path",
+			opts:    codexDispatchPacketOptions{FinalMessagePath: filepath.Join("..", "escape-final.md")},
+			wantErr: "output.final_message_path",
+		},
+		{
+			name:    "dot-dot jsonl path",
+			opts:    codexDispatchPacketOptions{JSONLPath: filepath.Join("..", "escape-events.jsonl")},
+			wantErr: "output.jsonl_path",
+		},
+		{
+			name:    "absolute prompt path outside cwd",
+			opts:    codexDispatchPacketOptions{PromptPath: filepath.Join(outside, "prompt.md")},
+			wantErr: "execution.prompt_path",
+		},
+		{
+			name:    "dot-dot schema path",
+			opts:    codexDispatchPacketOptions{SchemaPath: filepath.Join("..", "escape-schema.json")},
+			wantErr: "output.schema_path",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newCodexDispatchRepo(t)
+			marker := filepath.Join(repo, "worker-ran")
+			writeFakeCodexBinary(t)
+			t.Setenv("FAKE_CODEX_MARKER", marker)
+			t.Setenv("OPENAI_API_KEY", "")
+
+			packetPath, receiptPath := writeCodexDispatchPacket(t, repo, tt.opts)
+			_, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+			if err == nil {
+				t.Fatalf("codex dispatch succeeded, want path escape refusal")
+			}
+			if !strings.Contains(err.Error(), tt.wantErr) || !strings.Contains(err.Error(), "escapes cwd") {
+				t.Fatalf("dispatch error = %q, want %q path-escape refusal", err.Error(), tt.wantErr)
+			}
+			assertPathAbsent(t, marker)
+			if tt.opts.ReceiptPath == "" {
+				assertPathAbsent(t, receiptPath)
+			} else {
+				assertPathAbsent(t, tt.opts.ReceiptPath)
+			}
+		})
+	}
+}
+
+func TestCodexDispatchAllowsDeclaredAllowedPathRoot(t *testing.T) {
+	repo := newCodexDispatchRepo(t)
+	outside := t.TempDir()
+	writeFakeCodexBinary(t)
+	t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
+	t.Setenv("OPENAI_API_KEY", "")
+
+	receiptPathOverride := filepath.Join(outside, "runs", "receipt.json")
+	packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+		AllowedPaths: []string{outside},
+		ReceiptPath:  receiptPathOverride,
+	})
+	out, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+	if err != nil {
+		t.Fatalf("codex dispatch with allowed_paths root returned error: %v\noutput:\n%s", err, out)
+	}
+	if receiptPath != receiptPathOverride {
+		t.Fatalf("receipt path = %q, want %q", receiptPath, receiptPathOverride)
+	}
+	receipt := readCodexDispatchReceipt(t, receiptPath)
+	if receipt.Verdict.Status != "PASS" {
+		t.Fatalf("verdict.status = %q, want PASS", receipt.Verdict.Status)
+	}
+}
+
+func TestResolveCodexDispatchPathBounds(t *testing.T) {
+	cwd := t.TempDir()
+	allowedAbs := t.TempDir()
+	tests := []struct {
+		name    string
+		allowed []string
+		path    string
+		want    string
+		wantErr bool
+	}{
+		{name: "relative inside cwd", path: "runs/receipt.json", want: filepath.Join(cwd, "runs", "receipt.json")},
+		{name: "absolute inside cwd", path: filepath.Join(cwd, "runs", "receipt.json"), want: filepath.Join(cwd, "runs", "receipt.json")},
+		{name: "dot-dot escape rejected", path: filepath.Join("..", "receipt.json"), wantErr: true},
+		{name: "absolute escape rejected", path: filepath.Join(allowedAbs, "receipt.json"), wantErr: true},
+		{name: "absolute allowed root accepted", allowed: []string{allowedAbs}, path: filepath.Join(allowedAbs, "receipt.json"), want: filepath.Join(allowedAbs, "receipt.json")},
+		{name: "relative allowed root cannot escape on its own", allowed: []string{"subdir"}, path: filepath.Join("..", "receipt.json"), wantErr: true},
+		{name: "sibling prefix is not containment", allowed: []string{allowedAbs}, path: allowedAbs + "-sibling/receipt.json", wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := resolveCodexDispatchPath(cwd, tt.allowed, tt.path)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("resolveCodexDispatchPath(%q) = %q, want escape error", tt.path, got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("resolveCodexDispatchPath(%q) error: %v", tt.path, err)
+			}
+			if got != tt.want {
+				t.Fatalf("resolveCodexDispatchPath(%q) = %q, want %q", tt.path, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestCodexDispatchRequiresChatGPTStatus(t *testing.T) {
 	repo := newCodexDispatchRepo(t)
 	marker := filepath.Join(repo, "worker-ran")
@@ -328,12 +449,18 @@ func TestCodexVerdictBodyRejectsMalformedAndContradictoryVerdicts(t *testing.T) 
 }
 
 type codexDispatchPacketOptions struct {
-	TimeoutSeconds int
-	Resume         *codexTaskResume
-	Sandbox        string
-	ArgvSandbox    string
-	Environment    map[string]string
-	RejectEnv      []string
+	TimeoutSeconds   int
+	Resume           *codexTaskResume
+	Sandbox          string
+	ArgvSandbox      string
+	Environment      map[string]string
+	RejectEnv        []string
+	AllowedPaths     []string
+	FinalMessagePath string
+	JSONLPath        string
+	ReceiptPath      string
+	PromptPath       string
+	SchemaPath       string
 }
 
 func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacketOptions) (packetPath string, receiptPath string) {
@@ -352,9 +479,21 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 	runDir := filepath.Join(".agents", "codex", "runs", "dispatch-test")
 	taskDir := filepath.Join(".agents", "codex", "tasks", "dispatch-test")
 	promptPath := filepath.Join(taskDir, "prompt.md")
+	if opts.PromptPath != "" {
+		promptPath = opts.PromptPath
+	}
 	finalPath := filepath.Join(runDir, "final.md")
+	if opts.FinalMessagePath != "" {
+		finalPath = opts.FinalMessagePath
+	}
 	jsonlPath := filepath.Join(runDir, "events.jsonl")
+	if opts.JSONLPath != "" {
+		jsonlPath = opts.JSONLPath
+	}
 	receiptRelPath := filepath.Join(runDir, "receipt.json")
+	if opts.ReceiptPath != "" {
+		receiptRelPath = opts.ReceiptPath
+	}
 	packetRelPath := filepath.Join(taskDir, "packet.json")
 	argv := []string{
 		"codex",
@@ -369,8 +508,14 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 	if err := os.MkdirAll(filepath.Join(repo, taskDir), 0o750); err != nil {
 		t.Fatalf("create task dir: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(repo, promptPath), []byte("dispatch acceptance prompt\n"), 0o600); err != nil {
-		t.Fatalf("write prompt: %v", err)
+	promptAbs := promptPath
+	if !filepath.IsAbs(promptAbs) {
+		promptAbs = filepath.Join(repo, promptPath)
+	}
+	if strings.HasPrefix(filepath.Clean(promptAbs), filepath.Clean(repo)+string(os.PathSeparator)) {
+		if err := os.WriteFile(promptAbs, []byte("dispatch acceptance prompt\n"), 0o600); err != nil {
+			t.Fatalf("write prompt: %v", err)
+		}
 	}
 
 	rejectEnv := opts.RejectEnv
@@ -384,6 +529,7 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 		Objective:     "Run Codex dispatch acceptance test.",
 		Role:          "worker",
 		CWD:           repo,
+		AllowedPaths:  opts.AllowedPaths,
 		Sandbox:       sandbox,
 		Auth: codexTaskAuthGuard{
 			RequiredMode:           "chatgpt-subscription",
@@ -407,6 +553,7 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 			CaptureMode:      "output-last-message",
 			FinalMessagePath: finalPath,
 			JSONLPath:        jsonlPath,
+			SchemaPath:       opts.SchemaPath,
 			ReceiptPath:      receiptRelPath,
 		},
 		Evidence: codexTaskEvidenceContract{
@@ -425,7 +572,11 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 	if err := os.WriteFile(packetAbsPath, append(data, '\n'), 0o600); err != nil {
 		t.Fatalf("write packet: %v", err)
 	}
-	return packetAbsPath, filepath.Join(repo, receiptRelPath)
+	receiptAbsPath := receiptRelPath
+	if !filepath.IsAbs(receiptAbsPath) {
+		receiptAbsPath = filepath.Join(repo, receiptRelPath)
+	}
+	return packetAbsPath, receiptAbsPath
 }
 
 func validCodexFinalVerdictForTest(status string) string {

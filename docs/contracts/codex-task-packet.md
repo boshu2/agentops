@@ -41,8 +41,17 @@ enough that the receipt can later prove whether the stop condition was met.
 
 `cwd` is the working directory for the Codex process.
 
-`allowed_paths` and `forbidden_actions` are guidance and audit fields. They do
-not replace filesystem permissions.
+`allowed_paths` is **enforced** by `ao codex dispatch` for every
+dispatcher-managed path: `output.final_message_path`, `output.jsonl_path`,
+`output.schema_path`, `output.receipt_path`, `execution.prompt_path`,
+`execution.output_schema_path`, and `evidence.receipt_path` must resolve inside
+the packet `cwd` or inside one of the `allowed_paths` roots (relative roots are
+resolved against `cwd`). Absolute paths and `..` traversal that escape every
+permitted root are rejected before auth checks, worker execution, and receipt
+creation. The boundary applies to paths the dispatcher itself reads and writes;
+it does not constrain what the Codex process touches and does not replace
+filesystem permissions or the sandbox. `forbidden_actions` remains a guidance
+and audit field with no runtime enforcement.
 
 `sandbox` is the requested Codex sandbox: `read-only`, `workspace-write`, or
 `danger-full-access`. The packet must make the requested sandbox explicit so a
