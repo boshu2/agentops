@@ -154,7 +154,7 @@ PM_START=$(date +%s)
 **If no ID:** Find recently completed work:
 ```bash
 # Check for closed beads
-bd list --status closed --since "7 days ago" 2>/dev/null | head -5
+br list --status closed --since "7 days ago" 2>/dev/null | head -5
 
 # Or check recent git activity
 git log --oneline --since="7 days ago" | head -10
@@ -220,7 +220,7 @@ Read `references/closure-integrity-audit.md` for the full procedure. Mechanicall
 
 1. **Evidence precedence per child** — every closed child resolves on the strongest available evidence in this order: `commit`, then `staged`, then `worktree`
 2. **Phantom bead detection** — flags children with generic titles ("task") or empty descriptions
-3. **Orphaned children** — beads in `bd list` but not linked to parent in `bd show`
+3. **Orphaned children** — beads in `br list` but not linked to parent in `bd show`
 4. **Multi-wave regression detection** — for crank epics, checks if a later wave removed code added by an earlier wave
 5. **Stretch goal audit** — verifies deferred stretch goals have documented rationale
 

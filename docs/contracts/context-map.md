@@ -185,7 +185,7 @@ graph LR
 | `discovery` | consumes | research |
 | `discovery` | consumes | shared |
 | `discovery` | produces | .agents/plans/*.md |
-| `discovery` | produces | bd-issue |
+| `discovery` | produces | br-issue |
 | `discovery` | produces | execution-packet.json |
 | `doc` | consumes | repo-context |
 | `doc` | produces | documentation |

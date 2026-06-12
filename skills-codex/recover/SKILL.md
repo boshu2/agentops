@@ -63,11 +63,11 @@ git branch --show-current
 
 **Call 4 — Work Queue State:**
 ```bash
-if bd ready --json >/dev/null 2>&1 && bd list --type epic --status open --json >/dev/null 2>&1; then
+if br ready --json >/dev/null 2>&1 && br list --type epic --status open --json >/dev/null 2>&1; then
   echo "=== IN_PROGRESS ==="
-  bd list --status in_progress 2>/dev/null | head -3
+  br list --status in_progress 2>/dev/null | head -3
   echo "=== READY ==="
-  bd ready 2>/dev/null | head -3
+  br ready 2>/dev/null | head -3
 else
   echo "BD_DEGRADED_OR_UNAVAILABLE"
 fi

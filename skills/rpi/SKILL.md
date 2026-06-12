@@ -104,7 +104,7 @@ same objective.
    - default, `research`, `plan`, `pre-mortem`, `brainstorm` -> discovery
    - `implementation` or `crank` -> implementation
    - `validation`, `vibe`, or `post-mortem` -> validation
-3. If the input is a bead and `--from` is absent, resolve it with `bd show`:
+3. If the input is a bead and `--from` is absent, resolve it with `br show`:
    - epic -> implementation with that epic
    - child with parent -> implementation with the parent epic
 4. Classify complexity:

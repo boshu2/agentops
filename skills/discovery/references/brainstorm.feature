@@ -36,7 +36,7 @@ Feature: Brainstorm separates goals from implementation before planning
 
   Scenario: ideation mode generates many and winnows ruthlessly to a ranked five
     When ideation mode runs
-    Then it grounds in reality by reading AGENTS.md and open and closed bd beads
+    Then it grounds in reality by reading AGENTS.md and open and closed br beads
     And it generates 30 candidate ideas thought through for how-it-works, user-perception, and implementation
     And it winnows to the very best 5 ranked best-to-worst with full rationale
     And it scores survivors against the ten-dimension rubric

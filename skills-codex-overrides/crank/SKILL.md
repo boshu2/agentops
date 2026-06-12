@@ -18,7 +18,7 @@ This override captures the Codex-native execution model for multi-issue epic wor
 
 ### Step 1: Select the wave
 
-Use `bd ready --json` when available, or the current plan artifact when beads is unavailable. Only include unblocked work with disjoint file ownership in the same wave.
+Use `br ready --json` when available, or the current plan artifact when beads is unavailable. Only include unblocked work with disjoint file ownership in the same wave.
 
 ### Step 2: Prepare worker packets
 

@@ -12,7 +12,7 @@
 3. Re-add to next wave
 4. After 3 failures, escalate:
    ```bash
-   bd update <issue-id> --labels BLOCKER 2>/dev/null
+   br update <issue-id> --labels BLOCKER 2>/dev/null
    bd comments add <issue-id> "ESCALATED: 3 validation failures. Human review required." 2>/dev/null
    ```
 

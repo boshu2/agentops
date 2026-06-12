@@ -110,7 +110,7 @@ git apply --stat "$AGENT_PATH"
 Understand the intent behind the changes before reviewing the code:
 
 - **PR Mode:** Read PR title/body, check linked issues (`fixes #`, `closes #`), read commit messages.
-- **Diff Mode:** Check `git log --oneline -5`, branch name, open issues via `bd list --status open`.
+- **Diff Mode:** Check `git log --oneline -5`, branch name, open issues via `br list --status open`.
 - **Agent Mode:** Read execution logs in output directory, check `.agents/rpi/` artifacts.
 
 **Output a one-line intent summary before proceeding:**

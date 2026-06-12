@@ -62,15 +62,15 @@ fi
 
 **Call 2 — Beads / Epic State:**
 ```bash
-if bd ready --json >/dev/null 2>&1 && bd list --type epic --status open --json >/dev/null 2>&1; then
+if br ready --json >/dev/null 2>&1 && br list --type epic --status open --json >/dev/null 2>&1; then
   echo "=== EPIC ==="
-  bd list --type epic --status open 2>/dev/null | head -5
+  br list --type epic --status open 2>/dev/null | head -5
   echo "=== IN_PROGRESS ==="
-  bd list --status in_progress 2>/dev/null | head -5
+  br list --status in_progress 2>/dev/null | head -5
   echo "=== READY ==="
-  bd ready 2>/dev/null | head -5
+  br ready 2>/dev/null | head -5
   echo "=== TOTAL ==="
-  bd list 2>/dev/null | wc -l
+  br list 2>/dev/null | wc -l
 else
   echo "BD_DEGRADED_OR_UNAVAILABLE"
 fi
@@ -154,7 +154,7 @@ ACTIVE EPIC
   In Progress: <list in-progress issues, max 3>
 
 READY TO WORK
-  <top 3 unblocked issues from bd ready>
+  <top 3 unblocked issues from br ready>
   <or "No ready issues — create work with $plan">
 
 RECENT VALIDATIONS

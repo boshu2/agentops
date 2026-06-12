@@ -15,7 +15,7 @@ consumes:
 - shared
 produces:
 - .agents/plans/*.md
-- bd-issue
+- br-issue
 - execution-packet.json
 context_rel:
 - kind: shared-kernel
@@ -110,7 +110,7 @@ for the boundary between Discovery and Plan:
 | Inbound port | `shape_intent` from operator goal or BDD intent |
 | Outbound port | `plan_slices` into `/plan` |
 | Driving adapter | `/discovery` skill invocation |
-| Driven adapter | `/plan` skill invocation plus bd/file persistence |
+| Driven adapter | `/plan` skill invocation plus br/file persistence |
 | Context packet | density block, artifact links, acceptance examples, non-goals, constraints |
 | Guard adapter | `/pre-mortem` verdict before packet handoff |
 
@@ -124,10 +124,10 @@ On the open-ended path, Discovery prepends the generate-winnow methodology befor
 
 1. **Ideate (delegate to `brainstorm --ideate`).** Invoke `brainstorm` in **ideation mode** (a real skill invocation — strict delegation still applies; do NOT inline the 30-idea generation). It returns a ranked portfolio of **15** ideas (top 5 + next 10) with how/perceive/implement notes, rubric scores, and red-team findings.
 2. **Research + Plan + Pre-mortem.** Run the normal artifact-first DAG over the selected portfolio, scoped to the winnowed ideas rather than a single goal.
-3. **Operationalize.** Turn the ranked portfolio into a comprehensive, granular set of **self-documenting `bd` beads** — tasks, subtasks, dependency structure (`bd dep add`), and **explicit test tasks** (unit + e2e with detailed logging). Each bead carries what/why/how/risks/success so the original plan markdown never needs to be consulted again. Overlap-check against existing beads (`bd list --json`) before creating — merge, don't duplicate.
-4. **Refine in plan space (4-5 passes).** Before handing the packet to `/crank`, run **4-5 refinement passes** over the bead set. Each pass: **re-read AGENTS.md** (especially after compaction), check every bead for sense and optimality, and **DO NOT OVERSIMPLIFY / DO NOT LOSE FEATURES OR FUNCTIONALITY**. Validate between passes (no dependency cycles; every leaf actionable via `bd ready`).
+3. **Operationalize.** Turn the ranked portfolio into a comprehensive, granular set of **self-documenting `br` beads** — tasks, subtasks, dependency structure (`br dep add`), and **explicit test tasks** (unit + e2e with detailed logging). Each bead carries what/why/how/risks/success so the original plan markdown never needs to be consulted again. Overlap-check against existing beads (`br list --json`) before creating — merge, don't duplicate.
+4. **Refine in plan space (4-5 passes).** Before handing the packet to `/crank`, run **4-5 refinement passes** over the bead set. Each pass: **re-read AGENTS.md** (especially after compaction), check every bead for sense and optimality, and **DO NOT OVERSIMPLIFY / DO NOT LOSE FEATURES OR FUNCTIONALITY**. Validate between passes (no dependency cycles; every leaf actionable via `br ready`).
 
-> Tracking is **`bd`**, never `br`/`bv` — this is AgentOps. The operationalize and refine steps consume `brainstorm`'s ideation output; see [`references/bead-operationalization.md`](references/bead-operationalization.md).
+> Tracking is **`br`** with `bv` triage — this is AgentOps. The operationalize and refine steps consume `brainstorm`'s ideation output; see [`references/bead-operationalization.md`](references/bead-operationalization.md).
 
 Executable acceptance for this path: [references/discovery.feature](references/discovery.feature) (ideation/operationalize/refine scenarios, ag-yw0).
 
@@ -144,7 +144,7 @@ and the acceptance-criteria YAML contract.
 | `--auto` | on | Fully autonomous (no human gates). Inverse of `--interactive`. Passed through to `/research` and `/plan`. |
 | `--interactive` | off | Human gates in research and plan (STEP 3, STEP 4). Does NOT affect pre-mortem gate. |
 | `--skip-brainstorm` | auto | Skip STEP 1 brainstorm when goal is already specific |
-| `--ideate` | auto | Force the open-ended generate-winnow path: delegate to `brainstorm --ideate` (30→5→15), then operationalize into self-documenting `bd` beads and refine 4-5x in plan space. Auto-on for open-ended goals. See [Open-Ended Path](#open-ended-path-generate-winnow--operationalize--refine). |
+| `--ideate` | auto | Force the open-ended generate-winnow path: delegate to `brainstorm --ideate` (30→5→15), then operationalize into self-documenting `br` beads and refine 4-5x in plan space. Auto-on for open-ended goals. See [Open-Ended Path](#open-ended-path-generate-winnow--operationalize--refine). |
 | `--complexity=<level>` | auto | Force complexity level (`fast` / `standard` / `full`) |
 | `--no-budget` | off | Disable phase time budgets |
 | `--no-scaffold` | off | Skip scaffold auto-invocation in STEP 4.5 |

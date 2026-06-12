@@ -11,7 +11,7 @@
   description="Implement beads issue <issue-id>.
 
 Details from beads:
-<paste issue details from bd show>
+<paste issue details from br show>
 
 Execute using $implement <issue-id>. Mark complete when done.",
   activeForm="Implementing <issue-id>"
@@ -31,7 +31,7 @@ Parameters:
 
 5. **After swarm completes, verify beads status:**
 ```bash
-bd update <issue-id> --status closed 2>/dev/null
+br update <issue-id> --status closed 2>/dev/null
 ```
 
 
@@ -60,7 +60,7 @@ Parameters:
 
 2. **Sync to beads:**
    ```bash
-   bd update <issue-id> --status closed 2>/dev/null
+   br update <issue-id> --status closed 2>/dev/null
    ```
 
 3. **On sync failure** (bd unavailable or error):
@@ -81,7 +81,7 @@ Parameters:
 After completing a wave:
 
 ### Beads Mode
-2. Check if new beads issues are now unblocked: `bd ready`
+2. Check if new beads issues are now unblocked: `br ready`
 4. If no more issues after 3 retry attempts, proceed to final validation
 
 2. If yes, loop back to wave execution
