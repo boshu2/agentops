@@ -185,9 +185,16 @@ Free-text-only acceptance is invalid (AGENTS.md). The plan output MUST also
 include `acceptance_criteria` fenced YAML at two levels (the machine-checkable
 layer): the parent epic body and each child bead body. Criterion shape is
 canonical in `schemas/execution-packet.schema.json` (`#/$defs/Criterion`).
-Discovery does NOT relax this requirement; if a returned bead lacks a
-`## Scenarios` block, send it back to `/plan` to be promoted before compiling
-the packet.
+Discovery does NOT relax this requirement; run the admission gate per
+returned bead:
+
+```bash
+BEADS_DIR=$PWD/_beads br show "$BEAD_ID" | bash scripts/check-bead-scenario-coverage.sh --admission -
+```
+
+Exit 1 sends the bead back to `/plan` to be promoted before compiling the
+packet. Exit 2 is a tracker failure — stop and surface it; do not reject the
+bead.
 
 ### STEP 4.5 - Optional Scaffold
 
