@@ -45,6 +45,7 @@ Run a specific tier:
 | Push-time local gate | `scripts/pre-push-gate.sh` | ~30-90s |
 | Activate repo hooks | `bash scripts/install-dev-hooks.sh` | ~1s |
 | Go build + vet + changed-scope race | `scripts/validate-go-fast.sh` | ~20s |
+| Changed-scope derived artifact repair | `bash scripts/regen-changed-scope.sh --check --scope head` | ~1-30s |
 | AgentOps contract canaries | `scripts/test-agentops-contract-canaries.sh` | ~2-5m |
 | AgentOps eval advisory corpus | `scripts/eval-agentops.sh --fast` | ~5-10m |
 | BATS script tests | `bats tests/scripts/*.bats` | ~10s |
@@ -54,6 +55,27 @@ Run a specific tier:
 | Contract compatibility | `./scripts/check-contract-compatibility.sh` | ~10s |
 | Full CI gate (local) | `scripts/ci-local-release.sh` | 5-10 min |
 | Native Windows smoke | `powershell -ExecutionPolicy Bypass -File .\tests\windows\test-windows-smoke.ps1` | ~1-3 min |
+
+### Changed-Scope Regeneration
+
+Use `scripts/regen-changed-scope.sh` for ordinary slice work. It inspects the
+changed files and runs only the relevant generator/checker pair: Codex hashes
+for skill edits, context-map generation for skill frontmatter changes, contract
+index checks for docs contracts, registry generation for registry sources, and
+CLI command surfaces for `cli/cmd/ao` command changes.
+
+`scripts/regen-all.sh` is the release-wide sweep. Use release-wide regen-all for
+release preparation, command deletion/rename cleanup, large skill-prune waves,
+or when the changed-scope script explicitly says it has no localized repair.
+
+Examples:
+
+```bash
+bash scripts/regen-changed-scope.sh --check --scope head
+bash scripts/regen-changed-scope.sh --scope worktree
+bash scripts/regen-changed-scope.sh --list --file skills/discovery/SKILL.md
+bash scripts/regen-all.sh --check  # release-wide / full sweep
+```
 
 ### AgentOps Contract Canaries
 

@@ -13,6 +13,14 @@
 #   scripts/regen-all.sh --skills foo,bar     # scope the codex-hash step to foo,bar
 #   REGEN_SKILLS=foo,bar scripts/regen-all.sh # same scoping via env
 #
+# For ordinary slice work, prefer changed-scope repair first:
+#   scripts/regen-changed-scope.sh --check --scope head
+#   scripts/regen-changed-scope.sh --scope worktree
+#
+# This script is release-wide: use it for final release sweeps, broad skill
+# prune waves, command deletion/rename cleanup, or when changed-scope repair has
+# no localized generator.
+#
 # NOTE: Codex twins (skills-codex/<name>/{SKILL.md,prompt.md}) are MANUAL — this
 # refreshes their hashes but cannot author a missing twin. Create twins by hand
 # (runtime-native: no `.claude/...` tokens), then re-run.

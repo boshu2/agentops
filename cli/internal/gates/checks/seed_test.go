@@ -44,3 +44,33 @@ func TestSeedChecksHaveValidShape(t *testing.T) {
 		}
 	}
 }
+
+func TestChangedScopeRegenIsSplitFromReleaseWideRegenAll(t *testing.T) {
+	changed, ok := gates.Default.Get("derived.changed-scope")
+	if !ok {
+		t.Fatal("derived.changed-scope gate is not registered")
+	}
+	if changed.Tiers&gates.Fast == 0 {
+		t.Fatalf("derived.changed-scope tiers = %v, want fast", changed.Tiers)
+	}
+	if changed.Tiers&gates.Full != 0 {
+		t.Fatalf("derived.changed-scope tiers = %v, want changed-scope only in fast; release-wide regen-all owns full", changed.Tiers)
+	}
+	if changed.Backing != "regen-changed-scope.sh" {
+		t.Fatalf("derived.changed-scope backing = %q, want regen-changed-scope.sh", changed.Backing)
+	}
+
+	releaseWide, ok := gates.Default.Get("always.regen-all")
+	if !ok {
+		t.Fatal("always.regen-all gate is not registered")
+	}
+	if releaseWide.Tiers&gates.Fast != 0 {
+		t.Fatalf("always.regen-all tiers = %v, want release-wide regen-all out of fast changed-scope", releaseWide.Tiers)
+	}
+	if releaseWide.Tiers&gates.Full == 0 {
+		t.Fatalf("always.regen-all tiers = %v, want full", releaseWide.Tiers)
+	}
+	if releaseWide.Backing != "regen-all.sh" {
+		t.Fatalf("always.regen-all backing = %q, want regen-all.sh", releaseWide.Backing)
+	}
+}
