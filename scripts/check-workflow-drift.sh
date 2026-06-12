@@ -4,7 +4,9 @@
 # Blocking set: bdd-foundry.js
 #   - absent entirely               -> SKIP line, exit 0 (clean machines/CI stay green)
 #   - dangling symlink              -> exit 1 naming the offending path
-#   - symlink                       -> must realpath-resolve to the repo canonical, else exit 1
+#   - symlink                       -> must realpath-resolve to the repo canonical, OR (cross-
+#                                      checkout: gate run from a worktree) resolve to a target
+#                                      byte-equal to this repo's canonical; else exit 1
 #   - regular file                  -> cmp -s against the repo canonical, else exit 1
 # Report-only set: every other repo-tracked .claude/workflows/*.js
 #   (today: bead-crank.js, operating-loop.js) — the same comparison, but divergence
@@ -35,8 +37,13 @@ compare_install() {
       return 1
     fi
     if [ "$(resolve "$inst")" != "$(resolve "$canon")" ]; then
-      echo "$name installed symlink resolves to $(resolve "$inst"), not the repo canonical $canon"
-      return 1
+      # Cross-checkout tolerance: the home symlink targets the MAIN checkout, so a gate run
+      # from a worktree sees a different realpath. Byte-equality with THIS repo's canonical
+      # is the real invariant — fail only when the resolved content has drifted.
+      if ! cmp -s "$(resolve "$inst")" "$canon"; then
+        echo "$name installed symlink resolves to $(resolve "$inst"), not the repo canonical $canon, and its bytes differ"
+        return 1
+      fi
     fi
   elif ! cmp -s "$inst" "$canon"; then
     echo "$name installed copy bytes differ from the repo canonical: $inst vs $canon"
