@@ -363,6 +363,118 @@ func TestCodexDispatchTimeoutWritesReceipt(t *testing.T) {
 	if receipt.FailureReason == "" {
 		t.Fatalf("failure_reason is empty")
 	}
+	if len(receipt.CommandsRun) != 1 {
+		t.Fatalf("commands_run length = %d, want 1: required commands must not execute after a timeout", len(receipt.CommandsRun))
+	}
+}
+
+func TestCodexDispatchExecutesRequiredCommandsIntoReceipt(t *testing.T) {
+	repo := newCodexDispatchRepo(t)
+	writeFakeCodexBinary(t)
+	t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
+	t.Setenv("OPENAI_API_KEY", "")
+
+	packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+		RequiredCommands: []string{"echo acceptance-evidence-ok", "test -d ."},
+	})
+	out, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+	if err != nil {
+		t.Fatalf("codex dispatch returned error: %v\noutput:\n%s", err, out)
+	}
+	receipt := readCodexDispatchReceipt(t, receiptPath)
+	if len(receipt.CommandsRun) != 3 {
+		t.Fatalf("commands_run length = %d, want 3 (codex invocation + 2 required commands): %+v", len(receipt.CommandsRun), receipt.CommandsRun)
+	}
+	echoResult := receipt.CommandsRun[1]
+	if echoResult.Command != "echo acceptance-evidence-ok" {
+		t.Fatalf("commands_run[1].command = %q, want echo acceptance-evidence-ok", echoResult.Command)
+	}
+	if echoResult.ExitCode != 0 {
+		t.Fatalf("commands_run[1].exit_code = %d, want 0", echoResult.ExitCode)
+	}
+	if !strings.Contains(echoResult.OutputExcerpt, "acceptance-evidence-ok") {
+		t.Fatalf("commands_run[1].output_excerpt = %q, want acceptance command output", echoResult.OutputExcerpt)
+	}
+	testResult := receipt.CommandsRun[2]
+	if testResult.Command != "test -d ." {
+		t.Fatalf("commands_run[2].command = %q, want test -d .", testResult.Command)
+	}
+	if testResult.ExitCode != 0 {
+		t.Fatalf("commands_run[2].exit_code = %d, want 0", testResult.ExitCode)
+	}
+}
+
+func TestCodexDispatchRecordsFailingRequiredCommandExitCode(t *testing.T) {
+	repo := newCodexDispatchRepo(t)
+	writeFakeCodexBinary(t)
+	t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
+	t.Setenv("OPENAI_API_KEY", "")
+
+	packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+		RequiredCommands: []string{"exit 7"},
+	})
+	out, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+	if err != nil {
+		t.Fatalf("codex dispatch returned error: %v\noutput:\n%s", err, out)
+	}
+	receipt := readCodexDispatchReceipt(t, receiptPath)
+	if len(receipt.CommandsRun) != 2 {
+		t.Fatalf("commands_run length = %d, want 2: %+v", len(receipt.CommandsRun), receipt.CommandsRun)
+	}
+	if receipt.CommandsRun[1].Command != "exit 7" {
+		t.Fatalf("commands_run[1].command = %q, want exit 7", receipt.CommandsRun[1].Command)
+	}
+	if receipt.CommandsRun[1].ExitCode != 7 {
+		t.Fatalf("commands_run[1].exit_code = %d, want 7 (recorded honestly)", receipt.CommandsRun[1].ExitCode)
+	}
+}
+
+func TestValidateCodexReceiptRequiredCommands(t *testing.T) {
+	base := validCodexReceiptForTest()
+	tests := []struct {
+		name     string
+		required []string
+		recorded []codexCommandResult
+		wantErr  string
+	}{
+		{
+			name:     "all required commands recorded",
+			required: []string{"go test ./cmd/ao"},
+			recorded: base.CommandsRun,
+		},
+		{
+			name:     "no required commands declared",
+			required: nil,
+			recorded: base.CommandsRun,
+		},
+		{
+			name:     "declared required command absent from commands_run",
+			required: []string{"go test ./cmd/ao", "go vet ./..."},
+			recorded: base.CommandsRun,
+			wantErr:  "missing required command evidence in commands_run: go vet ./...",
+		},
+		{
+			name:     "blank required entries ignored",
+			required: []string{" ", ""},
+			recorded: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			receipt := validCodexReceiptForTest()
+			receipt.CommandsRun = tt.recorded
+			err := validateCodexReceiptRequiredCommands(tt.required, receipt)
+			if tt.wantErr == "" {
+				if err != nil {
+					t.Fatalf("validateCodexReceiptRequiredCommands() error: %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("validateCodexReceiptRequiredCommands() error = %v, want to contain %q", err, tt.wantErr)
+			}
+		})
+	}
 }
 
 func TestCodexDispatchRejectsNoCommandVerdict(t *testing.T) {
@@ -455,6 +567,7 @@ type codexDispatchPacketOptions struct {
 	ArgvSandbox      string
 	Environment      map[string]string
 	RejectEnv        []string
+	RequiredCommands []string
 	AllowedPaths     []string
 	FinalMessagePath string
 	JSONLPath        string
@@ -522,6 +635,10 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 	if len(rejectEnv) == 0 {
 		rejectEnv = []string{"OPENAI_API_KEY"}
 	}
+	requiredCommands := opts.RequiredCommands
+	if len(requiredCommands) == 0 {
+		requiredCommands = []string{"echo dispatch-acceptance-ok"}
+	}
 	packet := codexTaskPacket{
 		SchemaVersion: 1,
 		PacketID:      "codex-dispatch-test",
@@ -558,7 +675,7 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 		},
 		Evidence: codexTaskEvidenceContract{
 			ReceiptPath:      receiptRelPath,
-			RequiredCommands: []string{"codex exec"},
+			RequiredCommands: requiredCommands,
 			Artifacts:        []string{finalPath, jsonlPath},
 		},
 		Resume:        opts.Resume,
