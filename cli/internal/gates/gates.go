@@ -13,6 +13,7 @@ package gates
 
 import (
 	"context"
+	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
@@ -75,6 +76,10 @@ type Check struct {
 	// Env are extra environment variables passed to a Backing script.
 	// Ignored for native Run checks.
 	Env map[string]string
+	// RepairHint is an optional operator-facing command or instruction for
+	// fixing a failed or skipped check. If unset, reports derive a rerun command
+	// from the backing script or point to the native-Go implementation.
+	RepairHint string
 	// Run is a native-Go implementation. Exactly one of Backing or Run must be
 	// set.
 	Run CheckFunc
@@ -83,3 +88,37 @@ type Check struct {
 // AlwaysRun reports whether the check is selected regardless of changed files
 // (i.e. it has no path globs to route on).
 func (c Check) AlwaysRun() bool { return len(c.Match) == 0 }
+
+// ArtifactPath returns the local artifact that implements the check.
+func (c Check) ArtifactPath() string {
+	if c.Run != nil {
+		return "native-go"
+	}
+	if c.Backing == "" {
+		return ""
+	}
+	if strings.Contains(c.Backing, "/") {
+		return c.Backing
+	}
+	return "scripts/" + c.Backing
+}
+
+// WorkflowBacking returns the command-shaped backing visible in CI/workflows.
+func (c Check) WorkflowBacking() string {
+	if c.Run != nil {
+		return "native-go"
+	}
+	return strings.Join(append([]string{"bash", c.ArtifactPath()}, c.Args...), " ")
+}
+
+// EffectiveRepairHint returns an explicit repair hint or derives a rerun hint
+// from the check backing.
+func (c Check) EffectiveRepairHint() string {
+	if c.RepairHint != "" {
+		return c.RepairHint
+	}
+	if c.Run != nil {
+		return "inspect native gate " + c.ID + " in cli/internal/gates"
+	}
+	return c.WorkflowBacking()
+}

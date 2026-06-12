@@ -47,3 +47,48 @@ func TestReportGitHubAnnotations(t *testing.T) {
 		t.Fatalf("PASS checks should not emit annotations: %q", got)
 	}
 }
+
+func TestGateReportHumanExplainability(t *testing.T) {
+	report := &Report{
+		Mode:      Fast,
+		Scope:     ScopeHead,
+		StartedAt: time.Unix(0, 0),
+		Results: []CheckResult{
+			{
+				Check: Check{
+					ID:         "derived.changed-scope",
+					Tiers:      Fast,
+					Blocking:   true,
+					Backing:    "regen-changed-scope.sh",
+					Args:       []string{"--check", "--scope", "head"},
+					RepairHint: "bash scripts/regen-changed-scope.sh --scope head",
+				},
+				SelectedReason: `selected: changed file "skills/x/SKILL.md" matched "skills/**"`,
+				Verdict:        ports.GateVerdict{Status: ports.GateStatusPass, Reason: "ok"},
+			},
+		},
+		Skipped: []SkippedCheck{
+			{
+				Check:  Check{ID: "always.regen-all", Tiers: Full, Blocking: true, Backing: "regen-all.sh", RepairHint: "bash scripts/regen-all.sh"},
+				Reason: "skipped: check tiers full do not include active mode fast",
+			},
+		},
+	}
+
+	var out bytes.Buffer
+	report.Human(&out)
+	got := out.String()
+	for _, want := range []string{
+		`selected: changed file "skills/x/SKILL.md" matched "skills/**"`,
+		"backing: bash scripts/regen-changed-scope.sh --check --scope head",
+		"artifact: scripts/regen-changed-scope.sh",
+		"repair: bash scripts/regen-changed-scope.sh --scope head",
+		"skipped gates:",
+		"skipped: check tiers full do not include active mode fast",
+		"not run: 1 gates",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("human output missing %q:\n%s", want, got)
+		}
+	}
+}

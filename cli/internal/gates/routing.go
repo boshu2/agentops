@@ -30,12 +30,18 @@ func matchGlob(pattern, path string) bool {
 
 // matchAny reports whether path matches any of the patterns.
 func matchAny(patterns []string, path string) bool {
+	_, ok := matchAnyPattern(patterns, path)
+	return ok
+}
+
+// matchAnyPattern reports the first pattern matched by path.
+func matchAnyPattern(patterns []string, path string) (string, bool) {
 	for _, p := range patterns {
 		if matchGlob(p, path) {
-			return true
+			return p, true
 		}
 	}
-	return false
+	return "", false
 }
 
 // affected reports whether a check is selected by the changed-file set: a check
@@ -45,11 +51,21 @@ func (c Check) affected(changed []string) bool {
 		return true
 	}
 	for _, f := range changed {
-		if matchAny(c.Match, f) {
+		if _, ok := matchAnyPattern(c.Match, f); ok {
 			return true
 		}
 	}
 	return false
+}
+
+// affectedReason reports the first changed-file/path-glob reason selecting c.
+func (c Check) affectedReason(changed []string) (file string, pattern string, ok bool) {
+	for _, f := range changed {
+		if p, matched := matchAnyPattern(c.Match, f); matched {
+			return f, p, true
+		}
+	}
+	return "", "", false
 }
 
 // invalidatesAll reports whether any changed file forces a full run regardless
@@ -59,14 +75,30 @@ func (c Check) affected(changed []string) bool {
 // class), so we run everything.
 func invalidatesAll(changed []string) bool {
 	for _, f := range changed {
-		switch {
-		case f == "go.mod" || f == "go.sum" || f == "cli/go.mod" || f == "cli/go.sum":
-			return true
-		case strings.HasPrefix(f, "cli/internal/gates/"):
-			return true
-		case strings.HasPrefix(f, "cli/cmd/ao/gate"):
+		if invalidatesAllFile(f) {
 			return true
 		}
+	}
+	return false
+}
+
+func firstInvalidatingFile(changed []string) string {
+	for _, f := range changed {
+		if invalidatesAllFile(f) {
+			return f
+		}
+	}
+	return ""
+}
+
+func invalidatesAllFile(f string) bool {
+	switch {
+	case f == "go.mod" || f == "go.sum" || f == "cli/go.mod" || f == "cli/go.sum":
+		return true
+	case strings.HasPrefix(f, "cli/internal/gates/"):
+		return true
+	case strings.HasPrefix(f, "cli/cmd/ao/gate"):
+		return true
 	}
 	return false
 }

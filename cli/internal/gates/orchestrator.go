@@ -3,6 +3,7 @@ package gates
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/ports"
@@ -21,12 +22,24 @@ type RunOptions struct {
 
 // CheckResult is the outcome of running one check.
 type CheckResult struct {
-	Check    Check
-	Verdict  ports.GateVerdict
-	Duration time.Duration
+	Check          Check
+	SelectedReason string
+	Verdict        ports.GateVerdict
+	Duration       time.Duration
 	// Err is set only when the check could not be evaluated at all (distinct
 	// from a FAIL verdict).
 	Err error
+}
+
+// SkippedCheck records a registered check that did not execute in this run.
+type SkippedCheck struct {
+	Check  Check
+	Reason string
+}
+
+type checkSelection struct {
+	Check  Check
+	Reason string
 }
 
 // Orchestrator selects and runs checks against the registry. Phase A runs them
@@ -49,26 +62,33 @@ func NewOrchestrator(reg *Registry, runner ports.GateRunnerPort, files ChangedFi
 // Run selects the checks for opts and runs them serially, returning a Report.
 func (o *Orchestrator) Run(ctx context.Context, opts RunOptions) (*Report, error) {
 	started := o.now()
-	selected, changed, err := o.selectChecks(ctx, opts)
+	selected, skipped, changed, err := o.selectCheckPlans(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
 	rc := RunContext{RepoRoot: o.repoRoot, ChangedFiles: changed, Mode: opts.Mode}
 
 	results := make([]CheckResult, 0, len(selected))
-	for _, c := range selected {
+	for i, plan := range selected {
 		if cerr := ctx.Err(); cerr != nil {
 			return nil, cerr
 		}
 		start := o.now()
-		verdict, runErr := o.runOne(ctx, c, rc)
+		verdict, runErr := o.runOne(ctx, plan.Check, rc)
 		results = append(results, CheckResult{
-			Check:    c,
-			Verdict:  verdict,
-			Duration: o.now().Sub(start),
-			Err:      runErr,
+			Check:          plan.Check,
+			SelectedReason: plan.Reason,
+			Verdict:        verdict,
+			Duration:       o.now().Sub(start),
+			Err:            runErr,
 		})
-		if opts.FailFast && isBlockingFail(c, verdict) {
+		if opts.FailFast && isBlockingFail(plan.Check, verdict) {
+			for _, pending := range selected[i+1:] {
+				skipped = append(skipped, SkippedCheck{
+					Check:  pending.Check,
+					Reason: fmt.Sprintf("skipped: fail-fast stopped after blocking failure in %s", plan.Check.ID),
+				})
+			}
 			break
 		}
 	}
@@ -80,6 +100,7 @@ func (o *Orchestrator) Run(ctx context.Context, opts RunOptions) (*Report, error
 		StartedAt:    started,
 		Elapsed:      o.now().Sub(started),
 		Results:      results,
+		Skipped:      skipped,
 	}, nil
 }
 
@@ -94,30 +115,69 @@ func (o *Orchestrator) Select(ctx context.Context, opts RunOptions) ([]Check, []
 // selectChecks applies the tier filter, then (Fast mode only) changed-file
 // routing with the full-run invalidation escape hatch.
 func (o *Orchestrator) selectChecks(ctx context.Context, opts RunOptions) ([]Check, []string, error) {
+	selected, _, changed, err := o.selectCheckPlans(ctx, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+	checks := make([]Check, 0, len(selected))
+	for _, plan := range selected {
+		checks = append(checks, plan.Check)
+	}
+	return checks, changed, nil
+}
+
+// selectCheckPlans applies the tier filter, then (Fast mode only) changed-file
+// routing with the full-run invalidation escape hatch. It keeps explicit
+// reasons for both selected and skipped checks so report consumers can explain
+// route decisions without reconstructing the registry.
+func (o *Orchestrator) selectCheckPlans(ctx context.Context, opts RunOptions) ([]checkSelection, []SkippedCheck, []string, error) {
 	var tierMatched []Check
+	var skipped []SkippedCheck
 	for _, c := range o.reg.All() {
 		if c.Tiers.Has(opts.Mode) {
 			tierMatched = append(tierMatched, c)
+			continue
 		}
+		skipped = append(skipped, SkippedCheck{
+			Check:  c,
+			Reason: fmt.Sprintf("skipped: check tiers %s do not include active mode %s", tierString(c.Tiers), modeString(opts.Mode)),
+		})
 	}
 	if opts.Mode == Full {
-		return tierMatched, nil, nil
+		selected := make([]checkSelection, 0, len(tierMatched))
+		for _, c := range tierMatched {
+			selected = append(selected, checkSelection{
+				Check:  c,
+				Reason: fmt.Sprintf("selected: full mode runs every check that includes tier %s", modeString(Full)),
+			})
+		}
+		return selected, skipped, nil, nil
 	}
 
 	changed, err := o.files.Changed(ctx, opts.Scope)
 	if err != nil {
-		return nil, nil, fmt.Errorf("gates: detect changed files: %w", err)
+		return nil, nil, nil, fmt.Errorf("gates: detect changed files: %w", err)
 	}
-	if invalidatesAll(changed) {
-		return tierMatched, changed, nil
-	}
-	selected := make([]Check, 0, len(tierMatched))
-	for _, c := range tierMatched {
-		if c.affected(changed) {
-			selected = append(selected, c)
+	if invalidatingFile := firstInvalidatingFile(changed); invalidatingFile != "" {
+		selected := make([]checkSelection, 0, len(tierMatched))
+		for _, c := range tierMatched {
+			selected = append(selected, checkSelection{
+				Check:  c,
+				Reason: fmt.Sprintf("selected: changed file %q invalidates fast routing, so all fast checks run", invalidatingFile),
+			})
 		}
+		return selected, skipped, changed, nil
 	}
-	return selected, changed, nil
+	selected := make([]checkSelection, 0, len(tierMatched))
+	for _, c := range tierMatched {
+		reason, ok := fastSelectionReason(c, changed)
+		if ok {
+			selected = append(selected, checkSelection{Check: c, Reason: reason})
+			continue
+		}
+		skipped = append(skipped, SkippedCheck{Check: c, Reason: fastSkipReason(c, changed)})
+	}
+	return selected, skipped, changed, nil
 }
 
 // runOne dispatches to the native Run func or the GateRunnerPort (Backing).
@@ -132,4 +192,23 @@ func (o *Orchestrator) runOne(ctx context.Context, c Check, rc RunContext) (port
 // blocking check. A non-blocking FAIL (and any WARN/SKIP) is advisory.
 func isBlockingFail(c Check, v ports.GateVerdict) bool {
 	return c.Blocking && v.Status == ports.GateStatusFail
+}
+
+func fastSelectionReason(c Check, changed []string) (string, bool) {
+	if c.AlwaysRun() {
+		return "selected: check has no match globs and always runs", true
+	}
+	file, pattern, ok := c.affectedReason(changed)
+	if ok {
+		return fmt.Sprintf("selected: changed file %q matched %q", file, pattern), true
+	}
+	return "", false
+}
+
+func fastSkipReason(c Check, changed []string) string {
+	match := strings.Join(c.Match, ", ")
+	if len(changed) == 0 {
+		return fmt.Sprintf("skipped: no changed files; match globs require %s", match)
+	}
+	return fmt.Sprintf("skipped: no changed file matched match globs %s", match)
 }

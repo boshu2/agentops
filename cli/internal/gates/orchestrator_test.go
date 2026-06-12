@@ -3,6 +3,7 @@ package gates
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -57,6 +58,24 @@ func ranIDs(r *Report) map[string]bool {
 	return m
 }
 
+func resultByID(r *Report, id string) (CheckResult, bool) {
+	for _, res := range r.Results {
+		if res.Check.ID == id {
+			return res, true
+		}
+	}
+	return CheckResult{}, false
+}
+
+func skippedByID(r *Report, id string) (SkippedCheck, bool) {
+	for _, skip := range r.Skipped {
+		if skip.Check.ID == id {
+			return skip, true
+		}
+	}
+	return SkippedCheck{}, false
+}
+
 func TestOrchestrator_FullModeRunsAllTierMatched(t *testing.T) {
 	o := testOrch(t, sampleRegistry(t), fakeFiles{}, sampleVerdicts)
 	rep, err := o.Run(context.Background(), RunOptions{Mode: Full})
@@ -74,7 +93,7 @@ func TestOrchestrator_FullModeRunsAllTierMatched(t *testing.T) {
 	}
 }
 
-func TestOrchestrator_FastModeRoutesByChangedFiles(t *testing.T) {
+func TestGateOrchestrator_FastModeRoutesByChangedFiles(t *testing.T) {
 	o := testOrch(t, sampleRegistry(t), fakeFiles{files: []string{"cli/cmd/ao/main.go"}}, sampleVerdicts)
 	rep, err := o.Run(context.Background(), RunOptions{Mode: Fast, Scope: ScopeHead})
 	if err != nil {
@@ -90,9 +109,30 @@ func TestOrchestrator_FastModeRoutesByChangedFiles(t *testing.T) {
 	if got["fullonly"] {
 		t.Error("Full-only check should NOT run in fast mode")
 	}
+	goResult, ok := resultByID(rep, "go")
+	if !ok {
+		t.Fatal("missing go result")
+	}
+	if want := `selected: changed file "cli/cmd/ao/main.go" matched "cli/**"`; goResult.SelectedReason != want {
+		t.Errorf("go selected reason = %q, want %q", goResult.SelectedReason, want)
+	}
+	docsSkip, ok := skippedByID(rep, "docs")
+	if !ok {
+		t.Fatal("docs should be reported as route-skipped")
+	}
+	if !strings.Contains(docsSkip.Reason, "no changed file matched") || !strings.Contains(docsSkip.Reason, "docs/**") {
+		t.Errorf("docs skip reason = %q, want route explanation with docs/**", docsSkip.Reason)
+	}
+	fullOnlySkip, ok := skippedByID(rep, "fullonly")
+	if !ok {
+		t.Fatal("fullonly should be reported as tier-skipped")
+	}
+	if !strings.Contains(fullOnlySkip.Reason, "do not include active mode fast") {
+		t.Errorf("fullonly skip reason = %q, want tier explanation", fullOnlySkip.Reason)
+	}
 }
 
-func TestOrchestrator_FastModeInvalidationRunsAllFast(t *testing.T) {
+func TestGateOrchestrator_FastModeInvalidationRunsAllFast(t *testing.T) {
 	o := testOrch(t, sampleRegistry(t), fakeFiles{files: []string{"go.mod"}}, sampleVerdicts)
 	rep, err := o.Run(context.Background(), RunOptions{Mode: Fast, Scope: ScopeHead})
 	if err != nil {
@@ -104,6 +144,13 @@ func TestOrchestrator_FastModeInvalidationRunsAllFast(t *testing.T) {
 	}
 	if got["fullonly"] {
 		t.Error("Full-only check still excluded from fast mode")
+	}
+	docsResult, ok := resultByID(rep, "docs")
+	if !ok {
+		t.Fatal("missing docs result after invalidation")
+	}
+	if !strings.Contains(docsResult.SelectedReason, `changed file "go.mod" invalidates fast routing`) {
+		t.Errorf("docs selected reason = %q, want invalidation explanation", docsResult.SelectedReason)
 	}
 }
 
@@ -124,7 +171,7 @@ func TestReport_ExitCode_NonBlockingFailIsAdvisory(t *testing.T) {
 	}
 }
 
-func TestOrchestrator_FailFastStopsAfterFirstBlockingFail(t *testing.T) {
+func TestGateOrchestrator_FailFastStopsAfterFirstBlockingFail(t *testing.T) {
 	r := NewRegistry()
 	for _, id := range []string{"a", "b", "c"} {
 		if err := r.Add(Check{ID: id, Tiers: Full, Blocking: true, Backing: id}); err != nil {
@@ -141,9 +188,14 @@ func TestOrchestrator_FailFastStopsAfterFirstBlockingFail(t *testing.T) {
 	if len(rep.Results) != 1 {
 		t.Errorf("FailFast should stop after 1 blocking FAIL; ran %d", len(rep.Results))
 	}
+	if bSkip, ok := skippedByID(rep, "b"); !ok {
+		t.Error("FailFast should report later selected checks as skipped")
+	} else if !strings.Contains(bSkip.Reason, "fail-fast stopped") {
+		t.Errorf("b skip reason = %q, want fail-fast explanation", bSkip.Reason)
+	}
 }
 
-func TestReport_JSONSchema(t *testing.T) {
+func TestGateReport_JSONSchema(t *testing.T) {
 	o := testOrch(t, sampleRegistry(t), fakeFiles{}, sampleVerdicts)
 	rep, err := o.Run(context.Background(), RunOptions{Mode: Full})
 	if err != nil {
@@ -168,5 +220,27 @@ func TestReport_JSONSchema(t *testing.T) {
 	}
 	if len(parsed.Gates) != 4 {
 		t.Errorf("gates len = %d, want 4", len(parsed.Gates))
+	}
+	var goGate jsonGate
+	for _, gate := range parsed.Gates {
+		if gate.Name == "go" {
+			goGate = gate
+			break
+		}
+	}
+	if goGate.Name == "" {
+		t.Fatal("JSON gates missing go")
+	}
+	if goGate.SelectedReason == "" {
+		t.Error("go selected_reason should be populated")
+	}
+	if goGate.WorkflowBacking != "bash scripts/go" {
+		t.Errorf("go workflow_backing = %q, want bash scripts/go", goGate.WorkflowBacking)
+	}
+	if goGate.ArtifactPath != "scripts/go" {
+		t.Errorf("go artifact_path = %q, want scripts/go", goGate.ArtifactPath)
+	}
+	if goGate.RepairHint != "bash scripts/go" {
+		t.Errorf("go repair_hint = %q, want bash scripts/go", goGate.RepairHint)
 	}
 }
