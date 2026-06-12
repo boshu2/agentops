@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "packet_id": "codex-task-2026-06-12T160000Z-ag-codex-runtime-enhancement-o0nds-1",
+  "created_at": "2026-06-12T16:00:00Z",
+  "objective": "Define the Codex task-packet and run-receipt contract for ag-codex-runtime-enhancement-o0nds.1.",
+  "role": "worker",
+  "cwd": "/Users/bo/dev/agentops-wt-ag-codex-packet",
+  "allowed_paths": [
+    "schemas/codex-task-packet.schema.json",
+    "schemas/codex-run-receipt.schema.json",
+    "docs/contracts/codex-task-packet.md",
+    "docs/contracts/examples/codex/task-packet.json",
+    "docs/contracts/examples/codex/run-receipt.json",
+    "cli/cmd/ao/codex_packet_contract_test.go"
+  ],
+  "forbidden_actions": [
+    "do not run ao codex start/stop/ensure-start/ensure-stop as routine validation",
+    "do not use OPENAI_API_KEY for worker authentication"
+  ],
+  "sandbox": "workspace-write",
+  "auth": {
+    "required_mode": "chatgpt-subscription",
+    "reject_env": [
+      "OPENAI_API_KEY"
+    ],
+    "login_status_must_contain": "Logged in using ChatGPT",
+    "forbid_api_key": true
+  },
+  "dispatch": {
+    "mode": "non-mutating",
+    "mutates_repo": false,
+    "command": [
+      "codex",
+      "exec",
+      "--json",
+      "--sandbox",
+      "workspace-write",
+      "--output-last-message",
+      ".agents/codex/runs/ag-codex-runtime-enhancement-o0nds.1/final.md"
+    ],
+    "notes": "The dispatcher writes only the task packet and run receipt artifacts; Codex performs the requested repository work."
+  },
+  "execution": {
+    "argv": [
+      "codex",
+      "exec",
+      "--json",
+      "--sandbox",
+      "workspace-write",
+      "--output-last-message",
+      ".agents/codex/runs/ag-codex-runtime-enhancement-o0nds.1/final.md"
+    ],
+    "stdin": {
+      "mode": "pipe-prompt",
+      "close_after_prompt": true
+    },
+    "timeout_seconds": 900,
+    "prompt_path": ".agents/codex/tasks/ag-codex-runtime-enhancement-o0nds.1/prompt.md"
+  },
+  "output": {
+    "capture_mode": "output-last-message",
+    "final_message_path": ".agents/codex/runs/ag-codex-runtime-enhancement-o0nds.1/final.md",
+    "jsonl_path": ".agents/codex/runs/ag-codex-runtime-enhancement-o0nds.1/events.jsonl",
+    "receipt_path": ".agents/codex/runs/ag-codex-runtime-enhancement-o0nds.1/receipt.json"
+  },
+  "evidence": {
+    "receipt_path": ".agents/codex/runs/ag-codex-runtime-enhancement-o0nds.1/receipt.json",
+    "required_commands": [
+      "test -f schemas/codex-task-packet.schema.json && test -f schemas/codex-run-receipt.schema.json",
+      "rg -n \"stdin|timeout|Logged in using ChatGPT|sandbox|receipt|session\" docs/contracts/codex-task-packet.md",
+      "cd cli && go test ./cmd/ao ./internal/... -run 'Codex.*Packet|Codex.*Receipt'"
+    ],
+    "artifacts": [
+      "schemas/codex-task-packet.schema.json",
+      "schemas/codex-run-receipt.schema.json",
+      "docs/contracts/codex-task-packet.md",
+      "docs/contracts/examples/codex/task-packet.json",
+      "docs/contracts/examples/codex/run-receipt.json"
+    ]
+  },
+  "resume": {
+    "policy": "session-id",
+    "session_id": "codex-session-placeholder",
+    "allow_resume": true
+  },
+  "stop_condition": "Acceptance commands pass and the run receipt captures final message, exit code, changed files, commands run, and verdict."
+}
