@@ -71,6 +71,18 @@ you need the full autonomy contract.
   `plan_slices`, `execute_wave`, `validate_acceptance`, and `record_evidence`.
 - **Context density survives phase boundaries.** Apply the [Context Density Rule](../domain/references/context-density-rule.md) to every phase handoff and final report: keep intent, boundary, evidence, decision, constraint, and next action; omit or link anything else.
 
+### Folded triggers (ag-s43tg wave 1): `operating-loop-skill` + `operating-loop-workflow` route here
+
+- **`operating-loop-skill` → one bead through the loop.** Use when driving one bead
+  end-to-end through claim, work, independent validation, closeout, and persistence —
+  `/rpi <bead-id>` runs that exact arc: claim at discovery, work via `/crank`,
+  `/validate` as the independent gate, closeout on green acceptance, and evidence +
+  learning capture as the persistence move.
+- **`operating-loop-workflow` → the Workflow shape.** Use when you would install or
+  run the seven-move operating-loop Workflow for AgentOps plugin users and
+  multi-agent orchestration — `/rpi` is the in-session orchestrator of the same
+  seven moves ([operating loop doctrine](../../docs/architecture/operating-loop.md)).
+
 ## Core Contract
 
 RPI delegates via `Skill(skill="discovery", ...)`,
