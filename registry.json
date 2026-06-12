@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-12T14:01:12Z",
+  "generated_at": "2026-06-12T14:40:09Z",
   "summary": {
     "skills": 66,
     "hooks": 0,
@@ -1940,7 +1940,7 @@
       ],
       "produces": [
         ".agents/plans/*.md",
-        "bd-issue",
+        "br-issue",
         "execution-packet.json"
       ],
       "drives_commands": [

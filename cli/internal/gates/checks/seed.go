@@ -24,6 +24,21 @@ var (
 	corpusPaths     = []string{".agents/**", "docs/canon/**", "canon/**"}
 	goalsPaths      = []string{"GOALS.md", "spec/scenarios/**", "docs/adr/ADR-0003*"}
 	registryPaths   = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}
+	regenScopePaths = []string{
+		"skills/**",
+		"skills-codex/**",
+		"skills-codex-overrides/**",
+		"docs/contracts/**",
+		"docs/reference/agentops-skill-domain-map.md",
+		"docs/reference/agentops-hexagonal-architecture-map.md",
+		"registry.json",
+		"cli/cmd/ao/**",
+		"cli/docs/COMMANDS.md",
+		"docs/cli-surface.json",
+		"docs/cli-surface.md",
+		"evals/agentops-core/cli-command-surface-matrix.json",
+		"evals/agentops-core/fixtures/cli-command-surface-smoke.sh",
+	}
 )
 
 func init() {
@@ -94,6 +109,8 @@ func init() {
 		{ID: "always.bd-closeout-contract", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-bd-closeout-contract.sh"},
 		{ID: "always.domain-evolution-plan", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-agentops-domain-evolution-plan.sh"},
 		{ID: "always.file-manifest-overlap", Tiers: gates.Full, Blocking: true, Backing: "check-file-manifest-overlap.sh"},
+		{ID: "derived.changed-scope", Tiers: gates.Fast, Blocking: true, Backing: "regen-changed-scope.sh", Args: []string{"--check", "--scope", "head"},
+			Match: regenScopePaths},
 		{ID: "always.regen-all", Tiers: gates.Full, Blocking: true, Backing: "regen-all.sh", Args: []string{"--check"}},
 		{ID: "always.three-gap-supergate", Tiers: gates.Full, Match: goalsPaths, Blocking: true, Backing: "check-three-gap-supergate.sh"},
 		{ID: "always.sovereignty-proof-citations", Tiers: gates.Full, Match: docsPaths, Blocking: true, Backing: "validate-sovereignty-proof-citations.sh"},

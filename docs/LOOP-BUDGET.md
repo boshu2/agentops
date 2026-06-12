@@ -62,6 +62,7 @@ scripts/pre-push-gate.sh --single-pass         # Full single-pass (old behavior)
 | 25 | Doc-release gate | docs | Outer (CI) | No |
 | 25b | Release audit artifact refs | docs | Outer (CI) | No |
 | 26 | Contract compatibility | contract | Middle (advisory) | No |
+| 26a | Changed-scope derived artifact drift | derived | Middle (blocking) | Yes |
 | 27 | Hook preflight | hook | Middle (blocking) | Yes |
 | 28 | Hooks/docs parity | hook | Middle (advisory) | No |
 | 29 | CI policy parity | ci_policy | Outer (CI) | No |
@@ -119,6 +120,18 @@ scripts/pre-push-gate.sh --single-pass         # Full single-pass (old behavior)
 | swarm-evidence | always | Outer |
 | windows-smoke | always | Outer |
 | summary | always | Outer (gateway) |
+
+## Regeneration Scope Policy
+
+`derived.changed-scope` is the fast-path repair/check gate. It runs
+`scripts/regen-changed-scope.sh --check --scope head`, which selects scoped
+generators from the changed files and prints the matching repair command. It is
+for one-slice changes and should not require release-wide churn.
+
+`always.regen-all` is release-wide and full-mode only. It keeps
+`scripts/regen-all.sh --check` available for release prep, command deletions or
+renames, broad skill-prune waves, and final sweeps where touching every derived
+surface is intentional.
 
 ## Policy: Adding New Checks
 
