@@ -35,7 +35,7 @@ output_contract: skills/research/schemas/findings.json
 
 ## Loop position
 
-Upstream of move **1 (shape intent as BDD)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes a free-text goal; produces Given/When/Then-shaped acceptance examples that `/discovery` can fold into a [BDD intent issue](../../docs/templates/intent-issue.md). The Capture step (phase 4 below) is not complete until at least one happy path and one critical edge are written as testable Gherkin — "it should work" is not a captured example.
+Upstream of move **1 (shape intent as BDD)** of the [operating loop](../../../docs/architecture/operating-loop.md). Consumes a free-text goal; produces Given/When/Then-shaped acceptance examples that `/discovery` can fold into a [BDD intent issue](../../../docs/templates/intent-issue.md). The Capture step (phase 4 below) is not complete until at least one happy path and one critical edge are written as testable Gherkin — "it should work" is not a captured example.
 
 ## Two modes
 
@@ -238,7 +238,7 @@ Phase 4: Writes .agents/brainstorm/2026-02-17-search-performance.md
 
 ## See Also
 
-- [skills/plan/SKILL.md](../plan/SKILL.md) — Decompose the selected approach into actionable issues
+- [skills/plan/SKILL.md](../../plan/SKILL.md) — Decompose the selected approach into actionable issues
 
 ## Reference Documents
 
