@@ -36,6 +36,22 @@ output_contract: .agents/plans/YYYY-MM-DD-*.md, beads (via bd create)
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
+## Absorbed trigger surface — planning-workflow (folded in, skill-prune phase 2)
+
+This skill also covers the retired `planning-workflow` skill: the comprehensive
+markdown planning methodology for software projects. Use `plan` when starting a
+new project, creating implementation plans, or refining architecture before
+coding — planning tokens are far fewer and cheaper than implementation tokens,
+so front-load the thinking. The absorbed methodology's bar for a *delivered*
+plan: self-contained (a fresh agent can implement without asking the human),
+dependency-aware (decomposes cleanly into a beads graph), justified (every
+non-obvious choice has a *why*), reviewed to steady-state by a strong reasoning
+model, and converted to beads with the dependency edges intact. Ground every
+load-bearing architectural claim (library choices, existing-codebase structure,
+performance/cost numbers) in a verifiable source before it survives a review
+round. For small local changes (< ~200 LOC), plan in chat instead — the
+planning overhead would exceed the implementation cost.
+
 ## Loop position
 
 Moves **3 (vertical slice decomposition)** and **5 (wave validity check)** of the [operating loop](../../docs/architecture/operating-loop.md). Consumes the [BDD intent issue](../../docs/templates/intent-issue.md); produces a [slice validation plan](../../docs/templates/slice-validation.md) — one slice per Given/When/Then row with a first-failing-test target, write-scope, bounded context, and ownership. Slices group into a wave only when every row of the wave-validity check passes (distinct write scopes, no shared migration/contract/CLI surface, declared integration order, owner per slice, discard path per slice). Default to sequential when in doubt — parallel waves are an optimization, not a default.
