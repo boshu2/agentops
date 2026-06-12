@@ -48,6 +48,12 @@ var codexImageHealthRunCheck = runCodexImageHealthCheck
 // check gets its own bound to keep a wedged script from hanging the command.
 const codexImageHealthDefaultCheckTimeout = 30 * time.Second
 
+// codexImageHealthWaitDelay bounds how long Wait blocks on the stdout/stderr
+// pipe copy after the check's context expires. Without it, a grandchild that
+// inherits the pipes keeps Run blocked past the per-check budget even though
+// the direct child was killed.
+const codexImageHealthWaitDelay = 2 * time.Second
+
 var codexImageHealthCheckTimeout = codexImageHealthDefaultCheckTimeout
 
 const (
@@ -1000,6 +1006,7 @@ func runCodexImageHealthCheck(ctx context.Context, cwd string, spec codexImageHe
 	started := time.Now()
 	cmd := exec.CommandContext(checkCtx, spec.Command[0], spec.Command[1:]...)
 	cmd.Dir = cwd
+	cmd.WaitDelay = codexImageHealthWaitDelay
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

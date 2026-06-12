@@ -301,3 +301,39 @@ func findCodexImageHealthCheck(t *testing.T, result codexImageHealthResult, name
 	t.Fatalf("missing check %q in %+v", name, result.Checks)
 	return codexImageHealthCheckResult{}
 }
+
+func TestCodexImageHealthForkingCheckReturnsDespiteGrandchildPipeHold(t *testing.T) {
+	cwd := t.TempDir()
+	// The backgrounded sleep inherits the stdout/stderr pipes; killing the
+	// direct child on deadline is not enough — Wait blocks on the pipe copy
+	// until WaitDelay abandons it.
+	spec := codexImageHealthCheckSpec{
+		Name:        "forking-slow-check",
+		Description: "Forking check must not block Run past the budget via inherited pipes.",
+		Command:     []string{"sh", "-c", "sleep 60 & wait"},
+	}
+	withCodexImageHealthCheckTimeout(t, 100*time.Millisecond)
+
+	done := make(chan codexImageHealthCheckResult, 1)
+	go func() {
+		done <- runCodexImageHealthCheck(context.Background(), cwd, spec)
+	}()
+
+	select {
+	case check := <-done:
+		if check.Status != "FAIL" {
+			t.Fatalf("status = %q, want FAIL for timed-out forking check", check.Status)
+		}
+		if !check.TimedOut {
+			t.Fatalf("timed_out = false, want true for forking check exceeding the budget")
+		}
+		if !check.Slow {
+			t.Fatalf("slow = false, want true for forking check exceeding the budget")
+		}
+		if check.DurationMS >= 4000 {
+			t.Fatalf("duration_ms = %d, want bounded by budget + WaitDelay (well under 4000ms)", check.DurationMS)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("image-health check still running after 5s: grandchild pipe hold blocks Run (WaitDelay unset)")
+	}
+}
