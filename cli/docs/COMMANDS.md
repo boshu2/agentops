@@ -4547,6 +4547,25 @@ ao skills resolve [flags]
       --strict   Exit non-zero when ME overlaps are found (CI dedup gate)
 ```
 
+#### `ao skills retire`
+
+One deterministic retire operation for a skill.
+
+```
+ao skills retire <slug> [flags]
+```
+
+**Flags:**
+
+```
+      --allow-critical   Allow retiring a slug listed in docs/contracts/critical-skills.txt
+      --dry-run          Report every planned operation without mutating anything
+  -h, --help             help for retire
+      --into string      Target skill the retiree merges into (historical state merged-into; default: cut)
+      --json             Emit a machine-readable JSON report
+      --no-regen         Skip the regen scripts after the ledger flip
+```
+
 ---
 
 ### `ao turn`
