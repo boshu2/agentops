@@ -1,6 +1,6 @@
 ---
 name: review
-description: 'Review diffs for risk, find mocks, scan for bugs, audit codebases. Use when: reviewing a diff/PR for bugs and risk, hunting mocks/stubs/placeholders, or auditing for quality.'
+description: 'Review diffs for risk, find mocks, scan for bugs, audit codebases. Use when: reviewing a diff/PR for bugs and risk, hunting mocks/stubs/placeholders, or auditing for quality. Also: investigate bugs and root causes (absorbs bug-hunt); Domain-parameterized codebase audits (security, UX, perf, API, copy, CLI) + report modes (archaeology, architecture/briefing, patterns, risk) when auditing or onboarding (absorbs codebase-audit); and reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks (absorbs ubs).'
 practices:
 - code-complete
 - refactoring
@@ -335,6 +335,26 @@ Merge council findings into the review document under a "## Council Findings" se
 | `/standards` | Auto-loaded for language-specific rules. |
 | `/bug-hunt` | `/review` does a structured pass; `/bug-hunt` does deep investigation of suspected bugs. |
 | `/validate --mode=pr` | PR-specific validation (isolation, scope creep). Complementary to `/review`. |
+
+---
+
+## Absorbed Skills (skill-prune phase 2 fold-ins)
+
+This skill is the fold target for three retired skills. Their use-cases route here:
+
+- **bug-hunt** — investigate bugs and root causes. Use `/review --bugs` for the
+  scanner pass ([references/BUG_SCANNER.md](references/BUG_SCANNER.md)); for deep
+  investigation of a suspected bug, run the scanner findings through an
+  evidence-first root-cause loop (reproduce → isolate → fix → verify).
+- **codebase-audit** — Domain-parameterized codebase audits (security, UX, perf,
+  API, copy, CLI) + report modes (archaeology, architecture/briefing, patterns,
+  risk). Use when auditing or onboarding: `/review --audit <domain>` and
+  `/review --deep-scan` ([references/DOMAIN_AUDIT.md](references/DOMAIN_AUDIT.md),
+  [references/DEEP_SCAN.md](references/DEEP_SCAN.md)).
+- **ubs** — use when reviewing code with UBS for bugs, security issues,
+  AI-generated quality, or pre-commit checks. If the `ubs` scanner binary is on
+  PATH, run it over the diff and triage its findings into the SCORED pass
+  (see [references/audit-and-mock-sweeps.md](references/audit-and-mock-sweeps.md)).
 
 ---
 
