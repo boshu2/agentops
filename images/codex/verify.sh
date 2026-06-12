@@ -4,7 +4,7 @@
 # For each CORE slug in images/codex/manifest.json, confirm its skills-codex/<slug>/
 # twin is present and complete: SKILL.md AND prompt.md AND .agentops-generated.json
 # all exist. Missing or incomplete twins are FLAGGED (non-zero exit), never silently
-# passed. The corpus is post-distillation, so all 61 CORE twins should exist.
+# passed. The corpus is post-distillation, so all manifest-listed CORE twins should exist.
 #
 # This is presence/packaging verification ONLY. Hash-consistency (twin in sync with
 # source) is the separate, authoritative gate: scripts/regen-codex-hashes.sh --check,
@@ -27,12 +27,19 @@ if [ ! -f "${MANIFEST}" ]; then
   exit 2
 fi
 
-# Extract the CORE slug list from the manifest (no jq dependency; use python3).
-mapfile -t CORE_SLUGS < <(python3 -c '
+# Extract the CORE manifest rows (no jq dependency; use python3).
+mapfile -t CORE_ROWS < <(python3 -c '
 import json, sys
 m = json.load(open(sys.argv[1]))
 for s in m["core_skills"]:
-    print(s["slug"])
+    files = s["twin_files"]
+    print("\t".join([
+        s["slug"],
+        s["twin_path"],
+        files["skill"],
+        files["prompt"],
+        files["drift_marker"],
+    ]))
 ' "${MANIFEST}")
 
 EXPECTED="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["core_count"])' "${MANIFEST}")"
@@ -45,13 +52,21 @@ echo
 
 missing=0
 checked=0
-for slug in "${CORE_SLUGS[@]}"; do
+for row in "${CORE_ROWS[@]}"; do
+  IFS=$'\t' read -r slug twin_path skill_file prompt_file drift_file <<<"${row}"
   [ -z "${slug}" ] && continue
   checked=$((checked + 1))
-  twin="skills-codex/${slug}"
-  for f in SKILL.md prompt.md .agentops-generated.json; do
-    if [ ! -f "${twin}/${f}" ]; then
-      echo "MISSING/STALE: ${twin}/${f}  (CORE slug '${slug}' twin incomplete)" >&2
+  expected_twin_path="skills-codex/${slug}/"
+  if [[ "${twin_path}" != "${expected_twin_path}" ]]; then
+    echo "MISSING/STALE: ${slug} twin_path is '${twin_path}', want '${expected_twin_path}'" >&2
+    missing=$((missing + 1))
+  fi
+  for file in "${skill_file}" "${prompt_file}" "${drift_file}"; do
+    if [[ "${file}" != "${expected_twin_path}"* ]]; then
+      echo "MISSING/STALE: ${file}  (CORE slug '${slug}' twin_files path outside '${expected_twin_path}')" >&2
+      missing=$((missing + 1))
+    elif [ ! -f "${file}" ]; then
+      echo "MISSING/STALE: ${file}  (CORE slug '${slug}' twin incomplete)" >&2
       missing=$((missing + 1))
     fi
   done

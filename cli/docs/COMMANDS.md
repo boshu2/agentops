@@ -1424,6 +1424,14 @@ ao codex ensure-stop [flags]
       --transcript string     Explicit transcript path to forge instead of runtime discovery
 ```
 
+#### `ao codex image-health`
+
+Run read-only Codex image and runtime health checks
+
+```
+ao codex image-health [flags]
+```
+
 #### `ao codex start`
 
 Start a Codex session with explicit flywheel maintenance (fallback for pre-v0.115.0)

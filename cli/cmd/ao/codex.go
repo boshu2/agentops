@@ -41,6 +41,8 @@ var (
 	codexDispatchPacketPath    string
 )
 
+var codexImageHealthRunCheck = runCodexImageHealthCheck
+
 const (
 	runtimeKindClaude   = codexruntime.RuntimeKindClaude
 	runtimeKindCodex    = codexruntime.RuntimeKindCodex
@@ -178,6 +180,46 @@ type codexStatusResult struct {
 	Retrieval codexRetrievalHealth    `json:"retrieval"`
 	Promotion codexPromotionHealth    `json:"promotion"`
 	Citations codexCitationHealth     `json:"citations"`
+}
+
+type codexImageHealthResult struct {
+	SchemaVersion         int                           `json:"schema_version"`
+	Status                string                        `json:"status"`
+	CheckedAt             string                        `json:"checked_at"`
+	CWD                   string                        `json:"cwd"`
+	LifecycleStatePath    string                        `json:"lifecycle_state_path"`
+	LifecycleStateMutated bool                          `json:"lifecycle_state_mutated"`
+	Summary               codexImageHealthSummary       `json:"summary"`
+	Checks                []codexImageHealthCheckResult `json:"checks"`
+}
+
+type codexImageHealthSummary struct {
+	Total   int `json:"total"`
+	Passed  int `json:"passed"`
+	Failed  int `json:"failed"`
+	Skipped int `json:"skipped"`
+}
+
+type codexImageHealthCheckSpec struct {
+	Name                string   `json:"name"`
+	Description         string   `json:"description"`
+	Command             []string `json:"command"`
+	RepairHint          string   `json:"repair_hint"`
+	OptionalWhenMissing bool     `json:"optional_when_missing,omitempty"`
+}
+
+type codexImageHealthCheckResult struct {
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Status      string   `json:"status"`
+	Command     []string `json:"command"`
+	RepairHint  string   `json:"repair_hint"`
+	ExitCode    int      `json:"exit_code"`
+	DurationMS  int64    `json:"duration_ms"`
+	Stdout      string   `json:"stdout,omitempty"`
+	Stderr      string   `json:"stderr,omitempty"`
+	Error       string   `json:"error,omitempty"`
+	Optional    bool     `json:"optional,omitempty"`
 }
 
 type codexTaskPacket struct {
@@ -368,10 +410,17 @@ var codexDispatchCmd = &cobra.Command{
 	RunE:    runCodexDispatch,
 }
 
+var codexImageHealthCmd = &cobra.Command{
+	Use:   "image-health",
+	Short: "Run read-only Codex image and runtime health checks",
+	Args:  cobra.NoArgs,
+	RunE:  runCodexImageHealth,
+}
+
 func init() {
 	codexCmd.GroupID = "workflow"
 	rootCmd.AddCommand(codexCmd)
-	codexCmd.AddCommand(codexStartCmd, codexEnsureStartCmd, codexStopCmd, codexEnsureStopCmd, codexStatusCmd, codexDispatchCmd)
+	codexCmd.AddCommand(codexStartCmd, codexEnsureStartCmd, codexStopCmd, codexEnsureStopCmd, codexStatusCmd, codexDispatchCmd, codexImageHealthCmd)
 
 	codexStartCmd.Flags().IntVar(&codexStartLimit, "limit", 3, "Maximum artifacts to surface per category")
 	codexStartCmd.Flags().StringVar(&codexStartQuery, "query", "", "Optional startup query (defaults to the current Codex thread name)")
@@ -790,6 +839,215 @@ func runCodexDispatch(cmd *cobra.Command, args []string) error {
 		}
 	}
 	return runErr
+}
+
+func runCodexImageHealth(cmd *cobra.Command, args []string) error {
+	cwd, err := resolveProjectDir()
+	if err != nil {
+		return err
+	}
+	result := performCodexImageHealth(cmd.Context(), resolveCodexImageHealthRoot(cwd))
+	if err := outputCodexImageHealthResult(result); err != nil {
+		return err
+	}
+	if result.Status == "FAIL" {
+		return fmt.Errorf("codex image health failed: %d check(s) failed", result.Summary.Failed)
+	}
+	return nil
+}
+
+func performCodexImageHealth(ctx context.Context, cwd string) codexImageHealthResult {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	checkedAt := time.Now().UTC().Format(time.RFC3339)
+	lifecycleStatePath := filepath.Join(cwd, ".agents", "ao", "codex", "state.json")
+	before := codexImageHealthFileFingerprint(lifecycleStatePath)
+
+	result := codexImageHealthResult{
+		SchemaVersion:      1,
+		Status:             "PASS",
+		CheckedAt:          checkedAt,
+		CWD:                cwd,
+		LifecycleStatePath: lifecycleStatePath,
+	}
+	for _, spec := range codexImageHealthCheckSpecs() {
+		check := codexImageHealthRunCheck(ctx, cwd, spec)
+		result.Checks = append(result.Checks, check)
+	}
+
+	after := codexImageHealthFileFingerprint(lifecycleStatePath)
+	result.LifecycleStateMutated = before != after
+	if result.LifecycleStateMutated {
+		result.Checks = append(result.Checks, codexImageHealthCheckResult{
+			Name:        "codex-lifecycle-state-nonmutation",
+			Description: "Image health must not mutate Codex lifecycle state.",
+			Status:      "FAIL",
+			RepairHint:  "Run image health without lifecycle start/stop/ensure commands.",
+			ExitCode:    1,
+			Error:       "Codex lifecycle state changed during image health check.",
+		})
+	}
+	result.Summary = summarizeCodexImageHealthChecks(result.Checks)
+	if result.Summary.Failed > 0 {
+		result.Status = "FAIL"
+	}
+	return result
+}
+
+func resolveCodexImageHealthRoot(cwd string) string {
+	root, err := resolveRepoRoot(cwd)
+	if err == nil && strings.TrimSpace(root) != "" {
+		return root
+	}
+	return cwd
+}
+
+func codexImageHealthCheckSpecs() []codexImageHealthCheckSpec {
+	return []codexImageHealthCheckSpec{
+		{
+			Name:        "codex-image-verify",
+			Description: "Codex image bundle has complete twins and synchronized hashes.",
+			Command:     []string{"bash", "images/codex/verify.sh"},
+			RepairHint:  "bash images/codex/verify.sh; if hashes drift, run bash scripts/regen-codex-hashes.sh",
+		},
+		{
+			Name:        "codex-parity-audit",
+			Description: "Codex artifacts do not contain unsupported Claude-only primitives or stale runtime syntax.",
+			Command:     []string{"bash", "scripts/audit-codex-parity.sh"},
+			RepairHint:  "bash scripts/audit-codex-parity.sh --skill <name>",
+		},
+		{
+			Name:        "codex-override-coverage",
+			Description: "Codex override catalog deliberately covers every skill treatment.",
+			Command:     []string{"bash", "scripts/validate-codex-override-coverage.sh"},
+			RepairHint:  "bash scripts/validate-codex-override-coverage.sh",
+		},
+		{
+			Name:        "codex-generated-artifacts",
+			Description: "Checked-in Codex artifacts and generated metadata are current.",
+			Command:     []string{"bash", "scripts/validate-codex-generated-artifacts.sh", "--scope", "worktree"},
+			RepairHint:  "bash scripts/refresh-codex-artifacts.sh --scope worktree",
+		},
+		{
+			Name:        "codex-rpi-contract",
+			Description: "Codex skill chaining and RPI contract defaults are intact.",
+			Command:     []string{"bash", "scripts/validate-codex-rpi-contract.sh"},
+			RepairHint:  "bash scripts/validate-codex-rpi-contract.sh",
+		},
+		{
+			Name:        "codex-lifecycle-guards",
+			Description: "Codex entry/closeout skills use ensure-start/ensure-stop and current tracker guidance.",
+			Command:     []string{"bash", "scripts/validate-codex-lifecycle-guards.sh"},
+			RepairHint:  "bash scripts/validate-codex-lifecycle-guards.sh",
+		},
+		{
+			Name:                "codex-headless-runtime-skills",
+			Description:         "Headless runtime skill checks are available and pass for Codex.",
+			Command:             []string{"bash", "scripts/validate-headless-runtime-skills.sh"},
+			RepairHint:          "bash scripts/validate-headless-runtime-skills.sh",
+			OptionalWhenMissing: true,
+		},
+	}
+}
+
+func runCodexImageHealthCheck(ctx context.Context, cwd string, spec codexImageHealthCheckSpec) codexImageHealthCheckResult {
+	result := codexImageHealthCheckResult{
+		Name:        spec.Name,
+		Description: spec.Description,
+		Command:     append([]string(nil), spec.Command...),
+		RepairHint:  spec.RepairHint,
+	}
+	if len(spec.Command) == 0 {
+		result.Status = "FAIL"
+		result.ExitCode = -1
+		result.Error = "health check command is empty"
+		return result
+	}
+	if missing := codexImageHealthMissingScript(cwd, spec.Command); missing != "" {
+		if spec.OptionalWhenMissing {
+			result.Status = "SKIP"
+			result.Optional = true
+			result.ExitCode = 0
+			result.Error = "optional health check unavailable: " + missing
+			return result
+		}
+		result.Status = "FAIL"
+		result.ExitCode = -1
+		result.Error = "required health check unavailable: " + missing
+		return result
+	}
+
+	started := time.Now()
+	cmd := exec.CommandContext(ctx, spec.Command[0], spec.Command[1:]...)
+	cmd.Dir = cwd
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	result.DurationMS = time.Since(started).Milliseconds()
+	result.Stdout = codexImageHealthExcerpt(stdout.String())
+	result.Stderr = codexImageHealthExcerpt(stderr.String())
+	result.ExitCode = codexDispatchExitCode(err, ctx.Err() == context.DeadlineExceeded)
+	if err != nil {
+		result.Status = "FAIL"
+		result.Error = strings.TrimSpace(err.Error())
+		if strings.TrimSpace(result.Stderr) != "" {
+			result.Error = strings.TrimSpace(result.Stderr)
+		}
+		return result
+	}
+	result.Status = "PASS"
+	return result
+}
+
+func codexImageHealthMissingScript(cwd string, command []string) string {
+	if len(command) < 2 || command[0] != "bash" {
+		return ""
+	}
+	scriptPath := command[1]
+	if filepath.IsAbs(scriptPath) {
+		if !fileExists(scriptPath) {
+			return scriptPath
+		}
+		return ""
+	}
+	abs := filepath.Join(cwd, scriptPath)
+	if !fileExists(abs) {
+		return scriptPath
+	}
+	return ""
+}
+
+func summarizeCodexImageHealthChecks(checks []codexImageHealthCheckResult) codexImageHealthSummary {
+	summary := codexImageHealthSummary{Total: len(checks)}
+	for _, check := range checks {
+		switch check.Status {
+		case "PASS":
+			summary.Passed++
+		case "SKIP":
+			summary.Skipped++
+		default:
+			summary.Failed++
+		}
+	}
+	return summary
+}
+
+func codexImageHealthFileFingerprint(path string) string {
+	info, err := os.Stat(path)
+	if err != nil {
+		return "missing"
+	}
+	return fmt.Sprintf("exists:%d:%d", info.Size(), info.ModTime().UnixNano())
+}
+
+func codexImageHealthExcerpt(text string) string {
+	text = strings.TrimSpace(text)
+	if len(text) > 2000 {
+		return text[:2000]
+	}
+	return text
 }
 
 func loadCodexTaskPacket(path string) (codexTaskPacket, error) {
@@ -2142,6 +2400,34 @@ func outputCodexDispatchResult(result codexRunReceipt) error {
 	}
 	if result.FailureReason != "" {
 		fmt.Printf("Failure: %s\n", result.FailureReason)
+	}
+	return nil
+}
+
+func outputCodexImageHealthResult(result codexImageHealthResult) error {
+	if GetOutput() == "json" {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(result)
+	}
+
+	fmt.Println("Codex Image Health")
+	fmt.Println("==================")
+	fmt.Printf("Status: %s\n", result.Status)
+	fmt.Printf("Checks: %d pass, %d fail, %d skip\n", result.Summary.Passed, result.Summary.Failed, result.Summary.Skipped)
+	fmt.Printf("Lifecycle state mutated: %t\n", result.LifecycleStateMutated)
+	fmt.Println()
+	for _, check := range result.Checks {
+		fmt.Printf("- %s: %s\n", check.Name, check.Status)
+		if len(check.Command) > 0 {
+			fmt.Printf("  command: %s\n", strings.Join(check.Command, " "))
+		}
+		if check.Error != "" {
+			fmt.Printf("  error: %s\n", firstLine(check.Error))
+		}
+		if check.RepairHint != "" && check.Status != "PASS" {
+			fmt.Printf("  repair: %s\n", check.RepairHint)
+		}
 	}
 	return nil
 }

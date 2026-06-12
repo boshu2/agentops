@@ -100,7 +100,14 @@ Claude Code's plugin manager, then re-run `scripts/install-claude.sh`.
 ```bash
 curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash
 codex --version
+ao codex image-health --json
 ```
+
+`ao codex image-health` is the read-only Codex image doctor. It aggregates
+`images/codex/verify.sh`, Codex parity/override/generated-artifact gates, the
+RPI contract, lifecycle guards, and headless-runtime checks without running
+`ao codex start`, `ao codex stop`, `ao codex ensure-start`, or
+`ao codex ensure-stop`.
 
 If stale raw skills shadow the plugin, inspect the backup path recorded in
 `~/.codex/.agentops-codex-install.json`, then re-run the installer.

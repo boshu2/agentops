@@ -1,18 +1,18 @@
-# Codex image bundle — 61 CORE twins
+# Codex image bundle — 40 CORE twins
 
 **`cp-gqu` image-skills EPIC · Unit 4 · bead `cp-eoxc`.** Spec:
 `control-plane/IMAGE-CORE.md` §1 (the 61 CORE slugs), §2c + §2d (the Codex
 conversion recipe), §3b (Codex operator skills), §4 Unit-4 (what this unit
 consumes). Cross-image laws: `control-plane/IMAGES.md`.
 
-This directory **packages** the CORE-61 subset as the **Codex image**. Codex is
+This directory **packages** the CORE-40 subset as the **Codex image**. Codex is
 the **only** vendor that needs a format **conversion** — Claude and Gemini/AGY
 consume `skills/<slug>/SKILL.md` directly, but Codex consumes a converted twin at
 `skills-codex/<slug>/`.
 
 > **This bundle does NOT re-run the converter.** The `skills-codex/` twins already
-> exist for the whole corpus (158 twins). The job here is to declare the CORE-61
-> subset as the Codex image and **prove** those 61 twins are present, converted,
+> exist for the current Codex corpus (66 twins). The job here is to declare the CORE-40
+> subset as the Codex image and **prove** those 40 twins are present, converted,
 > and hash-consistent with their source. Packaging only — nothing under `skills/`
 > or `skills-codex/` is edited.
 
@@ -20,7 +20,7 @@ consume `skills/<slug>/SKILL.md` directly, but Codex consumes a converted twin a
 
 | File | Purpose |
 |---|---|
-| `manifest.json` | The Codex image set: 61 CORE slugs (35 method + 26 tool-op), each with its `skills-codex/<slug>/` twin path, source path, twin files, and `codex_override_catalog` wave + treatment; plus the 4 §3b Codex operator skills. |
+| `manifest.json` | The Codex image set: 40 CORE slugs (29 method + 11 tool-op), each with its `skills-codex/<slug>/` twin path, source path, twin files, and `codex_override_catalog` wave + treatment; plus the 4 §3b Codex operator skills. |
 | `verify.sh` | Presence gate: for each CORE slug confirm `SKILL.md` + `prompt.md` + `.agentops-generated.json` exist in its twin; then run the hash-drift gate. Exit 0 = clean; missing/stale twins are flagged, never silently passed. |
 | `README.md` | This file. |
 
@@ -53,15 +53,15 @@ A top-level **`skills-codex/.agentops-manifest.json`** holds the
 `security-focused`, `catalog-parity`) plus a catalog hash. `manifest.json` records
 each CORE slug's `codex_wave` + `codex_treatment` from this catalog.
 
-### CORE-61 wave distribution
+### CORE-40 wave distribution
 
 | Wave | CORE slugs |
 |---|---:|
-| `backbone` | 11 |
+| `backbone` | 10 |
 | `core-execution` | 7 |
-| `analysis-authoring` | 1 |
-| `catalog-parity` | 42 |
-| **total** | **61** |
+| `analysis-authoring` | 0 |
+| `catalog-parity` | 23 |
+| **total** | **40** |
 
 ## The integrity gate
 
@@ -87,7 +87,7 @@ curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/instal
 
 ```bash
 # from the agentops repo root (or anywhere — verify.sh resolves the root itself)
-bash images/codex/verify.sh          # presence of all 61 twins + hash drift gate -> exit 0
+bash images/codex/verify.sh          # presence of all 40 twins + hash drift gate -> exit 0
 
 # the authoritative drift gate on its own
 scripts/regen-codex-hashes.sh --check   # exit 0 = twins in sync with source
