@@ -142,9 +142,9 @@ func TestTickLedgerDirResolution(t *testing.T) {
 			want:       func(d string) string { return filepath.Join(d, "overlay_beads") },
 		},
 		{
-			name:       "last rt.env entry wins",
-			rtEnv:      []string{"BEADS_DIR=first", "BEADS_DIR=second"},
-			want:       func(d string) string { return filepath.Join(d, "second") },
+			name:  "last rt.env entry wins",
+			rtEnv: []string{"BEADS_DIR=first", "BEADS_DIR=second"},
+			want:  func(d string) string { return filepath.Join(d, "second") },
 		},
 		{
 			name:       "absolute BEADS_DIR used verbatim",
