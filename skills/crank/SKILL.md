@@ -11,7 +11,7 @@ consumes:
 - implement
 - post-mortem
 - swarm
-- vibe
+- validate
 produces:
 - .agents/swarm/results/*.json
 - git-changes
@@ -32,7 +32,7 @@ metadata:
   tier: execution
   dependencies:
   - swarm
-  - vibe
+  - validate
   - implement
   - beads
   - post-mortem
@@ -67,7 +67,7 @@ Read `references/team-coordination.md` for the full per-wave execution model, `r
 | `--test-first` | off | Enable spec-first TDD: SPEC WAVE generates contracts, TEST WAVE generates failing tests, IMPL WAVES make tests pass |
 | `--per-task-commits` | off | Opt-in per-task commit strategy. Falls back to wave-batch when file boundaries overlap. See `references/commit-strategies.md`. |
 | `--tier=<name>` | (auto) | Force a specific cost tier (quality/balanced/budget) for all council calls. Overrides effort-to-tier auto-mapping. |
-| `--no-lifecycle` | off | Skip ALL lifecycle skill auto-invocations (test delegation in TEST WAVE, pre-vibe deps/test checks) |
+| `--no-lifecycle` | off | Skip ALL lifecycle skill auto-invocations (test delegation in TEST WAVE, pre-validation deps/test checks) |
 | `--lifecycle=<tier>` | matches complexity | Controls which lifecycle skills fire: `minimal` (test only), `standard` (+deps vuln), `full` (all) |
 | `--no-scope-check` | off | Skip scope-completion check before DONE marker (Step 8.7) |
 | `--skip-audit` | off | Skip bd-audit pre-flight gate (Step 3a.2) |
@@ -112,7 +112,7 @@ Read [references/wave-dispatch.md](references/wave-dispatch.md) when you need SP
 
 ### Wave completion (Step 5 → Step 8.7)
 
-Read [references/wave-completion.md](references/wave-completion.md) when you need verify-and-sync (Step 5, external-gate protocol), wave acceptance check + CI-policy parity gate (5.5), wave checkpoint + per-criterion verdicts + back-compat fallback (5.7), vibe-context checkpoint (5.7b), shared-task-notes harvest (5.7c), plan-mutation logging (5.7d), wave status report (5.8), worktree base-SHA refresh (5.9), check-for-more-work loop (Step 6), de-sloppify pass (6.5), pre-vibe lifecycle checks (6.9), final batched validation (Step 7), phase-2 summary (Step 8), learnings extraction (8.5), shared-notes archive (8.6), and the scope-completion pre-close gate (8.7).
+Read [references/wave-completion.md](references/wave-completion.md) when you need verify-and-sync (Step 5, external-gate protocol), wave acceptance check + CI-policy parity gate (5.5), wave checkpoint + per-criterion verdicts + back-compat fallback (5.7), validation-context checkpoint (5.7b), shared-task-notes harvest (5.7c), plan-mutation logging (5.7d), wave status report (5.8), worktree base-SHA refresh (5.9), check-for-more-work loop (Step 6), de-sloppify pass (6.5), pre-validation lifecycle checks (6.9), final batched validation (Step 7), phase-2 summary (Step 8), learnings extraction (8.5), shared-notes archive (8.6), and the scope-completion pre-close gate (8.7).
 
 Step 5.5 includes the **CI-Policy Parity Gate**: if a wave diff touches `.github/workflows/*.yml`, run `bash scripts/validate-ci-policy-parity.sh`; any non-zero exit fails wave acceptance and surfaces the generated drift report. See [references/wave-patterns.md](references/wave-patterns.md) "CI-Policy Parity Gate" for the worked example and trigger pattern.
 
@@ -122,7 +122,7 @@ Tell the user:
 1. Epic ID and title
 2. Number of issues completed
 3. Total iterations used (of 50 max)
-4. Final vibe results
+4. Final validation (/validate --mode=post-impl, absorbs vibe) results
 5. Flywheel status (if ao available)
 6. Suggest running `/validate` to complete closeout and promote learnings
 
@@ -184,8 +184,8 @@ Read `references/worker-verb-disambiguation.md` for the verb clarification table
 
 ## Examples
 
-**User says:** `/crank ag-m0r` — Beads epic: loads learnings, swarm per wave, loops until all closed, final vibe.
-**User says:** `/crank .agents/plans/auth-refactor.md` — Plan file: decomposes into tasks, swarm per wave, final vibe.
+**User says:** `/crank ag-m0r` — Beads epic: loads learnings, swarm per wave, loops until all closed, final validation.
+**User says:** `/crank .agents/plans/auth-refactor.md` — Plan file: decomposes into tasks, swarm per wave, final validation.
 **User says:** `/crank --test-first ag-xj9` — SPEC → TEST → RED Gate → GREEN IMPL. See `references/test-first-mode.md`.
 
 ---
@@ -200,7 +200,7 @@ Common failure modes: no ready issues, repeated wave gate failures, missing file
 
 Most `/crank` steps delegate worker execution via `/swarm` or `Skill()`. A small number of steps are **orchestrator-owned** by design — these are inline gates, scans, and bookkeeping that must stay in the orchestrator's context to make a downstream decision. Orchestrator-owned steps are marked with a `*(orchestrator-owned: …)*` admonition in the body (see STEP 3a.3, STEP 6.5 slop-scan, STEP 8.7).
 
-**Do NOT convert orchestrator-owned steps into `Skill()` or `/swarm` delegations** — they are intentionally inline. Every other step (SPEC wave, TEST wave, IMPL wave, vibe, lifecycle checks) should delegate via the documented `Skill(...)` call or `/swarm` invocation.
+**Do NOT convert orchestrator-owned steps into `Skill()` or `/swarm` delegations** — they are intentionally inline. Every other step (SPEC wave, TEST wave, IMPL wave, validation, lifecycle checks) should delegate via the documented `Skill(...)` call or `/swarm` invocation.
 
 If unsure whether a step is orchestrator-owned or delegatable, the default is **delegate**. Only steps marked with the admonition above are exempt.
 

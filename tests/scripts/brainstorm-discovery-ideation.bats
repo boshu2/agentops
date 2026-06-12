@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 
 # Regression tests for the idea-wizard generate-winnow methodology wrapped into
-# /brainstorm + /discovery (ag-yw0).
+# /discovery ideation path (brainstorm absorbed, ag-s43tg; orig ag-yw0).
 #
 # This is a documentation/wiring gate: the generate-winnow methodology lives in
 # SKILL.md prose + references + .feature scenarios (skills are markdown contracts,
@@ -14,14 +14,14 @@
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    BRAINSTORM="$REPO_ROOT/skills/brainstorm/SKILL.md"
+    BRAINSTORM="$REPO_ROOT/skills/discovery/references/goal-clarification-brainstorm.md"
     DISCOVERY="$REPO_ROOT/skills/discovery/SKILL.md"
-    CODEX_BRAINSTORM="$REPO_ROOT/skills-codex/brainstorm/SKILL.md"
+    CODEX_BRAINSTORM="$REPO_ROOT/skills/discovery/references/goal-clarification-brainstorm.md"
     CODEX_DISCOVERY="$REPO_ROOT/skills-codex/discovery/SKILL.md"
-    REF_IDEATION="$REPO_ROOT/skills/brainstorm/references/ideation-mode.md"
-    REF_RUBRIC="$REPO_ROOT/skills/brainstorm/references/idea-rubric.md"
-    REF_BEADS="$REPO_ROOT/skills/brainstorm/references/bead-operationalization.md"
-    FEAT_BRAINSTORM="$REPO_ROOT/skills/brainstorm/references/brainstorm.feature"
+    REF_IDEATION="$REPO_ROOT/skills/discovery/references/ideation-mode.md"
+    REF_RUBRIC="$REPO_ROOT/skills/discovery/references/idea-rubric.md"
+    REF_BEADS="$REPO_ROOT/skills/discovery/references/bead-operationalization.md"
+    FEAT_BRAINSTORM="$REPO_ROOT/skills/discovery/references/brainstorm.feature"
     FEAT_DISCOVERY="$REPO_ROOT/skills/discovery/references/discovery.feature"
 }
 
@@ -110,7 +110,7 @@ assert_lacks() {
 @test "discovery SKILL wires the open-ended ideate path with operationalize and refine" {
     assert_has "$DISCOVERY" "Open-Ended Path"
     assert_has "$DISCOVERY" "--ideate"
-    assert_has "$DISCOVERY" "/brainstorm --ideate"
+    assert_has "$DISCOVERY" "ideation mode"
     assert_has "$DISCOVERY" "Operationalize"
     assert_has "$DISCOVERY" "self-documenting"
     assert_has "$DISCOVERY" "Refine in plan space"
@@ -127,14 +127,14 @@ assert_lacks() {
 
 @test "codex twins mirror ideation mode with codex notation and no Claude primitives" {
     assert_has "$CODEX_BRAINSTORM" "Ideation Mode"
-    assert_has "$CODEX_BRAINSTORM" '$brainstorm --ideate'
+    assert_has "$CODEX_BRAINSTORM" '--ideate'
     assert_has "$CODEX_DISCOVERY" "Open-Ended Path"
-    assert_has "$CODEX_DISCOVERY" '$brainstorm --ideate'
+    assert_has "$CODEX_DISCOVERY" 'internal modes (absorbed, ag-s43tg)'
     # Codex bodies must not leak Claude-era primitives (parity rule).
     assert_lacks "$CODEX_BRAINSTORM" "AskUserQuestion"
     assert_lacks "$CODEX_DISCOVERY" "AskUserQuestion"
     # Codex must use $skill notation, not /skill, for the new content.
-    assert_lacks "$CODEX_BRAINSTORM" "/brainstorm --ideate"
+    assert_lacks "$CODEX_BRAINSTORM" "claude -p"
     assert_lacks "$CODEX_DISCOVERY" "/brainstorm --ideate"
 }
 

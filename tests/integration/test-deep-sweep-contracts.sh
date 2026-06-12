@@ -112,9 +112,19 @@ echo ""
 # Step 2.6 / sweep-block asserts retired with the Lane A extraction (see §3
 # note). The no-cap reporting asserts below still apply to the surviving
 # post-mortem skill.
-echo "4. Post-Mortem SKILL.md (no-cap reporting)"
+echo "4. Post-Mortem sweep wiring (references/execution-steps.md) + no-cap reporting"
 
 PM="$REPO_ROOT/skills/post-mortem/SKILL.md"
+PMSTEPS="$REPO_ROOT/skills/post-mortem/references/execution-steps.md"
+
+check "Step 2.6 exists in execution steps (Pre-Council Deep Audit Sweep)" \
+  "grep -q 'Step 2.6' '$PMSTEPS'"
+
+check "Step 2.6 title mentions deep audit" \
+  "grep -q 'Pre-Council Deep Audit Sweep' '$PMSTEPS'"
+
+check "--skip-sweep flag documented in execution steps" \
+  "grep -q '\-\-skip-sweep' '$PMSTEPS'"
 
 check "No 'at least 5 improvements' cap in Step 5.5" \
   "! grep -q 'at least \*\*5\*\*' '$PM'"

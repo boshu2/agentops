@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-65 checked-in AgentOps skills before any broad rewrite, using current
+66 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 65 |
+| Skills audited | 66 |
 | Domains classified | 5 of 5 (BC1-BC5) |
-| Dispositions assigned | 65 / 65 |
+| Dispositions assigned | 66 / 66 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -74,6 +74,7 @@ Disposition meanings:
 | `bootstrap` | BC4 Factory | driving-adapter | update | First-run factory entrypoint; needs current 3.0/domain packet shape. |
 | `cass` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `cc-hooks` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `codex-approval` | BC5 Runtime | driving-adapter | keep | Codex-side approval bridge that routes plan reviews through an interactive ATM/NTM Fable validator, with persisted tmux capture and council artifact evidence.. |
 | `codex-exec` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `compile` | BC1 Corpus | supporting | refactor | Corpus compiler is core; align read/write flows to Corpus ports. |
 | `converter` | BC4 Factory | generic | keep | Cross-runtime packaging adapter (Codex/Cursor twins); skill-builder consumes it — live producer→consumer edge (resolved 2026-05-24). |

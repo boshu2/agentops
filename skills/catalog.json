@@ -1,8 +1,22 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-11T12:39:45Z",
-  "skill_count": 105,
+  "generated_at": "2026-06-12T13:55:49Z",
+  "skill_count": 66,
   "skills": [
+    {
+      "name": "account-rotation",
+      "description": "Switch coding-agent accounts on a usage/rate limit or to spread swarm lanes. Routes by host+agent: macOS+Claude via claude-acct; Codex/Gemini and Linux/WSL via caam.",
+      "hexagonal_role": "supporting",
+      "user_invocable": false,
+      "consumes": [],
+      "produces": [],
+      "practices": [
+        "pragmatic-programmer"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": true
+    },
     {
       "name": "acfs",
       "description": "|-",
@@ -89,32 +103,6 @@
       "codex_override_present": true
     },
     {
-      "name": "agy-mcp-plugins",
-      "description": "|-",
-      "hexagonal_role": "driven-adapter",
-      "user_invocable": false,
-      "consumes": [
-        "mcp-server",
-        "skill-bundle"
-      ],
-      "produces": [
-        "agy-mcp-config",
-        "agy-plugin-install"
-      ],
-      "practices": [
-        "data-contracts",
-        "least-privilege"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "agy-native"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
       "name": "agy-native",
       "description": "|-",
       "hexagonal_role": "driving-adapter",
@@ -136,84 +124,6 @@
         }
       ],
       "references_count": 1,
-      "codex_override_present": true
-    },
-    {
-      "name": "agy-project-worktree-permissions",
-      "description": "Prove AGY project/worktree isolation with scoped --add-dir permissions, role tiers, dcg guardrails, and persisted evidence.",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [
-        "agy-native"
-      ],
-      "produces": [
-        "agy-isolation-evidence"
-      ],
-      "practices": [
-        "team-topologies",
-        "continuous-delivery"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "agy-native"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "agy-rules-workflows",
-      "description": "|-",
-      "hexagonal_role": "driving-adapter",
-      "user_invocable": true,
-      "consumes": [
-        "operating-loop-workflow"
-      ],
-      "produces": [
-        "agy-rules",
-        "agy-workflows"
-      ],
-      "practices": [
-        "design-by-contract",
-        "continuous-delivery"
-      ],
-      "context_rel": [
-        {
-          "kind": "conformist-to",
-          "with": "operating-loop-workflow"
-        }
-      ],
-      "references_count": 1,
-      "codex_override_present": true
-    },
-    {
-      "name": "agy-sidecar-scheduled-tick",
-      "description": "|-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [
-        "agy-native",
-        "agy-headless-evidence"
-      ],
-      "produces": [
-        "agy-sidecar-tick-evidence"
-      ],
-      "practices": [
-        "design-by-contract",
-        "evidence-over-assertion"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "agy-native"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "validate"
-        }
-      ],
-      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -255,35 +165,6 @@
         {
           "kind": "supplier-to",
           "with": "workflow-builder"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "bead-completion-audit",
-      "description": "|-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [
-        "closed-beads"
-      ],
-      "produces": [
-        "compliance-report.md"
-      ],
-      "practices": [
-        "design-by-contract",
-        "evidence-over-assertion",
-        "cmm-process-maturity"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "beads-br"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "post-mortem"
         }
       ],
       "references_count": 0,
@@ -381,126 +262,6 @@
       "codex_override_present": true
     },
     {
-      "name": "brainstorm",
-      "description": "Separate goals from implementation.",
-      "hexagonal_role": "domain",
-      "user_invocable": false,
-      "consumes": [
-        "standards"
-      ],
-      "produces": [
-        "result.json",
-        "verdict.json"
-      ],
-      "practices": [
-        "lean-startup",
-        "mythical-man-month"
-      ],
-      "context_rel": [
-        {
-          "kind": "shared-kernel",
-          "with": "standards"
-        }
-      ],
-      "references_count": 4,
-      "codex_override_present": true
-    },
-    {
-      "name": "bug-hunt",
-      "description": "Investigate bugs and root causes.",
-      "hexagonal_role": "domain",
-      "user_invocable": false,
-      "consumes": [
-        "beads",
-        "standards"
-      ],
-      "produces": [],
-      "practices": [
-        "refactoring",
-        "property-based-testing",
-        "code-complete"
-      ],
-      "context_rel": [
-        {
-          "kind": "shared-kernel",
-          "with": "standards"
-        }
-      ],
-      "references_count": 8,
-      "codex_override_present": true
-    },
-    {
-      "name": "burndown",
-      "description": "Drive a finite epic set to all-merged, then stop. Use when finishing a specific list of tasks, burning down a backlog epic, or executing a bounded set of beads until done.",
-      "hexagonal_role": "domain",
-      "user_invocable": true,
-      "consumes": [
-        "beads",
-        "rpi",
-        "implement",
-        "post-mortem"
-      ],
-      "produces": [
-        ".agents/burndown/*.json",
-        "git-changes"
-      ],
-      "practices": [
-        "continuous-delivery",
-        "xp",
-        "agile-manifesto"
-      ],
-      "context_rel": [
-        {
-          "kind": "shared-kernel",
-          "with": "standards"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "caam",
-      "description": "Use when switching AI coding CLI accounts quickly to recover from subscription rate limits or OAuth friction.",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 3,
-      "codex_override_present": true
-    },
-    {
-      "name": "casr",
-      "description": ">-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "cass-memory",
-      "description": "Use when starting non-trivial work, mining lessons, or preventing repeated mistakes with cm procedural memory.",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 5,
-      "codex_override_present": true
-    },
-    {
       "name": "cass",
       "description": "Mine past agent sessions for working prompts, decisions, and patterns. Use when \"what did I ask?\", \"find that prompt\", session archaeology, or agent history.",
       "hexagonal_role": "supporting",
@@ -515,33 +276,8 @@
       "codex_override_present": true
     },
     {
-      "name": "cc-cron-ticks",
-      "description": "|-",
-      "hexagonal_role": "driving-adapter",
-      "user_invocable": true,
-      "consumes": [
-        "evolve",
-        "autodev"
-      ],
-      "produces": [
-        "scheduled-tick"
-      ],
-      "practices": [
-        "agile-manifesto",
-        "continuous-delivery"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "evolve"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
       "name": "cc-hooks",
-      "description": ">-",
+      "description": "Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [],
@@ -554,105 +290,32 @@
       "codex_override_present": true
     },
     {
-      "name": "cc-loop-driver",
+      "name": "codex-approval",
       "description": "|-",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "consumes": [
-        "beads",
-        "validate"
+        "using-atm",
+        "agent-mail"
       ],
       "produces": [
-        "evidence/<id>.md",
-        "git-commit"
+        "council-verdict"
       ],
       "practices": [
-        "design-by-contract",
         "continuous-delivery",
-        "agile-manifesto"
+        "pragmatic-programmer"
       ],
       "context_rel": [
         {
           "kind": "customer-of",
-          "with": "beads"
+          "with": "using-atm"
         },
         {
           "kind": "customer-of",
-          "with": "validate"
-        }
-      ],
-      "references_count": 2,
-      "codex_override_present": true
-    },
-    {
-      "name": "cc-subagents",
-      "description": "|-",
-      "hexagonal_role": "supporting",
-      "user_invocable": true,
-      "consumes": [],
-      "produces": [
-        "subagent-dispatch-plan"
-      ],
-      "practices": [
-        "team-topologies",
-        "mythical-man-month"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "cc-loop-driver"
-        }
-      ],
-      "references_count": 1,
-      "codex_override_present": true
-    },
-    {
-      "name": "cc-worktree-isolation",
-      "description": "|-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [
-        "git-worktree"
-      ],
-      "produces": [
-        "isolated-worktree-plan"
-      ],
-      "practices": [
-        "team-topologies",
-        "continuous-delivery"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "cc-subagents"
+          "with": "agent-mail"
         }
       ],
       "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "codebase-audit",
-      "description": ">-",
-      "hexagonal_role": "supporting",
-      "user_invocable": true,
-      "consumes": [],
-      "produces": [
-        "codebase-audit"
-      ],
-      "practices": [
-        "code-review"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "plan"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "validate"
-        }
-      ],
-      "references_count": 4,
       "codex_override_present": true
     },
     {
@@ -678,76 +341,6 @@
       "codex_override_present": true
     },
     {
-      "name": "codex-goals",
-      "description": "|-",
-      "hexagonal_role": "driving-adapter",
-      "user_invocable": true,
-      "consumes": [],
-      "produces": [
-        "codex-goal-state"
-      ],
-      "practices": [
-        "agile-manifesto",
-        "continuous-delivery"
-      ],
-      "context_rel": [],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "codex-mcp-plugins",
-      "description": "|-",
-      "hexagonal_role": "driven-adapter",
-      "user_invocable": true,
-      "consumes": [
-        "mcp-server",
-        "codex-plugin"
-      ],
-      "produces": [
-        "codex-config"
-      ],
-      "practices": [
-        "data-contracts",
-        "twelve-factor-app"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "codex-exec"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "codex-sandbox-evidence",
-      "description": "|-",
-      "hexagonal_role": "supporting",
-      "user_invocable": true,
-      "consumes": [
-        "codex-exec"
-      ],
-      "produces": [
-        "codex-evidence-jsonl"
-      ],
-      "practices": [
-        "design-by-contract",
-        "data-contracts"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "codex-exec"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "validate"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
       "name": "compile",
       "description": "Compile .agents knowledge wiki.",
       "hexagonal_role": "supporting",
@@ -762,31 +355,6 @@
       ],
       "context_rel": [],
       "references_count": 4,
-      "codex_override_present": true
-    },
-    {
-      "name": "complexity",
-      "description": "Find focused refactor hotspots.",
-      "hexagonal_role": "domain",
-      "user_invocable": false,
-      "consumes": [
-        "doc",
-        "standards"
-      ],
-      "produces": [
-        "stdout"
-      ],
-      "practices": [
-        "code-complete",
-        "refactoring"
-      ],
-      "context_rel": [
-        {
-          "kind": "shared-kernel",
-          "with": "standards"
-        }
-      ],
-      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -842,7 +410,7 @@
         "implement",
         "post-mortem",
         "swarm",
-        "vibe"
+        "validate"
       ],
       "produces": [
         ".agents/swarm/results/*.json",
@@ -859,33 +427,7 @@
           "with": "standards"
         }
       ],
-      "references_count": 30,
-      "codex_override_present": true
-    },
-    {
-      "name": "cross-vendor-trust-gate",
-      "description": "Run the skill-factory final trust gate: operate trust-gate.sh, read skill.trust.json, and enforce --require-cross.",
-      "hexagonal_role": "domain",
-      "user_invocable": false,
-      "consumes": [
-        "converted-skill"
-      ],
-      "produces": [
-        "trust-artifact",
-        "stdout"
-      ],
-      "practices": [
-        "measure-before-land",
-        "evidence-driven-iteration",
-        "cross-vendor-parity-as-a-gate"
-      ],
-      "context_rel": [
-        {
-          "kind": "shared-kernel",
-          "with": "heal-skill"
-        }
-      ],
-      "references_count": 0,
+      "references_count": 31,
       "codex_override_present": true
     },
     {
@@ -920,58 +462,8 @@
       "codex_override_present": true
     },
     {
-      "name": "deps",
-      "description": "Audit dependency risks and updates.",
-      "hexagonal_role": "driven-adapter",
-      "user_invocable": false,
-      "consumes": [
-        "repo-context"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "practices": [
-        "supply-chain-integrity",
-        "continuous-delivery",
-        "sre"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "vibe"
-        }
-      ],
-      "references_count": 1,
-      "codex_override_present": true
-    },
-    {
-      "name": "design",
-      "description": "Validate product fit before discovery. Use when: framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.",
-      "hexagonal_role": "domain",
-      "user_invocable": true,
-      "consumes": [
-        "standards"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "practices": [
-        "lean-startup",
-        "ddd-bounded-context",
-        "mythical-man-month"
-      ],
-      "context_rel": [
-        {
-          "kind": "shared-kernel",
-          "with": "standards"
-        }
-      ],
-      "references_count": 3,
-      "codex_override_present": true
-    },
-    {
       "name": "discovery",
-      "description": "Create dense execution packets.",
+      "description": "Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing).",
       "hexagonal_role": "domain",
       "user_invocable": true,
       "consumes": [
@@ -998,7 +490,7 @@
           "with": "standards"
         }
       ],
-      "references_count": 9,
+      "references_count": 14,
       "codex_override_present": true
     },
     {
@@ -1041,7 +533,7 @@
     },
     {
       "name": "eval-outcomes",
-      "description": "Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons.",
+      "description": "Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario.",
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
@@ -1236,58 +728,6 @@
       "codex_override_present": true
     },
     {
-      "name": "multi-model-triangulation",
-      "description": ">-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "ntm-browser-test-coordination",
-      "description": "|-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [
-        "ntm",
-        "agent-mail",
-        "test"
-      ],
-      "produces": [
-        "browser-test-coordination-packet",
-        "browser-test-evidence-index",
-        "browser-test-handoff"
-      ],
-      "practices": [
-        "continuous-delivery",
-        "bdd-gherkin",
-        "team-topologies"
-      ],
-      "context_rel": [],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "ntm-review-worker-orchestration",
-      "description": "|-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
       "name": "ntm",
       "description": ">-",
       "hexagonal_role": "supporting",
@@ -1299,58 +739,6 @@
       ],
       "context_rel": [],
       "references_count": 16,
-      "codex_override_present": true
-    },
-    {
-      "name": "operating-loop-skill",
-      "description": "|-",
-      "hexagonal_role": "domain",
-      "user_invocable": true,
-      "consumes": [
-        "beads",
-        "git"
-      ],
-      "produces": [
-        "evidence/<id>.md",
-        "git-commit",
-        "closed-bead"
-      ],
-      "practices": [
-        "design-by-contract",
-        "agile-manifesto"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "beads"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "agy-native"
-        },
-        {
-          "kind": "supplier-to",
-          "with": "cc-loop-driver"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "operating-loop-workflow",
-      "description": "Install or run the seven-move operating-loop Workflow for AgentOps plugin users and multi-agent orchestration.",
-      "hexagonal_role": "driving-adapter",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [
-        "git-changes"
-      ],
-      "practices": [
-        "pragmatic-programmer",
-        "agile-manifesto"
-      ],
-      "context_rel": [],
-      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -1405,27 +793,13 @@
       "codex_override_present": true
     },
     {
-      "name": "planning-workflow",
-      "description": ">-",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 3,
-      "codex_override_present": true
-    },
-    {
       "name": "post-mortem",
       "description": "Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).",
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [
         "implement",
-        "vibe",
+        "validate",
         "council"
       ],
       "produces": [
@@ -1443,31 +817,6 @@
         }
       ],
       "references_count": 22,
-      "codex_override_present": true
-    },
-    {
-      "name": "pr-implement",
-      "description": "Implement a scoped OSS PR.",
-      "hexagonal_role": "driving-adapter",
-      "user_invocable": false,
-      "consumes": [
-        "crank"
-      ],
-      "produces": [
-        "git-changes"
-      ],
-      "practices": [
-        "continuous-delivery",
-        "xp",
-        "pragmatic-programmer"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "crank"
-        }
-      ],
-      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -1493,26 +842,6 @@
         }
       ],
       "references_count": 4,
-      "codex_override_present": true
-    },
-    {
-      "name": "pr-research",
-      "description": "Research an upstream repo.",
-      "hexagonal_role": "driven-adapter",
-      "user_invocable": false,
-      "consumes": [
-        "external-api"
-      ],
-      "produces": [
-        "result.json"
-      ],
-      "practices": [
-        "wiki-knowledge-surface",
-        "legacy-code-seams",
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 1,
       "codex_override_present": true
     },
     {
@@ -1585,57 +914,6 @@
       "codex_override_present": true
     },
     {
-      "name": "quickstart",
-      "description": "Show AgentOps next action.",
-      "hexagonal_role": "driving-adapter",
-      "user_invocable": false,
-      "consumes": [
-        "rpi"
-      ],
-      "produces": [
-        "stdout"
-      ],
-      "practices": [
-        "pragmatic-programmer",
-        "agile-manifesto"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "rpi"
-        }
-      ],
-      "references_count": 3,
-      "codex_override_present": true
-    },
-    {
-      "name": "ratchet",
-      "description": "Record Brownian Ratchet gates.",
-      "hexagonal_role": "domain",
-      "user_invocable": false,
-      "consumes": [
-        "validate",
-        "vibe",
-        "post-mortem"
-      ],
-      "produces": [
-        ".agents/rpi/*.md"
-      ],
-      "practices": [
-        "dora-metrics",
-        "refactoring",
-        "continuous-integration"
-      ],
-      "context_rel": [
-        {
-          "kind": "shared-kernel",
-          "with": "standards"
-        }
-      ],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
       "name": "rch",
       "description": "Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues.",
       "hexagonal_role": "supporting",
@@ -1689,7 +967,7 @@
       "context_rel": [
         {
           "kind": "supplier-to",
-          "with": "vibe"
+          "with": "validate"
         }
       ],
       "references_count": 0,
@@ -1733,7 +1011,7 @@
       "context_rel": [
         {
           "kind": "supplier-to",
-          "with": "ship-loop"
+          "with": "crank"
         }
       ],
       "references_count": 8,
@@ -1762,26 +1040,8 @@
       "codex_override_present": true
     },
     {
-      "name": "reverse-engineer-rpi",
-      "description": "Reverse-engineer product specs.",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [
-        ".agents/research/*.md"
-      ],
-      "practices": [
-        "legacy-code-seams",
-        "ddd-bounded-context",
-        "adr"
-      ],
-      "context_rel": [],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
       "name": "review",
-      "description": "Review diffs for risk, find mocks, scan for bugs, audit codebases. Use when: reviewing a diff/PR for bugs and risk, hunting mocks/stubs/placeholders, or auditing for quality.",
+      "description": "Review diffs for risk, find mocks, scan for bugs, audit codebases. Fold target for bug-hunt, codebase-audit, and ubs.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [
@@ -1880,29 +1140,6 @@
       "codex_override_present": true
     },
     {
-      "name": "scenario",
-      "description": "Manage holdout scenarios.",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "practices": [
-        "property-based-testing",
-        "snapshot-testing",
-        "llm-eval-harness"
-      ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "validate"
-        }
-      ],
-      "references_count": 1,
-      "codex_override_present": true
-    },
-    {
       "name": "scope",
       "description": "Hard-block edits outside declared frozen directories and protect paths during risky changes.",
       "hexagonal_role": "driven-adapter",
@@ -1944,53 +1181,10 @@
       "context_rel": [
         {
           "kind": "supplier-to",
-          "with": "vibe"
+          "with": "validate"
         }
       ],
       "references_count": 1,
-      "codex_override_present": true
-    },
-    {
-      "name": "session-bootstrap",
-      "description": "Universal AgentOps init prompt for starting or onboarding a fresh agent session.",
-      "hexagonal_role": "driving-adapter",
-      "user_invocable": false,
-      "consumes": [
-        "bd",
-        "onboard"
-      ],
-      "produces": [
-        "stdout",
-        "json"
-      ],
-      "practices": [
-        "agile-manifesto",
-        "dora-metrics",
-        "fungibility-charter"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "AGENTS.md"
-        },
-        {
-          "kind": "customer-of",
-          "with": "AGENTS-WORKFLOW.md"
-        },
-        {
-          "kind": "customer-of",
-          "with": "AGENTS-CI.md"
-        },
-        {
-          "kind": "customer-of",
-          "with": "AGENTS-CODEX.md"
-        },
-        {
-          "kind": "customer-of",
-          "with": "AGENTS-RUNTIME.md"
-        }
-      ],
-      "references_count": 0,
       "codex_override_present": true
     },
     {
@@ -2009,40 +1203,6 @@
       ],
       "context_rel": [],
       "references_count": 16,
-      "codex_override_present": true
-    },
-    {
-      "name": "ship-loop",
-      "description": "Run the fast-lane internal ship cycle for one closable bead or small slice: claim, test, implement, push, merge, close.",
-      "hexagonal_role": "driving-adapter",
-      "user_invocable": true,
-      "consumes": [
-        "beads",
-        "rpi",
-        "post-mortem"
-      ],
-      "produces": [
-        "git-changes",
-        "merged-prs"
-      ],
-      "practices": [
-        "continuous-delivery",
-        "xp",
-        "tdd",
-        "bdd",
-        "pragmatic-programmer"
-      ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "rpi"
-        },
-        {
-          "kind": "customer-of",
-          "with": "post-mortem"
-        }
-      ],
-      "references_count": 4,
       "codex_override_present": true
     },
     {
@@ -2143,7 +1303,7 @@
       "user_invocable": false,
       "consumes": [
         "implement",
-        "vibe"
+        "validate"
       ],
       "produces": [
         ".agents/swarm/results/*.json"
@@ -2184,61 +1344,6 @@
       "codex_override_present": true
     },
     {
-      "name": "trace",
-      "description": "Trace decisions through artifacts.",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [
-        "result.json"
-      ],
-      "practices": [
-        "distributed-tracing",
-        "adr",
-        "ebpf-observability"
-      ],
-      "context_rel": [
-        {
-          "kind": "shared-kernel",
-          "with": "curate"
-        }
-      ],
-      "references_count": 3,
-      "codex_override_present": true
-    },
-    {
-      "name": "ubs",
-      "description": "Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks.",
-      "hexagonal_role": "supporting",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [],
-      "practices": [
-        "pragmatic-programmer"
-      ],
-      "context_rel": [],
-      "references_count": 3,
-      "codex_override_present": true
-    },
-    {
-      "name": "using-agentops",
-      "description": "Explain AgentOps workflows.",
-      "hexagonal_role": "generic",
-      "user_invocable": false,
-      "consumes": [],
-      "produces": [
-        "documentation"
-      ],
-      "practices": [
-        "wiki-knowledge-surface",
-        "pragmatic-programmer",
-        "agile-manifesto"
-      ],
-      "context_rel": [],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
       "name": "using-atm",
       "description": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.",
       "hexagonal_role": "supporting",
@@ -2263,7 +1368,7 @@
     },
     {
       "name": "validate",
-      "description": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured verdict on an artifact, plan, code, PR, or CI gate before proceeding.",
+      "description": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — including quick readiness/sanity checks before commit (absorbs vibe) and completion audits.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "consumes": [],
@@ -2275,34 +1380,7 @@
         "llm-eval-harness"
       ],
       "context_rel": [],
-      "references_count": 0,
-      "codex_override_present": true
-    },
-    {
-      "name": "vibe",
-      "description": "Validate code readiness. Use when: doing a quick readiness or sanity check that code is ready to commit or ship, short of a full review.",
-      "hexagonal_role": "domain",
-      "user_invocable": false,
-      "consumes": [
-        "standards"
-      ],
-      "produces": [
-        "result.json",
-        "verdict.json"
-      ],
-      "practices": [
-        "ai-assisted-dev",
-        "llm-eval-harness",
-        "code-complete",
-        "pragmatic-programmer"
-      ],
-      "context_rel": [
-        {
-          "kind": "shared-kernel",
-          "with": "standards"
-        }
-      ],
-      "references_count": 22,
+      "references_count": 23,
       "codex_override_present": true
     },
     {

@@ -580,6 +580,12 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex parity wrapper for AGY image operator skill."
+    },
+    {
+      "name": "codex-approval",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-native approval bridge for ATM/Fable plan reviews; source contract and checked-in Codex wrapper are aligned, so no separate override layer is needed yet."
     }
   ]
 }

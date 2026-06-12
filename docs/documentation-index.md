@@ -52,6 +52,7 @@ Bridge / framing docs:
 - [Architecture](ARCHITECTURE.md) — System design and component overview
 - [Architecture Folder Index](architecture/index.md) — Architecture subdocs overview
 - [Codex Hookless Lifecycle](architecture/codex-hookless-lifecycle.md) — Runtime-aware lifecycle fallback for Codex when hooks are unavailable
+- [Codex Task Packet Contract](contracts/codex-task-packet.md) — Non-mutating Codex dispatch packet, auth guard, sandbox, stdin, timeout, resume, and run-receipt contract
 - [Primitive Chains](architecture/primitive-chains.md) — Audited primitive set, lifecycle chains, and terminology drift ledger
 - [Ports and Adapters](architecture/ports-and-adapters.md) — Hexagonal seam: inner-hexagon domain, driving/driven adapters, ports, and how to add a new adapter
 - [Hexagon Port-Realness Audit](architecture/hexagon-port-realness-audit.md) — Empirical 2026-05-23 inventory of all 26 declared ports (real vs in-memory vs bypassed), direct-coupling hotspots (git/bd/loop/corpus) with file:line, and the recommended adapter build order for epic soc-zvhsl
@@ -81,7 +82,7 @@ Bridge / framing docs:
 - [Critical Skills Policy](contracts/critical-skills.txt) — Human-supervised skill-edit denylist consumed by `ao skills edit seal`
 - [Skill Quality Rubric](reference/skill-quality-rubric.md) — Scoring rubric for repo-runtime, export, and mega-skill readiness
 - [AgentOps Domain Evolution BDD](reference/agentops-domain-evolution-bdd.md) — Gherkin acceptance contract for skill, CLI, and hook evolution
-- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 65 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
+- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 66 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
 - [AgentOps Hexagonal Architecture Map](reference/agentops-hexagonal-architecture-map.md) — Bounded contexts, ports, adapters, and proof gates for the evolution program
 - [AgentOps Domain Evolution Plan](reference/agentops-domain-evolution-plan.md) — Sequenced bootstrap and evolution plan anchored to `soc-y5vh`
 - [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph

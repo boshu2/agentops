@@ -187,6 +187,10 @@ Read `references/troubleshooting.md` for common problems and solutions.
 
 ## Reference Documents
 
+- [references/goal-clarification-brainstorm.md](references/goal-clarification-brainstorm.md) — absorbed brainstorm body (four-phase clarification + ideation funnel)
+- [references/idea-rubric.md](references/idea-rubric.md) — absorbed brainstorm idea rubric
+- [references/brainstorm.feature](references/brainstorm.feature) — absorbed brainstorm executable spec
+- [references/red-team-checklist.md](references/red-team-checklist.md) — absorbed brainstorm red-team checklist
 - [references/dag.md](references/dag.md) — executable workflow, state shape, gate detail, per-step detail, acceptance-criteria YAML contract
 - [references/complexity-auto-detect.md](references/complexity-auto-detect.md) — precedence contract for keyword vs issue-count classification
 - [references/idempotency-and-resume.md](references/idempotency-and-resume.md) — re-run safety and resume behavior

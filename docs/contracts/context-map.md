@@ -29,6 +29,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `acfs` — Use when operating ACFS flywheel health checks, init, and agent loop tooling from ~/acfs/bin/acfs. Triggers:
 - `agy-native` — Drive AgentOps in AGY: loop, plugins, memory, evidence, scoped worktrees. Triggers: agy, antigravity, agy plugin, AGY evidence.
 - `bootstrap` — Initialize AgentOps project files.
+- `codex-approval` — Use when Codex needs Fable approval through an ATM/NTM validator pane. Triggers: - codex approval - ask fable - fable plan review
 - `codex-exec` — Use when running Codex workers or validators non-interactively through codex exec with evidence. Triggers:
 - `implement` — Implement one tracked issue.
 - `inject` — Load relevant .agents context.
@@ -38,7 +39,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `research` — Explore and write findings.
 - `review` — Review diffs for risk, find mocks, scan for bugs, audit codebases. Fold target for bug-hunt, codebase-audit, and ubs.
 - `status` — Show AgentOps work status.
-- `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured verdict on an artifact, plan, code, PR, or CI gate before proceeding.
+- `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — including quick readiness/sanity checks before commit (absorbs vibe) and completion audits.
 
 ### driven-adapter
 
@@ -103,6 +104,8 @@ graph LR
   automation-shape-routing -- "supplier-to" --> workflow-builder
   beads -- "supplier-to" --> crank
   beads -- "supplier-to" --> ratchet
+  codex-approval -- "customer-of" --> agent-mail
+  codex-approval -- "customer-of" --> using-atm
   codex-exec -- "supplier-to" --> codex-sandbox-evidence
   council -- "shared-kernel" --> standards
   crank -- "shared-kernel" --> standards
@@ -119,14 +122,14 @@ graph LR
   pr-prep -- "customer-of" --> domain
   pre-mortem -- "shared-kernel" --> standards
   product -- "shared-kernel" --> standards
-  red-team -- "supplier-to" --> vibe
-  release -- "supplier-to" --> ship-loop
+  red-team -- "supplier-to" --> validate
+  release -- "supplier-to" --> crank
   review -- "customer-of" --> validate
   rpi -- "customer-of" --> crank
   rpi -- "customer-of" --> discovery
   rpi -- "customer-of" --> validate
   scope -- "supplier-to" --> domain
-  security -- "supplier-to" --> vibe
+  security -- "supplier-to" --> validate
   skill-auditor -- "supplier-to" --> heal-skill
   skill-auditor -- "customer-of" --> skill-builder
   skill-builder -- "customer-of" --> automation-shape-routing
@@ -158,6 +161,9 @@ graph LR
 | `bootstrap` | consumes | goals |
 | `bootstrap` | consumes | product |
 | `bootstrap` | consumes | shared |
+| `codex-approval` | consumes | agent-mail |
+| `codex-approval` | consumes | using-atm |
+| `codex-approval` | produces | council-verdict |
 | `codex-exec` | produces | codex-run-output |
 | `compile` | produces | .agents/compiled/lint-report.md |
 | `converter` | produces | converted-skill |
@@ -168,7 +174,7 @@ graph LR
 | `crank` | consumes | implement |
 | `crank` | consumes | post-mortem |
 | `crank` | consumes | swarm |
-| `crank` | consumes | vibe |
+| `crank` | consumes | validate |
 | `crank` | produces | .agents/swarm/results/*.json |
 | `crank` | produces | git-changes |
 | `curate` | produces | .agents/research/*.md |
@@ -207,7 +213,7 @@ graph LR
 | `plan` | produces | execution-packet.json |
 | `post-mortem` | consumes | council |
 | `post-mortem` | consumes | implement |
-| `post-mortem` | consumes | vibe |
+| `post-mortem` | consumes | validate |
 | `post-mortem` | produces | result.json |
 | `pr-prep` | consumes | domain |
 | `pr-prep` | produces | git-changes |
@@ -250,7 +256,7 @@ graph LR
 | `status` | consumes | bd |
 | `status` | produces | stdout |
 | `swarm` | consumes | implement |
-| `swarm` | consumes | vibe |
+| `swarm` | consumes | validate |
 | `swarm` | produces | .agents/swarm/results/*.json |
 | `test` | consumes | repo-context |
 | `test` | consumes | standards |

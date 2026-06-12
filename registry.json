@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-12T13:08:55Z",
+  "generated_at": "2026-06-12T13:58:33Z",
   "summary": {
-    "skills": 65,
+    "skills": 66,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 83,
-    "capabilities": 162
+    "capabilities": 163
   },
   "surfaces": {
     "skills": [
@@ -131,6 +131,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 4
+      },
+      {
+        "name": "codex-approval",
+        "tier": "execution",
+        "path": "skills/codex-approval/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "crank",
@@ -402,7 +410,7 @@
         "path": "skills/discovery/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 11
+        "reference_count": 14
       },
       {
         "name": "heal-skill",
@@ -916,6 +924,7 @@
         "bounded_context": "BC3",
         "driven_by_skills": [
           "agent-native",
+          "eval-outcomes",
           "evolve",
           "goals",
           "post-mortem",
@@ -1351,8 +1360,8 @@
     ]
   },
   "capability_summary": {
-    "total": 162,
-    "skills": 65,
+    "total": 163,
+    "skills": 66,
     "cli_commands": 83,
     "gates": 14,
     "reference_impls": 0
@@ -1733,6 +1742,27 @@
       "references": 4
     },
     {
+      "sku": "skill:codex-approval",
+      "name": "codex-approval",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "driving-adapter",
+      "tier": "execution",
+      "purpose": "|-",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "using-atm",
+        "agent-mail"
+      ],
+      "produces": [
+        "council-verdict"
+      ],
+      "drives_commands": [],
+      "path": "skills/codex-approval/",
+      "references": 0
+    },
+    {
       "sku": "skill:codex-exec",
       "name": "codex-exec",
       "type": "skill",
@@ -1828,7 +1858,7 @@
         "implement",
         "post-mortem",
         "swarm",
-        "vibe"
+        "validate"
       ],
       "produces": [
         ".agents/swarm/results/*.json",
@@ -1919,7 +1949,7 @@
         "ao search"
       ],
       "path": "skills/discovery/",
-      "references": 11
+      "references": 14
     },
     {
       "sku": "skill:doc",
@@ -1987,7 +2017,11 @@
       "produces": [
         "skills/council/schemas/verdict.json"
       ],
-      "drives_commands": [],
+      "drives_commands": [
+        "ao goals",
+        "ao scenario add",
+        "ao scenario validate"
+      ],
       "path": "skills/eval-outcomes/",
       "references": 0
     },
@@ -2282,7 +2316,7 @@
       "disposition": "update",
       "consumes": [
         "implement",
-        "vibe",
+        "validate",
         "council"
       ],
       "produces": [
@@ -2774,7 +2808,7 @@
       "disposition": "update",
       "consumes": [
         "implement",
-        "vibe"
+        "validate"
       ],
       "produces": [
         ".agents/swarm/results/*.json"
@@ -2836,7 +2870,7 @@
       "bounded_context": "BC2",
       "hex_role": "driving-adapter",
       "tier": "judgment",
-      "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates. Use when: you need a structured verdict on an artifact, plan, code, PR, or CI gate before proceeding.",
+      "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — including quick readiness/sanity checks before commit (absorbs vibe) and completion audits.",
       "status": "active",
       "disposition": "keep",
       "consumes": [],
@@ -3555,6 +3589,7 @@
       "status": "active",
       "driven_by_skills": [
         "agent-native",
+        "eval-outcomes",
         "evolve",
         "goals",
         "post-mortem",

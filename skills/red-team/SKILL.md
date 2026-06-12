@@ -12,7 +12,7 @@ produces:
 - result.json
 context_rel:
 - kind: supplier-to
-  with: vibe
+  with: validate
 skill_api_version: 1
 metadata:
   tier: judgment

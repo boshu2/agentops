@@ -12,7 +12,7 @@ produces:
 - security-report.json
 context_rel:
 - kind: supplier-to
-  with: vibe
+  with: validate
 skill_api_version: 1
 context:
   window: fork
@@ -268,7 +268,7 @@ python3 skills/security/scripts/prompt_redteam.py scan \
   - `.github/workflows/release.yml`
 - For binary/internal black-box assurance plus offline repo-surface redteam, use the composable suite above (`security_suite.py` and `prompt_redteam.py`).
 - For dependency vulnerability and license scanning, use:
-  - deps — Dependency audit, vulnerability scanning, and license compliance (absorbed into this skill)
+  - deps — Audit dependency risks and updates: vulnerability scanning and license compliance (absorbed into this skill)
 
 ## Examples
 

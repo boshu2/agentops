@@ -8,7 +8,7 @@ practices:
 hexagonal_role: domain
 consumes:
 - implement
-- vibe
+- validate
 - council
 produces:
 - result.json

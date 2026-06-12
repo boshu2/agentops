@@ -8,7 +8,7 @@ practices:
 hexagonal_role: supporting
 consumes:
 - implement
-- vibe
+- validate
 produces:
 - .agents/swarm/results/*.json
 context_rel:
@@ -27,7 +27,7 @@ metadata:
   tier: orchestration
   dependencies:
   - implement
-  - vibe
+  - validate
 output_contract: .agents/swarm/results/*.json
 ---
 # Swarm Skill

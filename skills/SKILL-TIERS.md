@@ -220,7 +220,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (59)
+### User-Facing Skills (60)
 
 **Judgment:**
 
@@ -314,6 +314,7 @@ These are how skills chain in practice:
 | **beads-workflow** | execution | Use when converting markdown plans into br beads with dependencies for implementation or swarm execution. |
 | **cass** | execution | Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history. |
 | **cc-hooks** | execution | Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification. Use when blocking commands, auto-formatting, custom permissions, or writing hooks. |
+| **codex-approval** | execution | Use when Codex needs independent Claude/Fable approval for a plan, design, or high-risk change through an ATM/NTM interactive validator pane. |
 | **codex-exec** | orchestration | Use when running Codex workers or validators non-interactively through codex exec with evidence. |
 | **dcg** | execution | Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails. |
 | **ntm** | execution | Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors. |
@@ -397,7 +398,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 
 | Vendor | CLI | Command |
 |--------|-----|---------|
-| Claude | `claude` | `claude --print "prompt" > output.md` |
+| Claude | `claude` | Interactive ATM/NTM pane only; print mode is forbidden |
 | Codex | `codex` | `codex exec --full-auto -m gpt-5.3-codex -C "$(pwd)" -o output.md "prompt"` |
 | OpenCode | `opencode` | (similar pattern) |
 

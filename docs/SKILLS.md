@@ -1,6 +1,6 @@
 # Skills Reference
 
-Complete reference for all 65 AgentOps skills (59 user-facing + 6 internal).
+Complete reference for all 66 AgentOps skills (60 user-facing + 6 internal).
 
 Skills are the primitive layer of AgentOps. Higher-level entry points like
 `/implement`, `/validation`, `/rpi`, and `/evolve` compose those primitives
@@ -11,13 +11,13 @@ into repeatable flows.
 ## Skill Router (Start Here)
 
 Use this when you're not sure which skill to run. For a full flow overview, run
-`/using-agentops`.
+`/inject` (absorbs using-agentops).
 
 ```text
 What are you trying to do?
 │
 ├─ "Not sure what to do yet"
-│   └─ Generate options first ─────► /brainstorm
+│   └─ Generate options first ─────► /discovery --ideate
 │
 ├─ "I have an idea"
 │   └─ Understand code + context ──► /research
@@ -32,7 +32,7 @@ What are you trying to do?
 │
 ├─ "Fix a bug"
 │   ├─ Already scoped? ────────────► /implement <issue-id>
-│   └─ Need to investigate? ───────► /bug-hunt
+│   └─ Need to investigate? ───────► /review (bug-hunt mode)
 │
 ├─ "Build a feature"
 │   ├─ Small (1-2 files) ─────────► /implement
@@ -41,14 +41,14 @@ What are you trying to do?
 │
 ├─ "Validate something"
 │   ├─ Work ready to close? ──────► /validation
-│   ├─ Code quality only? ───────► /vibe
+│   ├─ Code quality only? ───────► /validate
 │   ├─ Plan ready to build? ──────► /pre-mortem
 │   └─ Quick sanity check? ───────► /council --quick validate
 │
 ├─ "Explore or research"
 │   ├─ Understand this codebase ──► /research
 │   ├─ Compare approaches ────────► /council research <topic>
-│   └─ Generate ideas ────────────► /brainstorm
+│   └─ Generate ideas ────────────► /discovery --ideate
 │
 ├─ "Learn from past work"
 │   ├─ Turn the corpus into operator surfaces ─► /knowledge-activation
@@ -69,7 +69,7 @@ What are you trying to do?
 │   ├─ Save for next session ─────► /handoff
 │   └─ Recover after compaction ──► /recover
 │
-└─ "First time here" ────────────► ao quick-start → /quickstart
+└─ "First time here" ────────────► ao quick-start → /status
 ```
 
 ## Core Flow Skills
@@ -104,15 +104,15 @@ Execute a single beads issue with full lifecycle.
 
 **Phases:** Context → Tests → Code → Validation → Commit
 
-### /brainstorm
+### /discovery --ideate
 
 Structured idea exploration. Four phases: assess clarity, understand idea, explore approaches, capture design.
 
 ```bash
-/brainstorm "add user authentication"
+/discovery --ideate "add user authentication"
 ```
 
-**Output:** `.agents/brainstorm/YYYY-MM-DD-<slug>.md`
+**Output:** `.agents/discovery/YYYY-MM-DD-<slug>.md`
 
 ### /rpi
 
@@ -138,7 +138,7 @@ Autonomous multi-issue execution. Runs until epic is CLOSED.
 
 ### /validation
 
-Full validation close-out. Wraps `/vibe` + `/post-mortem` + `/retro` + `/forge`.
+Full validation close-out. Wraps `/validate` (absorbs vibe) + `/post-mortem` + `/forge`.
 
 ```bash
 /validation
@@ -147,12 +147,12 @@ Full validation close-out. Wraps `/vibe` + `/post-mortem` + `/retro` + `/forge`.
 
 **Use when:** The work is ready for final review, closeout, and learning capture.
 
-### /vibe
+### /validate --mode=post-impl (absorbs /vibe)
 
 Comprehensive code validation across 8 aspects with finding classification (CRITICAL vs INFORMATIONAL), suppression framework for known false positives, and domain-specific checklists (SQL safety, LLM trust boundary, race conditions) auto-loaded from `/standards`. Correlates findings against pre-mortem predictions.
 
 ```bash
-/vibe services/auth/
+/validate --mode=post-impl services/auth/
 ```
 
 **Checks:** Security, Quality, Architecture, Complexity, Testing, Accessibility, Performance, Documentation
@@ -194,12 +194,12 @@ bd show <id>          # Issue details
 bd close <id>         # Close issue
 ```
 
-### /bug-hunt
+### /review (absorbs /bug-hunt)
 
 Root cause analysis with git archaeology.
 
 ```bash
-/bug-hunt "login fails after password reset"
+/review "login fails after password reset"
 ```
 
 ### Knowledge queries (no slash command)
@@ -227,12 +227,12 @@ Maintain a compounding wiki for external reading material.
 
 **Status:** Proposal skill for external `raw/` to `wiki/` knowledge, separate from the internal `.agents/` compiler.
 
-### /complexity
+### /refactor (absorbs /complexity)
 
 Code complexity analysis using radon (Python) or gocyclo (Go).
 
 ```bash
-/complexity services/
+/refactor services/
 ```
 
 **Threshold:** CC > 10 triggers refactoring issue
@@ -314,12 +314,12 @@ Single-screen dashboard of project state.
 /status
 ```
 
-### /quickstart
+### /status (absorbs /quickstart)
 
 Interactive onboarding — mini RPI cycle for new users.
 
 ```bash
-/quickstart
+/status
 ```
 
 ### /dream
@@ -332,12 +332,12 @@ its own. In-session knowledge primitives stay on-demand: `/harvest`, `/forge`,
 
 **Output:** none — this skill no longer drives an in-repo command.
 
-### /trace
+### /recover (absorbs /trace)
 
 Trace design decisions through knowledge artifacts.
 
 ```bash
-/trace "why did we choose Redis?"
+/recover "why did we choose Redis?"
 ```
 
 ### /knowledge-activation
@@ -453,7 +453,7 @@ phases, and flags.
 | `/autodev` | Manage the `PROGRAM.md` operational contract for autonomous development loops |
 | `/bootstrap` | One-command product-layer setup (`GOALS.md`, `PRODUCT.md`, `README.md`, `.agents/`, optional hooks) |
 | `/compile` | Compile raw `.agents/` artifacts into an interlinked wiki at `.agents/compiled/` (Mine → Grow → Defrag → Lint) |
-| `/deps` | Dependency audit, updates, vulnerability scanning, license compliance |
+| `/security` (absorbs deps) | Dependency audit, updates, vulnerability scanning, license compliance |
 | `/design` | Product validation gate — aligns goal with `PRODUCT.md` before discovery |
 | `/discovery` | Full discovery-phase orchestrator (brainstorm + search + research + plan + pre-mortem) |
 | `/goals` | Maintain `GOALS.yaml`/`GOALS.md` fitness specs; measure drift; add/prune directives |
@@ -467,7 +467,7 @@ phases, and flags.
 | `/reverse-engineer-rpi` | Reverse-engineer a product into feature catalog, code map, and specs |
 | `/review` | Structured review of incoming PRs, agent-generated changes, or diffs |
 | `/scaffold` | Project scaffolding, component generation, boilerplate |
-| `/scenario` | Author/manage holdout scenarios in `.agents/holdout/` for behavioral validation |
+| `/eval-outcomes` (absorbs scenario) | Author/manage holdout scenarios in `.agents/holdout/` for behavioral validation |
 | `/security` | Continuous repository security scanning and release gating |
 | `/security-suite` | Composable security suite — static, dynamic, redteam, baseline drift, policy gating |
 | `/test` | Test generation, coverage analysis, TDD workflow |
@@ -485,7 +485,7 @@ These fire automatically and are not directly invoked:
 | `ratchet` | Progress gates for RPI workflow |
 | `flywheel` | Knowledge health monitoring |
 | `provenance` | Trace knowledge artifact lineage |
-| `standards` | Language-specific coding standards (auto-loaded by /vibe, /implement) |
+| `standards` | Language-specific coding standards (auto-loaded by /validate, /implement) |
 | `shared` | Shared reference documents for multi-agent backends |
 | `beads` | Issue tracking reference |
 | `using-agentops` | Workflow guide (hook-capable silent state prep, explicit Codex startup fallback) |
@@ -494,16 +494,16 @@ These fire automatically and are not directly invoked:
 
 ## Subagents
 
-Subagent behaviors are defined inline within SKILL.md files (not as separate agent files). Skills that use subagents spawn them as Task agents during execution. 20 specialized roles are used across `/vibe`, `/pre-mortem`, `/post-mortem`, and `/research`.
+Subagent behaviors are defined inline within SKILL.md files (not as separate agent files). Skills that use subagents spawn them as Task agents during execution. 20 specialized roles are used across `/validate`, `/pre-mortem`, `/post-mortem`, and `/research`.
 
 | Agent Role | Used By | Focus |
 |------------|---------|-------|
-| Code reviewer | /vibe, /council | Quality, patterns, maintainability |
-| Security reviewer | /vibe, /council | Vulnerabilities, OWASP |
-| Security expert | /vibe, /council | Deep security analysis |
-| Architecture expert | /vibe, /council | System design review |
-| Code quality expert | /vibe, /council | Complexity and maintainability |
-| UX expert | /vibe, /council | Accessibility and UX validation |
+| Code reviewer | /validate, /council | Quality, patterns, maintainability |
+| Security reviewer | /validate, /council | Vulnerabilities, OWASP |
+| Security expert | /validate, /council | Deep security analysis |
+| Architecture expert | /validate, /council | System design review |
+| Code quality expert | /validate, /council | Complexity and maintainability |
+| UX expert | /validate, /council | Accessibility and UX validation |
 | Plan compliance expert | /post-mortem | Compare implementation to plan |
 | Goal achievement expert | /post-mortem | Did we solve the problem? |
 | Ratchet validator | /post-mortem | Verify gates are locked |
