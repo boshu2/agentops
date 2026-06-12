@@ -167,6 +167,17 @@ Crank repeats FIRE (Find → Ignite → Reap → Vibe → Escalate) for each wav
 - Validate once per wave, fix CRITICAL findings before completion, and keep looping until every issue/task is done.
 - Load learnings at the start, extract learnings at the end, and always emit `DONE`, `BLOCKED`, or `PARTIAL`.
 
+### Folded triggers (ag-s43tg wave 1): `burndown` + `ship-loop` route here
+
+- **`/burndown` → bounded epic mode.** Use when you need to drive a finite epic set to all-merged,
+  then stop — finishing a specific list of tasks, burning down a backlog epic, or executing a
+  bounded set of beads until done. Crank's per-wave loop with a fixed input set (epic-id or bead
+  list) and the epic-close gate IS the burndown: no new-work discovery, terminate on all-closed.
+- **`/ship-loop` → single-bead fast lane.** Use when running the fast-lane internal ship cycle for
+  one closable bead or small slice: claim, test, implement, push, merge, close. That is a one-issue,
+  one-wave crank — the Orchestrator-Merge + Reconcile Loop above (confirmed-MERGED before close)
+  owns the merge/close half.
+
 ### Verb Disambiguation for Worker Prompts
 
 Read `references/worker-verb-disambiguation.md` for the verb clarification table. Ambiguous verbs (extract, remove, update, consolidate) cause workers to implement wrong operations — always use explicit instructions with `wc -l` assertions.
