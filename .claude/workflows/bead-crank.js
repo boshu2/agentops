@@ -1,13 +1,13 @@
 export const meta = {
   name: 'bead-crank',
   description: 'Drive a list of beads to confirmed-merged with worktree-isolated implementer subagents + orchestrator-only reconcile (sequential for coupled surfaces, parallel for disjoint)',
-  whenToUse: 'When you have a list of bead ids to crank to merged PRs in one autonomous session. Pass args = {beads:[...ids], mode:"parallel"|"sequential"}. mode is a hint; the PLAN-GRAPH phase demotes a "parallel" request to a sequential sub-chain whenever two beads share a write/derived surface. Codifies the 2026-05-31 bead-crank post-mortem (§6): worktree-isolated subagents, orchestrator-only merge, mechanical reconciliation of the registry/codex/security/flake taxes, and a confirmed-MERGED-before-bd-close gate.',
+  whenToUse: 'When you have a list of bead ids to crank to merged PRs in one autonomous session. Pass args = {beads:[...ids], mode:"parallel"|"sequential"}. mode is a hint; the PLAN-GRAPH phase demotes a "parallel" request to a sequential sub-chain whenever two beads share a write/derived surface. Codifies the 2026-05-31 bead-crank post-mortem (§6): worktree-isolated subagents, orchestrator-only merge, mechanical reconciliation of the registry/codex/security/flake taxes, and a confirmed-MERGED-before-br-close gate.',
   phases: [
-    { title: 'Prelude', detail: 'git reset --hard origin/main (NEVER pull --rebase); validate every bead exists + unclaimed; classify requested mode' },
+    { title: 'Prelude', detail: 'git reset --hard origin/main (NEVER pull --rebase); validate every bead exists + unclaimed; run the acceptance ADMISSION gate per bead (fail-closed); classify requested mode' },
     { title: 'Plan-Graph', detail: 'build the bead DAG; surface-collision detector demotes parallel→sequential for coupled surfaces; emit the wave plan' },
     { title: 'Fan-Crank', detail: 'parallel: spawn a wave of implementer agents (cap 4-6) in isolated worktrees; sequential: one agent, confirm-merge, branch next off the freshly-merged SHA' },
-    { title: 'Reconcile', detail: 'per-PR state machine: poll → flake-rerun-once → fix-forward derived surfaces → squash-merge --admin → confirm MERGED → bd close' },
-    { title: 'Epilogue', detail: 'close a parent epic ONLY when every child is confirmed-merged; prune merged worktrees; bd dolt push + git push; write bd remember learnings' },
+    { title: 'Reconcile', detail: 'per-PR state machine: poll → flake-rerun-once → fix-forward derived surfaces → squash-merge --admin → confirm MERGED → br close' },
+    { title: 'Epilogue', detail: 'close a parent epic ONLY when every child is confirmed-merged; prune merged worktrees; git -C _beads push + git push; write br comment learnings' },
   ],
 }
 
@@ -95,7 +95,7 @@ const PLAN_GRAPH_SCHEMA = {
 // Implementer-agent return blob (post-mortem §6 — machine-checkable, never free-text).
 const AGENT_RETURN_SCHEMA = {
   type: 'object',
-  required: ['bead_id', 'status', 'pr_number', 'branch', 'base_sha', 'touched_surfaces', 'regen_ran', 'regen_check_clean'],
+  required: ['bead_id', 'status', 'pr_number', 'branch', 'base_sha', 'touched_surfaces', 'regen_ran', 'regen_check_clean', 'covered_by_tagged'],
   properties: {
     bead_id: { type: 'string' },
     status: { type: 'string', enum: ['pr-open', 'blocked', 'no-op'] },
@@ -106,6 +106,7 @@ const AGENT_RETURN_SCHEMA = {
     regen_ran: { type: 'boolean', description: 'did the agent run scripts/regen-all.sh (required if it touched any SKILL.md)' },
     regen_check_clean: { type: 'boolean', description: 'did scripts/regen-all.sh --check pass with no drift after commit' },
     test_fns: { type: 'array', items: { type: 'string' }, description: 'the L2 first-failing test fn names cited in the PR body' },
+    covered_by_tagged: { type: 'boolean', description: '@covered-by tags written back to the bead body after green' },
     security_suppressions: { type: 'array', items: { type: 'string' }, description: 'e.g. G401, G505, nosemgrep if SHA-1/MD5 git-object code was touched' },
     blocked_reason: { type: ['string', 'null'] },
     noop_evidence: { type: ['string', 'null'], description: 'required when status=no-op: verified non-reproduction or allowlisted-exception citation' },
@@ -140,8 +141,8 @@ const EPILOGUE_SCHEMA = {
     childrenAllMerged: { type: 'boolean', description: 'every child PR independently re-confirmed MERGED via gh pr view --json state' },
     unmergedChildren: { type: 'array', items: { type: 'string' }, description: 'child bead/PR ids that blocked the epic close' },
     worktreesPruned: { type: 'integer', description: 'count of merged-PR worktrees reaped (git worktree remove --force + prune)' },
-    pushed: { type: 'boolean', description: 'bd dolt push + git push succeeded' },
-    learnings: { type: 'array', items: { type: 'string' }, description: 'bd remember lines written for recurring reconciliation taxes (≥2× → propose folding into the implementer prompt)' },
+    pushed: { type: 'boolean', description: 'git -C _beads push + git push succeeded' },
+    learnings: { type: 'array', items: { type: 'string' }, description: 'br comments add lines written for recurring reconciliation taxes (≥2× → propose folding into the implementer prompt)' },
   },
 }
 
@@ -159,11 +160,11 @@ You are a worktree-isolated implementer. Implement EXACTLY ONE bead and open a P
 
 (A) ROLE+ISOLATION — You own an isolated worktree for bead ${beadId} ONLY. ${baseClause}. NEVER edit the shared checkout; never touch another bead's files.
 
-(B) CLAIM — \`bd update ${beadId} --claim\` (skip if already in_progress and owned by this run).
+(B) CLAIM — \`BEADS_DIR=$PWD/_beads br update ${beadId} --claim\` (skip if already in_progress and owned by this run).
 
-(C) SCOPE — Read the bead's acceptance: a .feature file (canonical when present) or an embedded \`## Scenarios\` block. Free-text acceptance is INVALID — promote it to scenarios before any work. If the bead is a verified non-reproduction or an allowlisted-exception, return status="no-op" with noop_evidence and DO NOT open a PR.
+(C) SCOPE — Read the bead's acceptance: a .feature file (canonical when present) or an embedded \`## Scenarios\` block. The bead's \`## Scenarios\` (or bare-GWT) acceptance is admission-guaranteed present (Prelude gate); read it as the contract. If the bead is a verified non-reproduction or an allowlisted-exception, return status="no-op" with noop_evidence and DO NOT open a PR.
 
-(D) TDD-FIRST — Write the L2 failing test BEFORE the implementation; confirm it fails for the right reason (missing behavior, not syntax). Then make the smallest change to flip it green; refactor under green. Cite the test fn name(s) in the PR body and in test_fns.
+(D) TDD-FIRST — Write the L2 failing test BEFORE the implementation; confirm it fails for the right reason (missing behavior, not syntax). Then make the smallest change to flip it green; refactor under green. Cite the test fn name(s) in the PR body and in test_fns. AFTER the L2 test passes red→green: close the coverage temporal gap — add \`@covered-by:<test-path>[::<TestName>]\` on its own line directly above EACH scenario in the bead body, then write the tagged body back with \`BEADS_DIR=$PWD/_beads br update ${beadId} --body\` so the bead later passes /validate full coverage. Set covered_by_tagged=true only after the write-back succeeds.
 
 (E) DERIVED-SURFACE CHECKLIST (load-bearing) — If you touched ANY skills/**/SKILL.md you changed derived surfaces. Run \`scripts/regen-all.sh\`, then \`scripts/regen-all.sh --check\`, and commit ALL regenerated files. The MOST-MISSED surface is registry.json via scripts/generate-registry.sh — SKILL metadata/SKU edits mutate it even when no \`ao\` subcommand changed and it trips contracts-sync. If the codex regen sweeps twin manifest entries you did NOT touch, scope it: pass \`--skills foo,bar\` (or REGEN_SKILLS=foo,bar) so the diff stays scope-clean. Set regen_ran/regen_check_clean honestly.
 
@@ -196,8 +197,8 @@ STATE MACHINE:
 3. KNOWN-FLAKE RERUN — \`correctness (ubuntu-latest)\` tar-cache-restore exit 2 is a known flake. \`gh run rerun\` it EXACTLY ONCE (budget=${FLAKE_RERUN_BUDGET}), re-poll, then believe the result. One retry only, so it can't mask a real break.
 4. FIX-FORWARD — derived-surface drift (registry.json / cli-command-surface / context-map / codex via contracts-sync) is fixed-forward IN THE WORKTREE: \`scripts/regen-all.sh\` (scope with --skills if codex sweeps twins), commit, push; re-poll. NEVER bounce back to the agent; NEVER revert green work. A pre-existing-looking red (contracts-sync/security-canary) is reproduced on a CLEAN origin/main worktree FIRST — if it reproduces there it is a latent-trunk break: file a NEW bead + fix it separately, do not block this feature PR.
 5. MERGE — only when all substantive checks are green: \`gh pr merge ${ret.pr_number} --squash --admin\`.
-6. CONFIRM-MERGED — \`gh pr view ${ret.pr_number} --json state -q .state\` MUST equal "MERGED". This ledger line is AUTHORITATIVE — never trust a bd batch query.
-7. BEAD-CLOSED — ONLY after confirmed MERGED: \`bd close ${ret.bead_id} --reason "merged in #${ret.pr_number}"\`.
+6. CONFIRM-MERGED — \`gh pr view ${ret.pr_number} --json state -q .state\` MUST equal "MERGED". This ledger line is AUTHORITATIVE — never trust a batch tracker query.
+7. BEAD-CLOSED — ONLY after confirmed MERGED: \`BEADS_DIR=$PWD/_beads br close ${ret.bead_id} --reason "merged in #${ret.pr_number}"\`.
 
 Return the reconcile ledger blob. terminal_state="blocked" if a substantive red is real and unresolved; "abandoned" only if the PR was intentionally closed without merge.`
 
@@ -217,20 +218,29 @@ const prelude = await agent(
 PRELUDE for a bead-crank run over: ${beadIds.join(', ')} (requested mode: ${requestedMode}${epicId ? `, parent epic: ${epicId}` : ''}).
 
 1. STALE-CHECKOUT GUARD — on the host orchestration checkout run \`git fetch origin && git reset --hard origin/main\`. \`git pull --rebase\` is BANNED in this workflow (it silently no-ops on a diverged local main and corrupts surveys).
-2. VALIDATE BEADS — for EACH bead run \`bd show <id>\` (do NOT rely on a single batch \`bd --json\` query for control flow). Confirm each exists and is either unclaimed or already owned by this run. Flag any that are missing, closed, or claimed by someone else.
-3. Report the validated bead list and any anomalies. Do NOT start implementation.`,
+2. VALIDATE BEADS — for EACH bead run \`BEADS_DIR=$PWD/_beads br show <id>\` (do NOT rely on a single batch \`--json\` query for control flow). Confirm each exists and is either unclaimed or already owned by this run. Flag any that are missing, closed, or claimed by someone else.
+2.5. ADMISSION GATE — for EACH validated bead run \`BEADS_DIR=$PWD/_beads br show <id> | bash scripts/check-bead-scenario-coverage.sh --admission -\`. Exit 0 → ADMISSIBLE (add to admissibleBeads). Exit 1 → anomaly {beadId, issue: "inadmissible: no runnable acceptance"} — the bead does NOT enter admissibleBeads. Exit 2 → anomaly {beadId, issue: "tracker failure"} — an infra/misuse failure; the bead is NOT classified inadmissible, and it does NOT enter admissibleBeads.
+3. Report the validated bead list, the admissible bead list, and any anomalies. Do NOT start implementation.`,
   { label: 'prelude:validate', phase: 'Prelude', schema: {
     type: 'object',
-    required: ['resetClean', 'validBeads', 'anomalies'],
+    required: ['resetClean', 'validBeads', 'admissibleBeads', 'anomalies'],
     properties: {
       resetClean: { type: 'boolean', description: 'git reset --hard origin/main succeeded' },
       validBeads: { type: 'array', items: { type: 'string' } },
+      admissibleBeads: { type: 'array', items: { type: 'string' }, description: 'validated beads that ALSO passed the --admission acceptance gate (exit 0)' },
       anomalies: { type: 'array', items: { type: 'object', required: ['beadId', 'issue'], properties: { beadId: { type: 'string' }, issue: { type: 'string' } } } },
     },
   } }
 )
 log(`Prelude: ${prelude.validBeads.length}/${beadIds.length} beads valid${prelude.anomalies.length ? ` · ${prelude.anomalies.length} anomalies` : ''}`)
-const workBeads = prelude.validBeads.length ? prelude.validBeads : beadIds
+// FAIL-CLOSED admission filter (ag-iruq3.3): an empty admissible set STOPS the
+// run. Never fall back to "admit everything" — the old `validBeads || beadIds`
+// fallback was fail-open and would crank beads with no runnable acceptance.
+if (!prelude.admissibleBeads || prelude.admissibleBeads.length === 0) {
+  log('PRELUDE: zero admissible beads — refusing to crank (fail-closed).')
+  return { stoppedAt: 'prelude', reason: 'no admissible beads', anomalies: prelude.anomalies }
+}
+const workBeads = prelude.admissibleBeads
 
 // ===========================================================================
 // PHASE 2 — PLAN-GRAPH
@@ -269,7 +279,7 @@ let lastMergedSha = null // threaded base for the next sequential link
 // before-return slice must surface as a structured blocked blob, never be dropped.
 const blockedReturn = (beadId, err) => ({
   bead_id: beadId, status: 'blocked', pr_number: 0, branch: '', base_sha: '',
-  touched_surfaces: [], regen_ran: false, regen_check_clean: false, test_fns: [],
+  touched_surfaces: [], regen_ran: false, regen_check_clean: false, test_fns: [], covered_by_tagged: false,
   security_suppressions: [], blocked_reason: `agent errored before returning: ${String((err && err.message) || err)}`, noop_evidence: null,
 })
 const runImplementer = (beadId, baseSha) => () =>
@@ -286,7 +296,7 @@ const reconcileReturn = async (ret) => {
       return { bead_id: ret.bead_id, pr_number: 0, terminal_state: 'blocked', confirmed_merged: false, bead_closed: false, note: 'no-op without evidence', transitions: [], flake_rerun_used: false, fix_forward_applied: null, soft_failed_checks: [] }
     }
     const closed = await agent(
-      `${DOCTRINE}\n\nBead ${ret.bead_id} is a verified no-op (evidence: ${ret.noop_evidence}). Re-confirm the evidence holds, then \`bd close ${ret.bead_id} --reason "no-op: ${ret.noop_evidence}"\`. No PR is involved. Return the reconcile ledger blob with terminal_state="abandoned" (closed without merge), confirmed_merged=false, bead_closed per the result.`,
+      `${DOCTRINE}\n\nBead ${ret.bead_id} is a verified no-op (evidence: ${ret.noop_evidence}). Re-confirm the evidence holds, then \`BEADS_DIR=$PWD/_beads br close ${ret.bead_id} --reason "no-op: ${ret.noop_evidence}"\`. No PR is involved. Return the reconcile ledger blob with terminal_state="abandoned" (closed without merge), confirmed_merged=false, bead_closed per the result.`,
       { label: `reconcile:${ret.bead_id}`, phase: 'Reconcile', schema: RECONCILE_SCHEMA })
     return closed || { bead_id: ret.bead_id, pr_number: 0, terminal_state: 'abandoned', confirmed_merged: false, bead_closed: false, note: 'no-op close returned null', transitions: ['bead-closed'], flake_rerun_used: false, fix_forward_applied: null, soft_failed_checks: [] }
   }
@@ -342,7 +352,7 @@ log(`Fan-Crank+Reconcile done · ${merged}/${reconcileLedger.length} confirmed-m
 // PHASE 5 — EPILOGUE
 // Close the parent epic ONLY when every child is confirmed-merged (re-query
 // gh pr state per child — the §6 epic-close guard; failure #3). Prune merged
-// worktrees, push, and write bd remember learnings for recurring taxes.
+// worktrees, push, and write br comment learnings for recurring taxes.
 // ===========================================================================
 phase('Epilogue')
 const epilogue = await agent(
@@ -350,13 +360,13 @@ const epilogue = await agent(
 
 EPILOGUE for the bead-crank run.${epicId ? ` Parent epic: ${epicId}.` : ' No parent epic to close.'}
 
-Reconcile ledger (authoritative — this carries the workflow's own structured state, NOT a bd batch query):
+Reconcile ledger (authoritative — this carries the workflow's own structured state, NOT a batch tracker query):
 ${JSON.stringify(reconcileLedger, null, 2)}
 
-1. EPIC-CLOSE GUARD (only if a parent epic was given) — list the epic's children. For EACH child, re-query \`gh pr view <N> --json state -q .state\` independently (do NOT trust a batch \`bd --json\`). Close the epic ONLY if EVERY child is confirmed MERGED; one non-merged child ABORTS the close (record it in unmergedChildren). Never close a parent before every child PR is confirmed merged.
+1. EPIC-CLOSE GUARD (only if a parent epic was given) — list the epic's children. For EACH child, re-query \`gh pr view <N> --json state -q .state\` independently (do NOT trust a batch \`--json\` tracker query). Close the epic ONLY if EVERY child is confirmed MERGED; one non-merged child ABORTS the close (record it in unmergedChildren). Never close a parent before every child PR is confirmed merged.
 2. WORKTREE REAPING — for every CONFIRMED-MERGED PR's worktree: \`git worktree remove <path> --force\`; then \`git worktree prune\`. Leave unmerged-PR worktrees intact. Target: zero orphaned worktrees from this run.
-3. PUSH — \`bd dolt push\` then \`git push\`; confirm \`git status\` shows up-to-date with origin.
-4. LEARNING CAPTURE — write \`bd remember\` for each reconciliation lesson; if a tax recurred >=2x in the ledger (registry drift, codex sweep, tar-cache flake, security suppression), propose folding it into the implementer prompt template (sections E/G) — the same shaping that reduced the tax in the source session.
+3. PUSH — \`git -C _beads push\` (the private br ledger repo) then \`git push\`; confirm \`git status\` shows up-to-date with origin.
+4. LEARNING CAPTURE — write \`BEADS_DIR=$PWD/_beads br comments add <id> "<lesson>"\` on the relevant bead (or the epic) for each reconciliation lesson; if a tax recurred >=2x in the ledger (registry drift, codex sweep, tar-cache flake, security suppression), propose folding it into the implementer prompt template (sections E/G) — the same shaping that reduced the tax in the source session.
 
 Return the epilogue blob.`,
   { label: 'epilogue', phase: 'Epilogue', schema: EPILOGUE_SCHEMA }
