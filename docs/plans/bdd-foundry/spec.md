@@ -416,3 +416,29 @@ No scenario text changes; B-assertions are untouched.
 
 Each slice's done = its listed scenarios green AND no previously-green
 scenario regressed (`bats docs/plans/bdd-foundry/acceptance-tests`).
+
+---
+
+## 8. Run-2 amendments (appended at run-2 Phase-3 freeze — see `intent-amendment-pass-run-2-on-the-agent/spec.md` §9)
+
+Pinned BEFORE run-2 implementation begins (B84/B85/B88 grep this file):
+
+1. **Foreign-hook policy (B84, pinned at freeze):** `--install` installs a
+   fresh guard hook on hookless clones; on an existing pre-push that is
+   **not recognized** (no beads markers, no guard markers) it REFUSES — exit
+   nonzero, message "existing pre-push not recognized — chain manually" — and
+   never modifies the foreign hook (zero byte changes, no guard text written
+   anywhere under `.git/hooks/`). Recognized beads-managed chains are chained,
+   never clobbered.
+2. **Cross-host residual (B85):** the landing lock is **host-local** —
+   `LAND_LOCK_DIR` cannot serialize a Mac land against a bushido land.
+   Cross-host serialization is explicitly out of scope for land.sh v1 and is
+   owned by the **ag-arpk** disposition (GitHub merge queue kept-planned,
+   sequenced after the land.sh epic).
+3. **Implementation choice (B88):** the acceptance suite is the contract; an
+   **`ao land`** Go implementation is PERMITTED AND PREFERRED over hardening
+   ~2k lines of concurrency-critical Bash 3.2 if the implementer judges it
+   cheaper. Either substrate must pass the identical suite via the
+   **LAND_BIN** seam, and installed guard segments dispatch through the
+   configured land command (`${LAND_BIN:-scripts/land.sh}` via
+   `--hook-pre-push`), never a hardcoded path.
