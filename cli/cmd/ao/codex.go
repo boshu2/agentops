@@ -1272,17 +1272,13 @@ func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
 }
 
 func validateCodexDispatchAuth(packet codexTaskPacket) (string, error) {
-	for _, name := range packet.Auth.RejectEnv {
-		name = strings.TrimSpace(name)
-		if name == "" {
-			continue
-		}
+	for _, name := range codexDispatchForbiddenEnvNames(packet.Auth) {
 		if os.Getenv(name) != "" {
 			return "", fmt.Errorf("codex dispatch refuses %s in environment; use ChatGPT subscription auth", name)
 		}
-	}
-	if packet.Auth.ForbidAPIKey && os.Getenv("OPENAI_API_KEY") != "" {
-		return "", fmt.Errorf("codex dispatch refuses OPENAI_API_KEY in environment; use ChatGPT subscription auth")
+		if _, injected := packet.Execution.Environment[name]; injected {
+			return "", fmt.Errorf("codex dispatch refuses %s in packet execution.environment; use ChatGPT subscription auth", name)
+		}
 	}
 
 	binary := codexDispatchBinary(packet)
@@ -1301,6 +1297,29 @@ func validateCodexDispatchAuth(packet codexTaskPacket) (string, error) {
 		return "", fmt.Errorf("codex dispatch requires ChatGPT subscription auth; login status %q does not contain %q", status, want)
 	}
 	return status, nil
+}
+
+// codexDispatchForbiddenEnvNames returns the deduplicated, ordered set of
+// environment variable names the dispatch auth guard must reject in BOTH the
+// ambient environment and packet-provided execution.environment.
+// OPENAI_API_KEY is always forbidden: dispatch is ChatGPT-subscription-only,
+// so a packet cannot opt back into API-key auth by weakening its own guard.
+func codexDispatchForbiddenEnvNames(auth codexTaskAuthGuard) []string {
+	var names []string
+	seen := make(map[string]bool)
+	add := func(name string) {
+		name = strings.TrimSpace(name)
+		if name == "" || seen[name] {
+			return
+		}
+		seen[name] = true
+		names = append(names, name)
+	}
+	for _, name := range auth.RejectEnv {
+		add(name)
+	}
+	add("OPENAI_API_KEY")
+	return names
 }
 
 func codexDispatchBinary(packet codexTaskPacket) string {
