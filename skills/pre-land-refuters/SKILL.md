@@ -113,3 +113,6 @@ parallel → fix findings forward → land → re-sweep pins.
 - [codex-exec](../codex-exec/SKILL.md) — the codex refuter lane
 - [codex-approval](../codex-approval/SKILL.md) — the inverse direction (Codex asks Fable)
 - [red-team](../red-team/SKILL.md) — adversarial probing of docs/plans (pre-work); this skill is pre-land
+- [rpi](../rpi/SKILL.md) — invokes this panel at Phase 3 exit on full-complexity arcs
+- [pre-mortem](../pre-mortem/SKILL.md) — plan-time twin (move 4); this skill is the landing twin (move 6 exit)
+- [post-mortem](../post-mortem/SKILL.md) — consumes the council artifact as landing evidence (move 7)

@@ -151,7 +151,8 @@ Enter at the routed phase and run every phase after it.
    or through phase-isolated skill transport. Add `--strict-surfaces` when
    `--quality` is set. On FAIL, extract findings, re-run `/crank` on the same
    objective, then re-run `/validate`, up to 3 total validation attempts. On
-   DONE, record `ao ratchet record vibe 2>/dev/null || true`.
+   DONE, record `ao ratchet record vibe 2>/dev/null || true`. On `full`-complexity arcs (100+ files, factory regen, contract-test repoints, capability removal), DONE is a claim, not a landing pass:
+   invoke [`/pre-land-refuters`](../pre-land-refuters/SKILL.md) before push; REFUTED findings re-crank like a validation FAIL.
 4. **Report:** summarize phase verdicts and epic status using
    [references/report-template.md](references/report-template.md). With
    `--loop`, restart from discovery on FAIL while `cycle < max_cycles`. With

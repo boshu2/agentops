@@ -231,6 +231,7 @@ See [references/examples.md](references/examples.md) for the troubleshooting tab
 ## See Also
 
 - `skills/council/SKILL.md` — Multi-model validation council
+- [`pre-land-refuters`](../pre-land-refuters/SKILL.md) — same adversarial stance aimed at the finished diff: this skill attacks the plan pre-work; that one attacks the completion claim pre-push
 - `skills/plan/SKILL.md` — Create implementation plans
 - `skills/validate/SKILL.md` — Validate code after implementation
 
