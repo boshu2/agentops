@@ -47,6 +47,24 @@ Verified primitives on this host (`agy --help`, `agy plugin help`, `agy models`)
 - **Workspace scope:** `--add-dir <dir>` (repeatable) scopes which repos a run can touch (AGY's write-isolation primitive — it scopes by directory, not by spawning worktrees).
 - **Brain/knowledge:** durable agent memory + user-facing artifacts under `~/.gemini/antigravity-cli/{brain,knowledge}/` (per-conversation dirs; `*.md` + `*.md.metadata.json` with `{summary, updatedAt, userFacing}`).
 
+### Folded triggers (ag-s43tg wave 1): the four AGY sibling lanes route here
+
+- **`agy-mcp-plugins` → the Distribution lane.** Use when wiring MCP servers and AgentOps plugin bundles
+  into the AGY image with least-privilege access, rollback evidence, and validation hooks — the
+  §"Distribution" layer below (plugin trees, `agy plugin link/install`, validate → apply → list →
+  record-rollback) owns that mutation protocol.
+- **`agy-project-worktree-permissions` → the isolation rules.** Use when proving AGY project/worktree
+  isolation with scoped --add-dir permissions, role permission tiers, and `dcg` guardrails — Rules 4–6
+  below (non-overlapping `--add-dir` scopes, permission matched to role, the `dcg` BeforeTool hook)
+  are that contract, with evidence persisted per Rule 3.
+- **`agy-rules-workflows` (triggers: AGY rules, agy-loop, AGY schedule) → Phase 2 law packaging.** Use
+  when installing AGY rules, workflow, goal, and schedule controls for AgentOps loop law — the
+  `agy-control-plane` plugin tree in Phase 2 (`rules/` + `workflows/` + `hooks.json`) is where the
+  agy-loop law lands; schedules drive Phase 5.
+- **`agy-sidecar-scheduled-tick` → the Phase 5 recurring driver.** Use when running a
+  recurring AGY sidecar loop tick with agentapi evidence capture — Phase 5's tick lane (AGY
+  scheduled task, or an external timer / Claude `CronCreate` calling `agy --print`) is that driver.
+
 ## ⚠️ Critical Constraints
 
 - **Rule 1 — Never `claude -p` for workers (LAW 0).** AGY runs on Gemini OAuth (and proxied Claude/GPT). Drive AGY workers with `agy --print` or `agy -i`, Codex with `codex exec`, Claude only via NTM panes / subagents. **Why:** `claude -p` bills the API per-token, not the Max sub; the overnight factory burned API this exact way (banned).
