@@ -2,10 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "6cbf836754c9508041e48ffca8b3d4337ca2d296847b5291d3892b2b03f7c6d4",
-  "codex_override_catalog_hash": "1bfd89daee3f272e97636fc440ce297f2d9ccce00b80478715a942eb0f1dc946",
-  "codex_override_catalog_hash": "77049cc5501ccdcaae1ea6ca22b521a5ecf3782e35eb062c07030cd8fa5d547b",
-  "codex_override_catalog_hash": "b715eeb0a48a7e7b98403d687648ec42422e547cfe83957f3e01c857ed75632d",
+  "codex_override_catalog_hash": "23dd75a007bebef88b11a0dae0426f444cb81fc59360569802ac8a9ff0d502e8",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -960,7 +957,6 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Unbiased dual-model pre-land validation panel; codex twin is a thin pointer stub with codex-as-refuter profile."
-        "reason": "caam->account-rotation rename reconciliation; Codex-owned wrapper stays parity-only until durable Codex-specific divergence is proven."
       },
       {
         "name": "continuity-loop",

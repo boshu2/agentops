@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-12T18:48:57Z",
-  "skill_count": 70,
+  "generated_at": "2026-06-12T18:53:02Z",
+  "skill_count": 71,
   "skills": [
     {
       "name": "account-rotation",
@@ -941,6 +941,35 @@
         }
       ],
       "references_count": 4,
+      "codex_override_present": true
+    },
+    {
+      "name": "pre-land-refuters",
+      "description": "Dispatch unbiased parallel refuters before landing a large multi-surface change: a fresh-context Fable validator + a codex exec read-only validator try to REFUTE the completion claim; their findings are the work list. Use before pushing any 100+ file change, corpus prune, generated-surface regen, or contract-test repoint. Triggers: pre-land validation, unbiased review, refute before push, dual-model landing check.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": true,
+      "consumes": [
+        "validate",
+        "codex-exec"
+      ],
+      "produces": [
+        ".agents/council/*.md"
+      ],
+      "practices": [
+        "llm-eval-harness",
+        "ai-assisted-dev"
+      ],
+      "context_rel": [
+        {
+          "kind": "customer-of",
+          "with": "validate"
+        },
+        {
+          "kind": "customer-of",
+          "with": "codex-exec"
+        }
+      ],
+      "references_count": 0,
       "codex_override_present": true
     },
     {
