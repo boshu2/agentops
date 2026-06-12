@@ -1,0 +1,175 @@
+{
+  "run": "intent-amendment-pass-run-2-on-the-agent",
+  "frozen_scenarios": "B74-B93 frozen + B94 (drift-guard repair split of B85's rollout-evidence concern)",
+  "notes": "All acceptance commands run from the repo root. Tracker writes (B77, B87, B90 rider) run as `br` from the main checkout /Users/bo/dev/agentops with BEADS_DIR=$PWD/_beads — never from a worktree. Run-1 spec §8 amendments (C16) were applied at spec-freeze, not by a bead. Drift-guard repair 2026-06-12: B85's second concern (durable two-clone rollout evidence) is split out as scenario B94 with its own bats test, so bead 'done' is 1:1 with a runnable test — run2-install-verify owns `^B85:` (green at its own close), run2-rollout-evidence owns `^B94:` (terminal; the former trailing check-rollout-evidence.sh shell half is folded into the B94 test body). 21 beads, 21 distinct tests, one bats invocation each.",
+  "beads": [
+    {
+      "key": "run2-coverage-manifest",
+      "title": "B91 coverage manifest + checker: map every appended behavior B74-B94 to a mechanical verifier (C13)",
+      "why": "Spec §11.1: this gates every other bead — no appended behavior may be satisfied by prose alone. Creates <run2>/coverage-manifest.txt (one line per behavior B74-B94, kind in {bats,script,cmd}; each behavior id maps to exactly one test) and <run2>/acceptance-tests/check-coverage-manifest.sh that fails naming missing/duplicate ids, unselected bats refs, and missing/non-executable scripts.",
+      "scenario_ref": "B91",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B91:'",
+      "deps": []
+    },
+    {
+      "key": "run2-hermetic-check",
+      "title": "B92 hermetic-verification wrapper scripts/with-hermetic-check.sh (C12)",
+      "why": "Real-repo verifiers must never dirty the operator checkout. Wrapper captures git status --porcelain + HEAD before/after the wrapped command, exits nonzero printing 'verifier residue' naming every leftover path / SHA mismatch, otherwise propagates the wrapped exit status. Records pre/post itself so a mid-run crash cannot hide residue.",
+      "scenario_ref": "B92",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B92:'",
+      "deps": ["run2-coverage-manifest"]
+    },
+    {
+      "key": "run2-fixture-gatekeep",
+      "title": "B74 harness repair: track scripts/gate.d/.gitkeep in seed_fixture + literal self-check (C1)",
+      "why": "Root cause of the 10-test redirect-crash class: git cannot track an empty dir, so lane clones lacked scripts/gate.d. seed_fixture writes .gitkeep before its git add -A commit; run-acceptance.sh/helpers.bash gain a post-seed self-check failing with the exact string 'fixture defect: scripts/gate.d untracked'.",
+      "scenario_ref": "B74",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B74:'",
+      "deps": ["run2-coverage-manifest"]
+    },
+    {
+      "key": "run2-audit-red",
+      "title": "B75 standing red-on-assertion gate: <base>/audit-red.sh over the run-1 suite (C2)",
+      "why": "Makes red-on-assertion a mechanical standing gate, not a one-time fix: forces the SUT red via LAND_BIN (exit-97 placeholder), derives EXPECTED count from bats --count cross-checked against the B91 coverage manifest (never hardcoded 73), asserts zero ok / zero harness crashes, classifies every failure trace into a @test body (the ten previously-poisoned tests checked by name), and runs find_identical_if_else over the base suite. Spec §11.2: depends on C1 (crash-free base) and C13 (reads the manifest).",
+      "scenario_ref": "B75",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B75:'",
+      "deps": ["run2-fixture-gatekeep", "run2-coverage-manifest"]
+    },
+    {
+      "key": "run2-b57-repair",
+      "title": "B76 repair the B57 dead conditional in <base>/08-crash-recovery.bats: materially distinct post-push vs pre-push arms (C3)",
+      "why": "B57's if/else had byte-identical branches (dead code). Rewrite: post-push crash phases (push, pre-release) assert rerun exit 0 + 'already landed' + unchanged remote patch-id set; pre-push phases (rebase, regen-write, regen-commit, gate) assert exit 0 + skill lands exactly once. No land.sh design change (run-1 M8b behavior); the audit-red lint keeps dead conditionals extinct. Full green also requires the run-1 land.sh engine beads (cross-run prerequisite, outside this DAG).",
+      "scenario_ref": "B76",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B76:'",
+      "deps": ["run2-audit-red"]
+    },
+    {
+      "key": "run2-bead-d3-acceptance",
+      "title": "B77 amend ag-d3-fixture-guard-yk7rq: runnable ^B62 ACCEPTANCE replaces the prose recipe (C14)",
+      "why": "Tracker edit via br FROM THE MAIN CHECKOUT /Users/bo/dev/agentops (BEADS_DIR=$PWD/_beads) — never from a worktree. ACCEPTANCE becomes exactly one runnable backticked criterion (`bats docs/plans/bdd-foundry/acceptance-tests -f '^B62'` plus required env); the ^B25 smoke proxy and every manual operative verb removed. Depends on the harness repair so the stated filter fails on assertion, not crash.",
+      "scenario_ref": "B77",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B77:'",
+      "deps": ["run2-fixture-gatekeep"]
+    },
+    {
+      "key": "run2-regen-manifest",
+      "title": "B78 real-repo regen write set: scripts/regen-manifest.txt + scripts/check-regen-manifest.sh (C6)",
+      "why": "Cutover lane. Strict-format manifest of regen-all.sh's fully-generated write set; checker derives reality from an ACTUAL regen run in a disposable clone (pass 1: written set ⊆ declared; pass 2: git rm declared, rerun, recreated == declared), rejects format defects and source-owned overlap naming the line. Includes the migration: regen-all.sh tolerates regenerating from a tree where its outputs are absent. Hermetic by construction (B92).",
+      "scenario_ref": "B78",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B78:'",
+      "deps": ["run2-coverage-manifest", "run2-hermetic-check"]
+    },
+    {
+      "key": "run2-count-markers",
+      "title": "B80 generator-owned skill-count marker blocks in the ~11 prose docs + scripts/count-docs.txt + generator wired into regen-all.sh (C7 part 1)",
+      "why": "Every skill-count occurrence in the manifested docs converts to <!-- count:skills -->N<!-- /count -->; scripts/sync-skill-counts.sh becomes marker-driven and is invoked from regen-all.sh so edit-then-regen byte-restores values and regen-all.sh --check passes on the cutover commit. Sequenced after run2-regen-manifest: both edit scripts/regen-all.sh (shared write surface).",
+      "scenario_ref": "B80",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B80:'",
+      "deps": ["run2-regen-manifest"]
+    },
+    {
+      "key": "run2-install-chain",
+      "title": "B82 install engine v2 segment model: --install CHAINS onto the beads-managed pre-push hook + --hook-pre-push guard dispatch through the LAND_BIN seam (C5 §5.1-5.2)",
+      "why": "The real repo's pre-push IS a live beads chain — clobbering it is the catastrophic failure. Ordered-segment parser (beads segment byte-preserved, pre-push.local never opened, guard segment the only owned bytes), documented order printed by --help, guard body dispatches via ${LAND_BIN:-$(git rev-parse --show-toplevel)/scripts/land.sh} --hook-pre-push (B63 nonce permit / B17 rejection). Head of the scripts/land.sh write-surface chain.",
+      "scenario_ref": "B82",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B82:'",
+      "deps": ["run2-coverage-manifest"]
+    },
+    {
+      "key": "run2-install-foreign-refuse",
+      "title": "B84 pinned foreign-hook policy: install on hookless, REFUSE on unrecognized — across all control-flow trap variants (C5 §5.1)",
+      "why": "Policy pinned at freeze (run-1 spec §8 amendment 1, already applied): exit nonzero matching 'not recognized' + 'chain manually', zero byte changes, no guard text anywhere under .git/hooks/, unconditional across exit-0 head / trailing exec / no shebang / non-executable variants; printed in --help. Serialized on the scripts/land.sh surface after run2-install-chain.",
+      "scenario_ref": "B84",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B84:'",
+      "deps": ["run2-install-chain"]
+    },
+    {
+      "key": "run2-install-idempotent",
+      "title": "B83 --install idempotency + guard-segment-only upgrade (C5 §5.3 part 1)",
+      "why": "Rerun with current guard: exit 0, 'already installed', hook byte-identical, backup untouched. Older guard version: rewrite ONLY the guard segment bytes, log 'guard upgraded <old> -> <new>', beads segment + pre-push.local sha256-identical. Serialized on the scripts/land.sh surface.",
+      "scenario_ref": "B83",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B83:'",
+      "deps": ["run2-install-foreign-refuse"]
+    },
+    {
+      "key": "run2-install-crash-safe",
+      "title": "B93 crash-safe install: temp-file + atomic rename, backup at .git/hooks/pre-push.pre-land-install.bak, LAND_TEST_INSTALL_FAIL fault seams (C5 §5.3 part 2)",
+      "why": "Every write path composes the full hook, writes pre-push.tmp.$$, chmod +x, backs up the prior hook (only when content changes), atomic mv — never in-place. Fault seams write/rename/chmod (LAND_TEST_MODE=1) abort AT that step: exit nonzero naming the failed step, surviving hook byte-identical, no tmp wreckage; --help documents backup path + recovery. Serialized on the scripts/land.sh surface.",
+      "scenario_ref": "B93",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B93:'",
+      "deps": ["run2-install-idempotent"]
+    },
+    {
+      "key": "run2-install-verify",
+      "title": "B85 strict --install --verify: pinned JSON keys, five named defect rejections, naked-clone diagnosis, host-local-lock residual in --help + scripts/check-rollout-evidence.sh (C5 §5.4 + C10 script)",
+      "why": "Machine-readable deterministic verify (guard_present, guard_version, chain, defects; exit codes in --help); distinct defect token each for stale version / duplicate segment / unpaired marker / missing exec bit / chain order; pure resolution. Ships the rollout-evidence checker script (≥2 records, all keys, staleness via repo_sha blob-equality + guard_version match), proven bead-scoped against a stale SYNTHETIC manifest — zero dependence on the checked-in evidence records (those are run2-rollout-evidence's B94 deliverable). Bead-scoped done: the ^B85: test goes green at THIS bead's own close.",
+      "scenario_ref": "B85",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B85:'",
+      "deps": ["run2-install-crash-safe"]
+    },
+    {
+      "key": "run2-lock-default",
+      "title": "B89 pinned LAND_LOCK_DIR production default: XDG state root + sha256 digest of the canonicalized origin identity (C5 §7)",
+      "why": "lock_dir = ${XDG_STATE_HOME:-$HOME/.local/state}/land/<first-16-hex of sha256(canonical origin identity)>; canonicalization (scp≡ssh, scheme/credentials/default-port stripped, lowercased host, trailing .git stripped, file://≡local path) pinned in --help with the word 'canonical'. Same identity ⇒ same lock_dir across the four GitHub spellings; --status stays pure and reports lock_dir; mutual exclusion flows through the default. Serialized on the scripts/land.sh surface.",
+      "scenario_ref": "B89",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B89:'",
+      "deps": ["run2-install-verify"]
+    },
+    {
+      "key": "run2-count-checker",
+      "title": "B79 scripts/land.sh --check-counts + repo-wide out-of-marker sweep + count-literal migration (C7 part 2)",
+      "why": "Validates count-docs.txt format naming the line, recomputes every marker-block value, sweeps git ls-files -co --exclude-standard '*.md' (tracked AND untracked — catches the planted rogue doc) for \\b[0-9]+\\+?\\s+skills?\\b outside marker blocks; migration fixes/manifests every existing out-of-marker literal so the sweep is 0 on the cutover commit. Also satisfies B79's -x scripts/land.sh assertion on the real repo (cutover of the run-1 D1 artifact). Serialized on scripts/land.sh after run2-lock-default; needs the marker conversion from run2-count-markers.",
+      "scenario_ref": "B79",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B79:'",
+      "deps": ["run2-count-markers", "run2-lock-default"]
+    },
+    {
+      "key": "run2-gate-parity",
+      "title": "B81 validate.yml land-gate-families declaration + scripts/check-gate-parity.sh + land.sh --gate-families verb (C8)",
+      "why": "Exactly one workflow-level env key, each family token mapping to a real job/step; checker is a STRUCTURAL python3+PyYAML parse (never grep) rejecting commented-out/duplicate/empty declarations and unmapped or missing families; parity reads land.sh's list via the new --gate-families verb. CONSTRAINT (spec §11.3, recorded here per B81/B90 self-containment): the implementing lane MUST coordinate with or sequence after the active lane holding validate.yml — take an am reservation on .github/workflows/validate.yml before editing. Tail of the scripts/land.sh write-surface chain.",
+      "scenario_ref": "B81",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B81:'",
+      "deps": ["run2-count-checker"]
+    },
+    {
+      "key": "run2-land-bin-seam",
+      "title": "B88 one LAND_BIN invocation seam: run-1 helpers honor LAND_BIN, all 28 direct SUT invocations rerouted (C4)",
+      "why": "land()/start_land()/status_json() invoke ${LAND_BIN:-$lane/scripts/land.sh}; every direct scripts/land.sh invocation in run-1 .bats files routes through the helpers (fixture-authoring heredocs exempt per find_direct_sut_invocations). The installed-hook half of the seam is run2-install-chain's guard dispatch (dependency); the spec's ao-land substrate note is already in run-1 spec §8 (C16, applied at freeze).",
+      "scenario_ref": "B88",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B88:'",
+      "deps": ["run2-install-chain"]
+    },
+    {
+      "key": "run2-doctrine-flip",
+      "title": "B86 repo-wide landing-doctrine flip + scripts/check-doctrine-docs.sh (C9)",
+      "why": "CLAUDE.md Phases Land step + Branch+PR-shape Land row instruct scripts/land.sh; the seven sister docs name scripts/land.sh in every LIVE landing instruction; direct-push language survives only inside marked historical/superseded sections; sweep script greps the pinned doc list (each name literal in the script) for the operative phrases and documents the marker convention in its header. Depends on run2-install-chain so the hook description matches the installed chain order (beads segment + cockpit gate + land guard).",
+      "scenario_ref": "B86",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B86:'",
+      "deps": ["run2-install-chain"]
+    },
+    {
+      "key": "run2-arpk-disposition",
+      "title": "B87 disposition ag-arpk: keep merge-queue planned, sequenced after the land.sh epic, residual named (C15)",
+      "why": "Tracker edit via br FROM THE MAIN CHECKOUT /Users/bo/dev/agentops (BEADS_DIR=$PWD/_beads) — never from a worktree. Chosen path pinned by spec §6: keep merge-queue planned; br dep add ag-arpk <land.sh epic id> so br ready --limit 0 and bv triage show it blocked, never unclaimed-ready. Body states deferral + re-evaluation trigger (cutover verified on both clones), the exact cross-host residual (host-local lock; merge queue the only listed serializer), and the residual-handling choice — machine state agrees with prose.",
+      "scenario_ref": "B87",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B87:'",
+      "deps": ["run2-coverage-manifest"]
+    },
+    {
+      "key": "run2-bead-sweep",
+      "title": "B90 scripts/sweep-bead-acceptance.sh + normalize every landing-redesign bead body to full runnable commands (C11)",
+      "why": "Fail-closed sweep (br on PATH, main checkout .git, ledger dir, every id live-resolvable — any miss exits nonzero by name; never a skip, never cached prose) that extracts every ACCEPTANCE/regression command, rejects shorthand-only criteria, and EXECUTES each from a clean repo root with only the declared env — zero-selection, stale path, and harness death fail naming bead + command (shared audit-red trace classifier). Tracker rider via br from the main checkout: normalize the 16 existing + this run's new bead bodies (full bats path + filter + env). Depends on run2-audit-red (shared classifier, healthy harness) and run2-bead-d3-acceptance (its body is in the swept set).",
+      "scenario_ref": "B90",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B90:'",
+      "deps": ["run2-audit-red", "run2-bead-d3-acceptance"]
+    },
+    {
+      "key": "run2-rollout-evidence",
+      "title": "B94 rollout evidence: run --install + --install --verify on BOTH live clones and check in <run2>/rollout-evidence.jsonl (C10)",
+      "why": "Spec §11.4 — the last lane, only after the C5-C9 cutover is on the real repo's main and both clones (Mac main checkout; bushido via ssh bushido) are pulled. One JSON record per host (host, repo_sha, guard_version, command, ISO-8601 timestamp, raw verify JSON), validated by scripts/check-rollout-evidence.sh (staleness rejected, not grandfathered). B94 is the drift-guard split of B85's rollout-evidence concern; the former trailing `&& scripts/check-rollout-evidence.sh` is folded INTO the B94 test body (it executes the checker from the real repo root and rejects a staleness-mutated copy), so the acceptance is ONE bats invocation selecting ONE test.",
+      "scenario_ref": "B94",
+      "acceptance_test": "bats docs/plans/bdd-foundry/intent-amendment-pass-run-2-on-the-agent/acceptance-tests -f '^B94:'",
+      "deps": ["run2-install-verify", "run2-regen-manifest", "run2-count-checker", "run2-gate-parity", "run2-doctrine-flip"]
+    }
+  ]
+}
