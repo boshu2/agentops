@@ -43,6 +43,13 @@ var (
 
 var codexImageHealthRunCheck = runCodexImageHealthCheck
 
+// codexImageHealthDefaultCheckTimeout is the default per-check budget for
+// image-health checks. The caller context usually has no deadline, so each
+// check gets its own bound to keep a wedged script from hanging the command.
+const codexImageHealthDefaultCheckTimeout = 30 * time.Second
+
+var codexImageHealthCheckTimeout = codexImageHealthDefaultCheckTimeout
+
 const (
 	runtimeKindClaude   = codexruntime.RuntimeKindClaude
 	runtimeKindCodex    = codexruntime.RuntimeKindCodex
@@ -198,6 +205,7 @@ type codexImageHealthSummary struct {
 	Passed  int `json:"passed"`
 	Failed  int `json:"failed"`
 	Skipped int `json:"skipped"`
+	Slow    int `json:"slow"`
 }
 
 type codexImageHealthCheckSpec struct {
@@ -216,6 +224,8 @@ type codexImageHealthCheckResult struct {
 	RepairHint  string   `json:"repair_hint"`
 	ExitCode    int      `json:"exit_code"`
 	DurationMS  int64    `json:"duration_ms"`
+	TimedOut    bool     `json:"timed_out,omitempty"`
+	Slow        bool     `json:"slow,omitempty"`
 	Stdout      string   `json:"stdout,omitempty"`
 	Stderr      string   `json:"stderr,omitempty"`
 	Error       string   `json:"error,omitempty"`
@@ -421,6 +431,8 @@ func init() {
 	codexCmd.GroupID = "workflow"
 	rootCmd.AddCommand(codexCmd)
 	codexCmd.AddCommand(codexStartCmd, codexEnsureStartCmd, codexStopCmd, codexEnsureStopCmd, codexStatusCmd, codexDispatchCmd, codexImageHealthCmd)
+
+	codexImageHealthCmd.Flags().DurationVar(&codexImageHealthCheckTimeout, "check-timeout", codexImageHealthDefaultCheckTimeout, "Per-check timeout budget for image health checks")
 
 	codexStartCmd.Flags().IntVar(&codexStartLimit, "limit", 3, "Maximum artifacts to surface per category")
 	codexStartCmd.Flags().StringVar(&codexStartQuery, "query", "", "Optional startup query (defaults to the current Codex thread name)")
@@ -978,17 +990,33 @@ func runCodexImageHealthCheck(ctx context.Context, cwd string, spec codexImageHe
 		return result
 	}
 
+	budget := codexImageHealthCheckTimeout
+	if budget <= 0 {
+		budget = codexImageHealthDefaultCheckTimeout
+	}
+	checkCtx, cancel := context.WithTimeout(ctx, budget)
+	defer cancel()
+
 	started := time.Now()
-	cmd := exec.CommandContext(ctx, spec.Command[0], spec.Command[1:]...)
+	cmd := exec.CommandContext(checkCtx, spec.Command[0], spec.Command[1:]...)
 	cmd.Dir = cwd
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
-	result.DurationMS = time.Since(started).Milliseconds()
+	elapsed := time.Since(started)
+	timedOut := errors.Is(checkCtx.Err(), context.DeadlineExceeded)
+	result.DurationMS = elapsed.Milliseconds()
+	result.TimedOut = timedOut
+	result.Slow = timedOut || elapsed >= budget*4/5
 	result.Stdout = codexImageHealthExcerpt(stdout.String())
 	result.Stderr = codexImageHealthExcerpt(stderr.String())
-	result.ExitCode = codexDispatchExitCode(err, ctx.Err() == context.DeadlineExceeded)
+	result.ExitCode = codexDispatchExitCode(err, timedOut)
+	if timedOut {
+		result.Status = "FAIL"
+		result.Error = fmt.Sprintf("check timed out after %s (per-check budget %s)", elapsed.Round(time.Millisecond), budget)
+		return result
+	}
 	if err != nil {
 		result.Status = "FAIL"
 		result.Error = strings.TrimSpace(err.Error())
@@ -1029,6 +1057,9 @@ func summarizeCodexImageHealthChecks(checks []codexImageHealthCheckResult) codex
 			summary.Skipped++
 		default:
 			summary.Failed++
+		}
+		if check.Slow {
+			summary.Slow++
 		}
 	}
 	return summary

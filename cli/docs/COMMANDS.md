@@ -1432,6 +1432,13 @@ Run read-only Codex image and runtime health checks
 ao codex image-health [flags]
 ```
 
+**Flags:**
+
+```
+      --check-timeout duration   Per-check timeout budget for image health checks (default 30s)
+  -h, --help                     help for image-health
+```
+
 #### `ao codex start`
 
 Start a Codex session with explicit flywheel maintenance (fallback for pre-v0.115.0)
