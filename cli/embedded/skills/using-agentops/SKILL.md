@@ -144,6 +144,7 @@ These are the skills every user needs first. Everything else is available when y
 | `/crank` | Autonomous epic loop (uses swarm for each wave) |
 | `/swarm` | Fresh-context parallel execution (Ralph pattern) |
 | `/using-atm` | Run AgentOps loops out of session on an ATM tmux swarm (the ATM leg of the substrate) |
+| `/codex-approval` | Ask an idle ATM/NTM Fable validator to approve a Codex plan and persist the tmux capture plus council artifact |
 | `evolve` | Goal-driven fitness-scored improvement loop |
 | `/burndown` | Bounded epic-completion loop — drive a finite target to all-merged, then stop |
 | `/eval-outcomes` | Grade via Outcomes as a holdout-safe projection of the locked eval substrate — one bar, many runtimes |

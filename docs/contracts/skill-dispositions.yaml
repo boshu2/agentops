@@ -438,6 +438,11 @@ dispositions:
     hexagonal_role: supporting
     disposition:    keep
     rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:          codex-approval
+    domain:         "BC5 Runtime"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "Codex-side approval bridge that routes plan reviews through an interactive ATM/NTM Fable validator, with persisted tmux capture and council artifact evidence."
   - skill:          codex-exec
     domain:         "BC5 Runtime"
     hexagonal_role: driving-adapter

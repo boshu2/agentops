@@ -163,7 +163,7 @@ Every skill works alone. Compose flows for end-to-end cycles.
 | [`/evolve`](../skills/evolve/SKILL.md) | You want a goal-driven improvement loop with regression gates |
 
 !!! info "Full catalog"
-    [:octicons-book-24: **All 105 skills**](skills/catalog.md) — complete reference with source links and descriptions.
+    [:octicons-book-24: **All 106 skills**](skills/catalog.md) — complete reference with source links and descriptions.
     [:octicons-routes-24: **Decision tree**](skills-decision-tree.md) — "which skill do I need next?"
 
 ---

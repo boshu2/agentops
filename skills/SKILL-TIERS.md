@@ -220,7 +220,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (97)
+### User-Facing Skills (98)
 
 **Judgment:**
 
@@ -359,6 +359,7 @@ These are how skills chain in practice:
 | **sbh** | execution | Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status. |
 | **ubs** | execution | Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks. |
 | **vibing-with-ntm** | execution | Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence. |
+| **codex-approval** | execution | Use when Codex needs independent Claude/Fable approval for a plan, design, or high-risk change through an ATM/NTM interactive validator pane. |
 
 ### Internal Skills (8) — `metadata.internal: true`
 
@@ -450,7 +451,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 
 | Vendor | CLI | Command |
 |--------|-----|---------|
-| Claude | `claude` | `claude --print "prompt" > output.md` |
+| Claude | `claude` | Interactive ATM/NTM pane only; print mode is forbidden |
 | Codex | `codex` | `codex exec --full-auto -m gpt-5.3-codex -C "$(pwd)" -o output.md "prompt"` |
 | OpenCode | `opencode` | (similar pattern) |
 
