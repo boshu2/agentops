@@ -13,7 +13,10 @@ layer in between.
 
 | Date | File | One-line takeaway |
 |---|---|---|
+| 2026-06-12 | [epic-close-needs-target-disposition-not-children-closed.md](2026-06-12-epic-close-needs-target-disposition-not-children-closed.md) | Epic close requires per-target disposition (LANDED/SCHEDULED/DROPPED); children-all-closed misses never-created children. |
+| 2026-06-12 | [go-exec-waitdelay-grandchild-pipes.md](2026-06-12-go-exec-waitdelay-grandchild-pipes.md) | `exec.CommandContext` + buffer pipes needs `WaitDelay` — deadline kills the child, grandchildren holding pipes block `Run()`. |
 | 2026-06-12 | [codex-runtime-review-auth-and-scope.md](2026-06-12-codex-runtime-review-auth-and-scope.md) | Codex runtime receipts need executable auth/schema/evidence guardrails before planning ceremony. |
+| 2026-05-30 | [claim-green-verify-first.md](2026-05-30-claim-green-verify-first.md) | Claim a PR is green only AFTER running the gates — self-report-over-verification is the repeat failure mode. |
 | 2026-05-13 | [cli-wiring-cycle-shape.md](2026-05-13-cli-wiring-cycle-shape.md) | CLI-wiring is a repeatable ~10-min cycle-shape: parent noun + verb subcommand + injectable func; 3 production adapters exposed in 3 cycles. |
 | 2026-05-13 | [loop-context-drift-87-cycle-observation.md](2026-05-13-loop-context-drift-87-cycle-observation.md) | `/loop` context accumulates but disk-state ledger protects correctness — soc-wx55q.1 P1 may be P3. |
 | 2026-05-13 | [substring-sed-rename-overreach.md](2026-05-13-substring-sed-rename-overreach.md) | Before any bulk `sed` rename, enumerate ALL substring-containing identifiers and classify by concept. |
