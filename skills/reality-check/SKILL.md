@@ -1,6 +1,7 @@
 ---
 name: reality-check
-description: 'Mid-epic strategic drift audit: code is ground truth, README/PRODUCT.md/plan docs are the measuring stick. Use when: a wave boundary lands mid-epic, "where are we really", bead counts look healthy but shipped value is unclear, or before steering the next wave.'
+description: >-
+  Mid-epic drift audit: code is ground truth; README/PRODUCT/plan are the measuring stick. Use when a wave boundary lands and bead counts look healthy but value feels absent.
 practices:
 - lean-startup
 - dora-metrics

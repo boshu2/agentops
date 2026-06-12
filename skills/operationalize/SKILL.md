@@ -1,6 +1,7 @@
 ---
 name: operationalize
-description: 'Distill rich gathered context (deep-research output, codebase-recon reports, big learnings) into evidence-anchored rules and route each rule to its automation shape. Use when: you have a finished research artifact or hard-won learning and want it operationalized into a skill, workflow, hook, gate, beads, or playbook.'
+description: >-
+  Distill context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Use when a finished artifact should become skills, gates, or beads.
 practices:
 - wiki-knowledge-surface
 - design-by-contract

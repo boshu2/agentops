@@ -1,6 +1,7 @@
 ---
 name: continuity-loop
-description: 'Own the unattended renewal spine: renewal ticks, the two-tick stall rule, and escalation for NTM panes coordinated over MCP Agent Mail. Use when: wiring a loop skill continuity step, tuning tick cadence, diagnosing a stalled lane, or reading .agents/continuity/state.json.'
+description: >-
+  Own the unattended renewal spine: renewal ticks, the two-tick stall rule, escalation for NTM panes over MCP Agent Mail. Use when wiring or tuning a loop's continuity step.
 practices:
 - sre
 - team-topologies

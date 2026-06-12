@@ -14,20 +14,20 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `discovery` — Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing).
 - `cross-vendor-trust-gate` — Run the skill-factory final trust gate: operate trust-gate.sh, read skill.trust.json, and enforce --require-cross.
 - `design` — Validate product fit before discovery. Use when: framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.
-- `discovery` — Create dense execution packets. Also the fold target for brainstorm and design. Brainstorm — Separate goals from implementation; clarify goals and explore the problem space before planning. Design — validate product fit before discovery; use when framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.
+- `discovery` — Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing).
 - `domain` — Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs.
 - `flywheel` — Check knowledge flywheel health.
 - `forge` — Mine transcripts into learnings.
 - `goals` — Maintain AgentOps goals.
 - `operating-loop-skill` — Use when driving one bead end-to-end through claim, work, independent validation, closeout, and persistence. Triggers:
-- `operationalize` — Distill rich gathered context (deep-research output, codebase-recon reports, big learnings) into evidence-anchored rules and route each rule to its automation shape. Use when: you have a finished research artifact or hard-won learning and want it operationalized into a skill, workflow, hook, gate, beads, or playbook.
+- `operationalize` — Distill gathered context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Use when a finished artifact should become skills, gates, or beads.
 - `perf` — Profile and optimize hotspots.
 - `plan` — Decompose goals into issue plans.
 - `post-mortem` — Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).
 - `pre-mortem` — Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
 - `product` — Create or refine PRODUCT.md.
 - `ratchet` — Record Brownian Ratchet gates.
-- `reality-check` — Mid-epic strategic drift audit: code is ground truth, README/PRODUCT.md/plan docs are the measuring stick. Use when: a wave boundary lands mid-epic, "where are we really", bead counts look healthy but shipped value is unclear, or before steering the next wave.
+- `reality-check` — Mid-epic drift audit: code is ground truth; README/PRODUCT/plan are the measuring stick. Use when a wave boundary lands and bead counts look healthy but value feels absent.
 - `shared` — Shared AgentOps skill contracts.
 - `standards` — Provide repo coding standards.
 
@@ -72,13 +72,13 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `cass` — Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history.
 - `cc-hooks` — Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills.
 - `cass-memory` — Use when starting non-trivial work, mining lessons, or preventing repeated mistakes with cm procedural memory.
-- `cc-hooks` — Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification. Use when blocking commands, auto-formatting, custom permissions, or writing hooks. Also: scheduling autonomous in-session flywheel ticks with Claude Code cron routines (absorbs cc-cron-ticks); running a Claude-native control-plane tick loop with worker and separate-validator subagents (absorbs cc-loop-driver); dispatching scoped Claude Code subagents with worktrees, roles, tools, memory, and evidence gates (absorbs cc-subagents); and isolating parallel Claude Code workers in separate git worktrees to prevent file collisions (absorbs cc-worktree-isolation).
+- `cc-hooks` — Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills.
 - `cc-subagents` — Use when dispatching scoped Claude Code subagents with worktrees, roles, tools, memory, and evidence gates. Triggers:
 - `cc-worktree-isolation` — Use when isolating parallel Claude Code workers in separate git worktrees to prevent file collisions. Triggers:
 - `codebase-audit` — Domain-parameterized codebase audits (security, UX, perf, API, copy, CLI) + report modes (archaeology, architecture/briefing, patterns, risk). Use when auditing or onboarding.
 - `codex-sandbox-evidence` — Use when running codex exec in a least-privilege sandbox with machine-checkable proof. Triggers:
 - `compile` — Compile .agents knowledge wiki.
-- `continuity-loop` — Own the unattended renewal spine: renewal ticks, the two-tick stall rule, and escalation for NTM panes coordinated over MCP Agent Mail. Use when: wiring a loop skill continuity step, tuning tick cadence, diagnosing a stalled lane, or reading .agents/continuity/state.json.
+- `continuity-loop` — Own the unattended renewal spine: renewal ticks, the two-tick stall rule, escalation for NTM panes over MCP Agent Mail. Use when wiring or tuning a loop's continuity step.
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.
 - `dcg` — Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails.
 - `doc` — Generate and validate repo docs, READMEs, and OSS doc packs.
@@ -99,7 +99,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `skill-builder` — Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill".
 - `swarm` — Dispatch parallel agents.
 - `test` — Generate tests and coverage plans.
-- `toil-mining` — Mine usage history (cass session archaeology, rtk analytics, shell history) for repeated toil, cluster it, score frequency x pain, and emit ranked automation candidates for automation-shape-routing. Use when: the same prompt keeps getting hand-pasted, "what should we automate next", or the scheduled compounding sweep fires.
+- `toil-mining` — Mine usage history (cass, rtk, shell) for repeated toil, cluster and score frequency x pain, emit ranked candidates for automation-shape-routing. Use when rituals repeat by hand.
 - `trace` — Trace decisions through artifacts.
 - `ubs` — Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks.
 - `using-atm` — Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.
