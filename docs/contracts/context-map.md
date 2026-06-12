@@ -12,15 +12,22 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `council` — Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.
 - `crank` — Execute epics through waves.
 - `discovery` — Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing).
+- `cross-vendor-trust-gate` — Run the skill-factory final trust gate: operate trust-gate.sh, read skill.trust.json, and enforce --require-cross.
+- `design` — Validate product fit before discovery. Use when: framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.
+- `discovery` — Create dense execution packets. Also the fold target for brainstorm and design. Brainstorm — Separate goals from implementation; clarify goals and explore the problem space before planning. Design — validate product fit before discovery; use when framing a problem, checking product/market fit, or pressure-testing user value before writing a discovery packet or any code.
 - `domain` — Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs.
 - `flywheel` — Check knowledge flywheel health.
 - `forge` — Mine transcripts into learnings.
 - `goals` — Maintain AgentOps goals.
+- `operating-loop-skill` — Use when driving one bead end-to-end through claim, work, independent validation, closeout, and persistence. Triggers:
+- `operationalize` — Distill rich gathered context (deep-research output, codebase-recon reports, big learnings) into evidence-anchored rules and route each rule to its automation shape. Use when: you have a finished research artifact or hard-won learning and want it operationalized into a skill, workflow, hook, gate, beads, or playbook.
 - `perf` — Profile and optimize hotspots.
 - `plan` — Decompose goals into issue plans.
 - `post-mortem` — Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).
 - `pre-mortem` — Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
 - `product` — Create or refine PRODUCT.md.
+- `ratchet` — Record Brownian Ratchet gates.
+- `reality-check` — Mid-epic strategic drift audit: code is ground truth, README/PRODUCT.md/plan docs are the measuring stick. Use when: a wave boundary lands mid-epic, "where are we really", bead counts look healthy but shipped value is unclear, or before steering the next wave.
 - `shared` — Shared AgentOps skill contracts.
 - `standards` — Provide repo coding standards.
 
@@ -39,6 +46,9 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `recover` — Recover session context.
 - `research` — Explore and write findings.
 - `review` — Review diffs for risk, find mocks, scan for bugs, audit codebases. Fold target for bug-hunt, codebase-audit, and ubs.
+- `review` — Review diffs for risk, find mocks, scan for bugs, audit codebases. Use when: reviewing a diff/PR for bugs and risk, hunting mocks/stubs/placeholders, or auditing for quality. Also: investigate bugs and root causes (absorbs bug-hunt); Domain-parameterized codebase audits (security, UX, perf, API, copy, CLI) + report modes (archaeology, architecture/briefing, patterns, risk) when auditing or onboarding (absorbs codebase-audit); and reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks (absorbs ubs).
+- `session-bootstrap` — Universal AgentOps init prompt for starting or onboarding a fresh agent session.
+- `ship-loop` — Run the fast-lane internal ship cycle for one closable bead or small slice: claim, test, implement, push, merge, close.
 - `status` — Show AgentOps work status.
 - `validate` — Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — including quick readiness/sanity checks before commit (absorbs vibe) and completion audits.
 
@@ -61,11 +71,19 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `beads-workflow` — Use when converting markdown plans into br beads with dependencies for implementation or swarm execution.
 - `cass` — Mine past agent sessions for working prompts, decisions, and patterns. Use when "what did I ask?", "find that prompt", session archaeology, or agent history.
 - `cc-hooks` — Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills.
+- `cass-memory` — Use when starting non-trivial work, mining lessons, or preventing repeated mistakes with cm procedural memory.
+- `cc-hooks` — Configure Claude Code hooks for PreToolUse, PostToolUse, Stop, Notification. Use when blocking commands, auto-formatting, custom permissions, or writing hooks. Also: scheduling autonomous in-session flywheel ticks with Claude Code cron routines (absorbs cc-cron-ticks); running a Claude-native control-plane tick loop with worker and separate-validator subagents (absorbs cc-loop-driver); dispatching scoped Claude Code subagents with worktrees, roles, tools, memory, and evidence gates (absorbs cc-subagents); and isolating parallel Claude Code workers in separate git worktrees to prevent file collisions (absorbs cc-worktree-isolation).
+- `cc-subagents` — Use when dispatching scoped Claude Code subagents with worktrees, roles, tools, memory, and evidence gates. Triggers:
+- `cc-worktree-isolation` — Use when isolating parallel Claude Code workers in separate git worktrees to prevent file collisions. Triggers:
+- `codebase-audit` — Domain-parameterized codebase audits (security, UX, perf, API, copy, CLI) + report modes (archaeology, architecture/briefing, patterns, risk). Use when auditing or onboarding.
+- `codex-sandbox-evidence` — Use when running codex exec in a least-privilege sandbox with machine-checkable proof. Triggers:
 - `compile` — Compile .agents knowledge wiki.
+- `continuity-loop` — Own the unattended renewal spine: renewal ticks, the two-tick stall rule, and escalation for NTM panes coordinated over MCP Agent Mail. Use when: wiring a loop skill continuity step, tuning tick cadence, diagnosing a stalled lane, or reading .agents/continuity/state.json.
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.
 - `dcg` — Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails.
 - `doc` — Generate and validate repo docs, READMEs, and OSS doc packs.
 - `eval-outcomes` — Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario.
+- `eval-outcomes` — Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Also the fold target for the retired scenario skill — Manage holdout scenarios; author and manage holdout scenarios with measurable acceptance vectors and satisfaction scoring in .agents/holdout/ for behavioral validation.
 - `evolve` — Run autonomous improvement loops.
 - `handoff` — Write compact session handoffs.
 - `heal-skill` — Repair skill hygiene.
@@ -81,6 +99,9 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `skill-builder` — Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill".
 - `swarm` — Dispatch parallel agents.
 - `test` — Generate tests and coverage plans.
+- `toil-mining` — Mine usage history (cass session archaeology, rtk analytics, shell history) for repeated toil, cluster it, score frequency x pain, and emit ranked automation candidates for automation-shape-routing. Use when: the same prompt keeps getting hand-pasted, "what should we automate next", or the scheduled compounding sweep fires.
+- `trace` — Trace decisions through artifacts.
+- `ubs` — Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks.
 - `using-atm` — Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.
 - `vibing-with-ntm` — Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence.
 - `workflow-builder` — Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: "build a workflow", "create a workflow", "scaffold workflow", "author a workflow".
@@ -101,6 +122,11 @@ graph LR
   agy-headless-evidence -- "customer-of" --> agy-native
   agy-headless-evidence -- "supplier-to" --> validate
   agy-native -- "customer-of" --> operating-loop-skill
+  agy-project-worktree-permissions -- "customer-of" --> agy-native
+  agy-rules-workflows -- "conformist-to" --> operating-loop-workflow
+  agy-sidecar-scheduled-tick -- "customer-of" --> agy-native
+  agy-sidecar-scheduled-tick -- "supplier-to" --> validate
+  automation-shape-routing -- "supplier-to" --> operationalize
   automation-shape-routing -- "supplier-to" --> skill-builder
   automation-shape-routing -- "supplier-to" --> workflow-builder
   beads -- "supplier-to" --> crank
@@ -108,6 +134,15 @@ graph LR
   codex-approval -- "customer-of" --> agent-mail
   codex-approval -- "customer-of" --> using-atm
   codex-exec -- "supplier-to" --> codex-sandbox-evidence
+  codex-mcp-plugins -- "supplier-to" --> codex-exec
+  codex-sandbox-evidence -- "customer-of" --> codex-exec
+  codex-sandbox-evidence -- "supplier-to" --> validate
+  complexity -- "shared-kernel" --> standards
+  continuity-loop -- "customer-of" --> agent-mail
+  continuity-loop -- "supplier-to" --> evolve
+  continuity-loop -- "customer-of" --> ntm
+  continuity-loop -- "supplier-to" --> recover
+  continuity-loop -- "supplier-to" --> using-atm
   council -- "shared-kernel" --> standards
   crank -- "shared-kernel" --> standards
   discovery -- "shared-kernel" --> standards
@@ -117,6 +152,16 @@ graph LR
   goals -- "shared-kernel" --> standards
   heal-skill -- "customer-of" --> skill-auditor
   implement -- "customer-of" --> domain
+  operating-loop-skill -- "supplier-to" --> agy-native
+  operating-loop-skill -- "customer-of" --> beads
+  operating-loop-skill -- "supplier-to" --> cc-loop-driver
+  operationalize -- "customer-of" --> automation-shape-routing
+  operationalize -- "supplier-to" --> beads-workflow
+  operationalize -- "supplier-to" --> cc-hooks
+  operationalize -- "customer-of" --> research
+  operationalize -- "supplier-to" --> skill-builder
+  operationalize -- "customer-of" --> validate
+  operationalize -- "supplier-to" --> workflow-builder
   perf -- "shared-kernel" --> standards
   plan -- "shared-kernel" --> standards
   post-mortem -- "shared-kernel" --> standards
@@ -127,6 +172,11 @@ graph LR
   product -- "shared-kernel" --> standards
   red-team -- "supplier-to" --> validate
   release -- "supplier-to" --> crank
+  quickstart -- "customer-of" --> rpi
+  ratchet -- "shared-kernel" --> standards
+  reality-check -- "supplier-to" --> discovery
+  red-team -- "supplier-to" --> vibe
+  release -- "supplier-to" --> ship-loop
   review -- "customer-of" --> validate
   rpi -- "customer-of" --> crank
   rpi -- "customer-of" --> discovery
@@ -138,6 +188,8 @@ graph LR
   skill-builder -- "customer-of" --> automation-shape-routing
   skill-builder -- "supplier-to" --> skill-auditor
   swarm -- "customer-of" --> crank
+  toil-mining -- "supplier-to" --> automation-shape-routing
+  trace -- "shared-kernel" --> curate
   using-atm -- "customer-of" --> swarm
   workflow-builder -- "customer-of" --> automation-shape-routing
   workflow-builder -- "shared-kernel" --> operating-loop-workflow
@@ -169,6 +221,13 @@ graph LR
 | `codex-approval` | produces | council-verdict |
 | `codex-exec` | produces | codex-run-output |
 | `compile` | produces | .agents/compiled/lint-report.md |
+| `complexity` | consumes | doc |
+| `complexity` | consumes | standards |
+| `complexity` | produces | stdout |
+| `continuity-loop` | consumes | agent-mail |
+| `continuity-loop` | consumes | ntm |
+| `continuity-loop` | produces | .agents/continuity/state.json |
+| `continuity-loop` | produces | escalation-message |
 | `converter` | produces | converted-skill |
 | `council` | consumes | standards |
 | `council` | produces | result.json |
@@ -209,6 +268,23 @@ graph LR
 | `handoff` | produces | .agents/research/*.md |
 | `implement` | consumes | domain |
 | `implement` | produces | git-changes |
+| `ntm-browser-test-coordination` | consumes | agent-mail |
+| `ntm-browser-test-coordination` | consumes | ntm |
+| `ntm-browser-test-coordination` | consumes | test |
+| `ntm-browser-test-coordination` | produces | browser-test-coordination-packet |
+| `ntm-browser-test-coordination` | produces | browser-test-evidence-index |
+| `ntm-browser-test-coordination` | produces | browser-test-handoff |
+| `operating-loop-skill` | consumes | beads |
+| `operating-loop-skill` | consumes | git |
+| `operating-loop-skill` | produces | closed-bead |
+| `operating-loop-skill` | produces | evidence/<id>.md |
+| `operating-loop-skill` | produces | git-commit |
+| `operating-loop-workflow` | produces | git-changes |
+| `operationalize` | consumes | .agents/research/*.md |
+| `operationalize` | consumes | audit-report |
+| `operationalize` | consumes | learning |
+| `operationalize` | produces | .agents/operationalize/*.md |
+| `operationalize` | produces | routed-handoffs |
 | `perf` | consumes | repo-context |
 | `perf` | produces | result.json |
 | `plan` | consumes | standards |
@@ -229,6 +305,14 @@ graph LR
 | `product` | produces | result.json |
 | `push` | consumes | git-changes |
 | `push` | produces | git-changes |
+| `quickstart` | consumes | rpi |
+| `quickstart` | produces | stdout |
+| `ratchet` | consumes | post-mortem |
+| `ratchet` | consumes | validate |
+| `ratchet` | consumes | vibe |
+| `ratchet` | produces | .agents/rpi/*.md |
+| `reality-check` | consumes | implement |
+| `reality-check` | produces | result.json |
 | `recover` | consumes | bd |
 | `recover` | consumes | rpi |
 | `recover` | produces | .agents/rpi/*.md |
@@ -267,6 +351,9 @@ graph LR
 | `test` | consumes | repo-context |
 | `test` | consumes | standards |
 | `test` | produces | result.json |
+| `toil-mining` | produces | result.json |
+| `trace` | produces | result.json |
+| `using-agentops` | produces | documentation |
 | `using-atm` | produces | documentation |
 | `validate` | produces | result.json |
 | `workflow-builder` | produces | workflow-script |
