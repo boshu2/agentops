@@ -20,7 +20,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `forge` — Mine transcripts into learnings.
 - `goals` — Maintain AgentOps goals.
 - `operating-loop-skill` — Use when driving one bead end-to-end through claim, work, independent validation, closeout, and persistence. Triggers:
-- `operationalize` — Distill gathered context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Use when a finished artifact should become skills, gates, or beads.
+- `operationalize` — Distill context (research, recon, learnings) into evidence-anchored rules routed to automation shapes. Use when a finished artifact should become skills, gates, or beads.
 - `perf` — Profile and optimize hotspots.
 - `plan` — Decompose goals into issue plans.
 - `post-mortem` — Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).
@@ -99,7 +99,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `skill-builder` — Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: "create a skill", "scaffold skill", "absorb external skill", "new skill".
 - `swarm` — Dispatch parallel agents.
 - `test` — Generate tests and coverage plans.
-- `toil-mining` — Mine usage history (cass, rtk, shell) for repeated toil, cluster and score frequency x pain, emit ranked candidates for automation-shape-routing. Use when rituals repeat by hand.
+- `toil-mining` — Mine usage history (cass, rtk, shell) for repeated toil, score frequency x pain, emit ranked candidates for automation-shape-routing. Use when rituals repeat by hand.
 - `trace` — Trace decisions through artifacts.
 - `ubs` — Use when reviewing code with UBS for bugs, security issues, AI-generated quality, or pre-commit checks.
 - `using-atm` — Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.
