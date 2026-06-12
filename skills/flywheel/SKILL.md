@@ -41,6 +41,17 @@ Sessions → Transcripts → Forge → Pool → Promote → Knowledge
 
 **Velocity** = rate of knowledge flowing through. **Friction** = bottlenecks slowing the flywheel.
 
+### Folded triggers (ag-s43tg wave 1): `ratchet` routes here
+
+- **`/ratchet` → flywheel gate tracking.** Use when asked to record Brownian Ratchet gates —
+  tracking progress through the RPI workflow with permanent gates
+  (`Progress = Chaos × Filter → Ratchet`; merged/closed/stored progress can't be un-ratcheted).
+- Gate surface: `ao ratchet status` / `ao ratchet check <step>` / `ao ratchet record <step>
+  --output "<artifact-path>"` over the chain at `.agents/ao/chain.jsonl`
+  (steps: `research`, `plan`, `implement`, `vibe`, `post-mortem`).
+- Ratchet tracks and locks progress; it does not run the loop itself — pair with `/crank`
+  (epic loop) or `/swarm` (Ralph loop) to execute work.
+
 ## Execution Steps
 Given `/flywheel`:
 ### Step 1: Measure Knowledge Pools
