@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-12T14:25:54Z",
+  "generated_at": "2026-06-12T18:48:57Z",
   "skill_count": 70,
   "skills": [
     {
@@ -523,7 +523,7 @@
       ],
       "produces": [
         ".agents/plans/*.md",
-        "bd-issue",
+        "br-issue",
         "execution-packet.json"
       ],
       "practices": [
