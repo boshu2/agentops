@@ -47,6 +47,17 @@ Load relevant prior knowledge into the current session as a legacy adapter.
 | Current allowed use | manual compatibility lookup only |
 | Not allowed | default startup injection, hidden hook delivery, task planning |
 
+## Folded triggers (ag-s43tg wave 1): `session-bootstrap` + `using-agentops` route here
+
+- **`session-bootstrap` → `ao session bootstrap`.** The Universal AgentOps init prompt
+  for starting or onboarding a fresh agent session is the `ao session bootstrap`
+  orientation report — run it first, then pull decay-ranked context on demand with
+  `ao lookup` / `ao inject`.
+- **`using-agentops` → this skill** (skill dir removed; embedded CLI copy retired with
+  it). Use when asked to Explain AgentOps workflows: start with `ao session bootstrap`
+  for orientation, then walk the on-demand surfaces here (`ao lookup`, `ao inject`,
+  `ao knowledge brief`) for the workflow tour.
+
 ## How It Works
 
 In the default hookless startup path, no startup injection occurs. Run `ao session bootstrap` for the standard orientation report, then prefer `ao lookup` / `ao inject` for on-demand retrieval and bounded per-phase packets. Use `/inject` or `ao inject` only for legacy compatibility.
