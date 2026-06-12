@@ -1,6 +1,6 @@
 ---
 name: pre-land-refuters
-description: "Dispatch unbiased parallel refuters before landing a large multi-surface change: a fresh-context Fable validator + a codex exec read-only validator try to REFUTE the completion claim; their findings are the work list. Use before pushing any 100+ file change, corpus prune, generated-surface regen, or contract-test repoint. Triggers: pre-land validation, unbiased review, refute before push, dual-model landing check."
+description: "Dispatch unbiased parallel refuters (fresh Fable + read-only codex exec) to attack a completion claim before landing a 100+ file change. Triggers: pre-land validation, refute before push."
 practices:
 - llm-eval-harness
 - ai-assisted-dev

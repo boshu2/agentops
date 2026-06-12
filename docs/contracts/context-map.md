@@ -34,7 +34,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `implement` — Implement one tracked issue.
 - `inject` — Load relevant .agents context.
 - `pr-prep` — Prepare PR commits and body.
-- `pre-land-refuters` — Dispatch unbiased parallel refuters before landing a large multi-surface change: a fresh-context Fable validator + a codex exec read-only validator try to REFUTE the completion claim; their findings are the work list. Use before pushing any 100+ file change, corpus prune, generated-surface regen, or contract-test repoint. Triggers: pre-land validation, unbiased review, refute before push, dual-model landing check.
+- `pre-land-refuters` — Dispatch unbiased parallel refuters (fresh Fable + read-only codex exec) to attack a completion claim before landing a 100+ file change. Triggers: pre-land validation, refute before push.
 - `push` — Validate, commit, and push.
 - `recover` — Recover session context.
 - `research` — Explore and write findings.
