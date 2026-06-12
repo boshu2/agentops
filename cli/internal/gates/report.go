@@ -19,6 +19,7 @@ type Report struct {
 	StartedAt    time.Time
 	Elapsed      time.Duration
 	Results      []CheckResult
+	Skipped      []SkippedCheck
 	Coverage     *WorkflowCoverage
 }
 
@@ -67,9 +68,10 @@ type Summary struct {
 // ---- JSON wire format (the contract the refinery + CI consume) ----
 
 type jsonReport struct {
-	Run      jsonRun           `json:"run"`
-	Gates    []jsonGate        `json:"gates"`
-	Coverage *WorkflowCoverage `json:"coverage,omitempty"`
+	Run          jsonRun           `json:"run"`
+	Gates        []jsonGate        `json:"gates"`
+	SkippedGates []jsonSkippedGate `json:"skipped_gates,omitempty"`
+	Coverage     *WorkflowCoverage `json:"coverage,omitempty"`
 }
 
 type jsonRun struct {
@@ -82,13 +84,27 @@ type jsonRun struct {
 }
 
 type jsonGate struct {
-	Name       string `json:"name"`
-	Tier       string `json:"tier"`
-	Status     string `json:"status"`
-	Blocking   bool   `json:"blocking"`
-	Reason     string `json:"reason"`
-	LogTail    string `json:"log_tail,omitempty"`
-	DurationMs int64  `json:"duration_ms"`
+	Name            string `json:"name"`
+	Tier            string `json:"tier"`
+	Status          string `json:"status"`
+	Blocking        bool   `json:"blocking"`
+	Reason          string `json:"reason"`
+	SelectedReason  string `json:"selected_reason,omitempty"`
+	WorkflowBacking string `json:"workflow_backing"`
+	ArtifactPath    string `json:"artifact_path"`
+	RepairHint      string `json:"repair_hint"`
+	LogTail         string `json:"log_tail,omitempty"`
+	DurationMs      int64  `json:"duration_ms"`
+}
+
+type jsonSkippedGate struct {
+	Name            string `json:"name"`
+	Tier            string `json:"tier"`
+	Blocking        bool   `json:"blocking"`
+	SkipReason      string `json:"skip_reason"`
+	WorkflowBacking string `json:"workflow_backing"`
+	ArtifactPath    string `json:"artifact_path"`
+	RepairHint      string `json:"repair_hint"`
 }
 
 // JSON renders the report as the wire contract.
@@ -113,14 +129,32 @@ func (r *Report) JSON() ([]byte, error) {
 			reason = "evaluation error: " + res.Err.Error()
 		}
 		jr.Gates = append(jr.Gates, jsonGate{
-			Name:       res.Check.ID,
-			Tier:       tierString(res.Check.Tiers),
-			Status:     string(res.Verdict.Status),
-			Blocking:   res.Check.Blocking,
-			Reason:     reason,
-			LogTail:    res.Verdict.LogTail,
-			DurationMs: res.Duration.Milliseconds(),
+			Name:            res.Check.ID,
+			Tier:            tierString(res.Check.Tiers),
+			Status:          string(res.Verdict.Status),
+			Blocking:        res.Check.Blocking,
+			Reason:          reason,
+			SelectedReason:  res.SelectedReason,
+			WorkflowBacking: res.Check.WorkflowBacking(),
+			ArtifactPath:    res.Check.ArtifactPath(),
+			RepairHint:      res.Check.EffectiveRepairHint(),
+			LogTail:         res.Verdict.LogTail,
+			DurationMs:      res.Duration.Milliseconds(),
 		})
+	}
+	if len(r.Skipped) > 0 {
+		jr.SkippedGates = make([]jsonSkippedGate, 0, len(r.Skipped))
+		for _, skip := range r.Skipped {
+			jr.SkippedGates = append(jr.SkippedGates, jsonSkippedGate{
+				Name:            skip.Check.ID,
+				Tier:            tierString(skip.Check.Tiers),
+				Blocking:        skip.Check.Blocking,
+				SkipReason:      skip.Reason,
+				WorkflowBacking: skip.Check.WorkflowBacking(),
+				ArtifactPath:    skip.Check.ArtifactPath(),
+				RepairHint:      skip.Check.EffectiveRepairHint(),
+			})
+		}
 	}
 	out, err := json.MarshalIndent(jr, "", "  ")
 	if err != nil {
@@ -134,10 +168,25 @@ func (r *Report) Human(w io.Writer) {
 	s := r.Summary()
 	for _, res := range r.Results {
 		mark := string(res.Verdict.Status)
-		fmt.Fprintf(w, "%-5s %s\n", mark, res.Check.ID)
+		fmt.Fprintf(w, "%-5s %s%s\n", mark, res.Check.ID, humanCheckDetails(res.Check, res.SelectedReason))
+	}
+	if len(r.Skipped) > 0 {
+		fmt.Fprintln(w, "\nskipped gates:")
+		for _, skip := range r.Skipped {
+			fmt.Fprintf(w, "SKIP  %s | %s | backing: %s | artifact: %s | repair: %s\n",
+				skip.Check.ID,
+				skip.Reason,
+				skip.Check.WorkflowBacking(),
+				skip.Check.ArtifactPath(),
+				skip.Check.EffectiveRepairHint(),
+			)
+		}
 	}
 	fmt.Fprintf(w, "\n%s/%s: %d checks — %d pass, %d warn, %d fail, %d skip (%dms)\n",
 		modeString(r.Mode), r.Scope, s.Total, s.Passed, s.Warned, s.Failed, s.Skipped, r.Elapsed.Milliseconds())
+	if len(r.Skipped) > 0 {
+		fmt.Fprintf(w, "not run: %d gates (routing/tier/fail-fast)\n", len(r.Skipped))
+	}
 	if r.Coverage != nil {
 		fmt.Fprintf(w, "workflow coverage: %d workflow scripts, %d registry scripts, %d missing (%d blocking, %d advisory, %d deferred), %d registry-only\n",
 			r.Coverage.WorkflowScriptCount,
@@ -149,6 +198,19 @@ func (r *Report) Human(w io.Writer) {
 			r.Coverage.RegistryOnlyScriptCount,
 		)
 	}
+}
+
+func humanCheckDetails(c Check, selectedReason string) string {
+	parts := []string{}
+	if selectedReason != "" {
+		parts = append(parts, selectedReason)
+	}
+	parts = append(parts,
+		"backing: "+c.WorkflowBacking(),
+		"artifact: "+c.ArtifactPath(),
+		"repair: "+c.EffectiveRepairHint(),
+	)
+	return " | " + strings.Join(parts, " | ")
 }
 
 // GitHubAnnotations writes GitHub Actions log annotations for failing or

@@ -53,7 +53,7 @@ func init() {
 		// routed by change class
 		{ID: "go.command-test-pair", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-go-command-test-pair.sh"},
 		{ID: "skill.schema", Tiers: gates.Fast | gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-schema.sh"},
-		{ID: "contract.registry-drift", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-registry-drift.sh"},
+		{ID: "contract.registry-drift", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-registry-drift.sh", RepairHint: "bash scripts/generate-registry.sh"},
 		{ID: "contract.bounded-contexts-drift", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-bounded-contexts-drift.sh"},
 		{ID: "contract.finding-registry", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-finding-registry.sh"},
 		{ID: "ci.policy-parity", Tiers: gates.Fast | gates.Full, Match: ciPolicyPaths, Blocking: true, Backing: "validate-ci-policy-parity.sh"},
@@ -92,7 +92,7 @@ func init() {
 
 		// contract / context-map / swarm classes
 		{ID: "contract.compatibility", Tiers: gates.Fast | gates.Full, Match: contractPaths, Blocking: true, Backing: "check-contract-compatibility.sh"},
-		{ID: "contract.context-map-drift", Tiers: gates.Fast | gates.Full, Match: contextMapPaths, Blocking: true, Backing: "validate-context-map-drift.sh"},
+		{ID: "contract.context-map-drift", Tiers: gates.Fast | gates.Full, Match: contextMapPaths, Blocking: true, Backing: "validate-context-map-drift.sh", RepairHint: "bash scripts/generate-context-map.sh"},
 		{ID: "contract.registry-json", Tiers: gates.Full, Match: registryPaths, Blocking: true, Backing: "generate-registry.sh", Args: []string{"--check"}},
 		{ID: "contract.sku-catalog-drift", Tiers: gates.Full, Match: registryPaths, Blocking: true, Backing: "validate-sku-catalog-drift.sh"},
 		{ID: "docs.agents-split", Tiers: gates.Full, Match: agentsDocPaths, Blocking: true, Backing: "validate-agents-split.sh"},
@@ -110,8 +110,8 @@ func init() {
 		{ID: "always.domain-evolution-plan", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-agentops-domain-evolution-plan.sh"},
 		{ID: "always.file-manifest-overlap", Tiers: gates.Full, Blocking: true, Backing: "check-file-manifest-overlap.sh"},
 		{ID: "derived.changed-scope", Tiers: gates.Fast, Blocking: true, Backing: "regen-changed-scope.sh", Args: []string{"--check", "--scope", "head"},
-			Match: regenScopePaths},
-		{ID: "always.regen-all", Tiers: gates.Full, Blocking: true, Backing: "regen-all.sh", Args: []string{"--check"}},
+			Match: regenScopePaths, RepairHint: "bash scripts/regen-changed-scope.sh --scope head"},
+		{ID: "always.regen-all", Tiers: gates.Full, Blocking: true, Backing: "regen-all.sh", Args: []string{"--check"}, RepairHint: "bash scripts/regen-all.sh"},
 		{ID: "always.three-gap-supergate", Tiers: gates.Full, Match: goalsPaths, Blocking: true, Backing: "check-three-gap-supergate.sh"},
 		{ID: "always.sovereignty-proof-citations", Tiers: gates.Full, Match: docsPaths, Blocking: true, Backing: "validate-sovereignty-proof-citations.sh"},
 		{ID: "corpus.secret-scan", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "check-corpus-secret-scan.sh"},
