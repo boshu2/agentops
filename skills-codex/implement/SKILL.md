@@ -73,7 +73,7 @@ bd show <issue-id> 2>/dev/null
 
 **If no argument:** Check for ready work:
 ```bash
-bd ready 2>/dev/null | head -3
+br ready 2>/dev/null | head -3
 ```
 
 ### Step 2: Claim the Issue
@@ -617,7 +617,7 @@ If bd CLI not available:
 **User says:** `$implement`
 
 **What happens:**
-1. Agent runs `bd ready` — finds `ag-3b7` (first unblocked issue)
+1. Agent runs `br ready` — finds `ag-3b7` (first unblocked issue)
 2. Claims issue via `bd update ag-3b7 --status in_progress`
 3. Implements and verifies
 4. Closes issue

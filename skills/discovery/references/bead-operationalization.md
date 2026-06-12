@@ -2,13 +2,13 @@
 
 > The fourth and fifth steps of the generate-winnow methodology
 > (`ideation-mode.md`): turn a ranked portfolio of ideas into a comprehensive,
-> granular, self-documenting set of `bd` beads, then refine them 4-5x in "plan
+> granular, self-documenting set of `br` beads, then refine them 4-5x in "plan
 > space" before any implementation begins.
 >
 > This is primarily a `/discovery` responsibility on the open-ended path, but it
-> consumes ideation-mode output and uses the same `bd`-only discipline.
+> consumes ideation-mode output and uses the same `br`/`bv` discipline.
 >
-> **Tracking is `bd` (beads).** This is AgentOps — do NOT use `br`/`bv`.
+> **Tracking is `br` (beads).** This is AgentOps — use `br`/`bv`.
 
 ## Step 4 — Comprehensive bead creation
 
@@ -31,7 +31,7 @@ goals, intentions, and thought process that produced the idea.
 ### Bead structure
 
 ```bash
-bd create "Epic: <Feature Name>" -p 1 -t epic --description "
+br create "Epic: <Feature Name>" -p 1 -t epic --description "
 ## Background
 [Why this feature matters; which ideation idea(s) it came from]
 
@@ -51,13 +51,13 @@ bd create "Epic: <Feature Name>" -p 1 -t epic --description "
 
 ```bash
 # Create the epic, then tasks under it
-bd create "Design <component> interface" -p 1 -t task --description "..."
-bd create "Implement <component> logic"  -p 2 -t task --description "..."
-bd create "Tests for <component>"         -p 2 -t task --description "..."
+br create "Design <component> interface" -p 1 -t task --description "..."
+br create "Implement <component> logic"  -p 2 -t task --description "..."
+br create "Tests for <component>"         -p 2 -t task --description "..."
 
 # Wire dependencies (child depends on parent)
-bd dep add <impl-id> <epic-id>      # impl depends on epic
-bd dep add <test-id> <impl-id>      # tests depend on implementation
+br dep add <impl-id> <epic-id>      # impl depends on epic
+br dep add <test-id> <impl-id>      # tests depend on implementation
 ```
 
 ### Explicit test tasks (mandatory, with detailed logging)
@@ -66,7 +66,7 @@ Every feature gets companion test beads — unit AND e2e — with detailed loggi
 so we can confirm everything works after implementation:
 
 ```bash
-bd create "Unit tests for <component>" -p 2 -t task --description "
+br create "Unit tests for <component>" -p 2 -t task --description "
 ## Coverage Requirements
 - Core behavior
 - Error handling for invalid input
@@ -77,7 +77,7 @@ bd create "Unit tests for <component>" -p 2 -t task --description "
 - Log timing for performance tracking
 "
 
-bd create "E2E tests for <component>" -p 2 -t task --description "
+br create "E2E tests for <component>" -p 2 -t task --description "
 ## Scenarios
 - Happy path
 - Error path
@@ -94,14 +94,14 @@ bd create "E2E tests for <component>" -p 2 -t task --description "
 Compare against existing beads so ideas enhance rather than duplicate:
 
 ```bash
-bd list --json | jq '.issues[]?.title'
+br list --json | jq '.issues[]?.title'
 ```
 
 | Overlap type | Action |
 |--------------|--------|
 | Direct duplicate | Skip; reference the existing bead |
 | Complementary | Merge into the existing bead |
-| Conflicts | Note explicitly; flag an architectural decision (`bd human`) |
+| Conflicts | Note explicitly; flag an architectural decision in the bead body or handoff |
 
 ## Step 5 — Refine in plan space (4-5 passes)
 
@@ -132,13 +132,13 @@ Suggested per-pass focus:
 ### Validation between passes
 
 ```bash
-bd dep cycles --json     # dependency cycles MUST be empty
-bd ready --json | jq 'length'   # confirm actionable work exists
-bd lint                  # hygiene: orphans, missing fields
+br dep cycles --json     # dependency cycles MUST be empty
+br ready --json | jq 'length'   # confirm actionable work exists
+br lint                  # hygiene: orphans, missing fields
 ```
 
-> If `bd` lacks a direct cycle-detection subcommand in your install, inspect the
-> dependency graph with `bd dep tree <id>` and `bd blocked --json`. The
+> If `br` lacks a direct cycle-detection subcommand in your install, inspect the
+> dependency graph with `br dep tree <id>` and `br blocked --json`. The
 > invariant is the same: no cycles, every leaf actionable.
 
 ## Anti-patterns
@@ -150,4 +150,4 @@ bd lint                  # hygiene: orphans, missing fields
 | Omit tests | Explicit unit + e2e test beads with detailed logging |
 | Oversimplify on refinement | Preserve complexity that exists for a reason |
 | Lose features when refining | Every portfolio capability survives |
-| `br`/`bv` | `bd` — this is AgentOps |
+| `bd`/Dolt | `br`/`bv` — this is AgentOps |

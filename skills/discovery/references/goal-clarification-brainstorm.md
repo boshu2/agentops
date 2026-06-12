@@ -157,9 +157,9 @@ Read project state so ideas align and don't duplicate work:
 
 ```bash
 cat AGENTS.md                      # or CLAUDE.md — rules, constraints, non-goals
-bd list --json                     # open work — don't duplicate
-bd list --status closed --json     # closed work — don't re-propose cut ideas
-bd ready --json                    # what is actionable now
+br list --json                     # open work — don't duplicate
+br list --status closed --json     # closed work — don't re-propose cut ideas
+br ready --json                    # what is actionable now
 ```
 
 ### Step 2 — Generate 30, winnow to 5 (ranked, with rationale)
@@ -172,13 +172,13 @@ Generate the **next best 10** (each with rationale) for a ranked portfolio of **
 
 ### Steps 4-5 — Operationalize + refine (handed to `/discovery`)
 
-Carry the ranked 15 (with how/perceive/implement notes + rubric scores + red-team findings) forward. `/discovery` operationalizes them into self-documenting `bd` beads (deps + explicit test tasks) and refines 4-5x in plan space. See [references/bead-operationalization.md](./bead-operationalization.md).
+Carry the ranked 15 (with how/perceive/implement notes + rubric scores + red-team findings) forward. `/discovery` operationalizes them into self-documenting `br` beads (deps + explicit test tasks) and refines 4-5x in plan space. See [references/bead-operationalization.md](./bead-operationalization.md).
 
 ### Output
 
 Standalone (`/brainstorm --ideate`): write the ranked portfolio to `.agents/brainstorm/YYYY-MM-DD-<slug>-ideation.md` (template in [references/ideation-mode.md](./ideation-mode.md)). Invoked by `/discovery`: return the ranked portfolio inline for the operationalize step.
 
-> **Tracking is `bd`, never `br`/`bv`** — this is AgentOps.
+> **Tracking is `br` with `bv` triage** — this is AgentOps.
 
 ---
 
@@ -250,4 +250,4 @@ Phase 4: Writes .agents/brainstorm/2026-02-17-search-performance.md
 
 - [references/idea-rubric.md](./idea-rubric.md) — Ten-dimension evaluation rubric (robust/reliable/performant/intuitive/user-friendly/ergonomic/useful/compelling/accretive/pragmatic) + winnowing rounds (ag-yw0)
 
-- [references/bead-operationalization.md](./bead-operationalization.md) — Operationalize the ranked portfolio into self-documenting `bd` beads (deps + test tasks) and refine 4-5x in plan space (ag-yw0)
+- [references/bead-operationalization.md](./bead-operationalization.md) — Operationalize the ranked portfolio into self-documenting `br` beads (deps + test tasks) and refine 4-5x in plan space (ag-yw0)

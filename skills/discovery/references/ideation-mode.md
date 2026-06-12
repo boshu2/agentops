@@ -32,9 +32,9 @@ and don't duplicate existing work.
 
 ```bash
 cat AGENTS.md                # or CLAUDE.md — project rules + constraints
-bd list --json              # open work — avoid duplicating
-bd list --status closed --json   # closed work — lessons learned, don't re-propose
-bd ready --json             # what is actionable right now
+br list --json              # open work — avoid duplicating
+br list --status closed --json   # closed work — lessons learned, don't re-propose
+br ready --json             # what is actionable right now
 ```
 
 Checklist before generating:
@@ -122,4 +122,4 @@ standalone file.
 | Stop at 5 | Expand to 15 — #6-15 are often complementary |
 | Present unranked | Rank best-to-worst with full rationale |
 | Drop rationale on handoff | Carry how/perceive/implement + rubric scores into operationalize |
-| Use `br`/`bv` | This is AgentOps — use `bd` for all tracking |
+| Use `bd`/Dolt | This is AgentOps — use `br` for tracking and `bv` for graph triage |

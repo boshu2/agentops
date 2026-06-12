@@ -13,7 +13,7 @@ description: "Run crank."
 ```text
 Crank (lead agent)
     |
-    +-> bd ready (current wave)
+    +-> br ready (current wave)
     |
     +-> Build a wave task packet
     |
@@ -93,7 +93,7 @@ fi
 ### Step 0.5: Detect Tracking Mode
 
 ```bash
-if bd ready --json >/dev/null 2>&1 && bd list --type epic --status open --json >/dev/null 2>&1; then
+if br ready --json >/dev/null 2>&1 && br list --type epic --status open --json >/dev/null 2>&1; then
     TRACKING_MODE="beads"
 else
     TRACKING_MODE="tasklist"
@@ -161,7 +161,7 @@ log_plan_mutation() {
 
 **Beads mode:**
 - If epic ID provided: use it directly
-- If no epic ID: `bd list --type epic --status open 2>/dev/null | head -5`
+- If no epic ID: `br list --type epic --status open 2>/dev/null | head -5`
 
 **Execution-packet/file mode:**
 - If the input is `.agents/rpi/execution-packet.json`, read `objective`, `epic_id`, `tracker_mode`, `done_criteria`, and `validation_commands`
@@ -183,17 +183,17 @@ bd show <epic-id> 2>/dev/null
 
 **Execution-packet/file mode:**
 - Read the packet or plan file into local state for the current objective
-- Preserve the same objective across retries; do not narrow to one slice from `bd ready`
+- Preserve the same objective across retries; do not narrow to one slice from `br ready`
 
 ### Step 3: List Ready Work for the Current Wave
 
 **Beads mode:**
 
 ```bash
-bd ready 2>/dev/null
+br ready 2>/dev/null
 ```
 
-`bd ready` returns all unblocked issues - these can run in parallel.
+`br ready` returns all unblocked issues - these can run in parallel.
 
 **Execution-packet/file mode:**
 - Read remaining tasks from `.agents/rpi/execution-packet.json` or the plan file
@@ -478,7 +478,7 @@ if [[ $wave -ge 50 ]]; then
     exit 1
 fi
 
-REMAINING=$(bd ready 2>/dev/null | wc -l)
+REMAINING=$(br ready 2>/dev/null | wc -l)
 if [[ $REMAINING -eq 0 ]]; then
     ALL_CLOSED=$(bd children "$EPIC_ID" 2>/dev/null | grep -c "CLOSED" || echo 0)
     ALL_TOTAL=$(bd children "$EPIC_ID" 2>/dev/null | wc -l || echo 0)

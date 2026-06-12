@@ -52,7 +52,7 @@ Fall back to serial execution within the current session.
 ### Step 1: Ensure Tasks Exist
 
 Tasks come from one of:
-- `bd ready` output
+- `br ready` output
 - An explicit task list from `$crank`
 - A user-provided description that you decompose first
 

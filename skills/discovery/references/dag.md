@@ -52,7 +52,7 @@ Run every step in order. Stop only on an explicit BLOCKED verdict.
 
 ```bash
 mkdir -p .agents/rpi
-if command -v bd >/dev/null 2>&1; then TRACKING_MODE=beads; else TRACKING_MODE=tasklist; fi
+if command -v br >/dev/null 2>&1; then TRACKING_MODE=beads; else TRACKING_MODE=tasklist; fi
 if command -v ao >/dev/null 2>&1; then AO_AVAILABLE=true; else AO_AVAILABLE=false; fi
 ```
 

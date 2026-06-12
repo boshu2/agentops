@@ -43,9 +43,9 @@ Feature: Discovery hands dense intent to planning
   Scenario: Discovery operationalizes the winnowed portfolio into self-documenting beads
     Given a ranked portfolio of 15 ideas from ideation mode
     When the operationalize step runs
-    Then it creates self-documenting bd beads with dependency structure and explicit test tasks
+    Then it creates self-documenting br beads with dependency structure and explicit test tasks
     And each bead carries what, why, how, risks, and success criteria
-    And it uses bd for all tracking, never br or bv
+    And it uses br for tracking and bv for graph triage
 
   Scenario: Discovery refines beads in plan space before crank
     Given operationalized beads exist

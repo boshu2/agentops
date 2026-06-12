@@ -1,7 +1,7 @@
 # Idea Evaluation Rubric
 
 > The ten-dimension rubric for scoring and winnowing ideas in ideation mode
-> (`ideation-mode.md`). Adapted for AgentOps — tracking is `bd`, not `br`/`bv`.
+> (`ideation-mode.md`). Adapted for AgentOps — tracking is `br` with `bv` triage.
 
 Ideas are evaluated on: **robust, reliable, performant, intuitive, user-friendly,
 ergonomic, useful, compelling, accretive, pragmatic.** A good idea makes the

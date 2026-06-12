@@ -9,44 +9,44 @@ Graph-based issue tracker that survives conversation compaction.
 
 ## Overview
 
-**bd** and **br (beads_rust)** replace markdown task lists with a dependency-aware graph stored in git. **bv** adds graph-aware triage using PageRank and betweenness centrality.
+**br (beads_rust)** replaces markdown task lists with a dependency-aware graph stored in git. **bv** adds graph-aware triage using PageRank and betweenness centrality. `bd`/Dolt is legacy unless a repository explicitly opts into it.
 
 **Key Distinction**:
-- **bd/br**: Multi-session work, dependencies, survives compaction, git-backed
+- **br**: Multi-session work, dependencies, survives compaction, git-backed
 - **bv**: Graph analysis, priority triage, bottleneck detection, parallel execution planning
 - **In-session tracking**: Single-session tasks, status tracking, conversation-scoped (harness-native)
 
-**Decision Rule**: If resuming in 2 weeks would be hard without bd, use bd.
+**Decision Rule**: If resuming in 2 weeks would be hard without persistent issues, use br.
 
-**br vs bd**: br is the Rust rewrite. Commands are the same except: br never auto-commits (git is your job), and `bd sync` becomes `br sync --flush-only`. Use whichever is installed.
+**br vs legacy bd**: br is the current default. It never auto-commits; sync explicitly with `br sync --flush-only`, then commit the exported JSONL in the tracker repo or configured issue directory.
 
 **bv safety**: NEVER run bare `bv` — it launches interactive TUI and blocks the terminal. Always use `--robot-*` flags.
 
 ## Operating Rules
 
-- Treat live `bd` reads as authoritative. Use `bd show`, `bd ready`, `bd list`, and `bd export` to inspect current tracker state. Do not treat `.beads/issues.jsonl` as the primary decision source when live `bd` data is available.
-- Treat `.beads/issues.jsonl` as a git-friendly export artifact. If the repo tracks `.beads/issues.jsonl` and you mutate tracker state, refresh it explicitly with `bd export -o .beads/issues.jsonl`.
+- Treat live `br` reads as authoritative. Use `br show`, `br ready`, and `br list` to inspect current tracker state. Do not treat JSONL exports as the primary decision source when live `br` data is available.
+- Treat the configured issues JSONL as a git-friendly export artifact. If you mutate tracker state, refresh it explicitly with `br sync --flush-only`.
 - After closing or materially updating a child issue, reconcile the open parent in the same session. Update stale "remaining gap" notes immediately, and close the parent when the child resolved the parent's last real gap.
-- Before closing a child issue, include scoped closure proof in the `bd close --reason` text.
+- Before closing a child issue, include scoped closure proof in the `br close --reason` text.
   Name the touched files or explicit no-file evidence artifact, validation command(s), and parent
   reconciliation outcome. Do not use generic closure reasons such as "done" or "implemented" for child beads.
-- If `bd ready` returns a broad umbrella issue, do not implement directly against vague parent wording. First narrow the remaining gap into an execution-ready child issue, then land the child and reconcile the parent.
+- If `br ready` returns a broad umbrella issue, do not implement directly against vague parent wording. First narrow the remaining gap into an execution-ready child issue, then land the child and reconcile the parent.
 - Normalize stale queue items instead of silently skipping them. Rewrite broad or partially absorbed beads to the actual remaining gap.
 - Use this post-mutation sequence when tracker state changed:
 
 ```bash
-bd ...                              # mutate tracker state
-bd export -o .beads/issues.jsonl    # if tracked in git
-bd vc status
-bd dolt commit -m "..."             # if tracker changes are pending
-bd dolt push                        # only if a Dolt remote is configured
+br ...                              # mutate tracker state
+br sync --flush-only                # export DB -> JSONL
+git add <issues-jsonl-or-dir>
+git commit -m "Update issues"       # if tracker changes are pending
+git push                            # tracker remote, when configured
 ```
 
 ## Prerequisites
 
-- **bd CLI**: Version 0.34.0+ installed and in PATH
+- **br CLI**: Installed and in PATH
 - **Git Repository**: Current directory must be a git repo
-- **Initialization**: `bd init` run once (humans do this, not agents)
+- **Initialization**: `br init` run once (humans do this, not agents)
 
 ## Examples
 
@@ -56,11 +56,11 @@ bd dolt push                        # only if a Dolt remote is configured
 
 **What happens:**
 1. Agent loads beads skill automatically via dependency
-2. Agent calls `bd show <id>` to read issue metadata
+2. Agent calls `br show <id>` to read issue metadata
 3. Agent links validation findings to the issue being checked
 4. Output references issue ID in validation report
 
-**Result:** Validation report includes issue context, no manual bd lookups needed.
+**Result:** Validation report includes issue context, no manual br lookups needed.
 
 ### Skill Loading from $implement
 
@@ -68,15 +68,15 @@ bd dolt push                        # only if a Dolt remote is configured
 
 **What happens:**
 1. Agent loads beads skill to understand issue structure
-2. Agent calls `bd show ag-xyz-123` to read issue body
-3. Agent checks dependencies with bd output
-4. Agent closes issue with `bd close ag-xyz-123` after completion
+2. Agent calls `br show ag-xyz-123` to read issue body
+3. Agent checks dependencies with br output
+4. Agent closes issue with `br close ag-xyz-123` after completion
 
 **Result:** Issue lifecycle managed automatically during implementation.
 
 ## br (beads_rust) Quick Reference
 
-br is the Rust rewrite of bd; the binary self-describes (`br --help`). Full command surface: [references/BR_REFERENCE.md](references/BR_REFERENCE.md). Doctrine: sync is EXPLICIT, never automatic — `br sync --flush-only` (DB → JSONL, before git commit) / `br sync --import-only` (JSONL → DB, after git pull); session ends with pull-rebase → flush → commit `.beads/` → push.
+br is the current tracker CLI; the binary self-describes (`br --help`). Full command surface: [references/BR_REFERENCE.md](references/BR_REFERENCE.md). Doctrine: sync is EXPLICIT, never automatic — `br sync --flush-only` (DB → JSONL, before git commit) / `br sync --import-only` (JSONL → DB, after git pull); session ends with pull-rebase → flush → commit the tracker JSONL/directory → push.
 
 ## bv Graph Triage
 
@@ -96,7 +96,7 @@ Convert a markdown plan into fully dependency-wired beads:
 4. Include the `hexagon:` boundary block from
    `docs/architecture/intent-to-loop-hexagon.md` for substantial beads:
    inbound port, bounded context, adapters, context packet, and done state.
-5. Wire dependencies with `br dep add` / `bd dep add`. Do not hand-edit JSONL or
+5. Wire dependencies with `br dep add`. Do not hand-edit JSONL or
    database files.
 6. Polish iteratively (usually 6-9 passes) until steady-state. Check for lost
    features, oversimplification, missing tests, unclear boundaries, missing e2e

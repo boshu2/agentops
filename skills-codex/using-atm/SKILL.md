@@ -43,7 +43,7 @@ tend AgentOps loops on an ATM swarm.
 2. **Agents inherit the skills via overlay.** Each pane is a Claude or Codex
    agent with the AgentOps Codex skills installed, so `$rpi`, `$evolve`,
    `$validate` resolve in-pane.
-3. **The bead queue is the work source.** A lead runs `bd ready`, picks the next
+3. **The bead queue is the work source.** A lead runs `br ready`, picks the next
    bead, and dispatches it to a free worker pane.
 4. **Green CI is the merge gate.** Each worker drives its bead to a green PR from
    a per-bead worktree; the operator stays *on* the loop (intent + stop), not *in* it.
@@ -78,20 +78,20 @@ Run one tick at a time; take the first action whose trigger fires:
 - **Rate-limited / auth-expired pane** → rotate the account / relaunch, re-send its bead.
 - **Wedged pane** (no output, not at a prompt) → nudge once; if still wedged, kill + relaunch + re-dispatch.
 - **Context-saturated pane** (forgetting, repeating) → have it write a handoff, relaunch fresh, re-dispatch.
-- **Worker finished** (PR merged, bead closed) → dispatch the next `bd ready` bead.
+- **Worker finished** (PR merged, bead closed) → dispatch the next `br ready` bead.
 - **Many review beads open, few closing** → flip to review-only, drain the backlog.
 - **Otherwise** → observe; do not nudge a healthy working pane.
 
 ## Coordination (the Agent Mail leg)
 
-- **Beads (`bd`)** — shared work queue + state source: `bd ready`, `bd update --claim`, `bd close`.
+- **Beads (`bd`)** — shared work queue + state source: `br ready`, `bd update --claim`, `bd close`.
 - **Agent Mail (`am`)** (its own daemon at `127.0.0.1:8765` — the `am` CLI, **not** an `ao` subcommand; old "MCP Agent Mail" name retired) — register with `am macros start-session`, then cross-pane messages + **file reservations** (reserve before edit, release on commit).
 - **Worktree-per-bead** is mandatory: no pane edits the shared checkout.
 
 ## Convergence + shutdown
 
-Done when `bd ready` is empty, no pane has an in-flight bead, and the last few CI
-runs are green. Confirm with `atm activity` (all idle) + `bd ready` (empty) before
+Done when `br ready` is empty, no pane has an in-flight bead, and the last few CI
+runs are green. Confirm with `atm activity` (all idle) + `br ready` (empty) before
 `atm kill <session>`. Don't shut down on a transient quiet patch — a rate-limited
 pane also looks idle.
 
