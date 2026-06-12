@@ -20,7 +20,7 @@
     ],
     "override_catalog": "skills-codex/.agentops-manifest.json -> codex_override_catalog (per-skill treatment map, waved)",
     "integrity_gate": "scripts/regen-codex-hashes.sh --check  (CI drift gate; --only <slug> scopes a single-skill PR)",
-    "note": "This bundle does NOT re-run the converter - the twins already exist for the whole corpus (158 in skills-codex/). It PACKAGES the CORE-61 subset and PROVES the twins are present + hash-consistent."
+    "note": "This bundle does NOT re-run the converter - the twins already exist for the current Codex corpus (66 in skills-codex/). It PACKAGES the CORE-40 subset and PROVES the twins are present + hash-consistent."
   },
   "codex_override_catalog": {
     "manifest_path": "skills-codex/.agentops-manifest.json",
@@ -34,15 +34,15 @@
       "catalog-parity": "Skills reviewed explicitly and kept on converter parity until a real Codex-only divergence appears."
     },
     "core_wave_distribution": {
-      "backbone": 11,
+      "backbone": 10,
       "core-execution": 7,
-      "catalog-parity": 42,
-      "analysis-authoring": 1
+      "catalog-parity": 23,
+      "analysis-authoring": 0
     }
   },
-  "core_count": 61,
-  "method_core_count": 35,
-  "tool_op_core_count": 26,
+  "core_count": 40,
+  "method_core_count": 29,
+  "tool_op_core_count": 11,
   "core_skills": [
     {
       "slug": "rpi",
@@ -500,53 +500,14 @@
       "codex_treatment": "parity_only"
     },
     {
-      "slug": "caam",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/caam/",
-      "source_path": "skills/caam/",
-      "twin_files": {
-        "skill": "skills-codex/caam/SKILL.md",
-        "prompt": "skills-codex/caam/prompt.md",
-        "drift_marker": "skills-codex/caam/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
       "slug": "review",
       "kind": "tool-op",
       "twin_path": "skills-codex/review/",
       "source_path": "skills/review/",
       "twin_files": {
-        "skill": "skills-codex/ubs/SKILL.md",
-        "prompt": "skills-codex/ubs/prompt.md",
-        "drift_marker": "skills-codex/ubs/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "ru-multi-repo-workflow",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/ru-multi-repo-workflow/",
-      "source_path": "skills/ru-multi-repo-workflow/",
-      "twin_files": {
-        "skill": "skills-codex/ru-multi-repo-workflow/SKILL.md",
-        "prompt": "skills-codex/ru-multi-repo-workflow/prompt.md",
-        "drift_marker": "skills-codex/ru-multi-repo-workflow/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "gh-triage-ru",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/gh-triage-ru/",
-      "source_path": "skills/gh-triage-ru/",
-      "twin_files": {
-        "skill": "skills-codex/gh-triage-ru/SKILL.md",
-        "prompt": "skills-codex/gh-triage-ru/prompt.md",
-        "drift_marker": "skills-codex/gh-triage-ru/.agentops-generated.json"
+        "skill": "skills-codex/review/SKILL.md",
+        "prompt": "skills-codex/review/prompt.md",
+        "drift_marker": "skills-codex/review/.agentops-generated.json"
       },
       "codex_wave": "catalog-parity",
       "codex_treatment": "parity_only"
@@ -573,110 +534,6 @@
         "skill": "skills-codex/sbh/SKILL.md",
         "prompt": "skills-codex/sbh/prompt.md",
         "drift_marker": "skills-codex/sbh/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "process-triage",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/process-triage/",
-      "source_path": "skills/process-triage/",
-      "twin_files": {
-        "skill": "skills-codex/process-triage/SKILL.md",
-        "prompt": "skills-codex/process-triage/prompt.md",
-        "drift_marker": "skills-codex/process-triage/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "system-performance-remediation",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/system-performance-remediation/",
-      "source_path": "skills/system-performance-remediation/",
-      "twin_files": {
-        "skill": "skills-codex/system-performance-remediation/SKILL.md",
-        "prompt": "skills-codex/system-performance-remediation/prompt.md",
-        "drift_marker": "skills-codex/system-performance-remediation/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "ssh",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/ssh/",
-      "source_path": "skills/ssh/",
-      "twin_files": {
-        "skill": "skills-codex/ssh/SKILL.md",
-        "prompt": "skills-codex/ssh/prompt.md",
-        "drift_marker": "skills-codex/ssh/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "gcloud",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/gcloud/",
-      "source_path": "skills/gcloud/",
-      "twin_files": {
-        "skill": "skills-codex/gcloud/SKILL.md",
-        "prompt": "skills-codex/gcloud/prompt.md",
-        "drift_marker": "skills-codex/gcloud/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "gh-cli",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/gh-cli/",
-      "source_path": "skills/gh-cli/",
-      "twin_files": {
-        "skill": "skills-codex/gh-cli/SKILL.md",
-        "prompt": "skills-codex/gh-cli/prompt.md",
-        "drift_marker": "skills-codex/gh-cli/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "gh-actions",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/gh-actions/",
-      "source_path": "skills/gh-actions/",
-      "twin_files": {
-        "skill": "skills-codex/gh-actions/SKILL.md",
-        "prompt": "skills-codex/gh-actions/prompt.md",
-        "drift_marker": "skills-codex/gh-actions/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "research-software",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/research-software/",
-      "source_path": "skills/research-software/",
-      "twin_files": {
-        "skill": "skills-codex/research-software/SKILL.md",
-        "prompt": "skills-codex/research-software/prompt.md",
-        "drift_marker": "skills-codex/research-software/.agentops-generated.json"
-      },
-      "codex_wave": "catalog-parity",
-      "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "repeatedly-apply-skill",
-      "kind": "tool-op",
-      "twin_path": "skills-codex/repeatedly-apply-skill/",
-      "source_path": "skills/repeatedly-apply-skill/",
-      "twin_files": {
-        "skill": "skills-codex/repeatedly-apply-skill/SKILL.md",
-        "prompt": "skills-codex/repeatedly-apply-skill/prompt.md",
-        "drift_marker": "skills-codex/repeatedly-apply-skill/.agentops-generated.json"
       },
       "codex_wave": "catalog-parity",
       "codex_treatment": "parity_only"
