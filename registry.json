@@ -1,14 +1,16 @@
 {
   "schema_version": 2,
   "generated_at": "2026-06-12T19:53:57Z",
+  "generated_at": "2026-06-12T18:53:47Z",
+  "generated_at": "2026-06-12T18:55:56Z",
   "summary": {
-    "skills": 67,
+    "skills": 71,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 83,
-    "capabilities": 164
+    "capabilities": 168
   },
   "surfaces": {
     "skills": [
@@ -141,6 +143,14 @@
         "reference_count": 0
       },
       {
+        "name": "continuity-loop",
+        "tier": "execution",
+        "path": "skills/continuity-loop/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
         "name": "crank",
         "tier": "execution",
         "path": "skills/crank/",
@@ -189,6 +199,14 @@
         "reference_count": 16
       },
       {
+        "name": "operationalize",
+        "tier": "execution",
+        "path": "skills/operationalize/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
         "name": "perf",
         "tier": "execution",
         "path": "skills/perf/",
@@ -219,6 +237,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 16
+      },
+      {
+        "name": "reality-check",
+        "tier": "execution",
+        "path": "skills/reality-check/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "refactor",
@@ -275,6 +301,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 6
+      },
+      {
+        "name": "toil-mining",
+        "tier": "execution",
+        "path": "skills/toil-mining/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 1
       },
       {
         "name": "using-atm",
@@ -1368,8 +1402,8 @@
     ]
   },
   "capability_summary": {
-    "total": 164,
-    "skills": 67,
+    "total": 168,
+    "skills": 71,
     "cli_commands": 83,
     "gates": 14,
     "reference_impls": 0
@@ -1811,6 +1845,28 @@
       ],
       "path": "skills/compile/",
       "references": 4
+    },
+    {
+      "sku": "skill:continuity-loop",
+      "name": "continuity-loop",
+      "type": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": ">-",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "ntm",
+        "agent-mail"
+      ],
+      "produces": [
+        ".agents/continuity/state.json",
+        "escalation-message"
+      ],
+      "drives_commands": [],
+      "path": "skills/continuity-loop/",
+      "references": 0
     },
     {
       "sku": "skill:converter",
@@ -2264,6 +2320,29 @@
       "references": 16
     },
     {
+      "sku": "skill:operationalize",
+      "name": "operationalize",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "domain",
+      "tier": "execution",
+      "purpose": ">-",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        ".agents/research/*.md",
+        "audit-report",
+        "learning"
+      ],
+      "produces": [
+        ".agents/operationalize/*.md",
+        "routed-handoffs"
+      ],
+      "drives_commands": [],
+      "path": "skills/operationalize/",
+      "references": 0
+    },
+    {
       "sku": "skill:perf",
       "name": "perf",
       "type": "skill",
@@ -2467,6 +2546,26 @@
       "drives_commands": [],
       "path": "skills/rch/",
       "references": 16
+    },
+    {
+      "sku": "skill:reality-check",
+      "name": "reality-check",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "domain",
+      "tier": "execution",
+      "purpose": ">-",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "implement"
+      ],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/reality-check/",
+      "references": 0
     },
     {
       "sku": "skill:recover",
@@ -2870,6 +2969,24 @@
       "drives_commands": [],
       "path": "skills/test/",
       "references": 6
+    },
+    {
+      "sku": "skill:toil-mining",
+      "name": "toil-mining",
+      "type": "skill",
+      "bounded_context": "BC1",
+      "hex_role": "supporting",
+      "tier": "execution",
+      "purpose": ">-",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [],
+      "produces": [
+        "result.json"
+      ],
+      "drives_commands": [],
+      "path": "skills/toil-mining/",
+      "references": 1
     },
     {
       "sku": "skill:using-atm",
