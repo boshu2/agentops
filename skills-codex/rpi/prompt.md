@@ -16,7 +16,7 @@ Run the full RPI lifecycle in a Codex-native way: direct in-session orchestratio
 6. Orchestrate phases directly in the current session; do not hand RPI orchestration to wrapper commands.
 7. For Nightly, evolve, or auto-prompt goals, inspect the last 14 days of Nightly PRs and scheduled Nightly runs before choosing the implementation slice.
 8. Classify recurring evidence as code-driven, runtime-artifact-only, or corpus-state-bound; prefer a code-driven fix unless the user explicitly asked for corpus maintenance.
-9. Route `bd` unavailability, tag push failures, worktree-disposition friction, and security/eval advisory recurrence as prompt/runtime debt rather than treating them as background noise.
+9. Route `br` unavailability, tag push failures, worktree-disposition friction, and security/eval advisory recurrence as prompt/runtime debt rather than treating them as background noise.
 10. claim, release, and consume semantics exactly
 11. claim before work, consume on success, release on failure or interruption
 
