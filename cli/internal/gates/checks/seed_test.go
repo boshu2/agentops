@@ -74,3 +74,23 @@ func TestChangedScopeRegenIsSplitFromReleaseWideRegenAll(t *testing.T) {
 		t.Fatalf("always.regen-all backing = %q, want regen-all.sh", releaseWide.Backing)
 	}
 }
+
+func TestRetrievalManifestPathGateHasFixtureManifestArgs(t *testing.T) {
+	check, ok := gates.Default.Get("always.retrieval-manifest-paths")
+	if !ok {
+		t.Fatal("always.retrieval-manifest-paths gate is not registered")
+	}
+	if check.Backing != "check-retrieval-manifest-paths.sh" {
+		t.Fatalf("always.retrieval-manifest-paths backing = %q, want check-retrieval-manifest-paths.sh", check.Backing)
+	}
+
+	want := []string{"cli/cmd/ao/testdata/retrieval-bench/search-eval-manifest.json"}
+	if len(check.Args) != len(want) {
+		t.Fatalf("always.retrieval-manifest-paths args = %v, want %v", check.Args, want)
+	}
+	for i := range want {
+		if check.Args[i] != want[i] {
+			t.Fatalf("always.retrieval-manifest-paths args = %v, want %v", check.Args, want)
+		}
+	}
+}
