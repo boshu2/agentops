@@ -45,6 +45,19 @@ If the snapshot or attention feed disagrees with what the command said happened,
 
 For any state-changing action, verify the live contract with `ntm --robot-capabilities` before executing.
 
+### Folded triggers (ag-s43tg wave 1): `ntm-browser-test-coordination` + `ntm-review-worker-orchestration` route here
+
+- **Browser/UI test coordination.** Use when coordinating browser or UI tests through NTM panes
+  with screenshots and handoffs: dispatch the test run as marching orders to a dedicated pane,
+  reserve the surfaces under test via `agent-mail`, keep screenshot/artifact paths in the pane
+  output, and confirm completion in `--robot-snapshot` + the attention feed before handing off.
+- **Review/analysis workers.** Use when operating an NTM review or
+  analysis worker with bounded inputs and evidence-backed output: scope the worker
+  to an explicit input set (files, diff, bead),
+  require artifact-backed findings (paths + line refs, not impressions), and treat a worker that
+  emits conclusions without evidence as not-done — re-dispatch with the bounded-input contract
+  restated.
+
 ## The Loop (Mandatory)
 
 ```
