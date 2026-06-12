@@ -98,6 +98,9 @@ func TestCodexRunReceiptSchemaAndExample(t *testing.T) {
 	if got := fixtureString(t, fixture, "outputs", "receipt_path"); got == "" {
 		t.Fatalf("outputs.receipt_path must be non-empty")
 	}
+	if got := fixtureString(t, fixture, "verdict", "judge_model_family"); got == "" {
+		t.Fatalf("verdict.judge_model_family must be non-empty")
+	}
 }
 
 func loadCodexContractPair(t *testing.T, schemaParts, fixtureParts []string) (map[string]any, map[string]any) {

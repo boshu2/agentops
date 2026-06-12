@@ -61,7 +61,11 @@
   "verdict": {
     "status": "PASS",
     "judge_source": "acceptance-commands",
-    "summary": "Schema, docs, and fixture-backed contract tests passed."
+    "summary": "Schema, docs, and fixture-backed contract tests passed.",
+    "author_id": "codex",
+    "judge_name": "fable",
+    "judge_program": "claude-code",
+    "judge_model_family": "claude"
   },
   "evidence": [
     {

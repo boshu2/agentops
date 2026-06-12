@@ -53,7 +53,7 @@ func TestCodexDispatchWritesReceiptAndClosesStdin(t *testing.T) {
 	promptCapture := filepath.Join(repo, "prompt-capture.txt")
 	writeFakeCodexBinary(t)
 	t.Setenv("FAKE_CODEX_PROMPT_CAPTURE", promptCapture)
-	t.Setenv("FAKE_CODEX_FINAL_MESSAGE", "VERDICT: PASS\nCOMMANDS RUN:\n- fake codex exec")
+	t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
 	t.Setenv("FAKE_CODEX_STDOUT", "{\"event\":\"ok\"}")
 	t.Setenv("OPENAI_API_KEY", "")
 
@@ -88,6 +88,9 @@ func TestCodexDispatchWritesReceiptAndClosesStdin(t *testing.T) {
 	}
 	if fileReceipt.Verdict.Status != "PASS" {
 		t.Fatalf("verdict.status = %q, want PASS", fileReceipt.Verdict.Status)
+	}
+	if fileReceipt.Verdict.JudgeModelFamily != "claude" {
+		t.Fatalf("verdict.judge_model_family = %q, want claude", fileReceipt.Verdict.JudgeModelFamily)
 	}
 	assertFileContains(t, promptCapture, "dispatch acceptance prompt")
 	assertFileContains(t, filepath.Join(repo, fileReceipt.Outputs.FinalMessagePath), "VERDICT: PASS")
@@ -127,14 +130,108 @@ func TestCodexDispatchTimeoutWritesReceipt(t *testing.T) {
 	}
 }
 
+func TestCodexDispatchRejectsNoCommandVerdict(t *testing.T) {
+	repo := newCodexDispatchRepo(t)
+	writeFakeCodexBinary(t)
+	t.Setenv("FAKE_CODEX_FINAL_MESSAGE", "author: codex\njudge: fable\njudge_program: claude-code\njudge_model_family: claude\nVERDICT: PASS")
+	t.Setenv("OPENAI_API_KEY", "")
+
+	packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{})
+	out, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+	if err == nil {
+		t.Fatalf("codex dispatch succeeded, want no-command verdict rejection")
+	}
+	if !strings.Contains(err.Error(), "verdict rejected") && !strings.Contains(out, "COMMANDS RUN") {
+		t.Fatalf("dispatch error/output did not explain COMMANDS RUN rejection:\nerr=%v\nout=%s", err, out)
+	}
+	receipt := readCodexDispatchReceipt(t, receiptPath)
+	if receipt.Verdict.Status != "ERROR" {
+		t.Fatalf("verdict.status = %q, want ERROR", receipt.Verdict.Status)
+	}
+	if !strings.Contains(receipt.FailureReason, "COMMANDS RUN") {
+		t.Fatalf("failure_reason = %q, want COMMANDS RUN", receipt.FailureReason)
+	}
+}
+
+func TestCodexDispatchRejectsResumeCWDInheritance(t *testing.T) {
+	repo := newCodexDispatchRepo(t)
+	packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+		Resume: &codexTaskResume{Policy: "last-session-in-cwd", AllowResume: true},
+	})
+
+	_, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+	if err == nil {
+		t.Fatalf("codex dispatch succeeded, want resume cwd inheritance rejection")
+	}
+	if !strings.Contains(err.Error(), "last-session-in-cwd") {
+		t.Fatalf("dispatch error = %q, want last-session-in-cwd rejection", err.Error())
+	}
+	assertPathAbsent(t, receiptPath)
+}
+
+func TestCodexDispatchRejectsSandboxMismatch(t *testing.T) {
+	repo := newCodexDispatchRepo(t)
+	packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+		Sandbox:     "read-only",
+		ArgvSandbox: "workspace-write",
+	})
+
+	_, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+	if err == nil {
+		t.Fatalf("codex dispatch succeeded, want sandbox mismatch rejection")
+	}
+	if !strings.Contains(err.Error(), "does not match execution argv sandbox") {
+		t.Fatalf("dispatch error = %q, want sandbox mismatch", err.Error())
+	}
+	assertPathAbsent(t, receiptPath)
+}
+
+func TestCodexReceiptValidationRejectsMissingCommandEvidenceAndJudgeIdentity(t *testing.T) {
+	receipt := validCodexReceiptForTest()
+	receipt.CommandsRun = nil
+	receipt.Verdict.JudgeModelFamily = ""
+
+	err := validateCodexRunReceipt(receipt)
+	if err == nil {
+		t.Fatalf("validateCodexRunReceipt succeeded, want command and judge identity rejection")
+	}
+	if !strings.Contains(err.Error(), "commands_run") || !strings.Contains(err.Error(), "judge_model_family") {
+		t.Fatalf("validation error = %q, want commands_run and judge_model_family gaps", err.Error())
+	}
+}
+
+func TestCodexVerdictBodyRejectsMalformedAndContradictoryVerdicts(t *testing.T) {
+	for _, body := range []string{
+		"author: codex\njudge: fable\njudge_program: claude-code\njudge_model_family: claude\nVERDICT: PASS\nVERDICT: FAIL\nCOMMANDS RUN:\n  go test ./cmd/ao\n",
+		"author: codex\njudge: fable\njudge_program: claude-code\njudge_model_family: claude\nVERDICT: PASS\nVERDICT: PASS\nCOMMANDS RUN:\n  go test ./cmd/ao\n",
+		"author: codex\njudge: fable\njudge_program: claude-code\njudge_model_family: claude\nVERDICT: MAYBE\nCOMMANDS RUN:\n  go test ./cmd/ao\n",
+	} {
+		verdict := codexFinalMessageVerdict(body)
+		if verdict.Status != "ERROR" && verdict.Status != "NO_VERDICT" {
+			t.Fatalf("codexFinalMessageVerdict(%q).Status = %q, want ERROR or NO_VERDICT", body, verdict.Status)
+		}
+	}
+}
+
 type codexDispatchPacketOptions struct {
 	TimeoutSeconds int
+	Resume         *codexTaskResume
+	Sandbox        string
+	ArgvSandbox    string
 }
 
 func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacketOptions) (packetPath string, receiptPath string) {
 	t.Helper()
 	if opts.TimeoutSeconds == 0 {
 		opts.TimeoutSeconds = 30
+	}
+	sandbox := opts.Sandbox
+	if sandbox == "" {
+		sandbox = "workspace-write"
+	}
+	argvSandbox := opts.ArgvSandbox
+	if argvSandbox == "" {
+		argvSandbox = sandbox
 	}
 	runDir := filepath.Join(".agents", "codex", "runs", "dispatch-test")
 	taskDir := filepath.Join(".agents", "codex", "tasks", "dispatch-test")
@@ -148,7 +245,7 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 		"exec",
 		"--json",
 		"--sandbox",
-		"workspace-write",
+		argvSandbox,
 		"--output-last-message",
 		finalPath,
 	}
@@ -167,7 +264,7 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 		Objective:     "Run Codex dispatch acceptance test.",
 		Role:          "worker",
 		CWD:           repo,
-		Sandbox:       "workspace-write",
+		Sandbox:       sandbox,
 		Auth: codexTaskAuthGuard{
 			RequiredMode:           "chatgpt-subscription",
 			RejectEnv:              []string{"OPENAI_API_KEY"},
@@ -196,6 +293,7 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 			RequiredCommands: []string{"codex exec"},
 			Artifacts:        []string{finalPath, jsonlPath},
 		},
+		Resume:        opts.Resume,
 		StopCondition: "Receipt captures output, stdin, timeout, and verdict.",
 	}
 	data, err := json.MarshalIndent(packet, "", "  ")
@@ -207,6 +305,49 @@ func writeCodexDispatchPacket(t *testing.T, repo string, opts codexDispatchPacke
 		t.Fatalf("write packet: %v", err)
 	}
 	return packetAbsPath, filepath.Join(repo, receiptRelPath)
+}
+
+func validCodexFinalVerdictForTest(status string) string {
+	return "author: codex\n" +
+		"judge: fable\n" +
+		"judge_program: claude-code\n" +
+		"judge_model_family: claude\n" +
+		"VERDICT: " + status + "\n" +
+		"COMMANDS RUN:\n" +
+		"  go test ./cmd/ao -run CodexDispatch\n"
+}
+
+func validCodexReceiptForTest() codexRunReceipt {
+	return codexRunReceipt{
+		SchemaVersion:  1,
+		ReceiptID:      "codex-receipt-test",
+		PacketID:       "codex-packet-test",
+		StartedAt:      "2026-06-12T16:00:00Z",
+		EndedAt:        "2026-06-12T16:00:01Z",
+		CWD:            "/tmp/repo",
+		Sandbox:        "workspace-write",
+		AuthMode:       "chatgpt-subscription",
+		AuthStatus:     "Logged in using ChatGPT",
+		Command:        codexReceiptCommand{Argv: []string{"codex", "exec", "--sandbox", "workspace-write"}},
+		Stdin:          codexReceiptStdin{Mode: "pipe-prompt", ClosedAt: "2026-06-12T16:00:00Z", BytesWritten: 12},
+		TimeoutSeconds: 30,
+		ExitCode:       0,
+		Outputs: codexReceiptOutputs{
+			FinalMessagePath: ".agents/codex/runs/final.md",
+			ReceiptPath:      ".agents/codex/runs/receipt.json",
+		},
+		ChangedFiles: []string{"cli/cmd/ao/codex.go"},
+		CommandsRun:  []codexCommandResult{{Command: "go test ./cmd/ao", ExitCode: 0}},
+		Verdict: codexReceiptVerdict{
+			Status:           "PASS",
+			JudgeSource:      "codex-final-message",
+			Summary:          "VERDICT: PASS",
+			AuthorID:         "codex",
+			JudgeName:        "fable",
+			JudgeProgram:     "claude-code",
+			JudgeModelFamily: "claude",
+		},
+	}
 }
 
 func writeFakeCodexBinary(t *testing.T) string {

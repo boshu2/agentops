@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -10,7 +11,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -192,6 +195,7 @@ type codexTaskPacket struct {
 	Execution        codexTaskExecution        `json:"execution"`
 	Output           codexTaskOutputContract   `json:"output"`
 	Evidence         codexTaskEvidenceContract `json:"evidence"`
+	Resume           *codexTaskResume          `json:"resume,omitempty"`
 	StopCondition    string                    `json:"stop_condition"`
 	Notes            []string                  `json:"notes,omitempty"`
 }
@@ -236,6 +240,12 @@ type codexTaskEvidenceContract struct {
 	ReceiptPath      string   `json:"receipt_path"`
 	RequiredCommands []string `json:"required_commands"`
 	Artifacts        []string `json:"artifacts,omitempty"`
+}
+
+type codexTaskResume struct {
+	Policy      string `json:"policy"`
+	SessionID   string `json:"session_id,omitempty"`
+	AllowResume bool   `json:"allow_resume"`
 }
 
 type codexRunReceipt struct {
@@ -287,9 +297,13 @@ type codexCommandResult struct {
 }
 
 type codexReceiptVerdict struct {
-	Status      string `json:"status"`
-	JudgeSource string `json:"judge_source"`
-	Summary     string `json:"summary"`
+	Status           string `json:"status"`
+	JudgeSource      string `json:"judge_source"`
+	Summary          string `json:"summary"`
+	AuthorID         string `json:"author_id,omitempty"`
+	JudgeName        string `json:"judge_name,omitempty"`
+	JudgeProgram     string `json:"judge_program,omitempty"`
+	JudgeModelFamily string `json:"judge_model_family,omitempty"`
 }
 
 type codexEvidenceRef struct {
@@ -813,6 +827,12 @@ func validateCodexTaskPacket(packet codexTaskPacket) error {
 	if packet.Execution.TimeoutSeconds <= 0 {
 		return fmt.Errorf("codex task packet execution.timeout_seconds must be > 0")
 	}
+	if err := validateCodexTaskResume(packet); err != nil {
+		return err
+	}
+	if err := validateCodexDispatchSandbox(packet); err != nil {
+		return err
+	}
 	if packet.Dispatch.Mode != "non-mutating" || packet.Dispatch.MutatesRepo {
 		return fmt.Errorf("codex dispatch only accepts non-mutating packets")
 	}
@@ -826,6 +846,61 @@ func validateCodexTaskPacket(packet codexTaskPacket) error {
 		return fmt.Errorf("codex dispatch requires execution.stdin.close_after_prompt for pipe-prompt")
 	}
 	return nil
+}
+
+func validateCodexTaskResume(packet codexTaskPacket) error {
+	if packet.Resume == nil {
+		return nil
+	}
+	policy := strings.TrimSpace(packet.Resume.Policy)
+	switch policy {
+	case "", "none":
+		return nil
+	case "session-id":
+		if !packet.Resume.AllowResume {
+			return fmt.Errorf("codex task packet resume.policy session-id requires resume.allow_resume")
+		}
+		if strings.TrimSpace(packet.Resume.SessionID) == "" {
+			return fmt.Errorf("codex task packet resume.policy session-id requires resume.session_id")
+		}
+		return nil
+	case "last-session-in-cwd":
+		return fmt.Errorf("codex dispatch refuses resume.policy last-session-in-cwd; use explicit session-id to avoid cwd inheritance")
+	default:
+		return fmt.Errorf("unsupported codex task packet resume.policy %q", packet.Resume.Policy)
+	}
+}
+
+func validateCodexDispatchSandbox(packet codexTaskPacket) error {
+	switch strings.TrimSpace(packet.Sandbox) {
+	case "read-only", "workspace-write", "danger-full-access":
+	default:
+		return fmt.Errorf("unsupported codex task packet sandbox %q", packet.Sandbox)
+	}
+	sandboxArg, ok := codexDispatchSandboxArg(packet.Execution.Argv)
+	if !ok {
+		return fmt.Errorf("codex task packet execution.argv must include --sandbox matching packet sandbox")
+	}
+	if sandboxArg != packet.Sandbox {
+		return fmt.Errorf("codex task packet sandbox %q does not match execution argv sandbox %q", packet.Sandbox, sandboxArg)
+	}
+	return nil
+}
+
+func codexDispatchSandboxArg(argv []string) (string, bool) {
+	for i, arg := range argv {
+		if arg == "--sandbox" {
+			if i+1 >= len(argv) {
+				return "", false
+			}
+			return strings.TrimSpace(argv[i+1]), strings.TrimSpace(argv[i+1]) != ""
+		}
+		if value, ok := strings.CutPrefix(arg, "--sandbox="); ok {
+			value = strings.TrimSpace(value)
+			return value, value != ""
+		}
+	}
+	return "", false
 }
 
 func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
@@ -909,6 +984,16 @@ func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
 		Evidence:      codexDispatchEvidence(packet),
 		FailureReason: failureReason,
 	}
+	if packet.Resume != nil && packet.Resume.Policy == "session-id" {
+		receipt.ResumeFromSession = strings.TrimSpace(packet.Resume.SessionID)
+	}
+	receiptValidationErr := validateCodexRunReceipt(receipt)
+	if receiptValidationErr != nil && receipt.FailureReason == "" {
+		receipt.FailureReason = receiptValidationErr.Error()
+	}
+	if receipt.Verdict.Status == "ERROR" && runErr == nil && !timedOut && receipt.FailureReason == "" {
+		receipt.FailureReason = receipt.Verdict.Summary
+	}
 	if err := writeCodexRunReceipt(cwd, packet.Output.ReceiptPath, receipt); err != nil {
 		return codexRunReceipt{}, err
 	}
@@ -918,6 +1003,12 @@ func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
 	}
 	if runErr != nil {
 		return receipt, fmt.Errorf("codex dispatch failed: %s", failureReason)
+	}
+	if receiptValidationErr != nil {
+		return receipt, fmt.Errorf("codex receipt validation failed: %w", receiptValidationErr)
+	}
+	if receipt.Verdict.Status == "ERROR" {
+		return receipt, fmt.Errorf("codex verdict rejected: %s", receipt.Verdict.Summary)
 	}
 	return receipt, nil
 }
@@ -1078,21 +1169,125 @@ func codexDispatchVerdict(cwd string, out codexTaskOutputContract, exitCode int,
 		return codexReceiptVerdict{Status: "NO_VERDICT", JudgeSource: "codex-dispatch", Summary: "Final message was not readable."}
 	}
 	text := string(data)
-	status := parseCodexVerdictStatus(text)
-	if status == "NO_VERDICT" {
-		return codexReceiptVerdict{Status: status, JudgeSource: "codex-final-message", Summary: firstLine(text)}
-	}
-	return codexReceiptVerdict{Status: status, JudgeSource: "codex-final-message", Summary: firstLine(text)}
+	return codexFinalMessageVerdict(text)
 }
 
 func parseCodexVerdictStatus(text string) string {
-	upper := strings.ToUpper(text)
-	for _, status := range []string{"PASS", "WARN", "FAIL", "ERROR"} {
-		if strings.Contains(upper, "VERDICT: "+status) || strings.Contains(upper, "VERDICT="+status) {
-			return status
+	status, _ := parseCodexVerdictStatusStrict(text)
+	return status
+}
+
+func codexFinalMessageVerdict(text string) codexReceiptVerdict {
+	status, err := parseCodexVerdictStatusStrict(text)
+	if err != nil {
+		return codexReceiptVerdict{Status: "ERROR", JudgeSource: "codex-final-message", Summary: err.Error()}
+	}
+	if status == "NO_VERDICT" {
+		return codexReceiptVerdict{Status: status, JudgeSource: "codex-final-message", Summary: firstLine(text)}
+	}
+	verdict := codexReceiptVerdict{Status: status, JudgeSource: "codex-final-message", Summary: firstLine(text)}
+	if status == "ERROR" {
+		return verdict
+	}
+	if !tickVerdictHasCommandsRun(text) {
+		verdict.Status = "ERROR"
+		verdict.Summary = "Final verdict missing non-empty COMMANDS RUN body."
+		return verdict
+	}
+	identity, gaps := tickVerdictIdentity(text)
+	if len(gaps) > 0 {
+		verdict.Status = "ERROR"
+		verdict.Summary = "Final verdict identity unproven: " + strings.Join(gaps, "; ")
+		return verdict
+	}
+	verdict.AuthorID = identity.Author
+	verdict.JudgeName = identity.JudgeName
+	verdict.JudgeProgram = identity.JudgeProgram
+	verdict.JudgeModelFamily = identity.JudgeModelFamily
+	return verdict
+}
+
+func parseCodexVerdictStatusStrict(text string) (string, error) {
+	re := regexp.MustCompile(`(?i)^\s*VERDICT\s*[:=]\s*(PASS|WARN|FAIL|ERROR)\b`)
+	var statuses []string
+	scanner := bufio.NewScanner(strings.NewReader(text))
+	for scanner.Scan() {
+		match := re.FindStringSubmatch(scanner.Text())
+		if len(match) == 2 {
+			statuses = append(statuses, strings.ToUpper(match[1]))
 		}
 	}
-	return "NO_VERDICT"
+	if len(statuses) == 0 {
+		return "NO_VERDICT", nil
+	}
+	if len(statuses) > 1 {
+		unique := make(map[string]bool, len(statuses))
+		for _, status := range statuses {
+			unique[status] = true
+		}
+		if len(unique) > 1 {
+			return "ERROR", fmt.Errorf("contradictory verdict body: %s", strings.Join(statuses, ", "))
+		}
+		return "ERROR", fmt.Errorf("malformed verdict body: repeated %s verdict", statuses[0])
+	}
+	return statuses[0], nil
+}
+
+func validateCodexRunReceipt(receipt codexRunReceipt) error {
+	var gaps []string
+	if strings.TrimSpace(receipt.ReceiptID) == "" {
+		gaps = append(gaps, "missing receipt_id")
+	}
+	if strings.TrimSpace(receipt.PacketID) == "" {
+		gaps = append(gaps, "missing packet_id")
+	}
+	if len(receipt.Command.Argv) == 0 {
+		gaps = append(gaps, "missing command.argv")
+	}
+	if len(receipt.CommandsRun) == 0 {
+		gaps = append(gaps, "missing command evidence in commands_run")
+	}
+	for i, command := range receipt.CommandsRun {
+		if strings.TrimSpace(command.Command) == "" {
+			gaps = append(gaps, fmt.Sprintf("commands_run[%d] missing command", i))
+		}
+	}
+	status := strings.ToUpper(strings.TrimSpace(receipt.Verdict.Status))
+	switch status {
+	case "PASS", "WARN", "FAIL", "ERROR", "NO_VERDICT":
+	default:
+		gaps = append(gaps, "malformed verdict status "+strconv.Quote(receipt.Verdict.Status))
+	}
+	if receipt.ExitCode == 0 && !receipt.TimedOut && (status == "" || status == "NO_VERDICT") {
+		gaps = append(gaps, "successful Codex run did not produce a verifiable verdict")
+	}
+	if status == "PASS" || status == "WARN" || status == "FAIL" {
+		identity := tickVerdictIdentityInfo{
+			Author:           receipt.Verdict.AuthorID,
+			JudgeName:        receipt.Verdict.JudgeName,
+			JudgeProgram:     receipt.Verdict.JudgeProgram,
+			JudgeModelFamily: receipt.Verdict.JudgeModelFamily,
+		}
+		if strings.TrimSpace(identity.Author) == "" {
+			gaps = append(gaps, "missing author_id")
+		}
+		if strings.TrimSpace(identity.JudgeName) == "" {
+			gaps = append(gaps, "missing judge_name")
+		}
+		if strings.TrimSpace(identity.JudgeProgram) == "" {
+			gaps = append(gaps, "missing judge_program")
+		}
+		if strings.TrimSpace(identity.JudgeModelFamily) == "" || tickUnknownModelFamily(identity.JudgeModelFamily) {
+			gaps = append(gaps, "missing or unknown judge_model_family")
+		}
+		if strings.TrimSpace(identity.Author) != "" && strings.TrimSpace(identity.Author) == strings.TrimSpace(identity.JudgeName) {
+			gaps = append(gaps, "author_neq_validator failed: judge_name equals author_id")
+		}
+	}
+	if len(gaps) > 0 {
+		return errors.New(strings.Join(gaps, "; "))
+	}
+	return nil
 }
 
 func codexDispatchEvidence(packet codexTaskPacket) []codexEvidenceRef {
