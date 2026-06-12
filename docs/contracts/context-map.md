@@ -41,6 +41,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `bootstrap` — Initialize AgentOps project files.
 - `cc-cron-ticks` — Use when scheduling autonomous in-session flywheel ticks with Claude Code cron routines. Triggers:
 - `cc-loop-driver` — Use when running a Claude-native control-plane tick loop with worker and separate-validator subagents. Triggers:
+- `codex-approval` — Use when Codex needs Fable approval through an ATM/NTM validator pane. Triggers: - codex approval - ask fable - fable plan review
 - `codex-exec` — Use when running Codex workers or validators non-interactively through codex exec with evidence. Triggers:
 - `codex-goals` — Use when using Codex Goals to define an objective once and let Codex iterate until done. Triggers:
 - `implement` — Implement one tracked issue.
@@ -160,6 +161,8 @@ graph LR
   cc-worktree-isolation -- "supplier-to" --> cc-subagents
   codebase-audit -- "supplier-to" --> plan
   codebase-audit -- "supplier-to" --> validate
+  codex-approval -- "customer-of" --> agent-mail
+  codex-approval -- "customer-of" --> using-atm
   codex-exec -- "supplier-to" --> codex-sandbox-evidence
   codex-mcp-plugins -- "supplier-to" --> codex-exec
   codex-sandbox-evidence -- "customer-of" --> codex-exec
@@ -274,6 +277,9 @@ graph LR
 | `cc-worktree-isolation` | consumes | git-worktree |
 | `cc-worktree-isolation` | produces | isolated-worktree-plan |
 | `codebase-audit` | produces | codebase-audit |
+| `codex-approval` | consumes | agent-mail |
+| `codex-approval` | consumes | using-atm |
+| `codex-approval` | produces | council-verdict |
 | `codex-exec` | produces | codex-run-output |
 | `codex-goals` | produces | codex-goal-state |
 | `codex-mcp-plugins` | consumes | codex-plugin |

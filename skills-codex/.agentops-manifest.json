@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "615470e47d9eb65877394a4a3b1100ffcd3fa395c4675c63850eee92c51c6ddc",
+  "codex_override_catalog_hash": "1bfd89daee3f272e97636fc440ce297f2d9ccce00b80478715a942eb0f1dc946",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -1197,6 +1197,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Codex parity wrapper for canonicalized codebase-* skill (cp-801l)."
+      },
+      {
+        "name": "codex-approval",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Codex-native approval bridge for ATM/Fable plan reviews; source contract and checked-in Codex wrapper are aligned, so no separate override layer is needed yet."
       }
     ]
   },
@@ -1428,6 +1434,12 @@
       "source_skill": "skills/codebase-audit",
       "source_hash": "92d76f3983d6773decaa148ad937183eda7118f0e1dfaa630e6c5d0a1270495a",
       "generated_hash": "10bb17195bde5b713f5d72647af6732dbe8f45eb42d5f6d3a6b9f87c7a83cbc8"
+    },
+    {
+      "name": "codex-approval",
+      "source_skill": "skills/codex-approval",
+      "source_hash": "d74283ad2a5eab82da20fc69581a05b33e11162dab63a301792773c587519ed0",
+      "generated_hash": "2347e9dbc0f914519751f12e126c1e2ba3ac0a089cb2f1812454aca7ea00f2ec"
     },
     {
       "name": "codex-exec",
@@ -2176,8 +2188,8 @@
     {
       "name": "using-agentops",
       "source_skill": "skills/using-agentops",
-      "source_hash": "fae8821e60339abc8cdaf83434eb17f7cee0c7e0b4fd47fc1120048251794ca0",
-      "generated_hash": "56246e0dc03ecac27a7bec56c73972f41fd9f8aa5ccc0660e55fa249c79ee0a0"
+      "source_hash": "9e4862a2cb4ceb0389c4f46c9905eda4e345ce2cbe4c795866d62e00035e849d",
+      "generated_hash": "27578fac83ada78b7e9417a69c83519c5da4357d1323270eb25f1e1c1a852978"
     },
     {
       "name": "using-atm",

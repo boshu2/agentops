@@ -143,7 +143,7 @@ They will. Anthropic's Managed Agents is the first move; others will follow. Tha
 ┌──────────────────────────────────────────────────────────────────┐
 │                    AgentOps at a Glance                          │
 ├───────────────────┬──────────────────────┬───────────────────────┤
-│ 105 shared skills │   `ao` Control Plane │   CI-gated (hookless) │
+│ 106 shared skills │   `ao` Control Plane │   CI-gated (hookless) │
 │ plus runtime      │ repo-native retrieval│  validate.yml is the  │
 │    artifacts      │ goals, and automation│  authoritative gate   │
 └───────────────────┴──────────────────────┴───────────────────────┘
