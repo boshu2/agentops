@@ -43,8 +43,8 @@ The bash gate (`scripts/pre-push-gate.sh` + the `AGENTOPS_GATE_BASH=1` branch in
    gate's ~2210 LOC is a first-class deletion target, not silent cruft removal.
 
 **When all four hold, the action is:** delete `scripts/pre-push-gate.sh`, remove the
-`AGENTOPS_GATE_BASH` branch from `scripts/hooks/pre-push.local`, update `AGENTS-WORKFLOW.md` (which
-still names `scripts/pre-push-gate.sh --fast` as the default), and record the deletion in the
+`AGENTOPS_GATE_BASH` branch from `scripts/hooks/pre-push.local`, keep `AGENTS-WORKFLOW.md` aligned
+with the Go-gate authority model, and record the deletion in the
 retirement ledger. That work executes under **cp-v8m.6**; do not partially retire (a deleted script
 with a live hatch is a broken hatch, and a removed hatch with a live script is dead code).
 
@@ -54,7 +54,7 @@ with a live hatch is a broken hatch, and a removed hatch with a live script is d
 ## Who watches this
 
 - Tracking bead in this repo's bd: **ag-ltjq** ("bash gate sunset: retire scripts/pre-push-gate.sh
-  + AGENTOPS_GATE_BASH hatch when criterion holds") — pointer bead filed by cp-4jac; execution
+  and AGENTOPS_GATE_BASH hatch when criterion holds") — pointer bead filed by cp-4jac; execution
   stays in control-plane cp-v8m.6.
 - Conformance test: `cd cli && go test ./internal/gates/checks -run TestRegistryCoversBashGateBackingScripts`
 

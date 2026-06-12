@@ -39,7 +39,7 @@ AgentOps 3.0 (`docs/3.0.md`) names the loop a software factory runs at every sca
 | Agent contract | `ao capabilities` / `ao robot-docs` | Machine-readable CLI contract for agents (`root.go:46-48` advertises it) |
 | Skills runtime | `skills/*/SKILL.md` | Invoked by harnesses (Claude/Codex/Gemini) directly; frontmatter is the contract |
 | Installer | `scripts/install.sh` | End-user install (`curl … install.sh`); also `homebrew-tap/` |
-| Local gate | `scripts/pre-push-gate.sh:1` | Pre-push wall (15+ checks); Go orchestrator twin: `ao gate check` (`cli/cmd/ao/gate_check.go`) behind `AGENTOPS_GATE_GO=1` |
+| Local gate | `ao gate check` (`cli/cmd/ao/gate_check.go`) | Go-owned pre-push wall; legacy bash fallback: `scripts/pre-push-gate.sh` through `AGENTOPS_GATE_BASH=1` |
 | CI | `.github/workflows/validate.yml` | Omnibus post-push validation (T0/T1/T2 tiers, all required) |
 | Loop driver (legacy) | `cli/cmd/ao/rpi_*.go` (e.g. `rpi_loop_supervisor.go`, `rpi_phased_tmux.go`) | Load-bearing legacy lane — live, tested, but frozen: no new surface area (per `CLAUDE.md` "Legacy RPI lane") |
 | Standalone tool | `bin/ralph` | Shell loop runner outside the Go CLI |
@@ -168,7 +168,7 @@ Precedence (`cli/internal/config/config.go:1-7`), highest first:
 
 Config sections: `Forge`, `Search`, `Paths` (artifact locations are configurable, not hardcoded), `RPI` (worktree/runtime/command overrides), `Flywheel` (auto-promote threshold), `Models` (tier), `Dream` (overnight runs + local curator engine), `Compile` (headless runtime preference: codex-cli vs Ollama). Override file path: `AGENTOPS_CONFIG` (`config.go:400`).
 
-Behavioral toggles outside config.yaml: `AGENTOPS_GATE_GO=1` (Go gate orchestrator instead of shell), `AGENTOPS_HOOKS_DISABLED=1` (operator-fleet hook bypass; AgentOps itself ships no hooks).
+Behavioral toggles outside config.yaml: `AGENTOPS_GATE_BASH=1` (legacy bash gate fallback instead of the Go gate), `AGENTOPS_HOOKS_DISABLED=1` (operator-fleet hook bypass; AgentOps itself ships no hooks).
 
 ---
 
@@ -229,7 +229,7 @@ agentops/
 
 1. **Generated artifacts are everywhere — never hand-edit:** `cli/docs/COMMANDS.md`, `docs/contracts/context-map.md`, `registry.json` (190KB), badge/manifest surfaces. `scripts/regen-all.sh` regenerates; CI diffs them.
 2. **Skill SOT is `skills/` here**, but on the operator fleet `~/.claude/skills` etc. *symlink into this checkout* — edits in place are live across three runtimes; never `cp` into the symlink (`CLAUDE.md`).
-3. **Push-to-main supersedes the PR model AND the local-gate-retirement ADR** (reversed): `pre-push-gate.sh` is load-bearing again. Go-native gate (`ao gate check`) exists but is opt-in (~12/79 check parity at last report) — the 2,210-line shell gate is still the default. Don't confuse `ao gate` (human review of pool candidates) with `ao gate check` (push gate orchestrator) — same command tree, different domains.
+3. **Push-to-main supersedes the PR model AND the local-gate-retirement ADR** (reversed): the local gate is load-bearing again. Go-native gate (`ao gate check`) is the default push gate; the 2,210-line shell gate remains only as the `AGENTOPS_GATE_BASH=1` fallback until sunset. Don't confuse `ao gate` (human review of pool candidates) with `ao gate check` (push gate orchestrator) — same command tree, different domains.
 4. **Legacy RPI lane** (`rpi_loop_supervisor.go`, `rpi_phased_tmux.go`, `rpi_parallel.go`, `rpi_c2_events.go`): live, tested, referenced by 13+ files — extend tests when touched, but **no new features and no deletion** without caller migration (soc-1gbpz). The Gas City bridge was fully removed; `runtime=gc` is not a valid mode.
 5. **Hookless is doctrine** (ADR-0002): nothing auto-injects at session start. `ao session bootstrap` + `ao inject` are the explicit replacements. A "hooks-runtime drift gate" in CI keeps live-facing docs hookless.
 6. **The shared checkout is contended** (hot repo, hundreds of commits/week): all edits go through `bd worktree create`; foreign uncommitted files are quarantined, not adopted. In-flight worktrees (`wt-ag-*`) at root are normal.

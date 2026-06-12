@@ -33,7 +33,7 @@ cd cli && make sync-hooks   # Sync embedded lib/skills into cli/embedded/
 
 ## Local Validation
 
-Routine AgentOps changes land by local validation plus direct push to `main`. `scripts/pre-push-gate.sh --fast` is the cockpit gate for normal pushes; `ao gate check --full --workflow-coverage --require-workflow-parity` is the local full-gate parity proof for release-sensitive work. GitHub Actions remain available for explicit/manual backstop runs, external PR contexts, and release tags, but they are not the normal push authority.
+Routine AgentOps changes land by local validation plus direct push to `main`. `ao gate check --fast --scope head` is the Go-owned cockpit gate for normal pushes; `ao gate check --full --workflow-coverage --require-workflow-parity` is the local full-gate parity proof for release-sensitive work. The legacy bash gate remains available only through the documented `AGENTOPS_GATE_BASH=1` fallback while its backing scripts still serve CI. GitHub Actions remain available for explicit/manual backstop runs, external PR contexts, and release tags, but they are not the normal push authority.
 
 ### Quick Local Sanity Checks (per-tool, not omnibus)
 
