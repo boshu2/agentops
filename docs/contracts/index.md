@@ -97,6 +97,13 @@ skills, the runtime, and external integrations.
     Required flags, tool allowlists, and timeout strategy for non-interactive
     Claude/Codex execution.
 
+-   :material-clipboard-flow: **[Codex Task Packet](codex-task-packet.md)**
+
+    ---
+
+    Non-mutating Codex dispatch packet, auth guard, sandbox, stdin closure,
+    timeout, resume, and run-receipt evidence contract.
+
 -   :material-api: **[Codex Skill API](codex-skill-api.md)**
 
     ---
