@@ -102,6 +102,41 @@ mkskill() {
     [[ "$output" == *"ghost"* ]]
 }
 
+@test "red-then-green: zzz-phantom edge fails strict naming source and target, clean root passes" {
+    # RED: a temp skills root whose only skill cites a phantom peer must fail
+    # --strict and name BOTH ends of the dangling edge.
+    mkskill "$ROOT" srcskill zzz-phantom
+    run bash "$SCRIPT" --strict --skills-root "$ROOT"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"srcskill/SKILL.md"* ]]
+    [[ "$output" == *"zzz-phantom"* ]]
+
+    # GREEN: a clean temp root (every context_rel.with resolves) exits 0.
+    GREEN="$(mktemp -d "$BATS_TMPDIR/clean-skills.XXXXXX")"
+    mkskill "$GREEN" alpha beta
+    mkskill "$GREEN" beta
+    run bash "$SCRIPT" --strict --skills-root "$GREEN"
+    rm -rf "$GREEN"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"0 unresolved context_rel.with edge(s)"* ]]
+}
+
+@test "baseline pin: real skills root reports the current unresolved-edge count (advisory contract)" {
+    # ── BASELINE-PIN ─────────────────────────────────────────────────────────
+    # The auditor is ADVISORY by default: it must exit 0 against the real
+    # skills/ tree even while known dangling context_rel.with edges exist
+    # (currently the session-bootstrap AGENTS-*.md doc-as-slug edges). This
+    # case pins the exact count so any drift — new rot OR the drain landing —
+    # surfaces here deliberately.
+    #
+    # >>> WHEN THE DANGLING-EDGE DRAIN LANDS: update EXPECTED_UNRESOLVED <<<
+    # (to 0, at which point this becomes the clean-tree pin).
+    EXPECTED_UNRESOLVED=5
+    run bash "$SCRIPT" --skills-root "$REPO_ROOT/skills"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"${EXPECTED_UNRESOLVED} unresolved context_rel.with edge(s)"* ]]
+}
+
 @test "unknown flag exits 2" {
     run bash "$SCRIPT" --bogus
     [ "$status" -eq 2 ]
