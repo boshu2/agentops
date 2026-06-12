@@ -2,9 +2,13 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -31,6 +35,7 @@ var (
 	codexStopCloseLoop         bool
 	codexStopNoCloseLoop       bool
 	codexStatusDays            int
+	codexDispatchPacketPath    string
 )
 
 const (
@@ -172,6 +177,126 @@ type codexStatusResult struct {
 	Citations codexCitationHealth     `json:"citations"`
 }
 
+type codexTaskPacket struct {
+	SchemaVersion    int                       `json:"schema_version"`
+	PacketID         string                    `json:"packet_id"`
+	CreatedAt        string                    `json:"created_at"`
+	Objective        string                    `json:"objective"`
+	Role             string                    `json:"role"`
+	CWD              string                    `json:"cwd"`
+	AllowedPaths     []string                  `json:"allowed_paths,omitempty"`
+	ForbiddenActions []string                  `json:"forbidden_actions,omitempty"`
+	Sandbox          string                    `json:"sandbox"`
+	Auth             codexTaskAuthGuard        `json:"auth"`
+	Dispatch         codexTaskDispatchPolicy   `json:"dispatch"`
+	Execution        codexTaskExecution        `json:"execution"`
+	Output           codexTaskOutputContract   `json:"output"`
+	Evidence         codexTaskEvidenceContract `json:"evidence"`
+	StopCondition    string                    `json:"stop_condition"`
+	Notes            []string                  `json:"notes,omitempty"`
+}
+
+type codexTaskAuthGuard struct {
+	RequiredMode           string   `json:"required_mode"`
+	RejectEnv              []string `json:"reject_env"`
+	LoginStatusMustContain string   `json:"login_status_must_contain"`
+	ForbidAPIKey           bool     `json:"forbid_api_key"`
+}
+
+type codexTaskDispatchPolicy struct {
+	Mode        string   `json:"mode"`
+	MutatesRepo bool     `json:"mutates_repo"`
+	Command     []string `json:"command"`
+	Notes       string   `json:"notes,omitempty"`
+}
+
+type codexTaskExecution struct {
+	Argv             []string          `json:"argv"`
+	Stdin            codexTaskStdin    `json:"stdin"`
+	TimeoutSeconds   int               `json:"timeout_seconds"`
+	PromptPath       string            `json:"prompt_path,omitempty"`
+	OutputSchemaPath string            `json:"output_schema_path,omitempty"`
+	Environment      map[string]string `json:"environment,omitempty"`
+}
+
+type codexTaskStdin struct {
+	Mode             string `json:"mode"`
+	CloseAfterPrompt bool   `json:"close_after_prompt"`
+}
+
+type codexTaskOutputContract struct {
+	CaptureMode      string `json:"capture_mode"`
+	FinalMessagePath string `json:"final_message_path"`
+	JSONLPath        string `json:"jsonl_path,omitempty"`
+	SchemaPath       string `json:"schema_path,omitempty"`
+	ReceiptPath      string `json:"receipt_path"`
+}
+
+type codexTaskEvidenceContract struct {
+	ReceiptPath      string   `json:"receipt_path"`
+	RequiredCommands []string `json:"required_commands"`
+	Artifacts        []string `json:"artifacts,omitempty"`
+}
+
+type codexRunReceipt struct {
+	SchemaVersion     int                  `json:"schema_version"`
+	ReceiptID         string               `json:"receipt_id"`
+	PacketID          string               `json:"packet_id"`
+	CodexSessionID    string               `json:"codex_session_id,omitempty"`
+	StartedAt         string               `json:"started_at"`
+	EndedAt           string               `json:"ended_at"`
+	CWD               string               `json:"cwd"`
+	Sandbox           string               `json:"sandbox"`
+	AuthMode          string               `json:"auth_mode"`
+	AuthStatus        string               `json:"auth_status"`
+	Command           codexReceiptCommand  `json:"command"`
+	Stdin             codexReceiptStdin    `json:"stdin"`
+	TimeoutSeconds    int                  `json:"timeout_seconds"`
+	TimedOut          bool                 `json:"timed_out"`
+	ExitCode          int                  `json:"exit_code"`
+	Outputs           codexReceiptOutputs  `json:"outputs"`
+	ChangedFiles      []string             `json:"changed_files"`
+	CommandsRun       []codexCommandResult `json:"commands_run"`
+	Verdict           codexReceiptVerdict  `json:"verdict"`
+	ResumeFromSession string               `json:"resume_from_session,omitempty"`
+	Evidence          []codexEvidenceRef   `json:"evidence,omitempty"`
+	FailureReason     string               `json:"failure_reason,omitempty"`
+}
+
+type codexReceiptCommand struct {
+	Argv []string `json:"argv"`
+}
+
+type codexReceiptStdin struct {
+	Mode         string `json:"mode"`
+	ClosedAt     string `json:"closed_at"`
+	BytesWritten int    `json:"bytes_written"`
+}
+
+type codexReceiptOutputs struct {
+	FinalMessagePath string `json:"final_message_path"`
+	JSONLPath        string `json:"jsonl_path,omitempty"`
+	SchemaPath       string `json:"schema_path,omitempty"`
+	ReceiptPath      string `json:"receipt_path"`
+}
+
+type codexCommandResult struct {
+	Command       string `json:"command"`
+	ExitCode      int    `json:"exit_code"`
+	OutputExcerpt string `json:"output_excerpt,omitempty"`
+}
+
+type codexReceiptVerdict struct {
+	Status      string `json:"status"`
+	JudgeSource string `json:"judge_source"`
+	Summary     string `json:"summary"`
+}
+
+type codexEvidenceRef struct {
+	Path string `json:"path"`
+	Kind string `json:"kind"`
+}
+
 var codexCmd = &cobra.Command{
 	Use:   "codex",
 	Short: "Codex lifecycle commands (fallback for pre-v0.115.0; native hooks preferred)",
@@ -221,10 +346,18 @@ var codexStatusCmd = &cobra.Command{
 	RunE:  runCodexStatus,
 }
 
+var codexDispatchCmd = &cobra.Command{
+	Use:     "dispatch --packet <path>",
+	Aliases: []string{"run"},
+	Short:   "Run a non-mutating Codex task packet and write a receipt",
+	Args:    cobra.NoArgs,
+	RunE:    runCodexDispatch,
+}
+
 func init() {
 	codexCmd.GroupID = "workflow"
 	rootCmd.AddCommand(codexCmd)
-	codexCmd.AddCommand(codexStartCmd, codexEnsureStartCmd, codexStopCmd, codexEnsureStopCmd, codexStatusCmd)
+	codexCmd.AddCommand(codexStartCmd, codexEnsureStartCmd, codexStopCmd, codexEnsureStopCmd, codexStatusCmd, codexDispatchCmd)
 
 	codexStartCmd.Flags().IntVar(&codexStartLimit, "limit", 3, "Maximum artifacts to surface per category")
 	codexStartCmd.Flags().StringVar(&codexStartQuery, "query", "", "Optional startup query (defaults to the current Codex thread name)")
@@ -247,6 +380,9 @@ func init() {
 	codexEnsureStopCmd.Flags().BoolVar(&codexStopNoCloseLoop, "no-close-loop", false, "Skip flywheel close-loop maintenance after forging")
 
 	codexStatusCmd.Flags().IntVar(&codexStatusDays, "days", 7, "Citation window in days for Codex lifecycle health")
+
+	codexDispatchCmd.Flags().StringVar(&codexDispatchPacketPath, "packet", "", "Path to a Codex task packet JSON file")
+	_ = codexDispatchCmd.MarkFlagRequired("packet")
 }
 
 func detectLifecycleRuntimeProfile() lifecycleRuntimeProfile {
@@ -626,6 +762,425 @@ func runCodexStatus(cmd *cobra.Command, args []string) error {
 		Citations: collectCodexCitationHealth(cwd, codexStatusDays),
 	}
 	return outputCodexStatusResult(result)
+}
+
+func runCodexDispatch(cmd *cobra.Command, args []string) error {
+	packet, err := loadCodexTaskPacket(codexDispatchPacketPath)
+	if err != nil {
+		return err
+	}
+	receipt, runErr := performCodexDispatch(packet)
+	if receipt.ReceiptID != "" {
+		if err := outputCodexDispatchResult(receipt); err != nil {
+			return err
+		}
+	}
+	return runErr
+}
+
+func loadCodexTaskPacket(path string) (codexTaskPacket, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return codexTaskPacket{}, fmt.Errorf("codex dispatch requires --packet")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return codexTaskPacket{}, fmt.Errorf("read codex task packet: %w", err)
+	}
+	var packet codexTaskPacket
+	if err := json.Unmarshal(data, &packet); err != nil {
+		return codexTaskPacket{}, fmt.Errorf("parse codex task packet: %w", err)
+	}
+	if err := validateCodexTaskPacket(packet); err != nil {
+		return codexTaskPacket{}, err
+	}
+	return packet, nil
+}
+
+func validateCodexTaskPacket(packet codexTaskPacket) error {
+	if packet.SchemaVersion != 1 {
+		return fmt.Errorf("codex task packet schema_version = %d, want 1", packet.SchemaVersion)
+	}
+	if strings.TrimSpace(packet.PacketID) == "" {
+		return fmt.Errorf("codex task packet missing packet_id")
+	}
+	if strings.TrimSpace(packet.CWD) == "" {
+		return fmt.Errorf("codex task packet missing cwd")
+	}
+	if len(packet.Execution.Argv) == 0 {
+		return fmt.Errorf("codex task packet execution.argv is empty")
+	}
+	if packet.Execution.TimeoutSeconds <= 0 {
+		return fmt.Errorf("codex task packet execution.timeout_seconds must be > 0")
+	}
+	if packet.Dispatch.Mode != "non-mutating" || packet.Dispatch.MutatesRepo {
+		return fmt.Errorf("codex dispatch only accepts non-mutating packets")
+	}
+	if strings.TrimSpace(packet.Output.ReceiptPath) == "" {
+		return fmt.Errorf("codex task packet output.receipt_path is required")
+	}
+	if packet.Execution.Stdin.Mode == "inherit-interactive" {
+		return fmt.Errorf("codex dispatch refuses inherit-interactive stdin; use closed or pipe-prompt")
+	}
+	if packet.Execution.Stdin.Mode == "pipe-prompt" && !packet.Execution.Stdin.CloseAfterPrompt {
+		return fmt.Errorf("codex dispatch requires execution.stdin.close_after_prompt for pipe-prompt")
+	}
+	return nil
+}
+
+func performCodexDispatch(packet codexTaskPacket) (codexRunReceipt, error) {
+	cwd, err := filepath.Abs(packet.CWD)
+	if err != nil {
+		return codexRunReceipt{}, fmt.Errorf("resolve packet cwd: %w", err)
+	}
+	if info, err := os.Stat(cwd); err != nil {
+		return codexRunReceipt{}, fmt.Errorf("stat packet cwd: %w", err)
+	} else if !info.IsDir() {
+		return codexRunReceipt{}, fmt.Errorf("packet cwd is not a directory: %s", cwd)
+	}
+
+	authStatus, err := validateCodexDispatchAuth(packet)
+	if err != nil {
+		return codexRunReceipt{}, err
+	}
+	if err := ensureCodexDispatchOutputDirs(cwd, packet.Output); err != nil {
+		return codexRunReceipt{}, err
+	}
+
+	started := time.Now().UTC()
+	stdinBytes, err := codexDispatchStdin(cwd, packet)
+	if err != nil {
+		return codexRunReceipt{}, err
+	}
+	stdinClosedAt := time.Now().UTC()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(packet.Execution.TimeoutSeconds)*time.Second)
+	defer cancel()
+
+	argv := append([]string(nil), packet.Execution.Argv...)
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	cmd.Dir = cwd
+	cmd.Env = codexDispatchEnv(packet)
+	if packet.Execution.Stdin.Mode == "pipe-prompt" {
+		cmd.Stdin = bytes.NewReader(stdinBytes)
+	}
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	runErr := cmd.Run()
+	ended := time.Now().UTC()
+	timedOut := ctx.Err() == context.DeadlineExceeded
+	exitCode := codexDispatchExitCode(runErr, timedOut)
+	failureReason := codexDispatchFailureReason(runErr, timedOut, stderr.String())
+
+	if err := writeCodexDispatchOutputFiles(cwd, packet.Output, stdout.Bytes()); err != nil {
+		return codexRunReceipt{}, err
+	}
+
+	receipt := codexRunReceipt{
+		SchemaVersion:  1,
+		ReceiptID:      "codex-receipt-" + started.Format("20060102T150405Z") + "-" + sanitizeCodexReceiptID(packet.PacketID),
+		PacketID:       packet.PacketID,
+		StartedAt:      started.Format(time.RFC3339),
+		EndedAt:        ended.Format(time.RFC3339),
+		CWD:            cwd,
+		Sandbox:        packet.Sandbox,
+		AuthMode:       "chatgpt-subscription",
+		AuthStatus:     authStatus,
+		Command:        codexReceiptCommand{Argv: argv},
+		Stdin:          codexReceiptStdin{Mode: packet.Execution.Stdin.Mode, ClosedAt: stdinClosedAt.Format(time.RFC3339), BytesWritten: len(stdinBytes)},
+		TimeoutSeconds: packet.Execution.TimeoutSeconds,
+		TimedOut:       timedOut,
+		ExitCode:       exitCode,
+		Outputs: codexReceiptOutputs{
+			FinalMessagePath: packet.Output.FinalMessagePath,
+			JSONLPath:        packet.Output.JSONLPath,
+			SchemaPath:       packet.Output.SchemaPath,
+			ReceiptPath:      packet.Output.ReceiptPath,
+		},
+		ChangedFiles: collectCodexDispatchChangedFiles(cwd),
+		CommandsRun: []codexCommandResult{{
+			Command:       strings.Join(argv, " "),
+			ExitCode:      exitCode,
+			OutputExcerpt: codexDispatchOutputExcerpt(stdout.String(), stderr.String()),
+		}},
+		Verdict:       codexDispatchVerdict(cwd, packet.Output, exitCode, timedOut),
+		Evidence:      codexDispatchEvidence(packet),
+		FailureReason: failureReason,
+	}
+	if err := writeCodexRunReceipt(cwd, packet.Output.ReceiptPath, receipt); err != nil {
+		return codexRunReceipt{}, err
+	}
+
+	if timedOut {
+		return receipt, fmt.Errorf("codex dispatch timed out after %ds", packet.Execution.TimeoutSeconds)
+	}
+	if runErr != nil {
+		return receipt, fmt.Errorf("codex dispatch failed: %s", failureReason)
+	}
+	return receipt, nil
+}
+
+func validateCodexDispatchAuth(packet codexTaskPacket) (string, error) {
+	for _, name := range packet.Auth.RejectEnv {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+		if os.Getenv(name) != "" {
+			return "", fmt.Errorf("codex dispatch refuses %s in environment; use ChatGPT subscription auth", name)
+		}
+	}
+	if packet.Auth.ForbidAPIKey && os.Getenv("OPENAI_API_KEY") != "" {
+		return "", fmt.Errorf("codex dispatch refuses OPENAI_API_KEY in environment; use ChatGPT subscription auth")
+	}
+
+	binary := codexDispatchBinary(packet)
+	cmd := exec.Command(binary, "login", "status")
+	cmd.Stdin = nil
+	out, err := cmd.CombinedOutput()
+	status := strings.TrimSpace(string(out))
+	if err != nil {
+		return "", fmt.Errorf("check Codex login status with %q: %w: %s", binary, err, status)
+	}
+	want := strings.TrimSpace(packet.Auth.LoginStatusMustContain)
+	if want == "" {
+		want = "Logged in using ChatGPT"
+	}
+	if !strings.Contains(status, want) {
+		return "", fmt.Errorf("codex dispatch requires ChatGPT subscription auth; login status %q does not contain %q", status, want)
+	}
+	return status, nil
+}
+
+func codexDispatchBinary(packet codexTaskPacket) string {
+	if len(packet.Execution.Argv) == 0 || strings.TrimSpace(packet.Execution.Argv[0]) == "" {
+		return "codex"
+	}
+	return packet.Execution.Argv[0]
+}
+
+func ensureCodexDispatchOutputDirs(cwd string, out codexTaskOutputContract) error {
+	for _, path := range []string{out.FinalMessagePath, out.JSONLPath, out.SchemaPath, out.ReceiptPath} {
+		path = strings.TrimSpace(path)
+		if path == "" {
+			continue
+		}
+		abs := resolveCodexDispatchPath(cwd, path)
+		if err := os.MkdirAll(filepath.Dir(abs), 0o750); err != nil {
+			return fmt.Errorf("create output dir for %s: %w", path, err)
+		}
+	}
+	return nil
+}
+
+func codexDispatchStdin(cwd string, packet codexTaskPacket) ([]byte, error) {
+	switch packet.Execution.Stdin.Mode {
+	case "closed", "":
+		return nil, nil
+	case "pipe-prompt":
+		promptPath := strings.TrimSpace(packet.Execution.PromptPath)
+		if promptPath == "" {
+			return []byte(packet.Objective), nil
+		}
+		data, err := os.ReadFile(resolveCodexDispatchPath(cwd, promptPath))
+		if err != nil {
+			return nil, fmt.Errorf("read Codex prompt path: %w", err)
+		}
+		return data, nil
+	default:
+		return nil, fmt.Errorf("unsupported codex dispatch stdin mode %q", packet.Execution.Stdin.Mode)
+	}
+}
+
+func codexDispatchEnv(packet codexTaskPacket) []string {
+	env := os.Environ()
+	for k, v := range packet.Execution.Environment {
+		env = append(env, k+"="+v)
+	}
+	return env
+}
+
+func codexDispatchExitCode(err error, timedOut bool) int {
+	if timedOut {
+		return -1
+	}
+	if err == nil {
+		return 0
+	}
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return exitErr.ExitCode()
+	}
+	return -1
+}
+
+func codexDispatchFailureReason(err error, timedOut bool, stderr string) string {
+	if timedOut {
+		return "timeout"
+	}
+	if err == nil {
+		return ""
+	}
+	stderr = strings.TrimSpace(stderr)
+	if stderr != "" {
+		return stderr
+	}
+	return err.Error()
+}
+
+func writeCodexDispatchOutputFiles(cwd string, out codexTaskOutputContract, stdout []byte) error {
+	if strings.TrimSpace(out.JSONLPath) != "" && len(stdout) > 0 {
+		if err := atomicWriteFile(resolveCodexDispatchPath(cwd, out.JSONLPath), stdout, 0o600); err != nil {
+			return fmt.Errorf("write codex jsonl output: %w", err)
+		}
+	}
+	return nil
+}
+
+func collectCodexDispatchChangedFiles(cwd string) []string {
+	cmd := exec.Command("git", "-C", cwd, "status", "--short", "--untracked-files=all")
+	out, err := cmd.Output()
+	if err != nil {
+		return nil
+	}
+	var files []string
+	for _, line := range strings.Split(string(out), "\n") {
+		if len(line) < 4 {
+			continue
+		}
+		path := strings.TrimSpace(line[3:])
+		if strings.Contains(path, " -> ") {
+			parts := strings.Split(path, " -> ")
+			path = strings.TrimSpace(parts[len(parts)-1])
+		}
+		if path != "" {
+			files = append(files, path)
+		}
+	}
+	return files
+}
+
+func codexDispatchVerdict(cwd string, out codexTaskOutputContract, exitCode int, timedOut bool) codexReceiptVerdict {
+	if timedOut {
+		return codexReceiptVerdict{Status: "ERROR", JudgeSource: "codex-dispatch", Summary: "Codex dispatch timed out."}
+	}
+	if exitCode != 0 {
+		return codexReceiptVerdict{Status: "ERROR", JudgeSource: "codex-dispatch", Summary: fmt.Sprintf("Codex exec exited %d.", exitCode)}
+	}
+	finalPath := strings.TrimSpace(out.FinalMessagePath)
+	if finalPath == "" {
+		return codexReceiptVerdict{Status: "NO_VERDICT", JudgeSource: "codex-dispatch", Summary: "No final message path was configured."}
+	}
+	data, err := os.ReadFile(resolveCodexDispatchPath(cwd, finalPath))
+	if err != nil {
+		return codexReceiptVerdict{Status: "NO_VERDICT", JudgeSource: "codex-dispatch", Summary: "Final message was not readable."}
+	}
+	text := string(data)
+	status := parseCodexVerdictStatus(text)
+	if status == "NO_VERDICT" {
+		return codexReceiptVerdict{Status: status, JudgeSource: "codex-final-message", Summary: firstLine(text)}
+	}
+	return codexReceiptVerdict{Status: status, JudgeSource: "codex-final-message", Summary: firstLine(text)}
+}
+
+func parseCodexVerdictStatus(text string) string {
+	upper := strings.ToUpper(text)
+	for _, status := range []string{"PASS", "WARN", "FAIL", "ERROR"} {
+		if strings.Contains(upper, "VERDICT: "+status) || strings.Contains(upper, "VERDICT="+status) {
+			return status
+		}
+	}
+	return "NO_VERDICT"
+}
+
+func codexDispatchEvidence(packet codexTaskPacket) []codexEvidenceRef {
+	var evidence []codexEvidenceRef
+	for _, path := range packet.Evidence.Artifacts {
+		path = strings.TrimSpace(path)
+		if path == "" {
+			continue
+		}
+		evidence = append(evidence, codexEvidenceRef{Path: path, Kind: codexEvidenceKind(path)})
+	}
+	if packet.Output.FinalMessagePath != "" {
+		evidence = append(evidence, codexEvidenceRef{Path: packet.Output.FinalMessagePath, Kind: "final-message"})
+	}
+	if packet.Output.JSONLPath != "" {
+		evidence = append(evidence, codexEvidenceRef{Path: packet.Output.JSONLPath, Kind: "jsonl"})
+	}
+	return evidence
+}
+
+func codexEvidenceKind(path string) string {
+	lower := strings.ToLower(path)
+	switch {
+	case strings.Contains(lower, "schema"):
+		return "schema"
+	case strings.Contains(lower, "test") || strings.Contains(lower, "log"):
+		return "test-log"
+	case strings.Contains(lower, "fixture") || strings.Contains(lower, "example"):
+		return "fixture"
+	default:
+		return "contract"
+	}
+}
+
+func writeCodexRunReceipt(cwd, path string, receipt codexRunReceipt) error {
+	abs := resolveCodexDispatchPath(cwd, path)
+	data, err := json.MarshalIndent(receipt, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal codex run receipt: %w", err)
+	}
+	if err := atomicWriteFile(abs, append(data, '\n'), 0o600); err != nil {
+		return fmt.Errorf("write codex run receipt: %w", err)
+	}
+	return nil
+}
+
+func resolveCodexDispatchPath(cwd, path string) string {
+	if filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(cwd, path)
+}
+
+func sanitizeCodexReceiptID(id string) string {
+	var b strings.Builder
+	for _, r := range id {
+		switch {
+		case r >= 'a' && r <= 'z':
+			b.WriteRune(r)
+		case r >= 'A' && r <= 'Z':
+			b.WriteRune(r)
+		case r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == '-' || r == '_' || r == '.':
+			b.WriteRune(r)
+		default:
+			b.WriteByte('-')
+		}
+	}
+	out := strings.Trim(b.String(), "-")
+	if out == "" {
+		return "packet"
+	}
+	return out
+}
+
+func codexDispatchOutputExcerpt(stdout, stderr string) string {
+	text := strings.TrimSpace(stdout)
+	if strings.TrimSpace(stderr) != "" {
+		if text != "" {
+			text += "\n"
+		}
+		text += strings.TrimSpace(stderr)
+	}
+	if len(text) > 500 {
+		return text[:500]
+	}
+	return text
 }
 
 func collectCodexStartupArtifacts(cwd, query string, limit int) ([]codexArtifactRef, []learning, []pattern, []knowledgeFinding, []session, []nextWorkItem, []codexArtifactRef) {
@@ -1362,6 +1917,36 @@ func outputCodexStatusResult(result codexStatusResult) error {
 		if result.State.LastStop != nil {
 			fmt.Printf("Last stop: %s\n", result.State.LastStop.Timestamp)
 		}
+	}
+	return nil
+}
+
+func outputCodexDispatchResult(result codexRunReceipt) error {
+	if GetOutput() == "json" {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(result)
+	}
+
+	fmt.Println("Codex Dispatch")
+	fmt.Println("==============")
+	fmt.Printf("Packet: %s\n", result.PacketID)
+	fmt.Printf("Receipt: %s\n", result.Outputs.ReceiptPath)
+	fmt.Printf("Sandbox: %s\n", result.Sandbox)
+	fmt.Printf("Auth: %s\n", result.AuthStatus)
+	fmt.Printf("Exit: %d\n", result.ExitCode)
+	if result.TimedOut {
+		fmt.Println("Timed out: true")
+	}
+	fmt.Printf("Verdict: %s\n", result.Verdict.Status)
+	if result.Outputs.FinalMessagePath != "" {
+		fmt.Printf("Final message: %s\n", result.Outputs.FinalMessagePath)
+	}
+	if result.Outputs.JSONLPath != "" {
+		fmt.Printf("JSONL: %s\n", result.Outputs.JSONLPath)
+	}
+	if result.FailureReason != "" {
+		fmt.Printf("Failure: %s\n", result.FailureReason)
 	}
 	return nil
 }

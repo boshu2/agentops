@@ -67,6 +67,7 @@ func executeCommand(args ...string) (string, error) {
 	origCodexStopCloseLoop := codexStopCloseLoop
 	origCodexStopNoCloseLoop := codexStopNoCloseLoop
 	origCodexStatusDays := codexStatusDays
+	origCodexDispatchPacketPath := codexDispatchPacketPath
 	origAutodevFile := autodevFile
 	origAutodevForce := autodevForce
 	origFindingsListLimit := findingsListLimit
@@ -149,6 +150,7 @@ func executeCommand(args ...string) (string, error) {
 		codexStopCloseLoop = origCodexStopCloseLoop
 		codexStopNoCloseLoop = origCodexStopNoCloseLoop
 		codexStatusDays = origCodexStatusDays
+		codexDispatchPacketPath = origCodexDispatchPacketPath
 		autodevFile = origAutodevFile
 		autodevForce = origAutodevForce
 		findingsListLimit = origFindingsListLimit
@@ -229,6 +231,7 @@ func executeCommand(args ...string) (string, error) {
 	codexStopCloseLoop = false
 	codexStopNoCloseLoop = false
 	codexStatusDays = 7
+	codexDispatchPacketPath = ""
 	autodevFile = ""
 	autodevForce = false
 	findingsListLimit = 20

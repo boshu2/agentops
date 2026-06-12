@@ -1366,6 +1366,27 @@ ao codex [command]
 
 **Subcommands:**
 
+#### `ao codex dispatch`
+
+Run a non-mutating Codex task packet and write a receipt
+
+```
+ao codex dispatch --packet <path> [flags]
+```
+
+**Aliases:**
+
+```
+  dispatch, run
+```
+
+**Flags:**
+
+```
+  -h, --help            help for dispatch
+      --packet string   Path to a Codex task packet JSON file
+```
+
 #### `ao codex ensure-start`
 
 Ensure Codex startup context exists once per thread

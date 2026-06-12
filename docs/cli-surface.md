@@ -35,6 +35,7 @@
 | `ao claim bind` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao claim list` | `public-stateful-fixture-needed` | `allowlisted` | Reads claim-evidence stores and needs an isolated claim fixture. |
 | `ao close` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao codex dispatch` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao codex ensure-start` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao codex ensure-stop` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao codex start` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
