@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -411,5 +412,190 @@ func TestSkillsRetireNoRegenSkipsScripts(t *testing.T) {
 	}
 	if len(*calls) != 0 {
 		t.Fatalf("expected no regen invocations with --no-regen, got %v", *calls)
+	}
+}
+
+// ag-s3ja7 finding 1: an indented comment line directly after the retired row
+// is NOT part of the row block — it must survive byte-identically.
+func TestSkillsRetirePreservesCommentAfterRow(t *testing.T) {
+	repo := setupSkillsRetireRepo(t)
+	t.Chdir(repo)
+	commentLine := "  # COMMENT-AFTER-ROW: load-bearing note about the beta row below\n"
+	writeSkillEditFile(t, repo, "docs/contracts/skill-dispositions.yaml",
+		retireFixtureYAMLHeader+"\ndispositions:\n"+retireFixtureYAMLAlphaRow+commentLine+retireFixtureYAMLBetaRow)
+
+	out, err := executeCommand("skills", "retire", "alpha", "--into", "beta", "--no-regen")
+	if err != nil {
+		t.Fatalf("ao skills retire: %v\n%s", err, out)
+	}
+	today := time.Now().Format("2006-01-02")
+	want := retireFixtureYAMLHeader +
+		retireHistoricalEntry("alpha", "merged-into", "beta", today,
+			"Retired via ao skills retire: merged into beta.") +
+		"\ndispositions:\n" + commentLine + retireFixtureYAMLBetaRow
+	got := readRetireFile(t, repo, "docs/contracts/skill-dispositions.yaml")
+	if !strings.Contains(got, "# COMMENT-AFTER-ROW") {
+		t.Fatalf("indented comment after the retired row was eaten:\n%s", got)
+	}
+	if got != want {
+		t.Fatalf("ledger flip not byte-exact around the comment.\n--- got ---\n%s\n--- want ---\n%s", got, want)
+	}
+}
+
+// ag-s3ja7 finding 2: --into gets the same slug-format validation as the
+// retire slug, plus a self-merge refusal — all BEFORE any mutation.
+func TestSkillsRetireRefusesInvalidIntoTarget(t *testing.T) {
+	cases := []struct {
+		name string
+		into string
+	}{
+		{"path-traversal", "../scripts"},
+		{"nested-path", "zz/sub"},
+		{"self-merge", "alpha"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := setupSkillsRetireRepo(t)
+			t.Chdir(repo)
+			// Make the bad targets resolve to real dirs so only the new
+			// validation (not isDir) can refuse them.
+			writeSkillEditFile(t, repo, "scripts/placeholder.sh", "#!/bin/bash\n")
+			writeSkillEditFile(t, repo, "skills/zz/sub/SKILL.md", "---\nname: sub\n---\nbody\n")
+			yamlBefore := readRetireFile(t, repo, "docs/contracts/skill-dispositions.yaml")
+
+			out, err := executeCommand("skills", "retire", "alpha", "--into", tc.into, "--no-regen")
+			if err == nil {
+				t.Fatalf("expected --into %q refusal, got success:\n%s", tc.into, out)
+			}
+			if !strings.Contains(err.Error(), "--into") {
+				t.Fatalf("expected refusal to name --into, got: %v", err)
+			}
+			if !retireDirExists(repo, "skills/alpha") || !retireDirExists(repo, "skills-codex/alpha") {
+				t.Fatalf("--into %q refusal must not remove any tree", tc.into)
+			}
+			if got := readRetireFile(t, repo, "docs/contracts/skill-dispositions.yaml"); got != yamlBefore {
+				t.Fatalf("--into %q refusal must not touch the ledger", tc.into)
+			}
+		})
+	}
+}
+
+// ag-s3ja7 finding 3: retiring the LAST dispositions row must preserve the
+// file's trailing newline.
+func TestSkillsRetireLastRowKeepsTrailingNewline(t *testing.T) {
+	repo := setupSkillsRetireRepo(t)
+	t.Chdir(repo)
+	// alpha is the last row in the file; the file ends with exactly one \n.
+	writeSkillEditFile(t, repo, "docs/contracts/skill-dispositions.yaml",
+		retireFixtureYAMLHeader+"\ndispositions:\n"+retireFixtureYAMLBetaRow+retireFixtureYAMLAlphaRow)
+
+	out, err := executeCommand("skills", "retire", "alpha", "--into", "beta", "--no-regen")
+	if err != nil {
+		t.Fatalf("ao skills retire: %v\n%s", err, out)
+	}
+	got := readRetireFile(t, repo, "docs/contracts/skill-dispositions.yaml")
+	if !strings.HasSuffix(got, "\n") {
+		t.Fatalf("trailing newline dropped on last-row retire:\n%q", got[len(got)-40:])
+	}
+	if strings.HasSuffix(got, "\n\n") {
+		t.Fatalf("expected exactly one trailing newline, got more:\n%q", got[len(got)-40:])
+	}
+	today := time.Now().Format("2006-01-02")
+	want := retireFixtureYAMLHeader +
+		retireHistoricalEntry("alpha", "merged-into", "beta", today,
+			"Retired via ao skills retire: merged into beta.") +
+		"\ndispositions:\n" + retireFixtureYAMLBetaRow
+	if got != want {
+		t.Fatalf("last-row retire not byte-exact.\n--- got ---\n%s\n--- want ---\n%s", got, want)
+	}
+}
+
+// stubRetireRegenFailAt makes the regen runner fail on the nth script (1-based).
+func stubRetireRegenFailAt(t *testing.T, n int) *[]string {
+	t.Helper()
+	var calls []string
+	orig := skillsRetireRunScript
+	skillsRetireRunScript = func(repoRoot, script string) error {
+		calls = append(calls, script)
+		if len(calls) == n {
+			return fmt.Errorf("regen %s: exit status 1", script)
+		}
+		return nil
+	}
+	t.Cleanup(func() { skillsRetireRunScript = orig })
+	return &calls
+}
+
+// ag-s3ja7 finding 4: a regen failure after trees+ledger mutated must still
+// emit the operations report (text) alongside the error.
+func TestSkillsRetireRegenFailureStillEmitsReport(t *testing.T) {
+	repo := setupSkillsRetireRepo(t)
+	t.Chdir(repo)
+	calls := stubRetireRegenFailAt(t, 3)
+
+	out, err := executeCommand("skills", "retire", "alpha", "--into", "beta")
+	if err == nil {
+		t.Fatalf("expected regen failure error, got success:\n%s", out)
+	}
+	if !strings.Contains(err.Error(), "generate-registry.sh") {
+		t.Fatalf("expected error naming the failed script, got: %v", err)
+	}
+	if len(*calls) != 3 {
+		t.Fatalf("expected regen to stop at the failing script, got %v", *calls)
+	}
+	// The mutations already landed — the operator must see them.
+	for _, op := range []string{
+		"removed skills/alpha",
+		"removed skills-codex/alpha",
+		"skill-dispositions.yaml",
+		"ran scripts/sync-skill-counts.sh",
+		"ran scripts/generate-skill-domain-map.sh",
+	} {
+		if !strings.Contains(out, op) {
+			t.Fatalf("regen-failure report missing %q:\n%s", op, out)
+		}
+	}
+}
+
+// ag-s3ja7 finding 4 (--json): the partial report is emitted as JSON too.
+func TestSkillsRetireRegenFailureStillEmitsJSONReport(t *testing.T) {
+	repo := setupSkillsRetireRepo(t)
+	t.Chdir(repo)
+	stubRetireRegenFailAt(t, 3)
+
+	out, err := executeCommand("skills", "retire", "alpha", "--into", "beta", "--json")
+	if err == nil {
+		t.Fatalf("expected regen failure error, got success:\n%s", out)
+	}
+	var report struct {
+		Slug       string   `json:"slug"`
+		Operations []string `json:"operations"`
+		Regen      []string `json:"regen"`
+	}
+	if jsonErr := json.NewDecoder(strings.NewReader(out)).Decode(&report); jsonErr != nil {
+		t.Fatalf("expected JSON report alongside regen failure, got %v:\n%s", jsonErr, out)
+	}
+	if report.Slug != "alpha" {
+		t.Fatalf("unexpected report slug: %+v", report)
+	}
+	if len(report.Operations) == 0 {
+		t.Fatalf("expected operations in the partial report, got %+v", report)
+	}
+	if len(report.Regen) != 2 {
+		t.Fatalf("expected the two completed regen scripts recorded, got %v", report.Regen)
+	}
+}
+
+// ag-s3ja7 finding 5: the Long help documents exit-code semantics and the
+// --dry-run exits-0 behavior.
+func TestSkillsRetireHelpDocumentsExitSemantics(t *testing.T) {
+	out, err := executeCommand("skills", "retire", "--help")
+	if err != nil {
+		t.Fatalf("ao skills retire --help: %v\n%s", err, out)
+	}
+	for _, want := range []string{"Exit codes", "--dry-run", "unresolved"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("help text missing %q:\n%s", want, out)
+		}
 	}
 }

@@ -90,7 +90,13 @@ skills-codex-overrides/, images/*/skills/), flip
 docs/contracts/skill-dispositions.yaml (active row -> historical, non-lossy
 text edit), run the regen scripts, then scan-and-report remaining references
 (exit non-zero while any remain). No git commands run — the operator lands
-the change; every mutation is git-recoverable.`,
+the change; every mutation is git-recoverable.
+
+Exit codes: 0 on a clean retire. 1 both on refusal (invalid slug or --into,
+phantom slug, critical skill without --allow-critical — nothing mutated) and
+when unresolved references remain after a real run (mutations landed; resolve
+the reported refs and re-run the scan). --dry-run always exits 0, even when
+unresolved references would be reported.`,
 	Args: cobra.ExactArgs(1),
 	RunE: runSkillsRetire,
 }
@@ -119,22 +125,32 @@ func runSkillsRetire(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceUsage = true
 	report, err := retireSkill(opts)
+	out := cmd.OutOrStdout()
 	if err != nil {
+		// A non-nil report means mutations already landed (e.g. regen failed
+		// after trees+ledger): emit it so the operator sees the partial state.
+		if report != nil {
+			emitSkillsRetireReport(out, report)
+		}
 		return err
 	}
-	out := cmd.OutOrStdout()
-	if skillsRetireJSON {
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(report); err != nil {
-			return err
-		}
-	} else {
-		printSkillsRetireReport(out, report)
+	if emitErr := emitSkillsRetireReport(out, report); emitErr != nil {
+		return emitErr
 	}
 	if !report.DryRun && len(report.UnresolvedRefs) > 0 {
 		return fmt.Errorf("%d unresolved reference(s) to %q remain; resolve them and re-run the scan", len(report.UnresolvedRefs), report.Slug)
 	}
+	return nil
+}
+
+// emitSkillsRetireReport writes the report as JSON or text per --json.
+func emitSkillsRetireReport(out io.Writer, report *skillsRetireReport) error {
+	if skillsRetireJSON {
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		return enc.Encode(report)
+	}
+	printSkillsRetireReport(out, report)
 	return nil
 }
 
@@ -166,9 +182,11 @@ func retireSkill(opts skillsRetireOptions) (*skillsRetireReport, error) {
 	if err := retireFlipLedgers(opts, critical[opts.Slug], report); err != nil {
 		return nil, err
 	}
-	// Phase 4: regen.
+	// Phase 4: regen. On failure return the partial report alongside the
+	// error — trees and ledger are already mutated and the operator needs the
+	// operations list to see what landed.
 	if err := retireRunRegen(opts, report); err != nil {
-		return nil, err
+		return report, err
 	}
 	// Phase 5: ripple scan-and-report (read-only; runs in dry-run too).
 	refs, err := scanSkillsRetireRipples(opts.RepoRoot, opts.Slug, trees)
@@ -195,8 +213,17 @@ func validateSkillsRetire(opts skillsRetireOptions) (map[string]bool, error) {
 	if !isDir(filepath.Join(opts.RepoRoot, "skills", slug)) {
 		return nil, fmt.Errorf("skill not found on disk: skills/%s — phantom/ledger-only slug; fix docs/contracts/skill-dispositions.yaml directly, there is nothing to retire", slug)
 	}
-	if opts.Into != "" && !isDir(filepath.Join(opts.RepoRoot, "skills", opts.Into)) {
-		return nil, fmt.Errorf("--into target not found: skills/%s does not exist", opts.Into)
+	if opts.Into != "" {
+		into := opts.Into
+		if strings.Contains(into, "/") || strings.Contains(into, string(filepath.Separator)) || into == "." || into == ".." {
+			return nil, fmt.Errorf("invalid --into target %q: must be a bare skill slug", into)
+		}
+		if into == slug {
+			return nil, fmt.Errorf("--into target equals the retiring slug %q: a skill cannot merge into itself", slug)
+		}
+		if !isDir(filepath.Join(opts.RepoRoot, "skills", into)) {
+			return nil, fmt.Errorf("--into target not found: skills/%s does not exist", into)
+		}
 	}
 	critical, err := loadCriticalSkills(opts.RepoRoot, "")
 	if err != nil {
@@ -283,6 +310,7 @@ func retireRunRegen(opts skillsRetireOptions, report *skillsRetireReport) error 
 			continue
 		}
 		if err := skillsRetireRunScript(opts.RepoRoot, script); err != nil {
+			report.Operations = append(report.Operations, "regen FAILED at scripts/"+script)
 			return err
 		}
 		report.Regen = append(report.Regen, script)
@@ -342,8 +370,13 @@ func flipDispositionsLedger(path, slug, into, state, date string) (string, bool,
 			continue
 		}
 		rowRemoved = true
+		// Consume only the row's own field lines: stop at the next `- skill:`
+		// row, the next top-level key, or a comment line (comments are
+		// load-bearing and never belong to the removed row).
 		for i++; i < len(lines); i++ {
-			if skillsRetireRowRe.MatchString(lines[i]) || (lines[i] != "" && !strings.HasPrefix(lines[i], " ")) {
+			if skillsRetireRowRe.MatchString(lines[i]) ||
+				strings.HasPrefix(strings.TrimSpace(lines[i]), "#") ||
+				(lines[i] != "" && !strings.HasPrefix(lines[i], " ")) {
 				i--
 				break
 			}
@@ -392,7 +425,13 @@ func flipDispositionsLedger(path, slug, into, state, date string) (string, bool,
 	updated = append(updated, lines[:insertAt]...)
 	updated = append(updated, entry...)
 	updated = append(updated, lines[insertAt:]...)
-	return strings.Join(updated, "\n"), rowRemoved, nil
+	result := strings.Join(updated, "\n")
+	// Preserve the file's trailing newline iff the original had one — the
+	// split/rejoin drops it when the removed row block runs to EOF.
+	if strings.HasSuffix(string(data), "\n") && !strings.HasSuffix(result, "\n") {
+		result += "\n"
+	}
+	return result, rowRemoved, nil
 }
 
 // removeCriticalSkillLine drops the slug's line from critical-skills.txt,
