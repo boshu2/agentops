@@ -1078,8 +1078,8 @@
     {
       "name": "codex-approval",
       "source_skill": "skills/codex-approval",
-      "source_hash": "d74283ad2a5eab82da20fc69581a05b33e11162dab63a301792773c587519ed0",
-      "generated_hash": "2347e9dbc0f914519751f12e126c1e2ba3ac0a089cb2f1812454aca7ea00f2ec"
+      "source_hash": "ab4c6c03b95d434990708bdae12b21aff99d60e985d276814c97f5aa3a293fe8",
+      "generated_hash": "43580f236d06096608f79da9ee498b52733836a96bc945dcf6f94fe09aba9834"
     },
     {
       "name": "codex-exec",
@@ -1162,8 +1162,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "96a1ecbc9a4c51e8e65790f678137d17b355012106fe75f5a6ff421de7ccbcd7",
-      "generated_hash": "3174a888415a393877a01dd661a50773e919cb4994c38b53c9c264a20db57050"
+      "source_hash": "691cd439a98806331c3792fb5735a62bd09c78b1c80c33cae86338ad4182b6b0",
+      "generated_hash": "cd0571ddc4891dc58370ccba51806c3ba25cf2abc205b63af0b30ca6411f40b6"
     },
     {
       "name": "doc",

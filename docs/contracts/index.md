@@ -104,6 +104,13 @@ skills, the runtime, and external integrations.
     Non-mutating Codex dispatch packet, auth guard, sandbox, stdin closure,
     timeout, resume, and run-receipt evidence contract.
 
+-   :material-call-split: **[Codex Fanout Approval Packet](codex-fanout-approval-packet.md)**
+
+    ---
+
+    PerspectivePlan, SynthesisPacket, and ApprovalEdge contract for Fable-gated
+    Codex discovery before bead creation.
+
 -   :material-api: **[Codex Skill API](codex-skill-api.md)**
 
     ---

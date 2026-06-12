@@ -29,6 +29,10 @@ discovery_state = {
     design_path: null,
     ranked_packet_path: null,
     research_path: null,
+    perspective_plan_paths: [],
+    synthesis_packet_path: null,
+    fable_approval_path: null,
+    approval_edge_path: null,
     plan_path: null,
     pre_mortem_path: null
   },
@@ -114,10 +118,47 @@ The research artifact is the source of detail. Discovery extracts only:
 - applicable test levels
 - constraints that must affect the plan
 
+### STEP 3.5 - Codex Fanout Approval Gate
+
+Run this step for open-ended or high-risk Codex discovery before `$plan`
+creates or updates beads. The artifact shape is defined in
+[`docs/contracts/codex-fanout-approval-packet.md`](../../../docs/contracts/codex-fanout-approval-packet.md).
+
+Write at least three independent `PerspectivePlan` artifacts under
+`.agents/discovery/<run-id>/`, normally using these lenses:
+
+- product/user value
+- architecture and gate integrity
+- operations, migration, and failure recovery
+
+Then write one `SynthesisPacket` that selects or merges the winning plan,
+records rejected alternatives, and carries open questions for Fable. Invoke
+`$codex-approval` with the `SynthesisPacket` plus every `PerspectivePlan` path
+so Fable reads the artifacts directly, then persist the resulting
+`ApprovalEdge`.
+
+Gate semantics:
+
+- `PASS`: continue to `$plan`.
+- `WARN is not` a silent pass: update the `SynthesisPacket` and rerun approval,
+  or record an explicit accepted-risk note in the `ApprovalEdge` before
+  continuing.
+- `FAIL`: do not create beads; return to fanout/synthesis. After three failed
+  approval attempts, write BLOCKED and stop.
+
+Discovery records only:
+
+- `perspective_plan_paths`
+- `synthesis_packet_path`
+- `fable_approval_path`
+- `approval_edge_path`
+- one decision line explaining the selected plan
+
 ### STEP 4 - Plan Contract
 
-Run `$plan` as its own skill contract with the bounded objective and `--auto`
-when discovery is in auto mode.
+Run `$plan` as its own skill contract with the bounded objective, or the
+approved `synthesis_packet_path` when STEP 3.5 ran, and `--auto` when discovery
+is in auto mode.
 
 The plan artifact is the source of slice detail. Discovery extracts only:
 

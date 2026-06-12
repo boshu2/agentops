@@ -42,9 +42,10 @@ output_contract: A persisted .agents/council approval artifact plus a tmux captu
 # codex-approval
 
 Ask an always-on ATM/NTM Claude-family validator, usually Fable, to approve or
-reject a Codex plan. This is the Codex-side bridge for cross-vendor approval:
-Codex prepares the packet, an independent interactive Claude-family pane reviews
-it, and the verdict is saved as a council artifact with a tmux capture.
+reject a Codex plan or fanout `SynthesisPacket`. This is the Codex-side bridge
+for cross-vendor approval: Codex prepares the packet, an independent
+interactive Claude-family pane reviews it, and the verdict is saved as a council
+artifact with a tmux capture.
 
 ## Critical Constraints
 
@@ -59,6 +60,21 @@ it, and the verdict is saved as a council artifact with a tmux capture.
   plan, research, diff, or packet and ask the pane to read them directly.
 - **WARN is not a silent pass.** Either update the plan to address the warning,
   or record why the warning is accepted before continuing.
+
+## Fanout Packet Contract
+
+For open-ended/high-risk discovery, approval consumes the packet contract in
+[`docs/contracts/codex-fanout-approval-packet.md`](../../docs/contracts/codex-fanout-approval-packet.md):
+
+- `PerspectivePlan`: one independent planner lens. Fable must receive every
+  perspective path, not just the selected one.
+- `SynthesisPacket`: the selected or merged candidate plan plus rejected
+  alternatives, rationale, risks, and open questions.
+- `ApprovalEdge`: the normalized edge proving which Fable lane reviewed which
+  packet, where the tmux capture lives, and how PASS/WARN/FAIL was handled.
+
+`WARN is not` approval by omission. If the verdict is WARN, the edge must cite
+the updated packet or an explicit accepted-risk note before work proceeds.
 
 ## Workflow
 
@@ -81,6 +97,7 @@ The request must include:
 - decision question
 - required output shape
 - explicit instruction not to modify files
+- for fanout discovery: all `PerspectivePlan` paths and the `SynthesisPacket`
 
 ### Phase 2: Find an idle validator pane
 
@@ -103,8 +120,9 @@ Keep the prompt bounded and auditable:
 
 ```text
 You are an independent Fable Claude-family reviewer. Do not modify files.
-Review <PLAN> and <RESEARCH>. Judge whether the plan is implementable,
-correctly scoped, and safe with respect to Law 0 and Codex subscription auth.
+Review <PLAN or SYNTHESIS_PACKET> and its supporting artifacts. Judge whether
+the plan is implementable, correctly scoped, and safe with respect to Law 0 and
+Codex subscription auth.
 Return exactly:
 VERDICT: PASS|WARN|FAIL
 
@@ -142,6 +160,16 @@ The artifact must contain:
 - `## Commands Run`
 - `## Reasons`
 - `## Required Changes` when verdict is WARN or FAIL
+
+For fanout discovery also write:
+
+```text
+.agents/discovery/<run-id>/approval-edge.yaml
+```
+
+The `ApprovalEdge` records the source `SynthesisPacket`, every
+`PerspectivePlan`, the validator pane, tmux capture, verdict artifact, verdict,
+required changes, and accepted risks.
 
 ### Phase 5: Gate on the result
 

@@ -116,6 +116,29 @@ for the boundary between Discovery and Plan:
 
 Executable acceptance: [references/discovery.feature](references/discovery.feature) — Discovery hands dense intent across the `plan_slices` port (promoted from inline; soc-qk4b.2).
 
+## Codex Fanout Approval Gate
+
+For open-ended or high-risk Codex discovery, insert the fanout gate before
+`/plan` creates beads. The contract is
+[`docs/contracts/codex-fanout-approval-packet.md`](../../docs/contracts/codex-fanout-approval-packet.md).
+
+Required artifact sequence:
+
+1. Write at least three independent `PerspectivePlan` artifacts with different
+   lenses, normally product/user value, architecture/gate integrity, and
+   operations/migration risk.
+2. Winnow those plans into one `SynthesisPacket` that records the selected plan,
+   rejected alternatives, rationale, open questions, and risks.
+3. Invoke `codex-approval` so an idle Fable/Claude-family ATM/NTM pane reviews
+   the `SynthesisPacket` and every `PerspectivePlan` path directly.
+4. Persist an `ApprovalEdge` with the validator pane, tmux capture, normalized
+   Fable verdict artifact, verdict, required changes, and accepted risks.
+
+`PASS` permits bead creation. `WARN is not` a silent pass: update the packet and
+rerun approval, or record an explicit accepted-risk note in the `ApprovalEdge`.
+`FAIL` blocks bead creation and returns Discovery to fanout/synthesis, up to
+three approval attempts.
+
 ## Open-Ended Path (generate-winnow → operationalize → refine)
 
 > **Additive to the default flow — it does not replace the strict-delegation contract or the artifact-first DAG.** This path activates for open-ended "improve the project"-style goals (`"improve the project"`, `"what should we build next"`, `"make X more robust"`) OR when `--ideate` is passed. For a specific goal, the default flow (brainstorm-clarify → research → plan → pre-mortem) is unchanged.
@@ -123,7 +146,7 @@ Executable acceptance: [references/discovery.feature](references/discovery.featu
 On the open-ended path, Discovery prepends the generate-winnow methodology before research/plan and adds two steps after planning. Full detail lives in [`references/bead-operationalization.md`](references/bead-operationalization.md) and [`references/ideation-mode.md`](references/ideation-mode.md).
 
 1. **Ideate (delegate to `brainstorm --ideate`).** Invoke `brainstorm` in **ideation mode** (a real skill invocation — strict delegation still applies; do NOT inline the 30-idea generation). It returns a ranked portfolio of **15** ideas (top 5 + next 10) with how/perceive/implement notes, rubric scores, and red-team findings.
-2. **Research + Plan + Pre-mortem.** Run the normal artifact-first DAG over the selected portfolio, scoped to the winnowed ideas rather than a single goal.
+2. **Research + fanout approval + Plan + Pre-mortem.** Run research over the selected portfolio. For Codex-led open-ended/high-risk work, produce `PerspectivePlan` artifacts, a `SynthesisPacket`, and a Fable `ApprovalEdge` before `/plan` creates tracker rows. Then run the normal artifact-first DAG over the approved packet rather than a single goal.
 3. **Operationalize.** Turn the ranked portfolio into a comprehensive, granular set of **self-documenting `br` beads** — tasks, subtasks, dependency structure (`br dep add`), and **explicit test tasks** (unit + e2e with detailed logging). Each bead carries what/why/how/risks/success so the original plan markdown never needs to be consulted again. Overlap-check against existing beads (`br list --json`) before creating — merge, don't duplicate.
 4. **Refine in plan space (4-5 passes).** Before handing the packet to `/crank`, run **4-5 refinement passes** over the bead set. Each pass: **re-read AGENTS.md** (especially after compaction), check every bead for sense and optimality, and **DO NOT OVERSIMPLIFY / DO NOT LOSE FEATURES OR FUNCTIONALITY**. Validate between passes (no dependency cycles; every leaf actionable via `br ready`).
 
