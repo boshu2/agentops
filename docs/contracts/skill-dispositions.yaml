@@ -578,3 +578,8 @@ dispositions:
     hexagonal_role: driving-adapter
     disposition:    keep
     rationale:      "Codex-side approval bridge that routes plan reviews through an interactive ATM/NTM Fable validator, with persisted tmux capture and council artifact evidence."
+  - skill:          pre-land-refuters
+    domain:         "BC2 Validation"
+    hexagonal_role: driving-adapter
+    disposition:    keep
+    rationale:      "Unbiased dual-model refuter panel before landing large multi-surface changes; codified from the ag-s43tg landing where it caught 9 real misses."

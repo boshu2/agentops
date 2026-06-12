@@ -220,7 +220,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (60)
+### User-Facing Skills (61)
 
 **Judgment:**
 
@@ -228,6 +228,7 @@ These are how skills chain in practice:
 |-------|------|-------------|
 | **council** | judgment | Multi-model validation (core primitive) — independent judges debate and converge |
 | **validate** | judgment | Canonical validator role — produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, and gates |
+| **pre-land-refuters** | judgment | Use before landing any 100+ file change: dispatch unbiased Fable + codex refuters to attack the completion claim. |
 | **pre-mortem** | judgment | Council on plans — simulate failures before implementation |
 | **post-mortem** | judgment | Council + knowledge lifecycle — validate completed work, extract/activate/retire learnings |
 | **review** | judgment | Review incoming PRs, agent-generated changes, or diffs — SCORED checklist |

@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-12T14:40:09Z",
+  "generated_at": "2026-06-12T18:46:24Z",
   "summary": {
-    "skills": 66,
+    "skills": 67,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 83,
-    "capabilities": 163
+    "capabilities": 164
   },
   "surfaces": {
     "skills": [
@@ -307,6 +307,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 22
+      },
+      {
+        "name": "pre-land-refuters",
+        "tier": "judgment",
+        "path": "skills/pre-land-refuters/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
       },
       {
         "name": "pre-mortem",
@@ -1360,8 +1368,8 @@
     ]
   },
   "capability_summary": {
-    "total": 163,
-    "skills": 66,
+    "total": 164,
+    "skills": 67,
     "cli_commands": 83,
     "gates": 14,
     "reference_impls": 0
@@ -2355,6 +2363,27 @@
       "drives_commands": [],
       "path": "skills/pr-prep/",
       "references": 4
+    },
+    {
+      "sku": "skill:pre-land-refuters",
+      "name": "pre-land-refuters",
+      "type": "skill",
+      "bounded_context": "BC2",
+      "hex_role": "driving-adapter",
+      "tier": "judgment",
+      "purpose": "Dispatch unbiased parallel refuters before landing a large multi-surface change: a fresh-context Fable validator + a codex exec read-only validator try to REFUTE the completion claim; their findings are the work list. Use before pushing any 100+ file change, corpus prune, generated-surface regen, or contract-test repoint. Triggers: pre-land validation, unbiased review, refute before push, dual-model landing check.",
+      "status": "active",
+      "disposition": "keep",
+      "consumes": [
+        "validate",
+        "codex-exec"
+      ],
+      "produces": [
+        ".agents/council/*.md"
+      ],
+      "drives_commands": [],
+      "path": "skills/pre-land-refuters/",
+      "references": 0
     },
     {
       "sku": "skill:pre-mortem",

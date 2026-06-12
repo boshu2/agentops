@@ -586,6 +586,12 @@
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Codex-native approval bridge for ATM/Fable plan reviews; source contract and checked-in Codex wrapper are aligned, so no separate override layer is needed yet."
+    },
+    {
+      "name": "pre-land-refuters",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Unbiased dual-model pre-land validation panel; codex twin is a thin pointer stub with codex-as-refuter profile."
     }
   ]
 }
