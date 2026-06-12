@@ -1342,7 +1342,7 @@
     {
       "name": "post-mortem",
       "source_skill": "skills/post-mortem",
-      "source_hash": "6e9db3bc1703b17d9cc6014dea3efdcb356cfa0acc4bfabf60c9c1c7ab85a7ba",
+      "source_hash": "07f5d1452b3a8f7ee26c5f48fcdbcca7a631b4fe0cae44f5ca3428fb8c31c6d9",
       "generated_hash": "a2291ceda1dd75efd5313046d7265964671c17290fbdc5bf57a1c4432e4aa661"
     },
     {
@@ -1360,7 +1360,7 @@
     {
       "name": "pre-land-refuters",
       "source_skill": "skills/pre-land-refuters",
-      "source_hash": "a1df62bcc09ef3aac600ae664122607c6db3a9532a189eafb4af79065a338787",
+      "source_hash": "c7dbe95a8e89bffb43dc073fa5e816059cb6055d26ceffb13c2d5ec7dbf7f829",
       "generated_hash": "d690bcee73e2b64f0fea3333a07f9f473ad75b1e2227e58b3e2f3875d0b5ca7c"
     },
     {
@@ -1372,7 +1372,7 @@
     {
       "name": "pre-mortem",
       "source_skill": "skills/pre-mortem",
-      "source_hash": "d050f5de4d0b8351d5e4c4fcf0a316de521edec113a0a21066ab40c189191670",
+      "source_hash": "263faa2268d069f986d4d2b9f0662299f38d17ca82247f3cb735048fcec74842",
       "generated_hash": "043b465f78bf730d40c955b1ec4103f80ca5d179f918513adb03e21b857dfc8d"
     },
     {
@@ -1486,7 +1486,7 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "2fbb5180e0f98fe7292d3a3e8165029e3579a75a4a64a6d0ec477fe62880aa6f",
+      "source_hash": "5f79f7a1fd1e3a4b498e9c548e88737616a7e9f0bf90e4cfafc9419a11625b90",
       "generated_hash": "9e1a058756851e44572b3992f93aa0377b60cdb8bff67c2ebb0310fb5db6f9bc"
     },
     {
@@ -1630,7 +1630,7 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "da44362f36d58ca969d79e56e1c1fe7fc229ac3083354fd2a707e6a9d75254c8",
+      "source_hash": "fa35955514a3729af473fe707b2d8ff735dee03fff18eb35c9fb6f8f7c5ed25d",
       "generated_hash": "9e4193b727967f14e7f1be94a2d341055f9ed24c359a9027f7fda13ba0d2d63e"
     },
     {

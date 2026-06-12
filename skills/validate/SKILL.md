@@ -333,6 +333,7 @@ measured reality was 36 run / 34 pass / 1 fail / 1 skip, on a different commit.
 - `skills/rpi/SKILL.md` — orchestrator that fires `/validate --mode=pre-impl` after `/plan`
 - `skills/curate/SKILL.md` — miner role (paired canonical skill)
 - `schemas/verdict.v1.schema.json` — output contract
+- [`pre-land-refuters`](../pre-land-refuters/SKILL.md) — landing escalation: on large arcs a self-administered DONE is a claim; the unbiased dual-model panel attacks it at the push boundary
 
 ## Reference Documents
 
