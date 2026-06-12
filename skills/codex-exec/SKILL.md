@@ -64,6 +64,23 @@ Auth is the whole game. `codex login status` must read **`Logged in using ChatGP
 
 Verified against `codex-cli 0.137.0` (`codex exec --help`, `codex exec resume --help`).
 
+## Folded triggers (ag-s43tg wave 1): `codex-goals` + `codex-mcp-plugins` + `codex-sandbox-evidence` route here
+
+- **`codex-goals` → this skill.** Use when asked to define an objective once and let Codex iterate
+  until done (Codex Goals): express the objective as the `codex exec` prompt with an explicit
+  done-condition ("Run tests. Report PASS/FAIL."), then drive iterations through
+  `codex exec resume --last` (Phase 3) until the verdict lands — same sub-billing and sandbox
+  rules as any worker lane.
+- **`codex-mcp-plugins` → this skill.** Use when wiring MCP servers or plugins into Codex CLI
+  or the AgentOps Codex skill bundle: MCP/plugin config lives in `$CODEX_HOME/config.toml`
+  (layer per-lane variants via `-p/--profile <name>.config.toml`); verify the wired server is
+  visible to a worker with a cheap `codex exec -s read-only` probe before dispatching real work.
+- **`codex-sandbox-evidence` → this skill.** Use when running `codex exec` in a
+  least-privilege sandbox with machine-checkable proof: pick the narrowest `-s` policy
+  (Phase 2), then capture the proof surface — `--json` JSONL event stream, `-o` final-message
+  file, and `--output-schema` for a schema-constrained verdict — so the sandbox posture and
+  the result are both auditable artifacts.
+
 ## Quick Start
 
 ```bash
