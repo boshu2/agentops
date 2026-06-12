@@ -1,6 +1,6 @@
 ---
 name: pre-land-refuters
-description: "Dispatch unbiased parallel refuters (fresh Fable + read-only codex exec) to attack a completion claim before landing a large change. Triggers: pre-land validation, refute before push."
+description: "Dispatch unbiased refuters (fresh Fable + read-only codex exec) to attack a completion claim before landing a large change. Triggers: pre-land validation, refute before push."
 practices:
 - llm-eval-harness
 - ai-assisted-dev
