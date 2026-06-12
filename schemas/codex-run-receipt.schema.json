@@ -202,6 +202,18 @@
         },
         "summary": {
           "type": "string"
+        },
+        "author_id": {
+          "type": "string"
+        },
+        "judge_name": {
+          "type": "string"
+        },
+        "judge_program": {
+          "type": "string"
+        },
+        "judge_model_family": {
+          "type": "string"
         }
       }
     },

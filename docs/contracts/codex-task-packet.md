@@ -98,12 +98,23 @@ Required receipt fields:
 - `changed_files`
 - `commands_run`, with command text, exit code, and optional output excerpt
 - `verdict.status`, `verdict.judge_source`, and `verdict.summary`
+- for `PASS`, `WARN`, or `FAIL` verdicts: `verdict.author_id`,
+  `verdict.judge_name`, `verdict.judge_program`, and
+  `verdict.judge_model_family`
 - `resume_from_session` when the run resumed an earlier session
 - `failure_reason` when the process, auth guard, timeout, or validation failed
 
 `auth_mode: "api-key"` is allowed in the receipt schema only so failed attempts
 can be recorded honestly. It is not a passing worker-auth state for routine
 AgentOps Codex work.
+
+Successful Codex receipts use the same review-gate floor as `ao tick
+verdict-gate`: a final `PASS`, `WARN`, or `FAIL` verdict must include a
+non-empty `COMMANDS RUN` body and typed independent judge identity
+(`author_id`, `judge_name`, `judge_program`, `judge_model_family`). Missing
+command evidence, missing judge identity, self-approval
+(`author_neq_validator`), malformed verdict tokens, or contradictory verdict
+bodies are rejected and recorded as failed receipt validation.
 
 ## Validation
 
@@ -116,7 +127,7 @@ The schemas and examples are committed together:
 
 The Go contract tests parse both schemas and fixtures, assert required fields,
 and check enum membership for role, sandbox, auth mode, stdin mode, output mode,
-resume policy, and receipt verdict status.
+resume policy, receipt verdict status, and receipt judge identity.
 
 Acceptance command:
 
