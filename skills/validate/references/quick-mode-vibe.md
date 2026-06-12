@@ -224,6 +224,7 @@ Test-pyramid inventory (2g) checks that tests *exist* and are well-shaped — it
 
 ```bash
 # When validating a tracked bead with a ## Scenarios block:
+# (--bead fetches the body via `br show`; BEADS_DIR defaults to <repo>/_beads — bd is retired)
 bash scripts/check-bead-scenario-coverage.sh --bead <bead-id> --json
 
 # When validating a .feature directly:

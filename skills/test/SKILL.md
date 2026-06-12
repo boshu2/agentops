@@ -51,13 +51,14 @@ Default mode is `generate` when unspecified. Detect from user intent.
 
 When the task is tied to a bead or `.feature` file, **author tests FORWARD from the Gherkin scenarios** — not backward from a coverage gap. This is the C2 contract (ag-9jle.4): the unit of test authoring is one scenario, one covering test.
 
-1. Read the scenarios: the bead's `## Scenarios` block (`bd show <bead-id>`) or a `.feature` under `skills/<skill>/references/`.
+1. Read the scenarios: the bead's `## Scenarios` block (`BEADS_DIR=$PWD/_beads br show <bead-id>`) or a `.feature` under `skills/<skill>/references/`.
 2. For each `Scenario:`, locate or write the test that exercises its `Given/When/Then`. Name it after the behavior.
 3. Declare the linkage by adding `@covered-by:<test-path>` (optionally `::<TestName>`) directly above the scenario in its source — so the leaf coverage gate can prove the mapping.
 4. Run the leaf coverage gate and require it to pass before considering the slice tested:
 
 ```bash
 bash scripts/check-bead-scenario-coverage.sh --bead <bead-id> --run      # every scenario -> a PASSING test
+# (--bead fetches the body via `br show`; BEADS_DIR defaults to <repo>/_beads — bd is retired)
 bash scripts/check-bead-scenario-coverage.sh skills/<skill>/references/<name>.feature --run
 ```
 

@@ -75,6 +75,33 @@ br create --title "<task>" --body "Description...
 
 Beads-backed issues are the preferred path because they give `/crank` richer dependency data and make ratchet progress easier to inspect. When br is unavailable or degraded, keep the plan file + execution packet path accurate and continue in file-backed mode for `/crank` and `/validate`.
 
+## Step 7b.0: Scenario Admission Gate (Blocking)
+
+Before the validation-block check, run the mechanical scenario admission gate over every created issue. The gate (`scripts/check-bead-scenario-coverage.sh --admission`) is the plan-time structural check: it passes only when the bead body carries at least one structurally complete scenario unit — a `Scenario:` block or a bare Given/When/Then stanza.
+
+```bash
+if command -v br &>/dev/null; then
+    INADMISSIBLE=()
+    for ISSUE_ID in $ALL_CREATED_ISSUES; do
+        BEADS_DIR=$PWD/_beads br show "$ISSUE_ID" | bash scripts/check-bead-scenario-coverage.sh --admission -
+        RC=$?
+        if [[ $RC -eq 1 ]]; then
+            INADMISSIBLE+=("$ISSUE_ID")
+        elif [[ $RC -eq 2 ]]; then
+            echo "TRACKER FAILURE: admission gate got no usable input for $ISSUE_ID (br down? empty body fetch?)."
+            echo "  Surface the infra failure and stop. Do NOT treat the bead as inadmissible."
+            break
+        fi
+    done
+    if [[ ${#INADMISSIBLE[@]} -gt 0 ]]; then
+        echo "BLOCKING: ${#INADMISSIBLE[@]} issue(s) failed scenario admission: ${INADMISSIBLE[*]}"
+        echo "  Fix each bead body (add or repair its ## Scenarios block) before reporting the plan DONE."
+    fi
+fi
+```
+
+**This is a blocking gate, unlike the Step 7b validation-block warning below.** Exit 1 means the bead is inadmissible — fix the bead body before reporting the plan DONE. Exit 2 means tracker/infra failure — surface it and stop; do NOT treat the bead as inadmissible.
+
 ## Step 7b: Verify Validation Blocks (Post-Creation Check)
 
 After creating all beads issues, verify that every issue body contains a fenced validation block. Missing validation blocks break the plan-to-crank pipeline — `/crank` cannot extract conformance checks from issues that lack them.

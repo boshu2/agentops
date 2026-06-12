@@ -206,7 +206,7 @@ Rules:
 - One scenario per distinct Given/When/Then behavior; a bead with N behaviors carries N scenarios.
 - Scenarios describe **observable behavior**, not implementation steps.
 - The `## Scenarios` block sits in the bead description ABOVE the `acceptance_criteria` YAML; the YAML is the machine-checkable layer, Gherkin is the behavior layer (they are complementary, not substitutes).
-- A bead emitted without a `## Scenarios` block is a contract violation — promote any free-text acceptance to scenarios before creating the bead.
+- This contract is enforced mechanically by the Step 7b.0 admission gate (`scripts/check-bead-scenario-coverage.sh --admission`, per `references/task-creation.md`): every created bead is piped through the gate post-creation, and a bead that fails admission must be fixed before the plan is reported DONE.
 
 This is the same `## Scenarios` block the bead-embedded acceptance model expects (`scenario-hash-stability` CI gate) and that `/discovery` lifts into the execution packet.
 
