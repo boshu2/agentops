@@ -583,3 +583,23 @@ dispositions:
     hexagonal_role: driving-adapter
     disposition:    keep
     rationale:      "Unbiased dual-model refuter panel before landing large multi-surface changes; codified from the ag-s43tg landing where it caught 9 real misses."
+  - skill:          continuity-loop
+    domain:         "BC5 Runtime"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Seams epic ag-xwjlc: clean-room home for the renewal spine CLAUDE.md declares live; evolve/using-atm/recover route continuity here."
+  - skill:          operationalize
+    domain:         "BC1 Corpus"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "Seams epic ag-xwjlc: distill+route bridge from gathered context to automation shapes; fills the curate/forge-to-builders seam."
+  - skill:          reality-check
+    domain:         "BC2 Validation"
+    hexagonal_role: domain
+    disposition:    keep
+    rationale:      "Seams epic ag-xwjlc: mid-epic drift audit (code vs claimed vision); complements status/validate/post-mortem."
+  - skill:          toil-mining
+    domain:         "BC1 Corpus"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Seams epic ag-xwjlc: usage-history toil miner feeding automation-shape-routing; the flywheel's missing feeder."
