@@ -217,3 +217,188 @@ write_feature() {
     run bash "$FAKE_SCRIPT" --bogus "$FAKE_REPO/work/bead.md"
     [ "$status" -eq 2 ]
 }
+
+# --- --admission mode (ag-iruq3.1) -------------------------------------------
+# Plan-time admission gate: PASS iff >=1 structurally complete scenario unit
+# (Scenario:/Scenario Outline: block OR contiguous bare-GWT stanza). Fixtures
+# below are REAL bead-body-shaped markdown (## sections, fenced yaml
+# acceptance_criteria blocks) per the fixture-fidelity rule.
+
+@test "admission: bead body without Scenarios block is inadmissible" {
+    cat > "$FAKE_REPO/work/bead.md" <<'EOF'
+## Context
+
+Audit (2026-06-12) found acceptance enforcement is prose-only everywhere.
+The mechanical tool exists but only runs at validate time.
+
+## Approach
+
+Add the flag to the parse loop; keep existing modes byte-identical.
+
+## Notes
+
+Free-text acceptance: the script should work correctly when done.
+EOF
+    run bash "$FAKE_SCRIPT" --admission "$FAKE_REPO/work/bead.md"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"## Scenarios"* ]]
+}
+
+@test "admission: free-text acceptance (heading but zero units) is inadmissible" {
+    cat > "$FAKE_REPO/work/bead.md" <<'EOF'
+## Context
+
+Migrate the --bead mode off the retired tracker.
+
+## Scenarios
+
+The script should fetch the bead body via the new tracker and fail
+gracefully when it is absent. All existing behavior stays the same.
+
+## Logging
+
+Log it.
+EOF
+    run bash "$FAKE_SCRIPT" --admission "$FAKE_REPO/work/bead.md"
+    [ "$status" -eq 1 ]
+}
+
+@test "admission: Scenario-header GWT without covered-by passes" {
+    cat > "$FAKE_REPO/work/bead.md" <<'EOF'
+## Context
+
+Plan-time: tests are not written yet, so no @covered-by tags exist.
+
+## Scenarios
+
+Scenario: gate rejects beads without runnable acceptance
+  Given a bead body with no Scenarios block
+  When the admission gate runs
+  Then it exits 1 naming the bead
+
+## Logging
+
+Log it.
+EOF
+    run bash "$FAKE_SCRIPT" --admission "$FAKE_REPO/work/bead.md"
+    [ "$status" -eq 0 ]
+}
+
+@test "admission: bare-GWT stanza without Scenario header passes" {
+    # Real corpus style (~97 bodies): contiguous Given/When/Then lines with no
+    # Scenario: header, plus the fenced yaml acceptance block bead bodies carry.
+    cat > "$FAKE_REPO/work/bead.md" <<'EOF'
+Add plan-time admission semantics to the leaf gate; migrate --bead off retired bd.
+
+## Scenarios
+
+Given a bead body using bare-GWT stanzas without Scenario headers
+When the admission gate runs
+And both corpus styles are considered
+Then it exits 0
+
+```yaml
+acceptance_criteria:
+  - id: ac-1
+    description: "admission accepts both corpus styles"
+    check_type: command_exit_zero
+```
+EOF
+    run bash "$FAKE_SCRIPT" --admission "$FAKE_REPO/work/bead.md"
+    [ "$status" -eq 0 ]
+}
+
+@test "admission: blank line inside a Scenario block does not split the unit" {
+    cat > "$FAKE_REPO/work/bead.md" <<'EOF'
+## Scenarios
+
+Scenario: blank line is body formatting, not a unit boundary
+  Given a Scenario block with a blank line between its lines
+
+  Then it still counts as one complete unit
+EOF
+    run bash "$FAKE_SCRIPT" --admission --json "$FAKE_REPO/work/bead.md"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"units_total":1'* ]]
+    [[ "$output" == *'"structurally_complete":1'* ]]
+}
+
+@test "admission: structurally incomplete LAST unit is inadmissible" {
+    # The final unit lacks a Then line — exercises the EOF verdict flush (F7).
+    cat > "$FAKE_REPO/work/bead.md" <<'EOF'
+## Scenarios
+
+Scenario: complete unit lands first
+  Given a thing
+  When it runs
+  Then it works
+
+Scenario: final unit has no Then
+  Given a dangling setup
+  When nothing is asserted
+EOF
+    run bash "$FAKE_SCRIPT" --admission "$FAKE_REPO/work/bead.md"
+    [ "$status" -eq 1 ]
+}
+
+@test "admission: missing When warns but passes" {
+    cat > "$FAKE_REPO/work/bead.md" <<'EOF'
+## Scenarios
+
+Scenario: declarative unit with no action line
+  Given a precondition
+  Then the postcondition holds
+EOF
+    run bash "$FAKE_SCRIPT" --admission --json "$FAKE_REPO/work/bead.md"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN"* ]]
+    [[ "$output" == *'"warnings":1'* ]]
+}
+
+@test "admission: fenced content is parse-inert" {
+    # Only fenced 'Scenario:'/GWT text — must NOT count as a unit (F4).
+    cat > "$FAKE_REPO/work/bead.md" <<'EOF'
+## Scenarios
+
+```yaml
+acceptance_criteria:
+  - id: ac-1
+    description: |
+      Scenario: phantom unit inside a fence
+        Given a fenced line
+        Then it must not be parsed
+```
+EOF
+    run bash "$FAKE_SCRIPT" --admission --json "$FAKE_REPO/work/bead.md"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *'"units_total":0'* ]]
+}
+
+@test "admission: empty input is infra failure not policy rejection (exit 2)" {
+    run bash -c "printf '' | bash '$FAKE_SCRIPT' --admission -"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"no content"* ]]
+}
+
+@test "admission: --run with --admission is misuse exit 2" {
+    cat > "$FAKE_REPO/work/bead.md" <<'EOF'
+## Scenarios
+
+Scenario: any
+  Given a thing
+  Then it works
+EOF
+    run bash "$FAKE_SCRIPT" --admission --run "$FAKE_REPO/work/bead.md"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"cannot be combined"* ]]
+}
+
+@test "admission: zero-scenario loophole is closed (--min-covered=0 still fails)" {
+    cat > "$FAKE_REPO/work/bead.md" <<'EOF'
+## Scenarios
+
+Acceptance is described in free text only; no GWT units here.
+EOF
+    run bash "$FAKE_SCRIPT" --admission --min-covered=0 "$FAKE_REPO/work/bead.md"
+    [ "$status" -eq 1 ]
+}
