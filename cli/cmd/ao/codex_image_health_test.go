@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCodexImageHealthDoctorCleanJSONDoesNotMutateLifecycle(t *testing.T) {
@@ -138,6 +139,101 @@ func TestCodexImageHealthDoctorSkipsOptionalRuntimeUnavailable(t *testing.T) {
 	if check.Status != "SKIP" || !check.Optional {
 		t.Fatalf("headless check = %+v, want optional skip", check)
 	}
+}
+
+func TestCodexImageHealthSlowCheckTimesOutWithinBudget(t *testing.T) {
+	cwd := t.TempDir()
+	spec := codexImageHealthCheckSpec{
+		Name:        "stub-slow-check",
+		Description: "Stubbed slow check must be cut off by the per-check budget.",
+		Command:     []string{"sleep", "5"},
+	}
+	withCodexImageHealthCheckTimeout(t, 100*time.Millisecond)
+
+	done := make(chan codexImageHealthCheckResult, 1)
+	go func() {
+		done <- runCodexImageHealthCheck(context.Background(), cwd, spec)
+	}()
+
+	select {
+	case check := <-done:
+		if check.Status != "FAIL" {
+			t.Fatalf("status = %q, want FAIL for timed-out check", check.Status)
+		}
+		if check.DurationMS <= 0 {
+			t.Fatalf("duration_ms = %d, want > 0 for timed-out check", check.DurationMS)
+		}
+		if check.DurationMS >= 2000 {
+			t.Fatalf("duration_ms = %d, want bounded by the per-check budget (well under 2000ms)", check.DurationMS)
+		}
+		if !strings.Contains(check.Error, "timed out") {
+			t.Fatalf("error = %q, want per-check timeout message", check.Error)
+		}
+		if !check.TimedOut {
+			t.Fatalf("timed_out = false, want true for check exceeding the budget")
+		}
+		if !check.Slow {
+			t.Fatalf("slow = false, want true for check exceeding the budget")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("image-health check still running after 2s: no per-check timeout budget")
+	}
+}
+
+func TestCodexImageHealthJSONFlagsSlowCheck(t *testing.T) {
+	repo := t.TempDir()
+	withCodexImageHealthTestProject(t, repo)
+	// The --check-timeout flag writes the package var; restore it after the test.
+	withCodexImageHealthCheckTimeout(t, codexImageHealthCheckTimeout)
+	withCodexImageHealthFakeRunner(t, func(ctx context.Context, cwd string, spec codexImageHealthCheckSpec) codexImageHealthCheckResult {
+		if spec.Name == "codex-image-verify" {
+			spec.Command = []string{"sleep", "5"}
+			return runCodexImageHealthCheck(ctx, cwd, spec)
+		}
+		return codexImageHealthTestResult(spec, "PASS", "")
+	})
+
+	start := time.Now()
+	out, err := executeCommand("codex", "image-health", "--json", "--check-timeout", "100ms")
+	if elapsed := time.Since(start); elapsed > 3*time.Second {
+		t.Fatalf("image-health took %s, want the 100ms per-check budget to bound the slow check", elapsed)
+	}
+	if err == nil {
+		t.Fatalf("codex image-health succeeded, want failure for timed-out check\noutput:\n%s", out)
+	}
+	result := decodeCodexImageHealthResult(t, out)
+	if result.Status != "FAIL" {
+		t.Fatalf("status = %q, want FAIL", result.Status)
+	}
+	check := findCodexImageHealthCheck(t, result, "codex-image-verify")
+	if check.Status != "FAIL" {
+		t.Fatalf("check status = %q, want FAIL", check.Status)
+	}
+	if check.DurationMS <= 0 || check.DurationMS >= 2000 {
+		t.Fatalf("duration_ms = %d, want > 0 and bounded by the budget", check.DurationMS)
+	}
+	if !strings.Contains(check.Error, "timed out") {
+		t.Fatalf("check error = %q, want per-check timeout message", check.Error)
+	}
+	if !check.TimedOut || !check.Slow {
+		t.Fatalf("check timed_out=%t slow=%t, want both true", check.TimedOut, check.Slow)
+	}
+	if result.Summary.Slow != 1 {
+		t.Fatalf("summary.slow = %d, want 1", result.Summary.Slow)
+	}
+	if !strings.Contains(out, `"timed_out": true`) {
+		t.Fatalf("JSON output missing timed_out flag for slow check:\n%s", out)
+	}
+	if !strings.Contains(out, `"slow": true`) {
+		t.Fatalf("JSON output missing slow flag for slow check:\n%s", out)
+	}
+}
+
+func withCodexImageHealthCheckTimeout(t *testing.T, budget time.Duration) {
+	t.Helper()
+	old := codexImageHealthCheckTimeout
+	codexImageHealthCheckTimeout = budget
+	t.Cleanup(func() { codexImageHealthCheckTimeout = old })
 }
 
 func withCodexImageHealthTestProject(t *testing.T, repo string) {
