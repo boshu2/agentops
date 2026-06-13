@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-71 checked-in AgentOps skills before any broad rewrite, using current
+72 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 71 |
+| Skills audited | 72 |
 | Domains classified | 6 of 6 (BC1-BC6) |
-| Dispositions assigned | 71 / 71 |
+| Dispositions assigned | 72 / 72 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -79,6 +79,7 @@ Disposition meanings:
 | `codex-exec` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `compile` | BC1 Corpus | supporting | refactor | Corpus compiler is core; align read/write flows to Corpus ports. |
 | `continuity-loop` | BC6 Orchestration | supporting | keep | Seams epic ag-xwjlc: clean-room home for the renewal spine CLAUDE.md declares live; evolve/using-atm/recover route continuity here.. |
+| `converge` | BC5 Runtime | driving-adapter | keep | Thin memo over the Go ao converge command (context-quorum loop + two-sided canary); the loop lives in cli, not the skill. |
 | `converter` | BC4 Factory | driven-adapter | keep | Cross-runtime packaging adapter (Codex/Cursor twins) the factory drives to emit converted-skill output; skill-builder consumes it. Re-graded generic→driven-adapter (ag-j3ge0 — it adapts the factory to runtime skill formats, a driven port, not an unclassified generic).. |
 | `council` | BC2 Validation | domain | update | Core judgment gate; strengthen scenario and verdict self-test. |
 | `crank` | BC3 Loop | domain | refactor | Wave executor; align with vertical-slice and conflict-free wave contract. |

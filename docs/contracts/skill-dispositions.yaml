@@ -362,6 +362,18 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Corpus compiler is core; align read/write flows to Corpus ports"
+  - skill:            converge
+    domain:           "BC5 Runtime"
+    hexagonal_role:   driving-adapter
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: orchestration
+    path:             skills/converge/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Thin memo over the Go ao converge command (context-quorum loop + two-sided canary); the loop lives in cli, not the skill"
   - skill:            converter
     domain:           "BC4 Factory"
     hexagonal_role:   driven-adapter

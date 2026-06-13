@@ -35,6 +35,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `bootstrap` — Initialize AgentOps project files.
 - `codex-approval` — Use when Codex needs Fable approval through an ATM/NTM validator pane. Triggers: - codex approval - ask fable - fable plan review
 - `codex-exec` — Use when running Codex workers or validators non-interactively through codex exec with evidence. Triggers:
+- `converge` — Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — the loop, the context-quorum floor, the LAW-0 cross-family dispatch table, and the canary entry gate all live in Go.
 - `implement` — Implement one tracked issue.
 - `inject` — Load relevant .agents context.
 - `pr-prep` — Prepare PR commits and body.
@@ -193,6 +194,8 @@ graph LR
 | `continuity-loop` | consumes | ntm |
 | `continuity-loop` | produces | .agents/continuity/state.json |
 | `continuity-loop` | produces | escalation-message |
+| `converge` | consumes | ao converge |
+| `converge` | produces | stdout |
 | `converter` | produces | converted-skill |
 | `council` | consumes | standards |
 | `council` | produces | result.json |

@@ -29,10 +29,40 @@
   ],
   "skills": [
     {
-      "name": "compile",
+      "name": "account-rotation",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "The canonical knowledge-cycle contract is already operationally specific; a bespoke Codex prompt is not justified yet."
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "acfs",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+    },
+    {
+      "name": "agent-mail",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "agent-native",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for agent-native"
+    },
+    {
+      "name": "agy-headless-evidence",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex parity wrapper for AGY image operator skill."
+    },
+    {
+      "name": "agy-native",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
     },
     {
       "name": "autodev",
@@ -41,16 +71,82 @@
       "reason": "Thin operator layer over ao autodev contract validation; Codex handoff should chain into $evolve or $rpi rather than terminal wrapper commands."
     },
     {
+      "name": "automation-shape-routing",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Front-door routing skill that names the deciding axis (Workflow vs NTM vs plain skill) and hands off; the prose is decision guidance with no Codex-specific runtime divergence."
+    },
+    {
       "name": "beads",
       "treatment": "bespoke",
       "wave": "backbone",
       "reason": "Issue routing and dependency edits are a core Codex workflow and need explicit runtime-facing operator guidance."
     },
     {
+      "name": "beads-br",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "beads-bv",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "beads-workflow",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
       "name": "bootstrap",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "New lifecycle skill; converter parity is acceptable."
+    },
+    {
+      "name": "cass",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "cc-hooks",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "codex-approval",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-native approval bridge for ATM/Fable plan reviews; source contract and checked-in Codex wrapper are aligned, so no separate override layer is needed yet."
+    },
+    {
+      "name": "codex-exec",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
+    },
+    {
+      "name": "compile",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "The canonical knowledge-cycle contract is already operationally specific; a bespoke Codex prompt is not justified yet."
+    },
+    {
+      "name": "continuity-loop",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "seams epic ag-xwjlc parity twin"
+    },
+    {
+      "name": "converge",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Thin memo over the Go ao converge command; the loop + canary live in cli, so a bespoke Codex prompt is not justified \u2014 parity twin suffices."
     },
     {
       "name": "converter",
@@ -71,6 +167,18 @@
       "reason": "Hands-free execution depends on Codex-native agent control, progress reporting, and scope discipline."
     },
     {
+      "name": "curate",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Canonical miner role; converter parity is acceptable while the release train decides which legacy miner shims remain."
+    },
+    {
+      "name": "dcg",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
       "name": "discovery",
       "treatment": "parity_only",
       "wave": "backbone",
@@ -81,6 +189,18 @@
       "treatment": "bespoke",
       "wave": "analysis-authoring",
       "reason": "Documentation work benefits from Codex-specific emphasis on repo-grounded evidence and validation commands."
+    },
+    {
+      "name": "domain",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Vocabulary corpus loaded as reference material; entries are vendor-neutral markdown and do not currently need a Codex-specific prompt layer."
+    },
+    {
+      "name": "eval-outcomes",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for eval-outcomes"
     },
     {
       "name": "evolve",
@@ -169,6 +289,24 @@
       "reason": "This deprecated background skill has minimal user-facing surface and does not justify bespoke Codex phrasing."
     },
     {
+      "name": "ntm",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "operationalize",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "seams epic ag-xwjlc parity twin"
+    },
+    {
+      "name": "perf",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New lifecycle skill; converter parity is acceptable."
+    },
+    {
       "name": "plan",
       "treatment": "bespoke",
       "wave": "backbone",
@@ -213,6 +351,12 @@
       "reason": "Preparing a PR in Codex needs a tighter artifact checklist and explicit user-review boundary."
     },
     {
+      "name": "pre-land-refuters",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Unbiased dual-model pre-land validation panel; codex twin is a thin pointer stub with codex-as-refuter profile."
+    },
+    {
       "name": "pre-mortem",
       "treatment": "bespoke",
       "wave": "core-execution",
@@ -244,10 +388,16 @@
       }
     },
     {
-      "name": "red-team",
+      "name": "rch",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "New adversarial validation skill; converter parity is acceptable."
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "reality-check",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "seams epic ag-xwjlc parity twin"
     },
     {
       "name": "recover",
@@ -268,6 +418,18 @@
           "Make the `Next Step` directly executable by the current Codex session."
         ]
       }
+    },
+    {
+      "name": "red-team",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New adversarial validation skill; converter parity is acceptable."
+    },
+    {
+      "name": "refactor",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New lifecycle skill; converter parity is acceptable."
     },
     {
       "name": "release",
@@ -308,6 +470,12 @@
       }
     },
     {
+      "name": "review",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New lifecycle skill; converter parity is acceptable."
+    },
+    {
       "name": "rpi",
       "treatment": "bespoke",
       "wave": "backbone",
@@ -335,6 +503,24 @@
       }
     },
     {
+      "name": "sbh",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
+      "name": "scaffold",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "New lifecycle skill; converter parity is acceptable."
+    },
+    {
+      "name": "scope",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Edit-scope guard behavior is already explicit in the generated Codex artifact; no bespoke override is needed yet."
+    },
+    {
       "name": "security",
       "treatment": "bespoke",
       "wave": "security-focused",
@@ -347,16 +533,22 @@
       "reason": "This non-invocable shared-reference skill does not need bespoke Codex prompt wording."
     },
     {
+      "name": "skill-auditor",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Two-pass auditor delegates to heal-skill (Pass 1) and runs 8 NEW content-discipline checks (Pass 2); parity is sufficient since the auditor's logic lives in scripts/audit.sh, not the prose."
+    },
+    {
+      "name": "skill-builder",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Builder dispatcher (scripts/build.sh) drives all 4 modes (from-scratch, from-template, absorb-external, from-pattern); the prose is reference material with no Codex-specific runtime divergence."
+    },
+    {
       "name": "standards",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "Standards are loaded as reference material and do not currently need a Codex-specific prompt layer."
-    },
-    {
-      "name": "domain",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Vocabulary corpus loaded as reference material; entries are vendor-neutral markdown and do not currently need a Codex-specific prompt layer."
     },
     {
       "name": "status",
@@ -396,88 +588,16 @@
       }
     },
     {
-      "name": "skill-auditor",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Two-pass auditor delegates to heal-skill (Pass 1) and runs 8 NEW content-discipline checks (Pass 2); parity is sufficient since the auditor's logic lives in scripts/audit.sh, not the prose."
-    },
-    {
-      "name": "skill-builder",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Builder dispatcher (scripts/build.sh) drives all 4 modes (from-scratch, from-template, absorb-external, from-pattern); the prose is reference material with no Codex-specific runtime divergence."
-    },
-    {
-      "name": "perf",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "New lifecycle skill; converter parity is acceptable."
-    },
-    {
-      "name": "refactor",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "New lifecycle skill; converter parity is acceptable."
-    },
-    {
-      "name": "review",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "New lifecycle skill; converter parity is acceptable."
-    },
-    {
-      "name": "scaffold",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "New lifecycle skill; converter parity is acceptable."
-    },
-    {
       "name": "test",
       "treatment": "parity_only",
       "wave": "catalog-parity",
       "reason": "New lifecycle skill; converter parity is acceptable."
     },
     {
-      "name": "scope",
+      "name": "toil-mining",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Edit-scope guard behavior is already explicit in the generated Codex artifact; no bespoke override is needed yet."
-    },
-    {
-      "name": "curate",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Canonical miner role; converter parity is acceptable while the release train decides which legacy miner shims remain."
-    },
-    {
-      "name": "validate",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
-    },
-    {
-      "name": "automation-shape-routing",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Front-door routing skill that names the deciding axis (Workflow vs NTM vs plain skill) and hands off; the prose is decision guidance with no Codex-specific runtime divergence."
-    },
-    {
-      "name": "workflow-builder",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Scaffolds a Claude Workflow JS script from the operating-loop.js template; the authoring guidance is tool-specific reference material with no Codex-specific runtime divergence."
-    },
-    {
-      "name": "eval-outcomes",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for eval-outcomes"
-    },
-    {
-      "name": "agent-native",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "TODO: confirm parity_only or flip to bespoke (+scaffold override dir) for agent-native"
+      "reason": "seams epic ag-xwjlc parity twin"
     },
     {
       "name": "using-atm",
@@ -486,88 +606,10 @@
       "reason": "ATM substrate guidance is documentation-led and portable across runtimes; Codex parity is sufficient"
     },
     {
-      "name": "acfs",
+      "name": "validate",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-    },
-    {
-      "name": "agy-native",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-    },
-    {
-      "name": "codex-exec",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Factory-built vendor-native operator skill with checked-in Codex artifact; keep on parity until a durable Codex-only divergence is proven."
-    },
-    {
-      "name": "agent-mail",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "beads-br",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "beads-bv",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "beads-workflow",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "account-rotation",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "cass",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "cc-hooks",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "dcg",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "ntm",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "rch",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
-    },
-    {
-      "name": "sbh",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+      "reason": "Canonical validator role; converter parity is acceptable until the legacy validation skills are shimmed or retired."
     },
     {
       "name": "vibing-with-ntm",
@@ -576,46 +618,10 @@
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
-      "name": "agy-headless-evidence",
+      "name": "workflow-builder",
       "treatment": "parity_only",
       "wave": "catalog-parity",
-      "reason": "Codex parity wrapper for AGY image operator skill."
-    },
-    {
-      "name": "codex-approval",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Codex-native approval bridge for ATM/Fable plan reviews; source contract and checked-in Codex wrapper are aligned, so no separate override layer is needed yet."
-    },
-    {
-      "name": "pre-land-refuters",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "Unbiased dual-model pre-land validation panel; codex twin is a thin pointer stub with codex-as-refuter profile."
-    },
-    {
-      "name": "continuity-loop",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "seams epic ag-xwjlc parity twin"
-    },
-    {
-      "name": "operationalize",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "seams epic ag-xwjlc parity twin"
-    },
-    {
-      "name": "reality-check",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "seams epic ag-xwjlc parity twin"
-    },
-    {
-      "name": "toil-mining",
-      "treatment": "parity_only",
-      "wave": "catalog-parity",
-      "reason": "seams epic ag-xwjlc parity twin"
+      "reason": "Scaffolds a Claude Workflow JS script from the operating-loop.js template; the authoring guidance is tool-specific reference material with no Codex-specific runtime divergence."
     }
   ]
 }

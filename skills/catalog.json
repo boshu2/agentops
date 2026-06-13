@@ -1,7 +1,7 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-12T18:53:02Z",
-  "skill_count": 71,
+  "generated_at": "2026-06-13T18:04:08Z",
+  "skill_count": 72,
   "skills": [
     {
       "name": "account-rotation",
@@ -403,6 +403,25 @@
       ],
       "references_count": 0,
       "codex_override_present": true
+    },
+    {
+      "name": "converge",
+      "description": "Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — the loop, the context-quorum floor, the LAW-0 cross-family dispatch table, and the canary entry gate all live in Go.",
+      "hexagonal_role": "driving-adapter",
+      "user_invocable": false,
+      "consumes": [
+        "ao converge"
+      ],
+      "produces": [
+        "stdout"
+      ],
+      "practices": [
+        "design-by-contract",
+        "llm-eval-harness"
+      ],
+      "context_rel": [],
+      "references_count": 0,
+      "codex_override_present": false
     },
     {
       "name": "converter",
@@ -945,7 +964,7 @@
     },
     {
       "name": "pre-land-refuters",
-      "description": "Dispatch unbiased parallel refuters before landing a large multi-surface change: a fresh-context Fable validator + a codex exec read-only validator try to REFUTE the completion claim; their findings are the work list. Use before pushing any 100+ file change, corpus prune, generated-surface regen, or contract-test repoint. Triggers: pre-land validation, unbiased review, refute before push, dual-model landing check.",
+      "description": "Dispatch unbiased refuters (fresh Fable + read-only codex exec) to attack a completion claim before landing a large change. Triggers: pre-land validation, refute before push.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "consumes": [

@@ -353,7 +353,7 @@ AgentOps 3.0 is hookless — these invariants live in CI and the skills themselv
 .
 ├── .claude-plugin/
 │   └── plugin.json      # Plugin manifest
-├── skills/              # 71 skills (65 user-facing, 6 internal)
+├── skills/              # 72 skills (66 user-facing, 6 internal)
 │   ├── rpi/             # orchestration — Full RPI lifecycle orchestrator
 │   ├── council/         # orchestration — Multi-model validation (core primitive)
 │   ├── crank/           # orchestration — Autonomous epic execution
