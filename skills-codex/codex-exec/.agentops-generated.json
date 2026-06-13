@@ -2,8 +2,6 @@
   "generator": "manual-maintained",
   "source_skill": "skills/codex-exec",
   "layout": "modular",
-  "source_hash": "6ba1544b32285b89f4367a7bd3fa13d247cfc5df58d1cfc2d0182696e1a365b6",
-  "generated_hash": "0e1778e7c62eb6d26fc7386d8302cc67430ab87740eebd1c15e701adca843c53"
-  "source_hash": "25a66569a635dd00db1fa384e53ef85f38628f09dc41dc96a6100214a3da7547",
+  "source_hash": "2a13b0c84796b06e32ec9bfb70e4e60bae0e1feca2564606807dba2fe8db3791",
   "generated_hash": "0e1778e7c62eb6d26fc7386d8302cc67430ab87740eebd1c15e701adca843c53"
 }
