@@ -7,8 +7,19 @@ cd "$REPO_ROOT"
 
 failures=0
 
+# ag-2vz5v: resolve skill paths through the dispositions ledger so folds/cuts
+# auto-retarget. Identity fallback keeps hermetic test copies self-contained.
+if [[ -f "$REPO_ROOT/scripts/lib/resolve-skill-path.sh" ]]; then
+  # shellcheck source=lib/resolve-skill-path.sh
+  source "$REPO_ROOT/scripts/lib/resolve-skill-path.sh"
+else
+  resolve_skill_path() { printf '%s\n' "$1"; }
+fi
+
 require_contains() {
-  local file="$1"
+  local file
+  file="$(resolve_skill_path "$1")"
+  [[ -n "$file" ]] || return 0 # cut slug: resolver warned; skip visibly
   local needle="$2"
   local message="$3"
   if ! grep -Fq -- "$needle" "$file"; then
@@ -20,7 +31,9 @@ require_contains() {
 }
 
 require_not_contains() {
-  local file="$1"
+  local file
+  file="$(resolve_skill_path "$1")"
+  [[ -n "$file" ]] || return 0 # cut slug: resolver warned; skip visibly
   local needle="$2"
   local message="$3"
   if grep -Fq -- "$needle" "$file"; then
