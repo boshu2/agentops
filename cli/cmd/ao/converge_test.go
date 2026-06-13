@@ -88,3 +88,21 @@ func mustWriteKill(t *testing.T, killDir string) {
 		t.Fatal(err)
 	}
 }
+
+func TestConvergeProductionCanaryIsTwoSided(t *testing.T) {
+	// The real gate must bite the planted self-judge and accept the good fixture.
+	res := convergeRunCanary(convergeProductionCanaryGate)
+	if !res.Passed || !res.Proceed {
+		t.Fatalf("production canary Passed=%v Proceed=%v, want both true: %s", res.Passed, res.Proceed, res.Message)
+	}
+	// A gate that accepts everything must abort the run.
+	broken := convergeRunCanary(func(string) (bool, int) { return false, 0 })
+	if broken.Proceed {
+		t.Fatal("broken (accept-all) gate must not let converge proceed")
+	}
+	// A degenerate all-reject gate gives false confidence and must also fail.
+	allReject := convergeRunCanary(func(string) (bool, int) { return true, convergeCanaryRejectCode })
+	if allReject.Passed {
+		t.Fatal("all-reject gate must fail the two-sided canary")
+	}
+}
