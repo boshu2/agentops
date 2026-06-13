@@ -5,7 +5,7 @@ practices:
 - lean-startup
 - dora-metrics
 - agile-manifesto
-hexagonal_role: supporting
+hexagonal_role: domain
 consumes:
 - rpi
 - goals

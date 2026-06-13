@@ -1144,7 +1144,7 @@
     {
       "name": "converter",
       "source_skill": "skills/converter",
-      "source_hash": "7ea73a38458afc15a237929495c8df3927c0e750666ca031dcfc11bb33eafe22",
+      "source_hash": "9ba3ef2ecdb30c010171d3551b0afe2ae6ac97479b84f25b0834add04f4f8f8c",
       "generated_hash": "6ec7d7b2abf3018c5b67cef8907a3dba7c104eebd65357c6ab0741a89c234914"
     },
     {
@@ -1246,7 +1246,7 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "1e1db30df5ea455e2e255096308f8f722c8417114dfc47c8688777e0ac2661a8",
+      "source_hash": "2f6ca7073d98a9d587151c703ab34d9c65d71b56bbdfb3f1a6e3c9c1a35fe8db",
       "generated_hash": "53a3353af8ad80a64bed46470578a928d8794efa3d9cd2644502b1bfba608b9f"
     },
     {
@@ -1528,7 +1528,7 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "5f79f7a1fd1e3a4b498e9c548e88737616a7e9f0bf90e4cfafc9419a11625b90",
+      "source_hash": "9daf7412b5d19ee0b14dcb0aeeeb60fd0f406422d901363794606fda5948ff44",
       "generated_hash": "9e1a058756851e44572b3992f93aa0377b60cdb8bff67c2ebb0310fb5db6f9bc"
     },
     {

@@ -13,6 +13,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `crank` — Execute epics through waves.
 - `discovery` — Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing).
 - `domain` — Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs.
+- `evolve` — Run autonomous improvement loops.
 - `flywheel` — Check knowledge flywheel health.
 - `forge` — Mine transcripts into learnings.
 - `goals` — Maintain AgentOps goals.
@@ -23,6 +24,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `pre-mortem` — Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.
 - `product` — Create or refine PRODUCT.md.
 - `reality-check` — Mid-epic drift audit: code is ground truth; README/PRODUCT/plan are the measuring stick. Use when a wave boundary lands and bead counts look healthy but value feels absent.
+- `rpi` — Run discovery, crank, validation.
 - `shared` — Shared AgentOps skill contracts.
 - `standards` — Provide repo coding standards.
 
@@ -47,6 +49,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 ### driven-adapter
 
 - `beads` — Track issues with bd/br, triage with bv, and convert plans to beads.
+- `converter` — Convert AgentOps skill formats.
 - `scope` — Hard-block edits outside declared frozen directories and protect paths during risky changes.
 - `security` — Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates.
 
@@ -69,7 +72,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `dcg` — Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails.
 - `doc` — Generate and validate repo docs, READMEs, and OSS doc packs.
 - `eval-outcomes` — Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario.
-- `evolve` — Run autonomous improvement loops.
 - `handoff` — Write compact session handoffs.
 - `heal-skill` — Repair skill hygiene.
 - `ntm` — Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors.
@@ -77,7 +79,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `red-team` — Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.
 - `refactor` — Execute safe refactors.
 - `release` — Run release validation.
-- `rpi` — Run discovery, crank, validation.
 - `sbh` — Disk-pressure defense for AI coding workloads. Use when: disk full, low space, ballast, cleanup, scan artifacts, emergency, sbh daemon, sbh status.
 - `scaffold` — Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure.
 - `skill-auditor` — Audit SKILL.md files against the AgentOps template and readiness checks. Use for quality reviews or template compliance.
@@ -91,7 +92,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### generic
 
-- `converter` — Convert AgentOps skill formats.
+- (no skills in this role yet)
 
 ### unclassified
 

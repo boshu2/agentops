@@ -364,7 +364,7 @@ dispositions:
     rationale:        "Corpus compiler is core; align read/write flows to Corpus ports"
   - skill:            converter
     domain:           "BC4 Factory"
-    hexagonal_role:   generic
+    hexagonal_role:   driven-adapter
     disposition:      keep
     kind:             skill
     runtime_targets:  [claude, codex]
@@ -373,7 +373,7 @@ dispositions:
     path:             skills/converter/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Cross-runtime packaging adapter (Codex/Cursor twins); skill-builder consumes it — live producer→consumer edge (resolved 2026-05-24)"
+    rationale:        "Cross-runtime packaging adapter (Codex/Cursor twins) the factory drives to emit converted-skill output; skill-builder consumes it. Re-graded generic→driven-adapter (ag-j3ge0 — it adapts the factory to runtime skill formats, a driven port, not an unclassified generic)."
   - skill:            council
     domain:           "BC2 Validation"
     hexagonal_role:   domain
@@ -448,7 +448,7 @@ dispositions:
     rationale:        "Ubiquitous-language kernel; central to DDD"
   - skill:            evolve
     domain:           "BC3 Loop"
-    hexagonal_role:   supporting
+    hexagonal_role:   domain
     disposition:      refactor
     kind:             skill
     runtime_targets:  [claude, codex]
@@ -457,7 +457,7 @@ dispositions:
     path:             skills/evolve/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Main loop; must use `soc-y5vh` typed Loop ports and convergence STOP"
+    rationale:        "Autonomous improvement main loop with convergence STOP; promoted supporting→domain (ag-j3ge0 — the loop's core driver, not a peripheral helper)"
   - skill:            flywheel
     domain:           "BC1 Corpus"
     hexagonal_role:   domain
@@ -543,7 +543,7 @@ dispositions:
     supersedes:       null
     rationale:        "Context injection should be explicit CorpusReader adapter use"
   - skill:            perf
-    domain:           "BC2 Validation"
+    domain:           "BC3 Loop"
     hexagonal_role:   domain
     disposition:      update
     kind:             skill
@@ -553,7 +553,7 @@ dispositions:
     path:             skills/perf/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Performance generator; add thresholds and proof examples"
+    rationale:        "Performance profile-and-optimize loop; re-binned BC2→BC3 (ag-j3ge0 — drives optimization work inside the loop, not a fitness gate)"
   - skill:            plan
     domain:           "BC3 Loop"
     hexagonal_role:   domain
@@ -651,7 +651,7 @@ dispositions:
     supersedes:       null
     rationale:        "Probe generator; add severity/evidence contract"
   - skill:            refactor
-    domain:           "BC2 Validation"
+    domain:           "BC3 Loop"
     hexagonal_role:   supporting
     disposition:      update
     kind:             skill
@@ -661,7 +661,7 @@ dispositions:
     path:             skills/refactor/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Refactor generator; align with complexity thresholds and TDD proof"
+    rationale:        "Refactor generator; loop-side change execution (re-binned BC2→BC3, ag-j3ge0 — produces code changes inside the operating loop, not a validation gate)"
   - skill:            release
     domain:           "BC2 Validation"
     hexagonal_role:   supporting
@@ -700,7 +700,7 @@ dispositions:
     rationale:        "Human-facing review gate; align to validator output contract"
   - skill:            rpi
     domain:           "BC3 Loop"
-    hexagonal_role:   supporting
+    hexagonal_role:   domain
     disposition:      refactor
     kind:             skill
     runtime_targets:  [claude, codex]
@@ -709,7 +709,7 @@ dispositions:
     path:             skills/rpi/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "Lifecycle orchestrator; should consume BDD intent and preserve objective spine"
+    rationale:        "Loop-spine lifecycle orchestrator (Research→Plan→Implement); promoted supporting→domain (ag-j3ge0 — the per-turn executor IS the operating loop's core logic, not a peripheral helper)"
   - skill:            scaffold
     domain:           "BC4 Factory"
     hexagonal_role:   supporting
@@ -987,7 +987,7 @@ dispositions:
     supersedes:       null
     rationale:        "Unified host-routed account rotation (macOS+Claude->claude-acct Keychain swap; else->caam file swap); supersedes the retired caam skill."
   - skill:            cass
-    domain:           "BC5 Runtime"
+    domain:           "BC1 Corpus"
     hexagonal_role:   supporting
     disposition:      keep
     kind:             skill
@@ -997,7 +997,7 @@ dispositions:
     path:             skills/cass/SKILL.md
     aliases:          []
     supersedes:       null
-    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+    rationale:        "Mines past agent sessions for prompts/decisions/patterns — a corpus reader; re-binned BC5→BC1 (ag-j3ge0, capability_class=corpus already)."
   - skill:            cc-hooks
     domain:           "BC5 Runtime"
     hexagonal_role:   supporting
