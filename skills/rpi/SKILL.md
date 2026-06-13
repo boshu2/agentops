@@ -10,7 +10,7 @@ practices:
 - dora-metrics
 - agile-manifesto
 - pragmatic-programmer
-hexagonal_role: supporting
+hexagonal_role: domain
 consumes:
 - crank
 - discovery
