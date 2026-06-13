@@ -19,6 +19,15 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# ag-2vz5v: resolve skill paths through the dispositions ledger so folds/cuts
+# auto-retarget. Identity fallback keeps hermetic test copies self-contained.
+if [[ -f "$ROOT/scripts/lib/resolve-skill-path.sh" ]]; then
+  # shellcheck source=lib/resolve-skill-path.sh
+  source "$ROOT/scripts/lib/resolve-skill-path.sh"
+else
+  resolve_skill_path() { printf '%s\n' "$1"; }
+fi
+
 FILES=(
   "AGENTS.md"
   "docs/architecture/primitive-chains.md"
@@ -54,7 +63,9 @@ fail() {
 
 violations=0
 scanned=0
-for rel in "${FILES[@]}"; do
+for raw in "${FILES[@]}"; do
+  rel="$(resolve_skill_path "$raw")"
+  [[ -n "$rel" ]] || continue # cut slug: resolver warned; skip visibly
   file="$ROOT/$rel"
   [[ -f "$file" ]] || continue
   scanned=$((scanned + 1))

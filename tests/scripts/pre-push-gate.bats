@@ -16,6 +16,7 @@ setup() {
     FAKE_REPO="$TMP_DIR/repo"
     mkdir -p \
         "$FAKE_REPO/scripts" \
+        "$FAKE_REPO/scripts/lib" \
         "$FAKE_REPO/cli" \
         "$FAKE_REPO/hooks" \
         "$FAKE_REPO/cli/embedded/hooks" \
@@ -31,6 +32,10 @@ setup() {
     echo "content" > "$FAKE_REPO/cli/embedded/hooks/hooks.json"
 
     GATE="$FAKE_REPO/scripts/pre-push-gate.sh"
+    # ag-2vz5v: resolve-skill-path.sh is SOURCED by the gate, not executed; an
+    # exit-0 stub makes the gate's probe-then-source guard fall back to identity
+    # (no rewrite), matching the no-historical-row behavior on the real repo.
+    make_stub "$FAKE_REPO/scripts/lib/resolve-skill-path.sh"
     make_stub "$FAKE_REPO/scripts/validate-go-fast.sh"
     make_stub "$FAKE_REPO/scripts/check-go-command-test-pair.sh"
     make_stub "$FAKE_REPO/scripts/check-mutation-route-coverage.sh"

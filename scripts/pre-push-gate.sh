@@ -75,6 +75,23 @@ if [[ -n "${GIT_DIR:-}" && -z "${GIT_WORK_TREE:-}" ]]; then
     export GIT_WORK_TREE="$REPO_ROOT"
 fi
 
+# ag-2vz5v: resolve skill paths through the dispositions ledger so folds/cuts
+# auto-retarget. Probe-then-source: the bats fake repo auto-stubs every
+# scripts/*.sh literal in this file with a bare `exit 0` script — sourcing
+# that stub would terminate the gate — so only source the lib when a probe
+# subshell confirms it defines resolve_skill_path; otherwise fall back to
+# identity (no rewrite), which keeps behavior byte-identical.
+_rsp_lib="$REPO_ROOT/scripts/lib/resolve-skill-path.sh"
+# shellcheck source=lib/resolve-skill-path.sh
+_rsp_probe="$( (source "$_rsp_lib" >/dev/null 2>&1 && declare -F resolve_skill_path) 2>/dev/null || true )"
+if [[ "$_rsp_probe" == "resolve_skill_path" ]]; then
+    # shellcheck source=lib/resolve-skill-path.sh
+    source "$_rsp_lib"
+else
+    resolve_skill_path() { printf '%s\n' "$1"; }
+fi
+unset _rsp_lib _rsp_probe
+
 run_without_git_env() {
     local var_name
     local -a env_args=(env)
@@ -448,7 +465,12 @@ if [[ "$FAST_MODE" == "true" ]]; then
     else
         HAS_SKILL=0
     fi
-    if echo "$all_changed" | grep -qE '^hooks/|^cli/embedded/|^cli/Makefile$|^scripts/validate-embedded-sync\.sh$|^lib/|^skills/standards/references/'; then
+    hook_changed_regex='^hooks/|^cli/embedded/|^cli/Makefile$|^scripts/validate-embedded-sync\.sh$|^lib/'
+    standards_refs_prefix="$(resolve_skill_path "skills/standards/references/")"
+    if [[ -n "$standards_refs_prefix" ]]; then
+        hook_changed_regex="${hook_changed_regex}|^${standards_refs_prefix}"
+    fi
+    if echo "$all_changed" | grep -qE "$hook_changed_regex"; then
         HAS_HOOK=1
     else
         HAS_HOOK=0
@@ -920,15 +942,18 @@ fi
 
 # --- 12. Skill integrity ---
 if needs_check skill; then
-    if [[ -x skills/heal-skill/scripts/heal.sh ]]; then
-        if skill_integrity_output="$(bash skills/heal-skill/scripts/heal.sh --strict 2>&1)"; then
+    heal_script="$(resolve_skill_path "skills/heal-skill/scripts/heal.sh")"
+    if [[ -z "$heal_script" ]]; then
+        skip "skill integrity (heal-skill cut in dispositions ledger)"
+    elif [[ -x "$heal_script" ]]; then
+        if skill_integrity_output="$(bash "$heal_script" --strict 2>&1)"; then
             pass "skill integrity"
         else
             fail "skill integrity"
             indent_output "$skill_integrity_output"
         fi
     else
-        fail "missing executable: skills/heal-skill/scripts/heal.sh"
+        fail "missing executable: $heal_script"
     fi
 else
     skip "skill integrity"
