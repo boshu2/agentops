@@ -298,12 +298,21 @@ claude (print-mode) call (LAW 0).
 		maxRounds, _ := cmd.Flags().GetInt("max-rounds")
 		minContexts, _ := cmd.Flags().GetInt("min-contexts")
 		requireCrossFamily, _ := cmd.Flags().GetBool("require-cross-family")
+
+		// Mandatory ENTRY canary: prove the gate can FAIL on a planted positive
+		// (and accepts a known-good) before trusting any PASS. An empty/PASS result
+		// is a lie until proven to bite. A failed canary aborts before any dispatch.
+		canary := convergeRunCanary(convergeProductionCanaryGate)
+		if !canary.Proceed {
+			return fmt.Errorf("%s", canary.Message)
+		}
+
 		// The full live loop wires dispatch + the orchestrator fix step; this
 		// command surface exposes the resolved bound/CLAIM. AgentOps never writes a
 		// binding verdict — MTO remains the sole writer.
 		fmt.Fprintf(cmd.OutOrStdout(),
-			"ao converge: bounded loop (max-rounds=%d, min-contexts=%d, require-cross-family=%v); the fix step is the orchestrating agent's, the judge leg is non-mutating.\n",
-			maxRounds, minContexts, requireCrossFamily)
+			"ao converge: %s; bounded loop (max-rounds=%d, min-contexts=%d, require-cross-family=%v); the fix step is the orchestrating agent's, the judge leg is non-mutating.\n",
+			canary.Message, maxRounds, minContexts, requireCrossFamily)
 		return nil
 	},
 }
