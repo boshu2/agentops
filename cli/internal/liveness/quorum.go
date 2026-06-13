@@ -21,20 +21,42 @@ const (
 	ACKVerdictBlock   ACKVerdict = "BLOCK"
 )
 
-// QuorumACK is one recorded cross-model ACK from the consensus log.
+// QuorumACK is one recorded ACK from the consensus log. ContextID is the
+// session-identity axis: two distinct ContextIDs are two effectively-independent
+// judges even when they share a model. An ACK with an empty ContextID predates
+// the context axis and is NOT counted toward the floor (see
+// CheckSignificantActionDetailed) — the context, not the model, is what makes a
+// judge independent.
 type QuorumACK struct {
 	AgentID     string
 	ModelFamily string
+	ContextID   string
 	Verdict     ACKVerdict
 }
 
 // SignificantActionRequest is the orchestration-tier gate input. ActorID is the
-// orchestrator attempting the action; ACKs are the already-recorded quorum
-// approvals, for example from Agent Mail or bd.
+// orchestrator attempting the action; ActorContextID is the author's CONTEXT —
+// the axis that is excluded from the floor (never the author's model). ACKs are
+// the already-recorded quorum approvals, for example from Agent Mail or bd.
+// RequireCrossFamily is an OPTIONAL strengthener: off by default (the context
+// floor IS the floor); on = additionally require >=2 distinct model families
+// among the counted contexts.
 type SignificantActionRequest struct {
-	ActorID string
-	Action  SignificantAction
-	ACKs    []QuorumACK
+	ActorID            string
+	ActorContextID     string
+	Action             SignificantAction
+	RequireCrossFamily bool
+	ACKs               []QuorumACK
+}
+
+// CheckSignificantActionResult is the detailed verdict of the context-quorum
+// gate. DistinctNonAuthorContexts is the count of distinct approving contexts
+// after excluding the author context and de-duplicating shared contexts.
+// UnmetReason is populated only when Decision != Allowed.
+type CheckSignificantActionResult struct {
+	Decision                  Decision
+	DistinctNonAuthorContexts int
+	UnmetReason               string
 }
 
 // IsSignificantAction reports whether action needs cross-model quorum.
@@ -52,31 +74,74 @@ func IsSignificantAction(action SignificantAction) bool {
 	}
 }
 
-// CheckSignificantAction enforces the orchestration-tier no-self-grade rule. A
-// non-significant action is allowed. A significant action needs at least two
-// distinct non-actor ACKs spanning at least two model families; otherwise it must
-// be routed to admission instead of executed.
+// CheckSignificantAction enforces the orchestration-tier no-self-grade rule and
+// is a thin wrapper over CheckSignificantActionDetailed (kept for existing
+// callers that only need the Decision).
 func CheckSignificantAction(req SignificantActionRequest) Decision {
+	return CheckSignificantActionDetailed(req).Decision
+}
+
+// CheckSignificantActionDetailed is the context-quorum gate. The independence
+// axis is FRESH CONTEXT, not model family: a significant action needs at least
+// two distinct NON-AUTHOR contexts that APPROVE. The author's CONTEXT is
+// excluded (never the author's model — the producing model may judge its own
+// work from a fresh context). model_family is demoted to an OPTIONAL
+// RequireCrossFamily strengthener.
+//
+// Counting rules for an ACK to contribute one distinct context:
+//   - Verdict must be ACKVerdictApprove (BLOCK never counts).
+//   - ContextID must be non-empty. A legacy ACK with an empty ContextID predates
+//     the context axis and is NOT counted (fail-closed: an unidentifiable
+//     context cannot be proven independent).
+//   - ContextID must differ from req.ActorContextID (the author's context is
+//     excluded regardless of AgentID or model family).
+//
+// Distinct contexts are de-duplicated, so two ACKs sharing one context are one
+// judge. Author MODEL/AgentID is never a basis for exclusion — only the context.
+func CheckSignificantActionDetailed(req SignificantActionRequest) CheckSignificantActionResult {
 	if !IsSignificantAction(req.Action) {
-		return Allowed
+		return CheckSignificantActionResult{Decision: Allowed}
 	}
-	if req.ActorID == "" {
-		return Denied
+	// Cannot exclude the author's context from the floor if we do not know it.
+	if req.ActorID == "" && req.ActorContextID == "" {
+		return CheckSignificantActionResult{
+			Decision:    Denied,
+			UnmetReason: "cannot identify author context",
+		}
 	}
-	agents := map[string]struct{}{}
+
+	contexts := map[string]struct{}{}
 	families := map[string]struct{}{}
 	for _, ack := range req.ACKs {
 		if ack.Verdict != ACKVerdictApprove {
 			continue
 		}
-		if ack.AgentID == "" || ack.ModelFamily == "" || ack.AgentID == req.ActorID {
+		if ack.ContextID == "" || ack.ContextID == req.ActorContextID {
 			continue
 		}
-		agents[ack.AgentID] = struct{}{}
-		families[ack.ModelFamily] = struct{}{}
+		contexts[ack.ContextID] = struct{}{}
+		if ack.ModelFamily != "" {
+			families[ack.ModelFamily] = struct{}{}
+		}
 	}
-	if len(agents) >= 2 && len(families) >= 2 {
-		return Allowed
+	n := len(contexts)
+
+	if n < 2 {
+		return CheckSignificantActionResult{
+			Decision:                  NeedsAdmission,
+			DistinctNonAuthorContexts: n,
+			UnmetReason:               "context floor: need >=2 distinct non-author contexts",
+		}
 	}
-	return NeedsAdmission
+	if req.RequireCrossFamily && len(families) < 2 {
+		return CheckSignificantActionResult{
+			Decision:                  NeedsAdmission,
+			DistinctNonAuthorContexts: n,
+			UnmetReason:               "cross-family strengthener: need >=2 model families",
+		}
+	}
+	return CheckSignificantActionResult{
+		Decision:                  Allowed,
+		DistinctNonAuthorContexts: n,
+	}
 }

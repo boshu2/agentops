@@ -92,34 +92,34 @@ func TestKernelComposition_FullAdmissionFlow(t *testing.T) {
 		t.Fatal("Disjoint primitive disagrees with Check VerbJudge — vocabularies diverged")
 	}
 
-	// 5) CROSS-MODEL QUORUM (quorum.go): merging the worker's result to main is a
-	//    significant action. Solo → NeedsAdmission; the actor's own ACK does not
-	//    count; two SAME-family ACKs do not clear (collusion guard); two distinct
-	//    families clear.
-	merge := SignificantActionRequest{ActorID: "worker-1", Action: SignificantActionMergeMain}
+	// 5) CONTEXT QUORUM (quorum.go): merging the worker's result to main is a
+	//    significant action. Solo → NeedsAdmission; the actor's own CONTEXT does
+	//    not count; two distinct non-author contexts clear (the independence axis
+	//    is fresh context, not model family).
+	merge := SignificantActionRequest{ActorID: "worker-1", ActorContextID: "ctx-author", Action: SignificantActionMergeMain}
 	if got := CheckSignificantAction(merge); got != NeedsAdmission {
 		t.Fatalf("solo merge-main: want NeedsAdmission, got %s", got)
 	}
 	selfAck := merge
-	selfAck.ACKs = []QuorumACK{{AgentID: "worker-1", ModelFamily: "claude", Verdict: ACKVerdictApprove}}
+	selfAck.ACKs = []QuorumACK{{AgentID: "worker-1", ContextID: "ctx-author", ModelFamily: "claude", Verdict: ACKVerdictApprove}}
 	if got := CheckSignificantAction(selfAck); got != NeedsAdmission {
-		t.Fatalf("actor self-ACK must not count: want NeedsAdmission, got %s", got)
+		t.Fatalf("actor self-context ACK must not count: want NeedsAdmission, got %s", got)
 	}
-	sameFamily := merge
-	sameFamily.ACKs = []QuorumACK{
-		{AgentID: "rev-a", ModelFamily: "claude", Verdict: ACKVerdictApprove},
-		{AgentID: "rev-b", ModelFamily: "claude", Verdict: ACKVerdictApprove},
+	oneContext := merge
+	oneContext.ACKs = []QuorumACK{
+		{AgentID: "rev-a", ContextID: "ctx-judge-shared", ModelFamily: "claude", Verdict: ACKVerdictApprove},
+		{AgentID: "rev-b", ContextID: "ctx-judge-shared", ModelFamily: "claude", Verdict: ACKVerdictApprove},
 	}
-	if got := CheckSignificantAction(sameFamily); got != NeedsAdmission {
-		t.Fatalf("two same-family ACKs (collusion guard): want NeedsAdmission, got %s", got)
+	if got := CheckSignificantAction(oneContext); got != NeedsAdmission {
+		t.Fatalf("two ACKs sharing one context are one judge: want NeedsAdmission, got %s", got)
 	}
-	crossFamily := merge
-	crossFamily.ACKs = []QuorumACK{
-		{AgentID: "rev-a", ModelFamily: "claude", Verdict: ACKVerdictApprove},
-		{AgentID: "rev-b", ModelFamily: "codex", Verdict: ACKVerdictApprove},
+	twoContexts := merge
+	twoContexts.ACKs = []QuorumACK{
+		{AgentID: "rev-a", ContextID: "ctx-judge-a", ModelFamily: "claude", Verdict: ACKVerdictApprove},
+		{AgentID: "rev-b", ContextID: "ctx-judge-b", ModelFamily: "codex", Verdict: ACKVerdictApprove},
 	}
-	if got := CheckSignificantAction(crossFamily); got != Allowed {
-		t.Fatalf("two cross-family ACKs: want Allowed, got %s", got)
+	if got := CheckSignificantAction(twoContexts); got != Allowed {
+		t.Fatalf("two distinct-context ACKs: want Allowed, got %s", got)
 	}
 	quorumInbound := AdmitInboundWorkMessage(InboundWorkMessage{
 		SenderID:                 "quorum-log",
@@ -127,10 +127,10 @@ func TestKernelComposition_FullAdmissionFlow(t *testing.T) {
 		Authenticated:            true,
 		Intent:                   InboundIntentDirective,
 		SignificantAction:        SignificantActionMergeMain,
-		SignificantActionRequest: crossFamily,
+		SignificantActionRequest: twoContexts,
 	})
 	if !quorumInbound.CanExecute() {
-		t.Fatalf("cross-family quorum inbound directive = %+v, want executable", quorumInbound)
+		t.Fatalf("two-context quorum inbound directive = %+v, want executable", quorumInbound)
 	}
 
 	// 6) HARD EXPIRY + TAKEOVER (work_lease.go): the worker goes dark, its lease

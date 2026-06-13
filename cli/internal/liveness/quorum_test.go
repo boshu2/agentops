@@ -15,15 +15,16 @@ func TestCheckSignificantActionSoloCommitNeedsAdmission(t *testing.T) {
 
 func TestCheckSignificantActionTwoCrossModelACKsAllowed(t *testing.T) {
 	got := CheckSignificantAction(SignificantActionRequest{
-		ActorID: "sageharbor",
-		Action:  SignificantActionMergeMain,
+		ActorID:        "sageharbor",
+		ActorContextID: "ctx-author",
+		Action:         SignificantActionMergeMain,
 		ACKs: []QuorumACK{
-			{AgentID: "windycastle", ModelFamily: "claude", Verdict: ACKVerdictApprove},
-			{AgentID: "rubymoose", ModelFamily: "openai", Verdict: ACKVerdictApprove},
+			{AgentID: "windycastle", ContextID: "ctx-judge-a", ModelFamily: "claude", Verdict: ACKVerdictApprove},
+			{AgentID: "rubymoose", ContextID: "ctx-judge-b", ModelFamily: "openai", Verdict: ACKVerdictApprove},
 		},
 	})
 	if got != Allowed {
-		t.Fatalf("two cross-model ACKs = %q, want %q", got, Allowed)
+		t.Fatalf("two distinct-context ACKs = %q, want %q", got, Allowed)
 	}
 }
 
@@ -42,16 +43,20 @@ func TestCheckSignificantActionSameFamilyNeedsAdmission(t *testing.T) {
 }
 
 func TestCheckSignificantActionActorACKDoesNotCount(t *testing.T) {
+	// The author's own CONTEXT is excluded (not the author's model): the actor's
+	// ACK carries the author context and must not count, leaving 1 distinct
+	// non-author context, below the floor.
 	got := CheckSignificantAction(SignificantActionRequest{
-		ActorID: "sageharbor",
-		Action:  SignificantActionP0Bead,
+		ActorID:        "sageharbor",
+		ActorContextID: "ctx-author",
+		Action:         SignificantActionP0Bead,
 		ACKs: []QuorumACK{
-			{AgentID: "sageharbor", ModelFamily: "openai", Verdict: ACKVerdictApprove},
-			{AgentID: "windycastle", ModelFamily: "claude", Verdict: ACKVerdictApprove},
+			{AgentID: "sageharbor", ContextID: "ctx-author", ModelFamily: "openai", Verdict: ACKVerdictApprove},
+			{AgentID: "windycastle", ContextID: "ctx-judge-a", ModelFamily: "claude", Verdict: ACKVerdictApprove},
 		},
 	})
 	if got != NeedsAdmission {
-		t.Fatalf("actor self-ACK counted: got %q, want %q", got, NeedsAdmission)
+		t.Fatalf("actor self-context ACK counted: got %q, want %q", got, NeedsAdmission)
 	}
 }
 
