@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "23dd75a007bebef88b11a0dae0426f444cb81fc59360569802ac8a9ff0d502e8",
+  "codex_override_catalog_hash": "1cfc8283713dec46a27a9e7293730d4aaf3ef6fda3241133f05a310a08bb9ed0",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -981,6 +981,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "seams epic ag-xwjlc parity twin"
+      },
+      {
+        "name": "converge",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Thin memo over the Go ao converge command; loop + canary live in cli, parity twin suffices."
       }
     ]
   },
@@ -1134,6 +1140,12 @@
       "source_skill": "skills/continuity-loop",
       "source_hash": "ae72b1a9f5a4b7440003cf1d8391d824e75b7093bb82a668b2027d3341880176",
       "generated_hash": "21df76c40e36953b9cbd971b04c342637efcbc84548f6dd599b855e44216c573"
+    },
+    {
+      "name": "converge",
+      "source_skill": "skills/converge",
+      "source_hash": "f7711e6ff9a7d4c212cd8a9242c3189649290bf96a2ba50074e16f9a9d8ce094",
+      "generated_hash": "4210749b835a469aac459ae9a6e66aaab9df62e2370f02575052f6eaf97b6264"
     },
     {
       "name": "converter",

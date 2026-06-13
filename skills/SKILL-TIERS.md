@@ -220,7 +220,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (65)
+### User-Facing Skills (66)
 
 **Judgment:**
 
@@ -327,6 +327,7 @@ These are how skills chain in practice:
 | **operationalize** | execution | >- |
 | **reality-check** | execution | >- |
 | **toil-mining** | execution | >- |
+| **converge** | execution | Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — the loop, the context-quorum floor, the LAW-0 cross-family dispatch table, and the canary entry gate all live in Go. |
 
 ### Internal Skills (6) — `metadata.internal: true`
 

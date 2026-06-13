@@ -1,15 +1,16 @@
 {
   "schema_version": 2,
   "generated_at": "2026-06-13T17:49:23Z",
+  "generated_at": "2026-06-13T18:07:03Z",
   "summary": {
-    "skills": 71,
+    "skills": 72,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 84,
     "workflows": 4,
-    "capabilities": 169
+    "capabilities": 170
   },
   "surfaces": {
     "skills": [
@@ -145,6 +146,14 @@
         "name": "continuity-loop",
         "tier": "execution",
         "path": "skills/continuity-loop/",
+        "has_skill_md": true,
+        "has_references": false,
+        "reference_count": 0
+      },
+      {
+        "name": "converge",
+        "tier": "execution",
+        "path": "skills/converge/",
         "has_skill_md": true,
         "has_references": false,
         "reference_count": 0
@@ -842,8 +851,10 @@
         "name": "ao converge",
         "path": "cli/cmd/ao/",
         "purpose": "Bounded fix -> re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK",
-        "bounded_context": "",
-        "driven_by_skills": []
+        "bounded_context": "BC5",
+        "driven_by_skills": [
+          "converge"
+        ]
       },
       {
         "name": "ao corpus",
@@ -1475,8 +1486,8 @@
     ]
   },
   "capability_summary": {
-    "total": 169,
-    "skills": 71,
+    "total": 170,
+    "skills": 72,
     "cli_commands": 84,
     "gates": 14,
     "reference_impls": 0
@@ -2130,6 +2141,39 @@
       ],
       "drives_commands": [],
       "path": "skills/continuity-loop/",
+      "references": 0
+    },
+    {
+      "sku": "skill:converge",
+      "name": "converge",
+      "type": "skill",
+      "kind": "skill",
+      "bounded_context": "BC5",
+      "hex_role": "driving-adapter",
+      "tier": "execution",
+      "capability_class": "orchestration",
+      "purpose": "Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — the loop, the context-quorum floor, the LAW-0 cross-family dispatch table, and the canary entry gate all live in Go.",
+      "status": "active",
+      "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
+      "consumes": [
+        "ao converge"
+      ],
+      "produces": [
+        "stdout"
+      ],
+      "drives_commands": [
+        "ao codex dispatch",
+        "ao converge"
+      ],
+      "path": "skills/converge/",
       "references": 0
     },
     {
@@ -4207,10 +4251,12 @@
       "sku": "cmd:ao.converge",
       "name": "ao converge",
       "type": "cli-command",
-      "bounded_context": "",
+      "bounded_context": "BC5",
       "purpose": "Bounded fix -> re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK",
       "status": "active",
-      "driven_by_skills": [],
+      "driven_by_skills": [
+        "converge"
+      ],
       "flags": [
         "--config",
         "--dry-run",
