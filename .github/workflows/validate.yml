@@ -112,6 +112,12 @@ jobs:
             contracts:
               - 'schemas/**'
               - 'docs/contracts/**'
+              # Claude workflows (ag-jy8gj): the workflow-governance drift gate is a
+              # bidirectional identity match between .claude/workflows/*.js and the
+              # `workflows:` ledger section in docs/contracts/skill-dispositions.yaml.
+              # A .js add/remove/rename must re-run that gate, so the workflow dir is
+              # a contracts trigger (the ledger half is already covered by docs/contracts/**).
+              - '.claude/workflows/**'
               # redteam-pack target globs (ag-nl1u): every file the
               # security redteam pack
               # (skills/security/references/agentops-redteam-pack.json)
@@ -1008,6 +1014,16 @@ jobs:
         run: |
           chmod +x scripts/check-bounded-contexts-drift.sh
           ./scripts/check-bounded-contexts-drift.sh
+
+      - name: Check workflow governance drift (ag-jy8gj — js<->ledger bijection + kind/BC/role)
+        # Bidirectional: every .claude/workflows/*.js has a `workflows:` ledger row
+        # carrying kind: workflow + a Bounded Context (domain) + a hexagonal_role,
+        # and every kind: workflow ledger row has a matching .js (no stale rows).
+        # Workflows are Claude-only — no Codex twin required.
+        if: needs.changes.outputs.contracts == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/check-workflow-governance.sh
+          ./scripts/check-workflow-governance.sh
 
       - name: Check skill-domain-map golden (soc-zxia.3 Phase 3)
         if: needs.changes.outputs.skills == 'true' || needs.changes.outputs.ci == 'true'

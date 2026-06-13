@@ -64,9 +64,10 @@ WRONG:    ~/.claude/skills/evolve/SKILL.md (installed copy — do not edit)
 
 ## Registries (generated — don't hand-edit)
 
-Two machine-generated, drift-gated inventories. Edit the **sources** (`skills/**/SKILL.md` for skills, `cli/cmd/ao/` for commands), then regenerate with `make regen-all` (`scripts/regen-all.sh`); `scripts/regen-all.sh --check` is the pre-push/CI drift gate. Never hand-edit the artifacts below.
+Three machine-generated, drift-gated inventories (kind-discriminated: `skill` · `workflow` · CLI command), spanning the 6 Bounded Contexts. Edit the **sources** (`skills/**/SKILL.md` for skills, `.claude/workflows/*.js` + the `workflows:` ledger for workflows, `cli/cmd/ao/` for commands), then regenerate with `make regen-all` (`scripts/regen-all.sh`); `scripts/regen-all.sh --check` is the pre-push/CI drift gate. Never hand-edit the artifacts below.
 
 - **Skills registry** — `registry.json` (canonical skill inventory) · `docs/SKILLS.md` (catalog + routes) · `skills/SKILL-TIERS.md` (tiers) · `docs/reference/agentops-skill-domain-map.md` (DDD/domain map) · `docs/contracts/skill-dispositions.yaml` (per-skill disposition ledger — keep/fold/cut; the source `ao skills retire` retargets validators through).
+- **Workflows registry** — `registry.json` `workflows[]` surface (the Claude-only `.claude/workflows/*.js` orchestration scripts, `kind: workflow`) · sourced from the top-level `workflows:` section of `docs/contracts/skill-dispositions.yaml` (kind + Bounded Context + hexagonal_role). Workflows are Claude-runtime only (no Codex twin). Drift gate: `scripts/check-workflow-governance.sh` enforces the bidirectional `.js`↔ledger bijection + the kind/BC/role identity triple.
 - **Tools registry** — `cli/docs/COMMANDS.md` (full `ao` command surface) · `docs/cli-surface.{json,md}` (surface snapshot for parity). Both generated from `cli/cmd/ao/`.
 
 ## Deep reference (on-demand, not auto-loaded)
