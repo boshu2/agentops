@@ -395,6 +395,56 @@ build_cli_commands() {
   }] | sort_by(.name)'
 }
 
+# ─── Workflows surface (ag-4akl8 S0) ────────────────────────────────────────
+#
+# Emit the top-level `workflows:` section of skill-dispositions.yaml as a
+# first-class registry surface. Workflows are kind: workflow artifacts (Claude
+# Workflow .js scripts) — claude-only, parity-exempt — that the `- skill:`
+# line-parsers deliberately skip. The registry surfaces them by reading `kind`
+# so consumers can enumerate workflows without re-parsing the ledger.
+
+build_workflows() {
+  local disp_yaml="${REPO_ROOT}/docs/contracts/skill-dispositions.yaml"
+  if [[ ! -f "$disp_yaml" ]] || ! command -v python3 >/dev/null 2>&1; then
+    echo "[]"
+    return
+  fi
+  DISP_YAML="$disp_yaml" python3 - <<'PY' 2>/dev/null || echo "[]"
+import json
+import os
+import sys
+
+try:
+    import yaml
+except ImportError:
+    print("[]")
+    sys.exit(0)
+
+data = yaml.safe_load(open(os.environ["DISP_YAML"], encoding="utf-8")) or {}
+out = []
+for wf_id, e in (data.get("workflows") or {}).items():
+    if not isinstance(e, dict):
+        continue
+    targets = e.get("runtime_targets") or []
+    reach = "cross" if len(targets) > 1 else (targets[0] if targets else "")
+    out.append({
+        "id": wf_id,
+        "kind": e.get("kind", "workflow"),
+        "bounded_context": (str(e.get("domain", "")).split(" ", 1)[0] or ""),
+        "hex_role": e.get("hexagonal_role", ""),
+        "capability_class": e.get("capability_class", ""),
+        "runtime_targets": targets,
+        "runtime_reach": reach,
+        "parity_policy": e.get("parity_policy", ""),
+        "aliases": e.get("aliases", []) or [],
+        "path": e.get("path", ""),
+        "supersedes": (e.get("supersedes") if e.get("supersedes") not in (None, "null") else None),
+    })
+out.sort(key=lambda w: w["id"])
+print(json.dumps(out))
+PY
+}
+
 # ─── Cadence Recommendations ────────────────────────────────────────────────
 
 build_cadence_recommendations() {
@@ -505,15 +555,17 @@ main() {
   evals=$(build_evals)
   cli_commands=$(build_cli_commands "$sku_block")
   cadence=$(build_cadence_recommendations)
+  workflows=$(build_workflows)
 
   # Count totals
-  local skill_count hook_count store_count job_type_count eval_suite_count cli_count
+  local skill_count hook_count store_count job_type_count eval_suite_count cli_count workflow_count
   skill_count=$(echo "$skills" | jq 'length')
   hook_count=$(echo "$hooks" | jq 'length')
   store_count=$(echo "$knowledge_stores" | jq 'length')
   job_type_count=$(echo "$job_types" | jq 'length')
   eval_suite_count=$(echo "$evals" | jq '[.[].eval_count] | add // 0')
   cli_count=$(echo "$cli_commands" | jq 'length')
+  workflow_count=$(echo "$workflows" | jq 'length')
 
   # SKU catalog block (schema v2)
   local capabilities capability_summary cli_top_level capability_count
@@ -546,6 +598,8 @@ main() {
     --argjson capabilities "$capabilities" \
     --argjson capability_summary "$capability_summary" \
     --argjson cli_top_level "$cli_top_level" \
+    --argjson workflows "$workflows" \
+    --argjson workflow_count "$workflow_count" \
     '{
       schema_version: 2,
       generated_at: $generated_at,
@@ -556,6 +610,7 @@ main() {
         job_types: $job_type_count,
         eval_files: $eval_suite_count,
         cli_commands: $cli_count,
+        workflows: $workflow_count,
         capabilities: $capability_count
       },
       surfaces: {
@@ -565,11 +620,13 @@ main() {
         job_types: $job_types,
         schedules: $schedules,
         evals: $evals,
-        cli_commands: $cli_commands
+        cli_commands: $cli_commands,
+        workflows: $workflows
       },
       capability_summary: $capability_summary,
       cli_top_level_commands: $cli_top_level,
       capabilities: $capabilities,
+      workflows: $workflows,
       cadence_recommendations: $cadence
     }')
 

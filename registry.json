@@ -1,8 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-12T19:53:57Z",
-  "generated_at": "2026-06-12T18:53:47Z",
-  "generated_at": "2026-06-12T18:55:56Z",
+  "generated_at": "2026-06-13T16:51:20Z",
   "summary": {
     "skills": 71,
     "hooks": 0,
@@ -10,6 +8,7 @@
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 83,
+    "workflows": 4,
     "capabilities": 168
   },
   "surfaces": {
@@ -1399,6 +1398,73 @@
         "bounded_context": "BC1",
         "driven_by_skills": []
       }
+    ],
+    "workflows": [
+      {
+        "id": "bdd-foundry",
+        "kind": "workflow",
+        "bounded_context": "BC3",
+        "hex_role": "driving-adapter",
+        "capability_class": "planning",
+        "runtime_targets": [
+          "claude"
+        ],
+        "runtime_reach": "claude",
+        "parity_policy": "exempt",
+        "aliases": [],
+        "path": ".claude/workflows/bdd-foundry.js",
+        "supersedes": null
+      },
+      {
+        "id": "bead-crank",
+        "kind": "workflow",
+        "bounded_context": "BC3",
+        "hex_role": "driving-adapter",
+        "capability_class": "orchestration",
+        "runtime_targets": [
+          "claude"
+        ],
+        "runtime_reach": "claude",
+        "parity_policy": "exempt",
+        "aliases": [
+          "crank"
+        ],
+        "path": ".claude/workflows/bead-crank.js",
+        "supersedes": "ship-beads"
+      },
+      {
+        "id": "operating-loop",
+        "kind": "workflow",
+        "bounded_context": "BC3",
+        "hex_role": "driving-adapter",
+        "capability_class": "orchestration",
+        "runtime_targets": [
+          "claude"
+        ],
+        "runtime_reach": "claude",
+        "parity_policy": "exempt",
+        "aliases": [],
+        "path": ".claude/workflows/operating-loop.js",
+        "supersedes": null
+      },
+      {
+        "id": "ship-beads",
+        "kind": "workflow",
+        "bounded_context": "BC3",
+        "hex_role": "driving-adapter",
+        "capability_class": "orchestration",
+        "runtime_targets": [
+          "claude"
+        ],
+        "runtime_reach": "claude",
+        "parity_policy": "exempt",
+        "aliases": [
+          "crank",
+          "bead-crank"
+        ],
+        "path": ".claude/workflows/ship-beads.js",
+        "supersedes": null
+      }
     ]
   },
   "capability_summary": {
@@ -1498,12 +1564,22 @@
       "sku": "skill:account-rotation",
       "name": "account-rotation",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "safety",
       "purpose": "Switch coding-agent accounts on a usage/rate limit or to spread swarm lanes. Routes by host+agent: macOS+Claude via claude-acct; Codex/Gemini and Linux/WSL via caam.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -1514,12 +1590,22 @@
       "sku": "skill:acfs",
       "name": "acfs",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "driving-adapter",
       "tier": "unknown",
+      "capability_class": "orchestration",
       "purpose": "|-",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "substrate-health-report"
@@ -1532,12 +1618,22 @@
       "sku": "skill:agent-mail",
       "name": "agent-mail",
       "type": "skill",
-      "bounded_context": "BC5",
+      "kind": "skill",
+      "bounded_context": "BC6",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "orchestration",
       "purpose": "Use when coordinating agents with Agent Mail locks, inboxes, threads, and conflict-prevention handoffs.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -1548,12 +1644,22 @@
       "sku": "skill:agent-native",
       "name": "agent-native",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "supporting",
       "tier": "meta",
+      "capability_class": "execution",
       "purpose": "Make an out-of-session agent AgentOps-native with skills, the ao CLI, and CI instead of hooks.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "standards",
         "converter",
@@ -1579,12 +1685,22 @@
       "sku": "skill:agy-headless-evidence",
       "name": "agy-headless-evidence",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "validation",
       "purpose": "|-",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "agy-native"
       ],
@@ -1599,12 +1715,22 @@
       "sku": "skill:agy-native",
       "name": "agy-native",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "driving-adapter",
       "tier": "cross-vendor",
+      "capability_class": "execution",
       "purpose": "|-",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "operating-loop-skill"
       ],
@@ -1619,12 +1745,22 @@
       "sku": "skill:autodev",
       "name": "autodev",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "planning",
       "purpose": "Manage the PROGRAM.md/AUTODEV.md contract consumed by evolve/factory ticks. Use for loop rules, boundaries, or PROGRAM.md repair.",
       "status": "active",
       "disposition": "refactor",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "evolve",
         "rpi"
@@ -1643,12 +1779,22 @@
       "sku": "skill:automation-shape-routing",
       "name": "automation-shape-routing",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "meta",
+      "capability_class": "planning",
       "purpose": "Front door for agent automation — decide the SHAPE (Workflow vs ATM vs skill), then hand off. Triggers: \"build automation\", \"convert skills to workflows\", \"which shape\".",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -1659,12 +1805,22 @@
       "sku": "skill:beads",
       "name": "beads",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "driven-adapter",
       "tier": "library",
+      "capability_class": "tracking",
       "purpose": "Track issues with bd/br, triage with bv, and convert plans to beads.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "bd-issue"
       ],
@@ -1683,12 +1839,22 @@
       "sku": "skill:beads-br",
       "name": "beads-br",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "tracking",
       "purpose": ">-",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -1699,12 +1865,22 @@
       "sku": "skill:beads-bv",
       "name": "beads-bv",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "tracking",
       "purpose": ">-",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -1715,12 +1891,22 @@
       "sku": "skill:beads-workflow",
       "name": "beads-workflow",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "tracking",
       "purpose": "Use when converting markdown plans into br beads with dependencies for implementation or swarm execution.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -1731,12 +1917,22 @@
       "sku": "skill:bootstrap",
       "name": "bootstrap",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC4",
       "hex_role": "driving-adapter",
       "tier": "session",
+      "capability_class": "authoring",
       "purpose": "Initialize AgentOps project files.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "goals",
         "product",
@@ -1755,12 +1951,22 @@
       "sku": "skill:cass",
       "name": "cass",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "corpus",
       "purpose": "Mine past agent sessions for working prompts, decisions, and patterns. Use when \"what did I ask?\", \"find that prompt\", session archaeology, or agent history.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -1771,12 +1977,22 @@
       "sku": "skill:cc-hooks",
       "name": "cc-hooks",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "execution",
       "purpose": "Configure Claude Code hooks (PreToolUse, PostToolUse, Stop, Notification). Fold target for the cc-* loop, subagent, and worktree-isolation skills.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -1787,12 +2003,22 @@
       "sku": "skill:codex-approval",
       "name": "codex-approval",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "driving-adapter",
       "tier": "execution",
+      "capability_class": "validation",
       "purpose": "|-",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "using-atm",
         "agent-mail"
@@ -1808,12 +2034,22 @@
       "sku": "skill:codex-exec",
       "name": "codex-exec",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "driving-adapter",
       "tier": "unknown",
+      "capability_class": "execution",
       "purpose": "|-",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "codex-run-output"
@@ -1826,12 +2062,22 @@
       "sku": "skill:compile",
       "name": "compile",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC1",
       "hex_role": "supporting",
       "tier": "knowledge",
+      "capability_class": "corpus",
       "purpose": "Compile .agents knowledge wiki.",
       "status": "active",
       "disposition": "refactor",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         ".agents/compiled/lint-report.md"
@@ -1850,12 +2096,22 @@
       "sku": "skill:continuity-loop",
       "name": "continuity-loop",
       "type": "skill",
-      "bounded_context": "BC5",
+      "kind": "skill",
+      "bounded_context": "BC6",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "orchestration",
       "purpose": ">-",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "ntm",
         "agent-mail"
@@ -1872,12 +2128,22 @@
       "sku": "skill:converter",
       "name": "converter",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC4",
       "hex_role": "generic",
       "tier": "cross-vendor",
+      "capability_class": "authoring",
       "purpose": "Convert AgentOps skill formats.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "converted-skill"
@@ -1890,12 +2156,22 @@
       "sku": "skill:council",
       "name": "council",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC2",
       "hex_role": "domain",
       "tier": "judgment",
+      "capability_class": "validation",
       "purpose": "Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "standards"
       ],
@@ -1911,12 +2187,22 @@
       "sku": "skill:crank",
       "name": "crank",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "execution",
+      "capability_class": "orchestration",
       "purpose": "Execute epics through waves.",
       "status": "active",
       "disposition": "refactor",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "beads",
         "implement",
@@ -1949,12 +2235,22 @@
       "sku": "skill:curate",
       "name": "curate",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC1",
       "hex_role": "supporting",
       "tier": "knowledge",
+      "capability_class": "corpus",
       "purpose": "Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         ".agents/research/*.md"
@@ -1972,12 +2268,22 @@
       "sku": "skill:dcg",
       "name": "dcg",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "safety",
       "purpose": ">-",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -1988,12 +2294,22 @@
       "sku": "skill:discovery",
       "name": "discovery",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "meta",
+      "capability_class": "planning",
       "purpose": "Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing).",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "brainstorm",
         "design",
@@ -2019,12 +2335,22 @@
       "sku": "skill:doc",
       "name": "doc",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "product",
+      "capability_class": "docs",
       "purpose": "Generate and validate repo docs, READMEs, and OSS doc packs.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "repo-context"
       ],
@@ -2039,12 +2365,22 @@
       "sku": "skill:domain",
       "name": "domain",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC4",
       "hex_role": "domain",
       "tier": "knowledge",
+      "capability_class": "docs",
       "purpose": "Canonical vocabulary for human-AI software work. Use when naming concepts, resolving terminology disputes, or establishing shared domain language across agents and docs.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "stdout"
@@ -2067,12 +2403,22 @@
       "sku": "skill:eval-outcomes",
       "name": "eval-outcomes",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC2",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "validation",
       "purpose": "Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "validate",
         "ratchet",
@@ -2093,12 +2439,22 @@
       "sku": "skill:evolve",
       "name": "evolve",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "orchestration",
       "purpose": "Run autonomous improvement loops.",
       "status": "active",
       "disposition": "refactor",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "rpi",
         "goals",
@@ -2139,12 +2495,22 @@
       "sku": "skill:flywheel",
       "name": "flywheel",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC1",
       "hex_role": "domain",
       "tier": "background",
+      "capability_class": "corpus",
       "purpose": "Check knowledge flywheel health.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         ".agents/learnings/*.md"
@@ -2176,12 +2542,22 @@
       "sku": "skill:forge",
       "name": "forge",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC1",
       "hex_role": "domain",
       "tier": "background",
+      "capability_class": "corpus",
       "purpose": "Mine transcripts into learnings.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         ".agents/research/*.md"
@@ -2197,12 +2573,22 @@
       "sku": "skill:goals",
       "name": "goals",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "product",
+      "capability_class": "planning",
       "purpose": "Maintain AgentOps goals.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "result.json"
@@ -2219,12 +2605,22 @@
       "sku": "skill:handoff",
       "name": "handoff",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC1",
       "hex_role": "supporting",
       "tier": "session",
+      "capability_class": "corpus",
       "purpose": "Write compact session handoffs.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         ".agents/research/*.md"
@@ -2239,12 +2635,22 @@
       "sku": "skill:heal-skill",
       "name": "heal-skill",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "meta",
+      "capability_class": "authoring",
       "purpose": "Repair skill hygiene.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -2255,12 +2661,22 @@
       "sku": "skill:implement",
       "name": "implement",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "driving-adapter",
       "tier": "execution",
+      "capability_class": "execution",
       "purpose": "Implement one tracked issue.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "domain"
       ],
@@ -2279,12 +2695,22 @@
       "sku": "skill:inject",
       "name": "inject",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC1",
       "hex_role": "driving-adapter",
       "tier": "background",
+      "capability_class": "corpus",
       "purpose": "Load relevant .agents context.",
       "status": "active",
       "disposition": "refactor",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [
@@ -2307,12 +2733,22 @@
       "sku": "skill:ntm",
       "name": "ntm",
       "type": "skill",
-      "bounded_context": "BC5",
+      "kind": "skill",
+      "bounded_context": "BC6",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "orchestration",
       "purpose": ">-",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -2323,12 +2759,22 @@
       "sku": "skill:operationalize",
       "name": "operationalize",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC1",
       "hex_role": "domain",
       "tier": "execution",
+      "capability_class": "corpus",
       "purpose": ">-",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         ".agents/research/*.md",
         "audit-report",
@@ -2346,12 +2792,22 @@
       "sku": "skill:perf",
       "name": "perf",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC2",
       "hex_role": "domain",
       "tier": "execution",
+      "capability_class": "validation",
       "purpose": "Profile and optimize hotspots.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "repo-context"
       ],
@@ -2366,12 +2822,22 @@
       "sku": "skill:plan",
       "name": "plan",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "execution",
+      "capability_class": "planning",
       "purpose": "Decompose goals into issue plans.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "standards"
       ],
@@ -2395,12 +2861,22 @@
       "sku": "skill:post-mortem",
       "name": "post-mortem",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "judgment",
+      "capability_class": "corpus",
       "purpose": "Review completed work and learn. Use when: a task, PR arc, or session is finished and you want to extract learnings, or after ≥5 PRs (the scope checkpoint).",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "implement",
         "validate",
@@ -2427,12 +2903,22 @@
       "sku": "skill:pr-prep",
       "name": "pr-prep",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "driving-adapter",
       "tier": "contribute",
+      "capability_class": "delivery",
       "purpose": "Prepare PR commits and body.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "domain"
       ],
@@ -2447,12 +2933,22 @@
       "sku": "skill:pre-land-refuters",
       "name": "pre-land-refuters",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC2",
       "hex_role": "driving-adapter",
       "tier": "judgment",
+      "capability_class": "validation",
       "purpose": "Dispatch unbiased refuters (fresh Fable + read-only codex exec) to attack a completion claim before landing a large change. Triggers: pre-land validation, refute before push.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "validate",
         "codex-exec"
@@ -2468,12 +2964,22 @@
       "sku": "skill:pre-mortem",
       "name": "pre-mortem",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC2",
       "hex_role": "domain",
       "tier": "judgment",
+      "capability_class": "validation",
       "purpose": "Stress-test plans before work. Use when: a plan is drafted but not yet executed and you want to surface failure modes, risks, and what would prove it wrong before committing.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "standards"
       ],
@@ -2497,12 +3003,22 @@
       "sku": "skill:product",
       "name": "product",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "domain",
       "tier": "product",
+      "capability_class": "planning",
       "purpose": "Create or refine PRODUCT.md.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "result.json"
@@ -2515,12 +3031,22 @@
       "sku": "skill:push",
       "name": "push",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "driving-adapter",
       "tier": "execution",
+      "capability_class": "delivery",
       "purpose": "Validate, commit, and push.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "git-changes"
       ],
@@ -2535,12 +3061,22 @@
       "sku": "skill:rch",
       "name": "rch",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "execution",
       "purpose": "Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -2551,12 +3087,22 @@
       "sku": "skill:reality-check",
       "name": "reality-check",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC2",
       "hex_role": "domain",
       "tier": "execution",
+      "capability_class": "validation",
       "purpose": ">-",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "implement"
       ],
@@ -2571,12 +3117,22 @@
       "sku": "skill:recover",
       "name": "recover",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC1",
       "hex_role": "driving-adapter",
       "tier": "session",
+      "capability_class": "corpus",
       "purpose": "Recover session context.",
       "status": "active",
       "disposition": "refactor",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "bd",
         "rpi"
@@ -2599,12 +3155,22 @@
       "sku": "skill:red-team",
       "name": "red-team",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC2",
       "hex_role": "supporting",
       "tier": "judgment",
+      "capability_class": "validation",
       "purpose": "Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "repo-context"
       ],
@@ -2619,12 +3185,22 @@
       "sku": "skill:refactor",
       "name": "refactor",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC2",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "execution",
       "purpose": "Execute safe refactors.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "complexity",
         "repo-context"
@@ -2640,12 +3216,22 @@
       "sku": "skill:release",
       "name": "release",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC2",
       "hex_role": "supporting",
       "tier": "product",
+      "capability_class": "delivery",
       "purpose": "Run release validation.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "result.json"
@@ -2661,12 +3247,22 @@
       "sku": "skill:research",
       "name": "research",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC1",
       "hex_role": "driving-adapter",
       "tier": "execution",
+      "capability_class": "corpus",
       "purpose": "Explore and write findings.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "inject",
         "repo-context"
@@ -2686,12 +3282,22 @@
       "sku": "skill:review",
       "name": "review",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC2",
       "hex_role": "driving-adapter",
       "tier": "judgment",
+      "capability_class": "validation",
       "purpose": "Review diffs for risk, find mocks, scan for bugs, audit codebases. Fold target for bug-hunt, codebase-audit, and ubs.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "github-pr",
         "validate"
@@ -2710,12 +3316,22 @@
       "sku": "skill:rpi",
       "name": "rpi",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "supporting",
       "tier": "meta",
+      "capability_class": "orchestration",
       "purpose": "Run discovery, crank, validation.",
       "status": "active",
       "disposition": "refactor",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "crank",
         "discovery",
@@ -2736,12 +3352,22 @@
       "sku": "skill:sbh",
       "name": "sbh",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "safety",
       "purpose": ">-",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -2752,12 +3378,22 @@
       "sku": "skill:scaffold",
       "name": "scaffold",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "authoring",
       "purpose": "Create project, component, or boilerplate scaffolds. Use when starting a new project, module, or component, generating boilerplate, or stamping a repeatable file structure.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "converted-skill"
@@ -2773,12 +3409,22 @@
       "sku": "skill:scope",
       "name": "scope",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC5",
       "hex_role": "driven-adapter",
       "tier": "execution",
+      "capability_class": "safety",
       "purpose": "Hard-block edits outside declared frozen directories and protect paths during risky changes.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "filesystem-gate"
@@ -2794,12 +3440,22 @@
       "sku": "skill:security",
       "name": "security",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC2",
       "hex_role": "driven-adapter",
       "tier": "product",
+      "capability_class": "safety",
       "purpose": "Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "repo-context"
       ],
@@ -2814,12 +3470,22 @@
       "sku": "skill:shared",
       "name": "shared",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC4",
       "hex_role": "domain",
       "tier": "library",
+      "capability_class": "authoring",
       "purpose": "Shared AgentOps skill contracts.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "stdout"
@@ -2838,12 +3504,22 @@
       "sku": "skill:skill-auditor",
       "name": "skill-auditor",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "meta",
+      "capability_class": "validation",
       "purpose": "Audit SKILL.md files against the AgentOps template and readiness checks. Use for quality reviews or template compliance.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "result.json"
@@ -2856,12 +3532,22 @@
       "sku": "skill:skill-builder",
       "name": "skill-builder",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "meta",
+      "capability_class": "authoring",
       "purpose": "Scaffold or absorb new SKILL.md files against the unified AgentOps template. Triggers: \"create a skill\", \"scaffold skill\", \"absorb external skill\", \"new skill\".",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "converted-skill"
@@ -2876,12 +3562,22 @@
       "sku": "skill:standards",
       "name": "standards",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC4",
       "hex_role": "domain",
       "tier": "library",
+      "capability_class": "docs",
       "purpose": "Provide repo coding standards.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "stdout"
@@ -2900,12 +3596,22 @@
       "sku": "skill:status",
       "name": "status",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC3",
       "hex_role": "driving-adapter",
       "tier": "session",
+      "capability_class": "tracking",
       "purpose": "Show AgentOps work status.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "bd"
       ],
@@ -2928,12 +3634,22 @@
       "sku": "skill:swarm",
       "name": "swarm",
       "type": "skill",
-      "bounded_context": "BC5",
+      "kind": "skill",
+      "bounded_context": "BC6",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "orchestration",
       "purpose": "Dispatch parallel agents.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "implement",
         "validate"
@@ -2953,12 +3669,22 @@
       "sku": "skill:test",
       "name": "test",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC2",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "validation",
       "purpose": "Generate tests and coverage plans.",
       "status": "active",
       "disposition": "update",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [
         "standards",
         "repo-context"
@@ -2974,12 +3700,22 @@
       "sku": "skill:toil-mining",
       "name": "toil-mining",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC1",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "corpus",
       "purpose": ">-",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "result.json"
@@ -2992,12 +3728,22 @@
       "sku": "skill:using-atm",
       "name": "using-atm",
       "type": "skill",
-      "bounded_context": "BC4",
+      "kind": "skill",
+      "bounded_context": "BC6",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "orchestration",
       "purpose": "Use ATM as the out-of-session substrate: spawn Claude/Codex panes running /rpi and /evolve over a bead queue, then tend the swarm to convergence.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "documentation"
@@ -3013,12 +3759,22 @@
       "sku": "skill:validate",
       "name": "validate",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC2",
       "hex_role": "driving-adapter",
       "tier": "judgment",
+      "capability_class": "validation",
       "purpose": "Produce PASS/WARN/FAIL verdicts for artifacts, plans, code, PRs, or gates — including quick readiness/sanity checks before commit (absorbs vibe) and completion audits.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "result.json"
@@ -3040,12 +3796,22 @@
       "sku": "skill:vibing-with-ntm",
       "name": "vibing-with-ntm",
       "type": "skill",
-      "bounded_context": "BC4",
+      "kind": "skill",
+      "bounded_context": "BC6",
       "hex_role": "supporting",
       "tier": "execution",
+      "capability_class": "orchestration",
       "purpose": "Use when tending NTM agent swarms, unsticking panes, handling rate limits, or coordinating convergence.",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [],
       "drives_commands": [],
@@ -3056,12 +3822,22 @@
       "sku": "skill:workflow-builder",
       "name": "workflow-builder",
       "type": "skill",
+      "kind": "skill",
       "bounded_context": "BC4",
       "hex_role": "supporting",
       "tier": "meta",
+      "capability_class": "authoring",
       "purpose": "Scaffold a new Claude Workflow script — deterministic multi-agent orchestration. Triggers: \"build a workflow\", \"create a workflow\", \"scaffold workflow\", \"author a workflow\".",
       "status": "active",
       "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
       "consumes": [],
       "produces": [
         "workflow-script"
@@ -4888,6 +5664,73 @@
       "purpose": "CI validation gate (.github/workflows/validate.yml).",
       "status": "active",
       "path": ".github/workflows/validate.yml"
+    }
+  ],
+  "workflows": [
+    {
+      "id": "bdd-foundry",
+      "kind": "workflow",
+      "bounded_context": "BC3",
+      "hex_role": "driving-adapter",
+      "capability_class": "planning",
+      "runtime_targets": [
+        "claude"
+      ],
+      "runtime_reach": "claude",
+      "parity_policy": "exempt",
+      "aliases": [],
+      "path": ".claude/workflows/bdd-foundry.js",
+      "supersedes": null
+    },
+    {
+      "id": "bead-crank",
+      "kind": "workflow",
+      "bounded_context": "BC3",
+      "hex_role": "driving-adapter",
+      "capability_class": "orchestration",
+      "runtime_targets": [
+        "claude"
+      ],
+      "runtime_reach": "claude",
+      "parity_policy": "exempt",
+      "aliases": [
+        "crank"
+      ],
+      "path": ".claude/workflows/bead-crank.js",
+      "supersedes": "ship-beads"
+    },
+    {
+      "id": "operating-loop",
+      "kind": "workflow",
+      "bounded_context": "BC3",
+      "hex_role": "driving-adapter",
+      "capability_class": "orchestration",
+      "runtime_targets": [
+        "claude"
+      ],
+      "runtime_reach": "claude",
+      "parity_policy": "exempt",
+      "aliases": [],
+      "path": ".claude/workflows/operating-loop.js",
+      "supersedes": null
+    },
+    {
+      "id": "ship-beads",
+      "kind": "workflow",
+      "bounded_context": "BC3",
+      "hex_role": "driving-adapter",
+      "capability_class": "orchestration",
+      "runtime_targets": [
+        "claude"
+      ],
+      "runtime_reach": "claude",
+      "parity_policy": "exempt",
+      "aliases": [
+        "crank",
+        "bead-crank"
+      ],
+      "path": ".claude/workflows/ship-beads.js",
+      "supersedes": null
     }
   ],
   "cadence_recommendations": [

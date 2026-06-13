@@ -81,6 +81,7 @@ else
   step "codex runtime sections" bash scripts/validate-codex-runtime-sections.sh
   step "codex hashes (no drift)" bash scripts/regen-codex-hashes.sh --check ${REGEN_SKILLS:+--only "$REGEN_SKILLS"}
   step "SKU catalog drift"     bash scripts/validate-sku-catalog-drift.sh
+  step "artifact-classification schema" bash scripts/validate-skill-disposition-schema.sh
   step "context-map drift"     bash scripts/validate-context-map-drift.sh
   step "command surfaces drift" bash scripts/regen-command-surfaces.sh --check
   step "doc-release gate"      bash tests/docs/validate-doc-release.sh
