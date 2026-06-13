@@ -15,7 +15,7 @@
 
 | # | Artifact | Status | Satisfies |
 |---|---|---|---|
-| D1 | `scripts/land.sh` — **single self-contained bash file** (the harness `install_sut` copies only this one file into every fixture; it may source nothing from the repo) | new | B1–B72 |
+| D1 | ~~`scripts/land.sh` — single self-contained bash file~~ **SUPERSEDED 2026-06-13 → `ao land` Go subcommand** (`cli/cmd/ao/land*.go` + `cli/internal/land/`). See run-2 spec §9.3 (B88 decision) + the daemon-vs-oneshot PIN that gates the engine. The bats suite is unchanged via the LAND_BIN seam. | new | B1–B72 |
 | D2 | `tests/landing/run-acceptance.sh` — thin executable delegator to `docs/plans/bdd-foundry/acceptance-tests/run-acceptance.sh`; body must literally contain the suite path and the tokens `focus`, `skip`, `twice`/`deterministic` (B73 greps it) | new | B73 |
 | D3 | `acceptance-tests/helpers.bash` edit — install the **server-side fixture guard** pre-receive hook into the bare remote after seeding, + pin `LAND_PUSH_NONCE` in the contract header (§6 — the one sanctioned renegotiation) | edit | B17, B62, B63 |
 | D4 | `behaviors.md` coverage-map tagging edit — add the unmapped ids (B15, B31, B69, B70; verify all of B1–B73 expand from the table) so the B73 map check passes. Tagging only — no scenario text changes (Phase-1-owner edit sanctioned in the Phase-2 harness notes) | edit | B73 |
