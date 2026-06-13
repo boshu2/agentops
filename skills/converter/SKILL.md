@@ -4,7 +4,7 @@ description: Convert AgentOps skill formats.
 practices:
 - refactoring
 - design-patterns
-hexagonal_role: generic
+hexagonal_role: driven-adapter
 consumes: []
 produces:
 - converted-skill
