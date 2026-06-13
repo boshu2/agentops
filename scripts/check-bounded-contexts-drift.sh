@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # scripts/check-bounded-contexts-drift.sh
 #
-# Verify the BC1-BC5 definitions in docs/contracts/bounded-contexts.yaml
+# Verify the BC1-BC6 definitions in docs/contracts/bounded-contexts.yaml
 # (canonical) match the prose used in the registry docs that classify
 # skills against them.
 #
@@ -83,8 +83,8 @@ JSON_OUT = os.environ.get("JSON_OUT") == "1"
 
 data = yaml.safe_load(BC_YAML.read_text())
 bcs = data.get("bounded_contexts", [])
-if len(bcs) != 5:
-    print(f"ERROR: expected 5 bounded contexts in {BC_YAML.name}, got {len(bcs)}", file=sys.stderr)
+if len(bcs) != 6:
+    print(f"ERROR: expected 6 bounded contexts in {BC_YAML.name}, got {len(bcs)}", file=sys.stderr)
     sys.exit(2)
 
 map_text = MAP_DOC.read_text()

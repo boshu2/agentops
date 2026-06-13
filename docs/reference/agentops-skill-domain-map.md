@@ -19,7 +19,7 @@ around small provable changes.
 | Signal | Result |
 |---|---:|
 | Skills audited | 71 |
-| Domains classified | 5 of 5 (BC1-BC5) |
+| Domains classified | 6 of 6 (BC1-BC6) |
 | Dispositions assigned | 71 / 71 |
 <!-- END:audit-summary -->
 
@@ -41,6 +41,7 @@ and aligning loop-facing skills to the bounded-context architecture.
 | BC3 Loop | Operating loop | Select work, execute RPI, log cycles, measure fitness, and stop at convergence. |
 | BC4 Factory | Skill and claim factory | Build, audit, package, and govern reusable skills and product claims. |
 | BC5 Runtime | Harness and operator adapters | Adapt the control plane to harnesses, hooks, PRs, shells, and local machines. |
+| BC6 Orchestration | Multi-agent orchestration substrate | Spawn, coordinate, and converge multi-agent swarms across panes, mailboxes, and renewal loops. |
 <!-- END:domain-taxonomy -->
 
 ## Full Skill Map
@@ -61,7 +62,7 @@ Disposition meanings:
 |---|---|---|---|---|
 | `account-rotation` | BC5 Runtime | supporting | keep | Unified host-routed account rotation (macOS+Claude->claude-acct Keychain swap; else->caam file swap); supersedes the retired caam skill.. |
 | `acfs` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
-| `agent-mail` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `agent-mail` | BC6 Orchestration | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `agent-native` | BC5 Runtime | supporting | keep | Hookless reframe: makes out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI; extends standards+converter, never a hook revival. |
 | `agy-headless-evidence` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `agy-native` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
@@ -77,7 +78,7 @@ Disposition meanings:
 | `codex-approval` | BC5 Runtime | driving-adapter | keep | Codex-side approval bridge that routes plan reviews through an interactive ATM/NTM Fable validator, with persisted tmux capture and council artifact evidence.. |
 | `codex-exec` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `compile` | BC1 Corpus | supporting | refactor | Corpus compiler is core; align read/write flows to Corpus ports. |
-| `continuity-loop` | BC5 Runtime | supporting | keep | Seams epic ag-xwjlc: clean-room home for the renewal spine CLAUDE.md declares live; evolve/using-atm/recover route continuity here.. |
+| `continuity-loop` | BC6 Orchestration | supporting | keep | Seams epic ag-xwjlc: clean-room home for the renewal spine CLAUDE.md declares live; evolve/using-atm/recover route continuity here.. |
 | `converter` | BC4 Factory | generic | keep | Cross-runtime packaging adapter (Codex/Cursor twins); skill-builder consumes it — live producer→consumer edge (resolved 2026-05-24). |
 | `council` | BC2 Validation | domain | update | Core judgment gate; strengthen scenario and verdict self-test. |
 | `crank` | BC3 Loop | domain | refactor | Wave executor; align with vertical-slice and conflict-free wave contract. |
@@ -95,7 +96,7 @@ Disposition meanings:
 | `heal-skill` | BC4 Factory | supporting | update | Skill hygiene gate; should consume the new domain map. |
 | `implement` | BC3 Loop | driving-adapter | update | Slice executor; enforce first-failing-test language. |
 | `inject` | BC1 Corpus | driving-adapter | refactor | Context injection should be explicit CorpusReader adapter use. |
-| `ntm` | BC5 Runtime | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `ntm` | BC6 Orchestration | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `operationalize` | BC1 Corpus | domain | keep | Seams epic ag-xwjlc: distill+route bridge from gathered context to automation shapes; fills the curate/forge-to-builders seam.. |
 | `perf` | BC2 Validation | domain | update | Performance generator; add thresholds and proof examples. |
 | `plan` | BC3 Loop | domain | update | Must output vertical slices and wave-validity checks. |
@@ -123,12 +124,12 @@ Disposition meanings:
 | `skill-builder` | BC4 Factory | supporting | update | Builder should scaffold SELF-TEST and domain metadata by default. |
 | `standards` | BC4 Factory | domain | keep | Current pilot upgraded with SELF-TEST; continue incremental patches. |
 | `status` | BC3 Loop | driving-adapter | update | Operator state surface; should show loop/domain/evidence status. |
-| `swarm` | BC5 Runtime | supporting | update | Multi-agent runtime adapter; align with conflict-free wave rules. |
+| `swarm` | BC6 Orchestration | supporting | update | Multi-agent runtime adapter; align with conflict-free wave rules. |
 | `test` | BC2 Validation | supporting | update | Test generator; central to first-failing-test loop. |
 | `toil-mining` | BC1 Corpus | supporting | keep | Seams epic ag-xwjlc: usage-history toil miner feeding automation-shape-routing; the flywheel's missing feeder.. |
-| `using-atm` | BC4 Factory | supporting | keep | Shippable AgentOps-scoped guide for the ATM leg of the out-of-session substrate (ATM+Agent Mail+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill.. |
+| `using-atm` | BC6 Orchestration | supporting | keep | Shippable AgentOps-scoped guide for the ATM leg of the out-of-session substrate (ATM+Agent Mail+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill.. |
 | `validate` | BC2 Validation | driving-adapter | keep | Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24). |
-| `vibing-with-ntm` | BC4 Factory | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
+| `vibing-with-ntm` | BC6 Orchestration | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `workflow-builder` | BC4 Factory | supporting | keep | Scaffolds Claude Workflow scripts (composite capability); counterpart to skill-builder. |
 <!-- END:full-skill-map -->
 

@@ -1,6 +1,6 @@
 # Bounded Contexts — canonical definitions
 #
-# Single source of truth for the 5 bounded contexts that govern AgentOps.
+# Single source of truth for the 6 bounded contexts that govern AgentOps.
 # Read by:
 #   - scripts/check-bounded-contexts-drift.sh (verifies registry docs don't
 #     drift from these definitions)
@@ -105,3 +105,20 @@ bounded_contexts:
       - EventBusPort
       - GitPort
       - IssueTrackerPort
+
+  - id: BC6
+    name: Orchestration
+    product_layer: "Multi-agent orchestration substrate"
+    responsibility: "Spawn, coordinate, and converge multi-agent swarms across panes, mailboxes, and renewal loops."
+    center_of_gravity:
+      - ntm
+      - swarm
+      - agent-mail
+      - using-atm
+      - vibing-with-ntm
+      - continuity-loop
+    ports:
+      - OrchestrationPort
+      - SwarmDispatchPort
+      - AgentMailPort
+      - ConvergencePort
