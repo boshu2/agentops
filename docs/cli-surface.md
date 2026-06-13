@@ -50,6 +50,7 @@
 | `ao constraint retire` | `public-tested` | `allowlisted` | Covered by constraint list smoke behavior. |
 | `ao constraint review` | `public-tested` | `allowlisted` | Covered by constraint list smoke behavior. |
 | `ao contradict` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao converge` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao corpus capture` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao corpus fitness` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao corpus inject` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |

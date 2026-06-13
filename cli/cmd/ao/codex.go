@@ -256,6 +256,16 @@ type codexTaskPacket struct {
 	Resume           *codexTaskResume          `json:"resume,omitempty"`
 	StopCondition    string                    `json:"stop_condition"`
 	Notes            []string                  `json:"notes,omitempty"`
+	// AuthorIdentity carries the identity of the agent that AUTHORED the work
+	// being judged, so the author_neq_validator asymmetry can be enforced on the
+	// dispatched judge (the judge must be a different identity than the author).
+	AuthorIdentity string `json:"author_identity,omitempty"`
+}
+
+// AuthorID returns the identity of the work author carried by the packet (used by
+// the converge author_neq_validator guard).
+func (p codexTaskPacket) AuthorID() string {
+	return p.AuthorIdentity
 }
 
 type codexTaskAuthGuard struct {
