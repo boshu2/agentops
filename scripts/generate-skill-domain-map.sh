@@ -3,7 +3,7 @@
 #
 # Generate the data sections of docs/reference/agentops-skill-domain-map.md
 # from canonical sources:
-#   - docs/contracts/bounded-contexts.yaml   (BC1-BC5 definitions)
+#   - docs/contracts/bounded-contexts.yaml   (BC1-BC6 definitions)
 #   - docs/contracts/skill-dispositions.yaml (per-skill judgment data)
 #   - skills/<name>/SKILL.md                 (hexagonal_role cross-check)
 #
@@ -130,7 +130,7 @@ if errs:
 audit_summary = f"""| Signal | Result |
 |---|---:|
 | Skills audited | {len(actual_skills)} |
-| Domains classified | {len(set(d['domain'] for d in disps))} of 5 (BC1-BC5) |
+| Domains classified | {len(set(d['domain'] for d in disps))} of 6 (BC1-BC6) |
 | Dispositions assigned | {len(disp_skills)} / {len(actual_skills)} |"""
 
 

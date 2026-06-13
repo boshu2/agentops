@@ -274,8 +274,10 @@ workflows:
     hexagonal_role:  driving-adapter
     runtime_targets: [claude]
     parity_policy:   exempt
+    capability_class: orchestration
     aliases:         [crank, bead-crank]
     path:            .claude/workflows/ship-beads.js
+    supersedes:      null
     rationale:       "Bootstrap engine (ag-km74w): drive/ship a bead list to confirmed-merged. Additive rename of bead-crank (crank=jargon); both resolve."
   bead-crank:
     kind:            workflow
@@ -283,8 +285,10 @@ workflows:
     hexagonal_role:  driving-adapter
     runtime_targets: [claude]
     parity_policy:   exempt
+    capability_class: orchestration
     aliases:         [crank]
     path:            .claude/workflows/bead-crank.js
+    supersedes:      ship-beads
     rationale:       "Legacy ship-beads predecessor; kept working (additive, never breaking-renamed). Superseded-by: ship-beads."
   bdd-foundry:
     kind:            workflow
@@ -292,8 +296,10 @@ workflows:
     hexagonal_role:  driving-adapter
     runtime_targets: [claude]
     parity_policy:   exempt
+    capability_class: planning
     aliases:         []
     path:            .claude/workflows/bdd-foundry.js
+    supersedes:      null
     rationale:       "Behavior-first planning workflow: intent → Gherkin → failing acceptance tests → acceptance-gated bead DAG."
   operating-loop:
     kind:            workflow
@@ -301,364 +307,862 @@ workflows:
     hexagonal_role:  driving-adapter
     runtime_targets: [claude]
     parity_policy:   exempt
+    capability_class: orchestration
     aliases:         []
     path:            .claude/workflows/operating-loop.js
+    supersedes:      null
     rationale:       "Runs one capability through the AgentOps seven-move operating loop end-to-end."
 
 dispositions:
-  - skill:          autodev
-    domain:         "BC3 Loop"
-    hexagonal_role: supporting
-    disposition:    refactor
-    rationale:      "Must compose with PROGRAM.md and RPI as one vertical-slice executor"
-  - skill:          beads
-    domain:         "BC3 Loop"
-    hexagonal_role: driven-adapter
-    disposition:    update
-    rationale:      "Tracker adapter is core; add BDD/slice acceptance self-test"
-  - skill:          bootstrap
-    domain:         "BC4 Factory"
-    hexagonal_role: driving-adapter
-    disposition:    update
-    rationale:      "First-run factory entrypoint; needs current 3.0/domain packet shape"
-  - skill:          compile
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    refactor
-    rationale:      "Corpus compiler is core; align read/write flows to Corpus ports"
-  - skill:          converter
-    domain:         "BC4 Factory"
-    hexagonal_role: generic
-    disposition:    keep
-    rationale:      "Cross-runtime packaging adapter (Codex/Cursor twins); skill-builder consumes it — live producer→consumer edge (resolved 2026-05-24)"
-  - skill:          council
-    domain:         "BC2 Validation"
-    hexagonal_role: domain
-    disposition:    update
-    rationale:      "Core judgment gate; strengthen scenario and verdict self-test"
-  - skill:          crank
-    domain:         "BC3 Loop"
-    hexagonal_role: domain
-    disposition:    refactor
-    rationale:      "Wave executor; align with vertical-slice and conflict-free wave contract"
-  - skill:          curate
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Designed-future canonical unified miner (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24)"
-  - skill:          discovery
-    domain:         "BC3 Loop"
-    hexagonal_role: domain
-    disposition:    update
-    rationale:      "Creates execution packets; add explicit loop-shape SELF-TEST"
-  - skill:          doc
-    domain:         "BC4 Factory"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Documentation factory adapter; keep tied to doc-release gates"
-  - skill:          domain
-    domain:         "BC4 Factory"
-    hexagonal_role: domain
-    disposition:    keep
-    rationale:      "Ubiquitous-language kernel; central to DDD"
-  - skill:          evolve
-    domain:         "BC3 Loop"
-    hexagonal_role: supporting
-    disposition:    refactor
-    rationale:      "Main loop; must use `soc-y5vh` typed Loop ports and convergence STOP"
-  - skill:          flywheel
-    domain:         "BC1 Corpus"
-    hexagonal_role: domain
-    disposition:    update
-    rationale:      "Flywheel health kernel; needs productized self-test"
-  - skill:          forge
-    domain:         "BC1 Corpus"
-    hexagonal_role: domain
-    disposition:    update
-    rationale:      "Learning extraction; align to capture quality and promotion ratchet"
-  - skill:          goals
-    domain:         "BC3 Loop"
-    hexagonal_role: domain
-    disposition:    keep
-    rationale:      "Fitness source; use as evolution selection input"
-  - skill:          handoff
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Session continuity artifact; clarify promotion vs local-only notes"
-  - skill:          heal-skill
-    domain:         "BC4 Factory"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Skill hygiene gate; should consume the new domain map"
-  - skill:          implement
-    domain:         "BC3 Loop"
-    hexagonal_role: driving-adapter
-    disposition:    update
-    rationale:      "Slice executor; enforce first-failing-test language"
-  - skill:          inject
-    domain:         "BC1 Corpus"
-    hexagonal_role: driving-adapter
-    disposition:    refactor
-    rationale:      "Context injection should be explicit CorpusReader adapter use"
-  - skill:          perf
-    domain:         "BC2 Validation"
-    hexagonal_role: domain
-    disposition:    update
-    rationale:      "Performance generator; add thresholds and proof examples"
-  - skill:          plan
-    domain:         "BC3 Loop"
-    hexagonal_role: domain
-    disposition:    update
-    rationale:      "Must output vertical slices and wave-validity checks"
-  - skill:          post-mortem
-    domain:         "BC3 Loop"
-    hexagonal_role: domain
-    disposition:    update
-    rationale:      "Loop closeout; connect to next-work and ratchet evidence"
-  - skill:          pr-prep
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    update
-    rationale:      "PR publication adapter; align to evidence and release discipline"
-  - skill:          pre-mortem
-    domain:         "BC2 Validation"
-    hexagonal_role: domain
-    disposition:    update
-    rationale:      "Plan risk gate; add scenario/verdict self-test"
-  - skill:          product
-    domain:         "BC3 Loop"
-    hexagonal_role: domain
-    disposition:    keep
-    rationale:      "Product intent source; important for loop work selection"
-  - skill:          push
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    update
-    rationale:      "Git adapter; add branch/worktree disposition self-test"
-  - skill:          recover
-    domain:         "BC1 Corpus"
-    hexagonal_role: driving-adapter
-    disposition:    refactor
-    rationale:      "Session recovery is valuable but currently structurally heavy"
-  - skill:          red-team
-    domain:         "BC2 Validation"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Probe generator; add severity/evidence contract"
-  - skill:          refactor
-    domain:         "BC2 Validation"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Refactor generator; align with complexity thresholds and TDD proof"
-  - skill:          release
-    domain:         "BC2 Validation"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Release gate driver; keep tied to local CI and evidence export"
-  - skill:          research
-    domain:         "BC1 Corpus"
-    hexagonal_role: driving-adapter
-    disposition:    update
-    rationale:      "Knowledge acquisition entrypoint; add source/citation self-test"
-  - skill:          review
-    domain:         "BC2 Validation"
-    hexagonal_role: driving-adapter
-    disposition:    update
-    rationale:      "Human-facing review gate; align to validator output contract"
-  - skill:          rpi
-    domain:         "BC3 Loop"
-    hexagonal_role: supporting
-    disposition:    refactor
-    rationale:      "Lifecycle orchestrator; should consume BDD intent and preserve objective spine"
-  - skill:          scaffold
-    domain:         "BC4 Factory"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Code/artifact scaffolder; add non-goal and validation examples"
-  - skill:          scope
-    domain:         "BC5 Runtime"
-    hexagonal_role: driven-adapter
-    disposition:    keep
-    rationale:      "Runtime filesystem gate; hard boundary skill"
-  - skill:          security
-    domain:         "BC2 Validation"
-    hexagonal_role: driven-adapter
-    disposition:    keep
-    rationale:      "Canonical security skill: continuous release-gate driver (security-gate.sh) PLUS the composable primitive library (security_suite.py / prompt_redteam.py) collapsed in from security-suite (cp-qqq, 2026-06-07)"
-  - skill:          shared
-    domain:         "BC4 Factory"
-    hexagonal_role: domain
-    disposition:    keep
-    rationale:      "Shared contracts; avoid broad edits"
-  - skill:          skill-auditor
-    domain:         "BC4 Factory"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Audit role should consume new quality/domain rubrics"
-  - skill:          skill-builder
-    domain:         "BC4 Factory"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Builder should scaffold SELF-TEST and domain metadata by default"
-  - skill:          automation-shape-routing
-    domain:         "BC4 Factory"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Front-door router: decides Workflow vs NTM swarm vs plain skill, hands off to the right builder"
-  - skill:          workflow-builder
-    domain:         "BC4 Factory"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Scaffolds Claude Workflow scripts (composite capability); counterpart to skill-builder"
-  - skill:          standards
-    domain:         "BC4 Factory"
-    hexagonal_role: domain
-    disposition:    keep
-    rationale:      "Current pilot upgraded with SELF-TEST; continue incremental patches"
-  - skill:          status
-    domain:         "BC3 Loop"
-    hexagonal_role: driving-adapter
-    disposition:    update
-    rationale:      "Operator state surface; should show loop/domain/evidence status"
-  - skill:          swarm
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Multi-agent runtime adapter; align with conflict-free wave rules"
-  - skill:          test
-    domain:         "BC2 Validation"
-    hexagonal_role: supporting
-    disposition:    update
-    rationale:      "Test generator; central to first-failing-test loop"
-  - skill:          validate
-    domain:         "BC2 Validation"
-    hexagonal_role: driving-adapter
-    disposition:    keep
-    rationale:      "Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24)"
-  - skill:          eval-outcomes
-    domain:         "BC2 Validation"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Holdout-safe Outcomes grading transport projecting the locked eval substrate; extends validation+ratchet, emits the one council verdict — never an alternate bar"
-  - skill:          agent-native
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Hookless reframe: makes out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI; extends standards+converter, never a hook revival"
-  - skill:          using-atm
-    domain:         "BC4 Factory"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Shippable AgentOps-scoped guide for the ATM leg of the out-of-session substrate (ATM+Agent Mail+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill."
-
-  - skill:          acfs
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          agent-mail
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          agy-native
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          beads-br
-    domain:         "BC3 Loop"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          beads-bv
-    domain:         "BC3 Loop"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          beads-workflow
-    domain:         "BC3 Loop"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          account-rotation
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Unified host-routed account rotation (macOS+Claude->claude-acct Keychain swap; else->caam file swap); supersedes the retired caam skill."
-  - skill:          cass
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          cc-hooks
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          codex-exec
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          dcg
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          agy-headless-evidence
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          ntm
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          rch
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          sbh
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          vibing-with-ntm
-    domain:         "BC4 Factory"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
-  - skill:          codex-approval
-    domain:         "BC5 Runtime"
-    hexagonal_role: driving-adapter
-    disposition:    keep
-    rationale:      "Codex-side approval bridge that routes plan reviews through an interactive ATM/NTM Fable validator, with persisted tmux capture and council artifact evidence."
-  - skill:          pre-land-refuters
-    domain:         "BC2 Validation"
-    hexagonal_role: driving-adapter
-    disposition:    keep
-    rationale:      "Unbiased dual-model refuter panel before landing large multi-surface changes; codified from the ag-s43tg landing where it caught 9 real misses."
-  - skill:          continuity-loop
-    domain:         "BC5 Runtime"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Seams epic ag-xwjlc: clean-room home for the renewal spine CLAUDE.md declares live; evolve/using-atm/recover route continuity here."
-  - skill:          operationalize
-    domain:         "BC1 Corpus"
-    hexagonal_role: domain
-    disposition:    keep
-    rationale:      "Seams epic ag-xwjlc: distill+route bridge from gathered context to automation shapes; fills the curate/forge-to-builders seam."
-  - skill:          reality-check
-    domain:         "BC2 Validation"
-    hexagonal_role: domain
-    disposition:    keep
-    rationale:      "Seams epic ag-xwjlc: mid-epic drift audit (code vs claimed vision); complements status/validate/post-mortem."
-  - skill:          toil-mining
-    domain:         "BC1 Corpus"
-    hexagonal_role: supporting
-    disposition:    keep
-    rationale:      "Seams epic ag-xwjlc: usage-history toil miner feeding automation-shape-routing; the flywheel's missing feeder."
+  - skill:            autodev
+    domain:           "BC3 Loop"
+    hexagonal_role:   supporting
+    disposition:      refactor
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: planning
+    path:             skills/autodev/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Must compose with PROGRAM.md and RPI as one vertical-slice executor"
+  - skill:            beads
+    domain:           "BC3 Loop"
+    hexagonal_role:   driven-adapter
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: tracking
+    path:             skills/beads/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Tracker adapter is core; add BDD/slice acceptance self-test"
+  - skill:            bootstrap
+    domain:           "BC4 Factory"
+    hexagonal_role:   driving-adapter
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: authoring
+    path:             skills/bootstrap/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "First-run factory entrypoint; needs current 3.0/domain packet shape"
+  - skill:            compile
+    domain:           "BC1 Corpus"
+    hexagonal_role:   supporting
+    disposition:      refactor
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/compile/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Corpus compiler is core; align read/write flows to Corpus ports"
+  - skill:            converter
+    domain:           "BC4 Factory"
+    hexagonal_role:   generic
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: authoring
+    path:             skills/converter/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Cross-runtime packaging adapter (Codex/Cursor twins); skill-builder consumes it — live producer→consumer edge (resolved 2026-05-24)"
+  - skill:            council
+    domain:           "BC2 Validation"
+    hexagonal_role:   domain
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/council/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Core judgment gate; strengthen scenario and verdict self-test"
+  - skill:            crank
+    domain:           "BC3 Loop"
+    hexagonal_role:   domain
+    disposition:      refactor
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: orchestration
+    path:             skills/crank/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Wave executor; align with vertical-slice and conflict-free wave contract"
+  - skill:            curate
+    domain:           "BC1 Corpus"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/curate/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Designed-future canonical unified miner (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24)"
+  - skill:            discovery
+    domain:           "BC3 Loop"
+    hexagonal_role:   domain
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: planning
+    path:             skills/discovery/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Creates execution packets; add explicit loop-shape SELF-TEST"
+  - skill:            doc
+    domain:           "BC4 Factory"
+    hexagonal_role:   supporting
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: docs
+    path:             skills/doc/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Documentation factory adapter; keep tied to doc-release gates"
+  - skill:            domain
+    domain:           "BC4 Factory"
+    hexagonal_role:   domain
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: docs
+    path:             skills/domain/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Ubiquitous-language kernel; central to DDD"
+  - skill:            evolve
+    domain:           "BC3 Loop"
+    hexagonal_role:   supporting
+    disposition:      refactor
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: orchestration
+    path:             skills/evolve/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Main loop; must use `soc-y5vh` typed Loop ports and convergence STOP"
+  - skill:            flywheel
+    domain:           "BC1 Corpus"
+    hexagonal_role:   domain
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/flywheel/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Flywheel health kernel; needs productized self-test"
+  - skill:            forge
+    domain:           "BC1 Corpus"
+    hexagonal_role:   domain
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/forge/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Learning extraction; align to capture quality and promotion ratchet"
+  - skill:            goals
+    domain:           "BC3 Loop"
+    hexagonal_role:   domain
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: planning
+    path:             skills/goals/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Fitness source; use as evolution selection input"
+  - skill:            handoff
+    domain:           "BC1 Corpus"
+    hexagonal_role:   supporting
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/handoff/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Session continuity artifact; clarify promotion vs local-only notes"
+  - skill:            heal-skill
+    domain:           "BC4 Factory"
+    hexagonal_role:   supporting
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: authoring
+    path:             skills/heal-skill/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Skill hygiene gate; should consume the new domain map"
+  - skill:            implement
+    domain:           "BC3 Loop"
+    hexagonal_role:   driving-adapter
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: execution
+    path:             skills/implement/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Slice executor; enforce first-failing-test language"
+  - skill:            inject
+    domain:           "BC1 Corpus"
+    hexagonal_role:   driving-adapter
+    disposition:      refactor
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/inject/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Context injection should be explicit CorpusReader adapter use"
+  - skill:            perf
+    domain:           "BC2 Validation"
+    hexagonal_role:   domain
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/perf/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Performance generator; add thresholds and proof examples"
+  - skill:            plan
+    domain:           "BC3 Loop"
+    hexagonal_role:   domain
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: planning
+    path:             skills/plan/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Must output vertical slices and wave-validity checks"
+  - skill:            post-mortem
+    domain:           "BC3 Loop"
+    hexagonal_role:   domain
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/post-mortem/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Loop closeout; connect to next-work and ratchet evidence"
+  - skill:            pr-prep
+    domain:           "BC5 Runtime"
+    hexagonal_role:   driving-adapter
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: delivery
+    path:             skills/pr-prep/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "PR publication adapter; align to evidence and release discipline"
+  - skill:            pre-mortem
+    domain:           "BC2 Validation"
+    hexagonal_role:   domain
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/pre-mortem/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Plan risk gate; add scenario/verdict self-test"
+  - skill:            product
+    domain:           "BC3 Loop"
+    hexagonal_role:   domain
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: planning
+    path:             skills/product/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Product intent source; important for loop work selection"
+  - skill:            push
+    domain:           "BC5 Runtime"
+    hexagonal_role:   driving-adapter
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: delivery
+    path:             skills/push/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Git adapter; add branch/worktree disposition self-test"
+  - skill:            recover
+    domain:           "BC1 Corpus"
+    hexagonal_role:   driving-adapter
+    disposition:      refactor
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/recover/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Session recovery is valuable but currently structurally heavy"
+  - skill:            red-team
+    domain:           "BC2 Validation"
+    hexagonal_role:   supporting
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/red-team/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Probe generator; add severity/evidence contract"
+  - skill:            refactor
+    domain:           "BC2 Validation"
+    hexagonal_role:   supporting
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: execution
+    path:             skills/refactor/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Refactor generator; align with complexity thresholds and TDD proof"
+  - skill:            release
+    domain:           "BC2 Validation"
+    hexagonal_role:   supporting
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: delivery
+    path:             skills/release/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Release gate driver; keep tied to local CI and evidence export"
+  - skill:            research
+    domain:           "BC1 Corpus"
+    hexagonal_role:   driving-adapter
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/research/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Knowledge acquisition entrypoint; add source/citation self-test"
+  - skill:            review
+    domain:           "BC2 Validation"
+    hexagonal_role:   driving-adapter
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/review/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Human-facing review gate; align to validator output contract"
+  - skill:            rpi
+    domain:           "BC3 Loop"
+    hexagonal_role:   supporting
+    disposition:      refactor
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: orchestration
+    path:             skills/rpi/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Lifecycle orchestrator; should consume BDD intent and preserve objective spine"
+  - skill:            scaffold
+    domain:           "BC4 Factory"
+    hexagonal_role:   supporting
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: authoring
+    path:             skills/scaffold/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Code/artifact scaffolder; add non-goal and validation examples"
+  - skill:            scope
+    domain:           "BC5 Runtime"
+    hexagonal_role:   driven-adapter
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: safety
+    path:             skills/scope/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Runtime filesystem gate; hard boundary skill"
+  - skill:            security
+    domain:           "BC2 Validation"
+    hexagonal_role:   driven-adapter
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: safety
+    path:             skills/security/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Canonical security skill: continuous release-gate driver (security-gate.sh) PLUS the composable primitive library (security_suite.py / prompt_redteam.py) collapsed in from security-suite (cp-qqq, 2026-06-07)"
+  - skill:            shared
+    domain:           "BC4 Factory"
+    hexagonal_role:   domain
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: authoring
+    path:             skills/shared/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Shared contracts; avoid broad edits"
+  - skill:            skill-auditor
+    domain:           "BC4 Factory"
+    hexagonal_role:   supporting
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/skill-auditor/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Audit role should consume new quality/domain rubrics"
+  - skill:            skill-builder
+    domain:           "BC4 Factory"
+    hexagonal_role:   supporting
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: authoring
+    path:             skills/skill-builder/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Builder should scaffold SELF-TEST and domain metadata by default"
+  - skill:            automation-shape-routing
+    domain:           "BC4 Factory"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: planning
+    path:             skills/automation-shape-routing/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Front-door router: decides Workflow vs NTM swarm vs plain skill, hands off to the right builder"
+  - skill:            workflow-builder
+    domain:           "BC4 Factory"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: authoring
+    path:             skills/workflow-builder/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Scaffolds Claude Workflow scripts (composite capability); counterpart to skill-builder"
+  - skill:            standards
+    domain:           "BC4 Factory"
+    hexagonal_role:   domain
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: docs
+    path:             skills/standards/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Current pilot upgraded with SELF-TEST; continue incremental patches"
+  - skill:            status
+    domain:           "BC3 Loop"
+    hexagonal_role:   driving-adapter
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: tracking
+    path:             skills/status/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Operator state surface; should show loop/domain/evidence status"
+  - skill:            swarm
+    domain:           "BC6 Orchestration"
+    hexagonal_role:   supporting
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: orchestration
+    path:             skills/swarm/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Multi-agent runtime adapter; align with conflict-free wave rules"
+  - skill:            test
+    domain:           "BC2 Validation"
+    hexagonal_role:   supporting
+    disposition:      update
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/test/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Test generator; central to first-failing-test loop"
+  - skill:            validate
+    domain:           "BC2 Validation"
+    hexagonal_role:   driving-adapter
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/validate/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Designed-future canonical unified validator (m6v5.D Phase 1, epic soc-cp7pv); not redundant cruft — epic GO/REVERT is a separate decision (resolved KEEP 2026-05-24)"
+  - skill:            eval-outcomes
+    domain:           "BC2 Validation"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/eval-outcomes/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Holdout-safe Outcomes grading transport projecting the locked eval substrate; extends validation+ratchet, emits the one council verdict — never an alternate bar"
+  - skill:            agent-native
+    domain:           "BC5 Runtime"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: execution
+    path:             skills/agent-native/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Hookless reframe: makes out-of-session agents (Managed/SDK/sandbox) AgentOps-native via skills + ao CLI + CI; extends standards+converter, never a hook revival"
+  - skill:            using-atm
+    domain:           "BC6 Orchestration"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: orchestration
+    path:             skills/using-atm/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Shippable AgentOps-scoped guide for the ATM leg of the out-of-session substrate (ATM+Agent Mail+managed-agents): spawn agent panes that run the /rpi and /evolve skills over a bead queue. Replaces the dangling external ntm/vibing-with-ntm pointers in automation-shape-routing with an owned, skills-as-runtime skill."
+  - skill:            acfs
+    domain:           "BC5 Runtime"
+    hexagonal_role:   driving-adapter
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: orchestration
+    path:             skills/acfs/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            agent-mail
+    domain:           "BC6 Orchestration"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: orchestration
+    path:             skills/agent-mail/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            agy-native
+    domain:           "BC5 Runtime"
+    hexagonal_role:   driving-adapter
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: execution
+    path:             skills/agy-native/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            beads-br
+    domain:           "BC3 Loop"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: tracking
+    path:             skills/beads-br/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            beads-bv
+    domain:           "BC3 Loop"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: tracking
+    path:             skills/beads-bv/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            beads-workflow
+    domain:           "BC3 Loop"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: tracking
+    path:             skills/beads-workflow/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            account-rotation
+    domain:           "BC5 Runtime"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: safety
+    path:             skills/account-rotation/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Unified host-routed account rotation (macOS+Claude->claude-acct Keychain swap; else->caam file swap); supersedes the retired caam skill."
+  - skill:            cass
+    domain:           "BC5 Runtime"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/cass/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            cc-hooks
+    domain:           "BC5 Runtime"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: execution
+    path:             skills/cc-hooks/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            codex-exec
+    domain:           "BC5 Runtime"
+    hexagonal_role:   driving-adapter
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: execution
+    path:             skills/codex-exec/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            dcg
+    domain:           "BC5 Runtime"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: safety
+    path:             skills/dcg/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            agy-headless-evidence
+    domain:           "BC5 Runtime"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/agy-headless-evidence/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            ntm
+    domain:           "BC6 Orchestration"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: orchestration
+    path:             skills/ntm/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            rch
+    domain:           "BC5 Runtime"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: execution
+    path:             skills/rch/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            sbh
+    domain:           "BC5 Runtime"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: safety
+    path:             skills/sbh/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            vibing-with-ntm
+    domain:           "BC6 Orchestration"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: orchestration
+    path:             skills/vibing-with-ntm/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability."
+  - skill:            codex-approval
+    domain:           "BC5 Runtime"
+    hexagonal_role:   driving-adapter
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/codex-approval/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Codex-side approval bridge that routes plan reviews through an interactive ATM/NTM Fable validator, with persisted tmux capture and council artifact evidence."
+  - skill:            pre-land-refuters
+    domain:           "BC2 Validation"
+    hexagonal_role:   driving-adapter
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/pre-land-refuters/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Unbiased dual-model refuter panel before landing large multi-surface changes; codified from the ag-s43tg landing where it caught 9 real misses."
+  - skill:            continuity-loop
+    domain:           "BC6 Orchestration"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: orchestration
+    path:             skills/continuity-loop/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Seams epic ag-xwjlc: clean-room home for the renewal spine CLAUDE.md declares live; evolve/using-atm/recover route continuity here."
+  - skill:            operationalize
+    domain:           "BC1 Corpus"
+    hexagonal_role:   domain
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/operationalize/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Seams epic ag-xwjlc: distill+route bridge from gathered context to automation shapes; fills the curate/forge-to-builders seam."
+  - skill:            reality-check
+    domain:           "BC2 Validation"
+    hexagonal_role:   domain
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: validation
+    path:             skills/reality-check/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Seams epic ag-xwjlc: mid-epic drift audit (code vs claimed vision); complements status/validate/post-mortem."
+  - skill:            toil-mining
+    domain:           "BC1 Corpus"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: corpus
+    path:             skills/toil-mining/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Seams epic ag-xwjlc: usage-history toil miner feeding automation-shape-routing; the flywheel's missing feeder."

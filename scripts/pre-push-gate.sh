@@ -1410,6 +1410,23 @@ else
     fail "missing file: scripts/check-bounded-contexts-drift.sh"
 fi
 
+# --- 22o2. Artifact-classification schema (ag-4akl8 S0) ---
+# Verifies every active `- skill:` row + `workflows:` entry in
+# docs/contracts/skill-dispositions.yaml carries the additive artifact-
+# classification fields (kind/runtime_targets/parity_policy/capability_class/
+# path/aliases/supersedes) with valid closed-enum values. Names the offending
+# row on failure. Always runs: ledger edits come from any diff scope.
+if [[ -f scripts/validate-skill-disposition-schema.sh ]]; then
+    if disp_schema_output="$(bash scripts/validate-skill-disposition-schema.sh 2>&1)"; then
+        pass "artifact-classification schema"
+    else
+        fail "artifact-classification schema"
+        indent_output "$disp_schema_output"
+    fi
+else
+    fail "missing file: scripts/validate-skill-disposition-schema.sh"
+fi
+
 # --- 22p. Skill-domain-map golden gate (soc-zxia.3 Phase 3) ---
 # Verifies docs/reference/agentops-skill-domain-map.md matches what the
 # generator would produce from yaml canonical sources. Forbids hand

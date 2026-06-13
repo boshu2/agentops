@@ -18,6 +18,7 @@ beads, and ratcheted knowledge make trust repeatable.
 | BC3 Loop | Select work, execute RPI, log cycles, measure fitness, and stop at convergence. | `evolve`, `rpi`, `autodev`, `goals`, `beads`, loop CLI | `LoopReaderPort`, `LoopWriterPort`, `HypothesisLedgerPort`, `ConvergenceCheckPort`, `WorkSelectorPort` |
 | BC4 Factory | Build, audit, package, and govern reusable skills and product claims. | `skill-builder`, `skill-auditor`, `heal-skill`, standards, docs | `SkillCatalogPort`, `SkillScorerPort`, `FactoryAdmissionPort`, `ClaimEvidencePort` |
 | BC5 Runtime | Adapt the control plane to harnesses, hooks, PRs, shells, and local machines. | Codex/Claude skills, hooks, GitHub PR skills, `push`, `scope`, `swarm` | `HarnessPort`, `OperatorPort`, `EventBusPort`, `GitPort`, `IssueTrackerPort` |
+| BC6 Orchestration | Spawn, coordinate, and converge multi-agent swarms across panes, mailboxes, and renewal loops. | `ntm`, `swarm`, `agent-mail`, `using-atm`, `vibing-with-ntm`, `continuity-loop` | `OrchestrationPort`, `SwarmDispatchPort`, `AgentMailPort`, `ConvergencePort` |
 
 ## Hexagonal Rule
 
@@ -42,6 +43,7 @@ flowchart LR
     Loop["BC3 Loop"]
     Factory["BC4 Factory"]
     Runtime["BC5 Runtime"]
+    Orchestration["BC6 Orchestration"]
   end
 
   FS["Filesystem .agents"]
