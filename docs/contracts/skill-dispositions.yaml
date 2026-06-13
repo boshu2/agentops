@@ -246,6 +246,65 @@ historical:
     date:         2026-06-12
     rationale:    "Quick-readiness check; fold into validate as a --quick mode (fold landed ag-s43tg S24, was merge-review)"
 
+# Workflow dispositions — Claude Workflow scripts (.claude/workflows/*.js), the
+# deterministic multi-agent orchestration layer. These are NOT skills: they are
+# a SEPARATE artifact kind (kind: workflow), registered here so the
+# workflow-governance gate (scripts/check-workflow-governance.sh) can assert
+# every .claude/workflows/*.js has a ledger entry.
+#
+# This is a separate top-level mapping (NOT part of `dispositions:`) for the same
+# reason `historical:` is: the `- skill:` line-parsers (scripts/lib/sku_catalog.py
+# regex `^\s*-\s+skill:`, scripts/generate-skill-domain-map.sh `.get("dispositions")`)
+# only read the `dispositions:` list, so a top-level `workflows:` mapping is
+# skipped exactly like `historical:` — it does NOT change the skill COUNT.
+#
+# Schema per entry:
+#   id              workflow id (matches meta.name in the .js)
+#   kind            always "workflow"
+#   domain          "BC<n> <Name>" — must match docs/contracts/bounded-contexts.yaml
+#   hexagonal_role  driving-adapter (workflows orchestrate; they drive the loop)
+#   runtime_targets which runtimes can run it (Claude Workflow engine today)
+#   parity_policy   exempt — workflows are not subject to the cross-runtime skill parity gate
+#   aliases         prior/alternate names that must keep resolving (additive-rename safety)
+#   path            the canonical .js path
+workflows:
+  ship-beads:
+    kind:            workflow
+    domain:          "BC3 Loop"
+    hexagonal_role:  driving-adapter
+    runtime_targets: [claude]
+    parity_policy:   exempt
+    aliases:         [crank, bead-crank]
+    path:            .claude/workflows/ship-beads.js
+    rationale:       "Bootstrap engine (ag-km74w): drive/ship a bead list to confirmed-merged. Additive rename of bead-crank (crank=jargon); both resolve."
+  bead-crank:
+    kind:            workflow
+    domain:          "BC3 Loop"
+    hexagonal_role:  driving-adapter
+    runtime_targets: [claude]
+    parity_policy:   exempt
+    aliases:         [crank]
+    path:            .claude/workflows/bead-crank.js
+    rationale:       "Legacy ship-beads predecessor; kept working (additive, never breaking-renamed). Superseded-by: ship-beads."
+  bdd-foundry:
+    kind:            workflow
+    domain:          "BC3 Loop"
+    hexagonal_role:  driving-adapter
+    runtime_targets: [claude]
+    parity_policy:   exempt
+    aliases:         []
+    path:            .claude/workflows/bdd-foundry.js
+    rationale:       "Behavior-first planning workflow: intent → Gherkin → failing acceptance tests → acceptance-gated bead DAG."
+  operating-loop:
+    kind:            workflow
+    domain:          "BC3 Loop"
+    hexagonal_role:  driving-adapter
+    runtime_targets: [claude]
+    parity_policy:   exempt
+    aliases:         []
+    path:            .claude/workflows/operating-loop.js
+    rationale:       "Runs one capability through the AgentOps seven-move operating loop end-to-end."
+
 dispositions:
   - skill:          autodev
     domain:         "BC3 Loop"
