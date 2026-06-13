@@ -701,6 +701,7 @@ func validCodexFinalVerdictForTest(status string) string {
 		"judge: fable\n" +
 		"judge_program: claude-code\n" +
 		"judge_model_family: claude\n" +
+		"context_id: ctx-fable-dispatch\n" +
 		"VERDICT: " + status + "\n" +
 		"COMMANDS RUN:\n" +
 		"  go test ./cmd/ao -run CodexDispatch\n"

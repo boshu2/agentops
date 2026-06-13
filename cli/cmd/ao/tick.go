@@ -40,6 +40,10 @@ type tickRuntime struct {
 	stdout  io.Writer
 	stderr  io.Writer
 	env     []string
+	// requireCrossFamily is the OPTIONAL cross-family strengthener. Default false
+	// = the distinct-context floor IS the floor; true = additionally require >=2
+	// model families in the PASS quorum (newTickRuntime leaves it false).
+	requireCrossFamily bool
 }
 
 func newTickRuntime(cmd *cobra.Command) tickRuntime {
@@ -630,13 +634,25 @@ func tickCouncilGate(rt tickRuntime, paths []string) error {
 	pass, fail, unverified := 0, 0, 0
 	families := map[string]bool{}
 	judges := map[string]bool{}
+	contexts := map[string]bool{}
 	for _, path := range paths {
 		text, err := tickReadVerdict(rt, path)
 		identity, identityGaps := tickVerdictIdentity(text)
+		// A verdict with any identity gap — now including a missing context_id or a
+		// judge context equal to the author context (self-judge) — is unverified and
+		// fails closed.
 		if err != nil || !tickVerdictHasCommandsRun(text) || len(identityGaps) > 0 {
 			unverified++
 			continue
 		}
+		// The independence axis is the judge CONTEXT, not the judge name: a
+		// duplicate context is one judge regardless of how it labels itself.
+		if contexts[identity.ContextID] {
+			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: duplicate judge context %q does not count as an independent judge\n", identity.ContextID)
+			return &tickExitError{code: tickExitCouncil}
+		}
+		contexts[identity.ContextID] = true
+		// Retain the judge-name dedup as a secondary guard.
 		if judges[identity.JudgeName] {
 			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: duplicate judge %q does not count as an independent judge\n", identity.JudgeName)
 			return &tickExitError{code: tickExitCouncil}
@@ -654,15 +670,21 @@ func tickCouncilGate(rt tickRuntime, paths []string) error {
 		}
 	}
 	if unverified > 0 {
-		fmt.Fprintf(rt.stderr, "FAIL-CLOSED: %d/%d verdict(s) unverified (no COMMANDS RUN)\n", unverified, n)
+		fmt.Fprintf(rt.stderr, "FAIL-CLOSED: %d/%d verdict(s) unverified (no COMMANDS RUN / identity gap)\n", unverified, n)
 		return &tickExitError{code: tickExitCouncil}
 	}
 	if pass == n {
-		if len(families) < 2 {
-			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: PASS quorum has %d model family; need at least 2 independent families\n", len(families))
+		// Context floor: need >=2 distinct non-author judge contexts.
+		if len(contexts) < 2 {
+			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: PASS quorum has %d distinct judge context; need at least 2 independent contexts\n", len(contexts))
 			return &tickExitError{code: tickExitCouncil}
 		}
-		fmt.Fprintf(rt.stdout, "COUNCIL PASS: %d/%d judges unanimous across %d model families\n", pass, n, len(families))
+		// Optional cross-family strengthener: only gated when explicitly required.
+		if rt.requireCrossFamily && len(families) < 2 {
+			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: --require-cross-family set but PASS quorum spans %d model family; need at least 2 (cross-family)\n", len(families))
+			return &tickExitError{code: tickExitCouncil}
+		}
+		fmt.Fprintf(rt.stdout, "COUNCIL PASS: %d/%d judges unanimous across %d distinct contexts (%d model families)\n", pass, n, len(contexts), len(families))
 		return nil
 	}
 	if fail == n {
@@ -678,6 +700,12 @@ type tickVerdictIdentityInfo struct {
 	JudgeName        string
 	JudgeProgram     string
 	JudgeModelFamily string
+	// ContextID is the judge's session-identity axis (the independence axis): two
+	// distinct ContextIDs are two independent judges even on the same model.
+	ContextID string
+	// AuthorContextID is the author's context — a judge whose ContextID equals it
+	// is self-judging and fails closed.
+	AuthorContextID string
 }
 
 func tickVerdictIdentity(text string) (tickVerdictIdentityInfo, []string) {
@@ -686,6 +714,8 @@ func tickVerdictIdentity(text string) (tickVerdictIdentityInfo, []string) {
 		JudgeName:        tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "judge", "judge_name", "judge-name", "judge name", "judge_id", "judge-id", "judge id")),
 		JudgeProgram:     tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "judge_program", "judge-program", "judge program", "program", "validator_program", "validator-program", "validator program")),
 		JudgeModelFamily: tickNormalizeModelFamily(tickVerdictMetadataValue(text, "judge_model_family", "judge-model-family", "judge model family", "model_family", "model-family", "model family", "family")),
+		ContextID:        tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "context_id", "context-id", "context id", "validator_session", "validator-session", "validator session")),
+		AuthorContextID:  tickNormalizeIdentityValue(tickVerdictMetadataValue(text, "author_context_id", "author-context-id", "author context id")),
 	}
 	var gaps []string
 	if info.Author == "" {
@@ -702,8 +732,14 @@ func tickVerdictIdentity(text string) (tickVerdictIdentityInfo, []string) {
 	} else if tickUnknownModelFamily(info.JudgeModelFamily) {
 		gaps = append(gaps, "judge.model_family is unknown")
 	}
+	if info.ContextID == "" {
+		gaps = append(gaps, "missing judge.context_id")
+	}
 	if info.Author != "" && info.JudgeName != "" && info.Author == info.JudgeName {
 		gaps = append(gaps, "judge.name equals author")
+	}
+	if info.AuthorContextID != "" && info.ContextID != "" && info.AuthorContextID == info.ContextID {
+		gaps = append(gaps, "judge.context_id equals author context")
 	}
 	if tickVerdictMetadataValue(text, "allow_self", "allow-self", "allow self", "self_waiver", "self-waiver", "self waiver") != "" {
 		gaps = append(gaps, "self-judge waiver must be external and principal-logged, not verdict-authored")
