@@ -3997,6 +3997,25 @@ ao close <id> <commit-message> <evidence-ref> [paths...] [flags]
 
 ---
 
+### `ao converge`
+
+Run a bounded convergence loop: dispatch a non-mutating judge panel, apply the
+
+```
+ao converge [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                   help for converge
+      --max-rounds int         maximum fix->re-run rounds before NOT-CONVERGED (default 5)
+      --min-contexts int       distinct non-author judge contexts required to converge (default 2)
+      --require-cross-family   optional strengthener: additionally require >=2 model families in the PASS quorum
+```
+
+---
+
 ### `ao council-gate`
 
 Fail-closed two-plus judge verdict aggregation

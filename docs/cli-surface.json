@@ -325,6 +325,13 @@
     },
     {
       "category": "public-tested",
+      "command": "converge",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "corpus capture",
       "coverage_status": "covered",
       "kind": "leaf",
