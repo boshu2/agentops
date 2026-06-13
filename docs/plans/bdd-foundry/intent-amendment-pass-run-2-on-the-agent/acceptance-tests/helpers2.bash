@@ -89,8 +89,12 @@ RUN1_SPEC="$RUN2_PLAN_DIR/../spec.md"
 source "$BASE_SUITE_DIR/helpers.bash"
 
 # Run-2 tests live one directory deeper than run 1 — repoint root discovery.
-repo_under_test() { cd "$RUN2_TESTS_DIR/../../../../.." && pwd; }
-REAL_REPO_ROOT="$(repo_under_test)"
+# B-3 fix (pre-mortem 2026-06-12): resolve to the git toplevel of THIS checkout,
+# not a hardcoded ../../../../.. depth-count (which pinned the seams worktree and
+# split REAL_REPO_ROOT from BR_MAIN_CHECKOUT). git toplevel is correct from any
+# checkout depth — main, or a fresh crank worktree off main. Override: REAL_REPO_ROOT.
+repo_under_test() { git -C "$RUN2_TESTS_DIR" rev-parse --show-toplevel 2>/dev/null || ( cd "$RUN2_TESTS_DIR/../../../../.." && pwd ); }
+REAL_REPO_ROOT="${REAL_REPO_ROOT:-$(repo_under_test)}"
 
 # ── pinned artifact paths ────────────────────────────────────────────
 AUDIT_RED="$BASE_SUITE_DIR/audit-red.sh"
