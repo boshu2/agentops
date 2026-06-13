@@ -398,12 +398,43 @@ file for these):
    (Mac ↔ bushido) serialization is out of scope for land.sh v1 and owned by
    the **ag-arpk** disposition (merge queue kept-planned, sequenced after the
    land.sh epic).
-3. **B88 implementation choice:** the suite is the contract; an **`ao land`**
-   Go implementation is PERMITTED AND PREFERRED over hardening ~2k lines of
-   concurrency-critical Bash 3.2 if the implementer judges it cheaper; either
-   substrate must pass the identical suite via the **LAND_BIN** seam, and
-   installed guard segments dispatch through the configured land command
-   (§5.2), never a hardcoded path.
+3. **B88 implementation — DECIDED: Go (`ao land`), not bash (operator call,
+   2026-06-13).** This supersedes the run-1 D1 line ("single self-contained bash
+   file") and the earlier "permitted/preferred-if-cheaper" framing. land.sh ships
+   as a subcommand of the existing `ao` Go CLI, NOT a 2k-line bash script.
+   Rationale: types, real unit-testability, and first-class concurrency
+   primitives (goroutines + channels for the lock/queue/heartbeat) — the lock,
+   regen, and gate are concurrency-critical and bash is the riskiest substrate
+   for that. The **acceptance suite is unchanged and remains the contract**: the
+   Go binary must pass the identical bats suite via the **LAND_BIN** seam (the
+   tests shell out to `$LAND_BIN`; point it at the `ao land` binary). The D1
+   bash artifact is retired; D2/D3/D4 (runner delegator, helpers guard, coverage
+   tags) stand. Installed guard segments dispatch through the configured land
+   command (§5.2), never a hardcoded path.
+
+   *Mechanical consequence for the beads:* the engine beads (m1–m11) now target
+   `cli/cmd/ao/land*.go` + `cli/internal/land/` instead of `scripts/land.sh`;
+   their bats acceptance is unchanged (LAND_BIN seam). The bash-portability
+   bound in §1 (no flock/setsid/date+%N) NO LONGER APPLIES — Go gets real
+   `flock`/file-locking, process groups, and monotonic clocks. Re-scope the
+   engine beads to the Go surface before cranking.
+
+### 📌 PIN — resolve BEFORE any engine bead is cranked (operator-flagged 2026-06-13)
+
+**Does `ao land` become a long-lived daemon, not a one-shot command?** The
+operator raised that a Go implementation invites a daemon shape — a resident
+process owning the lock/queue and serializing lands across all in-process
+lanes via channels, rather than a fresh `ao land` invocation per land
+contending a file-lock. Possibly even a "refiner" that does more than serialize
+(batches, pre-warms gates, reorders the queue). **This is explicitly NOT decided
+and NOT in scope to design now** — it is parked as the first thing to work
+through before the M4 lock/queue bead is built, because daemon-vs-oneshot
+changes the lock mechanism, the crash-recovery model (M9), the `--status`
+surface (M4), and whether cross-host (the ag-arpk residual) folds in here after
+all. Do not crank the engine until this fork is settled; the acceptance suite is
+substrate-agnostic so it survives either answer, but the spec's M3/M4/M9
+internals do not. **One-shot file-lock is the current assumed baseline; the
+daemon question is the gate.**
 
 ---
 
