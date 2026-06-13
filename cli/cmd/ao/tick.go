@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/liveness"
 	"github.com/spf13/cobra"
 )
 
@@ -647,11 +648,14 @@ func tickCouncilGate(rt tickRuntime, paths []string) error {
 		}
 		// The independence axis is the judge CONTEXT, not the judge name: a
 		// duplicate context is one judge regardless of how it labels itself.
-		if contexts[identity.ContextID] {
+		// Canonicalize first so a single judge cannot forge "distinct" contexts via
+		// whitespace/case/unicode variants.
+		canonCtx := liveness.CanonicalizeContextID(identity.ContextID)
+		if contexts[canonCtx] {
 			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: duplicate judge context %q does not count as an independent judge\n", identity.ContextID)
 			return &tickExitError{code: tickExitCouncil}
 		}
-		contexts[identity.ContextID] = true
+		contexts[canonCtx] = true
 		// Retain the judge-name dedup as a secondary guard.
 		if judges[identity.JudgeName] {
 			fmt.Fprintf(rt.stderr, "FAIL-CLOSED: duplicate judge %q does not count as an independent judge\n", identity.JudgeName)

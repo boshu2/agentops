@@ -85,8 +85,15 @@ type convergeRoundDisposition struct {
 
 // convergeEvaluateRound maps a round to a disposition, failing closed: a round
 // with zero usable verdicts (nil or empty ContextVerdicts) is NEVER a vacuous
-// PASS — absence of evidence is treated as a failing round.
-func convergeEvaluateRound(result convergeRoundResult) convergeRoundDisposition {
+// PASS — absence of evidence is treated as a failing round. The optional
+// minContexts arg lets a caller (e.g. convergeRunBounded) evaluate against the
+// SAME floor it uses; omitted/<=0 falls back to convergeDefaultMinContexts so the
+// two paths cannot silently disagree on the floor.
+func convergeEvaluateRound(result convergeRoundResult, minContexts ...int) convergeRoundDisposition {
+	floor := convergeDefaultMinContexts
+	if len(minContexts) > 0 && minContexts[0] > 0 {
+		floor = minContexts[0]
+	}
 	usable := 0
 	for _, v := range result.ContextVerdicts {
 		if v.ContextID != "" {
@@ -96,8 +103,8 @@ func convergeEvaluateRound(result convergeRoundResult) convergeRoundDisposition 
 	if usable == 0 {
 		return convergeRoundDisposition{Pass: false, IncrementsFailCounter: true}
 	}
-	// A round is "passing progress" only when it converges on the default floor.
-	converged, _ := convergeJudgeAgreement(result, convergeDefaultMinContexts)
+	// A round is "passing progress" only when it converges on the given floor.
+	converged, _ := convergeJudgeAgreement(result, floor)
 	if converged {
 		return convergeRoundDisposition{Pass: true, IncrementsFailCounter: false}
 	}
@@ -307,12 +314,32 @@ claude (print-mode) call (LAW 0).
 			return fmt.Errorf("%s", canary.Message)
 		}
 
-		// The full live loop wires dispatch + the orchestrator fix step; this
-		// command surface exposes the resolved bound/CLAIM. AgentOps never writes a
-		// binding verdict — MTO remains the sole writer.
+		// Resolve the author identity + transport from the runtime context. This
+		// exercises the LAW-0 transport selector (UsesClaudePrint is false in every
+		// branch) and builds the non-mutating, author_neq_validator judge packet —
+		// the kernel the loop drives, surfaced here so the command is not vacuous.
+		authorID := resolveSessionID("")
+		transport := convergeResolveTransport(convergeEnv{
+			ClaudeSessionID: os.Getenv("CLAUDE_SESSION_ID"),
+			CodexThreadID:   os.Getenv("CODEX_THREAD_ID"),
+		})
+		if transport.UsesClaudePrint { // structural LAW-0 assertion, can never be true
+			return fmt.Errorf("converge: refusing transport that uses a headless claude print call (LAW 0)")
+		}
+		packet := convergeBuildJudgePacket(authorID)
+		if packet.Dispatch.MutatesRepo {
+			return fmt.Errorf("converge: judge packet must be non-mutating")
+		}
+		cfg := convergeLoopConfig{MaxRounds: maxRounds, MinContexts: minContexts, KillDir: cmd.Flags().Lookup("kill-dir").Value.String()}
+
+		// The loop is agent-driven: converge dispatches a non-mutating judge each
+		// round and the ORCHESTRATING agent applies the fix between rounds — converge
+		// never applies a fix itself, and AgentOps never writes a binding verdict
+		// (MTO is the sole writer). The command surfaces the resolved plan/CLAIM.
 		fmt.Fprintf(cmd.OutOrStdout(),
-			"ao converge: %s; bounded loop (max-rounds=%d, min-contexts=%d, require-cross-family=%v); the fix step is the orchestrating agent's, the judge leg is non-mutating.\n",
-			canary.Message, maxRounds, minContexts, requireCrossFamily)
+			"ao converge: %s\n  author=%q transport=%s (delegated=%v) judge-role=%q\n  bounded loop: max-rounds=%d min-contexts=%d require-cross-family=%v kill-dir=%q\n  the fix step is the orchestrating agent's; the judge leg is non-mutating; MTO writes the binding verdict.\n",
+			canary.Message, authorID, transport.Kind, transport.Delegated, packet.Role,
+			cfg.MaxRounds, cfg.MinContexts, requireCrossFamily, cfg.KillDir)
 		return nil
 	},
 }
@@ -321,5 +348,6 @@ func init() {
 	convergeCmd.Flags().Int("max-rounds", convergeDefaultMaxRounds, "maximum fix->re-run rounds before NOT-CONVERGED")
 	convergeCmd.Flags().Int("min-contexts", convergeDefaultMinContexts, "distinct non-author judge contexts required to converge")
 	convergeCmd.Flags().Bool("require-cross-family", false, "optional strengthener: additionally require >=2 model families in the PASS quorum")
+	convergeCmd.Flags().String("kill-dir", ".", "directory whose .agents/rpi/KILL switch aborts the bounded loop at a round boundary")
 	rootCmd.AddCommand(convergeCmd)
 }
