@@ -38,6 +38,17 @@ The aspiration is factory-grade throughput for code: enough structure that agent
 
 The thesis is simple: indeterministic workers need disciplined systems. DevOps proved this for engineers. SRE proved it again with SLOs and error budgets. Kubernetes proved it for declarative infrastructure with control loops that reconcile actual state to desired state. Coding agents are the next indeterministic worker class. Same playbook. New substrate. The asset that survives — yours, not ours — is the corpus the system compounds on your behalf.
 
+### Why it must exist: a GPS for agentic work, not a workflow
+
+The deepest "why" under the corpus and the gates is this: **agentic workers are inherently stochastic, so AgentOps is a goal-directed navigator, not a workflow.** A deterministic worker — compiled code — takes rails: the route *is* the track, and a script, DAG, or pipeline is the right shape. An agent has no rails. Told "turn left," it has real probability of confidently driving into the lake. So the orchestration paradigm **inverts**:
+
+- **Orchestration determinism runs inverse to worker determinism.** Deterministic worker → script / DAG / pipeline (rails). Stochastic worker → a navigator that *assumes* deviation and self-corrects continuously.
+- **You don't script the route — you set the destination.** A goal is a destination — acceptance, "done" — not a turn-by-turn workflow. Linear `crank` / `swarm` waves are rails: the brittle special case for when scopes happen not to collide. The general shape is a **goal-directed traversal of a deterministic role-topology with live re-routing**: the *map* (roles, stages, legal transitions, gates) is fixed and trusted; the *route* (the path a given goal takes) is dynamic — chosen at each node, recalculated on failure.
+- **Trust the environment, not the agent.** Trust the GPS — the deterministic map plus the gates — not the driver. The environment supplies the reliability the agent structurally cannot.
+- **The windshield is non-negotiable.** The agent's signature failure is not a wrong turn on a real map; it *hallucinates roads that do not exist* — invents an API, a file, a fact, and drives toward it confidently. Re-routing cannot save you from a road that was never there. Only **deterministic ground-truth** — the gate, the eval, the test that actually runs — is the windshield that catches the lake. This is why the validation-gate / evidence layer is the load-bearing floor, not an optional add-on.
+
+This is the reliability-into-stochastic-systems thesis stated as architecture: you do not make the *agent* reliable — stochastic is what it is — you build the navigator that makes the *work* reliable in spite of it.
+
 ## What if the labs ship this natively?
 
 They will. Anthropic's Managed Agents is the first move; others will follow. That's fine — the value isn't in this tool. It's in the corpus you build with it.
