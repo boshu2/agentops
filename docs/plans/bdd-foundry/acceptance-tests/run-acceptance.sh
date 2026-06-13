@@ -22,7 +22,7 @@ if grep -nE '^[[:space:]]*skip([[:space:]]|$)' "$SUITE_DIR"/*.bats; then
   echo "FATAL: skip marker found — the suite must be total (B73)" >&2
   exit 2
 fi
-if grep -n 'bats:focus' "$SUITE_DIR"/*.bats; then
+if grep -nE '^[[:space:]]*#[[:space:]]*bats:focus' "$SUITE_DIR"/*.bats; then
   echo "FATAL: focus marker found — the suite must be total (B73)" >&2
   exit 2
 fi

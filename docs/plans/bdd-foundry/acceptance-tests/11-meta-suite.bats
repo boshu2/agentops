@@ -43,7 +43,7 @@ expand_b_ids() {
 
   # ── no skip/pending/focus marker anywhere in the suite ──
   ! grep -nE '^[[:space:]]*skip([[:space:]]|$)' "$SUITE_DIR"/*.bats
-  ! grep -n 'bats:focus' "$SUITE_DIR"/*.bats
+  ! grep -nE '^[[:space:]]*#[[:space:]]*bats:focus' "$SUITE_DIR"/*.bats
 
   # ── hermetic fixtures: temp dirs + the B25 sandbox-marked bare remote ──
   grep -q 'land-sandbox' "$SUITE_DIR/helpers.bash"

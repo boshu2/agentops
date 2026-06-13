@@ -1,0 +1,256 @@
+1..73
+not ok 1 B1: single lane lands with one command and one rebase attempt
+# (in test file 01-core-landing.bats, line 17)
+#   `[ "$status" -eq 0 ]' failed
+not ok 2 B2: regen-at-land — author never hand-runs the 8 generators; regen commit carries pinned identity
+# (in test file 01-core-landing.bats, line 35)
+#   `[ "$status" -eq 0 ]' failed
+not ok 3 B3: queued lanes land FIFO with zero manual rebases
+# (from function `wait_until' in file helpers.bash, line 382,
+#  in test file 01-core-landing.bats, line 66)
+#   `wait_until 10 lock_state_is "$LANE_B" held' failed
+not ok 4 B4: three-lane soak — the tonight-failure-mode does not reproduce
+# (in test file 01-core-landing.bats, line 98)
+#   `[ "$ST_A" -eq 0 ]; [ "$ST_B" -eq 0 ]; [ "$ST_C" -eq 0 ]' failed
+not ok 5 B5: lock status is observable for swarm tending
+# (from function `wait_until' in file helpers.bash, line 382,
+#  in test file 01-core-landing.bats, line 121)
+#   `wait_until 10 lock_state_is "$LANE_B" held' failed
+not ok 6 B6: mutual exclusion is mechanical — no two holders, ever (10-lane stress)
+# (in test file 01-core-landing.bats, line 149)
+#   `[ "$acq" -eq 10 ]; [ "$rel" -eq 10 ]' failed
+not ok 7 B7: stale lock from a dead lane is reclaimed, not waited on forever
+# (in test file 01-core-landing.bats, line 170)
+#   `[ "$status" -eq 0 ]' failed
+not ok 8 B8: a live lock is never stolen
+# (in test file 01-core-landing.bats, line 188)
+#   `[[ "$output" =~ lock\ held\ by\ .*(queued|timed\ out) ]] || [[ "$output" == *"timed out"* ]]' failed
+# true
+not ok 9 B9: derived surfaces never present a textual conflict to anyone
+# (in test file 01-core-landing.bats, line 208)
+#   `[ "$status" -eq 0 ]' failed
+not ok 10 B10: re-running land.sh on an already-landed branch is a no-op
+# (in test file 01-core-landing.bats, line 221)
+#   `[ "$status" -eq 0 ]' failed
+not ok 11 B11: counts are never hand-asserted — prose counts are generated or gated
+# (in test file 01-core-landing.bats, line 240)
+#   `[ "$status" -eq 0 ]' failed
+not ok 12 B12: out-of-band push between gate and push is absorbed, never force-pushed
+# (in test file 01-core-landing.bats, line 272)
+#   `[ "$status" -eq 0 ]' failed
+not ok 13 B13: all gate failures reported in ONE pass, not one per cycle
+# (in test file 01-core-landing.bats, line 293)
+#   `cat > "$LANE/scripts/gate.d/10-context-rel.sh" <<'EOF'' failed
+# /Users/bo/dev/wt-ag-seams-20260612/docs/plans/bdd-foundry/acceptance-tests/01-core-landing.bats: line 293: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/bats-run-An8GS5/test/13/land-sbx.vg7ZA0/lanes/a/scripts/gate.d/10-context-rel.sh: No such file or directory
+not ok 14 B14: dirty working tree is refused before any lock or rebase
+# (in test file 01-core-landing.bats, line 337)
+#   `[[ "$output" =~ working\ tree\ dirty ]]' failed
+not ok 15 B15: a real source conflict aborts cleanly and reports, leaving no wreckage
+# (in test file 01-core-landing.bats, line 361)
+#   `[[ "$output" == *"skills/crank/SKILL.md"* ]]' failed
+not ok 16 B16: hash-marker JSON corruption can never land (duplicate generated_hash class)
+# (in test file 01-core-landing.bats, line 375)
+#   `echo "lane-side edit" >> "$LANE/skills/seed-skill/SKILL.md"' failed
+# fatal: failed to copy file to '/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/bats-run-An8GS5/test/16/land-sbx.tjXCKy/lanes/a/.git/objects/3f/f163fec63b19d880fff5a78b3de7ebc7b4ea52': No such file or directory
+# fatal: cannot change to '/var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/bats-run-An8GS5/test/16/land-sbx.tjXCKy/lanes/a': No such file or directory
+# /Users/bo/dev/wt-ag-seams-20260612/docs/plans/bdd-foundry/acceptance-tests/01-core-landing.bats: line 375: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/bats-run-An8GS5/test/16/land-sbx.tjXCKy/lanes/a/skills/seed-skill/SKILL.md: No such file or directory
+not ok 17 B17: direct pushes to main outside land.sh are mechanically blocked
+# (in test file 01-core-landing.bats, line 392)
+#   `[ "$status" -eq 0 ]' failed
+not ok 18 B18: gate failure or crash mid-land never strands the queue
+# (in test file 01-core-landing.bats, line 419)
+#   `[ "$status" -eq 0 ]' failed
+not ok 19 B19: every class of dirt is refused or explicitly classified before lock
+# (in test file 02-preflight.bats, line 14)
+#   `[ "$status" -ne 0 ]; [[ "$output" =~ working\ tree\ dirty ]]' failed
+not ok 20 B20: root discovery works; broken invocation contexts are refused
+# (in test file 02-preflight.bats, line 59)
+#   `[ "$status" -eq 0 ]' failed
+not ok 21 B21: an in-progress git operation is refused before lock
+# (in test file 02-preflight.bats, line 106)
+#   `[[ "$output" =~ git\ operation\ in\ progress ]]' failed
+not ok 22 B22: missing tooling is reported in ONE preflight summary, no lock taken
+# (in test file 02-preflight.bats, line 125)
+#   `[[ "$output" == *jq* ]]' failed
+not ok 23 B23: configuration has pinned precedence and validates before lock
+# (in test file 02-preflight.bats, line 138)
+#   `[ "$status" -eq 0 ]' failed
+not ok 24 B24: help, version, and usage errors never mutate anything
+# (in test file 02-preflight.bats, line 183)
+#   `[ "$status" -eq 0 ]; [[ "$output" =~ [Uu]sage ]]' failed
+not ok 25 B25: the harness refuses to operate on a non-sandbox remote
+# (in test file 02-preflight.bats, line 219)
+#   `[[ "$output" == *"refusing non-sandbox remote"* ]]' failed
+not ok 26 B26: lock acquisition is atomic — exactly one winner at the same instant
+# (in test file 03-lock-queue.bats, line 24)
+#   `[ "$first_two" = "acquire release" ]' failed
+not ok 27 B27: unreadable lock storage fails closed before any mutation
+# (in test file 03-lock-queue.bats, line 38)
+#   `[[ "$output" =~ lock\ state\ unreadable|lock\ storage ]]' failed
+not ok 28 B28: lane identity is unique and PID reuse cannot fake liveness
+# (from function `wait_until' in file helpers.bash, line 382,
+#  in test file 03-lock-queue.bats, line 69)
+#   `wait_until 10 lock_state_is "$LANE_B" held' failed
+not ok 29 B29: queue hygiene — no duplicate entries, no ghosts, no starvation
+# (from function `wait_until' in file helpers.bash, line 382,
+#  in test file 03-lock-queue.bats, line 96)
+#   `wait_until 10 queue_len_is "$LANE_B" 1' failed
+not ok 30 B30: concurrent lands of the same branch — one land, one clean no-op
+# (in test file 03-lock-queue.bats, line 135)
+#   `false' failed
+not ok 31 B31: heartbeat stays fresh through long phases; heartbeat write failure is fail-safe
+# (from function `wait_until' in file helpers.bash, line 382,
+#  in test file 03-lock-queue.bats, line 155)
+#   `wait_until 10 lock_state_is "$LANE_A" held' failed
+not ok 32 B32: SIGINT/SIGTERM at every phase exit cleanly, no wreckage
+# (from function `wait_until' in file helpers.bash, line 382,
+#  in test file 03-lock-queue.bats, line 199)
+#   `wait_until 10 queue_len_is "$LQ" 0' failed
+not ok 33 B33: a failed holder releases and the queue advances
+# (in test file 03-lock-queue.bats, line 225)
+#   `cat > "$LANE_A/scripts/gate.d/99-fail.sh" <<'EOF'' failed
+# /Users/bo/dev/wt-ag-seams-20260612/docs/plans/bdd-foundry/acceptance-tests/03-lock-queue.bats: line 225: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/bats-run-An8GS5/test/33/land-sbx.cxllds/lanes/a/scripts/gate.d/99-fail.sh: No such file or directory
+not ok 34 B34: the status contract is total — every lock state has pinned JSON
+# (in test file 03-lock-queue.bats, line 258)
+#   `[ "$status" -eq 0 ]' failed
+not ok 35 B35: rebase base comes from a post-acquisition fetch; fetch failure fails closed
+# (in test file 04-rebase-shapes.bats, line 28)
+#   `[ "$ST_B" -eq 0 ]' failed
+not ok 36 B36: nothing-to-land shapes exit fast and mutate nothing
+# (in test file 04-rebase-shapes.bats, line 53)
+#   `[ "$status" -eq 0 ]; [[ "$output" == *"nothing to land"* ]]; [ $((t1-t0)) -lt 10 ]' failed
+not ok 37 B37: already-landed is patch-aware; partial lands are completed, not duplicated
+# (in test file 04-rebase-shapes.bats, line 80)
+#   `git -C "$d/c" cherry-pick -q FETCH_HEAD' failed with status 129
+# usage: git cherry-pick [--edit] [-n] [-m <parent-number>] [-s] [-x] [--ff]
+#                        [-S[<keyid>]] <commit>...
+#    or: git cherry-pick (--continue | --skip | --abort | --quit)
+#
+#     --quit                end revert or cherry-pick sequence
+#     --continue            resume revert or cherry-pick sequence
+#     --abort               cancel revert or cherry-pick sequence
+#     --skip                skip current commit and continue
+#     --[no-]cleanup <mode> how to strip spaces and #comments from message
+#     -n, --no-commit       don't automatically commit
+#     --commit              opposite of --no-commit
+#     -e, --[no-]edit       edit the commit message
+#     -s, --[no-]signoff    add a Signed-off-by trailer
+#     -m, --[no-]mainline <parent-number>
+#                           select mainline parent
+#     --[no-]rerere-autoupdate
+#                           update the index with reused conflict resolution if possible
+#     --[no-]strategy <strategy>
+#                           merge strategy
+#     -X, --[no-]strategy-option <option>
+#                           option for merge strategy
+#     -S, --[no-]gpg-sign[=<key-id>]
+#                           GPG sign commit
+#     -x                    append commit name
+#     --[no-]ff             allow fast-forward
+#     --[no-]allow-empty    preserve initially empty commits
+#     --[no-]allow-empty-message
+#                           allow commits with empty messages
+#     --[no-]keep-redundant-commits
+#                           deprecated: use --empty=keep instead
+#     --empty (stop|drop|keep)
+#                           how to handle commits that become empty
+#
+not ok 38 B38: branch shapes that would denormalize main are handled explicitly
+# (in test file 04-rebase-shapes.bats, line 115)
+#   `[[ "$output" == *"merge commits not supported"* ]]' failed
+not ok 39 B39: a lane that becomes conflicted only after its predecessor lands
+# (from function `wait_until' in file helpers.bash, line 382,
+#  in test file 04-rebase-shapes.bats, line 146)
+#   `wait_until 10 lock_state_is "$LANE_B" held' failed
+not ok 40 B40: conflicts are classified — modify/delete, rename/rename, binary
+# (in test file 04-rebase-shapes.bats, line 188)
+#   `[[ "$output" == *"rename/rename"* ]]' failed
+not ok 41 B41: land.sh is provably non-interactive and leaves git config untouched
+# (in test file 04-rebase-shapes.bats, line 228)
+#   `[ "$status" -eq 0 ]' failed
+not ok 42 B42: the derived write set is a manifest, never a hard-coded list
+# (in test file 05-derived-regen.bats, line 25)
+#   `[ "$status" -eq 0 ]' failed
+not ok 43 B43: generator failure mid-land aborts with everything restored
+# (in test file 05-derived-regen.bats, line 67)
+#   `[[ "$output" == *"15-broken"* ]]' failed
+not ok 44 B44: nondeterministic generator output is detected before push
+# (in test file 05-derived-regen.bats, line 90)
+#   `[[ "$output" == *"nondeterministic generator output"* ]]' failed
+not ok 45 B45: deleting or renaming a skill leaves no stale derived entries
+# (in test file 05-derived-regen.bats, line 107)
+#   `[ "$status" -eq 0 ]' failed
+not ok 46 B46: hand edits to generator-owned files are reset to canonical output
+# (in test file 05-derived-regen.bats, line 141)
+#   `grep -qiE 'discard|reset|overwrit' <<<"$sneaky_out"' failed
+not ok 47 B47: the strict-JSON verifier is broad and independently testable
+# (in test file 05-derived-regen.bats, line 162)
+#   `[ "$status" -eq 0 ]' failed
+not ok 48 B48: the count checker reads a manifest and survives marker edge cases
+# (in test file 05-derived-regen.bats, line 205)
+#   `[[ "$output" == *"NEWDOC.md"* ]]' failed
+not ok 49 B49: the gate runs every required family and aggregates across all of them
+# (in test file 06-gate.bats, line 14)
+#   `cat > "$LANE/scripts/gate.d/10-bats-family.sh" <<'EOF'' failed
+# /Users/bo/dev/wt-ag-seams-20260612/docs/plans/bdd-foundry/acceptance-tests/06-gate.bats: line 14: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/bats-run-An8GS5/test/49/land-sbx.SQnDoZ/lanes/a/scripts/gate.d/10-bats-family.sh: No such file or directory
+not ok 50 B50: a hung gate check is killed by timeout, not waited on forever
+# (in test file 06-gate.bats, line 64)
+#   `cat > "$LANE/scripts/gate.d/50-hang.sh" <<EOF' failed
+# /Users/bo/dev/wt-ag-seams-20260612/docs/plans/bdd-foundry/acceptance-tests/06-gate.bats: line 64: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/bats-run-An8GS5/test/50/land-sbx.3huDno/lanes/a/scripts/gate.d/50-hang.sh: No such file or directory
+not ok 51 B51: a base main that is already red is reported as such, never blamed on the lane
+# (in test file 06-gate.bats, line 111)
+#   `[[ "$output" == *"base main is already failing"* ]]' failed
+# regen drift:
+#  M docs/context-map.md
+not ok 52 B52: post-land verification runs the full gate on a fresh clone of the remote
+# (in test file 06-gate.bats, line 126)
+#   `[ "$status" -eq 0 ]' failed
+not ok 53 B53: push failures are classified and leave no half-land
+# (in test file 07-push.bats, line 22)
+#   `grep -q 'retryable: yes' <<<"$out1"' failed
+not ok 54 B54: a rewound or force-pushed origin/main fails closed
+# (in test file 07-push.bats, line 80)
+#   `[[ "$output" =~ origin/main\ moved\ unexpectedly|rewound ]]' failed
+not ok 55 B55: a land pushes exactly one ref — refs/heads/main, fast-forward by construction
+# (in test file 07-push.bats, line 103)
+#   `[ "$status" -eq 0 ]' failed
+not ok 56 B56: repeated out-of-band churn exhausts the bounded retry and aborts cleanly
+# (in test file 07-push.bats, line 139)
+#   `[[ "$output" == *"out-of-band churn"* ]]' failed
+not ok 57 B57: crash-point matrix — SIGKILL at every phase is recoverable to exactly-once
+# (in test file 08-crash-recovery.bats, line 28)
+#   `[ "$status" -eq 0 ]' failed
+# land.sh: NOT IMPLEMENTED — bdd-foundry Phase 2 red placeholder
+not ok 58 B58: --abort has a complete contract
+# (in test file 08-crash-recovery.bats, line 52)
+#   `[ "$status" -eq 0 ]' failed
+not ok 59 B59: every documented failure has a clean retry path
+# (in test file 08-crash-recovery.bats, line 86)
+#   `cat > "$L1/scripts/gate.d/99-fail.sh" <<'EOF'' failed
+# /Users/bo/dev/wt-ag-seams-20260612/docs/plans/bdd-foundry/acceptance-tests/08-crash-recovery.bats: line 86: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/bats-run-An8GS5/test/59/land-sbx.mTlJvO/lanes/g/scripts/gate.d/99-fail.sh: No such file or directory
+not ok 60 B60: destructive steps record a recovery point; temp artifacts are cleaned
+# (in test file 08-crash-recovery.bats, line 144)
+#   `cat > "$LANE/scripts/gate.d/99-fail.sh" <<'EOF'' failed
+# /Users/bo/dev/wt-ag-seams-20260612/docs/plans/bdd-foundry/acceptance-tests/08-crash-recovery.bats: line 144: /var/folders/xl/3tf773396mgbm5yp5g_xr6x00000gn/T/bats-run-An8GS5/test/60/land-sbx.s0HESm/lanes/a/scripts/gate.d/99-fail.sh: No such file or directory
+not ok 61 B61: disk-full never corrupts main, the lock, or the audit log
+# (in test file 08-crash-recovery.bats, line 230)
+#   `jq -e '.state' <<<"$output" >/dev/null   # a torn append never breaks later --status' failed with status 5
+# jq: parse error: Invalid numeric literal at line 1, column 8
+not ok 62 B62: guard install lifecycle is explicit; an unprotected clone is never silent
+# (in test file 09-guards.bats, line 23)
+#   `[[ "$output" =~ install ]]' failed
+not ok 63 B63: the land.sh bypass marker cannot be replayed outside a live land
+# (in test file 09-guards.bats, line 52)
+#   `[ "$status" -eq 0 ]' failed
+not ok 64 B64: branch-side .gitignore edits cannot blind the checks
+# (in test file 09-guards.bats, line 82)
+#   `[ "$status" -eq 0 ]' failed
+not ok 65 B65: private _beads paths can never be staged or pushed by land.sh
+# (in test file 09-guards.bats, line 108)
+#   `[[ "$output" == *"_beads"* ]]' failed
+not ok 66 B66: a branch that modifies land.sh itself is handled, not trusted blindly
+# (in test file 09-guards.bats, line 130)
+#   `[[ "$output" =~ self-modifying\ land ]]' failed
+not ok 67 B67: exit codes are a stable taxonomy and every error is structured
+# (in test file 10-observability.bats, line 13)
+#   `[ "$status" -eq "$EXIT_OK" ]' failed
