@@ -30,9 +30,10 @@ When in doubt about HOW the work should flow, read [`docs/cdlc.md`](docs/cdlc.md
 
 ## Registries (generated — don't hand-edit)
 
-Two drift-gated inventories. Edit the sources (`skills/**/SKILL.md`, `cli/cmd/ao/`), then `make regen-all` (`scripts/regen-all.sh`); `--check` is the gate. Never hand-edit the artifacts:
+Three drift-gated inventories (kind-discriminated: `skill` · `workflow` · CLI command), across the 6 Bounded Contexts. Edit the sources (`skills/**/SKILL.md`, `.claude/workflows/*.js` + the `workflows:` ledger, `cli/cmd/ao/`), then `make regen-all` (`scripts/regen-all.sh`); `--check` is the gate. Never hand-edit the artifacts:
 
 - **Skills** — `registry.json` · `docs/SKILLS.md` · `skills/SKILL-TIERS.md` · `docs/reference/agentops-skill-domain-map.md` · `docs/contracts/skill-dispositions.yaml` (disposition ledger; `ao skills retire` retargets validators through it).
+- **Workflows** — `registry.json` `workflows[]` (Claude-only `.claude/workflows/*.js`, `kind: workflow`); sourced from the `workflows:` section of `docs/contracts/skill-dispositions.yaml` (kind + BC + hexagonal_role). Drift gate: `scripts/check-workflow-governance.sh` (bidirectional `.js`↔ledger + identity triple). No Codex twin.
 - **Tools** — `cli/docs/COMMANDS.md` · `docs/cli-surface.{json,md}` (generated from `cli/cmd/ao/`).
 
 ## Installing/Updating Skills
