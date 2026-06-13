@@ -4009,6 +4009,7 @@ ao converge [flags]
 
 ```
   -h, --help                   help for converge
+      --kill-dir string        directory whose .agents/rpi/KILL switch aborts the bounded loop at a round boundary (default ".")
       --max-rounds int         maximum fix->re-run rounds before NOT-CONVERGED (default 5)
       --min-contexts int       distinct non-author judge contexts required to converge (default 2)
       --require-cross-family   optional strengthener: additionally require >=2 model families in the PASS quorum

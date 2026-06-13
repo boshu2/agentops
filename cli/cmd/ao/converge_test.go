@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -105,4 +106,54 @@ func TestConvergeProductionCanaryIsTwoSided(t *testing.T) {
 	if allReject.Passed {
 		t.Fatal("all-reject gate must fail the two-sided canary")
 	}
+}
+
+// Hardening (refuter P1): the command RunE must actually exercise the kernel
+// (canary -> transport (LAW-0) -> non-mutating judge packet) and emit a real
+// plan, not a vacuous print. We assert the output reflects the wired kernel.
+func TestConvergeCommandRunExercisesKernel(t *testing.T) {
+	cmd, _, err := rootCmd.Find([]string{"converge"})
+	if err != nil {
+		t.Fatalf("converge not found: %v", err)
+	}
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.ParseFlags([]string{"--max-rounds", "4", "--min-contexts", "2"}); err != nil {
+		t.Fatalf("parse flags: %v", err)
+	}
+	if err := cmd.RunE(cmd, nil); err != nil {
+		t.Fatalf("converge RunE error: %v", err)
+	}
+	s := out.String()
+	for _, want := range []string{"transport=", "judge-role=", "max-rounds=4", "non-mutating"} {
+		if !convContainsSubH(s, want) {
+			t.Fatalf("converge output missing %q (kernel not wired into RunE?):\n%s", want, s)
+		}
+	}
+}
+
+// Hardening (refuter #8): convergeEvaluateRound honors the passed floor so it
+// cannot silently disagree with convergeRunBounded's cfg.MinContexts.
+func TestConvergeEvaluateRoundHonorsFloor(t *testing.T) {
+	round := convergeRoundResult{ContextVerdicts: []convergeContextVerdict{
+		{ContextID: "a", ModelFamily: "claude", Pass: true},
+		{ContextID: "b", ModelFamily: "openai", Pass: true},
+	}}
+	// Two PASS contexts: passes the default floor (2)...
+	if d := convergeEvaluateRound(round); !d.Pass {
+		t.Fatal("2 contexts should pass the default floor of 2")
+	}
+	// ...but a floor of 3 must NOT be a vacuous pass.
+	if d := convergeEvaluateRound(round, 3); d.Pass {
+		t.Fatal("2 contexts must not pass a floor of 3 (evaluateRound must honor the floor)")
+	}
+}
+
+func convContainsSubH(haystack, needle string) bool {
+	for i := 0; i+len(needle) <= len(haystack); i++ {
+		if haystack[i:i+len(needle)] == needle {
+			return true
+		}
+	}
+	return needle == ""
 }
