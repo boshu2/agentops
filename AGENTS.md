@@ -28,6 +28,13 @@ The canonical zero-context read order lives in [`CLAUDE.md`](CLAUDE.md) ("Zero-C
 
 When in doubt about HOW the work should flow, read [`docs/cdlc.md`](docs/cdlc.md) and [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md). When in doubt about WHAT to build, read [`PRODUCT.md`](PRODUCT.md) (positioning) and [`GOALS.md`](GOALS.md) (measurable fitness). Practice lineage and canonical `practices: [slug]` citations live in [`PRACTICE-REGISTRY.md`](PRACTICE-REGISTRY.md). Vocabulary lives in [`skills/domain/SKILL.md`](skills/domain/SKILL.md).
 
+## Registries (generated — don't hand-edit)
+
+Two drift-gated inventories. Edit the sources (`skills/**/SKILL.md`, `cli/cmd/ao/`), then `make regen-all` (`scripts/regen-all.sh`); `--check` is the gate. Never hand-edit the artifacts:
+
+- **Skills** — `registry.json` · `docs/SKILLS.md` · `skills/SKILL-TIERS.md` · `docs/reference/agentops-skill-domain-map.md` · `docs/contracts/skill-dispositions.yaml` (disposition ledger; `ao skills retire` retargets validators through it).
+- **Tools** — `cli/docs/COMMANDS.md` · `docs/cli-surface.{json,md}` (generated from `cli/cmd/ao/`).
+
 ## Installing/Updating Skills
 
 Use the [skills.sh](https://skills.sh/) npm package to install AgentOps skills for any agent:

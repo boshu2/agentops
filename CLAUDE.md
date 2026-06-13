@@ -62,6 +62,13 @@ CORRECT:  skills/evolve/SKILL.md          (this repo — source of truth)
 WRONG:    ~/.claude/skills/evolve/SKILL.md (installed copy — do not edit)
 ```
 
+## Registries (generated — don't hand-edit)
+
+Two machine-generated, drift-gated inventories. Edit the **sources** (`skills/**/SKILL.md` for skills, `cli/cmd/ao/` for commands), then regenerate with `make regen-all` (`scripts/regen-all.sh`); `scripts/regen-all.sh --check` is the pre-push/CI drift gate. Never hand-edit the artifacts below.
+
+- **Skills registry** — `registry.json` (canonical skill inventory) · `docs/SKILLS.md` (catalog + routes) · `skills/SKILL-TIERS.md` (tiers) · `docs/reference/agentops-skill-domain-map.md` (DDD/domain map) · `docs/contracts/skill-dispositions.yaml` (per-skill disposition ledger — keep/fold/cut; the source `ao skills retire` retargets validators through).
+- **Tools registry** — `cli/docs/COMMANDS.md` (full `ao` command surface) · `docs/cli-surface.{json,md}` (surface snapshot for parity). Both generated from `cli/cmd/ao/`.
+
 ## Deep reference (on-demand, not auto-loaded)
 
 Building the CLI, the Key Scripts table, CI-validation detail + the "rules that break CI", testing rules, the release pipeline, and the `ao goals` command surface all live in **[`docs/agent-workflow-reference.md`](docs/agent-workflow-reference.md)**. Read it only when you're actually touching those surfaces. The AGENTS-side scope detail lives in the tiered split: `AGENTS-WORKFLOW.md`, `AGENTS-CI.md`, `AGENTS-CODEX.md`, `AGENTS-RUNTIME.md`.
