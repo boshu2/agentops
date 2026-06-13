@@ -367,7 +367,9 @@ func TestTickVerdictTokenCounts(t *testing.T) {
 }
 
 func tickTestVerdict(author, judge, program, family, verdict, command string) string {
-	return fmt.Sprintf("author: %s\njudge: %s\njudge_program: %s\njudge_model_family: %s\nVERDICT: %s\nCOMMANDS RUN:\n  %s\n", author, judge, program, family, verdict, command)
+	// Each distinct judge gets a distinct non-author context so the typed-judge
+	// tuple satisfies the context-floor (the independence axis is fresh context).
+	return fmt.Sprintf("author: %s\njudge: %s\njudge_program: %s\njudge_model_family: %s\ncontext_id: ctx-%s\nVERDICT: %s\nCOMMANDS RUN:\n  %s\n", author, judge, program, family, judge, verdict, command)
 }
 
 func TestTickVerdictIdentityRequiresTypedIndependentJudge(t *testing.T) {
@@ -436,32 +438,10 @@ func TestTickCouncilGateMatrix(t *testing.T) {
 	}
 }
 
-func TestTickCouncilGateRejectsSameFamilyAndSelfJudgeQuorum(t *testing.T) {
-	dir := t.TempDir()
-	write := func(name, body string) string {
-		path := filepath.Join(dir, name)
-		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
-			t.Fatal(err)
-		}
-		return path
-	}
-	claude1 := write("claude1.md", tickTestVerdict("codex", "athena", "claude-code", "claude", "PASS", "ao tick guard-status"))
-	claude2 := write("claude2.md", tickTestVerdict("codex", "pr", "claude-code", "claude", "PASS", "ao tick verdict-gate -"))
-	selfJudge := write("self.md", tickTestVerdict("codex", "codex", "codex-cli", "codex", "PASS", "ao tick guard-status"))
-	gemini := write("gemini.md", tickTestVerdict("codex", "windyelm", "gemini-cli", "gemini", "PASS", "ao tick verdict-gate -"))
-	duplicateJudge := write("duplicate.md", tickTestVerdict("codex", "athena", "claude-code", "gemini", "PASS", "ao tick smoke"))
-
-	rt := tickRuntime{workDir: dir, stdout: &bytes.Buffer{}, stderr: &bytes.Buffer{}}
-	if code := tickExitCode(tickCouncilGate(rt, []string{claude1, claude2})); code != tickExitCouncil {
-		t.Fatalf("same-family council code = %d, want %d", code, tickExitCouncil)
-	}
-	if code := tickExitCode(tickCouncilGate(rt, []string{selfJudge, gemini})); code != tickExitCouncil {
-		t.Fatalf("self-judge council code = %d, want %d", code, tickExitCouncil)
-	}
-	if code := tickExitCode(tickCouncilGate(rt, []string{claude1, duplicateJudge})); code != tickExitCouncil {
-		t.Fatalf("duplicate judge council code = %d, want %d", code, tickExitCouncil)
-	}
-}
+// Retired: the family-floor council test (same-family two-context -> reject) was
+// flipped to the context-floor in TestTickCouncilGateContextFloorFlip (the staged
+// S1b.4 acceptance test). Self-judge (by context) and duplicate-context
+// fail-closed are covered there.
 
 func TestTickLedgerShowsClosed(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "issues.jsonl")
