@@ -73,11 +73,12 @@ func TestAdmitInboundWorkMessageOperatorMustAuthenticate(t *testing.T) {
 
 func TestAdmitInboundWorkMessageQuorumDirectiveRequiresCrossModelACKs(t *testing.T) {
 	req := SignificantActionRequest{
-		ActorID: "orchestrator-1",
-		Action:  SignificantActionMergeMain,
+		ActorID:        "orchestrator-1",
+		ActorContextID: "ctx-author",
+		Action:         SignificantActionMergeMain,
 		ACKs: []QuorumACK{
-			{AgentID: "windycastle", ModelFamily: "claude", Verdict: ACKVerdictApprove},
-			{AgentID: "rubymoose", ModelFamily: "openai", Verdict: ACKVerdictApprove},
+			{AgentID: "windycastle", ContextID: "ctx-judge-a", ModelFamily: "claude", Verdict: ACKVerdictApprove},
+			{AgentID: "rubymoose", ContextID: "ctx-judge-b", ModelFamily: "openai", Verdict: ACKVerdictApprove},
 		},
 	}
 	got := AdmitInboundWorkMessage(InboundWorkMessage{
