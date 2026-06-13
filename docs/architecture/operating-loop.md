@@ -25,6 +25,14 @@ The doctrine source for this spine is [`.agents/research/2026-05-15-cdlc-dojo-do
 6. **Context crosses boundaries as artifacts.** RPI keeps orchestration visible,
    but phase execution should cross through bounded packets and summaries, not
    raw accumulated chat context.
+7. **The map is fixed; the route is re-routed.** This loop is a deterministic
+   role-topology — its stages, legal transitions, and gates do not change per
+   goal (the map). The path a given goal takes through it is dynamic and
+   recalculated on failure (the route). Because the worker is stochastic, you
+   trust the map and the gates, not the agent: the gate at move 6 is the
+   *windshield* — deterministic ground-truth that catches a confident
+   hallucination (a road that was never there) which re-routing alone cannot.
+   See [3.0 → the navigator model](../3.0.md#why-a-loop-and-not-a-pipeline-the-navigator-model).
 
 ## The seven moves
 
