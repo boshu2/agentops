@@ -18,11 +18,22 @@
 # Exit codes (documented contract — tests assert these exactly):
 #   0  PR merged AND bead closed (and, in --epic mode, epic reconciled)
 #   1  gate failure (--epic mode: epic has an open/in_progress child; epic NOT closed)
-#   2  blocked — substantive check(s) failing; did NOT merge, did NOT close
+#   2  blocked — substantive check(s) failing OR still PENDING after POLL_MAX
+#      (green CI is strictly necessary; pending-forever never reaches merge);
+#      did NOT merge, did NOT close
 #   3  merge attempted but PR state is not MERGED; bead NOT closed
 #   4  usage / missing-dependency / bad-input error
+#   5  pawl-gate HOLD — green CI but the pawl verdict does NOT authorize:
+#      absent / REFUTED / ESCALATE / HOLD / diversity-floor-unmet / empty-or-STALE
+#      head_sha (head unresolvable, or a new commit was pushed after the review) /
+#      missing reviewer evidence / schema-invalid. Did NOT merge, did NOT close.
+#      Fail-closed: green CI is necessary but NOT sufficient at the
+#      mutate-shared-trunk door (docs/contracts/pawls.md). A tripped circuit
+#      breaker surfaces for a human.
 #
 # Dependencies: gh, bd, jq (stubbed via PATH in the hermetic bats suite).
+# The pawl verdict (fresh-context default; multi-model opt-in) is read via
+# scripts/pawl-verdict.sh (sibling).
 
 set -uo pipefail
 
@@ -34,6 +45,9 @@ EPIC=""
 POLL_MAX=30
 POLL_SLEEP=20
 DRY_RUN=false
+# Where the pawl verdict lives (see scripts/pawl-verdict.sh).
+# Overridable for hermetic tests; defaults to the repo's untracked runtime dir.
+VERDICT_DIR="$SCRIPT_DIR/../.agents/pawl-verdicts"
 
 # Checks we never treat as blocking:
 #   claude-review — soft-fails on usage-limit; advisory, not a merge gate.
@@ -55,10 +69,15 @@ Options:
                      if check-epic-children-closed.sh reports no open children.
   --poll-max N       Max poll iterations waiting for pending checks (default 30).
   --poll-sleep S     Seconds between polls (default 20).
+  --verdict-dir D    Directory holding the pawl verdict for this bead
+                     (default .agents/pawl-verdicts). Green CI is necessary
+                     but NOT sufficient — a CONFIRMED pawl verdict tied
+                     to this bead+PR must exist or the merge is refused (HOLD).
   --dry-run          Print actions; do not merge or mutate beads.
   -h, --help         Show this help.
 
-Exit codes: 0 merged+closed · 1 gate-fail · 2 blocked · 3 merge-fail · 4 usage.
+Exit codes: 0 merged+closed · 1 gate-fail · 2 blocked · 3 merge-fail ·
+            4 usage · 5 pawl-gate HOLD (green CI, no CONFIRMED pawl verdict).
 USAGE
 }
 
@@ -71,6 +90,7 @@ while [[ $# -gt 0 ]]; do
     --epic)       EPIC="${2:-}"; shift 2 || die "--epic needs a value" ;;
     --poll-max)   POLL_MAX="${2:-}"; shift 2 || die "--poll-max needs a value" ;;
     --poll-sleep) POLL_SLEEP="${2:-}"; shift 2 || die "--poll-sleep needs a value" ;;
+    --verdict-dir) VERDICT_DIR="${2:-}"; shift 2 || die "--verdict-dir needs a value" ;;
     --dry-run)    DRY_RUN=true; shift ;;
     -h|--help)    usage; exit 0 ;;
     --*)          usage; die "unknown flag: $1" ;;
@@ -137,6 +157,7 @@ rerun_flake() {
 # --- poll loop ---------------------------------------------------------------
 flake_rerun_used=false
 i=0
+pend=0
 while (( i < POLL_MAX )); do
   i=$((i+1))
   pend="$(count_pending)"
@@ -176,6 +197,44 @@ fi
 if [[ -n "$fails" ]]; then
   echo "BLOCKED fails=[$(echo "$fails" | paste -sd, -)]" >&2
   exit 2
+fi
+
+# --- terminal-green requirement (FAIL-CLOSED on still-pending) ---------------
+# Green CI must be strictly NECESSARY: a check that never concluded (still
+# PENDING/QUEUED/IN_PROGRESS after POLL_MAX) must NOT be treated as "not
+# failing" and slipped through to merge. Re-observe one final time; if anything
+# is still pending, BLOCK (exit 2) — pending-forever never reaches merge.
+pend="$(count_pending)"; pend="${pend:-0}"
+if [[ "$pend" -ne 0 ]]; then
+  echo "BLOCKED: $pend check(s) still PENDING after $POLL_MAX polls — not concluded green; did NOT merge (green CI is strictly necessary)" >&2
+  exit 2
+fi
+
+# --- pawl gate (FAIL-CLOSED) -------------------------------------------------
+# Green CI is necessary but NOT sufficient at the mutate-shared-trunk door
+# (docs/contracts/pawls.md). Before merging, a CONFIRMED, EVIDENCE-BOUND,
+# COMMIT-CURRENT pawl verdict (fresh-context default; multi-model opt-in) tied
+# to THIS bead+PR MUST exist, with head_sha == the PR's CURRENT head. Absent /
+# REFUTED / ESCALATE / STALE-head / no-evidence / schema-invalid => HOLD
+# (exit 5): do NOT merge, do NOT close. Non-convergence (a tripped circuit
+# breaker) surfaces for a human.
+#
+# Fetch the PR's CURRENT head sha so a verdict cannot be reused across a re-push:
+# if a new commit landed after the panel reviewed, the verdict is STALE and the
+# gate fail-closes. FAIL-CLOSED on the lookup itself: if `gh pr view headRefOid`
+# fails or returns empty we CANNOT prove the verdict is commit-current, so we
+# HOLD (exit 5) rather than call the gate with an empty head (which would skip
+# the staleness comparison and let a stale verdict authorize a merge).
+cur_head="$(gh pr view "$PR" --json headRefOid -q .headRefOid 2>/dev/null || true)"
+if [[ -z "$cur_head" ]]; then
+  echo "PAWL-HOLD: could not resolve current PR head (gh pr view headRefOid failed/empty) for PR=$PR — cannot prove the verdict is commit-current; did NOT merge, did NOT close. Fail-closed." >&2
+  exit 5
+fi
+pawl_status=0
+"$SCRIPT_DIR/pawl-verdict.sh" check "$BEAD" "$PR" --dir "$VERDICT_DIR" --head "$cur_head" || pawl_status=$?
+if [[ "$pawl_status" -ne 0 ]]; then
+  echo "PAWL-HOLD: green CI but no CONFIRMED pawl verdict (fresh-context default; multi-model opt-in) for bead=$BEAD PR=$PR (pawl-verdict.sh check exit=$pawl_status) — did NOT merge, did NOT close. Fail-closed; surface for human on non-convergence." >&2
+  exit 5
 fi
 
 # --- merge -------------------------------------------------------------------
