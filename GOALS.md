@@ -1,8 +1,18 @@
 # Goals
 
-An SDLC control plane for agentic software development, backed by a repo-native wiki for your agents that turns context into the durable moat under any model or harness.
+**AgentOps is the navigator for stochastic agentic work** — the deterministic apparatus (the map, the route, the position signal, the corpus, the loop) that drives an agent from a *goal* to a *verified done*, and compounds the context that makes the next drive better. You don't script the route; you set the destination and the navigator drives it, trusting the environment (the map, the gates, the real test that runs) over the stochastic agent. **Mount Olympus is the gate inside it** — the review organ that says "good, or back"; AgentOps is the rest of the navigator: everything that gets a stochastic worker *to* that gate and learns from the trip.
 
-> Canonical 3.0 definition: [docs/3.0.md](docs/3.0.md). The directives below are measured against it.
+> Canonical 3.0 + navigator architecture: [docs/3.0.md](docs/3.0.md); product framing: [PRODUCT.md](PRODUCT.md). The directives below are measured against it.
+
+## The Destination — what drives this repo
+
+A navigator with no destination is a map you stare at. AgentOps had a *scope* ("a control plane for everything in agentic SDLC"), not a destination — which is exactly why the backlog sprawled to 100+ open epics with nothing to prioritize against. The destination, set 2026-06-14:
+
+> **Autonomous goal → verified done.** Give AgentOps a goal carrying an acceptance contract, and the navigator drives a stochastic agent to a *verified* done — shape intent → slice → route → build → gate (Mount Olympus) → recover on failure (re-scope with the failure as new acceptance, or pull the andon) → ratchet the learning — **without a human in each step.**
+
+This is the parallel of Mount Olympus's "self-hosting line": MTO is done-enough when it reviews its own work; **AgentOps is done-enough when the navigator drives its OWN next epic to verified-done, end-to-end, unattended.** That is the finish line — see Directive 16.
+
+The prioritization rule this destination creates — and the reason it *drives* the repo: **an epic is pursued only if it advances a route milestone toward autonomous-goal→verified-done; everything else is deferred, not abandoned.** That rule is what turns 100+ undifferentiated epics into a route. Every North Star below is a *property* the navigator needs to reach the destination; every Directive is a *paving stone on the route*.
 
 ## North Stars
 
@@ -174,6 +184,24 @@ It is a stay-removed OUTCOME guard, not a code-size metric (GOALS.md "## Anti St
 **Directive ID:** d-teardown-removed-apparatus-stays-removed
 **Steer:** decrease (teardown-removed surfaces that regrew)
 **Scenarios:** s-2026-05-24-015
+
+### 16. Reach the self-hosting line — autonomous goal → verified done
+
+**The destination (see "## The Destination"), made measurable.** AgentOps reaches it when the navigator drives its OWN next epic to verified-done end-to-end, unattended. This directive *prioritizes all others*: an epic is on the route only if it advances one of the route milestones below; an epic that advances none is deferred. This is the goal that drives the repo.
+
+Route milestones (the paving stones, in dependency order — each carries an honest status, not a claim):
+
+1. **Position signal** — the navigator must know where it is. The SDLC provenance ledger exists and is tamper-evident (`ag-8jf97`, landed `479891017`); the emitters that feed it are not wired yet (`ag-62jrm`). *Status: floor poured, unfed.*
+2. **Resilience / the role state-machine** — the navigator must recover without a human: mechanical failures fix-forward, substantive ones re-scope with the failure as the new acceptance, blockers pull the andon (stop-the-line). `ship-beads` builds but cannot self-merge yet. *Status: build half works, recovery half is a stub.*
+3. **The gate** — "done" must be *verified*, not claimed: cross-family review (Mount Olympus) at the significant-action boundary, fail-closed; deterministic ground-truth (the ledger, the gates, the real test) is the windshield that catches a hallucinated done. *Status: MTO in flight; provenance windshield poured.*
+4. **Self-improvement** — each drive must measurably improve the next: SENSOR (the ledger) → ASSAY (bounded periodic miners over it) → GATE (suggestions re-enter the same front door). *Status: designed; sensor floor just poured; miners + tick unbuilt.*
+5. **Governance front-door** — nothing new is born ungoverned: the kind-unified factory admits a skill / workflow / loop only with a bounded context + role + runnable acceptance (epic `ag-3fp54`; S0 schema landed `692f420ac`). *Status: schema landed; front-door unbuilt.*
+
+The drive is unattended-end-to-end only when all five hold at once. Until then, the route milestone with the lowest status is the highest-priority work.
+
+**Directive ID:** d-reach-the-self-hosting-line-autonomous-goal-verified-done
+**Steer:** increase (route milestones reaching verified-done, toward the unattended end-to-end drive)
+**Tags:** destination, north-star
 
 ## Three-Gap Contract Proof Surface
 
