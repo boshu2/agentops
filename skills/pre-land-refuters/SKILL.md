@@ -89,6 +89,24 @@ there, just run it.
    the pinned sweep on the landed tree and record the panel verdicts in
    `.agents/council/YYYY-MM-DD-pre-land-<slug>.md`.
 
+## Escalation — autonomous panel, human only on non-convergence
+
+The panel runs **autonomously: model reviews model.** The human is NOT a checkpoint at the
+pawl by default — they are the exception. See [docs/contracts/pawls.md](../../docs/contracts/pawls.md)
+"Escalation".
+
+- **Both refuters CONFIRMED (+ green gate)** → land. No human.
+- **Any REFUTED** → orchestrator fixes the findings forward and **re-dispatches the panel**,
+  autonomously, up to **N attempts (default 3)**. The loop self-corrects model-to-model; no
+  human in the loop. This is the ordinary path.
+- **ESCALATE to a human — ONLY when the models can't converge:** (1) **reviewer deadlock** —
+  refuters contradict and stay contradicted after a re-gate and the diff can't arbitrate;
+  (2) **N attempts exhausted** — still REFUTED after the default 3 re-work/re-gate cycles;
+  (3) a refuter **explicitly flags a value / irreversibility judgment** models should not make
+  alone. This is the **andon** ("Hey! Listen!") — rare, earned, never the default.
+
+Even fully unattended, the gate fires at every pawl. Escalation is the exception, not the gate.
+
 ## Output Specification
 
 **Format:** a council artifact at `.agents/council/YYYY-MM-DD-pre-land-<slug>.md`
