@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/ratchet"
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 func TestExtractCouncilVerdict(t *testing.T) {
@@ -2102,8 +2103,8 @@ func TestDefaultPhasedEngineOptions_AllFields(t *testing.T) {
 	if opts.RuntimeMode != "auto" {
 		t.Errorf("RuntimeMode = %q, want %q", opts.RuntimeMode, "auto")
 	}
-	if opts.RuntimeCommand != "claude" {
-		t.Errorf("RuntimeCommand = %q, want %q", opts.RuntimeCommand, "claude")
+	if opts.RuntimeCommand != cliRPI.DefaultRuntimeCommand {
+		t.Errorf("RuntimeCommand = %q, want %q", opts.RuntimeCommand, cliRPI.DefaultRuntimeCommand)
 	}
 	if opts.AOCommand != "ao" {
 		t.Errorf("AOCommand = %q, want %q", opts.AOCommand, "ao")
