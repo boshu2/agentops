@@ -7,9 +7,13 @@
 > as the surviving factory** — because AgentOps is now the one self-contained factory and the
 > operating rules should live where the work runs.
 >
-> **Adapted, not blind-copied.** The load-bearing invariants (fail-closed, author≠reviewer,
-> evidence-bound, single-writer) are **already embodied** in the shipped ratchet pawl-gate —
-> each is cited below to the exact mechanism. The rules that were *about the cut cathedral*
+> **Adapted, not blind-copied.** The load-bearing gate invariants — fail-closed (exit 5 on any
+> non-CONFIRMED verdict), author≠reviewer by context identity, and evidence-*presence* binding —
+> are **already embodied** in the shipped ratchet pawl-gate, each cited below to the exact
+> mechanism. Others are weaker than the kernel's wording: single-writer is a workflow convention
+> (the script doesn't check the caller), command-citation is aspiration (the gate checks evidence
+> presence, not transcript content), and the auto-redo/breaker economy is orchestrator-loop
+> behavior, not gate-script code — each is labeled honestly per rule. The rules that were *about the cut cathedral*
 > (an OS-account privilege floor, peercred kernel identity, a daemon, a Rust gate spec) are
 > intentionally **dropped** — the ratchet pawl-gate ([`pawls.md`](../contracts/pawls.md))
 > embodies them in AgentOps terms, and re-importing the floor as live doctrine would resurrect
@@ -72,23 +76,38 @@ context-vs-family resolution the kernel's DISPUTED-1 settled.
 ### D4 — Single writer
 One decision, one binding artifact, one writer. Workers propose and never close; reviewers verify
 and never close; only the orchestrator writes the close, and only on verified PASS.
-**Embodied-in-gate.** The merge/close is performed solely by `reconcile-pr.sh` (the
-orchestrator-only reconcile step); the implementer subagents never merge. Competing writers are an
-integrity failure, not a race.
+**Doctrine** (workflow convention). The close is funneled through a *single* mechanism —
+`reconcile-pr.sh` is the one reconcile step that merges and then closes the bead — so there is one
+binding write path, not competing writers. But the script does **not** verify *who* invoked it: it
+performs no caller-identity check (no author/orchestrator distinction, no `whoami`). "Only the
+orchestrator runs it, and the implementer subagents never do" is an operating convention of the
+ship-beads/reconcile discipline, not something the gate enforces. The gate-enforced grain is
+narrower (the verdict's `author_context_id` != refuter `context_id`, checked by `pawl-verdict.sh`);
+single-*writer* itself is convention.
 
 ### D5 — Evidence or it didn't happen
-Every close cites a proof surface; every verdict carries the commands it ran. A verdict with no
-cited evidence is rejected as unverified.
-**Embodied-in-gate.** `pawl-verdict.sh check` requires real, **non-empty** per-refuter evidence;
-an empty or missing evidence file fails the verdict (HOLD). Green CI is recorded but is not the
-proof — the reviewer evidence is.
+Every close cites a proof surface. A verdict with no cited evidence is rejected as unverified.
+**Embodied-in-gate as evidence *presence*.** `pawl-verdict.sh check` requires real, **non-empty**
+reviewer evidence: every per-refuter evidence path that exists must point at a non-empty file, and
+there must be at least one non-empty evidence file or a non-empty `council_artifact`, or the verdict
+fails closed (HOLD). What the gate enforces is that *a review actually ran and left a non-empty
+surface* — it does **not** parse or prove the *content* of that evidence (it does not verify the
+transcript records the specific commands run, nor that those commands match the work). Green CI is
+recorded but is not the proof — the reviewer evidence is. **Doctrine** rider: "every verdict carries
+the commands it ran" is the aspiration for *what belongs in* that evidence file; the gate checks
+presence and non-emptiness, not command-citation.
 
 ### D6 — Fail closed
 Genuine uncertainty defaults to FAIL. Ties, thin councils, missing minimums → HOLD/escalate; the
-resolver never synthesizes a winner; a quorum of one is a self-grade.
+resolver never synthesizes a winner. A self-grade — the **author's own context** grading the
+author's own work — never counts as a verdict. (Note: a self-grade is author≠refuter *by context*,
+not a head-count. A single **fresh-context** refuter — one whose `context_id` differs from the
+author's — is **not** a self-grade and is the gate's accepted floor under D3; multi-model is the
+opt-in strengthener, not the minimum.)
 **Embodied-in-gate.** Every non-CONFIRMED disposition (REFUTED/ESCALATE/HOLD), a STALE head, an
-unresolvable head, a missing verdict, or an unmet diversity floor all exit 5 (HOLD: no merge, no
-close) in `reconcile-pr.sh`. Non-convergence never auto-lands.
+unresolvable head, a missing verdict, missing reviewer evidence, or a fresh-context floor that is
+unmet (zero refuters with a distinct `context_id`) all exit 5 (HOLD: no merge, no close) in
+`reconcile-pr.sh`. Non-convergence never auto-lands.
 
 ### D7 — Identity is attested, not asserted
 **Dropped-as-cathedral** (mostly). The kernel's D7 was anchored to the OS privilege floor —
@@ -158,10 +177,16 @@ tracker/notes/snapshot writes — merge, don't clobber.
 The scarcest resource is the human's attention; babysitting burns it because an unverified "done"
 must be personally checked. The system subordinates everything to that constraint and spends
 attention only where the human is irreplaceable (intent, acceptance, one-way doors).
-**Embodied-in-gate** (as escalation economy) + **doctrine.** The pawls.md circuit-breaker model is
-this rule operationalized: the gate runs model-to-model and auto-redoes on REFUTED *with no human*;
-a human is pulled in **only** when a tunable breaker trips (max-attempts, time, cost, oscillation,
-explicit-judgment-flag). The andon ("Hey! Listen!") is rare and earned, never the default.
+**Embodied-in-gate** (the HOLD) + **doctrine** (the escalation economy). What the *scripts* enforce
+is the fail-closed HOLD: on any non-CONFIRMED verdict, `reconcile-pr.sh` exits 5 — it does not merge
+and does not close, so an unverified "done" can never silently land while the human is away.
+`pawl-verdict.sh`/`reconcile-pr.sh` contain **no** auto-redo loop and **no** circuit breakers; they
+just hold. The auto-redo-on-REFUTED loop and the tunable circuit breakers (max-attempts, time/cost
+budget, oscillation, explicit-judgment-flag) are **doctrine / orchestrator-loop behavior** —
+described in [`pawls.md` §Escalation](../contracts/pawls.md) and carried by the evolve loop and its
+`scripts/evolve/halt-check.sh`, not by the reconcile/verdict scripts. The andon ("Hey! Listen!") is
+rare and earned, never the default — but that economy lives in the loop above the gate, not inside
+the gate script.
 
 ### D16 — Mechanisms stay general; policy lives in its bounded context; layers meet through ports
 A shared mechanism never has a context's law welded into it — the context configures it via a mode
