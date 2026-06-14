@@ -1,6 +1,6 @@
 # Goals
 
-**AgentOps is the navigator for stochastic agentic work** — the deterministic apparatus (the map, the route, the position signal, the corpus, the loop) that drives an agent from a *goal* to a *verified done*, and compounds the context that makes the next drive better. You don't script the route; you set the destination and the navigator drives it, trusting the environment (the map, the gates, the real test that runs) over the stochastic agent. **Mount Olympus is the gate inside it** — the review organ that says "good, or back"; AgentOps is the rest of the navigator: everything that gets a stochastic worker *to* that gate and learns from the trip.
+**AgentOps is the navigator for stochastic agentic work** — the deterministic apparatus (the map, the route, the position signal, the corpus, the loop) that drives an agent from a *goal* to a *verified done*, and compounds the context that makes the next drive better. You don't script the route; you set the destination and the navigator drives it, trusting the environment (the map, the gates, the real test that runs) over the stochastic agent. **Mount Olympus is the *separate, trusted* verifying factory** — a sovereign product (ADR-0009: AgentOps has no verdict-core; MTO is one) that writes the binding verdict; AgentOps is the producing/sensing/mining factory that drives a stochastic worker *to* that gate and learns from the verdict. They are a **two-factory machine**, not one navigator with a sub-gate — see below.
 
 > Canonical 3.0 + navigator architecture: [docs/3.0.md](docs/3.0.md); product framing: [PRODUCT.md](PRODUCT.md). The directives below are measured against it.
 
@@ -13,6 +13,20 @@ A navigator with no destination is a map you stare at. AgentOps had a *scope* ("
 This is the parallel of Mount Olympus's "self-hosting line": MTO is done-enough when it reviews its own work; **AgentOps is done-enough when the navigator drives its OWN next epic to verified-done, end-to-end, unattended.** That is the finish line — see Directive 16.
 
 The prioritization rule this destination creates — and the reason it *drives* the repo: **an epic is pursued only if it advances a route milestone toward autonomous-goal→verified-done; everything else is deferred, not abandoned.** That rule is what turns 100+ undifferentiated epics into a route. Every North Star below is a *property* the navigator needs to reach the destination; every Directive is a *paving stone on the route*.
+
+## The two-factory machine — AgentOps ↔ Mount Olympus
+
+The destination is not reached by one factory with a gate bolted on. It is reached by **two sovereign factories with the trust boundary running between them** — because you cannot trust the producer to grade itself, so the producer and the verifier are *separate products* (ADR-0009).
+
+- **AgentOps is the producing / sensing / mining factory.** It drives the work, emits deterministic evidence to the provenance ledger (**SENSOR**), and mines that evidence into proposed improvements (**ASSAY**). It produces and it *claims* — `ao validate` / `ao gate` emit claims, never the binding verdict.
+- **Mount Olympus is the trusted verifying factory.** `olympusd` is the **sole writer of binding terminal verdicts** — ≥2 model families, no self-approval, fail-closed. It is the **GATE**. It judges; it never produces.
+
+They run **SENSOR → ASSAY → GATE**, and they exchange back-and-forth on **two axes**:
+
+1. **The work axis (per artifact):** AgentOps's SENSOR emits the evidence → Mount Olympus's GATE consumes it and writes the binding verdict → **the verdict returns to AgentOps as a first-class provenance-ledger event** (`claude-code-review` verdicts are first-class ledger events). Evidence out, verdict back — and the verdict is now new sensor data. The loop closes *through the ledger*.
+2. **The improvement axis (per pattern):** AgentOps's ASSAY mines the accumulated evidence + verdicts → proposes an apparatus change (a skill, a gate, a rule) → Mount Olympus gates **the proposal** (the improver is untrusted too) → the ratified change ratchets into the apparatus.
+
+The trust comes from the **separation**: the producing factory is stochastic and untrusted; the verifying factory is the deterministic environment. *"Trust the environment, not the agent"* — at the factory altitude. Neither factory is complete alone, and that is the point. This machine is exactly Directive 16's route: milestone 1 (the sensor/ledger) is what AgentOps emits to the gate, milestone 3 (the gate) **is** Mount Olympus, and milestone 4 (self-improvement) is the second axis closing. The destination — *autonomous goal → verified done* — is the two factories running both axes with no human in either loop.
 
 ## North Stars
 
