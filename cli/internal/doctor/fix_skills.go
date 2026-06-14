@@ -629,7 +629,9 @@ func computeHashDrift(repo string) []hashDrift {
 			catalogH := hashDirRecursive(filepath.Join(repo, "skills-codex-overrides"))
 			var recorded string
 			if rc, ok := manifest["codex_override_catalog_hash"]; ok {
-				_ = json.Unmarshal(rc, &recorded)
+				// Best-effort: a malformed value leaves recorded == "", which
+				// correctly registers as drift below; no error to propagate.
+				_ = json.Unmarshal(rc, &recorded) //nolint:errcheck // malformed value falls through to drift detection
 			}
 			if recorded != catalogH {
 				drifted = append(drifted, hashDrift{skill: "<catalog>", path: manifestPath, field: "codex_override_catalog_hash"})
@@ -753,7 +755,9 @@ func (f skillsHashDriftFixer) fixCatalogHash(ctx *MutateContext, env *DetectEnv,
 	catalogH := hashDirRecursive(filepath.Join(env.RepoRoot, "skills-codex-overrides"))
 	var recorded string
 	if rc, ok := manifest["codex_override_catalog_hash"]; ok {
-		_ = json.Unmarshal(rc, &recorded)
+		// Best-effort: a malformed value leaves recorded == "", which
+		// correctly drives the rewrite below; no error to propagate.
+		_ = json.Unmarshal(rc, &recorded) //nolint:errcheck // malformed value falls through to rewrite
 	}
 	if recorded == catalogH {
 		return nil

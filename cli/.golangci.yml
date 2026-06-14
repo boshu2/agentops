@@ -15,7 +15,12 @@ linters:
     #   - errorlint  -> agentops-bs8 (after %w/errors.Is backlog cleared)
     #   - unconvert  -> agentops-0l9 (rpi_c2_events.go is deprecated; needs path exclusion)
     #   - unused     -> agentops-0l9 (~37 backlog; risky auto-removal)
-    # errcheck already covers json.Marshal/Unmarshal (not excluded) -> satisfies agentops-tqc.3.
+    # NOTE on agentops-tqc.3 (swallowed json.Marshal/Unmarshal): errcheck here
+    # does NOT catch the blank-discard swallow (`b, _ := json.Marshal(...)`)
+    # because check-blank is off (and turning it on globally would flood
+    # unrelated `_, _ :=` discards). The scoped enforcement lives in
+    # scripts/check-json-marshal-checked.sh (errcheck -blank filtered to the
+    # conventional `json.` selector), wired blocking into validate.yml.
   settings:
     gocyclo:
       min-complexity: 25

@@ -68,7 +68,10 @@ func runEvalSuiteVerdict(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("eval suite verdict: --arms required when suite has no varied_axis on disk")
 	}
 
-	rule := decisionRuleJSON(suite)
+	rule, err := decisionRuleJSON(suite)
+	if err != nil {
+		return fmt.Errorf("eval suite verdict: %w", err)
+	}
 	nReq := evalSuiteVerdictNRequired
 	if nReq <= 0 {
 		nReq = derivedNRequired(suite)
@@ -188,7 +191,7 @@ func extractArmIDs(suite *evalsub.Suite, override string) []string {
 	return nil
 }
 
-func decisionRuleJSON(suite *evalsub.Suite) string {
+func decisionRuleJSON(suite *evalsub.Suite) (string, error) {
 	rule := map[string]interface{}{"kind": "ci_excludes_zero", "confidence": 0.95}
 	if suite != nil {
 		if suite.Stats.DecisionRule.Kind != "" {
@@ -201,8 +204,15 @@ func decisionRuleJSON(suite *evalsub.Suite) string {
 			rule["min_delta"] = suite.Stats.DecisionRule.MinDelta
 		}
 	}
-	bs, _ := json.Marshal(rule)
-	return string(bs)
+	// rule carries float64 values (e.g. DecisionRule.Confidence / .MinDelta),
+	// and json.Marshal DOES fail on non-finite floats (NaN/+Inf/-Inf). Do not
+	// swallow it: propagate so a bad suite surfaces instead of silently
+	// emitting an empty decision rule.
+	bs, err := json.Marshal(rule)
+	if err != nil {
+		return "", fmt.Errorf("marshal decision rule: %w", err)
+	}
+	return string(bs), nil
 }
 
 func derivedNRequired(suite *evalsub.Suite) int {

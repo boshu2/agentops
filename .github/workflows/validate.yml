@@ -512,6 +512,19 @@ jobs:
           fi
           ./scripts/check-go-complexity.sh --base "$BASE_REF" --warn 15 --fail 25
 
+      # Swallowed-json guard (agentops-tqc.3 / planning-rule f-2026-04-29-002).
+      # Blocking. golangci-lint's errcheck does NOT catch the blank-discard
+      # swallow (`b, _ := json.Marshal(...)`) because check-blank is off, and
+      # turning it on globally would explode unrelated discards — so this
+      # dedicated step runs errcheck -blank filtered to conventional `json.`
+      # selector call sites (textual, not alias-resolving).
+      - name: Enforce checked json.Marshal/Unmarshal returns
+        if: runner.os == 'Linux' && (needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
+        run: |
+          echo "=== Enforcing checked json.Marshal/Unmarshal returns ==="
+          GOBIN=/usr/local/bin go install github.com/kisielk/errcheck@v1.20.0
+          bash scripts/check-json-marshal-checked.sh
+
       - name: Upload coverage to Codecov
         if: runner.os == 'Linux' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: codecov/codecov-action@v7
