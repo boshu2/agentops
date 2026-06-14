@@ -28,28 +28,30 @@ Why so few pawls: a pawl on *every* step is waterfall (validate every tread). It
 
 Editing a file · writing a test · running a build · a local experiment · a draft · a throwaway branch · a read-only query · an intermediate RPI slice · a mock→real swap · trying an approach and discarding it. **None of these are irreversible. Do not gate them.** Iterate cheaply; the pawl catches you at the door.
 
-## Escalation — who resolves a pawl
+## Escalation — the circuit-breaker model
 
 **The human is NOT needed at a pawl by default.** A pawl fires the cross-family gate
 ([`/pre-land-refuters`](../../skills/pre-land-refuters/SKILL.md)) **autonomously — model reviews model.**
-The loop self-corrects; the human is the exception, not the checkpoint.
+The loop self-corrects; the human is the exception a *circuit breaker* trips into, not the checkpoint.
 
-- **PASS** → proceed through the door. No human.
-- **FAIL (REFUTED)** → the author re-works with the findings and **re-gates**, autonomously, up to **N attempts (default 3)**. Each pass is fresh model-to-model review; no human in the loop. This is the ordinary path — most FAILs converge here.
-- **ESCALATE to a human — ONLY when the models cannot converge.** The three earned triggers:
-  1. **Reviewer deadlock** — the panel cannot reach a stable verdict (refuters contradict and stay contradicted after re-gate).
-  2. **N attempts exhausted** — `default 3` re-work/re-gate cycles still REFUTED.
-  3. **Explicit judgment flag** — a reviewer explicitly raises a value or irreversibility judgment that models should not make alone.
+The model has two layers: a **default auto-redo loop**, and a set of **tunable circuit breakers** that govern when that loop stops and hands off to a human.
 
-**ESCALATE means HOLD — the door stays closed until a human resolves it.** On any of
-the three triggers above the action does **not** proceed: the merge/push is **held**,
-not landed, not retried-into-landing, and surfaced for human resolution. Non-convergence
-**never auto-lands** — fail-closed is the whole point. The enforcing merge path
-(`scripts/reconcile-pr.sh` → `scripts/pawl-verdict.sh check`) records this as an
-`ESCALATE`/`HOLD` disposition and exits **5 (HOLD: no merge, no close)**; only a
-`CONFIRMED` cross-family verdict opens the door.
+- **PASS (CONFIRMED)** → proceed through the door. No human.
+- **FAIL (REFUTED) → AUTO-REJECT → AUTO-REDO (the default path, no human).** A REFUTED verdict means the gate *rejected*; the loop **automatically** sends the work back to be re-done with the findings and **re-gates** it. This is continuous self-correction: the loop redoes on REFUTED **on its own**, with no human in the loop. A plain REFUTED is *never* an escalation — it is the ordinary, expected path, and most FAILs converge here.
+- **ESCALATE to a human — ONLY when a CIRCUIT BREAKER trips.** The breakers are **plural and operator-tunable** — they bound the auto-redo loop so it can't burn forever:
+  1. **max-attempts** — N re-work/re-gate cycles still REFUTED (default 3, tunable).
+  2. **time budget** — wall-clock with no productive forward progress (the evolve loop's existing 60-min "no productive work" breaker; tunable).
+  3. **cost / quota budget** — paid API spend or usage-quota ceiling for the loop (tunable).
+  4. **oscillation / no-forward-progress** — the *same* failure repeating (the evolve oscillation quarantine: a target with 3+ improved→fail transitions; tunable threshold). Also covers reviewer deadlock — refuters contradicting and staying contradicted is a no-forward-progress signal.
+  5. **explicit judgment flag** — a reviewer explicitly raises a value / irreversibility judgment that models should not make alone (an immediate, hard breaker).
 
-This escalation is the **andon** ("Hey! Listen!") — rare and *earned*, never the default. Even fully unattended, the gate runs model-to-model at every pawl; pulling a human in is the exception that fires only on non-convergence — and until the human acts, the pawl **holds**.
+  These are the **same governor** the autonomous loop already runs: the evolve circuit breakers (time-based + oscillation quarantine, Step 1 / [`scripts/evolve/halt-check.sh`](../../scripts/evolve/halt-check.sh)). The pawl gate *references and extends* that mechanism as its escalation governor; thresholds are configurable (e.g. `EVOLVE_KILL_TTL_DAYS`, `--max-cycles`, max-attempts) rather than hard-coded.
+
+**REFUTED → auto-redo (loop, no human). Breaker-trip → HOLD/escalate.** The verdict disposition is set accordingly: a plain REFUTED carries `disposition: REFUTED` and the loop re-works; the disposition is flipped to **`ESCALATE` / `HOLD` only when a breaker trips**, never on plain REFUTED. When a breaker trips the action does **not** proceed: the merge/push is **held**, not landed, not retried-into-landing, and surfaced for a human. Non-convergence **never auto-lands** — fail-closed is the whole point. The enforcing merge path (`scripts/reconcile-pr.sh` → `scripts/pawl-verdict.sh check`) records the `ESCALATE`/`HOLD` disposition and exits **5 (HOLD: no merge, no close)**; only a `CONFIRMED` cross-family verdict opens the door. (A bare `REFUTED` verdict also exits 5 at the merge path — the merge is correctly refused — but the *loop's* response to REFUTED is auto-redo, not human escalation; the merge-path HOLD is just fail-closed enforcement while the redo happens.)
+
+This breaker-governed escalation is the **andon** ("Hey! Listen!") — rare and *earned*, never the default. Even fully unattended, the gate runs model-to-model at every pawl and auto-redoes on REFUTED; pulling a human in is the exception that fires only when a tunable circuit breaker trips — and until the human acts, the pawl **holds**.
+
+> **Scope note (threat model).** The cross-family pawl verdict (`schemas/pawl-verdict.v1.schema.json`) is an **evidence-bound, commit-bound cross-family verdict that requires real reviewer runs** — it defends against a *sloppy agent that skips the real review and self-stamps CONFIRMED*. It is **not** cryptographic provenance: there are no signatures, no peercred, no OS-level writer separation, and cryptographic un-forgeability against a hostile forger is **intentionally out of scope** (single-operator trusted loop — the cut cathedral). What the gate guarantees is that a review *actually ran* (evidence files exist + non-empty), against the *current commit* (head_sha == the PR's live head), by *two real families* (roster-validated, normalized labels).
 
 ## Adding a pawl
 
