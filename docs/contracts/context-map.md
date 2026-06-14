@@ -39,7 +39,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `implement` — Implement one tracked issue.
 - `inject` — Load relevant .agents context.
 - `pr-prep` — Prepare PR commits and body.
-- `pre-land-refuters` — Dispatch cross-family refuters to attack a completion claim at the mutate-shared-trunk pawl before landing, at any complexity. Triggers: pre-land validation, refute pre-push.
+- `pre-land-refuters` — Dispatch fresh-context refuters (model-agnostic by default; multi-model opt-in) to attack a completion claim at the mutate-shared-trunk pawl before landing, at any complexity. Triggers: pre-land validation, refute pre-push.
 - `push` — Validate, commit, and push.
 - `recover` — Recover session context.
 - `research` — Explore and write findings.
