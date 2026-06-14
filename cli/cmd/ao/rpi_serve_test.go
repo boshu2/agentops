@@ -321,8 +321,8 @@ func TestBuildServeEngineOptions_DefaultsWithoutToolchainOverrides(t *testing.T)
 	if opts.RuntimeMode != "auto" {
 		t.Errorf("RuntimeMode = %q, want %q", opts.RuntimeMode, "auto")
 	}
-	if opts.RuntimeCommand != "claude" {
-		t.Errorf("RuntimeCommand = %q, want %q", opts.RuntimeCommand, "claude")
+	if opts.RuntimeCommand != cliRPI.DefaultRuntimeCommand {
+		t.Errorf("RuntimeCommand = %q, want %q", opts.RuntimeCommand, cliRPI.DefaultRuntimeCommand)
 	}
 }
 

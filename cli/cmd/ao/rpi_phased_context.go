@@ -75,7 +75,7 @@ func defaultPhasedEngineOptions() phasedEngineOptions {
 		AutoCleanStaleAfter:  24 * time.Hour,
 		StallCheckInterval:   30 * time.Second,
 		RuntimeMode:          "auto",
-		RuntimeCommand:       "claude",
+		RuntimeCommand:       cliRPI.DefaultRuntimeCommand,
 		AOCommand:            "ao",
 		BDCommand:            "bd",
 		TmuxCommand:          "tmux",
@@ -167,7 +167,7 @@ func normalizeRuntimeMode(mode string) string {
 }
 
 func effectiveRuntimeCommand(command string) string {
-	return cmp.Or(strings.TrimSpace(command), "claude")
+	return cmp.Or(strings.TrimSpace(command), cliRPI.DefaultRuntimeCommand)
 }
 
 func effectiveAOCommand(command string) string {

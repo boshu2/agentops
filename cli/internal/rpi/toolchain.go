@@ -10,7 +10,7 @@ const (
 	// DefaultRuntimeMode controls backend selection when no overrides are provided.
 	DefaultRuntimeMode = "auto"
 	// DefaultRuntimeCommand is the default runtime process command.
-	DefaultRuntimeCommand = "claude"
+	DefaultRuntimeCommand = "codex"
 	// DefaultAOCommand is the default ao CLI command.
 	DefaultAOCommand = "ao"
 	// DefaultBDCommand is the default bd CLI command.

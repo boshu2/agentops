@@ -21,6 +21,9 @@ func TestResolveToolchain_Defaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveToolchain() error = %v", err)
 	}
+	if DefaultRuntimeCommand == "claude" {
+		t.Fatal("DefaultRuntimeCommand must not default to claude; that can route phased RPI into claude -p")
+	}
 
 	if tc.RuntimeMode != DefaultRuntimeMode {
 		t.Fatalf("RuntimeMode = %q, want %q", tc.RuntimeMode, DefaultRuntimeMode)

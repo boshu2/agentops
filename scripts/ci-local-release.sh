@@ -997,6 +997,7 @@ run_step_bg "Next-work contract parity" bash ./scripts/validate-next-work-contra
 run_step_bg "Skill runtime formats" bash ./scripts/validate-skill-runtime-formats.sh
 run_step_bg "Contract compatibility gate" ./scripts/check-contract-compatibility.sh
 run_step_bg "Embedded sync check" ./scripts/validate-embedded-sync.sh
+run_step_bg "Door 9 no Claude print RPI guard" ./scripts/check-door9-no-claude-p.sh
 run_step_bg "Secret pattern scan" run_security_scan_patterns
 run_step_bg "Dangerous shell pattern scan" run_dangerous_pattern_scan
 run_step_bg "Skill CLI snippets" bash ./scripts/validate-skill-cli-snippets.sh
