@@ -1,6 +1,6 @@
 ---
 name: pre-land-refuters
-description: "Dispatch fresh-context refuters (model-agnostic by default; multi-model opt-in) to attack a completion claim at the mutate-shared-trunk pawl before landing, at any complexity. Triggers: pre-land validation, refute pre-push."
+description: "Dispatch fresh-context refuters (model-agnostic; multi-model opt-in) to attack a completion claim at the shared-trunk pawl before landing. Triggers: pre-land validation, refute."
 practices:
 - llm-eval-harness
 - ai-assisted-dev
