@@ -48,10 +48,12 @@ Do NOT proceed with empty issue list - this produces false "epic complete" statu
 
 ## Final Batched Validation
 
-When all issues complete, check whether a full /validate is needed:
+When all issues complete, run the final bead-acceptance `/validate` — the **bead-acceptance pawl** ([docs/contracts/pawls.md](../../../docs/contracts/pawls.md)). This is the lock at the irreversible door (close-as-accepted / merge-to-main); it is **NOT skippable on any path that reaches merge-to-main**, no matter how clean the per-wave checks were. Per-wave inline checks are chaos-side treads — cheap and wrong-tolerant — and they do **not** substitute for the pawl. Standalone `/crank` and `evolve`'s direct `/crank` epic path must not degrade to per-wave checks only: every path still hits the bead-pawl `/validate` before merge.
+
+Use the wave checkpoint verdicts only to scale the gate's DEPTH (quick vs full council), never to exempt it:
 
 ```bash
-# Check wave checkpoint verdicts — skip final vibe if ALL waves passed clean
+# Check wave checkpoint verdicts — clean waves scale the gate down, never skip it
 ALL_PASS=true
 for checkpoint in .agents/crank/wave-*-checkpoint.json; do
     verdict=$(jq -r '.acceptance_verdict // "UNKNOWN"' "$checkpoint" 2>/dev/null)
@@ -63,7 +65,7 @@ done
 ```
 
 **If ALL waves passed acceptance check with PASS verdict (no WARNs, no retries):**
-Skip the final /validate — per-wave acceptance checks already validated acceptance criteria. Proceed directly to Step 8 (learnings extraction).
+Run the final bead-acceptance `/validate` at reduced depth (one comprehensive pass / `--quick`) — the pawl still fires; the clean waves only let it run lighter, never let it be skipped.
 
 **If ANY wave had WARN, FAIL, or missing verdicts:**
 Run ONE comprehensive vibe on recent changes:

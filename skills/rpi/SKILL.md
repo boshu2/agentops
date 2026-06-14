@@ -62,7 +62,7 @@ you need the full autonomy contract.
 
 `/rpi` is the orchestrator across **every move** of the [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence + learning capture. It delegates each move to the skill that owns it (`/discovery`, `/plan`, `/crank`, `/validate`, `/forge`/`/post-mortem`), and enforces three loop-level invariants:
 
-- **No move-skipping.** Strict delegation is on by default; phases never compress, and validation cannot be skipped. The lifecycle objective is preserved across the whole loop.
+- **No move-skipping, but validation cadence is pawl-gated, not per-tread** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). Strict delegation is on by default; phases never compress; the lifecycle objective is preserved across the loop. "Validation cannot be skipped" means the *bead-acceptance pawl* validates fully — NOT that every intermediate slice pays the heavy cross-family panel. The acceptance roll-up + heavy gates (full council, `/validate --mixed`, `/pre-land-refuters`) fire **once, at the bead-acceptance / merge-to-main pawl** (the ratchet's lock). Intermediate slices are **chaos**: cheap local checks (build, TDD red→green, light inline wave-acceptance judges) run freely; the heavy panel never fires per slice. A pawl on every tread is the waterfall the ratchet exists to avoid.
 - **The first failing test is the bead's contract.** With `--test-first` on (the default), `/crank` is invoked with the TDD-per-slice discipline; `--no-test-first` is an explicit opt-out, not a fast path.
 - **Acceptance examples close the bead, not activity.** Validation FAIL re-cranks on the same objective up to 3 attempts; DONE requires the acceptance roll-up in the [slice-validation template](../../docs/templates/slice-validation.md) to be fully green.
 - **Ports stay visible.** Preserve the [Intent-to-Loop Hexagon](../../docs/architecture/intent-to-loop-hexagon.md) boundary as the objective crosses `shape_intent`, `persist_intent`, `plan_slices`, `execute_wave`, `validate_acceptance`, and `record_evidence`.
@@ -151,8 +151,7 @@ Enter at the routed phase and run every phase after it.
    or through phase-isolated skill transport. Add `--strict-surfaces` when
    `--quality` is set. On FAIL, extract findings, re-run `/crank` on the same
    objective, then re-run `/validate`, up to 3 total validation attempts. On
-   DONE, record `ao ratchet record vibe 2>/dev/null || true`. On `full`-complexity arcs (100+ files, factory regen, contract-test repoints, capability removal), DONE is a claim, not a landing pass:
-   invoke [`/pre-land-refuters`](../pre-land-refuters/SKILL.md) before push; REFUTED findings re-crank like a validation FAIL.
+   DONE, record `ao ratchet record vibe 2>/dev/null || true`. This Phase-3 `/validate` is the **bead-acceptance pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)) — once per RPI objective at acceptance, not per slice. **The merge-to-main pawl fires regardless of complexity:** any work crossing the shared-trunk door — fast/standard included — invokes the pawl gate [`/pre-land-refuters`](../pre-land-refuters/SKILL.md) before push (pawls.md makes mutate-shared-trunk complexity-independent). Complexity scales the gate's DEPTH, never exempts it: every door gets at least the **fresh-context default** (≥1 fresh-context refuter, model-agnostic); higher-irreversibility doors are opted up to **multi-model** (≥2 distinct families), and `full` arcs (100+ files, factory regen, contract-test repoints, capability removal) get full council — neither skips the gate. **REFUTED → AUTO-REDO**: refuted findings re-crank like a validation FAIL, autonomously and with no human (the default self-correcting path); a human is escalated to **only when a tunable circuit breaker trips** (max-attempts — here the 3-attempt cap — time budget, cost/quota, or oscillation), per pawls.md "Escalation — the circuit-breaker model". The gate is the door, never per slice.
 4. **Report:** summarize phase verdicts and epic status using
    [references/report-template.md](references/report-template.md). With
    `--loop`, restart from discovery on FAIL while `cycle < max_cycles`. With
@@ -171,20 +170,13 @@ schemas and archive paths.
 
 ## Complexity-Scaled Gates
 
-### Pre-mortem
-- `complexity == "low"` or `"fast"`: inline review, no spawning (`--quick`)
-- `complexity == "medium"` or `"standard"`: inline fast default (`--quick`)
-- `complexity == "high"` or `"full"`: full council, 2-judge minimum; max 3 total attempts
+> The pawl gates ([pawls.md](../../docs/contracts/pawls.md)) fire at the irreversible doors — bead-acceptance and merge-to-main — never per slice/wave; chaos between pawls. The merge-to-main pawl fires **regardless of complexity** (see Phase 3); complexity below only scales the DEPTH of the gate, never whether it runs.
 
-### Final Vibe
-- `complexity == "low"` or `"fast"`: inline review, no spawning (`--quick`)
-- `complexity == "medium"` or `"standard"`: inline fast default (`--quick`)
-- `complexity == "high"` or `"full"`: full council, 2-judge minimum; max 3 total attempts
+Complexity scales the gate's depth: `low`/`fast` and `medium`/`standard` → 2-judge minimum panel (inline / `--quick`); `high`/`full` → full council; max 3 total attempts. The gate still fires at the door at every complexity.
 
-### Post-mortem (STEP 2)
-- `complexity == "low"` or `"fast"`: inline review, no spawning (`--quick`)
-- `complexity == "medium"` or `"standard"`: inline fast default (`--quick`)
-- `complexity == "high"` or `"full"`: full council, 2-judge minimum; max 3 total attempts
+- **Pre-mortem** (planning-time, chaos-side — NOT a pawl): `high`/`full` → full council, 2-judge minimum; max 3 total attempts. Pre-mortem stress-tests the plan before work; it is not an irreversible door and carries no heavy gate of its own outside this optional `full`-arc depth.
+- **Final Vibe** (at the bead-acceptance pawl): `high`/`full` → full council, 2-judge minimum; max 3 total attempts.
+- **Post-mortem** (STEP 2, at the bead-acceptance pawl): `high`/`full` → full council; same scale as above.
 
 ## Flags
 

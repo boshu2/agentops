@@ -61,6 +61,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `overnight` | rolling | scripts, skills | overnight-run-state | Overnight run state and morning packets |
 | `packets` | rolling | cli | context-packet-cache | Source manifests and promoted packets feeding the context-explain surface |
 | `patterns` | persistent | cli, skills | promoted-pattern | Promoted pattern artifacts |
+| `pawl-verdicts` | persistent | scripts, skills | decision-record | Machine-checkable pawl verdicts (fresh-context default; multi-model opt-in; schema `schemas/pawl-verdict.v1.schema.json`) written by `/pre-land-refuters` via `scripts/pawl-verdict.sh write` and read by `scripts/reconcile-pr.sh` to gate merge-to-main (fail-closed: no CONFIRMED verdict, no merge) |
 | `planning-rules` | persistent | cli | generated-policy | Planning rules sourced from skills/contracts |
 | `plans` | persistent | skills, scripts | planning-artifact | Planning artifacts |
 | `playbooks` | persistent | cli | generated-playbook | Compiled playbook candidates |
@@ -134,6 +135,7 @@ orchestration
 overnight
 packets
 patterns
+pawl-verdicts
 planning-rules
 plans
 playbooks
