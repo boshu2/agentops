@@ -1,6 +1,6 @@
 // `ao beads resume <id>` — slice 3 of soc-vuu6.27 (fungible-swarm death
 // recovery). Atomically transfers an in_progress claim from a previous
-// (likely stale) agent to the current one via `bd update <id> --claim`,
+// (likely stale) agent to the current one via `br update <id> --claim`,
 // then appends a stale-claim-event (event_type="claim_transferred") to
 // docs/provenance/ledger.jsonl so the audit trail records who picked up
 // whose work.
@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -35,7 +36,7 @@ var (
 var beadsResumeCmd = &cobra.Command{
 	Use:   "resume <bead-id>",
 	Short: "Atomically transfer an in_progress claim from a stale agent to this one",
-	Long: `Transfers a stale claim via 'bd update <bead-id> --claim', then appends a
+	Long: `Transfers a stale claim via 'br update <bead-id> --claim', then appends a
 claim_transferred event (matching schemas/stale-claim-event.v1.schema.json)
 to docs/provenance/ledger.jsonl. The bead's prior + new revision (assignee
 and updated_at hash) is captured in the event for audit.
@@ -61,46 +62,46 @@ func init() {
 
 // beadsResumeShowFunc is the test seam for fetching a bead's current state
 // (assignee + updated_at) BEFORE the claim transfer, so we can record the
-// prior revision. Production: shells out to `bd show <id> --json`.
+// prior revision. Production: shells out to `br show <id> --json`.
 var beadsResumeShowFunc = func(ctx context.Context, beadID string) (staleBeadRecord, error) {
-	out, err := exec.CommandContext(ctx, "bd", "show", beadID, "--json").Output()
+	out, err := beadsTrackerCommandContext(ctx, "show", beadID, "--json").Output()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return staleBeadRecord{}, fmt.Errorf("bd show %s exited %d: %s", beadID, exitErr.ExitCode(), string(exitErr.Stderr))
+			return staleBeadRecord{}, fmt.Errorf("br show %s exited %d: %s", beadID, exitErr.ExitCode(), string(exitErr.Stderr))
 		}
 		return staleBeadRecord{}, err
 	}
-	// bd show <id> --json may emit either an object or a 1-element array.
+	// br show <id> --json may emit either an object or a 1-element array.
 	trimmed := bytes_trim_leading_ws(out)
 	if len(trimmed) > 0 && trimmed[0] == '[' {
 		var arr []staleBeadRecord
 		if err := json.Unmarshal(out, &arr); err != nil {
-			return staleBeadRecord{}, fmt.Errorf("parse bd show array: %w", err)
+			return staleBeadRecord{}, fmt.Errorf("parse br show array: %w", err)
 		}
 		if len(arr) == 0 {
-			return staleBeadRecord{}, fmt.Errorf("bd show %s returned empty array", beadID)
+			return staleBeadRecord{}, fmt.Errorf("br show %s returned empty array", beadID)
 		}
 		return arr[0], nil
 	}
 	var rec staleBeadRecord
 	if err := json.Unmarshal(out, &rec); err != nil {
-		return staleBeadRecord{}, fmt.Errorf("parse bd show object: %w", err)
+		return staleBeadRecord{}, fmt.Errorf("parse br show object: %w", err)
 	}
 	return rec, nil
 }
 
 // beadsResumeClaimFunc is the test seam for performing the atomic update.
-// Production: `bd update <id> --claim --actor <agent>`.
+// Production: `br update <id> --claim --actor <agent>`.
 var beadsResumeClaimFunc = func(ctx context.Context, beadID, agent string) error {
 	args := []string{"update", beadID, "--claim"}
 	if agent != "" {
 		args = append(args, "--actor", agent)
 	}
-	cmd := exec.CommandContext(ctx, "bd", args...)
+	cmd := beadsTrackerCommandContext(ctx, args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("bd update --claim failed: %w: %s", err, string(out))
+		return fmt.Errorf("br update --claim failed: %w: %s", err, string(out))
 	}
 	return nil
 }
@@ -135,7 +136,7 @@ func runBeadsResume(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// 1. Capture prior revision via `bd show`.
+	// 1. Capture prior revision via `br show`.
 	prior, err := beadsResumeShowFunc(ctx, beadID)
 	if err != nil {
 		return fmt.Errorf("fetch prior state: %w", err)
@@ -188,7 +189,7 @@ func runBeadsResume(cmd *cobra.Command, args []string) error {
 		OriginalClaimant: staleAgent{ID: priorAgent},
 		Evidence: staleEvidence{
 			LastTouchTS:       prior.UpdatedAt,
-			LastEvidenceEvent: "bd update --claim",
+			LastEvidenceEvent: "br update --claim",
 		},
 	}
 	// Extra fields for the transferred variant are emitted via a wrapper —
@@ -247,7 +248,7 @@ type transferInfo struct {
 }
 
 // fingerprint produces a compact, stable revision token from (assignee,
-// updated_at). bd itself does not expose an etag; (assignee, updated_at)
+// updated_at). br itself does not expose an etag; (assignee, updated_at)
 // changes on every claim/update so it serves as the audit fingerprint.
 func fingerprint(r staleBeadRecord) string {
 	if r.Assignee == "" && r.UpdatedAt == "" {
@@ -262,6 +263,44 @@ func fingerprint(r staleBeadRecord) string {
 		u = "_"
 	}
 	return a + "@" + u
+}
+
+func beadsTrackerCommandContext(ctx context.Context, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, "br", args...)
+	cmd.Env = beadsTrackerEnv()
+	return cmd
+}
+
+func beadsTrackerEnv() []string {
+	if os.Getenv("BEADS_DIR") != "" {
+		return os.Environ()
+	}
+	env := make([]string, 0, len(os.Environ())+1)
+	for _, entry := range os.Environ() {
+		if strings.HasPrefix(entry, "BEADS_DIR=") {
+			continue
+		}
+		env = append(env, entry)
+	}
+	return append(env, "BEADS_DIR="+defaultBeadsDir())
+}
+
+func defaultBeadsDir() string {
+	root, rootErr := repoRootForBeads()
+	out, err := exec.Command("git", "rev-parse", "--git-common-dir").Output()
+	if err != nil {
+		if rootErr == nil {
+			return filepath.Join(root, "_beads")
+		}
+		return "_beads"
+	}
+	common := string(bytes_trim_trailing_ws(out))
+	if !filepath.IsAbs(common) {
+		if rootErr == nil {
+			common = filepath.Join(root, common)
+		}
+	}
+	return filepath.Join(filepath.Dir(common), "_beads")
 }
 
 // repoRootForBeads finds the git repo root, falling back to cwd. Kept local

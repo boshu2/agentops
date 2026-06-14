@@ -1,7 +1,7 @@
 // Package main / cmd ao.
 //
 // `ao beads stale-claims` — slice 2 of soc-vuu6.27 (fungible-swarm death
-// recovery). Reads `bd list --status in_progress --json`, derives a
+// recovery). Reads `br list --status in_progress --json`, derives a
 // staleness signal per bead from its last activity timestamp, and emits a
 // table or a JSON record array conforming to
 // schemas/stale-claim-event.v1.schema.json (event_type: "stale_detected").
@@ -53,7 +53,7 @@ func init() {
 		"Emit JSON array conforming to stale-claim-event.v1 (event_type: stale_detected).")
 }
 
-// staleBeadRecord is the subset of `bd list --json` output we care about.
+// staleBeadRecord is the subset of `br list --json` output we care about.
 type staleBeadRecord struct {
 	ID        string `json:"id"`
 	Status    string `json:"status"`
@@ -89,11 +89,11 @@ func runBeadsStale(cmd *cobra.Command, args []string) error {
 
 	raw, err := beadsStaleFetchCmd(ctx)
 	if err != nil {
-		return fmt.Errorf("bd list: %w", err)
+		return fmt.Errorf("br list: %w", err)
 	}
 	var beads []staleBeadRecord
 	if err := json.Unmarshal(raw, &beads); err != nil {
-		return fmt.Errorf("parse bd list: %w", err)
+		return fmt.Errorf("parse br list: %w", err)
 	}
 
 	now := time.Now().UTC()
@@ -135,14 +135,14 @@ func runBeadsStale(cmd *cobra.Command, args []string) error {
 }
 
 // beadsStaleFetchCmd is the seam for tests. Tests overwrite it to inject
-// canned `bd list` output without touching a real bd binary.
+// canned `br list` output without touching a real br binary.
 var beadsStaleFetchCmd = func(ctx context.Context) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, "bd", "list", "--status", "in_progress", "--json", "--limit", "500")
+	cmd := beadsTrackerCommandContext(ctx, "list", "--status", "in_progress", "--json", "--limit", "500")
 	out, err := cmd.Output()
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			return nil, fmt.Errorf("bd list exited %d: %s", exitErr.ExitCode(), string(exitErr.Stderr))
+			return nil, fmt.Errorf("br list exited %d: %s", exitErr.ExitCode(), string(exitErr.Stderr))
 		}
 		return nil, err
 	}

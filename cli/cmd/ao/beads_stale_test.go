@@ -2,7 +2,7 @@
 //
 // Strategy: table tests for the pure computeStaleEvents function (no exec,
 // no clock — all inputs explicit), plus a single L2 integration test that
-// drives the cobra command via beadsStaleFetchCmd seam with canned bd-list
+// drives the cobra command via beadsStaleFetchCmd seam with canned br-list
 // JSON.
 //
 // Per .claude/rules/go.md: L2 first, L1 always. Exact value assertions,
@@ -149,7 +149,7 @@ func TestComputeStaleEvents_AssigneeDefaultUnknown(t *testing.T) {
 }
 
 func TestRunBeadsStale_JSON_OutputShape(t *testing.T) {
-	// Inject canned bd-list JSON via the seam.
+	// Inject canned br-list JSON via the seam.
 	canned := `[
 		{"id":"a","status":"in_progress","assignee":"alice","updated_at":"2026-05-20T03:00:00Z"},
 		{"id":"b","status":"in_progress","assignee":"","updated_at":"2026-05-20T11:00:00Z"}
@@ -225,10 +225,10 @@ func TestRunBeadsStale_BdMalformed(t *testing.T) {
 	}
 	err := runBeadsStale(beadsStaleCmd, nil)
 	if err == nil {
-		t.Fatalf("expected error on malformed bd-list JSON; got nil")
+		t.Fatalf("expected error on malformed br-list JSON; got nil")
 	}
-	if !strings.Contains(err.Error(), "parse bd list") {
-		t.Errorf("error = %v; want wrapping 'parse bd list'", err)
+	if !strings.Contains(err.Error(), "parse br list") {
+		t.Errorf("error = %v; want wrapping 'parse br list'", err)
 	}
 }
 
