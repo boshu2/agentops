@@ -36,9 +36,21 @@ output_contract: .agents/council/YYYY-MM-DD-pre-land-*.md
 
 ## When to fire
 
-Before pushing any change that is large (100+ files), regenerates factory
-surfaces, repoints contract tests/canaries, or removes capability. NOT for
-routine single-file changes — the panel costs two agent runs.
+Fire at a **pawl** — a one-way door on the canonical static list
+([docs/contracts/pawls.md](../../docs/contracts/pawls.md)): **mutate shared
+trunk** (push/merge to main or rewrite a shared ref), **delete**,
+**external-send / shared-state mutation**, **schema/contract change**,
+**credential/authority change**, **spend**. The pawl is the only place the
+cross-family panel runs. This is the ratchet's Filter: gate at the irreversible
+door, nowhere else. (pawls.md is the source of truth — if it changes, this list
+follows it.)
+
+**NOT on a tread.** Routine edits, builds, tests, drafts, intermediate RPI
+slices, mock→real swaps, throwaway experiments — all run as chaos, **ungated**.
+The panel costs two agent runs; spend it at the door, never per-step. A pawl on
+every step is waterfall (validate every tread) — exactly the thing the ratchet
+exists to avoid. Check the action against the pawl list (a lookup); if it isn't
+there, just run it.
 
 ## Constraints
 
