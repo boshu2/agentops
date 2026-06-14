@@ -89,13 +89,23 @@ there, just run it.
    record the panel result as the cross-family pawl verdict the merge path
    enforces against:
    ```bash
+   head_sha="$(gh pr view <pr> --json headRefOid -q .headRefOid)"
    scripts/pawl-verdict.sh write <bead> <pr> \
      --disposition CONFIRMED \
-     --refuter claude:CONFIRMED --refuter codex:CONFIRMED \
+     --head "$head_sha" \
+     --refuter claude:CONFIRMED:.agents/council/$(date +%F)-pre-land-<slug>-claude.md \
+     --refuter codex:CONFIRMED:.agents/council/$(date +%F)-pre-land-<slug>-codex.md \
      --council .agents/council/$(date +%F)-pre-land-<slug>.md
    ```
-   (disposition `REFUTED` on any refuted refuter; `ESCALATE`/`HOLD` on
-   non-convergence — those make the merge path HOLD, exit 5.) `scripts/reconcile-pr.sh`
+   The verdict is **EVIDENCE-BOUND and COMMIT-BOUND**: `--head` pins it to the
+   commit the panel actually reviewed (a new push makes it STALE and the gate
+   fail-closes), and each `--refuter family:verdict:<evidence-path>` must point at
+   a **real, non-empty** reviewer-run transcript (or supply `--council` as the
+   shared evidence anchor). `check` refuses a verdict with no reviewer evidence —
+   a self-asserted stamp is not a review. (disposition `REFUTED` on any refuted
+   refuter — the loop **auto-redoes** on REFUTED, no human; `ESCALATE`/`HOLD` only
+   when a circuit breaker trips — those make the merge path HOLD, exit 5.)
+   `scripts/reconcile-pr.sh`
    reads this with `scripts/pawl-verdict.sh check <bead> <pr>` and **refuses to merge
    without a CONFIRMED, cross-family, this-bead+PR verdict** — green CI alone never
    authorizes the door. Then land (commit → merge upstream if it moved → gate →
@@ -103,30 +113,45 @@ there, just run it.
    narrative in `.agents/council/YYYY-MM-DD-pre-land-<slug>.md`
    (the human-readable companion to the checkable verdict).
 
-## Escalation — autonomous panel, human only on non-convergence
+## Escalation — the circuit-breaker model (auto-redo by default)
 
 The panel runs **autonomously: model reviews model.** The human is NOT a checkpoint at the
-pawl by default — they are the exception. See [docs/contracts/pawls.md](../../docs/contracts/pawls.md)
-"Escalation".
+pawl by default — they are the exception a *circuit breaker* trips into. See
+[docs/contracts/pawls.md](../../docs/contracts/pawls.md) "Escalation — the circuit-breaker model".
 
 - **Both refuters CONFIRMED (+ green gate)** → land. No human.
-- **Any REFUTED** → orchestrator fixes the findings forward and **re-dispatches the panel**,
-  autonomously, up to **N attempts (default 3)**. The loop self-corrects model-to-model; no
-  human in the loop. This is the ordinary path.
-- **ESCALATE to a human — ONLY when the models can't converge:** (1) **reviewer deadlock** —
-  refuters contradict and stay contradicted after a re-gate and the diff can't arbitrate;
-  (2) **N attempts exhausted** — still REFUTED after the default 3 re-work/re-gate cycles;
-  (3) a refuter **explicitly flags a value / irreversibility judgment** models should not make
-  alone. This is the **andon** ("Hey! Listen!") — rare, earned, never the default.
+- **Any REFUTED → AUTO-REJECT → AUTO-REDO (the default, no human).** A REFUTED verdict means
+  the gate *rejected*; the orchestrator **automatically** fixes the findings forward and
+  **re-dispatches the panel**. The loop redoes on REFUTED on its own — continuous
+  self-correction, no human in the loop. A plain REFUTED is never an escalation.
+- **ESCALATE to a human — ONLY when a tunable CIRCUIT BREAKER trips.** The breakers are
+  **plural and operator-tunable**, and are the **same governor the autonomous loop already
+  runs** (the evolve circuit breakers: time-based "no productive work" + oscillation
+  quarantine, [`scripts/evolve/halt-check.sh`](../../scripts/evolve/halt-check.sh)):
+  **max-attempts** (N re-gate cycles still REFUTED, default 3, tunable) · **time budget**
+  (wall-clock with no forward progress) · **cost / quota budget** · **oscillation /
+  no-forward-progress** (the same failure repeating; covers reviewer deadlock) · an
+  **explicit judgment flag** a reviewer raises (value / irreversibility). This is the
+  **andon** ("Hey! Listen!") — rare, earned, never the default.
 
-**ESCALATE / N-attempts-exhausted means HOLD — the door stays closed until a human resolves
-it.** Record the disposition as `ESCALATE` (or `HOLD`) in the machine-checkable verdict and
-**do not land**: a non-convergent pawl is never auto-merged. The enforcing merge path
-(`scripts/reconcile-pr.sh` → `scripts/pawl-verdict.sh check`) exits **5 (HOLD: no merge, no
-close)** on any disposition that is not `CONFIRMED`. Only both-refuters-`CONFIRMED`, ≥2
-distinct families, tied to this bead+PR, opens the door (fail-closed by construction).
+**REFUTED → auto-redo (loop). Breaker-trip → HOLD/escalate.** Set the verdict disposition
+accordingly: a plain REFUTED carries `REFUTED` (the loop re-works); flip it to `ESCALATE` /
+`HOLD` **only when a breaker trips**, and **do not land** — a breaker-tripped pawl is never
+auto-merged. The enforcing merge path (`scripts/reconcile-pr.sh` → `scripts/pawl-verdict.sh
+check`) exits **5 (HOLD: no merge, no close)** on any disposition that is not `CONFIRMED`
+(so a bare REFUTED also correctly refuses the merge while the loop redoes). Only
+both-refuters-`CONFIRMED`, ≥2 distinct **canonical** families, real non-empty reviewer
+evidence, and `head_sha` == the PR's current head, tied to this bead+PR, opens the door
+(fail-closed by construction).
 
-Even fully unattended, the gate fires at every pawl. Escalation is the exception, not the gate.
+Even fully unattended, the gate fires at every pawl and auto-redoes on REFUTED. Human
+escalation is the exception a circuit breaker trips into, not the gate.
+
+> **Scope note.** This verdict is an **evidence-bound, commit-bound cross-family verdict that
+> requires real reviewer runs** — it defends against a *sloppy agent self-stamping CONFIRMED*,
+> NOT a hostile forger. No signatures / peercred / OS writer-separation; cryptographic
+> un-forgeability is **intentionally out of scope** (single-operator trusted loop — the cut
+> cathedral).
 
 ## Output Specification
 

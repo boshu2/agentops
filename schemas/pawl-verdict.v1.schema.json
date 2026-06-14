@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://agentops.dev/schemas/pawl-verdict.v1.schema.json",
     "title": "AgentOps Cross-Family Pawl Verdict v1",
-    "description": "The machine-checkable cross-family verdict that authorizes a mutate-shared-trunk pawl (merge/push to main). Written by the /pre-land-refuters (or /council) gate after the panel runs; read by scripts/reconcile-pr.sh BEFORE it merges. Green CI is necessary but NOT sufficient: a merge requires this artifact to exist, be tied to THIS bead+PR, and carry BOTH cross-family refuters CONFIRMED. Fail-closed by construction: absent artifact, wrong bead/PR, fewer than two distinct families, any non-CONFIRMED refuter, or an escalate/hold disposition => the gate refuses the merge. The companion free-form council narrative still lives at .agents/council/YYYY-MM-DD-pre-land-*.md; THIS file is the checkable summary the merge path enforces against. Runtime artifact lives at .agents/pawl-verdicts/<bead-id>.json (untracked); this schema and its fixtures are tracked.",
+    "description": "The machine-checkable, EVIDENCE-BOUND and COMMIT-BOUND cross-family verdict that authorizes a mutate-shared-trunk pawl (merge/push to main). Written by the /pre-land-refuters (or /council) gate after the panel runs; read by scripts/reconcile-pr.sh BEFORE it merges. Green CI is necessary but NOT sufficient: a merge requires this artifact to exist, be tied to THIS bead+PR+head_sha, carry BOTH cross-family refuters CONFIRMED, and carry real reviewer evidence (a transcript/evidence path that exists and is non-empty, or a council_artifact that exists). Fail-closed by construction: absent artifact, wrong bead/PR, stale head_sha, fewer than two KNOWN-roster distinct families, any non-CONFIRMED refuter, missing reviewer evidence, or an escalate/hold disposition => the gate refuses the merge. THREAT MODEL: this defends against a SLOPPY agent that skips the real review and self-stamps CONFIRMED — it requires that a review ACTUALLY RAN (evidence) against the CURRENT commit (head_sha) by two real families. It is NOT cryptographic provenance: there are no signatures, no peercred, no OS-level writer separation. Cryptographic un-forgeability against a hostile forger is INTENTIONALLY OUT OF SCOPE (single-operator trusted loop; the cut cathedral). The companion free-form council narrative lives at .agents/council/YYYY-MM-DD-pre-land-*.md; THIS file is the checkable summary the merge path enforces against. Runtime artifact lives at .agents/pawl-verdicts/<bead-id>.json (untracked); this schema and its fixtures are tracked.",
     "practices": ["llm-eval-harness", "adr"],
     "type": "object",
     "additionalProperties": false,
@@ -10,6 +10,7 @@
         "schema_version",
         "bead_id",
         "pr",
+        "head_sha",
         "disposition",
         "generated_at",
         "refuters"
@@ -32,12 +33,13 @@
         },
         "head_sha": {
             "type": "string",
-            "description": "Optional: the PR head commit the panel reviewed. When present, reconcile-pr.sh may require it to match the PR's current head so a verdict cannot be reused across new pushes."
+            "minLength": 7,
+            "description": "REQUIRED: the PR head commit the panel actually reviewed. reconcile-pr.sh fetches the PR's CURRENT head sha (gh pr view <PR> --json headRefOid) and refuses the merge if this != current — a verdict goes STALE the moment a new commit is pushed, so it can never be reused across a re-push. This is the COMMIT-BINDING half of the gate."
         },
         "disposition": {
             "type": "string",
             "enum": ["CONFIRMED", "REFUTED", "ESCALATE", "HOLD"],
-            "description": "Panel-level disposition. CONFIRMED = both cross-family refuters confirmed and the panel authorizes the door. REFUTED = at least one refuter refuted; do NOT merge, re-work and re-gate. ESCALATE / HOLD = the models could not converge (reviewer deadlock, N attempts exhausted, or an explicit judgment flag); do NOT merge, surface for human resolution. Only CONFIRMED authorizes the merge; everything else fail-closed HOLDs."
+            "description": "Panel-level disposition. CONFIRMED = both cross-family refuters confirmed and the panel authorizes the door. REFUTED = at least one refuter refuted; the gate REJECTED. The default REFUTED path is AUTO-REJECT -> AUTO-REDO: the loop sends the work back to be re-done with the findings and re-gates, with no human — continuous self-correction. ESCALATE / HOLD = a tunable CIRCUIT BREAKER tripped (max-attempts, time budget, cost/quota budget, or oscillation/no-forward-progress); the loop stops auto-redoing and HOLDs for a human. The disposition is ESCALATE/HOLD ONLY on a breaker trip, NOT on plain REFUTED. Only CONFIRMED authorizes the merge; everything else fail-closed HOLDs at the merge path."
         },
         "generated_at": {
             "type": "string",
@@ -47,7 +49,7 @@
         "attempt": {
             "type": "integer",
             "minimum": 1,
-            "description": "Which re-gate attempt produced this verdict (default 1). After N (default 3) the disposition must be ESCALATE/HOLD, never CONFIRMED on a streak of REFUTEDs."
+            "description": "Which re-gate attempt produced this verdict (default 1). A plain REFUTED auto-redoes (no human); the disposition only flips to ESCALATE/HOLD when a circuit breaker trips — e.g. the max-attempts breaker after N (default 3) re-work/re-gate cycles, or the time/cost/oscillation breakers. Never CONFIRMED on a streak of REFUTEDs."
         },
         "refuters": {
             "type": "array",
@@ -60,8 +62,8 @@
                 "properties": {
                     "family": {
                         "type": "string",
-                        "minLength": 1,
-                        "description": "The reviewer's model family (e.g. 'claude'/'fable', 'codex'/'gpt', 'gemini'/'agy'). At least two DISTINCT families must appear across the refuters."
+                        "enum": ["claude", "fable", "anthropic", "gpt", "codex", "openai", "gemini", "agy", "google"],
+                        "description": "The reviewer's model family, recorded as a label from the KNOWN alias roster (the writer stores the raw label as given). Aliases collapse to three CANONICAL families: fable/anthropic -> claude; codex/openai -> gpt; agy/google -> gemini. This enum admits the full alias set; pawl-verdict.sh `check` then lowercases + normalizes each label to its canonical family and rejects anything off-roster, so a fake/unknown label ('totally-real-family', 'x') is refused at check time — the '>=2 distinct families' rule cannot be gamed with junk strings. At least two DISTINCT CANONICAL families must appear across the refuters (e.g. claude + codex passes; claude + fable does not — both canonicalize to claude)."
                     },
                     "reviewer": {
                         "type": "string",
@@ -74,7 +76,8 @@
                     },
                     "evidence": {
                         "type": "string",
-                        "description": "Optional pointer to the grounding evidence (the real tests/build that ran, the council narrative anchor, the pinned-fixture sweep)."
+                        "minLength": 1,
+                        "description": "Path to this refuter's grounding evidence — the real reviewer run output (transcript), the pinned-fixture sweep, or the council narrative anchor. reconcile-pr.sh requires this file to EXIST and be NON-EMPTY (or the verdict's top-level council_artifact to exist). A verdict with no reviewer evidence anywhere is fail-closed: it reflects an assertion, not a review that actually ran. This is the EVIDENCE-BINDING half of the gate."
                     }
                 }
             }
