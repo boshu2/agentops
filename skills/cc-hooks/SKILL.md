@@ -109,6 +109,26 @@ Decisions: `"allow"` (auto-approve), `"deny"` (block), `"ask"` (show dialog)
 
 Details: [DCG-RCH.md](references/DCG-RCH.md)
 
+## Skill-First Coordination Guard (opt-in)
+
+A copy-paste PreToolUse recipe that nudges agents to **load the coordination
+skill before hand-rolling the `am`/`atm`/`ntm`/`tmux send-keys` CLI**. AgentOps
+3.0 is hookless — this auto-installs nothing; you opt in per host.
+
+**Context-budget doctrine for hooks:** hooks are the most powerful enforcement
+(mechanical, can't be reasoned past) but they pollute context — use sparingly. A
+hook must be SILENT on the happy path (exit 0, no stdout/stderr), fire ONLY on a
+real violation (ideally once per session, sentinel-gated), prefer PreToolUse
+violation-guards over `UserPromptSubmit`/`SessionStart` per-turn injectors, and
+NEVER emit stray stdout on an exit-0 PreToolUse path (it is parsed as JSON and
+breaks the tool call). Block via exit 2 + stderr.
+
+The recipe ships both scripts verbatim, a precise head-only matcher (so a
+`br create --body "...am/atm/ntm..."` never false-fires), the two-matcher
+opt-in `settings.json` snippet, and a bats test proving every fire/silent case.
+
+Recipe: [SKILL-FIRST-COORDINATION-GUARD.md](references/SKILL-FIRST-COORDINATION-GUARD.md)
+
 ## Writing Your Own Hook
 
 **Minimal Python:**
@@ -188,5 +208,6 @@ use-cases route here:
 
 - [HOOK-EVENTS.md](references/HOOK-EVENTS.md) - All events with full schemas
 - [DCG-RCH.md](references/DCG-RCH.md) - Production examples (dcg, rch)
+- [SKILL-FIRST-COORDINATION-GUARD.md](references/SKILL-FIRST-COORDINATION-GUARD.md) - Opt-in coordination skill-first guard + context-budget doctrine
 - [PATTERNS.md](references/PATTERNS.md) - Auto-format, logging, notifications
 - [JSON-OUTPUT.md](references/JSON-OUTPUT.md) - Response schemas

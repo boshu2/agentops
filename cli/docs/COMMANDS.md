@@ -2986,7 +2986,7 @@ ao beads lint [flags]
 
 #### `ao beads resume`
 
-Transfers a stale claim via 'bd update <bead-id> --claim', then appends a
+Transfers a stale claim via 'br update <bead-id> --claim', then appends a
 
 ```
 ao beads resume <bead-id> [flags]
