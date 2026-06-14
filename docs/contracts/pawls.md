@@ -17,7 +17,7 @@ Why so few pawls: a pawl on *every* step is waterfall (validate every tread). It
 
 | Pawl | What it is | Why irreversible | Already guarded by |
 |---|---|---|---|
-| **mutate shared trunk** | Push/merge into the **shared** trunk (not a local merge); close a bead as accepted; **or rewrite a shared ref** — `git push --force`, history rewrite on a pushed branch | Shared ground-truth; a bad merge or rewritten ref propagates to every consumer and can't be cleanly un-done | pre-push gate · `/pre-land-refuters` |
+| **mutate shared trunk** | Push/merge into the **shared** trunk (not a local merge); close a bead as accepted; **or rewrite a shared ref** — `git push --force`, history rewrite on a pushed branch | Shared ground-truth; a bad merge or rewritten ref propagates to every consumer and can't be cleanly un-done | pre-push gate · `/pre-land-refuters` (**enforced**: `scripts/reconcile-pr.sh` requires a CONFIRMED cross-family verdict via `scripts/pawl-verdict.sh check` — green CI alone never authorizes the merge; schema `schemas/pawl-verdict.v1.schema.json`) |
 | **delete** | Destroying data/code/state: `rm -rf`, `git reset --hard`, `DROP DATABASE`, `kubectl delete`, `terraform destroy` | The thing is gone; no undo | [`dcg`](../../skills/dcg/SKILL.md) (destructive-command guard) |
 | **external-send / shared-state mutation** | Anything that affects state outside your local sandbox: publish, post, deploy, email, a PR/issue to a forge, a side-effectful API call, sending to a person, **or writing to a shared/prod store** (a shared DB, a deployed service's state) | Caching / indexing / people / downstream consumers make it un-retractable even if later "deleted" | *(this list is the trigger)* |
 | **schema / contract change** | Changing an interface, schema, or contract other code/agents depend on; regenerating a factory surface; repointing a contract test or canary | Downstream consumers break silently — "looks fine here" ≠ fine for them | [`scope`](../../skills/scope/SKILL.md) (frozen dirs) · contract-canary gates |
@@ -41,7 +41,15 @@ The loop self-corrects; the human is the exception, not the checkpoint.
   2. **N attempts exhausted** — `default 3` re-work/re-gate cycles still REFUTED.
   3. **Explicit judgment flag** — a reviewer explicitly raises a value or irreversibility judgment that models should not make alone.
 
-This escalation is the **andon** ("Hey! Listen!") — rare and *earned*, never the default. Even fully unattended, the gate runs model-to-model at every pawl; pulling a human in is the exception that fires only on non-convergence.
+**ESCALATE means HOLD — the door stays closed until a human resolves it.** On any of
+the three triggers above the action does **not** proceed: the merge/push is **held**,
+not landed, not retried-into-landing, and surfaced for human resolution. Non-convergence
+**never auto-lands** — fail-closed is the whole point. The enforcing merge path
+(`scripts/reconcile-pr.sh` → `scripts/pawl-verdict.sh check`) records this as an
+`ESCALATE`/`HOLD` disposition and exits **5 (HOLD: no merge, no close)**; only a
+`CONFIRMED` cross-family verdict opens the door.
+
+This escalation is the **andon** ("Hey! Listen!") — rare and *earned*, never the default. Even fully unattended, the gate runs model-to-model at every pawl; pulling a human in is the exception that fires only on non-convergence — and until the human acts, the pawl **holds**.
 
 ## Adding a pawl
 

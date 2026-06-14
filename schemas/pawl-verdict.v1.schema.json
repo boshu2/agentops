@@ -1,0 +1,87 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://agentops.dev/schemas/pawl-verdict.v1.schema.json",
+    "title": "AgentOps Cross-Family Pawl Verdict v1",
+    "description": "The machine-checkable cross-family verdict that authorizes a mutate-shared-trunk pawl (merge/push to main). Written by the /pre-land-refuters (or /council) gate after the panel runs; read by scripts/reconcile-pr.sh BEFORE it merges. Green CI is necessary but NOT sufficient: a merge requires this artifact to exist, be tied to THIS bead+PR, and carry BOTH cross-family refuters CONFIRMED. Fail-closed by construction: absent artifact, wrong bead/PR, fewer than two distinct families, any non-CONFIRMED refuter, or an escalate/hold disposition => the gate refuses the merge. The companion free-form council narrative still lives at .agents/council/YYYY-MM-DD-pre-land-*.md; THIS file is the checkable summary the merge path enforces against. Runtime artifact lives at .agents/pawl-verdicts/<bead-id>.json (untracked); this schema and its fixtures are tracked.",
+    "practices": ["llm-eval-harness", "adr"],
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "schema_version",
+        "bead_id",
+        "pr",
+        "disposition",
+        "generated_at",
+        "refuters"
+    ],
+    "properties": {
+        "schema_version": {
+            "type": "string",
+            "const": "pawl-verdict.v1",
+            "description": "Schema discriminator."
+        },
+        "bead_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The bead this verdict authorizes. reconcile-pr.sh requires this to equal the bead it is closing."
+        },
+        "pr": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "The PR number this verdict was produced against. reconcile-pr.sh requires this to equal the PR it is merging — a verdict for a different PR does not transfer."
+        },
+        "head_sha": {
+            "type": "string",
+            "description": "Optional: the PR head commit the panel reviewed. When present, reconcile-pr.sh may require it to match the PR's current head so a verdict cannot be reused across new pushes."
+        },
+        "disposition": {
+            "type": "string",
+            "enum": ["CONFIRMED", "REFUTED", "ESCALATE", "HOLD"],
+            "description": "Panel-level disposition. CONFIRMED = both cross-family refuters confirmed and the panel authorizes the door. REFUTED = at least one refuter refuted; do NOT merge, re-work and re-gate. ESCALATE / HOLD = the models could not converge (reviewer deadlock, N attempts exhausted, or an explicit judgment flag); do NOT merge, surface for human resolution. Only CONFIRMED authorizes the merge; everything else fail-closed HOLDs."
+        },
+        "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "RFC3339 timestamp when the panel recorded this verdict."
+        },
+        "attempt": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Which re-gate attempt produced this verdict (default 1). After N (default 3) the disposition must be ESCALATE/HOLD, never CONFIRMED on a streak of REFUTEDs."
+        },
+        "refuters": {
+            "type": "array",
+            "minItems": 2,
+            "description": "The cross-family refuter panel. At least two refuters from at least two distinct model families, each prompted to refute, each read-only and stake-free. The merge requires EVERY refuter to be CONFIRMED and at least two distinct families represented.",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["family", "verdict"],
+                "properties": {
+                    "family": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "The reviewer's model family (e.g. 'claude'/'fable', 'codex'/'gpt', 'gemini'/'agy'). At least two DISTINCT families must appear across the refuters."
+                    },
+                    "reviewer": {
+                        "type": "string",
+                        "description": "Optional reviewer/session identifier (must differ from the authoring worker session)."
+                    },
+                    "verdict": {
+                        "type": "string",
+                        "enum": ["CONFIRMED", "REFUTED"],
+                        "description": "This refuter's verdict. Both refuters must be CONFIRMED for the panel to authorize the door."
+                    },
+                    "evidence": {
+                        "type": "string",
+                        "description": "Optional pointer to the grounding evidence (the real tests/build that ran, the council narrative anchor, the pinned-fixture sweep)."
+                    }
+                }
+            }
+        },
+        "council_artifact": {
+            "type": "string",
+            "description": "Optional path to the free-form council narrative (.agents/council/YYYY-MM-DD-pre-land-<slug>.md) this summary was distilled from."
+        }
+    }
+}

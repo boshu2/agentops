@@ -1180,7 +1180,7 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "e070e1d2e3fe8ab5009dd9567e70697d6ee00f057c7e2331e979e591aa5259ad",
+      "source_hash": "2cacbf2aa88edc23acc5e8006adccea2dc9c6ae92e2d6b65cca8f2e52a90f284",
       "generated_hash": "23dcc9ad55148815116337b9d53f2680df800c9df9eada11755fd073d5c2f3ed"
     },
     {
@@ -1258,7 +1258,7 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "09f824403e6217984b647f324f5962a84a37a9b5250beae4f89b837931478ac8",
+      "source_hash": "153cc80663fb0ccfe0d20cb05d3226a8e85868989f667c9e7f000e5154c83d57",
       "generated_hash": "53a3353af8ad80a64bed46470578a928d8794efa3d9cd2644502b1bfba608b9f"
     },
     {
@@ -1408,7 +1408,7 @@
     {
       "name": "pre-land-refuters",
       "source_skill": "skills/pre-land-refuters",
-      "source_hash": "724667060175b557b287f17c782dcdeffc9a129d43e2dd7b41a07aa5e3e4c272",
+      "source_hash": "3c9fdeded38f63f64afcac2c1c269e745201a4939fcc171711feeace445986eb",
       "generated_hash": "d690bcee73e2b64f0fea3333a07f9f473ad75b1e2227e58b3e2f3875d0b5ca7c"
     },
     {
@@ -1690,7 +1690,7 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "60abad967af29569d087fd2dcb8d8d7fb9e77929fdce98adeccbb14782385161",
+      "source_hash": "72b798b429a071a6939de82930688f8a5381cac705b8f23a647d081e9a0640b7",
       "generated_hash": "9e4193b727967f14e7f1be94a2d341055f9ed24c359a9027f7fda13ba0d2d63e"
     },
     {
