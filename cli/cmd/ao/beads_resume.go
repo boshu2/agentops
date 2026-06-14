@@ -226,7 +226,10 @@ func runBeadsResume(cmd *cobra.Command, args []string) error {
 
 	// 8. Optional JSON-to-stdout.
 	if beadsResumeJSON {
-		raw, _ := json.Marshal(transferred)
+		raw, err := json.Marshal(transferred)
+		if err != nil {
+			return fmt.Errorf("marshal transferred claim: %w", err)
+		}
 		fmt.Fprintln(cmd.OutOrStdout(), string(raw))
 	} else {
 		fmt.Fprintf(cmd.OutOrStdout(),
