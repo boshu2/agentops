@@ -390,7 +390,7 @@ func hashGroundTruthRef(rows []evalsub.GroundTruthRow, ref string) string {
 	// Stable serialization: sort by id, marshal each as canonical JSON.
 	var buf []byte
 	for _, m := range matches {
-		bs, _ := json.Marshal(m)
+		bs, _ := json.Marshal(m) //nolint:errcheck // m is an in-memory record struct; marshal cannot fail and CanonicalizeJSON below re-validates the bytes
 		canon, err := evalsub.CanonicalizeJSON(bs)
 		if err != nil {
 			canon = bs
