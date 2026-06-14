@@ -77,5 +77,5 @@ redirects) before judges deliberate. Without it, pre-mortem is unfalsifiable.
 
 - `skills/rpi/SKILL.md`
 - `skills/discovery/SKILL.md`
-- `skills/validation/SKILL.md`
+- `skills/validate/SKILL.md`
 - `skills/shared/references/strict-delegation-contract.md`
