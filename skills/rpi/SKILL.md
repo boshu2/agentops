@@ -151,7 +151,7 @@ Enter at the routed phase and run every phase after it.
    or through phase-isolated skill transport. Add `--strict-surfaces` when
    `--quality` is set. On FAIL, extract findings, re-run `/crank` on the same
    objective, then re-run `/validate`, up to 3 total validation attempts. On
-   DONE, record `ao ratchet record vibe 2>/dev/null || true`. This Phase-3 `/validate` is the **bead-acceptance pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)) — once per RPI objective at acceptance, not per slice. On `full`-complexity arcs (100+ files, factory regen, contract-test repoints, capability removal), DONE is a claim: invoke [`/pre-land-refuters`](../pre-land-refuters/SKILL.md) at the **merge-to-main pawl** (before push), never per slice; REFUTED findings re-crank like a validation FAIL.
+   DONE, record `ao ratchet record vibe 2>/dev/null || true`. This Phase-3 `/validate` is the **bead-acceptance pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)) — once per RPI objective at acceptance, not per slice. **The merge-to-main pawl fires regardless of complexity:** any work crossing the shared-trunk door — fast/standard included — invokes the cross-family gate [`/pre-land-refuters`](../pre-land-refuters/SKILL.md) before push (pawls.md makes mutate-shared-trunk complexity-independent). Complexity scales the gate's DEPTH, never exempts it: `full` arcs (100+ files, factory regen, contract-test repoints, capability removal) get full council; fast/standard get the 2-judge minimum panel — neither skips it. REFUTED findings re-crank like a validation FAIL; the gate is the door, never per slice.
 4. **Report:** summarize phase verdicts and epic status using
    [references/report-template.md](references/report-template.md). With
    `--loop`, restart from discovery on FAIL while `cycle < max_cycles`. With
@@ -170,11 +170,11 @@ schemas and archive paths.
 
 ## Complexity-Scaled Gates
 
-> Heavy `full` escalation = the **pawl** gate ([pawls.md](../../docs/contracts/pawls.md)): fires at the bead-acceptance / merge-to-main door ONCE, never per slice/wave — chaos between pawls.
+> The pawl gates ([pawls.md](../../docs/contracts/pawls.md)) fire at the irreversible doors — bead-acceptance and merge-to-main — never per slice/wave; chaos between pawls. The merge-to-main pawl fires **regardless of complexity** (see Phase 3); complexity below only scales the DEPTH of the gate, never whether it runs.
 
-All three scale the same way: `low`/`fast` and `medium`/`standard` → inline (`--quick`); `high`/`full` → full council, 2-judge minimum; max 3 total attempts.
+Complexity scales the gate's depth: `low`/`fast` and `medium`/`standard` → 2-judge minimum panel (inline / `--quick`); `high`/`full` → full council; max 3 total attempts. The gate still fires at the door at every complexity.
 
-- **Pre-mortem** (at the planning pawl): `high`/`full` → full council, 2-judge minimum; max 3 total attempts.
+- **Pre-mortem** (planning-time, chaos-side — NOT a pawl): `high`/`full` → full council, 2-judge minimum; max 3 total attempts. Pre-mortem stress-tests the plan before work; it is not an irreversible door and carries no heavy gate of its own outside this optional `full`-arc depth.
 - **Final Vibe** (at the bead-acceptance pawl): `high`/`full` → full council, 2-judge minimum; max 3 total attempts.
 - **Post-mortem** (STEP 2, at the bead-acceptance pawl): `high`/`full` → full council; same scale as above.
 
