@@ -93,20 +93,96 @@ activate() {
   export PATH="$TMP/bin:$ORIG_PATH"
 }
 
-run_reconcile() {
-  run "$SCRIPT" --poll-sleep 0 --poll-max 2 "$@"
+# Seed a cross-family pawl verdict into the per-test verdict dir, so the
+# fail-closed pawl gate authorizes (or refuses) the merge. Uses the real
+# scripts/pawl-verdict.sh writer.
+#   seed_verdict <bead> <pr> <disposition> <ref1> [ref2 ...]
+# where each refN is "family:CONFIRMED|REFUTED".
+seed_verdict() {
+  local bead="$1" pr="$2" disp="$3"; shift 3
+  local args=()
+  local r
+  for r in "$@"; do args+=(--refuter "$r"); done
+  "$REPO_ROOT/scripts/pawl-verdict.sh" write "$bead" "$pr" \
+    --disposition "$disp" "${args[@]}" --dir "$TMP/verdicts" >/dev/null
 }
 
-@test "all-green: merges + closes bead, exit 0" {
+# All reconcile runs point at the per-test verdict dir (empty by default =>
+# fail-closed HOLD unless a test seeds a verdict).
+run_reconcile() {
+  run "$SCRIPT" --poll-sleep 0 --poll-max 2 --verdict-dir "$TMP/verdicts" "$@"
+}
+
+@test "all-green WITH CONFIRMED cross-family verdict: merges + closes bead, exit 0" {
   printf '%s' '[{"name":"correctness (ubuntu-latest)","state":"SUCCESS"},{"name":"validate","state":"SUCCESS"},{"name":"claude-review","state":"SUCCESS"}]' > "$TMP/checks"
   printf 'MERGED' > "$TMP/pr_state"
   activate
+  seed_verdict ag-700 700 CONFIRMED claude:CONFIRMED codex:CONFIRMED
   run_reconcile 700 ag-700
   [ "$status" -eq 0 ]
   [[ "$output" == *"MERGED: PR 700"* ]]
   [[ "$output" == *"CLOSED bead=ag-700"* ]]
   grep -qx 'merge 700' "$ACTION_LOG"
   grep -qx 'close ag-700' "$ACTION_LOG"
+}
+
+@test "all-green but NO pawl verdict: HOLD exit 5, no merge, no close (green CI is NOT sufficient)" {
+  printf '%s' '[{"name":"correctness (ubuntu-latest)","state":"SUCCESS"},{"name":"validate","state":"SUCCESS"},{"name":"claude-review","state":"SUCCESS"}]' > "$TMP/checks"
+  printf 'MERGED' > "$TMP/pr_state"
+  activate
+  # No seed_verdict: the verdict dir is empty => fail-closed.
+  run_reconcile 720 ag-720
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"PAWL-HOLD"* ]]
+  ! grep -q '^merge' "$ACTION_LOG"
+  ! grep -q '^close' "$ACTION_LOG"
+}
+
+@test "all-green but REFUTED verdict: HOLD exit 5, no merge, no close" {
+  printf '%s' '[{"name":"validate","state":"SUCCESS"}]' > "$TMP/checks"
+  printf 'MERGED' > "$TMP/pr_state"
+  activate
+  seed_verdict ag-721 721 REFUTED claude:CONFIRMED codex:REFUTED
+  run_reconcile 721 ag-721
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"PAWL-HOLD"* ]]
+  ! grep -q '^merge' "$ACTION_LOG"
+  ! grep -q '^close' "$ACTION_LOG"
+}
+
+@test "all-green but ESCALATE verdict (non-convergence): HOLD exit 5, no merge" {
+  printf '%s' '[{"name":"validate","state":"SUCCESS"}]' > "$TMP/checks"
+  printf 'MERGED' > "$TMP/pr_state"
+  activate
+  seed_verdict ag-722 722 ESCALATE claude:CONFIRMED codex:CONFIRMED
+  run_reconcile 722 ag-722
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"PAWL-HOLD"* ]]
+  ! grep -q '^merge' "$ACTION_LOG"
+  ! grep -q '^close' "$ACTION_LOG"
+}
+
+@test "all-green but single-family verdict: HOLD exit 5 (single-family is NOT cross-family)" {
+  printf '%s' '[{"name":"validate","state":"SUCCESS"}]' > "$TMP/checks"
+  printf 'MERGED' > "$TMP/pr_state"
+  activate
+  seed_verdict ag-723 723 CONFIRMED claude:CONFIRMED claude:CONFIRMED
+  run_reconcile 723 ag-723
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"PAWL-HOLD"* ]]
+  ! grep -q '^merge' "$ACTION_LOG"
+}
+
+@test "all-green but verdict for a DIFFERENT pr: HOLD exit 5 (verdict does not transfer)" {
+  printf '%s' '[{"name":"validate","state":"SUCCESS"}]' > "$TMP/checks"
+  printf 'MERGED' > "$TMP/pr_state"
+  activate
+  # CONFIRMED verdict exists for this bead but pinned to PR 999, not 724.
+  seed_verdict ag-724 999 CONFIRMED claude:CONFIRMED codex:CONFIRMED
+  run_reconcile 724 ag-724
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"PAWL-HOLD"* ]]
+  ! grep -q '^merge' "$ACTION_LOG"
 }
 
 @test "substantive fail: BLOCKED exit 2, no merge, no close" {
@@ -120,10 +196,11 @@ run_reconcile() {
   ! grep -q '^close' "$ACTION_LOG"
 }
 
-@test "claude-review failure alone is NOT blocking: merges, exit 0" {
+@test "claude-review failure alone is NOT blocking: merges (with verdict), exit 0" {
   printf '%s' '[{"name":"validate","state":"SUCCESS"},{"name":"claude-review","state":"FAILURE"}]' > "$TMP/checks"
   printf 'MERGED' > "$TMP/pr_state"
   activate
+  seed_verdict ag-702 702 CONFIRMED claude:CONFIRMED codex:CONFIRMED
   run_reconcile 702 ag-702
   [ "$status" -eq 0 ]
   grep -qx 'merge 702' "$ACTION_LOG"
@@ -136,6 +213,7 @@ run_reconcile() {
   printf '%s' '[{"name":"correctness (ubuntu-latest)","state":"SUCCESS"},{"name":"validate","state":"SUCCESS"}]' > "$TMP/checks.after"
   printf 'MERGED' > "$TMP/pr_state"
   activate
+  seed_verdict ag-703 703 CONFIRMED claude:CONFIRMED codex:CONFIRMED
   run_reconcile 703 ag-703
   [ "$status" -eq 0 ]
   grep -qx 'rerun' "$ACTION_LOG"
@@ -158,16 +236,18 @@ run_reconcile() {
   printf '%s' '[{"name":"validate","state":"SUCCESS"}]' > "$TMP/checks"
   printf 'OPEN' > "$TMP/pr_state"
   activate
+  seed_verdict ag-705 705 CONFIRMED claude:CONFIRMED codex:CONFIRMED
   run_reconcile 705 ag-705
   [ "$status" -eq 3 ]
   [[ "$output" == *"merge-FAILED"* ]]
   ! grep -q '^close' "$ACTION_LOG"
 }
 
-@test "dry-run on green: no merge, no close, exit 0" {
+@test "dry-run on green WITH verdict: no merge, no close, exit 0" {
   printf '%s' '[{"name":"validate","state":"SUCCESS"}]' > "$TMP/checks"
   printf 'MERGED' > "$TMP/pr_state"
   activate
+  seed_verdict ag-706 706 CONFIRMED claude:CONFIRMED codex:CONFIRMED
   run_reconcile --dry-run 706 ag-706
   [ "$status" -eq 0 ]
   [[ "$output" == *"DRY-RUN"* ]]

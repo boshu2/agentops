@@ -150,11 +150,11 @@ When crank drives PRs to `main` itself (orchestrator-merge model), reconcile eac
 1. **Poll** `gh pr checks <pr>` until all checks are terminal.
 2. **Block only on substantive fails.** A failing `claude-review` on a usage-limit message is non-blocking; only substantive non-`claude-review` failures block the merge.
 3. **Fix-forward stale/transient reds — never revert green work.** `correctness (ubuntu-latest)` tar-cache-restore exit-2 → `gh run rerun` **once**, then believe. `registry.json` / derived-surface or `contracts-sync` drift from another PR → `make regen-all` (scoped via `--skills` when only some skills changed), commit, push.
-4. **Merge when green:** `gh pr merge --squash --admin`.
+4. **Merge only when green AND cross-family-CONFIRMED.** Green CI is necessary but **NOT sufficient** — merge-to-main is the **mutate-shared-trunk pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). A CONFIRMED cross-family pawl verdict ([`/pre-land-refuters`](../pre-land-refuters/SKILL.md): both refuters CONFIRMED, ≥2 distinct model families) tied to this bead+PR must exist, or the merge is **refused (HOLD)**. REFUTED → re-work the findings and re-gate; ESCALATE / N-attempts-exhausted → HOLD for human resolution (never auto-land on non-convergence). Then `gh pr merge --squash --admin`.
 5. **Close on confirmed-MERGED only.** `bd close` a child bead ONLY after `gh pr view <pr> --json state -q .state` returns `MERGED` — never on a log line or batch `bd --json` query (those flake to null/0).
 6. **Epic-close gate.** **NEVER close a parent epic before EVERY child PR is independently confirmed `MERGED`** — re-query `gh pr view --json state` per child first. One non-merged child aborts the close. (Post-mortem governance checkpoint: this is a hard gate, not advisory.)
 
-> Enforce steps 5–6 with the committed scripts, not by hand: `scripts/reconcile-pr.sh <pr> <bead> [--epic <epic>]` (polls checks, reruns the lone correctness-ubuntu flake once, merges `--squash --admin`, closes the bead only on confirmed `MERGED`) and `scripts/check-epic-children-closed.sh <epic>` (the no-epic-close-with-open-child gate). Both are hermetic-tested under `tests/scripts/`.
+> Enforce steps 4–6 with the committed scripts, not by hand: `scripts/reconcile-pr.sh <pr> <bead> [--epic <epic>]` (polls checks, reruns the lone correctness-ubuntu flake once, **verifies a CONFIRMED cross-family pawl verdict via `scripts/pawl-verdict.sh check <bead> <pr>` — exit 5/HOLD with no merge if absent/REFUTED/ESCALATE/single-family**, merges `--squash --admin`, closes the bead only on confirmed `MERGED`) and `scripts/check-epic-children-closed.sh <epic>` (the no-epic-close-with-open-child gate). Both are hermetic-tested under `tests/scripts/`.
 
 ## The FIRE Loop
 

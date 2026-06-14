@@ -1,6 +1,6 @@
 ---
 name: pre-land-refuters
-description: "Dispatch unbiased refuters (fresh Fable + read-only codex exec) to attack a completion claim before landing a large change. Triggers: pre-land validation, refute before push."
+description: "Dispatch cross-family refuters to attack a completion claim at the mutate-shared-trunk pawl before landing, at any complexity. Triggers: pre-land validation, refute pre-push."
 practices:
 - llm-eval-harness
 - ai-assisted-dev
@@ -85,9 +85,23 @@ there, just run it.
    refuter).
 5. **Triage findings**: fix each forward; classify pre-existing vs introduced;
    re-run only the affected validators.
-6. **Land** (commit → merge upstream if it moved → gate → push), then re-run
-   the pinned sweep on the landed tree and record the panel verdicts in
-   `.agents/council/YYYY-MM-DD-pre-land-<slug>.md`.
+6. **Write the machine-checkable verdict, THEN land.** Before the merge/push,
+   record the panel result as the cross-family pawl verdict the merge path
+   enforces against:
+   ```bash
+   scripts/pawl-verdict.sh write <bead> <pr> \
+     --disposition CONFIRMED \
+     --refuter claude:CONFIRMED --refuter codex:CONFIRMED \
+     --council .agents/council/$(date +%F)-pre-land-<slug>.md
+   ```
+   (disposition `REFUTED` on any refuted refuter; `ESCALATE`/`HOLD` on
+   non-convergence — those make the merge path HOLD, exit 5.) `scripts/reconcile-pr.sh`
+   reads this with `scripts/pawl-verdict.sh check <bead> <pr>` and **refuses to merge
+   without a CONFIRMED, cross-family, this-bead+PR verdict** — green CI alone never
+   authorizes the door. Then land (commit → merge upstream if it moved → gate →
+   push), re-run the pinned sweep on the landed tree, and write the free-form
+   narrative in `.agents/council/YYYY-MM-DD-pre-land-<slug>.md`
+   (the human-readable companion to the checkable verdict).
 
 ## Escalation — autonomous panel, human only on non-convergence
 
@@ -104,6 +118,13 @@ pawl by default — they are the exception. See [docs/contracts/pawls.md](../../
   (2) **N attempts exhausted** — still REFUTED after the default 3 re-work/re-gate cycles;
   (3) a refuter **explicitly flags a value / irreversibility judgment** models should not make
   alone. This is the **andon** ("Hey! Listen!") — rare, earned, never the default.
+
+**ESCALATE / N-attempts-exhausted means HOLD — the door stays closed until a human resolves
+it.** Record the disposition as `ESCALATE` (or `HOLD`) in the machine-checkable verdict and
+**do not land**: a non-convergent pawl is never auto-merged. The enforcing merge path
+(`scripts/reconcile-pr.sh` → `scripts/pawl-verdict.sh check`) exits **5 (HOLD: no merge, no
+close)** on any disposition that is not `CONFIRMED`. Only both-refuters-`CONFIRMED`, ≥2
+distinct families, tied to this bead+PR, opens the door (fail-closed by construction).
 
 Even fully unattended, the gate fires at every pawl. Escalation is the exception, not the gate.
 
@@ -143,6 +164,6 @@ parallel → fix findings forward → land → re-sweep pins.
 - [codex-exec](../codex-exec/SKILL.md) — the codex refuter lane
 - [codex-approval](../codex-approval/SKILL.md) — the inverse direction (Codex asks Fable)
 - [red-team](../red-team/SKILL.md) — adversarial probing of docs/plans (pre-work); this skill is pre-land
-- [rpi](../rpi/SKILL.md) — invokes this panel at Phase 3 exit on full-complexity arcs
+- [rpi](../rpi/SKILL.md) — invokes this panel at the merge-to-main pawl **regardless of complexity** (rpi:154); complexity scales the panel's DEPTH (full council vs 2-judge minimum), never exempts the gate
 - [pre-mortem](../pre-mortem/SKILL.md) — plan-time twin (move 4); this skill is the landing twin (move 6 exit)
 - [post-mortem](../post-mortem/SKILL.md) — consumes the council artifact as landing evidence (move 7)

@@ -21,8 +21,13 @@
 #   2  blocked — substantive check(s) failing; did NOT merge, did NOT close
 #   3  merge attempted but PR state is not MERGED; bead NOT closed
 #   4  usage / missing-dependency / bad-input error
+#   5  pawl-gate HOLD — green CI but NO CONFIRMED cross-family verdict (or REFUTED /
+#      ESCALATE / single-family); did NOT merge, did NOT close. Fail-closed: green CI
+#      is necessary but NOT sufficient at the mutate-shared-trunk door
+#      (docs/contracts/pawls.md). Surface for human resolution on non-convergence.
 #
 # Dependencies: gh, bd, jq (stubbed via PATH in the hermetic bats suite).
+# The cross-family pawl verdict is read via scripts/pawl-verdict.sh (sibling).
 
 set -uo pipefail
 
@@ -34,6 +39,9 @@ EPIC=""
 POLL_MAX=30
 POLL_SLEEP=20
 DRY_RUN=false
+# Where the cross-family pawl verdict lives (see scripts/pawl-verdict.sh).
+# Overridable for hermetic tests; defaults to the repo's untracked runtime dir.
+VERDICT_DIR="$SCRIPT_DIR/../.agents/pawl-verdicts"
 
 # Checks we never treat as blocking:
 #   claude-review — soft-fails on usage-limit; advisory, not a merge gate.
@@ -55,10 +63,15 @@ Options:
                      if check-epic-children-closed.sh reports no open children.
   --poll-max N       Max poll iterations waiting for pending checks (default 30).
   --poll-sleep S     Seconds between polls (default 20).
+  --verdict-dir D    Directory holding the cross-family pawl verdict for this
+                     bead (default .agents/pawl-verdicts). Green CI is necessary
+                     but NOT sufficient — a CONFIRMED cross-family verdict tied
+                     to this bead+PR must exist or the merge is refused (HOLD).
   --dry-run          Print actions; do not merge or mutate beads.
   -h, --help         Show this help.
 
-Exit codes: 0 merged+closed · 1 gate-fail · 2 blocked · 3 merge-fail · 4 usage.
+Exit codes: 0 merged+closed · 1 gate-fail · 2 blocked · 3 merge-fail ·
+            4 usage · 5 pawl-gate HOLD (green CI, no CONFIRMED cross-family verdict).
 USAGE
 }
 
@@ -71,6 +84,7 @@ while [[ $# -gt 0 ]]; do
     --epic)       EPIC="${2:-}"; shift 2 || die "--epic needs a value" ;;
     --poll-max)   POLL_MAX="${2:-}"; shift 2 || die "--poll-max needs a value" ;;
     --poll-sleep) POLL_SLEEP="${2:-}"; shift 2 || die "--poll-sleep needs a value" ;;
+    --verdict-dir) VERDICT_DIR="${2:-}"; shift 2 || die "--verdict-dir needs a value" ;;
     --dry-run)    DRY_RUN=true; shift ;;
     -h|--help)    usage; exit 0 ;;
     --*)          usage; die "unknown flag: $1" ;;
@@ -176,6 +190,19 @@ fi
 if [[ -n "$fails" ]]; then
   echo "BLOCKED fails=[$(echo "$fails" | paste -sd, -)]" >&2
   exit 2
+fi
+
+# --- cross-family pawl gate (FAIL-CLOSED) ------------------------------------
+# Green CI is necessary but NOT sufficient at the mutate-shared-trunk door
+# (docs/contracts/pawls.md). Before merging, a CONFIRMED cross-family verdict
+# (both refuters CONFIRMED, >=2 distinct families) tied to THIS bead+PR MUST
+# exist. Absent / REFUTED / ESCALATE / single-family => HOLD (exit 5): do NOT
+# merge, do NOT close. Non-convergence surfaces for human resolution.
+pawl_status=0
+"$SCRIPT_DIR/pawl-verdict.sh" check "$BEAD" "$PR" --dir "$VERDICT_DIR" || pawl_status=$?
+if [[ "$pawl_status" -ne 0 ]]; then
+  echo "PAWL-HOLD: green CI but no CONFIRMED cross-family verdict for bead=$BEAD PR=$PR (pawl-verdict.sh check exit=$pawl_status) — did NOT merge, did NOT close. Fail-closed; surface for human on non-convergence." >&2
+  exit 5
 fi
 
 # --- merge -------------------------------------------------------------------

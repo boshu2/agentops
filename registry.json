@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-14T15:53:19Z",
+  "generated_at": "2026-06-14T16:14:23Z",
   "summary": {
     "skills": 72,
     "hooks": 0,
@@ -2989,7 +2989,7 @@
       "hex_role": "driving-adapter",
       "tier": "judgment",
       "capability_class": "validation",
-      "purpose": "Dispatch unbiased refuters (fresh Fable + read-only codex exec) to attack a completion claim before landing a large change. Triggers: pre-land validation, refute before push.",
+      "purpose": "Dispatch cross-family refuters to attack a completion claim at the mutate-shared-trunk pawl before landing, at any complexity. Triggers: pre-land validation, refute pre-push.",
       "status": "active",
       "disposition": "keep",
       "runtime_targets": [
