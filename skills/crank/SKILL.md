@@ -164,7 +164,7 @@ Crank repeats FIRE (Find → Ignite → Reap → Vibe → Escalate) for each wav
 
 - Auto-detect tracking (`bd` first, TaskList fallback) and use the provided epic or plan input directly.
 - Use `/swarm` for every wave, preserve fresh per-issue context, and refuse to continue past unresolved conflicts or the 50-wave cap.
-- Validate once per wave, fix CRITICAL findings before completion, and keep looping until every issue/task is done.
+- Per-wave validation is **chaos**, not a pawl ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)): the wave-acceptance check uses the **lightweight inline judges** described in `references/wave-patterns.md` ("Wave Acceptance Check") — no skill invocations, no cross-family panel, no context explosion. Fix CRITICAL findings before advancing and keep looping until every issue/task is done. The **heavy** validation (full council, `/validate --mixed`, `/pre-land-refuters`) is reserved for the **bead-acceptance / merge-to-main pawl** — the Final Batched Validation (Step 7) and downstream `/validate` closeout, NOT per intermediate wave.
 - Load learnings at the start, extract learnings at the end, and always emit `DONE`, `BLOCKED`, or `PARTIAL`.
 
 ### Folded triggers (ag-s43tg wave 1): `burndown` + `ship-loop` route here
