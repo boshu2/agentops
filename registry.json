@@ -1,6 +1,7 @@
 {
   "schema_version": 2,
   "generated_at": "2026-06-14T20:21:27Z",
+  "generated_at": "2026-06-14T20:23:23Z",
   "summary": {
     "skills": 72,
     "hooks": 0,
@@ -131,7 +132,7 @@
         "path": "skills/cc-hooks/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 4
+        "reference_count": 5
       },
       {
         "name": "codex-approval",
@@ -2013,7 +2014,7 @@
       "produces": [],
       "drives_commands": [],
       "path": "skills/cc-hooks/",
-      "references": 4
+      "references": 5
     },
     {
       "sku": "skill:codex-approval",
