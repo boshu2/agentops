@@ -383,7 +383,7 @@ None of the direct competitors has a full Karpathy-style public wiki loop as a c
 
 Reference: Anthropic Code-with-Claude announcement, 2026-05-06. Dreaming research preview plus outcomes, multiagent orchestration, and webhooks shipped in public beta on the Claude Platform.
 
-This is Anthropic externalizing the architecture AgentOps has been implementing. Memory + dream cycle + grader-graded outcomes + lead/specialist orchestration are the same primitives AgentOps ships locally. The wedge for AgentOps was always the deployment story, and that wedge is unchanged: this is off the API, cross-vendor, and the corpus stays in `.agents/` on disk.
+This is Anthropic externalizing the architecture AgentOps has been implementing. Memory + dream cycle + grader-graded outcomes + lead/specialist orchestration are the same primitives AgentOps ships locally — and binding, cross-context, grader-gated review is now table stakes, not a wedge (CodeRabbit, Qodo, and GitHub Copilot Code Review all ship binding cross-vendor pre-merge review). What stays distinct for AgentOps is the ownership story, and it is unchanged: this is off the API, cross-vendor, and the corpus stays in `.agents/` on disk.
 
 Pattern:
 
@@ -409,7 +409,7 @@ Capability mapping against AgentOps:
 
 Competitive read:
 
-This is the validation event for the AgentOps thesis, not a competitive threat. Anthropic confirms the architecture; what stays yours is the corpus the system compounds on your behalf. Readers who want these primitives running off the API, against any vendor's model, with the corpus owned locally land at AgentOps.
+This is the validation event for the AgentOps thesis, not a competitive threat. Anthropic confirms the architecture; what stays yours is the corpus the system compounds on your behalf. The primitives — including the cross-context review gate — are now floor across the field, not a differentiator; the durable differentiator is ownership (off-API, cross-vendor, corpus owned locally), and the only candidate quality moat is a measured corpus delta that is still unproven. Readers who want these primitives running off the API, against any vendor's model, with the corpus owned locally land at AgentOps.
 
 ## Borrowable Primitives
 
@@ -441,6 +441,6 @@ AgentOps should compare itself against three distinct competitor archetypes:
 - Compound Engineer: readable solution-library compounding and refresh.
 - GSD/SDD/Superpowers: ergonomic workflow discipline around plans, specs, tasks, and skills.
 
-Anthropic's 2026-05-06 Managed Agents launch ships these primitives natively on the Claude Platform; the AgentOps wedge is the off-API + cross-vendor deployment story, not the primitives themselves.
+Anthropic's 2026-05-06 Managed Agents launch ships these primitives natively on the Claude Platform; the primitives themselves — memory, dream, graded outcomes, and the cross-context review gate — are table stakes, not the differentiator. AgentOps' durable differentiator is ownership: the off-API + cross-vendor + locally-owned-corpus deployment story. The only candidate quality moat is a measured corpus delta, which is still unproven.
 
 AgentOps wins when it proves the whole loop is operational: capture evidence, score it, promote it, inject it with citations, validate that it helped, prune what decays, and let Dream run the maintenance work without touching source code.
