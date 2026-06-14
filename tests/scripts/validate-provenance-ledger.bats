@@ -116,3 +116,43 @@ JSON
     run "$SCRIPT" "$tmp"
     [ "$status" -ne 0 ]
 }
+
+@test "the committed ledger exists and is the seeded SOT (ag-8jf97)" {
+    [ -f "$REPO_ROOT/docs/provenance/ledger.jsonl" ]
+    # First line is the genesis row: empty prev_hash, the seeding bead as from_id.
+    head -1 "$REPO_ROOT/docs/provenance/ledger.jsonl" | grep -q '"prev_hash":""'
+    head -1 "$REPO_ROOT/docs/provenance/ledger.jsonl" | grep -q '"from_id":"ag-8jf97"'
+}
+
+@test "--gate passes on the committed (intact) ledger" {
+    AO="$REPO_ROOT/cli/bin/ao"
+    [ -x "$AO" ] || skip "ao binary not built"
+    run env AO_BIN="$AO" "$SCRIPT" --gate
+    [ "$status" -eq 0 ]
+    echo "$output" | grep -q "hash chain intact"
+}
+
+@test "verify FAILS on a tampered committed ledger and names the broken line (windshield)" {
+    AO="$REPO_ROOT/cli/bin/ao"
+    [ -x "$AO" ] || skip "ao binary not built"
+    # Repo-shaped throwaway dir whose ledger is a copy of the committed one with
+    # one payload field flipped but the committed hashes left stale -> a lying
+    # instrument. ao provenance verify resolves the ledger by walking up to a dir
+    # containing docs/ + schemas/, so this isolated tree is verified, not the real
+    # repo, and the tamper is caught in place at its line.
+    work="$BATS_TEST_TMPDIR/tamperrepo"
+    mkdir -p "$work/docs/provenance" "$work/schemas"
+    cp "$SCHEMA" "$work/schemas/"
+    python3 - "$REPO_ROOT/docs/provenance/ledger.jsonl" "$work/docs/provenance/ledger.jsonl" <<'PY'
+import json, sys
+src, dst = sys.argv[1], sys.argv[2]
+lines = open(src).read().splitlines()
+e = json.loads(lines[0]); e["to_id"] = "evil-injected"   # alter content, keep stale hashes
+lines[0] = json.dumps(e)
+open(dst, "w").write("\n".join(lines) + "\n")
+PY
+    run bash -c "cd '$work' && '$AO' provenance verify"
+    [ "$status" -ne 0 ]
+    echo "$output" | grep -q "line 1"
+    echo "$output" | grep -qi "broken\|mismatch"
+}

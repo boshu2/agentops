@@ -1270,6 +1270,13 @@
     },
     {
       "category": "public-tested",
+      "command": "provenance verify",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "quick-start",
       "coverage_status": "covered",
       "kind": "leaf",
