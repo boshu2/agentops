@@ -67,7 +67,10 @@ var scenarioListCmd = &cobra.Command{
 			return nil
 		}
 
-		out, _ := json.MarshalIndent(scenarios, "", "  ")
+		out, err := json.MarshalIndent(scenarios, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal scenarios: %w", err)
+		}
 		fmt.Fprintln(cmd.OutOrStdout(), string(out))
 		return nil
 	},
