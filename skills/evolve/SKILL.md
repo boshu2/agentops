@@ -177,9 +177,9 @@ Then load the repo-local autodev program contract when it exists. The execution 
 
 Recover cycle number, generator streaks, and the last claimed work item from disk (survives context compaction). Initialize `CYCLE` from `cycle-history.jsonl`, recover `IDLE_STREAK`, `GENERATOR_EMPTY_STREAK`, `LAST_SELECTED_SOURCE`, and `CLAIMED_WORK_REF` from `session-state.json`.
 
-**Circuit breakers:** Time-based (60 min no productive work).
+**Circuit breakers (tunable; also the pawl-escalation governor):** Time-based (60 min no productive work) · max-cycles / max-attempts cap · cost/quota budget · oscillation/no-forward-progress. These are the **same breakers that govern pawl escalation** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md) "Escalation — the circuit-breaker model"): a REFUTED pawl auto-redoes, and a human is pulled in only when one of these breakers trips. Thresholds are configurable (`EVOLVE_KILL_TTL_DAYS`, `--max-cycles`, max-attempts), not hard-coded.
 
-**Oscillation quarantine:** Pre-populate quarantine list from cycle history (scan for goals with 3+ improved-to-fail transitions). See `references/oscillation.md`.
+**Oscillation quarantine:** Pre-populate quarantine list from cycle history (scan for goals with 3+ improved-to-fail transitions) — this is the **oscillation / no-forward-progress breaker**. See `references/oscillation.md`.
 
 Parse flags: `--max-cycles=N` (default unlimited), `--dry-run`, `--beads-only`, `--skip-baseline`, `--quality`, `--compile`.
 
@@ -377,21 +377,29 @@ PR merge is — accumulation + a green local gate are necessary but **NOT
 sufficient**. Where the repo takes PRs, route through `scripts/reconcile-pr.sh`
 (which enforces the verdict, below). Where a direct push is taken, the same
 CONFIRMED cross-family pawl verdict ([`/pre-land-refuters`](../pre-land-refuters/SKILL.md):
-both refuters CONFIRMED, ≥2 distinct families) must exist first — never push the
-shared trunk on green-alone; REFUTED → re-gate, ESCALATE / N-exhausted → HOLD for
-human resolution (pawls.md "Escalation"):
+both refuters CONFIRMED, ≥2 distinct canonical families, real reviewer evidence,
+`head_sha` == the PR's current head) must exist first — never push the shared
+trunk on green-alone. **REFUTED → AUTO-REDO** (the loop re-gates on its own, no
+human); a human is pulled in **only when a tunable circuit breaker trips** —
+max-attempts, time budget, cost/quota, or oscillation/no-forward-progress — which
+the loop already governs via its evolve circuit breakers (Step 1 /
+[`scripts/evolve/halt-check.sh`](../../scripts/evolve/halt-check.sh)); on a
+breaker trip the disposition is `ESCALATE`/`HOLD` and the push is held (pawls.md
+"Escalation — the circuit-breaker model"):
 ```bash
 if [ $((PRODUCTIVE_THIS_SESSION % 5)) -eq 0 ] && [ "$PRODUCTIVE_THIS_SESSION" -gt 0 ]; then
-  # mutate-shared-trunk pawl: a CONFIRMED cross-family verdict gates the push.
-  if scripts/pawl-verdict.sh check "$BEAD" "$PR"; then
+  # mutate-shared-trunk pawl: an evidence-bound, commit-current CONFIRMED
+  # cross-family verdict gates the push. --head pins it to the live commit.
+  CUR_HEAD="$(gh pr view "$PR" --json headRefOid -q .headRefOid 2>/dev/null || true)"
+  if scripts/pawl-verdict.sh check "$BEAD" "$PR" --head "$CUR_HEAD"; then
     git push
   else
-    echo "PAWL-HOLD: no CONFIRMED cross-family verdict — not pushing the shared trunk" >&2
+    echo "PAWL-HOLD: no CONFIRMED, evidence-bound, commit-current cross-family verdict — not pushing the shared trunk" >&2
   fi
 fi
 ```
 
-**Drive to completion (orchestrator-merge model, soc-2drk).** Where the repo requires PRs (branch protection rejects direct `main` pushes), a productive cycle does not stop at "PR opened" — the loop is the orchestrator that drives each bead to *merged*. Ship the bead from its per-bead worktree as a PR (trailers `Closes-scenario` / `Bounded-context` / `Evidence`), wait for CI, and **squash-merge to main yourself once both gates clear** (`gh pr merge <N> --squash --admin`), then `bd close` the bead and remove the worktree. Merge-to-main is the **mutate-shared-trunk pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)): clearing it requires **green CI AND the pawl gate** — the cross-family review ([`/pre-land-refuters`](../pre-land-refuters/SKILL.md)) must CONFIRM. A green build is **not** a substitute for the cross-family gate at the shared-trunk door; CI alone never authorizes a merge. This is **enforced executably**, not by prose: `scripts/reconcile-pr.sh` calls `scripts/pawl-verdict.sh check <bead> <pr>` before `gh pr merge` and exits **5 (HOLD — no merge, no close)** unless a CONFIRMED cross-family pawl verdict (both refuters CONFIRMED, ≥2 distinct families) tied to this bead+PR exists. On a quality/test red, fix-and-repush or revert; never merge red; on a REFUTED pawl, re-work with findings and re-gate (autonomous, up to N attempts; escalate to human only on non-convergence — see pawls.md "Escalation"). The loop may dispatch sub-agents to implement and drives their PRs to merge too. The operator stays *on* the loop (intent + STOP marker), not *in* it (per-PR approval). This **supersedes "operator is the merge gate"** for the autonomous loop — see [ADR-0008](../../docs/adr/ADR-0008-evolve-intelligent-agile-operating-model.md).
+**Drive to completion (orchestrator-merge model, soc-2drk).** Where the repo requires PRs (branch protection rejects direct `main` pushes), a productive cycle does not stop at "PR opened" — the loop is the orchestrator that drives each bead to *merged*. Ship the bead from its per-bead worktree as a PR (trailers `Closes-scenario` / `Bounded-context` / `Evidence`), wait for CI, and **squash-merge to main yourself once both gates clear** (`gh pr merge <N> --squash --admin`), then `bd close` the bead and remove the worktree. Merge-to-main is the **mutate-shared-trunk pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)): clearing it requires **green CI AND the pawl gate** — the cross-family review ([`/pre-land-refuters`](../pre-land-refuters/SKILL.md)) must CONFIRM. A green build is **not** a substitute for the cross-family gate at the shared-trunk door; CI alone never authorizes a merge. This is **enforced executably**, not by prose: `scripts/reconcile-pr.sh` calls `scripts/pawl-verdict.sh check <bead> <pr>` before `gh pr merge` and exits **5 (HOLD — no merge, no close)** unless a CONFIRMED cross-family pawl verdict (both refuters CONFIRMED, ≥2 distinct families) tied to this bead+PR exists. On a quality/test red, fix-and-repush or revert; never merge red; on a **REFUTED pawl the loop AUTO-REDOES** — re-work with findings and re-gate, autonomously, no human. A human is escalated to **only when a tunable circuit breaker trips** (max-attempts / time budget / cost-quota / oscillation), governed by the same evolve circuit breakers the loop already runs (`scripts/evolve/halt-check.sh`) — see pawls.md "Escalation — the circuit-breaker model". The loop may dispatch sub-agents to implement and drives their PRs to merge too. The operator stays *on* the loop (intent + STOP marker), not *in* it (per-PR approval). This **supersedes "operator is the merge gate"** for the autonomous loop — see [ADR-0008](../../docs/adr/ADR-0008-evolve-intelligent-agile-operating-model.md).
 
 **Confirmed-MERGED gate before `bd close` (hard, not advisory).** Re-confirm `gh pr view <N> --json state -q .state` returns `MERGED` *before* `bd close` — never close on a `gh pr merge` exit code, a log line, or a batch `bd --json` query (those flake to null/0). **Close a parent epic ONLY after every child PR is independently confirmed `MERGED`**; re-query per child first, and one non-merged child aborts the epic close. (Caught two premature epic-closes in the 2026-05-31 crank session — this gate is the governance checkpoint, applied here too.) Enforce via the committed `scripts/reconcile-pr.sh <pr> <bead> [--epic <epic>]` + `scripts/check-epic-children-closed.sh <epic>` (hermetic-tested in `tests/scripts/`), not by hand.
 
