@@ -1180,7 +1180,7 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "3ef56851b3ab73e2704029ef687a656b79674ce7b7356ef4c5029fd35bd4b783",
+      "source_hash": "70e8d2f2afb44338fa0d04cc6195185d23d42bc112ecfe4d743f07a24fc0c448",
       "generated_hash": "23dcc9ad55148815116337b9d53f2680df800c9df9eada11755fd073d5c2f3ed"
     },
     {
@@ -1258,7 +1258,7 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "2f6ca7073d98a9d587151c703ab34d9c65d71b56bbdfb3f1a6e3c9c1a35fe8db",
+      "source_hash": "cb72d93228a1ef303a12877525adeb1304edd8ab3a14d5a5693b45bd47bf2f5b",
       "generated_hash": "53a3353af8ad80a64bed46470578a928d8794efa3d9cd2644502b1bfba608b9f"
     },
     {
@@ -1540,7 +1540,7 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "9daf7412b5d19ee0b14dcb0aeeeb60fd0f406422d901363794606fda5948ff44",
+      "source_hash": "4d6a89174b7eda63a81d93249086d5377a388b75dee8992266a593c89cbbbb53",
       "generated_hash": "9e1a058756851e44572b3992f93aa0377b60cdb8bff67c2ebb0310fb5db6f9bc"
     },
     {
