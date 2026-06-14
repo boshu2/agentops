@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 // --- resolveGoalAndStartPhase ---
@@ -781,21 +783,34 @@ func TestPreflightRuntimeAvailability_DryRunSkips(t *testing.T) {
 	}
 }
 
-func TestPreflightRuntimeAvailability_WhitespaceDefaultsToClaude(t *testing.T) {
+func TestPreflightRuntimeAvailability_WhitespaceDefaultsToCodex(t *testing.T) {
 	origDryRun := dryRun
 	dryRun = false
 	defer func() { dryRun = origDryRun }()
 
-	// When input is whitespace, cmp.Or defaults to "claude".
-	// If claude is on PATH, no error; if not, error mentions "claude".
+	// When input is whitespace, phased RPI defaults to the shared non-Claude runtime.
 	err := preflightRuntimeAvailability("  ", nil)
 	if err != nil {
-		// Verify the error references the default "claude" command.
-		if !strings.Contains(err.Error(), "claude") {
-			t.Errorf("error = %q, should mention 'claude' as the default", err.Error())
+		if !strings.Contains(err.Error(), cliRPI.DefaultRuntimeCommand) {
+			t.Errorf("error = %q, should mention %q as the default", err.Error(), cliRPI.DefaultRuntimeCommand)
 		}
 	}
-	// If no error, claude was found on PATH, which is fine.
+}
+
+func TestPreflightRuntimeAvailability_RejectsHeadlessClaude(t *testing.T) {
+	origDryRun := dryRun
+	dryRun = false
+	defer func() { dryRun = origDryRun }()
+
+	err := preflightRuntimeAvailability("claude", func(string) (string, error) {
+		return "/usr/local/bin/claude", nil
+	})
+	if err == nil {
+		t.Fatal("expected headless Claude runtime to be rejected")
+	}
+	if !strings.Contains(err.Error(), "forbidden Claude print mode") {
+		t.Fatalf("error = %q, want forbidden Claude print mode refusal", err.Error())
+	}
 }
 
 func TestPreflightRuntimeAvailability_NonexistentBinary(t *testing.T) {

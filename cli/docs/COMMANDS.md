@@ -2528,7 +2528,7 @@ ao rpi parallel [goals...] [flags]
       --merge-order string       Comma-separated epic names for merge order (default: manifest order or arg order)
       --no-merge                 Compatibility alias for the default preserve-for-review behavior
       --phase-timeout duration   Timeout per epic (kills subprocess if exceeded) (default 1h30m0s)
-      --runtime-cmd string       Runtime command for phased sessions (default: claude)
+      --runtime-cmd string       Runtime command for phased sessions (default: codex)
       --tmux                     Spawn epics in tmux windows for interactive visibility
 ```
 
@@ -2562,7 +2562,7 @@ ao rpi phased <goal> [flags]
       --no-worktree                       Disable worktree isolation (run in current directory)
       --phase-timeout duration            Maximum wall-clock runtime per phase (0 disables timeout) (default 1h30m0s)
       --runtime string                    Phase runtime mode: auto|direct|stream|tmux (default "auto")
-      --runtime-cmd string                Runtime command used for phase prompts (Claude uses '-p'; Codex uses 'exec') (default "claude")
+      --runtime-cmd string                Runtime command used for phase prompts (default: codex; Codex uses exec) (default "codex")
       --scaffold-domain string            Write a domain-slice manifest template at docs/domains/<name>/manifest.yaml and exit (does NOT run RPI)
       --stall-timeout duration            Maximum time without progress before declaring stall (0 disables) (default 10m0s)
       --stream-startup-timeout duration   Maximum time to wait for first stream event before falling back to direct execution (0 disables) (default 45s)

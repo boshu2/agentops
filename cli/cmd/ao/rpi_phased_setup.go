@@ -2,7 +2,6 @@
 package main
 
 import (
-	"cmp"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -27,13 +26,23 @@ func preflightRuntimeAvailability(runtimeCommand string, lookPathFn lookFn) erro
 	if GetDryRun() {
 		return nil
 	}
-	command := cmp.Or(strings.TrimSpace(runtimeCommand), "claude")
+	command := effectiveRuntimeCommand(runtimeCommand)
+	if err := rejectForbiddenHeadlessRuntime(command); err != nil {
+		return err
+	}
 	executable, _ := splitRuntimeCommand(command)
 	if executable == "" {
 		return fmt.Errorf("runtime command %q is empty", command)
 	}
 	if _, err := defaultLookPath(lookPathFn)(executable); err != nil {
 		return fmt.Errorf("runtime executable %q (from %q) not found on PATH (required for spawning phase sessions)", executable, command)
+	}
+	return nil
+}
+
+func rejectForbiddenHeadlessRuntime(command string) error {
+	if runtimeBinaryName(command) == "claude" {
+		return fmt.Errorf("runtime command %q would require forbidden Claude print mode in phased RPI; use codex or another non-Claude headless worker", command)
 	}
 	return nil
 }

@@ -39,7 +39,7 @@ func TestStreamExecutorExecute_FallsBackToDirectOnStartupTimeout(t *testing.T) {
 	marker := filepath.Join(t.TempDir(), "direct-ran.txt")
 	t.Setenv("STREAM_FALLBACK_MARKER", marker)
 
-	claudePath := filepath.Join(binDir, "claude")
+	runtimePath := filepath.Join(binDir, "agy")
 	script := `#!/bin/sh
 case "$*" in
   *"--output-format stream-json"*)
@@ -51,12 +51,13 @@ case "$*" in
     ;;
 esac
 `
-	if err := os.WriteFile(claudePath, []byte(script), 0755); err != nil {
-		t.Fatalf("write fake claude: %v", err)
+	if err := os.WriteFile(runtimePath, []byte(script), 0755); err != nil {
+		t.Fatalf("write fake runtime: %v", err)
 	}
 	t.Setenv("PATH", binDir+":"+os.Getenv("PATH"))
 
 	exec := &streamExecutor{
+		runtimeCommand:       "agy",
 		statusPath:           filepath.Join(t.TempDir(), "live-status.md"),
 		allPhases:            []PhaseProgress{{Name: "discovery", CurrentAction: "starting"}},
 		phaseTimeout:         0,
