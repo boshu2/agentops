@@ -1430,6 +1430,18 @@ jobs:
           chmod +x scripts/check-provenance-orphans.sh
           AO_BIN="$PWD/cli/bin/ao" ./scripts/check-provenance-orphans.sh
 
+      - name: Committed provenance ledger gate (schema + tamper-evident hash chain, blocking)
+        # T1 (≤5min, ag-8jf97). Blocking: docs/provenance/ledger.jsonl is the
+        # declared append-only SOT in CLAUDE.md ("ledger wins on disagreement").
+        # This gate requires it to EXIST, be schema-valid per line, and be an
+        # intact hash chain (via `ao provenance verify`) — so a tampered field,
+        # forged hash, or reordered row fails the build instead of becoming a
+        # lying instrument.
+        if: needs.changes.outputs.go == 'true' || needs.changes.outputs.docs == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.shell == 'true'
+        run: |
+          chmod +x scripts/validate-provenance-ledger.sh
+          AO_BIN="$PWD/cli/bin/ao" ./scripts/validate-provenance-ledger.sh --gate
+
       - name: Witness Dolt→JSONL cross-check gate (scripts/witness-dolt-jsonl-crosscheck.sh)
         # T1 (≤5min, ag-lmdx.3). Blocking: the watcher-that-watches-the-watcher.
         # Re-derives the hash-chained JSONL witness FROM the Dolt projection and

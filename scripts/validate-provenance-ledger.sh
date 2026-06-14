@@ -16,6 +16,10 @@
 #       schema-valid.
 #   scripts/validate-provenance-ledger.sh --jsonl <ledger.jsonl> [...]
 #       Validate every non-blank line of each JSONL ledger file as one event.
+#   scripts/validate-provenance-ledger.sh --gate
+#       CI/pre-push gate over the COMMITTED ledger (docs/provenance/ledger.jsonl):
+#       require it to exist, be schema-valid per line, AND be an intact,
+#       tamper-evident hash chain (via `ao provenance verify`). Blocking.
 #   scripts/validate-provenance-ledger.sh --selftest
 #       Validate the tracked fixtures with expected pass/fail and exit 0 only if
 #       all match expectations.
@@ -117,6 +121,51 @@ if [[ "${1:-}" == "--selftest" ]]; then
     exit "$rc"
 fi
 
+if [[ "${1:-}" == "--gate" ]]; then
+    # CI/pre-push gate: the COMMITTED ledger must be (a) schema-valid per line
+    # AND (b) an intact, tamper-evident hash chain. A wrong hash-chain makes the
+    # audit authority a lying instrument, so this is blocking — not advisory.
+    LEDGER="$REPO_ROOT/$( \
+        grep -hoE 'docs/provenance/ledger\.jsonl' "$REPO_ROOT/cli/internal/provenancegraph/edge.go" 2>/dev/null \
+        | head -1)"
+    [[ -n "$LEDGER" ]] || LEDGER="$REPO_ROOT/docs/provenance/ledger.jsonl"
+
+    if [[ ! -f "$LEDGER" ]]; then
+        # The committed ledger is declared SOT in CLAUDE.md; its absence is the
+        # exact defect ag-8jf97 fixed. A missing file fails the gate loudly.
+        echo "FAIL: committed provenance ledger missing: $LEDGER" >&2
+        echo "      CLAUDE.md declares it the append-only SOT; create+seed it (see ag-8jf97)." >&2
+        exit 1
+    fi
+
+    # (a) Per-line schema validation (skips cleanly if jsonschema unavailable).
+    if ! validate_jsonl "$LEDGER"; then
+        echo "FAIL: $LEDGER (one or more events schema-invalid)" >&2
+        exit 1
+    fi
+    echo "PASS: $LEDGER schema-valid"
+
+    # (b) In-place hash-chain / tamper verification via the ao binary. Prefer a
+    # freshly-built CI binary, fall back to PATH; if no binary is available the
+    # chain check is skipped (the bats suite + Go tests are the always-on guard).
+    AO="${AO_BIN:-}"
+    if [[ -z "$AO" ]]; then
+        if [[ -x "$REPO_ROOT/cli/bin/ao" ]]; then AO="$REPO_ROOT/cli/bin/ao"
+        elif command -v ao >/dev/null 2>&1; then AO="ao"
+        fi
+    fi
+    if [[ -z "$AO" ]]; then
+        echo "SKIP: ao binary unavailable; hash-chain verify skipped (schema gate passed)" >&2
+        exit 0
+    fi
+    if ( cd "$REPO_ROOT" && "$AO" provenance verify ); then
+        echo "PASS: provenance ledger hash chain intact"
+        exit 0
+    fi
+    echo "FAIL: provenance ledger hash chain BROKEN/TAMPERED (see line above)" >&2
+    exit 1
+fi
+
 if [[ "${1:-}" == "--jsonl" ]]; then
     shift
     if [[ $# -lt 1 ]]; then
@@ -136,7 +185,7 @@ if [[ "${1:-}" == "--jsonl" ]]; then
 fi
 
 if [[ $# -lt 1 ]]; then
-    echo "usage: $(basename "$0") <event.json> [...] | --jsonl <ledger.jsonl> [...] | --selftest" >&2
+    echo "usage: $(basename "$0") <event.json> [...] | --jsonl <ledger.jsonl> [...] | --gate | --selftest" >&2
     exit 2
 fi
 
