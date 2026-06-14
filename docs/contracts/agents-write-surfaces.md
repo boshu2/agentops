@@ -53,6 +53,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `LOG.md` | persistent | operators, scripts | corpus-log | Human-readable change log for tracked `.agents/` knowledge surfaces |
 | `memory` | persistent | cli | memory-rl-state | Memory-rl artifacts |
 | `mine` | rolling | cli, skills | mining-inbox | Mined raw signal awaiting promotion |
+| `mto-handoff` | rolling | scripts | cross-factory-handoff | Inbound MTO→AgentOps recurrence handoff (`.agents/mto-handoff/recurrence.json`), written by the external MTO bridge (mt-olympus `efficacy-to-flywheel.sh`) and read by `scripts/assay/consume-mto-recurrence.sh` to emit a planning-rule on a recurrence tripwire |
 | `nightly` | rolling | scripts | local-nightly-state | Private local nightly run digests, readiness snapshots, scheduler templates, and phase logs |
 | `opencode-tests` | regenerated | scripts, tests | test-output | Opencode runtime test fixtures and outputs |
 | `operator` | rolling | cli | operator-intents | Durable OperatorIntent records (halt, rescope, handoff) appended via the BC4 OperatorPort |
@@ -125,6 +126,7 @@ learnings
 ledger
 memory
 mine
+mto-handoff
 nightly
 opencode-tests
 operator
