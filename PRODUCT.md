@@ -1,23 +1,22 @@
 ---
-last_reviewed: 2026-06-03
+last_reviewed: 2026-06-14
 ---
 
 # PRODUCT.md
 
 ## Mission
 
-**AgentOps is an SDLC control plane for agentic software development.** It automates the discipline of building a wiki for your agents: markdown in `.agents/` next to your code, produced and consumed by the agents that work there. The compounded corpus is the moat. The internal lifecycle is the CDLC: context is developed, tested, delivered, observed, and improved because context is what LLM agents consume.
+**AgentOps is an SDLC control plane for agentic software development.** It automates the discipline of building a wiki for your agents: markdown in `.agents/` next to your code, produced and consumed by the agents that work there. The compounded corpus is the asset that stays yours. The internal lifecycle is the CDLC: context is developed, tested, delivered, observed, and improved because context is what LLM agents consume.
 
 > The canonical definition of what 3.0 is — the hookless-first CDLC loop and the four-practice waist — lives in [docs/3.0.md](docs/3.0.md). This file is consistent with it.
 
-## Standalone AgentOps, optional Mount Olympus extension
+## One self-contained factory; the gate is the in-repo floor
 
-AgentOps is complete as a standalone product. It does not need Mount Olympus to run the navigator loop, maintain the corpus/flywheel, execute the CDLC, or enforce its validation membrane: `ao validate` / `ao gate` emit evidence-backed claims as first-class product outputs. **Mount Olympus** is the optional high-assurance extension: `olympusd` consumes selected AgentOps claims and upgrades them into binding terminal verdicts (≥2 model families, no self-approval, fail-closed). The dependency is one-way: MTO consumes AgentOps outputs; AgentOps never depends on MTO. When extended into MTO, the products exchange on two axes:
+AgentOps is the one self-contained software factory: it researches, plans, validates the plan, implements, and proves work end-to-end, and it carries its own **acceptance gate in-repo**. The gate is the **ratchet pawl-gate** — `docs/contracts/pawls.md` + `scripts/pawl-verdict.sh` + `scripts/reconcile-pr.sh`. At the merge pawl (the one-way door) work reaches *accepted* only through a fresh-context reviewer whose `context_id ≠ author` (model-agnostic by default; ≥2 distinct model families opt-in per pawl), with a verdict that is **evidence-bound and commit-bound** (`head_sha`) and **enforced fail-closed** (no CONFIRMED verdict → HOLD; green CI alone cannot merge), plus auto-redo on REFUTED and circuit-breaker escalation to a human only when a tunable breaker trips. The trust is the **separation of duties**: a stochastic worker never approves its own work, and the author cannot choose, brief, or transcribe its own reviewer. The destination (*autonomous goal → verified done*) lives in [GOALS.md](GOALS.md).
 
-- **Work axis (per artifact):** AgentOps emits evidence-backed claims → MTO's gate writes the binding verdict for selected claims → the verdict returns to AgentOps as a first-class provenance-ledger event. Evidence out, verdict back.
-- **Recurrence axis (per pattern):** MTO assays its *own* gate (efficacy + recurrence — is the gate catching wrong work, has a seeded guard stopped sticking) and can hand that signal to AgentOps's improvement mining across a **tracker-independent file artifact** (`.agents/mto-handoff/recurrence.json`); AgentOps turns a returning defect-class into the next cycle's planning rule when the optional extension is in use. (Shipped + proven live end-to-end 2026-06-14.)
+> **There is no separate Mount Olympus product or daemon in the running factory.** The gate is in-repo policy at the pawl, not an external `olympusd` service consuming claims. "Mount Olympus" survives in two reduced forms: (1) **lineage** — the typed-loop, explicit-ratchet-rules work (2026) the pawl-gate descends from; and (2) an optional **high-assurance Linux build** — a binding daemon with OS-account / peercred isolation, for *adversarial multi-tenant* deployments where a hostile worker might forge its own approval. That threat model does not apply to a single operator running their own factory, so the daemon is **parked until earned at scale**; the in-repo pawl-gate is the gate for everyone else.
 
-The trust is the *separation of duties*: stochastic workers do not self-approve; AgentOps forces work through evidence, gates, claims, and provenance. MTO is the optional stronger environment for teams that need binding cross-family verdicts. The CDLC/control-plane identity below is AgentOps's standalone product model; the destination (*autonomous goal → verified done*) lives in [GOALS.md](GOALS.md).
+**The gate is table stakes, not the moat.** Binding cross-vendor pre-merge review with non-author override is *already shipped commercially* — CodeRabbit, Qodo, and GitHub Copilot Code Review all gate merges on independent, often cross-model review (adversarial siege, 2026-06-14). So the fail-closed cross-family gate is the **correctness floor a serious factory needs**, not a differentiator. AgentOps positions on the **ruler, not the gate** (see [Strategic Bet](#strategic-bet)): the only *candidate* moat is the measured corpus delta, and it is a hypothesis until measured (`ag-8p8o`).
 
 ## Product Identity
 
@@ -251,6 +250,8 @@ The CDLC is not a packet pipeline. It is the operating discipline that ensures e
 
 The bet is **sovereignty, not features.** Every harness — ours included — gets absorbed into the model. Memory primitives, learning loops, validation gates: frontier vendors will ship them natively. What they won't ship is *your* corpus — what your repo learned, what your team scarred, what your codebase decided.
 
+**Position on the ruler, not the gate.** The fail-closed cross-family gate is table stakes — binding cross-vendor pre-merge review with non-author override already ships (CodeRabbit, Qodo, Copilot). It is a necessary correctness floor, not a wedge, and the messaging does not lean on it. The only *candidate* moat is the **corpus delta**: does the compounding `.agents/` corpus measurably improve agent output versus the same models with no corpus? That is **unproven** — the one A/B on record (ADR-0002, Δ=0) was a hook-layer test, not a corpus A/B, and the corpus delta itself (`ag-8p8o`) is still being measured. So the moat is a *hypothesis gated on a ruler*, not a claim; the load-bearing work is building that ruler. **Fungible dispatch** — identical generalist workers, any-agent-any-bead, mixed families coordinated through the durable board rather than a shared context window — is the *mechanism* that makes the cheap cross-family gate, disposable-context management, and vendor-cost arbitrage possible; it is not itself the moat. The durable, non-quality differentiator is **sovereignty**: the corpus stays in your repo and outlives any model, harness, or vendor.
+
 **When Anthropic ships native scheduling, councils, Skillify, and Dreaming inside Claude Code in the next 6 months, what specifically does AgentOps still do?** The honest answer:
 
 1. **Cross-runtime corpus.** The corpus stays in `.agents/` in your repo. It runs the same way on Claude Code, Codex CLI, Cursor, and OpenCode. When the next frontier model wins next quarter — or when you switch teams or platforms — the corpus comes with you. Vendor-managed memory follows the chat session. AgentOps' corpus follows the team.
@@ -322,6 +323,8 @@ Your corpus grows every session — learnings, patterns, and constraints accumul
 | Behavioral eval system needs live agent runtime at scale | Eval workbench shipped: 3 fixture components (Go CLI, Python FastAPI, DevOps), 12 tasks with golden solutions and scoring scripts, behavioral eval suite, agent harness script, eval-skill-delta CI gate, and `--two-pass` head gate. Scoring infrastructure verified (golden 12/12, broken detection 12/12). A/B DeltaScorecard works for deterministic cases. Remaining gap: live agent runtime execution at scale — the harness and gates exist but full skill-on vs skill-off delta across the workbench is not yet a default gate. | in-progress |
 | High-assurance profile needs deeper control mapping | The initial [assurance profile](docs/assurance-profile.md) now documents local-first state, evidence packets, policy gates, telemetry boundaries, autonomy modes, and out-of-scope claims. Remaining work is redaction, evidence export, supply-chain inputs, and program-specific control mapping. | in-progress |
 | Public messaging is still converging | README, PRODUCT.md, GOALS.md, CDLC, the docs landing page, and the one-page brief now lead with "SDLC control plane" and explain CDLC as the internal context lifecycle. Remaining gap: downstream comparison docs and skill-page intros still need a sweep to match. | in-progress |
+| **The moat is unproven — corpus delta not yet measured** | The product's only *candidate* moat (does the compounding corpus measurably improve agent output?) has no A/B proof. ADR-0002's Δ=0 was a hook-layer test, not a corpus A/B. Until `ag-8p8o` produces a measured delta on realistic tasks, the moat is a hypothesis — public quality/moat claims stay gated on it. This is the single highest-leverage gap: the ruler is the product. | open (`ag-8p8o`) |
+| **The cross-family gate is table stakes, not a differentiator** | Binding cross-vendor pre-merge review with non-author override already ships commercially (CodeRabbit, Qodo, Copilot — adversarial siege 2026-06-14). The in-repo pawl-gate is a necessary correctness floor; messaging must not position on it as a wedge. | acknowledged |
 
 ## Lineage
 
@@ -335,7 +338,7 @@ The internal lineage that produced this product, and the parallels we are *not* 
 - **Olympus** was the predecessor runtime. Power-user daemon, run ledger, context compilation, constraint injection. Archived as a live system; its patterns survived as skills inside AgentOps.
 - **AgentOps** (this repository) is the coding-agent implementation. Skills + execution packets + `ao` CLI + explicit validation gates. It applies the context-compounding model to software work; always-on scheduling is delegated to a substrate.
 <!-- agentops:claim:AOP-CLAIM-PRODUCT-MT-OLYMPUS-PROOF -->
-- **Mt. Olympus** is the forkable Gas City runtime proof — the empirical demonstration that the substrate can run scheduled and supervised loops against a real codebase under operator control.
+- **Mt. Olympus** is not a separate running product. It is (1) the **lineage** of the in-repo ratchet pawl-gate — the typed-loop / explicit-ratchet-rules work (2026) the gate descends from — and (2) a parked, optional **high-assurance Linux build** (binding daemon, OS-account isolation) for adversarial multi-tenant settings. The acceptance gate it pioneered now ships inside AgentOps as the in-repo pawl-gate; there is no `olympusd` service in the running factory.
 
 ### Why Meadows, foregrounded
 
@@ -359,7 +362,7 @@ The thread-based development pattern — multiple agents working compoundingly, 
 3. **SRE (SLOs + error budgets)** — Reliability is a measurable condition, not a vibe. `GOALS.md` carries SLO-shaped fitness gates; `ao goals measure` is the burn-rate equivalent. The reliability lineage. Source: *Site Reliability Engineering* (Beyer, Jones, Petoff, Murphy).
 4. **Kubernetes control loops** — Declared state + reconcile loop. `GOALS.md` declares; `/evolve` reconciles. Errors don't crash the loop; they enter the work queue. The self-correction lineage.
 5. **[Brownian Ratchet](docs/brownian-ratchet.md)** — Embrace agent variance, filter aggressively, ratchet successes. Chaos + filter + one-way gate = net forward progress. The forward-only-progress lineage.
-6. **[Knowledge Flywheel (escape velocity)](docs/the-science.md#the-escape-velocity-condition)** — If retrieval rate × usage rate exceeds decay rate, knowledge compounds. If not, it decays to zero. The compounding-context lineage. *This is the one infrastructure never needed* — software workers persist; agents don't. The corpus is the moat.
+6. **[Knowledge Flywheel (escape velocity)](docs/the-science.md#the-escape-velocity-condition)** — If retrieval rate × usage rate exceeds decay rate, knowledge compounds. If not, it decays to zero. The compounding-context lineage. *This is the one infrastructure never needed* — software workers persist; agents don't. The corpus is the asset that stays yours, and the candidate moat — unproven until the delta is measured (see [Strategic Bet](#strategic-bet)).
 
 **Operational principles:**
 
