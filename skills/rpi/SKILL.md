@@ -63,6 +63,7 @@ you need the full autonomy contract.
 `/rpi` is the orchestrator across **every move** of the [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence + learning capture. It delegates each move to the skill that owns it (`/discovery`, `/plan`, `/crank`, `/validate`, `/forge`/`/post-mortem`), and enforces three loop-level invariants:
 
 - **No move-skipping.** Strict delegation is on by default; phases never compress, and validation cannot be skipped. The lifecycle objective is preserved across the whole loop.
+- **Validation cadence is pawl-gated, not per-tread** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). "Validation cannot be skipped" means the *bead-acceptance pawl* validates fully — it does NOT mean every intermediate slice/wave pays the heavy cross-family panel. The acceptance roll-up + the heavy gates (full council, `/validate --mixed`, `/pre-land-refuters`) fire **once, at the bead-acceptance / merge-to-main pawl** — the ratchet's lock. Intermediate slices are **chaos**: cheap local checks (build, TDD red→green, the light inline wave-acceptance judges) run freely; the heavy cross-family panel does NOT fire per slice. A pawl on every tread is waterfall — it makes every wrong turn expensive and is exactly the failure the ratchet exists to avoid.
 - **The first failing test is the bead's contract.** With `--test-first` on (the default), `/crank` is invoked with the TDD-per-slice discipline; `--no-test-first` is an explicit opt-out, not a fast path.
 - **Acceptance examples close the bead, not activity.** Validation FAIL re-cranks on the same objective up to 3 attempts; DONE requires the acceptance roll-up in the [slice-validation template](../../docs/templates/slice-validation.md) to be fully green.
 - **Ports stay visible.** Preserve the [Intent-to-Loop Hexagon](../../docs/architecture/intent-to-loop-hexagon.md) boundary as the objective crosses `shape_intent`, `persist_intent`, `plan_slices`, `execute_wave`, `validate_acceptance`, and `record_evidence`.
@@ -151,8 +152,8 @@ Enter at the routed phase and run every phase after it.
    or through phase-isolated skill transport. Add `--strict-surfaces` when
    `--quality` is set. On FAIL, extract findings, re-run `/crank` on the same
    objective, then re-run `/validate`, up to 3 total validation attempts. On
-   DONE, record `ao ratchet record vibe 2>/dev/null || true`. On `full`-complexity arcs (100+ files, factory regen, contract-test repoints, capability removal), DONE is a claim, not a landing pass:
-   invoke [`/pre-land-refuters`](../pre-land-refuters/SKILL.md) before push; REFUTED findings re-crank like a validation FAIL.
+   DONE, record `ao ratchet record vibe 2>/dev/null || true`. This Phase-3 `/validate` is the **bead-acceptance pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)): it runs once per RPI objective at acceptance, not per intermediate slice. On `full`-complexity arcs (100+ files, factory regen, contract-test repoints, capability removal), DONE is a claim, not a landing pass:
+   invoke [`/pre-land-refuters`](../pre-land-refuters/SKILL.md) at the **merge-to-main pawl** (before push), never per slice; REFUTED findings re-crank like a validation FAIL.
 4. **Report:** summarize phase verdicts and epic status using
    [references/report-template.md](references/report-template.md). With
    `--loop`, restart from discovery on FAIL while `cycle < max_cycles`. With
@@ -171,17 +172,19 @@ schemas and archive paths.
 
 ## Complexity-Scaled Gates
 
-### Pre-mortem
+> **Pawl-gated, not per-tread** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). The heavy `full`-complexity escalation below (full council, 2-judge minimum) is the **pawl** gate — it fires at the bead-acceptance / merge-to-main door of *this* RPI run, ONCE. It does NOT re-fire per intermediate slice or wave inside the run, and an outer loop (`/evolve`) that dispatches RPI per bead must not read it as "run a full council on every cycle regardless of complexity": each cycle escalates only to the tier its *own* complexity earns, and the heavy panel sits at that cycle's acceptance pawl. Between pawls, iterate as chaos — cheap local checks only.
+
+### Pre-mortem (at the planning pawl)
 - `complexity == "low"` or `"fast"`: inline review, no spawning (`--quick`)
 - `complexity == "medium"` or `"standard"`: inline fast default (`--quick`)
 - `complexity == "high"` or `"full"`: full council, 2-judge minimum; max 3 total attempts
 
-### Final Vibe
+### Final Vibe (at the bead-acceptance pawl)
 - `complexity == "low"` or `"fast"`: inline review, no spawning (`--quick`)
 - `complexity == "medium"` or `"standard"`: inline fast default (`--quick`)
 - `complexity == "high"` or `"full"`: full council, 2-judge minimum; max 3 total attempts
 
-### Post-mortem (STEP 2)
+### Post-mortem (STEP 2, at the bead-acceptance pawl)
 - `complexity == "low"` or `"fast"`: inline review, no spawning (`--quick`)
 - `complexity == "medium"` or `"standard"`: inline fast default (`--quick`)
 - `complexity == "high"` or `"full"`: full council, 2-judge minimum; max 3 total attempts
