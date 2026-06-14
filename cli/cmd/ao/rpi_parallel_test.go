@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	cliRPI "github.com/boshu2/agentops/cli/internal/rpi"
 )
 
 func TestGoalSlug(t *testing.T) {
@@ -420,9 +422,9 @@ func TestParallelWorktreeRoot(t *testing.T) {
 		want       string
 	}{
 		{
-			name:       "default claude root",
-			runtimeCmd: "claude",
-			want:       filepath.Join(tmpDir, ".claude", "worktrees"),
+			name:       "default codex root",
+			runtimeCmd: cliRPI.DefaultRuntimeCommand,
+			want:       filepath.Join(tmpDir, ".codex", "worktrees"),
 		},
 		{
 			name:       "codex root",
@@ -443,6 +445,14 @@ func TestParallelWorktreeRoot(t *testing.T) {
 				t.Fatalf("parallelWorktreeRoot(%q) = %q, want %q", tt.runtimeCmd, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestFormatRuntimeShellCommandUsesCodexExec(t *testing.T) {
+	got := formatRuntimeShellCommand("codex --profile ci", "/rpi $goal")
+	want := "'codex' '--profile' 'ci' 'exec' '/rpi $goal'"
+	if got != want {
+		t.Fatalf("formatRuntimeShellCommand() = %q, want %q", got, want)
 	}
 }
 

@@ -109,7 +109,7 @@ Manifest format (JSON):
 	parallelCmd.Flags().BoolVar(&parallelAutoMerge, "auto-merge", false, "Opt in to legacy merge/cleanup after successful epics")
 	parallelCmd.Flags().BoolVar(&parallelNoMerge, "no-merge", false, "Compatibility alias for the default preserve-for-review behavior")
 	parallelCmd.Flags().StringVar(&parallelGateScript, "gate-script", "", "Validation script to run after all merges (e.g., scripts/ci-local-release.sh)")
-	parallelCmd.Flags().StringVar(&parallelRuntimeCmd, "runtime-cmd", "", "Runtime command for phased sessions (default: claude)")
+	parallelCmd.Flags().StringVar(&parallelRuntimeCmd, "runtime-cmd", "", "Runtime command for phased sessions (default: codex)")
 	parallelCmd.Flags().DurationVar(&parallelPhaseTimeout, "phase-timeout", 90*time.Minute, "Timeout per epic (kills subprocess if exceeded)")
 	parallelCmd.Flags().BoolVar(&parallelTmux, "tmux", false, "Spawn epics in tmux windows for interactive visibility")
 
@@ -238,9 +238,12 @@ func validateParallelPrereqs(args []string) ([]parallelEpic, string, string, err
 		return nil, "", "", fmt.Errorf("not a git repository (required for worktree isolation)")
 	}
 
-	runtimeCmd := "claude"
+	runtimeCmd := cliRPI.DefaultRuntimeCommand
 	if parallelRuntimeCmd != "" {
 		runtimeCmd = parallelRuntimeCmd
+	}
+	if err := rejectForbiddenHeadlessRuntime(runtimeCmd); err != nil {
+		return nil, "", "", err
 	}
 	if _, err := exec.LookPath(runtimeCmd); err != nil {
 		return nil, "", "", fmt.Errorf("runtime command %q not found on PATH", runtimeCmd)
@@ -451,7 +454,7 @@ func runParallelEpic(epic parallelEpic, worktreePath, branch, runtimeCmd, logFil
 	if aoErr == nil {
 		// Use ao rpi phased (preferred — gets full orchestration).
 		args := []string{"rpi", "phased", epic.Goal, "--no-worktree"}
-		if runtimeCmd != "claude" {
+		if runtimeCmd != cliRPI.DefaultRuntimeCommand {
 			args = append(args, "--runtime-cmd", runtimeCmd)
 		}
 		cmd = exec.Command(aoPath, args...)
@@ -617,12 +620,12 @@ func runParallelEpicTmux(epic parallelEpic, worktreePath, branch, runtimeCmd, lo
 	var cmdLine string
 	if aoErr == nil {
 		runtimeFlag := ""
-		if runtimeCmd != "claude" {
+		if runtimeCmd != cliRPI.DefaultRuntimeCommand {
 			runtimeFlag = " --runtime-cmd " + shellQuote(runtimeCmd)
 		}
 		cmdLine = fmt.Sprintf("%s rpi phased \"$goal\" --no-worktree%s", shellQuote(aoPath), runtimeFlag)
 	} else {
-		cmdLine = fmt.Sprintf("%s -p \"/rpi $goal\"", shellQuote(runtimeCmd))
+		cmdLine = formatRuntimeShellCommand(runtimeCmd, "/rpi $goal")
 	}
 
 	script := fmt.Sprintf(`#!/bin/bash
@@ -677,6 +680,15 @@ goal=$(cat %s)
 			return result
 		}
 	}
+}
+
+func formatRuntimeShellCommand(runtimeCmd, prompt string) string {
+	executable, _ := splitRuntimeCommand(runtimeCmd)
+	parts := []string{shellQuote(executable)}
+	for _, arg := range runtimeDirectCommandArgs(runtimeCmd, prompt) {
+		parts = append(parts, shellQuote(arg))
+	}
+	return strings.Join(parts, " ")
 }
 
 // truncateGoal is defined in rpi_status.go — reused here.
