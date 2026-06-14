@@ -25,7 +25,6 @@ metadata:
   tier: execution
   dependencies:
   - standards
-  - complexity
 output_contract: test files, coverage report
 ---
 # Test Skill

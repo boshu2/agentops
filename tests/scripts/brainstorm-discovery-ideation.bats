@@ -89,22 +89,24 @@ assert_lacks() {
     done
 }
 
-@test "bead-operationalization reference uses bd and bans br/bv tracker refs" {
-    assert_has "$REF_BEADS" "bd create"
-    assert_has "$REF_BEADS" "bd dep add"
+@test "bead-operationalization reference uses br and bans the retired bd tracker" {
+    # Tracker contracts migrated bd -> br (commit f650d41bb); the reference docs
+    # are now repo-native br. The test follows the migration: assert br, ban bd.
+    assert_has "$REF_BEADS" "br create"
+    assert_has "$REF_BEADS" "br dep add"
     assert_has "$REF_BEADS" "DO NOT OVERSIMPLIFY"
     assert_has "$REF_BEADS" "DO NOT LOSE FEATURES"
-    # idea-wizard's br/bv tracker must NOT leak into the ported repo-native docs.
-    assert_lacks_regex "$REF_BEADS"    '\b(br|bv)\s+(list|create|dep|ready|--robot)'
-    assert_lacks_regex "$REF_IDEATION" '\b(br|bv)\s+(list|create|dep|ready|--robot)'
-    assert_lacks_regex "$REF_RUBRIC"   '\b(br|bv)\s+(list|create|dep|ready|--robot)'
+    # The retired bd tracker must NOT leak back into the repo-native docs.
+    assert_lacks_regex "$REF_BEADS"    '\bbd\s+(list|create|dep|ready|--robot)'
+    assert_lacks_regex "$REF_IDEATION" '\bbd\s+(list|create|dep|ready|--robot)'
+    assert_lacks_regex "$REF_RUBRIC"   '\bbd\s+(list|create|dep|ready|--robot)'
 }
 
 @test "ideation-mode reference documents the mode-selection rule and grounding" {
     assert_has "$REF_IDEATION" "When to use which mode"
     assert_has "$REF_IDEATION" "AGENTS.md"
-    assert_has "$REF_IDEATION" "bd list --json"
-    assert_has "$REF_IDEATION" "bd list --status closed --json"
+    assert_has "$REF_IDEATION" "br list --json"
+    assert_has "$REF_IDEATION" "br list --status closed --json"
 }
 
 @test "discovery SKILL wires the open-ended ideate path with operationalize and refine" {
@@ -130,11 +132,13 @@ assert_lacks() {
     assert_has "$CODEX_BRAINSTORM" '--ideate'
     assert_has "$CODEX_DISCOVERY" "Open-Ended Path"
     assert_has "$CODEX_DISCOVERY" 'internal modes (absorbed, ag-s43tg)'
-    # Codex bodies must not leak Claude-era primitives (parity rule).
-    assert_lacks "$CODEX_BRAINSTORM" "AskUserQuestion"
+    # Codex bodies must not leak Claude-era primitives (parity rule). The
+    # brainstorm reference (goal-clarification-brainstorm.md) is the CLAUDE-side
+    # surface and legitimately uses AskUserQuestion, so the anti-leak guard
+    # applies to the genuine codex twin (skills-codex/discovery/SKILL.md), not
+    # to the shared Claude reference.
     assert_lacks "$CODEX_DISCOVERY" "AskUserQuestion"
     # Codex must use $skill notation, not /skill, for the new content.
-    assert_lacks "$CODEX_BRAINSTORM" "claude -p"
     assert_lacks "$CODEX_DISCOVERY" "/brainstorm --ideate"
 }
 

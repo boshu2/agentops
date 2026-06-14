@@ -26,7 +26,6 @@ metadata:
   tier: execution
   dependencies:
   - standards
-  - complexity
 output_contract: 'stdout: performance profile/benchmark report'
 ---
 # Perf Skill

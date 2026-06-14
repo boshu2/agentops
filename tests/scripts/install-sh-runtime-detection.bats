@@ -74,7 +74,10 @@ run_install_with_path() {
   [[ "$output" == *"Detected Claude Code: yes"* ]]
   [[ "$output" == *"Detected Codex CLI: no"* ]]
   [[ "$output" == *"single-runtime mode (Claude Code only)"* ]]
-  [[ "$output" == *"install Codex CLI: https://github.com/openai/codex"* ]]
+  # install.sh now points single-runtime users at the other runtimes' install
+  # links (multi-vendor: Codex + Gemini/AGY) under a "install another runtime"
+  # banner. Assert the Codex link is offered.
+  [[ "$output" == *"Codex CLI:   https://github.com/openai/codex"* ]]
 }
 
 @test "codex only: single-runtime + Claude install suggestion" {
@@ -88,7 +91,8 @@ run_install_with_path() {
   [[ "$output" == *"Detected Claude Code: no"* ]]
   [[ "$output" == *"Detected Codex CLI: yes"* ]]
   [[ "$output" == *"single-runtime mode (Codex CLI only)"* ]]
-  [[ "$output" == *"install Claude Code: https://docs.anthropic.com/en/docs/claude-code"* ]]
+  # Assert the Claude install link is offered to the single-runtime Codex user.
+  [[ "$output" == *"Claude Code: https://docs.anthropic.com/en/docs/claude-code"* ]]
 }
 
 @test "neither present: warning + both install links" {

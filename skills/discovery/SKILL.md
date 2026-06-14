@@ -7,8 +7,6 @@ practices:
 - mythical-man-month
 hexagonal_role: domain
 consumes:
-- brainstorm
-- design
 - plan
 - pre-mortem
 - research
@@ -33,8 +31,6 @@ context:
 metadata:
   tier: meta
   dependencies:
-  - brainstorm
-  - design
   - research
   - plan
   - pre-mortem

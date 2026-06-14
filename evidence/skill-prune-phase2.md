@@ -27,8 +27,8 @@ Skill count: 114 → **105** (97 user-facing + 8 internal).
 
 - `scripts/skill-flow-standalone.txt`: 3 stale entries removed.
 - `scripts/validate-agy-plugin.sh`: 10 stale core_skills removed (9 were Phase 1
-  misses — script was failing on main); `.agy-plugin/skills/` bundle pruned to 17
-  + 9 drifted SKILL.mds resynced. Validator now PASSES (was failing).
+  misses — script was failing on main); `.agy-plugin/skills/` bundle pruned to
+  17 + 9 drifted SKILL.mds resynced. Validator now PASSES (was failing).
 - `tests/docs/broken-links-allowlist.txt`: matches belong to the research skill's
   own reference files (same basename) — no change needed.
 - zsh footnote: the first sweep pass used unquoted `$names` word-splitting, which

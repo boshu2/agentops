@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-13T18:04:08Z",
+  "generated_at": "2026-06-14T18:26:50Z",
   "skill_count": 72,
   "skills": [
     {
@@ -30,12 +30,7 @@
         "pragmatic-programmer",
         "continuous-delivery"
       ],
-      "context_rel": [
-        {
-          "kind": "supplier-to",
-          "with": "operating-loop-skill"
-        }
-      ],
+      "context_rel": [],
       "references_count": 0,
       "codex_override_present": true
     },
@@ -107,9 +102,7 @@
       "description": "|-",
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
-      "consumes": [
-        "operating-loop-skill"
-      ],
+      "consumes": [],
       "produces": [
         "agy-run-evidence"
       ],
@@ -117,12 +110,7 @@
         "team-topologies",
         "continuous-delivery"
       ],
-      "context_rel": [
-        {
-          "kind": "customer-of",
-          "with": "operating-loop-skill"
-        }
-      ],
+      "context_rel": [],
       "references_count": 1,
       "codex_override_present": true
     },
@@ -410,7 +398,7 @@
       "hexagonal_role": "driving-adapter",
       "user_invocable": false,
       "consumes": [
-        "ao converge"
+        "command-help"
       ],
       "produces": [
         "stdout"
@@ -421,12 +409,12 @@
       ],
       "context_rel": [],
       "references_count": 0,
-      "codex_override_present": false
+      "codex_override_present": true
     },
     {
       "name": "converter",
       "description": "Convert AgentOps skill formats.",
-      "hexagonal_role": "generic",
+      "hexagonal_role": "driven-adapter",
       "user_invocable": false,
       "consumes": [],
       "produces": [
@@ -533,8 +521,6 @@
       "hexagonal_role": "domain",
       "user_invocable": true,
       "consumes": [
-        "brainstorm",
-        "design",
         "plan",
         "pre-mortem",
         "research",
@@ -604,7 +590,6 @@
       "user_invocable": false,
       "consumes": [
         "validate",
-        "ratchet",
         "council"
       ],
       "produces": [
@@ -621,7 +606,7 @@
     {
       "name": "evolve",
       "description": "Run autonomous improvement loops.",
-      "hexagonal_role": "supporting",
+      "hexagonal_role": "domain",
       "user_invocable": true,
       "consumes": [
         "rpi",
@@ -813,9 +798,7 @@
       "hexagonal_role": "domain",
       "user_invocable": false,
       "consumes": [
-        ".agents/research/*.md",
-        "audit-report",
-        "learning"
+        ".agents/research/*.md"
       ],
       "produces": [
         ".agents/operationalize/*.md",
@@ -964,7 +947,7 @@
     },
     {
       "name": "pre-land-refuters",
-      "description": "Dispatch unbiased refuters (fresh Fable + read-only codex exec) to attack a completion claim before landing a large change. Triggers: pre-land validation, refute before push.",
+      "description": "Dispatch fresh-context refuters (model-agnostic by default; multi-model opt-in) to attack a completion claim at the mutate-shared-trunk pawl before landing, at any complexity. Triggers: pre-land validation, refute pre-push.",
       "hexagonal_role": "driving-adapter",
       "user_invocable": true,
       "consumes": [
@@ -1150,7 +1133,6 @@
       "hexagonal_role": "supporting",
       "user_invocable": false,
       "consumes": [
-        "complexity",
         "repo-context"
       ],
       "produces": [
@@ -1239,13 +1221,12 @@
     {
       "name": "rpi",
       "description": "Run discovery, crank, validation.",
-      "hexagonal_role": "supporting",
+      "hexagonal_role": "domain",
       "user_invocable": true,
       "consumes": [
         "crank",
         "discovery",
         "domain",
-        "ratchet",
         "validate"
       ],
       "produces": [

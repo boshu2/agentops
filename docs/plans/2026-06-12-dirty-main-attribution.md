@@ -13,9 +13,9 @@ bead: ag-xwjlc (seams epic)
 - main's recent history is `aug/*` merge commits (aug/validate, aug/status,
   aug/rpi, aug/review, aug/refactor ...) — an augmentation wave in progress.
 - The working tree on host main is dirty with a large in-flight pass:
-  PRODUCT.md, docs/SKILLS.md, docs/contracts/* (context-map, dispositions,
+  PRODUCT.md, docs/SKILLS.md, `docs/contracts/*` (context-map, dispositions,
   critical-skills), .github/workflows/validate.yml, skills/SKILL-TIERS.md, many
-  skills/*/SKILL.md (including uncommitted DELETIONS of vibe/ratchet/brainstorm/
+  `skills/*/SKILL.md` (including uncommitted DELETIONS of vibe/ratchet/brainstorm/
   design/scenario/... — at committed HEAD those skills still exist), full
   skills-codex/ + images/gemini/ regen surfaces. `git status --porcelain`
   snapshot captured at decision time (~600 entries; see session evidence

@@ -8,7 +8,6 @@ practices:
 hexagonal_role: supporting
 consumes:
 - validate
-- ratchet
 - council
 produces:
 - skills/council/schemas/verdict.json
@@ -21,7 +20,7 @@ context:
   intel_scope: topic
 metadata:
   tier: execution
-  dependencies: [validate, ratchet]
+  dependencies: [validate]
   stability: experimental
 output_contract: "skills/council/schemas/verdict.json (one council verdict record)"
 ---

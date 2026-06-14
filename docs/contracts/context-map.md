@@ -103,10 +103,8 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ```mermaid
 graph LR
-  acfs -- "supplier-to" --> operating-loop-skill
   agy-headless-evidence -- "customer-of" --> agy-native
   agy-headless-evidence -- "supplier-to" --> validate
-  agy-native -- "customer-of" --> operating-loop-skill
   automation-shape-routing -- "supplier-to" --> operationalize
   automation-shape-routing -- "supplier-to" --> skill-builder
   automation-shape-routing -- "supplier-to" --> workflow-builder
@@ -175,7 +173,6 @@ graph LR
 | `agent-native` | produces | docs/contracts/agent-runtime-profile.md |
 | `agy-headless-evidence` | consumes | agy-native |
 | `agy-headless-evidence` | produces | agy-evidence-dir |
-| `agy-native` | consumes | operating-loop-skill |
 | `agy-native` | produces | agy-run-evidence |
 | `autodev` | consumes | evolve |
 | `autodev` | consumes | rpi |
@@ -194,7 +191,7 @@ graph LR
 | `continuity-loop` | consumes | ntm |
 | `continuity-loop` | produces | .agents/continuity/state.json |
 | `continuity-loop` | produces | escalation-message |
-| `converge` | consumes | ao converge |
+| `converge` | consumes | command-help |
 | `converge` | produces | stdout |
 | `converter` | produces | converted-skill |
 | `council` | consumes | standards |
@@ -208,8 +205,6 @@ graph LR
 | `crank` | produces | .agents/swarm/results/*.json |
 | `crank` | produces | git-changes |
 | `curate` | produces | .agents/research/*.md |
-| `discovery` | consumes | brainstorm |
-| `discovery` | consumes | design |
 | `discovery` | consumes | plan |
 | `discovery` | consumes | pre-mortem |
 | `discovery` | consumes | research |
@@ -221,7 +216,6 @@ graph LR
 | `doc` | produces | documentation |
 | `domain` | produces | stdout |
 | `eval-outcomes` | consumes | council |
-| `eval-outcomes` | consumes | ratchet |
 | `eval-outcomes` | consumes | validate |
 | `eval-outcomes` | produces | skills/council/schemas/verdict.json |
 | `evolve` | consumes | compile |
@@ -237,8 +231,6 @@ graph LR
 | `implement` | consumes | domain |
 | `implement` | produces | git-changes |
 | `operationalize` | consumes | .agents/research/*.md |
-| `operationalize` | consumes | audit-report |
-| `operationalize` | consumes | learning |
 | `operationalize` | produces | .agents/operationalize/*.md |
 | `operationalize` | produces | routed-handoffs |
 | `perf` | consumes | repo-context |
@@ -268,7 +260,6 @@ graph LR
 | `recover` | produces | .agents/rpi/*.md |
 | `red-team` | consumes | repo-context |
 | `red-team` | produces | result.json |
-| `refactor` | consumes | complexity |
 | `refactor` | consumes | repo-context |
 | `refactor` | produces | git-changes |
 | `release` | produces | result.json |
@@ -282,7 +273,6 @@ graph LR
 | `rpi` | consumes | crank |
 | `rpi` | consumes | discovery |
 | `rpi` | consumes | domain |
-| `rpi` | consumes | ratchet |
 | `rpi` | consumes | validate |
 | `rpi` | produces | .agents/rpi/*.md |
 | `scaffold` | produces | converted-skill |

@@ -15,7 +15,6 @@ consumes:
 - crank
 - discovery
 - domain
-- ratchet
 - validate
 produces:
 - .agents/rpi/*.md
@@ -43,7 +42,6 @@ metadata:
   - discovery
   - crank
   - validate
-  - ratchet
   internal: false
 output_contract: .agents/rpi/YYYY-MM-DD-*.md
 ---

@@ -11,9 +11,7 @@ hexagonal_role: driving-adapter
 consumes: []
 produces:
 - substrate-health-report
-context_rel:
-- kind: supplier-to
-  with: operating-loop-skill
+context_rel: []
 skill_api_version: 1
 user-invocable: true
 context:
@@ -25,7 +23,7 @@ context:
   intel_scope: topic
 metadata:
   tier: orchestration
-  dependencies: [ntm, account-rotation, cass-memory, dcg]
+  dependencies: [ntm, account-rotation, dcg]
   external_dependencies: [fleet-ops]
   stability: stable
 output_contract: "Terminal report (acfs doctor/init verdict) + a stated next action; no files written unless a sub-tool persists state (br/cm)."
