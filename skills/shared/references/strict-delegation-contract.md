@@ -42,6 +42,27 @@ rationalizations to reject:
 - *"I'll just spawn 3 judges directly — it's what `/validate` does anyway."*
 - *"Post-mortem is just writing a summary, I'll do it inline."*
 
+### Pre-Mortem Anti-Rationalization Clause
+
+The following do **NOT** count as a pre-mortem and **MUST NOT** be used to skip
+the delegated `/pre-mortem` pass:
+
+1. **An inline risk or "honest risk" section the author wrote.** The author's
+   own risk assessment is autocorrelated with the plan — the same blind spots
+   that shaped the plan shape the risk section. It is not an independent check.
+2. **An earlier adversarial pass on an INPUT or premise, not THIS plan.** A
+   prior council/siege/refutation that challenged a *premise* (e.g. "is this
+   the right goal?") does not validate the *implementation plan* derived from
+   that premise. Different artifact, different failure modes.
+3. **"A related council already ran."** A council on a sibling plan, a prior
+   version of the plan, or a different artifact in the same epic does not
+   transfer. Pre-mortem is plan-specific.
+
+**Pre-mortem = DELEGATED + INDEPENDENT (author ≠ reviewer) + fresh-context on
+THIS plan.** All three conditions must hold. An inline section satisfies none;
+a prior-premise adversarial pass satisfies at most one (independent) but not
+the other two (not this plan, not delegated).
+
 All of these are contract violations. A live compression was observed 2026-04-19 (see [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../../docs/learnings/orchestrator-compression-anti-pattern.md)). The compression "worked" mechanically (strict build passed, 2-judge inline vibe PASSed) but the knowledge flywheel never turned — no forged learnings, no post-mortem artifact, no structured council verdict. Contract strength depends on actual `Skill()` invocations, not self-certification.
 
 ## `Agent()` vs `Skill()`

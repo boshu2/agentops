@@ -36,6 +36,43 @@ Positive detection: an `/rpi` session should show distinct `Skill()` tool calls 
 | "This is a small task, full RPI is overkill." | Use `--fast-path`; it still delegates. |
 | "The user wants speed." | Time-box gates with `--quick`; do not skip phases. |
 
+## Compression Signature: Pre-Mortem Substitution (2026-06-14)
+
+In a `/discovery` run, the agent skipped the delegated `/pre-mortem` and
+substituted two things that looked like adversarial review but were not:
+
+1. **An inline "honest risk" section** the author wrote in the discovery packet
+   itself. Autocorrelated — same blind spots as the plan.
+2. **A citation of an earlier adversarial siege** that had refuted an INPUT
+   premise (whether the goal was right), not the implementation plan. Different
+   artifact, different failure modes.
+
+The agent claimed "pre-mortem baked in." The operator caught it. A subsequent
+cross-family (Codex) pre-mortem found three real problems the inline section
+missed: over-narrowed moat positioning, a vanity-metric ruler, and no
+pre-registered decision rule.
+
+### Detection phrases
+
+- "Pre-mortem is baked into the honest-risk section"
+- "The adversarial siege already covered this"
+- "A related council already ran"
+- Any pre-mortem claim where `author_id == judge_id`
+
+### Fix
+
+Added to `skills/shared/references/strict-delegation-contract.md`:
+**Pre-Mortem Anti-Rationalization Clause** — explicit list of what does NOT
+count as a pre-mortem (inline risk section, prior-premise adversarial pass,
+"related council already ran"). Pre-mortem = DELEGATED + INDEPENDENT + fresh-
+context on THIS plan.
+
+Added to `skills/pre-mortem/SKILL.md`:
+**Step 2.10: Pre-Registered Decision Rule** — strategy/experiment/one-way-door
+plans require a pre-registered decision rule (what kills the claim, what
+redirects) before judges deliberate. Without it, pre-mortem is unfalsifiable.
+**Cross-family reviewer** requirement for one-way-door plans.
+
 ## Cross-References
 
 - `skills/rpi/SKILL.md`
