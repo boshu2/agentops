@@ -7,7 +7,6 @@ practices:
 - design-patterns
 hexagonal_role: supporting
 consumes:
-- complexity
 - repo-context
 produces:
 - git-changes
@@ -25,7 +24,6 @@ metadata:
   tier: execution
   dependencies:
   - standards
-  - complexity
   - beads
 output_contract: code changes with regression verification
 ---

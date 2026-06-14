@@ -6,7 +6,7 @@ practices:
 - llm-eval-harness
 hexagonal_role: driving-adapter
 consumes:
-- ao converge
+- command-help
 produces:
 - stdout
 context_rel: []

@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-14T17:07:44Z",
+  "generated_at": "2026-06-14T18:25:10Z",
   "summary": {
     "skills": 72,
     "hooks": 0,
@@ -1749,9 +1749,7 @@
       "parity_policy": "required",
       "aliases": [],
       "supersedes": null,
-      "consumes": [
-        "operating-loop-skill"
-      ],
+      "consumes": [],
       "produces": [
         "agy-run-evidence"
       ],
@@ -2163,7 +2161,7 @@
       "aliases": [],
       "supersedes": null,
       "consumes": [
-        "ao converge"
+        "command-help"
       ],
       "produces": [
         "stdout"
@@ -2362,8 +2360,6 @@
       "aliases": [],
       "supersedes": null,
       "consumes": [
-        "brainstorm",
-        "design",
         "plan",
         "pre-mortem",
         "research",
@@ -2472,7 +2468,6 @@
       "supersedes": null,
       "consumes": [
         "validate",
-        "ratchet",
         "council"
       ],
       "produces": [
@@ -2827,9 +2822,7 @@
       "aliases": [],
       "supersedes": null,
       "consumes": [
-        ".agents/research/*.md",
-        "audit-report",
-        "learning"
+        ".agents/research/*.md"
       ],
       "produces": [
         ".agents/operationalize/*.md",
@@ -3253,7 +3246,6 @@
       "aliases": [],
       "supersedes": null,
       "consumes": [
-        "complexity",
         "repo-context"
       ],
       "produces": [
@@ -3387,7 +3379,6 @@
         "crank",
         "discovery",
         "domain",
-        "ratchet",
         "validate"
       ],
       "produces": [

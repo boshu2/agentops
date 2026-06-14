@@ -63,8 +63,8 @@ hard constraint reserves for one writer:
    scenario-test linkage, regen-all --check, context-map drift). Fix-forward on
    red; the gate naming a stale surface is the designed trip-wire, not a thing
    to disarm.
-6. **One atomic commit** (removals + ledger + regen + the two tracked plan docs
-   + trigger manifest), push main (carries 3384f5638 with it).
+6. **One atomic commit** (removals + ledger + regen + the two tracked plan
+   docs + trigger manifest), push main (carries 3384f5638 with it).
    `git revert <sha>` restores everything together.
 7. **Verify:** `ls skills | wc -l` = 68; pinned-manifest grep all-GREEN;
    `link-skill --all --relink`; `validate.yml` green on main.

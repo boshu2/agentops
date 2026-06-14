@@ -7,13 +7,10 @@ practices:
 - team-topologies
 - continuous-delivery
 hexagonal_role: driving-adapter
-consumes:
-- operating-loop-skill
+consumes: []
 produces:
 - agy-run-evidence
-context_rel:
-- kind: customer-of
-  with: operating-loop-skill
+context_rel: []
 skill_api_version: 1
 user-invocable: false
 context:

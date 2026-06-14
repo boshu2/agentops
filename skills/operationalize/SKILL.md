@@ -9,8 +9,6 @@ practices:
 hexagonal_role: domain
 consumes:
 - .agents/research/*.md
-- audit-report
-- learning
 produces:
 - .agents/operationalize/*.md
 - routed-handoffs
