@@ -28,6 +28,21 @@ Why so few pawls: a pawl on *every* step is waterfall (validate every tread). It
 
 Editing a file · writing a test · running a build · a local experiment · a draft · a throwaway branch · a read-only query · an intermediate RPI slice · a mock→real swap · trying an approach and discarding it. **None of these are irreversible. Do not gate them.** Iterate cheaply; the pawl catches you at the door.
 
+## Escalation — who resolves a pawl
+
+**The human is NOT needed at a pawl by default.** A pawl fires the cross-family gate
+([`/pre-land-refuters`](../../skills/pre-land-refuters/SKILL.md)) **autonomously — model reviews model.**
+The loop self-corrects; the human is the exception, not the checkpoint.
+
+- **PASS** → proceed through the door. No human.
+- **FAIL (REFUTED)** → the author re-works with the findings and **re-gates**, autonomously, up to **N attempts (default 3)**. Each pass is fresh model-to-model review; no human in the loop. This is the ordinary path — most FAILs converge here.
+- **ESCALATE to a human — ONLY when the models cannot converge.** The three earned triggers:
+  1. **Reviewer deadlock** — the panel cannot reach a stable verdict (refuters contradict and stay contradicted after re-gate).
+  2. **N attempts exhausted** — `default 3` re-work/re-gate cycles still REFUTED.
+  3. **Explicit judgment flag** — a reviewer explicitly raises a value or irreversibility judgment that models should not make alone.
+
+This escalation is the **andon** ("Hey! Listen!") — rare and *earned*, never the default. Even fully unattended, the gate runs model-to-model at every pawl; pulling a human in is the exception that fires only on non-convergence.
+
 ## Adding a pawl
 
 A new pawl earns its place **only** if the action is genuinely irreversible — data lost, money spent, something left the machine, or a shared contract changed. If it's recoverable, it's chaos, and it stays ungated. Keep this list short: every pawl is a tread you now validate, i.e. a step back toward waterfall.
