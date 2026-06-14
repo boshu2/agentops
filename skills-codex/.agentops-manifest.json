@@ -1144,7 +1144,7 @@
     {
       "name": "converge",
       "source_skill": "skills/converge",
-      "source_hash": "e73d0e90e5199e9b5c38bccfe11c10773ff1da131c6bf9f3cb8f673f836128ba",
+      "source_hash": "b91813e7fc21ef79e21087cbe71580a3cedefb5dbfa5cc060567c2e883c9715b",
       "generated_hash": "4210749b835a469aac459ae9a6e66aaab9df62e2370f02575052f6eaf97b6264"
     },
     {
@@ -1408,7 +1408,7 @@
     {
       "name": "pre-land-refuters",
       "source_skill": "skills/pre-land-refuters",
-      "source_hash": "606d71155a0097a62be02df56487a9bc7941cbf07204de565749395f099d00ef",
+      "source_hash": "75d0df76afeac46ad115db128a828dc5e00960ddc3e8c40b21ab526a318fd3d5",
       "generated_hash": "d690bcee73e2b64f0fea3333a07f9f473ad75b1e2227e58b3e2f3875d0b5ca7c"
     },
     {

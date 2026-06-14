@@ -185,58 +185,67 @@ echo "--- RPI Complexity Scaling ---"
 
 RPI_SKILL="$REPO_ROOT/skills/rpi/SKILL.md"
 
+# T14-T16: complexity scaling — low/medium use --quick (2-judge inline),
+# high uses full council. The rpi pawl-gate rewrite (efd06bf93/4879432c4)
+# consolidated the per-gate "low/medium = inline" prose into ONE shared
+# scaling line; the per-gate Pre-mortem/Final Vibe/Post-mortem lines now carry
+# the `high`/`full` → full council depth. Tests follow the rewrite: T*a/T*b
+# assert the shared low/medium → --quick rule; T*c assert the per-gate high
+# → full council line. Behavior asserted is unchanged.
+SHARED_LOWMED='`low`/`fast` and `medium`/`standard`.*inline.*--quick'
+
 # T14: Pre-mortem: low = --quick, medium = --quick, high = full council
-if grep -A3 'Pre-mortem' "$RPI_SKILL" | grep -q 'complexity == "low".*inline\|"low".*no spawning'; then
+if grep -qE "$SHARED_LOWMED" "$RPI_SKILL"; then
     pass "T14a: RPI pre-mortem low = --quick"
 else
     fail "T14a: RPI pre-mortem low should use --quick"
 fi
 
-if grep -A3 'Pre-mortem' "$RPI_SKILL" | grep -q 'complexity == "medium".*inline\|"medium".*fast default'; then
+if grep -qE "$SHARED_LOWMED" "$RPI_SKILL"; then
     pass "T14b: RPI pre-mortem medium = --quick"
 else
     fail "T14b: RPI pre-mortem medium should use --quick"
 fi
 
-if grep -A3 'Pre-mortem' "$RPI_SKILL" | grep -q 'complexity == "high".*full.*council\|"high".*2-judge'; then
+if grep -A3 'Pre-mortem' "$RPI_SKILL" | grep -qE '`high`/`full`.*full council|"high".*2-judge'; then
     pass "T14c: RPI pre-mortem high = full council"
 else
     fail "T14c: RPI pre-mortem high should use full council"
 fi
 
 # T15: Final Vibe: low = --quick, medium = --quick, high = full council
-if grep -A3 'Final Vibe' "$RPI_SKILL" | grep -q 'complexity == "low".*inline\|"low".*no spawning'; then
+if grep -qE "$SHARED_LOWMED" "$RPI_SKILL"; then
     pass "T15a: RPI final vibe low = --quick"
 else
     fail "T15a: RPI final vibe low should use --quick"
 fi
 
-if grep -A3 'Final Vibe' "$RPI_SKILL" | grep -q 'complexity == "medium".*inline\|"medium".*fast default'; then
+if grep -qE "$SHARED_LOWMED" "$RPI_SKILL"; then
     pass "T15b: RPI final vibe medium = --quick"
 else
     fail "T15b: RPI final vibe medium should use --quick"
 fi
 
-if grep -A3 'Final Vibe' "$RPI_SKILL" | grep -q 'complexity == "high".*full.*council\|"high".*2-judge'; then
+if grep -A3 'Final Vibe' "$RPI_SKILL" | grep -qE '`high`/`full`.*full council|"high".*2-judge'; then
     pass "T15c: RPI final vibe high = full council"
 else
     fail "T15c: RPI final vibe high should use full council"
 fi
 
 # T16: Post-mortem: low = --quick, medium = --quick, high = full council
-if grep -A3 'Post-mortem .STEP 2' "$RPI_SKILL" | grep -q 'complexity == "low".*inline\|"low".*no spawning'; then
+if grep -qE "$SHARED_LOWMED" "$RPI_SKILL"; then
     pass "T16a: RPI post-mortem low = --quick"
 else
     fail "T16a: RPI post-mortem low should use --quick"
 fi
 
-if grep -A3 'Post-mortem .STEP 2' "$RPI_SKILL" | grep -q 'complexity == "medium".*inline\|"medium".*fast default'; then
+if grep -qE "$SHARED_LOWMED" "$RPI_SKILL"; then
     pass "T16b: RPI post-mortem medium = --quick"
 else
     fail "T16b: RPI post-mortem medium should use --quick"
 fi
 
-if grep -A3 'Post-mortem .STEP 2' "$RPI_SKILL" | grep -q 'complexity == "high".*full.*council\|"high".*2-judge'; then
+if grep -A3 'Post-mortem.*STEP 2' "$RPI_SKILL" | grep -qE '`high`/`full`.*full council|"high".*2-judge'; then
     pass "T16c: RPI post-mortem high = full council"
 else
     fail "T16c: RPI post-mortem high should use full council"
