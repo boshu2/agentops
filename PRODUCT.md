@@ -10,6 +10,15 @@ last_reviewed: 2026-06-03
 
 > The canonical definition of what 3.0 is — the hookless-first CDLC loop and the four-practice waist — lives in [docs/3.0.md](docs/3.0.md). This file is consistent with it.
 
+## The two-factory machine (AgentOps ↔ Mount Olympus)
+
+AgentOps does not grade its own work. The full picture is **two sovereign factories with the trust boundary between them** (ADR-0009): AgentOps is the **producing / sensing / mining** factory — it drives a stochastic worker to a *claimed* done and emits deterministic evidence to its provenance ledger; **Mount Olympus** is the **trusted verifying** factory — `olympusd`, the sole writer of binding terminal verdicts (≥2 model families, no self-approval, fail-closed). AgentOps produces and *claims*; MTO *judges*. Together they run **SENSOR → ASSAY → GATE** and exchange on two axes:
+
+- **Work axis (per artifact):** AgentOps emits evidence → MTO's gate writes the binding verdict → the verdict returns to AgentOps as a first-class provenance-ledger event. Evidence out, verdict back.
+- **Recurrence axis (per pattern):** MTO assays its *own* gate (efficacy + recurrence — is the gate catching wrong work, has a seeded guard stopped sticking) and hands that signal to AgentOps's improvement mining across a **tracker-independent file artifact** (`.agents/mto-handoff/recurrence.json`); AgentOps turns a returning defect-class into the next cycle's planning rule. (Shipped + proven live end-to-end 2026-06-14.)
+
+The trust is the *separation*: the producer is stochastic and untrusted; the verifier is the deterministic environment — *"trust the environment, not the agent,"* at the factory altitude. The CDLC/control-plane identity below is AgentOps's *internal* model as the producing factory; the canonical machine framing and the destination (*autonomous goal → verified done*) live in [GOALS.md](GOALS.md).
+
 ## Product Identity
 
 AgentOps is the SDLC control plane for agent teams: software-engineering practice encoded for LLM agents under token scarcity.
