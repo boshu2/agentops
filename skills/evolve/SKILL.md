@@ -48,6 +48,8 @@ output_contract: code changes, GOALS.md fitness deltas
 
 > Measure what's wrong. Fix the worst thing. Measure again. Compound.
 
+> **Cadence is pawl-gated, not per-tread** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). Each cycle's heavy validation (full council, `/validate --mixed`, `/pre-land-refuters`) fires at that cycle's **bead-acceptance / merge-to-main pawl** — once per bead, not per intermediate slice or wave. The per-cycle regression gate (Step 5) and the lightweight in-cycle checks are **chaos**: cheap, run freely, wrong-tolerant between pawls. Do NOT escalate every cycle to a cross-family panel "to be safe" — that re-creates the waterfall the ratchet exists to avoid (`--mixed` is reserved for strategic decisions, NOT per-cycle health; see `references/postmortem-checkpoint.md`). The bead is still fully validated at its acceptance pawl — that is the ratchet's lock.
+
 **The loop runs as this skill (skills-are-the-runtime).** `evolve` selects work
 and invokes complete `/rpi --auto` cycles — that *is* the loop. `evolve` (and
 `ao rpi loop --supervisor`) are terminal-native **wrapper commands** for humans or
