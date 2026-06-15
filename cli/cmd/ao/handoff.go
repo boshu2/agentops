@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -50,6 +51,10 @@ type handoffState struct {
 	ActiveBead     string   `json:"active_bead,omitempty"`
 	OpenBeadsCount int      `json:"open_beads_count,omitempty"`
 	RecentCommits  []string `json:"recent_commits,omitempty"`
+	// Reservations are the active Agent Mail file reservations in the project,
+	// captured so a rehydrating agent restores its lock landscape (ag-8c00a /
+	// epic ag-2jp7l rehydrate-completeness). Best-effort: empty when AM absent.
+	Reservations []string `json:"reservations,omitempty"`
 }
 
 var (
@@ -121,6 +126,12 @@ func runHandoff(cmd *cobra.Command, args []string) error {
 	// --collect: populate state
 	if handoffCollect {
 		artifact.State = collectHandoffState(cwd)
+		// Populate the continuation pointer from the captured state so a
+		// rehydrating agent knows the next action (ag-8c00a). Don't clobber an
+		// explicitly-passed continuation.
+		if artifact.Continuation == "" {
+			artifact.Continuation = deriveContinuation(artifact.State)
+		}
 	}
 
 	// --rpi-phase: populate RPI context
@@ -182,21 +193,22 @@ func collectHandoffState(cwd string) *handoffState {
 	state.ModifiedFiles = modified
 	state.GitDirty = len(modified) > 0
 
-	// Active bead
-	activeBead := runCommand(cwd, 1200*time.Millisecond, "bd", "current")
-	if activeBead != "" {
-		state.ActiveBead = activeBead
+	// Active bead — via br (bd is RETIRED, 2026-06-11; the old `bd current`
+	// silently returned empty since the migration). The claimed/active bead is
+	// the in-progress one in the br ledger. (ag-8c00a)
+	inProgress := runBeadsTracker(cwd, 1500*time.Millisecond, "list", "--status", "in_progress", "--json")
+	if bead := parseInProgressBeadID(inProgress); bead != "" {
+		state.ActiveBead = bead
 	}
 
-	// Open beads count
-	openCountStr := runCommand(cwd, 1200*time.Millisecond, "bd", "ready", "--json")
-	if openCountStr != "" {
-		// Parse JSON array and count entries
-		var beads []json.RawMessage
-		if json.Unmarshal([]byte(openCountStr), &beads) == nil {
-			state.OpenBeadsCount = len(beads)
-		}
-	}
+	// Open ready beads count — via br ready --json.
+	readyOut := runBeadsTracker(cwd, 1500*time.Millisecond, "ready", "--json")
+	state.OpenBeadsCount = parseReadyCount(readyOut)
+
+	// Held Agent Mail file reservations — so a rehydrating agent restores its
+	// lock landscape. Best-effort; empty when AM is absent.
+	resOut := runCommand(cwd, 1500*time.Millisecond, "am", "robot", "reservations", "--project", cwd)
+	state.Reservations = parseReservationPaths(resOut)
 
 	// Recent commits
 	recentLog := runCommand(cwd, 2*time.Second, "git", "log", "--oneline", "-5", "--no-decorate")
@@ -213,6 +225,119 @@ func collectHandoffState(cwd string) *handoffState {
 	}
 
 	return state
+}
+
+// runBeadsTracker runs `br <args>` with the BEADS_DIR env wired (matching the
+// rest of the CLI's br invocation), bounded by timeout, returning trimmed
+// stdout (empty on any error so callers degrade gracefully).
+func runBeadsTracker(cwd string, timeout time.Duration, args ...string) string {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	c := beadsTrackerCommandContext(ctx, args...)
+	c.Dir = cwd
+	out, err := c.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+// brIssue is the subset of `br list/ready --json` we read.
+type brIssue struct {
+	ID        string `json:"id"`
+	Status    string `json:"status"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+// decodeBrIssues parses both br JSON shapes: the {"issues":[...]} wrapper and a
+// bare [...] array. Returns nil on any parse error (caller degrades).
+func decodeBrIssues(jsonOut string) []brIssue {
+	s := strings.TrimSpace(jsonOut)
+	if s == "" {
+		return nil
+	}
+	var wrapped struct {
+		Issues []brIssue `json:"issues"`
+	}
+	if err := json.Unmarshal([]byte(s), &wrapped); err == nil && wrapped.Issues != nil {
+		return wrapped.Issues
+	}
+	var bare []brIssue
+	if err := json.Unmarshal([]byte(s), &bare); err == nil {
+		return bare
+	}
+	return nil
+}
+
+// parseInProgressBeadID returns the lane's active bead from `br list --status
+// in_progress --json`. Since br has no per-session "current" pointer and
+// in_progress is global (often many stale claims across a fleet), we use the
+// MOST-RECENTLY-UPDATED in_progress bead as the best heuristic for "what this
+// lane is working on" — the freshly-claimed bead has the newest updated_at.
+// Empty if none. (RFC3339 timestamps sort lexicographically, so a string max
+// is correct.)
+func parseInProgressBeadID(jsonOut string) string {
+	bestID, bestTS := "", ""
+	for _, i := range decodeBrIssues(jsonOut) {
+		if i.ID == "" {
+			continue
+		}
+		if i.Status != "in_progress" && i.Status != "" {
+			continue
+		}
+		// First candidate, or a strictly-newer update, wins.
+		if bestID == "" || i.UpdatedAt > bestTS {
+			bestID, bestTS = i.ID, i.UpdatedAt
+		}
+	}
+	return bestID
+}
+
+// parseReadyCount counts ready beads from `br ready --json`.
+func parseReadyCount(jsonOut string) int {
+	return len(decodeBrIssues(jsonOut))
+}
+
+// parseReservationPaths returns "path [agent]" strings for each active file
+// reservation in `am robot reservations` output. Empty when AM is absent or the
+// output is unparseable.
+func parseReservationPaths(jsonOut string) []string {
+	s := strings.TrimSpace(jsonOut)
+	if s == "" {
+		return nil
+	}
+	var parsed struct {
+		AllActive []struct {
+			Agent string `json:"agent"`
+			Path  string `json:"path"`
+		} `json:"all_active"`
+	}
+	if err := json.Unmarshal([]byte(s), &parsed); err != nil {
+		return nil
+	}
+	out := make([]string, 0, len(parsed.AllActive))
+	for _, r := range parsed.AllActive {
+		if r.Path == "" {
+			continue
+		}
+		if r.Agent != "" {
+			out = append(out, fmt.Sprintf("%s [%s]", r.Path, r.Agent))
+		} else {
+			out = append(out, r.Path)
+		}
+	}
+	return out
+}
+
+// deriveContinuation builds a next-action pointer from the captured state so a
+// rehydrating agent knows where to resume. Empty when there is no active bead —
+// never fabricate a next action.
+func deriveContinuation(state *handoffState) string {
+	if state == nil || state.ActiveBead == "" {
+		return ""
+	}
+	return fmt.Sprintf("Resume %s (run `br show %s` for the full acceptance + notes). %d bead(s) ready.",
+		state.ActiveBead, state.ActiveBead, state.OpenBeadsCount)
 }
 
 // buildHandoffRPIContext reads phased state and constructs RPI context for the handoff.

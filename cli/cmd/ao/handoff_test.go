@@ -369,6 +369,11 @@ func assertHandoffNilPointer[T any](t *testing.T, label string, got *T) {
 
 func TestCollectHandoffState_EmptyDir(t *testing.T) {
 	dir := t.TempDir()
+	// Hermetic: point the bead tracker at an empty dir so `br` finds no ledger.
+	// (Before bd→br, ag-8c00a, this test passed only because the dead `bd` call
+	// always returned empty; now that br actually resolves a ledger, the test
+	// must isolate from the ambient real ledger.)
+	t.Setenv("BEADS_DIR", t.TempDir())
 
 	state := collectHandoffState(dir)
 	if state == nil {
@@ -381,7 +386,7 @@ func TestCollectHandoffState_EmptyDir(t *testing.T) {
 		t.Errorf("expected empty branch for non-git dir, got %q", state.GitBranch)
 	}
 	if state.ActiveBead != "" {
-		t.Errorf("expected empty active bead, got %q", state.ActiveBead)
+		t.Errorf("expected empty active bead with no ledger, got %q", state.ActiveBead)
 	}
 }
 
