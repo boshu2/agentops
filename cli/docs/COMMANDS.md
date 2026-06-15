@@ -4185,6 +4185,23 @@ ao provenance emit-landed [flags]
       --range string    Git revision range (e.g. origin/main..HEAD); emits for every commit in it
 ```
 
+#### `ao provenance emit-verdict`
+
+Read a pawl-verdict JSON artifact (.agents/pawl-verdicts/<bead>.json) and
+
+```
+ao provenance emit-verdict [flags]
+```
+
+**Flags:**
+
+```
+      --dry-run       Resolve and print edges without writing the ledger
+      --file string   Path to the pawl-verdict JSON file (required)
+  -h, --help          help for emit-verdict
+      --json          Emit appended edges as JSON
+```
+
 #### `ao provenance export`
 
 Read docs/provenance/ledger.jsonl, canonically sort its edges by

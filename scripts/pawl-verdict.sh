@@ -394,6 +394,11 @@ do_write() {
     > "$tmp" || { rm -f "$tmp"; die "failed to render verdict json"; }
   mv "$tmp" "$out"
   echo "pawl-verdict: wrote $out (disposition=$disposition)" >&2
+
+  # Emit verdict→commit provenance edge (non-blocking, ag-cm8nd sensor).
+  if command -v ao >/dev/null 2>&1; then
+    ao provenance emit-verdict --file "$out" 2>/dev/null || true
+  fi
 }
 
 case "$cmd" in
