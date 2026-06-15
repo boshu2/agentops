@@ -12,42 +12,64 @@ import (
 	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 )
 
-// beadIDPattern matches a tracker bead id: a lowercase alpha prefix, a dash,
+// beadIDPattern matches an AgentOps tracker bead id: the literal `ag-` prefix,
 // then an alphanumeric token that may carry dotted child suffixes
-// (ag-62jrm, ag-tixgy, soc-y8b.5, psite-agu.1). Anchored only inside the
-// recognized citation contexts below — never matched against free prose — so
-// ordinary hyphenated words (cross-context, follow-up) cannot become edges.
-var beadIDPattern = `[a-z]{2,}-[a-z0-9]+(?:\.[0-9]+)*`
+// (ag-62jrm, ag-tixgy, ag-agu.1). STRICT BY PREFIX, FAIL-CLOSED: the prior
+// `[a-z]{2,}-…` form matched any hyphenated word, so prose inside the
+// title-parens convention — "(council-ratified)", "(pre-mortem cleanup)" —
+// emitted FALSE edges (bead_id="council-ratified"; 3 stray "pre-" edges already
+// in the ledger). The agentops tracker is `ag-` only (265/265 ids); a foreign
+// prefix (soc-, psite-) is another repo's bead, never an agentops landing, so
+// it is deliberately NOT emitted here. Tightening the prefix is the fix
+// (ag-62jrm / ag-5qltf): English compounds can no longer be mistaken for ids.
+var beadIDPattern = `ag-[a-z0-9]+(?:\.[0-9]+)*`
 
 var (
-	// "Closes-scenario: <id>#slug" or "Closes: <id>" trailers.
+	// "Closes-scenario: <id>#slug" or "Closes: <id>" trailers — explicit,
+	// machine-intended citations, recognized ANYWHERE in the message.
 	closesTrailerRe = regexp.MustCompile(`(?mi)^\s*Closes(?:-scenario)?:\s*(` + beadIDPattern + `)`)
-	// PR-title / subject parens convention: "(<id> #slug)" or bare "(<id>)".
-	// The "(?:^|\s)" guard requires the open-paren to be at the start or after
-	// whitespace, so a conventional-commit scope (`feat(cc-hooks):` — paren glued
-	// to the type word) is NOT mistaken for a bead reference.
-	titleParensRe = regexp.MustCompile(`(?:^|\s)\((` + beadIDPattern + `)(?:\s+#[^)]*)?\)`)
+	// A parenthesized group opening at start-or-after-whitespace. Applied ONLY to
+	// the SUBJECT line (see extractLandedBeadIDs) — body parens are prose and must
+	// never become edges. The "(?:^|\s)" guard also excludes the conventional-
+	// commit scope (`feat(cc-hooks):` — paren glued to the type word).
+	subjectParenGroupRe = regexp.MustCompile(`(?:^|\s)\(([^)]*)\)`)
+	// Every bead id inside a subject-paren group — supports comma-lists like
+	// "(ag-7hdg0, ag-56cru)" and the "(<id> #slug)" form.
+	beadIDRe = regexp.MustCompile(beadIDPattern)
 )
 
-// extractLandedBeadIDs returns the bead ids a commit message cites as landed,
-// in true first-seen (text-position) order, de-duplicated. It reads only the
-// recognized citation contexts (Closes/Closes-scenario trailers and the
-// parenthesized title convention) so prose that merely resembles an id is never
-// captured. Pure: no I/O, so it is the unit under test.
+// extractLandedBeadIDs returns the AgentOps bead ids a commit cites as landed,
+// in true first-seen (text-position) order, de-duplicated. It reads only two
+// STRUCTURED contexts and FAILS CLOSED everywhere else: (1) Closes/Closes-
+// scenario trailers anywhere, and (2) the parenthesized convention on the
+// SUBJECT LINE ONLY. Body prose — e.g. "(council-ratified)" or "(pre-mortem
+// cleanup)" — is never read, which (with the strict ag- namespace) is the fix
+// for the false-edge bug (ag-62jrm / ag-5qltf). Pure: no I/O, so it is the unit
+// under test. Namespace validation is by the deliberate ag- prefix, NOT by any
+// observed ledger data (the ledger is the contaminated surface here).
 func extractLandedBeadIDs(msg string) []string {
 	type hit struct {
 		pos int
 		id  string
 	}
 	var hits []hit
-	collect := func(re *regexp.Regexp) {
-		for _, m := range re.FindAllStringSubmatchIndex(msg, -1) {
-			// m[2],m[3] are the start/end of capture group 1 (the id).
-			hits = append(hits, hit{pos: m[2], id: msg[m[2]:m[3]]})
+	// 1) Closes / Closes-scenario trailers — anywhere in the message.
+	for _, m := range closesTrailerRe.FindAllStringSubmatchIndex(msg, -1) {
+		hits = append(hits, hit{pos: m[2], id: msg[m[2]:m[3]]})
+	}
+	// 2) Subject-line parenthetical convention ONLY. Within each subject-paren
+	// group, extract EVERY bead id so a comma-list yields all of them.
+	subject := msg
+	if i := strings.IndexByte(msg, '\n'); i >= 0 {
+		subject = msg[:i]
+	}
+	for _, pm := range subjectParenGroupRe.FindAllStringSubmatchIndex(subject, -1) {
+		innerStart, innerEnd := pm[2], pm[3] // capture group 1 = inner paren text
+		inner := subject[innerStart:innerEnd]
+		for _, im := range beadIDRe.FindAllStringIndex(inner, -1) {
+			hits = append(hits, hit{pos: innerStart + im[0], id: inner[im[0]:im[1]]})
 		}
 	}
-	collect(closesTrailerRe)
-	collect(titleParensRe)
 	sort.SliceStable(hits, func(i, j int) bool { return hits[i].pos < hits[j].pos })
 
 	seen := map[string]bool{}
