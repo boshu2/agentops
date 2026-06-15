@@ -46,11 +46,11 @@
     }
   },
   "evidence": {
-    "verified_against": "codex-cli 0.137.0",
+    "verified_against": "codex-cli 0.139.0",
     "sources": [
-      { "kind": "cli-help", "cmd": "codex exec --help", "verified": "2026-06-06" },
-      { "kind": "cli-help", "cmd": "codex exec resume --help", "verified": "2026-06-06" },
-      { "kind": "cli-status", "cmd": "codex login status", "result": "Logged in using ChatGPT", "verified": "2026-06-06" }
+      { "kind": "cli-help", "cmd": "codex exec --help", "verified": "2026-06-15" },
+      { "kind": "cli-help", "cmd": "codex exec resume --help", "verified": "2026-06-15" },
+      { "kind": "cli-status", "cmd": "codex login status", "result": "Logged in using ChatGPT", "verified": "2026-06-15" }
     ]
   },
   "quality_score": 0.95

@@ -63,7 +63,7 @@ Drive headless Codex worker and validator agents with `codex exec` on the ChatGP
 
 Auth is the whole game. `codex login status` must read **`Logged in using ChatGPT`** (the Pro/Plus subscription via OAuth). That billing is flat-rate. The moment Codex is authed with an API key (`OPENAI_API_KEY`, `codex login --with-api-key`), every token is metered against the API account — the exact failure mode `claude -p` causes on the Claude side. This skill exists to keep Codex workers on the sub. Without it, a loop that dispatches Codex turns can quietly run on metered API billing and produce a surprise invoice.
 
-Verified against `codex-cli 0.139.0` (`codex exec --help`, `codex exec resume --help`).
+Verified against `codex-cli 0.139.0` (`codex exec --help`, `codex exec resume --help`). **Re-verify the flag surface on the next codex-cli bump** — the flag tables (Phase 2 key flags, the Phase 3 resume currency note) are version-pinned; a CLI upgrade can add/rename/move flags, so re-run the two `--help` commands and reconcile before trusting this skill against a newer codex.
 
 ## Folded triggers (ag-s43tg wave 1): `codex-goals` + `codex-mcp-plugins` + `codex-sandbox-evidence` route here
 
