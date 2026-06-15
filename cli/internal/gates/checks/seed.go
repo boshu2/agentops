@@ -49,6 +49,11 @@ func init() {
 		{ID: "always.agents-write-surfaces", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-agents-write-surfaces.sh"},
 		{ID: "always.door9-no-claude-p", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-door9-no-claude-p.sh"},
 		{ID: "always.no-tracked-agents", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-no-tracked-agents.sh"},
+		// always-run + fail-closed PATH guard: a private artifact (corpus,
+		// tracker, untraceable wiki) must never reach the PUBLIC repo. No Match
+		// glob — a force-added private path might not match any corpus glob, so
+		// changed-file scoping must never be able to skip this (ag-ao0eo).
+		{ID: "corpus.path-guard", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-corpus-path-guard.sh"},
 		{ID: "always.embedded-sync", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-embedded-sync.sh"},
 
 		// routed by change class
