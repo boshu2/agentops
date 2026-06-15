@@ -4644,3 +4644,33 @@ ao verdict-gate <file|-> [flags]
 
 ---
 
+### `ao yield`
+
+Record durable, append-only, bead-keyed operational events for the
+
+```
+ao yield [command]
+```
+
+**Subcommands:**
+
+#### `ao yield emit`
+
+Append one operational event keyed by bead to the yield ledger
+
+```
+ao yield emit <accept|gate-verdict|usage> --bead <id> --run <id> [--json <body> | typed flags] [flags]
+```
+
+**Flags:**
+
+```
+      --bead string   bead id this event is keyed to (required)
+  -h, --help          help for emit
+      --json string   the typed body object as a single JSON blob
+      --run string    factory run/cycle id (required)
+      --ts string     optional RFC3339 timestamp; defaults to now (UTC)
+```
+
+---
+

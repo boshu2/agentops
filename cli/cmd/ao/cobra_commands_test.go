@@ -492,6 +492,7 @@ func TestCobraCommandTreeRegistration(t *testing.T) {
 		"vibe-check",
 		"wiki",
 		"worktree",
+		"yield",
 	}
 	cmdSet := make(map[string]bool)
 	for _, name := range cmdNames {
@@ -638,6 +639,7 @@ func TestCobraExpectedCmdsMatchRegistration(t *testing.T) {
 		"vibe-check",
 		"wiki",
 		"worktree",
+		"yield",
 	}
 
 	// Every expected command must be registered
