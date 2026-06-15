@@ -82,6 +82,50 @@ func TestRunYieldGauge_Report(t *testing.T) {
 	}
 }
 
+// TestRunYieldGauge_UnadmittedWarning verifies the report surfaces the E-G leak
+// line when an accept is NOT gate-admitted (its ref resolves to no CONFIRMED
+// verdict) — so an operator sees that the mesh saw unjudged deposits.
+func TestRunYieldGauge_UnadmittedWarning(t *testing.T) {
+	root := t.TempDir()
+	const run = "r-unadmitted"
+	w := yieldledger.Writer{}
+	// REFUTED verdict + an accept backed by it → unadmitted deposit.
+	if _, err := w.AppendGateVerdict(root, yieldledger.GateVerdictInput{
+		BeadID: "ag-bad", RunID: run, Difficulty: 1,
+		PawlVerdictRef: yieldledger.PawlVerdictRef{BeadID: "ag-bad", HeadSHA: "sha-bad7"},
+		Disposition:    yieldledger.DispositionRefuted, HeadSHA: "sha-bad7", Attempt: 1,
+		AuthorContextID: "ctx-1", AuthorFamily: "claude",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.AppendAccept(root, yieldledger.AcceptInput{
+		BeadID: "ag-bad", RunID: run, MergeSHA: "merge-bad7", MergedBy: "orch",
+		GateVerdictRef: yieldledger.PawlVerdictRef{BeadID: "ag-bad", HeadSHA: "sha-bad7"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	prev := testProjectDir
+	testProjectDir = root
+	defer func() { testProjectDir = prev }()
+
+	cmd := yieldGaugeCmd
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	if err := cmd.Flags().Set("run", run); err != nil {
+		t.Fatal(err)
+	}
+	if err := runYieldGauge(cmd, nil); err != nil {
+		t.Fatalf("runYieldGauge: %v", err)
+	}
+	got := out.String()
+	for _, want := range []string{"unadmitted deposits", "E-G LEAK"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("report missing %q (unadmitted accept should surface the leak)\n--- report ---\n%s", want, got)
+		}
+	}
+}
+
 // TestRunYieldGauge_JSON verifies --json emits the gauges plus the hypotheses,
 // and that C is the pending sentinel when no --c-delta is supplied.
 func TestRunYieldGauge_JSON(t *testing.T) {
