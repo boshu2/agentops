@@ -139,6 +139,48 @@ func TestVerifyChain_DetectsTamper(t *testing.T) {
 	}
 }
 
+// TestJoinKeys_AreNonPayload_HashUnaffected is the load-bearing invariant for
+// ag-5qltf: the additive (bead_id, merge_sha) mesh join keys MUST NOT enter the
+// payload hash. If they did, every edge committed before the fields existed
+// would fail VerifyChain. Proof: an edge sealed WITH the join keys has the
+// identical payload_hash/hash as the same edge sealed WITHOUT them, and a chain
+// mixing both verifies.
+func TestJoinKeys_AreNonPayload_HashUnaffected(t *testing.T) {
+	bare := validEdge()
+	withKeys := validEdge()
+	withKeys.BeadID = "ag-62jrm"
+	withKeys.MergeSHA = "abc1234def5678"
+
+	sealedBare, err := Seal(bare, "")
+	if err != nil {
+		t.Fatalf("seal bare: %v", err)
+	}
+	sealedKeys, err := Seal(withKeys, "")
+	if err != nil {
+		t.Fatalf("seal withKeys: %v", err)
+	}
+
+	if sealedBare.PayloadHash != sealedKeys.PayloadHash {
+		t.Fatalf("payload_hash changed by join keys: bare=%s withKeys=%s — join keys leaked into the payload, which would break every pre-existing committed edge",
+			sealedBare.PayloadHash, sealedKeys.PayloadHash)
+	}
+	if sealedBare.Hash != sealedKeys.Hash {
+		t.Fatalf("hash changed by join keys: bare=%s withKeys=%s", sealedBare.Hash, sealedKeys.Hash)
+	}
+	// The keys still round-trip on the record (just not into the hash).
+	if sealedKeys.BeadID != "ag-62jrm" || sealedKeys.MergeSHA != "abc1234def5678" {
+		t.Fatalf("join keys lost after seal: bead_id=%q merge_sha=%q", sealedKeys.BeadID, sealedKeys.MergeSHA)
+	}
+	// A chain mixing a legacy (no-keys) edge and a join-key edge verifies intact.
+	second, err := Seal(withKeys, sealedBare.Hash)
+	if err != nil {
+		t.Fatalf("seal second: %v", err)
+	}
+	if idx, err := VerifyChain([]Edge{sealedBare, second}); err != nil || idx != 0 {
+		t.Fatalf("mixed legacy+join-key chain: idx=%d err=%v, want 0/nil", idx, err)
+	}
+}
+
 func TestEdgeIdentity_IgnoresTimestampAndHashes(t *testing.T) {
 	e1 := validEdge()
 	e1.TS = "2026-01-01T00:00:00Z"

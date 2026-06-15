@@ -190,4 +190,16 @@ func TestBuildBeadCommitEdge(t *testing.T) {
 	if !strings.Contains(e.EvidenceRef, "abc1234def") {
 		t.Errorf("evidence should reference the commit, got %q", e.EvidenceRef)
 	}
+	// Mesh join keys (ag-5qltf): bead_id + merge_sha are stamped first-class,
+	// denormalizing from_id/to_id so the yield↔provenance join resolves on
+	// (bead_id, merge_sha) without decoding edge endpoints.
+	if e.BeadID != "ag-62jrm" {
+		t.Errorf("bead_id = %q, want ag-62jrm (universal mesh join key)", e.BeadID)
+	}
+	if e.MergeSHA != "abc1234def" {
+		t.Errorf("merge_sha = %q, want abc1234def (bead→commit anchor)", e.MergeSHA)
+	}
+	if e.BeadID != e.FromID || e.MergeSHA != e.ToID {
+		t.Errorf("join keys must denormalize from_id/to_id: bead_id=%q from_id=%q, merge_sha=%q to_id=%q", e.BeadID, e.FromID, e.MergeSHA, e.ToID)
+	}
 }

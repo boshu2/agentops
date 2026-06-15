@@ -52,6 +52,16 @@
       "minLength": 1,
       "description": "Optional pointer to the evidence backing this edge — a repo-relative path, a CI run URL, a commit sha, or a ledger event_id. Required in practice for inferred/mined edges to remain auditable, but optional at the schema level so authored edges asserted from a bead need not duplicate the bead id."
     },
+    "bead_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional, additive mesh join key (ag-5qltf, epic ag-w0wr2): the canonical work-unit id (e.g. 'ag-62jrm') this edge pertains to. On a bead→commit edge it denormalizes from_id. bead_id is the UNIVERSAL join key across the yield↔provenance mesh (the corpus→C hop joins on bead_id alone). NON-payload: excluded from payload_hash because it is a projection of the already-hashed from_id/to_id, so existing committed edges keep their hashes and VerifyChain stays intact."
+    },
+    "merge_sha": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Optional, additive mesh join key (ag-5qltf): the full/canonical trunk commit OID (push-to-main: the landed commit) anchoring the bead→commit hop. Denormalizes to_id on a bead→commit edge. Pairs with bead_id as (bead_id, merge_sha). NON-payload (see bead_id)."
+    },
     "trust_tier": {
       "type": "string",
       "enum": ["authored", "inferred", "mined"],
@@ -68,7 +78,7 @@
     },
     "payload_hash": {
       "$ref": "#/$defs/sha256_hex",
-      "description": "sha256 (lowercase hex) over the canonical JSON of the edge payload — every field of this record EXCEPT prev_hash, payload_hash, and hash."
+      "description": "sha256 (lowercase hex) over the canonical JSON of the edge payload — every field of this record EXCEPT prev_hash, payload_hash, hash, and the additive non-payload join keys (bead_id, merge_sha). The join keys are excluded because they denormalize the already-hashed from_id/to_id; excluding them keeps payload_hash stable for edges that predate the join-key fields (ag-5qltf)."
     },
     "hash": {
       "$ref": "#/$defs/sha256_hex",
