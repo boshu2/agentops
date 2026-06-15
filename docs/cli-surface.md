@@ -208,6 +208,7 @@
 | `ao refinery once` | `unsafe-live` | `allowlisted` | Runs the full refinery against live repo state; command registration and subcommands are covered by refinery tests. |
 | `ao refinery run` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao registry list` | `public-stateful-fixture-needed` | `allowlisted` | Reads generated registry state and needs a representative registry fixture. |
+| `ao rehydrate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao retrieval-bench` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao robot-docs` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao rpi cancel` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |

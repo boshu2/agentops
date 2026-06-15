@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-15T14:05:47Z",
+  "generated_at": "2026-06-15T16:17:48Z",
   "summary": {
     "skills": 72,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 85,
+    "cli_commands": 86,
     "workflows": 4,
-    "capabilities": 171
+    "capabilities": 172
   },
   "surfaces": {
     "skills": [
@@ -1261,6 +1261,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao rehydrate",
+        "path": "cli/cmd/ao/",
+        "purpose": "Restore a lane from its latest handoff (the read-side of handoff→clear→rehydrate)",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao retrieval-bench",
         "path": "cli/cmd/ao/",
         "purpose": "Run retrieval quality benchmarks",
@@ -1493,9 +1500,9 @@
     ]
   },
   "capability_summary": {
-    "total": 171,
+    "total": 172,
     "skills": 72,
-    "cli_commands": 85,
+    "cli_commands": 86,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1565,6 +1572,7 @@
     "redact",
     "refinery",
     "registry",
+    "rehydrate",
     "retrieval-bench",
     "robot-docs",
     "rpi",
@@ -5230,6 +5238,24 @@
         "--dry-run",
         "--json",
         "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.rehydrate",
+      "name": "ao rehydrate",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Restore a lane from its latest handoff (the read-side of handoff→clear→rehydrate)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--peek",
         "--verbose"
       ],
       "path": "cli/cmd/ao/"

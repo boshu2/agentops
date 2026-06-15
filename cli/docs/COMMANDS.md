@@ -4357,6 +4357,24 @@ ao registry list [flags]
 
 ---
 
+### `ao rehydrate`
+
+Rehydrate emits a lane's re-bootstrap brief from the most recent handoff
+
+```
+ao rehydrate [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for rehydrate
+      --json   Emit the raw handoff artifact as JSON
+      --peek   Read the brief without marking the handoff consumed
+```
+
+---
+
 ### `ao scenario`
 
 Create, list, and validate holdout scenarios stored in .agents/holdout/.
