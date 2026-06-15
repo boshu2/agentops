@@ -155,6 +155,26 @@ the status signals were misread. Discipline:
    dedicated `--codex-goal` flag for the `/goal` flow — the tell that slash-commands
    need special handling). Prefer self-contained direct instructions, and ALWAYS verify
    the lane engaged (via `atm save` + artifacts), never assume the send took.
+6. **Wait for input-ready BEFORE the first dispatch — the boot race (Hard-won 2026-06-15).**
+   `atm spawn` returns before the pane's agent has booted to its input box. A `send` in
+   the first few seconds lands on a not-yet-ready TUI and is **silently dropped** — the
+   prompt never reaches the agent, and the lane looks "spawned" but never engages. The
+   tell: a `>_ OpenAI Codex (v…)` welcome screen with an empty input box (or a Claude pane
+   still loading) is **NOT** ready. Confirm a clean ready prompt
+   (`tmux capture-pane -p -t <sess>.<pane>` → the `❯`/input box, no splash) before
+   sending. A wedge from sending-too-early is **operator error, not a tool defect** — do
+   NOT conclude "codex is unreliable" and pivot worker models to escape it; fix the
+   dispatch (wait + verify). The same `atm send` delivers fine once the pane is ready.
+7. **Verify the FIRST lane engaged before fanning out to the rest.** Dispatch lane 1,
+   confirm it LEFT the idle prompt and is working (an artifact appearing, OR CPU burn —
+   see 8), THEN send lanes 2..N. Sending all N blind means discovering all N missed at
+   once; one confirmed lane is your proof the dispatch path works before you commit the
+   fleet to it.
+8. **`ps` CPU% is the honest wedge signal the meter isn't.** `ps aux | grep '[c]odex'`
+   (or `[c]laude`) → a pane's agent process at **0.0% CPU with no growing artifact** is
+   genuinely idle, not "working invisibly." CPU burn + growing token counts = real work
+   even when `atm activity` and the TUI capture look frozen. The meter lies and the TUI
+   capture can be stale; CPU does not. Use it to break ties before respawning.
 
 ## Coordination (the Agent Mail leg)
 
