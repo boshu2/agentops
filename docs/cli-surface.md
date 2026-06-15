@@ -55,6 +55,7 @@
 | `ao corpus fitness` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao corpus inject` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao corpus restore` | `public-stateful-fixture-needed` | `allowlisted` | Restores corpus snapshots and needs a disposable corpus fixture. |
+| `ao corpus scan` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao corpus snapshot` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao council-gate` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao cron self-adjust` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
