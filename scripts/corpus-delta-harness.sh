@@ -16,7 +16,8 @@
 #       "$CORPUS_DELTA_RUNNER" <task-id> <agent> <seed>
 #   with AO_AGENTS_DIR exported to the arm's corpus root. It MUST print one JSON line:
 #       {"pass": true|false, "score": <num>, "total": <num>}
-#   Default runner = scripts/eval-agent-harness.sh (real agent: claude|codex).
+#   Default runner = scripts/eval-agent-harness.sh (real agent: codex only;
+#   non-codex --agent fails fast). A custom CORPUS_DELTA_RUNNER sets its own contract.
 #
 # ⚠️ HONESTY: a run of this harness with a STUB runner (e.g. the bats test) proves the
 #    harness PLUMBING only — it is NOT evidence of the corpus delta. The real claim needs
@@ -29,7 +30,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TASK_ID=""
 SEEDS=3
 CORPUS_DIR="$REPO_ROOT/.agents"
-AGENT="claude"
+AGENT="codex"
 OUT=""
 
 usage() {
@@ -39,7 +40,10 @@ Usage: scripts/corpus-delta-harness.sh --task <id> [options]
   --task <id>        Workbench task id (required)
   --seeds <K>        Seeds per arm (default: 3)
   --corpus <dir>     Organic corpus root for context_on (default: repo .agents)
-  --agent <name>     Agent for the default runner: claude|codex (default: claude)
+  --agent <name>     Agent for the default runner: codex only (default: codex).
+                     The default runner (eval-agent-harness.sh) supports codex
+                     only; a non-codex --agent fails fast before any seed. A
+                     custom CORPUS_DELTA_RUNNER may accept other agents.
   --out <file>       Write the ContextDeltaScorecard JSON here (default: stdout only)
 
 Override CORPUS_DELTA_RUNNER to inject a custom runner (used by tests).
@@ -63,6 +67,15 @@ done
 
 DEFAULT_RUNNER="$REPO_ROOT/scripts/eval-agent-harness.sh"
 RUNNER="${CORPUS_DELTA_RUNNER:-$DEFAULT_RUNNER}"
+
+# ag-jqpy1: the default runner (eval-agent-harness.sh) is codex-only. Fail fast
+# BEFORE any seed if it would run with a non-codex agent — a wrong/missing --agent
+# must never silently invalidate a metered W1c run. A custom CORPUS_DELTA_RUNNER
+# (e.g. the test stub) is exempt: it owns its own agent contract.
+if [[ "$RUNNER" == "$DEFAULT_RUNNER" && "$AGENT" != "codex" ]]; then
+  echo "error: default runner supports codex only; got --agent '$AGENT'. Pass --agent codex (or override CORPUS_DELTA_RUNNER)." >&2
+  exit 2
+fi
 
 # --- ag-5apc: always-loaded-root contamination fix --------------------------------
 # Isolating AO_AGENTS_DIR alone is INSUFFICIENT: the agent also auto-loads knowledge
