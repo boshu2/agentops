@@ -4167,6 +4167,24 @@ ao provenance add <from-id> <to-id> [flags]
       --ts string           Override the UTC RFC3339 timestamp (defaults to now)
 ```
 
+#### `ao provenance emit-landed`
+
+Read the commit(s) being landed and append a schema-valid, hash-chained
+
+```
+ao provenance emit-landed [flags]
+```
+
+**Flags:**
+
+```
+      --commit string   Single commit-ish to emit edges for (default HEAD when no --range)
+      --dry-run         Resolve and print edges without writing the ledger
+  -h, --help            help for emit-landed
+      --json            Emit appended edges as JSON
+      --range string    Git revision range (e.g. origin/main..HEAD); emits for every commit in it
+```
+
 #### `ao provenance export`
 
 Read docs/provenance/ledger.jsonl, canonically sort its edges by

@@ -1249,6 +1249,13 @@
     },
     {
       "category": "public-tested",
+      "command": "provenance emit-landed",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "provenance export",
       "coverage_status": "covered",
       "kind": "leaf",
@@ -1824,6 +1831,20 @@
     {
       "category": "public-tested",
       "command": "wiki search",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-stateful-fixture-needed",
+      "command": "yield emit",
+      "coverage_status": "allowlisted",
+      "kind": "leaf",
+      "reason": "Parent of accept/gate-verdict/usage; writes the yield ledger and needs a bead+run fixture. Pre-existing gap surfaced by an unrelated cli/cmd/ao change (ag-62jrm)."
+    },
+    {
+      "category": "public-tested",
+      "command": "yield gauge",
       "coverage_status": "covered",
       "kind": "leaf",
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
