@@ -123,6 +123,13 @@ func Execute() {
 			}
 			os.Exit(tickErr.ExitCode())
 		}
+		var scanErr *corpusScanExitError
+		if errors.As(err, &scanErr) {
+			// The exit code IS the verdict for `ao corpus scan`: 1 means a leak
+			// marker (or unreadable file) was detected — fail closed. The
+			// report already went to stdout/stderr, so nothing more to surface.
+			os.Exit(scanErr.ExitCode())
+		}
 		printRequiredFlagHint(executedCmd, err)
 		os.Exit(1)
 	}
