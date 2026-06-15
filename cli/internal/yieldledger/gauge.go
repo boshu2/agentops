@@ -1,5 +1,10 @@
 package yieldledger
 
+import (
+	"sort"
+	"time"
+)
+
 // Gauge computation for the dynamo yield vector (ag-qzinh): the dial on top of
 // the meter ag-grcz3 built. ComputeGauges reads the bead-keyed operational event
 // stream and derives the gauges per
@@ -113,26 +118,70 @@ func spendOf(u *UsageBody) int {
 	return u.TokensOut
 }
 
-// runUsage returns the usage events for one run keyed by bead, plus the set of
-// beads that have ≥1 accept and the set with ≥1 gate-verdict in this run.
-func computeRunSets(l *Ledger, runID string) (
-	accepted map[string]bool, // bead -> has a terminal accept this run
-	attempted map[string]bool, // bead -> has ≥1 gate-verdict this run
-) {
-	accepted = map[string]bool{}
-	attempted = map[string]bool{}
-	for _, ev := range l.Events {
+type gateAttempt struct {
+	headSHA    string
+	attempt    int
+	ts         time.Time
+	eventIndex int
+}
+
+type runSets struct {
+	accepted         map[string]bool
+	attempted        map[string]bool
+	acceptingAttempt map[string]int
+	gateAttempts     map[string][]gateAttempt
+}
+
+// computeRunSets returns the run-level bead sets plus the gate attempt metadata
+// needed for Q and L's accepted-bead rework attribution.
+func computeRunSets(l *Ledger, runID string) runSets {
+	sets := runSets{
+		accepted:         map[string]bool{}, // bead -> has a terminal accept this run
+		attempted:        map[string]bool{}, // bead -> has ≥1 gate-verdict this run
+		acceptingAttempt: map[string]int{},  // bead -> attempt number authorized by accept
+		gateAttempts:     map[string][]gateAttempt{},
+	}
+	for idx, ev := range l.Events {
 		if ev.RunID != runID {
 			continue
 		}
 		switch ev.Event {
 		case EventAccept:
-			accepted[ev.BeadID] = true
+			sets.accepted[ev.BeadID] = true
 		case EventGateVerdict:
-			attempted[ev.BeadID] = true
+			if ev.GateVerdict == nil {
+				continue
+			}
+			sets.attempted[ev.BeadID] = true
+			sets.gateAttempts[ev.BeadID] = append(sets.gateAttempts[ev.BeadID], gateAttempt{
+				headSHA:    ev.GateVerdict.HeadSHA,
+				attempt:    ev.GateVerdict.Attempt,
+				ts:         eventTime(ev),
+				eventIndex: idx,
+			})
 		}
 	}
-	return accepted, attempted
+	for bead := range sets.gateAttempts {
+		sort.SliceStable(sets.gateAttempts[bead], func(i, j int) bool {
+			left := sets.gateAttempts[bead][i]
+			right := sets.gateAttempts[bead][j]
+			if left.ts.Equal(right.ts) {
+				return left.eventIndex < right.eventIndex
+			}
+			return left.ts.Before(right.ts)
+		})
+	}
+	for _, ev := range l.Events {
+		if ev.RunID != runID || ev.Event != EventAccept || ev.Accept == nil {
+			continue
+		}
+		if attempt, ok := acceptingAttemptFor(ev, sets.gateAttempts[ev.BeadID]); ok {
+			if current, exists := sets.acceptingAttempt[ev.BeadID]; !exists || attempt < current {
+				sets.acceptingAttempt[ev.BeadID] = attempt
+			}
+		}
+	}
+	return sets
 }
 
 // difficultyOf returns the bead's difficulty weight for this run, taken from its
@@ -197,21 +246,68 @@ func cleanFirstPass(l *Ledger, runID, beadID string) bool {
 	return false
 }
 
-// classifyUsage performs the read-time L join for one usage row: it joins the
-// row's bead to that bead's terminal disposition this run. A never-accepted bead
-// is a rejected loss; phase==rework is a rework loss; phase==coordination is a
-// coordination loss; spend on an accepted bead otherwise is productive.
-func classifyUsage(ev Event, accepted map[string]bool) LossCategory {
+func eventTime(ev Event) time.Time {
+	ts, _ := time.Parse(time.RFC3339, ev.TS)
+	return ts
+}
+
+func acceptingAttemptFor(ev Event, gates []gateAttempt) (int, bool) {
+	ref := ev.Accept.GateVerdictRef
+	if ref.BeadID != ev.BeadID {
+		return 0, false
+	}
+	for _, gate := range gates {
+		if gate.headSHA == ref.HeadSHA {
+			return gate.attempt, true
+		}
+	}
+	return 0, false
+}
+
+func usageAttempt(ev Event, eventIndex int, gates []gateAttempt) (int, bool) {
+	usageTS := eventTime(ev)
+	for _, gate := range gates {
+		if gate.ts.After(usageTS) || (gate.ts.Equal(usageTS) && gate.eventIndex > eventIndex) {
+			return gate.attempt, true
+		}
+	}
+	return 0, false
+}
+
+func (b *LossBreakdown) add(other LossBreakdown) {
+	b.Rejected += other.Rejected
+	b.Rework += other.Rework
+	b.Coordination += other.Coordination
+	b.Productive += other.Productive
+}
+
+// classifyUsage performs the read-time L join for one usage row. A
+// never-accepted bead is rejected loss; explicit rework/coordination phases stay
+// loss; an accepted bead's spend before the accepting attempt-N is rework loss.
+// Ambiguous or post-confirm accepted-bead spend stays productive: L should
+// under-attribute rework rather than over-charge productive work as loss.
+func classifyUsage(ev Event, eventIndex int, sets runSets) LossBreakdown {
+	spend := spendOf(ev.Usage)
 	switch ev.Usage.Phase {
 	case PhaseRework:
-		return LossRework
+		return LossBreakdown{Rework: spend}
 	case PhaseCoordination:
-		return LossCoordination
+		return LossBreakdown{Coordination: spend}
 	}
-	if !accepted[ev.BeadID] {
-		return LossRejected
+	if !sets.accepted[ev.BeadID] {
+		return LossBreakdown{Rejected: spend}
 	}
-	return LossProductive
+	acceptingAttempt, hasAcceptingAttempt := sets.acceptingAttempt[ev.BeadID]
+	if !hasAcceptingAttempt || acceptingAttempt <= 1 {
+		return LossBreakdown{Productive: spend}
+	}
+	if attempt, ok := usageAttempt(ev, eventIndex, sets.gateAttempts[ev.BeadID]); ok {
+		if attempt < acceptingAttempt {
+			return LossBreakdown{Rework: spend}
+		}
+		return LossBreakdown{Productive: spend}
+	}
+	return LossBreakdown{Productive: spend}
 }
 
 // ComputeGauges derives the yield vector for runID from the ledger. C is
@@ -220,7 +316,7 @@ func classifyUsage(ev Event, accepted map[string]bool) LossCategory {
 func ComputeGauges(l *Ledger, runID string, cDelta float64, cKnown bool) Gauges {
 	g := Gauges{RunID: runID, SpendMeasure: SpendMeasure}
 
-	accepted, attempted := computeRunSets(l, runID)
+	sets := computeRunSets(l, runID)
 
 	// A and R.
 	for _, ev := range l.Events {
@@ -242,7 +338,7 @@ func ComputeGauges(l *Ledger, runID string, cDelta float64, cKnown bool) Gauges 
 	}
 
 	// Q — difficulty-weighted first-pass yield over distinct attempted beads.
-	for bead := range attempted {
+	for bead := range sets.attempted {
 		w := difficultyOf(l, runID, bead)
 		g.QDenominator += w
 		g.QAttemptBeads++
@@ -272,21 +368,11 @@ func ComputeGauges(l *Ledger, runID string, cDelta float64, cKnown bool) Gauges 
 	}
 
 	// L — read-time loss join.
-	for _, ev := range l.Events {
+	for idx, ev := range l.Events {
 		if ev.RunID != runID || ev.Event != EventUsage || ev.Usage == nil {
 			continue
 		}
-		spend := spendOf(ev.Usage)
-		switch classifyUsage(ev, accepted) {
-		case LossRejected:
-			g.LCategory.Rejected += spend
-		case LossRework:
-			g.LCategory.Rework += spend
-		case LossCoordination:
-			g.LCategory.Coordination += spend
-		case LossProductive:
-			g.LCategory.Productive += spend
-		}
+		g.LCategory.add(classifyUsage(ev, idx, sets))
 	}
 	g.LSpend = g.LCategory.LossSpend()
 	if g.R > 0 {
