@@ -84,8 +84,16 @@ dispatch and tend AgentOps loops on an ATM swarm.
 ## Quick start
 
 ```bash
-# 1. Spawn a swarm of agent panes against the repo (2 Claude + 1 Codex worker).
-atm spawn agentops --cc=2 --cod=1
+# 1. Spawn a swarm of agent panes — BORN INTO COORDINATION (ag-tixgy gateway).
+#    --reserve makes each worker register in Agent Mail + hold its file scope +
+#    receive the "coordinate via am, never hand-roll" contract, by construction.
+#    Pass a per-lane scope so workers can't silently collide. (Implies --coord-contract.)
+atm spawn agentops --cc=2 --cod=1 --reserve "cli/ tests/"
+
+# Bare spawn (no --reserve) is still valid, but workers are then UNCOORDINATED
+# until each runs `am macros start-session` by hand — the #1 swarm failure mode.
+# scripts/check-spawn-reservation-coverage.sh flags atm-registered workers holding
+# no reservation, so you can catch an uncoordinated lane before it collides.
 
 # 2. Dispatch a whole loop to a pane — the SKILL, not a CLI subprocess.
 atm send agentops --pane=1 "/rpi ag-1234 --auto"
