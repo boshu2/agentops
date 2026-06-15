@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# ag-veotd: the dynamo-e2e harness runs one full loop cycle and proves it closes.
+# ag-veotd + ag-7wrje: the dynamo-e2e harness runs the loop end-to-end (clean + rework/ratchet) and proves it closes.
 
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
@@ -23,6 +23,17 @@ setup() {
   [[ "$output" == *"Shadow-mode actuation"* ]]
   # C is honestly pending, never fabricated
   [[ "$output" == *"pending"* ]]
+}
+
+@test "rework scenario: the ratchet is honest — reject->rework->accept penalizes Q and L (ag-7wrje)" {
+  run env AO_BIN="$AO_E2E_BIN" "$HARNESS" --scenario=rework --run-id=bats-rework
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"RATCHET HONEST"* ]]
+  [[ "$output" == *"REFUTED attempt-1"* ]]
+  # the reworked bead is accepted but NOT counted a clean first pass (Q penalized)
+  [[ "$output" == *"(0/1 beads clean)"* ]]
+  # rework spend is counted as loss (L > 0)
+  [[ "$output" != *"L=0.000"* ]]
 }
 
 @test "the loop-closed proof has teeth: a non-codex AO_BIN that emits nothing fails" {
