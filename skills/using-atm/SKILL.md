@@ -120,6 +120,34 @@ Run one tick at a time; take the first action whose trigger fires:
   drain the backlog before taking new feature work.
 - **Otherwise** → observe; do not nudge a healthy working pane.
 
+> **The wedged-vs-working judgment depends entirely on reading the pane CORRECTLY — see below. The `atm` meter lies.**
+
+## Observing lanes (the meter LIES)
+
+Hard-won 2026-06-15: an operator nearly **respawned healthy working lanes** because
+the status signals were misread. Discipline:
+
+1. **`atm status` context-% and `atm activity` are UNRELIABLE for codex panes.** They
+   freeze around ~4K/256K and show `WAITING`/`available` while the codex lane is
+   actively, correctly working. **Never conclude a lane is wedged from the meter or
+   `atm activity` alone** — that's how you kill a working lane.
+2. **To actually SEE pane content: `atm save <session>`** → writes per-pane dumps to
+   `./outputs/<session>_<pane>_<timestamp>.txt`; read those. (`atm copy <session>
+   [--cod|--cc|--all]` copies to clipboard.) There is **no** `atm capture`/`atm read`
+   — don't reach for one.
+3. **Confirm a lane by its ARTIFACTS, not the meter:** a real lane claims its bead
+   (`br`/`bd` assignee), creates a worktree/branch, opens a PR, or writes its output
+   file. Check those (`git ls-remote --heads origin 'task/*'`, `gh pr list`, the
+   expected path) as ground truth.
+4. **Diagnose BEFORE you respawn.** `atm respawn` kills + restarts panes — run
+   `atm save` and read the dump first; only respawn after the dump confirms a genuine
+   wedge (an error, a login/trust prompt, an empty/frozen transcript), not a frozen meter.
+5. **Dispatch caveat:** `atm send --pane=N "prompt"` reliably delivers DIRECT prompts.
+   Slash-commands (`/rpi`) may NOT fire via a plain send on codex panes (codex has a
+   dedicated `--codex-goal` flag for the `/goal` flow — the tell that slash-commands
+   need special handling). Prefer self-contained direct instructions, and ALWAYS verify
+   the lane engaged (via `atm save` + artifacts), never assume the send took.
+
 ## Coordination (the Agent Mail leg)
 
 ATM panes coordinate through the other substrate legs, not bespoke glue:
