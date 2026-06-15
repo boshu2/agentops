@@ -139,3 +139,15 @@ CSTUB_EOF
     "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS" --out "$TMP/sc2.json"
   jq -e '.context_off.aggregate_score == 0' "$TMP/sc2.json" >/dev/null
 }
+
+@test "default runner with non-codex --agent fails fast before any seed (ag-jqpy1)" {
+  run "$HARNESS" --task demo --agent claude --seeds 1
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"default runner supports codex only"* ]]
+}
+
+@test "custom CORPUS_DELTA_RUNNER is exempt from the codex-only fail-fast (ag-jqpy1)" {
+  # a custom runner owns its agent contract; --agent claude must NOT trip the guard
+  run env CORPUS_DELTA_RUNNER=/bin/true "$HARNESS" --task demo --agent claude --seeds 1 --corpus "$CORPUS"
+  [[ "$output" != *"default runner supports codex only"* ]]
+}
