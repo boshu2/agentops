@@ -19,13 +19,16 @@ RUN_ID="dynamo-e2e-demo"
 BEAD="e2e-synthetic-1"
 AO_BIN="${AO_BIN:-ao}"          # override to a freshly-built binary in CI/tests
 KEEP=false
+SCENARIO="clean"               # clean = CONFIRMED first pass; rework = REFUTE -> rework -> CONFIRM (the ratchet)
 for a in "$@"; do
   case "$a" in
-    --run-id=*) RUN_ID="${a#*=}" ;;
-    --keep)     KEEP=true ;;
-    -h|--help)  sed -n '2,20p' "$0"; exit 0 ;;
+    --run-id=*)   RUN_ID="${a#*=}" ;;
+    --scenario=*) SCENARIO="${a#*=}" ;;
+    --keep)       KEEP=true ;;
+    -h|--help)    sed -n '2,20p' "$0"; exit 0 ;;
   esac
 done
+case "$SCENARIO" in clean|rework) ;; *) echo "dynamo-e2e: --scenario must be clean|rework (got '$SCENARIO')" >&2; exit 2 ;; esac
 
 command -v "$AO_BIN" >/dev/null 2>&1 || { echo "dynamo-e2e: '$AO_BIN' not on PATH (build + install ao, or set AO_BIN)" >&2; exit 2; }
 
@@ -39,23 +42,42 @@ cd "$WORK"
 
 emit() { "$AO_BIN" yield emit "$@"; }   # real organ — fail HARD here (this is a test, not the fail-open merge path)
 
-echo "== DYNAMO E2E — one full cycle (run=$RUN_ID, bead=$BEAD) =="
+gv() { # gate-verdict helper: gv <head_sha> <disposition> <attempt>
+  emit gate-verdict --bead "$BEAD" --run "$RUN_ID" --json "{\"difficulty\":2,\"pawl_verdict_ref\":{\"bead_id\":\"$BEAD\",\"head_sha\":\"$1\"},\"disposition\":\"$2\",\"head_sha\":\"$1\",\"attempt\":$3,\"mode\":\"fresh-context\",\"author_context_id\":\"e2e-author\",\"refuter_families\":[\"claude\"],\"author_family\":\"codex\",\"cross_family\":true,\"author_ne_reviewer\":true,\"evidence_present\":true}" >/dev/null
+}
+use() { # usage helper: use <tokens> <phase>
+  emit usage --bead "$BEAD" --run "$RUN_ID" --json "{\"tokens_in\":0,\"tokens_out\":$1,\"cost_usd\":0,\"wall_clock_s\":1,\"model\":\"stub-worker\",\"phase\":\"$2\"}" >/dev/null
+}
+
+echo "== DYNAMO E2E — scenario=$SCENARIO (run=$RUN_ID, bead=$BEAD) =="
 
 # 1. DISPATCH + PRODUCE (stub worker; deterministic, no LLM) -------------------
 echo "[1/6] dispatch+produce : stub worker produced work for $BEAD (no LLM)"
-HEAD_SHA="e2e000feed"   # synthetic commit the gate reviews + the accept binds to
 
-# 2. GATE (cross-family verdict: author != judge, fresh-context, CONFIRMED) ----
-emit gate-verdict --bead "$BEAD" --run "$RUN_ID" --json "{\"difficulty\":2,\"pawl_verdict_ref\":{\"bead_id\":\"$BEAD\",\"head_sha\":\"$HEAD_SHA\"},\"disposition\":\"CONFIRMED\",\"head_sha\":\"$HEAD_SHA\",\"attempt\":1,\"mode\":\"fresh-context\",\"author_context_id\":\"e2e-author\",\"refuter_families\":[\"claude\"],\"author_family\":\"codex\",\"cross_family\":true,\"author_ne_reviewer\":true,\"evidence_present\":true}" >/dev/null
-echo "[2/6] gate           : CONFIRMED (fresh-context, author!=judge)"
-
-# 3. ACCEPT (terminal accept bound to the gate verdict) -----------------------
-emit accept --bead "$BEAD" --run "$RUN_ID" --json "{\"merge_sha\":\"$HEAD_SHA\",\"merged_by\":\"dynamo-e2e\",\"gate_verdict_ref\":{\"bead_id\":\"$BEAD\",\"head_sha\":\"$HEAD_SHA\"}}" >/dev/null
-echo "[3/6] accept         : merged $HEAD_SHA (gated)"
-
-# 4. USAGE (per-bead spend — the R denominator) -------------------------------
-emit usage --bead "$BEAD" --run "$RUN_ID" --json "{\"tokens_in\":0,\"tokens_out\":1000,\"cost_usd\":0,\"wall_clock_s\":1,\"model\":\"stub-worker\",\"phase\":\"implement\"}" >/dev/null
-echo "[4/6] usage          : recorded (R fed)"
+if [[ "$SCENARIO" == "clean" ]]; then
+  # Happy path: CONFIRMED on the first attempt.
+  HEAD_SHA="e2e000feed"
+  gv "$HEAD_SHA" CONFIRMED 1
+  echo "[2/6] gate           : CONFIRMED attempt-1 (clean first pass)"
+  emit accept --bead "$BEAD" --run "$RUN_ID" --json "{\"merge_sha\":\"$HEAD_SHA\",\"merged_by\":\"dynamo-e2e\",\"gate_verdict_ref\":{\"bead_id\":\"$BEAD\",\"head_sha\":\"$HEAD_SHA\"}}" >/dev/null
+  echo "[3/6] accept         : merged $HEAD_SHA (gated)"
+  use 1000 implement
+  echo "[4/6] usage          : 1000 tok productive (R fed)"
+else
+  # The RATCHET: attempt-1 REFUTED -> rework -> attempt-2 CONFIRMED -> accept.
+  # Proves reconcile-by-rejection: bad work is rejected, reworked, and only the
+  # good commit is accepted; the gauges must PENALIZE the rework (Q not-clean, L>0).
+  gv "e2e0v1bad" REFUTED 1
+  use 700 implement                       # attempt-1 spend (before the accept -> rework-loss)
+  echo "[2/6] gate           : REFUTED attempt-1 -> reconcile: rework"
+  HEAD_SHA="e2e0v2good"
+  gv "$HEAD_SHA" CONFIRMED 2
+  use 500 rework                          # rework spend
+  echo "      gate (re)      : CONFIRMED attempt-2 (after rework)"
+  emit accept --bead "$BEAD" --run "$RUN_ID" --json "{\"merge_sha\":\"$HEAD_SHA\",\"merged_by\":\"dynamo-e2e\",\"gate_verdict_ref\":{\"bead_id\":\"$BEAD\",\"head_sha\":\"$HEAD_SHA\"}}" >/dev/null
+  echo "[3/6] accept         : merged $HEAD_SHA (gated, attempt-2)"
+  echo "[4/6] usage          : 700 attempt-1 + 500 rework (R fed; loss expected)"
+fi
 
 # 5. SENSE + 6. TUNE (real gauge: A/Q/A-R/E/L + C status + shadow hypotheses) --
 echo "[5/6] sense+tune     : ao yield gauge --"
@@ -76,14 +98,27 @@ a_val="$(grep -E '^A \(accepted\)' <<<"$GAUGE_OUT" | grep -oE '[0-9]+' | head -1
 # R (raw input) must be > 0 — the usage event flowed through
 r_val="$(grep -E '^R \(raw input\)' <<<"$GAUGE_OUT" | grep -oE '[0-9]+' | head -1 || echo 0)"
 [[ "${r_val:-0}" -gt 0 ]] || { echo "dynamo-e2e: usage did NOT reach the sensor (R=$r_val)" >&2; fail=1; }
-# GATE organ flowed: the CONFIRMED attempt-1 gate-verdict must be counted clean in
-# Q (>=1 bead clean). Without this, A>=1 only proves accept; this proves the gate
-# verdict reached the sensor and was scored (fresh-context reviewer's note).
-grep -qE '\([1-9][0-9]*/[0-9]+ beads clean\)' <<<"$GAUGE_OUT" || { echo "dynamo-e2e: gate-verdict did NOT reach the sensor (0 beads counted clean in Q)" >&2; fail=1; }
+# GATE organ flowed + the RATCHET is honest. The gate-verdict must reach Q, and Q
+# must reflect the scenario: clean => >=1 bead clean; rework => 0 clean (a
+# rejected-then-reworked bead is NOT a clean first pass) AND L>0 (rework is loss).
+clean_frac="$(grep -oE '\([0-9]+/[0-9]+ beads clean\)' <<<"$GAUGE_OUT" | head -1)"
+[[ -n "$clean_frac" ]] || { echo "dynamo-e2e: gate-verdict did NOT reach the sensor (no Q clean-fraction)" >&2; fail=1; }
+l_val="$(grep -E '^L \(loss\)' <<<"$GAUGE_OUT" | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo 0)"
+if [[ "$SCENARIO" == "clean" ]]; then
+  grep -qE '\([1-9][0-9]*/[0-9]+ beads clean\)' <<<"$GAUGE_OUT" || { echo "dynamo-e2e: clean run but 0 beads counted clean in Q ($clean_frac)" >&2; fail=1; }
+else
+  # ratchet: the reworked bead must NOT count clean, and rework spend must be loss
+  grep -qE '\(0/[0-9]+ beads clean\)' <<<"$GAUGE_OUT" || { echo "dynamo-e2e: rework run but Q counted a reworked bead as clean ($clean_frac) — ratchet not penalizing" >&2; fail=1; }
+  [[ "$l_val" != "0.000" && -n "$l_val" ]] || { echo "dynamo-e2e: rework run but L=$l_val (rework spend not counted as loss)" >&2; fail=1; }
+fi
 
 if [[ "$fail" -ne 0 ]]; then
-  echo "[6/6] VERDICT        : LOOP DID NOT CLOSE — missing organ signal(s)" >&2
+  echo "[6/6] VERDICT        : LOOP DID NOT CLOSE — organ/ratchet check failed" >&2
   exit 1
 fi
-echo "[6/6] verdict        : LOOP CLOSED — dispatch->gate->accept->sense->C->tune all wired"
+if [[ "$SCENARIO" == "rework" ]]; then
+  echo "[6/6] verdict        : LOOP CLOSED + RATCHET HONEST — reject->rework->accept; Q penalized $clean_frac, L=$l_val"
+else
+  echo "[6/6] verdict        : LOOP CLOSED — dispatch->gate->accept->sense->C->tune all wired ($clean_frac)"
+fi
 echo "== DYNAMO E2E OK =="
