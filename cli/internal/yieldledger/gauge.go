@@ -284,9 +284,8 @@ func (b *LossBreakdown) add(other LossBreakdown) {
 // classifyUsage performs the read-time L join for one usage row. A
 // never-accepted bead is rejected loss; explicit rework/coordination phases stay
 // loss; an accepted bead's spend before the accepting attempt-N is rework loss.
-// When a usage row is an aggregate emitted after all gate verdicts, split it
-// evenly across attempts so the N-1 pre-accepting attempts no longer disappear
-// into productive spend.
+// Ambiguous or post-confirm accepted-bead spend stays productive: L should
+// under-attribute rework rather than over-charge productive work as loss.
 func classifyUsage(ev Event, eventIndex int, sets runSets) LossBreakdown {
 	spend := spendOf(ev.Usage)
 	switch ev.Usage.Phase {
@@ -308,11 +307,7 @@ func classifyUsage(ev Event, eventIndex int, sets runSets) LossBreakdown {
 		}
 		return LossBreakdown{Productive: spend}
 	}
-	reworkSpend := spend * (acceptingAttempt - 1) / acceptingAttempt
-	return LossBreakdown{
-		Rework:     reworkSpend,
-		Productive: spend - reworkSpend,
-	}
+	return LossBreakdown{Productive: spend}
 }
 
 // ComputeGauges derives the yield vector for runID from the ledger. C is

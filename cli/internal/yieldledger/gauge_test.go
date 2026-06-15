@@ -341,7 +341,7 @@ func TestComputeGauges_AcceptedLateAttemptCountsPriorAttemptsAsRework(t *testing
 	}
 }
 
-func TestComputeGauges_AggregateAcceptedLateAttemptSpendIsProrated(t *testing.T) {
+func TestComputeGauges_PostConfirmProductiveSpendStaysProductive(t *testing.T) {
 	root := t.TempDir()
 	w := Writer{}
 	ts := time.Date(2026, 6, 15, 11, 0, 0, 0, time.UTC)
@@ -352,8 +352,7 @@ func TestComputeGauges_AggregateAcceptedLateAttemptSpendIsProrated(t *testing.T)
 		disposition string
 	}{
 		{"shaatt01", 1, DispositionRefuted},
-		{"shaatt02", 2, DispositionRefuted},
-		{"shaatt03", 3, DispositionConfirmed},
+		{"shaatt02", 2, DispositionConfirmed},
 	} {
 		if _, err := w.AppendGateVerdict(root, GateVerdictInput{
 			BeadID: "ag-aggregate", RunID: "r1", TS: ts, Difficulty: 3,
@@ -366,7 +365,7 @@ func TestComputeGauges_AggregateAcceptedLateAttemptSpendIsProrated(t *testing.T)
 	}
 	if _, err := w.AppendUsage(root, UsageInput{
 		BeadID: "ag-aggregate", RunID: "r1", TS: ts,
-		TokensOut: 90, Model: "m", Phase: PhaseReview,
+		TokensOut: 100, Model: "m", Phase: PhaseReview,
 		CategoryHint: CategoryProductive,
 	}); err != nil {
 		t.Fatal(err)
@@ -374,7 +373,7 @@ func TestComputeGauges_AggregateAcceptedLateAttemptSpendIsProrated(t *testing.T)
 	if _, err := w.AppendAccept(root, AcceptInput{
 		BeadID: "ag-aggregate", RunID: "r1", TS: ts,
 		MergeSHA: "merge01", MergedBy: "orch",
-		GateVerdictRef: PawlVerdictRef{BeadID: "ag-aggregate", HeadSHA: "shaatt03"},
+		GateVerdictRef: PawlVerdictRef{BeadID: "ag-aggregate", HeadSHA: "shaatt02"},
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -385,14 +384,14 @@ func TestComputeGauges_AggregateAcceptedLateAttemptSpendIsProrated(t *testing.T)
 	}
 	g := ComputeGauges(l, "r1", 0, false)
 
-	if g.LCategory.Rework != 60 {
-		t.Errorf("rework = %d, want 60 (2 of 3 aggregate attempts before accept)", g.LCategory.Rework)
+	if g.LCategory.Rework != 0 {
+		t.Errorf("rework = %d, want 0 (post-confirm productive spend must not be prorated into rework)", g.LCategory.Rework)
 	}
-	if g.LCategory.Productive != 30 {
-		t.Errorf("productive = %d, want 30 (accepting attempt's aggregate share)", g.LCategory.Productive)
+	if g.LCategory.Productive != 100 {
+		t.Errorf("productive = %d, want 100 (usage emitted after confirming verdict is productive)", g.LCategory.Productive)
 	}
-	if !g.LDefined || !approx(g.L, 2.0/3.0) {
-		t.Errorf("L = %v, want %v", g.L, 2.0/3.0)
+	if !g.LDefined || !approx(g.L, 0) {
+		t.Errorf("L = %v, want 0", g.L)
 	}
 }
 
