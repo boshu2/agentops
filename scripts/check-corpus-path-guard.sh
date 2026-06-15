@@ -44,18 +44,17 @@ base=""
 if git rev-parse --verify -q "$BASE_REF" >/dev/null 2>&1; then
   base="$(git merge-base "$BASE_REF" HEAD 2>/dev/null || echo "")"
 fi
-if [ -z "$base" ]; then
-  # No origin/main (fresh clone, detached, CI without remote). Fall back to the
-  # parent of HEAD so we still scan the tip commit; if even that fails (root
-  # commit), the empty base makes `git diff` list HEAD's full tree — still scanned.
-  base="$(git rev-parse -q --verify 'HEAD~1' 2>/dev/null || echo "")"
-fi
 
 committed=""
 if [ -n "$base" ]; then
   committed="$(git diff --name-only "$base..HEAD" 2>/dev/null || true)"
 else
-  # No usable base at all (root commit / no HEAD~1): scan HEAD's full tree.
+  # FAIL-CLOSED: the authoritative base ($BASE_REF, default origin/main) is
+  # unavailable (fresh clone, detached, CI without the remote). We CANNOT know
+  # which commits are "new", so we scan HEAD's FULL TREE — every path that would
+  # be pushed. We deliberately do NOT fall back to HEAD~1..HEAD: that narrow
+  # window misses a forbidden path introduced in an EARLIER unpushed commit that
+  # is still present in HEAD (a fail-OPEN hole — caught by Navi review, ag-ao0eo).
   committed="$(git ls-tree -r --name-only HEAD 2>/dev/null || true)"
 fi
 

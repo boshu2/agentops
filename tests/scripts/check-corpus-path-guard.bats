@@ -64,6 +64,20 @@ teardown() {
   [[ "$output" == *".agents/learnings/staged.md"* ]]
 }
 
+@test "FAILS closed when base ref is missing and a forbidden path is in an EARLIER commit (Navi regression)" {
+  # The fail-OPEN hole: with no authoritative base, a HEAD~1..HEAD window would
+  # miss a forbidden path introduced earlier but still present in HEAD. With the
+  # fix, a missing base scans the FULL HEAD tree, so this MUST fail.
+  mkdir -p .agents/learnings
+  printf 'private\n' > .agents/learnings/leak.md
+  git add -A && git commit -qm "earlier: add private learning"
+  printf 'package main\n\nfunc main() {}\n' > cli/main.go
+  git add -A && git commit -qm "clean tip commit"
+  run env CORPUS_PATH_GUARD_BASE="missing-ref-does-not-exist" bash "$SCRIPT"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *".agents/learnings/leak.md"* ]]
+}
+
 @test "PASSES for an ordinary cli/ + docs (non-wiki) change" {
   printf 'package main\n\nfunc main() {}\n' > cli/main.go
   printf '# guide\n' > docs/guide.md
