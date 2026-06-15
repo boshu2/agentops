@@ -4672,5 +4672,22 @@ ao yield emit <accept|gate-verdict|usage> --bead <id> --run <id> [--json <body> 
       --ts string     optional RFC3339 timestamp; defaults to now (UTC)
 ```
 
+#### `ao yield gauge`
+
+Load the yield ledger, compute the dynamo yield vector for one run, and
+
+```
+ao yield gauge --run <id> [--json] [--c-delta <float>] [flags]
+```
+
+**Flags:**
+
+```
+      --c-delta float   ag-8p8o's published corpus delta (C); omit to report C as pending
+  -h, --help            help for gauge
+      --json            emit the computed gauges as JSON for machine consumption
+      --run string      factory run/cycle id to compute gauges for (required)
+```
+
 ---
 
