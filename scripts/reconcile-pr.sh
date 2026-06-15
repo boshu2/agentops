@@ -232,7 +232,63 @@ if [[ -z "$cur_head" ]]; then
 fi
 pawl_status=0
 "$SCRIPT_DIR/pawl-verdict.sh" check "$BEAD" "$PR" --dir "$VERDICT_DIR" --head "$cur_head" || pawl_status=$?
+
+# --- yield-ledger: gate-verdict (fail-open observability, NEVER a gate) -------
+# Project the pawl-verdict into a bead-keyed yield event so the dynamo's Q/E
+# gauges are computable from data (ag-grcz3). This emit fires for EVERY
+# disposition (CONFIRMED | REFUTED | ESCALATE | HOLD) RIGHT AFTER the gate
+# returns its verdict — BEFORE the exit-5-on-non-confirmed below — so Q's
+# denominator (every attempted bead) and E (ESCALATE/HOLD count) are
+# computable, not just CONFIRMED merges. Best-effort: every step is guarded so
+# a missing `ao`/jq, an empty verdict (the no-verdict HOLD), or a malformed
+# verdict cannot block the gate. difficulty + author_family are emit-time
+# inputs the script does not know; the orchestrator supplies them via
+# AO_YIELD_DIFFICULTY / AO_YIELD_AUTHOR_FAMILY.
+emit_yield_gate_verdict() {
+  command -v ao >/dev/null 2>&1 || return 0
+  command -v jq >/dev/null 2>&1 || return 0
+  local vfile="$VERDICT_DIR/$BEAD.json"
+  [[ -s "$vfile" ]] || return 0
+  local run_id="${AO_YIELD_RUN_ID:-reconcile-$BEAD}"
+  local difficulty="${AO_YIELD_DIFFICULTY:-1}"
+  local author_family="${AO_YIELD_AUTHOR_FAMILY:-unknown}"
+  local body
+  body="$(jq -c \
+    --arg head "$cur_head" --argjson diff "$difficulty" --arg af "$author_family" '
+    {
+      difficulty: $diff,
+      pawl_verdict_ref: {bead_id: .bead_id, head_sha: (.head_sha // $head)},
+      disposition: .disposition,
+      head_sha: (.head_sha // $head),
+      attempt: (.attempt // 1),
+      mode: (.mode // "fresh-context"),
+      author_context_id: .author_context_id,
+      refuter_families: ([.refuters[]?.family] | unique),
+      author_family: $af,
+      cross_family: (([.refuters[]?.family] | unique | length) >= 2),
+      author_ne_reviewer: ([.refuters[]?.context_id] | index(.author_context_id) | not),
+      evidence_present: ([.refuters[]?.evidence // empty] | length > 0)
+    }' "$vfile" 2>/dev/null)" || return 0
+  [[ -n "$body" ]] || return 0
+  ao yield emit gate-verdict --bead "$BEAD" --run "$run_id" --json "$body" >/dev/null 2>&1 || true
+}
+# Run SYNCHRONOUSLY (not backgrounded): on the exit-5 path this emit must finish
+# recording the REFUTED/ESCALATE/HOLD disposition before the script exits — that
+# is the whole point of B3 (Q's denominator + E count). It is pre-merge, so it
+# cannot delay a merge; the gate already gates the merge.
+emit_yield_gate_verdict || true
+
 if [[ "$pawl_status" -ne 0 ]]; then
+  # yield-ledger: emit USAGE for the rejected/HOLD attempt too, so its spend is
+  # recorded for L/R (ag-qzinh's read-time join classifies a never-accepted bead's
+  # usage as loss). Symmetric to the accepted-path usage emit; without this,
+  # rejected spend is invisible. Synchronous + guarded + pre-exit; this path never
+  # merges, so a fast local append cannot delay anything. (codex review attempt-2 BLOCKING.)
+  if command -v ao >/dev/null 2>&1; then
+    ao yield emit usage --bead "$BEAD" --run "${AO_YIELD_RUN_ID:-reconcile-$BEAD}" \
+      --json "{\"tokens_in\":${AO_YIELD_TOKENS_IN:-0},\"tokens_out\":${AO_YIELD_TOKENS_OUT:-0},\"cost_usd\":${AO_YIELD_COST_USD:-0},\"wall_clock_s\":${AO_YIELD_WALL_CLOCK_S:-0},\"model\":\"${AO_YIELD_MODEL:-unknown}\",\"phase\":\"${AO_YIELD_PHASE:-review}\"}" \
+      >/dev/null 2>&1 || true
+  fi
   echo "PAWL-HOLD: green CI but no CONFIRMED pawl verdict (fresh-context default; multi-model opt-in) for bead=$BEAD PR=$PR (pawl-verdict.sh check exit=$pawl_status) — did NOT merge, did NOT close. Fail-closed; surface for human on non-convergence." >&2
   exit 5
 fi
@@ -254,11 +310,60 @@ fi
 
 echo "MERGED: PR $PR" >&2
 
+# --- yield-ledger: accept (fail-open observability, NEVER a gate) -------------
+# Emit the terminal-accept event keyed by bead so the dynamo's A gauge is
+# computable from data (ag-grcz3). The authorizing pawl is referenced by
+# bead_id+head_sha; merge_sha falls back to the reviewed head_sha when the
+# squash sha is not resolvable. Guarded — never blocks the close path.
+emit_yield_accept() {
+  command -v ao >/dev/null 2>&1 || return 0
+  local run_id="${AO_YIELD_RUN_ID:-reconcile-$BEAD}"
+  local merge_sha
+  merge_sha="$(gh pr view "$PR" --json mergeCommit -q .mergeCommit.oid 2>/dev/null || true)"
+  [[ -n "$merge_sha" ]] || merge_sha="$cur_head"
+  ao yield emit accept --bead "$BEAD" --run "$run_id" \
+    --json "{\"merge_sha\":\"$merge_sha\",\"merged_by\":\"reconcile-pr\",\"gate_verdict_ref\":{\"bead_id\":\"$BEAD\",\"head_sha\":\"$cur_head\"}}" \
+    >/dev/null 2>&1 || true
+}
+# Post-decision (the merge is already confirmed MERGED above), so backgrounded:
+# a slow/hung emit can never delay the close path.
+emit_yield_accept & disown 2>/dev/null || true
+
 # --- close bead (use `bd update --status closed`: bd close has a dolt --------
 #     blocker-query glitch on this server) -----------------------------------
 bd update "$BEAD" --status closed >/dev/null 2>&1 \
   || { echo "WARN: bead $BEAD close command failed" >&2; }
 echo "CLOSED bead=$BEAD" >&2
+
+# --- yield-ledger: usage (fail-open observability, NEVER a gate) --------------
+# Emit a per-bead usage event so the dynamo's R / A-R / L gauges have an
+# automated source (ag-grcz3). The orchestrator supplies per-bead spend via the
+# AO_YIELD_* env (model + tokens/cost/wall-clock); absent metrics default to 0.
+# phase is ALWAYS present (defaults to implement). Guarded — never blocks close.
+emit_yield_usage() {
+  command -v ao >/dev/null 2>&1 || return 0
+  local run_id="${AO_YIELD_RUN_ID:-reconcile-$BEAD}"
+  local model="${AO_YIELD_MODEL:-unknown}"
+  local phase="${AO_YIELD_PHASE:-implement}"
+  local tokens_in="${AO_YIELD_TOKENS_IN:-0}"
+  local tokens_out="${AO_YIELD_TOKENS_OUT:-0}"
+  local cost_usd="${AO_YIELD_COST_USD:-0}"
+  local wall_clock_s="${AO_YIELD_WALL_CLOCK_S:-0}"
+  local body
+  if command -v jq >/dev/null 2>&1; then
+    body="$(jq -nc \
+      --argjson ti "$tokens_in" --argjson to "$tokens_out" \
+      --argjson cost "$cost_usd" --argjson wall "$wall_clock_s" \
+      --arg model "$model" --arg phase "$phase" '
+      {tokens_in: $ti, tokens_out: $to, cost_usd: $cost, wall_clock_s: $wall, model: $model, phase: $phase}' \
+      2>/dev/null)" || return 0
+  else
+    body="{\"tokens_in\":$tokens_in,\"tokens_out\":$tokens_out,\"cost_usd\":$cost_usd,\"wall_clock_s\":$wall_clock_s,\"model\":\"$model\",\"phase\":\"$phase\"}"
+  fi
+  [[ -n "$body" ]] || return 0
+  ao yield emit usage --bead "$BEAD" --run "$run_id" --json "$body" >/dev/null 2>&1 || true
+}
+emit_yield_usage & disown 2>/dev/null || true
 
 # --- optional epic reconcile -------------------------------------------------
 if [[ -n "$EPIC" ]]; then
