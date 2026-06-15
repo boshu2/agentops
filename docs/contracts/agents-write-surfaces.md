@@ -94,6 +94,7 @@ lane must name the intended write path; it cannot be blank or placeholder text.
 | `topics` | rolling | cli | topic-packet-cache | Topic-packets surface inputs |
 | `validation` | persistent | scripts | proof-evidence | Local pre-push proof file (`.agents/validation/pre-push-success.tsv`) written by `scripts/pre-push-proof.sh`; formerly covered by the retired `validation` skill (folded into `validate --mode=post-impl`, cp-ki8) |
 | `wiki` | regenerated | cli | generated-output | Wiki source artifacts written by Dream / forge pipelines (sources/) |
+| `yield` | persistent | cli | durable-ledger | Dynamo yield instrument: append-only per-bead operational event stream (`yield-ledger.jsonl`) written by `ao yield emit`; read by `ao yield gauge` (ag-grcz3/ag-qzinh) |
 
 ### Skill-owned subdirs
 
@@ -166,6 +167,7 @@ tests
 topics
 validation
 wiki
+yield
 <!-- END agents-write-surfaces-allowlist -->
 
 ## How to update
