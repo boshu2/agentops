@@ -2234,6 +2234,13 @@ else
     else
         echo -e "${GREEN}pre-push gate: passed${NC}"
     fi
+    # SENSOR feed (ag-62jrm): emit bead→commit provenance edges for the commits
+    # that just cleared the gate, so the position-signal ledger feeds itself with
+    # no human in the loop. Non-blocking by construction (the script always exits
+    # 0); skip with AGENTOPS_PROVENANCE_EMIT_SKIP=1.
+    if [[ -x scripts/emit-landed-provenance.sh ]]; then
+        bash scripts/emit-landed-provenance.sh || true
+    fi
     if [[ "$SMOKE_EVOLVE" == "true" ]]; then
         smoke_script="scripts/test-evolve-cycle-smoke.sh"
         if [[ ! -x "$smoke_script" ]]; then

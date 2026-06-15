@@ -42,6 +42,7 @@ setup() {
     make_stub "$FAKE_REPO/scripts/check-author-judge-convergence.sh"
     make_stub "$FAKE_REPO/scripts/check-retrieval-manifest-paths.sh"
     make_stub "$FAKE_REPO/scripts/check-test-fixture-parity.sh"
+    make_stub "$FAKE_REPO/scripts/emit-landed-provenance.sh"
     make_stub "$FAKE_REPO/scripts/gc-stale-worktrees.sh"
     make_stub "$FAKE_REPO/scripts/test-evolve-cycle-smoke.sh"
     make_stub "$FAKE_REPO/scripts/sync-skill-counts.sh"

@@ -1,16 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-14T20:21:27Z",
-  "generated_at": "2026-06-14T20:23:23Z",
+  "generated_at": "2026-06-15T02:26:01Z",
   "summary": {
     "skills": 72,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 84,
+    "cli_commands": 85,
     "workflows": 4,
-    "capabilities": 170
+    "capabilities": 171
   },
   "surfaces": {
     "skills": [
@@ -1415,6 +1414,13 @@
         "purpose": "Unified wiki knowledge surface (experimental)",
         "bounded_context": "BC1",
         "driven_by_skills": []
+      },
+      {
+        "name": "ao yield",
+        "path": "cli/cmd/ao/",
+        "purpose": "Record dynamo yield-ledger events (per-bead operational stream)",
+        "bounded_context": "",
+        "driven_by_skills": []
       }
     ],
     "workflows": [
@@ -1486,9 +1492,9 @@
     ]
   },
   "capability_summary": {
-    "total": 170,
+    "total": 171,
     "skills": 72,
-    "cli_commands": 84,
+    "cli_commands": 85,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1576,7 +1582,8 @@
     "verdict-gate",
     "version",
     "vibe-check",
-    "wiki"
+    "wiki",
+    "yield"
   ],
   "capabilities": [
     {
@@ -5594,6 +5601,23 @@
       "type": "cli-command",
       "bounded_context": "BC1",
       "purpose": "Unified wiki knowledge surface (experimental)",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.yield",
+      "name": "ao yield",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Record dynamo yield-ledger events (per-bead operational stream)",
       "status": "active",
       "driven_by_skills": [],
       "flags": [
