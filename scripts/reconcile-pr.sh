@@ -30,14 +30,18 @@
 #      Fail-closed: green CI is necessary but NOT sufficient at the
 #      mutate-shared-trunk door (docs/contracts/pawls.md). A tripped circuit
 #      breaker surfaces for a human.
+#   6  PR state is MERGED but br close failed; merged-but-unclosed is surfaced
+#      as a hard failure.
 #
-# Dependencies: gh, bd, jq (stubbed via PATH in the hermetic bats suite).
+# Dependencies: gh, br, jq (stubbed via PATH in the hermetic bats suite).
 # The pawl verdict (fresh-context default; multi-model opt-in) is read via
 # scripts/pawl-verdict.sh (sibling).
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+BR_BEADS_DIR="$REPO_ROOT/_beads"
 
 PR=""
 BEAD=""
@@ -62,7 +66,7 @@ Usage: scripts/reconcile-pr.sh <pr-number> <bead-id> [options]
 Drives one PR to a confirmed merge, then closes its bead. Polls checks until
 terminal, reruns once on the known correctness-ubuntu flake, treats only
 substantive non-claude-review failures as blocking, merges --squash --admin,
-confirms state==MERGED, then `bd update <bead> --status closed`.
+confirms state==MERGED, then `BEADS_DIR=<repo>/_beads br close <bead>`.
 
 Options:
   --epic <epic-id>   After closing the bead, reconcile <epic-id>: close it only
@@ -77,7 +81,7 @@ Options:
   -h, --help         Show this help.
 
 Exit codes: 0 merged+closed · 1 gate-fail · 2 blocked · 3 merge-fail ·
-            4 usage · 5 pawl-gate HOLD (green CI, no CONFIRMED pawl verdict).
+            4 usage · 5 pawl-gate HOLD · 6 br close failed after merge.
 USAGE
 }
 
@@ -106,7 +110,7 @@ BEAD="${positional[1]}"
 [[ -n "$BEAD" ]] || die "bead-id must be non-empty"
 
 command -v gh >/dev/null 2>&1 || die "gh CLI not on PATH"
-command -v bd >/dev/null 2>&1 || die "bd CLI not on PATH"
+command -v br >/dev/null 2>&1 || die "br CLI not on PATH"
 command -v jq >/dev/null 2>&1 || die "jq not on PATH"
 
 # --- helpers -----------------------------------------------------------------
@@ -295,7 +299,7 @@ fi
 
 # --- merge -------------------------------------------------------------------
 if $DRY_RUN; then
-  echo "DRY-RUN: would gh pr merge $PR --squash --admin, then bd update $BEAD --status closed" >&2
+  echo "DRY-RUN: would gh pr merge $PR --squash --admin, then BEADS_DIR=$BR_BEADS_DIR br close $BEAD" >&2
   exit 0
 fi
 
@@ -329,11 +333,17 @@ emit_yield_accept() {
 # a slow/hung emit can never delay the close path.
 emit_yield_accept & disown 2>/dev/null || true
 
-# --- close bead (use `bd update --status closed`: bd close has a dolt --------
-#     blocker-query glitch on this server) -----------------------------------
-bd update "$BEAD" --status closed >/dev/null 2>&1 \
-  || { echo "WARN: bead $BEAD close command failed" >&2; }
-echo "CLOSED bead=$BEAD" >&2
+# --- close bead (mandatory; merged-but-unclosed is protection-off) -----------
+close_failed=false
+close_rc=0
+close_reason="reconcile-pr: PR #$PR merged; reviewed_head=$cur_head"
+if BEADS_DIR="$BR_BEADS_DIR" br close "$BEAD" --reason "$close_reason" >/dev/null 2>&1; then
+  echo "CLOSED bead=$BEAD" >&2
+else
+  close_rc=$?
+  close_failed=true
+  echo "close-FAILED: PR $PR is MERGED but bead $BEAD was NOT closed (BEADS_DIR=$BR_BEADS_DIR br close exit=$close_rc)" >&2
+fi
 
 # --- yield-ledger: usage (fail-open observability, NEVER a gate) --------------
 # Emit a per-bead usage event so the dynamo's R / A-R / L gauges have an
@@ -365,12 +375,21 @@ emit_yield_usage() {
 }
 emit_yield_usage & disown 2>/dev/null || true
 
+if [[ "$close_failed" == "true" ]]; then
+  exit 6
+fi
+
 # --- optional epic reconcile -------------------------------------------------
 if [[ -n "$EPIC" ]]; then
   if "$SCRIPT_DIR/check-epic-children-closed.sh" "$EPIC"; then
-    bd update "$EPIC" --status closed >/dev/null 2>&1 \
-      || { echo "WARN: epic $EPIC close command failed" >&2; }
-    echo "CLOSED epic=$EPIC" >&2
+    epic_close_reason="reconcile-pr: all children closed after PR #$PR bead $BEAD"
+    if BEADS_DIR="$BR_BEADS_DIR" br close "$EPIC" --reason "$epic_close_reason" >/dev/null 2>&1; then
+      echo "CLOSED epic=$EPIC" >&2
+    else
+      epic_close_rc=$?
+      echo "epic-close-FAILED: epic $EPIC was NOT closed (BEADS_DIR=$BR_BEADS_DIR br close exit=$epic_close_rc)" >&2
+      exit 6
+    fi
   else
     echo "EPIC-GATE: $EPIC has open child(ren) — epic NOT closed" >&2
     exit 1
