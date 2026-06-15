@@ -60,6 +60,29 @@ If you cannot name the phase you are in and the evidence behind it, do not nudge
 
 **Cold start:** run one bounded tick (`--robot-snapshot` → tail suspect panes → match exactly one decision-tree branch → act on one pane or lever → verify). Do not read every reference first; wait on the attention feed instead of inventing work.
 
+## Gate-Request Interrupts
+
+A peer gate request is an interrupt, not background watch traffic. Treat these
+phrases as a first-class `ACT` trigger even if another pane looks busy:
+`ACTION NEEDED`, `Hey! Listen!`, `merge gate`, `unblock-condition`,
+`dry-run verdict`, `PASS / REVISE verdict`, `ACK-with-id`, or an explicit
+request to verify a SHA/PR/bead before merge or close.
+
+When this trigger fires:
+
+1. Stop broad watching and answer the gate first.
+2. Run the smallest authoritative verifier named by the request (PR check,
+   `br show`, dry-run command, test, or pane capture).
+3. Surface the result where the requesting peer can actually read it. Agent Mail
+   is enough only if their read path is known-good; otherwise write a bead note,
+   PR comment, or pane relay with `tmux send-keys ... C-m` and capture evidence.
+4. Do not claim the peer was answered until the visible artifact or capture
+   proves the verdict landed.
+
+This is the fix for ag-navi-gate-interrupt-ggque: a navigator that leaves an
+unblock request sitting in mail or pane scrollback has not tended the swarm,
+even if the underlying watch loop is otherwise healthy.
+
 ## Liveness Truth Stack (what to believe, in order)
 
 Before acting on any "pane is stuck / rate-limited / done / idle" judgment, verify in this order — each layer catches lies from the one above:

@@ -83,6 +83,11 @@ managed-agent driver — **not** an AgentOps daemon.
 
 Run one tick at a time; take the first action whose trigger fires:
 
+- **Peer gate request** (`ACTION NEEDED`, `Hey! Listen!`, merge-gate,
+  unblock-condition, verdict/dry-run before merge/close) → interrupt broad
+  watching, run the named verifier, and answer in a channel the peer can read.
+  If AM reads are degraded, use a bead note, PR comment, or tmux relay with
+  `C-m` plus capture evidence; mail-send alone is not delivery.
 - **Rate-limited / auth-expired pane** → rotate the account / relaunch, re-send its bead.
 - **Wedged pane** (no output, not at a prompt) → nudge once; if still wedged, kill + relaunch + re-dispatch.
 - **Context-saturated pane** (forgetting, repeating) → have it write a handoff, relaunch fresh, re-dispatch.
@@ -99,6 +104,8 @@ The wedged-vs-working call depends on reading the pane right — the `atm` meter
 - **Confirm by ARTIFACT, not meter:** bead assignee, worktree/branch, PR, output file (`git ls-remote --heads origin 'task/*'`, `gh pr list`).
 - **Diagnose before `atm respawn`** (it kills + restarts) — read the `atm save` dump first; respawn only on a confirmed wedge (error / login prompt / frozen transcript).
 - **Dispatch:** `atm send --pane=N` delivers DIRECT prompts; slash-commands may not fire on codex panes (`--codex-goal` is the tell). Prefer self-contained instructions; verify engagement via `atm save` + artifacts.
+- **Raw tmux last resort:** submit with `tmux send-keys ... C-m` and capture
+  the pane. Text still sitting in the input box is not delivery.
 
 ## Coordination (the Agent Mail leg)
 
