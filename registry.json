@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-15T12:57:31Z",
+  "generated_at": "2026-06-15T14:05:47Z",
   "summary": {
     "skills": 72,
     "hooks": 0,
@@ -1004,7 +1004,8 @@
         "purpose": "Write a structured handoff artifact for session boundary isolation",
         "bounded_context": "BC1",
         "driven_by_skills": [
-          "crank"
+          "crank",
+          "handoff"
         ]
       },
       {
@@ -2680,6 +2681,7 @@
         ".agents/research/*.md"
       ],
       "drives_commands": [
+        "ao handoff",
         "ao ratchet"
       ],
       "path": "skills/handoff/",
@@ -4628,7 +4630,8 @@
       "purpose": "Write a structured handoff artifact for session boundary isolation",
       "status": "active",
       "driven_by_skills": [
-        "crank"
+        "crank",
+        "handoff"
       ],
       "flags": [
         "--collect",

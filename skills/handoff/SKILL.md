@@ -29,6 +29,32 @@ output_contract: .agents/handoffs/YYYY-MM-DD-*.md
 
 Create a handoff document that enables seamless session continuation.
 
+## Handoff is the write-side of the self-healing context loop
+
+Handoff is not only an end-of-session ritual — it is the **write-side of the
+`handoff → clear → rehydrate` loop** that keeps a long-running agent (or a peer
+orchestrator) healthy against context bloat. The natural pre-`/clear` step is to
+hand off: capture the working state to durable state *first*, then clear, then
+rehydrate from the artifact. **Handoff before clear, always** — clearing without
+a current handoff loses the thread.
+
+For that to be safe, the handoff must be **complete enough to rehydrate the lane
+to exactly where it was**: the active goal, the claimed bead(s), held file
+reservations, the peer/comms topology, and a pointer to the working thread. A
+thin handoff makes `clear` destructive; a complete one makes the agent
+disposable-yet-continuous (the system-not-DAG property at the orchestrator
+level). The structured artifact is `ao handoff` → `.agents/handoff/` (JSON;
+`--no-kill` writes without the tmux restart).
+
+## Every handoff is a compounding artifact
+
+A handoff is a **first-class node in the compounding artifact graph**, not a
+throwaway note. It feeds the llm-wiki / knowledge corpus, gets **mined and
+measured** (the artifact already carries `consumed` / `consumed_by` hooks), and
+each cycle should make the *next* handoff better. Context, code, and markdown are
+all artifacts to be fed back. Write handoffs dense and honest — they are evidence
+the flywheel compounds on, not paperwork.
+
 ## Execution Steps
 
 Given `/handoff [topic]`:
