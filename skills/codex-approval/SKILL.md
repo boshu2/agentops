@@ -130,10 +130,26 @@ Use the pane only when it is idle at a prompt. If it is busy, launch or select a
 different dedicated validator lane through ATM/NTM. Keep the lane single-purpose:
 one approval request at a time.
 
+**Boot race — wait for input-ready before Phase 3.** A *freshly launched* validator
+lane (Claude or codex) returns from `spawn` before the agent has booted to its input
+box; a request sent in the first few seconds is silently dropped and you wait forever
+on a verdict that was never requested. Confirm the pane is at a real input prompt
+first: `tmux capture-pane -p` should show the `❯`/input box (not a splash or booting
+screen). If the validator lane is a **codex** pane, `tmux capture-pane`/`atm save` can
+return ANSI-only/empty — read readiness with `atm codex preflight --json` (proceed only
+on `codex-live`/`goal-completed`) instead. See `using-atm` (Observing lanes / OC-047).
+
 ### Phase 3: Send the request
 
-Use `atm send` when available; `tmux send-keys` is acceptable for a known pane.
-Keep the prompt bounded and auditable:
+Use `atm send` when available; `tmux send-keys` is acceptable for a known pane —
+but only after the pane is confirmed input-ready (see Phase 2 boot-race note).
+**Then verify the request actually engaged before Phase 4:** after sending, confirm
+the pane LEFT its idle prompt and is reviewing (a working/thinking indicator, or for
+a codex lane `atm codex wait-goal-engaged --json`, non-zero = it did not take). Do not
+capture a "verdict" from a pane that never received the request — a blank/idle pane is
+not a PASS. If the validator is a codex pane driven through the goal flow, dispatch
+with `atm send --codex-goal --pane N --file <packet>` (a bare send may not fire), or
+the `asend` readiness-gated helper. Keep the prompt bounded and auditable:
 
 ```text
 You are an independent Fable Claude-family reviewer. Do not modify files.
