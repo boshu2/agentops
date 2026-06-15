@@ -4235,6 +4235,21 @@ ao provenance list [flags]
       --relation string   Filter to edges with this relation
 ```
 
+#### `ao provenance position`
+
+Read the provenance ledger and report the navigator's current position:
+
+```
+ao provenance position [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for position
+      --json   Emit machine-readable JSON (stdout-as-data)
+```
+
 #### `ao provenance trace`
 
 Audit a provenance trace-graph for orphans: engineered artifact nodes
