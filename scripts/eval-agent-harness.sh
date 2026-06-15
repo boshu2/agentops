@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# ag-zzpy1: under `set -e`, a failing setup.sh/score.sh aborts the script before
+# the normal cleanup runs, leaking a runner-created workspace. This EXIT trap
+# cleans the workspace currently in flight on ANY exit path. It tracks ONLY a
+# workspace the runner created (mktemp fallback); a caller-provided
+# CORPUS_DELTA_WORKSPACE is never tracked here, so it is never deleted.
+_CLEANUP_WS=""
+trap '[[ -n "${_CLEANUP_WS:-}" ]] && rm -rf "$_CLEANUP_WS"' EXIT
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-WORKBENCH="$REPO_ROOT/evals/workbench"
+WORKBENCH="${EVAL_WORKBENCH:-$REPO_ROOT/evals/workbench}"
 
 usage() {
   cat <<'USAGE'
@@ -124,8 +132,19 @@ run_single() {
     return
   fi
 
+  # ag-zzpy1: honor the caller's isolation sandbox. The corpus-delta harness builds
+  # a per-arm sandbox (isolated HOME + workspace) and exports CORPUS_DELTA_WORKSPACE
+  # so the agent runs INSIDE that sandbox. A raw mktemp here bypasses it, leaving the
+  # ag-5apc context-isolation proof valid only for the stub runner, not the real run.
+  # Use the caller's workspace when provided; else fall back to a fresh temp dir.
   local workspace
-  workspace="$(mktemp -d)"
+  if [[ -n "${CORPUS_DELTA_WORKSPACE:-}" ]]; then
+    workspace="$CORPUS_DELTA_WORKSPACE"
+    mkdir -p "$workspace"
+  else
+    workspace="$(mktemp -d)"
+    _CLEANUP_WS="$workspace"   # runner-created → tracked for trap cleanup on abort
+  fi
 
   bash "$TASK_DIR/setup.sh" "$workspace" >/dev/null 2>&1
 
@@ -157,7 +176,14 @@ run_single() {
     fi
   fi
 
-  rm -rf "$workspace"
+  # ag-zzpy1: clean ONLY a workspace we created. A caller-provided
+  # CORPUS_DELTA_WORKSPACE (the harness's per-arm sandbox) is the caller's to
+  # manage — removing it here would delete the isolation sandbox out from under
+  # the harness.
+  if [[ -z "${CORPUS_DELTA_WORKSPACE:-}" ]]; then
+    rm -rf "$workspace"
+    _CLEANUP_WS=""   # cleaned on the happy path → trap has nothing to do
+  fi
   echo "$result"
 }
 
