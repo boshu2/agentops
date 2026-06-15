@@ -20,3 +20,11 @@ the live-session caveat, and swarm-lane spreading. Read it first, then use
 - Load only the relevant source references or scripts for the task.
 - Verify command syntax from local `--help` or checked-in references before acting.
 - Return concrete evidence: commands run, files touched, exit codes, and any remaining blocker.
+
+## Navi-rotate (you rotate a builder peer)
+In the trilateral, YOU (codex Navi) run on a different runtime, so a builder's rate
+limit does not affect you — you rotate it: `navi-rotate <peer-tmux-session> [--to
+<acct>] [--dry-run]` (`dotfiles/bin/navi-rotate`) picks the builder's next account,
+swaps it, then am+atm-signals the peer to relaunch. The swap lands on the peer's
+NEXT launch (live token unaffected); continuity rides worktree+bead. The account-swap
+tool is the builder-runtime's concern (routed in the source skill).

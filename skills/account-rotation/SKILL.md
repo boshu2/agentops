@@ -95,3 +95,23 @@ caam use codex acct-a   && <spawn lane A>;  caam next codex      && <spawn lane 
 ```
 A dispatcher's limit-hit hook calls `claude-acct use` on Mac / `caam next` on
 Linux, then re-dispatches the lane's work.
+
+## Navi-rotate (the cross-model helper rotates a peer — trilateral)
+
+In the trilateral (2 Claude builders + 1 Codex **Navi**), the Navi runs on a
+DIFFERENT runtime/account, so it is UNAFFECTED by a builder's Claude rate limit —
+making it the right agent to rotate a limited builder. `navi-rotate`
+(`dotfiles/bin/navi-rotate`) wraps `claude-acct` with rotation-order + peer-relaunch
+signaling, so the move is one repeatable command:
+
+```bash
+navi-rotate <peer-tmux-session> [--to <account>] [--dry-run]
+# Navi: next account (claude-acct list order) -> claude-acct use <next>
+#       -> am + atm signal the peer to relaunch.
+```
+
+Per the **Live-Session Caveat**: the swap lands on the peer's NEXT launch, not its
+live session — continuity rides the durable substrate (worktree + bead + handoff),
+so the peer resumes from its last bead on the fresh account. This is the repeatable,
+cross-model-driven form of the dispatcher limit-hit hook above. Routed correctly:
+the swap is always `claude-acct` for Mac+Claude (NEVER caam).
