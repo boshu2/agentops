@@ -3189,6 +3189,21 @@ ao corpus restore [flags]
       --overwrite     Replace an existing destination directory (with .bak rescue)
 ```
 
+#### `ao corpus scan`
+
+Scan a file or directory of RENDERED public text (markdown/json/txt/html)
+
+```
+ao corpus scan <path> [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for scan
+      --json   Emit the scan report as JSON (per-file hits)
+```
+
 #### `ao corpus snapshot`
 
 Writes the entire .agents/ tree as a tar.gz to a durable directory outside the repo,
