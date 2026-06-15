@@ -63,6 +63,17 @@
       "default": "pull",
       "description": "Blast-radius tier, orthogonal to maturity: bead=per-bead context, pull=queried on demand (default), always=auto-injected at session bootstrap (computed from maturity==established INTERSECT canon, never author-set)."
     },
+    "sensitivity": {
+      "type": "string",
+      "enum": ["unknown", "private", "public"],
+      "default": "unknown",
+      "description": "Promote-gate CEILING — a publish property, NOT a capture property. unknown=un-triaged (default); private=tainted, never crosses the seam; public=abstracted lesson cleared for the wiki. Only sensitivity==public AND publishable==true may be promoted to docs/wiki (allowlist, fail-closed; default excludes). Per council verdict .agents/council/2026-06-15-corpus-private-public-seam-verdict.md; field boundary in docs/contracts/corpus-learning-seam.md."
+    },
+    "publishable": {
+      "type": "boolean",
+      "default": false,
+      "description": "Promotion allowlist flag. false by default; set true ONLY after the lesson body is abstracted and passes the corpusscan leak detector (cli/internal/corpusscan). Inclusion is earned; default excludes."
+    },
     "schema_version": {
       "type": "integer",
       "const": 1

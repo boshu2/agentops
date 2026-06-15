@@ -3138,6 +3138,22 @@ ao corpus capture --path <relpath> [--body <text>] [--body-file <file>] [--body-
       --root string        corpus root (default: .agents/learnings/)
 ```
 
+#### `ao corpus classify`
+
+Ensure every learning record under <dir> carries the two promote-gate
+
+```
+ao corpus classify <dir> [flags]
+```
+
+**Flags:**
+
+```
+      --apply   Write the changes (default: dry run, report only)
+  -h, --help    help for classify
+      --json    Emit the report as JSON
+```
+
 #### `ao corpus fitness`
 
 Compute the corpus-quality fitness vector for the current .agents/
