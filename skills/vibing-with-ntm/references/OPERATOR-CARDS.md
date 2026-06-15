@@ -4,7 +4,7 @@
 
 - OC-001..OC-016: rate limits, stuck panes, source health, convergence, and core coordination
 - OC-017..OC-032: dispatch hygiene, cron, handoff, restarts, retries, and build/process contention
-- OC-033..OC-046: phase rotation, handoff failures, queue-dry, pressure-aware assignment, pane identity, and integration contracts
+- OC-033..OC-047: phase rotation, handoff failures, queue-dry, pressure-aware assignment, pane identity, integration contracts, and the spawn-then-send boot race
 
 Each card codifies one lesson from real multi-agent swarm operation across many projects. Structure follows the `operationalizing-expertise` methodology: **trigger → failure mode → recipe → prompt module → validator**.
 
@@ -1275,6 +1275,43 @@ Before using an integration command, query NTM's registry and the tool's current
 ```
 
 **Validator.** The command exists in `--robot-capabilities`, returns structured output, and the actual build/test path still runs through the repo-required tool (`rch exec -- ...` when required).
+
+---
+
+## OC-047 — First-Dispatch-After-Spawn Must Wait For Input-Ready
+
+**Trigger.** You ran a bare `ntm spawn` (or `atm spawn`) that returned immediately, and you are about to fire the first separate `ntm send` / `--robot-send` seconds later. Or: a freshly-spawned pane shows its CLI running but sits at an empty input box with no working/thinking indicator and never started.
+
+**Failure mode (the boot race, observed).** `spawn` returns **before** the pane agent boots to its input box. A separate `send` in the first few seconds is silently dropped — the keystrokes land before the input is rendered. The pane looks spawned (layer 1 of the Liveness Truth Stack passes: the CLI process is alive) but is **never-engaged**: 0.0% CPU on `pane_pid`, no indicator, no artifact, no acknowledged order. Operators misdiagnose this as "stuck" and restart — throwing away a healthy CLI. This is distinct from the permanent bare-shell case (build left zsh, OC-026/OC-027), where the fix is relaunch.
+
+**Recipe.** After a bare `spawn`, before the first separate `send`, wait for input-ready, then dispatch and verify:
+
+```bash
+# Prefer the built-in readiness wait where the path supports it:
+#   ntm spawn … --assign            → waits until agents are ready, then assigns
+#   ntm spawn … --init-prompt="…"   → sent AFTER agents become ready (pair with --assign)
+#   ntm --robot-wait=<session> --wait-until=ready --panes=<pane>
+
+# Manual guard (when you spawned bare and must send separately):
+WIN=$(tmux list-windows -t <session> -F '#{window_index}' | head -1)
+for i in $(seq 1 10); do
+  cmd=$(tmux list-panes -t <session>:${WIN} -F '#{pane_index} #{pane_current_command}' | awk -v p=<pane> '$1==p{print $2}')
+  case "$cmd" in claude|bun|node|gemini)
+    # process is up; confirm the input box rendered, not still booting
+    tmux capture-pane -t <session>:${WIN}.<pane> -p -S -8 | grep -qiE '›|>|esc to|/help|tab to' && break ;;
+  esac
+  sleep 1   # cc input-ready ~6-10s, codex ~3-5s after process appears
+done
+
+# NOW dispatch, then verify it engaged (don't fire-and-forget):
+ntm --robot-send=<session> --panes=<pane> --msg="$(cat marching_orders.txt)"
+tmux capture-pane -t <session>:${WIN}.<pane> -p -S -10 | grep -iE 'working|thinking|processing' \
+  || echo "first dispatch may have raced boot — re-send"
+```
+
+**Rule.** A bare `spawn`-then-`send` has no readiness guarantee; `--stagger` only paces prompts *baked into the spawn*, not your separate send. If a pane is never-engaged, **re-dispatch (it never received the order), do NOT restart.** For codex panes, combine with the multi-Enter submit (OC-037).
+
+**Validator.** Within one observation window of the (re-)dispatch, the pane shows a working/thinking indicator and `pane_pid` CPU rises above 0.0%, or an artifact/commit/mail ack lands. A pane that stays at 0.0% after a confirmed input-ready re-send is a genuine stall, not a boot race — escalate per OC-003.
 
 ---
 

@@ -64,6 +64,18 @@ specific pane that doesn't match the type yields zero targets + error.
 - `--pane` + `--panes` → `cannot use --pane and --panes together` (`send.go:658`).
 - `--project` + specific session name → `cannot use --project with a specific session name` (`send.go:580`).
 
+### Addressing disambiguation (don't mis-target)
+
+Three different selector families coexist and use **different index spaces** — easy to mis-address and silently hit the wrong pane (or the operator pane). When combined, they **AND** together (intersection); an empty intersection errors rather than broadcasting.
+
+| Selector | Index space | Selects | Typical use |
+|----------|-------------|---------|-------------|
+| `--pane=N` / `--panes=N,M` | **tmux pane index** (verify live; base-index may be 1 — OC-028/OC-045) | exactly that pane / that explicit set | targeted dispatch to a known pane |
+| `--cc` / `--cod` / `--gmi` (+ `:variant`) | **agent type**, not index | all panes of that type | broadcast to a model class |
+| `--agent <idx>` (batch/broadcast only, default `-1`) | **round-robin selector** over agent panes, NOT a tmux index | one agent per batch item, rotating; `-1` = auto round-robin | distributing a batch across agents |
+
+Rules: `--agent` is a batch-distribution knob (`send.go:772`), **not** a synonym for `--pane`. Don't reach for `--agent 2` to mean "pane 2" — use `--pane=2`. With no target flags at all, `send` hits every agent pane and excludes the user pane (the usual automation default); `--all` re-includes the user pane. Verify the live pane index immediately before any raw `tmux send-keys` (OC-045).
+
 ### `--all` vs `--project`
 
 These are orthogonal axes.

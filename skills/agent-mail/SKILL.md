@@ -70,6 +70,7 @@ is invisible work. "Are these filed?" must not be a question — the ACK closes 
 | Situation | Action |
 |-----------|--------|
 | Starting any agent session | `macro_start_session` (CLI: `am macros start-session`) |
+| **Confirm a lane actually registered** | `am robot agents --project <abs> --active` — must list your name and each peer lane |
 | About to edit files | reserve paths → edit → release reservations |
 | Need to tell another agent something | `send_message` with `thread_id` (CLI: `am mail send`) |
 | Picking up someone else's work | `macro_prepare_thread` |
@@ -79,7 +80,15 @@ is invisible work. "Are these filed?" must not be a question — the ACK closes 
 
 ## Session Bootstrap
 
-**Call `macro_start_session` (or `am macros start-session --project <abs> --program <p> --model <m> --task "<desc>"`) at the start of every agent session.** One call: ensures project exists → registers your identity → fetches inbox. Returns `{project, agent, file_reservations, inbox}`.
+**Call `macro_start_session` (or `am macros start-session --project <abs> --program <p> --model <m> --task "<desc>"`) at the start of every agent session.** One call: ensures project exists → registers your identity → reserves files → fetches inbox. Returns `{project, agent, file_reservations, inbox}`.
+
+**Verify the lane registered.** A pane can *look* spawned and still have never registered — its start-session may not have landed. Confirm with:
+
+```bash
+am robot agents --project <abs> --active   # should list YOUR name and each peer lane
+```
+
+If your name (or a peer's) is missing, that lane's start-session did not land — **do not assume the coordination leg is live.** Re-run start-session for the missing lane before relying on mail/reservations between you. Skipping this check is how the coordination leg silently goes unverified.
 
 Identity notes:
 
@@ -117,6 +126,7 @@ Use bead IDs as your threading anchor. BR remains authoritative; mail carries th
 | Error | Fix |
 |-------|-----|
 | "sender_name not registered" | Call `macro_start_session` first |
+| Pane looks spawned but coordination is silent | A pane can look spawned yet never have registered. Run `am robot agents --project <abs> --active` — if the lane is absent, its start-session didn't land; re-run it |
 | "FILE_RESERVATION_CONFLICT" | Wait, coordinate, or use `exclusive=false` |
 | "CONTACT_BLOCKED" | Use `request_contact`, wait for approval |
 | Server unreachable | `health_check()` / `curl http://127.0.0.1:8765/health`; start with `am` |

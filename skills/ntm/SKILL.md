@@ -16,6 +16,8 @@ practices:
 
 > **Scope:** this skill is AgentOps **operating doctrine** for NTM. The binary is self-describing — for command syntax, flags, schemas, and examples use `ntm --robot-docs=quickstart|commands|examples|exit-codes`, `ntm --robot-capabilities`, `ntm --robot-schema=all`, or `ntm --help`. Never trust this file (or any notes) over the live contract. For tending loops, marching orders, unstick ladders, and swarm cadence, use the companion `vibing-with-ntm` skill.
 
+> **`atm` is the same binary.** `atm` (Bo's fork/alias, `~/.local/bin/atm`) is byte-identical to `ntm` — same `--help`, same `--robot-*` surface, same flags, same exit codes. Every `ntm …` form documented here and in the references applies verbatim to `atm …`, and vice-versa. Use them interchangeably; the companion out-of-session substrate skill is literally named `using-atm`. When `--robot-capabilities` matters, query whichever binary you invoked — they resolve to the same contract.
+
 # NTM — Named Tmux Manager
 
 > **The One Rule:** Discover the live NTM contract first, then use the least interactive surface that can prove and execute the action. No `--robot-capabilities` / `--robot-snapshot` evidence -> no automation assumption.
@@ -128,7 +130,8 @@ Escalate only with the action card filled; each tier raises the proof bar:
 | Conflate pipeline status and run | `--robot-pipeline=<id>` is status | `--robot-pipeline-run=<file>` |
 | Retry degraded mail/CASS forever | Burns the session | record degraded source, use fallback, continue |
 | Infer abandoned beads from silence | NTM deliberately does not implement `bead_orphaned` | explicit status/mail/reservation evidence |
-| Trust a fresh `spawn --cod` pane blind | Some builds leave a bare shell; prompts execute as shell text | verify with `--robot-tail`; fall back to `codex exec -C <worktree>` per lane |
+| Trust a fresh `spawn --cod` pane blind (bare shell) | Some builds leave a **bare zsh**; prompts execute as shell text | verify with `--robot-tail`; relaunch the CLI, or fall back to `codex exec -C <worktree>` per lane |
+| Fire a separate `send` right after a bare `spawn` (boot race) | `spawn` returns **before** the agent boots to its input box; the first send is silently dropped → pane is never-engaged (CLI alive, 0.0% CPU) | wait for input-ready first: `--assign` / `--init-prompt` / `--robot-wait=ready`; if already dropped, **re-dispatch, don't restart** (vibing OC-047) |
 
 ## Pre-Flight Checklist
 

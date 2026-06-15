@@ -164,6 +164,19 @@ Three overlapping flag families for backward-compat. For new code, prefer
 
 **Panes are always created at once for dashboard visibility; only prompt delivery is staggered.**
 
+### The spawn-then-separate-send boot race
+
+`--stagger` / `--stagger-mode=smart` only pace prompts **baked into the spawn** (`--prompt` / `--marching-orders`). They do nothing for the common pattern of a bare `ntm spawn` (returns immediately) followed by a **separate** `ntm send` / `--robot-send` seconds later: `spawn` returns *before* the pane agent boots to its input box, so the first separate send can land before the input is rendered and is **silently dropped**. The pane looks spawned but is never-engaged (CLI alive, 0.0% CPU, no indicator).
+
+Cures, in order of preference:
+
+- `--assign` — spawn **waits until agents become ready**, then runs `ntm assign`. This is the readiness-wait baked in.
+- `--init-prompt="…"` (paired with `--assign`) — delivered *after* agents become ready, unlike `--prompt` which fires at launch.
+- `ntm --robot-wait=<session> --wait-until=ready --panes=<pane>` before the first separate send.
+- Manual guard: poll `tmux list-panes -F '#{pane_current_command}'` until it shows the agent process AND `capture-pane` shows the input box rendered, then dispatch and verify the working/thinking indicator.
+
+If a pane is already never-engaged from a dropped first send, **re-dispatch — do not restart** (the CLI is healthy; it just never received the order). This is the transient counterpart to the permanent bare-shell case below. See `vibing-with-ntm` OC-047.
+
 ## Session profiles
 
 Saved spawn configurations you can reapply.

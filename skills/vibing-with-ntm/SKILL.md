@@ -65,12 +65,15 @@ If you cannot name the phase you are in and the evidence behind it, do not nudge
 Before acting on any "pane is stuck / rate-limited / done / idle" judgment, verify in this order — each layer catches lies from the one above:
 
 1. **`tmux list-panes … -F '#{pane_current_command} #{pane_pid}'`** — is the agent CLI even running? Silent exits back to zsh are invisible to `--robot-tail`. (OC-026)
-2. **`tmux capture-pane -p -S -20`** — ground truth for transient state; `--robot-tail` can sample stale buffer content for several ticks. (AP-41)
+2. **`tmux capture-pane -p -S -20`** — ground truth for transient state; `--robot-tail` can sample stale buffer content for several ticks. (AP-41) Caveat: a full-screen TUI agent (codex especially) can return almost entirely ANSI/alt-screen control sequences — stripping leaves empty. **Capture-unreadable is NOT evidence of idle**; fall through to layer 3.
 3. **`git log --since='15 minutes ago'` + `pgrep -af cargo|rustc|go|bun`** — are commits landing, are builds running? Timer labels like "Cogitated for 35m" are display artifacts, not activity. (AP-42)
-4. **`ntm --robot-is-working` / `--robot-health-oauth`** — provider-side state (rate-limit, context, quota).
-5. **`ntm --robot-snapshot | jq '{sources, degraded_sources}'`** — data-source freshness before acting on any derived state.
+4. **`ps -p $(tmux display -p -t <s>:<w>.<pane> '#{pane_pid}') -o pcpu=`** — the signal-of-last-resort. 0.0% on the pane process tree + no growing artifact = genuinely idle, even when the meter AND capture both lie. The one signal that survives when everything above it is unreadable (e.g. codex-TUI capture returns empty). (AP-48, AP-54)
+5. **`ntm --robot-is-working` / `--robot-health-oauth`** — provider-side state (rate-limit, context, quota).
+6. **`ntm --robot-snapshot | jq '{sources, degraded_sources}'`** — data-source freshness before acting on any derived state.
 
 If any two layers disagree, resync before acting. See [OBSERVABILITY.md](references/OBSERVABILITY.md) → "Liveness Signals That Can Lie" for the full catalog.
+
+**Never-engaged vs stuck-mid-work (use the stack to tell them apart).** A *never-engaged* pane = CLI running (layer 1 OK) **+ 0.0% CPU on `pane_pid`** (layer 4) **+ no working/thinking indicator + no artifact + no record of an acknowledged first dispatch.** This is almost always a dropped first send (the boot race — see OC-047): the pane booted but the send arrived before its input box rendered. **The fix is RE-DISPATCH (it never received the order), NOT restart.** Distinguish from *stuck-mid-work* (CPU/build active, or an indicator present — leave it, see AP-54) and from *standing-down* (queue-dry by policy). Restarting a never-engaged pane throws away a perfectly healthy CLI.
 
 ## Intervention Discipline
 
@@ -106,6 +109,9 @@ Is context >85% on any pane?
 Is there a file-reservation conflict or coordinator-reported collision?
   → Force-release too-broad patterns (OC-008); mediate via bead status-flip (OC-015).
 
+Is ANY pane never-engaged?  (CLI running AND 0.0% pane_pid CPU AND no indicator AND no artifact AND no acknowledged first dispatch — typically a bare spawn whose first send lost the boot race)
+  → RE-DISPATCH, don't restart (OC-047): confirm input-ready, then re-send the marching orders.
+
 Does convergence triple-check hold?
   ( git log 1h=0 AND br ready=0 AND in-flight unchanged ≥2 ticks AND convergence language in every pane )
   → STOP. Do not nudge. Exit the loop; report final state.
@@ -117,6 +123,7 @@ Every card (OC-###) and anti-pattern (AP-###) is documented with recipe, prompt 
 
 ## Command Surfaces (do not re-learn from here)
 
+- **`atm` is `ntm`.** `atm` (Bo's fork/alias, `~/.local/bin/atm`) is byte-identical to `ntm` — same robot surface, same flags, same exit codes. Every `ntm …` / `ntm --robot-*` form in this skill and its references applies verbatim to `atm`; the out-of-session substrate-runner skill is named `using-atm` for that reason. Use whichever the operator typed; they resolve to one contract.
 - **Agents use robot surfaces** (`--robot-snapshot`, `--robot-attention`, `--robot-send`, `--robot-smart-restart`, …); interactive TUIs (`ntm dashboard`, `palette`, `view`) are for humans. The authoritative catalog is `ntm robot-docs` / `ntm --help` — re-query it; see [ROBOT-MODE.md](references/ROBOT-MODE.md) for lanes, transports, and deprecations.
 - **Marching orders:** copy-paste dispatch prompts (first dispatch, steady-state, wide-swarm domain assignment, review dispatch) live in [PROMPTS.md](references/PROMPTS.md); the fill-in template is [assets/marching-orders-template.md](https://github.com/boshu2/agentops/blob/main/skills/vibing-with-ntm/assets/marching-orders-template.md). Keep one constraint live: first dispatch claims one scoped item and reserves files/worktree scope; steady-state asks for one commit or one explicit blocker per timebox.
 - **Isolation:** default is Agent Mail file reservations + clear bead ownership; `--worktrees` when repo policy allows. Repo-local `AGENTS.md` always wins.
@@ -169,7 +176,7 @@ At closeout, summarize the swarm in concrete deltas:
 | Robot-mode surfaces, lanes, transports, deprecations (always re-query the binary) | [ROBOT-MODE.md](references/ROBOT-MODE.md) |
 | Error taxonomy + autonomous recovery decision tree | [RECOVERY.md](references/RECOVERY.md) |
 | Freshness, source health, attention state machine, three-observation rule | [OBSERVABILITY.md](references/OBSERVABILITY.md) |
-| 46 operationalized field-expertise cards (trigger + recipe + prompt + validator) | [OPERATOR-CARDS.md](references/OPERATOR-CARDS.md) |
+| 47 operationalized field-expertise cards (trigger + recipe + prompt + validator) | [OPERATOR-CARDS.md](references/OPERATOR-CARDS.md) |
 | 61 named anti-patterns from real swarm sessions, each with a fix | [ANTI-PATTERNS.md](references/ANTI-PATTERNS.md) |
 | Score matrix, proof card, pathology triggers, pattern tiers, red-flag phrases, troubleshooting | [DECISION-AIDS.md](references/DECISION-AIDS.md) |
 | /loop, CronCreate, shell cron, schedule; convergence-gated tick scripts | [CRON-AND-AUTOMATION.md](references/CRON-AND-AUTOMATION.md) |

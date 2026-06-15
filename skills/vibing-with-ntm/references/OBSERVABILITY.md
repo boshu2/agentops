@@ -271,6 +271,33 @@ tmux capture-pane -t <session>:<win>.<pane> -p -S -20
 
 Rule: `--robot-tail` for bulk, `capture-pane` for single-pane ground truth after an action.
 
+### `capture-pane` of a codex/full-screen TUI can return ANSI-only / empty
+
+The whole "when the meter lies, read the actual pane via `capture-pane`" fallback (AP-7/AP-41, OC-028, OC-037) assumes capture returns readable text. It does not for every agent. A full-screen TUI — **codex especially** — paints to the alt-screen, so `tmux capture-pane` / `ntm save` returns almost entirely ANSI/alt-screen control sequences; stripping them leaves an empty string. **An empty or ANSI-only capture is NOT evidence that the pane is idle** — the documented fallback itself failed, and concluding "idle" here is the trap.
+
+When capture is unreadable, fall through to the ground-truth rung below; do not restart on a blank capture.
+
+```bash
+# capture came back empty/ANSI? get the honest signal from the OS, not the screen:
+PID=$(tmux display -p -t <session>:<win>.<pane> '#{pane_pid}')
+ps -p "$PID" -o pcpu=,etime=,comm=        # 0.0% + no growing artifact = genuinely idle
+# codex-specific structured fallback when available:
+ntm --robot-codex-palette-state=<session> --panes=<pane> --format=json 2>/dev/null   # query --robot-capabilities first
+```
+
+### Pane-PID CPU% is the signal of last resort
+
+When the status meter lies AND `capture-pane` is unreadable (above), per-pane CPU% is the only honest liveness signal left. It is layer 4 of the SKILL.md Liveness Truth Stack, not a footnote:
+
+```bash
+ps -p $(tmux display -p -t <session>:<win>.<pane> '#{pane_pid}') -o pcpu=
+# 0.0% on the pane process tree + no growing artifact (no new commit, no build output) = genuinely idle.
+# A booted-but-never-engaged pane (dropped first dispatch / boot race) reads exactly this — re-dispatch, don't restart (OC-047).
+# CPU above 0 with a live rustc/cargo/bun child = mid-work; leave it (AP-54).
+```
+
+Pair it with an artifact check (`git log --since`, build output, mail ack) — CPU% alone distinguishes *idle* from *busy*, the artifact distinguishes *never-engaged* from *standing-down*.
+
 ### Disk trajectory beats absolute threshold
 
 A single "disk 73%" reading is a snapshot; the danger signal is **delta-per-tick**. Runaway cargo `target/` dirs can climb `+3pp/tick` for several ticks before cresting, and fuzz corpora / build caches fail silently once the cliff is hit. Track trajectory:

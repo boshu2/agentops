@@ -51,6 +51,7 @@ Drive headless Codex worker and validator agents with `codex exec` on the ChatGP
   - WRONG: `OPENAI_API_KEY=sk-... codex exec -C "$REPO" "<task>"`
   - CORRECT: `codex login status  # Logged in using ChatGPT` then `codex exec -C "$REPO" -s workspace-write "<task>"`
 - **Confirm the sub before dispatch.** Run `codex login status` and require `Logged in using ChatGPT`. **Why:** a worker that "runs fine" on a leaked API token bills per token; the check is the only thing standing between a green run and a surprise invoice.
+- **Pipe the prompt (or close stdin) in any non-TTY lane — else codex HANGS.** A positional-arg `codex exec "<prompt>"` run with non-TTY stdin (background, `&`, ATM/NTM pane, cron, piped, inherited-pipe) still **reads stdin** — it prints `Reading additional input from stdin...` and blocks **forever** when that stdin never reaches EOF (the classic idle open pipe). **Why:** codex appends piped stdin as a `<stdin>` block even when a positional prompt is present, so an open idle stdin is an unterminated read. For unattended/background/factory lanes the safe DEFAULT is to **pipe the prompt** — `printf '%s' "$P" | codex exec … -` (or `cat prompt.txt | codex exec … -`) — or **close stdin** — `codex exec "<prompt>" </dev/null`. The bare positional form is fine only for an interactive TTY.
 - **Pick the sandbox deliberately.** `-s read-only` for validators, `-s workspace-write` for workers that must edit, `-s danger-full-access` only inside an already-sandboxed host. **Why:** `codex exec` runs model-generated shell commands; the sandbox is the blast radius.
 - **`--dangerously-bypass-approvals-and-sandbox` is for externally-sandboxed hosts only.** **Why:** it removes every guardrail in one flag; use it only when the OS/container is the sandbox.
 - **Don't strand work in `--ephemeral`.** It skips session persistence, so there is nothing to `resume`. **Why:** a crashed ephemeral run cannot be recovered or continued.
@@ -62,7 +63,7 @@ Drive headless Codex worker and validator agents with `codex exec` on the ChatGP
 
 Auth is the whole game. `codex login status` must read **`Logged in using ChatGPT`** (the Pro/Plus subscription via OAuth). That billing is flat-rate. The moment Codex is authed with an API key (`OPENAI_API_KEY`, `codex login --with-api-key`), every token is metered against the API account — the exact failure mode `claude -p` causes on the Claude side. This skill exists to keep Codex workers on the sub. Without it, a loop that dispatches Codex turns can quietly run on metered API billing and produce a surprise invoice.
 
-Verified against `codex-cli 0.137.0` (`codex exec --help`, `codex exec resume --help`).
+Verified against `codex-cli 0.139.0` (`codex exec --help`, `codex exec resume --help`).
 
 ## Folded triggers (ag-s43tg wave 1): `codex-goals` + `codex-mcp-plugins` + `codex-sandbox-evidence` route here
 
@@ -109,8 +110,14 @@ codex exec -C /path/to/repo -s read-only \
   -o /tmp/verdict.txt \
   "Independently validate the change on this branch. Output VERDICT: PASS|FAIL + reasons."
 
-# Stdin prompt (orchestrator piping the task in)
+# Stdin prompt (orchestrator piping the task in) — the SAFE DEFAULT for any
+# unattended/background/ATM-pane/cron lane. The trailing `-` reads the prompt
+# from the pipe and gives codex an immediate EOF, so it can't stall on
+# "Reading additional input from stdin..." (see Critical Constraints).
 printf '%s' "$TASK_PROMPT" | codex exec -C "$REPO" -s workspace-write -
+
+# If you must pass the prompt positionally in a non-TTY lane, close stdin:
+codex exec -C "$REPO" -s workspace-write "<task>" </dev/null
 
 # Named profile (a specific model/config lane)
 codex exec -p worker-fast -C "$REPO" -s workspace-write "<task>"
@@ -127,7 +134,7 @@ cd "$REPO" && codex exec resume --last "Address the validator's findings, then r
 codex exec resume <SESSION_ID> "<follow-up>"
 codex exec resume --last --json "<follow-up>" > events2.jsonl
 ```
-`resume` takes a UUID session id or thread name; `--last` picks the newest in the cwd; `--all` disables cwd filtering. **Currency note (codex-cli 0.137.0):** `resume` accepts `-m/--model`, `-o/--output-last-message`, `--json`, `--output-schema`, `--ephemeral`, `-i/--image`, `--skip-git-repo-check` — but **NOT** `-C/--cd` and **NOT** `-s/--sandbox`. The resumed session inherits its original working root and sandbox policy, so `cd` into the repo first (the resume picks the newest session in the cwd) rather than passing `-C`/`-s`.
+`resume` takes a UUID session id or thread name; `--last` picks the newest in the cwd; `--all` disables cwd filtering. **Currency note (codex-cli 0.139.0):** `resume` accepts `-m/--model`, `-o/--output-last-message`, `--json`, `--output-schema`, `--ephemeral`, `-i/--image`, `--skip-git-repo-check` — but **NOT** `-C/--cd` and **NOT** `-s/--sandbox`. The resumed session inherits its original working root and sandbox policy, so `cd` into the repo first (the resume picks the newest session in the cwd) rather than passing `-C`/`-s`. `resume` cannot change the sandbox via `-s`, but `--dangerously-bypass-approvals-and-sandbox` (and `--dangerously-bypass-hook-trust`) IS available on resume — the resume-side lever for an externally-sandboxed host that needs a network-touching follow-up.
 **Checkpoint:** The resumed session id matches the intended thread and the follow-up landed in the same working tree.
 
 ## Output Specification
@@ -236,12 +243,14 @@ receipts, image-health). Full packet:
 | `not a git repository` error | `-C` points outside a repo | Add `--skip-git-repo-check` (or point `-C` at a repo) |
 | Worker can't write files | `-s read-only` | Use `-s workspace-write`; add `--add-dir` for paths outside the root |
 | `resume` finds nothing | Prior run used `--ephemeral`, or wrong cwd | Don't use `--ephemeral` for resumable work; try `resume --all` to drop cwd filtering |
+| Hangs on `Reading additional input from stdin...` | Non-TTY stdin (background/`&`/ATM pane/cron) with no EOF — codex reads stdin even with a positional prompt | Pipe the prompt (`printf '%s' "$P" \| codex exec … -`) or add `</dev/null` to the positional form |
 | Empty / truncated output in a loop | Parsing terminal text | Use `-o FILE` or `--json` and read the structured result |
 | Rate-limited on the Pro lane | One account saturated | Switch lanes with `caam exec codex <other-profile> --` |
 
 ## See Also / References
 
 - `ntm` — Claude worker panes (the Claude-side lane; never `claude -p`)
+- `using-atm` — driving codex as an ATM **TUI pane** (keystroke / `--codex-goal` flow, `atm codex` readiness gates) vs this skill's **headless** `codex exec` (stdin/positional). Different dispatch mechanics, same auth/sub rules — conflating them is how "positional arg → background hang" and "send → wedged TUI pane" co-occur.
 - `account-rotation` — host-routed account switching; on Codex/Gemini and Linux/WSL lanes the swap tool is `caam` (isolated multi-account profiles for the 4-lane flywheel: Claude Max ×2 + Codex Pro + Gemini)
 - `dcg` — destructive-command guard that can enforce the never-API-bill rule
 - Memory: "Never claude -p for workers 2026-06-06" — the Claude-side twin of this skill's core rule

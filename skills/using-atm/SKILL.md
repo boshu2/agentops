@@ -96,8 +96,13 @@ atm spawn agentops --cc=2 --cod=1 --reserve "cli/ tests/"
 # no reservation, so you can catch an uncoordinated lane before it collides.
 
 # 2. Dispatch a whole loop to a pane — the SKILL, not a CLI subprocess.
-atm send agentops --pane=1 "/rpi ag-1234 --auto"
-atm send agentops --pane=2 "/evolve --beads-only --auto"
+#    Pane 1 = the USER/controller pane; workers start at pane 2 (unless --no-user).
+#    --pane=N is the tmux PANE index; --agent=N is the agent ORDINAL — they
+#    differ by the user-pane offset (--pane=2 == --agent=1 in a default session).
+atm send agentops --pane=2 "/rpi ag-1234 --auto"
+atm send agentops --pane=3 "/evolve --beads-only --auto"
+# For codex panes, drive the /goal flow with --codex-goal (a bare slash-command
+# send may not fire): atm send agentops --codex-goal --pane=2 --file packet.txt
 
 # 3. Watch / attach.
 atm activity agentops          # per-pane agent state
@@ -141,8 +146,14 @@ the status signals were misread. Discipline:
    `atm activity` alone** — that's how you kill a working lane.
 2. **To actually SEE pane content: `atm save <session>`** → writes per-pane dumps to
    `./outputs/<session>_<pane>_<timestamp>.txt`; read those. (`atm copy <session>
-   [--cod|--cc|--all]` copies to clipboard.) There is **no** `atm capture`/`atm read`
-   — don't reach for one.
+   [--cod|--cc|--all]` copies to clipboard.) **Caveat — codex TUI panes:** `atm save`
+   dumps a codex pane as raw ANSI; stripping escapes can leave it **EMPTY**. For codex
+   state, read `atm codex palette-state --json` / `atm codex preflight --json`
+   (classified, ANSI-immune) instead of the raw dump — `atm save` is reliable for Claude
+   panes. For the swarm-wide view use `atm get-all-session-text` / `gast` (cross-pane
+   markdown table with error detection) and `atm grep 'error\|rate.limit' <session>` for
+   fast triage. (`gast`/`grep`/`atm codex palette-state` ARE the read paths — there is no
+   `atm capture`/`atm read`.)
 3. **Confirm a lane by its ARTIFACTS, not the meter:** a real lane claims its bead
    (`br`/`bd` assignee), creates a worktree/branch, opens a PR, or writes its output
    file. Check those (`git ls-remote --heads origin 'task/*'`, `gh pr list`, the
@@ -150,31 +161,49 @@ the status signals were misread. Discipline:
 4. **Diagnose BEFORE you respawn.** `atm respawn` kills + restarts panes — run
    `atm save` and read the dump first; only respawn after the dump confirms a genuine
    wedge (an error, a login/trust prompt, an empty/frozen transcript), not a frozen meter.
-5. **Dispatch caveat:** `atm send --pane=N "prompt"` reliably delivers DIRECT prompts.
-   Slash-commands (`/rpi`) may NOT fire via a plain send on codex panes (codex has a
-   dedicated `--codex-goal` flag for the `/goal` flow — the tell that slash-commands
-   need special handling). Prefer self-contained direct instructions, and ALWAYS verify
-   the lane engaged (via `atm save` + artifacts), never assume the send took.
-6. **Wait for input-ready BEFORE the first dispatch — the boot race (Hard-won 2026-06-15).**
-   `atm spawn` returns before the pane's agent has booted to its input box. A `send` in
+5. **Dispatch caveat + worker-model routing.** `atm send --pane=N "prompt"` reliably
+   delivers DIRECT prompts. **Addressing:** `--pane N` is the tmux PANE index (1 = user,
+   workers 2+); `--agent N` is the agent ORDINAL — they differ by the user-pane offset
+   (`--pane=2` == `--agent=1` in a default `--user` session). Prefer `--agent` for worker
+   addressing so the offset can't bite you, or `--panes=2,3` for explicit multi-target.
+   **Model routing:** free-form/exploratory loop work → Claude panes (engage reliably on a
+   plain `atm send`). Codex panes need the goal lifecycle — drive them with
+   `atm send --codex-goal --pane N --file packet.txt` (the supported `/goal` path), NOT a
+   bare slash-command send. If a codex lane won't engage, suspect the boot race / goal-flow,
+   not "codex is unreliable" — verify with `atm codex preflight` (item 6) before switching
+   models. ALWAYS verify the lane engaged (artifacts / `atm codex wait-goal-engaged`),
+   never assume the send took.
+6. **Gate the first dispatch on `atm codex` readiness — the boot race (Hard-won 2026-06-15).**
+   `atm spawn` returns BEFORE the pane's agent has booted to its input box. A `send` in
    the first few seconds lands on a not-yet-ready TUI and is **silently dropped** — the
-   prompt never reaches the agent, and the lane looks "spawned" but never engages. The
-   tell: a `>_ OpenAI Codex (v…)` welcome screen with an empty input box (or a Claude pane
-   still loading) is **NOT** ready. Confirm a clean ready prompt
-   (`tmux capture-pane -p -t <sess>.<pane>` → the `❯`/input box, no splash) before
-   sending. A wedge from sending-too-early is **operator error, not a tool defect** — do
-   NOT conclude "codex is unreliable" and pivot worker models to escape it; fix the
-   dispatch (wait + verify). The same `atm send` delivers fine once the pane is ready.
+   lane looks "spawned" but never engages. For codex panes this is solved deterministically:
+   the `atm codex` group is purpose-built for it.
+   - **Before the first dispatch**, gate on `atm codex preflight --session <s> --pane <n> --json`
+     — it classifies readiness (`codex-live` / `goal-in-progress` / `usage-limit` /
+     `replace-goal-dialog` / `stale-scrollback`) and tells you `proceed` / `wait` / `respawn`.
+     Send only on `codex-live` (or `goal-completed`).
+   - **After dispatch**, confirm engagement with `atm codex wait-goal-engaged <s> --pane <n> --json`
+     — a bounded poll that exits **non-zero** on `unconfirmed` / `dialog_stuck` /
+     `respawn_required`, so a missed send fails loudly instead of looking idle.
+   This is the deterministic ground truth (the navigator pattern); the meter is the
+   stochastic surface. **Fallback (Claude panes, or codex if the group is unavailable):**
+   confirm a clean ready prompt (`tmux capture-pane -p -t <sess>.<pane>` → the `❯`/input
+   box, no `>_ OpenAI Codex (v…)` splash) before sending. A wedge from sending-too-early is
+   **operator error, not a tool defect** — fix the dispatch (gate + verify), do NOT pivot
+   worker models to escape it.
 7. **Verify the FIRST lane engaged before fanning out to the rest.** Dispatch lane 1,
-   confirm it LEFT the idle prompt and is working (an artifact appearing, OR CPU burn —
+   confirm it engaged (`atm codex wait-goal-engaged`, OR an artifact appearing, OR CPU burn —
    see 8), THEN send lanes 2..N. Sending all N blind means discovering all N missed at
    once; one confirmed lane is your proof the dispatch path works before you commit the
    fleet to it.
-8. **`ps` CPU% is the honest wedge signal the meter isn't.** `ps aux | grep '[c]odex'`
-   (or `[c]laude`) → a pane's agent process at **0.0% CPU with no growing artifact** is
-   genuinely idle, not "working invisibly." CPU burn + growing token counts = real work
-   even when `atm activity` and the TUI capture look frozen. The meter lies and the TUI
-   capture can be stale; CPU does not. Use it to break ties before respawning.
+8. **`ps` CPU% is the honest fallback wedge signal when the tooling can't reach it.**
+   `ps aux | grep '[c]odex'` (or `[c]laude`) → a pane's agent process at **0.0% CPU with
+   no growing artifact** is genuinely idle, not "working invisibly." CPU burn + growing
+   token counts = real work even when `atm activity` and the TUI capture look frozen. The
+   meter lies and the TUI capture can be stale; CPU does not. Use it (and the deterministic
+   windshield — `atm codex preflight`, `gh pr list`, `git ls-remote`, the output file) to
+   break ties before respawning — prefer the `atm codex` classifier first, CPU% as the
+   cheap tie-breaker.
 
 ## Coordination (the Agent Mail leg)
 
@@ -238,4 +267,5 @@ server; do not declare convergence from a stale checkout.
 - [`/automation-shape-routing`](../automation-shape-routing/SKILL.md) — decide Workflow vs ATM swarm vs plain skill *before* standing up a swarm.
 - [`/swarm`](../swarm/SKILL.md) — in-session parallel fan-out across worktrees (the in-session sibling of this out-of-session substrate).
 - [`/agent-native`](../agent-native/SKILL.md) — `ao agent bundle` produces the loop definition a managed-agents substrate runs (the managed-agents leg).
+- [`codex-exec`](../codex-exec/SKILL.md) — the **headless** codex lane (`codex exec`, stdin/positional) vs an ATM codex **TUI pane** here (keystroke / `--codex-goal` flow, `atm codex` readiness gates). Different dispatch mechanics, same auth/sub rules.
 - [`rpi`](../rpi/SKILL.md) · [`evolve`](../evolve/SKILL.md) — the loops the substrate dispatches.
