@@ -381,6 +381,65 @@ func TestEnsureCriticalHandoffWritesMarkerAndDeduplicates(t *testing.T) {
 	}
 }
 
+// TestEnsureCriticalHandoffEmitsRehydratableArtifact proves the self-healing
+// loop closes for the AUTOMATIC trigger: when the context guard writes a
+// critical handoff, it must land on the same structured handoff-<ts>.json that
+// `ao rehydrate`/pickLatestHandoff consumes — not only an orphan .md that the
+// read-side ignores (epic ag-2jp7l S2 / ag-qhn37).
+func TestEnsureCriticalHandoffEmitsRehydratableArtifact(t *testing.T) {
+	cwd := t.TempDir()
+	status := contextSessionStatus{
+		SessionID:      "session-loop-1",
+		Status:         string(contextbudget.StatusCritical),
+		UsagePercent:   0.93,
+		EstimatedUsage: 186000,
+		MaxTokens:      contextbudget.DefaultMaxTokens,
+		LastTask:       "orchestrate the operability lane",
+		Action:         "handoff_now",
+	}
+	usage := transcriptUsage{Model: "claude-opus", Timestamp: time.Now().UTC()}
+
+	if _, _, err := ensureCriticalHandoff(cwd, status, usage); err != nil {
+		t.Fatalf("ensureCriticalHandoff: %v", err)
+	}
+
+	// The read-side must select the auto handoff.
+	path, err := pickLatestHandoff(cwd)
+	if err != nil {
+		t.Fatalf("pickLatestHandoff did not find the auto handoff (loop did not close): %v", err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read auto handoff: %v", err)
+	}
+	var art handoffArtifact
+	if err := json.Unmarshal(data, &art); err != nil {
+		t.Fatalf("parse auto handoff: %v", err)
+	}
+	if art.Type != "auto" {
+		t.Errorf("artifact Type = %q, want %q", art.Type, "auto")
+	}
+	if art.State == nil {
+		t.Error("artifact State is nil; rehydrate needs the lane state")
+	}
+	if !strings.Contains(art.Summary, "CRITICAL") {
+		t.Errorf("summary = %q, want it to mention CRITICAL", art.Summary)
+	}
+
+	// Idempotency: a second CRITICAL for the same session must not produce a
+	// second structured artifact.
+	if _, _, err := ensureCriticalHandoff(cwd, status, usage); err != nil {
+		t.Fatalf("ensureCriticalHandoff second call: %v", err)
+	}
+	structured, err := filepath.Glob(filepath.Join(cwd, ".agents", "handoff", "handoff-*.json"))
+	if err != nil {
+		t.Fatalf("glob structured handoffs: %v", err)
+	}
+	if len(structured) != 1 {
+		t.Fatalf("expected exactly one structured auto handoff, got %d", len(structured))
+	}
+}
+
 func writeTranscriptLines(t *testing.T, path string, lines []map[string]any) {
 	t.Helper()
 	var b strings.Builder
