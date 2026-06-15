@@ -121,6 +121,12 @@ managed-agent driver — **not** an AgentOps daemon.
 
 Run one tick at a time; take the first action whose trigger fires:
 
+- **A peer says `ACTION NEEDED`, `Hey! Listen!`, `merge gate`,
+  `unblock-condition`, or asks for a verdict/dry-run before merge/close** →
+  interrupt broad watching and answer that gate first. Run the named verifier,
+  then surface the result in a channel the peer can read. If Agent Mail reads are
+  degraded, use a bead note, PR comment, or raw tmux relay with `C-m` plus
+  capture evidence. A mail send alone is not proof the peer was answered.
 - **A pane is rate-limited or auth-expired** → rotate the account / relaunch the
   pane, then re-send its in-flight bead. Do not let a dead pane look idle.
 - **A pane is wedged** (no output, not at a prompt) → nudge it once; if still
@@ -204,6 +210,32 @@ the status signals were misread. Discipline:
    windshield — `atm codex preflight`, `gh pr list`, `git ls-remote`, the output file) to
    break ties before respawning — prefer the `atm codex` classifier first, CPU% as the
    cheap tie-breaker.
+
+## Raw tmux Key Injection (Last Resort)
+
+Prefer `atm send`, `atm codex ...`, or NTM robot send surfaces for dispatch. Use
+raw `tmux send-keys` only for direct TUI/menu control, emergency pane relay, or
+when the robot surface cannot express the action.
+
+When you do use raw tmux, **submit with `C-m` and verify it landed**. Do not rely
+on a trailing literal `Enter` token in automation; in live pane relay it can
+leave text sitting in the input buffer. The safe pattern is:
+
+```bash
+tmux send-keys -t <target-pane> -- "<message>"
+tmux send-keys -t <target-pane> C-m
+tmux capture-pane -pt <target-pane> -S -30
+```
+
+The capture must show that the input line cleared and the pane started reacting
+(thinking/working indicator, echoed command output, or new prompt movement). If
+the message is still visibly parked in the input box, send another `C-m` and
+capture again. Codex-family TUIs may need two or three `C-m` submits after a
+large paste; never fire-and-forget a raw tmux relay.
+
+For gate/unblock replies, a capture that only shows text sitting in the input
+box is not delivery. The answer must be visible as accepted pane input/output or
+recorded in a durable artifact the peer can inspect (bead note or PR comment).
 
 ## Coordination (the Agent Mail leg)
 
