@@ -176,8 +176,8 @@ At closeout, summarize the swarm in concrete deltas:
 | Robot-mode surfaces, lanes, transports, deprecations (always re-query the binary) | [ROBOT-MODE.md](references/ROBOT-MODE.md) |
 | Error taxonomy + autonomous recovery decision tree | [RECOVERY.md](references/RECOVERY.md) |
 | Freshness, source health, attention state machine, three-observation rule | [OBSERVABILITY.md](references/OBSERVABILITY.md) |
-| 47 operationalized field-expertise cards (trigger + recipe + prompt + validator) | [OPERATOR-CARDS.md](references/OPERATOR-CARDS.md) |
-| 61 named anti-patterns from real swarm sessions, each with a fix | [ANTI-PATTERNS.md](references/ANTI-PATTERNS.md) |
+| Operationalized field-expertise cards (trigger + recipe + prompt + validator) | [OPERATOR-CARDS.md](references/OPERATOR-CARDS.md) |
+| Named anti-patterns from real swarm sessions, each with a fix | [ANTI-PATTERNS.md](references/ANTI-PATTERNS.md) |
 | Score matrix, proof card, pathology triggers, pattern tiers, red-flag phrases, troubleshooting | [DECISION-AIDS.md](references/DECISION-AIDS.md) |
 | /loop, CronCreate, shell cron, schedule; convergence-gated tick scripts | [CRON-AND-AUTOMATION.md](references/CRON-AND-AUTOMATION.md) |
 | Review-Only Mode full spec | [REVIEW-MODE.md](references/REVIEW-MODE.md) |
