@@ -1678,8 +1678,8 @@
     {
       "name": "using-atm",
       "source_skill": "skills/using-atm",
-      "source_hash": "793a5692fb23b9fd6f3aa4a712d84a74d8b9cbbdcf489fbdc34a651ab025abc4",
-      "generated_hash": "479812e37758bcd4f3131b8eca02217acfdbc86610e0c61834d03eb6cf150a2d"
+      "source_hash": "fced2c5870c6ac86b99505738f290774613343367c68d265ca97d07f69a4f44d",
+      "generated_hash": "9bf8d388407761338850df99a10a2b10591e6bbd43737f6aa9bcb89e89732243"
     },
     {
       "name": "validate",

@@ -82,6 +82,16 @@ Run one tick at a time; take the first action whose trigger fires:
 - **Many review beads open, few closing** → flip to review-only, drain the backlog.
 - **Otherwise** → observe; do not nudge a healthy working pane.
 
+## Observing lanes (the meter LIES)
+
+The wedged-vs-working call depends on reading the pane right — the `atm` meter misleads:
+
+- **`atm status` context-% + `atm activity` are UNRELIABLE for codex panes** — freeze ~4K/256K showing WAITING/available while the lane works. Never conclude wedged from the meter alone.
+- **See real content: `atm save <session>`** → `./outputs/<session>_<pane>_<ts>.txt`; read those (`atm copy` to clipboard). No `atm capture`/`atm read` exists.
+- **Confirm by ARTIFACT, not meter:** bead assignee, worktree/branch, PR, output file (`git ls-remote --heads origin 'task/*'`, `gh pr list`).
+- **Diagnose before `atm respawn`** (it kills + restarts) — read the `atm save` dump first; respawn only on a confirmed wedge (error / login prompt / frozen transcript).
+- **Dispatch:** `atm send --pane=N` delivers DIRECT prompts; slash-commands may not fire on codex panes (`--codex-goal` is the tell). Prefer self-contained instructions; verify engagement via `atm save` + artifacts.
+
 ## Coordination (the Agent Mail leg)
 
 - **Beads (`bd`)** — shared work queue + state source: `br ready`, `bd update --claim`, `bd close`.
