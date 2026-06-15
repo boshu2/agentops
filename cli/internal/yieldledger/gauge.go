@@ -58,8 +58,17 @@ func (b LossBreakdown) LossSpend() int { return b.Rejected + b.Rework + b.Coordi
 type Gauges struct {
 	RunID string `json:"run_id"`
 
-	// A = count(accept events) for the run.
+	// A = count(GATE-ADMITTED accept events) for the run — an accept counts only
+	// when its gate_verdict_ref resolves to a CONFIRMED gate-verdict for the same
+	// bead+head_sha (mesh edge E-G admission). An accept with no matching CONFIRMED
+	// verdict is an UNADMITTED deposit: it does NOT count toward A (that would let
+	// the mesh self-excite on unjudged work) and is surfaced as Unadmitted instead.
 	A int `json:"a_accepted"`
+
+	// Unadmitted = accept events whose gate_verdict_ref does NOT resolve to a
+	// CONFIRMED verdict (E-G leak surfaced). >0 means the mesh saw deposits that
+	// bypassed the gate — C/self-excitation must be treated as suspect.
+	Unadmitted int `json:"unadmitted_accepts"`
 
 	// R = total usage spend (SpendMeasure) for the run — the raw-input
 	// denominator. Reported so A_over_R and L are interpretable.
@@ -147,7 +156,13 @@ func computeRunSets(l *Ledger, runID string) runSets {
 		}
 		switch ev.Event {
 		case EventAccept:
-			sets.accepted[ev.BeadID] = true
+			// E-G admission: a bead is "accepted" for Q AND L only if the accept is
+			// gate-admitted. An unadmitted accept must NOT mark the bead accepted —
+			// else classifyUsage would count its spend productive instead of loss
+			// (the L-side of the same self-excite-on-unjudged-work hole; codex gate).
+			if acceptAdmitted(l, runID, ev) {
+				sets.accepted[ev.BeadID] = true
+			}
 		case EventGateVerdict:
 			if ev.GateVerdict == nil {
 				continue
@@ -173,6 +188,10 @@ func computeRunSets(l *Ledger, runID string) runSets {
 	}
 	for _, ev := range l.Events {
 		if ev.RunID != runID || ev.Event != EventAccept || ev.Accept == nil {
+			continue
+		}
+		// Only an admitted accept authorizes an accepting-attempt (E-G consistency).
+		if !acceptAdmitted(l, runID, ev) {
 			continue
 		}
 		if attempt, ok := acceptingAttemptFor(ev, sets.gateAttempts[ev.BeadID]); ok {
@@ -240,6 +259,34 @@ func cleanFirstPass(l *Ledger, runID, beadID string) bool {
 		}
 		ref := ev.Accept.GateVerdictRef
 		if ref.BeadID == beadID && ref.HeadSHA == attempt1SHA {
+			return true
+		}
+	}
+	return false
+}
+
+// acceptAdmitted reports whether an accept event is GATE-ADMITTED (mesh edge E-G):
+// there exists a gate-verdict for the SAME bead whose head_sha equals the accept's
+// gate_verdict_ref.head_sha AND whose disposition is CONFIRMED. An accept that
+// references a missing, REFUTED, ESCALATE/HOLD, or mismatched verdict is NOT
+// admitted — it is an unadmitted deposit that must not count as accepted work.
+func acceptAdmitted(l *Ledger, runID string, accept Event) bool {
+	if accept.Accept == nil {
+		return false
+	}
+	ref := accept.Accept.GateVerdictRef
+	// The ref must be internally consistent: it must claim THIS accept's bead. An
+	// accept on bead-X carrying a ref.bead_id of bead-Y is malformed and must not
+	// be admitted via bead-X's verdicts (codex gate: cross-bead-ref false-admit).
+	// cleanFirstPass binds ref.BeadID the same way.
+	if ref.HeadSHA == "" || ref.BeadID != accept.BeadID {
+		return false
+	}
+	for _, ev := range l.Events {
+		if ev.RunID != runID || ev.BeadID != accept.BeadID || ev.Event != EventGateVerdict || ev.GateVerdict == nil {
+			continue
+		}
+		if ev.GateVerdict.HeadSHA == ref.HeadSHA && ev.GateVerdict.Disposition == DispositionConfirmed {
 			return true
 		}
 	}
@@ -325,7 +372,15 @@ func ComputeGauges(l *Ledger, runID string, cDelta float64, cKnown bool) Gauges 
 		}
 		switch ev.Event {
 		case EventAccept:
-			g.A++
+			// E-G admission: an accept counts toward A only if it is gate-admitted
+			// (its gate_verdict_ref resolves to a CONFIRMED verdict for this
+			// bead+head_sha). Otherwise it is an unadmitted deposit — surfaced, not
+			// counted, so the mesh can't self-excite on unjudged work.
+			if acceptAdmitted(l, runID, ev) {
+				g.A++
+			} else {
+				g.Unadmitted++
+			}
 		case EventUsage:
 			g.R += spendOf(ev.Usage)
 		case EventGateVerdict:

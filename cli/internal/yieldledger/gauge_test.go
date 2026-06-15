@@ -471,8 +471,15 @@ func TestComputeGauges_LooseMatchGuard(t *testing.T) {
 	}
 	g := ComputeGauges(l, "r1", 0, false)
 
-	if g.A != 1 {
-		t.Fatalf("A = %d, want 1 (an accept exists)", g.A)
+	// E-G admission (ag-9gg4j): the accept references head_sha "sha-other", which
+	// has NO gate-verdict — it claims authorization from a verdict that does not
+	// exist. It is an UNADMITTED deposit: A must NOT count it (that would let the
+	// mesh self-excite on unjudged work); it is surfaced as Unadmitted instead.
+	if g.A != 0 {
+		t.Fatalf("A = %d, want 0 (accept references a head_sha with no CONFIRMED verdict → unadmitted)", g.A)
+	}
+	if g.Unadmitted != 1 {
+		t.Fatalf("Unadmitted = %d, want 1 (the unbacked accept is surfaced)", g.Unadmitted)
 	}
 	// The accept does not reference the attempt-1 verdict's head_sha, so the bead
 	// is NOT a clean first pass — numerator 0.
@@ -485,6 +492,56 @@ func TestComputeGauges_LooseMatchGuard(t *testing.T) {
 	// Still in the denominator (attempted).
 	if g.QAttemptBeads != 1 || !approx(g.QDenominator, 2) {
 		t.Errorf("denominator: QAttemptBeads=%d QDenominator=%v, want 1 and 2", g.QAttemptBeads, g.QDenominator)
+	}
+}
+
+// E-G admission gate (ag-9gg4j): A counts only gate-CONFIRMED-backed accepts; an
+// accept backed by a REFUTED verdict is an unadmitted deposit. Without this the
+// mesh self-excites on unjudged work.
+func TestComputeGauges_EGAdmissionGate(t *testing.T) {
+	root := t.TempDir()
+	w := Writer{}
+	// ag-good: CONFIRMED verdict at sha-good + accept bound to it → ADMITTED.
+	if _, err := w.AppendGateVerdict(root, GateVerdictInput{
+		BeadID: "ag-good", RunID: "r1", Difficulty: 1,
+		PawlVerdictRef: PawlVerdictRef{BeadID: "ag-good", HeadSHA: "sha-good"},
+		Disposition:    DispositionConfirmed, HeadSHA: "sha-good", Attempt: 1,
+		AuthorContextID: "ctx-1", AuthorFamily: "claude",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.AppendAccept(root, AcceptInput{
+		BeadID: "ag-good", RunID: "r1", MergeSHA: "merge-good", MergedBy: "orch",
+		GateVerdictRef: PawlVerdictRef{BeadID: "ag-good", HeadSHA: "sha-good"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// ag-bad: REFUTED verdict at sha-bad + accept bound to it → UNADMITTED
+	// (an accept backed by a REFUTED verdict must NOT count as accepted work).
+	if _, err := w.AppendGateVerdict(root, GateVerdictInput{
+		BeadID: "ag-bad", RunID: "r1", Difficulty: 1,
+		PawlVerdictRef: PawlVerdictRef{BeadID: "ag-bad", HeadSHA: "sha-bad"},
+		Disposition:    DispositionRefuted, HeadSHA: "sha-bad", Attempt: 1,
+		AuthorContextID: "ctx-1", AuthorFamily: "claude",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.AppendAccept(root, AcceptInput{
+		BeadID: "ag-bad", RunID: "r1", MergeSHA: "merge-badd", MergedBy: "orch",
+		GateVerdictRef: PawlVerdictRef{BeadID: "ag-bad", HeadSHA: "sha-bad"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	l, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := ComputeGauges(l, "r1", 0, false)
+	if g.A != 1 {
+		t.Errorf("A = %d, want 1 (only the CONFIRMED-backed accept is admitted)", g.A)
+	}
+	if g.Unadmitted != 1 {
+		t.Errorf("Unadmitted = %d, want 1 (the REFUTED-backed accept is rejected from A)", g.Unadmitted)
 	}
 }
 
@@ -531,5 +588,87 @@ func TestActuationHypotheses_AreShadow(t *testing.T) {
 	}
 	if !foundAR {
 		t.Error("missing the A/R WATCH-ONLY hypothesis")
+	}
+}
+
+// TestComputeGauges_EGCrossBeadRefNotAdmitted closes the codex-gate false-admit:
+// an accept on bead-X carrying a gate_verdict_ref.bead_id of bead-Y must NOT be
+// admitted via bead-X's own CONFIRMED verdict at the same head_sha — the ref must
+// bind to the accept's bead.
+func TestComputeGauges_EGCrossBeadRefNotAdmitted(t *testing.T) {
+	root := t.TempDir()
+	w := Writer{}
+	if _, err := w.AppendGateVerdict(root, GateVerdictInput{
+		BeadID: "ag-x", RunID: "r1", Difficulty: 1,
+		PawlVerdictRef: PawlVerdictRef{BeadID: "ag-x", HeadSHA: "sha-shared"},
+		Disposition:    DispositionConfirmed, HeadSHA: "sha-shared", Attempt: 1,
+		AuthorContextID: "ctx-1", AuthorFamily: "claude",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// accept on bead-X, but its ref claims bead-Y (mismatched) at the same sha.
+	if _, err := w.AppendAccept(root, AcceptInput{
+		BeadID: "ag-x", RunID: "r1", MergeSHA: "merge-xref", MergedBy: "orch",
+		GateVerdictRef: PawlVerdictRef{BeadID: "ag-y", HeadSHA: "sha-shared"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	l, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := ComputeGauges(l, "r1", 0, false)
+	if g.A != 0 {
+		t.Errorf("A = %d, want 0 (cross-bead ref.bead_id must not admit via the wrong bead's verdict)", g.A)
+	}
+	if g.Unadmitted != 1 {
+		t.Errorf("Unadmitted = %d, want 1 (mismatched-ref accept surfaced)", g.Unadmitted)
+	}
+}
+
+// TestComputeGauges_EGUnadmittedSpendIsLoss closes the L-side of E-G (codex gate):
+// a bead whose only accept is UNADMITTED (backed by a REFUTED verdict) must be
+// treated as never-accepted by the L join — its spend is rejected-loss, NOT
+// productive. Otherwise the mesh under-counts loss on unjudged deposits.
+func TestComputeGauges_EGUnadmittedSpendIsLoss(t *testing.T) {
+	root := t.TempDir()
+	w := Writer{}
+	if _, err := w.AppendGateVerdict(root, GateVerdictInput{
+		BeadID: "ag-uad", RunID: "r1", Difficulty: 1,
+		PawlVerdictRef: PawlVerdictRef{BeadID: "ag-uad", HeadSHA: "sha-refd"},
+		Disposition:    DispositionRefuted, HeadSHA: "sha-refd", Attempt: 1,
+		AuthorContextID: "ctx-1", AuthorFamily: "claude",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// accept backed by the REFUTED verdict → unadmitted.
+	if _, err := w.AppendAccept(root, AcceptInput{
+		BeadID: "ag-uad", RunID: "r1", MergeSHA: "merge-uad", MergedBy: "orch",
+		GateVerdictRef: PawlVerdictRef{BeadID: "ag-uad", HeadSHA: "sha-refd"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	// productive-phase usage with an optimistic productive hint.
+	if _, err := w.AppendUsage(root, UsageInput{
+		BeadID: "ag-uad", RunID: "r1", TokensIn: 0, TokensOut: 800,
+		CostUSD: 0, WallClockS: 5, Model: "m", Phase: PhaseImplement,
+		CategoryHint: CategoryProductive,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	l, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := ComputeGauges(l, "r1", 0, false)
+	if g.A != 0 || g.Unadmitted != 1 {
+		t.Errorf("A=%d Unadmitted=%d, want 0/1 (unadmitted accept)", g.A, g.Unadmitted)
+	}
+	// the unadmitted-accept bead is never-accepted → its spend is rejected-loss.
+	if g.LCategory.Productive != 0 {
+		t.Errorf("productive = %d, want 0 (unadmitted bead spend must not be productive)", g.LCategory.Productive)
+	}
+	if g.LCategory.Rejected != 800 {
+		t.Errorf("rejected loss = %d, want 800 (unadmitted bead spend is loss)", g.LCategory.Rejected)
 	}
 }

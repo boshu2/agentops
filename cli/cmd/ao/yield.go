@@ -142,7 +142,10 @@ func writeGaugeReport(out io.Writer, g yieldledger.Gauges, asJSON bool) error {
 
 	tw := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
 	fmt.Fprintln(tw, "GAUGE\tVALUE\tROLE")
-	fmt.Fprintf(tw, "A (accepted)\t%d\tnumerator\n", g.A)
+	fmt.Fprintf(tw, "A (accepted)\t%d\tnumerator (gate-admitted only)\n", g.A)
+	if g.Unadmitted > 0 {
+		fmt.Fprintf(tw, "  ⚠ unadmitted deposits\t%d\tE-G LEAK — accepts with no CONFIRMED verdict; C/self-excitation SUSPECT\n", g.Unadmitted)
+	}
 	fmt.Fprintf(tw, "R (raw input)\t%d\tdenominator\n", g.R)
 	fmt.Fprintf(tw, "Q (first-pass yield)\t%s\tLEAD\n", fmtRatio(g.Q, g.QDefined))
 	fmt.Fprintf(tw, "  Q numerator/denominator\t%.3f / %.3f (%d/%d beads clean)\t\n",
