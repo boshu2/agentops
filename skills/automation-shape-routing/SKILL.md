@@ -24,12 +24,24 @@ context:
 metadata:
   tier: meta
   dependencies: []
-output_contract: 'a routing verdict — Workflow | ATM swarm | plain skill | gate — with the deciding axis named'
+output_contract: 'a routing verdict — shape 0 (inline / Agent fan-out) | Workflow | ATM swarm | plain skill | gate — with the deciding axis named'
 ---
 
 # Automation Shape Routing — Workflow vs ATM vs Skill
 
-> **The trap this kills:** "I built a lot of skills; they should become
+> **HEADLINE TRAP — don't orchestrate a one-shot task.** Before standing up ANY
+> ATM swarm or Workflow, ask: *is this a reusable automation, or a single
+> deliverable I just need produced once?* A one-off task ("generate 9 content
+> ideas", "draft this section", "summarize these files") is **not** an
+> automation — orchestrating it stands up machinery that costs more time than
+> the task. The verdict for a one-shot is **shape 0** below: do it inline, or
+> fan out 2–3 in-session Agent subagents. **Real failure (2026-06-15):** an
+> operator pointed a heavy ATM-codex swarm at a ~9-idea content task; it wedged
+> on codex boot and cost more than doing it inline would have. In-session
+> Agent fan-out later worked in one pass. If you are reaching for ATM or a
+> Workflow, confirm you are not here.
+>
+> **The other trap this kills:** "I built a lot of skills; they should become
 > workflows." Mostly false. Most orchestration-looking skills are either
 > long-lived/human-attachable (stay ATM) or hard-sequential (stay skills). The
 > win is the routing rule, not a migration project.
@@ -38,16 +50,24 @@ output_contract: 'a routing verdict — Workflow | ATM swarm | plain skill | gat
 
 | Shape | What it is | Mechanism |
 |---|---|---|
+| **Shape 0 — inline / in-session fan-out** | A one-shot deliverable, not a reusable automation | Just do the task inline. If you want independent drafts / fresh eyes, fan out 2–3 in-session **Agent** subagents (lightest parallel path — no persistence, no worktrees, read-only-friendly, dies with the session). **No ATM, no Workflow, no SKILL.md authored.** This is the target of axis-1 "no orchestration." |
 | **Workflow** | Deterministic, reproducible orchestration of subagents | Claude `Workflow` tool — `agent({schema})`, `parallel()`, `pipeline()`, `phase()`, loop-until-budget. In-process, headless, ~16 concurrent. |
 | **ATM swarm** | Long-lived, human-in-the-loop multi-agent run | `atm` (the CLI) driven by [`/using-atm`](../using-atm/SKILL.md) — persistent tmux panes running whole `/rpi`/`/evolve` loops over a bead queue, with attach + nudge + kill/relaunch and mail/locks coordination. |
-| **Plain skill** | One model reasoning through a procedure or knowledge | A single `SKILL.md`. No fan-out, or a strictly sequential edit-loop. |
+| **Plain skill** | One model reasoning through a *reusable* procedure or knowledge | A single `SKILL.md` — authored only when the procedure will be **re-run**. No fan-out, or a strictly sequential edit-loop. *Not* the home for a one-off task; that's shape 0. |
 
-## The decision rule (three axes)
+## The decision rule (axes)
 
-Ask in order:
+**Litmus zero — reusable automation, or a one-shot? Ask this FIRST.** Are you
+building something that will be **re-run**, or just producing **one deliverable**?
+One-shot → **shape 0: do not route. Do the task inline, or fan out 2–3 in-session
+Agent subagents.** Don't stand up ATM or a Workflow for a single deliverable.
+Only continue to the axes below if the answer is "reusable automation."
+
+Then ask in order:
 
 1. **Is there real orchestration at all?** (fan-out / barrier / multi-stage, OR a
-   loop with parallelism to exploit) — if **no** → **plain skill**. Stop.
+   loop with parallelism to exploit) — if **no** → **shape 0** (inline / Agent
+   fan-out) for a one-off, or **plain skill** if it's a reusable procedure. Stop.
 2. **Must a human attach and steer mid-run?** Or does it run for *hours*, do
    open-ended *file edits*, juggle a *fluid population* (rate limits, kill/
    relaunch, prompt-cache rounds), or relay between *cross-model* panes? — if
@@ -56,10 +76,19 @@ Ask in order:
    needing review), no attach needed, you want it **reproducible + headless** →
    **Workflow**.
 
+**Cost-check on axes 2–3 (before committing to fan-out).** Parallel buys
+*independence / fresh eyes*, **not wall-clock at small N** — a measured 3-way
+fan-out **tied** a single sequential agent (191s vs 180s) and cost **~2.7× the
+tokens**, because the synthesis barrier eats the parallel gain. So at small N,
+parallel is a tax unless you actually want independent verification. If you just
+want the answer once, the cheapest correct shape is **shape 0** — often a single
+inline pass. (Full evidence under "Spike-validated nuances" below.)
+
 **One-line litmus:**
+> one-shot deliverable, not reusable → **shape 0** (inline / in-session Agent fan-out)
 > deterministic DAG + structured JSON + no human-attach + headless-wanted → **Workflow**
 > long-lived + attachable + open-ended file edits / fluid population → **ATM**
-> no fan-out, or hard-sequential edit loop → **plain skill**
+> reusable procedure, no fan-out, or hard-sequential edit loop → **plain skill**
 
 **Zeroth question, before the three axes:** is this an automation at all, or a
 *constraint* — a "must never regress" rule promoted from a learning? A constraint
@@ -136,6 +165,7 @@ decided, hand off:
 
 | Verdict | Next | What it does |
 |---|---|---|
+| **shape 0 (one-shot)** | *(no builder — stop routing)* | Do the task inline, or fan out 2–3 in-session Agent subagents for independent drafts. Author nothing. |
 | **plain skill** | `skill-builder` | Scaffold a new `SKILL.md` against the unified template → then `skill-auditor` → `heal-skill`. |
 | **Workflow** | `workflow-builder` | Scaffold a new `.claude/workflows/*.js` from the operating-loop.js template. |
 | **ATM swarm** | `atm` + [`/using-atm`](../using-atm/SKILL.md) | Stand up + tend an ATM swarm running AgentOps loops (`/rpi`/`/evolve`) over a bead queue. |
