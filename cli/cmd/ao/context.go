@@ -517,6 +517,29 @@ func ensureCriticalHandoff(cwd string, status contextSessionStatus, usage transc
 		return "", "", fmt.Errorf("write handoff marker: %w", err)
 	}
 
+	// Close the self-healing loop for the AUTOMATIC trigger: also emit the
+	// structured handoff-<ts>.json that `ao rehydrate`/pickLatestHandoff
+	// consumes. Without this, the critical handoff is only an orphan .md the
+	// read-side never selects, so the loop closes only for manual `ao handoff`
+	// (epic ag-2jp7l S2 / ag-qhn37). The .md + pending marker above stay for the
+	// PreCompact hook trail and per-session idempotency.
+	autoState := collectHandoffState(cwd)
+	autoArtifact := &handoffArtifact{
+		SchemaVersion: 1,
+		ID:            "handoff-" + now.Format("20060102T150405Z"),
+		CreatedAt:     now.Format(time.RFC3339),
+		Type:          "auto",
+		Summary: fmt.Sprintf(
+			"AUTO-HANDOFF at CRITICAL context usage (%.0f%%). Session %s cycled by the context guard. Last task: %s.",
+			status.UsagePercent*100, status.SessionID, status.LastTask),
+		Continuation: deriveContinuation(autoState),
+		State:        autoState,
+		Consumed:     false,
+	}
+	if _, err := writeHandoffArtifact(cwd, autoArtifact); err != nil {
+		return "", "", fmt.Errorf("write structured auto-handoff: %w", err)
+	}
+
 	return relPath, toRepoRelative(cwd, markerPath), nil
 }
 
