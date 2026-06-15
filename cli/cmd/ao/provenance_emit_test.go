@@ -122,9 +122,9 @@ func TestExtractLandedBeadIDs(t *testing.T) {
 			want: []string{"ag-ws4cl"},
 		},
 		{
-			name: "Closes: trailer plain",
-			msg:  "chore: tidy\n\nCloses: soc-y8b.5\n",
-			want: []string{"soc-y8b.5"},
+			name: "Closes: trailer plain with dotted child",
+			msg:  "chore: tidy\n\nCloses: ag-y8b.5\n",
+			want: []string{"ag-y8b.5"},
 		},
 		{
 			name: "multiple distinct ids dedup + order",
@@ -143,6 +143,27 @@ func TestExtractLandedBeadIDs(t *testing.T) {
 			name: "conventional-commit scope is not a bead id",
 			msg:  "feat(cc-hooks): coordination guard (ag-real)",
 			want: []string{"ag-real"},
+		},
+		{
+			// ag-62jrm regression: subject comma-list yields BOTH ids (the real
+			// fix target — 1b3771563 should have emitted ag-7hdg0 + ag-56cru).
+			name: "subject comma-list yields both ids",
+			msg:  "feat: dual arc (ag-7hdg0, ag-56cru #slug)\n\nbody text\n",
+			want: []string{"ag-7hdg0", "ag-56cru"},
+		},
+		{
+			// ag-62jrm regression: BODY prose parens must NEVER become an edge —
+			// this is the exact false-edge bug (bead_id="council-ratified").
+			name: "body-prose parens ignored (the false-edge bug)",
+			msg:  "feat: real work (ag-real)\n\nthis was a council-ratified (council-ratified) change; see (pre-mortem cleanup)\n",
+			want: []string{"ag-real"},
+		},
+		{
+			// Foreign tracker prefixes are not AgentOps landings — the agentops
+			// sensor emits ag- only (deliberate namespace, not ledger-derived).
+			name: "foreign prefix not emitted",
+			msg:  "chore: cross-repo note\n\nCloses: soc-y8b.5\n",
+			want: nil,
 		},
 	}
 	for _, c := range cases {
@@ -164,10 +185,16 @@ func TestExtractLandedBeadIDs(t *testing.T) {
 // inventing edges from prose that merely resembles an id. A real id is
 // prefix-dash-token; ordinary hyphenated words must not match.
 func TestExtractLandedBeadIDs_NoFalsePositives(t *testing.T) {
-	msg := "refactor: rename well-known cross-context helper; see context-map and follow-up"
-	got := extractLandedBeadIDs(msg)
-	if len(got) != 0 {
-		t.Errorf("expected no ids from prose, got %v", got)
+	for _, msg := range []string{
+		"refactor: rename well-known cross-context helper; see context-map and follow-up",
+		// Body parens of hyphenated prose — the exact false-edge shape.
+		"docs: notes\n\nthis is a council-ratified (council-ratified) decision\nand a (pre-mortem cleanup) follow-up\n",
+		// A non-ag bead id mentioned in body prose parens is still not an edge.
+		"chore: mention (soc-y8b.5) in passing in the body\n",
+	} {
+		if got := extractLandedBeadIDs(msg); len(got) != 0 {
+			t.Errorf("expected no ids from prose %q, got %v", msg, got)
+		}
 	}
 }
 
