@@ -79,17 +79,27 @@ type Edge struct {
 	ToType        string `json:"to_type"`
 	Relation      string `json:"relation"`
 	EvidenceRef   string `json:"evidence_ref,omitempty"`
-	TrustTier     string `json:"trust_tier"`
-	TS            string `json:"ts"`
-	PrevHash      string `json:"prev_hash"`
-	PayloadHash   string `json:"payload_hash"`
-	Hash          string `json:"hash"`
+	// BeadID and MergeSHA are additive, NON-payload mesh join keys (ag-5qltf,
+	// epic ag-w0wr2). They denormalize the already-hashed from_id/to_id of a
+	// bead→commit edge into the canonical (bead_id, merge_sha) join key the
+	// yield↔provenance mesh joins on (bead_id is the universal key; merge_sha
+	// anchors the bead→commit hop). Deliberately EXCLUDED from edgePayload: the
+	// authoritative values are from_id/to_id, which the payload already covers,
+	// so these projections need no independent hash protection — and excluding
+	// them keeps every existing committed edge's payload_hash/VerifyChain intact.
+	BeadID      string `json:"bead_id,omitempty"`
+	MergeSHA    string `json:"merge_sha,omitempty"`
+	TrustTier   string `json:"trust_tier"`
+	TS          string `json:"ts"`
+	PrevHash    string `json:"prev_hash"`
+	PayloadHash string `json:"payload_hash"`
+	Hash        string `json:"hash"`
 }
 
 // edgePayload is the hash-input subset of an Edge: every field EXCEPT
-// prev_hash is part of the payload per the schema description, with prev_hash
-// itself appended only via the outer hash. Field order is fixed so the
-// canonical JSON is deterministic.
+// prev_hash/payload_hash/hash AND the additive non-payload join keys
+// (bead_id, merge_sha — denormalized projections of from_id/to_id, see Edge).
+// Field order is fixed so the canonical JSON is deterministic.
 type edgePayload struct {
 	SchemaVersion string `json:"schema_version"`
 	FromID        string `json:"from_id"`

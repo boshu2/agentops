@@ -64,6 +64,13 @@ func extractLandedBeadIDs(msg string) []string {
 // buildBeadCommitEdge constructs the slice-1 SDLC edge: the bead was generated
 // by the landing commit. trust_tier is "inferred" — the link is a deterministic
 // observation of the commit, never a self-graded claim.
+//
+// It also stamps the additive (bead_id, merge_sha) mesh join keys (ag-5qltf,
+// epic ag-w0wr2): bead_id is the universal yield↔provenance join key and
+// merge_sha anchors this bead→commit hop (push-to-main: the full landed trunk
+// OID). They denormalize from_id/to_id into first-class fields so the mesh join
+// resolves without decoding edge endpoints — and are non-payload (see Edge), so
+// stamping them does not perturb the hash chain.
 func buildBeadCommitEdge(beadID, commitSHA string) provenancegraph.Edge {
 	return provenancegraph.Edge{
 		FromID:      beadID,
@@ -73,6 +80,8 @@ func buildBeadCommitEdge(beadID, commitSHA string) provenancegraph.Edge {
 		Relation:    "wasGeneratedBy",
 		TrustTier:   "inferred",
 		EvidenceRef: "commit " + commitSHA,
+		BeadID:      beadID,
+		MergeSHA:    commitSHA,
 	}
 }
 
