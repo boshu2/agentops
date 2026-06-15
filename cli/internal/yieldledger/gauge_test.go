@@ -3,6 +3,7 @@ package yieldledger
 import (
 	"math"
 	"testing"
+	"time"
 )
 
 const dogfoodRun = "r-2026-06-14-dynamo"
@@ -256,6 +257,142 @@ func TestComputeGauges_LateConfirmNotCleanFirstPass(t *testing.T) {
 	}
 	if !g.QDefined || !approx(g.Q, 0) {
 		t.Errorf("Q = %v, want 0 (0/5)", g.Q)
+	}
+}
+
+func TestComputeGauges_AcceptedLateAttemptCountsPriorAttemptsAsRework(t *testing.T) {
+	root := t.TempDir()
+	w := Writer{}
+	base := time.Date(2026, 6, 15, 10, 0, 0, 0, time.UTC)
+
+	if _, err := w.AppendUsage(root, UsageInput{
+		BeadID: "ag-late", RunID: "r1", TS: base.Add(1 * time.Minute),
+		TokensOut: 100, Model: "m", Phase: PhaseImplement,
+		CategoryHint: CategoryProductive,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.AppendGateVerdict(root, GateVerdictInput{
+		BeadID: "ag-late", RunID: "r1", TS: base.Add(2 * time.Minute), Difficulty: 5,
+		PawlVerdictRef: PawlVerdictRef{BeadID: "ag-late", HeadSHA: "shaatt01"},
+		Disposition:    DispositionRefuted, HeadSHA: "shaatt01", Attempt: 1,
+		AuthorContextID: "ctx-1", RefuterFamilies: []string{"gpt"}, AuthorFamily: "claude",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.AppendUsage(root, UsageInput{
+		BeadID: "ag-late", RunID: "r1", TS: base.Add(3 * time.Minute),
+		TokensOut: 200, Model: "m", Phase: PhaseImplement,
+		CategoryHint: CategoryProductive,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.AppendGateVerdict(root, GateVerdictInput{
+		BeadID: "ag-late", RunID: "r1", TS: base.Add(4 * time.Minute), Difficulty: 5,
+		PawlVerdictRef: PawlVerdictRef{BeadID: "ag-late", HeadSHA: "shaatt02"},
+		Disposition:    DispositionRefuted, HeadSHA: "shaatt02", Attempt: 2,
+		AuthorContextID: "ctx-1", RefuterFamilies: []string{"gpt"}, AuthorFamily: "claude",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.AppendUsage(root, UsageInput{
+		BeadID: "ag-late", RunID: "r1", TS: base.Add(5 * time.Minute),
+		TokensOut: 300, Model: "m", Phase: PhaseImplement,
+		CategoryHint: CategoryProductive,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.AppendGateVerdict(root, GateVerdictInput{
+		BeadID: "ag-late", RunID: "r1", TS: base.Add(6 * time.Minute), Difficulty: 5,
+		PawlVerdictRef: PawlVerdictRef{BeadID: "ag-late", HeadSHA: "shaatt03"},
+		Disposition:    DispositionConfirmed, HeadSHA: "shaatt03", Attempt: 3,
+		AuthorContextID: "ctx-1", AuthorFamily: "claude",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.AppendAccept(root, AcceptInput{
+		BeadID: "ag-late", RunID: "r1", TS: base.Add(7 * time.Minute),
+		MergeSHA: "merge01", MergedBy: "orch",
+		GateVerdictRef: PawlVerdictRef{BeadID: "ag-late", HeadSHA: "shaatt03"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	l, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := ComputeGauges(l, "r1", 0, false)
+
+	if g.R != 600 {
+		t.Fatalf("R = %d, want 600", g.R)
+	}
+	if g.LCategory.Rework != 300 {
+		t.Errorf("rework = %d, want 300 (attempts 1 and 2 before accepting attempt 3)", g.LCategory.Rework)
+	}
+	if g.LCategory.Productive != 300 {
+		t.Errorf("productive = %d, want 300 (accepting attempt 3)", g.LCategory.Productive)
+	}
+	if g.LSpend != 300 {
+		t.Errorf("LSpend = %d, want 300", g.LSpend)
+	}
+	if !g.LDefined || !approx(g.L, 0.5) {
+		t.Errorf("L = %v, want 0.5", g.L)
+	}
+}
+
+func TestComputeGauges_AggregateAcceptedLateAttemptSpendIsProrated(t *testing.T) {
+	root := t.TempDir()
+	w := Writer{}
+	ts := time.Date(2026, 6, 15, 11, 0, 0, 0, time.UTC)
+
+	for _, tc := range []struct {
+		sha         string
+		attempt     int
+		disposition string
+	}{
+		{"shaatt01", 1, DispositionRefuted},
+		{"shaatt02", 2, DispositionRefuted},
+		{"shaatt03", 3, DispositionConfirmed},
+	} {
+		if _, err := w.AppendGateVerdict(root, GateVerdictInput{
+			BeadID: "ag-aggregate", RunID: "r1", TS: ts, Difficulty: 3,
+			PawlVerdictRef: PawlVerdictRef{BeadID: "ag-aggregate", HeadSHA: tc.sha},
+			Disposition:    tc.disposition, HeadSHA: tc.sha, Attempt: tc.attempt,
+			AuthorContextID: "ctx-1", RefuterFamilies: []string{"gpt"}, AuthorFamily: "claude",
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := w.AppendUsage(root, UsageInput{
+		BeadID: "ag-aggregate", RunID: "r1", TS: ts,
+		TokensOut: 90, Model: "m", Phase: PhaseReview,
+		CategoryHint: CategoryProductive,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.AppendAccept(root, AcceptInput{
+		BeadID: "ag-aggregate", RunID: "r1", TS: ts,
+		MergeSHA: "merge01", MergedBy: "orch",
+		GateVerdictRef: PawlVerdictRef{BeadID: "ag-aggregate", HeadSHA: "shaatt03"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	l, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := ComputeGauges(l, "r1", 0, false)
+
+	if g.LCategory.Rework != 60 {
+		t.Errorf("rework = %d, want 60 (2 of 3 aggregate attempts before accept)", g.LCategory.Rework)
+	}
+	if g.LCategory.Productive != 30 {
+		t.Errorf("productive = %d, want 30 (accepting attempt's aggregate share)", g.LCategory.Productive)
+	}
+	if !g.LDefined || !approx(g.L, 2.0/3.0) {
+		t.Errorf("L = %v, want %v", g.L, 2.0/3.0)
 	}
 }
 
