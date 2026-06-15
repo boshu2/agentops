@@ -1,7 +1,7 @@
 #!/usr/bin/env bats
 # Hermetic regression tests for scripts/reconcile-pr.sh (ag-9gac).
 #
-# The script shells out to `gh` and `bd`. We stub BOTH via PATH so the test is
+# The script shells out to `gh` and `br`. We stub BOTH via PATH so the test is
 # deterministic and never touches a real PR, repo, or bead database. `jq` is a
 # hard dep on every dev box and is used real.
 #
@@ -11,7 +11,7 @@
 #   gh pr view <pr> --json headRefName ... -> prints "feat/x"
 #   gh pr merge ...                        -> logs "merge <pr>"; exit 0
 #   gh run rerun ... / gh run list ...     -> logs "rerun"; exit 0
-#   bd update <bead> --status closed       -> logs "close <bead>"; exit 0
+#   BEADS_DIR=<repo>/_beads br close <bead> -> logs "close <bead>"; exit 0
 #
 # Poll cadence is forced to --poll-sleep 0 --poll-max 2 so the loop is instant.
 
@@ -76,21 +76,28 @@ EOF
   chmod +x "$TMP/bin/gh"
 }
 
-stub_bd() {
-  cat >"$TMP/bin/bd" <<EOF
+stub_br() {
+  cat >"$TMP/bin/br" <<EOF
 #!/usr/bin/env bash
 LOG="$ACTION_LOG"
-if [ "\$1" = "update" ] && [ "\$3" = "--status" ] && [ "\$4" = "closed" ]; then
+if [ "\$1" = "close" ]; then
+  case "\${BEADS_DIR:-}" in
+    */_beads) ;;
+    *) echo "bad-beads-dir \${BEADS_DIR:-}" >> "\$LOG"; exit 9 ;;
+  esac
+  if [ -f "$TMP/br_close_fail" ]; then
+    echo "close-fail \$2" >> "\$LOG"; exit 42
+  fi
   echo "close \$2" >> "\$LOG"; exit 0
 fi
 exit 0
 EOF
-  chmod +x "$TMP/bin/bd"
+  chmod +x "$TMP/bin/br"
 }
 
 activate() {
   stub_gh
-  stub_bd
+  stub_br
   export PATH="$TMP/bin:$ORIG_PATH"
 }
 
@@ -279,6 +286,21 @@ run_reconcile() {
   [ "$status" -eq 3 ]
   [[ "$output" == *"merge-FAILED"* ]]
   ! grep -q '^close' "$ACTION_LOG"
+}
+
+@test "merge confirmed but br close fails: hard-fail exit 6, merged-but-unclosed is surfaced" {
+  printf '%s' '[{"name":"validate","state":"SUCCESS"}]' > "$TMP/checks"
+  printf 'MERGED' > "$TMP/pr_state"
+  activate
+  seed_verdict ag-745 745 CONFIRMED claude:CONFIRMED codex:CONFIRMED
+  touch "$TMP/br_close_fail"
+  run_reconcile 745 ag-745
+  [ "$status" -eq 6 ]
+  [[ "$output" == *"MERGED: PR 745"* ]]
+  [[ "$output" == *"close-FAILED: PR 745 is MERGED but bead ag-745 was NOT closed"* ]]
+  [[ "$output" != *"CLOSED bead=ag-745"* ]]
+  grep -qx 'merge 745' "$ACTION_LOG"
+  grep -qx 'close-fail ag-745' "$ACTION_LOG"
 }
 
 @test "dry-run on green WITH verdict: no merge, no close, exit 0" {
