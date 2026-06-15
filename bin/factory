@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+FACTORY_DIR="${FACTORY_DIR:-$HOME/.config/factory}"
+APPROVAL_FILE="$FACTORY_DIR/bo-approval.env"
+APPROVAL_EXAMPLE="$FACTORY_DIR/bo-approval.env.example"
+WORKER_SCRIPT="$FACTORY_DIR/tick.sh"
+PROMPT_FILE="$FACTORY_DIR/driver-tick.txt"
+LEASE_FILE="$FACTORY_DIR/.lease"
+PID_FILE="$FACTORY_DIR/.pid"
+
+die() { printf 'factory: %s\n' "$1" >&2; exit 1; }
+
+_check_approval() {
+  [ -f "$APPROVAL_FILE" ] || return 1
+  grep -q '^approved_by=' "$APPROVAL_FILE" 2>/dev/null || return 1
+  grep -q '^run=' "$APPROVAL_FILE" 2>/dev/null || return 1
+}
+
+_acquire_lease() {
+  if [ -f "$LEASE_FILE" ]; then
+    local lease_pid
+    lease_pid="$(cat "$LEASE_FILE" 2>/dev/null)" || true
+    if [ -n "$lease_pid" ] && kill -0 "$lease_pid" 2>/dev/null; then
+      die "factory already running (pid $lease_pid, lease $LEASE_FILE)"
+    fi
+    rm -f "$LEASE_FILE"
+  fi
+  echo $$ > "$LEASE_FILE"
+}
+
+_release_lease() {
+  rm -f "$LEASE_FILE" "$PID_FILE"
+}
+
+cmd_start() {
+  if ! _check_approval; then
+    echo "FAIL CLOSED: no valid approval artifact at $APPROVAL_FILE"
+    echo "To approve: cp $APPROVAL_EXAMPLE $APPROVAL_FILE"
+    echo "Then edit approved_at and reason fields."
+    exit 1
+  fi
+
+  [ -x "$WORKER_SCRIPT" ] || die "worker not found or not executable: $WORKER_SCRIPT"
+  [ -f "$PROMPT_FILE" ]   || die "prompt not found: $PROMPT_FILE"
+
+  _acquire_lease
+  trap _release_lease EXIT
+
+  echo "factory: approved by $(grep '^approved_by=' "$APPROVAL_FILE" | cut -d= -f2)"
+  echo "factory: starting worker ($WORKER_SCRIPT)"
+
+  "$WORKER_SCRIPT" &
+  local worker_pid=$!
+  echo "$worker_pid" > "$PID_FILE"
+  echo "factory: worker pid $worker_pid"
+  wait "$worker_pid"
+}
+
+cmd_stop() {
+  if [ -f "$PID_FILE" ]; then
+    local pid
+    pid="$(cat "$PID_FILE" 2>/dev/null)" || true
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+      echo "factory: stopping worker pid $pid"
+      kill "$pid" 2>/dev/null || true
+      sleep 1
+      kill -0 "$pid" 2>/dev/null && kill -9 "$pid" 2>/dev/null || true
+    else
+      echo "factory: stale pid file (process $pid not running)"
+    fi
+    rm -f "$PID_FILE"
+  else
+    echo "factory: no pid file — not running"
+  fi
+  rm -f "$LEASE_FILE"
+}
+
+cmd_status() {
+  echo "=== Factory Status ==="
+
+  if _check_approval; then
+    echo "Approval:  ARMED"
+    echo "  by:      $(grep '^approved_by=' "$APPROVAL_FILE" | cut -d= -f2)"
+    echo "  at:      $(grep '^approved_at=' "$APPROVAL_FILE" | cut -d= -f2)"
+    echo "  run:     $(grep '^run=' "$APPROVAL_FILE" | cut -d= -f2)"
+    echo "  reason:  $(grep '^reason=' "$APPROVAL_FILE" | cut -d= -f2)"
+  else
+    echo "Approval:  NOT APPROVED (fail-closed)"
+  fi
+
+  local runtime="codex"
+  if grep -q 'claude' "$WORKER_SCRIPT" 2>/dev/null && ! grep -q 'codex' "$WORKER_SCRIPT" 2>/dev/null; then
+    runtime="claude (WARNING: LAW 0 violation risk)"
+  fi
+  echo "Runtime:   $runtime"
+  echo "Worker:    $WORKER_SCRIPT"
+  echo "Prompt:    $PROMPT_FILE"
+
+  if [ -f "$PID_FILE" ]; then
+    local pid
+    pid="$(cat "$PID_FILE" 2>/dev/null)" || true
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+      echo "Running:   YES (pid $pid)"
+    else
+      echo "Running:   NO (stale pid $pid)"
+    fi
+  elif [ -f "$LEASE_FILE" ]; then
+    echo "Running:   LEASE EXISTS ($(cat "$LEASE_FILE" 2>/dev/null))"
+  else
+    echo "Running:   NO"
+  fi
+}
+
+cmd_go() {
+  mkdir -p "$FACTORY_DIR"
+
+  if [ ! -f "$APPROVAL_EXAMPLE" ]; then
+    cat > "$APPROVAL_EXAMPLE" <<'EOF'
+approved_by=Bo
+run=factory-live
+approved_at=YYYY-MM-DDTHH:MM:SSZ
+reason=factory go-dark activation
+EOF
+    echo "factory: wrote example at $APPROVAL_EXAMPLE"
+  fi
+
+  if [ ! -f "$WORKER_SCRIPT" ]; then
+    cat > "$WORKER_SCRIPT" <<'WORKER'
+#!/bin/zsh
+export PATH="$HOME/bin:$HOME/.local/bin:/opt/homebrew/bin:$PATH"
+cd "/Users/bo/dev/agentops" || exit 1
+exec codex exec --cd "/Users/bo/dev/agentops" --sandbox workspace-write --ask-for-approval never "$(cat "/Users/bo/.config/factory/driver-tick.txt")"
+WORKER
+    chmod +x "$WORKER_SCRIPT"
+    echo "factory: wrote worker at $WORKER_SCRIPT"
+  fi
+
+  echo "factory: ARMED (config written). Not started."
+  echo "To approve: cp $APPROVAL_EXAMPLE $APPROVAL_FILE"
+  echo "To start:   factory start"
+}
+
+case "${1:-help}" in
+  start)  cmd_start  ;;
+  stop)   cmd_stop   ;;
+  status) cmd_status ;;
+  go)     cmd_go     ;;
+  help|--help|-h)
+    echo "Usage: factory {start|stop|status|go}"
+    echo ""
+    echo "  start   Start factory worker (FAILS CLOSED without Bo approval)"
+    echo "  stop    Stop factory worker by pid (no broad pkill)"
+    echo "  status  Show approval state, runtime, running status"
+    echo "  go      Write config/arm factory (does NOT start)"
+    ;;
+  *)
+    die "unknown command: $1 (try: factory help)"
+    ;;
+esac
