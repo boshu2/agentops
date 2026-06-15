@@ -20,15 +20,18 @@ BEAD="e2e-synthetic-1"
 AO_BIN="${AO_BIN:-ao}"          # override to a freshly-built binary in CI/tests
 KEEP=false
 SCENARIO="clean"               # clean = CONFIRMED first pass; rework = REFUTE -> rework -> CONFIRM (the ratchet)
+C_DELTA=""                     # self-excitation: a PUBLISHED corpus delta (ag-8p8o/W1c). Omit -> C pending (never faked).
 for a in "$@"; do
   case "$a" in
     --run-id=*)   RUN_ID="${a#*=}" ;;
     --scenario=*) SCENARIO="${a#*=}" ;;
+    --c-delta=*)  C_DELTA="${a#*=}" ;;
     --keep)       KEEP=true ;;
     -h|--help)    sed -n '2,20p' "$0"; exit 0 ;;
   esac
 done
 case "$SCENARIO" in clean|rework) ;; *) echo "dynamo-e2e: --scenario must be clean|rework (got '$SCENARIO')" >&2; exit 2 ;; esac
+[[ -z "$C_DELTA" || "$C_DELTA" =~ ^-?[0-9]+(\.[0-9]+)?$ ]] || { echo "dynamo-e2e: --c-delta must be a number (got '$C_DELTA')" >&2; exit 2; }
 
 command -v "$AO_BIN" >/dev/null 2>&1 || { echo "dynamo-e2e: '$AO_BIN' not on PATH (build + install ao, or set AO_BIN)" >&2; exit 2; }
 
@@ -80,8 +83,12 @@ else
 fi
 
 # 5. SENSE + 6. TUNE (real gauge: A/Q/A-R/E/L + C status + shadow hypotheses) --
-echo "[5/6] sense+tune     : ao yield gauge --"
-GAUGE_OUT="$("$AO_BIN" yield gauge --run "$RUN_ID" 2>&1)"
+# Self-excitation C: only populated from a PUBLISHED corpus delta (ag-8p8o/W1c)
+# passed via --c-delta; omitted -> the gauge reports C pending. NEVER fabricated.
+gauge_args=(yield gauge --run "$RUN_ID")
+if [[ -n "$C_DELTA" ]]; then gauge_args+=(--c-delta "$C_DELTA"); fi
+echo "[5/6] sense+tune     : ao yield gauge${C_DELTA:+ --c-delta $C_DELTA} --"
+GAUGE_OUT="$("$AO_BIN" "${gauge_args[@]}" 2>&1)"
 echo "$GAUGE_OUT" | sed 's/^/    /'
 
 # Prove the loop CLOSED: (a) every organ signal present, AND (b) the emitted
@@ -92,6 +99,17 @@ fail=0
 for needle in "A (accepted)" "Q (first-pass yield)" "C (corpus delta)" "E (escalation" "L (loss)" "Shadow-mode actuation"; do
   grep -qiF "$needle" <<<"$GAUGE_OUT" || { echo "dynamo-e2e: MISSING organ signal: $needle" >&2; fail=1; }
 done
+# SELF-EXCITATION C: honest both ways. With --c-delta, C must show that value
+# (the published corpus delta flowed). Without it, C MUST read pending — never a
+# fabricated zero. This is the self-excitation organ's readout wiring (E2).
+c_line="$(grep -E '^C \(corpus delta\)' <<<"$GAUGE_OUT" | head -1)"
+if [[ -n "$C_DELTA" ]]; then
+  # `--` so a negative delta (e.g. -0.5, the "field is NOT self-exciting" case) is
+  # not parsed as a grep option — negative C is the most decision-relevant reading.
+  grep -qF -- "$C_DELTA" <<<"$c_line" || { echo "dynamo-e2e: C did not show the published delta $C_DELTA (got: $c_line)" >&2; fail=1; }
+else
+  grep -qiF -- "pending" <<<"$c_line" || { echo "dynamo-e2e: C must be 'pending' with no --c-delta, never fabricated (got: $c_line)" >&2; fail=1; }
+fi
 # A (accepted) must be >= 1 — the accept event flowed through to the sensor
 a_val="$(grep -E '^A \(accepted\)' <<<"$GAUGE_OUT" | grep -oE '[0-9]+' | head -1 || echo 0)"
 [[ "${a_val:-0}" -ge 1 ]] || { echo "dynamo-e2e: accept did NOT reach the sensor (A=$a_val)" >&2; fail=1; }

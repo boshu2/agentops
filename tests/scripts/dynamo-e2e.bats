@@ -42,3 +42,19 @@ setup() {
   run env AO_BIN="$(command -v true)" "$HARNESS" --run-id=bats-empty
   [ "$status" -ne 0 ]
 }
+
+@test "self-excitation C readout: pending by default, populated from a published --c-delta (ag-1wv7s)" {
+  # default: C must be pending, never a fabricated value
+  run env AO_BIN="$AO_E2E_BIN" "$HARNESS" --run-id=bats-cpending
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"C (corpus delta)"*"pending"* ]]
+  # with a published delta: C shows the value (self-excitation organ readout)
+  run env AO_BIN="$AO_E2E_BIN" "$HARNESS" --run-id=bats-cval --c-delta=0.12
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"0.120"* ]]
+  [[ "$output" != *"C (corpus delta)           pending"* ]]
+  # negative delta (field NOT self-exciting) must populate, not error
+  run env AO_BIN="$AO_E2E_BIN" "$HARNESS" --run-id=bats-cneg --c-delta=-0.5
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"-0.500"* ]]
+}
