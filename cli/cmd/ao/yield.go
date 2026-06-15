@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"text/tabwriter"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -55,13 +57,131 @@ Examples:
 	RunE: runYieldEmit,
 }
 
+// yieldGaugeCmd computes and reports the yield vector for one run.
+var yieldGaugeCmd = &cobra.Command{
+	Use:   "gauge --run <id> [--json] [--c-delta <float>]",
+	Short: "Compute the yield gauges (A, Q, A/R, E, L) for a run + print shadow-mode hypotheses",
+	Long: `Load the yield ledger, compute the dynamo yield vector for one run, and
+print a readable report including the five gauges AND the pre-registered
+shadow-mode actuation hypotheses (the knob each gauge WOULD move). The hypotheses
+are PRINTED, never auto-steered — auto-tuning is ag-qpg99 (deferred).
+
+Gauges (see .agents/specs/2026-06-14-yield-vector-and-ledger-event-gap.md):
+  A      accepted beads (count of accept events)
+  Q      difficulty-weighted first-pass yield  [LEAD]
+  C      corpus delta, consumed from ag-8p8o (pending if unpublished) [LEAD]
+  A/R    accepted / raw input  [WATCH ONLY — Goodhart, never a tuning target]
+  E      (ESCALATE+HOLD verdicts) / accepts
+  L      loss spend / raw input (read-time join)
+
+C is consumed, never recomputed. Pass --c-delta to supply ag-8p8o's published
+delta; omit it to report C as pending.
+
+  ao yield gauge --run run-2026-06-14-dynamo-dogfood
+  ao yield gauge --run r1 --json
+  ao yield gauge --run r1 --c-delta 0.12`,
+	Args: cobra.NoArgs,
+	RunE: runYieldGauge,
+}
+
 func init() {
 	yieldEmitCmd.Flags().String("bead", "", "bead id this event is keyed to (required)")
 	yieldEmitCmd.Flags().String("run", "", "factory run/cycle id (required)")
 	yieldEmitCmd.Flags().String("json", "", "the typed body object as a single JSON blob")
 	yieldEmitCmd.Flags().String("ts", "", "optional RFC3339 timestamp; defaults to now (UTC)")
 	yieldCmd.AddCommand(yieldEmitCmd)
+
+	yieldGaugeCmd.Flags().String("run", "", "factory run/cycle id to compute gauges for (required)")
+	yieldGaugeCmd.Flags().Bool("json", false, "emit the computed gauges as JSON for machine consumption")
+	yieldGaugeCmd.Flags().Float64("c-delta", 0, "ag-8p8o's published corpus delta (C); omit to report C as pending")
+	yieldCmd.AddCommand(yieldGaugeCmd)
+
 	rootCmd.AddCommand(yieldCmd)
+}
+
+// runYieldGauge wires the cobra invocation to the gauge core.
+func runYieldGauge(cmd *cobra.Command, args []string) error {
+	root, err := resolveProjectDir()
+	if err != nil {
+		return err
+	}
+	run, _ := cmd.Flags().GetString("run")
+	if run == "" {
+		return fmt.Errorf("--run is required")
+	}
+	asJSON, _ := cmd.Flags().GetBool("json")
+	cDelta, _ := cmd.Flags().GetFloat64("c-delta")
+	cKnown := cmd.Flags().Changed("c-delta")
+
+	ledger, err := yieldledger.Load(root)
+	if err != nil {
+		return err
+	}
+	g := yieldledger.ComputeGauges(ledger, run, cDelta, cKnown)
+	return writeGaugeReport(cmd.OutOrStdout(), g, asJSON)
+}
+
+// gaugeJSON is the machine-output envelope: the gauges plus the shadow-mode
+// hypotheses table, so a --json consumer gets both in one document.
+type gaugeJSON struct {
+	Gauges     yieldledger.Gauges                `json:"gauges"`
+	Hypotheses []yieldledger.ActuationHypothesis `json:"shadow_mode_hypotheses"`
+}
+
+// writeGaugeReport renders the computed gauges either as JSON or as a readable
+// human report including the shadow-mode actuation hypotheses table.
+func writeGaugeReport(out io.Writer, g yieldledger.Gauges, asJSON bool) error {
+	if asJSON {
+		enc := json.NewEncoder(out)
+		enc.SetIndent("", "  ")
+		return enc.Encode(gaugeJSON{Gauges: g, Hypotheses: yieldledger.ActuationHypotheses()})
+	}
+
+	fmt.Fprintf(out, "Yield gauges — run %s\n", g.RunID)
+	fmt.Fprintf(out, "(spend measure R = %s)\n\n", g.SpendMeasure)
+
+	tw := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(tw, "GAUGE\tVALUE\tROLE")
+	fmt.Fprintf(tw, "A (accepted)\t%d\tnumerator\n", g.A)
+	fmt.Fprintf(tw, "R (raw input)\t%d\tdenominator\n", g.R)
+	fmt.Fprintf(tw, "Q (first-pass yield)\t%s\tLEAD\n", fmtRatio(g.Q, g.QDefined))
+	fmt.Fprintf(tw, "  Q numerator/denominator\t%.3f / %.3f (%d/%d beads clean)\t\n",
+		g.QNumerator, g.QDenominator, g.QCleanBeads, g.QAttemptBeads)
+	fmt.Fprintf(tw, "C (corpus delta)\t%s\tLEAD (consumed from ag-8p8o)\n", fmtC(g))
+	fmt.Fprintf(tw, "A/R (conversion)\t%s\tWATCH ONLY — Goodhart, never tune\n", fmtRatio(g.AOverR, g.AOverRDefined))
+	fmt.Fprintf(tw, "E (escalation rate)\t%s\tautonomy watch (%d ESCALATE/HOLD)\n", fmtRatio(g.E, g.EDefined), g.EEscalateHolds)
+	fmt.Fprintf(tw, "L (loss)\t%s\twaste watch\n", fmtRatio(g.L, g.LDefined))
+	fmt.Fprintf(tw, "  L breakdown (spend)\trejected=%d rework=%d coord=%d productive=%d\t\n",
+		g.LCategory.Rejected, g.LCategory.Rework, g.LCategory.Coordination, g.LCategory.Productive)
+	if err := tw.Flush(); err != nil {
+		return err
+	}
+
+	fmt.Fprintln(out, "\nShadow-mode actuation hypotheses (PRINTED, not auto-steered — ag-qpg99 deferred):")
+	htw := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(htw, "IF GAUGE READS…\t…WOULD MOVE THIS KNOB\tMODE")
+	for _, h := range yieldledger.ActuationHypotheses() {
+		fmt.Fprintf(htw, "%s\t%s\t%s\n", h.Trigger, h.Knob, h.Mode)
+	}
+	return htw.Flush()
+}
+
+// fmtRatio renders a ratio gauge, or "n/a (0 denom)" when undefined so a 0/0
+// reads as "no signal", not a misleading 0.000.
+func fmtRatio(v float64, defined bool) string {
+	if !defined {
+		return "n/a (0 denominator)"
+	}
+	return fmt.Sprintf("%.3f", v)
+}
+
+// fmtC renders the consumed corpus-delta gauge, distinguishing a published delta
+// from the pending sentinel (never fabricated).
+func fmtC(g yieldledger.Gauges) string {
+	if g.CPendingFlag {
+		return "pending (ag-8p8o unpublished)"
+	}
+	return fmt.Sprintf("%.3f", g.CDelta)
 }
 
 // runYieldEmit wires the cobra invocation to the emit core.
