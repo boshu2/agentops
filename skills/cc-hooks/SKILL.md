@@ -129,6 +129,23 @@ opt-in `settings.json` snippet, and a bats test proving every fire/silent case.
 
 Recipe: [SKILL-FIRST-COORDINATION-GUARD.md](references/SKILL-FIRST-COORDINATION-GUARD.md)
 
+## Installed-Skill-Edit Guard (opt-in)
+
+A PreToolUse `Edit|Write` guard that routes an edit of an **installed skill copy**
+(`*/.claude/skills/**`, `.codex`, `.gemini`) back to the repo source of truth
+`skills/<name>/`. This is a TRUE mistake-token — editing an installed/symlinked
+copy has no legitimate form (overwritten on install, or symlinks through to the
+factory checkout). Zero false-positive surface: it matches `tool_input.file_path`
+only, so a doc that merely mentions `claude/skills` in its body never fires.
+Reversible → it ROUTES (exit 2 + one-line redirect), not hard-blocks. Silent on
+every other path; fires once per session. Ships INERT — opt-in installer:
+
+```bash
+scripts/install-installed-skill-edit-guard.sh   # user scope; --project for project
+```
+
+Recipe: [INSTALLED-SKILL-EDIT-GUARD.md](references/INSTALLED-SKILL-EDIT-GUARD.md)
+
 ## Writing Your Own Hook
 
 **Minimal Python:**
@@ -209,5 +226,6 @@ use-cases route here:
 - [HOOK-EVENTS.md](references/HOOK-EVENTS.md) - All events with full schemas
 - [DCG-RCH.md](references/DCG-RCH.md) - Production examples (dcg, rch)
 - [SKILL-FIRST-COORDINATION-GUARD.md](references/SKILL-FIRST-COORDINATION-GUARD.md) - Opt-in coordination skill-first guard + context-budget doctrine
+- [INSTALLED-SKILL-EDIT-GUARD.md](references/INSTALLED-SKILL-EDIT-GUARD.md) - Opt-in guard routing installed-skill edits to repo skills/ (keystone)
 - [PATTERNS.md](references/PATTERNS.md) - Auto-format, logging, notifications
 - [JSON-OUTPUT.md](references/JSON-OUTPUT.md) - Response schemas

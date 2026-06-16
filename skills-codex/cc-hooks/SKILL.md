@@ -18,3 +18,11 @@ Read it first, then use `prompt.md` for the Codex runtime profile.
 - Prefer robot/JSON/NDJSON command surfaces when the source skill exposes them.
 - Verify command syntax from local `--help` or checked-in references before acting.
 - Return concrete evidence: commands run, files touched, exit codes, and any remaining blocker.
+
+## Opt-in guards
+
+- **Installed-skill-edit guard** — a PreToolUse `Edit|Write` guard that routes an
+  edit of an installed skill copy (`*/.claude/skills/**`, `.codex`, `.gemini`)
+  back to the repo source of truth `skills/<name>/`. Ships inert; activate with
+  `scripts/install-installed-skill-edit-guard.sh`. See
+  `references/INSTALLED-SKILL-EDIT-GUARD.md`.
