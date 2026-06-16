@@ -378,7 +378,7 @@ func TestRecalibrate_ResetsUtility(t *testing.T) {
 	path := filepath.Join(dir, "inflated.jsonl")
 	os.WriteFile(path, []byte(`{"utility":0.85,"reward_count":10,"maturity":"established","confidence":0.8}`+"\n"), 0644)
 
-	oldUtility, newUtility, err := updateLearningUtility(path, types.InitialUtility, 1.0)
+	oldUtility, newUtility, err := updateLearningUtility(path, types.InitialUtility, 1.0, nil)
 	if err != nil {
 		t.Fatalf("updateLearningUtility: %v", err)
 	}

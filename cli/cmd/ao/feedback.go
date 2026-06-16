@@ -130,19 +130,11 @@ func runFeedback(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("find learning: %w", err)
 	}
 
-	// Deposit chokepoint (the pawl): a reward may only strengthen a trail on a
-	// gate-passed outcome. A failed verdict never deposits; a missing verdict is
-	// refused under AO_DEPOSIT_GATE=strict, tolerated-with-warning otherwise.
+	// Resolve the gate verdict for this deposit; the chokepoint itself is
+	// enforced inside updateLearningUtility (the single door all paths route through).
 	verdict, gateErr := gateVerdictFromFlag(feedbackGate)
 	if gateErr != nil {
 		return gateErr
-	}
-	allowed, reason := lifecycle.GuardDeposit(verdict, lifecycle.ResolveDepositMode())
-	if !allowed {
-		return fmt.Errorf("deposit refused by gate chokepoint: %s", reason)
-	}
-	if len(reason) >= 4 && reason[:4] == "warn" {
-		fmt.Fprintf(os.Stderr, "WARNING: %s\n", reason)
 	}
 
 	if GetDryRun() {
@@ -152,7 +144,7 @@ func runFeedback(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	oldUtility, newUtility, err := updateLearningUtility(learningPath, feedbackReward, feedbackAlpha)
+	oldUtility, newUtility, err := updateLearningUtility(learningPath, feedbackReward, feedbackAlpha, verdict)
 	if err != nil {
 		return fmt.Errorf("update utility: %w", err)
 	}
@@ -176,7 +168,20 @@ func findLearningFile(baseDir, learningID string) (string, error) {
 	return resolver.NewFileResolver(baseDir).Resolve(learningID)
 }
 
-func updateLearningUtility(path string, reward, alpha float64) (oldUtility, newUtility float64, err error) {
+// updateLearningUtility is the SINGLE deposit chokepoint: every reward/utility
+// mutation in the CLI routes through here (verified: no other caller of
+// lifecycle.UpdateLearningUtility exists), so the pawl is structural, not a
+// per-command guard. Automated callers pass nil (tolerated in warn mode, refused
+// under AO_DEPOSIT_GATE=strict until they supply a real gate verdict — the
+// warn→strict ratchet); `ao feedback` passes its --gate verdict.
+func updateLearningUtility(path string, reward, alpha float64, verdict *lifecycle.GateVerdict) (oldUtility, newUtility float64, err error) {
+	allowed, reason := lifecycle.GuardDeposit(verdict, lifecycle.ResolveDepositMode())
+	if !allowed {
+		return 0, 0, fmt.Errorf("deposit refused by gate chokepoint: %s", reason)
+	}
+	if strings.HasPrefix(reason, "warn") {
+		fmt.Fprintf(os.Stderr, "WARNING: %s (%s)\n", reason, path)
+	}
 	return lifecycle.UpdateLearningUtility(path, reward, alpha, feedbackHelpful, feedbackHarmful)
 }
 

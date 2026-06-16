@@ -756,7 +756,7 @@ func TestFeedback_updateLearningUtility_dispatch(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, _, err := updateLearningUtility(path, 0.8, 0.1)
+		_, _, err := updateLearningUtility(path, 0.8, 0.1, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -769,7 +769,7 @@ func TestFeedback_updateLearningUtility_dispatch(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, _, err := updateLearningUtility(path, 0.8, 0.1)
+		_, _, err := updateLearningUtility(path, 0.8, 0.1, nil)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

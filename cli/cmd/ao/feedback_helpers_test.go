@@ -2,6 +2,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -133,5 +134,19 @@ func TestGateVerdictFromFlag(t *testing.T) {
 		if v, err := gateVerdictFromFlag(s); err == nil {
 			t.Errorf("%q: unknown value should error, got verdict %v", s, v)
 		}
+	}
+}
+
+// TestUpdateLearningUtility_ChokepointGatesAllPaths proves the guard now lives
+// in the single chokepoint: an automated nil-verdict deposit is refused under
+// strict mode (before any file I/O), and tolerated in warn mode.
+func TestUpdateLearningUtility_ChokepointGatesAllPaths(t *testing.T) {
+	t.Setenv("AO_DEPOSIT_GATE", "strict")
+	if _, _, err := updateLearningUtility("/nonexistent-kf.md", 0.8, 0.1, nil); err == nil || !strings.Contains(err.Error(), "deposit refused") {
+		t.Errorf("strict: nil-verdict deposit must be refused at the chokepoint, got err=%v", err)
+	}
+	t.Setenv("AO_DEPOSIT_GATE", "warn")
+	if _, _, err := updateLearningUtility("/nonexistent-kf.md", 0.8, 0.1, nil); err != nil && strings.Contains(err.Error(), "deposit refused") {
+		t.Errorf("warn: nil-verdict deposit must NOT be refused by the gate, got %v", err)
 	}
 }
