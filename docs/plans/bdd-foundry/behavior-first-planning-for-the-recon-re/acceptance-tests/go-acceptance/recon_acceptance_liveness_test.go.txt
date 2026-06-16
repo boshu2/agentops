@@ -1,0 +1,67 @@
+package liveness
+
+// Acceptance tests — B3-S1 (quorum default stays cross-family-OFF) and
+// B5-G3 (a caller-set ratification boolean never authorizes execution).
+//
+// This file is a TEMPLATE driven by stream-b-go.bats: it is copied into
+// cli/internal/liveness/ as `recon_acceptance_gen_test.go`, run via
+// `go test ./internal/liveness/ -run ReconAcceptance`, then removed.
+//
+// TEST-FIRST: B5-G3 is RED against today's admission.go, where a
+// quorum-source directive with QuorumRatified=true (and no SignificantAction)
+// returns Allowed/Execute — trusting the caller-forgeable boolean.
+
+import (
+	"os"
+	"path/filepath"
+	"regexp"
+	"testing"
+)
+
+// B3-S1 — the context floor is the floor: RequireCrossFamily defaults to false
+// AND no binding caller in quorum.go / admission.go / guards.go sets it true.
+// This test FAILS if anyone "fixes" by forcing the family floor (the forbidden
+// revert). It is a guardrail (green now, must STAY green); paired with the
+// source-grep that closes the "no caller flips it true" half.
+func TestReconAcceptanceB3S1QuorumDefaultCrossFamilyOff(t *testing.T) {
+	// (1) the struct default is false (zero value).
+	var req SignificantActionRequest
+	if req.RequireCrossFamily {
+		t.Fatalf("SignificantActionRequest.RequireCrossFamily default = true, want false (the forbidden family-floor revert)")
+	}
+
+	// (2) no binding caller flips RequireCrossFamily to true. The package source
+	// (cwd = cli/internal/liveness at test time) must contain no assignment of
+	// `RequireCrossFamily: true` / `.RequireCrossFamily = true`.
+	flip := regexp.MustCompile(`RequireCrossFamily\s*[:=]\s*true`)
+	for _, f := range []string{"quorum.go", "admission.go", "guards.go"} {
+		data, err := os.ReadFile(filepath.Clean(f))
+		if err != nil {
+			// missing file is not a pass; the named surfaces must exist.
+			t.Fatalf("read %s: %v", f, err)
+		}
+		if flip.Match(data) {
+			t.Fatalf("%s sets RequireCrossFamily true — the forbidden family-floor revert (B3 NON-GOAL)", f)
+		}
+	}
+}
+
+// B5-G3 — the sink re-derives quorum from ACK-bearing records; a caller-set
+// QuorumRatified boolean (no ACKs supplied) must NOT authorize execution.
+func TestReconAcceptanceB5G3ForgedRatificationCannotExecute(t *testing.T) {
+	got := AdmitInboundWorkMessage(InboundWorkMessage{
+		SenderID:       "attacker",
+		SourceKind:     InboundSourceQuorum,
+		Authenticated:  true,
+		Intent:         InboundIntentDirective,
+		QuorumRatified: true,
+		// NO SignificantActionRequest ACK records supplied.
+	})
+	if got.CanExecute() {
+		t.Fatalf("forged QuorumRatified=true authorized execution: decision=%v action=%v reason=%q; want NeedsAdmission/Denied (ratification provenance not verified)",
+			got.Decision, got.Action, got.Reason)
+	}
+	if got.Decision != NeedsAdmission && got.Decision != Denied {
+		t.Fatalf("decision = %v, want NeedsAdmission or Denied", got.Decision)
+	}
+}

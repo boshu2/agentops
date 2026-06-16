@@ -1,0 +1,182 @@
+package main
+
+// Acceptance tests — B5 (harden codex sh -c dispatch + provenance keying).
+// Covers B5-S1/S2/S3/S4, B5-G1, B5-G2, B5-G13.
+//
+// TEMPLATE driven by stream-b-go.bats: copied into cli/cmd/ao/ as
+// `recon_acceptance_codex_gen_test.go`, run via
+// `go test ./cmd/ao/ -run ReconAcceptanceB5`, then removed. It reuses the
+// existing dispatch test harness (writeCodexDispatchPacket, writeFakeCodexBinary,
+// newCodexDispatchRepo, assertPathAbsent) in codex_dispatch_test.go.
+//
+// TEST-FIRST and SPECIFIC-BY-CONSTRUCTION: each assertion keys to the NEW
+// behavior's distinct error signature so it cannot be satisfied by an unrelated
+// existing rejection (schema/auth/sandbox-mismatch). RED against today's codex.go
+// until the trust boundary, duplicate-sandbox detection, and symlink-safe paths
+// are built.
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+// trustBoundaryError reports whether an error names the operator-trusted-local
+// -artifact precondition (the NEW B5-S1/S2 boundary), not an unrelated rejection.
+func trustBoundaryError(err error) bool {
+	if err == nil {
+		return false
+	}
+	e := strings.ToLower(err.Error())
+	return strings.Contains(e, "trust boundary") ||
+		strings.Contains(e, "operator-trusted") ||
+		strings.Contains(e, "untrusted packet")
+}
+
+// B5-G1 — a duplicate/post-terminator --sandbox override is rejected at the
+// sink with a DUPLICATE-SANDBOX error (distinct from the existing sandbox-
+// MISMATCH check). codexDispatchSandboxArg reads the FIRST --sandbox but the CLI
+// may honor the LAST; dispatch must fail before invoking codex.
+func TestReconAcceptanceB5G1DuplicateSandboxRejected(t *testing.T) {
+	repo := newCodexDispatchRepo(t)
+	marker := filepath.Join(repo, "worker-ran")
+	writeFakeCodexBinary(t)
+	t.Setenv("FAKE_CODEX_MARKER", marker)
+	t.Setenv("OPENAI_API_KEY", "")
+
+	// packet sandbox == first argv sandbox (so the existing MISMATCH check does
+	// NOT fire); the SECOND --sandbox is the smuggled escalation.
+	packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+		Sandbox:     "read-only",
+		ArgvSandbox: "read-only",
+	})
+	injectArgvSandboxOverride(t, packetPath, "danger-full-access")
+
+	_, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+	if err == nil {
+		t.Fatalf("dispatch succeeded with a duplicate --sandbox override, want rejection")
+	}
+	if !strings.Contains(strings.ToLower(err.Error()), "duplicate sandbox") {
+		t.Fatalf("error = %q, want a DUPLICATE sandbox override rejection (not a generic sandbox error)", err.Error())
+	}
+	assertPathAbsent(t, marker) // codex must NEVER have been invoked
+	assertPathAbsent(t, receiptPath)
+}
+
+// B5-G2 — evidence.required_commands is a second sh -c surface. A packet from an
+// untrusted location whose required_commands smuggles a side effect must be
+// refused by the trust boundary before any sh -c executes; the marker must not
+// appear.
+func TestReconAcceptanceB5G2RequiredCommandsGuarded(t *testing.T) {
+	repo := newCodexDispatchRepo(t)
+	pwned := filepath.Join(repo, "ao-required-command-pwned")
+	writeFakeCodexBinary(t)
+	t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
+	t.Setenv("OPENAI_API_KEY", "")
+
+	packetPath, _ := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+		RequiredCommands: []string{"echo ok; touch " + pwned},
+	})
+	untrustedPath := relocatePacketUntrusted(t, packetPath)
+
+	_, err := executeCommand("codex", "dispatch", "--packet", untrustedPath, "--json")
+	if err == nil {
+		t.Fatalf("dispatch succeeded for an untrusted-location packet, want trust-boundary refusal")
+	}
+	if !trustBoundaryError(err) {
+		t.Fatalf("error = %q, want an operator-trusted-local-artifact trust-boundary error", err.Error())
+	}
+	assertPathAbsent(t, pwned) // the required_commands sh -c side effect must NOT fire
+}
+
+// B5-G13 — dispatch output paths are symlink/TOCTOU-safe: a final-message path
+// that resolves (through a symlink) outside allowed_paths must be refused before
+// any write. filepath.Clean (string prefix) is insufficient; the sink must
+// resolve symlinks.
+func TestReconAcceptanceB5G13SymlinkOutputPathRejected(t *testing.T) {
+	repo := newCodexDispatchRepo(t)
+	escape := filepath.Join(t.TempDir(), "ao-dispatch-escape")
+	writeFakeCodexBinary(t)
+	t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
+	t.Setenv("OPENAI_API_KEY", "")
+
+	allowed := filepath.Join(repo, ".agents", "codex", "runs", "demo")
+	if err := os.MkdirAll(allowed, 0o750); err != nil {
+		t.Fatalf("mkdir allowed: %v", err)
+	}
+	// final.md inside the allowed dir is a symlink pointing OUTSIDE the repo.
+	finalLink := filepath.Join(allowed, "final.md")
+	if err := os.Symlink(escape, finalLink); err != nil {
+		t.Skipf("symlink unsupported on this platform: %v", err)
+	}
+
+	packetPath, _ := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{
+		AllowedPaths:     []string{filepath.Join(".agents", "codex", "runs", "demo")},
+		FinalMessagePath: filepath.Join(".agents", "codex", "runs", "demo", "final.md"),
+	})
+
+	_, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+	if err == nil {
+		t.Fatalf("dispatch succeeded writing through a symlink escape, want path-boundary refusal")
+	}
+	// the escape target must be absent or unchanged (no write happened through the link)
+	if _, statErr := os.Stat(escape); statErr == nil {
+		t.Fatalf("%s exists — dispatch wrote through the symlink escape", escape)
+	}
+}
+
+// B5-S1/S2 — the sh -c packet trust boundary is asserted at the dispatch site:
+// a packet from an untrusted/unexpected location is refused with an explicit
+// trust-boundary error and the command is never passed to sh -c.
+func TestReconAcceptanceB5S1S2UntrustedPacketRefused(t *testing.T) {
+	repo := newCodexDispatchRepo(t)
+	marker := filepath.Join(repo, "worker-ran")
+	writeFakeCodexBinary(t)
+	t.Setenv("FAKE_CODEX_MARKER", marker)
+	t.Setenv("OPENAI_API_KEY", "")
+
+	packetPath, _ := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{})
+	untrustedPath := relocatePacketUntrusted(t, packetPath)
+
+	_, err := executeCommand("codex", "dispatch", "--packet", untrustedPath, "--json")
+	if err == nil {
+		t.Fatalf("dispatch executed an untrusted-location packet, want trust-boundary error")
+	}
+	if !trustBoundaryError(err) {
+		t.Fatalf("error = %q, want an explicit operator-trusted-local-artifact trust-boundary error", err.Error())
+	}
+	assertPathAbsent(t, marker)
+}
+
+// B5-S4 — the normal trusted-local path still executes unchanged (regression).
+func TestReconAcceptanceB5S4TrustedPathPreserved(t *testing.T) {
+	repo := newCodexDispatchRepo(t)
+	writeFakeCodexBinary(t)
+	t.Setenv("FAKE_CODEX_FINAL_MESSAGE", validCodexFinalVerdictForTest("PASS"))
+	t.Setenv("OPENAI_API_KEY", "")
+
+	packetPath, receiptPath := writeCodexDispatchPacket(t, repo, codexDispatchPacketOptions{})
+	out, err := executeCommand("codex", "dispatch", "--packet", packetPath, "--json")
+	if err != nil {
+		t.Fatalf("trusted dispatch returned error: %v\n%s", err, out)
+	}
+	receipt := readCodexDispatchReceipt(t, receiptPath)
+	if receipt.Verdict.Status != "PASS" {
+		t.Fatalf("verdict.status = %q, want PASS (trusted path unchanged)", receipt.Verdict.Status)
+	}
+}
+
+// B5-S3 — provenance keying decision is implemented OR documented. The runnable
+// floor: either a keyed-digest tamper-detection path exists in the package
+// source, or an explicit unkeyed-SHA-256 + git-anchor rationale is recorded.
+// One must hold. RED until either is materialized.
+func TestReconAcceptanceB5S3ProvenanceKeyingDecided(t *testing.T) {
+	keyed := symbolExists("provenanceHMAC") || symbolExists("KeyedDigest") || symbolExists("provenanceKeyedDigest")
+	documented := fileExistsWithMarker(
+		"../../docs/provenance/keying-decision.md", "git history is the real tamper-evidence anchor") ||
+		fileExistsWithMarker("../../docs/adr/provenance-keying.md", "tamper-evidence")
+	if !keyed && !documented {
+		t.Fatalf("provenance keying decision not materialized: no keyed-digest tamper-detection AND no documented unkeyed-SHA-256+git-anchor rationale")
+	}
+}
