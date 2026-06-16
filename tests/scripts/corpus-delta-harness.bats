@@ -140,6 +140,24 @@ CSTUB_EOF
   jq -e '.context_off.aggregate_score == 0' "$TMP/sc2.json" >/dev/null
 }
 
+@test "codex auth (~/.codex) is carried into BOTH sandbox arms (ag-94f)" {
+  # codex auth lives in ~/.codex, not ~/.claude — without this, codex 401s in the
+  # isolated sandbox HOME and every seed degrades. Auth must reach BOTH arms.
+  CODEXSRC="$TMP/codexhome"; mkdir -p "$CODEXSRC"
+  echo '{"OPENAI_API_KEY":"x"}' > "$CODEXSRC/auth.json"
+  echo 'model = "gpt-5.5"' > "$CODEXSRC/config.toml"
+  # Stub: pass iff it sees the codex auth file inside the sandbox HOME.
+  CXSTUB="$TMP/codex-auth-stub.sh"
+  printf '#!/usr/bin/env bash\n[ -f "${HOME}/.codex/auth.json" ] && echo '"'"'{"pass":true}'"'"' || echo '"'"'{"pass":false}'"'"'\n' > "$CXSTUB"
+  chmod +x "$CXSTUB"
+  run env CORPUS_DELTA_RUNNER="$CXSTUB" CORPUS_DELTA_CODEX_HOME="$CODEXSRC" \
+    "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS" --out "$TMP/cx.json"
+  [ "$status" -eq 0 ]
+  # auth present in BOTH arms -> both pass -> delta 0 (auth is runtime, not context)
+  jq -e '.context_off.aggregate_score == 1' "$TMP/cx.json" >/dev/null
+  jq -e '.context_on.aggregate_score == 1' "$TMP/cx.json" >/dev/null
+}
+
 @test "default runner with non-codex --agent fails fast before any seed (ag-jqpy1)" {
   run "$HARNESS" --task demo --agent claude --seeds 1
   [ "$status" -eq 2 ]

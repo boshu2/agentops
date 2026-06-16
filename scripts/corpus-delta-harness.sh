@@ -91,6 +91,13 @@ SRC_MEM_DIR="${CORPUS_DELTA_MEM_DIR:-$HOME/.claude/projects/-home-boful-dev-agen
 # applied, so real agents keep their credentials/settings while context is still stripped
 # from the off arm (off = base − context, on = base + context). Empty in tests.
 HOME_BASE="${CORPUS_DELTA_HOME_BASE:-}"
+# ag-94f: codex auth lives in ~/.codex (NOT ~/.claude), so an isolated sandbox HOME
+# strips it and `codex exec` fails 401 Unauthorized on EVERY seed in BOTH arms — a
+# DEGRADED run, not a delta. Carry codex CREDENTIALS into each sandbox HOME's .codex in
+# BOTH arms (auth is runtime, never corpus context). Only auth/config files are copied —
+# NOT codex sessions/history/log (those are codex's own memory, not needed and not context).
+# Overridable so the self-test can point it at a marker dir; set empty to disable.
+CODEX_HOME_SRC="${CORPUS_DELTA_CODEX_HOME:-$HOME/.codex}"
 
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -104,6 +111,16 @@ build_arm_sandbox() {
   # auth/settings base (preserved in BOTH arms; never carries context)
   if [[ -n "$HOME_BASE" && -d "$HOME_BASE" ]]; then
     cp -r "$HOME_BASE/." "$home/.claude/" 2>/dev/null || true
+  fi
+  # ag-94f: codex credentials (BOTH arms; auth is runtime, never corpus context). Copy
+  # only the auth/config files so the agent can authenticate inside the isolated HOME;
+  # codex sessions/history/log are deliberately NOT copied.
+  if [[ -n "$CODEX_HOME_SRC" && -d "$CODEX_HOME_SRC" ]]; then
+    mkdir -p "$home/.codex"
+    local cf
+    for cf in auth.json config.toml config.json; do
+      [[ -f "$CODEX_HOME_SRC/$cf" ]] && cp "$CODEX_HOME_SRC/$cf" "$home/.codex/$cf" 2>/dev/null || true
+    done
   fi
   if [[ "$variant" == "context_on" ]]; then
     # project always-loaded surface
