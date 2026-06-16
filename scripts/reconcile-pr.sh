@@ -297,6 +297,21 @@ if [[ "$pawl_status" -ne 0 ]]; then
   exit 5
 fi
 
+# --- governance front-door admission (M5) ------------------------------------
+# A pawl-CONFIRMED PR still cannot merge if it ADDS a skill/workflow/loop that
+# lacks front-door evidence (bounded-context + role + a runnable acceptance).
+# This is the same guard the pre-push gate runs (governance.frontdoor-admission);
+# enforcing it here too makes reconcile-pr.sh — the named door — fail-closed on
+# an under-governed new unit even when CI/pawl are green. Added-only, so it never
+# re-judges existing units; PRs that add no new unit pass instantly.
+ADMISSION="$SCRIPT_DIR/check-frontdoor-admission.sh"
+if [ -x "$ADMISSION" ]; then
+  if ! "$ADMISSION" --base "${FRONTDOOR_BASE:-origin/main}" >&2; then
+    echo "ADMISSION-HOLD: PR $PR adds a skill/workflow/loop without front-door evidence (bounded-context + role + acceptance) — did NOT merge, did NOT close. Fail-closed; add the evidence and re-push." >&2
+    exit 5
+  fi
+fi
+
 # --- merge -------------------------------------------------------------------
 if $DRY_RUN; then
   echo "DRY-RUN: would gh pr merge $PR --squash --admin, then BEADS_DIR=$BR_BEADS_DIR br close $BEAD" >&2

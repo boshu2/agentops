@@ -14,6 +14,7 @@ import "github.com/boshu2/agentops/cli/internal/gates"
 var (
 	goPaths          = []string{"cli/**", "go.mod", "go.sum"}
 	skillPaths       = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
+	frontDoorPaths   = []string{"skills/**", ".claude/workflows/**"}
 	contractPaths    = []string{"docs/contracts/**", "schemas/**"}
 	ciPolicyPaths    = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
 	evalPaths        = []string{"evals/**", "schemas/eval-*", "cli/internal/eval/**"}
@@ -113,6 +114,10 @@ func init() {
 		{ID: "skill.flow", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "validate-skill-flow.sh"},
 		{ID: "skill.domain-map-golden", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "generate-skill-domain-map.sh", Args: []string{"--check"}},
 		{ID: "skill.scenario-test-linkage", Tiers: gates.Full, Match: skillPaths, Blocking: true, Backing: "check-scenario-test-linkage.sh"},
+
+		// governance front-door admission (M5): a newly-ADDED skill/workflow/loop
+		// cannot merge without bounded-context + role + a runnable acceptance.
+		{ID: "governance.frontdoor-admission", Tiers: gates.Fast | gates.Full, Match: frontDoorPaths, Blocking: true, Backing: "check-frontdoor-admission.sh"},
 
 		// go class
 		{ID: "go.home-isolation", Tiers: gates.Fast | gates.Full, Match: goPaths, Blocking: true, Backing: "check-home-isolation.sh"},
