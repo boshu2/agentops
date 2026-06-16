@@ -140,6 +140,33 @@ CSTUB_EOF
   jq -e '.context_off.aggregate_score == 0' "$TMP/sc2.json" >/dev/null
 }
 
+@test "a degraded seed flags the run degraded + delta_valid=false (not a false null) (ag-t8n)" {
+  # Stub mimics a broken agent: emits degraded:true + pass:false (launch/timeout/rate-limit).
+  DSTUB="$TMP/degr-stub.sh"
+  printf '#!/usr/bin/env bash\necho '"'"'{"pass":false,"score":0,"total":1,"degraded":true,"agent_exit":1}'"'"'\n' > "$DSTUB"
+  chmod +x "$DSTUB"
+  run env CORPUS_DELTA_RUNNER="$DSTUB" "$HARNESS" --task demo --seeds 2 --corpus "$CORPUS" --out "$TMP/d.json"
+  [ "$status" -eq 0 ]
+  jq -e '.degraded == true' "$TMP/d.json" >/dev/null
+  jq -e '.delta_valid == false' "$TMP/d.json" >/dev/null
+  jq -e '.context_off.degraded_seeds == 2' "$TMP/d.json" >/dev/null
+  jq -e '.context_on.degraded_seeds == 2' "$TMP/d.json" >/dev/null
+  jq -e '.context_off.status == "degraded"' "$TMP/d.json" >/dev/null
+  jq -e '.context_on.status == "degraded"' "$TMP/d.json" >/dev/null
+  jq -e 'has("elapsed_seconds") and (.context_on | has("elapsed_seconds"))' "$TMP/d.json" >/dev/null
+}
+
+@test "a clean (non-degraded) run reports delta_valid=true, zero degraded seeds (ag-t8n)" {
+  PSTUB="$TMP/pass-stub.sh"
+  printf '#!/usr/bin/env bash\necho '"'"'{"pass":true,"score":1,"total":1}'"'"'\n' > "$PSTUB"
+  chmod +x "$PSTUB"
+  run env CORPUS_DELTA_RUNNER="$PSTUB" "$HARNESS" --task demo --seeds 1 --corpus "$CORPUS" --out "$TMP/c.json"
+  [ "$status" -eq 0 ]
+  jq -e '.degraded == false' "$TMP/c.json" >/dev/null
+  jq -e '.delta_valid == true' "$TMP/c.json" >/dev/null
+  jq -e '.context_off.degraded_seeds == 0' "$TMP/c.json" >/dev/null
+}
+
 @test "codex auth (~/.codex) is carried into BOTH sandbox arms (ag-94f)" {
   # codex auth lives in ~/.codex, not ~/.claude — without this, codex 401s in the
   # isolated sandbox HOME and every seed degrades. Auth must reach BOTH arms.

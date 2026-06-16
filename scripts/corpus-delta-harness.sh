@@ -32,6 +32,7 @@ SEEDS=3
 CORPUS_DIR="$REPO_ROOT/.agents"
 AGENT="codex"
 OUT=""
+TIMEOUT=""   # ag-t8n: per-call agent timeout passed to the default runner; empty = runner default
 
 usage() {
   cat <<'USAGE'
@@ -44,6 +45,9 @@ Usage: scripts/corpus-delta-harness.sh --task <id> [options]
                      The default runner (eval-agent-harness.sh) supports codex
                      only; a non-codex --agent fails fast before any seed. A
                      custom CORPUS_DELTA_RUNNER may accept other agents.
+  --timeout <secs>   Per-call agent timeout passed to the default runner (eval-agent-harness.sh).
+                     Empty = runner default (120s). Use a higher value for live codex so a
+                     real run isn't cut short and mislabeled. Ignored by a custom runner.
   --out <file>       Write the ContextDeltaScorecard JSON here (default: stdout only)
 
 Override CORPUS_DELTA_RUNNER to inject a custom runner (used by tests).
@@ -56,6 +60,7 @@ while [[ $# -gt 0 ]]; do
     --seeds) SEEDS="$2"; shift 2 ;;
     --corpus) CORPUS_DIR="$2"; shift 2 ;;
     --agent) AGENT="$2"; shift 2 ;;
+    --timeout) TIMEOUT="$2"; shift 2 ;;
     --out) OUT="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
@@ -144,47 +149,65 @@ build_arm_sandbox() {
   echo "$home $ws $agents"
 }
 
-# run_arm <variant> <corpus_root> -> echoes "passes total"
+# run_arm <variant> <corpus_root> -> echoes "passes degraded total elapsed_seconds"
 # The runner is invoked with HOME=<sandbox home>, AO_AGENTS_DIR=<sandbox agents>, and
 # CORPUS_DELTA_WORKSPACE=<sandbox ws>; a real agent MUST run with that HOME and cwd=ws so
 # neither arm can reach always-loaded knowledge outside its sandbox.
+# ag-t8n: count DEGRADED seeds (runner emitted "degraded":true — launch failure, timeout,
+# rate-limit) so a broken run is flagged, never recorded as an honest null; stamp elapsed
+# so an impossibly-fast (degraded) run is self-evident.
 run_arm() {
   local variant="$1" corpus_root="$2"
-  local passes=0 seed line is_pass home ws agents
+  local passes=0 degraded=0 seed line is_pass is_degr home ws agents t0 t1
+  t0="$(date +%s)"
   echo "[corpus-delta] arm=$variant corpus=$corpus_root seeds=$SEEDS" >&2
   for ((seed = 1; seed <= SEEDS; seed++)); do
     read -r home ws agents < <(build_arm_sandbox "$variant" "$corpus_root")
     if [[ "$RUNNER" == "$DEFAULT_RUNNER" ]]; then
-      line="$(cd "$ws" && HOME="$home" AO_AGENTS_DIR="$agents" CORPUS_DELTA_WORKSPACE="$ws" "$RUNNER" --task "$TASK_ID" --agent "$AGENT" --runs 1 2>/dev/null | tail -1)"
+      local rargs=(--task "$TASK_ID" --agent "$AGENT" --runs 1)
+      [[ -n "$TIMEOUT" ]] && rargs+=(--timeout "$TIMEOUT")   # ag-t8n: real timeout for live codex
+      line="$(cd "$ws" && HOME="$home" AO_AGENTS_DIR="$agents" CORPUS_DELTA_WORKSPACE="$ws" "$RUNNER" "${rargs[@]}" 2>/dev/null | tail -1)"
     else
       # Injected (test) runner contract: <task> <agent> <seed>; reads HOME, AO_AGENTS_DIR, CORPUS_DELTA_WORKSPACE.
       line="$(cd "$ws" && HOME="$home" AO_AGENTS_DIR="$agents" CORPUS_DELTA_WORKSPACE="$ws" "$RUNNER" "$TASK_ID" "$AGENT" "$seed" 2>/dev/null | tail -1)"
     fi
     is_pass="$(printf '%s' "$line" | jq -r 'if .pass == true then 1 else 0 end' 2>/dev/null || echo 0)"
+    is_degr="$(printf '%s' "$line" | jq -r 'if .degraded == true then 1 else 0 end' 2>/dev/null || echo 0)"
     [[ "$is_pass" == "1" ]] && passes=$((passes + 1))
+    [[ "$is_degr" == "1" ]] && degraded=$((degraded + 1))
   done
-  echo "$passes $SEEDS"
+  t1="$(date +%s)"
+  echo "$passes $degraded $SEEDS $((t1 - t0))"
 }
 
-read -r off_pass off_total < <(run_arm context_off "")
-read -r on_pass on_total < <(run_arm context_on "$CORPUS_DIR")
+read -r off_pass off_degr off_total off_elapsed < <(run_arm context_off "")
+read -r on_pass on_degr on_total on_elapsed < <(run_arm context_on "$CORPUS_DIR")
 
-# pass-rate per arm; delta = on - off
+# ag-t8n: a live agent ran iff we used the default runner; a custom (stub) runner is plumbing.
+EVIDENCE_KIND="harness_plumbing"
+[[ "$RUNNER" == "$DEFAULT_RUNNER" ]] && EVIDENCE_KIND="live_agent"
+
+# pass-rate per arm; delta = on - off. A degraded arm (>=1 degraded seed) is INVALID per the
+# prereg — its score/delta must NOT be read as a real result (delta_valid=false).
 scorecard="$(jq -n \
-  --argjson off_pass "$off_pass" --argjson off_total "$off_total" \
-  --argjson on_pass "$on_pass" --argjson on_total "$on_total" \
-  --arg task "$TASK_ID" --argjson seeds "$SEEDS" \
+  --argjson off_pass "$off_pass" --argjson off_degr "$off_degr" --argjson off_total "$off_total" --argjson off_elapsed "$off_elapsed" \
+  --argjson on_pass "$on_pass" --argjson on_degr "$on_degr" --argjson on_total "$on_total" --argjson on_elapsed "$on_elapsed" \
+  --arg task "$TASK_ID" --argjson seeds "$SEEDS" --arg evidence_kind "$EVIDENCE_KIND" \
   '
   ($off_pass / $off_total) as $off_score |
   ($on_pass / $on_total) as $on_score |
+  (($off_degr + $on_degr) > 0) as $degraded |
   {
     schema_version: 1,
     suite_id: ("corpus-delta-" + $task),
     suite_path: "scripts/corpus-delta-harness.sh",
-    evidence_kind: "harness_plumbing",
+    evidence_kind: $evidence_kind,
     seeds_per_arm: $seeds,
-    context_off: { variant: "context_off", passes: $off_pass, total: $off_total, aggregate_score: ($off_score | (.*10000|round)/10000), status: (if $off_score >= 0.75 then "pass" else "fail" end) },
-    context_on:  { variant: "context_on",  passes: $on_pass,  total: $on_total,  aggregate_score: ($on_score  | (.*10000|round)/10000), status: (if $on_score  >= 0.75 then "pass" else "fail" end) },
+    elapsed_seconds: ($off_elapsed + $on_elapsed),
+    degraded: $degraded,
+    delta_valid: ($degraded | not),
+    context_off: { variant: "context_off", passes: $off_pass, degraded_seeds: $off_degr, total: $off_total, elapsed_seconds: $off_elapsed, aggregate_score: ($off_score | (.*10000|round)/10000), status: (if $off_degr > 0 then "degraded" elif $off_score >= 0.75 then "pass" else "fail" end) },
+    context_on:  { variant: "context_on",  passes: $on_pass,  degraded_seeds: $on_degr,  total: $on_total,  elapsed_seconds: $on_elapsed, aggregate_score: ($on_score  | (.*10000|round)/10000), status: (if $on_degr > 0 then "degraded" elif $on_score  >= 0.75 then "pass" else "fail" end) },
     aggregate_delta: (($on_score - $off_score) | (.*10000|round)/10000)
   }')"
 
