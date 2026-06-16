@@ -148,6 +148,24 @@
     "mixed_mode_degraded_reason": {
       "type": "string"
     },
+    "orchestration_decision": {
+      "type": "object",
+      "description": "The recorded orchestration-shape decision (the ATM/AM call): the chosen shape plus the deterministic predicates that fired to reach it. Additive and advisory — it captures the decision and claims nothing about its quality. Defaults to single-agent (operating-loop principle 8); escalation predicates that override the default land in a later slice.",
+      "additionalProperties": false,
+      "required": ["chosen_shape"],
+      "properties": {
+        "chosen_shape": {
+          "type": "string",
+          "enum": ["single-agent", "am-only", "atm-only", "both"]
+        },
+        "predicates_fired": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "rationale": { "type": "string" },
+        "ts": { "type": "string" }
+      }
+    },
     "phase": {
       "type": "string"
     },

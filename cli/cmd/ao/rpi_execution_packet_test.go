@@ -219,6 +219,21 @@ func TestWriteExecutionPacketSeed_PopulatesLoopDensityFields(t *testing.T) {
 	if _, err := time.Parse(time.RFC3339, packet.DiscoveryTimestamp); err != nil {
 		t.Fatalf("DiscoveryTimestamp = %q is not RFC3339: %v", packet.DiscoveryTimestamp, err)
 	}
+	// S-record: the seed stamps a well-formed default orchestration-shape
+	// decision (single-agent-first). The record exists from the seed; it claims
+	// nothing about quality.
+	if packet.OrchestrationDecision == nil {
+		t.Fatalf("OrchestrationDecision = nil, want a stamped default")
+	}
+	if packet.OrchestrationDecision.ChosenShape != orchestrationShapeSingleAgent {
+		t.Fatalf("OrchestrationDecision.ChosenShape = %q, want %q", packet.OrchestrationDecision.ChosenShape, orchestrationShapeSingleAgent)
+	}
+	if packet.OrchestrationDecision.Rationale == "" {
+		t.Fatalf("OrchestrationDecision.Rationale is empty, want a recorded rationale")
+	}
+	if _, err := time.Parse(time.RFC3339, packet.OrchestrationDecision.Timestamp); err != nil {
+		t.Fatalf("OrchestrationDecision.Timestamp = %q is not RFC3339: %v", packet.OrchestrationDecision.Timestamp, err)
+	}
 }
 
 func TestWriteExecutionPacketSeed_IncludesRepoProfileAndPlanEpic(t *testing.T) {
@@ -565,6 +580,11 @@ func TestExecutionPacketSchema_CoversLoopDensityFixture(t *testing.T) {
 		},
 		RankedPacketPath:   executionPacketRankedPacketPath,
 		DiscoveryTimestamp: "2026-05-16T00:00:00Z",
+		OrchestrationDecision: &orchestrationDecision{
+			ChosenShape: orchestrationShapeSingleAgent,
+			Rationale:   "fixture: schema names the orchestration_decision block",
+			Timestamp:   "2026-05-16T00:00:00Z",
+		},
 	}
 	payload, err := json.Marshal(fixture)
 	if err != nil {
@@ -583,6 +603,38 @@ func TestExecutionPacketSchema_CoversLoopDensityFixture(t *testing.T) {
 		if _, ok := schema.Defs[def]; !ok {
 			t.Fatalf("schema missing $defs.%s", def)
 		}
+	}
+}
+
+func TestExecutionPacketSchema_OrchestrationShapeEnumMatchesConsts(t *testing.T) {
+	schemaPath := findRepoFileForTest(t, "schemas", "execution-packet.schema.json")
+	data, err := os.ReadFile(schemaPath)
+	if err != nil {
+		t.Fatalf("read schema: %v", err)
+	}
+	var schema struct {
+		Properties struct {
+			OrchestrationDecision struct {
+				Properties struct {
+					ChosenShape struct {
+						Enum []string `json:"enum"`
+					} `json:"chosen_shape"`
+				} `json:"properties"`
+			} `json:"orchestration_decision"`
+		} `json:"properties"`
+	}
+	if err := json.Unmarshal(data, &schema); err != nil {
+		t.Fatalf("unmarshal schema: %v", err)
+	}
+	got := schema.Properties.OrchestrationDecision.Properties.ChosenShape.Enum
+	want := []string{
+		orchestrationShapeSingleAgent,
+		orchestrationShapeAMOnly,
+		orchestrationShapeATMOnly,
+		orchestrationShapeBoth,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("schema chosen_shape enum = %v, want %v (Go consts and schema enum must stay in lockstep)", got, want)
 	}
 }
 

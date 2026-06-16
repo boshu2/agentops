@@ -54,6 +54,29 @@ type executionPacket struct {
 	PlannerVendor           string                         `json:"planner_vendor,omitempty"`
 	ReviewerVendor          string                         `json:"reviewer_vendor,omitempty"`
 	MixedModeDegradedReason string                         `json:"mixed_mode_degraded_reason,omitempty"`
+	OrchestrationDecision   *orchestrationDecision         `json:"orchestration_decision,omitempty"`
+}
+
+// Orchestration-shape values for orchestrationDecision.ChosenShape. The ATM/AM
+// decision splits two axes: durability (single vs ATM substrate) and contention
+// (single vs AM coordination). They compose into four shapes.
+const (
+	orchestrationShapeSingleAgent = "single-agent"
+	orchestrationShapeAMOnly      = "am-only"
+	orchestrationShapeATMOnly     = "atm-only"
+	orchestrationShapeBoth        = "both"
+)
+
+// orchestrationDecision records the chosen orchestration shape for a run (the
+// ATM/AM decision) and the deterministic predicates that fired to reach it. It is
+// additive and advisory: it captures the decision, it makes no claim about the
+// decision's quality. The default is single-agent (operating-loop principle 8);
+// escalation predicates that override the default land in a later slice.
+type orchestrationDecision struct {
+	ChosenShape     string   `json:"chosen_shape"`
+	PredicatesFired []string `json:"predicates_fired,omitempty"`
+	Rationale       string   `json:"rationale,omitempty"`
+	Timestamp       string   `json:"ts,omitempty"`
 }
 
 type repoExecutionProfile struct {
@@ -121,6 +144,15 @@ func writeExecutionPacketSeed(cwd string, state *phasedState) error {
 	packet.TestLevels = executionPacketTestLevelsForState(state)
 	packet.RankedPacketPath = executionPacketRankedPacketPath
 	packet.DiscoveryTimestamp = time.Now().UTC().Format(time.RFC3339)
+	// Stamp the default orchestration-shape decision: single-agent-first
+	// (operating-loop principle 8). The record exists from the seed; escalation
+	// predicates that override it are a later slice. Honest at n=1 — it captures
+	// the decision, it claims nothing about the decision's quality.
+	packet.OrchestrationDecision = &orchestrationDecision{
+		ChosenShape: orchestrationShapeSingleAgent,
+		Rationale:   "default: single-agent-first (operating-loop principle 8); no escalation predicate fired",
+		Timestamp:   packet.DiscoveryTimestamp,
+	}
 
 	data, err := json.MarshalIndent(packet, "", "  ")
 	if err != nil {
