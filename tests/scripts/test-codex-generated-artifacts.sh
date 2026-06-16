@@ -202,6 +202,56 @@ test_passes_when_references_mirrored() {
   fi
 }
 
+# age-j1g: source SKILL.md *body* edited, twin SKILL.md NOT mirrored, regen bumps
+# only the hashes → the divergent body must be blocked (worktree scope).
+test_fails_on_skillmd_body_divergence() {
+  local repo="$TMP_DIR/skillmd-body-divergence"
+  setup_repo "$repo"
+  printf '\nNEW BODY LINE (age-j1g)\n' >> "$repo/skills/example/SKILL.md"
+  regen_example_hashes "$repo"   # twin SKILL.md left stale; only hashes bump
+  if (cd "$repo" && bash scripts/validate-codex-generated-artifacts.sh --scope worktree >/dev/null 2>&1); then
+    fail "should fail when source SKILL.md body diverges from a stale codex twin"
+  else
+    pass "fails on codex-twin SKILL.md body content divergence (worktree scope)"
+  fi
+}
+
+# Same divergence, but committed and checked under --scope head — proves the
+# head base-ref path (HEAD~1..HEAD), which CI and the pre-push gate use.
+test_fails_on_skillmd_body_divergence_head_scope() {
+  local repo="$TMP_DIR/skillmd-body-head"
+  setup_repo "$repo"
+  printf '\nNEW BODY LINE head (age-j1g)\n' >> "$repo/skills/example/SKILL.md"
+  regen_example_hashes "$repo"
+  git -C "$repo" add -A && git -C "$repo" commit -qm "source body edit, twin stale"
+  if (cd "$repo" && bash scripts/validate-codex-generated-artifacts.sh --scope head >/dev/null 2>&1); then
+    fail "should fail (head scope) when source SKILL.md body diverges from a stale twin"
+  else
+    pass "fails on SKILL.md body divergence under --scope head"
+  fi
+}
+
+# The false-positive guard: a frontmatter-ONLY source SKILL.md change (a stripped
+# hex-wiring field the twin never carries) needs no twin change and must PASS —
+# otherwise legit hex-wiring pushes would red main.
+test_passes_on_skillmd_frontmatter_only_change() {
+  local repo="$TMP_DIR/skillmd-frontmatter-only"
+  setup_repo "$repo"
+  cat > "$repo/skills/example/SKILL.md" <<'EOF'
+---
+name: example
+description: fixture
+hexagonal_role: knowledge
+---
+EOF
+  regen_example_hashes "$repo"
+  if (cd "$repo" && bash scripts/validate-codex-generated-artifacts.sh --scope worktree >/dev/null 2>&1); then
+    pass "passes on a frontmatter-only source SKILL.md change (no twin change required)"
+  else
+    fail "should pass when only source SKILL.md frontmatter changed (hex-wiring needs no twin change)"
+  fi
+}
+
 test_passes_when_markers_exist_and_no_changes() {
   local repo="$TMP_DIR/pass"
   setup_repo "$repo"
@@ -293,6 +343,9 @@ EOF
 echo "== test-codex-generated-artifacts =="
 test_fails_on_codex_twin_content_divergence
 test_passes_when_references_mirrored
+test_fails_on_skillmd_body_divergence
+test_fails_on_skillmd_body_divergence_head_scope
+test_passes_on_skillmd_frontmatter_only_change
 test_passes_when_markers_exist_and_no_changes
 test_fails_on_missing_marker
 test_fails_on_codex_only_edits
