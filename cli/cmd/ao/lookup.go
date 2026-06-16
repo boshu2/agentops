@@ -23,6 +23,7 @@ var (
 	lookupNoCite    bool
 	lookupCiteType  string
 	lookupSessionID string
+	lookupGold      bool
 )
 
 var lookupCmd = &cobra.Command{
@@ -58,6 +59,7 @@ func init() {
 	lookupCmd.Flags().BoolVar(&lookupNoCite, "no-cite", false, "Skip citation recording")
 	lookupCmd.Flags().StringVar(&lookupCiteType, "cite", "retrieved", "Citation type to record for returned artifacts: retrieved, reference, applied")
 	lookupCmd.Flags().StringVar(&lookupSessionID, "session", "", "Session ID for citation tracking")
+	lookupCmd.Flags().BoolVar(&lookupGold, "gold", false, "Retrieve from the sanitized OKF gold wiki (.ao/wiki) instead of the raw .agents/ corpus")
 }
 
 func runLookup(cmd *cobra.Command, args []string) error {
@@ -143,6 +145,46 @@ func matchesID(itemID, filePath, searchID string) bool {
 }
 
 // lookupByQuery uses the existing collectors with query filtering.
+// collectGoldKnowledge retrieves learnings/patterns/findings from the OKF gold
+// wiki (.ao/wiki) — the sanitized, durable layer — reusing the same scorers as
+// the raw path. No global/canon merge: gold is already curated. Missing gold
+// sections yield empty results (run `ao wiki gold` first).
+// goldDocFiles drops OKF reserved catalog files (index.md, log.md) so they are
+// never surfaced as knowledge during gold retrieval.
+func goldDocFiles(paths []string) []string {
+	out := paths[:0]
+	for _, p := range paths {
+		switch filepath.Base(p) {
+		case "index.md", "log.md":
+			continue
+		}
+		out = append(out, p)
+	}
+	return out
+}
+
+func collectGoldKnowledge(goldRoot, query string, limit int) ([]learning, []pattern, []knowledgeFinding) {
+	now := nowFunc()
+	tokens := queryTokens(strings.ToLower(query))
+	qLower := strings.ToLower(query)
+
+	learnings := collectLocalLearnings(goldDocFiles(globLearningFiles(filepath.Join(goldRoot, SectionLearnings))), tokens, now)
+	rankLearnings(learnings)
+	learnings = limitCollectedLearnings(learnings, limit)
+
+	patterns, _ := collectPatternsFromDir(filepath.Join(goldRoot, SectionPatterns), qLower, now, false)
+	if len(patterns) > limit {
+		patterns = patterns[:limit]
+	}
+
+	findings, _ := collectFindingsFromDir(filepath.Join(goldRoot, SectionFindings), qLower, now, false, false)
+	if len(findings) > limit {
+		findings = findings[:limit]
+	}
+
+	return learnings, patterns, findings
+}
+
 func lookupByQuery(cwd string, cfg *config.Config) error {
 	globalLearningsDir := ""
 	globalFindingsDir := ""
@@ -160,19 +202,25 @@ func lookupByQuery(cwd string, cfg *config.Config) error {
 	query := lookupQuery
 	limit := lookupLimit
 
-	// Collect and score learnings
-	learnings, _ := collectLearnings(cwd, query, limit*3, globalLearningsDir, globalWeight)
+	var learnings []learning
+	var patterns []pattern
+	var findings []knowledgeFinding
+
+	if lookupGold {
+		// Retrieve from the sanitized OKF gold wiki — the durable, public-safe
+		// layer — instead of raw .agents/. No global/canon merge: gold is
+		// already the curated tier.
+		learnings, patterns, findings = collectGoldKnowledge(filepath.Join(cwd, ".ao", "wiki"), query, limit)
+	} else {
+		learnings, _ = collectLearnings(cwd, query, limit*3, globalLearningsDir, globalWeight)
+		patterns, _ = collectPatterns(cwd, query, limit, globalPatternsDir, globalWeight)
+		findings, _ = collectFindings(cwd, query, limit, globalFindingsDir, globalWeight)
+	}
 
 	// Apply bead filter if specified
 	if lookupBead != "" {
 		learnings = filterByBead(learnings, lookupBead)
 	}
-
-	// Collect and score patterns
-	patterns, _ := collectPatterns(cwd, query, limit, globalPatternsDir, globalWeight)
-
-	// Collect and score findings
-	findings, _ := collectFindings(cwd, query, limit, globalFindingsDir, globalWeight)
 
 	// Trim to limit
 	if len(learnings) > limit {
