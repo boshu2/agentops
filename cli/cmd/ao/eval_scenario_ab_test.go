@@ -196,6 +196,32 @@ func TestEvalScenarioABCmd_AnswerKeyDeterministic(t *testing.T) {
 	}
 }
 
+// TestTaskSuccessJudgePrompt_GradesPerArmSuccess locks the age-oe2 fix: the LLM
+// judge grades each arm's ABSOLUTE task-success against the goal/expected-outcome,
+// NOT the scenario's A/B-contrast acceptance_vectors (which describe the comparison
+// and are incoherent per-arm — the KF-4 −0.34 noise). It also keeps the grade
+// absolute (per-arm) so the age-707 ceiling pre-screen still has a control score.
+func TestTaskSuccessJudgePrompt_GradesPerArmSuccess(t *testing.T) {
+	sc := scenario.Scenario{
+		Goal:            "dispatch codex exec in a non-TTY context",
+		ExpectedOutcome: "the process engages and completes",
+		AcceptanceVectors: []scenario.AcceptanceVector{
+			{Dimension: "control-hangs", Threshold: 0.8},
+			{Dimension: "delta-attributable", Threshold: 0.8},
+		},
+	}
+	p := taskSuccessJudgePrompt(sc, "some arm output")
+	if !strings.Contains(p, sc.Goal) || !strings.Contains(p, sc.ExpectedOutcome) {
+		t.Error("prompt must include the goal and expected outcome")
+	}
+	if !strings.Contains(strings.ToLower(p), "task") || !strings.Contains(p, "do NOT compare") {
+		t.Error("prompt must instruct absolute, per-arm, on-its-own-merits task-success grading")
+	}
+	if strings.Contains(p, "control-hangs") || strings.Contains(p, "delta-attributable") {
+		t.Error("prompt must NOT enumerate the A/B-contrast acceptance vectors (the per-arm incoherence)")
+	}
+}
+
 func TestEvalScenarioABCmd_MissingScenarioFlag(t *testing.T) {
 	withFakes(t, fakeCmdRunner{}, fakeCmdJudge{})
 	if _, err := runScenarioABCmd(t, "", "", 0); err == nil {
