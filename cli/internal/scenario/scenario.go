@@ -65,6 +65,27 @@ func ValidSource(s string) bool {
 	}
 }
 
+// Load reads and decodes a scenario.v1 JSON file from path. It is the shared
+// production reader for callers that consume holdout scenarios (e.g. the
+// scenario-ab runner), so they decode the on-disk shape identically to how
+// Create wrote it. A malformed file or unreadable path is an error; Load does
+// not enforce the full schema (use the validate command for that) but does
+// reject an empty id so callers always have a stable scenario identity.
+func Load(path string) (*Scenario, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading scenario %s: %w", path, err)
+	}
+	var sc Scenario
+	if err := json.Unmarshal(data, &sc); err != nil {
+		return nil, fmt.Errorf("decoding scenario %s: %w", path, err)
+	}
+	if strings.TrimSpace(sc.ID) == "" {
+		return nil, fmt.Errorf("scenario %s has no id", path)
+	}
+	return &sc, nil
+}
+
 // CreateOptions configures Create.
 type CreateOptions struct {
 	Goal            string
