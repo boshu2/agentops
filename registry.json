@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-15T20:01:15Z",
+  "generated_at": "2026-06-16T11:47:26Z",
   "summary": {
     "skills": 72,
     "hooks": 0,
@@ -4183,6 +4183,7 @@
         "--force",
         "--force-repair",
         "--full",
+        "--gold",
         "--incremental",
         "--json",
         "--lint-only",
@@ -4817,6 +4818,7 @@
         "--cite",
         "--config",
         "--dry-run",
+        "--gold",
         "--json",
         "--limit",
         "--no-cite",
