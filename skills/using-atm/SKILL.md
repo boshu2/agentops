@@ -64,6 +64,34 @@ This skill does **not** re-document the full `atm` command surface — run
 `atm help` for that. It covers the **AgentOps substrate contract**: how to
 dispatch and tend AgentOps loops on an ATM swarm.
 
+## When to use ATM vs AM (the 4-case matrix)
+
+**ATM and AM are separate escalations on different axes — never a package.** ATM
+(this skill, the out-of-session substrate) answers a **durability/wall-clock**
+need: work must outlive your session, run unattended, or survive a pane death.
+AM ([`agent-mail`](../agent-mail/SKILL.md), coordination) answers a **contention**
+need: ≥2 writers can touch the same path. You reach for either *alone*.
+
+| Reach for | When (observable trigger) |
+|---|---|
+| **Neither** (default) | One writer, fits this session/context, no unattended wait, no shared hot path. Single-agent-first ([operating-loop principle 8](../../docs/architecture/operating-loop.md#governing-principles)). |
+| **AM only** (no ATM) | ≥2 live writable lanes share the repo (you + a peer, `/swarm`, review+impl pair) **and** any could touch the same file/glob, generated registry, schema, CLI docs, gate script, port, or build slot. The common case — needs no panes. |
+| **ATM only** (no AM) | Unattended/scheduled wall-clock work over a **file-disjoint** (or single-lane) bead queue: overnight grind, CI-green-while-away. Beads are the queue; git serializes pushes; reserving against yourself is ceremony. |
+| **Both** | ≥2 **unattended** panes that genuinely contend on shared surfaces. Rare core. `atm spawn … --reserve` with real paths, never "the repo". |
+
+**Inflection points (escalate only on a real trigger):** context-window pressure that *survives* a fresh handoff+reload; N≥3 provably file-disjoint units; estimated runtime > your remaining attention window; a partition that's genuinely impossible (every lane touches one generated file → AM). **Cross-family verification is a [`council`](../council/SKILL.md) gate, NOT an ATM trigger** — spin an ephemeral judge, don't stand up a swarm.
+
+**Asymmetry guardrail (bounds the de-mandate):** the de-mandate removes the
+single-writer **session-start tax**, not the **collision guard**. Cost of an
+*unneeded* AM call = one command; cost of a *missing* one = two panes silently
+clobber a shared file and the merge looks like ordinary conflict cleanup while the
+design forked. So the **`≥2-writers → reserve` reflex stays non-negotiable.**
+
+**Partition before you lock:** if you *can* cut the write-sets disjoint, do that
+(no AM) instead of reserving. Locks are the fallback when partition fails — not the
+default. (This skill applied to itself: when a lane overlaps another's hot path,
+prefer re-cutting the write-set to a sole-writer surface over a shared lease.)
+
 ## The dispatch contract
 
 1. **One bead = one whole-loop skill invocation.** A pane's agent runs

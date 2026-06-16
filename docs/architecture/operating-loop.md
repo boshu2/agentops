@@ -42,8 +42,18 @@ The doctrine source for this spine is [`.agents/research/2026-05-15-cdlc-dojo-do
    outputs a lead will merge, or independent implementation slices with
    **disjoint write scopes**. When ≥2 lanes/panes share the repo, Agent Mail
    registration and file reservations are mandatory before writes. With only
-   one active writer, stay single-agent and use normal bookkeeping. (Shape
-   routing detail: [`automation-shape-routing`](../../skills/automation-shape-routing/SKILL.md)
+   one active writer, stay single-agent and use normal bookkeeping.
+   **ATM and AM are *separate* escalations on different axes — never a package.**
+   ATM (the out-of-session substrate) answers a **durability/wall-clock** need —
+   work must outlive your session or run unattended. AM (coordination) answers a
+   **contention** need — ≥2 writers can touch the same path. You reach for either
+   *alone*: AM-without-ATM is the common case (two in-session lanes sharing a
+   repo); ATM-without-AM is an unattended **file-disjoint** queue. **Asymmetry
+   guardrail:** the de-mandate removes the single-writer *session-start tax*, not
+   the *collision guard* — the `≥2-writers → reserve` reflex stays non-negotiable
+   (an unneeded AM call costs one command; a missing one silently clobbers a
+   shared file). Full 4-case matrix: [`using-atm`](../../skills/using-atm/SKILL.md#when-to-use-atm-vs-am-the-4-case-matrix).
+   (Shape routing detail: [`automation-shape-routing`](../../skills/automation-shape-routing/SKILL.md)
    — "shape 0" is the default front door; `AGENTOPS_ORCHESTRATION=off` pins the
    beads floor.)
 
