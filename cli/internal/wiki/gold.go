@@ -76,7 +76,8 @@ var (
 		"verified": "authoritative", "provisional": "draft", "draft": "draft",
 		"deprecated": "deprecated", "superseded": "historical",
 	}
-	uuidPattern = regexp.MustCompile(`\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b`)
+	uuidPattern     = regexp.MustCompile(`\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b`)
+	wikilinkPattern = regexp.MustCompile(`\[\[[^\]]+\]\]`)
 	// homePathPattern catches ANY user's home dir, not just the current $HOME
 	// that llm.Redact scrubs. A publish-to-gold step must be conservative:
 	// another machine's /Users/<someone> or /home/<someone> is a private-
@@ -104,14 +105,17 @@ type GoldStats struct {
 	Redactions int            `json:"redactions"`
 	Rejections map[string]int `json:"rejections"`
 	ByType     map[string]int `json:"by_type"`
+	Links      int            `json:"links"`
 	Lint       []string       `json:"lint"`
 }
 
 type goldDoc struct {
 	okfType, title, description, timestamp, status, sourceDigest, body string
+	resource                                                           string // OKF standard: sanitized source pointer
 	tags                                                               []string
 	confidence                                                         float64
 	category, slug                                                     string
+	srcKeys                                                            []string // identifiers this doc can be referenced by
 }
 
 func (c *GoldCompiler) now() time.Time {
@@ -209,7 +213,8 @@ func (c *GoldCompiler) Compile(dryRun bool) (GoldStats, error) {
 				ot = strings.Title(mtype) //nolint:staticcheck // ASCII tags only
 			}
 			maturity := strings.ToLower(fieldStr(doc.Fields, "maturity"))
-			title := cleanTitle(firstSentence(clean), filepath.Base(path))
+			fmTitle, _ := sanitize(fieldStr(doc.Fields, "title")) // explicit title wins, sanitized
+			title := flattenWikilinks(cleanTitle(firstNonEmpty(strings.TrimSpace(fmTitle), firstSentence(clean)), filepath.Base(path)))
 			rawID := nullableID(fieldStr(doc.Fields, "id"))
 			fileStem := nullableID(strings.TrimSuffix(filepath.Base(path), ".md"))
 			// slug prefers a real id, then the title, then the filename — so a
@@ -228,10 +233,17 @@ func (c *GoldCompiler) Compile(dryRun bool) (GoldStats, error) {
 			if doc.Fields["confidence"] != nil {
 				conf = ParseConfidence(doc.Fields["confidence"]).Value
 			}
+			// srcKeys: every identifier another entry might use to [[link]] here
+			// — the source id, filename stem, frontmatter name, and title slug.
+			srcKeys := dedupeStrings([]string{
+				slugify(rawID), slugify(fileStem),
+				slugify(fieldStr(doc.Fields, "name")), slugify(title),
+			})
 			gd := goldDoc{
 				okfType:      ot,
 				title:        truncate(title, 120),
-				description:  truncate(firstSentence(clean), 200),
+				description:  truncate(flattenWikilinks(firstSentence(clean)), 200),
+				resource:     filepath.Join(filepath.Base(c.AgentsDir), sub, filepath.Base(path)),
 				tags:         nonEmpty(mtype, strings.ToLower(fieldStr(doc.Fields, "tier"))),
 				timestamp:    firstNonEmpty(fieldStr(doc.Fields, "date"), c.now().Format("2006-01-02")),
 				status:       status,
@@ -240,6 +252,7 @@ func (c *GoldCompiler) Compile(dryRun bool) (GoldStats, error) {
 				body:         strings.TrimRight(clean, "\n"),
 				category:     sub,
 				slug:         slugify(slugSrc),
+				srcKeys:      srcKeys,
 			}
 			docs = append(docs, gd)
 			stats.Promoted++
@@ -250,11 +263,79 @@ func (c *GoldCompiler) Compile(dryRun bool) (GoldStats, error) {
 	if dryRun {
 		return stats, nil
 	}
+
+	// Finalize slugs (dedup within category) BEFORE link rewriting so relative
+	// paths are stable, then weave the OKF cross-link graph.
+	c.finalizeSlugs(docs)
+	stats.Links = c.weaveLinks(docs)
+
 	if err := c.emit(docs, stats); err != nil {
 		return stats, err
 	}
 	stats.Lint = c.lint()
 	return stats, nil
+}
+
+// finalizeSlugs assigns each doc a unique slug within its category.
+func (c *GoldCompiler) finalizeSlugs(docs []goldDoc) {
+	seen := map[string]bool{}
+	for i := range docs {
+		slug := docs[i].slug
+		for n := 2; seen[docs[i].category+"/"+slug]; n++ {
+			slug = fmt.Sprintf("%s-%d", docs[i].slug, n)
+		}
+		seen[docs[i].category+"/"+slug] = true
+		docs[i].slug = slug
+	}
+}
+
+// weaveLinks rewrites [[wikilink]] references into OKF relative-path markdown
+// links when the target resolves to another promoted doc, and appends a
+// "## Related" section listing the resolved edges. Unresolved references are
+// flattened to plain text (no dead wiki-syntax in the OKF output). Returns the
+// number of resolved edges.
+func (c *GoldCompiler) weaveLinks(docs []goldDoc) int {
+	index := map[string]int{} // slugified srcKey -> doc position
+	for i := range docs {
+		for _, k := range docs[i].srcKeys {
+			if k != "" {
+				if _, exists := index[k]; !exists {
+					index[k] = i
+				}
+			}
+		}
+	}
+	resolved := 0
+	for i := range docs {
+		var related []int
+		seen := map[int]bool{i: true} // never self-link
+		body := wikilinkPattern.ReplaceAllStringFunc(docs[i].body, func(m string) string {
+			target := slugify(strings.Trim(m, "[]"))
+			j, ok := index[target]
+			if !ok {
+				return strings.Trim(m, "[]") // flatten unresolved
+			}
+			rel := relLink(docs[i].category, docs[j].category, docs[j].slug)
+			if !seen[j] {
+				seen[j] = true
+				related = append(related, j)
+			}
+			resolved++
+			return fmt.Sprintf("[%s](%s)", docs[j].title, rel)
+		})
+		if len(related) > 0 {
+			var sb strings.Builder
+			sb.WriteString(body)
+			sb.WriteString("\n\n## Related\n\n")
+			for _, j := range related {
+				rel := relLink(docs[i].category, docs[j].category, docs[j].slug)
+				fmt.Fprintf(&sb, "- [%s](%s) — `%s`\n", docs[j].title, rel, docs[j].okfType)
+			}
+			body = sb.String()
+		}
+		docs[i].body = body
+	}
+	return resolved
 }
 
 // emit writes the gold docs plus the OKF reserved index.md (catalog) and
@@ -273,19 +354,12 @@ func (c *GoldCompiler) emit(docs []goldDoc, stats GoldStats) error {
 		return err
 	}
 	byCat := map[string][]goldDoc{}
-	seen := map[string]bool{}
 	for i := range docs {
-		slug := docs[i].slug
-		for n := 2; seen[docs[i].category+"/"+slug]; n++ {
-			slug = fmt.Sprintf("%s-%d", docs[i].slug, n)
-		}
-		seen[docs[i].category+"/"+slug] = true
-		docs[i].slug = slug
 		catDir := filepath.Join(c.OutDir, docs[i].category)
 		if err := os.MkdirAll(catDir, 0o755); err != nil {
 			return err
 		}
-		if err := os.WriteFile(filepath.Join(catDir, slug+".md"), []byte(docs[i].render()), 0o644); err != nil { //nolint:gosec
+		if err := os.WriteFile(filepath.Join(catDir, docs[i].slug+".md"), []byte(docs[i].render()), 0o644); err != nil { //nolint:gosec
 			return err
 		}
 		byCat[docs[i].category] = append(byCat[docs[i].category], docs[i])
@@ -374,6 +448,9 @@ func (d goldDoc) render() string {
 	fmt.Fprintf(&b, "type: %s\n", d.okfType) // OKF required field
 	fmt.Fprintf(&b, "title: %s\n", yamlScalar(d.title))
 	fmt.Fprintf(&b, "description: %s\n", yamlScalar(d.description))
+	if d.resource != "" {
+		fmt.Fprintf(&b, "resource: %s\n", d.resource) // OKF standard field
+	}
 	fmt.Fprintf(&b, "tags: %s\n", tags)
 	fmt.Fprintf(&b, "timestamp: %s\n", d.timestamp)
 	fmt.Fprintf(&b, "status: %s\n", d.status) // trust label (handbook ext)
@@ -423,6 +500,15 @@ func fieldFloat(fields map[string]any, key string) float64 {
 	return f
 }
 
+// genericHeading are boilerplate section labels that make terrible titles
+// ("Intent", "Summary"); firstSentence skips them to find real content.
+var genericHeading = map[string]bool{
+	"intent": true, "summary": true, "overview": true, "context": true,
+	"tl;dr": true, "tldr": true, "background": true, "what we learned": true,
+	"pattern": true, "detection question": true, "notes": true, "details": true,
+	"description": true, "what": true, "why": true, "how": true,
+}
+
 func firstSentence(body string) string {
 	for _, line := range strings.Split(body, "\n") {
 		line = strings.TrimSpace(strings.TrimLeft(line, "#"))
@@ -430,6 +516,9 @@ func firstSentence(body string) string {
 		if line == "" || strings.HasPrefix(line, "**ID") ||
 			strings.HasPrefix(line, "**Category") || strings.HasPrefix(line, "**Confidence") {
 			continue
+		}
+		if genericHeading[strings.ToLower(strings.TrimRight(line, ":"))] {
+			continue // a boilerplate section label is not a title
 		}
 		if i := strings.IndexAny(line, ".!?"); i > 0 && i < len(line)-1 {
 			return strings.TrimSpace(line[:i+1])
@@ -504,4 +593,35 @@ func firstNonEmpty(vals ...string) string {
 func fileExists(p string) bool {
 	_, err := os.Stat(p)
 	return err == nil
+}
+
+// relLink builds a relative markdown link target from a doc in fromCat to a
+// doc (toCat/slug). Same category -> "slug.md"; cross category -> "../toCat/slug.md".
+func relLink(fromCat, toCat, slug string) string {
+	if fromCat == toCat {
+		return slug + ".md"
+	}
+	return "../" + toCat + "/" + slug + ".md"
+}
+
+// flattenWikilinks turns [[x]] into x — for titles/descriptions, which are
+// summaries and must not carry wiki-syntax (body links are rewritten to OKF
+// markdown links separately in weaveLinks).
+func flattenWikilinks(s string) string {
+	return wikilinkPattern.ReplaceAllStringFunc(s, func(m string) string {
+		return strings.Trim(m, "[]")
+	})
+}
+
+func dedupeStrings(in []string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, s := range in {
+		if s == "" || seen[s] {
+			continue
+		}
+		seen[s] = true
+		out = append(out, s)
+	}
+	return out
 }

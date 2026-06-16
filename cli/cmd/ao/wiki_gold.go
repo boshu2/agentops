@@ -92,6 +92,7 @@ EXPERIMENTAL.`,
 			fmt.Fprintf(w, "            %3d  %s\n", stats.Rejections[r], r)
 		}
 		fmt.Fprintf(w, "redactions %d secret/private spans scrubbed\n", stats.Redactions)
+		fmt.Fprintf(w, "links     %d OKF cross-links woven\n", stats.Links)
 		fmt.Fprintf(w, "by OKF type: %v\n", stats.ByType)
 		if !goldDryRun {
 			if len(stats.Lint) > 0 {
