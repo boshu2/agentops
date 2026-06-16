@@ -129,6 +129,40 @@ func TestGold_OKFConformance(t *testing.T) {
 	}
 }
 
+func TestGold_CrossLinks(t *testing.T) {
+	gc, agents := newTestCompiler(t)
+	// A links B (resolvable) and a dangling target (unresolvable).
+	writeAgent(t, filepath.Join(agents, "learnings"), "a.md",
+		"---\ntype: learning\nid: alpha\nmaturity: established\n---\n\nAlpha lesson references [[beta]] and a missing [[ghost-entry]] worth noting here.\n")
+	writeAgent(t, filepath.Join(agents, "patterns"), "b.md",
+		"---\ntype: pattern\nid: beta\nmaturity: established\n---\n\nBeta is a durable reusable pattern that other entries point to across the wiki.\n")
+
+	stats, err := gc.Compile(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.Links != 1 {
+		t.Errorf("links woven = %d, want 1 (alpha->beta)", stats.Links)
+	}
+	a, err := os.ReadFile(filepath.Join(gc.OutDir, "learnings", "alpha.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := string(a)
+	// resolved [[beta]] -> cross-category relative markdown link
+	if !strings.Contains(out, "(../patterns/beta.md)") {
+		t.Errorf("resolved cross-link missing relative path:\n%s", out)
+	}
+	// unresolved [[ghost-entry]] flattened (no dead wiki-syntax)
+	if strings.Contains(out, "[[") {
+		t.Errorf("unresolved wikilink not flattened:\n%s", out)
+	}
+	// a Related section listing the edge
+	if !strings.Contains(out, "## Related") {
+		t.Errorf("missing Related section:\n%s", out)
+	}
+}
+
 func TestGold_Idempotent(t *testing.T) {
 	gc, agents := newTestCompiler(t)
 	writeAgent(t, filepath.Join(agents, "patterns"), "p.md",
