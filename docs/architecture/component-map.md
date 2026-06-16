@@ -35,7 +35,7 @@ this map:
 | Component | Bounded context | Owns | Ports / objects | Product posture |
 |---|---|---|---|---|
 | Context Corpus | BC1 Corpus | `.agents/`, `.ao/wiki`, retrieval, capture, citation, learning promotion, corpus durability | `CorpusReaderPort`, `CorpusWriterPort`, `ContextCompilerPort`, `CitationPort`, `FindingCompilerPort`, `Finding`, `Learning`, `ContextPacket` | Supporting core. This is the durable asset and candidate moat, but the quality claim is unproven until measured. |
-| Verification Membrane | BC2 Validation | gates, CI/local gate verdicts, council/pre-mortem/vibe, safety policy, evidence binding, release readiness | `GateRunnerPort`, `CIStatusPort`, `SafetyPolicyPort`, `ClaimEvidenceBinderPort`, `CriterionVerdict`, `Evidence` | Product center and correctness floor. Keep it fail-closed; autonomy expands only when this stays trustworthy. |
+| Verification Membrane | BC2 Validation | gates, CI/local gate verdicts, council/pre-mortem/validate, safety policy, evidence binding, release readiness | `GateRunnerPort`, `CIStatusPort`, `SafetyPolicyPort`, `ClaimEvidenceBinderPort`, `CriterionVerdict`, `Evidence` | Product center and correctness floor. Keep it fail-closed; autonomy expands only when this stays trustworthy. |
 | Work Graph and Loop Engine | BC3 Loop | BDD intent, br beads, work selection, slice plans, RPI, evolve, closeout, convergence | `shape_intent`, `persist_intent`, `plan_slices`, `execute_slice`, `execute_wave`, `record_evidence`, `steer_goal`, `LoopReaderPort`, `LoopWriterPort`, `CloseoutPort`, `ConvergenceCheckPort`, `WorkItem`, `Slice`, `Wave` | Core route. One loop body, one inner tick, one in-session driver. |
 | Skill / Claim Factory | BC4 Factory | skill/workflow admission, skill quality, claim governance, reusable standards, generated registry sources | `SkillCatalogPort`, `SkillScorerPort`, `FactoryAdmissionPort`, `ClaimEvidencePort`, skill/workflow front-door checks | Core governance, but sequence after route-critical validation and corpus work. Avoid creating new peer loops. |
 | Runtime and Workspace Adapters | BC5 Runtime | harness packages, `ao` CLI driving adapters, git/workspace/session/operator shell, installer and release surfaces | `HarnessPort`, `WorkspacePort`, `OperatorPort`, `EventBusPort`, `GitPort`, `IssueTrackerPort`, runtime skill bundles | Adapter layer. Keep only surfaces that make the core loop usable across real harnesses. |
@@ -98,10 +98,16 @@ This is a routing snapshot, not a mutation. Verify live status with read-only
 4. Govern new factory entries: `ag-3fp54` / `ag-cuhad`.
 5. Only then resume broad adapters, substrate, UI, or product-market lanes.
 
-## Do Not Hand-Edit
+## Generated And Curated Surfaces
 
 The generated maps and registries remain derived artifacts. Do not hand-edit
-`registry.json`, `docs/contracts/context-map.md`, `docs/SKILLS.md`,
-`docs/reference/agentops-skill-domain-map.md`, `skills/SKILL-TIERS.md`,
-`cli/docs/COMMANDS.md`, or `docs/cli-surface.*`. Change their sources and run
-the generator/check path instead.
+`registry.json`, `docs/contracts/context-map.md`,
+`docs/reference/agentops-skill-domain-map.md`, `cli/docs/COMMANDS.md`, or
+`docs/cli-surface.*`. Change their sources and run the generator/check path
+instead.
+
+`docs/SKILLS.md` and `skills/SKILL-TIERS.md` are curated routers/ledgers, not
+pure generated projections. Edit their narrative rows deliberately, do not add
+hard-coded skill counts to `docs/SKILLS.md`, and let `scripts/sync-skill-counts.sh`
+own only the count-bearing markers that remain in `skills/SKILL-TIERS.md` and
+other count surfaces.

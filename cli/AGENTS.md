@@ -1,95 +1,25 @@
-# Agent Instructions
+# CLI subtree — operator pointer
 
-This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
+This file is **not** the issue-tracker or workflow source of truth. Read the repo root contracts first:
 
-## Quick Reference
+- [`../AGENTS.md`](../AGENTS.md) — canonical operator contract
+- [`../docs/architecture/codebase-overview.md`](../docs/architecture/codebase-overview.md) — map, footguns, active waist
 
-```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --claim  # Claim work atomically
-bd close <id>         # Complete work
-bd vc status          # Inspect tracker state
-bd dolt push          # Only if a real Dolt remote is configured
-```
-
-## Non-Interactive Shell Commands
-
-**ALWAYS use non-interactive flags** with file operations to avoid hanging on confirmation prompts.
-
-Shell commands like `cp`, `mv`, and `rm` may be aliased to include `-i` (interactive) mode on some systems, causing the agent to hang indefinitely waiting for y/n input.
-
-**Use these forms instead:**
-```bash
-# Force overwrite without prompting
-cp -f source dest           # NOT: cp source dest
-mv -f source dest           # NOT: mv source dest
-rm -f file                  # NOT: rm file
-
-# For recursive operations
-rm -rf directory            # NOT: rm -r directory
-cp -rf source dest          # NOT: cp -r source dest
-```
-
-**Other commands that may prompt:**
-- `scp` - use `-o BatchMode=yes` for non-interactive
-- `ssh` - use `-o BatchMode=yes` to fail instead of prompting
-- `apt-get` - use `-y` flag
-- `brew` - use `HOMEBREW_NO_AUTO_UPDATE=1` env var
-
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
-## Beads Issue Tracker
-
-This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
-
-### Quick Reference
+## Issue tracker (br only)
 
 ```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --claim  # Claim work
-bd close <id>         # Complete work
+BEADS_DIR=$PWD/_beads br ready              # Find available work
+BEADS_DIR=$PWD/_beads br show <id>          # View issue details
+BEADS_DIR=$PWD/_beads br update <id> --claim  # Claim work
+BEADS_DIR=$PWD/_beads br close <id> -r "Done" # Complete work
 ```
 
-### Rules
+**bd/Dolt is retired legacy (2026-06-11).** Do not run `bd` here. Sync the private ledger with `git -C _beads push` — never `git add _beads`.
 
-- Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
-- Run `bd prime` for detailed command reference and session close protocol
-- Treat `bd prime` as tracker workflow context. Durable knowledge recall comes
-  from the AgentOps markdown corpus via `ao session bootstrap` and
-  `ao inject "<topic>"` or `ao corpus inject --query "<topic>"`.
-- If `bd prime` surfaces a legacy memories block from the external tracker,
-  treat it as lineage only. New recall is markdown-sourced.
-- Do not use `bd remember` for new persistent knowledge. Preserve existing
-  entries only as migration lineage; do NOT use MEMORY.md files.
+## CLI development
 
-## Session Completion
-
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
-
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd vc status
-   bd dolt push  # only if a real Dolt remote is configured
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
-- If `bd dolt push` reports no remote is configured, record that tracker push
-  is unavailable and continue with Git push. Do not add a self-remote just to
-  silence the message.
-<!-- END BEADS INTEGRATION -->
+```bash
+cd cli && make build   # Build ao binary
+cd cli && make test    # Run tests
+cd cli && make lint    # Run linter
+```

@@ -54,11 +54,11 @@ The meta-framework. [DevOps' Three Ways](https://itrevolution.com/articles/the-t
 
 **Flow.** Orchestration skills move WIP through the system. Research → plan → validate → build → review → learn — single-piece flow, minimizing context switches. `/rpi` runs all phases end to end. `/crank` executes waves of parallel workers. `/swarm` spawns teams.
 
-**Feedback.** Shorten the feedback loop until defects can't survive it. Multi-model councils (`/council`) catch issues before code ships. CI gates (`.github/workflows/validate.yml`) make the rules unavoidable — validation gates, push blocking, regression auto-revert. Problems found Friday don't wait until Monday.
+**Feedback.** Shorten the feedback loop until defects can't survive it. Multi-model councils (`/council`) catch issues before code ships. The local cockpit gate (`ao gate check --fast --scope head`) is the routine release wall, and GitHub Actions remains the optional/manual or release-tag backstop. Problems found Friday don't wait until Monday.
 
 **Continual Learning.** Stop rediscovering what you already know. Every session extracts learnings, scores them, and makes them retrievable via `ao lookup` for the next session. Knowledge compounds when retrieval quality and usage stay ahead of decay and scale friction. Session 50 knows what session 1 learned the hard way.
 
-These three ways aren't aspirational — they're mechanically enforced through skills, CI gates, and operational invariants.
+These three ways aren't aspirational — they're mechanically enforced through skills, local gates, backstop CI, and operational invariants.
 
 Deep dive: [the-science.md](the-science.md) — formal model, decay rates, escape velocity.
 
@@ -91,11 +91,11 @@ The reconciliation engine that implements the ratchet:
 
 ### Validation Gates
 
-Gates are checkpoints enforced by CI (`.github/workflows/validate.yml`) and explicit `/vibe` / `/pre-mortem` runs. They block progress until a condition is met:
+Gates are checkpoints enforced by the local cockpit gate, explicit `/validate` / `/pre-mortem` runs, and optional/manual CI backstops. They block progress until a condition is met:
 
 | Gate | Blocks | Condition |
 |------|--------|-----------|
-| Push gate | merge to `main` | `/vibe` must pass |
+| Shared-trunk gate | push to `main` | `ao gate check --fast --scope head` passes with the relevant `/validate` or `/pre-mortem` evidence |
 | Pre-mortem gate | `/crank` on 3+ issue epics | `/pre-mortem` must pass |
 | Task validation | Task completion | Acceptance criteria verified |
 | Worker guard | Workers committing | Only lead commits |
@@ -107,7 +107,7 @@ The core validation primitive. Spawns independent judge agents (Claude and/or Co
 
 Judges write all analysis to output files. Messages to the lead contain only minimal completion signals. This context budget rule prevents N judges from exploding the lead's context window.
 
-Foundation for `/vibe`, `/pre-mortem`, and `/post-mortem`.
+Foundation for `/validate`, `/pre-mortem`, and `/post-mortem`.
 
 Deep dive: [brownian-ratchet.md](brownian-ratchet.md) — full philosophy, economics, FIRE loop details.
 
@@ -217,7 +217,7 @@ Each phase is a context boundary. The output of one phase is compressed and scop
 
 | Phase | Skills | Output |
 |-------|--------|--------|
-| **Discovery** | `/brainstorm`, `/research`, `/plan`, `/pre-mortem` (error/rescue mapping, scope modes, temporal interrogation, prediction tracking) | research artifacts, execution packet, scoped risks, predictions |
+| **Discovery** | `/discovery`, `/research`, `/plan`, `/pre-mortem` (error/rescue mapping, scope modes, temporal interrogation, prediction tracking) | research artifacts, execution packet, scoped risks, predictions |
 | **Implementation** | `/crank`, `/swarm`, `/implement` | code, tests, ratchet checkpoints |
 | **Validation** | `/validate` (finding classification + suppression + domain checklists), `/post-mortem` (council + extraction + streak tracking + prediction accuracy + history + backlog + activation + retirement) | learnings, findings, predictions, next-work queue |
 
@@ -326,16 +326,16 @@ Gate sizing adapts to epic complexity:
 
 ## Operational Invariants
 
-Cross-cutting rules enforced by CI gates (`.github/workflows/validate.yml`) and the skills that own each loop — not guidelines, not suggestions. Mechanically enforced.
+Cross-cutting rules enforced by the local cockpit gate, the scripts it routes to, optional/manual CI backstops, and the skills that own each loop — not guidelines, not suggestions. Mechanically enforced.
 
 | Invariant | Enforced By | What It Prevents |
 |-----------|-------------|------------------|
-| Workers MUST NOT commit | Worker-guard CI gate | Concurrent commits, unvalidated changes |
+| Workers MUST NOT commit | Worker-guard local gate/backstop CI | Concurrent commits, unvalidated changes |
 | Workers MUST NOT race-claim tasks | Pre-assignment before spawn | Race conditions in multi-worker waves |
 | Verify THEN trust | Validation contract | False completion claims from agents |
-| Push blocked until `/vibe` passes | Push CI gate | Unvalidated code reaching remote |
+| Push blocked until the cockpit gate and required `/validate` evidence pass | Local cockpit gate | Unvalidated code reaching remote |
 | `/crank` blocked until `/pre-mortem` passes (3+ issues) | Pre-mortem gate (`/crank` skill) | Expensive implementation of flawed plans |
-| No destructive git without explicit request | Dangerous-git CI gate | Accidental data loss |
+| No destructive git without explicit request | Dangerous-git gate | Accidental data loss |
 | Mechanical checks override council PASS | Constraint tests | LLMs estimating instead of measuring |
 | Max 50 waves per epic | Global wave limit | Infinite execution loops |
 | Max 3 retries per gate | Gate retry logic | Infinite retry loops |
@@ -343,7 +343,7 @@ Cross-cutting rules enforced by CI gates (`.github/workflows/validate.yml`) and 
 | Kill switch checked every cycle | Deploy kill switch | Runaway `/evolve` loops |
 | Skip goal after 3 consecutive failures | Strike check | Infinite retry on fundamentally broken goals |
 
-AgentOps 3.0 is hookless — these invariants live in CI and the skills themselves, not in always-on runtime hooks. If you want an always-on pre-creation signal, author one with the opt-in `hooks-authoring` skill; AgentOps ships zero hooks by default.
+AgentOps 3.0 is hookless — these invariants live in local gates, optional/manual CI backstops, and the skills themselves, not in always-on runtime hooks. If you want an always-on pre-creation signal, author one outside the default runtime using `skills/cc-hooks` as the opt-in reference; AgentOps ships zero hooks by default.
 
 ---
 
@@ -382,14 +382,14 @@ Skills span six tiers. Each level composes the ones below it.
 | **Team** | `/implement` | Single issue, full lifecycle |
 | **Solo** | `/research`, `/plan`, `/validate`, `/pre-mortem`, `/post-mortem`, etc. | Standalone use |
 | **Library** | `beads`, `standards`, `shared` | Reference docs loaded by other skills |
-| **Background** | `inject`, `extract`, `forge`, `provenance`, `ratchet`, `flywheel` | Invoked by `ao` commands / CI, mostly invisible |
-| **Meta** | `using-agentops` | Flow guide, surfaced via `ao session bootstrap` |
+| **Background** | `inject`, `forge`, `flywheel`, `compile` | Invoked by `ao` commands or lifecycle closeout, mostly invisible |
+| **Meta** | `ao session bootstrap` | Flow guide surfaced by the CLI, not a checked-in skill |
 
 ### Subagents
 
 Subagents are disposable. Each gets fresh context scoped to its role — no accumulated state, no bleed-through. Clean context in, validated output out, then terminate.
 
-Subagent behaviors are defined inline within SKILL.md files. Skills that use subagents (e.g., `/council`, `/vibe`, `/pre-mortem`, `/post-mortem`, `/research`) spawn them via runtime-native backends.
+Subagent behaviors are defined inline within SKILL.md files. Skills that use subagents (e.g., `/council`, `/validate`, `/pre-mortem`, `/post-mortem`, `/research`) spawn them via runtime-native backends.
 
 ### Custom Agents
 
@@ -447,9 +447,9 @@ automation surface.
 
 AgentOps 3.0 is hookless — nothing auto-fires on session start or stop. The
 compounding backbone runs as explicit `ao` commands the agent invokes at the
-start, end, and close of work. (If you want these to fire automatically, the
-opt-in `hooks-authoring` skill can wire them into your harness; AgentOps ships
-zero hooks by default.)
+start, end, and close of work. If you want these to fire automatically, wire
+them outside the default runtime using `skills/cc-hooks` as the opt-in
+reference; AgentOps ships zero hooks by default.
 
 ### Start — sessions compound without eager context
 

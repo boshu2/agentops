@@ -91,14 +91,15 @@ bounded_contexts:
   - id: BC5
     name: Runtime
     product_layer: "Harness and operator adapters"
-    responsibility: "Adapt the control plane to harnesses, hooks, PRs, shells, and local machines."
+    responsibility: "Adapt the control plane to harnesses, shells, local gates, and operator machines (hookless by default)."
     center_of_gravity:
       - "Codex/Claude skills"
-      - hooks
+      - cc-hooks
       - "GitHub PR skills"
       - push
       - scope
       - swarm
+      - agent-native
     ports:
       - HarnessPort
       - OperatorPort

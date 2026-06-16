@@ -8,17 +8,17 @@ Skills fall into three functional categories, plus infrastructure tiers for inte
 
 | Tier | Category | Description | Examples |
 |------|----------|-------------|----------|
-| **judgment** | Validation | Internal tier for validation, review, and quality gates — council is the foundation | council, vibe, pre-mortem, post-mortem, red-team |
+| **judgment** | Validation | Internal tier for validation, review, and quality gates — council is the foundation | council, validate, pre-mortem, post-mortem, red-team |
 | **execution** | Primitives + flows | Research, plan, build, and ship — the work itself | research, plan, implement, crank, swarm, rpi |
-| **knowledge** | Bookkeeping | The flywheel — capture, store, query, inject, and promote learnings | retro (quick-capture), flywheel, forge |
+| **knowledge** | Bookkeeping | The flywheel — capture, store, query, inject, and promote learnings | compile, flywheel, forge, operationalize |
 | **product** | Execution | Define mission, goals, release, docs | product, goals, release, doc |
-| **session** | Execution | Session continuity and status | handoff, recover, status, session-bootstrap |
-| **utility** | Execution | Standalone tools | quickstart, brainstorm, bug-hunt, complexity |
-| **contribute** | Execution | Upstream PR workflow | pr-research, pr-implement, pr-validate, pr-prep |
-| **cross-vendor** | Execution | Multi-runtime orchestration | codex-team, converter |
+| **session** | Execution | Session continuity and status | handoff, recover, status |
+| **utility** | Execution | Standalone tools | converter, scaffold, security, perf |
+| **contribute** | Execution | Upstream PR workflow | pr-prep |
+| **cross-vendor** | Execution | Multi-runtime orchestration | agent-native, converter, using-atm |
 | **library** | Internal | Reference skills loaded JIT by other skills | beads, standards, shared |
-| **background** | Internal | Hook-triggered or automatic skills | inject, extract, forge, ratchet |
-| **meta** | Internal | Skills about skills | using-agentops, heal-skill |
+| **background** | Internal | Hook-triggered or automatic skills | inject, forge, flywheel |
+| **meta** | Internal | Skills about skills | heal-skill, skill-auditor, skill-builder |
 
 ## The Three Categories
 
@@ -35,13 +35,13 @@ Council is the core primitive. Every validation skill depends on it. Remove coun
         │                     │                     │
         ▼                     ▼                     ▼
   ┌────────────┐        ┌─────────┐         ┌─────────────┐
-  │ pre-mortem │        │  vibe   │         │ post-mortem │
-  │ (plans)    │        │ (code)  │         │ (full retro │
+  │ pre-mortem │        │validate │         │ post-mortem │
+  │ (plans)    │        │ (code)  │         │ (knowledge  │
   └────────────┘        └────┬────┘         │ + knowledge)│
                              │              └─────────────┘
                              ▼
                        ┌────────────┐
-                       │ complexity │
+                       │  checks    │
                        └────────────┘
 ```
 
@@ -54,7 +54,7 @@ RESEARCH          PLAN              IMPLEMENT           VALIDATE
 ────────          ────              ─────────           ────────
 
 ┌──────────┐    ┌──────────┐      ┌───────────┐      ┌──────────┐
-│ research │───►│   plan   │─────►│ implement │─────►│   vibe   │
+│ research │───►│   plan   │─────►│ implement │─────►│ validate │
 └──────────┘    └────┬─────┘      └─────┬─────┘      └────┬─────┘
                      │                  │                 │
                      ▼                  │                 │
@@ -65,7 +65,7 @@ RESEARCH          PLAN              IMPLEMENT           VALIDATE
                                         │                 │
                                         ▼                 ▼
                                    ┌─────────┐      ┌───────────┐
-                                   │  swarm  │      │complexity │
+                                   │  swarm  │      │ validate  │
                                    └────┬────┘      │ + council │
                                         │           └───────────┘
                                         ▼
@@ -77,7 +77,7 @@ POST-SHIP                             ONBOARDING / STATUS
 ─────────                             ───────────────────
 
 ┌─────────────┐                       ┌────────────┐
-│ post-mortem │                       │ quickstart │ (first-time tour)
+│ post-mortem │                       │ bootstrap  │ (first-time setup)
 │ (council +  │                       └────────────┘
 │ knowledge)  │                       ┌────────────┐
 └──────┬──────┘                       │   status   │ (dashboard)
@@ -94,7 +94,7 @@ Append-only ledger in `.agents/`. Every session writes. Freshness decay prunes. 
 
 ```
 ┌─────────┐     ┌─────────┐     ┌──────────┐     ┌──────────┐
-│  retro  │────►│  forge  │────►│ compile  │────►│  inject  │
+│post-mortem│──►│  forge  │────►│ compile  │────►│  inject  │
 └─────────┘     └─────────┘     └──────────┘     └──────────┘
      ▲                                                 │
      │              ┌──────────┐                       │
@@ -102,7 +102,7 @@ Append-only ledger in `.agents/`. Every session writes. Freshness decay prunes. 
                     └──────────┘
 
 User-facing: /compile (query + grow), /post-mortem --quick (quick-capture), /post-mortem (full), /flywheel
-Background:  inject, forge, ratchet
+Background:  inject, forge, flywheel
 CLI:         ao lookup, ao extract, ao forge, ao maturity
 ```
 
@@ -242,7 +242,7 @@ These are how skills chain in practice:
 | **plan** | execution | Decompose epics into issues with dependency waves |
 | **implement** | execution | Full lifecycle for one task |
 | **crank** | execution | Autonomous epic execution — parallel waves |
-| **discovery** | meta | Discovery phase orchestrator — brainstorm → search → research → plan → pre-mortem |
+| **discovery** | meta | Discovery phase orchestrator — ideate → search → research → plan → pre-mortem |
 | **swarm** | execution | Parallelize any skill — fresh context per agent |
 | **using-atm** | execution | Run AgentOps loops out of session on an ATM tmux swarm — the ATM leg of the substrate |
 | **rpi** | meta | Thin wrapper: /discovery → /crank → /validate with complexity classification and loop |
@@ -352,16 +352,15 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 |-------|--------------|------|
 | **compile** | - | - (standalone, ao CLI optional) |
 | **curate** | - | - (standalone knowledge miner) |
-| **harvest** | - | - (standalone, ao CLI required) |
-| **knowledge-activation** | compile, harvest, flywheel | optional, optional, optional |
+| **operationalize** | compile, flywheel | optional, optional |
 | **council** | - | - (core primitive) |
 | **validate** | - | - (standalone validator role) |
 | **pre-mortem** | council | required |
 | **post-mortem** | council, beads | required, optional |
 | beads | - | - |
 | domain | - | - |
-| **codex-team** | - | - (standalone, fallback to swarm) |
-| **crank** | swarm, vibe, implement, beads, post-mortem | required, required, required, optional, optional |
+| **agent-native** | - | - (standalone runtime guide) |
+| **crank** | swarm, validate, implement, beads, post-mortem | required, required, required, optional, optional |
 | doc | standards | required |
 | flywheel | - | - |
 | forge | - | - |
@@ -371,30 +370,25 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **plan** | research, beads, pre-mortem, crank, implement | optional, optional, optional, optional, optional |
 | **push** | - | - (standalone) |
 | **product** | - | - (standalone) |
-| **pr-validate** | - | - (standalone) |
-| **pr-prep** | pr-validate | optional |
+| **pr-prep** | validate | optional |
 | **bootstrap** | goals, product, doc, shared | all optional (progressive — skips what exists) |
-| **discovery** | brainstorm, research, plan, pre-mortem, shared | brainstorm optional, rest required |
-| **validation** | vibe, post-mortem, retro, forge, shared | vibe+post-mortem required, retro+forge optional |
-| **rpi** | discovery, crank, validation, ratchet | all required |
+| **discovery** | research, plan, pre-mortem, shared | research+plan+pre-mortem required, shared optional |
+| **rpi** | discovery, crank, validate | all required |
 | **evolve** | rpi | required (rpi pulls in all sub-skills) |
 | **autodev** | evolve, rpi | required |
 | **release** | - | - (standalone) |
 | **security** | - | - (standalone) |
 | **recover** | - | - (standalone) |
-| research | knowledge, inject | optional, optional |
-| retro | - | - |
+| research | inject | optional |
 | standards | - | - |
 | **goals** | - | - (reads GOALS.yaml directly) |
 | **status** | - | - (all CLIs optional) |
-| **swarm** | implement, vibe | required, optional |
-| **update** | - | - (standalone) |
-| **test** | standards, complexity | required, optional |
+| **swarm** | implement, validate | required, optional |
+| **test** | standards | required |
 | **review** | standards, council | required, optional |
-| **refactor** | standards, complexity, beads | required, optional, optional |
-| **perf** | standards, complexity | optional, optional |
+| **refactor** | standards, beads | required, optional |
+| **perf** | standards | optional |
 | **scaffold** | standards | required |
-| **system-tuning** | - | - (standalone) |
 
 ---
 
@@ -434,7 +428,7 @@ All council-based skills write to `.agents/council/`:
 | `/council validate` | `.agents/council/YYYY-MM-DD-<target>-report.md` |
 | `/council brainstorm` | `.agents/council/YYYY-MM-DD-brainstorm-<topic>.md` |
 | `/council research` | `.agents/council/YYYY-MM-DD-research-<topic>.md` |
-| `/validate` | `.agents/council/YYYY-MM-DD-vibe-<target>.md` |
+| `/validate` | `.agents/council/YYYY-MM-DD-validate-<target>.md` |
 | `/pre-mortem` | `.agents/council/YYYY-MM-DD-pre-mortem-<topic>.md` |
 | `/post-mortem` | `.agents/council/YYYY-MM-DD-post-mortem-<topic>.md` |
 
@@ -463,7 +457,7 @@ session so the operator can see progress, phase transitions, and intervene.
 | rpi | Orchestrator | Keeps phase order, objective, retries, and operator visibility |
 | crank | Direct orchestrator | Wave reports visible when called directly |
 | discovery | Direct orchestrator | Gate visibility when called directly |
-| validation | Direct orchestrator | Verdict visibility when called directly |
+| validate | Direct orchestrator | Verdict visibility when called directly |
 | implement | Single-task | Single issue, medium duration |
 
 ### Tier 1.5: PHASE ISOLATION (declared phase contracts)
@@ -477,7 +471,7 @@ returns artifact path, verdict, and next action.
 |-------|------|-----|
 | discovery | Phase 1 contract | Research and planning context should not stay resident through implementation |
 | crank | Phase 2 contract | Wave execution context should not stay resident through validation |
-| validation | Phase 3 contract | Review and closeout context should not pollute the next lifecycle turn |
+| validate | Phase 3 contract | Review and closeout context should not pollute the next lifecycle turn |
 
 ### Tier 2: FORK (discovery primitives)
 
@@ -487,7 +481,7 @@ Discovery skills that produce filesystem artifacts. User wants the output, not t
 |-------|------|-----|
 | research | Discovery | Massive codebase exploration → `.agents/research/*.md` |
 | plan | Discovery | Decomposition + beads creation → `.agents/plans/*.md` + beads |
-| retro | Knowledge extraction | Extract learnings → `.agents/learnings/*.md` |
+| post-mortem | Knowledge extraction | Extract learnings → `.agents/learnings/*.md` |
 
 ### Tier 3: FORK (judgment + worker spawners)
 
@@ -498,7 +492,7 @@ Judgment skills validate artifacts in isolation. Worker spawners fan out paralle
 | pre-mortem | Judgment | Plan validation, user wants verdict |
 | post-mortem | Judgment | Validation close-out + knowledge extraction |
 | council | Worker spawner | Parallel judges, merge verdicts |
-| codex-team | Worker spawner | Parallel Codex agents, merge results |
+| swarm | Worker spawner | Parallel runtime agents, merge results |
 
 Note: `swarm` is an orchestrator (no `context: fork`) that spawns runtime workers via `TeamCreate`/`spawn_agent`. The workers it creates are runtime sub-agents, not SKILL.md skills.
 
@@ -525,6 +519,6 @@ transport and returns only bounded artifacts.
 - `skills/council/SKILL.md` — Core judgment primitive
 - `skills/validate/SKILL.md` — Complexity + council for code
 - `skills/pre-mortem/SKILL.md` — Council for plans
-- `skills/post-mortem/SKILL.md` — Council + retro for wrap-up
+- `skills/post-mortem/SKILL.md` — Council + knowledge closeout for wrap-up
 - `skills/swarm/SKILL.md` — Parallelize any skill
 - `skills/rpi/SKILL.md` — Full pipeline orchestrator

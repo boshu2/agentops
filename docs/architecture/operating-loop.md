@@ -1,6 +1,6 @@
 # Operating Loop
 
-> One-page spine. The operational discipline every AgentOps process skill executes. Companion to [Component Map](component-map.md) (product/component routing), [Ports and Adapters](ports-and-adapters.md) (the runtime seams), [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) (the process-level ports), and [CDLC](../cdlc.md) (the context lifecycle inside the SDLC control plane).
+> One-page spine. The operational discipline every AgentOps process skill executes. Companion to [Component Map](component-map.md) (product/component routing), [Ports and Adapters](ports-and-adapters.md) (the runtime seams), [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) (the process-level ports), and [CDLC](../cdlc.md) (the context lifecycle inside the SDLC control plane). RPI naming (`/rpi` skill vs `ao rpi` CLI vs this loop): [codebase-overview — RPI terminology](codebase-overview.md#rpi-terminology).
 
 AgentOps' execution discipline is one repeatable loop inside the SDLC control plane, not a phased waterfall of documents. Every process skill is one move within it. No artifact exists unless it advances the loop.
 
@@ -71,7 +71,7 @@ The intent issue is not ready until the acceptance examples are testable. Requir
 - Rollback / containment path
 - Evidence needed for completion (test names, snapshot keys, eval suites, council verdicts)
 
-Template: [`docs/templates/intent-issue.md`](../templates/intent-issue.md). Skills that produce this artifact: `/brainstorm`, `/discovery`, `/design`.
+Template: [`docs/templates/intent-issue.md`](../templates/intent-issue.md). Skills that produce this artifact: `/discovery`, `/product`, `/plan`.
 
 ### 2. Track as a bead when it leaves the head
 
@@ -110,7 +110,7 @@ Any failed row → slices run **sequential**. Skill: `/plan` declares the wave; 
 
 ### 6. Close the bead by proving its acceptance
 
-Every Given/When/Then maps to a passing test. Every non-goal is still untouched. Every rollback path is reachable. Evidence is recorded. Activity logs do not close beads. Skills: `/validation`, `/council`, `/vibe`.
+Every Given/When/Then maps to a passing test. Every non-goal is still untouched. Every rollback path is reachable. Evidence is recorded. Activity logs do not close beads. Skills: `/validate`, `/council`, `/pre-land-refuters`.
 
 When a cycle is logged, the CycleTrace can carry the closeout join explicitly:
 `bead_id`, `acceptance_examples`, `validation_commands`, and
@@ -119,7 +119,7 @@ example to the test, gate, or eval that proved it.
 
 ### 7. Capture evidence and learning, then ratchet
 
-Two outputs per loop turn — evidence into `.agents/ratchet/` and the bead; learnings only if they cleared the promotion bar (next section). Skills: `/post-mortem`, `/forge`, `/retro`, `/ratchet`, `/flywheel`, `/harvest`.
+Two outputs per loop turn — evidence into `.agents/rpi/`, the bead, and the relevant council/validation artifacts; learnings only if they cleared the promotion bar (next section). Skills: `/post-mortem`, `/forge`, `/flywheel`, `/compile`.
 
 ### The loop closes here: re-plan on evidence, not just on failure
 
@@ -145,16 +145,16 @@ The ratchet is what keeps `.agents/` from becoming a landfill. Compounding only 
 
 | Loop move | Primary skills | Produces |
 |-----------|----------------|----------|
-| Shape intent | `brainstorm`, `discovery`, `design` | BDD intent issue with acceptance examples |
+| Shape intent | `discovery`, `product`, `plan` | BDD intent issue with acceptance examples |
 | Track as bead | `beads` | Bead with slice list + acceptance contract |
 | Slice + wave plan | `plan` | Slice list + wave grouping + ownership map |
 | Pre-flight check | `pre-mortem`, `council` | Verdict on plan + wave validity |
 | TDD per slice | `implement` | First failing test → green → refactor |
 | Wave execution | `crank`, `swarm`, `autodev` | Parallel slices with explicit ownership |
-| Slice validation | `vibe`, `validate`, `validation` | Per-slice acceptance proof |
-| Bead acceptance | `validation`, `council` | Roll-up acceptance verdict |
-| Capture | `post-mortem`, `forge`, `retro`, `ratchet` | Evidence + ratcheted learnings |
-| Compound | `flywheel`, `harvest`, `dream` | Learnings → patterns → rules → gates |
+| Slice validation | `validate`, `council`, `pre-land-refuters` | Per-slice acceptance proof |
+| Bead acceptance | `validate`, `council` | Roll-up acceptance verdict |
+| Capture | `post-mortem`, `forge` | Evidence + promoted learnings |
+| Compound | `flywheel`, `compile`, `operationalize` | Learnings → patterns → rules → gates |
 
 ## How the loop composes with the architectural seams
 
@@ -172,7 +172,7 @@ The loop is operational discipline. The architectural seams are structural. They
 | Agent writes code with no contract | Move 4: first failing test before implementation |
 | Two agents stomp on the same file in parallel | Move 5: wave-validity write-scope check |
 | Bead closes with "looks good" instead of evidence | Move 6: every Given/When/Then maps to a passing test |
-| `.agents/` accumulates one-off observations forever | Move 7 + ratchet: most observations die at handoff |
+| `.agents/` accumulates one-off observations forever | Move 7 + promotion rule: most observations die at handoff |
 | A "refactor + feature" PR mixes contracts | Move 3: refactor and feature are two slices |
 | Layer-by-layer waterfall reappears under "phases" | Move 3 + move 1: slices are vertical and BDD-shaped |
 
@@ -181,7 +181,7 @@ The loop is operational discipline. The architectural seams are structural. They
 - Does not introduce a new `skills/cdlc/` skill — the spine is doc-shaped, referenced by every process skill.
 - Does not introduce new practice slugs — the loop is a composition of `bdd-gherkin` + `tdd` + `ddd-bounded-context` + `hexagonal-architecture` + `agile-manifesto` + `pragmatic-programmer` + `continuous-delivery`.
 - Does not couple AgentOps to any consumer's domain vocabulary — bounded contexts are named by the consuming repo.
-- Does not require new tooling — `br`, `ratchet`, and existing validation gates carry the load.
+- Does not require new tooling — `br` and existing validation gates carry the load.
 - Does not enforce parallelism — parallel waves are an optimization unlocked by the conflict-free check, not a default.
 
 ## See also
@@ -190,6 +190,7 @@ The loop is operational discipline. The architectural seams are structural. They
 - [Component Map](component-map.md) — product/component routing and trim/defer posture
 - [Ports and Adapters](ports-and-adapters.md) — architectural seams the loop runs through
 - [Fungibility Charter](fungibility-charter.md) — the six doctrinal commitments behind the loop's stateless, role-free, single-model-default agents
+- [Effective Feedback Compute](../doctrine/effective-feedback-compute.md) — *why* moves 6 (prove acceptance) and 7 (ratchet) are load-bearing: harness success scales with useful feedback (I·V·R·M), not raw spend
 - [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) — process-level ports/adapters from BDD intent through evidence ratchet
 - [ADR-0001](../adr/ADR-0001-ddd-hexagonal-adoption.md) — DDD + Hexagonal adoption
 - [CDLC](../cdlc.md) — conceptual seven phases this loop runs inside

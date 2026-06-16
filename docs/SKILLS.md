@@ -13,7 +13,7 @@ into repeatable flows.
 ## Skill Router (Start Here)
 
 Use this when you're not sure which skill to run. For a full flow overview, run
-`/inject` (absorbs using-agentops).
+`ao session bootstrap`, then `/inject` when you need on-demand context loading.
 
 ```text
 What are you trying to do?
@@ -208,7 +208,7 @@ Root cause analysis with git archaeology.
 ### Knowledge queries (no slash command)
 
 Query knowledge artifacts across locations via the CLI. There is no standalone
-`/knowledge` skill — use `/operationalize`, `/forge`, and `/compile` for
+knowledge skill — use `/operationalize`, `/forge`, and `/compile` for
 corpus promotion, or run the CLI below for ad-hoc lookup.
 
 ```bash
@@ -217,18 +217,6 @@ ao search --all "patterns for rate limiting"
 ```
 
 **Searches:** `.agents/learnings/`, `.agents/patterns/`, `.agents/research/`, `.agents/compiled/`
-
-### /llm-wiki
-
-Maintain a compounding wiki for external reading material.
-
-```bash
-/llm-wiki ingest raw/articles/example.md
-/llm-wiki query "what do we know about this topic?"
-/llm-wiki lint
-```
-
-**Status:** Proposal skill for external `raw/` to `wiki/` knowledge, separate from the internal `.agents/` compiler.
 
 ### /refactor (absorbs /complexity)
 
@@ -242,7 +230,10 @@ Code complexity analysis using radon (Python) or gocyclo (Go).
 
 ### /doc
 
-Generate and validate repo documentation. `--mode` selects the artifact family: default (code/API docs, code-maps), `--mode=readme` (gold-standard README via interview + council validation, absorbed `/readme`), `--mode=oss` (open-source doc pack — CONTRIBUTING/CHANGELOG/AGENTS, absorbed `/oss-docs`).
+Generate and validate repo documentation. `--mode` selects the artifact family:
+default (code/API docs, code-maps), `--mode=readme` (gold-standard README via
+interview + council validation), or `--mode=oss` (open-source doc pack:
+CONTRIBUTING, CHANGELOG, AGENTS).
 
 ```bash
 /doc services/auth/          # code/API docs (default)
@@ -252,7 +243,7 @@ Generate and validate repo documentation. `--mode` selects the artifact family: 
 
 ### /pre-mortem
 
-Simulate failures before implementing. Includes error/rescue mapping (tabular risk/mitigation), scope mode selection (Expand/Hold/Reduce with auto-detection), temporal interrogation (hour 1/2/4/6+ timeline), and prediction tracking with unique IDs (`pm-YYYYMMDD-NNN`) correlated through vibe and post-mortem.
+Simulate failures before implementing. Includes error/rescue mapping (tabular risk/mitigation), scope mode selection (Expand/Hold/Reduce with auto-detection), temporal interrogation (hour 1/2/4/6+ timeline), and prediction tracking with unique IDs (`pm-YYYYMMDD-NNN`) correlated through validate and post-mortem.
 
 ```bash
 /pre-mortem "add caching layer"
@@ -266,7 +257,7 @@ Simulate failures before implementing. Includes error/rescue mapping (tabular ri
 
 ### /council
 
-Multi-model validation — the core primitive used by vibe, pre-mortem, and post-mortem. Auto-extracts significant findings from WARN/FAIL verdicts into the knowledge flywheel.
+Multi-model validation — the core primitive used by validate, pre-mortem, and post-mortem. Auto-extracts significant findings from WARN/FAIL verdicts into the knowledge flywheel.
 
 ```bash
 /council validate recent
@@ -405,38 +396,6 @@ Convert skills to other platforms (Codex, Cursor).
 
 **Targets:** codex (SKILL.md + prompt.md), cursor (.mdc + optional mcp.json), test (raw bundle)
 
-### /openai-docs
-
-Use official OpenAI docs MCP access for current API/platform guidance with citations.
-
-```bash
-/openai-docs "responses api tools"
-```
-
-### /pr-research
-
-Research upstream contribution conventions before implementing an external PR.
-
-```bash
-/pr-research https://github.com/org/repo
-```
-
-### /pr-implement
-
-Execute fork-based contribution work with isolation checks.
-
-```bash
-/pr-implement
-```
-
-### /pr-validate
-
-Run PR-specific validation (scope creep, isolation, upstream alignment).
-
-```bash
-/pr-validate
-```
-
 ### /pr-prep
 
 Prepare structured PR bodies with validation evidence. Includes commit split advisor (Phase 4.5) suggesting bisectable commit ordering.
@@ -458,41 +417,33 @@ phases, and flags.
 | `/bootstrap` | One-command product-layer setup (`GOALS.md`, `PRODUCT.md`, `README.md`, `.agents/`, optional hooks) |
 | `/compile` | Compile raw `.agents/` artifacts into an interlinked wiki at `.agents/compiled/` (Mine → Grow → Defrag → Lint) |
 | `/security` (absorbs deps) | Dependency audit, updates, vulnerability scanning, license compliance |
-| `/design` | Product validation gate — aligns goal with `PRODUCT.md` before discovery |
-| `/discovery` | Full discovery-phase orchestrator (brainstorm + search + research + plan + pre-mortem) |
+| `/product` | Maintain `PRODUCT.md` so validation and planning share the same product contract |
+| `/discovery` | Full discovery-phase orchestrator (ideation + search + research + plan + pre-mortem) |
 | `/goals` | Maintain `GOALS.yaml`/`GOALS.md` fitness specs; measure drift; add/prune directives |
-| `/grafana-platform-dashboard` | Design/refactor/validate Grafana dashboards for OpenShift/Kubernetes platform ops |
-| `/harvest` | Cross-rig knowledge consolidation and tiered promotion to the global hub |
-| `/hooks-authoring` | Author and validate AgentOps runtime hooks |
 | `/perf` | Performance profiling, benchmarking, regression detection, optimization |
 | `/push` | Atomic test-commit-push with conventional-commit message |
 | `/red-team` | Persona-based adversarial validation — probes whether docs/skills actually work |
 | `/refactor` | Safe, verified refactoring with regression tests at each step |
-| `/reverse-engineer-rpi` | Reverse-engineer a product into feature catalog, code map, and specs |
 | `/review` | Structured review of incoming PRs, agent-generated changes, or diffs |
 | `/scaffold` | Project scaffolding, component generation, boilerplate |
 | `/eval-outcomes` (absorbs scenario) | Author/manage holdout scenarios in `.agents/holdout/` for behavioral validation |
-| `/security` | Continuous repository security scanning and release gating |
-| `/security-suite` | Composable security suite — static, dynamic, redteam, baseline drift, policy gating |
 | `/test` | Test generation, coverage analysis, TDD workflow |
 
 ---
 
 ## Internal Skills
 
-These fire automatically and are not directly invoked:
+These are loaded by other skills or lifecycle hooks; they are not primary
+user-facing entry points:
 
 | Skill | Purpose |
 |-------|---------|
 | `inject` | Load knowledge at session start (`ao inject`) |
 | `forge` | Mine transcripts for knowledge artifacts (decisions, learnings, failures, patterns) |
-| `ratchet` | Progress gates for RPI workflow |
 | `flywheel` | Knowledge health monitoring |
-| `provenance` | Trace knowledge artifact lineage |
 | `standards` | Language-specific coding standards (auto-loaded by /validate, /implement) |
 | `shared` | Shared reference documents for multi-agent backends |
 | `beads` | Issue tracking reference |
-| `using-agentops` | Workflow guide (hook-capable silent state prep, explicit Codex startup fallback) |
 
 ---
 

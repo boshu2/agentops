@@ -1,9 +1,9 @@
 #!/usr/bin/env bats
 # Acceptance surface for scripts/check-doc-skill-refs.sh — backtick-slash skill
-# references in doctrine docs (CLAUDE.md, docs/architecture/operating-loop.md,
-# skills/SKILL-TIERS.md) must resolve to an existing skills/<dir>. Lines
-# carrying a retirement marker (retired|folded|legacy|historical) are exempt.
-# Advisory by default (exit 0, prints findings); --strict fails.
+# references and slash-command headings in doctrine/router docs must resolve to
+# an existing skills/<dir>. Lines carrying a retirement marker
+# (retired|folded|legacy|historical) are exempt. Advisory by default (exit 0,
+# prints findings); --strict fails.
 #
 # Fixtures are generated in tmp trees (not committed) so repo-wide doc scanners
 # never see them.
@@ -61,10 +61,13 @@ teardown() {
 
 @test "scans the nested doc paths under --docs-root" {
     mkdir -p "$DOCS/docs/architecture" "$DOCS/skills"
+    printf '### /zzz-router-phantom\n' > "$DOCS/docs/SKILLS.md"
     printf 'Skills: `/zzz-loop-phantom` runs the loop.\n' > "$DOCS/docs/architecture/operating-loop.md"
     printf 'Tier 1: `/zzz-tier-phantom`.\n' > "$DOCS/skills/SKILL-TIERS.md"
     run bash "$SCRIPT" --strict --docs-root "$DOCS" --skills-root "$SKILLS"
     [ "$status" -ne 0 ]
+    [[ "$output" == *"docs/SKILLS.md"* ]]
+    [[ "$output" == *"zzz-router-phantom"* ]]
     [[ "$output" == *"operating-loop.md"* ]]
     [[ "$output" == *"zzz-loop-phantom"* ]]
     [[ "$output" == *"SKILL-TIERS.md"* ]]
@@ -83,6 +86,11 @@ teardown() {
 
 @test "advisory against the real repo exits 0" {
     run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+}
+
+@test "strict against the real repo exits 0" {
+    run bash "$SCRIPT" --strict
     [ "$status" -eq 0 ]
 }
 

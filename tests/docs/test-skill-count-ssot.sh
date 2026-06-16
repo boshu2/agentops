@@ -11,8 +11,8 @@
 #                                         any skill dir missing one (the manual
 #                                         step that used to block releases).
 #   scripts/sync-skill-counts.sh        — derives the count from disk and patches
-#                                         every doc surface (incl. same-width
-#                                         ASCII-diagram counts).
+#                                         every count-bearing doc surface (incl.
+#                                         same-width ASCII-diagram counts).
 #   tests/docs/validate-skill-count.sh  — the gate that verifies docs == derived.
 #
 # This test mutates the working tree under a fixture skill dir + tracked docs,
@@ -108,8 +108,9 @@ echo "PASS: gate green after sync, zero manual doc edits, auto-row present"
 echo ""
 
 echo "=== NEGATIVE: a hand-typed WRONG count must still be CAUGHT ==="
-# Corrupt one surface to a bogus value and confirm the gate catches it.
-perl -0pi -e 's/(Skills system — )\d+( skills,)/${1}99999${2}/' PRODUCT.md
+# Corrupt one live count-bearing surface to a bogus value and confirm the gate
+# catches it.
+perl -0pi -e 's/(Distribution\/runtime reach: )\d+( shared skills,)/${1}99999${2}/' PRODUCT.md
 if bash tests/docs/validate-skill-count.sh >/dev/null 2>&1; then
   fail "gate passed with a deliberately wrong count (99999) — SSOT not enforced"
 fi
