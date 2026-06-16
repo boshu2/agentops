@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "generated_at": "2026-06-14T18:40:06Z",
+  "generated_at": "2026-06-16T12:25:06Z",
   "skill_count": 72,
   "skills": [
     {
@@ -278,7 +278,7 @@
         "pragmatic-programmer"
       ],
       "context_rel": [],
-      "references_count": 4,
+      "references_count": 5,
       "codex_override_present": true
     },
     {

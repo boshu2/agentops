@@ -74,6 +74,8 @@ Strict delegation is the **default**.
 
 **Anti-pattern to reject:** inlining `/research` work (grep + read + synthesize), collapsing `/plan` into an inline decomposition, skipping `/pre-mortem`. See [`../shared/references/strict-delegation-contract.md`](../shared/references/strict-delegation-contract.md) for the full contract, supported compression escapes (`--quick`, `--skip-brainstorm`, `--interactive`/`--auto`, `--no-scaffold`), and the **Pre-Mortem Anti-Rationalization Clause** (what does NOT count as a pre-mortem: an inline risk section you wrote, a prior adversarial pass on an input/premise rather than this plan, or "a related council already ran").
 
+**Re-baseline before you scope** (mandatory for "improve X" / "build the missing Y"): `/research` MUST confirm a capability doesn't already exist before scoping *new construction*. The `--auto` trap is author-as-researcher scoping "what's unbuilt" from memory without grepping — existing machinery gets re-estimated as net-new. Every "X is missing" claim carries the search that proved it; no search → `/pre-mortem`'s re-baseline check (2.4–2.8) WARN/FAILs it.
+
 See [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../docs/learnings/orchestrator-compression-anti-pattern.md) for the live compression signature.
 See [`references/isolation-contract.md`](references/isolation-contract.md) for the mechanical four-lever model and the compression patterns flagged by `scripts/check-skill-isolation.sh`. See [`references/best-practices.md`](references/best-practices.md) for the lifecycle principle + anti-pattern citation table.
 
