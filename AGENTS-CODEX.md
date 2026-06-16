@@ -22,6 +22,21 @@ Codex is a first-class runtime in this repo.
 - `skills-codex-overrides/catalog.json` is the machine-readable treatment map for the full catalog.
 - `skills-codex/<name>/` is the checked-in Codex runtime artifact. It is manually maintained, while the legacy manifest/marker files remain part of the validation contract.
 
+> **Editing an EXISTING skill needs a manual twin mirror — not just regen.**
+> `make regen-all` / `scripts/regen-codex-hashes.sh` only refresh the twin's
+> *hash record* (`.agentops-generated.json`), **not** its prose. If you edit
+> `skills/<name>/references/*.md` (or `SKILL.md`) and only run regen, the marker
+> becomes self-consistent with the **stale** twin and a green `✓ codex hashes`
+> looks handled while the twin still says the old thing. You MUST manually copy
+> the content change into `skills-codex/<name>/references/` (runtime-native — no
+> `.claude/...` tokens), THEN run `scripts/regen-codex-hashes.sh --only <name>`.
+> Verify with a content diff (`grep -c <new-token>` on both copies), not the hash
+> exit code. The content-divergence gate
+> (`scripts/validate-codex-generated-artifacts.sh`) now blocks a source
+> `references/**` edit that is not mirrored into the twin — a marker-only codex
+> change no longer satisfies it (age-yxl). The same manual-mirror requirement the
+> docs already state for **new** skills applies to **edits of existing** ones.
+
 When a skill change affects Codex behavior, phrasing, orchestration, or UX:
 
 1. Update the source skill under `skills/` when the shared contract changes.

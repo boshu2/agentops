@@ -48,6 +48,12 @@ description: fixture
 ---
 EOF
 
+  # references/ twin: mirrored near-verbatim from source. The content-divergence
+  # gate (age-yxl) keys off this surface.
+  mkdir -p "$repo/skills/example/references" "$repo/skills-codex/example/references"
+  printf 'shared reference body\n' > "$repo/skills/example/references/guide.md"
+  printf 'shared reference body\n' > "$repo/skills-codex/example/references/guide.md"
+
   cat > "$repo/skills-codex-overrides/catalog.json" <<'EOF'
 {
   "version": 1,
@@ -116,6 +122,84 @@ PY
   git -C "$repo" config user.name "Test"
   git -C "$repo" add .
   git -C "$repo" commit -qm "fixture"
+}
+
+# Faithfully mimic scripts/regen-codex-hashes.sh for the `example` skill:
+# recompute generated_hash from the (current) twin and advance source_hash to the
+# current source tree, in BOTH the marker and the manifest entry. This is the
+# exact step that makes a stale twin "look handled" (age-yxl).
+regen_example_hashes() {
+  local repo="$1"
+  FIXTURE_ROOT="$repo" python3 - <<'PY'
+import hashlib, json, os
+from pathlib import Path
+
+repo = Path(os.environ["FIXTURE_ROOT"])
+skills_root = repo / "skills-codex"
+skill_dir = skills_root / "example"
+source_dir = repo / "skills" / "example"
+
+def sha256_bytes(data): return hashlib.sha256(data).hexdigest()
+
+def hash_tree(root):
+    rows = []
+    for path in sorted(p for p in root.rglob("*") if p.is_file()):
+        if path.name in {".agentops-manifest.json", ".agentops-generated.json", ".DS_Store"}:
+            continue
+        rows.append(f"{path.relative_to(root).as_posix()}\t{sha256_bytes(path.read_bytes())}\n")
+    return sha256_bytes("".join(rows).encode("utf-8"))
+
+generated_hash = hash_tree(skill_dir)
+source_hash = hash_tree(source_dir)
+
+marker_path = skill_dir / ".agentops-generated.json"
+marker = json.loads(marker_path.read_text())
+marker["generated_hash"] = generated_hash
+marker["source_hash"] = source_hash
+marker_path.write_text(json.dumps(marker))
+
+manifest_path = skills_root / ".agentops-manifest.json"
+manifest = json.loads(manifest_path.read_text())
+for entry in manifest["skills"]:
+    if entry.get("name") == "example":
+        entry["generated_hash"] = generated_hash
+        entry["source_hash"] = source_hash
+manifest_path.write_text(json.dumps(manifest))
+PY
+}
+
+# age-yxl: source references edited, twin references NOT mirrored, then regen
+# bumps the hashes so the marker is self-consistent with the STALE twin. The
+# source->codex check is satisfied by the marker change alone, so this is the
+# silent-divergence state that must now be blocked.
+test_fails_on_codex_twin_content_divergence() {
+  local repo="$TMP_DIR/twin-content-divergence"
+  setup_repo "$repo"
+  echo "NEW_SOURCE_ONLY_TOKEN" >> "$repo/skills/example/references/guide.md"
+  regen_example_hashes "$repo"   # twin references/guide.md left stale on purpose
+
+  if (cd "$repo" && bash scripts/validate-codex-generated-artifacts.sh --scope worktree >/dev/null 2>&1); then
+    fail "should fail when source references diverge from a stale codex twin (regen hash bump only)"
+  else
+    pass "fails on codex-twin references content divergence (regen hash bump does not mask it)"
+  fi
+}
+
+# Counterpart: when the source references edit IS mirrored into the twin, the
+# gate must pass — the content-divergence check must not false-positive on a
+# legitimately-mirrored edit.
+test_passes_when_references_mirrored() {
+  local repo="$TMP_DIR/references-mirrored"
+  setup_repo "$repo"
+  echo "MIRRORED_TOKEN" >> "$repo/skills/example/references/guide.md"
+  echo "MIRRORED_TOKEN" >> "$repo/skills-codex/example/references/guide.md"
+  regen_example_hashes "$repo"
+
+  if (cd "$repo" && bash scripts/validate-codex-generated-artifacts.sh --scope worktree >/dev/null 2>&1); then
+    pass "passes when a source references edit is mirrored into the codex twin"
+  else
+    fail "should pass when both source and twin references are updated together"
+  fi
 }
 
 test_passes_when_markers_exist_and_no_changes() {
@@ -207,6 +291,8 @@ EOF
 }
 
 echo "== test-codex-generated-artifacts =="
+test_fails_on_codex_twin_content_divergence
+test_passes_when_references_mirrored
 test_passes_when_markers_exist_and_no_changes
 test_fails_on_missing_marker
 test_fails_on_codex_only_edits

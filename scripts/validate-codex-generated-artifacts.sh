@@ -163,6 +163,8 @@ mapfile -t changed_files < <(collect_changed_files "$SCOPE" | sed '/^[[:space:]]
 if [[ "${#changed_files[@]}" -gt 0 ]]; then
   declare -A changed_source_skills=()
   declare -A changed_codex_skills=()
+  declare -A changed_source_refs=()
+  declare -A changed_codex_content=()
 
   for changed_file in "${changed_files[@]}"; do
     case "$changed_file" in
@@ -174,11 +176,25 @@ if [[ "${#changed_files[@]}" -gt 0 ]]; then
         skill_name="${changed_file#skills/}"
         skill_name="${skill_name%%/*}"
         changed_source_skills["$skill_name"]=1
+        # references/** is mirrored near-verbatim into the Codex twin, so a
+        # source references edit MUST be accompanied by a twin content change.
+        case "$changed_file" in
+          skills/*/references/*) changed_source_refs["$skill_name"]=1 ;;
+        esac
         ;;
       skills-codex/*/*)
         skill_name="${changed_file#skills-codex/}"
         skill_name="${skill_name%%/*}"
         changed_codex_skills["$skill_name"]=1
+        # Only a REAL twin content change counts. The generated bookkeeping
+        # files (.agentops-generated.json marker, .agentops-manifest.json) are
+        # refreshed by regen-codex-hashes.sh to be self-consistent with the
+        # CURRENT (possibly stale) twin, so they must not satisfy the
+        # content-mirror requirement below (age-yxl).
+        case "$changed_file" in
+          */.agentops-generated.json|*/.agentops-manifest.json) ;;
+          *) changed_codex_content["$skill_name"]=1 ;;
+        esac
         ;;
     esac
   done
@@ -186,6 +202,18 @@ if [[ "${#changed_files[@]}" -gt 0 ]]; then
   for skill_name in "${!changed_source_skills[@]}"; do
     if [[ -z "${changed_codex_skills[$skill_name]+x}" ]]; then
       fail "source skill changed without matching checked-in Codex update: skills/$skill_name -> skills-codex/$skill_name"
+    fi
+  done
+
+  # Codex-twin content-divergence gate (age-yxl). regen-all only refreshes the
+  # twin's hash record, NOT its prose: editing skills/<skill>/references/** and
+  # running regen makes the marker self-consistent with the STALE twin, so the
+  # source->codex check above is satisfied by a hash bump alone and a divergent
+  # twin ships silently. Require a real twin content change to mirror the source
+  # references edit; a marker-only codex change does not count.
+  for skill_name in "${!changed_source_refs[@]}"; do
+    if [[ -z "${changed_codex_content[$skill_name]+x}" ]]; then
+      fail "Codex twin content divergence: skills/$skill_name/references/ changed but skills-codex/$skill_name has no matching content update (only generated hashes changed). regen-all refreshes hashes, not twin prose — manually mirror the edit into skills-codex/$skill_name/references/, then run scripts/regen-codex-hashes.sh --only $skill_name."
     fi
   done
 fi
