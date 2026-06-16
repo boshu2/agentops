@@ -84,7 +84,11 @@ type ScenarioDeltaScorecard struct {
 	AggregateDelta        float64           `json:"aggregate_delta"`
 	SatisfactionThreshold float64           `json:"satisfaction_threshold"`
 	TokenBudget           int               `json:"token_budget"`
-	Gate                  ScenarioGate      `json:"gate"`
+	// CeilingViolation is true when the control (without-gold) arm already cleared
+	// the satisfaction threshold — the task has no headroom, so the A/B is invalid
+	// and no delta is emitted (LongMemEval-style validity certificate; age-707).
+	CeilingViolation bool         `json:"ceiling_violation,omitempty"`
+	Gate             ScenarioGate `json:"gate"`
 }
 
 // ScenarioABOptions configures RunScenarioAB. Timeout bounds each arm; the gate
@@ -128,10 +132,49 @@ func RunScenarioAB(ctx context.Context, opts ScenarioABOptions) (ScenarioDeltaSc
 		return ScenarioDeltaScorecard{}, fmt.Errorf("scenario A/B requires a judge")
 	}
 
+	thr := opts.Scenario.SatisfactionThreshold
+	// invalidCard builds a no-delta scorecard for a scenario that can't be validly
+	// A/B'd. CeilingViolation is the consumer's signal to IGNORE the delta entirely.
+	invalidCard := func(without ScenarioArmResult, reason string) ScenarioDeltaScorecard {
+		return ScenarioDeltaScorecard{
+			SchemaVersion:         1,
+			ScenarioID:            opts.Scenario.ID,
+			ScenarioPath:          opts.ScenarioPath,
+			GeneratedAt:           opts.Now(),
+			Without:               without,
+			SatisfactionThreshold: thr,
+			TokenBudget:           opts.TokenBudget,
+			CeilingViolation:      true,
+			Gate:                  ScenarioGate{Pass: false, Reasons: []string{reason}},
+		}
+	}
+
+	// A threshold <= 0 is a degenerate bar: every score "satisfies" it, so it can
+	// define neither task success nor headroom. Reject up-front (before spending an
+	// arm) — NOT a sentinel-skip (the prior `thr > 0` guard let a zero-bar scenario
+	// bypass the validity screen and emit a meaningless positive delta — refuter r1).
+	if thr <= 0 {
+		return invalidCard(ScenarioArmResult{}, fmt.Sprintf(
+			"satisfaction_threshold %.4f <= 0: a zero/absent bar cannot define task success or headroom — scenario invalid for an A/B (set a threshold in (0,1]). No delta emitted.", thr)), nil
+	}
+
 	without, err := runAndJudgeArm(ctx, opts, ArmWithoutGold, false)
 	if err != nil {
 		return ScenarioDeltaScorecard{}, fmt.Errorf("without-gold arm: %w", err)
 	}
+
+	// Ceiling pre-screen (the validity certificate): run the control FIRST and, if
+	// it already clears the satisfaction threshold, abort — the task has no headroom
+	// for the corpus to help, so any delta is uninterpretable (this is exactly the
+	// KF-4 −0.34 trap, where without-gold scored 0.89). Emit no delta; do NOT grade
+	// the treatment arm. A valid A/B needs an out-of-distribution task the model
+	// FAILS without the corpus.
+	if without.Score >= thr {
+		return invalidCard(without, fmt.Sprintf(
+			"ceiling violation: without-gold floor %.4f >= satisfaction_threshold %.4f — the task has no headroom for the corpus to help, so any delta would be uninterpretable. Use an out-of-distribution task the model fails without the corpus. No delta emitted.",
+			without.Score, thr)), nil
+	}
+
 	with, err := runAndJudgeArm(ctx, opts, ArmWithGold, true)
 	if err != nil {
 		return ScenarioDeltaScorecard{}, fmt.Errorf("with-gold arm: %w", err)

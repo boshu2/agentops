@@ -124,18 +124,44 @@ func TestEvalScenarioABCmd_GateFailReturnsError(t *testing.T) {
 			with:    aoeval.ArmOutcome{TokenCost: 100},
 			without: aoeval.ArmOutcome{TokenCost: 100},
 		},
-		// Equal scores -> delta 0 -> fail-loud.
+		// Equal scores -> delta 0 -> fail-loud. Both BELOW the 0.8 threshold so this
+		// exercises the delta<=0 gate path, not the ceiling pre-screen (control above
+		// threshold is a ceiling violation — a different code path, covered separately).
 		fakeCmdJudge{
 			with:    aoeval.JudgeVerdict{AggregateScore: 0.5},
 			without: aoeval.JudgeVerdict{AggregateScore: 0.5},
 		},
 	)
-	stdout, err := runScenarioABCmd(t, writeCmdFixture(t, 0.5), "", 200000)
+	stdout, err := runScenarioABCmd(t, writeCmdFixture(t, 0.8), "", 200000)
 	if err == nil {
 		t.Fatalf("expected gate-fail error, got nil\n%s", stdout)
 	}
 	if !strings.Contains(stdout, "gate=FAIL") {
 		t.Errorf("stdout missing gate=FAIL: %q", stdout)
+	}
+}
+
+// TestEvalScenarioABCmd_CeilingViolation: when the control arm clears the
+// threshold (no headroom), the CLI must surface CEILING VIOLATION (not a
+// misleading delta) and exit non-zero (age-707 validity certificate).
+func TestEvalScenarioABCmd_CeilingViolation(t *testing.T) {
+	withFakes(t,
+		fakeCmdRunner{
+			with:    aoeval.ArmOutcome{TokenCost: 100},
+			without: aoeval.ArmOutcome{TokenCost: 100},
+		},
+		// control already clears the 0.8 threshold -> ceiling violation.
+		fakeCmdJudge{
+			with:    aoeval.JudgeVerdict{AggregateScore: 0.6},
+			without: aoeval.JudgeVerdict{AggregateScore: 0.9},
+		},
+	)
+	stdout, err := runScenarioABCmd(t, writeCmdFixture(t, 0.8), "", 200000)
+	if err == nil {
+		t.Fatalf("expected non-zero exit on ceiling violation, got nil\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "CEILING VIOLATION") {
+		t.Errorf("stdout missing CEILING VIOLATION: %q", stdout)
 	}
 }
 

@@ -2,7 +2,9 @@ package eval
 
 import (
 	"context"
+	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -71,6 +73,101 @@ func loadFixtureScenario(t *testing.T, threshold float64) (scenario.Scenario, st
 
 func fixedNow() time.Time { return time.Date(2026, 6, 16, 12, 0, 0, 0, time.UTC) }
 
+// TestRunScenarioAB_CeilingViolation is the age-707 validity certificate
+// (LongMemEval-style): when the WITHOUT-gold control arm already clears the
+// satisfaction threshold, the task has no headroom — the corpus cannot help and
+// any delta is uninterpretable (exactly the KF-4 −0.34 trap). The run must abort
+// as a ceiling violation, emit NO delta, and NOT grade the with-gold arm.
+func TestRunScenarioAB_CeilingViolation(t *testing.T) {
+	sc, path := loadFixtureScenario(t, 0.8)
+	runner := fakeRunner{
+		without: ArmOutcome{Output: "control already solved it", TokenCost: 100},
+		with:    ArmOutcome{Output: "treatment", TokenCost: 100},
+	}
+	judge := fakeJudge{
+		without: JudgeVerdict{AggregateScore: 0.9}, // control clears the 0.8 threshold → ceiling
+		with:    JudgeVerdict{AggregateScore: 0.5},
+	}
+	card, err := RunScenarioAB(context.Background(), ScenarioABOptions{
+		Scenario: sc, ScenarioPath: path, Runner: runner, Judge: judge, Now: fixedNow,
+	})
+	if err != nil {
+		t.Fatalf("RunScenarioAB: %v", err)
+	}
+	if !card.CeilingViolation {
+		t.Error("expected CeilingViolation=true when control clears the threshold")
+	}
+	if card.Gate.Pass {
+		t.Error("ceiling violation must fail the gate")
+	}
+	if len(card.Gate.Reasons) == 0 || !strings.Contains(strings.ToLower(card.Gate.Reasons[0]), "ceiling") {
+		t.Errorf("gate reason should name the ceiling violation; got %v", card.Gate.Reasons)
+	}
+	if card.AggregateDelta != 0 {
+		t.Errorf("no delta should be emitted on ceiling violation; got %v", card.AggregateDelta)
+	}
+	if card.With.Score != 0 {
+		t.Errorf("with-gold arm must NOT be graded on ceiling violation; got With.Score %v", card.With.Score)
+	}
+}
+
+// TestRunScenarioAB_ZeroThresholdInvalid: a satisfaction_threshold <= 0 is a
+// degenerate bar (every score satisfies it), so it can define neither success nor
+// headroom — the run must reject it up-front without grading any arm, and emit no
+// delta (refuter r1: the prior `thr > 0` guard let a zero-bar scenario bypass the
+// validity screen and emit a meaningless positive delta).
+func TestRunScenarioAB_ZeroThresholdInvalid(t *testing.T) {
+	sc, path := loadFixtureScenario(t, 0)
+	card, err := RunScenarioAB(context.Background(), ScenarioABOptions{
+		Scenario: sc, ScenarioPath: path,
+		Runner: fakeRunner{without: ArmOutcome{TokenCost: 1}, with: ArmOutcome{TokenCost: 1}},
+		Judge:  fakeJudge{without: JudgeVerdict{AggregateScore: 0.1}, with: JudgeVerdict{AggregateScore: 0.9}},
+		Now:    fixedNow,
+	})
+	if err != nil {
+		t.Fatalf("RunScenarioAB: %v", err)
+	}
+	if !card.CeilingViolation || card.Gate.Pass {
+		t.Errorf("threshold<=0 must be flagged invalid and fail the gate; got violation=%v pass=%v", card.CeilingViolation, card.Gate.Pass)
+	}
+	if card.AggregateDelta != 0 {
+		t.Errorf("no delta on zero-threshold scenario; got %v", card.AggregateDelta)
+	}
+	if card.Without.Score != 0 || card.With.Score != 0 {
+		t.Errorf("no arm should be graded on threshold<=0; got without %v with %v", card.Without.Score, card.With.Score)
+	}
+	if len(card.Gate.Reasons) == 0 || !strings.Contains(card.Gate.Reasons[0], "threshold") {
+		t.Errorf("reason should name the degenerate threshold; got %v", card.Gate.Reasons)
+	}
+}
+
+// TestRunScenarioAB_CeilingViolation_JSONShape locks the persisted contract: the
+// ceiling_violation flag and the gate reason serialize, so a consumer keys on the
+// flag and never reads the (zeroed) delta in isolation (refuter r1 JSON concern).
+func TestRunScenarioAB_CeilingViolation_JSONShape(t *testing.T) {
+	sc, path := loadFixtureScenario(t, 0.8)
+	card, err := RunScenarioAB(context.Background(), ScenarioABOptions{
+		Scenario: sc, ScenarioPath: path,
+		Runner: fakeRunner{without: ArmOutcome{TokenCost: 1}, with: ArmOutcome{TokenCost: 1}},
+		Judge:  fakeJudge{without: JudgeVerdict{AggregateScore: 0.9}, with: JudgeVerdict{AggregateScore: 0.5}},
+		Now:    fixedNow,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := json.Marshal(card)
+	if err != nil {
+		t.Fatal(err)
+	}
+	js := string(b)
+	if !strings.Contains(js, `"ceiling_violation":true`) {
+		t.Errorf("serialized scorecard must carry ceiling_violation:true; got %s", js)
+	}
+	if !strings.Contains(js, "ceiling violation") {
+		t.Errorf("serialized gate reason must name the ceiling violation; got %s", js)
+	}
+}
+
 func TestRunScenarioAB_GateVerdicts(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -90,8 +187,11 @@ func TestRunScenarioAB_GateVerdicts(t *testing.T) {
 			wantDelta: 0.4, wantPass: true,
 		},
 		{
-			name: "zero delta fails (the spray returning)",
-			threshold: 0.5, withScore: 0.5, withoutScore: 0.5,
+			// both arms BELOW threshold → exercises the delta<=0 gate path, not the
+			// ceiling pre-screen (which fires only when the control CLEARS threshold;
+			// that case is covered by TestRunScenarioAB_CeilingViolation).
+			name: "zero delta below ceiling fails (the spray returning)",
+			threshold: 0.8, withScore: 0.5, withoutScore: 0.5,
 			withTokens: 1000, withoutTokens: 1000, budget: 200000,
 			wantDelta: 0.0, wantPass: false,
 		},
