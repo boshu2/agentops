@@ -563,7 +563,7 @@ func processSingleTaskFeedback(cwd string, task TaskEvent) bool {
 		return false
 	}
 
-	oldUtility, newUtility, err := updateLearningUtility(learningPath, completionReward, types.DefaultAlpha)
+	oldUtility, newUtility, err := updateLearningUtility(learningPath, completionReward, types.DefaultAlpha, nil)
 	if err != nil {
 		VerbosePrintf("Warning: failed to update %s: %v\n", learningPath, err)
 		return false

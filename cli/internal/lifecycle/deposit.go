@@ -13,17 +13,21 @@ import (
 // death-spiral, made worse by LLM agents that hallucinate trails. Every reward
 // deposit MUST route through GuardDeposit, which requires a GateVerdict.
 //
-// SCOPE (S1, honest — cross-family review confirmed bypasses): this is the guard
-// + the `ao feedback` deposit path. It is NOT yet the single chokepoint —
-// other reward-mutating callers still bypass it and must be routed through
-// GuardDeposit before strict mode is meaningful: flywheel_citation_feedback,
-// feedback_loop (normal + drain), close_loop callback, maturity recalibrate,
-// metrics cite, task_sync. That routing is the named S1 follow-up.
+// ENFORCEMENT (S1): GuardDeposit runs at the single live chokepoint
+// updateLearningUtility (cli/cmd/ao/feedback.go) — EVERY live reward/utility
+// deposit routes through it: ao feedback, flywheel_citation_feedback,
+// feedback_loop (normal + drain), maturity recalibrate, task_sync. Verified no
+// other live caller of lifecycle.UpdateLearningUtility (the lower helpers
+// applyJSONLRewardFields/updateJSONLUtility are test-only). Automated paths pass
+// a nil verdict.
+//
+// Remaining work is PROVENANCE, not routing: the automated paths should supply a
+// real GateVerdict (from the hindsight critic, S3) so strict mode rewards only
+// gate-passed marginal contribution.
 //
 // Rollout follows the warn-first ratchet: default mode is warn (tolerate a
-// missing verdict, but log it) so existing feedback flows keep working; flip to
-// strict (AO_DEPOSIT_GATE=strict) only AFTER every deposit path routes through
-// here.
+// missing verdict, but log it) so existing flows keep working; flip to strict
+// (AO_DEPOSIT_GATE=strict) once the automated paths supply verdicts.
 
 // DepositMode controls how a missing gate verdict is treated.
 type DepositMode int
