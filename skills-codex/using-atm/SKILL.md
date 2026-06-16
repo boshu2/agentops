@@ -140,27 +140,6 @@ The wedged-vs-working call depends on reading the pane right — the `atm` meter
 - **Raw tmux last resort:** submit with `tmux send-keys ... C-m` and capture
   the pane. Text still sitting in the input box is not delivery.
 
-## Raw tmux Key Injection (Last Resort)
-
-Prefer `atm send`, `atm codex ...`, or NTM robot send surfaces. Use raw
-`tmux send-keys` only for direct TUI/menu control, emergency pane relay, or when
-the robot surface cannot express the action.
-
-When using raw tmux, submit with `C-m` and verify by capture. Do not rely on a
-trailing literal `Enter` token in automation; it can leave text sitting in the
-input box. Safe pattern:
-
-```bash
-tmux send-keys -t <target-pane> -- "<message>"
-tmux send-keys -t <target-pane> C-m
-tmux capture-pane -pt <target-pane> -S -30
-```
-
-The capture must show that the input line cleared and the pane started reacting.
-If the text is still parked in the input box, send another `C-m` and capture
-again. Codex-family TUIs may need two or three `C-m` submits after a large
-paste; never fire-and-forget a raw tmux relay.
-
 ## Coordination (the Agent Mail leg)
 
 - **Beads (`bd`)** — shared work queue + state source: `br ready`, `bd update --claim`, `bd close`.
