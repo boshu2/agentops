@@ -78,6 +78,9 @@ var (
 	}
 	uuidPattern     = regexp.MustCompile(`\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b`)
 	wikilinkPattern = regexp.MustCompile(`\[\[[^\]]+\]\]`)
+	// tagLinePattern matches structured tag lines in an Applicability section
+	// ("- Work shapes: a, b", "- Scope tags: c", "- Languages: go, python").
+	tagLinePattern = regexp.MustCompile(`(?i)^\s*[-*]?\s*(?:work shapes?|scope tags?|languages?|tags?):\s*(.+)$`)
 	// homePathPattern catches ANY user's home dir, not just the current $HOME
 	// that llm.Redact scrubs. A publish-to-gold step must be conservative:
 	// another machine's /Users/<someone> or /home/<someone> is a private-
@@ -250,7 +253,7 @@ func (c *GoldCompiler) Compile(dryRun bool) (GoldStats, error) {
 				title:        truncateWords(title, 120),
 				description:  truncateWords(flattenWikilinks(firstSentence(clean)), 200),
 				resource:     filepath.Join(filepath.Base(c.AgentsDir), sub, filepath.Base(path)),
-				tags:         nonEmpty(mtype, strings.ToLower(fieldStr(doc.Fields, "tier"))),
+				tags:         harvestTags(doc.Fields, clean, mtype, strings.ToLower(fieldStr(doc.Fields, "tier"))),
 				timestamp:    firstNonEmpty(fieldStr(doc.Fields, "date"), c.now().Format("2006-01-02")),
 				status:       status,
 				confidence:   conf,
@@ -612,16 +615,6 @@ func truncateWords(s string, n int) string {
 	return strings.TrimRight(cut, " \t-/,;:") + "…"
 }
 
-func nonEmpty(vals ...string) []string {
-	var out []string
-	for _, v := range vals {
-		if strings.TrimSpace(v) != "" {
-			out = append(out, v)
-		}
-	}
-	return out
-}
-
 func firstNonEmpty(vals ...string) string {
 	for _, v := range vals {
 		if strings.TrimSpace(v) != "" {
@@ -708,6 +701,46 @@ func splitRefs(s string) []string {
 		}
 	}
 	return out
+}
+
+// harvestTags builds the OKF tags set: type + tier, the frontmatter tags
+// field, and the comma-separated values from a finding's Applicability section
+// (Work shapes / Scope tags / Languages). Tokens are slugified, deduped,
+// noise-filtered ("n/a", "any", "none"), and capped so tags stay queryable.
+func harvestTags(fields map[string]any, body, mtype, tier string) []string {
+	const maxTags = 8
+	noise := map[string]bool{"n-a": true, "na": true, "any": true, "none": true, "": true}
+	var tags []string
+	seen := map[string]bool{}
+	add := func(raw string) {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			return // guard before slugify, which maps "" -> "untitled"
+		}
+		t := slugify(raw)
+		// skip noise, dupes, and phrase-length tokens (not real tags)
+		if noise[t] || seen[t] || len(t) > 30 {
+			return
+		}
+		seen[t] = true
+		tags = append(tags, t)
+	}
+	add(mtype)
+	add(tier)
+	for _, v := range strings.Split(fieldStr(fields, "tags"), ",") {
+		add(v)
+	}
+	for _, line := range strings.Split(body, "\n") {
+		if m := tagLinePattern.FindStringSubmatch(line); m != nil {
+			for _, tok := range strings.Split(m[1], ",") {
+				add(tok)
+			}
+		}
+	}
+	if len(tags) > maxTags {
+		tags = tags[:maxTags]
+	}
+	return tags
 }
 
 func countAuthoritative(items []goldDoc) int {

@@ -285,6 +285,38 @@ func TestGold_CatalogQuality(t *testing.T) {
 	}
 }
 
+func TestGold_HarvestTags(t *testing.T) {
+	gc, agents := newTestCompiler(t)
+	body := "# Finding: external CLI without version pinning\n\n" +
+		"## Applicability\n- Work shapes: cli-integration, external-dependency\n" +
+		"- Languages: n/a\n- Scope tags: cli-integration, validation-gap\n"
+	writeAgent(t, filepath.Join(agents, "findings"), "t.md",
+		"---\ntype: finding\nid: tagged\nmaturity: established\ntier: gold\n---\n\n"+body)
+	if _, err := gc.Compile(false); err != nil {
+		t.Fatal(err)
+	}
+	out, _ := os.ReadFile(filepath.Join(gc.OutDir, "findings", "tagged.md"))
+	var tagLine string
+	for _, l := range strings.Split(string(out), "\n") {
+		if strings.HasPrefix(l, "tags:") {
+			tagLine = l
+		}
+	}
+	for _, want := range []string{"finding", "cli-integration", "external-dependency", "validation-gap"} {
+		if !strings.Contains(tagLine, want) {
+			t.Errorf("tag %q missing from %q", want, tagLine)
+		}
+	}
+	// noise filtered, no duplicate cli-integration
+	if strings.Contains(tagLine, "n-a") || strings.Count(tagLine, "cli-integration") != 1 {
+		t.Errorf("noise/dupe not handled: %q", tagLine)
+	}
+	// empty tier must not leak as the slugify "untitled" sentinel
+	if strings.Contains(tagLine, "untitled") {
+		t.Errorf("empty field leaked as 'untitled' tag: %q", tagLine)
+	}
+}
+
 func TestGold_Idempotent(t *testing.T) {
 	gc, agents := newTestCompiler(t)
 	writeAgent(t, filepath.Join(agents, "patterns"), "p.md",
