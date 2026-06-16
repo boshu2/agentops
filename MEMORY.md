@@ -23,6 +23,7 @@
 
 ## Key Lessons
 
+- **Validation Before Autonomy**: Prove code and agent output before expanding orchestration or autonomy. (source: `.agents/learnings/2026-06-16-validation-before-autonomy.md`)
 - **RPI Run Context Needs Run-ID Scope**: Phase handoff readers should filter by current run ID before injecting summaries, or unrelated prior RPI runs can contaminate implementation and validation prompts (source: `.agents/learnings/2026-05-01-rpi-run-context-needs-run-id-scope.md`)
 - **CI Scanner Syntax Parity** — Contract validators that mirror each other need paired fixtures for every accepted syntax form, not only comments saying the regexes agree (source: `.agents/learnings/2026-04-27-ci-contract-scanners-need-syntax-parity.md`)
 - **Audit Parser Reality**: Mechanical auditors must parse `File:` prose, anchors, and examples correctly or they create noisy false failures (source: `.agents/learnings/2026-03-28-last-week-commits.md`)

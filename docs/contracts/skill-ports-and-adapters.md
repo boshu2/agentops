@@ -11,6 +11,12 @@ the generated [Context Map](context-map.md) or the [Skill Domain Map](skill-doma
 It gives agents the vocabulary to describe skill boundaries without inventing
 new terms inside each refactor.
 
+Use the [AgentOps Component Map](../architecture/component-map.md) before this
+contract when the question is whether a skill/workflow/CLI surface belongs in
+the product core, adapter layer, deferred substrate lane, or external-domain
+trim lane. This contract names the ports and adapters after that routing
+decision is made.
+
 ## Rule
 
 Ports name the boundary. Adapters name the concrete mechanism.
@@ -27,7 +33,7 @@ port crossing first. The runtime, command, hook, or file format is the adapter.
 | Inbound port | A behavior-level entry into a skill domain. It says why the domain is being asked to act. | `shape_intent`, `plan_slices`, `validate_acceptance` |
 | Outbound port | A behavior-level dependency a skill domain needs from another domain or system. | `retrieve_context`, `persist_issue`, `run_gate` |
 | Driving adapter | A concrete caller that drives a skill domain through an inbound port. | slash skill, `ao` command, human prompt, scheduled job |
-| Driven adapter | A concrete dependency used behind an outbound port. | `bd`, git, filesystem, search, GitHub, LLM provider |
+| Driven adapter | A concrete dependency used behind an outbound port. | `br`, git, filesystem, search, GitHub, LLM provider |
 | Guard adapter | A concrete enforcement surface that allows, warns, or blocks. It should not inject context unless evidence proves value. | hook, schema check, pre-push gate, scope guard |
 | Runtime adapter | A concrete packaging or invocation surface for one agent runtime. | Claude skill, Codex skill, OpenCode skill |
 | Context packet | A typed or structured artifact crossing a boundary with dense intent and evidence. | execution packet, density block, verdict, handoff |
@@ -62,7 +68,7 @@ table as the short contract when editing skills:
 | Port | Owned by | Artifact crossing the boundary | Next port |
 |---|---|---|---|
 | `shape_intent` | `/discovery`, `/brainstorm`, `/design` | BDD intent issue with Gherkin scenarios | `persist_intent` |
-| `persist_intent` | `/beads` | Self-contained bead with scenario or linked intent issue | `plan_slices` |
+| `persist_intent` | `/beads` | Self-contained br-backed bead with scenario or linked intent issue | `plan_slices` |
 | `plan_slices` | `/plan` | Slice validation plan with first failing proofs | `execute_slice` / `execute_wave` |
 | `execute_slice` | `/implement` | Commit-ready slice result and proof output | `validate_acceptance` |
 | `execute_wave` | `/crank`, `/swarm`, `/autodev` | Wave result, worker evidence, phase handoff | `validate_acceptance` |
@@ -94,7 +100,7 @@ the skill domain.
 
 Driven adapters satisfy dependencies. Examples:
 
-- `bd` for issue persistence.
+- `br` through the tracker facade or `IssueTrackerPort` for issue persistence.
 - git for changed files and branch state.
 - Search and lookup commands for corpus retrieval.
 - Files under `.agents/` for local runtime state.
@@ -147,7 +153,7 @@ Feature: Discovery creates a dense packet
 | Inbound port | `shape_intent` from an operator goal |
 | Driving adapter | `/discovery` skill invocation |
 | Outbound ports | `research_facts`, `plan_slices`, `stress_test_plan`, `persist_issue` |
-| Driven adapters | `/research`, `/plan`, `/pre-mortem`, `bd`, `.agents/plans` |
+| Driven adapters | `/research`, `/plan`, `/pre-mortem`, `br`, `.agents/plans` |
 | Context packet | `.agents/rpi/execution-packet.json` plus phase summary |
 
 ### Plan
@@ -166,7 +172,7 @@ Feature: Planning turns intent into slices
 | Inbound port | `plan_slices` from BDD intent or execution packet |
 | Driving adapter | `/plan` skill invocation |
 | Outbound ports | `persist_issue`, `verify_symbols`, `retrieve_context` |
-| Driven adapters | `bd`, `rg`, `.agents/findings`, `.agents/plans` |
+| Driven adapters | `br`, tracker facade, `rg`, `.agents/findings`, `.agents/plans` |
 | Context packet | slice plan, file dependency matrix, acceptance criteria |
 
 ### Crank
@@ -186,7 +192,7 @@ Feature: Crank executes a validated wave
 | Inbound port | `execute_wave` from bead, plan, or execution packet |
 | Driving adapter | `/crank` skill invocation |
 | Outbound ports | `dispatch_worker`, `sync_issue_state`, `run_acceptance_gate` |
-| Driven adapters | `/swarm`, `/implement`, `bd`, git, test commands |
+| Driven adapters | `/swarm`, `/implement`, `br`, git, test commands |
 | Guard adapters | wave validity check, scope-completion gate, validation gates |
 | Context packet | worker brief, wave result, completion marker, phase-2 handoff |
 
@@ -194,10 +200,10 @@ Feature: Crank executes a validated wave
 
 - Prefer behavior verbs for ports: `shape_intent`, `plan_slices`,
   `execute_wave`, `validate_acceptance`, `record_evidence`.
-- Prefer concrete nouns for adapters: `bd`, `git`, `ao lookup`,
+- Prefer concrete nouns for adapters: `br`, `git`, `ao lookup`,
   `skills-codex/discovery/SKILL.md`, `hooks/scope-guard.sh`.
 - Do not use `BC1`, `BC2`, or similar abbreviations as the main prose name.
-- Do not name a port after a tool. `persist_issue` is a port; `bd` is an
+- Do not name a port after a tool. `persist_issue` is a port; `br` is an
   adapter.
 - Do not name an adapter after a policy. `validate_acceptance` is a port;
   `scripts/pre-push-gate.sh` is an adapter.

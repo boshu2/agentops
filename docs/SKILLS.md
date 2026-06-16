@@ -1,9 +1,11 @@
 # Skills Reference
 
-Complete reference for all 72 AgentOps skills (66 user-facing + 6 internal).
+Narrative reference for checked-in AgentOps skills. The current inventory is
+generated from `skills/**/SKILL.md` into `registry.json` and the generated
+domain maps; do not hard-code skill counts here.
 
 Skills are the primitive layer of AgentOps. Higher-level entry points like
-`/implement`, `/validation`, `/rpi`, and `/evolve` compose those primitives
+`/implement`, `/validate`, `/rpi`, and `/evolve` compose those primitives
 into repeatable flows.
 
 **Behavioral Contracts:** Most skills include `scripts/validate.sh` behavioral checks to verify key features remain documented. Run `skills/<name>/scripts/validate.sh` when present, or the GOALS.yaml `behavioral-skill-contracts` goal to validate the full covered set.
@@ -40,7 +42,7 @@ What are you trying to do?
 │   └─ Large (7+ issues) ─────────► /rpi (full pipeline)
 │
 ├─ "Validate something"
-│   ├─ Work ready to close? ──────► /validation
+│   ├─ Work ready to close? ──────► /validate, then /post-mortem
 │   ├─ Code quality only? ───────► /validate
 │   ├─ Plan ready to build? ──────► /pre-mortem
 │   └─ Quick sanity check? ───────► /council --quick validate
@@ -51,9 +53,9 @@ What are you trying to do?
 │   └─ Generate ideas ────────────► /discovery --ideate
 │
 ├─ "Learn from past work"
-│   ├─ Turn the corpus into operator surfaces ─► /knowledge-activation
+│   ├─ Turn the corpus into operator surfaces ─► /operationalize
 │   ├─ What do we know about X? ──► ao lookup "<query>" / ao search
-│   ├─ Save this insight ─────────► /retro --quick "insight"
+│   ├─ Save this insight ─────────► /post-mortem --quick "insight"
 │   └─ Full retrospective ────────► /post-mortem
 │
 ├─ "Parallelize work"
@@ -64,7 +66,7 @@ What are you trying to do?
 │   └─ Changelog + tag ──────────► /release <version>
 │
 ├─ "Session management"
-│   ├─ Prep or review Dream runs ─► /dream
+│   ├─ Compile knowledge ─────────► /forge or /compile
 │   ├─ Where was I? ──────────────► /status
 │   ├─ Save for next session ─────► /handoff
 │   └─ Recover after compaction ──► /recover
@@ -124,7 +126,7 @@ Full RPI lifecycle orchestrator. Discovery → Implementation → Validation in 
 /rpi --from=implementation ag-1234
 ```
 
-**Phases:** Discovery (`/discovery`) → Implementation (`/crank`) → Validation (`/validation`)
+**Phases:** Discovery (`/discovery`) → Implementation (`/crank`) → Validation (`/validate`)
 
 ### /crank
 
@@ -136,13 +138,14 @@ Autonomous multi-issue execution. Runs until epic is CLOSED.
 
 **Execution model:** Wave-based orchestration via `/swarm` with runtime-native workers.
 
-### /validation
+### /validate
 
-Full validation close-out. Wraps `/validate` (absorbs vibe) + `/post-mortem` + `/forge`.
+Final validation close-out. Use `/post-mortem` after validation when the work
+should feed the knowledge flywheel.
 
 ```bash
-/validation
-/validation ag-1234
+/validate
+/validate ag-1234
 ```
 
 **Use when:** The work is ready for final review, closeout, and learning capture.
@@ -157,12 +160,12 @@ Comprehensive code validation across 8 aspects with finding classification (CRIT
 
 **Checks:** Security, Quality, Architecture, Complexity, Testing, Accessibility, Performance, Documentation
 
-### /retro
+### /post-mortem --quick
 
 Quick-capture a learning. For full retrospectives, use `/post-mortem`.
 
 ```bash
-/retro --quick "debugging memory leak"
+/post-mortem --quick "debugging memory leak"
 ```
 
 **Output:** `.agents/learnings/`
@@ -189,9 +192,9 @@ Full validation + knowledge lifecycle. Council validates, extracts learnings, ac
 Git-native issue tracking operations.
 
 ```bash
-bd ready              # Unblocked issues
-bd show <id>          # Issue details
-bd close <id>         # Close issue
+BEADS_DIR=$PWD/_beads br ready      # Unblocked issues
+BEADS_DIR=$PWD/_beads br show <id>  # Issue details
+BEADS_DIR=$PWD/_beads br close <id> # Close issue
 ```
 
 ### /review (absorbs /bug-hunt)
@@ -205,8 +208,8 @@ Root cause analysis with git archaeology.
 ### Knowledge queries (no slash command)
 
 Query knowledge artifacts across locations via the CLI. There is no standalone
-`/knowledge` skill — use `/knowledge-activation` to build operator surfaces, or
-run the CLI below for ad-hoc lookup.
+`/knowledge` skill — use `/operationalize`, `/forge`, and `/compile` for
+corpus promotion, or run the CLI below for ad-hoc lookup.
 
 ```bash
 ao lookup "patterns for rate limiting"
@@ -278,12 +281,14 @@ Parallel agent spawning for concurrent task execution.
 /swarm <epic-id>
 ```
 
-### /codex-team
+### Runtime-native multi-agent lanes
 
-Spawn parallel Codex execution agents.
+Spawn parallel execution agents through the current runtime/substrate. Use
+`/swarm` for the skill-level entry point; use Codex subagents or NTM/ATM when
+the active runtime owns that transport.
 
 ```bash
-/codex-team <epic-id>
+/swarm <epic-id>
 ```
 
 ---
@@ -322,13 +327,13 @@ Interactive onboarding — mini RPI cycle for new users.
 /status
 ```
 
-### /dream
+### Out-of-session compounding
 
 Retirement pointer. The in-tree out-of-session compounding engine was removed
-(soc-2rtm0); scheduled, between-session knowledge compounding now runs via Gas
-City (the reference substrate), and AgentOps ships no out-of-session runner of
-its own. In-session knowledge primitives stay on-demand: `/harvest`, `/forge`,
-`/compile`, `/inject`. Daytime code compounding is `/evolve` via `/rpi`.
+(soc-2rtm0); scheduled, between-session knowledge compounding now runs via an
+adopted substrate, and AgentOps ships no out-of-session runner of its own.
+In-session knowledge primitives stay on-demand: `/forge`, `/compile`, and
+`/inject`. Daytime code compounding is `/evolve` via `/rpi`.
 
 **Output:** none — this skill no longer drives an in-repo command.
 
@@ -340,12 +345,11 @@ Trace design decisions through knowledge artifacts.
 /recover "why did we choose Redis?"
 ```
 
-### /knowledge-activation
+### Knowledge operationalization
 
 Operationalize a mature `.agents` corpus into reusable belief, playbook, briefing, and gap surfaces.
 
 ```bash
-/knowledge-activation
 ao knowledge activate --goal "productize knowledge activation"
 ao knowledge gaps
 ```
@@ -528,7 +532,7 @@ Skills integrate with the ao CLI for orchestration:
 | Skill | ao CLI Command |
 |-------|----------------|
 | `/research` | `ao lookup`, `ao search`, `ao rpi phased` |
-| `/retro` | `ao forge markdown`, `ao session close` |
+| `/post-mortem --quick` | `ao forge markdown`, `ao session close` |
 | `/post-mortem` | `ao forge`, `ao flywheel close-loop`, `ao constraint activate` |
 | `/implement` | `ao context assemble`, `ao lookup`, `ao ratchet record` |
 | `/crank` | `ao rpi phased`, `ao ratchet`, `ao flywheel status` |

@@ -4,9 +4,9 @@
 
 [![GitHub stars](https://img.shields.io/github/stars/boshu2/agentops?style=social)](https://github.com/boshu2/agentops/stargazers)
 
-### The in-session operating loop + context compiler for coding agents
+### Autonomous code validation for coding agents
 
-Coding agents don't do their own bookkeeping. AgentOps does. It sits on top of the agent you already use (Claude Code, Codex, Cursor, OpenCode) and adds the parts an engineering team would notice missing: a record of what was tried, gates between phases, and a corpus of learnings that survives the next session. Plain markdown in `.agents/` next to your code; mix any model per phase.
+Coding agents can produce plausible code that is still wrong. AgentOps helps answer the two questions that decide whether you can trust the work: **is the code right, and is the agent output proven enough to grant more autonomy?** It sits on top of the agent you already use (Claude Code, Codex, Cursor, OpenCode) and adds the validation membrane, evidence trail, and repo-local corpus that make that judgment repeatable.
 
 </div>
 
@@ -41,14 +41,14 @@ Recorded → .agents/council/<run-id>/verdict.md
 
 <!-- agentops:claim:AOP-CLAIM-README-FACTORY-CONTEXT -->
 
-Four layers that compound, all in local `.agents/` you can grep, diff, and review (no telemetry, no hosted control plane):
+The center is validation: prove the agent output, keep the proof, and use that record to decide how much autonomy the next run earns. The supporting layers all stay local in `.agents/` (no telemetry, no hosted control plane):
 
 | Layer | The problem | What AgentOps adds |
 |---|---|---|
-| **Bookkeeping** | agents forget what they tried and why | `.agents/` captures runs, decisions, findings, citations, verdicts, retros |
-| **Context compiler** | every session starts cold | `ao context assemble` builds phase-scoped packets; `ao lookup` retrieves decay-ranked knowledge |
-| **Validation gates** | agents ship confident garbage | `/pre-mortem`, `/vibe`, `/council` run multi-model consensus on plans and code; gates block rather than advise |
-| **Knowledge flywheel** | lessons vanish between sessions | `/forge` mines learnings, `/evolve` reconciles, the corpus compounds as a side effect of use |
+| **Validation membrane** | agent output can look correct while being wrong | tests, local gates, `/pre-mortem`, `/vibe`, `/council`, and pawl verdicts prove or reject the work |
+| **Evidence trail** | "looks good" does not survive handoff | `.agents/` captures runs, decisions, findings, citations, verdicts, retros, and closeout proof |
+| **Context compiler** | validators and implementers start cold | `ao context assemble` builds phase-scoped packets; `ao lookup` retrieves decay-ranked knowledge |
+| **Knowledge ratchet** | lessons vanish between sessions | `/forge` mines learnings, `/evolve` reconciles, and durable lessons become constraints before more autonomy is granted |
 
 The corpus is an LLM wiki of markdown. Agents read it natively and write to it as they work, so it maintains itself instead of becoming another doc you keep up by hand. Why that beats Notion or Confluence: [docs/wiki-for-agents.md](docs/wiki-for-agents.md). The full theory (context as the lifecycle, the CDLC): [docs/cdlc.md](docs/cdlc.md).
 
@@ -137,7 +137,7 @@ ao metrics health         # flywheel health
 
 <!-- agentops:claim:AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL -->
 
-**In session vs. out of session.** The whole loop runs in a plain session: no daemon, no scheduler, no cloud (the sovereignty floor). For always-on work, the same loop opts into a swappable substrate (an NTM tmux swarm, MCP via `ao mcp serve`, or managed-agents) that dispatches a whole `ao rpi` per ready bead. Details: [docs/3.0.md](docs/3.0.md).
+**In session vs. out of session.** The whole loop runs in a plain session: no daemon, no scheduler, no cloud (the sovereignty floor). For always-on work, the same loop opts into a swappable substrate (an NTM tmux swarm, MCP via `ao mcp serve`, or managed-agents) that dispatches a whole `ao rpi` per ready bead. Details: [docs/3.0.md](docs/3.0.md); component routing: [docs/architecture/component-map.md](docs/architecture/component-map.md).
 
 ---
 
@@ -147,7 +147,7 @@ ao metrics health         # flywheel health
 - **No hosted control plane or telemetry.** Everything lives in your repo; there's no cross-team dashboard unless you commit `.agents/`.
 - **Multi-model councils cost tokens.** Six judges per PR isn't free; running them on a substrate makes the cost predictable, not zero.
 - **The corpus needs hygiene.** `ao defrag` and `ao maturity` keep it healthy; neglected, it rots like any markdown vault.
-- **There are ~80 skills.** `/quickstart` and the [Skill Router](docs/SKILL-ROUTER.md) exist so you don't have to learn them all up front.
+- **There are many skills.** `/quickstart` and the [Skill Router](docs/SKILL-ROUTER.md) exist so you don't have to learn them all up front; current inventory is generated from `skills/**/SKILL.md`.
 
 **What if the labs ship this natively?** They will. The durable value is the `.agents/` corpus you build, not the tool that builds it: plain markdown in your repo, it carries forward to whatever ships next, stays forkable, and is Apache-2.0 with no lock-in.
 
@@ -155,6 +155,6 @@ ao metrics health         # flywheel health
 
 ## Docs & contributing
 
-[What 3.1 adds](docs/3.1.md) · [What 3.0 is](docs/3.0.md) · [docs index](docs/documentation-index.md) · [newcomer guide](docs/newcomer-guide.md) · [architecture](docs/ARCHITECTURE.md) · [FAQ](docs/FAQ.md) · built on the [12-factor doctrine](https://12factoragentops.com).
+[What 3.1 adds](docs/3.1.md) · [What 3.0 is](docs/3.0.md) · [component map](docs/architecture/component-map.md) · [docs index](docs/documentation-index.md) · [newcomer guide](docs/newcomer-guide.md) · [architecture](docs/ARCHITECTURE.md) · [FAQ](docs/FAQ.md) · built on the [12-factor doctrine](https://12factoragentops.com).
 
-Contributing: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) (agents: read [AGENTS.md](AGENTS.md), track work with `bd`). License: Apache-2.0.
+Contributing: [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) (agents: read [AGENTS.md](AGENTS.md), track work with `br`). License: Apache-2.0.

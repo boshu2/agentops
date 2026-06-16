@@ -6,9 +6,9 @@ last_reviewed: 2026-06-14
 
 ## Mission
 
-**AgentOps is an SDLC control plane for agentic software development.** It automates the discipline of building a wiki for your agents: markdown in `.agents/` next to your code, produced and consumed by the agents that work there. The compounded corpus is the asset that stays yours. The internal lifecycle is the CDLC: context is developed, tested, delivered, observed, and improved because context is what LLM agents consume.
+**AgentOps is autonomous code validation for agentic software development.** It answers the questions that matter before you trust an agent's work: **is this code right, and is this agent output proven enough to receive more autonomy?** The mechanism is an SDLC control-plane shape around a repo-local corpus: markdown in `.agents/` next to your code, produced and consumed by the agents that work there. The compounded corpus is the asset that stays yours. The internal lifecycle is the CDLC: context is developed, tested, delivered, observed, and improved because context is what LLM agents consume.
 
-> The canonical definition of what 3.0 is — the hookless-first CDLC loop and the four-practice waist — lives in [docs/3.0.md](docs/3.0.md). This file is consistent with it.
+> The canonical definition of what 3.0 is — the hookless-first CDLC loop and the four-practice waist — lives in [docs/3.0.md](docs/3.0.md). The component and trim/defer routing map that keeps that thesis from sprawling lives in [docs/architecture/component-map.md](docs/architecture/component-map.md). This file is consistent with both.
 
 ## One self-contained factory; the gate is the in-repo floor
 
@@ -20,16 +20,16 @@ AgentOps is the one self-contained software factory: it researches, plans, valid
 
 ## Product Identity
 
-AgentOps is the SDLC control plane for agent teams: software-engineering practice encoded for LLM agents under token scarcity.
+AgentOps is the validation layer for agent teams: software-engineering practice encoded so LLM-written code can be judged, corrected, and trusted under token scarcity.
 
 It gives agents the shared practices humans use to build complex software together: domain context, standards, tests, reviews, issues, handoffs, verdicts, wikis, operating loops, and release discipline.
 
 <!-- agentops:claim:AOP-CLAIM-PRODUCT-CONTEXT-ARTIFACT -->
 The highest-leverage input to coding agents is context: what the system knows, what it has tried, what failed, what the codebase decided, and what gates must hold. AgentOps automates the bookkeeping agents do not reliably do for themselves, then turns that record into an engineering artifact: typed, versioned, retrieved, validated, and fed back into the next run.
 
-It is not a packet generator. Packets are one artifact. The public category is **SDLC control plane**; the internal mechanism is the **Context Development Life Cycle (CDLC)**. CDLC is the DevSecOps SDLC translated to context, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, and planner/implementer/validator separation. Software engineering spent decades learning how to get fallible humans to work together in massive codebases. Those practices translate to fallible agents. AgentOps packages Extreme Programming, pragmatic engineering, TDD, DDD, BDD/Gherkin, SRE, DevOps, product discovery, and release discipline into composable skills, gates, standards, artifacts, and CI/substrate adapters. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validation` runs validator agents that have not seen the code. The four layers — bookkeeping, context compilation, validation gates, and knowledge flywheel — are the public product model. Dream is the bounded compounding skill; scheduled or unattended operation belongs to an orchestration substrate.
+It is not a packet generator. Packets are one artifact. The public wedge is **autonomous code validation**; the SDLC control-plane shape and the **Context Development Life Cycle (CDLC)** are the mechanism that make validation repeatable. CDLC is the DevSecOps SDLC translated to context, plus the operating practices of multi-agent work: isolated context per worker, stigmergic coordination through a shared corpus, and planner/implementer/validator separation. Software engineering spent decades learning how to get fallible humans to work together in massive codebases. Those practices translate to fallible agents. AgentOps packages Extreme Programming, pragmatic engineering, TDD, DDD, BDD/Gherkin, SRE, DevOps, product discovery, and release discipline into composable skills, gates, standards, artifacts, and CI/substrate adapters. The **RPI workflow** is the canonical instance — `/discovery` produces the planner artifact, `/crank` runs implementer agents in fresh-context waves, `/validate` runs validator agents that have not seen the code. The four layers — validation membrane, evidence trail, context compilation, and knowledge ratchet — are the public product model. Scheduled or unattended compounding belongs to an orchestration substrate.
 
-One factory, two AgentOps operator surfaces, four compounding layers: an **in-harness plugin** (skills for Claude Code, Codex, Cursor, OpenCode) and the **`ao` CLI** (terminal/CI control plane). Out-of-session orchestration is delegated to a substrate such as the reference Gas City City. AgentOps owns **execution packets, explicit gates, skills, and corpus compounding**; it does not ship a daemon, scheduler, or default hook layer.
+One factory, two AgentOps operator surfaces, four compounding layers: an **in-harness plugin** (skills for Claude Code, Codex, Cursor, OpenCode) and the **`ao` CLI** (terminal/CI control plane). Out-of-session orchestration is delegated to the substrate boundary (reference: NTM + MCP + managed-agents). AgentOps owns **execution packets, explicit gates, skills, and corpus compounding**; it does not ship a daemon, scheduler, or default hook layer.
 
 The bet is **sovereignty, not features**. Vendors will ship managed memory, councils, and dreaming natively — and lock them to their runtime. Your corpus stays in `.agents/` in your repo, runs on whichever harness you already pay for, and is portable across whichever frontier model wins next quarter. **The model gets smarter. The corpus stays yours.** Humans choose the posture: stay **in the loop** during discovery and validation, or sit **on the loop** while an external substrate dispatches AgentOps loops.
 
@@ -39,14 +39,25 @@ The bet is **sovereignty, not features**. Vendors will ship managed memory, coun
 
 ## Vision
 
-The software factory that gets better with each use. Every session produces code, evidence, decisions, attempts, lessons, and stronger constraints — the next session starts with more knowledge, tighter gates, and less wasted work. The model stays the same. The corpus compounds.
+The software factory that gets better at proving code with each use. Every session produces code, evidence, decisions, attempts, lessons, and stronger constraints — the next session starts with more knowledge, tighter gates, and less wasted work. The model stays the same. The corpus compounds.
 
 <!-- agentops:claim:AOP-CLAIM-PRODUCT-FACTORY-GRADE-THROUGHPUT -->
-The aspiration is factory-grade throughput for code: enough structure that agents can run against a defined process, with the operator setting cadence, rigor, and escalation boundaries. Same shape that turned software delivery into an engineering discipline — applied to coding agents.
+The aspiration is factory-grade confidence for agent-written code first, then throughput: enough structure that agents can run against a defined process, with the operator setting cadence, rigor, and escalation boundaries. Same shape that turned software delivery into an engineering discipline — applied to coding agents.
 
 The thesis is simple: indeterministic workers need disciplined systems. DevOps proved this for engineers. SRE proved it again with SLOs and error budgets. Kubernetes proved it for declarative infrastructure with control loops that reconcile actual state to desired state. Coding agents are the next indeterministic worker class. Same playbook. New substrate. The asset that survives — yours, not ours — is the corpus the system compounds on your behalf.
 
-### Why it must exist: a GPS for agentic work, not a workflow
+### Why it must exist: prove the code before scaling autonomy
+
+AgentOps starts with autonomous code validation, not autonomous orchestration.
+The first-order question is: **how do you know the code is right?** The second
+is: **how do you know the agent output is right enough to let it run farther
+next time?** Autonomy is earned by evidence. When the validation path holds for
+a lane, that lane can climb the [Autonomy Ladder](docs/architecture/autonomy-ladder.md):
+more steps before review, more repeated ticks, and eventually substrate-driven
+execution. The validation boundary does not loosen as autonomy rises; it is the
+reason autonomy can rise at all.
+
+### GPS for agentic work, not a workflow
 
 The deepest "why" under the corpus and the gates is this: **agentic workers are inherently stochastic, so AgentOps is a goal-directed navigator, not a workflow.** A deterministic worker — compiled code — takes rails: the route *is* the track, and a script, DAG, or pipeline is the right shape. An agent has no rails. Told "turn left," it has real probability of confidently driving into the lake. So the orchestration paradigm **inverts**:
 
@@ -85,10 +96,10 @@ Anthropic's Managed Agents (and peers like Cursor and Factory) appear to converg
 
 | Anthropic Concept | AgentOps Equivalent | Status |
 |---|---|---|
-| **Learning Loop** — memory extraction, dream cycle consolidation, future session context | Knowledge Flywheel — `/retro` → `/forge` → `/harvest` → `ao lookup` / `ao context assemble`, tiered promotion (learning → pattern → rule), plus bounded Dream via `/dream` | Live with bounds. On-demand capture/promotion works, and Dream provides an operator-started compounding lane. GitHub nightly is the public proof harness for the contracts, not the user's private runtime. |
-| **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — 72 skills, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Prototype built. `ao flywheel close-loop` now drafts review-only skills from repeated patterns; promotion polish is the remaining gap. |
-| **Verification Agent** — adversarial AI auditing AI, VERDICT system for human review | Council architecture — `/council`, `/pre-mortem`, `/vibe`, `/post-mortem` with multi-model consensus, prediction tracking. Stage 4 behavioral validation adds holdout scenarios + satisfaction scoring in STEP 1.8. | Live on demand. STEP 1.8 fires automatically inside `/validation` when that skill is invoked. |
-| **Managed Agents Dreaming** (May 2026) — scheduled session review, pattern extraction, memory curation between sessions | `/dream` + `.github/workflows/nightly.yml` proof jobs + substrate-driven scheduling when needed | Live with operator setup. The bounded private Dream lane runs harvest → forge → close-loop → defrag when the operator or substrate starts it. AgentOps itself no longer ships the daemon executor. |
+| **Learning Loop** — memory extraction, dream cycle consolidation, future session context | Knowledge Flywheel — `/post-mortem --quick` → `/forge` → `ao lookup` / `ao context assemble`, tiered promotion (learning → pattern → rule), plus substrate-run compounding | Live with bounds. On-demand capture/promotion works, and adopted substrates provide an operator-started compounding lane. GitHub nightly is the public proof harness for the contracts, not the user's private runtime. |
+| **Skillify** — AI watches patterns, packages them as reusable skills, compound growth | Skills system — generated registry, `/heal-skill` audit, `/converter` cross-runtime export, SKILL-TIERS classification | Prototype built. `ao flywheel close-loop` now drafts review-only skills from repeated patterns; promotion polish is the remaining gap. |
+| **Verification Agent** — adversarial AI auditing AI, VERDICT system for human review | Council architecture — `/council`, `/pre-mortem`, `/validate`, `/post-mortem` with multi-model consensus, prediction tracking. Stage 4 behavioral validation adds holdout scenarios + satisfaction scoring in STEP 1.8. | Live on demand. STEP 1.8 fires automatically inside `/validate` when that skill is invoked. |
+| **Managed Agents Dreaming** (May 2026) — scheduled session review, pattern extraction, memory curation between sessions | Substrate-driven compounding + `.github/workflows/nightly.yml` proof jobs when needed | Live with operator setup. The bounded private compounding lane runs harvest → forge → close-loop → defrag when the operator or substrate starts it. AgentOps itself no longer ships the daemon executor. |
 | **Managed Agents Outcomes** (May 2026) — rubric-driven separate-context grader with iterate-until-pass | Live at three scopes: project — `GOALS.md` (rubric) + `ao goals measure` (each gate runs as separate subprocess; `cli/internal/goals/measure.go:132-164`) + `/evolve` (can iterate a worst-failing gate under operator limits; `skills/evolve/SKILL.md:379-388`); plan — `/pre-mortem` council judges as separate-context graders; code — `/vibe` council judges. An internal council review (2026-05-06) found these capabilities present across rubric authoring, separate-context grading, iterate-until-pass, and pinpoint-what-changed; this is an internal finding, not an audited external-parity claim. | Live at the capability layer. Empirical workbench A/B (2026-05-06): Δ=+0.0000 across 12 cases at v1 difficulty (both legs 12/12) — task difficulty floor exhausted; v2 substrate (realistic agent tasks where the hook layer differentiates) is roadmap. Counter-stat artifact: `evals/workbench/results/2026-05-06-yjzp9-counterstat.json`. |
 
 Read the convergence table the right way: AgentOps and every harness like it gets absorbed into the model layer over time — Anthropic's 2026-05-06 Managed Agents launch is the textbook example. Memory primitives, learning loops, even validation gates — frontier vendors will ship them natively. What stays yours is the corpus. AgentOps is the bridge tool that helps you build that corpus *now*, with current models, before the harness layer commoditizes (whether it compounds into a quality moat is the unproven bet; that it stays yours is the durable one).
@@ -123,7 +134,7 @@ Read the convergence table the right way: AgentOps and every harness like it get
 2. **Context starts warm.** AgentOps compiles prior work into phase-scoped context instead of asking every agent to rediscover the repo from scratch.
 3. **Judgment becomes a gate.** `/pre-mortem`, `/vibe`, and `/council` add fresh-context review before risky plans and code ship.
 4. **Engineering practice becomes executable.** Pragmatic engineering, XP, TDD, DDD, BDD/Gherkin, SRE, DevOps, and product-management practices become reusable skills, standards, gates, issue flows, and acceptance proofs the operator can jump into, automate, or review.
-5. **Learning compounds under operator control.** `/forge`, `/harvest`, `/dream`, `ao flywheel`, and substrate-run maintenance turn completed work into reusable constraints without requiring an AgentOps cloud.
+5. **Learning compounds under operator control.** `/forge`, `ao flywheel`, and substrate-run maintenance turn completed work into reusable constraints without requiring an AgentOps cloud.
 6. **The corpus stays portable.** The same local knowledge base can outlive a model, chat session, harness, or vendor.
 
 ## 10-Star Experience
@@ -140,9 +151,9 @@ For the 3.0 target audience, a 10-star experience is not "configure every automa
 
 ## What the Product Actually Is
 
-AgentOps is an SDLC control plane backed by a wiki for your agents. `.agents/` is markdown in your repo, version-controlled with your code, that agents read, traverse, and contribute to — the kind of wiki your team should already have, except agents do the maintenance. AgentOps automates the discipline of building one: capture, retrieval, validation, and compounding all happen mechanically so the wiki stays current instead of bitrotting.
+AgentOps is autonomous code validation backed by a wiki for your agents. `.agents/` is markdown in your repo, version-controlled with your code, that agents read, traverse, and contribute to — the kind of wiki your team should already have, except agents do the maintenance. AgentOps automates the discipline of proving work and preserving the proof: capture, retrieval, validation, and compounding all happen mechanically so the wiki stays current instead of bitrotting.
 
-That wiki is the substrate underneath a software factory with three surfaces and four user-facing layers: Bookkeeping, Context Compiler, Validation Gates, and Knowledge Flywheel. Dream is a bounded compounding skill, not a separate peer product or AgentOps-owned scheduler. The SDLC control plane executes the CDLC — the [Context Development Life Cycle](docs/cdlc.md) — so agent work can move through small, bounded, evidence-bearing vertical slices. The deeper proof-contract framing — identity, reproducibility, evaluation, evidence, recovery — lives in [docs/trust-factory.md](docs/trust-factory.md).
+That wiki is the substrate underneath a software factory with three surfaces and four user-facing layers: Validation Membrane, Evidence Trail, Context Compiler, and Knowledge Ratchet. Dream is a bounded compounding skill, not a separate peer product or AgentOps-owned scheduler. The SDLC control plane executes the CDLC — the [Context Development Life Cycle](docs/cdlc.md) — so agent work can move through small, bounded, evidence-bearing vertical slices. The deeper proof-contract framing — identity, reproducibility, evaluation, evidence, recovery — lives in [docs/trust-factory.md](docs/trust-factory.md).
 
 ### Three surfaces
 
@@ -150,7 +161,7 @@ The same substrate, reached three ways:
 
 - **In-harness plugin** — skills for Claude Code, Codex, Gemini/Antigravity, Cursor, OpenCode. Context moves through explicit packets and skill workflows first. Runtime hooks are not an AgentOps default; teams that want custom hooks author them separately with the `hooks-authoring` skill. Install via `install-claude.sh`, `install-codex.sh`, `install-agy.sh`, or the skills.sh package.
 - **`ao` CLI** — the terminal and CI control plane. `ao context assemble`, `ao lookup`, `ao compile`, `ao goals measure`, `ao flywheel close-loop` — the same compiler, scriptable. Repo-native, with no required AgentOps cloud control plane.
-- **Out-of-session substrate** — optional, off-API, off-vendor orchestration outside the AgentOps product core. Gas City is the reference substrate: it dispatches agents that run whole AgentOps loops (`ao rpi`, compile/maturity jobs) while AgentOps stays daemonless and schedulerless.
+- **Out-of-session substrate** — optional, off-API, off-vendor orchestration outside the AgentOps product core. The reference boundary is NTM + MCP + managed-agents: it dispatches agents that run whole AgentOps loops (`ao rpi`, compile/maturity jobs) while AgentOps stays daemonless and schedulerless.
 
 ### Domain and practice layer
 
@@ -180,7 +191,7 @@ The same model used in the README: bookkeeping records the work, the context com
 **What the compiler emits:** File-backed traces of agent work: attempts, decisions, citations, handoffs, findings, retros, post-mortems, council verdicts, and run packets. This is the raw material for context compilation and compounding.
 
 - `.agents/` — repo-local bookkeeping substrate
-- `/retro` and `/post-mortem` — capture decisions, lessons, and follow-up work
+- `/post-mortem --quick` and `/post-mortem` — capture decisions, lessons, and follow-up work
 - `/provenance` and `/trace` — connect artifacts back to their source
 - `ao metrics cite` and citation logs — record what knowledge was used
 - RPI packets and council verdicts — preserve plan/build/validation evidence
@@ -195,7 +206,7 @@ The same model used in the README: bookkeeping records the work, the context com
 - `ao lookup` — decay-ranked retrieval for on-demand knowledge
 - `ao context assemble` — phase-scoped context packets
 - `ao compile` — rebuild the knowledge wiki (mine, grow, defrag, lint)
-- 72 skills — reusable context packages across Claude Code, Codex, Gemini/Antigravity, and OpenCode
+- Reusable skills — generated from `skills/**/SKILL.md` and packaged across Claude Code, Codex, Gemini/Antigravity, and OpenCode
 - Runtime install one-liners plus Day-2 operations — install, update, backup, permission repair, recovery, and escalation are product surfaces, not afterthoughts
 
 #### Layer 3: Validation Gates
@@ -220,7 +231,7 @@ The same model used in the README: bookkeeping records the work, the context com
 - `ao flywheel close-loop` — score, promote, curate automatically
 <!-- agentops:claim:AOP-CLAIM-PRODUCT-EVOLVE-RECONCILE -->
 - `/evolve` — bounded reconciliation: reads goals, targets the worst gap, validates, and can repeat under operator limits
-- `/dream` — bounded private compounding lane
+- Substrate-run compounding — bounded private compounding lane
 - Out-of-session substrate (reference: NTM + MCP + managed-agents) — operator-owned cadence for unattended rpi, compile, maturity, and related jobs
 - `.github/workflows/nightly.yml` — public proof harness for the contracts (not your private runtime)
 - MemRL feedback — cited artifacts receive session reward, utility scores update
@@ -302,7 +313,7 @@ These are this repo's corpus stats; your own AgentOps install will produce its o
 
 *`.agents/` runtime state was wiped by routine cleanup on 2026-05-07; receipts use 2026-05-04 stable snapshot. Durability fix tracked in soc-rv5p.*
 
-Your corpus grows every session — learnings, patterns, and constraints accumulate in your repo, not ours. The system writes the substrate; you decide whether dream/evolution/compile loops run manually, in session, or through an external scheduler such as Gas City. Scale and compounding follow from the cadence you set, not from a claim we make.
+Your corpus grows every session — learnings, patterns, and constraints accumulate in your repo, not ours. The system writes the substrate; you decide whether dream/evolution/compile loops run manually, in session, or through an external orchestration substrate. Scale and compounding follow from the cadence you set, not from a claim we make.
 
 ## Desired State vs Current State
 
@@ -316,13 +327,13 @@ Your corpus grows every session — learnings, patterns, and constraints accumul
 | 3.0 PMF scenario evidence is pending | The release thesis is clear, but the exact scenario with repo/task/control/measures has not yet produced exported proof. Public PMF/productivity claims stay gated on `soc-m6v5.8`. | open |
 | Canonical `/validate` and `/curate` consolidation is not release-ready | Additive skills exist in this worktree, but skill-count, registry, and Codex artifact gates are expected to fail until the release train resolves ship/defer and artifact sync. | in-progress |
 | Public launch claims need exported proof | Local `.agents/` artifacts are useful operating evidence but are not enough for public claims. 3.0 needs tracked evidence under `docs/releases/` or `evals/workbench/results/` when launch copy cites PMF proof. | planned |
-| Dream autonomy is still maturing | The private local Dream lane runs through `/dream`, with bounded compounding, reports, setup guidance, and a separate GitHub nightly proof harness. Scheduled operation is substrate-owned after the 3.0 daemon deletion. Remaining work is deeper full-loop autonomy, calibration, and onboarding polish. | in-progress |
+| Compounding autonomy is still maturing | The private compounding lane is substrate-owned after the 3.0 daemon deletion, with bounded compounding, reports, setup guidance, and a separate GitHub nightly proof harness. Remaining work is deeper full-loop autonomy, calibration, and onboarding polish. | in-progress |
 | Pattern-to-skill pipeline (synthesis layer) | Detection layer ships in v1 (`.agents/plans/2026-04-23-pattern-to-skill-pipeline-detection.md`); synthesis (LLM-authored draft skill bodies, tier heuristics, on-disk drafts in `.agents/skill-drafts/`) is deferred to v2 after a design council found 8+ blockers. The "self-programming compounding" framing is aspirational, not currently producing on-disk output. | deferred |
 | Multi-runtime proof is tiered, not complete | Tier S structural proof is active for all four runtimes. Tier I live inventory proof is partial. Tier E live execution proof remains opt-in / nightly, not a default gate. | in-progress |
 | Retrieval and worker knowledge propagation still limit compounding | The flywheel architecture is in place. Retrieval quality and passing prevention/finding context to implement workers remain weaker than the core thesis requires. | open |
 | Behavioral eval system needs live agent runtime at scale | Eval workbench shipped: 3 fixture components (Go CLI, Python FastAPI, DevOps), 12 tasks with golden solutions and scoring scripts, behavioral eval suite, agent harness script, eval-skill-delta CI gate, and `--two-pass` head gate. Scoring infrastructure verified (golden 12/12, broken detection 12/12). A/B DeltaScorecard works for deterministic cases. Remaining gap: live agent runtime execution at scale — the harness and gates exist but full skill-on vs skill-off delta across the workbench is not yet a default gate. | in-progress |
 | High-assurance profile needs deeper control mapping | The initial [assurance profile](docs/assurance-profile.md) now documents local-first state, evidence packets, policy gates, telemetry boundaries, autonomy modes, and out-of-scope claims. Remaining work is redaction, evidence export, supply-chain inputs, and program-specific control mapping. | in-progress |
-| Public messaging is still converging | README, PRODUCT.md, GOALS.md, CDLC, the docs landing page, and the one-page brief now lead with "SDLC control plane" and explain CDLC as the internal context lifecycle. Remaining gap: downstream comparison docs and skill-page intros still need a sweep to match. | in-progress |
+| Public messaging is still converging | README, PRODUCT.md, GOALS.md, CDLC, the docs landing page, and the one-page brief are being sharpened around autonomous code validation, with SDLC control-plane/CDLC language as the implementation mechanism. Remaining gap: downstream comparison docs and skill-page intros still need a sweep to match. | in-progress |
 | **The moat is unproven — corpus delta not yet measured** | The product's only *candidate* moat (does the compounding corpus measurably improve agent output?) has no A/B proof. ADR-0002's Δ=0 was a hook-layer test, not a corpus A/B. Until `ag-8p8o` produces a measured delta on realistic tasks, the moat is a hypothesis — public quality/moat claims stay gated on it. This is the single highest-leverage gap: the ruler is the product. | open (`ag-8p8o`) |
 | **The cross-family gate is table stakes, not a differentiator** | Binding cross-vendor pre-merge review with non-author override already ships commercially (CodeRabbit, Qodo, Copilot — adversarial siege 2026-06-14). The in-repo pawl-gate is a necessary correctness floor; messaging must not position on it as a wedge. | acknowledged |
 

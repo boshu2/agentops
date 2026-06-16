@@ -39,7 +39,7 @@ Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `ag
 
 - **Spine:** [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md) — 7-move agent doctrine. **Primary navigation.**
 - **One turn's executor:** `/rpi` skill. NOT primary.
-- **Architecture:** 5 Bounded Contexts (BC1 Corpus → BC5 Runtime). Where code lives.
+- **Architecture:** 6 Bounded Contexts (BC1 Corpus → BC6 Orchestration). Where code lives.
 - **Consumer metaphor:** "CDLC" — the compounding Knowledge Flywheel framing.
 
 ### Source layer — three axis owners, generated or schema-gated; **NEVER hand-edited inventory maps**

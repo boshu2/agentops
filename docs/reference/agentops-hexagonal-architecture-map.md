@@ -22,7 +22,7 @@ beads, and ratcheted knowledge make trust repeatable.
 
 ## Hexagonal Rule
 
-Domain policy lives inside the bounded context. Filesystems, GitHub, `bd`,
+Domain policy lives inside the bounded context. Filesystems, GitHub, `br`,
 agent harnesses, shell scripts, external skill corpora, CI, and local machine
 state are adapters. Adapters can be swapped; the loop contract cannot.
 
@@ -35,7 +35,7 @@ flowchart LR
   CLI["ao CLI"]
   Skills["Codex/Claude skills"]
   Hooks["Hooks and CI"]
-  Daemon["Daemon and schedules"]
+  Substrate["Substrate schedules"]
 
   subgraph Hex["AgentOps core"]
     Corpus["BC1 Corpus"]
@@ -47,7 +47,7 @@ flowchart LR
   end
 
   FS["Filesystem .agents"]
-  BD["bd tracker"]
+  BR["br tracker"]
   Git["Git/GitHub"]
   Harness["Agent harnesses"]
   ExtCorpus["External skill corpora (read-only analysis)"]
@@ -55,13 +55,13 @@ flowchart LR
   CLI --> Loop
   Skills --> Loop
   Hooks --> Validation
-  Daemon --> Loop
+  Substrate --> Loop
   Loop --> Corpus
   Loop --> Validation
   Loop --> Factory
   Runtime --> Skills
   Corpus --> FS
-  Loop --> BD
+  Loop --> BR
   Runtime --> Git
   Runtime --> Harness
   Factory --> ExtCorpus

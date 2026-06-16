@@ -576,12 +576,12 @@ MAX_TURNS=10 DEFAULT_TIMEOUT=180 ./tests/claude-code/test-swarm-skill.sh
    grep -E '"skill":"' tests/claude-code/logs/claude-*.jsonl
    ```
 
-4. **Run interactively:**
-   ```bash
-   claude -p "What is the swarm skill?" \
-       --plugin-dir <repo-root> \
-       --dangerously-skip-permissions \
-       --max-turns 5
+4. **Run interactively in the harness under test:**
+   ```text
+   Open an interactive session with the plugin installed and ask:
+   "What is the swarm skill?"
+
+   Do not use Claude print mode.
    ```
 
 ---

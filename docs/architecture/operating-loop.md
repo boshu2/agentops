@@ -1,6 +1,6 @@
 # Operating Loop
 
-> One-page spine. The operational discipline every AgentOps process skill executes. Companion to [Ports and Adapters](ports-and-adapters.md) (the runtime seams), [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) (the process-level ports), and [CDLC](../cdlc.md) (the context lifecycle inside the SDLC control plane).
+> One-page spine. The operational discipline every AgentOps process skill executes. Companion to [Component Map](component-map.md) (product/component routing), [Ports and Adapters](ports-and-adapters.md) (the runtime seams), [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) (the process-level ports), and [CDLC](../cdlc.md) (the context lifecycle inside the SDLC control plane).
 
 AgentOps' execution discipline is one repeatable loop inside the SDLC control plane, not a phased waterfall of documents. Every process skill is one move within it. No artifact exists unless it advances the loop.
 
@@ -56,7 +56,7 @@ The intent issue is not ready until the acceptance examples are testable. Requir
 - Feature / capability name
 - Given / When / Then examples (one happy path + at least one edge)
 - Domain terms used (anchored to the repo's ubiquitous-language register; for AgentOps that is [`skills/domain/references/`](../../skills/domain/references/) and [`skills/standards/references/architecture-terms.md`](https://github.com/boshu2/agentops/blob/main/skills/standards/references/architecture-terms.md))
-- Bounded context per the [context map](../contracts/context-map.md)
+- Component and bounded-context route per the [Component Map](component-map.md); generated skill-role context per the [context map](../contracts/context-map.md)
 - Non-goals
 - Rollback / containment path
 - Evidence needed for completion (test names, snapshot keys, eval suites, council verdicts)
@@ -65,7 +65,7 @@ Template: [`docs/templates/intent-issue.md`](../templates/intent-issue.md). Skil
 
 ### 2. Track as a bead when it leaves the head
 
-A bead is the linked-intent packet for one BDD-shaped behavior change. It carries the acceptance examples, the bounded-context tag, the slice list, the wave plan, accumulating evidence, and residual gaps at close. One-shot work that stays inside a single prompt does not need a bead. Skill: `/beads` (via `bd`).
+A bead is the linked-intent packet for one BDD-shaped behavior change. It carries the acceptance examples, the bounded-context tag, the slice list, the wave plan, accumulating evidence, and residual gaps at close. One-shot work that stays inside a single prompt does not need a bead. Skill: `/beads` (via `br`; while legacy `.beads/` retirement is in progress, invoke as `BEADS_DIR=$PWD/_beads br ...`).
 
 ### 3. Slice vertically through behavior
 
@@ -146,7 +146,7 @@ The ratchet is what keeps `.agents/` from becoming a landfill. Compounding only 
 
 The loop is operational discipline. The architectural seams are structural. They are orthogonal and they compose:
 
-- **Bounded contexts** ([context map](../contracts/context-map.md)) — every slice declares which bounded context it touches. A slice that crosses contexts is two slices.
+- **Bounded contexts** ([Component Map](component-map.md), generated [context map](../contracts/context-map.md)) — every slice declares which bounded context it touches. A slice that crosses contexts is two slices.
 - **Ports** (`cli/internal/ports/`) — the first failing test for a slice that touches a port can be written against the port interface before any adapter exists.
 - **Adapters** (`cli/internal/adapters/`) — adapter changes are slices like any other. The first failing test calls the adapter through the port; the port stays stable.
 - **Domain purity** ([ADR-0001](../adr/ADR-0001-ddd-hexagonal-adoption.md)) — slices that change `cli/internal/domain/` must keep the no-import-from-internal/* invariant. The wave check treats domain-purity as a shared concern: at most one slice per wave touches domain types.
@@ -167,12 +167,13 @@ The loop is operational discipline. The architectural seams are structural. They
 - Does not introduce a new `skills/cdlc/` skill — the spine is doc-shaped, referenced by every process skill.
 - Does not introduce new practice slugs — the loop is a composition of `bdd-gherkin` + `tdd` + `ddd-bounded-context` + `hexagonal-architecture` + `agile-manifesto` + `pragmatic-programmer` + `continuous-delivery`.
 - Does not couple AgentOps to any consumer's domain vocabulary — bounded contexts are named by the consuming repo.
-- Does not require new tooling — `bd`, `ratchet`, and existing validation gates carry the load.
+- Does not require new tooling — `br`, `ratchet`, and existing validation gates carry the load.
 - Does not enforce parallelism — parallel waves are an optimization unlocked by the conflict-free check, not a default.
 
 ## See also
 
 - [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-15-cdlc-dojo-doctrine.md) — doctrine source (promote changes here first)
+- [Component Map](component-map.md) — product/component routing and trim/defer posture
 - [Ports and Adapters](ports-and-adapters.md) — architectural seams the loop runs through
 - [Fungibility Charter](fungibility-charter.md) — the six doctrinal commitments behind the loop's stateless, role-free, single-model-default agents
 - [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) — process-level ports/adapters from BDD intent through evidence ratchet
