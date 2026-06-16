@@ -145,6 +145,62 @@ func TestBuildVerdictCommitEdge(t *testing.T) {
 	}
 }
 
+// TestEmitVerdict_ConsumesRealProducerArtifact is the producer→sensor seam
+// guard (age-d16-self-hosting-route-nkr.1 / M1). The fixture is the REAL on-disk
+// artifact emitted by `scripts/pawl-verdict.sh write` (not a hand-built struct),
+// per the fixture-fidelity rule in standards/references/test-pyramid.md. It
+// locks the contract that the sensor (extractVerdict → buildVerdictCommitEdge →
+// ledger append) consumes the producer's actual output shape: the producer
+// emits extra fields (pr, generated_at, author_context_id, attempt, refuters)
+// the sensor must ignore while still extracting bead_id/head_sha/disposition.
+// If the two halves drift apart the verdict feed silently dies (back to 0
+// verdict rows) — exactly the M1 starvation this guards against.
+func TestEmitVerdict_ConsumesRealProducerArtifact(t *testing.T) {
+	fixture := filepath.Join("..", "..", "..", "tests", "fixtures", "provenance", "pawl-verdict-real-sample.json")
+
+	v, err := extractVerdict(fixture)
+	if err != nil {
+		t.Fatalf("extractVerdict on real producer artifact: %v", err)
+	}
+	if v.BeadID != "age-d16-self-hosting-route-nkr.1" {
+		t.Errorf("BeadID = %q, want age-d16-self-hosting-route-nkr.1", v.BeadID)
+	}
+	if v.HeadSHA != "611615d9b78717eca0fa1b2d1eb75a54c9dc6970" {
+		t.Errorf("HeadSHA = %q, want the fixture's head_sha", v.HeadSHA)
+	}
+	if v.Disposition != "CONFIRMED" {
+		t.Errorf("Disposition = %q, want CONFIRMED", v.Disposition)
+	}
+
+	// The extracted verdict appends a valid, hash-chained edge to the ledger,
+	// and the verdict→commit join key is the FULL head_sha (the footgun: it
+	// must be the SHA that lands on origin/main, not a truncated/local one).
+	ledger := filepath.Join(t.TempDir(), "ledger.jsonl")
+	store := provenancegraph.NewStore(ledger)
+	edge := buildVerdictCommitEdge(v)
+	edge.TS = "2026-06-16T00:00:00Z"
+	res, err := store.Append(edge)
+	if err != nil {
+		t.Fatalf("append edge from real artifact: %v", err)
+	}
+	if res.Skipped {
+		t.Error("first emit of the real artifact should not be skipped")
+	}
+	if res.Edge.ToID != v.HeadSHA {
+		t.Errorf("edge to_id = %q, want full head_sha %q (the SHA join key)", res.Edge.ToID, v.HeadSHA)
+	}
+	if res.Edge.FromType != "verdict" {
+		t.Errorf("edge from_type = %q, want verdict", res.Edge.FromType)
+	}
+	vr, err := store.VerifyFile()
+	if err != nil {
+		t.Fatalf("verify after appending real-artifact edge: %v", err)
+	}
+	if !vr.Pass {
+		t.Fatalf("chain not intact after real-artifact append: %s", vr.Message)
+	}
+}
+
 // TestEmitVerdict_LedgerGrowsAndStaysIntact is the L2 scenario proof for
 // ag-cm8nd: emitting verdict→commit edges appends schema-valid, hash-chained
 // rows to the ledger, the chain verifies, and re-emitting is idempotent.
