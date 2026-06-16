@@ -244,7 +244,16 @@ paths, criteria, validation lanes, tracker state, test levels, complexity, and
 next action. It does not contain raw research, raw plan prose, or raw council
 deliberation.
 
+After the packet is written, stamp the orchestration-shape decision onto it. The
+live (skill-driven) packet write does NOT route through the Go seed-writer, so
+this is the live wire that makes `orchestration_decision` carry a validated
+shape: `ao rpi stamp-shape` reads the packet, gathers observable ground truth
+(Agent Mail live-writer count + per-lane reservation write-sets via
+`orchestration.ValidateShape`), and overrides any confabulated proposal. Add
+`--unattended` when the work must outlive the session (durability axis → ATM):
+
 ```bash
+ao rpi stamp-shape 2>/dev/null || true   # add --unattended for out-of-session/durable runs
 ao ratchet record discovery 2>/dev/null || true
 ```
 

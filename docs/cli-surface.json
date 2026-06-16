@@ -1529,6 +1529,13 @@
     },
     {
       "category": "public-tested",
+      "command": "rpi stamp-shape",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "rpi status",
       "coverage_status": "covered",
       "kind": "leaf",
