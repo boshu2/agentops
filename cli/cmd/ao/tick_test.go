@@ -189,32 +189,33 @@ func TestTickStagePath(t *testing.T) {
 	}
 }
 
-// TestTickCloseStagesResolvedLedger is the L2 regression for the live bug
-// where tickClose verified and staged `.beads/` while br wrote `_beads/`:
-// it drives tickClose end-to-end against stub br/git binaries and asserts
-// the resolved ledger paths are what reach `git add`.
-func TestTickCloseStagesResolvedLedger(t *testing.T) {
+// TestTickClose_PersistsLedgerInOwnRepoNotPublic is the L2 regression for the
+// private br ledger contract: tickClose must persist _beads through its nested
+// git repo and must never stage ledger files in the public repo.
+func TestTickClose_PersistsLedgerInOwnRepoNotPublic(t *testing.T) {
 	tests := []struct {
-		name      string
-		ledgerDir string
-		rtEnv     bool // set BEADS_DIR in rt.env to the ledger dir
-		wantAdd   string
+		name       string
+		ledgerDir  string
+		rtEnv      bool // set BEADS_DIR in rt.env to the ledger dir
+		commitNoop bool
 	}{
 		{
 			name:      "br workspace _beads",
 			ledgerDir: "_beads",
-			wantAdd:   "-- _beads/issues.jsonl _beads/metadata.json evidence/proof.md",
 		},
 		{
 			name:      "legacy .beads fallback",
 			ledgerDir: ".beads",
-			wantAdd:   "-- .beads/issues.jsonl .beads/metadata.json evidence/proof.md",
 		},
 		{
 			name:      "explicit BEADS_DIR override",
 			ledgerDir: "custom_beads",
 			rtEnv:     true,
-			wantAdd:   "-- custom_beads/issues.jsonl custom_beads/metadata.json evidence/proof.md",
+		},
+		{
+			name:       "empty ledger commit is ok when ledger shows closed",
+			ledgerDir:  "_beads",
+			commitNoop: true,
 		},
 	}
 	for _, tc := range tests {
@@ -242,13 +243,41 @@ func TestTickCloseStagesResolvedLedger(t *testing.T) {
 			if err := os.MkdirAll(fakebin, 0o755); err != nil {
 				t.Fatal(err)
 			}
-			headFile := filepath.Join(dir, "fake-head")
-			addLog := filepath.Join(dir, "fake-add.log")
-			if err := os.WriteFile(headFile, []byte("head-before\n"), 0o644); err != nil {
+			publicHeadFile := filepath.Join(dir, "fake-public-head")
+			ledgerHeadFile := filepath.Join(dir, "fake-ledger-head")
+			gitLog := filepath.Join(dir, "fake-git.log")
+			if err := os.WriteFile(publicHeadFile, []byte("public1\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(ledgerHeadFile, []byte("ledger1\n"), 0o644); err != nil {
 				t.Fatal(err)
 			}
 			fakeBR := "#!/usr/bin/env bash\ncase \"${1:-}\" in close|sync|update) exit 0 ;; *) echo \"unexpected br call: $*\" >&2; exit 43 ;; esac\n"
-			fakeGit := "#!/usr/bin/env bash\ncase \"${1:-}\" in\n  rev-parse) cat \"${TICK_TEST_HEAD_FILE:?}\" ;;\n  add) shift; printf '%s\\n' \"$*\" >> \"${TICK_TEST_ADD_LOG:?}\" ;;\n  commit) echo head-after > \"${TICK_TEST_HEAD_FILE:?}\" ;;\n  *) : ;;\nesac\n"
+			fakeGit := `#!/usr/bin/env bash
+printf '%s\n' "$*" >> "${TICK_TEST_GIT_LOG:?}"
+if [ "${1:-}" = "-C" ]; then
+  shift 2
+  case "${1:-}" in
+    rev-parse) cat "${TICK_TEST_LEDGER_HEAD_FILE:?}" ;;
+    add) exit 0 ;;
+    commit)
+      if [ "${TICK_TEST_LEDGER_COMMIT_NOOP:-}" = "1" ]; then
+        echo "nothing to commit, working tree clean"
+        exit 1
+      fi
+      echo ledger2 > "${TICK_TEST_LEDGER_HEAD_FILE:?}"
+      ;;
+    *) : ;;
+  esac
+  exit 0
+fi
+case "${1:-}" in
+  rev-parse) cat "${TICK_TEST_PUBLIC_HEAD_FILE:?}" ;;
+  add) exit 0 ;;
+  commit) echo public2 > "${TICK_TEST_PUBLIC_HEAD_FILE:?}" ;;
+  *) : ;;
+esac
+`
 			if err := os.WriteFile(filepath.Join(fakebin, "br"), []byte(fakeBR), 0o755); err != nil {
 				t.Fatal(err)
 			}
@@ -259,8 +288,12 @@ func TestTickCloseStagesResolvedLedger(t *testing.T) {
 			// exec.Command resolves binaries via the parent process PATH
 			// (not c.Env), so the stub PATH must go through t.Setenv.
 			t.Setenv("PATH", fakebin+string(os.PathListSeparator)+os.Getenv("PATH"))
-			t.Setenv("TICK_TEST_HEAD_FILE", headFile)
-			t.Setenv("TICK_TEST_ADD_LOG", addLog)
+			t.Setenv("TICK_TEST_PUBLIC_HEAD_FILE", publicHeadFile)
+			t.Setenv("TICK_TEST_LEDGER_HEAD_FILE", ledgerHeadFile)
+			t.Setenv("TICK_TEST_GIT_LOG", gitLog)
+			if tc.commitNoop {
+				t.Setenv("TICK_TEST_LEDGER_COMMIT_NOOP", "1")
+			}
 			var stdout, stderr bytes.Buffer
 			rt := tickRuntime{
 				workDir: dir,
@@ -270,21 +303,51 @@ func TestTickCloseStagesResolvedLedger(t *testing.T) {
 			if tc.rtEnv {
 				rt.env = []string{"BEADS_DIR=" + tc.ledgerDir}
 			}
-			if err := tickClose(rt, "cp-ledger", "close msg", "evidence/proof.md", nil); err != nil {
+			if err := tickClose(rt, "cp-ledger", "close msg", "evidence/proof.md", []string{"docs/close.md"}); err != nil {
 				t.Fatalf("tickClose() error: %v (stderr=%q)", err, stderr.String())
 			}
-			got, err := os.ReadFile(addLog)
+			got, err := os.ReadFile(gitLog)
 			if err != nil {
-				t.Fatalf("git add was never invoked: %v", err)
+				t.Fatalf("git was never invoked: %v", err)
 			}
-			if strings.TrimSpace(string(got)) != tc.wantAdd {
-				t.Fatalf("git add args = %q, want %q", strings.TrimSpace(string(got)), tc.wantAdd)
+			lines := strings.Split(strings.TrimSpace(string(got)), "\n")
+			wantLedgerAdd := "-C " + ledger + " add -- issues.jsonl metadata.json"
+			wantLedgerCommit := "-C " + ledger + " commit -q -m close msg"
+			if !tickTestLinesContain(lines, wantLedgerAdd) {
+				t.Fatalf("git calls missing ledger add %q; got %q", wantLedgerAdd, strings.TrimSpace(string(got)))
 			}
-			if want := "closed cp-ledger @ head-af\n"; stdout.String() != want {
+			if !tickTestLinesContain(lines, wantLedgerCommit) {
+				t.Fatalf("git calls missing ledger commit %q; got %q", wantLedgerCommit, strings.TrimSpace(string(got)))
+			}
+			for _, line := range lines {
+				if strings.HasPrefix(line, "add ") {
+					if strings.Contains(line, "_beads") || strings.Contains(line, ".beads") ||
+						strings.Contains(line, "issues.jsonl") || strings.Contains(line, "metadata.json") {
+						t.Fatalf("public git add staged ledger path: %q", line)
+					}
+					if line != "add -- evidence/proof.md docs/close.md" {
+						t.Fatalf("public git add = %q, want evidence and caller path only", line)
+					}
+				}
+			}
+			wantSHA := "ledger2"
+			if tc.commitNoop {
+				wantSHA = "ledger1"
+			}
+			if want := "closed cp-ledger @ " + wantSHA + "\n"; stdout.String() != want {
 				t.Fatalf("tickClose() stdout = %q, want %q", stdout.String(), want)
 			}
 		})
 	}
+}
+
+func tickTestLinesContain(lines []string, want string) bool {
+	for _, line := range lines {
+		if line == want {
+			return true
+		}
+	}
+	return false
 }
 
 func TestTickFirstReadyFromJSON(t *testing.T) {
