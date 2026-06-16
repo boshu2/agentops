@@ -8,6 +8,56 @@ import (
 	"time"
 )
 
+// TestFindingMatchesQuery_NaturalLanguageTokens is the age-r3w contract: a
+// natural-language / multi-word query must match a finding whose haystack
+// contains those tokens NON-contiguously. The old strings.Contains(haystack,
+// wholeQuery) required the entire query as a verbatim substring, so real
+// queries (and the eval runner's goal sentence) never matched any finding —
+// 0/58 gold findings surfaced. Token matching (mirroring the learnings matcher)
+// fixes it.
+func TestFindingMatchesQuery_NaturalLanguageTokens(t *testing.T) {
+	f := KnowledgeFinding{
+		ID:    "f-codex-stdin",
+		Title: "codex exec with a positional prompt reads stdin and hangs forever in any non-TTY context",
+	}
+	// non-contiguous tokens (real-world phrasing) — present, but not as a substring
+	if !FindingMatchesQuery(f, "codex exec stdin non-tty") {
+		t.Error("non-contiguous natural-language query should match via shared tokens")
+	}
+	// a goal-sentence-style query (like the eval runner's sc.Goal) should match too
+	if !FindingMatchesQuery(f, "dispatch codex exec from a background non-tty context") {
+		t.Error("goal-sentence query should match via shared salient tokens")
+	}
+	// a query sharing no salient tokens must NOT match (token matching is not match-all)
+	if FindingMatchesQuery(f, "kubernetes helm chart deployment") {
+		t.Error("query with no shared tokens must not match")
+	}
+}
+
+// TestFindingMatchRatio_Proportional locks the relevance signal (age-r3w refuter
+// fix): a full multi-token match scores 1.0, a partial match scores proportionally
+// less (so it folds into MatchConfidence and ranks below a fuller match), and no
+// shared token scores 0. Without this, any-token matching + freshness/utility-only
+// ranking lets a fresh one-token false positive outrank a stale relevant finding.
+func TestFindingMatchRatio_Proportional(t *testing.T) {
+	f := KnowledgeFinding{Title: "codex exec stdin non-tty hang"}
+	if r := FindingMatchRatio(f, ""); r != 1.0 {
+		t.Errorf("empty query ratio = %v, want 1.0", r)
+	}
+	full := FindingMatchRatio(f, "codex exec stdin")        // 3/3 tokens present
+	partial := FindingMatchRatio(f, "codex kubernetes helm") // 1/3 tokens present
+	none := FindingMatchRatio(f, "kubernetes helm chart")    // 0 shared tokens
+	if full != 1.0 {
+		t.Errorf("full match ratio = %v, want 1.0", full)
+	}
+	if !(partial > 0 && partial < full) {
+		t.Errorf("partial ratio = %v, want 0 < partial < 1.0", partial)
+	}
+	if none != 0 {
+		t.Errorf("no-shared-token ratio = %v, want 0", none)
+	}
+}
+
 func TestFindingMatchesQuery(t *testing.T) {
 	f := KnowledgeFinding{
 		ID: "f-1", Title: "Null Pointer", Summary: "Nil deref in parser",

@@ -263,6 +263,84 @@ func TestCollectFindingsFromDirEmpty(t *testing.T) {
 	}
 }
 
+// TestCollectFindingsFromDir_RelevanceWeighting is the age-r3w refuter fix: a
+// finding matching all query tokens must carry MatchConfidence 1.0 and keep its
+// utility, while a finding matching only one token is discounted (MatchConfidence
+// < 1 folded into utility) so it ranks below the fuller match — closing the gap
+// where any-token matching + freshness/utility-only ranking let a fresh one-token
+// false positive evict a relevant multi-token finding.
+func TestCollectFindingsFromDir_RelevanceWeighting(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, title string) {
+		c := "---\ntitle: " + title + "\n---\n\nbody.\n"
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(c), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("relevant.md", "codex exec stdin stall in non-tty context") // all query tokens
+	write("partial.md", "codex deployment guide")                     // only "codex"
+
+	results, err := collectFindingsFromDir(dir, "codex exec stdin", time.Now(), false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("expected both findings to match >=1 token, got %d", len(results))
+	}
+	var relevant, partial knowledgeFinding
+	for _, f := range results {
+		if f.ID == "relevant" {
+			relevant = f
+		} else {
+			partial = f
+		}
+	}
+	if relevant.MatchConfidence != 1.0 {
+		t.Errorf("full-match MatchConfidence = %v, want 1.0", relevant.MatchConfidence)
+	}
+	if !(partial.MatchConfidence > 0 && partial.MatchConfidence < 1.0) {
+		t.Errorf("partial-match MatchConfidence = %v, want 0 < x < 1.0", partial.MatchConfidence)
+	}
+	if relevant.Utility <= partial.Utility {
+		t.Errorf("relevance weighting not applied: relevant.Utility %v <= partial.Utility %v", relevant.Utility, partial.Utility)
+	}
+}
+
+// TestCollectGlobalFindings_RelevanceWeighting proves the GLOBAL finding path
+// (parallel to collectFindingsFromDir) also routes through matchAndWeighFinding,
+// so the relevance weighting can't be bypassed there — the gap the round-2 refuter
+// found (collectGlobalFindings previously used the boolean matcher only).
+func TestCollectGlobalFindings_RelevanceWeighting(t *testing.T) {
+	dir := t.TempDir()
+	write := func(name, title string) {
+		c := "---\ntitle: " + title + "\n---\n\nbody.\n"
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(c), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("relevant.md", "codex exec stdin stall in non-tty context") // all query tokens
+	write("partial.md", "codex deployment guide")                     // only "codex"
+
+	got := collectGlobalFindings(dir, map[string]bool{}, "codex exec stdin", time.Now(), false)
+	if len(got) != 2 {
+		t.Fatalf("expected 2 global findings, got %d", len(got))
+	}
+	var relevant, partial knowledgeFinding
+	for _, f := range got {
+		if f.ID == "relevant" {
+			relevant = f
+		} else {
+			partial = f
+		}
+	}
+	if relevant.MatchConfidence != 1.0 {
+		t.Errorf("global full-match MatchConfidence = %v, want 1.0", relevant.MatchConfidence)
+	}
+	if relevant.Utility <= partial.Utility {
+		t.Errorf("global relevance weighting not applied: relevant %v <= partial %v", relevant.Utility, partial.Utility)
+	}
+}
+
 func TestCollectFindingsFromDir(t *testing.T) {
 	dir := t.TempDir()
 	content := `---
