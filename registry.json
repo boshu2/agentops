@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-16T16:59:20Z",
+  "generated_at": "2026-06-16T17:49:26Z",
   "summary": {
     "skills": 72,
     "hooks": 0,
@@ -2390,6 +2390,7 @@
       "drives_commands": [
         "ao lookup",
         "ao ratchet",
+        "ao rpi stamp-shape",
         "ao search"
       ],
       "path": "skills/discovery/",

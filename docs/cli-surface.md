@@ -222,6 +222,7 @@
 | `ao rpi parallel` | `unsafe-live` | `allowlisted` | Parallel orchestration is long-running and state-modifying. |
 | `ao rpi phased` | `unsafe-live` | `allowlisted` | Full RPI lifecycle orchestration is long-running and state-modifying. |
 | `ao rpi serve` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao rpi stamp-shape` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao rpi status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao rpi stream` | `unsafe-live` | `allowlisted` | Requires an active RPI run event stream. |
 | `ao rpi verify` | `public-tested` | `allowlisted` | Covered by RPI status and verification tests. |

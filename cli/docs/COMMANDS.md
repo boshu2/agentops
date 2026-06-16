@@ -2609,6 +2609,25 @@ ao rpi serve [goal | run-id] [flags]
       --runtime-cmd string   Runtime command for orchestration phase prompts (Claude uses '-p'; Codex uses 'exec')
 ```
 
+#### `ao rpi stamp-shape`
+
+Compute the orchestration shape from observable ground truth (Agent Mail
+
+```
+ao rpi stamp-shape [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help              help for stamp-shape
+      --no-am             Skip Agent Mail gathering (single-agent floor unless --unattended)
+      --packet string     Path to the execution packet (default .agents/rpi/execution-packet.json)
+      --project string    Agent Mail project key for live-writer/reservation gathering (default cwd)
+      --proposed string   Model-proposed shape to validate/override (default: the packet's existing chosen_shape)
+      --unattended        Mark the durability axis: the run must outlive the session (→ ATM)
+```
+
 #### `ao rpi status`
 
 Display active and recent RPI phased runs.
