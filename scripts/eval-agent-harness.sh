@@ -109,12 +109,19 @@ run_agent() {
     agent_env+=(AGENTOPS_HOOKS_DISABLED=1)
   fi
 
+  # --skip-git-repo-check (ag-o9x): each task workspace is a fresh NON-git dir;
+  # modern `codex exec` REFUSES to launch there ("Not inside a trusted directory
+  # and --skip-git-repo-check was not specified", exit 1) without this flag — so the
+  # agent never ran and every task scored 0 in both arms. Capture the agent exit
+  # status (do NOT swallow with `|| true`) and return it, so run_single can mark a
+  # launch/timeout failure as `degraded` instead of an invisible score-0.
+  local rc=0
   case "$AGENT" in
     codex)
       if [[ ${#agent_env[@]} -gt 0 ]]; then
-        env "${agent_env[@]}" timeout "$TIMEOUT" codex exec -C "$workspace" -s workspace-write "$prompt" >/dev/null 2>&1 || true
+        env "${agent_env[@]}" timeout "$TIMEOUT" codex exec --skip-git-repo-check -C "$workspace" -s workspace-write "$prompt" >/dev/null 2>&1 || rc=$?
       else
-        timeout "$TIMEOUT" codex exec -C "$workspace" -s workspace-write "$prompt" >/dev/null 2>&1 || true
+        timeout "$TIMEOUT" codex exec --skip-git-repo-check -C "$workspace" -s workspace-write "$prompt" >/dev/null 2>&1 || rc=$?
       fi
       ;;
     *)
@@ -122,6 +129,7 @@ run_agent() {
       exit 1
       ;;
   esac
+  return "$rc"
 }
 
 run_single() {
@@ -148,7 +156,12 @@ run_single() {
 
   bash "$TASK_DIR/setup.sh" "$workspace" >/dev/null 2>&1
 
-  run_agent "$workspace" "$hooks_off"
+  # ag-o9x: capture the agent exit status (run_agent no longer swallows it). A
+  # non-zero status means the agent itself failed to run cleanly (e.g. the
+  # trusted-directory refusal, or a `timeout` kill: 124/137) — that is a DEGRADED
+  # run, not an honest grader-fail, and must not be counted as a silent score-0.
+  local agent_rc=0
+  run_agent "$workspace" "$hooks_off" || agent_rc=$?
 
   local result
   result="$(bash "$TASK_DIR/score.sh" "$workspace" 2>/dev/null | tail -1)"
@@ -170,10 +183,30 @@ run_single() {
 
       if [[ -n "$test_output" ]]; then
         local retry_prompt="You are in a software project at $workspace. Your previous fix attempt did not fully resolve the issue. Here are the test failures:\n\n$test_output\n\nFix the remaining issues so all tests pass. Do not explain — just fix the files."
-        PROMPT="$retry_prompt" run_agent "$workspace" "$hooks_off"
+        agent_rc=0
+        PROMPT="$retry_prompt" run_agent "$workspace" "$hooks_off" || agent_rc=$?
         result="$(bash "$TASK_DIR/score.sh" "$workspace" 2>/dev/null | tail -1)"
       fi
     fi
+  fi
+
+  # ag-o9x: a non-zero agent exit = DEGRADED run (the agent failed to launch/finish,
+  # e.g. the trusted-dir refusal or a timeout kill). Mark it so the caller can tell a
+  # degraded run apart from an honest grader-fail instead of silently scoring it 0.
+  # Happy path (agent_rc==0) leaves `result` byte-identical to the prior contract.
+  if [[ "$agent_rc" -ne 0 ]]; then
+    result="$(printf '%s' "$result" | AGENT_RC="$agent_rc" python3 -c '
+import sys, json, os
+rc = int(os.environ["AGENT_RC"])
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    d = {"score": 0, "total": 0, "pass": False}
+d["pass"] = False
+d["degraded"] = True
+d["agent_exit"] = rc
+print(json.dumps(d))
+' 2>/dev/null || printf '{"score": 0, "total": 0, "pass": false, "degraded": true, "agent_exit": %s}' "$agent_rc")"
   fi
 
   # ag-zzpy1: clean ONLY a workspace we created. A caller-provided
