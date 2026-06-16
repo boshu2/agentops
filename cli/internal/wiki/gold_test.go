@@ -2,6 +2,7 @@ package wiki
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -314,6 +315,36 @@ func TestGold_HarvestTags(t *testing.T) {
 	// empty tier must not leak as the slugify "untitled" sentinel
 	if strings.Contains(tagLine, "untitled") {
 		t.Errorf("empty field leaked as 'untitled' tag: %q", tagLine)
+	}
+}
+
+func TestGold_Manifest(t *testing.T) {
+	gc, agents := newTestCompiler(t)
+	writeAgent(t, filepath.Join(agents, "learnings"), "m.md",
+		"---\ntype: learning\nid: man-one\nmaturity: established\n---\n\nA durable lesson that should appear as a structured entry in manifest.json.\n")
+	if _, err := gc.Compile(false); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(filepath.Join(gc.OutDir, "manifest.json"))
+	if err != nil {
+		t.Fatalf("manifest.json not written: %v", err)
+	}
+	var m struct {
+		Format    string `json:"format"`
+		Count     int    `json:"count"`
+		Documents []struct {
+			Type, Title, Path, Status string
+		} `json:"documents"`
+	}
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatalf("manifest.json is not valid JSON: %v", err)
+	}
+	if m.Format != "okf" || m.Count != 1 || len(m.Documents) != 1 {
+		t.Fatalf("manifest shape wrong: %+v", m)
+	}
+	d := m.Documents[0]
+	if d.Type != "Learning" || d.Path != "learnings/man-one.md" || d.Status == "" {
+		t.Errorf("manifest entry wrong: %+v", d)
 	}
 }
 
