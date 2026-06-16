@@ -277,7 +277,7 @@ func learningArtifactCitationFeedback(
 		return citationFeedbackResult{event: &event, rewarded: 1}
 	}
 
-	oldUtility, newUtility, err := updateLearningUtility(path, effectiveReward, alpha)
+	oldUtility, newUtility, err := updateLearningUtility(path, effectiveReward, alpha, nil)
 	if err != nil {
 		currentUtility := parseUtilityFromFile(path)
 		event := FeedbackEvent{

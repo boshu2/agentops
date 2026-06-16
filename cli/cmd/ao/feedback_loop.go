@@ -221,7 +221,7 @@ func processUniqueCitations(cwd, sessionID, transcriptPath string, citations []t
 			continue
 		}
 
-		oldUtility, newUtility, err := updateLearningUtility(learningPath, reward, alpha)
+		oldUtility, newUtility, err := updateLearningUtility(learningPath, reward, alpha, nil)
 		if err != nil {
 			VerbosePrintf("Warning: failed to update %s: %v\n", learningPath, err)
 			failedCount++
@@ -696,7 +696,7 @@ func applyDrainUpdates(baseDir string, unique []types.CitationEvent, opts drainO
 			continue
 		}
 
-		if _, _, err := updateLearningUtility(learningPath, opts.Reward, opts.Alpha); err != nil {
+		if _, _, err := updateLearningUtility(learningPath, opts.Reward, opts.Alpha, nil); err != nil {
 			VerbosePrintf("drain: failed to update %s: %v\n", learningPath, err)
 			failed++
 			continue

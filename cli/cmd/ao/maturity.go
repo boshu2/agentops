@@ -274,7 +274,7 @@ func runMaturityRecalibrate(learningsDir string) error {
 	for _, file := range files {
 		// updateLearningUtility with alpha=1.0 and reward=InitialUtility
 		// yields: new = (1-1.0)*old + 1.0*0.5 = 0.5
-		_, _, err := updateLearningUtility(file, types.InitialUtility, 1.0)
+		_, _, err := updateLearningUtility(file, types.InitialUtility, 1.0, nil)
 		if err != nil {
 			VerbosePrintf("Warning: could not recalibrate %s: %v\n", filepath.Base(file), err)
 			continue
