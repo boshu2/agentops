@@ -102,7 +102,7 @@ func collectGlobalFindings(globalDir string, localPaths map[string]bool, queryLo
 		if !includeInactive && !findingStatusActiveForRetrieval(f.Status) {
 			continue
 		}
-		if !findingMatchesQuery(f, queryLower) {
+		if !matchAndWeighFinding(&f, queryLower) {
 			continue
 		}
 		f.Global = true
@@ -140,7 +140,7 @@ func collectFindingsFromDir(dir, queryLower string, now time.Time, isGlobal, inc
 		if !includeInactive && !findingStatusActiveForRetrieval(f.Status) {
 			continue
 		}
-		if !findingMatchesQuery(f, queryLower) {
+		if !matchAndWeighFinding(&f, queryLower) {
 			continue
 		}
 		f.Global = isGlobal
@@ -155,6 +155,28 @@ func applyFindingFreshness(f *knowledgeFinding, file string, now time.Time) {
 }
 func findingMatchesQuery(f knowledgeFinding, queryLower string) bool {
 	return search.FindingMatchesQuery(f, queryLower)
+}
+func findingMatchRatio(f knowledgeFinding, queryLower string) float64 {
+	return search.FindingMatchRatio(f, queryLower)
+}
+
+// matchAndWeighFinding applies token-relevance matching to a freshness-scored
+// finding (call after applyFindingFreshness, which sets the default utility it
+// folds into). Returns false to skip when no salient query token matches; else
+// sets MatchConfidence to the match ratio and folds a partial match into utility
+// so a one-token match ranks below a full match (mirrors the learnings matcher).
+// Every finding-collection path (local + global) routes through this so the
+// relevance weighting cannot be silently bypassed (age-r3w refuter rounds 1-2).
+func matchAndWeighFinding(f *knowledgeFinding, queryLower string) bool {
+	ratio := findingMatchRatio(*f, queryLower)
+	if ratio <= 0 {
+		return false
+	}
+	f.MatchConfidence = ratio
+	if f.MatchConfidence < 1.0 {
+		f.Utility *= f.MatchConfidence
+	}
+	return true
 }
 func parseFindingFile(path string) (knowledgeFinding, error) { return search.ParseFindingFile(path) }
 func applyFindingField(f *knowledgeFinding, line string)     { search.ApplyFindingField(f, line) }

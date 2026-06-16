@@ -73,6 +73,7 @@ type KnowledgeFinding struct {
 	FreshnessScore      float64  `json:"freshness_score,omitempty"`
 	AgeWeeks            float64  `json:"age_weeks,omitempty"`
 	Utility             float64  `json:"utility,omitempty"`
+	MatchConfidence     float64  `json:"match_confidence,omitempty"` // fraction of query tokens matched; folds into ranking so a partial (one-token) match ranks below a full match (age-r3w)
 	CompositeScore      float64  `json:"composite_score,omitempty"`
 	Global              bool     `json:"-"`
 }

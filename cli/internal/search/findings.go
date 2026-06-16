@@ -10,10 +10,15 @@ import (
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 
-// FindingMatchesQuery returns true if the finding matches the query (case-insensitive).
-func FindingMatchesQuery(f KnowledgeFinding, queryLower string) bool {
+// FindingMatchRatio returns the fraction of salient query tokens (0.0–1.0) present
+// in the finding's haystack; 1.0 for an empty query. This is the relevance signal:
+// FindingMatchesQuery thresholds it at >0, and callers fold it into MatchConfidence
+// so a partial (one-token) match ranks below a full multi-token match (mirrors the
+// learnings matcher). Without it, any-token matching + freshness/utility-only ranking
+// lets a fresh one-token false positive evict a stale but relevant finding (age-r3w).
+func FindingMatchRatio(f KnowledgeFinding, queryLower string) float64 {
 	if queryLower == "" {
-		return true
+		return 1.0
 	}
 	haystack := strings.ToLower(strings.Join([]string{
 		f.ID, f.Title, f.Summary, f.SourceSkill, f.Severity,
@@ -23,7 +28,15 @@ func FindingMatchesQuery(f KnowledgeFinding, queryLower string) bool {
 		strings.Join(f.ApplicableLanguages, " "),
 		strings.Join(f.CompilerTargets, " "),
 	}, " "))
-	return strings.Contains(haystack, queryLower)
+	return MatchRatio(QueryTokens(queryLower), haystack, "", "")
+}
+
+// FindingMatchesQuery returns true if at least one salient query token appears in
+// the finding's haystack (token-based; replaces the prior strings.Contains whole-query
+// substring test that left 0/58 gold findings unmatchable by natural-language queries —
+// age-r3w). Ranking relevance is carried by FindingMatchRatio → MatchConfidence.
+func FindingMatchesQuery(f KnowledgeFinding, queryLower string) bool {
+	return FindingMatchRatio(f, queryLower) > 0
 }
 
 // ParseFindingFile extracts finding info from a markdown file.
