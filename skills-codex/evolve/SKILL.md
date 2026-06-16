@@ -8,9 +8,12 @@ description: "Run evolve."
 
 **Codex orchestration default:** keep the skill name `$evolve`. In Codex,
 run the loop by chaining Codex skills: `$evolve` selects work and invokes
-complete `$rpi --auto` cycles. Treat retired CLI wrappers as terminal
-wrapper commands for humans or non-skill runtimes, not as the Codex skill
-default.
+complete `$rpi --auto` cycles. Each cycle's post-mortem checkpoint is a
+**re-plan point, not just stop/continue** — it may re-scope, reorder, drop, or
+add to the *remaining* queue/goal from what the cycle taught (`$rpi`'s
+[Agile Re-Plan Loop](../rpi/references/agile-replan-loop.md), one altitude up:
+agile across cycles, not a fixed backlog run to the letter).
+Treat retired CLI wrappers as terminal wrapper commands for humans or non-skill runtimes, not as the Codex skill default.
 
 **Operator cadence:** post-mortem finished work, analyze the current repo state,
 select or create the next highest-value work item, let `$rpi` handle research,

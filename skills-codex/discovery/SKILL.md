@@ -7,7 +7,9 @@ description: "Run discovery."
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**
 
 Discovery turns a goal plus delegated child artifacts into one dense execution
-packet for `$crank` and `$validate`.
+packet for `$crank` and `$validate`. It is also the **re-plan engine** for `$rpi`'s
+[Agile Re-Plan Loop](../rpi/references/agile-replan-loop.md): invoked again at each wave
+boundary to mutate the *remaining* waves from what the last wave taught — not only at the start.
 
 ## Strict Delegation Contract
 

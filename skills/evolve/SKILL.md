@@ -51,7 +51,11 @@ output_contract: code changes, GOALS.md fitness deltas
 > **Cadence is pawl-gated, not per-tread** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). Each cycle's heavy validation (full council, `/validate --mixed`, `/pre-land-refuters`) fires at that cycle's **bead-acceptance / merge-to-main pawl** — once per bead, not per slice or wave. The per-cycle regression gate (Step 5) and lightweight in-cycle checks are **chaos**: cheap, run freely, wrong-tolerant between pawls. Do NOT escalate every cycle to a cross-family panel "to be safe" — that re-creates the waterfall the ratchet exists to avoid (`--mixed` is reserved for strategic decisions; see `references/postmortem-checkpoint.md`). The bead is fully validated at its acceptance pawl — that is the ratchet's lock.
 
 **The loop runs as this skill (skills-are-the-runtime).** `evolve` selects work
-and invokes complete `/rpi --auto` cycles — that *is* the loop. `evolve` (and
+and invokes complete `/rpi --auto` cycles — that *is* the loop. Each cycle's
+post-mortem checkpoint is a **re-plan point, not just stop/continue**: it may
+re-scope, reorder, drop, or add to the *remaining* queue/goal from what the cycle
+taught (`/rpi`'s [Agile Re-Plan Loop](../rpi/references/agile-replan-loop.md), one
+altitude up — agile across cycles, not a fixed backlog run to the letter). `evolve` (and
 `ao rpi loop --supervisor`) are terminal-native **wrapper commands** for humans or
 non-skill runtimes, reusing the same v2 RPI loop engine. (The substrate dispatches
 the whole `evolve` skill loop as one unit; the `evolve`/`ao rpi` CLI wrappers are

@@ -49,7 +49,9 @@ output_contract: .agents/plans/YYYY-MM-DD-*.md, beads, epic-id
 > **Loop position:** move 1 (shape intent as BDD) plus the seed for move 3
 > (slice candidates) of the [operating loop](../../docs/architecture/operating-loop.md).
 > Discovery turns a goal plus delegated child artifacts into one dense execution
-> packet for `/crank` and `/validate`.
+> packet for `/crank` and `/validate`. It is also the **re-plan engine** for `/rpi`'s
+> [Agile Re-Plan Loop](../rpi/references/agile-replan-loop.md): invoked again at each wave
+> boundary to mutate the *remaining* waves from what the last wave taught — not only at the start.
 
 ## Folded-In Trigger Surface (brainstorm, design)
 
