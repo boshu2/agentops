@@ -1210,8 +1210,8 @@
     {
       "name": "discovery",
       "source_skill": "skills/discovery",
-      "source_hash": "c47db56714d7a97e4454f4f8b5b2a510274a16fdf8c66ca00cdba360e3cd537b",
-      "generated_hash": "5b544e0cacba680ab000bceaafbe4963b5625e34caf84dde8d047edbe06ab759"
+      "source_hash": "29df0652c2745d958e08987d14219f947b18547f43e78cc99a352b4cffaa920e",
+      "generated_hash": "2272f3704f9340398702a1147fda0748adcea53743c8552b92f7fc2b6e8b35fa"
     },
     {
       "name": "doc",
@@ -1258,8 +1258,8 @@
     {
       "name": "evolve",
       "source_skill": "skills/evolve",
-      "source_hash": "0f9165b3de6eddf246828c2291e1a24a598ec96f450ae7214c478342216f0a5e",
-      "generated_hash": "53a3353af8ad80a64bed46470578a928d8794efa3d9cd2644502b1bfba608b9f"
+      "source_hash": "490183b5402ff72595947802b442351cf82856c7d657f38fa89230c8b7278146",
+      "generated_hash": "de72be1cfd6923f48db5b801739458a17b9f81af21e28ec47b9e72eba77d6105"
     },
     {
       "name": "flywheel",
