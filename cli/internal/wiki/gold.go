@@ -116,6 +116,7 @@ type goldDoc struct {
 	confidence                                                         float64
 	category, slug                                                     string
 	srcKeys                                                            []string // identifiers this doc can be referenced by
+	relatedRefs                                                        []string // explicit cross-refs from frontmatter
 }
 
 func (c *GoldCompiler) now() time.Time {
@@ -239,10 +240,15 @@ func (c *GoldCompiler) Compile(dryRun bool) (GoldStats, error) {
 				slugify(rawID), slugify(fileStem),
 				slugify(fieldStr(doc.Fields, "name")), slugify(title),
 			})
+			// explicit cross-refs from frontmatter (comma/space-separated)
+			var relatedRefs []string
+			for _, k := range []string{"related", "related_learning", "related_finding", "parent_epic"} {
+				relatedRefs = append(relatedRefs, splitRefs(fieldStr(doc.Fields, k))...)
+			}
 			gd := goldDoc{
 				okfType:      ot,
-				title:        truncate(title, 120),
-				description:  truncate(flattenWikilinks(firstSentence(clean)), 200),
+				title:        truncateWords(title, 120),
+				description:  truncateWords(flattenWikilinks(firstSentence(clean)), 200),
 				resource:     filepath.Join(filepath.Base(c.AgentsDir), sub, filepath.Base(path)),
 				tags:         nonEmpty(mtype, strings.ToLower(fieldStr(doc.Fields, "tier"))),
 				timestamp:    firstNonEmpty(fieldStr(doc.Fields, "date"), c.now().Format("2006-01-02")),
@@ -253,6 +259,7 @@ func (c *GoldCompiler) Compile(dryRun bool) (GoldStats, error) {
 				category:     sub,
 				slug:         slugify(slugSrc),
 				srcKeys:      srcKeys,
+				relatedRefs:  relatedRefs,
 			}
 			docs = append(docs, gd)
 			stats.Promoted++
@@ -323,6 +330,16 @@ func (c *GoldCompiler) weaveLinks(docs []goldDoc) int {
 			resolved++
 			return fmt.Sprintf("[%s](%s)", docs[j].title, rel)
 		})
+		// explicit frontmatter cross-refs → Related edges (no body to rewrite)
+		for _, ref := range docs[i].relatedRefs {
+			j, ok := index[slugify(ref)]
+			if !ok || seen[j] {
+				continue
+			}
+			seen[j] = true
+			related = append(related, j)
+			resolved++
+		}
 		if len(related) > 0 {
 			var sb strings.Builder
 			sb.WriteString(body)
@@ -571,6 +588,19 @@ func truncate(s string, n int) string {
 	return s[:n]
 }
 
+// truncateWords trims s to at most n bytes at a word boundary, appending an
+// ellipsis — so titles/descriptions never cut mid-word ("...starter-bund").
+func truncateWords(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	cut := s[:n]
+	if i := strings.LastIndexAny(cut, " \t-/,;:"); i > n/2 {
+		cut = cut[:i]
+	}
+	return strings.TrimRight(cut, " \t-/,;:") + "…"
+}
+
 func nonEmpty(vals ...string) []string {
 	var out []string
 	for _, v := range vals {
@@ -611,6 +641,19 @@ func flattenWikilinks(s string) string {
 	return wikilinkPattern.ReplaceAllStringFunc(s, func(m string) string {
 		return strings.Trim(m, "[]")
 	})
+}
+
+// splitRefs splits a frontmatter cross-ref value (comma/space/bracket
+// separated, possibly [[wikilink]] wrapped) into individual reference tokens.
+func splitRefs(s string) []string {
+	s = strings.NewReplacer("[", " ", "]", " ", ",", " ", "\"", " ", "'", " ").Replace(s)
+	var out []string
+	for _, tok := range strings.Fields(s) {
+		if tok != "" {
+			out = append(out, tok)
+		}
+	}
+	return out
 }
 
 func dedupeStrings(in []string) []string {

@@ -163,6 +163,43 @@ func TestGold_CrossLinks(t *testing.T) {
 	}
 }
 
+func TestGold_RelatedFrontmatter(t *testing.T) {
+	gc, agents := newTestCompiler(t)
+	writeAgent(t, filepath.Join(agents, "learnings"), "x.md",
+		"---\ntype: learning\nid: ecks\nmaturity: established\nrelated: why-zed\n---\n\nEcks lesson with no body wikilinks but an explicit related frontmatter ref.\n")
+	writeAgent(t, filepath.Join(agents, "learnings"), "z.md",
+		"---\ntype: learning\nid: why-zed\nmaturity: established\n---\n\nZed is the durable lesson that ecks points to via a frontmatter cross-ref.\n")
+
+	stats, err := gc.Compile(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.Links != 1 {
+		t.Errorf("links = %d, want 1 (related frontmatter ecks->why-zed)", stats.Links)
+	}
+	out, _ := os.ReadFile(filepath.Join(gc.OutDir, "learnings", "ecks.md"))
+	if !strings.Contains(string(out), "## Related") || !strings.Contains(string(out), "why-zed.md") {
+		t.Errorf("frontmatter related ref not woven into Related:\n%s", out)
+	}
+}
+
+func TestGold_TruncateWords(t *testing.T) {
+	got := truncateWords("alpha beta gamma delta epsilon zeta", 20)
+	if strings.Contains(got, "delt") && !strings.HasSuffix(got, "…") {
+		t.Errorf("truncateWords cut mid-word: %q", got)
+	}
+	if !strings.HasSuffix(got, "…") {
+		t.Errorf("truncateWords should append ellipsis: %q", got)
+	}
+	if len("alpha beta") > 20 && !strings.HasPrefix(got, "alpha") {
+		t.Errorf("truncateWords lost the head: %q", got)
+	}
+	// short strings pass through untouched
+	if truncateWords("short", 20) != "short" {
+		t.Error("short string should be unchanged")
+	}
+}
+
 func TestGold_Idempotent(t *testing.T) {
 	gc, agents := newTestCompiler(t)
 	writeAgent(t, filepath.Join(agents, "patterns"), "p.md",
