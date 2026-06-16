@@ -98,7 +98,14 @@ If `ao` is available, retrieve pointers, not full context:
 
 ```bash
 ao search "<objective keywords>" 2>/dev/null || true
-ao lookup --query "<objective keywords>" --limit 5 2>/dev/null || true
+# Decision-point pull: GOLD wiki, compact pointers (no bodies), hard top-K cap
+# (ADR-0002 bookend-bound). WARN — never silently — if the gold wiki is absent.
+if [ -d .ao/wiki ]; then
+    ao lookup --query "<objective keywords>" --gold --pointers --limit 3 2>/dev/null || true
+else
+    echo "WARN: gold wiki (.ao/wiki) absent — run 'ao wiki gold'; falling back to raw .agents/ corpus" >&2
+    ao lookup --query "<objective keywords>" --limit 3 2>/dev/null || true
+fi
 ```
 
 Apply each returned item explicitly:

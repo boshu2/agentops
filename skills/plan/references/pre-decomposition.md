@@ -16,7 +16,16 @@ Use Grep to search `.agents/` for related content. If research exists, read it w
 ```bash
 if command -v ao &>/dev/null; then
     ao search "<topic> plan decomposition patterns" 2>/dev/null | head -10
-    ao lookup --query "<goal>" --limit 5 2>/dev/null | head -30
+    # Decision-point pull: prefer the curated GOLD wiki with compact pointers
+    # (no bodies) and a hard top-K cap — bookend-bounded (ADR-0002: never spray
+    # full corpus bodies into context). Fall back to the raw .agents/ corpus, but
+    # WARN loudly so a missing gold wiki is never a silent zero-result.
+    if [ -d .ao/wiki ]; then
+        ao lookup --query "<goal>" --gold --pointers --limit 3 2>/dev/null | head -20
+    else
+        echo "WARN: gold wiki (.ao/wiki) absent — run 'ao wiki gold' to enable gold retrieval; falling back to raw .agents/ corpus" >&2
+        ao lookup --query "<goal>" --limit 3 2>/dev/null | head -20
+    fi
 fi
 ```
 
