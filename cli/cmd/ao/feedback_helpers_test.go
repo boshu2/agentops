@@ -109,3 +109,29 @@ func TestUpdateFrontMatterFields(t *testing.T) {
 		}
 	})
 }
+
+func TestGateVerdictFromFlag(t *testing.T) {
+	// empty -> no verdict, no error
+	if v, err := gateVerdictFromFlag(""); v != nil || err != nil {
+		t.Errorf("empty: got (%v,%v), want (nil,nil)", v, err)
+	}
+	// pass/fail, case-insensitive + trimmed
+	for _, s := range []string{"pass", "PASS", " Pass "} {
+		v, err := gateVerdictFromFlag(s)
+		if err != nil || v == nil || !v.Passed {
+			t.Errorf("%q: want passed verdict, got (%v,%v)", s, v, err)
+		}
+	}
+	for _, s := range []string{"fail", "FAIL"} {
+		v, err := gateVerdictFromFlag(s)
+		if err != nil || v == nil || v.Passed {
+			t.Errorf("%q: want failed verdict, got (%v,%v)", s, v, err)
+		}
+	}
+	// unknown non-empty -> ERROR (not silently "missing") — the codex-caught bug
+	for _, s := range []string{"failed", "yes", "true", "xyz"} {
+		if v, err := gateVerdictFromFlag(s); err == nil {
+			t.Errorf("%q: unknown value should error, got verdict %v", s, v)
+		}
+	}
+}

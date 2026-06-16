@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -21,6 +22,7 @@ var (
 	feedbackAlpha   float64
 	feedbackHelpful bool
 	feedbackHarmful bool
+	feedbackGate    string // gate verdict licensing this deposit: pass|fail (empty=none)
 )
 
 var feedbackCmd = &cobra.Command{
@@ -63,7 +65,25 @@ func init() {
 	feedbackCmd.Flags().Float64Var(&feedbackAlpha, "alpha", types.DefaultAlpha, "EMA learning rate")
 	feedbackCmd.Flags().BoolVar(&feedbackHelpful, "helpful", false, "Mark as helpful (shortcut for --reward 1.0)")
 	feedbackCmd.Flags().BoolVar(&feedbackHarmful, "harmful", false, "Mark as harmful (shortcut for --reward 0.0)")
+	feedbackCmd.Flags().StringVar(&feedbackGate, "gate", "", "Gate verdict licensing this deposit: pass|fail (empty=none; refused under AO_DEPOSIT_GATE=strict)")
 	// Note: reward is no longer required since --helpful/--harmful can be used instead
+}
+
+// gateVerdictFromFlag maps the --gate flag to a GateVerdict: "" -> nil (no
+// verdict), "pass" -> passed, "fail" -> failed. An unknown NON-EMPTY value is an
+// error, never silently downgraded to "missing" — otherwise a typo'd `--gate=FAIL`
+// would deposit-with-warning in warn mode (cross-family review caught this).
+func gateVerdictFromFlag(s string) (*lifecycle.GateVerdict, error) {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "":
+		return nil, nil
+	case "pass":
+		return &lifecycle.GateVerdict{Passed: true, Source: "ao feedback --gate=pass"}, nil
+	case "fail":
+		return &lifecycle.GateVerdict{Passed: false, Source: "ao feedback --gate=fail"}, nil
+	default:
+		return nil, fmt.Errorf("invalid --gate value %q (want: pass|fail)", s)
+	}
 }
 
 func resolveReward(helpful, harmful bool, reward, alpha float64) (float64, error) {
@@ -108,6 +128,21 @@ func runFeedback(cmd *cobra.Command, args []string) error {
 	learningPath, err := findLearningFile(cwd, learningID)
 	if err != nil {
 		return fmt.Errorf("find learning: %w", err)
+	}
+
+	// Deposit chokepoint (the pawl): a reward may only strengthen a trail on a
+	// gate-passed outcome. A failed verdict never deposits; a missing verdict is
+	// refused under AO_DEPOSIT_GATE=strict, tolerated-with-warning otherwise.
+	verdict, gateErr := gateVerdictFromFlag(feedbackGate)
+	if gateErr != nil {
+		return gateErr
+	}
+	allowed, reason := lifecycle.GuardDeposit(verdict, lifecycle.ResolveDepositMode())
+	if !allowed {
+		return fmt.Errorf("deposit refused by gate chokepoint: %s", reason)
+	}
+	if len(reason) >= 4 && reason[:4] == "warn" {
+		fmt.Fprintf(os.Stderr, "WARNING: %s\n", reason)
 	}
 
 	if GetDryRun() {
