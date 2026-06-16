@@ -28,6 +28,7 @@ package wiki
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -251,7 +252,7 @@ func (c *GoldCompiler) Compile(dryRun bool) (GoldStats, error) {
 			gd := goldDoc{
 				okfType:      ot,
 				title:        truncateWords(title, 120),
-				description:  truncateWords(flattenWikilinks(firstSentence(clean)), 200),
+				description:  truncateWords(flattenWikilinks(titlePrefix.ReplaceAllString(firstSentence(clean), "")), 200),
 				resource:     filepath.Join(filepath.Base(c.AgentsDir), sub, filepath.Base(path)),
 				tags:         harvestTags(doc.Fields, clean, mtype, strings.ToLower(fieldStr(doc.Fields, "tier"))),
 				timestamp:    firstNonEmpty(fieldStr(doc.Fields, "date"), c.now().Format("2006-01-02")),
@@ -432,7 +433,56 @@ func (c *GoldCompiler) emit(docs []goldDoc, stats GoldStats) error {
 	for _, d := range docs {
 		fmt.Fprintf(&log, "- %s · `%s` · [%s](%s/%s.md) (%s)\n", d.timestamp, d.okfType, d.title, d.category, d.slug, d.status)
 	}
-	return os.WriteFile(filepath.Join(c.OutDir, "log.md"), []byte(log.String()), 0o644) //nolint:gosec
+	if err := os.WriteFile(filepath.Join(c.OutDir, "log.md"), []byte(log.String()), 0o644); err != nil { //nolint:gosec
+		return err
+	}
+
+	return c.writeManifest(docs, stats)
+}
+
+// manifestEntry is one gold document's machine-readable record.
+type manifestEntry struct {
+	Type         string   `json:"type"`
+	Title        string   `json:"title"`
+	Description  string   `json:"description"`
+	Status       string   `json:"status"`
+	Tags         []string `json:"tags"`
+	Timestamp    string   `json:"timestamp"`
+	Path         string   `json:"path"`
+	Resource     string   `json:"resource,omitempty"`
+	Confidence   float64  `json:"confidence"`
+	SourceDigest string   `json:"source_digest"`
+}
+
+// writeManifest emits manifest.json — a single machine-readable catalog of the
+// whole gold wiki so an agent or external OKF tool can consume it without
+// parsing every markdown file. This is the catalog-export side of OKF interop.
+func (c *GoldCompiler) writeManifest(docs []goldDoc, stats GoldStats) error {
+	entries := make([]manifestEntry, 0, len(docs))
+	for _, d := range docs {
+		if d.tags == nil {
+			d.tags = []string{}
+		}
+		entries = append(entries, manifestEntry{
+			Type: d.okfType, Title: d.title, Description: d.description,
+			Status: d.status, Tags: d.tags, Timestamp: d.timestamp,
+			Path: d.category + "/" + d.slug + ".md", Resource: d.resource,
+			Confidence: d.confidence, SourceDigest: d.sourceDigest,
+		})
+	}
+	sort.Slice(entries, func(a, b int) bool { return entries[a].Path < entries[b].Path })
+	manifest := map[string]any{
+		"format":    "okf",
+		"generator": "ao wiki gold",
+		"generated": c.now().Format(time.RFC3339),
+		"count":     len(entries),
+		"documents": entries,
+	}
+	data, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal manifest: %w", err)
+	}
+	return os.WriteFile(filepath.Join(c.OutDir, "manifest.json"), append(data, '\n'), 0o644) //nolint:gosec
 }
 
 // lint is a minimal OKF conformance check over the emitted tree.
