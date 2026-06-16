@@ -1,0 +1,132 @@
+package main
+
+// Self-contained helpers for the B5 codex acceptance tests
+// (recon_acceptance_codex_test.go). TEMPLATE — copied into cli/cmd/ao/ alongside
+// the codex acceptance test by stream-b-go.bats.
+//
+// These helpers manipulate an on-disk packet to model untrusted/tampered sources
+// and a duplicate-sandbox argv. They deliberately do NOT depend on yet-unbuilt
+// production symbols beyond the existing packet/dispatch surface — the trust
+// markers they set (a `trust:`/`source` field, an extra --sandbox arg) are the
+// inputs the hardened dispatch is expected to reject.
+
+import (
+	"encoding/json"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+// injectArgvSandboxOverride appends a SECOND --sandbox flag (with the given
+// smuggled value) AFTER the packet's existing argv sandbox. The packet stays
+// schema-valid: codexDispatchSandboxArg reads the FIRST --sandbox, so the
+// existing sandbox-MISMATCH check passes; a hardened sink must additionally
+// reject the DUPLICATE before exec.
+func injectArgvSandboxOverride(t *testing.T, packetPath, smuggled string) {
+	t.Helper()
+	raw, err := os.ReadFile(packetPath)
+	if err != nil {
+		t.Fatalf("read packet: %v", err)
+	}
+	var m map[string]any
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatalf("unmarshal packet: %v", err)
+	}
+	exec, _ := m["execution"].(map[string]any)
+	if exec == nil {
+		t.Fatalf("packet has no execution block")
+	}
+	argvAny, _ := exec["argv"].([]any)
+	argv := make([]any, 0, len(argvAny)+2)
+	argv = append(argv, argvAny...)
+	argv = append(argv, "--sandbox", smuggled)
+	exec["argv"] = argv
+	// dispatch.command must mirror execution.argv (existing invariant), so update
+	// it too — otherwise the test fails on the command-mismatch check, not the
+	// duplicate-sandbox check under test.
+	if disp, ok := m["dispatch"].(map[string]any); ok {
+		disp["command"] = argv
+	}
+	out, _ := json.MarshalIndent(m, "", "  ")
+	if err := os.WriteFile(packetPath, append(out, '\n'), 0o600); err != nil {
+		t.Fatalf("rewrite packet: %v", err)
+	}
+}
+
+// relocatePacketUntrusted copies the (schema-valid) packet to a location OUTSIDE
+// the repo's operator-trusted task dir and returns the new path. The hardened
+// dispatch trust boundary (B5-S1/S2) must refuse a packet that does not satisfy
+// the operator-trusted-local-artifact precondition (an unexpected source
+// location), independent of the packet's JSON validity.
+func relocatePacketUntrusted(t *testing.T, packetPath string) string {
+	t.Helper()
+	raw, err := os.ReadFile(packetPath)
+	if err != nil {
+		t.Fatalf("read packet: %v", err)
+	}
+	untrustedDir := t.TempDir() // a world-writable temp dir, not the repo task dir
+	dst := filepath.Join(untrustedDir, "untrusted-packet.json")
+	if err := os.WriteFile(dst, raw, 0o600); err != nil {
+		t.Fatalf("write untrusted packet: %v", err)
+	}
+	return dst
+}
+
+// symbolExists reports whether a top-level func/type/var with the given name is
+// declared anywhere in the cli/cmd/ao package source tree (cwd is cli/cmd/ao at
+// test time). Used by B5-S3 to detect an implemented keyed-digest path.
+func symbolExists(name string) bool {
+	fset := token.NewFileSet()
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".go") || strings.HasSuffix(e.Name(), "_test.go") {
+			continue
+		}
+		f, err := parser.ParseFile(fset, e.Name(), nil, 0)
+		if err != nil {
+			continue
+		}
+		for _, decl := range f.Decls {
+			switch d := decl.(type) {
+			case *ast.FuncDecl:
+				if d.Name.Name == name {
+					return true
+				}
+			case *ast.GenDecl:
+				for _, spec := range d.Specs {
+					switch s := spec.(type) {
+					case *ast.TypeSpec:
+						if s.Name.Name == name {
+							return true
+						}
+					case *ast.ValueSpec:
+						for _, id := range s.Names {
+							if id.Name == name {
+								return true
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
+// fileExistsWithMarker reports whether a file exists (relative to cli/cmd/ao at
+// test time) and contains the marker substring. Used by B5-S3 to detect a
+// documented unkeyed-SHA-256 + git-anchor rationale.
+func fileExistsWithMarker(relPath, marker string) bool {
+	data, err := os.ReadFile(relPath)
+	if err != nil {
+		return false
+	}
+	return strings.Contains(string(data), marker)
+}
