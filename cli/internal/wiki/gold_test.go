@@ -231,6 +231,34 @@ func TestGold_IndexForRoots(t *testing.T) {
 	}
 }
 
+func TestGold_DedupeSections(t *testing.T) {
+	gc, agents := newTestCompiler(t)
+	body := "# Finding: CLI bridge without version pinning\n\n" +
+		"## Summary\nCLI bridge without version pinning\n\n" +
+		"## Pattern\nCLI bridge without version pinning\n\n" +
+		"## Detection Question\nDoes the plan pin the external CLI schema version?\n\n" +
+		"## Source\n- Skill: finding-compiler\n- Artifact: .agents/findings/x.md\n"
+	writeAgent(t, filepath.Join(agents, "findings"), "x.md",
+		"---\ntype: finding\nid: cli-bridge\nmaturity: established\n---\n\n"+body)
+
+	if _, err := gc.Compile(false); err != nil {
+		t.Fatal(err)
+	}
+	out, _ := os.ReadFile(filepath.Join(gc.OutDir, "findings", "cli-bridge.md"))
+	s := string(out)
+	// unique content preserved
+	if !strings.Contains(s, "Detection Question") || !strings.Contains(s, "pin the external CLI") {
+		t.Errorf("unique section dropped:\n%s", s)
+	}
+	// redundant echoes + Source block removed
+	if strings.Contains(s, "## Summary") || strings.Contains(s, "## Pattern") {
+		t.Errorf("title-echo sections not removed:\n%s", s)
+	}
+	if strings.Contains(s, "## Source") || strings.Contains(s, "finding-compiler") {
+		t.Errorf("redundant Source block not removed:\n%s", s)
+	}
+}
+
 func TestGold_Idempotent(t *testing.T) {
 	gc, agents := newTestCompiler(t)
 	writeAgent(t, filepath.Join(agents, "patterns"), "p.md",

@@ -255,7 +255,7 @@ func (c *GoldCompiler) Compile(dryRun bool) (GoldStats, error) {
 				status:       status,
 				confidence:   conf,
 				sourceDigest: hex.EncodeToString(digest[:])[:12],
-				body:         strings.TrimRight(clean, "\n"),
+				body:         dedupeSections(strings.TrimRight(clean, "\n"), title),
 				category:     sub,
 				slug:         slugify(slugSrc),
 				srcKeys:      srcKeys,
@@ -632,6 +632,49 @@ func relLink(fromCat, toCat, slug string) string {
 		return slug + ".md"
 	}
 	return "../" + toCat + "/" + slug + ".md"
+}
+
+// normalizeText lowercases and collapses whitespace for content comparison.
+func normalizeText(s string) string {
+	return strings.Join(strings.Fields(strings.ToLower(s)), " ")
+}
+
+// dedupeSections removes "## Heading" blocks whose body merely repeats the
+// title or an earlier block — the Summary/Pattern echo that the
+// finding-compiler emits — and drops the redundant "## Source" block, whose
+// provenance now lives in the resource/source_digest frontmatter. Unique
+// sections (Detection Question, Checklist, Applicability, ...) are preserved.
+func dedupeSections(body, title string) string {
+	lines := strings.Split(body, "\n")
+	titleNorm := normalizeText(title)
+	seen := map[string]bool{}
+	var out []string
+	i := 0
+	for i < len(lines) && !strings.HasPrefix(strings.TrimSpace(lines[i]), "## ") {
+		out = append(out, lines[i]) // H1 + any intro before the first section
+		i++
+	}
+	for i < len(lines) {
+		block := []string{lines[i]}
+		name := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(lines[i]), "##")))
+		i++
+		for i < len(lines) && !strings.HasPrefix(strings.TrimSpace(lines[i]), "## ") {
+			block = append(block, lines[i])
+			i++
+		}
+		contentNorm := normalizeText(strings.Join(block[1:], "\n"))
+		if name == "source" {
+			continue // provenance is in frontmatter (resource + source_digest)
+		}
+		if contentNorm != "" && (contentNorm == titleNorm || seen[contentNorm]) {
+			continue // a section that merely echoes the title or a prior block
+		}
+		if contentNorm != "" {
+			seen[contentNorm] = true
+		}
+		out = append(out, block...)
+	}
+	return strings.TrimRight(strings.Join(out, "\n"), "\n")
 }
 
 // flattenWikilinks turns [[x]] into x — for titles/descriptions, which are
