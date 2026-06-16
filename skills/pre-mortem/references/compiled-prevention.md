@@ -8,11 +8,20 @@ Before review, retrieve learnings relevant to this plan's domain:
 
 ```bash
 if command -v ao &>/dev/null; then
-    ao lookup --query "<plan goal or title>" --limit 5 2>/dev/null | head -30
+    # Decision-point pull: prefer the curated GOLD wiki with compact pointers
+    # (no bodies) and a hard top-K cap — bookend-bounded (ADR-0002). Fall back to
+    # the raw .agents/ corpus, but WARN loudly so a missing gold wiki is never a
+    # silent zero-result.
+    if [ -d .ao/wiki ]; then
+        ao lookup --query "<plan goal or title>" --gold --pointers --limit 3 2>/dev/null | head -20
+    else
+        echo "WARN: gold wiki (.ao/wiki) absent — run 'ao wiki gold' to enable gold retrieval; falling back to raw .agents/ corpus" >&2
+        ao lookup --query "<plan goal or title>" --limit 3 2>/dev/null | head -20
+    fi
 fi
 ```
 
-If learnings are returned, include them as `known_context` in the review packet. Cite any learning by filename when it influences a prediction. Skip silently if ao is unavailable or returns no results.
+If learnings are returned, include them as `known_context` in the review packet. Cite any learning by filename when it influences a prediction. The gold-absent path WARNs (not silent) and falls back to the raw corpus; skip silently only if ao is unavailable or returns no results.
 
 ## Step 1.4b: Load Compiled Prevention First (Mandatory)
 
