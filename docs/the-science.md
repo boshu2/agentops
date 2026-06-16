@@ -614,6 +614,34 @@ None of the threads is the answer. The loop that connects them is.
 
 ---
 
+## Part 10: Effective Feedback Compute (External Validation of the Harness Bet)
+
+**Citation:** Zhang, X., Wang, D., Xu, K., Zhu, Q., & Che, W. (2026). "Scaling Laws for Agent Harnesses via Effective Feedback Compute." *arXiv:2605.29682*. https://arxiv.org/abs/2605.29682
+
+**Claim tier: A** (external) for the *direction*; **C** for the exact exponents until we measure our own traces.
+
+**Finding:** Agent-harness success scales with **Effective Feedback Compute (EFC)** — feedback credited only when it is **Informative · Valid · Non-redundant · Retained** — *not* with raw compute. Normalized by task demand, EFC predicts success at **R²=0.99** vs **R²=0.33** for raw tokens. In a matched-budget intervention (raw cost and tool calls held fixed), raising only feedback quality moved success from **0.27 → 0.90** (p ≈ 1e−300).
+
+```
+EFCₜ = κ · Iₜ · Vₜ · Rₜ · Mₜ          (a product — any factor at 0 zeroes the event)
+
+η = EFC / C_raw    harness efficiency   (predicts success: R²=0.97; raw cost: 0.01)
+X = EFC / D_task   feedback sufficiency  (relative to task demand, not absolute)
+```
+
+**Why this matters for AgentOps:** AgentOps *is* an agent harness, and EFC is the external twin of this document's own equation. The knowledge-stock law `dK/dt = I(t) − δ·K + σ·ρ·K` and EFC are the same claim at two altitudes:
+
+- `I(t)` (real input) is only the feedback where **I·V·R·M** all fire — volume without quality is not input.
+- `σ·ρ` (retrieval × decision-influence) **is** the run-level **M** (retention) factor measured at corpus scale.
+
+The four factors map onto mechanisms AgentOps already ships — **V** (validity) is gates / evidence-before-close / cross-family review; **M** (retention) is the flywheel and `σ×ρ`; **R** (non-redundancy) is the promotion ratchet; **I** (informativeness) is `ao inject` / corpus retrieval. The module ablation (router **+0.28**, verifier **+0.22**, memory **+0.20**) is independent evidence that routing, verification, and memory — the AgentOps spine — are exactly what buys efficiency.
+
+**Operationalized:** [`doctrine/effective-feedback-compute.md`](doctrine/effective-feedback-compute.md) turns the four factors into harness rules + a feedback-quality lens. The transfer-to-our-traces experiment is pre-registered (bead `age-k2w`) and gated on volume (N≥50) — it is **untested** here today.
+
+**Falsifiable prediction for our own traces:** if we compute Estimated-EFC over AgentOps sessions, `η = EFC/C_raw` should predict run success far better than token count. If it doesn't, the harness bet — and this doc — is wrong here.
+
+---
+
 ## Conclusion: The Goal Is The Math
 
 Everything in AgentOps exists to achieve one thing:
@@ -665,6 +693,9 @@ Every feature, every skill, every CLI command serves this inequality:
 
 ### Memory-Augmented Learning
 - Zhang, S., Wang, J., Zhou, R., Liao, J., Feng, Y., Zhang, W., Wen, Y., Li, Z., Xiong, F., Qi, Y., Tang, B., & Wen, M. (2025). "MemRL: Self-Evolving Agents via Runtime Reinforcement Learning on Episodic Memory." *arXiv:2601.03192*. https://arxiv.org/abs/2601.03192
+
+### Agent-Harness Scaling
+- Zhang, X., Wang, D., Xu, K., Zhu, Q., & Che, W. (2026). "Scaling Laws for Agent Harnesses via Effective Feedback Compute." *arXiv:2605.29682*. https://arxiv.org/abs/2605.29682
 
 ### DevOps
 - Kim, G., Humble, J., Debois, P., & Willis, J. (2016). *The DevOps Handbook*. IT Revolution Press.
