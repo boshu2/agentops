@@ -140,19 +140,30 @@ func (codexScenarioRunner) RunArm(ctx context.Context, sc scenario.Scenario, wit
 	return aoeval.ArmOutcome{Output: out, TokenCost: tokens}, nil
 }
 
+// taskSuccessJudgePrompt builds a per-arm TASK-SUCCESS grading prompt: it asks the
+// judge whether the OUTPUT accomplishes the scenario's goal/expected outcome, scored
+// 0..1 ABSOLUTELY and on its own merits. This replaces grading against the scenario's
+// A/B-CONTRAST acceptance_vectors (treatment-engages / control-hangs / delta-attributable),
+// which are properties of the COMPARISON, not of one arm — grading a single arm against
+// them is incoherent (an arm was penalized for correctly NOT "hanging"; the KF-4 −0.34
+// noise). An absolute per-arm task-success score is coherent AND preserves the age-707
+// ceiling pre-screen, which needs the control's absolute score. (age-oe2)
+func taskSuccessJudgePrompt(sc scenario.Scenario, output string) string {
+	var p strings.Builder
+	p.WriteString("You are a strict, fair judge. Grade ONLY whether the OUTPUT below accomplishes the task — score 0.0 to 1.0 (1.0 = the goal is fully achieved and the expected outcome met; 0.0 = not at all). Judge this OUTPUT on its own merits; do NOT compare it to any other answer.\n\n")
+	p.WriteString("Goal: " + sc.Goal + "\n")
+	if strings.TrimSpace(sc.ExpectedOutcome) != "" {
+		p.WriteString("Expected outcome: " + sc.ExpectedOutcome + "\n")
+	}
+	p.WriteString("\nOUTPUT:\n" + output + "\n\n")
+	p.WriteString(`Return ONLY strict JSON, no prose: {"vectors":[{"dimension":"task-success","pass":true,"score":0.0}],"aggregate_score":0.0}. Set pass=true iff score>=0.5; aggregate_score in [0,1] is your task-success grade.`)
+	return p.String()
+}
+
 type codexScenarioJudge struct{}
 
 func (codexScenarioJudge) Judge(ctx context.Context, sc scenario.Scenario, arm aoeval.ScenarioArm, outcome aoeval.ArmOutcome) (aoeval.JudgeVerdict, error) {
-	var prompt strings.Builder
-	prompt.WriteString("You are a strict cross-family judge. Grade the OUTPUT against the acceptance vectors.\n")
-	prompt.WriteString("Goal: " + sc.Goal + "\n")
-	prompt.WriteString("Expected outcome: " + sc.ExpectedOutcome + "\n")
-	prompt.WriteString("Acceptance vectors:\n")
-	for _, v := range sc.AcceptanceVectors {
-		fmt.Fprintf(&prompt, "- %s (threshold %.2f)\n", v.Dimension, v.Threshold)
-	}
-	prompt.WriteString("\nOUTPUT:\n" + outcome.Output + "\n\n")
-	prompt.WriteString(`Return ONLY strict JSON, no prose: {"vectors":[{"dimension":"...","pass":true,"score":0.0}],"aggregate_score":0.0}. aggregate_score is in [0,1].`)
+	prompt := taskSuccessJudgePrompt(sc, outcome.Output)
 	// Constrain the model's final message to the verdict shape so the parser
 	// reads a clean object, not codex's surrounding reasoning chrome.
 	schemaPath, cleanup, err := writeJudgeSchema()
@@ -160,7 +171,7 @@ func (codexScenarioJudge) Judge(ctx context.Context, sc scenario.Scenario, arm a
 		return aoeval.JudgeVerdict{}, err
 	}
 	defer cleanup()
-	out, _, err := runCodexExec(ctx, prompt.String(), schemaPath)
+	out, _, err := runCodexExec(ctx, prompt, schemaPath)
 	if err != nil {
 		return aoeval.JudgeVerdict{}, err
 	}
