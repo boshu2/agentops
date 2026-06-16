@@ -3572,6 +3572,7 @@ ao lookup [id] [flags]
 ```
       --bead string      Filter by source bead ID
       --cite string      Citation type to record for returned artifacts: retrieved, reference, applied (default "retrieved")
+      --gold             Retrieve from the sanitized OKF gold wiki (.ao/wiki) instead of the raw .agents/ corpus
   -h, --help             help for lookup
       --json             JSON output
       --limit int        Maximum results to return (default 3)

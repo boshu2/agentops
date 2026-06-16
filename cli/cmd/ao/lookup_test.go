@@ -956,3 +956,38 @@ func TestRecordLookupCitationsInNamespace(t *testing.T) {
 		t.Fatalf("match_confidence = %v, want 0.72", got)
 	}
 }
+
+func TestGoldDocFiles_ExcludesReserved(t *testing.T) {
+	in := []string{"/x/index.md", "/x/log.md", "/x/real-doc.md", "/x/another.md"}
+	got := goldDocFiles(in)
+	if len(got) != 2 {
+		t.Fatalf("goldDocFiles kept %d, want 2 (reserved files dropped): %v", len(got), got)
+	}
+	for _, p := range got {
+		if b := filepath.Base(p); b == "index.md" || b == "log.md" {
+			t.Errorf("reserved file %q not excluded", b)
+		}
+	}
+}
+
+func TestCollectGoldKnowledge_SkipsCatalogFiles(t *testing.T) {
+	gold := t.TempDir()
+	learn := filepath.Join(gold, "learnings")
+	if err := os.MkdirAll(learn, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// reserved catalog file that mentions the query — must NOT be retrieved
+	if err := os.WriteFile(filepath.Join(learn, "index.md"),
+		[]byte("# learnings\n\nratchet ratchet ratchet catalog\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// a real gold learning doc that matches the query
+	doc := "---\ntype: Learning\ntitle: \"Warn-then-fail ratchet\"\ndescription: \"the ratchet gate\"\ntags: [learning]\ntimestamp: 2026-06-16\nstatus: authoritative\nconfidence: 0.90\n---\n\nThe ratchet gate warns then fails so a regression cannot silently pass.\n"
+	if err := os.WriteFile(filepath.Join(learn, "warn-then-fail-ratchet.md"), []byte(doc), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	learnings, _, _ := collectGoldKnowledge(gold, "ratchet", 5)
+	if len(learnings) != 1 {
+		t.Fatalf("collectGoldKnowledge returned %d learnings, want 1 (real doc only, index.md excluded)", len(learnings))
+	}
+}
