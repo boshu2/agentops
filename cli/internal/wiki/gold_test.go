@@ -259,6 +259,32 @@ func TestGold_DedupeSections(t *testing.T) {
 	}
 }
 
+func TestGold_CatalogQuality(t *testing.T) {
+	gc, agents := newTestCompiler(t)
+	writeAgent(t, filepath.Join(agents, "learnings"), "auth.md",
+		"---\ntype: learning\nid: auth-one\nmaturity: canonical\n---\n\nAuthoritative durable lesson that should sort first in the OKF catalog index.\n")
+	writeAgent(t, filepath.Join(agents, "learnings"), "draft.md",
+		"---\ntype: learning\nid: draft-one\nconfidence: 0.72\n---\n\nA draft-status lesson promoted on confidence floor that should sort after authoritative.\n")
+	if _, err := gc.Compile(false); err != nil {
+		t.Fatal(err)
+	}
+	cat, _ := os.ReadFile(filepath.Join(gc.OutDir, "learnings", "index.md"))
+	s := string(cat)
+	if !strings.Contains(s, "authoritative. OKF catalog") {
+		t.Errorf("catalog missing authoritative count:\n%s", s)
+	}
+	// authoritative entry must appear before the draft entry
+	ai := strings.Index(s, "auth-one.md")
+	di := strings.Index(s, "draft-one.md")
+	if ai < 0 || di < 0 || ai > di {
+		t.Errorf("authoritative entry not sorted first (ai=%d di=%d):\n%s", ai, di, s)
+	}
+	// description line present (progressive disclosure)
+	if !strings.Contains(s, "Authoritative durable lesson") {
+		t.Errorf("catalog missing description line:\n%s", s)
+	}
+}
+
 func TestGold_Idempotent(t *testing.T) {
 	gc, agents := newTestCompiler(t)
 	writeAgent(t, filepath.Join(agents, "patterns"), "p.md",

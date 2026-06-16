@@ -382,15 +382,26 @@ func (c *GoldCompiler) emit(docs []goldDoc, stats GoldStats) error {
 		byCat[docs[i].category] = append(byCat[docs[i].category], docs[i])
 	}
 
-	// per-category catalog
+	// per-category catalog — authoritative first, then newest; each entry
+	// carries its description so the catalog supports OKF progressive
+	// disclosure (scan the index, then open the doc).
 	cats := make([]string, 0, len(byCat))
 	for cat, items := range byCat {
 		cats = append(cats, cat)
-		sort.Slice(items, func(a, b int) bool { return items[a].timestamp > items[b].timestamp })
+		sort.Slice(items, func(a, b int) bool {
+			ai, aj := items[a].status == "authoritative", items[b].status == "authoritative"
+			if ai != aj {
+				return ai
+			}
+			return items[a].timestamp > items[b].timestamp
+		})
 		var b strings.Builder
-		fmt.Fprintf(&b, "# %s\n\n_%d entries. OKF catalog._\n\n", cat, len(items))
+		fmt.Fprintf(&b, "# %s\n\n_%d entries · %d authoritative. OKF catalog._\n\n", cat, len(items), countAuthoritative(items))
 		for _, d := range items {
 			fmt.Fprintf(&b, "- [%s](%s.md) — `%s` · %s · %s\n", d.title, d.slug, d.okfType, d.status, d.timestamp)
+			if desc := strings.TrimSpace(d.description); desc != "" && desc != d.title {
+				fmt.Fprintf(&b, "  %s\n", desc)
+			}
 		}
 		if err := os.WriteFile(filepath.Join(c.OutDir, cat, "index.md"), []byte(b.String()), 0o644); err != nil { //nolint:gosec
 			return err
@@ -405,7 +416,7 @@ func (c *GoldCompiler) emit(docs []goldDoc, stats GoldStats) error {
 	fmt.Fprintf(&root, "_%d durable entries · %d redactions · %d raw entries gated out._\n\n## Catalog\n\n",
 		stats.Promoted, stats.Redactions, stats.Rejected)
 	for _, cat := range cats {
-		fmt.Fprintf(&root, "- [%s/](%s/index.md) — %d entries\n", cat, cat, len(byCat[cat]))
+		fmt.Fprintf(&root, "- [%s/](%s/index.md) — %d entries (%d authoritative)\n", cat, cat, len(byCat[cat]), countAuthoritative(byCat[cat]))
 	}
 	if err := os.WriteFile(filepath.Join(c.OutDir, "index.md"), []byte(root.String()), 0o644); err != nil { //nolint:gosec
 		return err
@@ -697,6 +708,16 @@ func splitRefs(s string) []string {
 		}
 	}
 	return out
+}
+
+func countAuthoritative(items []goldDoc) int {
+	n := 0
+	for _, d := range items {
+		if d.status == "authoritative" {
+			n++
+		}
+	}
+	return n
 }
 
 func dedupeStrings(in []string) []string {
