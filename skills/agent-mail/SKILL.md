@@ -19,6 +19,8 @@ practices:
 
 **Don't re-learn the command surface from this skill.** The MCP server self-describes its tools and resources in your tool list; the CLI self-describes via `am --help` and the group helps above. This skill carries only the operating doctrine: when to use mail, the reservation discipline, and the coordination boundaries. Full tool/parameter catalog: [TOOLS.md](references/TOOLS.md).
 
+> **When this applies (scope guard).** Agent Mail coordination — `start-session`, identity registration, file reservations, cross-lane ACKs — is **required when ≥2 lanes/panes share the repo** (a swarm, or you plus a concurrent peer session). With **only one active writer** (no second lane/pane), do **not** register or reserve against yourself — coordination is an escalation, not a session-start tax. If you are the sole writer, skip to the work. (Doctrine: [operating-loop principle 8](../../docs/architecture/operating-loop.md#governing-principles) — single-agent-first.)
+
 ## Coordination Boundary
 
 | Need | Source of truth |
@@ -80,7 +82,7 @@ is invisible work. "Are these filed?" must not be a question — the ACK closes 
 
 ## Session Bootstrap
 
-**Call `macro_start_session` (or `am macros start-session --project <abs> --program <p> --model <m> --task "<desc>"`) at the start of every agent session.** One call: ensures project exists → registers your identity → reserves files → fetches inbox. Returns `{project, agent, file_reservations, inbox}`.
+**Call `macro_start_session` (or `am macros start-session --project <abs> --program <p> --model <m> --task "<desc>"`) at the start of every *multi-lane* agent session** (skip it when you are the sole writer — see the scope guard above). One call: ensures project exists → registers your identity → reserves files → fetches inbox. Returns `{project, agent, file_reservations, inbox}`.
 
 **Verify the lane registered.** A pane can *look* spawned and still have never registered — its start-session may not have landed. Confirm with:
 

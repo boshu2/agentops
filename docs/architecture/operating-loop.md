@@ -33,6 +33,19 @@ The doctrine source for this spine is [`.agents/research/2026-05-15-cdlc-dojo-do
    *windshield* — deterministic ground-truth that catches a confident
    hallucination (a road that was never there) which re-routing alone cannot.
    See [3.0 → the navigator model](../3.0.md#why-a-loop-and-not-a-pipeline-the-navigator-model).
+8. **Single-agent-first; orchestration is opt-in escalation.** The default
+   execution shape is one capable agent working in-session with good
+   bookkeeping. Multi-agent orchestration — parallel waves, ATM swarms, Agent
+   Mail coordination — is an *escalation you reach for*, never a substrate you
+   start from. **Escalation trigger (observable):** escalate only when you are
+   creating **two or more active lanes** — independent read/review lanes whose
+   outputs a lead will merge, or independent implementation slices with
+   **disjoint write scopes**. When ≥2 lanes/panes share the repo, Agent Mail
+   registration and file reservations are mandatory before writes. With only
+   one active writer, stay single-agent and use normal bookkeeping. (Shape
+   routing detail: [`automation-shape-routing`](../../skills/automation-shape-routing/SKILL.md)
+   — "shape 0" is the default front door; `AGENTOPS_ORCHESTRATION=off` pins the
+   beads floor.)
 
 ## The seven moves
 

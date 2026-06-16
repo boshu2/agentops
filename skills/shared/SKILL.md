@@ -36,7 +36,7 @@ This directory contains shared reference documents used by multiple skills:
 - `references/backend-claude-teams.md` - Concrete examples for Claude native teams (`TeamCreate` + `SendMessage`)
 - `references/backend-codex-subagents.md` - Concrete examples for Codex CLI and Codex sub-agents
 - `references/backend-background-tasks.md` - Fallback: `Task(run_in_background=true)`
-- `references/backend-inline.md` - Degraded single-agent mode (no spawn)
+- `references/backend-inline.md` - Default single-agent mode (no spawn) — the baseline, not a degradation
 - `references/claude-cli-verified-commands.md` - Verified Claude CLI command shapes and caveats
 - `references/codex-cli-verified-commands.md` - Verified Codex CLI command shapes and caveats
 - `references/cli-command-failures-2026-02-26.md` - Dated failure log and mitigations from live runs
