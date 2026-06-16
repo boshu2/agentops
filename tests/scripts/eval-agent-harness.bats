@@ -55,3 +55,31 @@ teardown() { rm -rf "$TMP"; }
 # A green-but-vacuous test would assert coverage it does not have, so it is omitted.
 # Tests 1-2 above cover the load-bearing behavior (workspace honoring + ownership)
 # with proven teeth (test 1 fails against the pre-fix bare-mktemp).
+
+# ag-o9x: a non-zero agent exit (launch refusal, timeout kill) must surface as a
+# DEGRADED run, not a silent score-0 grader-fail. This is the regression that hid
+# the harness never launching codex (--skip-git-repo-check missing → exit 1 → `|| true`).
+@test "non-zero agent exit marks the run degraded (not a silent grader-fail)" {
+  # fake codex that REFUSES to run (mimics the trusted-dir launch failure: exit 1, no work)
+  cat > "$TMP/bin/codex" <<'FAKE'
+#!/usr/bin/env bash
+echo "Not inside a trusted directory and --skip-git-repo-check was not specified." >&2
+exit 1
+FAKE
+  chmod +x "$TMP/bin/codex"
+  run env -u CORPUS_DELTA_WORKSPACE "$RUNNER" --task cd-am-1 --agent codex --runs 1
+  [ "$status" -eq 0 ]
+  # the single-run result must be flagged degraded with the agent's exit code, pass=false
+  echo "$output" | grep -q '"degraded": *true'
+  echo "$output" | grep -q '"agent_exit": *1'
+  echo "$output" | grep -q '"pass": *false'
+}
+
+# ag-o9x: the happy path (agent exit 0) must NOT carry a degraded marker — the
+# pre-fix output contract is preserved byte-for-shape for clean runs.
+@test "clean agent exit (0) carries no degraded marker" {
+  # default setup() fake codex exits 0
+  run env -u CORPUS_DELTA_WORKSPACE "$RUNNER" --task cd-am-1 --agent codex --runs 1
+  [ "$status" -eq 0 ]
+  ! echo "$output" | grep -q 'degraded'
+}
