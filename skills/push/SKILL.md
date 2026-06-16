@@ -57,6 +57,10 @@ cd cli && go vet ./...
 cd cli && go test ./... -count=1 -short
 ```
 
+Run the **whole** suite (`./...`), never a `-run <feature>` subset. A filtered
+run stays green while cross-cutting tests (conformance, surface-parity) are red —
+they only surface at push, after you have already reported "green."
+
 **Python projects:**
 ```bash
 python -m pytest --tb=short -q
@@ -68,6 +72,28 @@ shellcheck <modified .sh files>
 ```
 
 If ANY test fails: **STOP.** Fix the failures before continuing. Do not commit broken code.
+
+### Step 2.5: Run the repo's own pre-push gate + regenerate derived artifacts
+
+`go test` green does **not** mean the push will pass. Repos with a pre-push gate
+also enforce **derived/generated artifacts** — generated CLI docs, registries,
+command-surface matrices, conformance trees, codex twins — that unit tests never
+touch. Discovering these at `git push` (after you reported "done") is the most
+common late failure.
+
+Before staging, if the repo has any of these, run its **regen + check locally**:
+
+- A gate runner / pre-push hook (run it directly, don't wait for the push).
+- A derived-scope or codegen finalizer after you touched a generating source
+  (e.g. you added a CLI command/flag, a skill, or a schema). In AgentOps:
+  `bash scripts/regen-changed-scope.sh --scope head` and
+  `bash scripts/generate-cli-reference.sh`; for skills, scope the codex-twin
+  regen to your skills (`scripts/regen-codex-hashes.sh --only <names>`).
+- Commit the regenerated artifacts **with** the change, not as a follow-up.
+
+Rule of thumb: **if you changed a file that generates another file, regenerate
+the other file now.** The gate that fails is the one whose globs you didn't
+think your change touched.
 
 ### Step 3: Stage Changes
 

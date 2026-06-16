@@ -74,6 +74,16 @@ Strict delegation is the **default**.
 
 **Anti-pattern to reject:** inlining `/research` work (grep + read + synthesize), collapsing `/plan` into an inline decomposition, skipping `/pre-mortem`. See [`../shared/references/strict-delegation-contract.md`](../shared/references/strict-delegation-contract.md) for the full contract, supported compression escapes (`--quick`, `--skip-brainstorm`, `--interactive`/`--auto`, `--no-scaffold`), and the **Pre-Mortem Anti-Rationalization Clause** (what does NOT count as a pre-mortem: an inline risk section you wrote, a prior adversarial pass on an input/premise rather than this plan, or "a related council already ran").
 
+**Re-baseline before you scope (mandatory for "improve X" / "build the missing
+Y" goals).** Before scoping any *new construction*, `/research` (or a grep+read
+pass) MUST confirm the capability does not already exist. Author-as-researcher
+in `--auto` is the trap: the author "knows" what's unbuilt and scopes from memory
+without searching — and is wrong (machinery that exists gets re-estimated as
+net-new, inflating effort and risking a duplicate path). Every slice that claims
+"X is missing/unbuilt" carries the search that proved it (the command, file, or
+symbol you grepped). No search → the claim is an assumption, and `/pre-mortem`'s
+re-baseline check (Steps 2.4–2.8) will WARN/FAIL it.
+
 See [`docs/learnings/orchestrator-compression-anti-pattern.md`](../../docs/learnings/orchestrator-compression-anti-pattern.md) for the live compression signature.
 See [`references/isolation-contract.md`](references/isolation-contract.md) for the mechanical four-lever model and the compression patterns flagged by `scripts/check-skill-isolation.sh`. See [`references/best-practices.md`](references/best-practices.md) for the lifecycle principle + anti-pattern citation table.
 
