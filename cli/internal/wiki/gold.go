@@ -121,6 +121,7 @@ type goldDoc struct {
 	resource                                                           string // OKF standard: sanitized source pointer
 	tags                                                               []string
 	confidence                                                         float64
+	utility                                                            float64 // MemRL strength signal carried from source for retrieval ranking
 	category, slug                                                     string
 	srcKeys                                                            []string // identifiers this doc can be referenced by
 	relatedRefs                                                        []string // explicit cross-refs from frontmatter
@@ -241,6 +242,10 @@ func (c *GoldCompiler) Compile(dryRun bool) (GoldStats, error) {
 			if doc.Fields["confidence"] != nil {
 				conf = ParseConfidence(doc.Fields["confidence"]).Value
 			}
+			// MemRL utility carried from source (0 when absent → render omits it, so
+			// the consumer's InitialUtility default still applies to flat docs). Only
+			// docs that already cleared isDurable reach here, so utility never promotes.
+			util := fieldFloat(doc.Fields, "utility")
 			// srcKeys: every identifier another entry might use to [[link]] here
 			// — the source id, filename stem, frontmatter name, and title slug.
 			srcKeys := dedupeStrings([]string{
@@ -261,6 +266,7 @@ func (c *GoldCompiler) Compile(dryRun bool) (GoldStats, error) {
 				timestamp:    firstNonEmpty(fieldStr(doc.Fields, "date"), c.now().Format("2006-01-02")),
 				status:       status,
 				confidence:   conf,
+				utility:      util,
 				sourceDigest: hex.EncodeToString(digest[:])[:12],
 				body:         dedupeSections(strings.TrimRight(clean, "\n"), title),
 				category:     sub,
@@ -539,6 +545,9 @@ func (d goldDoc) render() string {
 	fmt.Fprintf(&b, "timestamp: %s\n", d.timestamp)
 	fmt.Fprintf(&b, "status: %s\n", d.status) // trust label (handbook ext)
 	fmt.Fprintf(&b, "confidence: %.2f\n", d.confidence)
+	if d.utility > 0 {
+		fmt.Fprintf(&b, "utility: %.4f\n", d.utility) // MemRL strength → retrieval ranking
+	}
 	fmt.Fprintf(&b, "source_digest: %s\n", d.sourceDigest) // sanitized provenance
 	b.WriteString("---\n\n")
 	b.WriteString(d.body)

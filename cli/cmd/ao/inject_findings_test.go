@@ -8,6 +8,50 @@ import (
 	"time"
 )
 
+// TestRankFindings_UtilityDrivesOrder locks the gold-ranking wire: with
+// freshness held equal, a finding's utility decides its rank, and flipping the
+// utilities inverts the order. This is the consumer half of age-4fd — without
+// it, a finding's gold-frontmatter utility never reaches the rank the scenario
+// runner sees.
+func TestRankFindings_UtilityDrivesOrder(t *testing.T) {
+	findings := []knowledgeFinding{
+		{Title: "low", Source: "low.md", FreshnessScore: 0.5, Utility: 0.50},
+		{Title: "high", Source: "high.md", FreshnessScore: 0.5, Utility: 0.85},
+	}
+	rankFindings(findings)
+	if findings[0].Title != "high" {
+		t.Fatalf("higher-utility finding should rank first; got %q then %q", findings[0].Title, findings[1].Title)
+	}
+	if findings[0].CompositeScore <= findings[1].CompositeScore {
+		t.Errorf("composite not ordered by utility: %.4f <= %.4f", findings[0].CompositeScore, findings[1].CompositeScore)
+	}
+
+	// flip the utilities: order must invert (rules out a stable-sort artifact)
+	flipped := []knowledgeFinding{
+		{Title: "low", Source: "low.md", FreshnessScore: 0.5, Utility: 0.85},
+		{Title: "high", Source: "high.md", FreshnessScore: 0.5, Utility: 0.50},
+	}
+	rankFindings(flipped)
+	if flipped[0].Title != "low" {
+		t.Fatalf("after flip, higher-utility finding (low) should rank first; got %q", flipped[0].Title)
+	}
+}
+
+// TestRankPatterns_UtilityDrivesOrder is the pattern mirror of the above.
+func TestRankPatterns_UtilityDrivesOrder(t *testing.T) {
+	patterns := []pattern{
+		{Name: "low", FreshnessScore: 0.5, Utility: 0.50},
+		{Name: "high", FreshnessScore: 0.5, Utility: 0.85},
+	}
+	rankPatterns(patterns)
+	if patterns[0].Name != "high" {
+		t.Fatalf("higher-utility pattern should rank first; got %q then %q", patterns[0].Name, patterns[1].Name)
+	}
+	if patterns[0].CompositeScore <= patterns[1].CompositeScore {
+		t.Errorf("composite not ordered by utility: %.4f <= %.4f", patterns[0].CompositeScore, patterns[1].CompositeScore)
+	}
+}
+
 func TestTrimField(t *testing.T) {
 	tests := []struct {
 		input string
