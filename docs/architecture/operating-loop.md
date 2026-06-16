@@ -121,6 +121,10 @@ example to the test, gate, or eval that proved it.
 
 Two outputs per loop turn — evidence into `.agents/ratchet/` and the bead; learnings only if they cleared the promotion bar (next section). Skills: `/post-mortem`, `/forge`, `/retro`, `/ratchet`, `/flywheel`, `/harvest`.
 
+### The loop closes here: re-plan on evidence, not just on failure
+
+Move 7 feeds **back into move 1** — this is where the route gets re-routed (principle 7). The sharpening principle 7 leaves implicit: re-routing is triggered by **evidence, not only by failure.** A wave that *succeeds* still teaches something the plan didn't know, and that evidence may **refactor, insert, drop, reorder, or re-scope the *remaining* waves** before the next one runs. The wave plan is a hypothesis; each wave is the experiment that tests it. Under `--auto` the orchestrator executes those pivots itself — it is not gated on a wave *failing* first, and it does not run the initial wave-list to the letter. Two failure modes this kills: **retry-not-replan** (re-cranking a failed wave forever instead of asking whether the *remaining plan* should change) and **waterfall** (executing the pre-written wave list because "that was the plan"). Bounded by the run's circuit breakers (budget / attempt cap / oscillation detection) and the ≥5-arc post-mortem checkpoint; the operator is surfaced only at the terminal objective or a breaker trip — never just to approve a pivot. The orchestrator that owns this across a turn is `/rpi`; full mechanics: [Agile Re-Plan Loop](../../skills/rpi/references/agile-replan-loop.md).
+
 ## The promotion ratchet
 
 Do not run full ceremony for every observation. Promote progressively:
