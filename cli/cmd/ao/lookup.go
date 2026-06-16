@@ -185,9 +185,11 @@ func collectGoldKnowledge(goldRoot, query string, limit int) ([]learning, []patt
 	learnings = search.ExploreSelect(learnings, limit, eps, nil)
 
 	patterns, _ := collectPatternsFromDir(filepath.Join(goldRoot, SectionPatterns), qLower, now, false)
+	rankPatterns(patterns) // utility-weighted rank before ExploreSelect (which assumes ranked input)
 	patterns = search.ExploreSelect(patterns, limit, eps, nil)
 
 	findings, _ := collectFindingsFromDir(filepath.Join(goldRoot, SectionFindings), qLower, now, false, false)
+	rankFindings(findings) // utility-weighted rank before ExploreSelect (which assumes ranked input)
 	findings = search.ExploreSelect(findings, limit, eps, nil)
 
 	return learnings, patterns, findings

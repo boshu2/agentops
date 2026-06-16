@@ -54,6 +54,21 @@ func collectFindingsWithOptions(cwd, query string, limit int, globalDir string, 
 	return findings, nil
 }
 
+// rankFindings applies composite (freshness + utility-weighted) scoring and
+// sorts findings best-first, mirroring rankLearnings. The gold retrieval path
+// needs this so a finding's utility actually drives its rank before
+// ExploreSelect trims to top-K (ExploreSelect assumes already-ranked input).
+func rankFindings(findings []knowledgeFinding) {
+	items := make([]scorable, len(findings))
+	for i := range findings {
+		items[i] = &findings[i]
+	}
+	applyCompositeScoringTo(items, types.DefaultLambda)
+	slices.SortFunc(findings, func(a, b knowledgeFinding) int {
+		return cmp.Compare(b.CompositeScore, a.CompositeScore)
+	})
+}
+
 func resolveFindingsDir(cwd string) string {
 	findingsDir := filepath.Join(cwd, ".agents", SectionFindings)
 	if _, err := os.Stat(findingsDir); os.IsNotExist(err) {

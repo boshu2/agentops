@@ -138,6 +138,16 @@ func scoreAndWeighPatterns(patterns []pattern, globalWeight float64) {
 	}
 }
 
+// rankPatterns applies composite (freshness + utility-weighted) scoring and
+// sorts patterns best-first, mirroring rankFindings/rankLearnings. The gold
+// retrieval path needs this before ExploreSelect (which assumes ranked input).
+func rankPatterns(patterns []pattern) {
+	scoreAndWeighPatterns(patterns, 1.0) // 1.0 = no global down-weight; gold is local
+	slices.SortFunc(patterns, func(a, b pattern) int {
+		return cmp.Compare(b.CompositeScore, a.CompositeScore)
+	})
+}
+
 func parsePatternFile(path string) (pattern, error) { return search.ParsePatternFile(path) }
 func parseFrontmatterBlock(lines []string) (int, float64) {
 	return search.ParseFrontmatterBlock(lines)

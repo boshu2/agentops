@@ -33,6 +33,44 @@ func newTestCompiler(t *testing.T) (*GoldCompiler, string) {
 	return gc, agents
 }
 
+func TestGold_UtilityCarriedToFrontmatter(t *testing.T) {
+	gc, agents := newTestCompiler(t)
+	// qualifying (durable maturity) finding WITH a non-default utility
+	writeAgent(t, filepath.Join(agents, "findings"), "strong.md",
+		"---\ntype: finding\nid: strong\nmaturity: established\nconfidence: 0.9\nutility: 0.8\n---\n\nA durable, reviewed finding that has earned a high utility through verified reuse.\n")
+	// qualifying finding WITHOUT a utility field → gold must NOT emit one (consumer keeps its default)
+	writeAgent(t, filepath.Join(agents, "findings"), "flat.md",
+		"---\ntype: finding\nid: flat\nmaturity: established\nconfidence: 0.9\n---\n\nA durable finding that never received reward, so it carries no explicit utility yet.\n")
+	// NON-qualifying (below floor, no maturity) but high utility → utility must NOT promote it
+	writeAgent(t, filepath.Join(agents, "findings"), "noise.md",
+		"---\ntype: finding\nid: noise\nconfidence: 0.3\nutility: 0.95\n---\n\nA low-confidence finding with an inflated utility that must still be gated out of gold.\n")
+
+	if _, err := gc.Compile(false); err != nil {
+		t.Fatal(err)
+	}
+
+	strong := filepath.Join(gc.OutDir, "findings", "strong.md")
+	body, err := os.ReadFile(strong)
+	if err != nil {
+		t.Fatalf("qualifying finding not promoted: %v", err)
+	}
+	if !strings.Contains(string(body), "utility: 0.8000") {
+		t.Errorf("gold frontmatter missing carried utility; got:\n%s", body)
+	}
+
+	flat, err := os.ReadFile(filepath.Join(gc.OutDir, "findings", "flat.md"))
+	if err != nil {
+		t.Fatalf("flat finding not promoted: %v", err)
+	}
+	if strings.Contains(string(flat), "utility:") {
+		t.Errorf("gold doc emitted a utility line for a source without one; got:\n%s", flat)
+	}
+
+	if fileExists(filepath.Join(gc.OutDir, "findings", "noise.md")) {
+		t.Error("high-utility but non-durable finding leaked into gold (utility must not promote)")
+	}
+}
+
 func TestGold_PromotionGate(t *testing.T) {
 	gc, agents := newTestCompiler(t)
 	// durable: established maturity
