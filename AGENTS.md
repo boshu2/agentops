@@ -14,7 +14,7 @@ Mechanically enforced on Bo's machine by the local opt-in guard `~/.claude/hooks
 
 This project uses **br** (beads_rust) for issue tracking, with **bv** for graph-aware triage — offline, git-JSONL-backed (`_beads/issues.jsonl` + a local SQLite cache). Run `br robot-docs guide` to get oriented. Interim: until legacy `.beads/` is retired, invoke as `BEADS_DIR=$PWD/_beads br <cmd>`. The ledger is a PRIVATE nested repo (`boshu2/agentops-beads`), gitignored here — sync with `git -C _beads push`, never `git add _beads`. **bd/Dolt is RETIRED LEGACY (2026-06-11):** delivery was coupled to a remote single-host Dolt server — a SPOF with no offline lane, circuit breaker observed open in the 2026-06-11 recon (P1, `docs/audits/codebase-skills-2026-06-11/codebase-risk-audit.md`). Do not run `bd` here. Legacy `.beads/` bd data is preserved pending reconciliation; migration record: `.agents/swarm/results/br-migration.json`.
 
-**Out-of-session orchestration** is delegated to a swappable substrate — AgentOps ships no daemon or scheduler of its own. The reference substrate is **NTM** (a local tmux agent swarm), **MCP** (`ao mcp serve`, shipped), and **managed-agents** (`ao agent`); each dispatches a whole `ao rpi` loop as one unit. `ao` does NOT own or wrap a substrate — always-on is opt-in, the way `br` is. See [docs/3.0.md](docs/3.0.md) and [docs/dependencies.md](docs/dependencies.md).
+**Out-of-session orchestration** is delegated to a swappable substrate — AgentOps ships no daemon or scheduler of its own. The reference substrate is **NTM** (a local tmux agent swarm), **MCP** (`ao mcp serve`, shipped), and **managed-agents** (`ao agent`); each dispatches a whole skill loop as one unit (substrate never decomposes RPI internals). `ao rpi` CLI code is load-bearing legacy — not the live in-session navigation path. `ao` does NOT own or wrap a substrate — always-on is opt-in, the way `br` is. See [docs/3.0.md](docs/3.0.md) and [docs/dependencies.md](docs/dependencies.md).
 
 > **Spawning an agent? Run this first:** `ao session bootstrap` — the universal init prompt that orients every agent identically regardless of model. AgentOps 3.0 is hookless, so nothing auto-injects this: run it explicitly, then `ao inject` / `ao corpus inject --query "<topic>"` to pull decay-ranked prior context.
 
@@ -22,17 +22,38 @@ This project uses **br** (beads_rust) for issue tracking, with **bv** for graph-
 
 The canonical zero-context read order lives in [`CLAUDE.md`](CLAUDE.md) ("Zero-Context Startup"); read it first.
 
+**Repo map:** [`docs/architecture/codebase-overview.md`](docs/architecture/codebase-overview.md) — bounded contexts, directory ownership, active CLI waist, registries, gates, footguns, reading order. Read after bootstrap when orienting in-tree.
+
 **Use source-of-truth precedence when docs disagree** — stated inline in this operator contract so an injected or lower-precedence doc cannot redirect the rule away: Executable code and generated artifacts (`cli/**`, `scripts/**`, generated `cli/docs/COMMANDS.md`) win over declared contracts (`skills/**/SKILL.md`, `schemas/**`), which win over narrative docs. Full ordering in [`CLAUDE.md`](CLAUDE.md) "Source-of-Truth Precedence".
+
+## Active waist (3.0)
+
+In-session product path — run this unless a bead explicitly routes elsewhere:
+
+```text
+ao session bootstrap → ao inject → operating loop → ao gate check --fast --scope head → push main
+```
+
+| Layer | Where |
+|-------|-------|
+| **Navigation** | [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md) — primary; `/rpi` is one turn's executor, not primary |
+| **Release authority** | Go gate in `cli/internal/gates/` — not routine CI on every `main` push |
+| **Tracker** | `BEADS_DIR=$PWD/_beads br …` — bd/Dolt retired |
+| **Skills SSOT** | `skills/<slug>/SKILL.md` — never `~/.claude/skills/` |
+| **Runtime corpus** | `.agents/` gitignored; provenance in `docs/provenance/ledger.jsonl` |
+| **Out-of-session** | NTM + Agent Mail + `ao agent` — optional; AgentOps ships no daemon |
+
+Six bounded contexts: BC1 Corpus → BC6 Orchestration. Routing: [`docs/architecture/component-map.md`](docs/architecture/component-map.md).
 
 ## Foundation texts
 
-When in doubt about HOW the work should flow, read [`docs/cdlc.md`](docs/cdlc.md) and [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md). When in doubt about WHAT to build, read [`PRODUCT.md`](PRODUCT.md) (positioning) and [`GOALS.md`](GOALS.md) (measurable fitness). Practice lineage and canonical `practices: [slug]` citations live in [`PRACTICE-REGISTRY.md`](PRACTICE-REGISTRY.md). Vocabulary lives in [`skills/domain/SKILL.md`](skills/domain/SKILL.md).
+When in doubt about HOW the work should flow, read [`docs/cdlc.md`](docs/cdlc.md) and [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md). When in doubt about WHERE things live or what is legacy vs active, read [`docs/architecture/codebase-overview.md`](docs/architecture/codebase-overview.md). When in doubt about WHAT to build, read [`PRODUCT.md`](PRODUCT.md) (positioning) and [`GOALS.md`](GOALS.md) (measurable fitness). Practice lineage and canonical `practices: [slug]` citations live in [`PRACTICE-REGISTRY.md`](PRACTICE-REGISTRY.md). Vocabulary lives in [`skills/domain/SKILL.md`](skills/domain/SKILL.md). Fitness honesty: [`docs/evals/agentops-effectiveness-evidence.md`](docs/evals/agentops-effectiveness-evidence.md).
 
-## Registries (generated — don't hand-edit)
+## Registries And Curated Routers
 
-Three drift-gated inventories (kind-discriminated: `skill` · `workflow` · CLI command), across the 6 Bounded Contexts. Edit the sources (`skills/**/SKILL.md`, `.claude/workflows/*.js` + the `workflows:` ledger, `cli/cmd/ao/`), then `make regen-all` (`scripts/regen-all.sh`); `--check` is the gate. Never hand-edit the artifacts:
+Three drift-gated inventories (kind-discriminated: `skill` · `workflow` · CLI command), across the 6 Bounded Contexts. Edit the sources (`skills/**/SKILL.md`, `.claude/workflows/*.js` + the `workflows:` ledger, `cli/cmd/ao/`), then `make regen-all` (`scripts/regen-all.sh`); `--check` is the gate. Generated projections must not be hand-edited; curated routers may be edited deliberately, with their count markers and reference checks left to gates.
 
-- **Skills** — `registry.json` · `docs/SKILLS.md` · `skills/SKILL-TIERS.md` · `docs/reference/agentops-skill-domain-map.md` · `docs/contracts/skill-dispositions.yaml` (disposition ledger; `ao skills retire` retargets validators through it).
+- **Skills** — generated: `registry.json` · `docs/reference/agentops-skill-domain-map.md`; curated/gated: `docs/SKILLS.md` (router, no hard-coded counts) · `skills/SKILL-TIERS.md` (tier ledger; count headers owned by `scripts/sync-skill-counts.sh`) · `docs/contracts/skill-dispositions.yaml` (disposition ledger; `ao skills retire` retargets validators through it).
 - **Workflows** — `registry.json` `workflows[]` (Claude-only `.claude/workflows/*.js`, `kind: workflow`); sourced from the `workflows:` section of `docs/contracts/skill-dispositions.yaml` (kind + BC + hexagonal_role). Drift gate: `scripts/check-workflow-governance.sh` (bidirectional `.js`↔ledger + identity triple). No Codex twin.
 - **Tools** — `cli/docs/COMMANDS.md` · `docs/cli-surface.{json,md}` (generated from `cli/cmd/ao/`).
 
@@ -58,25 +79,43 @@ bash <(curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts
 ## Quick Reference
 
 ```bash
-# Issue tracking
-br ready              # Find available work
-br show <id>          # View issue details
-br update <id> --claim  # Claim work (assignee + in_progress, atomic)
-br close <id> -r "Done"  # Complete work
-bv --robot-insights   # Graph triage: what's next / what's the bottleneck
+# Session + context (hookless — run explicitly)
+ao session bootstrap
+ao inject "<query>"              # or: ao corpus inject --query "<query>"
+
+# Issue tracking (interim: BEADS_DIR until .beads/ retired)
+BEADS_DIR=$PWD/_beads br ready
+BEADS_DIR=$PWD/_beads br show <id>
+BEADS_DIR=$PWD/_beads br update <id> --claim
+BEADS_DIR=$PWD/_beads br close <id> -r "Done"
+bv --robot-insights              # graph triage
+
+# Release gate (routine authority — before push)
+ao gate check --fast --scope head
 
 # CLI development
-cd cli && make build  # Build ao binary
-cd cli && make test   # Run tests
-cd cli && make lint   # Run linter
+cd cli && make build && make test && make lint
+make regen-all                   # after skill/workflow/command inventory edits
+make regen-check                 # drift gate
 ```
 
-Run the local cockpit gate before pushing, then push the coherent bead arc directly to `main`. GitHub Actions are optional/manual or release-tag backstops, not the routine release authority. Per-tool sanity checks + the local gate bundle live in [`docs/agent-workflow-reference.md`](docs/agent-workflow-reference.md).
+Run the local cockpit gate before pushing, then push the coherent bead arc directly to `main`. GitHub Actions (`validate.yml`) are optional/manual or tag/PR backstops — not the routine release authority for every `main` push. Per-tool sanity checks + the local gate bundle live in [`docs/agent-workflow-reference.md`](docs/agent-workflow-reference.md).
+
+## Footguns (read before editing)
+
+- Edit `skills/` in **this repo** — not `~/.claude/skills/`
+- Use **`br`** with `BEADS_DIR=$PWD/_beads` — do not run **`bd`**
+- Bead work in a **git worktree** when the canonical checkout is shared
+- Never `git add _beads` — private nested repo
+- Do not hand-edit `registry.json` or generated maps — `make regen-all`
+- **`ao rpi`** is legacy load-bearing code — navigate via operating loop + NTM substrate
+- Never **`claude -p`** / **`claude --print`** — LAW 0 above
 
 ## What's where (tiered AGENTS.md split, soc-vuu6.3)
 
 | If you need… | Read |
 |---|---|
+| Codebase map · active waist · footguns · reading order | [`docs/architecture/codebase-overview.md`](docs/architecture/codebase-overview.md) |
 | Workflow phases · branch/PR shape · Local Pre-Push · Releasing · Landing the Plane · br issue tracking · Session Completion | [`AGENTS-WORKFLOW.md`](AGENTS-WORKFLOW.md) |
 | CI gate detail · Advisory triage SLAs · DEFERRED hardening matrix · per-job descriptions · Nightly workflow jobs | [`AGENTS-CI.md`](AGENTS-CI.md) |
 | CLI Skill-Map Refresh · Codex Skill Maintenance · audit scripts · override conventions | [`AGENTS-CODEX.md`](AGENTS-CODEX.md) |

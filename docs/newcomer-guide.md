@@ -15,8 +15,11 @@ At a high level:
 
 See also:
 
+- [Codebase Overview](architecture/codebase-overview.md) — consolidated map for humans and agents (start here for repo archaeology)
 - [README](https://github.com/boshu2/agentops/blob/main/README.md)
-- [Architecture](ARCHITECTURE.md)
+- [AgentOps 3.0 — the north star](3.0.md)
+- [Operating Loop](architecture/operating-loop.md) — how work flows (primary navigation)
+- [Architecture](ARCHITECTURE.md) — historical system overview (read the 3.0 banner first)
 - [How It Works](how-it-works.md)
 
 ## Repo structure (what matters most)
@@ -65,17 +68,28 @@ Use the router in [Skills Reference](SKILLS.md) to choose the right entry point:
 - Break work into issues: `/plan`
 - Implement one issue: `/implement`
 - Run multi-issue waves: `/crank`
-- Run end-to-end lifecycle: `/rpi`
+- Run end-to-end lifecycle: follow [Operating Loop](architecture/operating-loop.md) (the `/rpi` skill is one turn's executor — not the primary navigation surface)
 
-### 3) Hooks are opt-in, not a default
+### 3) Issue tracking uses br, not bd
+
+Tracked work lives in **`_beads/`** (private nested repo). Until legacy `.beads/` is retired, invoke:
+
+```bash
+BEADS_DIR=$PWD/_beads br ready
+BEADS_DIR=$PWD/_beads br update <id> --claim
+```
+
+Do not use `bd` or Dolt — retired as of 2026-06-11. See [Dependencies](dependencies.md).
+
+### 4) Hooks are opt-in, not a default
 
 AgentOps 3.0 ships zero hooks; nothing auto-injects or runs at session boundaries. This repo uses the local cockpit gate as the routine gate, while CI (`.github/workflows/validate.yml`) is an optional/manual backstop. If you want a bounded local gate of your own, author one with the `hooks-authoring` skill — AgentOps does not ship one.
 
-### 4) CLI docs are generated, not hand-maintained
+### 5) CLI docs are generated, not hand-maintained
 
 `cli/docs/COMMANDS.md` is generated. If command behavior changes, regenerate docs and keep parity checks passing.
 
-### 5) CI checks many non-code contracts
+### 6) CI checks many non-code contracts
 
 CI validates not just builds/tests but also docs parity, skill integrity/schema, security scans, and contract compatibility.
 
@@ -84,10 +98,11 @@ CI validates not just builds/tests but also docs parity, skill integrity/schema,
 ### Day 1 reading order
 
 1. `README.md`
-2. `docs/documentation-index.md`
-3. `docs/how-it-works.md`
-4. `docs/ARCHITECTURE.md`
-5. `docs/SKILLS.md`
+2. `docs/architecture/codebase-overview.md` — consolidated repo map
+3. `docs/3.0.md` — north star
+4. `docs/architecture/operating-loop.md` — how work flows
+5. `docs/documentation-index.md`
+6. `docs/SKILLS.md`
 
 ### Then pick one domain
 
@@ -104,7 +119,8 @@ CI validates not just builds/tests but also docs parity, skill integrity/schema,
 
 ## Practical tips
 
-- Run the local gate before pushing: `bash scripts/pre-push-gate.sh --fast` (smart conditional gate that only checks what changed).
+- Run the local gate before pushing: `ao gate check --fast --scope head` (Go registry; smart routing checks only what changed). Legacy bash escape hatch: `AGENTOPS_GATE_BASH=1` → `scripts/pre-push-gate.sh --fast`.
+- Use a **git worktree** per bead when the canonical checkout is shared — see `AGENTS-RUNTIME.md`.
 - Trust runtime files over narrative docs when there is a mismatch.
 - Keep changes small and verify with local gates before pushing.
 - Treat `.agents/` as a first-class part of the system behavior.
@@ -113,6 +129,7 @@ CI validates not just builds/tests but also docs parity, skill integrity/schema,
 
 ## Where to go next
 
+- [Codebase Overview](architecture/codebase-overview.md)
 - [Documentation Index](documentation-index.md)
 - [Contributing Guide](CONTRIBUTING.md)
 - [Skills Reference](SKILLS.md)

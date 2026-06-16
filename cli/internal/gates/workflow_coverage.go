@@ -70,13 +70,11 @@ var deferredWorkflowScripts = map[string]string{
 	"scripts/check-cmd-ao-coverage.sh":           "requires the coverage profile produced by the preceding Go test step",
 	"scripts/check-eval-workbench.sh":            "requires validate.yml's prior workbench Python venv setup",
 	"scripts/check-outcomes-holdout-leak.sh":     "validate.yml derives a dynamic payload list; needs native input modeling before delegation",
-	"scripts/check-provenance-orphans.sh":        "requires validate.yml's freshly built AO_BIN path",
 	"scripts/eval-agent-harness.sh":              "validate.yml asserts dry-run JSON shape after invoking the script",
 	"scripts/lint-evidence-lines.sh":             "PR-body advisory that requires GitHub PR context and GH_TOKEN",
 	"scripts/release-smoke-test.sh":              "workflow uses --skip-build after a prior build; standalone form should become a composed/native check",
 	"scripts/security-gate.sh":                   "requires validate.yml's security toolchain setup and scanner policy context",
 	"scripts/skill-eval.sh":                      "changed-skill scoped gate with pinned ms toolchain/cache setup",
-	"scripts/skill-probe-i0.sh":                  "I0 informational receipt lane, not a blocking Go-gate check",
 	"scripts/test-agentops-contract-canaries.sh": "requires validate.yml's canary toolchain setup and artifact context",
 	"scripts/verify-gate-claim.sh":               "AP7 verifier needs completed sibling workflow logs from the summary job",
 }

@@ -18,6 +18,7 @@
 - [AgentOps 3.0 PMF Evidence Loop](agentops-3-pmf-evidence-loop.md) — Content-led discovery loop and claim-gated evidence plan
 - [Behavioral Discipline](behavioral-discipline.md) — Before/after examples of good coding-agent behavior
 - [Newcomer Guide](newcomer-guide.md) — Fast orientation to repo structure, architecture, and contribution path
+- [Codebase Overview](architecture/codebase-overview.md) — Consolidated map of subsystems, active waist, registries, gates, footguns, and reading order (humans + agents)
 - [FAQ](FAQ.md) — Comparisons, limitations, subagent nesting, uninstall
 - [CONTRIBUTING](CONTRIBUTING.md) — How to contribute
 - [Create Your First Skill](create-your-first-skill.md) — Fast path for authoring a first skill without tripping CI
@@ -46,6 +47,7 @@ Bridge / framing docs:
 
 ## Architecture
 
+- [Codebase Overview](architecture/codebase-overview.md) — Consolidated repo map: bounded contexts, directory ownership, active CLI waist, registries, gates, knowledge flywheel, footguns, reading order
 - [How It Works](how-it-works.md) — Brownian Ratchet, Ralph Wiggum Pattern, agent backends, context windowing
 - [Software Factory Surface](software-factory.md) — Explicit automation surface for briefings, RPI flows, and operator-controlled closeout
 - [Assurance Profile](assurance-profile.md) — High-assurance operating posture, authority boundaries, and evidence artifact expectations for constrained environments
@@ -123,6 +125,8 @@ Bridge / framing docs:
 - [Context Lifecycle Contract](context-lifecycle.md) — Internal proof contract behind the compounding product loop
 - [Knowledge Flywheel](knowledge-flywheel.md) — How every session makes the next one smarter
 - [The Science](the-science.md) — Research behind knowledge decay and compounding
+- [Effective Feedback Compute](doctrine/effective-feedback-compute.md) — Imported doctrine: validation quality over raw token volume (η = EFC/C_raw); not locally proven
+- [AgentOps Effectiveness Evidence](evals/agentops-effectiveness-evidence.md) — Honest audit: what we can and cannot claim about live-agent uplift
 - [Brownian Ratchet](brownian-ratchet.md) — AI-native development philosophy
 - [Evolve Setup](evolve-setup.md) — GOALS.md, fitness loop, overnight runs
 - [Seed Definition](seed-definition.md) — What `ao seed` creates and why

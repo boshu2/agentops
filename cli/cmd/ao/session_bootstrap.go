@@ -10,8 +10,8 @@
 //      readable. Read by the agent itself, not pre-loaded into the report.
 //   2. Run `ao onboard --auto` if it exists (soc-vuu6.9 — currently a P3
 //      stub). Falls back to phase="skipped:not-implemented" if absent.
-//   3. Call `bd ready --json` and count claimable items. Falls back to
-//      ready_beads_count=null if bd is missing or errors.
+//   3. Call `br ready --json` and count claimable items. Falls back to
+//      ready_beads_count=null if br is missing or errors.
 //   4. mcp-agent-mail register/check — fully optional. Phase reports
 //      `present` / `absent`; never fails the bootstrap.
 //
@@ -39,7 +39,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/boshu2/agentops/cli/internal/adapters/tracker_bd"
 	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/types"
 
@@ -176,7 +175,7 @@ func computeBootstrapStatus(ctx context.Context, cwd string, noMail bool) Sessio
 		}
 	}
 
-	if n, ok := sessionBootstrapReadyBeads(ctx, cwd); ok {
+	if n, ok := sessionBootstrapMakeReady(ctx, cwd); ok {
 		status.ReadyBeadsCount = &n
 	}
 
@@ -375,15 +374,15 @@ func runOnboardSubprocess(ctx context.Context, cwd string) string {
 	return payload.Phase
 }
 
-// sessionBootstrapReadyBeads queries ready beads via the IssueTracker port
-// (tracker_bd, `bd ready --json`) and returns the count of returned items.
-// Returns (0, false) when bd is missing or errors.
-func sessionBootstrapReadyBeads(ctx context.Context, cwd string) (int, bool) {
-	issues, err := tracker_bd.New(cwd).Ready(ctx)
-	if err != nil {
+// sessionBootstrapReadyBeads queries ready beads via `br ready --json` and
+// returns the count of returned items. Returns (0, false) when br is missing
+// or errors.
+func sessionBootstrapReadyBeads(_ context.Context, cwd string) (int, bool) {
+	readyOut := runBeadsTracker(cwd, 1500*time.Millisecond, "ready", "--json")
+	if readyOut == "" {
 		return 0, false
 	}
-	return len(issues), true
+	return parseReadyCount(readyOut), true
 }
 
 // sessionBootstrapMailUnread is a soft probe for mcp-agent-mail. The current
@@ -442,7 +441,7 @@ func printBootstrapSummary(cmd *cobra.Command, s SessionBootstrapStatus) error {
 	}
 	if !s.AgentsMDRead {
 		_, err := fmt.Fprintln(cmd.ErrOrStderr(),
-			"warn: AGENTS.md missing — start with `cat AGENTS.md` if it exists, or `bd onboard` for repo orientation")
+			"warn: AGENTS.md missing — start with `cat AGENTS.md` if it exists, or `BEADS_DIR=$PWD/_beads br ready` for repo orientation")
 		return err
 	}
 	return nil

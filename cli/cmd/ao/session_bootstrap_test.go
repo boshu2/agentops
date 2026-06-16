@@ -49,6 +49,25 @@ func TestSessionBootstrap_FullStatusJSON(t *testing.T) {
 	}
 }
 
+func TestSessionBootstrap_ReadyBeadsCount(t *testing.T) {
+	dir := t.TempDir()
+	mustWriteFile(t, filepath.Join(dir, "AGENTS.md"), "# AGENTS")
+
+	orig := sessionBootstrapMakeReady
+	t.Cleanup(func() { sessionBootstrapMakeReady = orig })
+	sessionBootstrapMakeReady = func(_ context.Context, _ string) (int, bool) {
+		return 3, true
+	}
+
+	got := computeBootstrapStatus(context.Background(), dir, true)
+	if got.ReadyBeadsCount == nil {
+		t.Fatal("ReadyBeadsCount: want non-nil when makeReady succeeds")
+	}
+	if *got.ReadyBeadsCount != 3 {
+		t.Fatalf("ReadyBeadsCount: want 3, got %d", *got.ReadyBeadsCount)
+	}
+}
+
 func TestSessionBootstrap_AgentsMDMissing(t *testing.T) {
 	dir := t.TempDir() // no AGENTS.md
 	got := computeBootstrapStatus(context.Background(), dir, true)

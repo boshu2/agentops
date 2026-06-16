@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Out-of-session substrate wording reconciled (Wave F).** Live multi-agent orchestration is documented as **NTM/ATM + Agent Mail**; Gas City remains an optional reference SDK, not the default operator substrate. Historical 3.0.0 CHANGELOG entries that name Gas City as primary orchestration are superseded by this note for current doctrine — see [`docs/3.0.md`](docs/3.0.md) and [`docs/architecture/codebase-overview.md`](docs/architecture/codebase-overview.md).
+
+### Doc debt reconciliation (2026-06-16)
+
+- **Wave A:** `cli/AGENTS.md` br pointer stub; `ao session bootstrap` counts ready beads via `br ready --json`; new `cli.agents-tracker` drift gate.
+- **Wave B:** RPI terminology glossary in `docs/architecture/codebase-overview.md`.
+- **Wave C:** `ports-and-adapters.md`, BC5 in `bounded-contexts.yaml`, `ARCHITECTURE.md`/`CI-CD.md` hookless framing; `docs.architecture-drift` gate.
+- **Wave D:** worktree disposition audit ([`docs/audits/2026-06-16-worktree-disposition-audit.md`](docs/audits/2026-06-16-worktree-disposition-audit.md)) — dry-run only.
+- **Wave E:** registered `skill-probe-i0.sh` (I0 advisory) and `check-provenance-orphans.sh` in Go gate registry; deferred workflow script count 13 → 11.
+- **Wave F:** disposition triage checklist ([`docs/audits/2026-06-16-skill-disposition-triage.md`](docs/audits/2026-06-16-skill-disposition-triage.md)).
+
 ## [3.1.0] - 2026-06-08
 
 AgentOps 3.1 is the **packaging-and-gate-discipline** minor on top of the hookless 3.0 core. The headline is not a new feature — it is that the release pipeline itself became the product. Three things hardened together: the **release gate moved native** (the inline bash checks were ported to a single Go gate that the pre-push hook runs as the release authority, with workflow-parity enforcement so a check can't pass locally while drifting in CI); **close-admission tightened** (the verdict gate now counts distinct validator *families* with author exclusion, so a self-graded "looks good" no longer admits a close); and the **skill corpus was canonicalized** (ghost skills materialized into the tree, registries/counts regenerated from one source, and bundled image copies forced back to byte identity with that source). On top of that discipline, the three IMAGE-CORE recipes (Claude / Codex / Gemini-AGY) ship as real, smoke-proven install paths. See [docs/3.1.md](https://github.com/boshu2/agentops/blob/main/docs/3.1.md) for the release narrative.

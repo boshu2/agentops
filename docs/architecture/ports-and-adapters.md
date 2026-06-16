@@ -32,7 +32,7 @@ Secondary adapters are driven *by* the domain through a port interface — the d
 Future driven adapters (not delivered in v1, kept here as a design forecast):
 
 - **Git adapter** — packet history, ratchet snapshots, ADR provenance.
-- **Beads / tasklist adapter** — `ports.IssueTracker` against `bd` when available, falling back to the filesystem tasklist.
+- **Beads / tasklist adapter** — `br` (beads_rust) via shell invocation (`BEADS_DIR=$PWD/_beads br …`) in handoff and session bootstrap; legacy `tracker_bd` port adapter remains for other paths until the full IssueTracker port migrates.
 - **LLM-provider adapters** — `ports.LLMClient` against Claude, Codex, or local providers.
 
 ## Ports
@@ -40,7 +40,7 @@ Future driven adapters (not delivered in v1, kept here as a design forecast):
 Port interfaces live at `cli/internal/ports/`. Three are declared today:
 
 - **`PacketRepository`** (`storage.go`) — abstracts ExecutionPacket persistence: save / load / load-latest.
-- **`IssueTracker`** (`tracker.go`) — abstracts epic and issue creation, currently anticipating `bd` and a filesystem tasklist fallback.
+- **`IssueTracker`** (`tracker.go`) — abstracts epic and issue creation; production bootstrap/handoff paths call `br` directly; `tracker_bd` remains a legacy driven adapter behind the port interface.
 - **`LLMClient`** (`llm.go`) — abstracts model completion calls behind a provider-neutral `Complete(ctx, prompt, opts)` shape.
 
 Ports are deliberately narrow. New ports earn their place when at least a second implementation is in sight — the v1 set already meets that bar (tracker has two intended impls; LLM has many; storage has one today and is honest about that in ADR-0001).

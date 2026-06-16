@@ -143,12 +143,12 @@ Consolidated checklist of rules enforced by the pipeline:
 1. **No symlinks.** `plugin-load-test` rejects all symlinks in the repo. If you need the same file in multiple places, copy it.
 2. **Skill counts must be synced.** Adding or removing a skill directory requires `scripts/sync-skill-counts.sh`. Forgetting this fails `doc-release-gate`.
 3. **Every `references/*.md` must be linked in SKILL.md.** If a file exists in `skills/<name>/references/`, the skill's SKILL.md must contain a markdown link to it. Check with `heal.sh --strict`.
-4. **Embedded hooks must stay in sync.** After editing `hooks/`, `lib/hook-helpers.sh`, or `skills/standards/references/`: run `cd cli && make sync-hooks`. Checked by `embedded-sync` and `go-build`.
+4. **Embedded hooks must stay in sync (2.x / opt-in only).** AgentOps 3.0 ships zero hooks by default. If you edit the legacy `hooks/` tree or opt-in `skills/cc-hooks` references for a custom install, run `cd cli && make sync-hooks`. Checked by `embedded-sync` and `go-build`.
 5. **CLI docs must stay in sync.** After adding/changing CLI commands or flags: run `scripts/generate-cli-reference.sh`. Checked by `cli-docs-parity`.
 6. **Contracts must be catalogued.** Files added to `docs/contracts/` need a link in `docs/documentation-index.md`. Checked by `contract-compatibility-gate`.
 7. **Go complexity budget.** New/modified functions must stay under cyclomatic complexity 25 (warn at 15). Checked by `go-build` via `check-go-complexity.sh`.
 8. **Windows installer smoke must pass.** PowerShell installers need to parse, temp installs need to work, and focused Windows-sensitive Go tests must pass on `windows-latest`. Checked by `windows-smoke`.
-9. **No TODOs in SKILL.md.** Use `bd` issue tracking instead. Checked by `skill-lint`.
+9. **No TODOs in SKILL.md.** Use **br** issue tracking instead (`BEADS_DIR=$PWD/_beads br create …`). Checked by `skill-lint`.
 10. **No secrets in code.** `security-scan` greps for hardcoded passwords, API keys, and tokens in non-test files.
 11. **No dangerous shell patterns.** `security-scan` rejects `rm -rf /`, `curl | sh`, etc. in scripts (with explicit exceptions for installer scripts).
 
@@ -198,7 +198,7 @@ cd cli && make build && make test
 # If you changed Windows installers, Codex install surfaces, or OS-specific file locking:
 powershell -ExecutionPolicy Bypass -File .\tests\windows\test-windows-smoke.ps1
 
-# If you changed hooks or lib/hook-helpers.sh:
+# If you changed legacy hooks or lib/hook-helpers.sh (opt-in installs only):
 cd cli && make sync-hooks
 ```
 

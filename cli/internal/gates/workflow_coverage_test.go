@@ -27,7 +27,7 @@ jobs:
           echo "run scripts/check-echo-only.sh if this fails"
           ./scripts/check-advisory.sh
       - name: deferred
-        run: scripts/skill-probe-i0.sh skills .agents/ao/skill-eval
+        run: scripts/lint-evidence-lines.sh 12345
 `)
 	if err := os.WriteFile(filepath.Join(root, ".github", "workflows", "validate.yml"), workflow, 0o644); err != nil {
 		t.Fatal(err)
@@ -60,15 +60,21 @@ jobs:
 	if got.MissingAdvisoryCount != 1 || got.MissingAdvisoryScripts[0] != "scripts/check-advisory.sh" {
 		t.Fatalf("MissingAdvisoryScripts = %+v, want check-advisory", got.MissingAdvisoryScripts)
 	}
-	if got.MissingDeferredCount != 1 || got.MissingDeferredScripts[0].Script != "scripts/skill-probe-i0.sh" {
-		t.Fatalf("MissingDeferredScripts = %+v, want skill-probe-i0", got.MissingDeferredScripts)
+	if got.MissingDeferredCount != 1 || got.MissingDeferredScripts[0].Script != "scripts/lint-evidence-lines.sh" {
+		t.Fatalf("MissingDeferredScripts = %+v, want lint-evidence-lines", got.MissingDeferredScripts)
 	}
 	if got.MissingScripts[0] != "scripts/check-advisory.sh" ||
 		got.MissingScripts[1] != "scripts/check-missing.sh" ||
-		got.MissingScripts[2] != "scripts/skill-probe-i0.sh" {
+		got.MissingScripts[2] != "scripts/lint-evidence-lines.sh" {
 		t.Fatalf("MissingScripts = %+v, want check-missing", got.MissingScripts)
 	}
 	if got.RegistryOnlyScriptCount != 1 || got.RegistryOnlyScripts[0] != "scripts/check-extra.sh" {
 		t.Fatalf("RegistryOnlyScripts = %+v, want check-extra", got.RegistryOnlyScripts)
+	}
+}
+
+func TestDeferredWorkflowScriptCount(t *testing.T) {
+	if got := len(deferredWorkflowScripts); got != 11 {
+		t.Fatalf("deferredWorkflowScripts count = %d, want 11 (Wave E drain)", got)
 	}
 }

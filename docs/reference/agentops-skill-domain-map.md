@@ -40,7 +40,7 @@ and aligning loop-facing skills to the bounded-context architecture.
 | BC2 Validation | Validation Gates | Judge whether plans, code, docs, dependencies, and releases are fit. |
 | BC3 Loop | Operating loop | Select work, execute RPI, log cycles, measure fitness, and stop at convergence. |
 | BC4 Factory | Skill and claim factory | Build, audit, package, and govern reusable skills and product claims. |
-| BC5 Runtime | Harness and operator adapters | Adapt the control plane to harnesses, hooks, PRs, shells, and local machines. |
+| BC5 Runtime | Harness and operator adapters | Adapt the control plane to harnesses, shells, local gates, and operator machines (hookless by default). |
 | BC6 Orchestration | Multi-agent orchestration substrate | Spawn, coordinate, and converge multi-agent swarms across panes, mailboxes, and renewal loops. |
 <!-- END:domain-taxonomy -->
 

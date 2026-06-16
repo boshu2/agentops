@@ -178,6 +178,8 @@ nav:
       - CLI ↔ Skills Map: cli-skills-map.md
   - Architecture:
       - architecture/index.md
+      - Codebase Overview: architecture/codebase-overview.md
+      - Operating Loop: architecture/operating-loop.md
       - How It Works: how-it-works.md
       - Architecture Overview: ARCHITECTURE.md
       - Software Factory: software-factory.md

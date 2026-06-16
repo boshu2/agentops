@@ -175,28 +175,9 @@ patch_file "$REPO_ROOT/skills/SKILL-TIERS.md" \
   "s|^### Internal Skills \\([0-9]+\\)|### Internal Skills (${INTERNAL})|" \
   "SKILL-TIERS.md internal header"
 
-# docs/SKILLS.md: "all N AgentOps skills (M user-facing + K internal)"
-patch_file "$REPO_ROOT/docs/SKILLS.md" \
-  '^Complete reference for all [0-9]+ AgentOps skills \([0-9]+ user-facing [+] [0-9]+ internal\)\.$' \
-  "s|^Complete reference for all [0-9]+ AgentOps skills \\([0-9]+ user-facing [+] [0-9]+ internal\\)\\.$|Complete reference for all ${TOTAL} AgentOps skills (${USER_FACING} user-facing + ${INTERNAL} internal).|" \
-  "docs/SKILLS.md header"
-
-# docs/ARCHITECTURE.md: "skills/ # N skills (M user-facing, K internal)"
-patch_file "$REPO_ROOT/docs/ARCHITECTURE.md" \
-  'skills/[[:space:]]+# [0-9]+ skills \([0-9]+ user-facing, [0-9]+ internal\)$' \
-  "s|(skills/[[:space:]]+# )[0-9]+ skills \\([0-9]+ user-facing, [0-9]+ internal\\)$|\\1${TOTAL} skills (${USER_FACING} user-facing, ${INTERNAL} internal)|" \
-  "docs/ARCHITECTURE.md skills tree"
-
-# PRODUCT.md current count surfaces.
-patch_file "$REPO_ROOT/PRODUCT.md" \
-  'Skills system — [0-9]+ skills,' \
-  "s|(Skills system — )[0-9]+( skills,)|\\1${TOTAL}\\2|" \
-  "PRODUCT.md convergence skill count"
-
-patch_file "$REPO_ROOT/PRODUCT.md" \
-  '[0-9]+ skills — reusable context packages' \
-  "s|[0-9]+ skills — reusable context packages|${TOTAL} skills — reusable context packages|" \
-  "PRODUCT.md context compiler skill count"
+# docs/SKILLS.md, docs/ARCHITECTURE.md, PRODUCT.md product-layer prose, and
+# docs/index.md intentionally avoid hard-coded skill counts. The remaining
+# count-bearing surfaces below are the sync-owned projections.
 
 check_file_pattern "$REPO_ROOT/PRODUCT.md" \
   'Runtime hooks are not an AgentOps default' \
@@ -206,13 +187,6 @@ patch_file "$REPO_ROOT/PRODUCT.md" \
   'Distribution/runtime reach: [0-9]+ shared skills, [0-9]+ checked-in Codex artifacts, and [0-9]+ Codex overrides' \
   "s|Distribution/runtime reach: [0-9]+ shared skills, [0-9]+ checked-in Codex artifacts, and [0-9]+ Codex overrides|Distribution/runtime reach: ${TOTAL} shared skills, ${CODEX_TOTAL} checked-in Codex artifacts, and ${CODEX_OVERRIDES} Codex overrides|" \
   "PRODUCT.md distribution/runtime reach"
-
-# docs/index.md: full-catalog link label "All N skills" (links to the generated
-# catalog, which lists every checked-in skill, so this is the TOTAL).
-patch_file "$REPO_ROOT/docs/index.md" \
-  '\*\*All [0-9]+ skills\*\*\]\(skills/catalog\.md\)' \
-  "s|\\*\\*All [0-9]+ skills\\*\\*\\]\\(skills/catalog\\.md\\)|**All ${TOTAL} skills**](skills/catalog.md)|" \
-  "docs/index.md catalog link count"
 
 # docs/documentation-index.md: skill-domain-map entry "All N checked-in skills".
 patch_file "$REPO_ROOT/docs/documentation-index.md" \

@@ -51,7 +51,7 @@
     "ready_beads_count": {
       "type": ["integer", "null"],
       "minimum": 0,
-      "description": "Number of items returned by `bd ready --json`. Null when bd is missing or the command errors (fail-open contract — bootstrap does not abort)."
+      "description": "Number of items returned by `br ready --json`. Null when br is missing or the command errors (fail-open contract — bootstrap does not abort)."
     },
     "mail_unread_count": {
       "type": ["integer", "null"],

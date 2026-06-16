@@ -1,18 +1,27 @@
 # Architecture
 
-AgentOps is built from a small set of orthogonal components that compose into the full Research → Plan → Implement → Validate loop. The architecture is opinionated where it matters (bookkeeping format, validation contracts, hook lifecycles) and permissive everywhere else (model choice, runtime, repo layout).
+AgentOps is built from a small set of orthogonal components that compose into the full Research → Plan → Implement → Validate loop. The architecture is opinionated where it matters (bookkeeping format, validation contracts, explicit bootstrap) and permissive everywhere else (model choice, runtime, repo layout).
 
 Read in this order if you're new:
 
-1. **[How It Works](../how-it-works.md)** — start here for the mental model (Brownian Ratchet, context windowing, backends).
-2. **[System Overview](../ARCHITECTURE.md)** — then zoom out to see where every component sits.
-3. **[Primitive Chains](primitive-chains.md)** — then drill into the audited primitive set and lifecycle chains.
-4. **[Component Map](component-map.md)** — then route product components, bounded contexts, adapters, open beads, and trim/defer decisions.
-5. **[Intent-to-Loop Hexagon](intent-to-loop-hexagon.md)** — then trace one idea through BDD intent, beads, slices, validation, and ratchet evidence.
+1. **[Codebase Overview](codebase-overview.md)** — start here for a consolidated map (humans and agents).
+2. **[How It Works](../how-it-works.md)** — mental model (Brownian Ratchet, context windowing, backends).
+3. **[Operating Loop](operating-loop.md)** — how work flows (primary navigation).
+4. **[AgentOps 3.0](../3.0.md)** — north star doctrine.
+5. **[System Overview](../ARCHITECTURE.md)** — historical component survey (read the 3.0 banner first).
+6. **[Component Map](component-map.md)** — route product components and trim/defer decisions.
+7. **[Intent-to-Loop Hexagon](intent-to-loop-hexagon.md)** — trace one idea through beads, slices, validation, ratchet.
 
 The rest are specialized references. Skim titles and jump in when a topic becomes relevant.
 
 <div class="grid cards" markdown>
+
+-   :material-map: **[Codebase Overview](codebase-overview.md)**
+
+    ---
+
+    Consolidated repo map: BCs, directories, active waist, registries,
+    gates, footguns, reading order.
 
 -   :material-cogs: **[How It Works](../how-it-works.md)**
 

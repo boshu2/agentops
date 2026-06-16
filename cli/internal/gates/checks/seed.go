@@ -12,18 +12,44 @@ import "github.com/boshu2/agentops/cli/internal/gates"
 
 // Change-class path globs (ported from the bash gate's HAS_<CLASS> regexes).
 var (
-	goPaths         = []string{"cli/**", "go.mod", "go.sum"}
-	skillPaths      = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
-	contractPaths   = []string{"docs/contracts/**", "schemas/**"}
-	ciPolicyPaths   = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
-	evalPaths       = []string{"evals/**", "schemas/eval-*", "cli/internal/eval/**"}
-	contextMapPaths = []string{"skills/**", "docs/contracts/context-map.md"}
-	swarmPaths      = []string{".agents/swarm/**", "schemas/swarm-*"}
-	docsPaths       = []string{"docs/**", "README.md", "CHANGELOG.md", "PRODUCT.md", "SKILL-TIERS.md"}
-	agentsDocPaths  = []string{"AGENTS.md", "AGENTS-WORKFLOW.md", "AGENTS-CI.md", "AGENTS-CODEX.md", "AGENTS-RUNTIME.md", ".github/workflows/validate.yml"}
-	corpusPaths     = []string{".agents/**", "docs/canon/**", "canon/**"}
-	goalsPaths      = []string{"GOALS.md", "spec/scenarios/**", "docs/adr/ADR-0003*"}
-	registryPaths   = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}
+	goPaths          = []string{"cli/**", "go.mod", "go.sum"}
+	skillPaths       = []string{"skills/**", "skills-codex/**", "tests/skills/**"}
+	contractPaths    = []string{"docs/contracts/**", "schemas/**"}
+	ciPolicyPaths    = []string{".github/workflows/validate.yml", "docs/CI-CD.md", "AGENTS.md"}
+	evalPaths        = []string{"evals/**", "schemas/eval-*", "cli/internal/eval/**"}
+	contextMapPaths  = []string{"skills/**", "docs/contracts/context-map.md"}
+	swarmPaths       = []string{".agents/swarm/**", "schemas/swarm-*"}
+	docsPaths        = []string{"docs/**", "README.md", "CHANGELOG.md", "PRODUCT.md", "SKILL-TIERS.md"}
+	agentsDocPaths   = []string{"AGENTS.md", "AGENTS-WORKFLOW.md", "AGENTS-CI.md", "AGENTS-CODEX.md", "AGENTS-RUNTIME.md", ".github/workflows/validate.yml"}
+	corpusPaths      = []string{".agents/**", "docs/canon/**", "canon/**"}
+	goalsPaths       = []string{"GOALS.md", "spec/scenarios/**", "docs/adr/ADR-0003*"}
+	registryPaths    = []string{"skills/**", "hooks/**", "evals/**", "cli/cmd/ao/**", "cli/internal/**", "registry.json"}
+	docSkillRefPaths = []string{
+		"AGENTS.md",
+		"CLAUDE.md",
+		"docs/ARCHITECTURE.md",
+		"docs/SKILLS.md",
+		"docs/architecture/operating-loop.md",
+		"skills/SKILL-TIERS.md",
+		"skills/**",
+		"scripts/check-doc-skill-refs.sh",
+		"tests/scripts/check-doc-skill-refs.bats",
+	}
+	archDocDriftPaths = []string{
+		"docs/architecture/ports-and-adapters.md",
+		"docs/contracts/bounded-contexts.yaml",
+		"docs/reference/agentops-skill-domain-map.md",
+		"docs/reference/agentops-hexagonal-architecture-map.md",
+		"docs/ARCHITECTURE.md",
+		"docs/CI-CD.md",
+		"scripts/check-architecture-doc-drift.sh",
+		"tests/scripts/check-architecture-doc-drift.bats",
+	}
+	cliAgentsTrackerPaths = []string{
+		"cli/AGENTS.md",
+		"scripts/check-cli-agents-tracker-drift.sh",
+		"tests/scripts/check-cli-agents-tracker-drift.bats",
+	}
 	regenScopePaths = []string{
 		"skills/**",
 		"skills-codex/**",
@@ -110,6 +136,16 @@ func init() {
 		{ID: "always.author-judge-convergence", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-author-judge-convergence.sh"},
 		{ID: "always.contracts-structural-floor", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-contracts-structural-floor.sh"},
 		{ID: "always.docs-learning-references", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-docs-learning-references.sh"},
+		{ID: "docs.skill-refs", Tiers: gates.Fast | gates.Full, Match: docSkillRefPaths, Blocking: true,
+			Backing: "check-doc-skill-refs.sh", Args: []string{"--strict"}},
+		{ID: "cli.agents-tracker", Tiers: gates.Fast | gates.Full, Match: cliAgentsTrackerPaths, Blocking: true,
+			Backing: "check-cli-agents-tracker-drift.sh"},
+		{ID: "docs.architecture-drift", Tiers: gates.Fast | gates.Full, Match: archDocDriftPaths, Blocking: true,
+			Backing: "check-architecture-doc-drift.sh"},
+		{ID: "eval.skill-probe-i0", Tiers: gates.Full, Match: skillPaths, Blocking: false,
+			Backing: "skill-probe-i0.sh", Args: []string{"skills", ".agents/ao/skill-eval"}},
+		{ID: "provenance.orphans", Tiers: gates.Full, Match: contractPaths, Blocking: true,
+			Backing: "check-provenance-orphans.sh"},
 		{ID: "always.docs-hookless", Tiers: gates.Full, Blocking: true, Backing: "check-doc-hooks-drift.sh"},
 		{ID: "always.flywheel-compounding-snapshot", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-flywheel-compounding-snapshot.sh"},
 		{ID: "always.retrieval-manifest-paths", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-retrieval-manifest-paths.sh",

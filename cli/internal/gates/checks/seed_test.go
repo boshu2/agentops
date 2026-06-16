@@ -113,3 +113,81 @@ func TestSkillIsolationGateIsWarnFirst(t *testing.T) {
 		t.Fatal("skill.isolation should be routed by skill paths, not always-run")
 	}
 }
+
+func TestDocSkillRefsGateIsBlockingAndStrict(t *testing.T) {
+	check, ok := gates.Default.Get("docs.skill-refs")
+	if !ok {
+		t.Fatal("docs.skill-refs gate is not registered")
+	}
+	if check.Backing != "check-doc-skill-refs.sh" {
+		t.Fatalf("docs.skill-refs backing = %q, want check-doc-skill-refs.sh", check.Backing)
+	}
+	if !check.Blocking {
+		t.Fatal("docs.skill-refs must be blocking")
+	}
+	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
+		t.Fatalf("docs.skill-refs tiers = %v, want Fast|Full", check.Tiers)
+	}
+	if len(check.Args) != 1 || check.Args[0] != "--strict" {
+		t.Fatalf("docs.skill-refs args = %v, want [--strict]", check.Args)
+	}
+	if len(check.Match) == 0 {
+		t.Fatal("docs.skill-refs should be routed by live docs + skill paths")
+	}
+	for _, want := range []string{"AGENTS.md", "CLAUDE.md", "docs/ARCHITECTURE.md", "docs/SKILLS.md", "docs/architecture/operating-loop.md", "skills/SKILL-TIERS.md"} {
+		found := false
+		for _, got := range check.Match {
+			if got == want {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("docs.skill-refs match paths missing %q in %v", want, check.Match)
+		}
+	}
+}
+
+func TestCliAgentsTrackerGateIsBlockingAndStrict(t *testing.T) {
+	check, ok := gates.Default.Get("cli.agents-tracker")
+	if !ok {
+		t.Fatal("cli.agents-tracker gate is not registered")
+	}
+	if check.Backing != "check-cli-agents-tracker-drift.sh" {
+		t.Fatalf("cli.agents-tracker backing = %q, want check-cli-agents-tracker-drift.sh", check.Backing)
+	}
+	if !check.Blocking {
+		t.Fatal("cli.agents-tracker must be blocking")
+	}
+	if !check.Tiers.Has(gates.Fast) || !check.Tiers.Has(gates.Full) {
+		t.Fatalf("cli.agents-tracker tiers = %v, want Fast|Full", check.Tiers)
+	}
+	if len(check.Match) == 0 {
+		t.Fatal("cli.agents-tracker should be routed by cli/AGENTS.md + checker paths")
+	}
+	for _, want := range []string{"cli/AGENTS.md", "scripts/check-cli-agents-tracker-drift.sh", "tests/scripts/check-cli-agents-tracker-drift.bats"} {
+		found := false
+		for _, got := range check.Match {
+			if got == want {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("cli.agents-tracker match paths missing %q in %v", want, check.Match)
+		}
+	}
+}
+
+func TestArchitectureDriftGateIsBlocking(t *testing.T) {
+	check, ok := gates.Default.Get("docs.architecture-drift")
+	if !ok {
+		t.Fatal("docs.architecture-drift gate is not registered")
+	}
+	if check.Backing != "check-architecture-doc-drift.sh" {
+		t.Fatalf("docs.architecture-drift backing = %q, want check-architecture-doc-drift.sh", check.Backing)
+	}
+	if !check.Blocking {
+		t.Fatal("docs.architecture-drift must be blocking")
+	}
+}
