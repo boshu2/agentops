@@ -1,15 +1,16 @@
 # Pawls — the one-way doors (the ratchet's static map)
 
 > **Chaos + Filter + Ratchet = Progress** — see [brownian-ratchet.md](../brownian-ratchet.md).
-> This file is the **Filter**: the short, static list of irreversible actions where the ratchet's
-> pawl sits. Everything *not* on this list is chaos — cheap, wrong-tolerant, ungated. The router is
-> this lookup, **not** a decision engine.
+> This file is the **Filter**: the irreversible actions where the ratchet's pawl sits — a short list
+> of the common instances, governed by the [blast-radius rule](#the-blast-radius-rule-the-list-is-examples-not-the-boundary).
+> Anything that trips no clause of the rule is chaos — cheap, wrong-tolerant, ungated. The router is
+> a cheap classification (list + rule), **not** a heavyweight decision engine.
 
 ## The rule
 
-1. About to take an action? Check it against the pawl list below.
-2. **On the list → it's a pawl.** Fire the gate ([`/pre-land-refuters`](../../skills/pre-land-refuters/SKILL.md)): an independent **fresh-context** reviewer (a separate invocation, no shared accumulated context with the author) must confirm before the action proceeds. Fail-closed (ambiguity → hold, never silent-proceed). Fresh-context is the **default** diversity mode; a pawl can be **opted up to multi-model** (≥2 model families) per the [Diversity mode](#diversity-mode--per-pawl-fresh-context-by-default) section below.
-3. **Not on the list → chaos.** Just run it. No gate, no review, no ceremony. Iterate as wrong as you want between pawls — the pawls **reduce irreversible regression to the known one-way doors**, so between them you only ever touch state you can recover. (This holds only as far as the list below is *complete* and the chaos really is side-effect-free — if you find an irreversible action that isn't here, that's a missing pawl, add it.)
+1. About to take an action? Check it against the pawl list **and the [blast-radius rule](#the-blast-radius-rule-the-list-is-examples-not-the-boundary)** below.
+2. **A pawl (on the list, OR it trips any clause of the blast-radius rule) → fire the gate** ([`/pre-land-refuters`](../../skills/pre-land-refuters/SKILL.md)): an independent **fresh-context** reviewer (a separate invocation, no shared accumulated context with the author) must confirm before the action proceeds. Fail-closed (ambiguity → hold, never silent-proceed). Fresh-context is the **default** diversity mode; a pawl can be **opted up to multi-model** (≥2 model families) per the [Diversity mode](#diversity-mode--per-pawl-fresh-context-by-default) section below.
+3. **Not a pawl (not on the list AND it trips no clause of the blast-radius rule) → chaos.** Just run it. No gate, no review, no ceremony. Iterate as wrong as you want between pawls — the pawls **reduce irreversible regression to the known one-way doors**, so between them you only ever touch state you can recover. (The list is the common instances; the **rule** is the authority — if an action trips a clause but isn't listed, it is still a pawl, and it's a missing list entry to add.)
 
 Why so few pawls: a pawl on *every* step is waterfall (validate every tread). It makes every wrong turn expensive and kills the cheap iteration that makes agents productive. The ratchet works **because** the pawls are few and sit only at the irreversible points. Adding a pawl is adding a tread you now validate — do it only when the action is genuinely one-way.
 
@@ -23,6 +24,31 @@ Why so few pawls: a pawl on *every* step is waterfall (validate every tread). It
 | **schema / contract change** | Changing an interface, schema, or contract other code/agents depend on; regenerating a factory surface; repointing a contract test or canary | Downstream consumers break silently — "looks fine here" ≠ fine for them | [`scope`](../../skills/scope/SKILL.md) (frozen dirs) · contract-canary gates |
 | **credential / authority change** | Granting access, rotating or overwriting a credential, changing permissions or who-can-do-what | A granted/leaked credential or authority can't be cleanly un-granted; trust changes propagate | [`dcg`](../../skills/dcg/SKILL.md) · `claude-acct` fail-closed verify |
 | **spend** | Actions that cost real money or burn quota at scale: paid API runs, large agent fan-outs, deploys that bill | Money/quota is spent; you can't un-spend it | *(partial: fan-out consent)* |
+
+## The blast-radius rule (the list is examples, not the boundary)
+
+The table above is the *common* one-way doors, not an exhaustive taxonomy — a
+static list breaks by omission (it silently misses CI/gate edits, authz/default
+changes, data migrations, alert disabling, generated-registry regen,
+AGENTS/skill contract edits, and "temporary" bypasses). The boundary is a
+**rule**; the list is just its frequent instances:
+
+> **An action is a pawl if ANY clause holds:** it **mutates shared state**, it
+> **changes enforcement / gate logic**, it has an **external effect** (something
+> leaves the machine), or it is **hard to roll back**. Otherwise it is chaos —
+> run it free.
+
+When you hit an action that isn't in the table, apply the rule, not the list. If
+it trips any clause, it is a missing pawl: treat it as a pawl now, and add it.
+
+`scripts/intake.sh` applies this rule at the front door as **advisory triage** —
+CHAOS routes solo, PAWL routes to the cross-family Navi for a receipt before the
+door. It is a cheap early-warning (a keyword classifier, kept deliberately
+simple and fail-toward-PAWL), **not** the enforcement: the un-leakable gates are
+at the doors themselves — `scripts/reconcile-pr.sh` for the merge and
+[`dcg`](../../skills/dcg/SKILL.md) for destructive commands. A pawl the triage
+misses is still caught at the door; it just means the Navi is summoned later than
+ideal, never that a one-way door ships ungated.
 
 ## Diversity mode — per-pawl (fresh-context by default)
 
