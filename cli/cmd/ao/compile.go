@@ -17,6 +17,7 @@ import (
 	"github.com/boshu2/agentops/cli/internal/config"
 	"github.com/boshu2/agentops/cli/internal/lifecycle"
 	minePkg "github.com/boshu2/agentops/cli/internal/mine"
+	"github.com/boshu2/agentops/cli/internal/wiki"
 	"github.com/spf13/cobra"
 )
 
@@ -31,6 +32,7 @@ var (
 	compileLintOnly    bool
 	compileDefragOnly  bool
 	compileMineOnly    bool
+	compileGold        bool
 	compileFull        bool
 	compileQuiet       bool
 	compileBatchSize   int
@@ -109,6 +111,7 @@ func init() {
 	compileCmd.Flags().BoolVar(&compileLintOnly, "lint-only", false, "Only lint the existing compiled wiki")
 	compileCmd.Flags().BoolVar(&compileDefragOnly, "defrag-only", false, "Only run mechanical defrag cleanup")
 	compileCmd.Flags().BoolVar(&compileMineOnly, "mine-only", false, "Only mine new knowledge signal")
+	compileCmd.Flags().BoolVar(&compileGold, "gold", true, "Publish the sanitized OKF gold wiki to .ao/wiki after the compile cycle")
 	compileCmd.Flags().BoolVar(&compileFull, "full", false, "Run the full mine, compile, lint, and defrag cycle")
 	compileCmd.Flags().BoolVar(&compileQuiet, "quiet", false, "Suppress human progress output")
 	compileCmd.Flags().IntVar(&compileBatchSize, "batch-size", 25, "Max changed files per LLM prompt (prevents single-giant-prompt on large corpora)")
@@ -186,7 +189,40 @@ func runCompile(cmd *cobra.Command, _ []string) error {
 		report.Phases = append(report.Phases, phase)
 	}
 
+	// Flywheel close: after the .agents/ corpus is refined, publish the
+	// sanitized OKF gold wiki to .ao/wiki/. Runs on the full cycle only.
+	if compileGold && mode == "full" {
+		phase, err := runCompileGoldPhase(cwd, progress)
+		if err != nil {
+			return err
+		}
+		report.Phases = append(report.Phases, phase)
+	}
+
 	return printCompileReport(cmd.OutOrStdout(), report)
+}
+
+// runCompileGoldPhase publishes the sanitized OKF gold wiki to .ao/wiki/.
+func runCompileGoldPhase(cwd string, progress io.Writer) (compilePhaseResult, error) {
+	if !compileQuiet {
+		fmt.Fprintln(progress, "Compile gold: publishing OKF wiki to .ao/wiki")
+	}
+	gc := &wiki.GoldCompiler{
+		AgentsDir: wiki.AgentsDirIn(cwd),
+		OutDir:    filepath.Join(cwd, ".ao", "wiki"),
+	}
+	stats, err := gc.Compile(false)
+	if err != nil {
+		return compilePhaseResult{}, fmt.Errorf("compile gold: %w", err)
+	}
+	detail := fmt.Sprintf("%d gold entries from %d raw (%d gated, %d links, %d redactions)",
+		stats.Promoted, stats.Scanned, stats.Rejected, stats.Links, stats.Redactions)
+	status := "ok"
+	if len(stats.Lint) > 0 {
+		status = "warn"
+		detail += fmt.Sprintf("; %d lint issues", len(stats.Lint))
+	}
+	return compilePhaseResult{Name: "gold", Status: status, Detail: detail}, nil
 }
 
 // runCompilePreflightActions runs the standalone --reset / --repair actions
@@ -325,6 +361,9 @@ func plannedCompilePhases(mode string) []compilePhaseResult {
 	}
 	if shouldRunCompileDefrag(mode) {
 		phases = append(phases, compilePhaseResult{Name: "defrag", Status: "planned"})
+	}
+	if compileGold && mode == "full" {
+		phases = append(phases, compilePhaseResult{Name: "gold", Status: "planned"})
 	}
 	return phases
 }
