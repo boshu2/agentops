@@ -77,8 +77,11 @@ var (
 		"verified": "authoritative", "provisional": "draft", "draft": "draft",
 		"deprecated": "deprecated", "superseded": "historical",
 	}
-	uuidPattern     = regexp.MustCompile(`\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b`)
-	wikilinkPattern = regexp.MustCompile(`\[\[[^\]]+\]\]`)
+	uuidPattern = regexp.MustCompile(`\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b`)
+	// wikilinkPattern matches [[slug]] references. Anchored to a slug-shaped
+	// token (alnum first char, then slug chars) so it does NOT match bash
+	// double-bracket tests like [[ -f x ]], [[:space:]], or [[ $rc -eq 0 ]].
+	wikilinkPattern = regexp.MustCompile(`\[\[[A-Za-z0-9][A-Za-z0-9_/.-]*\]\]`)
 	// tagLinePattern matches structured tag lines in an Applicability section
 	// ("- Work shapes: a, b", "- Scope tags: c", "- Languages: go, python").
 	tagLinePattern = regexp.MustCompile(`(?i)^\s*[-*]?\s*(?:work shapes?|scope tags?|languages?|tags?):\s*(.+)$`)
@@ -590,6 +593,21 @@ var genericHeading = map[string]bool{
 	"description": true, "what": true, "why": true, "how": true,
 }
 
+// sentenceEnd returns the index of the first real sentence-ending punctuation
+// in line, or -1. A boundary is `.`/`!`/`?` followed by whitespace or
+// end-of-line — so periods inside tokens (SKILL.md, unique_by(.key), .service,
+// 0.85) are NOT treated as sentence ends.
+func sentenceEnd(line string) int {
+	for i := 0; i < len(line); i++ {
+		if c := line[i]; c == '.' || c == '!' || c == '?' {
+			if i == len(line)-1 || line[i+1] == ' ' || line[i+1] == '\t' {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
 func firstSentence(body string) string {
 	for _, line := range strings.Split(body, "\n") {
 		line = strings.TrimSpace(strings.TrimLeft(line, "#"))
@@ -601,7 +619,7 @@ func firstSentence(body string) string {
 		if genericHeading[strings.ToLower(strings.TrimRight(line, ":"))] {
 			continue // a boilerplate section label is not a title
 		}
-		if i := strings.IndexAny(line, ".!?"); i > 0 && i < len(line)-1 {
+		if i := sentenceEnd(line); i > 0 && i < len(line)-1 {
 			return strings.TrimSpace(line[:i+1])
 		}
 		return line

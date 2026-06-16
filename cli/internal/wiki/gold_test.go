@@ -348,6 +348,38 @@ func TestGold_Manifest(t *testing.T) {
 	}
 }
 
+func TestGold_FirstSentenceAbbrev(t *testing.T) {
+	cases := []struct{ in, want string }{
+		// period inside a token is NOT a sentence boundary
+		{"jq unique_by(.key) silently collapses entries", "jq unique_by(.key) silently collapses entries"},
+		{"Skill SKILL.md files are prompts. CLI subcommands differ", "Skill SKILL.md files are prompts."},
+		{"systemd-user .service files invoking daemons", "systemd-user .service files invoking daemons"},
+		{"adding a job to .github/workflows is fine", "adding a job to .github/workflows is fine"},
+		// real sentence boundary (period + space) still cuts
+		{"Do the thing. Then the next thing.", "Do the thing."},
+	}
+	for _, c := range cases {
+		if got := firstSentence(c.in); got != c.want {
+			t.Errorf("firstSentence(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+}
+
+func TestGold_WikilinkPatternNoBash(t *testing.T) {
+	shouldMatch := []string{"[[some-slug]]", "[[dynamo-e2e-thread-exists]]"}
+	shouldNot := []string{"[[ -f x ]]", "[[:space:]]", "[[ $rc -eq 0 ]]"}
+	for _, s := range shouldMatch {
+		if !wikilinkPattern.MatchString(s) {
+			t.Errorf("wikilinkPattern should match wikilink %q", s)
+		}
+	}
+	for _, s := range shouldNot {
+		if wikilinkPattern.MatchString(s) {
+			t.Errorf("wikilinkPattern wrongly matched bash %q", s)
+		}
+	}
+}
+
 func TestGold_Idempotent(t *testing.T) {
 	gc, agents := newTestCompiler(t)
 	writeAgent(t, filepath.Join(agents, "patterns"), "p.md",
