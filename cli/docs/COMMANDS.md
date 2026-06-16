@@ -1679,6 +1679,24 @@ ao eval run <suite.json> [flags]
       --runtime string                  runtime override (static, mock, shell, claude, codex)
 ```
 
+#### `ao eval scenario-ab`
+
+Run one holdout scenario (scenario.v1) twice — a control arm WITHOUT the gold
+
+```
+ao eval scenario-ab [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help               help for scenario-ab
+      --output string      Write the ScenarioDeltaScorecard JSON to this path
+      --scenario string    Path to the scenario.v1 JSON file (required)
+      --timeout duration   Per-arm timeout (0 = default 5m)
+      --token-budget int   Fail the gate if summed arm token cost exceeds this (0 = default 200000)
+```
+
 #### `ao eval scorecard`
 
 Build an eval scorecard from run records
@@ -3577,6 +3595,7 @@ ao lookup [id] [flags]
       --json             JSON output
       --limit int        Maximum results to return (default 3)
       --no-cite          Skip citation recording
+      --pointers         Compact pointers only (type · title · path · score) — no bodies; the token-cheap mode for decision-point pulls
       --query string     Search query for relevance matching
       --session string   Session ID for citation tracking
 ```
