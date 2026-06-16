@@ -1678,8 +1678,8 @@
     {
       "name": "using-atm",
       "source_skill": "skills/using-atm",
-      "source_hash": "61fd16d8ad46cfa7935ff3a5e52009fec3db793c708ab492d493f2b9edfd9b70",
-      "generated_hash": "99c0032be04b21d717fd071fc83db6db37c3235202547a5820c409bb3e10da87"
+      "source_hash": "7ed9c93047c0874ab63d6605aae202618cec6bdf1b5958a1743d7df05a306227",
+      "generated_hash": "370526e80efd36b2aae6b6a15f0897f570c90f656069b89f7828c3e367de6d57"
     },
     {
       "name": "validate",
@@ -1696,8 +1696,8 @@
     {
       "name": "vibing-with-ntm",
       "source_skill": "skills/vibing-with-ntm",
-      "source_hash": "af5f17f44cad354359a4abed8de05422b2bc6dc35f8f612793c603dfd834a7f2",
-      "generated_hash": "cda2515fc6773fb561d9c6432c7ecbcf5e5fdea9e4e4c8e03417069e25a60fdc"
+      "source_hash": "33b4d4d88af99774ba37d52b934f0c5c1a0bef23e53055628ef1681047de9212",
+      "generated_hash": "75e5fd0a64297dd770bd5870be3bf1adbdb0843382367e910174fe56a1ba0e12"
     },
     {
       "name": "workflow-builder",

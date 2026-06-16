@@ -81,6 +81,41 @@ dispatch and tend AgentOps loops on an ATM swarm.
    a per-bead worktree (orchestrator-merge model); the operator stays *on* the
    loop (intent + stop), not *in* it (per-PR approval).
 
+### Fresh Claude/Codex Peer Duels
+
+When the operator asks for "a fresh Claude and Codex", "fresh peer models", a
+"duel", or a cross-family opinion, the default substrate is **ATM panes**, not
+headless one-shot CLIs. Spawn exactly the requested model families, give both
+the same bounded prompt, verify engagement, collect pane output, and kill the
+temporary session when done. Do **not** use `claude -p` / `claude --print` for
+this shape; use an interactive Claude pane. Use headless `codex exec` only when
+the operator explicitly asks for headless execution or there is no pane/TUI
+requirement.
+
+Minimal bounded pattern:
+
+```bash
+atm spawn agentops --label navi-duel --no-user --cc=1:opus --cod=1:gpt-5.5 \
+  --no-cass-context --ready-timeout=2m --json
+
+# Claude pane: direct prompt is fine.
+atm send agentops--navi-duel --pane=1 --file prompt.md \
+  --no-cass-check --force-non-interactive --json
+
+# Codex pane: use the goal lifecycle and prove engagement.
+atm codex preflight --session agentops--navi-duel --pane 2 --json
+atm send agentops--navi-duel --pane=2 --codex-goal --file prompt.md \
+  --no-cass-check --force-non-interactive --json
+atm codex wait-goal-engaged --session agentops--navi-duel --pane 2 --json
+
+# After collecting outputs, do not leave idle duel panes around.
+atm kill agentops--navi-duel --json
+```
+
+If the requested model alias resolves to a nearby available runtime (for
+example `opus` resolving to the installed Opus build), report the actual pane
+model in the closeout instead of silently claiming the requested alias.
+
 ## Quick start
 
 ```bash
