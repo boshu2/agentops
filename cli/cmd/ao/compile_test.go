@@ -97,8 +97,11 @@ func TestRunCompileFullOrchestratesPhases(t *testing.T) {
 	if err := json.Unmarshal(out.Bytes(), &report); err != nil {
 		t.Fatalf("compile JSON invalid: %v\n%s", err, out.String())
 	}
-	if report.Mode != "full" || len(report.Phases) != 3 {
+	if report.Mode != "full" || len(report.Phases) != 4 {
 		t.Fatalf("report = %+v", report)
+	}
+	if last := report.Phases[len(report.Phases)-1]; last.Name != "gold" {
+		t.Fatalf("expected final phase 'gold' (flywheel close), got %q", last.Name)
 	}
 	if !strings.Contains(errOut.String(), "Compile mine") {
 		t.Fatalf("expected progress on stderr for JSON output, got %q", errOut.String())

@@ -138,6 +138,7 @@ public-stateful-fixture-needed|loop hypothesis list|Reads loop hypotheses and ne
 public-stateful-fixture-needed|orchestrate select|Selects work from repo-local orchestration state and needs a controlled queue fixture.
 public-stateful-fixture-needed|registry list|Reads generated registry state and needs a representative registry fixture.
 manual-only|sessions spawn|Spawns runtime sessions and requires live terminal/runtime state.
+public-stateful-fixture-needed|wiki gold|Reads .agents and writes the .ao/wiki OKF gold wiki; compiler logic covered by cli/internal/wiki/gold_test.go.
 public-stateful-fixture-needed|wiki inject|Reads and writes wiki/corpus state and needs an isolated wiki fixture.
 public-stateful-fixture-needed|wiki query|Queries wiki/corpus indexes and needs a representative wiki fixture.
 public-stateful-fixture-needed|yield emit|Parent of accept/gate-verdict/usage; writes the yield ledger and needs a bead+run fixture. Pre-existing gap surfaced by an unrelated cli/cmd/ao change (ag-62jrm).

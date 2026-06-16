@@ -155,10 +155,12 @@ func init() {
 	wikiCmd.AddCommand(wikiDoctorCmd)
 
 	wikiIndexCmd.Flags().String("base", "", "Corpus base directory (default: current directory)")
+	wikiIndexCmd.Flags().Bool("gold", false, "Index the OKF gold wiki (.ao/wiki) instead of the raw .agents/ corpus")
 
 	wikiSearchCmd.Flags().String("base", "", "Corpus base directory (default: current directory)")
 	wikiSearchCmd.Flags().Bool("reindex", false, "Rebuild the index before searching")
 	wikiSearchCmd.Flags().Int("limit", wikiSearchMaxResults, "Maximum results to print")
+	wikiSearchCmd.Flags().Bool("gold", false, "Search the OKF gold wiki (.ao/wiki) instead of the raw .agents/ corpus")
 
 	wikiLintCmd.Flags().String("vault", "", "Vault root (default: current directory)")
 	wikiQueryCmd.Flags().String("vault", "", "Vault root (default: current directory)")
@@ -203,6 +205,17 @@ func wikiIndexPathFor(base string) string {
 	return filepath.Join(wiki.AgentsDirIn(base), defaultWikiIndexFile)
 }
 
+// wikiNewIndex constructs the WikiIndex for a subcommand. With --gold it
+// targets the sanitized OKF gold wiki (.ao/wiki/) so retrieval reads the
+// durable, public-safe layer instead of the raw .agents/ corpus.
+func wikiNewIndex(cmd *cobra.Command, base string) (*wiki.WikiIndex, error) {
+	if gold, _ := cmd.Flags().GetBool("gold"); gold {
+		goldDir := filepath.Join(base, ".ao", "wiki")
+		return wiki.NewWikiIndexForRoots(filepath.Join(goldDir, defaultWikiIndexFile), goldDir)
+	}
+	return wiki.NewWikiIndex(wikiIndexPathFor(base), base)
+}
+
 // runWikiIndex builds or refreshes the persistent WikiIndex for the corpus
 // base, delegating to wiki.WikiIndex.Reindex.
 func runWikiIndex(cmd *cobra.Command, _ []string) error {
@@ -210,7 +223,7 @@ func runWikiIndex(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
-	idx, err := wiki.NewWikiIndex(wikiIndexPathFor(base), base)
+	idx, err := wikiNewIndex(cmd, base)
 	if err != nil {
 		return fmt.Errorf("construct wiki index: %w", err)
 	}
@@ -252,7 +265,7 @@ func runWikiSearch(cmd *cobra.Command, args []string) error {
 		limit = wikiSearchMaxResults
 	}
 
-	idx, err := wiki.NewWikiIndex(wikiIndexPathFor(base), base)
+	idx, err := wikiNewIndex(cmd, base)
 	if err != nil {
 		return fmt.Errorf("construct wiki index: %w", err)
 	}

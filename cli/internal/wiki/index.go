@@ -55,6 +55,10 @@ type WikiIndex struct {
 	// bases are the directories whose corpus roots are scanned. Each base
 	// is resolved to its .agents/ dir via CorpusLocator.
 	bases []string
+	// explicitRoots, when non-empty, are scanned verbatim instead of the
+	// CorpusLocator-resolved bases. Used to index a derived corpus such as
+	// the OKF gold wiki (.ao/wiki/) rather than the raw .agents/ layer.
+	explicitRoots []string
 	// locator resolves the .agents/ corpus directory for each base.
 	locator CorpusLocator
 }
@@ -70,6 +74,19 @@ func NewWikiIndex(indexPath string, bases ...string) (*WikiIndex, error) {
 		return nil, fmt.Errorf("wiki index: at least one base is required")
 	}
 	return &WikiIndex{indexPath: indexPath, bases: slices.Clone(bases)}, nil
+}
+
+// NewWikiIndexForRoots builds a WikiIndex that scans the given directories
+// verbatim (no CorpusLocator .agents/ resolution). Use it to index a derived
+// corpus — e.g. the OKF gold wiki under .ao/wiki/ — instead of the raw layer.
+func NewWikiIndexForRoots(indexPath string, roots ...string) (*WikiIndex, error) {
+	if strings.TrimSpace(indexPath) == "" {
+		return nil, fmt.Errorf("wiki index: indexPath is required")
+	}
+	if len(roots) == 0 {
+		return nil, fmt.Errorf("wiki index: at least one root is required")
+	}
+	return &WikiIndex{indexPath: indexPath, explicitRoots: slices.Clone(roots)}, nil
 }
 
 // Reindex scans every indexable document under the configured corpus roots and
@@ -119,6 +136,14 @@ func (w *WikiIndex) Records() ([]ports.WikiIndexRecord, error) {
 // indexable file found. The returned map is keyed by absolute path.
 func (w *WikiIndex) scan(ctx context.Context) (map[string]ports.WikiIndexRecord, error) {
 	out := make(map[string]ports.WikiIndexRecord)
+	if len(w.explicitRoots) > 0 {
+		for _, root := range w.explicitRoots {
+			if err := w.scanRoot(ctx, root, out); err != nil {
+				return nil, err
+			}
+		}
+		return out, nil
+	}
 	for _, base := range w.bases {
 		root := w.locator.AgentsDir(base)
 		if err := w.scanRoot(ctx, root, out); err != nil {
