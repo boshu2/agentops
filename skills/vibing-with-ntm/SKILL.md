@@ -147,6 +147,15 @@ Every card (OC-###) and anti-pattern (AP-###) is documented with recipe, prompt 
 ## Command Surfaces (do not re-learn from here)
 
 - **`atm` is `ntm`.** `atm` (Bo's fork/alias, `~/.local/bin/atm`) is byte-identical to `ntm` — same robot surface, same flags, same exit codes. Every `ntm …` / `ntm --robot-*` form in this skill and its references applies verbatim to `atm`; the out-of-session substrate-runner skill is named `using-atm` for that reason. Use whichever the operator typed; they resolve to one contract.
+- **Fresh Claude/Codex duel requests go through ATM panes.** If the operator asks for
+  fresh Claude and Codex peers, a cross-family duel, or fresh peer-model
+  judgment, spawn the requested panes with `atm spawn` and follow the
+  `using-atm` "Fresh Claude/Codex Peer Duels" pattern. Do not route this shape
+  through `claude -p` / `claude --print` or ad hoc headless one-shots; the value
+  is fresh interactive peer state plus observable pane engagement. Use
+  `atm codex preflight`, `atm send --codex-goal`, and
+  `atm codex wait-goal-engaged` for the Codex pane, then kill the temporary
+  duel session after collecting output.
 - **Agents use robot surfaces** (`--robot-snapshot`, `--robot-attention`, `--robot-send`, `--robot-smart-restart`, …); interactive TUIs (`ntm dashboard`, `palette`, `view`) are for humans. The authoritative catalog is `ntm robot-docs` / `ntm --help` — re-query it; see [ROBOT-MODE.md](references/ROBOT-MODE.md) for lanes, transports, and deprecations.
 - **Marching orders:** copy-paste dispatch prompts (first dispatch, steady-state, wide-swarm domain assignment, review dispatch) live in [PROMPTS.md](references/PROMPTS.md); the fill-in template is [assets/marching-orders-template.md](https://github.com/boshu2/agentops/blob/main/skills/vibing-with-ntm/assets/marching-orders-template.md). Keep one constraint live: first dispatch claims one scoped item and reserves files/worktree scope; steady-state asks for one commit or one explicit blocker per timebox.
 - **Isolation:** default is Agent Mail file reservations + clear bead ownership; `--worktrees` when repo policy allows. Repo-local `AGENTS.md` always wins.
