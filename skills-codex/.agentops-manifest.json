@@ -1006,7 +1006,7 @@
     {
       "name": "agent-mail",
       "source_skill": "skills/agent-mail",
-      "source_hash": "cbf52b3ceda479383e0c4e287bbc52216238354c31aed39f1cd24395db85b2ce",
+      "source_hash": "f6930782c7293be78bb1bfb155d007d50ef20919a509c607add8942f6c754278",
       "generated_hash": "e66befdbae502fe31a8b1094e7ff90c6779abfdd6ec01723c65cfa641a346ae6"
     },
     {
@@ -1678,7 +1678,7 @@
     {
       "name": "using-atm",
       "source_skill": "skills/using-atm",
-      "source_hash": "7ed9c93047c0874ab63d6605aae202618cec6bdf1b5958a1743d7df05a306227",
+      "source_hash": "682f6ad9386392efa6f2b55a879016d9b8f693f1a3e1d81f907b309b275fcb59",
       "generated_hash": "370526e80efd36b2aae6b6a15f0897f570c90f656069b89f7828c3e367de6d57"
     },
     {
