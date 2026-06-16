@@ -157,6 +157,17 @@ Five mandatory checks run during council validation — temporal interrogation, 
 
 When a plan introduces a regex, grep, glob, or similar scope predicate, also apply [references/scope-predicate-positive-negative-cases.md](references/scope-predicate-positive-negative-cases.md): require positive and negative examples before approval.
 
+**Re-baseline against what exists (mandatory when the plan proposes NEW
+construction).** A plan that says "build X" / "X is missing" / "the unbuilt
+arm" must prove X does not already exist — `grep`/read the codebase for the
+capability, the command, the function, the table — *before* the effort estimate
+is accepted. The dominant scoping failure is estimating new construction for
+machinery that is already built (and only needs integration), which inflates
+effort 2× and risks a duplicate/competing implementation. Judge prompt: "For
+each 'build/add/missing' claim, was the absence verified by a search, or
+assumed? Name the search." Treat an unverified "it's missing" as a WARN at
+minimum; FAIL if the plan's effort/sequencing depends on it.
+
 ### Step 2.9: No-self-grading invariant (author ≠ validator)
 
 The pre-mortem verdict must NOT be graded by the plan's own author. A verdict produced by the authoring context is autocorrelated — the same assumptions that shaped the plan pass it. This is the no-self-grading invariant (`ag-lmdx.4`): the independent-trust-domain check on the plan-acceptance verdict.
