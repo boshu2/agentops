@@ -67,6 +67,8 @@ After each wave, output one of:
 
 Never claim completion without the marker.
 
+**Feed the orchestrator's re-plan loop — don't swallow findings into a silent retry.** When run under `$rpi`, surface what a wave proved or broke UP to the orchestrator. A failed or surprising wave (a `PARTIAL`/`BLOCKED` marker) is *re-plan input*, not just a retry target: per the [`$rpi` Agile Re-Plan Loop](../rpi/SKILL.md#agile-re-plan-loop-the-anti-waterfall-rule), the *remaining* waves may be refactored, inserted, dropped, or reordered before the next runs. Re-cranking the same objective forever instead of letting the remaining plan change is the waterfall anti-pattern.
+
 ## Node Repair Operator
 
 When a task fails during wave execution, classify as **RETRY** (transient — re-add with adjustment, max 2), **DECOMPOSE** (too complex — split into sub-issues, terminal), or **PRUNE** (blocked — escalate immediately). Budget: 2 per task.

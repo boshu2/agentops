@@ -39,6 +39,14 @@ When the artifact claims DONE/closed/green, apply the
 [Completion-Claim Kernel](../shared/validation-contract.md#completion-claim-kernel)
 before returning PASS.
 
+**A verdict is re-plan evidence, not just a retry trigger.** Under `/rpi`, a
+FAIL/WARN (and its findings) surfaces UP to the orchestrator's
+[Agile Re-Plan Loop](../rpi/SKILL.md#agile-re-plan-loop-the-anti-waterfall-rule):
+the *remaining* waves may be refactored, inserted, dropped, or reordered in
+response — not only the failed objective re-cranked. Under `--auto` that pivot is
+autonomous. Looping a failed objective forever without asking whether the plan
+should change is the waterfall anti-pattern.
+
 ## Modes (≤8 per Fix-F mode-flag budget)
 
 | Mode | Purpose | Replaces (post-Phase 2) |
