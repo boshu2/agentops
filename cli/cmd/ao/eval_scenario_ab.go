@@ -117,7 +117,7 @@ func (codexScenarioRunner) RunArm(ctx context.Context, sc scenario.Scenario, wit
 	prompt.WriteString("\n\nGoal: ")
 	prompt.WriteString(sc.Goal)
 	prompt.WriteString("\n\nProduce your best attempt. Output only the result, no preamble.")
-	out, tokens, err := runCodexExec(ctx, prompt.String())
+	out, tokens, err := runCodexExec(ctx, prompt.String(), "")
 	if err != nil {
 		return aoeval.ArmOutcome{}, err
 	}
@@ -137,7 +137,14 @@ func (codexScenarioJudge) Judge(ctx context.Context, sc scenario.Scenario, arm a
 	}
 	prompt.WriteString("\nOUTPUT:\n" + outcome.Output + "\n\n")
 	prompt.WriteString(`Return ONLY strict JSON, no prose: {"vectors":[{"dimension":"...","pass":true,"score":0.0}],"aggregate_score":0.0}. aggregate_score is in [0,1].`)
-	out, _, err := runCodexExec(ctx, prompt.String())
+	// Constrain the model's final message to the verdict shape so the parser
+	// reads a clean object, not codex's surrounding reasoning chrome.
+	schemaPath, cleanup, err := writeJudgeSchema()
+	if err != nil {
+		return aoeval.JudgeVerdict{}, err
+	}
+	defer cleanup()
+	out, _, err := runCodexExec(ctx, prompt.String(), schemaPath)
 	if err != nil {
 		return aoeval.JudgeVerdict{}, err
 	}
@@ -146,6 +153,32 @@ func (codexScenarioJudge) Judge(ctx context.Context, sc scenario.Scenario, arm a
 		return aoeval.JudgeVerdict{}, fmt.Errorf("judge (%s) returned unparseable output: %w", arm, err)
 	}
 	return verdict, nil
+}
+
+// judgeOutputSchema constrains codex's final message to the JudgeVerdict shape
+// (codex exec --output-schema), so the judge returns a clean JSON object.
+// codex's strict structured-output mode requires "additionalProperties": false
+// on every object AND every property listed in "required" (a missing
+// additionalProperties yields a 400 invalid_json_schema).
+const judgeOutputSchema = `{"type":"object","additionalProperties":false,"properties":{"vectors":{"type":"array","items":{"type":"object","additionalProperties":false,"properties":{"dimension":{"type":"string"},"pass":{"type":"boolean"},"score":{"type":"number"}},"required":["dimension","pass","score"]}},"aggregate_score":{"type":"number"}},"required":["vectors","aggregate_score"]}`
+
+func writeJudgeSchema() (string, func(), error) {
+	f, err := os.CreateTemp("", "scenario-ab-judge-schema-*.json")
+	if err != nil {
+		return "", func() {}, fmt.Errorf("judge schema temp: %w", err)
+	}
+	name := f.Name()
+	cleanup := func() { _ = os.Remove(name) }
+	if _, err := f.WriteString(judgeOutputSchema); err != nil {
+		_ = f.Close()
+		cleanup()
+		return "", func() {}, fmt.Errorf("write judge schema: %w", err)
+	}
+	if err := f.Close(); err != nil {
+		cleanup()
+		return "", func() {}, fmt.Errorf("close judge schema: %w", err)
+	}
+	return name, cleanup, nil
 }
 
 // goldPointers shells the KF-A decision-point pull. Best-effort: a missing gold
@@ -164,17 +197,38 @@ func goldPointers(ctx context.Context, query string) string {
 
 var codexTokensRe = regexp.MustCompile(`(?i)tokens used[^\d]*([\d,]+)`)
 
-// runCodexExec runs a single non-interactive codex turn and returns stdout plus
-// a best-effort token count (parsed from codex's "tokens used" line, else
-// estimated from output length). Law 0: codex exec only; no Claude print-mode.
-func runCodexExec(ctx context.Context, prompt string) (string, int, error) {
-	cmd := exec.CommandContext(ctx, "codex", "exec", "--sandbox", "read-only", "--skip-git-repo-check", prompt)
-	out, err := cmd.CombinedOutput()
-	text := string(out)
+// runCodexExec runs a single non-interactive codex turn and returns the agent's
+// FINAL message (captured via --output-last-message, so codex's reasoning/chrome
+// is excluded) plus a best-effort token count (parsed from the full stdout's
+// "tokens used" line, else estimated). When outputSchemaPath is set, codex is
+// constrained to emit a final message matching that JSON Schema. Law 0: codex
+// exec only; no Claude print-mode.
+func runCodexExec(ctx context.Context, prompt, outputSchemaPath string) (string, int, error) {
+	msgFile, err := os.CreateTemp("", "scenario-ab-codex-msg-*.txt")
+	if err != nil {
+		return "", 0, fmt.Errorf("codex last-message temp: %w", err)
+	}
+	msgPath := msgFile.Name()
+	_ = msgFile.Close()
+	defer func() { _ = os.Remove(msgPath) }()
+
+	args := []string{"exec", "--sandbox", "read-only", "--skip-git-repo-check", "--output-last-message", msgPath}
+	if outputSchemaPath != "" {
+		args = append(args, "--output-schema", outputSchemaPath)
+	}
+	args = append(args, prompt)
+	cmd := exec.CommandContext(ctx, "codex", args...)
+	combined, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", 0, fmt.Errorf("codex exec: %w", err)
 	}
-	return text, parseCodexTokens(text), nil
+	tokens := parseCodexTokens(string(combined))
+	// Prefer the clean final message; fall back to combined output if codex did
+	// not write one.
+	if msg, readErr := os.ReadFile(msgPath); readErr == nil && len(strings.TrimSpace(string(msg))) > 0 {
+		return strings.TrimSpace(string(msg)), tokens, nil
+	}
+	return string(combined), tokens, nil
 }
 
 // parseJudgeJSON extracts the first JSON object from the judge's output (codex
