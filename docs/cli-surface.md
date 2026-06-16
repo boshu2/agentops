@@ -265,6 +265,7 @@
 | `ao version` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao vibe-check` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki doctor` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao wiki gold` | `public-stateful-fixture-needed` | `allowlisted` | Reads .agents and writes the .ao/wiki OKF gold wiki; compiler logic covered by cli/internal/wiki/gold_test.go. |
 | `ao wiki index` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao wiki inject` | `public-stateful-fixture-needed` | `allowlisted` | Reads and writes wiki/corpus state and needs an isolated wiki fixture. |
 | `ao wiki lint` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
