@@ -154,6 +154,66 @@ func stampShapeOnPacket(path string, verdict orchestration.ShapeVerdict, ts stri
 	return nil
 }
 
+// resolveStampRunID determines the run id whose durable per-run archive snapshot
+// should also be stamped, in priority order: the RPI_RUN_ID env (the loop sets
+// it) then the packet's own run_id field (the live /discovery packet carries it).
+// Returns "" when neither resolves — there is then no archive to mirror.
+func resolveStampRunID(packetPath string) string {
+	if v := strings.TrimSpace(os.Getenv("RPI_RUN_ID")); v != "" {
+		return v
+	}
+	data, err := os.ReadFile(packetPath)
+	if err != nil {
+		return ""
+	}
+	var packet struct {
+		RunID string `json:"run_id"`
+	}
+	if err := json.Unmarshal(data, &packet); err != nil {
+		return ""
+	}
+	return strings.TrimSpace(packet.RunID)
+}
+
+// runArchivePacketPath returns the per-run archive packet that mirrors the alias
+// at packetPath: <root>/.agents/rpi/runs/<run-id>/execution-packet.json, where
+// <root> is the repo root holding the alias
+// (<root>/.agents/rpi/execution-packet.json). Returns "" when runID is empty.
+func runArchivePacketPath(packetPath, runID string) string {
+	runID = strings.TrimSpace(runID)
+	if runID == "" {
+		return ""
+	}
+	// packetPath = <root>/.agents/rpi/<file> → three Dir() hops yield <root>.
+	root := filepath.Dir(filepath.Dir(filepath.Dir(packetPath)))
+	return filepath.Join(rpiRunRegistryDir(root, runID), executionPacketFile)
+}
+
+// stampShapeEverywhere stamps the verdict onto the alias packet and, when a run
+// id is resolvable and the durable per-run archive already exists, onto that
+// archive too (age-9gc). /discovery STEP 6 writes BOTH the alias and the run
+// archive, but only the alias routed through stamp-shape before — leaving the
+// durable snapshot without the validated orchestration_decision. The archive is
+// mirrored only when it already exists: stamp-shape records decisions on
+// existing packets, it does not create run archives. Returns the paths stamped.
+func stampShapeEverywhere(packetPath string, verdict orchestration.ShapeVerdict, ts string) ([]string, error) {
+	if err := stampShapeOnPacket(packetPath, verdict, ts); err != nil {
+		return nil, err
+	}
+	stamped := []string{packetPath}
+	archivePath := runArchivePacketPath(packetPath, resolveStampRunID(packetPath))
+	if archivePath == "" || archivePath == packetPath {
+		return stamped, nil
+	}
+	if _, err := os.Stat(archivePath); err != nil {
+		return stamped, nil //nolint:nilerr // no archive (or unreadable) → alias-only, not an error
+	}
+	if err := stampShapeOnPacket(archivePath, verdict, ts); err != nil {
+		return stamped, err
+	}
+	return append(stamped, archivePath), nil
+}
+
 // proposedFromPacket reads an already-present orchestration_decision.chosen_shape
 // so a shape the model wrote by hand on the live path is treated as the proposal
 // ValidateShape validates (and overrides when ground truth disagrees).
@@ -218,14 +278,19 @@ the single-agent floor; the packet always gets a record.`,
 			inputs := gatherShapeInputs(project, proposed, unattended, run)
 			verdict := orchestration.ValidateShape(inputs)
 			ts := time.Now().UTC().Format(time.RFC3339)
-			if err := stampShapeOnPacket(packetPath, verdict, ts); err != nil {
+			stamped, err := stampShapeEverywhere(packetPath, verdict, ts)
+			if err != nil {
 				return err
 			}
 			fired := "none"
 			if len(verdict.PredicatesFired) > 0 {
 				fired = strings.Join(verdict.PredicatesFired, ",")
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "orchestration_decision stamped: shape=%s predicates_fired=%s\n", verdict.Shape, fired)
+			archiveNote := ""
+			if len(stamped) > 1 {
+				archiveNote = fmt.Sprintf(" (+%d run-archive snapshot)", len(stamped)-1)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "orchestration_decision stamped: shape=%s predicates_fired=%s%s\n", verdict.Shape, fired, archiveNote)
 			return nil
 		},
 	}
