@@ -191,3 +191,33 @@ func TestParseCodexTokens(t *testing.T) {
 		}
 	}
 }
+
+// TestJudgeOutputSchema_StrictMode guards the exact codex strict-output
+// requirement that every object set "additionalProperties": false and list all
+// its properties in "required" — a missing additionalProperties yields a 400
+// invalid_json_schema (this cost a live run to discover, KF-C).
+func TestJudgeOutputSchema_StrictMode(t *testing.T) {
+	var root map[string]any
+	if err := json.Unmarshal([]byte(judgeOutputSchema), &root); err != nil {
+		t.Fatalf("judgeOutputSchema is not valid JSON: %v", err)
+	}
+	assertStrictObject := func(t *testing.T, obj map[string]any, where string) {
+		t.Helper()
+		if ap, ok := obj["additionalProperties"]; !ok || ap != false {
+			t.Errorf("%s: additionalProperties must be present and false (codex strict mode), got %v", where, ap)
+		}
+		props, _ := obj["properties"].(map[string]any)
+		req, _ := obj["required"].([]any)
+		if len(props) != len(req) {
+			t.Errorf("%s: every property must be in required (strict mode): %d props, %d required", where, len(props), len(req))
+		}
+	}
+	assertStrictObject(t, root, "root")
+	props, _ := root["properties"].(map[string]any)
+	vectors, _ := props["vectors"].(map[string]any)
+	if items, ok := vectors["items"].(map[string]any); ok {
+		assertStrictObject(t, items, "vectors.items")
+	} else {
+		t.Error("vectors.items object missing")
+	}
+}
