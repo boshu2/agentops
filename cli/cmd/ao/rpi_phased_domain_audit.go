@@ -67,7 +67,7 @@ type domainScopeAudit struct {
 	// "enforced".
 	EnforcementHookSource string `json:"enforcement_hook_source,omitempty"`
 	// RuntimeMode is the normalized phased runtime mode the enforcement
-	// decision was made for (direct|stream|tmux|gc|auto).
+	// decision was made for (direct|stream|tmux|auto).
 	RuntimeMode string `json:"runtime_mode,omitempty"`
 	// GateFailed is true when Enforcement is "enforced" and a denied-glob
 	// reference still surfaced in visible evidence — the read fence was

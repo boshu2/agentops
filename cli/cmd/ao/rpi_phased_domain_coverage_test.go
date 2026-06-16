@@ -313,7 +313,7 @@ func TestReportDomainScopeAudit_UnavailableWarns(t *testing.T) {
 	audit := &domainScopeAudit{
 		Domain:            "payments",
 		Enforcement:       "unavailable",
-		EnforcementReason: "gc runtime is opaque",
+		EnforcementReason: "runtime evidence is unavailable",
 		GateFailed:        false,
 		OutOfDomainRefs:   []outOfDomainRef{},
 	}

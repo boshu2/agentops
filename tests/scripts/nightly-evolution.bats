@@ -501,6 +501,21 @@ add_remote_nightly_branches() {
     jq -e '.runtime.command == "codex" and .runtime.mode == "direct" and .phases.evolve == "ok"' "$TMP_DIR/out/digest.json"
 }
 
+@test "gc runtime mode is rejected" {
+    AO_LOG="$TMP_DIR/ao.log"
+    AO_RPI_LOG="$TMP_DIR/rpi.log"
+    export AO_LOG AO_RPI_LOG
+
+    run env PATH="$MOCK_BIN:$PATH" bash "$FAKE_REPO/scripts/nightly-evolution.sh" \
+        --repo-root "$FAKE_REPO" \
+        --output-dir "$TMP_DIR/out" \
+        --date 2026-05-01 \
+        --runtime-mode gc
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"--runtime-mode must be auto, direct, stream, or tmux"* ]]
+}
+
 @test "dry-run builds blocker matrix and main CI baseline artifacts" {
     AO_LOG="$TMP_DIR/ao.log"
     AO_RPI_LOG="$TMP_DIR/rpi.log"
