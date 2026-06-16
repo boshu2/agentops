@@ -165,6 +165,37 @@ func TestEvalScenarioABCmd_CeilingViolation(t *testing.T) {
 	}
 }
 
+// TestEvalScenarioABCmd_AnswerKeyDeterministic: a scenario carrying answer_key is
+// graded by the deterministic AnswerKeyJudge (no LLM). With-gold output contains the
+// key (pass), without-gold does not (fail) → a clean positive delta that passes the
+// gate. This is the OOD fact-recall path (age-k8u).
+func TestEvalScenarioABCmd_AnswerKeyDeterministic(t *testing.T) {
+	withFakes(t,
+		fakeCmdRunner{
+			with:    aoeval.ArmOutcome{Output: "the private value is WIDGET-42", TokenCost: 10},
+			without: aoeval.ArmOutcome{Output: "I do not have that information", TokenCost: 10},
+		},
+		fakeCmdJudge{}, // ignored — a scenario answer_key selects the deterministic judge
+	)
+	dir := t.TempDir()
+	res, err := scenario.Create(scenario.CreateOptions{
+		Goal:      "recall a private fleet-specific value the base model cannot know",
+		Threshold: 0.8, AnswerKey: "WIDGET-42",
+		Status: "active", Source: "human", Dir: dir,
+		Now: func() time.Time { return time.Date(2026, 6, 16, 0, 0, 0, 0, time.UTC) },
+	})
+	if err != nil {
+		t.Fatalf("create fixture: %v", err)
+	}
+	stdout, err := runScenarioABCmd(t, res.Path, filepath.Join(dir, "card.json"), 200000)
+	if err != nil {
+		t.Fatalf("valid OOD answer-key A/B should pass the gate; got err %v\n%s", err, stdout)
+	}
+	if !strings.Contains(stdout, "gate=PASS") {
+		t.Errorf("with-gold (key present) over without-gold (absent) should PASS; got %q", stdout)
+	}
+}
+
 func TestEvalScenarioABCmd_MissingScenarioFlag(t *testing.T) {
 	withFakes(t, fakeCmdRunner{}, fakeCmdJudge{})
 	if _, err := runScenarioABCmd(t, "", "", 0); err == nil {

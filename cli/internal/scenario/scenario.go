@@ -41,8 +41,12 @@ type Scenario struct {
 	ExpectedOutcome       string             `json:"expected_outcome"`
 	AcceptanceVectors     []AcceptanceVector `json:"acceptance_vectors,omitempty"`
 	SatisfactionThreshold float64            `json:"satisfaction_threshold"`
-	Source                string             `json:"source,omitempty"`
-	Status                string             `json:"status"`
+	// AnswerKey, when set, switches grading to DETERMINISTIC: an arm passes iff
+	// this string appears (case-insensitive) in its output — no LLM judge. The
+	// rigorous, judge-noise-free grade for fact-recall OOD scenarios (age-k8u).
+	AnswerKey string `json:"answer_key,omitempty"`
+	Source    string `json:"source,omitempty"`
+	Status    string `json:"status"`
 }
 
 // ValidStatus reports whether s is an allowed scenario lifecycle status.
@@ -94,6 +98,9 @@ type CreateOptions struct {
 	Threshold       float64
 	Status          string
 	Source          string
+	// AnswerKey, when set, makes the scenario graded deterministically (exact
+	// case-insensitive substring of the arm output) instead of by the LLM judge.
+	AnswerKey string
 	// DirectiveID, when set, marks the scenario as a promoted spec scenario
 	// linked to a GOALS.md directive (see docs/adr/ADR-0003).
 	DirectiveID string
@@ -157,6 +164,7 @@ func Create(opts CreateOptions) (*CreateResult, error) {
 		Narrative:             inferNarrative(goal, opts.Narrative),
 		ExpectedOutcome:       inferOutcome(goal, opts.ExpectedOutcome),
 		SatisfactionThreshold: opts.Threshold,
+		AnswerKey:             opts.AnswerKey,
 		Source:                opts.Source,
 		Status:                opts.Status,
 	}

@@ -33,6 +33,16 @@ var (
 	scenarioABJudgeFactory  = func() aoeval.ScenarioJudge { return codexScenarioJudge{} }
 )
 
+// selectScenarioJudge picks the DETERMINISTIC answer-key judge when the scenario
+// carries an answer_key (fact-recall OOD grading — no LLM, zero judge noise/cost),
+// else the injected (codex) judge. age-k8u.
+func selectScenarioJudge(sc scenario.Scenario) aoeval.ScenarioJudge {
+	if strings.TrimSpace(sc.AnswerKey) != "" {
+		return aoeval.AnswerKeyJudge{}
+	}
+	return scenarioABJudgeFactory()
+}
+
 var evalScenarioABCmd = &cobra.Command{
 	Use:   "scenario-ab",
 	Short: "Run a knowledge-reuse holdout scenario with vs. without the gold pull (the discriminating A/B)",
@@ -58,7 +68,7 @@ satisfaction threshold, or when the summed arm token cost exceeds the budget.`,
 			Scenario:     *sc,
 			ScenarioPath: evalScenarioABScenario,
 			Runner:       scenarioABRunnerFactory(),
-			Judge:        scenarioABJudgeFactory(),
+			Judge:        selectScenarioJudge(*sc),
 			Timeout:      evalScenarioABTimeout,
 			TokenBudget:  evalScenarioABBudget,
 		})
