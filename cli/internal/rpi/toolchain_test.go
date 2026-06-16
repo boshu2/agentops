@@ -177,14 +177,14 @@ func TestNormalizeRuntimeMode(t *testing.T) {
 }
 
 func TestValidateRuntimeMode(t *testing.T) {
-	validModes := []string{"auto", "direct", "stream", "tmux", "gc", " Auto ", "DIRECT", "TMUX", "GC"}
+	validModes := []string{"auto", "direct", "stream", "tmux", " Auto ", "DIRECT", "TMUX"}
 	for _, m := range validModes {
 		if err := ValidateRuntimeMode(m); err != nil {
 			t.Errorf("ValidateRuntimeMode(%q) unexpected error: %v", m, err)
 		}
 	}
 
-	invalidModes := []string{"invalid", "hybrid", "custom"}
+	invalidModes := []string{"invalid", "hybrid", "custom", "gc", "GC", " gc "}
 	for _, m := range invalidModes {
 		if err := ValidateRuntimeMode(m); err == nil {
 			t.Errorf("ValidateRuntimeMode(%q) expected error", m)

@@ -23,7 +23,7 @@ Options:
   --date <YYYY-MM-DD>       Nightly date used for branch naming (default: UTC today).
   --runners <csv>           Dream runners (default: claude,codex).
   --runtime-cmd <cmd>       RPI runtime command for evolve (default: claude).
-  --runtime-mode <mode>     RPI runtime mode auto|direct|stream|tmux|gc (default: auto).
+  --runtime-mode <mode>     RPI runtime mode auto|direct|stream|tmux (default: auto).
   --max-cycles <n>          Max evolve cycles when --run-evolve is used (default: 1).
   --gate-policy <policy>    Evolve gate policy (default: required).
   --landing-policy <policy> Evolve landing policy (default: off).
@@ -59,6 +59,13 @@ json_empty_object() {
 
 json_empty_array() {
   printf '[]\n'
+}
+
+parse_utc_epoch() {
+  local value="$1"
+  date -u -d "$value" +%s 2>/dev/null || \
+    date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$value" +%s 2>/dev/null || \
+    echo 0
 }
 
 resolve_repo_root() {
@@ -198,7 +205,7 @@ preflight_evolve() {
   expires_at="$(jq -r '.expires_at // ""' "$wo")"
   if [[ -n "$expires_at" ]]; then
     now_epoch="$(date -u +%s)"
-    expires_epoch="$(date -u -d "$expires_at" +%s 2>/dev/null || echo 0)"
+    expires_epoch="$(parse_utc_epoch "$expires_at")"
     if [[ "$expires_epoch" -gt 0 && "$now_epoch" -gt "$expires_epoch" ]]; then
       die "work order expired at $expires_at"
     fi
@@ -437,8 +444,8 @@ done
 [[ "$RUN_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || die "--date must use YYYY-MM-DD"
 [[ "$MAX_CYCLES" =~ ^[0-9]+$ ]] || die "--max-cycles must be a non-negative integer"
 case "$RUNTIME_MODE" in
-  auto|direct|stream|tmux|gc) ;;
-  *) die "--runtime-mode must be auto, direct, stream, tmux, or gc" ;;
+  auto|direct|stream|tmux) ;;
+  *) die "--runtime-mode must be auto, direct, stream, or tmux" ;;
 esac
 
 REPO_ROOT="$(resolve_repo_root "$REPO_ROOT")"

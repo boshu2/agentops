@@ -380,7 +380,7 @@ emit_markdown() {
 
 emit_json() {
   local tmp_md
-  tmp_md="$(mktemp "${TMPDIR:-/tmp}/pr-digest-XXXXXX.md")"
+  tmp_md="$(mktemp "${TMPDIR:-/tmp}/pr-digest.XXXXXX")"
   emit_markdown > "$tmp_md"
 
   local admission_json="{}"
