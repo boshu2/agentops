@@ -140,6 +140,141 @@ func TestStampShapeOnPacket_PredicatesFiredAlwaysPresent(t *testing.T) {
 	}
 }
 
+// writeRunAlias writes an alias packet under <root>/.agents/rpi/ carrying run_id,
+// plus the matching per-run archive snapshot under
+// <root>/.agents/rpi/runs/<run-id>/ (the real on-disk shape /discovery STEP 6
+// produces). Returns the alias and archive paths.
+func writeRunAlias(t *testing.T, root, runID string) (string, string) {
+	t.Helper()
+	stateDir := filepath.Join(root, ".agents", "rpi")
+	if err := os.MkdirAll(filepath.Join(stateDir, "runs", runID), 0o750); err != nil {
+		t.Fatal(err)
+	}
+	body := map[string]any{
+		"schema_version":    1,
+		"objective":         "wire the live discovery shape",
+		"run_id":            runID,
+		"epic_id":           "age-gud",
+		"contract_surfaces": []string{"skills/discovery/references/dag.md"},
+		"tracker_mode":      "br",
+	}
+	data, err := json.MarshalIndent(body, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	aliasPath := filepath.Join(stateDir, executionPacketFile)
+	archivePath := filepath.Join(stateDir, "runs", runID, executionPacketFile)
+	for _, p := range []string{aliasPath, archivePath} {
+		if err := os.WriteFile(p, data, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return aliasPath, archivePath
+}
+
+func stampedShape(t *testing.T, path string) string {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got map[string]any
+	if err := json.Unmarshal(raw, &got); err != nil {
+		t.Fatalf("re-parse %s: %v", path, err)
+	}
+	dec, ok := got["orchestration_decision"].(map[string]any)
+	if !ok {
+		return ""
+	}
+	shape, _ := dec["chosen_shape"].(string)
+	return shape
+}
+
+func TestRunArchivePacketPath(t *testing.T) {
+	root := "/repo"
+	alias := filepath.Join(root, ".agents", "rpi", executionPacketFile)
+	got := runArchivePacketPath(alias, "run-123")
+	want := filepath.Join(root, ".agents", "rpi", "runs", "run-123", executionPacketFile)
+	if got != want {
+		t.Fatalf("archive path = %q, want %q", got, want)
+	}
+	if got := runArchivePacketPath(alias, ""); got != "" {
+		t.Fatalf("empty run id should yield empty path, got %q", got)
+	}
+	if got := runArchivePacketPath(alias, "  "); got != "" {
+		t.Fatalf("whitespace run id should yield empty path, got %q", got)
+	}
+}
+
+func TestResolveStampRunID_EnvOverridesPacket(t *testing.T) {
+	dir := t.TempDir()
+	alias, _ := writeRunAlias(t, dir, "packet-run")
+	t.Setenv("RPI_RUN_ID", "env-run")
+	if got := resolveStampRunID(alias); got != "env-run" {
+		t.Fatalf("run id = %q, want env-run (env wins over packet)", got)
+	}
+}
+
+func TestResolveStampRunID_FallsBackToPacket(t *testing.T) {
+	dir := t.TempDir()
+	alias, _ := writeRunAlias(t, dir, "packet-run")
+	t.Setenv("RPI_RUN_ID", "")
+	if got := resolveStampRunID(alias); got != "packet-run" {
+		t.Fatalf("run id = %q, want packet-run (packet fallback)", got)
+	}
+	// Missing packet → empty, no panic.
+	if got := resolveStampRunID(filepath.Join(dir, "nope.json")); got != "" {
+		t.Fatalf("missing packet run id = %q, want empty", got)
+	}
+}
+
+func TestStampShapeEverywhere_StampsAliasAndArchive(t *testing.T) {
+	dir := t.TempDir()
+	alias, archive := writeRunAlias(t, dir, "run-abc")
+	t.Setenv("RPI_RUN_ID", "") // force packet-based resolution
+	verdict := orchestration.ShapeVerdict{Shape: orchestration.ShapeATMOnly, Rationale: "unattended"}
+
+	stamped, err := stampShapeEverywhere(alias, verdict, "2026-06-16T00:00:00Z")
+	if err != nil {
+		t.Fatalf("stamp: %v", err)
+	}
+	if len(stamped) != 2 {
+		t.Fatalf("stamped %d paths, want 2 (alias + run archive): %v", len(stamped), stamped)
+	}
+	if got := stampedShape(t, alias); got != "atm-only" {
+		t.Fatalf("alias chosen_shape = %q, want atm-only", got)
+	}
+	if got := stampedShape(t, archive); got != "atm-only" {
+		t.Fatalf("run archive chosen_shape = %q, want atm-only — the durable snapshot must carry the decision", got)
+	}
+}
+
+func TestStampShapeEverywhere_NoArchiveStampsAliasOnly(t *testing.T) {
+	// Alias exists with run_id, but no run-archive snapshot on disk → stamp the
+	// alias only, no error (stamp-shape mirrors existing archives, never creates).
+	dir := t.TempDir()
+	stateDir := filepath.Join(dir, ".agents", "rpi")
+	if err := os.MkdirAll(stateDir, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	alias := filepath.Join(stateDir, executionPacketFile)
+	body, _ := json.MarshalIndent(map[string]any{"schema_version": 1, "run_id": "ghost-run", "objective": "x"}, "", "  ")
+	if err := os.WriteFile(alias, body, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("RPI_RUN_ID", "")
+	stamped, err := stampShapeEverywhere(alias, orchestration.ShapeVerdict{Shape: orchestration.ShapeSingleAgent}, "2026-06-16T00:00:00Z")
+	if err != nil {
+		t.Fatalf("stamp: %v", err)
+	}
+	if len(stamped) != 1 {
+		t.Fatalf("stamped %d paths, want 1 (alias only — no archive exists): %v", len(stamped), stamped)
+	}
+	if got := stampedShape(t, alias); got != "single-agent" {
+		t.Fatalf("alias chosen_shape = %q, want single-agent", got)
+	}
+}
+
 // fakeAM returns canned am stdout per (robot, <subcommand>, ...).
 func fakeAM(active, reservations string) amRunner {
 	return func(args ...string) ([]byte, error) {
