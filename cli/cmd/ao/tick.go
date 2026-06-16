@@ -423,7 +423,8 @@ func tickClose(rt tickRuntime, id, msg, evidence string, paths []string) error {
 		return &tickExitError{code: tickExitCloseRef}
 	}
 
-	before := tickGitRevParse(rt)
+	ledgerDir := tickLedgerDir(rt)
+	before := tickGitRevParseInDir(rt, ledgerDir)
 	if before == "" {
 		before = "none"
 	}
@@ -434,7 +435,6 @@ func tickClose(rt tickRuntime, id, msg, evidence string, paths []string) error {
 	if _, code, err := rt.run("br", "sync", "--flush-only"); err != nil || code != 0 {
 		_, _, _ = rt.run("br", "sync")
 	}
-	ledgerDir := tickLedgerDir(rt)
 	issuesPath := filepath.Join(ledgerDir, "issues.jsonl")
 	metadataPath := filepath.Join(ledgerDir, "metadata.json")
 	if !tickLedgerShowsClosed(issuesPath, id) {
@@ -444,28 +444,42 @@ func tickClose(rt tickRuntime, id, msg, evidence string, paths []string) error {
 		return &tickExitError{code: tickExitCloseFail}
 	}
 
-	stage := []string{"add", "--", tickStagePath(rt.workDir, issuesPath)}
+	ledgerStage := []string{"-C", ledgerDir, "add", "--", "issues.jsonl"}
 	if tickPathExists(rt.workDir, metadataPath) {
-		stage = append(stage, tickStagePath(rt.workDir, metadataPath))
+		ledgerStage = append(ledgerStage, "metadata.json")
 	}
-	if tickPathExists(rt.workDir, evFirst) {
-		stage = append(stage, evFirst)
+	if _, code, err := rt.run("git", ledgerStage...); err != nil || code != 0 {
+		return &tickExitError{code: code, msg: "ledger git add failed"}
 	}
-	stage = append(stage, paths...)
-	if _, code, err := rt.run("git", stage...); err != nil || code != 0 {
-		return &tickExitError{code: code, msg: "git add failed"}
+	ledgerCommitOut, code, err := rt.run("git", "-C", ledgerDir, "commit", "-q", "-m", msg)
+	ledgerCommitNoop := false
+	if err != nil || code != 0 {
+		if tickGitCommitNothingToCommit(ledgerCommitOut) {
+			ledgerCommitNoop = true
+		} else {
+			return &tickExitError{code: code, msg: "ledger git commit failed"}
+		}
 	}
-	if _, code, err := rt.run("git", "commit", "-q", "-m", msg); err != nil || code != 0 {
-		return &tickExitError{code: code, msg: "git commit failed"}
-	}
-	after := tickGitRevParse(rt)
+	after := tickGitRevParseInDir(rt, ledgerDir)
 	if after == "" {
 		after = "none"
 	}
-	if before == after {
+	if before == after && !ledgerCommitNoop {
 		_, _, _ = rt.run("br", "update", id, "--status", "open")
-		fmt.Fprintf(rt.stderr, "FAILED close %s: git commit did not land - ledger would lie; bead reopened\n", id)
+		fmt.Fprintf(rt.stderr, "FAILED close %s: ledger git commit did not land; bead reopened\n", id)
 		return &tickExitError{code: tickExitNoCommit}
+	}
+
+	stage := tickPublicStagePaths(rt, ledgerDir, evFirst, paths)
+	if len(stage) > 0 {
+		args := append([]string{"add", "--"}, stage...)
+		if _, code, err := rt.run("git", args...); err != nil || code != 0 {
+			return &tickExitError{code: code, msg: "git add failed"}
+		}
+		out, code, err := rt.run("git", "commit", "-q", "-m", msg)
+		if (err != nil || code != 0) && !tickGitCommitNothingToCommit(out) {
+			return &tickExitError{code: code, msg: "git commit failed"}
+		}
 	}
 	fmt.Fprintf(rt.stdout, "closed %s @ %s\n", id, tickShortSHA(after))
 	return nil
@@ -550,6 +564,50 @@ func tickGitRevParse(rt tickRuntime) string {
 		return ""
 	}
 	return strings.TrimSpace(string(out))
+}
+
+func tickGitRevParseInDir(rt tickRuntime, dir string) string {
+	out, code, err := rt.run("git", "-C", dir, "rev-parse", "HEAD")
+	if err != nil || code != 0 {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
+}
+
+func tickGitCommitNothingToCommit(out []byte) bool {
+	text := strings.ToLower(string(out))
+	return strings.Contains(text, "nothing to commit") ||
+		strings.Contains(text, "nothing added to commit") ||
+		strings.Contains(text, "no changes added to commit")
+}
+
+func tickPublicStagePaths(rt tickRuntime, ledgerDir, evFirst string, paths []string) []string {
+	stage := []string{}
+	if tickPathExists(rt.workDir, evFirst) {
+		stage = tickAppendPublicStagePath(stage, rt.workDir, ledgerDir, evFirst)
+	}
+	for _, path := range paths {
+		stage = tickAppendPublicStagePath(stage, rt.workDir, ledgerDir, path)
+	}
+	return stage
+}
+
+func tickAppendPublicStagePath(stage []string, root, ledgerDir, path string) []string {
+	if path == "" || tickIsPrivateLedgerPath(root, ledgerDir, path) {
+		return stage
+	}
+	return append(stage, path)
+}
+
+func tickIsPrivateLedgerPath(root, ledgerDir, path string) bool {
+	resolved := filepath.Clean(tickResolvePath(root, path))
+	ledger := filepath.Clean(tickResolvePath(root, ledgerDir))
+	if rel, err := filepath.Rel(ledger, resolved); err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return true
+	}
+	clean := filepath.Clean(path)
+	return clean == "_beads" || strings.HasPrefix(clean, "_beads"+string(filepath.Separator)) ||
+		clean == ".beads" || strings.HasPrefix(clean, ".beads"+string(filepath.Separator))
 }
 
 func tickShortSHA(sha string) string {
