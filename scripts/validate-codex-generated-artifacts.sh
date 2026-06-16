@@ -104,6 +104,45 @@ collect_changed_files() {
   esac
 }
 
+# strip_skill_frontmatter reads a SKILL.md on stdin and prints only the body
+# (everything after the leading --- ... --- frontmatter block). The Codex twin
+# frontmatter is name+description only, so a frontmatter-only source edit (e.g.
+# hex-wiring fields the twin does not carry) needs no twin change — the body is
+# the surface that must stay mirrored (age-j1g).
+strip_skill_frontmatter() {
+  awk 'seen<2 { if ($0 == "---") seen++; next } { print }'
+}
+
+# source_skill_body_changed returns 0 (true) when the source SKILL.md *body* for
+# a skill changed under the active scope, 1 (false) when only frontmatter changed
+# or the body is identical. Conservative: any ambiguity (new file, unresolved
+# base ref, read failure) returns 0 so a real divergence is never silently
+# skipped. base/target mirror collect_changed_files' per-scope diff semantics.
+source_skill_body_changed() {
+  local scope="$1" skill="$2"
+  local file="skills/$skill/SKILL.md"
+  local base target
+  case "$scope" in
+    head)     base="HEAD~1";      target="HEAD" ;;
+    staged)   base="HEAD";        target=":0" ;;
+    upstream) base="@{upstream}"; target="HEAD" ;;
+    *)        base="HEAD";        target="" ;;  # worktree/auto: working tree vs HEAD
+  esac
+  # No base version (new file, unborn/unresolved base ref) → conservatively changed.
+  git -C "$ROOT" cat-file -e "$base:$file" 2>/dev/null || return 0
+  local base_body target_body
+  base_body="$(git -C "$ROOT" show "$base:$file" 2>/dev/null | strip_skill_frontmatter)"
+  if [[ -z "$target" ]]; then
+    [[ -f "$ROOT/$file" ]] || return 0
+    target_body="$(strip_skill_frontmatter < "$ROOT/$file")"
+  else
+    git -C "$ROOT" cat-file -e "$target:$file" 2>/dev/null || return 0
+    target_body="$(git -C "$ROOT" show "$target:$file" 2>/dev/null | strip_skill_frontmatter)"
+  fi
+  [[ "$base_body" == "$target_body" ]] && return 1
+  return 0
+}
+
 echo "=== Codex artifact metadata validation ==="
 
 [[ -d "$SKILLS_ROOT" ]] || {
@@ -164,6 +203,7 @@ if [[ "${#changed_files[@]}" -gt 0 ]]; then
   declare -A changed_source_skills=()
   declare -A changed_codex_skills=()
   declare -A changed_source_refs=()
+  declare -A changed_source_skillmd=()
   declare -A changed_codex_content=()
 
   for changed_file in "${changed_files[@]}"; do
@@ -180,6 +220,7 @@ if [[ "${#changed_files[@]}" -gt 0 ]]; then
         # source references edit MUST be accompanied by a twin content change.
         case "$changed_file" in
           skills/*/references/*) changed_source_refs["$skill_name"]=1 ;;
+          skills/*/SKILL.md)     changed_source_skillmd["$skill_name"]=1 ;;
         esac
         ;;
       skills-codex/*/*)
@@ -214,6 +255,18 @@ if [[ "${#changed_files[@]}" -gt 0 ]]; then
   for skill_name in "${!changed_source_refs[@]}"; do
     if [[ -z "${changed_codex_content[$skill_name]+x}" ]]; then
       fail "Codex twin content divergence: skills/$skill_name/references/ changed but skills-codex/$skill_name has no matching content update (only generated hashes changed). regen-all refreshes hashes, not twin prose — manually mirror the edit into skills-codex/$skill_name/references/, then run scripts/regen-codex-hashes.sh --only $skill_name."
+    fi
+  done
+
+  # Codex-twin SKILL.md body-divergence gate (age-j1g). Same silent-staleness as
+  # references, for the SKILL.md BODY: a source SKILL.md body edit with a stale
+  # twin is masked by a regen hash bump. Scoped to the body on purpose —
+  # frontmatter-only edits (hex-wiring fields the twin does not carry:
+  # consumes/produces/hexagonal_role/context_rel/...) need no twin change and are
+  # NOT flagged, so legitimate frontmatter-only pushes stay green.
+  for skill_name in "${!changed_source_skillmd[@]}"; do
+    if source_skill_body_changed "$SCOPE" "$skill_name" && [[ -z "${changed_codex_content[$skill_name]+x}" ]]; then
+      fail "Codex twin content divergence: skills/$skill_name/SKILL.md body changed but skills-codex/$skill_name has no matching content update (only generated hashes changed). regen-all refreshes hashes, not twin prose — manually mirror the body edit into skills-codex/$skill_name/SKILL.md, then run scripts/regen-codex-hashes.sh --only $skill_name. (Frontmatter-only edits need no twin change.)"
     fi
   done
 fi
