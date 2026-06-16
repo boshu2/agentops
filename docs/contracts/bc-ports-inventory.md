@@ -1,21 +1,30 @@
 # BC Ports Inventory
 
-> **Status:** 20 ports scaffolded (12 from the cycle 78-106 wire-up
+> **Status:** historical typed-port inventory from the 20-port scaffold arc
+> (12 from the cycle 78-106 wire-up
 > arc + FactoryAdmissionPort cycle 139 / soc-2klg.1 +
 > ClaimEvidencePort cycle 141 / soc-2klg.2 + four AgentOps 3.0
 > hookless replacement ports from soc-m6v5.9.8.2 + two BC3 Loop
-> evidence/stop ports from soc-y5vh.3). 16 of 20 have production
+> evidence/stop ports from soc-y5vh.3). Later ports exist in
+> `cli/internal/ports/`, so do not use the opening count as complete route
+> authority. 16 of the original 20 have production
 > adapters delivered (cycles 83 + 108-118 + 140 + 142 + 193-194).
 > The 4 remaining ports have in-memory adapters and tests; production
 > adapters land as their hook leases and loop call-sites are migrated.
 > Every BC port has an `InMemoryX` test double in
 > `cli/internal/ports/` (compile-time `var _ XPort = (*InMemoryX)(nil)`
 > assertions). Next-phase work continues call-site migration through
-> these adapters (per-BC follow-up bds: `soc-pm5t` for BC1, sibling
-> bds for BC2-BC5).
+> these adapters (per-BC follow-up beads: `soc-pm5t` for BC1, sibling
+> beads for BC2-BC5).
 
-The 5 bounded contexts (Corpus, Validation, Loop, Factory, Runtime)
-each declare a small set of typed Go interfaces ("ports") at
+> **Reconciliation note, 2026-06-16:** the canonical bounded-context roster is
+> now six contexts in [bounded-contexts.yaml](bounded-contexts.yaml). This file
+> started as a five-BC typed-port inventory, so use the
+> [AgentOps Component Map](../architecture/component-map.md) for product routing
+> and this file for concrete Go port inventory.
+
+The 6 bounded contexts (Corpus, Validation, Loop, Factory, Runtime,
+Orchestration) each declare a small set of typed Go interfaces ("ports") at
 `cli/internal/ports/`. This contract is the catalog index — for the
 detailed BC1 semantics see
 [`bc1-corpus-ports.md`](bc1-corpus-ports.md). Each BC follows the
@@ -26,10 +35,11 @@ same file triplet shape (`<port>.go` + `inmemory_<port>.go` +
 See also: [`ubiquitous-language.md`](ubiquitous-language.md)
 (canonical naming per BC),
 [`finding-compiler.md`](finding-compiler.md) (the existing
-compile-side contract `FindingCompilerPort` mirrors), bd epics
+compile-side contract `FindingCompilerPort` mirrors), bead epics
 [`soc-2c1p`](https://github.com/boshu2/agentops/issues) (BC1),
 `soc-wxh5` (BC2), `soc-y5vh` (BC3), `soc-2klg` (BC4),
-`soc-zd7c` (BC5).
+`soc-zd7c` (BC5), and the BC6 Orchestration reconciliation tracked through the
+factory/front-door and orchestration beads.
 
 ## Roster
 
@@ -128,6 +138,19 @@ Adapter contracts:
 - `WorkspacePort.Setup` and `WorkspacePort.Cleanup` reject empty
   workspace ids and return typed lifecycle results.
 
+### BC6 Orchestration / Substrate Boundary (1 port)
+
+| Port | File | Responsibility |
+|---|---|---|
+| `OrchestrationPort` | `orchestration.go` | Select a safe backend for one unit of agent work, with explicit pinning, opt-out-to-beads-floor, and NTM -> Claude -> beads degradation. |
+
+Adapter contracts:
+
+- `OrchestrationPort.Select` honors context cancellation.
+- A non-empty `WorkSpec.Pin` wins over every other signal.
+- `WorkSpec.OptOut` routes to the beads floor.
+- Auto-selection degrades NTM -> Claude -> beads.
+
 ## AgentOps 3.0 Hookless Replacement Ports
 
 The hookless-first 3.0 migration adds four ports specifically to
@@ -174,20 +197,20 @@ When adding a 2nd adapter (filesystem-backed, durable-store-backed):
 
 ## Per-BC Wire-Up Order
 
-Each BC has its own follow-up bd that tracks production-adapter +
+Each BC has its own follow-up bead that tracks production-adapter +
 caller-refactor work:
 
 - **BC1** (`soc-pm5t`): start with CitationPort (smallest callers,
   cycle 75's 100%-covered helpers). Cycle 83 landed
   `productionCitationAdapter` as the first wire-up commit.
-- **BC2** (future bd): start with GateRunnerPort — existing gate
+- **BC2** (future bead): start with GateRunnerPort — existing gate
   invocations live in `cli/internal/evalsubstrate/gates.go`.
-- **BC3** (future bd): start with LoopReaderPort — evolve Step 0
+- **BC3** (future bead): start with LoopReaderPort — evolve Step 0
   bootstrap reads cycle-history.jsonl inline today.
-- **BC4** (future bd): EventBusPort needs a real transport
+- **BC4** (future bead): EventBusPort needs a real transport
   (NATS/Kafka) before wire-up is useful; OperatorPort can wire to
   the existing /halt + /rescue skills first.
-- **BC5** (future bd): HarnessPort wraps the existing
+- **BC5** (future bead): HarnessPort wraps the existing
   `scripts/regen-codex-hashes.sh` + `scripts/audit-codex-parity.sh`
   flow.
 
@@ -237,7 +260,7 @@ caller-refactor work:
 
 | Cycle | Commit | Adapter | BC | Shape |
 |---|---|---|---|---|
-| 83 | `4e91ab58` | `productionCitationAdapter` | BC1 | bd CLI wrapper |
+| 83 | `4e91ab58` | `productionCitationAdapter` | BC1 | legacy bd CLI wrapper |
 | 108 | `bb78cdb3` | `productionLoopReader` | BC3 | JSONL read |
 | 109 | `b0fa7dfe` | `productionLoopWriter` | BC3 | JSONL append |
 | 110 | `c511214b` | `productionOperator` | BC4 | JSONL append + reverse |

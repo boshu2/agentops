@@ -2,7 +2,7 @@
 
 > AgentOps is a context compiler for coding agents. Three product layers — Context Compiler, Validation Gates, and Knowledge Flywheel — turn raw session signal into better next context.
 
-> **⚠ 3.0 note (hookless).** AgentOps 3.0 installs **no hooks by default** — orientation is not auto-injected at SessionStart and gates are not hook-enforced; context is pulled on-demand (`ao lookup` / `ao inject`) and **CI is the authoritative gate** (see [3.0.md](3.0.md), [MIGRATION-3.0.md](MIGRATION-3.0.md)). Sections below that describe hook-based enforcement or session-start injection are **historical (2.x)** unless explicitly noted.
+> **⚠ 3.0 note (hookless).** AgentOps 3.0 installs **no hooks by default** — orientation is not auto-injected at SessionStart and gates are not hook-enforced; context is pulled on-demand (`ao lookup` / `ao inject`) and this repo uses the local cockpit gate as routine release authority, with CI as an optional/manual backstop (see [3.0.md](3.0.md), [MIGRATION-3.0.md](MIGRATION-3.0.md)). Sections below that describe hook-based enforcement or session-start injection are **historical (2.x)** unless explicitly noted.
 
 ## Overview
 
@@ -164,10 +164,10 @@ execution is isolated behind a declared contract.**
   keep phase order, retry policy, and operator intervention in the main
   session.
 - **Isolated phase transport:** `/rpi` phase contracts (`/discovery`, `/crank`,
-  `/validation`) may run in isolated phase contexts when the runtime supports
+  `/validate`) may run in isolated phase contexts when the runtime supports
   it. The orchestrator passes only the objective and bounded handoff artifact;
   the phase returns artifact path, verdict, and next action.
-- **Isolated workers:** worker spawners (`/council`, `/codex-team`, `/swarm`
+- **Isolated workers:** worker spawners (`/council`, `/swarm`
   workers) fork into subagents or equivalent runtime workers. Results merge
   back through filesystem artifacts.
 
@@ -219,7 +219,7 @@ Each phase is a context boundary. The output of one phase is compressed and scop
 |-------|--------|--------|
 | **Discovery** | `/brainstorm`, `/research`, `/plan`, `/pre-mortem` (error/rescue mapping, scope modes, temporal interrogation, prediction tracking) | research artifacts, execution packet, scoped risks, predictions |
 | **Implementation** | `/crank`, `/swarm`, `/implement` | code, tests, ratchet checkpoints |
-| **Validation** | `/validation`, `/vibe` (finding classification + suppression + domain checklists), `/post-mortem` (council + extraction + streak tracking + prediction accuracy + retro history + backlog + activation + retirement), `/retro` (quick-capture) | learnings, findings, predictions, next-work queue |
+| **Validation** | `/validate` (finding classification + suppression + domain checklists), `/post-mortem` (council + extraction + streak tracking + prediction accuracy + history + backlog + activation + retirement) | learnings, findings, predictions, next-work queue |
 
 Every `/post-mortem` feeds back into the next `/rpi` cycle:
 
@@ -353,21 +353,20 @@ AgentOps 3.0 is hookless — these invariants live in CI and the skills themselv
 .
 ├── .claude-plugin/
 │   └── plugin.json      # Plugin manifest
-├── skills/              # 72 skills (66 user-facing, 6 internal)
+├── skills/              # Skill behavior contracts; generated inventory lives in registry/docs maps
 │   ├── rpi/             # orchestration — Full RPI lifecycle orchestrator
 │   ├── council/         # orchestration — Multi-model validation (core primitive)
 │   ├── crank/           # orchestration — Autonomous epic execution
 │   ├── swarm/           # orchestration — Parallel agent spawning
-│   ├── codex-team/      # orchestration — Parallel Codex execution
 │   ├── evolve/          # orchestration — Goal-driven fitness loop
 │   ├── implement/       # team — Execute single issue
 │   ├── research/        # solo — Deep codebase exploration
 │   ├── plan/            # solo — Decompose epics into issues
-│   ├── vibe/            # solo — Code validation (complexity + council)
+│   ├── validate/        # solo — Code validation (complexity + council)
 │   ├── pre-mortem/      # solo — Council on plans
 │   ├── post-mortem/     # solo — Council + knowledge lifecycle (wrap up work)
 │   ├── shared/          # library — Shared reference docs
-│   └── ...              # 39 more skills
+│   └── ...              # See registry.json and generated skill-domain maps
 ├── cli/                 # Go CLI (ao binary) — the control plane
 ├── lib/                 # Shared code
 └── docs/                # Documentation
@@ -379,9 +378,9 @@ Skills span six tiers. Each level composes the ones below it.
 
 | Tier | Skills | Purpose |
 |------|--------|---------|
-| **Orchestration** | `/rpi`, `/council`, `/crank`, `/swarm`, `/codex-team`, `/evolve` | Multi-phase flows |
+| **Orchestration** | `/rpi`, `/crank`, `/swarm`, `/evolve` | Multi-phase flows |
 | **Team** | `/implement` | Single issue, full lifecycle |
-| **Solo** | `/research`, `/plan`, `/vibe`, `/pre-mortem`, `/post-mortem`, `/retro`, etc. | Standalone use |
+| **Solo** | `/research`, `/plan`, `/validate`, `/pre-mortem`, `/post-mortem`, etc. | Standalone use |
 | **Library** | `beads`, `standards`, `shared` | Reference docs loaded by other skills |
 | **Background** | `inject`, `extract`, `forge`, `provenance`, `ratchet`, `flywheel` | Invoked by `ao` commands / CI, mostly invisible |
 | **Meta** | `using-agentops` | Flow guide, surfaced via `ao session bootstrap` |
@@ -431,16 +430,16 @@ For full flow orchestration and headless automation, skills integrate with the
 | Skill | ao Command |
 |-------|------------|
 | `/research` | `ao lookup`, `ao search`, `ao rpi phased` |
-| `/retro` | `ao forge markdown`, `ao session close` |
+| `/post-mortem --quick` | `ao forge markdown`, `ao session close` |
 | `/post-mortem` | `ao forge`, `ao flywheel close-loop`, `ao constraint activate` |
 | `/implement` | `ao context assemble`, `ao lookup`, `ao ratchet record` |
 | `/crank` | `ao rpi phased`, `ao ratchet`, `ao flywheel status` |
 
-Dream's in-tree out-of-session engine was retired (soc-2rtm0): `/dream` is now a
-retirement pointer, and scheduled, between-session compounding runs on the
-out-of-session substrate (an NTM tmux swarm, MCP via `ao mcp serve`, or
-managed-agents via `ao agent` — AgentOps adopts, does not own; see
-[docs/3.0.md](3.0.md)) rather than an AgentOps-owned automation surface.
+The in-tree out-of-session compounding engine was retired (soc-2rtm0): scheduled,
+between-session compounding runs on the out-of-session substrate (an NTM tmux
+swarm, MCP via `ao mcp serve`, or managed-agents via `ao agent` — AgentOps
+adopts, does not own; see [docs/3.0.md](3.0.md)) rather than an AgentOps-owned
+automation surface.
 
 ---
 

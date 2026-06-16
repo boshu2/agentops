@@ -4,14 +4,14 @@ If you're new to this repository, this guide gives you a practical mental model,
 
 ## What this repo is
 
-AgentOps is the **operational layer for coding agents**: a skills + CLI system that provides bookkeeping, validation, primitives, and flows so sessions compound instead of restarting from zero. (AgentOps 3.0 is hookless by default — CI is the authoritative gate; hooks are an opt-in surface you author yourself.)
+AgentOps is the **operational layer for coding agents**: a skills + CLI system that provides bookkeeping, validation, primitives, and flows so sessions compound instead of restarting from zero. AgentOps 3.0 is hookless by default; this repo uses the local cockpit gate as routine release authority, with CI as an optional/manual backstop.
 
 At a high level:
 
-1. Run primitives and flows with skills (`/research`, `/implement`, `/validation`, `/rpi`)
+1. Run primitives and flows with skills (`/research`, `/implement`, `/validate`, `/rpi`)
 2. Persist bookkeeping in `.agents/`
 3. Inject the best prior learnings into the next session
-4. Enforce quality through CI gates (AgentOps 3.0 is hookless — CI is the authoritative gate; hooks are opt-in)
+4. Enforce quality through local gates, with CI as an optional/manual backstop
 
 See also:
 
@@ -26,7 +26,7 @@ Think in four layers:
 1. **Product/docs layer** — `docs/` + selected repo-root entrypoints such as `README.md`, `CHANGELOG.md`, `GOALS.md`, and `PRODUCT.md`
 2. **Skills layer** — `skills/`, checked-in `skills-codex/`, and `skills-codex-overrides/` (`SKILL.md` contracts + per-skill scripts/references + Codex-only tailoring)
 3. **CLI layer** — `cli/` (`cli/cmd/ao/`, `cli/internal/`, generated `cli/docs/COMMANDS.md`)
-4. **Validation layer** — `scripts/`, `tests/`, and `.github/workflows/validate.yml` (CI is the authoritative gate; AgentOps 3.0 ships no hooks)
+4. **Validation layer** — `scripts/`, `tests/`, the local cockpit gate, and `.github/workflows/validate.yml` as an optional/manual backstop
 
 ## Source-of-truth precedence
 
@@ -69,7 +69,7 @@ Use the router in [Skills Reference](SKILLS.md) to choose the right entry point:
 
 ### 3) Hooks are opt-in, not a default
 
-AgentOps 3.0 ships zero hooks; nothing auto-injects or runs at session boundaries. CI (`.github/workflows/validate.yml`) is the authoritative gate. If you want a bounded local gate of your own, author one with the `hooks-authoring` skill — AgentOps does not ship one.
+AgentOps 3.0 ships zero hooks; nothing auto-injects or runs at session boundaries. This repo uses the local cockpit gate as the routine gate, while CI (`.github/workflows/validate.yml`) is an optional/manual backstop. If you want a bounded local gate of your own, author one with the `hooks-authoring` skill — AgentOps does not ship one.
 
 ### 4) CLI docs are generated, not hand-maintained
 

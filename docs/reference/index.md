@@ -100,7 +100,7 @@ Three groups worth knowing:
 
     ---
 
-    All checked-in AgentOps skills mapped to BC1-BC5 with first dispositions.
+    All checked-in AgentOps skills mapped to BC1-BC6 with first dispositions.
 
 -   :material-hexagon-multiple: **[Hexagonal Architecture Map](agentops-hexagonal-architecture-map.md)**
 

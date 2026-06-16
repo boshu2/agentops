@@ -28,7 +28,7 @@ primitive — no artifact is produced unless it advances behavior toward accepta
 - skills-codex-overrides/**
 - tests/**
 - .github/workflows/**
-- .beads/**
+- _beads/** when the active command owns tracker state (private br ledger; never add it to this public repo)
 - .agents/** runtime state when the active command owns it
 - .agents/overnight/*/generator-results/*.json when Dream owns the active run
 - .agents/dream/external-watchlist.yaml when Dream is the active command (RFC 0001 Proposal 2 source)
@@ -73,11 +73,11 @@ first failing test against the port interface, not an adapter internal.
 - `cd cli && env -u AGENTOPS_RPI_RUNTIME go test ./internal/domain/... ./internal/ports/... ./internal/adapters/...`
 - `env -u AGENTOPS_RPI_RUNTIME bash skills/heal-skill/scripts/heal.sh --strict`
 - `bash scripts/check-worktree-disposition.sh`
-- `env -u AGENTOPS_RPI_RUNTIME scripts/pre-push-gate.sh --fast`
+- `env -u AGENTOPS_RPI_RUNTIME ao gate check --fast --scope head`
 
 ## Decision Policy
 
-- Start from `bd ready --json` or a user-selected bead; create a discovered bead
+- Start from `BEADS_DIR=$PWD/_beads br ready --json` or a user-selected bead; create a discovered bead
   before editing when the work is new. A bead is not ready to work until its
   acceptance examples are testable Given/When/Then rows.
 - For Nightly, evolve, or RPI-auto maintenance work, inspect the last 14 days of
@@ -112,7 +112,7 @@ first failing test against the port interface, not an adapter internal.
 - Capture under the promotion ratchet, not into a landfill: a one-off observation
   dies in the handoff; only a learning that repeats twice earns
   `.agents/learnings/`, and only a must-never-regress fact earns a gate.
-- Record every deferred follow-up in bd with a discovered-from relationship.
+- Record every deferred follow-up in br with a discovered-from relationship.
 
 ## Escalation Rules
 

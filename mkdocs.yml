@@ -172,7 +172,6 @@ nav:
       - Decision Tree: skills-decision-tree.md
       - Skill API: SKILL-API.md
       - Skill Router: SKILL-ROUTER.md
-      - Catalog: skills/catalog.md
   - CLI:
       - cli/index.md
       - Command Reference: cli/commands.md
@@ -182,6 +181,7 @@ nav:
       - How It Works: how-it-works.md
       - Architecture Overview: ARCHITECTURE.md
       - Software Factory: software-factory.md
+      - Component Map: architecture/component-map.md
       - Intent-to-Loop Hexagon: architecture/intent-to-loop-hexagon.md
       - Fungibility Charter: architecture/fungibility-charter.md
       - Autonomy Ladder: architecture/autonomy-ladder.md

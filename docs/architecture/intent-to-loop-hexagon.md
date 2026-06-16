@@ -10,6 +10,11 @@ This page connects the structural hexagon in
 an idea into BDD/Gherkin, beads, vertical slices, implementation work, validation
 verdicts, and ratcheted evidence.
 
+Use the [AgentOps Component Map](component-map.md) before this page when the
+question is "where does this work belong?" The component map routes bounded
+contexts, product components, open beads, and trim/defer decisions. This page
+then routes one accepted item of work through ports and adapters.
+
 ## Inner Hexagon
 
 The inner domain is not a CLI command or a specific agent runtime. It is the
@@ -26,7 +31,7 @@ Intent
   -> LearningDisposition
 ```
 
-These domain objects may be represented by Markdown, JSON, bd/br rows, Go
+These domain objects may be represented by Markdown, JSON, br rows, Go
 aggregates, or `.agents/` artifacts, but the names above are the stable language.
 Adapters may change; the domain contract does not.
 
@@ -35,7 +40,7 @@ Adapters may change; the domain contract does not.
 | Loop move | Inbound port | Required artifact crossing the port | Driving adapter | Driven / guard adapters | Done state |
 |---|---|---|---|---|---|
 | 1. Shape intent | `shape_intent` | Intent issue with `Feature` and testable `Scenario` blocks | `/discovery`, `/brainstorm`, `/design`, operator prompt | domain register, GOALS directives, scenario schema | Every scenario is testable, bounded context is named, non-goals and evidence are explicit |
-| 2. Track as bead | `persist_intent` | Bead body carrying the Gherkin or linking to the intent issue | `/beads`, `bd create`, `br create` | bd/br, `bv --robot-*`, dependency graph checks | Bead is self-contained, dependency-linked, and has validation commands |
+| 2. Track as bead | `persist_intent` | Bead body carrying the Gherkin or linking to the intent issue | `/beads`, `br create`, tracker facade | br, `IssueTrackerPort`, `bv --robot-*`, dependency graph checks | Bead is self-contained, dependency-linked, and has validation commands |
 | 3. Slice vertically | `plan_slices` | Slice validation plan, one row per scenario or behavior | `/plan` | symbol verification, file matrix, planning rules | Every slice has a first failing proof, write scope, owner, and bounded context |
 | 4. Execute slice | `execute_slice` | Worker brief with slice, proof, scope, and rollback path | `/implement`, `/crank`, `/swarm` | git, test runners, scope guard, runtime agents | Failing proof failed for the right reason, then passes after the smallest implementation |
 | 5. Execute wave | `execute_wave` | Wave packet with independent slice ownership | `/crank`, `/swarm`, `/autodev` | file-conflict matrix, worktrees, agent messaging | Same-wave writes do not collide, integration order is declared |
@@ -65,7 +70,7 @@ Adapters may change; the domain contract does not.
 | Adapter class | Examples | Responsibility |
 |---|---|---|
 | Driving adapters | slash skills, `$` Codex skills, `ao` commands, operator prompts, scheduled jobs | Translate outside requests into the current inbound port without smuggling raw chat context |
-| Driven adapters | bd/br, git, filesystem, search, eval runners, model providers, GitHub | Persist, retrieve, execute, or observe through narrow outbound ports |
+| Driven adapters | br, git, filesystem, search, eval runners, model providers, GitHub | Persist, retrieve, execute, or observe through narrow outbound ports |
 | Guard adapters | scope guard, schema validation, pre-push gates, CI, pre-mortem, wave-validity matrix | Warn or block when a boundary contract is not met |
 | Runtime adapters | `skills/`, `skills-codex/`, OpenCode skill bundles, hooks | Package the same domain contract for a specific agent runtime |
 
@@ -77,10 +82,10 @@ visible enough for the next agent to continue without chat memory:
 ```yaml
 hexagon:
   inbound_port: shape_intent | persist_intent | plan_slices | execute_slice | execute_wave | validate_acceptance | record_evidence | steer_goal
-  bounded_context: bc-corpus | bc-validation | bc-loop | bc-factory | bc-runtime | <repo-specific>
+  bounded_context: bc-corpus | bc-validation | bc-loop | bc-factory | bc-runtime | bc-orchestration | <repo-specific>
   driving_adapter: "<skill, command, prompt, or scheduler that initiated this>"
   driven_adapters:
-    - "<bd/br/git/test/eval/filesystem/model/etc. used behind the port>"
+    - "<br/git/test/eval/filesystem/model/etc. used behind the port>"
   guard_adapters:
     - "<pre-mortem/scope/schema/CI/completion-claim-kernel/etc.>"
   context_packet: "<artifact path or bead id crossing the boundary>"
@@ -115,10 +120,12 @@ agents are expected to consume.
 | Agent marks DONE from stale CI or summary text | Apply the completion-claim kernel and rerun proof |
 | Validation finds a real gap | Re-crank the same objective or create/reopen completion-debt beads |
 | Learning is interesting but not reusable | Keep it in handoff; do not promote |
+| New surface does not route to a component | Send it back to the component map before shaping implementation |
 
 ## See Also
 
 - [Operating Loop](operating-loop.md)
+- [AgentOps Component Map](component-map.md)
 - [Ports and Adapters](ports-and-adapters.md)
 - [Skill Ports and Adapters](../contracts/skill-ports-and-adapters.md)
 - [Intent Issue Template](../templates/intent-issue.md)

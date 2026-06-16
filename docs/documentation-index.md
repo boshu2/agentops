@@ -21,7 +21,7 @@
 - [FAQ](FAQ.md) — Comparisons, limitations, subagent nesting, uninstall
 - [CONTRIBUTING](CONTRIBUTING.md) — How to contribute
 - [Create Your First Skill](create-your-first-skill.md) — Fast path for authoring a first skill without tripping CI
-- [Dependencies](dependencies.md) — Complete tool-dependency declaration (ao, git, bd+Dolt, gc, gh, go, and utilities) with purpose, required-vs-optional, and fallback-if-absent
+- [Dependencies](dependencies.md) — Complete tool-dependency declaration (ao, git, br/bv, gh, go, and utilities) with purpose, required-vs-optional, and fallback-if-absent
 - [Upgrading](UPGRADING.md) — Version-to-version migration notes and breaking changes
 - [Migrating to AgentOps 3.0](MIGRATION-3.0.md) — What was removed in 3.0 (hooks, daemon, scheduler, factory) and what to use instead (in-session loop + an adopted substrate: NTM / MCP / managed-agents)
 - [AGENTS.md](https://github.com/boshu2/agentops/blob/main/AGENTS.md) — Local agent instructions for this repo
@@ -35,7 +35,7 @@
 | **Bookkeeping** (L0) | Records agent work so attempts, decisions, verdicts, and handoffs leave evidence | `.agents/`, RPI packets, council verdicts, retros, post-mortems |
 | **Context Compiler** (L1) | Assembles the right context for the right phase | `ao inject`, `ao compile`, skills, execution packets |
 | **Validation Gates** (L2) | Challenges plans and code before they ship | `/council`, `/vibe`, `/pre-mortem`, `/post-mortem` |
-| **Knowledge Flywheel** (L3) | Extracts, scores, and resurfaces learnings | `/retro`, `/forge`, `ao lookup`, `.agents/` |
+| **Knowledge Flywheel** (L3) | Extracts, scores, and resurfaces learnings | `/post-mortem --quick`, `/forge`, `ao lookup`, `.agents/` |
 
 Deep dives: [CDLC](cdlc.md) (AgentOps' context-native SDLC under token scarcity), [Knowledge Flywheel](knowledge-flywheel.md), [Context Lifecycle](context-lifecycle.md), [Assurance Profile](assurance-profile.md), [PRODUCT.md](https://github.com/boshu2/agentops/blob/main/PRODUCT.md)
 
@@ -245,7 +245,7 @@ Bridge / framing docs:
 
 - [Templates Overview](templates/README.md) — Templates index
 - [Intent Issue Template](templates/intent-issue.md) — BDD-shaped intent issue (Given/When/Then acceptance examples, bounded context, slice candidates) — produced by `/discovery`, consumed by `/plan`
-- [Slice Validation Plan Template](templates/slice-validation.md) — Per-slice proof with first failing test, write-scope, wave-validity check, and roll-up acceptance — produced by `/plan`, executed by `/validation`
+- [Slice Validation Plan Template](templates/slice-validation.md) — Per-slice proof with first failing test, write-scope, wave-validity check, and roll-up acceptance — produced by `/plan`, executed by `/validate`
 - [Workflow Template](templates/workflow.template.md) — Template for new workflows
 - [Agent Template](templates/agent.template.md) — Template for new agents
 - [Skill Template](templates/skill.template.md) — Template for new skills
@@ -274,9 +274,9 @@ Bridge / framing docs:
 - [Troubleshooting](troubleshooting.md) — Common issues and quick fixes
 - [Incident Runbook](INCIDENT-RUNBOOK.md) — Operational runbook for incidents and recovery
 - [Autonomy Runtime Cycle-1 Runbook](runbooks/autonomy-runtime-cycle-1.md) — Safe activation/rollback/evidence checks for RPI, evolve, and daemon-backed autonomy work
-- [bd Server-Mode Tracker Closeout](runbooks/bd-server-mode-closeout.md) — Distinguish Git push, local bd durability, and conditional Dolt remote push for server-mode trackers
+- [bd Server-Mode Tracker Closeout](runbooks/bd-server-mode-closeout.md) — Historical closeout note for retired bd/Dolt tracker deployments; not the current AgentOps tracker path
 - [Release Process Runbook](runbooks/release-process.md) — Step-by-step release runbook for gates, version injection, goreleaser, and post-release checks; complements `RELEASING.md`
-- [PR Creation From Linked Worktrees](runbooks/pr-creation-from-linked-worktrees.md) — Root-cause + verified fix for "No branch name available for PR creation" from `git worktree`/`bd worktree create` branches (upstream inherits `main`); three-tier PR-creation path that never relies on head inference
+- [PR Creation From Linked Worktrees](runbooks/pr-creation-from-linked-worktrees.md) — Root-cause + verified fix for linked-worktree PR branch inference issues; retained as historical PR-flow guidance
 - [AO Command Customization Matrix](architecture/ao-command-customization-matrix.md) — External command dependencies and customization policy tiers
 - [Contracts Index](contracts/index.md) — Landing page for all inter-component contracts
 - [Pawls — the one-way doors](contracts/pawls.md) — The ratchet's static map: the short list of irreversible actions (mutate-shared-trunk · delete · external-send/shared-state-mutation · schema/contract change · credential/authority change · spend) where the cross-family gate fires; everything else runs as ungated chaos
@@ -284,12 +284,12 @@ Bridge / framing docs:
 - [Lesson Format](contracts/lesson-format.md) — Schema for `.agents/learnings/` entries with frontmatter (id/severity/trigger/verifiable/rule/falsified_by/practice/related) and graduation path (unassigned → proposed → accepted → encoded)
 - [Corpus Learning Seam](contracts/corpus-learning-seam.md) — Field-level public/private boundary for learning records (epic ag-k7tq9 S3): the `sensitivity` + `publishable` promote-gate fields, what crosses the seam (the abstracted lesson) vs what never does (evidence/provenance/source_session), and the `ao corpus classify` migration; cites the cross-family council verdict
 - [bd remember Migration Manifest](contracts/bd-remember-migration-manifest.md) — Lineage-preserving manifest contract for classifying `bd remember` notes into bead-scoped, pull-learning, or discard dispositions before migration
-- [Bounded Contexts (yaml)](contracts/bounded-contexts.yaml) — Canonical BC1-BC5 definitions (id/name/responsibility/ports/center-of-gravity); registry doc prose must match this yaml (drift-checked by `scripts/check-bounded-contexts-drift.sh`, soc-zxia.2)
+- [Bounded Contexts (yaml)](contracts/bounded-contexts.yaml) — Canonical BC1-BC6 definitions (id/name/responsibility/ports/center-of-gravity); registry doc prose must match this yaml (drift-checked by `scripts/check-bounded-contexts-drift.sh`, soc-zxia.2)
 - [add-validate-job scaffolder](https://github.com/boshu2/agentops/blob/main/scripts/add-validate-job.sh) — CI integration scaffolder; emits all 5 touch-points (workflow + summary needs + summary echo + pre-push + bats stub + AGENTS table) atomically when adding a new `validate-*` job (soc-3oij)
 - [CI Jobs Manifest (yaml)](contracts/ci-jobs.yaml) — Canonical reason+failure for every validate.yml CI job; AGENTS.md `### CI Jobs and What They Check` table is rendered from this yaml + workflow `summary.needs` via `scripts/generate-ci-jobs-table.sh` (golden-file gate enforced by `validate-ci-policy-parity`, soc-3oij)
 - [Scenario → Test Linkage](contracts/scenario-test-linkage.md) — Every Gherkin scenario in `skills/*/references/*.feature` must declare its covering test via a `@covered-by:<test-path>` tag or be allowlisted as doc-only in `scripts/.scenario-linkage-allow`; gate is `scripts/check-scenario-test-linkage.sh` / `validate-scenario-test-linkage` (sibling to executable-spec-link-integrity; links scenarios→tests, soc-63xfx)
 - [@claude Bot Delegation](contracts/claude-bot-delegation.md) — Operational runbook for the `@claude` GitHub App: permissions, triggers, status decoding, gotchas, when to delegate
-- [Local Pre-Push Gate Retirement](contracts/local-pre-push-gate-retirement.md) — ADR (soc-g2r9): CI is the sole authoritative push gate; `scripts/pre-push-gate.sh` and its helpers are retired in follow-up waves; AP#7 mechanical enforcement migrates from pre-push to a validate.yml job
+- [Local Pre-Push Gate Retirement](contracts/local-pre-push-gate-retirement.md) — Historical ADR superseded by the local cockpit gate posture; retained for lineage, not current release authority
 - [Skill Dispositions (yaml)](contracts/skill-dispositions.yaml) — Canonical per-skill domain/disposition/rationale data; source-of-truth for `agentops-skill-domain-map.md`. Hand-edits to the .md forbidden — edit yaml and run `scripts/generate-skill-domain-map.sh` (golden-file gate, soc-zxia.3)
 - [Context Map](contracts/context-map.md) — Auto-generated bounded-context map of skills by hexagonal role with relationship and data-flow views (see ADR-0001)
 - [Skill-Flow Connectivity](contracts/skill-flow.md) — Closed `consumes` vocabulary + cross-layer connectivity model (`consumes`/`context_rel`/`metadata.dependencies`); gate `scripts/validate-skill-flow.sh` (`validate-skill-flow`) fails on unresolved tokens or un-allowlisted orphans; standalone leaves in `scripts/skill-flow-standalone.txt`
@@ -322,7 +322,7 @@ Bridge / framing docs:
 - [Context Usefulness Eval Contract](contracts/context-usefulness-eval.md) — Wave 0 deterministic `context_off` versus `context_on` evaluation, scorecard fields, hook-preservation boundaries
 - [Eval Verdict Pipeline Contract](contracts/eval-verdict-pipeline.md) — Verdict compiler pipeline from eval run manifests to learning utility and retirement signals
 - [Outcomes Rubric Projection Contract](contracts/outcomes-rubric-projection.md) — Holdout-safe projection of the locked eval substrate into an Outcomes-style grading payload (`schemas/outcomes-rubric.v1.schema.json`); `additionalProperties:false` at every level forbids target/ground_truth/expected_output (Managed Agents are not ZDR); validator `scripts/validate-outcomes-rubric.sh` + Go schema↔struct drift guard (ag-hguuf)
-- [Agent-Native Mechanism Contract](contracts/agent-native-mechanism.md) — Decision doc mapping each old-hook *intent* (orientation, standards, scope guard, commit-review, holdout-isolation) to its hookless equivalent (skill + `ao` subcommand + CI job) across both runtimes (Claude Managed Agents/SDK/MCP-`ao` and Codex/NTM shell-`ao`); Managed-Agents Agent shape + bushido self-hosted sandbox (MCP + Dolt over tailnet); SDK hooks as the OPTIONAL adapter and why CI is the default gate; holdout excluded from hosted bundles (ag-uphk9)
+- [Agent-Native Mechanism Contract](contracts/agent-native-mechanism.md) — Decision doc mapping each old-hook *intent* (orientation, standards, scope guard, commit-review, holdout-isolation) to its hookless equivalent (skill + `ao` subcommand + gate job) across both runtimes; retained with historical substrate notes
 - [Retrieval Comparison Contract](contracts/retrieval-comparison.md) — Deterministic search-eval backend comparison, promotion thresholds, optional rerank behavior, and deferred vector/graph-store policy
 - [Release Readiness Contract](contracts/release-readiness.md) — 8/10 release readiness score, SIL/VIL/HIL evidence, artifact manifest requirements, and HIL waiver policy
 - [MemRL Policy Schema](contracts/memrl-policy.schema.json) — Machine-readable retry/escalation policy profile for memory-reinforcement feedback loops

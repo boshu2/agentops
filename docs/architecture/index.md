@@ -7,7 +7,8 @@ Read in this order if you're new:
 1. **[How It Works](../how-it-works.md)** — start here for the mental model (Brownian Ratchet, context windowing, backends).
 2. **[System Overview](../ARCHITECTURE.md)** — then zoom out to see where every component sits.
 3. **[Primitive Chains](primitive-chains.md)** — then drill into the audited primitive set and lifecycle chains.
-4. **[Intent-to-Loop Hexagon](intent-to-loop-hexagon.md)** — then trace one idea through BDD intent, beads, slices, validation, and ratchet evidence.
+4. **[Component Map](component-map.md)** — then route product components, bounded contexts, adapters, open beads, and trim/defer decisions.
+5. **[Intent-to-Loop Hexagon](intent-to-loop-hexagon.md)** — then trace one idea through BDD intent, beads, slices, validation, and ratchet evidence.
 
 The rest are specialized references. Skim titles and jump in when a topic becomes relevant.
 
@@ -38,6 +39,12 @@ The rest are specialized references. Skim titles and jump in when a topic become
     ---
 
     Audited primitive set, lifecycle chains, and terminology drift ledger.
+
+-   :material-sitemap-outline: **[Component Map](component-map.md)**
+
+    ---
+
+    DDD + hexagonal routing map for components, open beads, and trim/defer decisions.
 
 -   :material-hexagon-multiple: **[Intent-to-Loop Hexagon](intent-to-loop-hexagon.md)**
 

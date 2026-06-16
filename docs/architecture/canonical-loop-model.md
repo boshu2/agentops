@@ -1,6 +1,6 @@
 # The Canonical Loop Model
 
-> Architecture doc. The single statement of how AgentOps' loops relate. Companion to [3.0.md](../3.0.md) (the north star), [operating-loop.md](operating-loop.md) (the seven moves inside one tick), and [ports-and-adapters.md](ports-and-adapters.md) (the runtime seams). Derivation: [`.agents/discovery/2026-05-24-canonical-loops-ddd.md`](https://github.com/boshu2/agentops/blob/main/.agents/discovery/2026-05-24-canonical-loops-ddd.md).
+> Architecture doc. The single statement of how AgentOps' loops relate. Companion to [3.0.md](../3.0.md) (the north star), [Component Map](component-map.md) (product/component routing), [operating-loop.md](operating-loop.md) (the seven moves inside one tick), and [ports-and-adapters.md](ports-and-adapters.md) (the runtime seams). Derivation: [`.agents/discovery/2026-05-24-canonical-loops-ddd.md`](https://github.com/boshu2/agentops/blob/main/.agents/discovery/2026-05-24-canonical-loops-ddd.md).
 
 AgentOps once had roughly twenty surfaces that read like a loop (evolve, rpi, autodev, factory, daemon, crank, dream, swarm, ship-loop, ratchet, flywheel, and more), with no named hierarchy and circular help. This doc collapses that sprawl into one statement.
 
@@ -79,7 +79,7 @@ The governing test: is it about *when, where, who supervises, or coordination*? 
 
 By that test: rpi's internal steps, the ratchet, `inject`, and `compile` belong to AgentOps; the agent calls them. Evolve's *cadence*, when run unattended, is a substrate cron/trigger; evolve's *logic* (which bead next, N cycles toward a goal) stays in AgentOps. The queue, the agents, and their supervision belong to the substrate.
 
-**The Factory driver is the substrate's job, not an AgentOps-shipped daemon.** AgentOps 3.0 ships no always-on daemon, scheduler, or overnight runner — they were deleted in the rearchitecture. When you want the loop to run unattended over a queue, a substrate drives it. On the reference substrate that dispatch is **swarm-driven**: an NTM tmux swarm (or a lead agent) runs `bd ready` then dispatches the next bead to a worker agent that runs the `/rpi` skill; a managed-agent driver (`ao agent`) or cron handles scheduled cadence, and `ao mcp serve` exposes the tool surface across the seam. AgentOps stays zero-dependency in a plain session through the Evolve driver.
+**The Factory driver is the substrate's job, not an AgentOps-shipped daemon.** AgentOps 3.0 ships no always-on daemon, scheduler, or overnight runner — they were deleted in the rearchitecture. When you want the loop to run unattended over a queue, a substrate drives it. On the reference substrate that dispatch is **swarm-driven**: an NTM tmux swarm (or a lead agent) runs `BEADS_DIR=$PWD/_beads br ready` then dispatches the next bead to a worker agent that runs the `/rpi` skill; a managed-agent driver (`ao agent`) or cron handles scheduled cadence, and `ao mcp serve` exposes the tool surface across the seam. AgentOps stays zero-dependency in a plain session through the Evolve driver.
 
 **rpi is never re-expressed in the substrate.** Decomposing the rpi tick into substrate-side workflow steps would duplicate the loop shape (re-introducing the surface-sprawl disease across the seam) and pit the substrate's retry machinery against the ratchet (substrate `max_attempts` retry versus fresh-agent-on-failure; substrate per-step agent assignment versus no-self-grade). The substrate dispatches a whole loop as one unit — an agent running the `/rpi` skill; it never drives the loop's insides.
 
@@ -110,6 +110,7 @@ It supersedes the help-string decision-tree approach (the prior attempt to disam
 ## See also
 
 - [3.0.md](../3.0.md): the north star this model serves
+- [component-map.md](component-map.md): the component routing and trim/defer posture that keeps loop work from sprawling
 - [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md): why AgentOps ships only the in-session driver
 - [operating-loop.md](operating-loop.md): the seven moves inside one tick
 - [ports-and-adapters.md](ports-and-adapters.md): the runtime seams the loop runs through

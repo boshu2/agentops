@@ -33,7 +33,7 @@ the model evolves.
 | | Reasoning core | Deterministic boundary |
 |---|---|---|
 | **Google** | `AI Operator` | `Actus` — mandatory dry-run, pre-flight validation, auto-downgrade on risk, Red Button |
-| **AgentOps** | the agent loop | **CI gates + ports-and-adapters + the ratchet** — CI is the sole authoritative push gate; the domain core never imports the shell; knowledge is durable only as a constraint |
+| **AgentOps** | the agent loop | **local cockpit gate + CI backstop + ports-and-adapters + the ratchet** — the local gate is the routine release wall, CI is the post-push backstop, the domain core never imports the shell, and knowledge is durable only as a constraint |
 
 The ladder moves the *reasoning core's* leash. It never relaxes the boundary.
 Higher autonomy means the agent acts more before a human looks — it never means
@@ -95,8 +95,9 @@ Autonomy is asymmetric — slow to grant, instant to revoke.
 - **The Red Button.** A human override that forces **every lane to L0**
   immediately, regardless of standing. It is unconditional, it cannot be vetoed
   by an agent, and recovery requires re-earning each promotion. The existing
-  primitives that compose into it: branch protection (no direct push to `main`),
-  the hard CI gates, and `bd`/merge-slot serialization.
+  primitives that compose into it: the local cockpit gate, CI backstop, `br`
+  work tracking, Agent Mail coordination, rebase-on-reject serialization, and a
+  human stop marker.
 
 ## Hard ceilings the ladder never crosses
 

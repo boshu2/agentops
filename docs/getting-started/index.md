@@ -122,7 +122,7 @@ PASS/WARN/FAIL verdict.
 | Set up a repo for the first time | `ao quick-start`, then `/quickstart` | Readiness summary shows the next action |
 | Make the first validated change | `/rpi "a small goal"` | Discovery, implementation, validation, and learning artifacts exist |
 | Review code before shipping | `/council validate this PR` or `/vibe recent` | Verdict is recorded before merge |
-| Continue tracked work | `ao reconcile --json`, then `bd ready`, then `/implement <issue-id>` or `/crank <epic-id>` | Main/release/bead evidence is clean before issue status and validation evidence are updated |
+| Continue tracked work | `ao reconcile --json`, then `BEADS_DIR=$PWD/_beads br ready`, then `/implement <issue-id>` or `/crank <epic-id>` | Main/release/bead evidence is clean before issue status and validation evidence are updated |
 | Run from the terminal | `ao factory start --goal "goal"`, then `ao rpi phased "goal"` | `ao rpi status` shows the phase result |
 
 ## Command Reference

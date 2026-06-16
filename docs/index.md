@@ -1,6 +1,6 @@
 ---
 title: AgentOps
-description: SDLC control plane for coding agents. Keep the books, compile context, gate output, and compound knowledge so every session starts loaded, not cold.
+description: Autonomous code validation for coding agents. Prove whether agent-written code is right, compile the evidence, and compound the context so each session starts loaded, not cold.
 hide:
   - navigation
   - toc
@@ -8,10 +8,10 @@ hide:
 
 # AgentOps { .landing-hero }
 
-### The SDLC control plane for coding agents.
+### Autonomous code validation for coding agents.
 
 <!-- agentops:claim:AOP-CLAIM-DOCS-INDEX-CORPUS -->
-AgentOps keeps the books, compiles context, gates output, and compounds learning for agentic software development. Its substrate is `.agents/`: a wiki of markdown files in your repo, version-controlled with your code, that agents read, traverse, and contribute to.
+AgentOps keeps the books, compiles context, gates output, and compounds learning so coding agents can prove their work before you grant them more autonomy. Its substrate is `.agents/`: a wiki of markdown files in your repo, version-controlled with your code, that agents read, traverse, and contribute to.
 
 AgentOps uses software-engineering practice people already understand — Agile/XP, BDD/Gherkin, DDD, hexagonal architecture, TDD, CI/CD, SRE, ADRs, provenance, and durable knowledge — then compiles those practices into dense, verifiable context for LLM agents under token scarcity. The internal lifecycle is the CDLC: context gets developed, tested, delivered, observed, and improved like any other software asset.
 
@@ -163,7 +163,7 @@ Every skill works alone. Compose flows for end-to-end cycles.
 | [`/evolve`](skills/evolve.md) | You want a goal-driven improvement loop with regression gates |
 
 !!! info "Full catalog"
-    [:octicons-book-24: **All 72 skills**](skills/catalog.md) — complete reference with source links and descriptions.
+    [:octicons-book-24: **Skills reference**](SKILLS.md) — current entry points and links to generated source maps.
     [:octicons-routes-24: **Decision tree**](skills-decision-tree.md) — "which skill do I need next?"
 
 ---
@@ -183,20 +183,20 @@ Every skill works alone. Compose flows for end-to-end cycles.
 [learn]   Post-mortem feeds the flywheel
 ```
 
-**Night: knowledge compounding.** `/dream` consolidates learnings, dedupes patterns, defragments the corpus. Purely bookkeeping work over `.agents/` — source code stays untouched, `/rpi` never fires, no git operations.
+**Night: knowledge compounding.** An adopted substrate can run bookkeeping-only compounding over `.agents/`: consolidate learnings, dedupe patterns, defragment the corpus, and report health. Source code stays untouched unless the operator dispatches a foreground `/rpi` loop.
 
 ```text
-> /dream start
+> /forge
+> /compile
 
-[overnight] INGEST  harvest new artifacts
-[overnight] REDUCE  dedup, defrag, close loops
-[overnight] MEASURE corpus quality
-[halted]    plateau reached
+[compile] INGEST  harvest new artifacts
+[compile] REDUCE  dedup, defrag, close loops
+[measure] corpus quality recorded
 
-Morning report: .agents/overnight/<run-id>/summary.md
+Report: .agents/compile/<run-id>/summary.md
 ```
 
-Run Dream overnight, then Evolve in the morning against a fresher corpus. Same model, smarter environment.
+Run compounding on the substrate's schedule, then Evolve in the morning against a fresher corpus. Same model, smarter environment.
 
 ---
 
@@ -204,7 +204,7 @@ Run Dream overnight, then Evolve in the morning against a fresher corpus. Same m
 
 1. **[Install](#install)** — pick your runtime.
 2. **Seed** your repo with `ao quick-start` (`ao quickstart` also works), then run `/quickstart` in your agent chat.
-3. **Choose a golden path:** `/rpi "a small goal"` for a first validated change, `/council validate this PR` for review-only, or `ao reconcile --json` then `bd ready` to continue tracked work.
+3. **Choose a golden path:** `/rpi "a small goal"` for a first validated change, `/council validate this PR` for review-only, or `ao reconcile --json` then `BEADS_DIR=$PWD/_beads br ready` to continue tracked work.
 
 Read the lineage at [12factoragentops.com](https://12factoragentops.com) — DevOps applied to coding agents in twelve factors.
 

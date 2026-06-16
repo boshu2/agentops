@@ -19,7 +19,7 @@ Feature: Domain-governed AgentOps 3.0 evolution
     And external-corpus-derived observations are used only through the clean-room policy
 
   Scenario: Audit every skill before changing shipped behavior
-    Given the checked-in skill catalog contains 72 skills
+    Given the checked-in skill catalog is generated from `skills/**/SKILL.md`
     When the evolution bootstrap audits the catalog
     Then every skill is assigned exactly one primary bounded context
     And each skill has a preliminary keep, update, refactor, merge-review, or cut-review disposition
@@ -28,7 +28,7 @@ Feature: Domain-governed AgentOps 3.0 evolution
   Scenario: Map AgentOps onto the hexagonal architecture
     Given AgentOps uses BDD, DDD, Hexagonal Architecture, TDD, XP, CI/SRE, ADRs, and provenance as one system
     When the bootstrap builds the architecture map
-    Then the core domains are Corpus, Validation, Loop, Factory, and Runtime
+    Then the core domains are Corpus, Validation, Loop, Factory, Runtime, and Orchestration
     And each domain lists its primary ports, driving adapters, driven adapters, and proof gates
     And Loop work from "soc-y5vh" depends on typed loop ports rather than shell-only state reads
     And no domain treats skills or hooks as the product by themselves
