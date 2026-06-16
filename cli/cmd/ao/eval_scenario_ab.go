@@ -68,10 +68,16 @@ satisfaction threshold, or when the summed arm token cost exceeds the budget.`,
 		if err := aoeval.WriteScenarioDeltaScorecard(card, evalScenarioABOutput); err != nil {
 			return err
 		}
-		fmt.Fprintf(cmd.OutOrStdout(),
-			"scenario-ab %s: delta=%.4f (with=%.4f without=%.4f) tokens=%d gate=%s\n",
-			card.ScenarioID, card.AggregateDelta, card.With.Score, card.Without.Score,
-			card.With.TokenCost+card.Without.TokenCost, gateLabel(card.Gate.Pass))
+		if card.CeilingViolation {
+			fmt.Fprintf(cmd.OutOrStdout(),
+				"scenario-ab %s: CEILING VIOLATION (without=%.4f >= threshold=%.4f) — invalid scenario, no delta emitted\n",
+				card.ScenarioID, card.Without.Score, card.SatisfactionThreshold)
+		} else {
+			fmt.Fprintf(cmd.OutOrStdout(),
+				"scenario-ab %s: delta=%.4f (with=%.4f without=%.4f) tokens=%d gate=%s\n",
+				card.ScenarioID, card.AggregateDelta, card.With.Score, card.Without.Score,
+				card.With.TokenCost+card.Without.TokenCost, gateLabel(card.Gate.Pass))
+		}
 		if !card.Gate.Pass {
 			for _, r := range card.Gate.Reasons {
 				fmt.Fprintf(cmd.ErrOrStderr(), "  FAIL: %s\n", r)
