@@ -1,6 +1,7 @@
 package wiki
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -197,6 +198,36 @@ func TestGold_TruncateWords(t *testing.T) {
 	// short strings pass through untouched
 	if truncateWords("short", 20) != "short" {
 		t.Error("short string should be unchanged")
+	}
+}
+
+func TestGold_IndexForRoots(t *testing.T) {
+	gc, agents := newTestCompiler(t)
+	writeAgent(t, filepath.Join(agents, "learnings"), "g.md",
+		"---\ntype: learning\nid: goldidx\nmaturity: established\n---\n\nGold entry about idempotent ratchet behavior that retrieval should find.\n")
+	if _, err := gc.Compile(false); err != nil {
+		t.Fatal(err)
+	}
+	// retrieval points at the gold dir, not .agents
+	idx, err := NewWikiIndexForRoots(filepath.Join(gc.OutDir, "wiki-index.jsonl"), gc.OutDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := idx.Reindex(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	recs, err := idx.Records()
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, r := range recs {
+		if strings.Contains(r.Path, "goldidx.md") {
+			found = true
+		}
+	}
+	if !found {
+		t.Errorf("gold doc not indexed via NewWikiIndexForRoots; got %d records", len(recs))
 	}
 }
 
