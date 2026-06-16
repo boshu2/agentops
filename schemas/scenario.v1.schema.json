@@ -89,6 +89,11 @@
             "default": 0.8,
             "description": "Overall satisfaction score threshold for scenario to pass. Default 0.8 matches the 'ao scenario add' CLI default (scenario_add.go)."
         },
+        "answer_key": {
+            "type": "string",
+            "minLength": 2,
+            "description": "When set, the scenario is graded DETERMINISTICALLY: an arm passes iff this string appears as a whole token (case-insensitive, not flanked by alphanumerics) in its output — no LLM judge. The rigorous, judge-noise-free grade for fact-recall out-of-distribution scenarios where the corpus holds a specific value the base model cannot know (age-k8u). Prefer a distinctive multi-character value to avoid ambiguous matches."
+        },
         "scope": {
             "type": "object",
             "description": "What parts of the codebase this scenario applies to",
