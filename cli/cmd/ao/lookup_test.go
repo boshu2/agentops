@@ -991,3 +991,26 @@ func TestCollectGoldKnowledge_SkipsCatalogFiles(t *testing.T) {
 		t.Fatalf("collectGoldKnowledge returned %d learnings, want 1 (real doc only, index.md excluded)", len(learnings))
 	}
 }
+
+// TestCollectGoldKnowledge_RespectsLimit exercises the ε-floor wiring: with
+// AO_RETRIEVAL_EPSILON unset (ε=0), gold retrieval returns exactly `limit` from a
+// larger matching set — i.e. zero behavior change vs the prior top-K trim.
+func TestCollectGoldKnowledge_RespectsLimit(t *testing.T) {
+	gold := t.TempDir()
+	learn := filepath.Join(gold, SectionLearnings)
+	if err := os.MkdirAll(learn, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	body := "Use flywheel compounding for durable knowledge retention and retrieval across sessions reliably."
+	for _, name := range []string{"a", "b", "c", "d", "e"} {
+		content := "---\nmaturity: provisional\n---\n# Flywheel lesson " + name + "\n\n" + body + "\n"
+		if err := os.WriteFile(filepath.Join(learn, name+".md"), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("AO_RETRIEVAL_EPSILON", "") // ε=0 → top-K, zero behavior change
+	learnings, _, _ := collectGoldKnowledge(gold, "flywheel", 2)
+	if len(learnings) != 2 {
+		t.Errorf("ε=0: expected exactly limit=2 from 5 matching learnings, got %d", len(learnings))
+	}
+}
