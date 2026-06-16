@@ -12,6 +12,7 @@ import (
 
 	"github.com/boshu2/agentops/cli/internal/config"
 	"github.com/boshu2/agentops/cli/internal/ratchet"
+	"github.com/boshu2/agentops/cli/internal/search"
 	"github.com/boshu2/agentops/cli/internal/types"
 )
 
@@ -167,20 +168,20 @@ func collectGoldKnowledge(goldRoot, query string, limit int) ([]learning, []patt
 	now := nowFunc()
 	tokens := queryTokens(strings.ToLower(query))
 	qLower := strings.ToLower(query)
+	// ε-exploration floor (cold-start): reserve a fraction of returned slots for
+	// tail trails so under-explored gold gets surfaced/cited/reinforced. ε=0
+	// (default) is identical to the prior top-K trim — zero behavior change.
+	eps := search.ResolveRetrievalEpsilon()
 
 	learnings := collectLocalLearnings(goldDocFiles(globLearningFiles(filepath.Join(goldRoot, SectionLearnings))), tokens, now)
 	rankLearnings(learnings)
-	learnings = limitCollectedLearnings(learnings, limit)
+	learnings = search.ExploreSelect(learnings, limit, eps, nil)
 
 	patterns, _ := collectPatternsFromDir(filepath.Join(goldRoot, SectionPatterns), qLower, now, false)
-	if len(patterns) > limit {
-		patterns = patterns[:limit]
-	}
+	patterns = search.ExploreSelect(patterns, limit, eps, nil)
 
 	findings, _ := collectFindingsFromDir(filepath.Join(goldRoot, SectionFindings), qLower, now, false, false)
-	if len(findings) > limit {
-		findings = findings[:limit]
-	}
+	findings = search.ExploreSelect(findings, limit, eps, nil)
 
 	return learnings, patterns, findings
 }
