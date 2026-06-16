@@ -25,6 +25,7 @@ var (
 	lookupCiteType  string
 	lookupSessionID string
 	lookupGold      bool
+	lookupPointers  bool
 )
 
 var lookupCmd = &cobra.Command{
@@ -61,6 +62,7 @@ func init() {
 	lookupCmd.Flags().StringVar(&lookupCiteType, "cite", "retrieved", "Citation type to record for returned artifacts: retrieved, reference, applied")
 	lookupCmd.Flags().StringVar(&lookupSessionID, "session", "", "Session ID for citation tracking")
 	lookupCmd.Flags().BoolVar(&lookupGold, "gold", false, "Retrieve from the sanitized OKF gold wiki (.ao/wiki) instead of the raw .agents/ corpus")
+	lookupCmd.Flags().BoolVar(&lookupPointers, "pointers", false, "Compact pointers only (type · title · path · score) — no bodies; the token-cheap mode for decision-point pulls")
 }
 
 func runLookup(cmd *cobra.Command, args []string) error {
@@ -74,8 +76,13 @@ func runLookup(cmd *cobra.Command, args []string) error {
 		VerbosePrintf("Warning: config load: %v (using defaults)\n", cfgErr)
 	}
 
-	// Mode 1: Lookup by ID
+	// Mode 1: Lookup by ID — fetches ONE artifact's full content, so --pointers
+	// (body-free) is contradictory and would otherwise leak a body past the
+	// compact contract. Refuse rather than silently emit the full artifact.
 	if len(args) > 0 {
+		if lookupPointers {
+			return fmt.Errorf("--pointers applies to --query/--bead retrieval, not by-ID fetch")
+		}
 		return lookupByID(cwd, args[0], cfg)
 	}
 
@@ -402,7 +409,33 @@ func outputFinding(cwd string, f knowledgeFinding) error {
 }
 
 // outputResults renders multiple learnings, patterns, and findings.
+// outputPointers renders compact, body-free pointers — the token-cheap retrieval
+// mode for decision-point pulls. One line per item (type · title · path · score),
+// no Summary/evidence/bodies, so a mandatory pre-decision retrieval can't restack
+// the prompt (the spray failure that killed the bookends: delta=0 @ 10.35M tokens).
+func outputPointers(cwd string, learnings []learning, patterns []pattern, findings []knowledgeFinding) error {
+	if len(learnings) == 0 && len(patterns) == 0 && len(findings) == 0 {
+		fmt.Println("No matching artifacts found.")
+		return nil
+	}
+	for _, l := range learnings {
+		fmt.Printf("- [learning] %s — %s (score %.2f)\n", l.Title, relPath(cwd, l.Source), l.CompositeScore)
+	}
+	for _, p := range patterns {
+		fmt.Printf("- [pattern] %s — %s (score %.2f)\n", p.Name, relPath(cwd, p.FilePath), p.CompositeScore)
+	}
+	for _, f := range findings {
+		fmt.Printf("- [finding] %s — %s (score %.2f)\n", f.Title, relPath(cwd, f.Source), f.CompositeScore)
+	}
+	return nil
+}
+
 func outputResults(cwd string, learnings []learning, patterns []pattern, findings []knowledgeFinding) error {
+	// --pointers wins over --json: the token-cheap, body-free contract must hold
+	// on every output path (a --json --pointers combo must NOT emit bodies).
+	if lookupPointers {
+		return outputPointers(cwd, learnings, patterns, findings)
+	}
 	if lookupJSON {
 		result := struct {
 			Learnings []learning         `json:"learnings"`

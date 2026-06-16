@@ -3,6 +3,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -1012,5 +1013,60 @@ func TestCollectGoldKnowledge_RespectsLimit(t *testing.T) {
 	learnings, _, _ := collectGoldKnowledge(gold, "flywheel", 2)
 	if len(learnings) != 2 {
 		t.Errorf("ε=0: expected exactly limit=2 from 5 matching learnings, got %d", len(learnings))
+	}
+}
+
+// TestOutputPointers_CompactNoBodies proves the --pointers mode is token-cheap:
+// one line per item (title/path/score), and the body/Summary is NOT emitted — so a
+// mandatory pre-decision gold pull can't restack the prompt (the spray failure).
+func TestOutputPointers_CompactNoBodies(t *testing.T) {
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	_ = outputPointers(".",
+		[]learning{{Title: "Ratchet lesson", Summary: "SECRET_BODY_TEXT", Source: "/x/r.md", CompositeScore: 0.9}},
+		nil, nil)
+	_ = w.Close()
+	os.Stdout = old
+	b, _ := io.ReadAll(r)
+	out := string(b)
+	if !strings.Contains(out, "Ratchet lesson") || !strings.Contains(out, "r.md") || !strings.Contains(out, "score") {
+		t.Errorf("pointers must include title/path/score: %q", out)
+	}
+	if strings.Contains(out, "SECRET_BODY_TEXT") {
+		t.Errorf("pointers must NOT include the body (token-cheap mode): %q", out)
+	}
+	if n := strings.Count(strings.TrimSpace(out), "\n"); n != 0 {
+		t.Errorf("expected exactly 1 pointer line for 1 item, got %q", out)
+	}
+}
+
+// TestOutputPointers_WinsOverJSON: --json --pointers must NOT leak bodies
+// (pointers takes precedence — the token-cheap contract holds on every path).
+func TestOutputPointers_WinsOverJSON(t *testing.T) {
+	oldP, oldJ := lookupPointers, lookupJSON
+	lookupPointers, lookupJSON = true, true
+	defer func() { lookupPointers, lookupJSON = oldP, oldJ }()
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	_ = outputResults(".", []learning{{Title: "T1", Summary: "SECRET_BODY", Source: "/x/a.md", CompositeScore: 0.5}}, nil, nil)
+	_ = w.Close()
+	os.Stdout = old
+	b, _ := io.ReadAll(r)
+	if out := string(b); strings.Contains(out, "SECRET_BODY") || !strings.Contains(out, "T1") {
+		t.Errorf("--json --pointers must be compact body-free, got %q", out)
+	}
+}
+
+// TestLookup_PointersByIDErrors: --pointers on a by-ID fetch is contradictory and
+// must error rather than emit the full artifact body.
+func TestLookup_PointersByIDErrors(t *testing.T) {
+	old := lookupPointers
+	lookupPointers = true
+	defer func() { lookupPointers = old }()
+	err := runLookup(nil, []string{"some-id"})
+	if err == nil || !strings.Contains(err.Error(), "--pointers applies") {
+		t.Errorf("by-ID + --pointers must error, got %v", err)
 	}
 }
