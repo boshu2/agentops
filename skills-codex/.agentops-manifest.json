@@ -1108,8 +1108,8 @@
     {
       "name": "cc-hooks",
       "source_skill": "skills/cc-hooks",
-      "source_hash": "48211811f1ee9016b6997db9425b103d23e028c30ae80f391b4b4e362f483d11",
-      "generated_hash": "293e1e21cfa57a4bb330adf1cb290529b2b1bdd2c1f9c61ea2225ce4a547cdde"
+      "source_hash": "b585bfcd9148e9cae33de379787ffeea691e6db49adaf17e2b8cfc7d5535e3b7",
+      "generated_hash": "ac8dd588e6984a6bfaee2f09c2477c5afc7f22da8d035629e0fdc2e127372df4"
     },
     {
       "name": "codex-approval",

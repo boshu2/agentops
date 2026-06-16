@@ -49,6 +49,42 @@ name="$(printf '%s' "$path" | sed -n 's#.*/\.\(claude\|codex\|gemini\)/skills/\(
 hint="skills/<name>/"
 [ -n "$name" ] && hint="skills/${name}/"
 
+# --- value-proof telemetry (age-workflow-guardrail-hooks-j39.2) -------------
+# Emit EXACTLY one gate-BLIND JSONL line per FIRE. The metric is the
+# fire-ATTEMPT rate over time (a learning signal the redirect itself cannot
+# fake) — see references/GUARDRAIL-VALUE-PROOF.md. PRIVACY: never the raw
+# command/path — only a SHA-256 hash of the path. Inert until the guard is
+# installed (this code only runs when the guard fires). Best-effort: telemetry
+# failure must NEVER change the guard's exit behavior.
+emit_telemetry() {
+  command -v jq >/dev/null 2>&1 || return 0
+  # Hash the path (privacy): sha256sum / shasum -a 256 / openssl, first available.
+  local h=""
+  if command -v sha256sum >/dev/null 2>&1; then
+    h="$(printf '%s' "$path" | sha256sum | cut -d' ' -f1)"
+  elif command -v shasum >/dev/null 2>&1; then
+    h="$(printf '%s' "$path" | shasum -a 256 | cut -d' ' -f1)"
+  elif command -v openssl >/dev/null 2>&1; then
+    h="$(printf '%s' "$path" | openssl dgst -sha256 | sed 's/^.*= *//')"
+  else
+    return 0  # no hasher -> emit nothing rather than risk leaking the raw path
+  fi
+  [ -n "$h" ] || return 0
+  local tdir="${AGENTOPS_HOME:-${HOME}/.agentops}"
+  local tfile="${AGENTOPS_GUARDRAIL_TELEMETRY:-${tdir}/guardrail-telemetry.jsonl}"
+  mkdir -p "$(dirname "$tfile")" 2>/dev/null || return 0
+  local line
+  line="$(jq -nc \
+    --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --arg session "$sid" \
+    --arg token_class "installed-skill-edit" \
+    --arg path_sha256 "$h" \
+    '{ts:$ts, session:$session, token_class:$token_class, path_sha256:$path_sha256}' \
+  )" || return 0
+  printf '%s\n' "$line" >> "$tfile" 2>/dev/null || return 0
+}
+emit_telemetry
+
 cat >&2 <<MSG
 ⛔ INSTALLED-SKILL EDIT: do not edit installed skill copies.
   ${path}

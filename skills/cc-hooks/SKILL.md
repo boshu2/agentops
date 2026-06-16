@@ -146,6 +146,21 @@ scripts/install-installed-skill-edit-guard.sh   # user scope; --project for proj
 
 Recipe: [INSTALLED-SKILL-EDIT-GUARD.md](references/INSTALLED-SKILL-EDIT-GUARD.md)
 
+### Value-proof (why this guard survives the hookless teardown)
+
+The keystone guard ships **gate-blind per-fire telemetry**: on each fire it
+appends exactly one JSONL line — `{ts, session, token_class, path_sha256}` — to
+`${AGENTOPS_HOME:-~/.agentops}/guardrail-telemetry.jsonl` (override with
+`AGENTOPS_GUARDRAIL_TELEMETRY`). The path is **SHA-256 hashed, never raw**
+(privacy); nothing is written on the happy path; the sensor is inert until the
+guard is installed and fires. The pre-registered methodology — metric =
+declining fire-ATTEMPT rate over time (a signal the redirect cannot fake, NOT the
+circular hand-roll rate), minimum N, noise floor, and **null-at-small-N is an
+acceptable outcome** — satisfies ADR-0002 l.58 ("test or eval evidence showing
+positive value"), the criterion whose absence killed 2.x hooks (#511).
+
+Methodology: [GUARDRAIL-VALUE-PROOF.md](references/GUARDRAIL-VALUE-PROOF.md)
+
 ## Writing Your Own Hook
 
 **Minimal Python:**
@@ -227,5 +242,6 @@ use-cases route here:
 - [DCG-RCH.md](references/DCG-RCH.md) - Production examples (dcg, rch)
 - [SKILL-FIRST-COORDINATION-GUARD.md](references/SKILL-FIRST-COORDINATION-GUARD.md) - Opt-in coordination skill-first guard + context-budget doctrine
 - [INSTALLED-SKILL-EDIT-GUARD.md](references/INSTALLED-SKILL-EDIT-GUARD.md) - Opt-in guard routing installed-skill edits to repo skills/ (keystone)
+- [GUARDRAIL-VALUE-PROOF.md](references/GUARDRAIL-VALUE-PROOF.md) - Pre-registered value-proof methodology + per-fire telemetry contract (ADR-0002 l.58)
 - [PATTERNS.md](references/PATTERNS.md) - Auto-format, logging, notifications
 - [JSON-OUTPUT.md](references/JSON-OUTPUT.md) - Response schemas

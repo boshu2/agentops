@@ -26,3 +26,11 @@ Read it first, then use `prompt.md` for the Codex runtime profile.
   back to the repo source of truth `skills/<name>/`. Ships inert; activate with
   `scripts/install-installed-skill-edit-guard.sh`. See
   `references/INSTALLED-SKILL-EDIT-GUARD.md`.
+
+  **Value-proof:** on each fire the guard appends exactly one gate-blind JSONL
+  line — `{ts, session, token_class, path_sha256}` — to
+  `${AGENTOPS_HOME:-~/.agentops}/guardrail-telemetry.jsonl`. The path is SHA-256
+  hashed, never raw (privacy); nothing is written on the happy path; the sensor
+  is inert until installed. Pre-registered methodology (metric = declining
+  fire-ATTEMPT rate over time; min N; null-at-small-N acceptable) satisfies
+  ADR-0002 l.58. See `references/GUARDRAIL-VALUE-PROOF.md`.
