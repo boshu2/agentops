@@ -50,6 +50,8 @@ Move **5 (wave execution)** of the [operating loop](../../docs/architecture/oper
 
 Autonomous execution: implement all issues until the epic is DONE.
 
+**Feed the orchestrator's re-plan loop — don't swallow findings into a silent retry.** When run under `/rpi`, surface what a wave proved or broke UP to the orchestrator. A failed or surprising wave is *re-plan input*, not just a retry target: per the [`/rpi` Agile Re-Plan Loop](../rpi/SKILL.md#agile-re-plan-loop-the-anti-waterfall-rule), the *remaining* waves may be refactored, inserted, dropped, or reordered before the next one runs. Re-cranking the same objective forever instead of letting the remaining plan change is the waterfall anti-pattern.
+
 **CLI dependencies:** bd (issue tracking), ao (knowledge flywheel). Both optional — see `skills/shared/SKILL.md` for fallback table. If bd is unavailable, use TaskList for issue tracking and skip beads sync. If ao is unavailable, skip knowledge injection/extraction.
 
 For Claude runtime feature coverage (agents/hooks/worktree/settings), the shared source of truth is `skills/shared/references/claude-code-latest-features.md`, mirrored locally at `references/claude-code-latest-features.md`.

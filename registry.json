@@ -1,6 +1,7 @@
 {
   "schema_version": 2,
   "generated_at": "2026-06-16T17:49:26Z",
+  "generated_at": "2026-06-16T19:41:53Z",
   "summary": {
     "skills": 72,
     "hooks": 0,
@@ -475,7 +476,7 @@
         "path": "skills/rpi/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 17
+        "reference_count": 18
       },
       {
         "name": "skill-auditor",
@@ -3407,7 +3408,7 @@
         "ao ratchet"
       ],
       "path": "skills/rpi/",
-      "references": 17
+      "references": 18
     },
     {
       "sku": "skill:sbh",

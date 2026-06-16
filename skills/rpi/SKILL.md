@@ -56,10 +56,13 @@ real blocked state exhausts retries. Read
 [references/autonomous-execution.md](references/autonomous-execution.md) when
 you need the full autonomy contract.
 
+**`--auto` means *pivot autonomously*, NOT *execute the initial plan to the letter*.** Autonomy is agility, not waterfall: between waves the orchestrator re-plans the remaining work and changes course on its own — refactoring, adding, dropping, reordering waves as evidence arrives — without the operator saying so (touched only at the terminal objective or a circuit-breaker trip). See [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule).
+
 ## Loop position
 
-`/rpi` is the orchestrator across **every move** of the [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence + learning capture. It delegates each move to the skill that owns it (`/discovery`, `/plan`, `/crank`, `/validate`, `/forge`/`/post-mortem`), and enforces three loop-level invariants:
+`/rpi` is the orchestrator across **every move** of the [operating loop](../../docs/architecture/operating-loop.md): BDD intent → vertical slices → conflict-free wave → bead acceptance → evidence + learning capture. It delegates each move to the skill that owns it (`/discovery`, `/plan`, `/crank`, `/validate`, `/forge`/`/post-mortem`), and enforces these loop-level invariants:
 
+- **Agile, not waterfall — the plan is a hypothesis.** Every wave closes with a **re-plan, not just a retry** (the [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule), autonomous under `--auto`).
 - **No move-skipping, but validation cadence is pawl-gated, not per-tread** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)). Strict delegation is on by default; phases never compress; the lifecycle objective is preserved across the loop. "Validation cannot be skipped" means the *bead-acceptance pawl* validates fully — NOT that every intermediate slice pays the heavy cross-family panel. The acceptance roll-up + heavy gates (full council, `/validate --mixed`, `/pre-land-refuters`) fire **once, at the bead-acceptance / merge-to-main pawl** (the ratchet's lock). Intermediate slices are **chaos**: cheap local checks (build, TDD red→green, light inline wave-acceptance judges) run freely; the heavy panel never fires per slice. A pawl on every tread is the waterfall the ratchet exists to avoid.
 - **The first failing test is the bead's contract.** With `--test-first` on (the default), `/crank` is invoked with the TDD-per-slice discipline; `--no-test-first` is an explicit opt-out, not a fast path.
 - **Acceptance examples close the bead, not activity.** Validation FAIL re-cranks on the same objective up to 3 attempts; DONE requires the acceptance roll-up in the [slice-validation template](../../docs/templates/slice-validation.md) to be fully green.
@@ -150,13 +153,18 @@ Enter at the routed phase and run every phase after it.
    `--quality` is set. On FAIL, extract findings, re-run `/crank` on the same
    objective, then re-run `/validate`, up to 3 total validation attempts. On
    DONE, record `ao ratchet record vibe 2>/dev/null || true`. This Phase-3 `/validate` is the **bead-acceptance pawl** ([docs/contracts/pawls.md](../../docs/contracts/pawls.md)) — once per RPI objective at acceptance, not per slice. **The merge-to-main pawl fires regardless of complexity:** any work crossing the shared-trunk door — fast/standard included — invokes the pawl gate [`/pre-land-refuters`](../pre-land-refuters/SKILL.md) before push (pawls.md makes mutate-shared-trunk complexity-independent). Complexity scales the gate's DEPTH, never exempts it: every door gets at least the **fresh-context default** (≥1 fresh-context refuter, model-agnostic); higher-irreversibility doors are opted up to **multi-model** (≥2 distinct families), and `full` arcs (100+ files, factory regen, contract-test repoints, capability removal) get full council — neither skips the gate. **REFUTED → AUTO-REDO**: refuted findings re-crank like a validation FAIL, autonomously and with no human (the default self-correcting path); a human is escalated to **only when a tunable circuit breaker trips** (max-attempts — here the 3-attempt cap — time budget, cost/quota, or oscillation), per pawls.md "Escalation — the circuit-breaker model". The gate is the door, never per slice.
-4. **Report:** summarize phase verdicts and epic status using
-   [references/report-template.md](references/report-template.md). With
-   `--loop`, restart from discovery on FAIL while `cycle < max_cycles`. With
+4. **Re-plan (mandatory between waves; the loop's hinge).** With remaining waves, run the [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule) before the next — a post-mortem/discovery delta that MAY mutate the remaining plan (autonomous under `--auto`). No remaining waves → straight to Report.
+5. **Report:** summarize phase verdicts, the re-plan deltas taken, and epic
+   status using [references/report-template.md](references/report-template.md).
+   With `--loop`, restart from discovery on FAIL while `cycle < max_cycles`. With
    `--spawn-next`, read `.agents/rpi/next-work.jsonl` and suggest the next
    command without invoking it. Before emitting the report, apply the Context
    Density Rule: every line should carry intent, boundary, evidence, decision,
    constraint, or next action.
+
+## Agile Re-Plan Loop (the anti-waterfall rule)
+
+The initial plan is a **hypothesis**; each wave is an experiment whose evidence re-plans the rest. At every wave boundary (and after validation): **reflect** (a bounded `/post-mortem` + `/discovery` re-plan delta over what shipped/broke) → **re-plan the REMAINING waves** (refactor / insert / drop / reorder / re-scope / escalate, persisting the mutated plan so the next wave reads the *current* one) → **proceed**. Under `--auto` this is autonomous, bounded by the run's circuit breakers (budget / attempt cap / oscillation detection) and the ≥5-ship post-mortem checkpoint; the operator is touched only at the terminal objective or a breaker trip. `/crank` and `/validate` surface findings UP for re-planning (never a silent local retry); `/discovery` is the re-plan engine. Anti-patterns: **waterfall** (run the plan to the letter), **retry-not-replan** (re-crank forever instead of changing the remaining plan), **permission-seeking** (pause to approve a pivot `--auto` already authorizes). **Full detail:** [references/agile-replan-loop.md](references/agile-replan-loop.md).
 
 ## Phase Data Contract
 
@@ -183,7 +191,7 @@ Complexity scales the gate's depth: `low`/`fast` and `medium`/`standard` → 2-j
 | `--from=<phase>` | discovery | Start at discovery, implementation, or validation |
 | `--discovery-artifact=<path>` | unset | With implementation start, convert an existing artifact into the handoff packet |
 | `--interactive` | off | Human gates in discovery/validate |
-| `--auto` | on | Fully autonomous default |
+| `--auto` | on | Fully autonomous default — **pivots between waves on its own** (re-plans remaining work; not a fixed-plan/waterfall executor). See [Agile Re-Plan Loop](#agile-re-plan-loop-the-anti-waterfall-rule) |
 | `--loop --max-cycles=<n>` | off / 3 | Iterate when validation fails |
 | `--spawn-next` | off | Surface follow-up work after reporting |
 | `--test-first` | on | Pass strict-quality preference to `/crank` |
@@ -222,6 +230,7 @@ interactive, loop, and artifact-mode examples.
 
 ## Reference Documents
 
+- [references/agile-replan-loop.md](references/agile-replan-loop.md) — the anti-waterfall rule: inter-wave re-plan, `--auto`-pivot bounds, anti-patterns
 - [references/rpi.feature](references/rpi.feature) — Executable spec: strict ordered phases, validation-never-skipped, context-density across handoffs (soc-qk4b.2)
 - [references/orchestrator-compression-anti-pattern.md](references/orchestrator-compression-anti-pattern.md) — Phase-skipping failure mode; rationalizations to reject
 - [references/autonomous-execution.md](references/autonomous-execution.md)

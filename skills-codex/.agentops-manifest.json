@@ -1180,8 +1180,8 @@
     {
       "name": "crank",
       "source_skill": "skills/crank",
-      "source_hash": "d674ed389741e2cc26b1414b30a798b661c2a5c9f2434fb60d8d4815376f53d8",
-      "generated_hash": "23dcc9ad55148815116337b9d53f2680df800c9df9eada11755fd073d5c2f3ed"
+      "source_hash": "a927313dc3a87c5031b0f7afe405359d22e901513d14be3f3fe107c043424edb",
+      "generated_hash": "b693ddda8df922475b55d25fb2e09c086c0270e0913dcea8c470b3bc0e3aa65a"
     },
     {
       "name": "curate",
@@ -1540,8 +1540,8 @@
     {
       "name": "rpi",
       "source_skill": "skills/rpi",
-      "source_hash": "20fa14f17983163bdf55e626b18e2146ed4571fe00c8fba7eebfdd6587c67ab5",
-      "generated_hash": "9e1a058756851e44572b3992f93aa0377b60cdb8bff67c2ebb0310fb5db6f9bc"
+      "source_hash": "68a565dfb101dbca2e89479a006bf2d95344a5b6f87f3b50c90dc5e91fa0754b",
+      "generated_hash": "9722e1226343e5c025aa491a5b5af3dbd921a97535c5ba8d444a9b3b3e428ea6"
     },
     {
       "name": "sbh",
@@ -1690,8 +1690,8 @@
     {
       "name": "validate",
       "source_skill": "skills/validate",
-      "source_hash": "a8a0b90da1aa54a3b8506a35e2e654cf4014be2dcf9d34d69f8f6fedbb645d85",
-      "generated_hash": "9e4193b727967f14e7f1be94a2d341055f9ed24c359a9027f7fda13ba0d2d63e"
+      "source_hash": "947b6146d8049b910c8be27a4b740e2bec468e746945fd5645610c043d4a60a2",
+      "generated_hash": "aec02bb7cf8a247319bfcf661b22914269686859cba37442730e906aa010c346"
     },
     {
       "name": "vibing-with-ntm",
