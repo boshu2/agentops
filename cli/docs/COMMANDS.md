@@ -3092,6 +3092,7 @@ ao compile [flags]
       --force               Recompile all source artifacts regardless of hashes
       --force-repair        Actually delete orphans during --repair. Without --force-repair, --repair runs dry.
       --full                Run the full mine, compile, lint, and defrag cycle
+      --gold                Publish the sanitized OKF gold wiki to .ao/wiki after the compile cycle (default true)
   -h, --help                help for compile
       --incremental         Compile only changed source artifacts (default true)
       --lint-only           Only lint the existing compiled wiki
@@ -3826,6 +3827,24 @@ ao wiki doctor [flags]
   -h, --help          help for doctor
 ```
 
+#### `ao wiki gold`
+
+ao wiki gold is the raw-lead-to-gold bridge of the knowledge flywheel.
+
+```
+ao wiki gold [flags]
+```
+
+**Flags:**
+
+```
+      --confidence-floor float   override the promotion confidence floor (default 0.70)
+      --dry-run                  report what would be promoted without writing
+  -h, --help                     help for gold
+      --json                     emit stats as JSON
+      --out string               output directory for the OKF gold wiki (default ".ao/wiki")
+```
+
 #### `ao wiki index`
 
 Scan the .agents/ corpus and update the persistent JSONL document index.
@@ -3838,6 +3857,7 @@ ao wiki index [flags]
 
 ```
       --base string   Corpus base directory (default: current directory)
+      --gold          Index the OKF gold wiki (.ao/wiki) instead of the raw .agents/ corpus
   -h, --help          help for index
 ```
 
@@ -3906,6 +3926,7 @@ ao wiki search <query> [flags]
 
 ```
       --base string   Corpus base directory (default: current directory)
+      --gold          Search the OKF gold wiki (.ao/wiki) instead of the raw .agents/ corpus
   -h, --help          help for search
       --limit int     Maximum results to print (default 20)
       --reindex       Rebuild the index before searching
