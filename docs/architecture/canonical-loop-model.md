@@ -109,6 +109,8 @@ It supersedes the help-string decision-tree approach (the prior attempt to disam
 
 ## See also
 
+- [the-agent-factory.md](the-agent-factory.md): the control-plane **primitives / citizens** view (roles × primitives × the adapter taxonomy) — the structural counterpart to this loop-hierarchy statement; the unifying entry that cross-links the loop/primitive docs
+- [control-loop-model.md](control-loop-model.md): why the loop converges (fast) and self-improves (slow + SPC governor) — the *behavior* of the citizens
 - [3.0.md](../3.0.md): the north star this model serves
 - [component-map.md](component-map.md): the component routing and trim/defer posture that keeps loop work from sprawling
 - [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md): why AgentOps ships only the in-session driver
