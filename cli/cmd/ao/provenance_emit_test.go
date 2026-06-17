@@ -88,10 +88,22 @@ func TestProvenanceEmitLandedCommand_Registered(t *testing.T) {
 	if !found {
 		t.Error("emit-landed is not registered under `ao provenance`")
 	}
-	for _, f := range []string{"dry-run", "commit", "range"} {
+	for _, f := range []string{"dry-run", "commit", "range", "trunk-ref"} {
 		if provenanceEmitLandedCmd.Flags().Lookup(f) == nil {
 			t.Errorf("missing flag --%s on `ao provenance emit-landed`", f)
 		}
+	}
+}
+
+// TestFilterCommitsOnTrunk_EmptyRefPassthrough (age-0tn): blank trunk-ref is a no-op.
+func TestFilterCommitsOnTrunk_EmptyRefPassthrough(t *testing.T) {
+	in := []landedCommit{{sha: "abc", msg: "feat: x (ag-test)"}}
+	got, err := filterCommitsOnTrunk(in, "")
+	if err != nil {
+		t.Fatalf("filterCommitsOnTrunk: %v", err)
+	}
+	if len(got) != 1 || got[0].sha != "abc" {
+		t.Fatalf("got %v, want unchanged input", got)
 	}
 }
 
