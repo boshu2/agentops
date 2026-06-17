@@ -129,10 +129,10 @@ PY
     and (.pr? | type == "number")          # MUST be a JSON number, not a string
     and (.head_sha? | is_str) and ((.head_sha|length) >= 7)
     and (.disposition? | is_str)
-    and ((["CONFIRMED","REFUTED","ESCALATE","HOLD"]) | index(.disposition) != null)
+    and (.disposition as $d | (["CONFIRMED","REFUTED","ESCALATE","HOLD"] | index($d)) != null)
     and (.generated_at? | is_str) and ((.generated_at|length) > 0)
     and (.author_context_id? | is_str) and ((.author_context_id|length) > 0)
-    and ((.mode? // null) | (. == null) or ((["fresh-context","multi-model"]) | index(.) != null))
+    and ((.mode? // null) | (. == null) or (. as $m | (["fresh-context","multi-model"] | index($m)) != null))
     and (.refuters? | type == "array") and ((.refuters|length) >= 1)
     # no unknown top-level keys
     and ((keys - ["schema_version","bead_id","pr","head_sha","disposition","generated_at","mode","author_context_id","attempt","refuters","council_artifact"]) | length == 0)
@@ -140,7 +140,7 @@ PY
     # extras, family within the known alias set (canonical-roster check is separate)
     and (all(.refuters[];
           (.family? | is_str) and ((.family|ascii_downcase) as $f | (known_families | index($f)) != null)
-          and (.verdict? | is_str) and ((["CONFIRMED","REFUTED"]) | index(.verdict) != null)
+          and (.verdict? | is_str) and (.verdict as $v | (["CONFIRMED","REFUTED"] | index($v)) != null)
           and (.context_id? | is_str) and ((.context_id|length) > 0)
           and ((.evidence? // null) | (. == null) or is_str)
           and ((.reviewer? // null) | (. == null) or is_str)
