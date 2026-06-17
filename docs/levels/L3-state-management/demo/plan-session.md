@@ -6,7 +6,7 @@ A session showing goal decomposition into tracked issues.
 
 ## Before
 
-- Beads initialized (`bd init` run previously)
+- Beads initialized (`BEADS_DIR=$PWD/_beads br init` run previously)
 - Goal: Add email notifications to the app
 - No existing issues for this feature
 
@@ -36,41 +36,41 @@ Need to:
 
 **Creating issues:**
 
-$ bd create --title "Set up email service (SendGrid)" --type task --priority 1
-Created: agentops-a1b
+$ BEADS_DIR=$PWD/_beads br create --title "Set up email service (SendGrid)" --type task --priority 1
+Created: ag-a1b
 
-$ bd create --title "Add notification triggers to order processor" --type task --priority 1
-Created: agentops-c2d
+$ BEADS_DIR=$PWD/_beads br create --title "Add notification triggers to order processor" --type task --priority 1
+Created: ag-c2d
 
-$ bd create --title "Create order email templates" --type task --priority 2
-Created: agentops-e3f
+$ BEADS_DIR=$PWD/_beads br create --title "Create order email templates" --type task --priority 2
+Created: ag-e3f
 
-$ bd create --title "Add email preference settings" --type feature --priority 2
-Created: agentops-g4h
+$ BEADS_DIR=$PWD/_beads br create --title "Add email preference settings" --type feature --priority 2
+Created: ag-g4h
 
-$ bd create --title "Write notification tests" --type task --priority 3
-Created: agentops-i5j
+$ BEADS_DIR=$PWD/_beads br create --title "Write notification tests" --type task --priority 3
+Created: ag-i5j
 
 **Setting dependencies:**
 
-$ bd dep add agentops-c2d agentops-a1b
+$ BEADS_DIR=$PWD/_beads br dep add ag-c2d ag-a1b
 (triggers depend on email service)
 
-$ bd dep add agentops-e3f agentops-a1b
+$ BEADS_DIR=$PWD/_beads br dep add ag-e3f ag-a1b
 (templates depend on email service)
 
-$ bd dep add agentops-i5j agentops-c2d
-$ bd dep add agentops-i5j agentops-e3f
+$ BEADS_DIR=$PWD/_beads br dep add ag-i5j ag-c2d
+$ BEADS_DIR=$PWD/_beads br dep add ag-i5j ag-e3f
 (tests depend on triggers and templates)
 
 **Plan saved to:** .agents/plans/2025-01-15-email-notifications.md
 
 **Ready to work:**
-$ bd ready
-1. [P1] agentops-a1b: Set up email service (SendGrid)
-2. [P2] agentops-g4h: Add email preference settings
+$ BEADS_DIR=$PWD/_beads br ready
+1. [P1] ag-a1b: Set up email service (SendGrid)
+2. [P2] ag-g4h: Add email preference settings
 
-Start with: `/implement agentops-a1b`
+Start with: `/implement ag-a1b`
 ```
 
 ---
@@ -78,8 +78,8 @@ Start with: `/implement agentops-a1b`
 ## After
 
 ```
-.beads/
-└── beads.db                    # Issues stored here
+_beads/
+└── issues.jsonl                # Issues stored here (git-JSONL ledger)
 
 .agents/
 └── plans/
@@ -95,7 +95,7 @@ Issues created:
 ## What You Learned
 
 1. `/plan` researches before creating issues
-2. Issues get IDs like `agentops-xyz`
+2. Issues get IDs like `ag-xyz`
 3. Dependencies control execution order
-4. `bd ready` shows what can be worked now
+4. `br ready` shows what can be worked now
 5. Plan document captures the reasoning

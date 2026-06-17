@@ -82,7 +82,7 @@ AgentOps is not a chatbot wrapper. It does not make prompts bigger. It does not 
 
 It is not trying to replace thinking. The model thinks. AgentOps manages what the model knows when it thinks.
 
-It is not a SaaS product or a managed service. All state lives locally. All operations are reversible. The product is the compounding environment — the `skills/`, the `ao` CLI, and the discipline enforced in CI. AgentOps 3.0 is hookless: skills and the CLI guide the workflow and CI is the authoritative gate. Hooks are opt-in — you author your own via the `hooks-authoring` skill — never installed by default. That environment is yours to own, version-control, and take with you.
+It is not a SaaS product or a managed service. All state lives locally. All operations are reversible. The product is the compounding environment — the `skills/`, the `ao` CLI, and the discipline enforced by the local pre-push gate. AgentOps 3.0 is hookless: skills and the CLI guide the workflow and the local pre-push Go gate (`ao gate check`) is the release authority (CI is a backstop). Hooks are opt-in — you author your own via the `hooks-authoring` skill — never installed by default. That environment is yours to own, version-control, and take with you.
 
 ## The Validated Thesis
 

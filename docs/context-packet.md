@@ -175,7 +175,7 @@ As you work, use `/retro` or `/post-mortem` to extract learnings for future sess
 
 **Purpose:** What this agent specifically needs to do right now. The immediate work assignment with acceptance criteria.
 
-**Source:** Bead description (from `bd show <id>`), epic context, or the task assignment from `/crank` wave planning. For `/evolve`, this is the current goal target and its failing check command.
+**Source:** Bead description (from `BEADS_DIR=$PWD/_beads br show <id>`), epic context, or the task assignment from `/crank` wave planning. For `/evolve`, this is the current goal target and its failing check command.
 
 **Content:**
 
@@ -423,7 +423,7 @@ This provenance record enables:
 
 ## Evolution of `ao lookup`
 
-The deprecated `ao inject` output a flat knowledge dump: learnings, patterns, and sessions rendered as markdown or JSON. The context packet evolves this through an on-demand retrieval pattern:
+The prior `ao inject` mode output a flat knowledge dump: learnings, patterns, and sessions rendered as markdown or JSON. (`ao inject` is current, not deprecated — it is the explicit replacement for the retired SessionStart injection; this describes its earlier flat-dump behavior.) The context packet evolves this through an on-demand retrieval pattern:
 
 ### Phase 1: Structured Sections (non-breaking)
 

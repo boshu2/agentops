@@ -103,7 +103,7 @@ AgentOps:
 
 ### Orchestration Focus, Not Quality Focus
 
-Claude-Flow excels at coordinating many agents. It doesn't provide the deep semantic validation that `/vibe` offers:
+Claude-Flow excels at coordinating many agents. It doesn't provide the deep semantic validation that `/validate` offers:
 
 | Validation | Claude-Flow | AgentOps |
 |------------|:-----------:|:--------:|
@@ -176,10 +176,10 @@ Claude-Flow excels at coordinating many agents. It doesn't provide the deep sema
 │  └──────┬──────┘                                   │            │
 │         │                                          │            │
 │         ▼                                          │            │
-│  ┌─────────────┐     ┌──────────┐                   │           │
-│  │   /crank    │────▶│  /vibe   │──── pass ────────▶│           │
-│  │ (implement) │     │(validate)│                  │            │
-│  └─────────────┘     └────┬─────┘                   │           │
+│  ┌─────────────┐     ┌───────────┐                  │           │
+│  │ /implement  │────▶│ /validate │─── pass ────────▶│           │
+│  │ (implement) │     │ (validate)│                  │            │
+│  └─────────────┘     └────┬──────┘                  │           │
 │                           │ fail                    │           │
 │                           └───────▶ fix ───────────┘            │
 │                                                                 │
@@ -235,17 +235,17 @@ AgentOps:           ████████████░░░░░░░░
 ┌─────────────────────────────────────────────────────────────────┐
 │                 CLAUDE-FLOW + AGENTOPS                          │
 │                                                                 │
-│  SessionStart:                                                  │
-│    └── AgentOps loads context on-demand                         │
+│  Session bootstrap (explicit, hookless):                        │
+│    └── ao session bootstrap → ao inject loads context           │
 │                                                                 │
 │  Execution:                                                     │
 │    └── Claude-Flow orchestrates 60+ agents                      │
 │                                                                 │
 │  Validation:                                                    │
-│    └── AgentOps /vibe validates all outputs                     │
+│    └── AgentOps /validate validates all outputs                 │
 │                                                                 │
-│  SessionEnd:                                                    │
-│    └── AgentOps extracts learnings for next time                │
+│  Session close (explicit):                                      │
+│    └── ao forge / ao flywheel close-loop extract learnings      │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```

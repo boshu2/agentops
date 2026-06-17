@@ -81,7 +81,7 @@ auditable.
 
 Setting `AGENTOPS_ORCHESTRATION=off` skips **all** spawn backends and degrades
 straight to the **beads floor** (single-agent inline / `--quick`; workers' work
-is still tracked through `bd`). This mirrors the `AGENTOPS_HOOKS_DISABLED=1`
+is still tracked through `br` — `BEADS_DIR=$PWD/_beads br`). This mirrors the `AGENTOPS_HOOKS_DISABLED=1`
 convention. At the port level this is the `WorkSpec.OptOut` path: it routes to
 `BackendBeads` regardless of NTM/Claude availability, but a non-empty `Pin`
 still overrides it.

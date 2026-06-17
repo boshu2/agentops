@@ -20,18 +20,23 @@ Just describe what you want:
 | "What should I work on?" | Shows status, suggests next task |
 | "Where was I?" | Shows last session, current state, blockers |
 
-### Option 2: Software Factory Lane (Recommended in Codex)
+### Option 2: Software Factory Lane (Recommended)
+
+The primary delivery path is the **operating loop**
+([`docs/architecture/operating-loop.md`](../architecture/operating-loop.md)):
+`ao session bootstrap` → `ao inject` → the seven-move loop →
+`ao gate check --fast --scope head` → push to `main`.
 
 ```bash
-# Start session with a goal-time briefing when possible
+# Orient: standard startup report + decay-ranked prior context
+ao session bootstrap
+ao inject
+
+# Optional: build a bounded goal-time briefing when the corpus supports it
 ao factory start --goal "fix auth startup"
 
-# Run the delivery lane
-/rpi "fix auth startup"
-# or: ao rpi phased "fix auth startup"
-
-# Monitor long-running phased work
-ao rpi status
+# Drive the work through the operating loop, landing slices with the gate
+ao gate check --fast --scope head
 
 # End session
 ao codex stop
@@ -40,9 +45,15 @@ ao codex stop
 ao codex status
 ```
 
-`ao factory start` keeps the operator lane explicit: build a bounded briefing if
-the corpus can support it, run Codex startup, then move into RPI. The lower
-level lifecycle commands still exist when you want direct control.
+`ao session bootstrap` + `ao inject` are the explicit startup path (3.0 is
+hookless — nothing auto-injects orientation). `ao factory start` keeps the
+operator lane explicit: build a bounded briefing if the corpus can support it,
+then drive the operating loop.
+
+> **`/rpi` and `ao rpi` are load-bearing LEGACY, not the live path.** The phased
+> RPI loop (`/rpi "fix auth startup"`, `ao rpi phased`, `ao rpi status`) still
+> compiles and is the one-turn executor referenced below, but new work is driven
+> through the operating loop above — not routed through the RPI loop.
 
 ### Option 3: Dream Compounding Run
 
@@ -484,9 +495,14 @@ cp .claude/templates/feature-list.json .
 
 ---
 
-## Integration with RPI Workflow
+## Integration with RPI Workflow (legacy executor)
 
-For complex features, use the phased RPI flow:
+> The phased RPI flow is the **load-bearing legacy** one-turn executor, not the
+> primary navigation. Drive new work through the operating loop
+> ([`docs/architecture/operating-loop.md`](../architecture/operating-loop.md));
+> reach for RPI only when a turn explicitly needs the phased executor.
+
+For complex features, the phased RPI flow runs:
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐

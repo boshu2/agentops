@@ -27,8 +27,8 @@ Evidence CTA: capture first-run and interview signals through
 |---|---|---|
 | 1 | Episode 1 plus 2 short clips | Teach the council-first value path. |
 | 1 | Episode 2 plus 2 short clips | Show the domain/practice packet as the product object. |
-| 2 | Episode 3 plus 2 short clips | Show verdict-to-work with bd and `.agents/`. |
-| 2 | Episode 4 plus 2 short clips | Show daemon/Dream as second-stage automation. |
+| 2 | Episode 3 plus 2 short clips | Show verdict-to-work with br and `.agents/`. |
+| 2 | Episode 4 plus 2 short clips | Show the out-of-session substrate (NTM + Agent Mail) as second-stage automation. |
 | 3 | Episode 5 plus 2 short clips | Show the full 3.0 launch workflow and invite PMF interviews. |
 
 Do not publish productivity or PMF claims in titles or thumbnails. The series
@@ -57,7 +57,7 @@ is a teaching funnel and evidence loop.
 2. Run `ao context assemble`.
 3. Run `/council --mixed`.
 4. Open `.agents/council/<run-id>/verdict.md`.
-5. Create bd follow-up from the verdict.
+5. Create br follow-up from the verdict.
 
 **CTA**
 
@@ -125,8 +125,8 @@ evidence rules.
 
 1. Open the sample verdict.
 2. Show PASS/WARN/BLOCK shape.
-3. Run `bd create ... --description "From .agents/council/<run-id>/verdict.md"`.
-4. Show `.beads/issues.jsonl`.
+3. Run `BEADS_DIR=$PWD/_beads br create ... --body "From .agents/council/<run-id>/verdict.md"`.
+4. Show `_beads/issues.jsonl`.
 5. Re-run `ao context assemble` with the new issue as the task.
 
 **CTA**
@@ -136,7 +136,7 @@ with clearer context.
 
 **Measurement fields**
 
-- Number of viewers who create first bd issue.
+- Number of viewers who create first br issue.
 - Number of viewers who paste a verdict path into a follow-up issue.
 - Questions about beads versus existing issue trackers.
 
@@ -158,13 +158,14 @@ with clearer context.
 **Demo beats**
 
 1. Recap the packet and verdict artifact.
-2. Run the loop in session: `ao rpi <bead>` (one cycle), `ao evolve` (many).
-3. To run it out of session, hand the loop to the reference substrate
-   (NTM + MCP + managed-agents); e.g. an NTM tmux swarm (or a lead agent) runs
-   `bd ready` and dispatches ready beads to workers that run `ao rpi`.
-4. Schedule corpus maintenance via the substrate (a managed-agent driver or cron
+2. Run the loop in session: the operating loop (primary) or the legacy
+   `ao rpi <bead>` executor (one cycle), `ao evolve` (many).
+3. To run it out of session, hand the loop to the substrate
+   (NTM + MCP Agent Mail); e.g. an NTM tmux swarm (or a lead agent) runs
+   `BEADS_DIR=$PWD/_beads br ready` and dispatches ready beads to workers.
+4. Schedule corpus maintenance via the substrate (a driver or cron
    running `ao compile`, `ao maturity --scan`).
-5. Explain Dream/wiki/forge as compounding jobs, not unattended source mutation.
+5. Explain wiki/forge as compounding jobs, not unattended source mutation.
 
 **CTA**
 
@@ -173,7 +174,7 @@ session.
 
 **Measurement fields**
 
-- In-session loop runs (`ao rpi` / `ao evolve`) before opting into always-on.
+- In-session loop runs (operating loop / `ao evolve`) before opting into always-on.
 - Substrate dispatch screenshots or reports.
 - Questions about safety boundaries and source mutation.
 
@@ -209,7 +210,7 @@ path, whether the packet made sense, and what blocked first value.
 - PMF interview bookings.
 - Activation reports with setup time and verdict path.
 - Packet reuse in later work.
-- Daemon adoption after first verdict.
+- Substrate adoption after first verdict.
 
 ## Short Clip Hooks
 
@@ -217,7 +218,7 @@ path, whether the packet made sense, and what blocked first value.
 2. "This file is the product: the domain packet your agents judge against."
 3. "Claude and Codex can disagree. AgentOps makes the disagreement reviewable."
 4. "The first artifact is not a dashboard. It is a verdict file."
-5. "Do not start with the daemon. Start with one trusted verdict."
+5. "Do not start with the out-of-session substrate. Start with one trusted verdict."
 6. "Agent decisions should become issues, not vanish into chat."
 7. "DDD, TDD, BDD, review, and release gates are agent context now."
 8. "The killer demo is not automation. It is shared engineering judgment."
@@ -244,8 +245,8 @@ path, whether the packet made sense, and what blocked first value.
 |---|---|---|
 | Episode 1 | Run `ao demo --quick`. | Follow `docs/first-value-path.md`. |
 | Episode 2 | Copy and edit the domain packet. | Read `docs/domain-practice-packets.md`. |
-| Episode 3 | Create one bd issue from one verdict. | Read the council verdict example. |
-| Episode 4 | Set up a schedule only after first verdict. | Read scheduling docs and examples. |
+| Episode 3 | Create one br issue from one verdict. | Read the council verdict example. |
+| Episode 4 | Hand a trusted loop to the substrate only after first verdict. | Read the NTM + Agent Mail substrate docs. |
 | Episode 5 | Share a first-value report or book a PMF interview. | Star the repo if the path worked. |
 | Short clips | Watch Episode 1 or read the explainer kit. | Run `ao demo --quick`. |
 
@@ -261,8 +262,8 @@ Collect these after content drives a first run:
 | Packet comprehension | Could the viewer explain the domain/practice packet? |
 | Council mode | Mixed, quick fallback, blocked |
 | Verdict artifact | Path or redacted exported sample |
-| Follow-up work | bd issue id or external issue link |
-| Daemon adoption | None, attempted, schedule listed, scheduled run completed |
+| Follow-up work | br issue id or external issue link |
+| Substrate adoption | None, attempted, substrate dispatch listed, unattended run completed |
 | Reuse signal | Packet or verdict reused in later engineering decision |
 | Friction | Free text |
 | Interview status | Requested, scheduled, completed, declined |

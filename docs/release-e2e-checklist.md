@@ -10,7 +10,7 @@ Use this before you tag. The release process in [RELEASING](RELEASING.md) is the
 |---|---|
 | "Is the release process itself current?" | [RELEASING](RELEASING.md) and its pre-release checklist |
 | "Did the local gate produce the expected evidence?" | `.agents/releases/local-ci/<timestamp>/` for SBOM, security report, eval reports, readiness, HIL evidence, digital-twin/VIL evidence, and the manifest |
-| "Did hooks and `ao rpi` smoke actually run?" | Fast gate markers: `Hook install smoke (minimal + full)` and `ao init --hooks + ao rpi smoke` |
+| "Did the bootstrap + `ao rpi` smoke actually run?" | Fast gate markers: `ao init`/bootstrap smoke and `ao rpi` smoke (3.0 is hookless — no hook-install smoke) |
 | "Did the release smoke path fail after a fast pass?" | Re-run `bash scripts/ci-local-release.sh` and inspect the failing section before tagging |
 | "Was the release already tagged or partially published?" | [RELEASING](RELEASING.md#failure-modes) and [Incident Runbook](INCIDENT-RUNBOOK.md) |
 
@@ -30,7 +30,7 @@ Expect:
   - `Codex artifact metadata`
   - `Skill runtime parity`
   - `Hook install smoke (minimal + full)`
-  - `ao init --hooks + ao rpi smoke`
+  - `ao init`/bootstrap + `ao rpi` smoke
 
 Reference test: `tests/integration/test-release-e2e-validation.sh`.
 

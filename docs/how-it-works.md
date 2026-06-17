@@ -29,7 +29,7 @@ page are organized around proving they are actually closed:
 
 1. **Validation gap** (internal label: judgment validation) — agents ship
    without risk context. **Validation Gates** (Layer 2) challenge plans and
-   implementations before they land (pre-mortem gate, `/vibe`, `/council`,
+   implementations before they land (pre-mortem gate, `/validate`, `/council`,
    task-validation gate).
 2. **Bookkeeping gap** (internal label: durable learning) — solved problems
    recur. The **Knowledge Flywheel** (Layer 3) extracts, scores, promotes,
@@ -141,8 +141,9 @@ Skills auto-select the best available backend:
 
 AgentOps 3.0 ships **zero hooks**. Everything a hook used to do is now an
 explicit, pulled surface — which means the operating loop works identically on
-every harness (Claude Code, Codex, Cursor, OpenCode) and CI is the single
-authoritative gate.
+every harness (Claude Code, Codex, Cursor, OpenCode), and the local pre-push Go
+gate (`ao gate check`) is the release authority. CI (`validate.yml`) is a
+tag/PR/manual backstop, not the gate on every `main` push.
 
 | Former hook responsibility | Hookless surface | Gap closed |
 |----------------------------|------------------|------------|
@@ -150,7 +151,7 @@ authoritative gate.
 | Transcript mining / maturity management / defrag | `/forge`, `ao maturity`, `ao compile` at session close | Durable learning, Loop closure |
 | Flywheel close | `ao flywheel close-loop` / `/retro` | Loop closure |
 | Prompt guidance / context pressure | `ao lookup`, factory briefings, `/inject` (pulled, not injected) | Judgment validation |
-| Validation gates / quality / completion | CI (`.github/workflows/validate.yml`) + skill-level checks + `cd cli && make test` | Judgment validation, Loop closure |
+| Validation gates / quality / completion | local pre-push Go gate (`ao gate check --fast` via the pre-push hook) + skill-level checks + `cd cli && make test`; CI (`.github/workflows/validate.yml`) as a tag/PR/manual backstop | Judgment validation, Loop closure |
 
 Operators who *want* runtime hooks can author their own with the
 `hooks-authoring` skill; they are opt-in and not part of the default product.

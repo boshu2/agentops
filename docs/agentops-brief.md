@@ -46,7 +46,7 @@ Records the operational memory agents do not keep for themselves: attempts, deci
 Assembles the right context for the right phase. Research gets prior knowledge; plan gets a compressed summary; workers get fresh context per wave. Skills and the `ao` CLI (`ao session bootstrap`, `ao inject`, `ao corpus inject`) collaborate to load, scope, and trim context to the token budget before the agent sees it.
 
 ### Layer 2: Validation Gates
-Challenges plans before build and code before commit. Multi-model councils (`/council`, `/vibe`, `/pre-mortem`) return auditable verdicts — PASS, WARN, or FAIL. Gates block, not advise. CI is the authoritative gate (`.github/workflows/validate.yml`), enforcing them on every PR regardless of what the operator remembers to run locally.
+Challenges plans before build and code before commit. Multi-model councils (`/council`, `/vibe`, `/pre-mortem`) return auditable verdicts — PASS, WARN, or FAIL. Gates block, not advise. The local pre-push Go gate (`ao gate check`) is the routine release authority — it blocks the push, not just advises. CI (`.github/workflows/validate.yml`) is a tag/PR/manual backstop.
 
 ### Layer 3: Knowledge Flywheel
 Extracts learnings from completed work, scores them for quality, promotes durable patterns, and re-injects them at the next session start. `.agents/` carries state on disk; `ao forge`, `ao lookup`, and maturity controls keep the loop closing.
