@@ -33,11 +33,11 @@ local notes until explicit permission exists to quote or publish.
 
 | Channel | Who to recruit | Ask |
 |---|---|---|
-| YouTube comments | Viewers asking how council, packets, or daemon scheduling work | "Want to try the first-value path on one repo and tell me where it breaks?" |
+| YouTube comments | Viewers asking how council, packets, or out-of-session substrate orchestration works | "Want to try the first-value path on one repo and tell me where it breaks?" |
 | GitHub issues/discussions | Users who star, open install questions, or ask about Claude/Codex workflows | "Can we observe your first council verdict and capture setup friction?" |
 | Discord/Slack communities | Engineers already showing coding-agent work in public | "Would a shared domain packet help your agent review workflow?" |
 | Direct outreach | Maintainers known to use agents on active OSS or internal repos | "I am testing a council-first workflow for agent teams; can you run a 20-minute path?" |
-| Existing users | People who have run AgentOps, Dream, daemon, or `/rpi` before | "Does the new packet/council path explain the product faster?" |
+| Existing users | People who have run AgentOps, Dream, the out-of-session substrate, or `/rpi` before | "Does the new packet/council path explain the product faster?" |
 
 ## First-Run Scenario
 
@@ -74,7 +74,7 @@ Use this after the run. Do not lead the user toward a positive answer.
 7. Did creating follow-up work from the verdict feel natural?
 8. What blocked or slowed first value?
 9. Would you reuse the packet or verdict in a later decision?
-10. When, if ever, would you trust the daemon or a schedule?
+10. When, if ever, would you trust an out-of-session substrate run (NTM + MCP + managed-agents) or a schedule?
 11. What would make you recommend this to another maintainer?
 12. What claim would feel false or overreaching if we put it on the homepage?
 
@@ -112,9 +112,9 @@ Record:
 - Whether the verdict created follow-up work.
 - Whether a later agent cited the packet or verdict.
 
-### Daemon Adoption Metric
+### Out-of-Session Substrate Adoption Metric
 
-Daemon adoption is second-stage:
+Out-of-session substrate adoption is second-stage:
 
 ```text
 Participant intentionally configured a schedule after first verdict trust existed.
@@ -157,7 +157,7 @@ Required fields:
 - Verdict path or redacted verdict excerpt.
 - Follow-up work created.
 - Reuse signal.
-- Daemon adoption signal.
+- Out-of-session substrate adoption signal.
 - Friction notes.
 - Quote, only with explicit permission.
 - Claim posture: none, private learning only, public anonymized evidence, or
@@ -183,7 +183,7 @@ Promotion from "learning signal" to "public claim support" requires:
 - At least five completed first-value runs from target-segment users.
 - At least three successful council verdict artifacts.
 - At least two reuse signals on a later decision.
-- At least one daemon adoption signal, if daemon claims are used.
+- At least one out-of-session substrate adoption signal, if always-on claims are used.
 - No unresolved claim-ledger failure for the public copy.
 
 ## Operating Cadence
@@ -200,6 +200,6 @@ Promotion from "learning signal" to "public claim support" requires:
 The loop should produce:
 
 - Redacted evidence records in `docs/releases/agentops-3-pmf-evidence/`.
-- Follow-up bd issues for repeated setup friction.
+- Follow-up `br` issues (`BEADS_DIR=$PWD/_beads br`) for repeated setup friction.
 - Copy changes only when claim posture allows them.
 - Product changes when repeated users fail before first verdict.

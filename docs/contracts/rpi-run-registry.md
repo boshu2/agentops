@@ -1,5 +1,7 @@
 # RPI Run Registry
 
+> **PARTIALLY RETIRED / HISTORICAL (as of 2026-06-11).** The "GasCity Session Correlation" and "Lost Session Semantics" sections below describe the removed GasCity/`gc` backend and the deleted in-repo daemon (ADR-0009); current backends are `auto`/`direct`/`stream`/`tmux` only, and `ao rpi` is load-bearing LEGACY, not the primary path (primary = the operating loop). The directory layout, artifact contracts, atomic-write, resume, and cleanup semantics remain current — see AGENTS.md.
+
 The RPI phased orchestrator (`ao rpi phased`) writes structured artifacts to a well-known directory layout. This document defines the registry layout, file naming conventions, required fields per phase transition, and contract guarantees.
 
 ## Directory Layout
@@ -142,10 +144,12 @@ Status classification is registry-first:
 
 Stale reasons include `worktree missing` when state references a removed worktree directory.
 
-## GasCity Session Correlation
+## GasCity Session Correlation (RETIRED — historical)
 
-Daemon-backed RPI runs that use GasCity must persist the provider correlation
-fields as soon as they are known:
+> **RETIRED (2026-06-11).** The GasCity/`gc` backend was removed from the CLI (`runtime=gc` is no longer valid) and the in-repo daemon was deleted (ADR-0009). This section is preserved only as a record of the former gc-backend contract; it imposes no current requirement.
+
+Daemon-backed RPI runs that used GasCity persisted the provider correlation
+fields as soon as they were known:
 
 | Field | Required When | Description |
 |-------|---------------|-------------|
@@ -155,15 +159,17 @@ fields as soon as they are known:
 | `session_alias` | AgentOps creates a friendly alias | Stable human-readable phase/session alias when available |
 | `event_cursor` | event stream/list APIs are consumed | Last consumed GasCity cursor for replay after reconnect |
 
-These fields are projections of daemon ledger events when RPI runs in daemon
-mode. Foreground legacy runs may still write them directly into the registry.
+These fields were projections of daemon ledger events when RPI ran in daemon
+mode. Foreground legacy runs wrote them directly into the registry.
 
-## Lost Session Semantics
+## Lost Session Semantics (RETIRED — historical)
 
-Missing GasCity session state is never success by itself. A lost session is a
+> **RETIRED (2026-06-11).** These statuses are GasCity-provider semantics; with the gc backend and daemon removed they impose no current requirement and are kept only as a record.
+
+Missing GasCity session state was never success by itself. A lost session was a
 failure/degraded state with evidence, not a successful phase.
 
-RPI must use these terminal or degraded statuses:
+RPI used these terminal or degraded statuses:
 
 | Status | Meaning | Retry/Recovery |
 |--------|---------|----------------|

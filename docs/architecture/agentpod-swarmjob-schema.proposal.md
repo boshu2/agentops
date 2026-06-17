@@ -118,7 +118,7 @@ fungibility-charter (single-model default; diversity is reached for *only* at a 
 
 `watch-event.v1` already ships the append-only event surface — but its enum is swarm-scoped
 (`wave.*`, `worker.*`). A reconcile controller (`ag-v1xk`) that wants to react to *bead* state has
-nothing to subscribe to and must poll `bd ready` — the exact anti-pattern k8s's watch API kills.
+nothing to subscribe to and must poll `BEADS_DIR=$PWD/_beads br ready` — the exact anti-pattern k8s's watch API kills.
 Because the schema is `additionalProperties:true` and consumers already tolerate unknown fields, this
 is a pure enum extension (no breaking change):
 
@@ -128,7 +128,7 @@ bead.blocked   bead.unblocked    bead.status_changed
 bead.verdict_landed              bead.closed
 ```
 
-Each reuses the existing `ts` / `issue_id` / `data` fields. Emitter = the `bd` write path
+Each reuses the existing `ts` / `issue_id` / `data` fields. Emitter = the tracker (`br`) write path
 (claim/status/verdict transitions). Consumer = the reconcile controller. This is the minimum that
 turns the inner loop from poll to watch.
 
@@ -137,15 +137,16 @@ turns the inner loop from poll to watch.
 ## Open questions the council must rule on (the ratifiable decisions)
 
 1. **AgentPod-spec / SwarmJob-spec binding:** carry as bead **metadata projection**
-   (`bd update --metadata`, reversible, no `bead.v1` migration) — *recommended* — vs. a first-class
+   (`br update --metadata`, reversible, no `bead.v1` migration) — *recommended* — vs. a first-class
    `bead.v1` field the scheduler can filter on at queue time. Recommendation: metadata first; promote
-   to a field only when `bd ready` must filter on it.
+   to a field only when `br ready` must filter on it.
 2. **SwarmJob vs. existing output contracts:** `swarm-job.v1` (desired-state *input*) sits **beside**
    `swarm-evidence.schema.json` / `orchestration-result.v1` (the *output* contracts) — *recommended* —
    rather than merging; input and output specs compose.
-3. **`bead.*` emitter placement:** emit from inside **`bd`'s write path** (durable, crash-safe,
-   runtime-agnostic) — *recommended* — vs. an `ao` projection that tails Dolt (can drop events on
-   crash). Same argument as fungibility-charter commitment 3 (durable surface is source of truth).
+3. **`bead.*` emitter placement:** emit from inside **the tracker's (`br`) write path** (durable,
+   crash-safe, runtime-agnostic) — *recommended* — vs. an `ao` projection that tails the JSONL ledger
+   (can drop events on crash). Same argument as fungibility-charter commitment 3 (durable surface is
+   source of truth).
 4. **`function` field vs. `roles.go`:** confirm `function` is the legible product layer only, with
    `roles.go` (RBAC authority) unchanged — Planner+Generator share `Worker` authority (spine's
    explicit clarification). No RBAC enum churn.

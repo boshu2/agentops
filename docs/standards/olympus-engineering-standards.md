@@ -6,11 +6,13 @@ status: reference
 
 # Olympus Engineering Standards (Reference)
 
+> **RETIRED / HISTORICAL (as of 2026-06-11).** The in-repo `agentopsd` daemon was deleted (ADR-0009); out-of-session orchestration is now the NTM + MCP + managed-agents substrate. The daemon-hygiene addenda below apply only to an *external* daemon, not a live in-repo `agentopsd` extraction — see AGENTS.md.
+
 > **Status:** Reference port from olympus v5.0.1. Where this doc disagrees with agentops's canonical `.claude/rules/{go,python}.md` or `skills/standards/references/{go,python}.md`, **the canonical agentops rules win**. This doc is preserved for cross-reference only.
 
 ## What carried (added value vs existing agentops rules)
 
-These rules existed in olympus's engineering standards and are NOT covered (or only weakly covered) by the canonical agentops standards. Treat them as advisory addenda for agentopsd-class daemon work.
+These rules existed in olympus's engineering standards and are NOT covered (or only weakly covered) by the canonical agentops standards. Treat them as advisory addenda for any external daemon work (the in-repo `agentopsd` was retired — ADR-0009).
 
 ### CLI composition over library imports (architectural)
 
@@ -75,7 +77,7 @@ All olympus rules in this category are equally or more thoroughly covered by the
 | `internal/` for implementation, `cmd/` for entrypoints | Already idiomatic Go layout; agentops follows it (`cli/cmd/ao`, `cli/internal/`) without needing it written down. Restating would be noise. |
 | Source-of-truth order naming `docs/specs/index.md`, `SPEC-CONTRACT.md`, etc. | Olympus-specific doc tree. Agentops has its own precedence ladder in `CLAUDE.md` ("Source-of-Truth Precedence") — that one wins. |
 | `make test`, `make build`, `make testing-check`, `make daemon-smoke`, `make serve-smoke`, `make throughput` as gate names | Olympus Makefile target names. Agentops's gate is `scripts/pre-push-gate.sh` + `cd cli && make build && make test` — different surface. |
-| Coverage ratchet via `scripts/check-coverage-floors.sh` | Olympus-specific script path. Agentops handles coverage through `/vibe`, `/complexity`, and CI checks rather than a ratcheted-floor script. |
+| Coverage ratchet via `scripts/check-coverage-floors.sh` | Olympus-specific script path. Agentops handles coverage through `/validate`, complexity checks, and the local Go gate / CI rather than a ratcheted-floor script. |
 | Suite definitions in `testing/suites/*.md`, scenarios in `testing/scenarios/catalog.md` | Olympus-specific paths and catalog. Agentops uses `tests/` + `/scenario` skill (holdout scenarios in `.agents/holdout/`) — different model. |
 | Long-tail merge checklist (6 items: spec match, tests, daemon/serve safety, throughput, docs/runbooks, goals/traceability) | Heavily olympus-coupled (daemon/serve binaries, throughput as a tracked metric, GOALS-yaml ratchets). Agentops's merge gate is `scripts/pre-push-gate.sh` and CI's 24 jobs — already enforced mechanically. Re-stating as prose would drift. |
 | Per-clone runtime isolation (`OL_HOME`, `BEADS_DIR`) | Olympus crew-clone workflow. Agentops uses repo-local `.agents/` and `.beads/` without `OL_HOME` indirection. |

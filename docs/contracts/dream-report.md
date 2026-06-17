@@ -186,7 +186,7 @@ them `pending`.
 | `target_files` | array of strings | `["cli/cmd/ao/overnight.go"]` | Candidate files to inspect first |
 | `likely_tests` | array of strings | `["cli/cmd/ao/overnight_test.go"]` | Likely tests to run or extend |
 | `morning_command` | string | `"ao rpi phased \"Repair Dream retrieval coverage\""` | Exact morning execution command |
-| `bead_id` | string | `"na-1234"` | Linked bead when bd sync succeeds |
+| `bead_id` | string | `"na-1234"` | Linked bead when br/bead sync succeeds |
 | `artifact_path` | string | `".../morning-packets/01-....json"` | Per-packet artifact path |
 
 ### IterationSummary Shape

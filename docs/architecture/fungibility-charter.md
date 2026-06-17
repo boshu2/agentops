@@ -30,9 +30,9 @@ A phase boundary is a *context* boundary (bounded packets and summaries cross it
 
 There are no "frontend agents," "testing agents," or "review agents." There is one pool of interchangeable generalists, and any agent can claim any ready bead from it.
 
-The bead claim model already enforces this mechanically: `bd ready` surfaces unblocked work to every agent equally, and `bd update <id> --claim` is an atomic first-come claim with no role predicate. The charter makes explicit what the tracker already does — claiming is by availability, never by assigned specialty.
+The bead claim model already enforces this mechanically: `br ready` surfaces unblocked work to every agent equally, and `br update <id> --claim` is an atomic first-come claim with no role predicate. The charter makes explicit what the tracker already does — claiming is by availability, never by assigned specialty.
 
-*Implemented by `bd`'s role-free claim model (`bd ready` / `bd update --claim`), which the [Operating Loop](operating-loop.md) move 2 ("track as a bead when it leaves the head") already assumes.*
+*Implemented by `br`'s role-free claim model (`br ready` / `br update --claim`), which the [Operating Loop](operating-loop.md) move 2 ("track as a bead when it leaves the head") already assumes.*
 
 ### 3. Stateless agent assumption
 

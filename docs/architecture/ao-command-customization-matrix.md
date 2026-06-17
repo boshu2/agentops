@@ -2,6 +2,8 @@
 
 This matrix tracks external command dependencies in the AO CLI and how each command group is customized.
 
+> The tracker command is `br` (beads_rust), invoked as `BEADS_DIR=$PWD/_beads br <cmd>`; `bd`/Dolt is retired (2026-06-11). The `rpi` rows describe the load-bearing-legacy RPI lane, not the live operating loop.
+
 Audit source:
 - `scripts/audit-cli-command-deps.sh`
 
@@ -14,8 +16,8 @@ Customization tiers:
 
 | Command Group | External Dependencies | Tier | Notes |
 |---|---|---|---|
-| `rpi phased` | `runtime`, `bd`, `ao` | Tier A (`runtime`, `bd`, `ao`) + Tier B (`git`, `bash`, `ps`) | Runtime + control-plane commands routed through shared RPI toolchain resolver. |
-| `rpi loop --supervisor` | `git`, `bash`, `bd` | Tier A (`bd`) + Tier B (`git`, `bash`) | Landing/sync uses configurable `bd` command. |
+| `rpi phased` | `runtime`, `br`, `ao` | Tier A (`runtime`, `br`, `ao`) + Tier B (`git`, `bash`, `ps`) | Runtime + control-plane commands routed through shared RPI toolchain resolver. |
+| `rpi loop --supervisor` | `git`, `bash`, `br` | Tier A (`br`) + Tier B (`git`, `bash`) | Landing/sync uses configurable `br` tracker command. |
 | `rpi status` | `tmux` | Tier A (`tmux`) | Tmux liveness probe uses shared RPI toolchain resolver. |
 | `rpi cancel` | `ps` | Tier B | Process tree inspection remains fixed for portability. |
 | `rpi cleanup` | `git` | Tier B | Cleanup lifecycle remains fixed to git contracts. |
@@ -23,16 +25,16 @@ Customization tiers:
 | `context` | `tmux` | Tier B | Not yet migrated to shared customization layer. |
 | `worktree` | `git`, `tmux` | Tier B | Not yet migrated to shared customization layer. |
 | `search` | `cass`, `rg`, `grep` | Tier B | Brokers to upstream `cass` for session history and keeps fixed repo-local fallback helpers. |
-| `goals`/`ratchet` | `bash`, `git`, `bd` | Tier B | Candidate for follow-up after RPI path is stable. |
-| `plans` | `bd` | Tier B | Candidate for follow-up after RPI path is stable. |
-| `quick-start` | `bd` | Tier B | Candidate for follow-up after RPI path is stable. |
+| `goals`/`ratchet` | `bash`, `git`, `br` | Tier B | Candidate for follow-up after RPI path is stable. |
+| `plans` | `br` | Tier B | Candidate for follow-up after RPI path is stable. |
+| `quick-start` | `br` | Tier B | Candidate for follow-up after RPI path is stable. |
 | `hooks` | `ao` | Tier B | Candidate for follow-up after RPI path is stable. |
 | Other AO command groups | none on runtime path | Tier C | No external process invocation in steady-state execution path. |
 
 ## Policy Defaults
 
 Runtime-focused customization defaults:
-- configurable: `runtime`, `ao`, `bd`, `tmux` for RPI control plane.
+- configurable: `runtime`, `ao`, `br`, `tmux` for RPI control plane.
 - fixed: `git`, `bash`, `ps` unless a future adapter contract is introduced.
 
 Configuration sources (highest to lowest):

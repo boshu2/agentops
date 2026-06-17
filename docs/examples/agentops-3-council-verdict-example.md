@@ -17,9 +17,10 @@ artifact shape, not PMF evidence or a claim that a live mixed council completed.
 
 **Status:** WARN
 
-Lead with the council-first engineering judgment demo. Keep the daemon and
-software-factory automation as the second-stage lane after the viewer has seen
-one visible domain/practice packet and one verdict artifact.
+Lead with the council-first engineering judgment demo. Keep the out-of-session
+NTM + Agent Mail substrate and software-factory automation as the second-stage
+lane after the viewer has seen one visible domain/practice packet and one
+verdict artifact.
 
 The launch copy should be updated before publication to avoid unsupported
 productivity, PMF, or autonomous-factory claims.
@@ -30,7 +31,7 @@ productivity, PMF, or autonomous-factory claims.
 |---|---|
 | Claude product judge | PASS: council-first is the clearest first value because the user sees taste, judgment, and shared context immediately. |
 | Claude engineering-practice judge | PASS: the domain/practice packet encodes DDD/TDD/BDD/review/release discipline before implementation begins. |
-| Codex implementation judge | PASS: existing `ao quick-start`, `ao context assemble`, `/council`, bd, and `.agents/` surfaces can support the path. |
+| Codex implementation judge | PASS: existing `ao quick-start`, `ao context assemble`, `/council`, br, and `.agents/` surfaces can support the path. |
 | Codex release-risk judge | WARN: public copy must avoid PMF and speed claims until exported evidence exists. |
 
 ## Evidence Used
@@ -45,8 +46,9 @@ productivity, PMF, or autonomous-factory claims.
 ## Required Follow-Up
 
 1. Point README and launch content at the first-value path.
-2. Show `.agents/council/<run-id>/verdict.md` before any daemon automation.
-3. Use `bd create ... --description "From .agents/council/<run-id>/verdict.md"`
+2. Show `.agents/council/<run-id>/verdict.md` before any out-of-session
+   substrate automation.
+3. Use `BEADS_DIR=$PWD/_beads br create ... --body "From .agents/council/<run-id>/verdict.md"`
    for tracked follow-up work.
 4. Keep `ao activate product-council` deferred until repeated PMF runs prove the
    profile is stable.

@@ -17,7 +17,7 @@ phased runs and `ao evolve` supervisor loops.
 
 ## Activation
 
-1. Pull latest `main` and sync beads (`git fetch --prune origin && git switch main && git reset --hard origin/main`; then `bd sync` if used in this clone).
+1. Pull latest `main` and sync beads (`git fetch --prune origin && git switch main && git reset --hard origin/main`; then `BEADS_DIR=$PWD/_beads br sync` if used in this clone).
 2. Run baseline quality gates:
    - `cd cli && make build` (produces `cli/bin/ao`)
    - `cd cli && go test ./internal/rpi/...`
@@ -57,7 +57,7 @@ Rollback steps:
 
 1. Stop using the new opt-in flag / pool input.
 2. Re-run with the legacy single-actor path.
-3. Capture failing artifacts and create follow-up bead(s) with references (`bd create --title ... --notes ...`).
+3. Capture failing artifacts and create follow-up bead(s) with references (`BEADS_DIR=$PWD/_beads br create "..." --body "..."`).
 
 ## Evidence Verification
 
@@ -66,7 +66,7 @@ Verify lifecycle and orchestration evidence via:
 1. RPI / bead events include the relevant lifecycle markers and payload fields.
    - RPI phased state and artifacts live under `.agents/rpi/`.
    - Out-of-session job events (when dispatched on the substrate) are inspectable through the substrate's own event surface, not an AgentOps daemon.
-2. RPI run ledger / bead store contains attempt records for affected beads (`bd show <id>`, `ao rpi status`).
+2. RPI run ledger / bead store contains attempt records for affected beads (`BEADS_DIR=$PWD/_beads br show <id>`, `ao rpi status`).
 3. RPI tests pass:
    - `cd cli && go test ./internal/rpi/...`
 4. Autonomy smoke remains green:
@@ -86,7 +86,7 @@ Verify lifecycle and orchestration evidence via:
 | CLI | `ao <cmd>` |
 | One bounded autonomy run | `ao rpi phased "<goal>"` |
 | Supervised loop | `ao evolve --max-cycles <n> "<goal>"` or `ao rpi loop` |
-| Work claim | `bd update <id> --claim` |
+| Work claim | `BEADS_DIR=$PWD/_beads br update <id> --claim` |
 | Validation | `/vibe`, `/council`, `ao goals validate`, `scripts/ci-local-release.sh` |
 | Knowledge extraction | `ao forge` |
 | Contracts | `docs/contracts/*` + `docs/documentation-index.md` |

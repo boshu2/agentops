@@ -1,5 +1,7 @@
 # Hexagon Port-Realness Audit
 
+> **RETIRED / HISTORICAL (snapshot 2026-05-23).** The "gc bridge vs legacy tmux" choice below is stale — the Gas City `gc` bridge was REMOVED (soc-2rtm0; `runtime=gc` is rejected). The live RPI phase-executor backends are `auto`/`direct`/`stream`/`tmux`. Tracker `bd` is retired (use `BEADS_DIR=$PWD/_beads br`). Read as a dated inventory, not current build guidance — see AGENTS.md.
+
 > Empirical ground-truth inventory of the AgentOps runtime hexagonal seam, taken
 > 2026-05-23 against `main`. Bead: `soc-upwor` (epic `soc-zvhsl` — "3.0: make the
 > hexagon real"). This is the disjoint adapter backlog the adapter-building beads
