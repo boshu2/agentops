@@ -1,10 +1,13 @@
 # The Agent Factory — a Kubernetes-style control plane for stochastic workloads
 
-> **PARTIALLY SUPERSEDED (as of 2026-06-11).** This spine names the state store / etcd-analog as
-> **bd/Dolt** (one-way door #4) — that is **retired**: the tracker is now **br** (git-JSONL, `BEADS_DIR=$PWD/_beads br …`,
-> ledger synced via `git -C _beads push`); `bd ready` → `br ready`. The control-plane *shape* (acceptance
-> store → scheduler → reconcile → membrane), the cost law, and the role/primitive model still stand — only the
-> concrete store binding changed. See AGENTS.md / CLAUDE.md for current tracker truth.
+> **Store binding corrected (2026-06-17).** This spine originally named the state store / etcd-analog as
+> **bd/Dolt** — that is **retired**. The etcd-analog is now **two ledgers** that together play etcd: the
+> **bead ledger** (`br`, git-JSONL — work / desired state; `BEADS_DIR=$PWD/_beads br …`, synced via
+> `git -C _beads push`) and the **proof / verdict ledger** (`docs/provenance/ledger.jsonl` + yield
+> `gate-verdict` events — admission state). The control-plane *shape* (acceptance store → scheduler →
+> reconcile → membrane), the cost law, and the role/primitive model still stand — only the concrete store
+> binding changed. See the **2026-06-17 delta** at the foot of this doc and AGENTS.md / CLAUDE.md for
+> current tracker truth.
 
 > **Status: cross-model reviewed (final whole-spine pass, 2026-06-05), pending operator ratification.**
 > The architecture spine (`ag-yv25`, subsumes "canonize the membrane"). Reviewed *through the membrane*
@@ -14,6 +17,13 @@
 > Records in `.agents/council/2026-06-05-*`. Per `liveness.SignificantActionDocCanonization`, canonizing
 > this very doc is itself a membrane-gated action. The single place that says how every AgentOps piece
 > composes into one factory.
+
+> **The 2026-06-17 delta is a dated addition, NOT part of the 2026-06-05 ratification lineage.** The
+> adapter taxonomy, the agent two-altitude reconciliation, and the store correction were added under a
+> separate `/discovery --mixed` cross-family pass (WARN → PASS-with-hardening; Claude + Codex converged).
+> Plan + verdict: [`.agents/plans/2026-06-17-control-plane-primitives-unification.md`]. Editing this doc
+> did **not** re-open the 2026-06-05 whole-spine ratification — that verdict stands on the spine as
+> reviewed then; the delta carries its own gate.
 
 ## Thesis
 
@@ -35,9 +45,10 @@ Not *proof* — stochastic output cannot be proven — but bounded, evidence-bac
 ```
                     ┌────────────────────── CONTROL PLANE (durable, HA) ──────────────────────┐
    goal +           │  acceptance store  │  scheduler  │  reconcile controllers │  MEMBRANE    │
-   acceptance ─────▶│  (bd/Dolt = etcd)  │  (place by  │  (rpi inner / evolve   │  (admission: │
-   contract         │  quorum, not one   │  capability,│  outer; declarative    │  cross-model │
-                    │  host               │  cost, model│  desired-state loop)   │  quorum gate)│
+   acceptance ─────▶│  (br + proof       │  (place by  │  (rpi inner / evolve   │  (admission: │
+   contract         │   ledger = etcd)   │  capability,│  outer; declarative    │  cross-model │
+                    │  quorum, not one   │  cost, model│  desired-state loop)   │  quorum gate)│
+                    │  host              │             │                        │              │
                     └─────────┬──────────────────┬───────────────┬──────────────────┬──────────┘
                               │ schedule          │ probe          │ reschedule       │ admit / reject
                     ┌─────────▼───────────────────▼────────────────▼──────────────────▼──────────┐
@@ -61,7 +72,7 @@ Two different units — and we already have the first one.
 
 **The unit of WORK = a bead.** A bead is a declarative workload object: intent (title/description) +
 acceptance contract (`.feature`/scenarios) + dependencies (`br dep`, the DAG) + status + priority +
-provenance — stored in the beads ledger (git-JSONL; bd/Dolt retired — see banner). *We already have the object model.* So:
+provenance — stored in the bead ledger (`br`, git-JSONL — see the store correction in the banner). *We already have the object model.* So:
 
 | k8s | factory | |
 |---|---|---|
@@ -84,7 +95,7 @@ the Pod boundary.
 | **Pod (AgentPod)** | **one agent run** | fresh context, own model process + optional sidecars, own lifecycle/fate, schedulable onto any Node |
 | Container | the **model process** (+ sidecars) | the claude/codex session; tool-server / MCP-helper sidecars |
 | **Volume** | the **worktree / branch** | *separate axis, not the Pod boundary*: default = shared clone + own branch (Tier 1); escalate to an ephemeral worktree (Tier 2) on a conflict signal |
-| Deployment / Job | a **swarm (SwarmJob)** | a controller-managed set of AgentPods for one bead/epic/wave, coordinating via Agent Mail (network) + bd (ownership), with placement policy |
+| Deployment / Job | a **swarm (SwarmJob)** | a controller-managed set of AgentPods for one bead/epic/wave, coordinating via Agent Mail (network) + the bead ledger (ownership), with placement policy |
 | kubelet / runtime | **NTM** | spawns + manages AgentPods (panes) on a host |
 | Pod network / IPC | **Agent Mail** | how AgentPods coordinate, lock, message |
 | controller | **rpi / evolve** | drives the SwarmJob to completion; restart/reschedule failed AgentPods |
@@ -133,7 +144,7 @@ merging the two vocabularies:
 | **Generator** | Worker | edit | AgentPod (Volume = branch/worktree) | writes the work — the author |
 | **Oracle** *(canon: Validator)* | Verifier | judge | AgentPod, **anti-affine** to the Generator | the membrane's judge — rules on **semantic** correctness against the contract; **never edits what it judges** (no-self-grade, RBAC-enforced) |
 | **Orchestrator** | Orchestrator | route, vote, shepherd, synthesize | **controller** (control-plane) | routes beads to SwarmJobs, synthesizes at gates; **cannot edit** (the prompt-injection defense) |
-| **Scribe** | Scribe | record | sidecar Container | writes provenance to bd; never decides |
+| **Scribe** | Scribe | record | sidecar Container | writes provenance to the proof/verdict ledger; never decides |
 | **Heartbeat** | Heartbeat | nudge | liveness probe / CronJob | only nudges; the health checker |
 
 **The Oracle is ours.** The canon calls this role "Validator" (a test-runner / internal reviewer); we
@@ -173,7 +184,7 @@ We run the canon pattern; the Oracle is the part the canon cannot yet do.
 | Declarative manifest (desired state) | goal + **acceptance contract** | `.feature`/Gherkin + bead acceptance | **built** |
 | Reconcile loop (controller) | reconcile-by-rejection loop | `rpi` (inner) / `evolve` (outer) | **built** |
 | kubelet / pod spawn | dispatch agents in fresh-context worktrees | `crank` / `swarm` (in-session); **NTM** swarm panes (out-of-session) | **built** |
-| etcd (quorum state) | acceptance + provenance store | beads ledger (git-JSONL; bd/Dolt retired) | **single-host HA superseded by git-JSONL** (`ag-o2tc` context) |
+| etcd (quorum state) | acceptance + provenance store | **two ledgers**: bead ledger (`br`, git-JSONL — work state) + proof/verdict ledger (`docs/provenance/ledger.jsonl` + yield `gate-verdict` — admission state) | **git-JSONL + ledger** (single-host Dolt HA superseded; `ag-o2tc` context) |
 | API server + object model + watch/events | declared workload objects + the change stream controllers act on | — (the beads ledger is the store; the object/event surface is implicit) | **to build** |
 | Scheduler (resource fit) | place agent-tasks by capability/cost/model-fit | — (cron heartbeat only) | **to build** (`ag-xanm`) |
 | Node pool / fungible nodes | fungible compute, heterogeneous by design | the fleet (Mac, bushido, cloud) | **partial** (`ag-xanm`) |
@@ -182,7 +193,7 @@ We run the canon pattern; the Oracle is the part the canon cannot yet do.
 | Self-healing reschedule | node dies → work moves to live compute | — (the crash proved we lack it) | **to build** |
 | RBAC | author ≠ judge; role-capability matrix | `cli/internal/liveness/roles.go` (#733) | **built** |
 | Namespaces | isolated context per worker | worktrees + per-worker context | **built** |
-| Immutable/versioned config | version-locked binaries across nodes | `fleet-versions.env` + `dolt-control-plane` | **built** (today) |
+| Immutable/versioned config | version-locked binaries across nodes | `fleet-versions.env` + version-lockstep tooling | **built** (today) |
 | Out-of-session swarm runtime (controller-manager + node agent) | persistent agent panes, robot API, pipelines, serve | **NTM** (native tmux) | **built** |
 | Coordination (leases / events) | file locks, messaging, inboxes, conflict-prevention | **MCP Agent Mail** | **built** |
 | kubectl (operator surface) | where-is-everything / what's-stuck | NTM robot API (partial) | **to build** (`ag-7dnb`) |
@@ -272,7 +283,7 @@ swappable mechanism behind it.)
 | 1 | The membrane is the central primitive; no-self-grade is structural law | the whole product identity + every gate couples to it | **decided** (duel + council + proven on `main`) |
 | 2 | The **workload-object schema** — declared goal + acceptance contract, the factory's API | k8s's hardest-to-change thing is its API; every controller/scheduler/agent codes against it | **OPEN — design before build step 2** |
 | 3 | Acceptance-contract language = Gherkin/`.feature` + bead acceptance | every spec is written in it; changing it rewrites all specs | **decided** (in use) |
-| 4 | State store = bd/Dolt as the etcd-analog | data gravity; migrating the state store is a full migration | **decided** (HA in progress, `ag-o2tc`) |
+| 4 | State store = **two ledgers** as the etcd-analog: the bead ledger (`br`, git-JSONL — work state) + the proof/verdict ledger (`docs/provenance/ledger.jsonl` + yield `gate-verdict` — admission state) | data gravity; migrating the state store is a full migration | **decided** (store binding corrected 2026-06-17; bd/Dolt retired — see banner + 2026-06-17 delta) |
 | 5 | Cross-vendor neutrality (operator-owned, portable, not vendor-locked) | the moat + a values commitment; coupling to one vendor is a rewrite to undo | **decided** (load-bearing) |
 
 **Two-way doors — decide fast, pivot freely (the adapters / mechanisms):**
@@ -292,3 +303,85 @@ A port → one-way door → design it **through the council** before committing.
 door → build the simplest thing and pivot when it hurts. **The one OPEN one-way door is #2 — the
 workload-object schema** — it gates build step 2 and must be council-designed before any controller,
 scheduler, or agent codes against it. Everything downstream is an adapter we can pivot.
+
+---
+
+## 2026-06-17 delta — the adapter taxonomy, the agent two-altitude reconciliation, the store correction
+
+> **Dated addition, separately gated.** Everything above is the 2026-06-05 whole-spine pass. This section
+> is the 2026-06-17 delta from the `/discovery --mixed` cross-family pass (WARN → PASS-with-hardening;
+> plan: [`.agents/plans/2026-06-17-control-plane-primitives-unification.md`]). It does not re-open the
+> 2026-06-05 ratification. **This doc is the unifying *entry* for the control-plane primitives — it points
+> at the sibling owners ([primitive-chains.md](primitive-chains.md), [canonical-loop-model.md](canonical-loop-model.md),
+> [loop-map.md](loop-map.md), [control-loop-model.md](control-loop-model.md)); it does not compete with them.**
+
+### Behavior sibling: this doc is the *citizens*, control-loop-model.md is the *behavior*
+
+The factory above names **who the citizens are** (roles × primitives × adapters — the control-plane
+structure). [control-loop-model.md](control-loop-model.md) names **how they behave over two timescales**
+(fast = convergence within a run; slow = governed improvement across runs, the SPC governor). Structure +
+behavior are the two halves of one control system; read them together. The membrane gate the citizens pass
+through is specified in [pawls.md](../contracts/pawls.md); the seven moves they execute are
+[operating-loop.md](operating-loop.md); the loop's other altitudes are indexed in [loop-map.md](loop-map.md).
+
+### The adapter taxonomy — which named thing is which citizen
+
+The factory is a composable set of control-plane primitives expressed **within** the existing DDD/hexagonal
+architecture ([ADR-0001](../adr/ADR-0001-ddd-hexagonal-adoption.md), [ports-and-adapters.md](ports-and-adapters.md)) —
+not a new architecture. Every named AgentOps surface is one of four citizen kinds:
+
+| Surface | Citizen kind | What it is |
+|---|---|---|
+| **Skills** (`/plan`, `/discovery`, `/rpi`, …) | **use-case logic** (behind a driving port) | the application-layer behavior the loop runs; they *call* the instruments, they are not themselves the instrument |
+| **`ao` CLI** | **driven adapter — the deterministic instrument** | the windshield: ground-truth checks, gates, ledger writes. Repeatable + codeable ⇒ an `ao` subcommand; skills just call it |
+| **MCP** | **driven adapter — alternate transport** | the same instruments over a different transport; guards apply per-port. *Leaving the box changes the threat model* — an out-of-process/remote transport widens the trust boundary the in-process CLI did not |
+| **Hooks** | **guard adapter — the tool-use seam** | mechanical, un-reasoned-past enforcement at the tool-call boundary (silent on the happy path, fires only on a real violation) |
+| **Gates / pawls** | **guard adapter — admission at a port boundary** | the membrane's deterministic admission checks; a passed gate ratchets and cannot reopen |
+| **The agent** | **actuator — the AgentPod / data-plane workload** | the stochastic worker that *does* the work. **Governed, never the controller.** (Already consistent with this doc's data-plane framing.) |
+| **The trigger layer** (`/goal`, cron, Workflow, Ralph, ATM, the in-session driver) | **invoker = the Orchestrator-controller** | the thin reconcile loop that reads the verdict, applies the bounding primitives, and routes to the next altitude — it never reasons about the work (control-loop-model §6) |
+
+**The invoker / actuator split (the load-bearing rule):** trust the **controller + the gates**, never the
+**actuator**. The invoker (Orchestrator-controller) gates and routes; the actuator (agent) generates and is
+gated. This is just *orchestration determinism runs inverse to worker determinism* ([loop-map.md](loop-map.md)
+"The system, not the DAG") stated as a citizen split: the map (controller + gates) is deterministic and
+trusted; the route (what the agent does) is stochastic and re-routed on a failed verdict.
+
+**"invoker" is a synonym, not a new primitive.** It names the Orchestrator/driving-adapter role already in
+the Roles × Primitives table above (the Orchestrator controller) — added only because "trigger layer" and
+"the thing that kicks off a run" needed one word. No new primitive is introduced; the cathedral guard holds.
+
+**No-orchestrator-object.** There is no monolithic "Orchestrator" component to build. Orchestration is a
+**swappable invoker role** — any trigger that runs the reconcile loop (the in-session driver, an NTM swarm,
+cron, a Workflow) plays it. AgentOps ships no daemon for it ([ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md));
+out-of-session, a substrate (NTM + MCP Agent Mail + managed-agents) plays the invoker. The role is fixed;
+the thing playing it is two-way-door.
+
+### The agent at two altitudes — reconciling ports-and-adapters.md
+
+[ports-and-adapters.md](ports-and-adapters.md) classifies slash commands, MCP, and the autonomous loops
+the **agent drives through** as **primary (driving) adapters** — the agent calls *into* the Go-runtime
+domain hexagon. This doc classifies the agent as the **data-plane workload (AgentPod, actuator)**. **Both
+are true at different altitudes — this is not a contradiction:**
+
+- **Runtime altitude** (the Go-runtime hexagon, ports-and-adapters.md): the agent **invokes adapters** — it
+  is on the *driving* side of the inner domain hexagon, calling `ao`/skills/MCP into the domain.
+- **Factory altitude** (this doc, the process control plane): the agent **is the governed workload** — the
+  AgentPod the controller schedules, probes, and gates; data-plane, not control-plane.
+
+Same agent, two hexagons nested at different scales: it *drives* the code-level domain and *is driven by*
+the process-level controller. When you read "the agent is a driving adapter" (runtime) and "the agent is the
+data-plane actuator" (factory), apply this note — they describe the same agent from inside vs. outside the
+process control plane. (Forward-linked both ways: ports-and-adapters.md → here for the factory altitude;
+here → ports-and-adapters.md for the runtime altitude.)
+
+### The store correction (recap) — two ledgers play etcd
+
+The etcd-analog is **two ledgers**, deliberately not flattened into one:
+
+- **Bead ledger** — `br` (git-JSONL, `BEADS_DIR=$PWD/_beads br …`): **work / desired state** (the
+  declarative workload objects + the dependency DAG). Synced via `git -C _beads push`; never `git add _beads`.
+- **Proof / verdict ledger** — `docs/provenance/ledger.jsonl` + the yield `gate-verdict` events:
+  **admission state** (what has been verified and admitted; the in-situ catch-rate reads from here).
+
+bd/Dolt is retired (single-host SPOF, no offline lane). The two ledgers together provide the durable,
+HA-able state the control plane reconciles and admits against.
