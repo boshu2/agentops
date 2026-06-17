@@ -13,6 +13,8 @@ BDD-shaped intent issue
   → evidence + learning capture (under the promotion ratchet)
 ```
 
+> **The unit of value is the proof, not the artifact.** A slice is *done* only when the membrane has written an independent verdict on it (no verdict = not done) — this is the move every skill feeds. The corpus/ratchet beneath is the (unproven, [ADR-0004](../adr/ADR-0004-corpus-moat-unproven-position-on-the-system.md)) compounding layer, not the headline; the membrane's own self-improvement (escape → new check → re-measure) is the compounding that has a deterministic gradient.
+
 The doctrine source for this spine is [`.agents/research/2026-05-16-agentops-3-cdlc-context-validation.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-16-agentops-3-cdlc-context-validation.md). Promote changes there first, then update this doc.
 
 ## Governing principles
