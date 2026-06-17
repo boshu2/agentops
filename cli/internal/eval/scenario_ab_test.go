@@ -31,6 +31,22 @@ func (f fakeRunner) RunArm(_ context.Context, _ scenario.Scenario, withGold bool
 	return f.without, nil
 }
 
+type recordingRunner struct {
+	withCalls    int
+	withoutCalls int
+	with         ArmOutcome
+	without      ArmOutcome
+}
+
+func (r *recordingRunner) RunArm(_ context.Context, _ scenario.Scenario, withGold bool) (ArmOutcome, error) {
+	if withGold {
+		r.withCalls++
+		return r.with, nil
+	}
+	r.withoutCalls++
+	return r.without, nil
+}
+
 // fakeJudge is the injected ScenarioJudge for tests. It returns a configured
 // machine-readable verdict per arm.
 type fakeJudge struct {
@@ -157,6 +173,69 @@ func TestRunScenarioAB_CeilingViolation(t *testing.T) {
 	}
 }
 
+// TestRunScenarioAB_ControlOnlyHeadroomPass runs the existing ceiling
+// pre-screen intentionally as a campaign/CI preflight: a control below threshold
+// passes the headroom audit and MUST NOT spend the with-gold treatment arm.
+func TestRunScenarioAB_ControlOnlyHeadroomPass(t *testing.T) {
+	sc, path := loadAppliedOODScenario(t, 0.8)
+	runner := &recordingRunner{
+		without: ArmOutcome{Output: "control misses the repo-specific doctrine", TokenCost: 100},
+		with:    ArmOutcome{Output: "treatment would be expensive", TokenCost: 900},
+	}
+	card, err := RunScenarioAB(context.Background(), ScenarioABOptions{
+		Scenario: sc, ScenarioPath: path,
+		Runner:      runner,
+		Judge:       fakeJudge{without: JudgeVerdict{AggregateScore: 0.3}, with: JudgeVerdict{AggregateScore: 1.0}},
+		Now:         fixedNow,
+		ControlOnly: true,
+	})
+	if err != nil {
+		t.Fatalf("RunScenarioAB control-only: %v", err)
+	}
+	if !card.ControlOnly {
+		t.Fatal("control-only scorecard must mark ControlOnly=true")
+	}
+	if !card.Gate.Pass || card.CeilingViolation {
+		t.Fatalf("control below threshold should pass headroom preflight; pass=%v ceiling=%v reasons=%v", card.Gate.Pass, card.CeilingViolation, card.Gate.Reasons)
+	}
+	if runner.withoutCalls != 1 || runner.withCalls != 0 {
+		t.Fatalf("control-only calls = without:%d with:%d, want without:1 with:0", runner.withoutCalls, runner.withCalls)
+	}
+	if card.With.Score != 0 || card.AggregateDelta != 0 {
+		t.Fatalf("control-only must not emit treatment/delta; with=%v delta=%v", card.With.Score, card.AggregateDelta)
+	}
+	if len(card.Gate.Reasons) == 0 || !strings.Contains(strings.ToLower(card.Gate.Reasons[0]), "headroom") {
+		t.Fatalf("control-only pass reason should name headroom; got %v", card.Gate.Reasons)
+	}
+}
+
+func TestRunScenarioAB_ControlOnlyCeilingViolation(t *testing.T) {
+	sc, path := loadAppliedOODScenario(t, 0.8)
+	runner := &recordingRunner{
+		without: ArmOutcome{Output: "control already solved it", TokenCost: 100},
+		with:    ArmOutcome{Output: "treatment would be expensive", TokenCost: 900},
+	}
+	card, err := RunScenarioAB(context.Background(), ScenarioABOptions{
+		Scenario: sc, ScenarioPath: path,
+		Runner:      runner,
+		Judge:       fakeJudge{without: JudgeVerdict{AggregateScore: 0.9}, with: JudgeVerdict{AggregateScore: 1.0}},
+		Now:         fixedNow,
+		ControlOnly: true,
+	})
+	if err != nil {
+		t.Fatalf("RunScenarioAB control-only ceiling: %v", err)
+	}
+	if !card.ControlOnly || !card.CeilingViolation || card.Gate.Pass {
+		t.Fatalf("control-only ceiling must fail visibly; control_only=%v ceiling=%v pass=%v", card.ControlOnly, card.CeilingViolation, card.Gate.Pass)
+	}
+	if card.MoatEligible {
+		t.Fatal("control-only ceiling cards are admission artifacts, not moat evidence")
+	}
+	if runner.withoutCalls != 1 || runner.withCalls != 0 {
+		t.Fatalf("control-only ceiling calls = without:%d with:%d, want without:1 with:0", runner.withoutCalls, runner.withCalls)
+	}
+}
+
 // TestRunScenarioAB_ZeroThresholdInvalid: a satisfaction_threshold <= 0 is a
 // degenerate bar (every score satisfies it), so it can define neither success nor
 // headroom — the run must reject it up-front without grading any arm, and emit no
@@ -216,18 +295,18 @@ func TestRunScenarioAB_CeilingViolation_JSONShape(t *testing.T) {
 
 func TestRunScenarioAB_GateVerdicts(t *testing.T) {
 	tests := []struct {
-		name        string
-		threshold   float64
-		withScore   float64
-		withoutScore float64
-		withTokens  int
+		name          string
+		threshold     float64
+		withScore     float64
+		withoutScore  float64
+		withTokens    int
 		withoutTokens int
-		budget      int
-		wantDelta   float64
-		wantPass    bool
+		budget        int
+		wantDelta     float64
+		wantPass      bool
 	}{
 		{
-			name: "positive delta above threshold under budget passes",
+			name:      "positive delta above threshold under budget passes",
 			threshold: 0.8, withScore: 0.9, withoutScore: 0.5,
 			withTokens: 1000, withoutTokens: 1000, budget: 200000,
 			wantDelta: 0.4, wantPass: true,
@@ -236,19 +315,19 @@ func TestRunScenarioAB_GateVerdicts(t *testing.T) {
 			// both arms BELOW threshold → exercises the delta<=0 gate path, not the
 			// ceiling pre-screen (which fires only when the control CLEARS threshold;
 			// that case is covered by TestRunScenarioAB_CeilingViolation).
-			name: "zero delta below ceiling fails (the spray returning)",
+			name:      "zero delta below ceiling fails (the spray returning)",
 			threshold: 0.8, withScore: 0.5, withoutScore: 0.5,
 			withTokens: 1000, withoutTokens: 1000, budget: 200000,
 			wantDelta: 0.0, wantPass: false,
 		},
 		{
-			name: "positive delta but below threshold fails",
+			name:      "positive delta but below threshold fails",
 			threshold: 0.8, withScore: 0.7, withoutScore: 0.3,
 			withTokens: 1000, withoutTokens: 1000, budget: 200000,
 			wantDelta: 0.4, wantPass: false,
 		},
 		{
-			name: "over budget fails even with good delta",
+			name:      "over budget fails even with good delta",
 			threshold: 0.8, withScore: 0.95, withoutScore: 0.4,
 			withTokens: 150000, withoutTokens: 150000, budget: 200000,
 			wantDelta: 0.55, wantPass: false,

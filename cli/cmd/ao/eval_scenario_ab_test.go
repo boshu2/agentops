@@ -65,6 +65,7 @@ func withFakes(t *testing.T, runner aoeval.ScenarioRunner, judge aoeval.Scenario
 		evalScenarioABScenario = ""
 		evalScenarioABOutput = ""
 		evalScenarioABBudget = 0
+		evalScenarioABControlOnly = false
 	})
 }
 
@@ -78,6 +79,21 @@ func runScenarioABCmd(t *testing.T, scenarioPath, outPath string, budget int) (s
 	evalScenarioABScenario = scenarioPath
 	evalScenarioABOutput = outPath
 	evalScenarioABBudget = budget
+	err := cmd.RunE(cmd, nil)
+	return buf.String(), err
+}
+
+func runScenarioABControlOnlyCmd(t *testing.T, scenarioPath, outPath string, budget int) (string, error) {
+	t.Helper()
+	cmd := evalScenarioABCmd
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+	cmd.SetErr(&buf)
+	cmd.SetContext(context.Background())
+	evalScenarioABScenario = scenarioPath
+	evalScenarioABOutput = outPath
+	evalScenarioABBudget = budget
+	evalScenarioABControlOnly = true
 	err := cmd.RunE(cmd, nil)
 	return buf.String(), err
 }
@@ -159,6 +175,58 @@ func TestEvalScenarioABCmd_CeilingViolation(t *testing.T) {
 	stdout, err := runScenarioABCmd(t, writeCmdFixture(t, 0.8), "", 200000)
 	if err == nil {
 		t.Fatalf("expected non-zero exit on ceiling violation, got nil\n%s", stdout)
+	}
+	if !strings.Contains(stdout, "CEILING VIOLATION") {
+		t.Errorf("stdout missing CEILING VIOLATION: %q", stdout)
+	}
+}
+
+func TestEvalScenarioABCmd_ControlOnlyHeadroomPass(t *testing.T) {
+	withFakes(t,
+		fakeCmdRunner{
+			with:    aoeval.ArmOutcome{Output: "treatment should not run", TokenCost: 10000},
+			without: aoeval.ArmOutcome{Output: "control misses", TokenCost: 100},
+		},
+		fakeCmdJudge{
+			with:    aoeval.JudgeVerdict{AggregateScore: 1.0},
+			without: aoeval.JudgeVerdict{AggregateScore: 0.3},
+		},
+	)
+	out := filepath.Join(t.TempDir(), "card.json")
+	stdout, err := runScenarioABControlOnlyCmd(t, writeCmdFixture(t, 0.8), out, 200000)
+	if err != nil {
+		t.Fatalf("control-only headroom should pass, got error: %v\n%s", err, stdout)
+	}
+	if !strings.Contains(stdout, "control-only headroom=PASS") {
+		t.Errorf("stdout missing control-only PASS: %q", stdout)
+	}
+	data, readErr := os.ReadFile(out)
+	if readErr != nil {
+		t.Fatalf("read scorecard: %v", readErr)
+	}
+	var card aoeval.ScenarioDeltaScorecard
+	if jsonErr := json.Unmarshal(data, &card); jsonErr != nil {
+		t.Fatalf("decode scorecard: %v", jsonErr)
+	}
+	if !card.ControlOnly || !card.Gate.Pass || card.CeilingViolation {
+		t.Fatalf("scorecard = control_only:%v pass:%v ceiling:%v, want true/true/false", card.ControlOnly, card.Gate.Pass, card.CeilingViolation)
+	}
+}
+
+func TestEvalScenarioABCmd_ControlOnlyCeilingViolationFails(t *testing.T) {
+	withFakes(t,
+		fakeCmdRunner{
+			with:    aoeval.ArmOutcome{Output: "treatment should not run", TokenCost: 10000},
+			without: aoeval.ArmOutcome{Output: "control solves it", TokenCost: 100},
+		},
+		fakeCmdJudge{
+			with:    aoeval.JudgeVerdict{AggregateScore: 1.0},
+			without: aoeval.JudgeVerdict{AggregateScore: 0.9},
+		},
+	)
+	stdout, err := runScenarioABControlOnlyCmd(t, writeCmdFixture(t, 0.8), "", 200000)
+	if err == nil {
+		t.Fatalf("expected control-only ceiling to fail\n%s", stdout)
 	}
 	if !strings.Contains(stdout, "CEILING VIOLATION") {
 		t.Errorf("stdout missing CEILING VIOLATION: %q", stdout)

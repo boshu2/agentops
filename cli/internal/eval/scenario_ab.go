@@ -116,10 +116,13 @@ type ScenarioGate struct {
 // ScenarioDeltaScorecard mirrors ContextDeltaScorecard's shape for the
 // with/without-gold scenario A/B. It is the persisted evidence artifact.
 type ScenarioDeltaScorecard struct {
-	SchemaVersion         int               `json:"schema_version"`
-	ScenarioID            string            `json:"scenario_id"`
-	ScenarioPath          string            `json:"scenario_path"`
-	GeneratedAt           time.Time         `json:"generated_at"`
+	SchemaVersion int       `json:"schema_version"`
+	ScenarioID    string    `json:"scenario_id"`
+	ScenarioPath  string    `json:"scenario_path"`
+	GeneratedAt   time.Time `json:"generated_at"`
+	// ControlOnly is true for the campaign/CI headroom preflight mode: only the
+	// without-gold arm was run, using the same ceiling pre-screen as the full A/B.
+	ControlOnly           bool              `json:"control_only,omitempty"`
 	Without               ScenarioArmResult `json:"without_gold"`
 	With                  ScenarioArmResult `json:"with_gold"`
 	AggregateDelta        float64           `json:"aggregate_delta"`
@@ -150,7 +153,10 @@ type ScenarioABOptions struct {
 	Judge        ScenarioJudge
 	Timeout      time.Duration
 	TokenBudget  int
-	Now          func() time.Time
+	// ControlOnly runs the without-gold arm and stops after the ceiling
+	// pre-screen. It is for CI/campaign admission, not fast pre-push.
+	ControlOnly bool
+	Now         func() time.Time
 }
 
 // defaultScenarioTokenBudget is the fail-loud spend ceiling for one A/B run.
@@ -192,12 +198,13 @@ func RunScenarioAB(ctx context.Context, opts ScenarioABOptions) (ScenarioDeltaSc
 			ScenarioID:            opts.Scenario.ID,
 			ScenarioPath:          opts.ScenarioPath,
 			GeneratedAt:           opts.Now(),
+			ControlOnly:           opts.ControlOnly,
 			Without:               without,
 			SatisfactionThreshold: thr,
 			TokenBudget:           opts.TokenBudget,
 			CeilingViolation:      true,
 			VerdictClass:          verdictClass,
-			MoatEligible:          moatEligible,
+			MoatEligible:          moatEligible && !opts.ControlOnly,
 			Gate:                  ScenarioGate{Pass: false, Reasons: []string{reason}},
 		}
 	}
@@ -226,6 +233,23 @@ func RunScenarioAB(ctx context.Context, opts ScenarioABOptions) (ScenarioDeltaSc
 		return invalidCard(without, fmt.Sprintf(
 			"ceiling violation: without-gold floor %.4f >= satisfaction_threshold %.4f — the task has no headroom for the corpus to help, so any delta would be uninterpretable. Use an out-of-distribution task the model fails without the corpus. No delta emitted.",
 			without.Score, thr)), nil
+	}
+
+	if opts.ControlOnly {
+		return ScenarioDeltaScorecard{
+			SchemaVersion:         1,
+			ScenarioID:            opts.Scenario.ID,
+			ScenarioPath:          opts.ScenarioPath,
+			GeneratedAt:           opts.Now(),
+			ControlOnly:           true,
+			Without:               without,
+			SatisfactionThreshold: thr,
+			TokenBudget:           opts.TokenBudget,
+			VerdictClass:          verdictClass,
+			MoatEligible:          false,
+			Gate: ScenarioGate{Pass: true, Reasons: []string{fmt.Sprintf(
+				"headroom clear: without-gold floor %.4f < satisfaction_threshold %.4f", without.Score, thr)}},
+		}, nil
 	}
 
 	with, err := runAndJudgeArm(ctx, opts, ArmWithGold, true)

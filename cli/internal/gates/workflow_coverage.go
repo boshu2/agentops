@@ -67,6 +67,7 @@ var workflowScriptPattern = regexp.MustCompile("(?:^|[\\s\"'`])(?:\\./)?((?:scri
 
 var deferredWorkflowScripts = map[string]string{
 	"scripts/check-agents-hash-snapshot.sh":      "stateful capture/diff bracket around the Go test phase",
+	"scripts/check-applied-ood-headroom.sh":      "model-backed campaign/CI admission preflight; intentionally outside fast/full Go gate execution",
 	"scripts/check-cmd-ao-coverage.sh":           "requires the coverage profile produced by the preceding Go test step",
 	"scripts/check-eval-workbench.sh":            "requires validate.yml's prior workbench Python venv setup",
 	"scripts/check-outcomes-holdout-leak.sh":     "validate.yml derives a dynamic payload list; needs native input modeling before delegation",
