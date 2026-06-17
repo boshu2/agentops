@@ -97,6 +97,18 @@ type Gauges struct {
 	EDefined       bool    `json:"e_defined"`
 	EEscalateHolds int     `json:"e_escalate_or_hold_verdicts"`
 
+	// CatchRate = REFUTED ÷ (REFUTED + CONFIRMED) — the in-situ membrane
+	// catch-rate: the fraction of adjudicated claimed-done units the membrane
+	// caught as false-done (a REFUTED gate-verdict). CatchRate is nil (not 0)
+	// when the denominator is 0 so a 0/0 reads as "no signal", with CatchRateNote
+	// explaining why. CatchRateCrossFamily restricts the same ratio to verdicts
+	// with cross_family == true (the diversity-gated subset).
+	Refuted              int      `json:"refuted"`
+	Confirmed            int      `json:"confirmed"`
+	CatchRate            *float64 `json:"catch_rate"`
+	CatchRateCrossFamily *float64 `json:"catch_rate_cross_family"`
+	CatchRateNote        string   `json:"catch_rate_note,omitempty"`
+
 	// L = Σ(loss spend) ÷ R via a read-time join. LDefined guards the R==0 divide.
 	L         float64       `json:"l_loss"`
 	LDefined  bool          `json:"l_defined"`
@@ -365,6 +377,9 @@ func ComputeGauges(l *Ledger, runID string, cDelta float64, cKnown bool) Gauges 
 
 	sets := computeRunSets(l, runID)
 
+	// Cross-family-restricted catch-rate accumulators (counted in the A/R loop).
+	var refutedXF, confirmedXF int
+
 	// A and R.
 	for _, ev := range l.Events {
 		if ev.RunID != runID {
@@ -384,12 +399,42 @@ func ComputeGauges(l *Ledger, runID string, cDelta float64, cKnown bool) Gauges 
 		case EventUsage:
 			g.R += spendOf(ev.Usage)
 		case EventGateVerdict:
-			if ev.GateVerdict != nil &&
-				(ev.GateVerdict.Disposition == DispositionEscalate ||
-					ev.GateVerdict.Disposition == DispositionHold) {
+			if ev.GateVerdict == nil {
+				continue
+			}
+			if ev.GateVerdict.Disposition == DispositionEscalate ||
+				ev.GateVerdict.Disposition == DispositionHold {
 				g.EEscalateHolds++
 			}
+			// Catch-rate adjudication: REFUTED = a false-done the membrane caught;
+			// CONFIRMED = an adjudicated true-done. ESCALATE/HOLD are not terminal
+			// adjudications and do NOT enter the denominator.
+			switch ev.GateVerdict.Disposition {
+			case DispositionRefuted:
+				g.Refuted++
+				if ev.GateVerdict.CrossFamily {
+					refutedXF++
+				}
+			case DispositionConfirmed:
+				g.Confirmed++
+				if ev.GateVerdict.CrossFamily {
+					confirmedXF++
+				}
+			}
 		}
+	}
+
+	// CatchRate = REFUTED / (REFUTED + CONFIRMED) — nil when no adjudicated
+	// gate-verdicts (0/0 reads as no signal, never a divide).
+	if denom := g.Refuted + g.Confirmed; denom > 0 {
+		cr := float64(g.Refuted) / float64(denom)
+		g.CatchRate = &cr
+	} else {
+		g.CatchRateNote = "no confirmed+refuted gate-verdicts"
+	}
+	if denomXF := refutedXF + confirmedXF; denomXF > 0 {
+		crXF := float64(refutedXF) / float64(denomXF)
+		g.CatchRateCrossFamily = &crXF
 	}
 
 	// Q — difficulty-weighted first-pass yield over distinct attempted beads.
