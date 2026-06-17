@@ -52,7 +52,8 @@ Drive headless Codex worker and validator agents with `codex exec` on the ChatGP
   - CORRECT: `codex login status  # Logged in using ChatGPT` then `codex exec -C "$REPO" -s workspace-write "<task>"`
 - **Confirm the sub before dispatch.** Run `codex login status` and require `Logged in using ChatGPT`. **Why:** a worker that "runs fine" on a leaked API token bills per token; the check is the only thing standing between a green run and a surprise invoice.
 - **Pipe the prompt (or close stdin) in any non-TTY lane — else codex HANGS.** A positional-arg `codex exec "<prompt>"` run with non-TTY stdin (background, `&`, ATM/NTM pane, cron, piped, inherited-pipe) still **reads stdin** — it prints `Reading additional input from stdin...` and blocks **forever** when that stdin never reaches EOF (the classic idle open pipe). **Why:** codex appends piped stdin as a `<stdin>` block even when a positional prompt is present, so an open idle stdin is an unterminated read. For unattended/background/factory lanes the safe DEFAULT is to **pipe the prompt** — `printf '%s' "$P" | codex exec … -` (or `cat prompt.txt | codex exec … -`) — or **close stdin** — `codex exec "<prompt>" </dev/null`. The bare positional form is fine only for an interactive TTY.
-- **Pick the sandbox deliberately.** `-s read-only` for validators, `-s workspace-write` for workers that must edit, `-s danger-full-access` only inside an already-sandboxed host. **Why:** `codex exec` runs model-generated shell commands; the sandbox is the blast radius.
+- **Pick the sandbox deliberately.** `-s read-only` for offline validators, `-s workspace-write` for workers that must edit, `-s danger-full-access` only inside an already-sandboxed host. **Why:** `codex exec` runs model-generated shell commands; the sandbox is the blast radius.
+- **Network-touching validators are the exception — use `-s danger-full-access`.** A validator that must `git fetch`, clone a repo, or hit any network endpoint will FALSE-FAIL under `-s read-only`, because the sandbox blocks `connect` syscalls — the failure is an infrastructure artifact, not a real verdict. On an already-sandboxed host, give network validators `-s danger-full-access`. Offline validators stay `-s read-only`.
 - **`--dangerously-bypass-approvals-and-sandbox` is for externally-sandboxed hosts only.** **Why:** it removes every guardrail in one flag; use it only when the OS/container is the sandbox.
 - **Don't strand work in `--ephemeral`.** It skips session persistence, so there is nothing to `resume`. **Why:** a crashed ephemeral run cannot be recovered or continued.
 - **Multi-account lanes go through `caam`, not env-var juggling.** **Why:** `caam exec codex <profile> --` keeps each Pro lane isolated; hand-setting `CODEX_HOME` invites cross-account token bleed.
@@ -105,10 +106,16 @@ echo "${OPENAI_API_KEY:+API_KEY_SET}"   # MUST print nothing
 codex exec -C /path/to/repo -s workspace-write \
   "Implement bead ag-123: <task>. Run tests. Report PASS/FAIL."
 
-# Validator: read-only, structured verdict
+# Validator (offline / no network): read-only, structured verdict
 codex exec -C /path/to/repo -s read-only \
   -o /tmp/verdict.txt \
   "Independently validate the change on this branch. Output VERDICT: PASS|FAIL + reasons."
+
+# Validator that must reach the network (git fetch, clone, API): danger-full-access
+# on an already-sandboxed host — -s read-only would FALSE-FAIL on blocked connect syscalls.
+codex exec -C /path/to/repo -s danger-full-access \
+  -o /tmp/verdict.txt \
+  "Fetch origin/main, validate the change against it. Output VERDICT: PASS|FAIL + reasons."
 
 # Stdin prompt (orchestrator piping the task in) — the SAFE DEFAULT for any
 # unattended/background/ATM-pane/cron lane. The trailing `-` reads the prompt
@@ -156,7 +163,7 @@ A loop should branch on the process exit code, not on scraped text.
 
 - [ ] `codex login status` showed `Logged in using ChatGPT` BEFORE dispatch
 - [ ] No `OPENAI_API_KEY` in the worker env and no `--with-api-key` anywhere
-- [ ] Sandbox mode matches role (read-only validator / workspace-write worker)
+- [ ] Sandbox mode matches role: offline validator → `-s read-only`; worker that edits → `-s workspace-write`; **network-touching validator** (`git fetch`/clone/API) → `-s danger-full-access` (read-only false-FAILs on blocked `connect`)
 - [ ] Working root set explicitly with `-C`, not assumed from cwd
 - [ ] Result captured deterministically (`-o FILE`, `--json`, or `--output-schema`) — not scraped from terminal noise
 - [ ] Long/multi-turn work uses `resume` (not `--ephemeral`) so it can be recovered
