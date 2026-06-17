@@ -3,6 +3,8 @@ package eval
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -336,5 +338,156 @@ func TestRunScenarioAB_ScoreClampedAndWritten(t *testing.T) {
 	reread, err := scenario.Load(path) // sanity: fixture path still valid
 	if err != nil || reread.ID != sc.ID {
 		t.Fatalf("fixture reread mismatch: %v", err)
+	}
+}
+
+// loadFactRecallScenario builds an answer_key (fact-recall) scenario through the
+// PRODUCTION writer + reader — the sentinel-recall shape age-6ys bans as moat
+// evidence.
+func loadFactRecallScenario(t *testing.T, threshold float64) (scenario.Scenario, string) {
+	t.Helper()
+	res, err := scenario.Create(scenario.CreateOptions{
+		Goal:      "state the AgentOps eval-harness probe sentinel value",
+		Threshold: threshold,
+		Status:    "active",
+		Source:    "human",
+		AnswerKey: "QXR-7731-VERIFY",
+		Dir:       t.TempDir(),
+		Now:       func() time.Time { return time.Date(2026, 6, 16, 0, 0, 0, 0, time.UTC) },
+	})
+	if err != nil {
+		t.Fatalf("Create fact-recall fixture: %v", err)
+	}
+	sc, err := scenario.Load(res.Path)
+	if err != nil {
+		t.Fatalf("Load fact-recall fixture: %v", err)
+	}
+	return *sc, res.Path
+}
+
+// loadAppliedOODScenario writes an acceptance-vector (applied-OOD) scenario JSON
+// and reads it back through the PRODUCTION reader (scenario.Load) — the only
+// moat-eligible shape. scenario.Create has no acceptance_vectors knob, so the
+// fixture round-trips a real on-disk shape (fixture-fidelity rule).
+func loadAppliedOODScenario(t *testing.T, threshold float64) (scenario.Scenario, string) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "s-2026-06-16-900.json")
+	body := `{
+  "schema_version": 1, "id": "s-2026-06-16-900", "version": 1, "date": "2026-06-16",
+  "goal": "apply a repo decision the base model defaults away from",
+  "narrative": "n", "expected_outcome": "e",
+  "acceptance_vectors": [{"dimension": "applies-doctrine", "threshold": 0.8}],
+  "satisfaction_threshold": ` + fmt.Sprintf("%g", threshold) + `, "source": "human", "status": "active"
+}`
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatalf("write applied-ood fixture: %v", err)
+	}
+	sc, err := scenario.Load(path)
+	if err != nil {
+		t.Fatalf("Load applied-ood fixture: %v", err)
+	}
+	return *sc, path
+}
+
+// TestClassifyVerdict: the mechanical moat-eligibility signal (age-6ys). An
+// answer_key scenario is fact-recall (plumbing, NEVER moat); acceptance vectors
+// are applied-OOD (the only moat-eligible class); neither is unspecified.
+func TestClassifyVerdict(t *testing.T) {
+	factRecall, _ := loadFactRecallScenario(t, 0.8)
+	applied, _ := loadAppliedOODScenario(t, 0.8)
+	unspecified, _ := loadFixtureScenario(t, 0.8) // Create -> no answer_key, no vectors
+
+	cases := []struct {
+		name         string
+		sc           scenario.Scenario
+		wantClass    string
+		wantEligible bool
+	}{
+		{"fact-recall is plumbing, not moat", factRecall, VerdictClassFactRecall, false},
+		{"applied-ood is moat-eligible", applied, VerdictClassAppliedOOD, true},
+		{"neither is unspecified, not moat", unspecified, VerdictClassUnspecified, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			class, eligible := classifyVerdict(tc.sc)
+			if class != tc.wantClass {
+				t.Errorf("class = %q, want %q", class, tc.wantClass)
+			}
+			if eligible != tc.wantEligible {
+				t.Errorf("moatEligible = %v, want %v", eligible, tc.wantEligible)
+			}
+		})
+	}
+}
+
+// TestRunScenarioAB_FactRecallNeverMoatEvidence: a fact-recall scorecard can
+// PASS its plumbing gate (delta=1, control fails, treatment clears threshold)
+// yet MUST carry MoatEligible=false — the age-6ys ban, enforced mechanically so
+// a passing sentinel scorecard can never be waved as the moat verdict.
+func TestRunScenarioAB_FactRecallNeverMoatEvidence(t *testing.T) {
+	sc, path := loadFactRecallScenario(t, 0.8)
+	card, err := RunScenarioAB(context.Background(), ScenarioABOptions{
+		Scenario:     sc,
+		ScenarioPath: path,
+		Runner:       fakeRunner{without: ArmOutcome{TokenCost: 10}, with: ArmOutcome{TokenCost: 10}},
+		Judge:        fakeJudge{without: JudgeVerdict{AggregateScore: 0.0}, with: JudgeVerdict{AggregateScore: 1.0}},
+		Now:          fixedNow,
+	})
+	if err != nil {
+		t.Fatalf("RunScenarioAB: %v", err)
+	}
+	if !card.Gate.Pass {
+		t.Fatalf("a clean fact-recall A/B should pass its plumbing gate; reasons=%v", card.Gate.Reasons)
+	}
+	if card.VerdictClass != VerdictClassFactRecall {
+		t.Errorf("VerdictClass = %q, want %q", card.VerdictClass, VerdictClassFactRecall)
+	}
+	if card.MoatEligible {
+		t.Error("BAN VIOLATED: a fact-recall scorecard must NEVER be moat-eligible (age-6ys)")
+	}
+}
+
+// TestRunScenarioAB_AppliedOODIsMoatEligible: an applied-OOD scorecard that
+// clears the ceiling pre-screen and passes its gate is admissible moat evidence.
+func TestRunScenarioAB_AppliedOODIsMoatEligible(t *testing.T) {
+	sc, path := loadAppliedOODScenario(t, 0.8)
+	card, err := RunScenarioAB(context.Background(), ScenarioABOptions{
+		Scenario:     sc,
+		ScenarioPath: path,
+		Runner:       fakeRunner{without: ArmOutcome{TokenCost: 10}, with: ArmOutcome{TokenCost: 10}},
+		Judge:        fakeJudge{without: JudgeVerdict{AggregateScore: 0.2}, with: JudgeVerdict{AggregateScore: 0.95}},
+		Now:          fixedNow,
+	})
+	if err != nil {
+		t.Fatalf("RunScenarioAB: %v", err)
+	}
+	if !card.Gate.Pass {
+		t.Fatalf("a clean applied-OOD A/B should pass; reasons=%v", card.Gate.Reasons)
+	}
+	if card.VerdictClass != VerdictClassAppliedOOD || !card.MoatEligible {
+		t.Errorf("applied-OOD should be moat-eligible; class=%q eligible=%v", card.VerdictClass, card.MoatEligible)
+	}
+}
+
+// TestRunScenarioAB_CeilingViolationCarriesClass: even an invalid (ceiling) card
+// must self-label its class + eligibility, so a self-burned fact-recall scenario
+// is visibly both ceiling-violating AND non-moat-evidence.
+func TestRunScenarioAB_CeilingViolationCarriesClass(t *testing.T) {
+	sc, path := loadFactRecallScenario(t, 0.8)
+	card, err := RunScenarioAB(context.Background(), ScenarioABOptions{
+		Scenario:     sc,
+		ScenarioPath: path,
+		Runner:       fakeRunner{without: ArmOutcome{TokenCost: 10}, with: ArmOutcome{TokenCost: 10}},
+		Judge:        fakeJudge{without: JudgeVerdict{AggregateScore: 1.0}, with: JudgeVerdict{AggregateScore: 1.0}},
+		Now:          fixedNow,
+	})
+	if err != nil {
+		t.Fatalf("RunScenarioAB: %v", err)
+	}
+	if !card.CeilingViolation {
+		t.Fatal("a control scoring 1.0 (self-burned sentinel) must be a ceiling violation")
+	}
+	if card.VerdictClass != VerdictClassFactRecall || card.MoatEligible {
+		t.Errorf("ceiling card must carry class=%q eligible=false; got class=%q eligible=%v", VerdictClassFactRecall, card.VerdictClass, card.MoatEligible)
 	}
 }

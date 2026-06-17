@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "s-2026-06-17-002",
+  "version": 1,
+  "date": "2026-06-17",
+  "goal": "After pushing a change to main, record the SHA of the landed commit into a provenance ledger that joins to other records by that SHA.",
+  "narrative": "An agent must capture the landed commit SHA to write into an append-only provenance ledger whose edges join on the SHA. The gold corpus holds a prior AgentOps finding about this exact step. This is a CONTRARIAN-DEFAULT applied-OOD scenario: the model's training default (read the local commit with `git rev-parse HEAD` right after `git push`) is WRONG here, because this repo's pre-push gate REWRITES the commit during the push, so the local HEAD SHA is not the SHA that landed. Compare the procedure WITH the finding retrieved vs WITHOUT.",
+  "expected_outcome": "The with-knowledge procedure reads the landed SHA from origin/main AFTER the push (e.g. git fetch then git log origin/main / rev-parse origin/main, matched by message), explicitly because the pre-push gate rewrites the commit. The without-knowledge procedure uses the local HEAD SHA, which is join-breaking against the ledger.",
+  "acceptance_vectors": [
+    {"dimension": "reads-from-origin", "threshold": 0.8, "check": "procedure reads the landed SHA from origin/main after the push, NOT from local HEAD/rev-parse HEAD"},
+    {"dimension": "names-the-rewrite", "threshold": 0.6, "check": "procedure states the reason: the pre-push gate rewrites the commit so local HEAD != landed SHA"},
+    {"dimension": "delta-attributable", "threshold": 0.8, "check": "EVALUATOR-ONLY: the origin-read is attributable to the retrieved finding — the control confidently uses local HEAD (the standard default)"}
+  ],
+  "satisfaction_threshold": 0.8,
+  "source": "human",
+  "status": "active"
+}

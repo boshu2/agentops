@@ -188,6 +188,18 @@ independently `positive`; claim **honest null** ONLY IF off-arm had headroom AND
 retrieval was verified present AND the CI straddles 0; otherwise **inconclusive**.
 A fresh non-author reviewer renders the residual positive/null/inconclusive call.
 
+**Gold/corpus axis — the scenario must be applied-OOD, not sentinel-recall
+(age-6ys).** The above is the *context*-axis prereg. The `ao eval scenario-ab`
+*gold/corpus* axis has its own locked rule:
+[`applied-ood-claim-rule.md`](applied-ood-claim-rule.md). The first "valid"
+gold-axis verdict (s-2026-06-16-100) used a **sentinel-recall** scenario — recall
+an invented string — which is tautological-by-construction AND self-burning (the
+secret leaks into docs/beads/learnings the isolation can't deny; on re-run the
+control read it and ceiling-violated). Banned as moat evidence and now enforced
+mechanically: every scorecard carries `verdict_class` + `moat_eligible`
+(`fact-recall` → never moat; `applied-ood` → the only moat-eligible class). The
+tracked moat-eligible set is `evals/scenarios/applied-ood/`.
+
 **One genuine measurement gap to add (small):** the discovery prompt's primary
 metric — **false-done rate** (agent claims done / emits a completion artifact but
 deterministic acceptance fails, evidence is missing, or the gate would reject) —

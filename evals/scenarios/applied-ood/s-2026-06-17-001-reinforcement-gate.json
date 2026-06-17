@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "s-2026-06-17-001",
+  "version": 1,
+  "date": "2026-06-17",
+  "goal": "Design a mechanism that strengthens 'useful' entries in a knowledge store based on how they get used over time.",
+  "narrative": "An agent is asked to design a reward/reinforcement mechanism for a knowledge store. The gold corpus holds a prior AgentOps architectural decision about what may legitimately strengthen a knowledge entry. This is a CONTRARIAN-DEFAULT applied-OOD scenario: the model's training default (reinforce on retrieval frequency / citation / co-presence, like recency-weighted RAG and most memory systems) is WRONG for this repo. Compare the design WITH the prior decision retrieved vs WITHOUT.",
+  "expected_outcome": "The with-knowledge design gates every reward deposit on a VERIFIED OUTCOME (a pass-verdict): co-presence/popularity alone never strengthens an entry, avoiding the reinforcement-amplifies-error death-spiral. The without-knowledge design reinforces on citation/retrieval/co-presence and is a popularity amplifier.",
+  "acceptance_vectors": [
+    {"dimension": "gates-on-verification", "threshold": 0.8, "check": "design requires a verification/gate verdict before any reward deposit; popularity/co-presence alone never strengthens"},
+    {"dimension": "names-the-death-spiral", "threshold": 0.6, "check": "design explicitly avoids reinforcement-amplifies-error (a popularity amplifier compounding wrong entries)"},
+    {"dimension": "delta-attributable", "threshold": 0.8, "check": "EVALUATOR-ONLY: the verification-gating is attributable to retrieving the prior decision, not generic good sense — the control reinforces on popularity"}
+  ],
+  "satisfaction_threshold": 0.8,
+  "source": "human",
+  "status": "active"
+}
