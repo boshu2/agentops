@@ -1114,8 +1114,8 @@
     {
       "name": "codex-exec",
       "source_skill": "skills/codex-exec",
-      "source_hash": "46c2e476aef26f4d80fde888fdd91c734fe2e6453fae8661fff35eb8d597aa56",
-      "generated_hash": "0e1778e7c62eb6d26fc7386d8302cc67430ab87740eebd1c15e701adca843c53"
+      "source_hash": "1dee14c02c6686d3ad614347e4a3606944e245b2684c4b48de0ff93fd2713124",
+      "generated_hash": "1d54e067d94a2facbab08e1fff0d71e46a2c25931bd6d11737c769962d356a9e"
     },
     {
       "name": "compile",
