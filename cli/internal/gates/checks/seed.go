@@ -51,6 +51,16 @@ var (
 		"scripts/check-cli-agents-tracker-drift.sh",
 		"tests/scripts/check-cli-agents-tracker-drift.bats",
 	}
+	controlPlaneTaxonomyPaths = []string{
+		"docs/architecture/the-agent-factory.md",
+		"docs/architecture/control-loop-model.md",
+		"docs/architecture/ports-and-adapters.md",
+		"docs/architecture/primitive-chains.md",
+		"docs/architecture/canonical-loop-model.md",
+		"docs/architecture/loop-map.md",
+		"scripts/check-control-plane-taxonomy.sh",
+		"tests/scripts/check-control-plane-taxonomy.bats",
+	}
 	regenScopePaths = []string{
 		"skills/**",
 		"skills-codex/**",
@@ -150,6 +160,9 @@ func init() {
 			Backing: "check-cli-agents-tracker-drift.sh"},
 		{ID: "docs.architecture-drift", Tiers: gates.Fast | gates.Full, Match: archDocDriftPaths, Blocking: true,
 			Backing: "check-architecture-doc-drift.sh"},
+		{ID: "docs.control-plane-taxonomy", Tiers: gates.Fast | gates.Full, Match: controlPlaneTaxonomyPaths, Blocking: true,
+			Backing: "check-control-plane-taxonomy.sh",
+			RepairHint: "keep the etcd-analog bound to br + the proof/verdict ledger (not bd/Dolt); keep the agent two-altitude note in the-agent-factory.md + ports-and-adapters.md; keep the taxonomy cross-links bidirectional; see scripts/check-control-plane-taxonomy.sh"},
 		{ID: "eval.skill-probe-i0", Tiers: gates.Full, Match: skillPaths, Blocking: false,
 			Backing: "skill-probe-i0.sh", Args: []string{"skills", ".agents/ao/skill-eval"}},
 		{ID: "provenance.orphans", Tiers: gates.Full, Match: contractPaths, Blocking: true,
