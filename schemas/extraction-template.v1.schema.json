@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/extraction-template.v1.schema.json",
+  "title": "ExtractionTemplate",
+  "description": "Template that drives native typed structured extraction. Steals Hyper-Extract's WHAT (output field schema) / HOW (guideline prompt) / identifiers (dedup keys) separation. See .agents/plans/2026-06-17-native-structured-extraction.md.",
+  "practices": ["wiki-knowledge-surface"],
+  "type": "object",
+  "required": ["language", "name", "type", "tags", "description", "output", "guideline", "identifiers"],
+  "properties": {
+    "language": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Natural language of the source/guideline (e.g. en)."
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+$",
+      "description": "Template identifier, e.g. agentops_provenance."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["graph", "temporal_graph", "model", "set"],
+      "description": "Output structure. graph/temporal_graph -> PROV-O edges; model/set -> typed learning records. hypergraph/spatial/spatio-temporal are deliberately NOT supported (non-goal §7)."
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Free-form classification tags."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable summary of what this template extracts."
+    },
+    "output": {
+      "type": "object",
+      "description": "WHAT: the typed field schema for extracted entities and relations.",
+      "properties": {
+        "entities": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/field" }
+        },
+        "relations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/field" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "guideline": {
+      "type": "string",
+      "minLength": 1,
+      "description": "HOW: the extraction prompt that defines extraction quality."
+    },
+    "identifiers": {
+      "type": "object",
+      "description": "Dedup keys. relation_id uses the canonical '{from}|{relation}|{to}' form.",
+      "properties": {
+        "entity_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier expression for entity dedup, e.g. name."
+        },
+        "relation_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier expression for relation dedup; canonical form '{from}|{relation}|{to}'."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "field": {
+      "type": "object",
+      "required": ["name", "type", "description"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": {
+          "type": "string",
+          "enum": ["string", "integer", "number", "boolean", "array", "object"]
+        },
+        "description": { "type": "string", "minLength": 1 },
+        "required": { "type": "boolean", "default": false }
+      },
+      "additionalProperties": false
+    }
+  }
+}
