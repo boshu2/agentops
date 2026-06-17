@@ -4,8 +4,8 @@
 // Harvested follow-ups land in .agents/rpi/next-work.jsonl as a queue but never
 // become durable beads, so the flywheel executes without compounding into the
 // tracker. This command reads unmaterialized items from the queue and creates
-// one durable bead per item via `bd create`, carrying provenance
-// (source_epic + proof_ref) on the bead's native metadata.
+// one durable bead per item via `br create`, carrying provenance
+// (source_epic + proof_ref) in the bead description.
 //
 // Design (locked, ag-9jle.3 + handoff 2026-05-30):
 //   - CLI owns the deterministic core; skills (post-mortem harvest, crank
@@ -13,12 +13,18 @@
 //   - Idempotent: an item is materialized once. The per-item bead_id field
 //     (rpi.NextWorkItem.BeadID) is the back-reference; a set bead_id means the
 //     item already has a durable bead and is skipped on re-run.
-//   - Provenance rides bd's native --metadata (no forked provenance format).
-//     The actual graph edge is deferred to ag-x31t.4's future `ao provenance
-//     add`; this command only records the anchor fields.
+//   - Provenance rides the br description footer. The actual graph edge is
+//     deferred to ag-x31t.4's future `ao provenance add`; this command only
+//     records the anchor fields.
 package main
 
 import (
+	"context"
+	"fmt"
+	"os/exec"
+	"strings"
+	"time"
+
 	"github.com/boshu2/agentops/cli/internal/adapters/mto/nextworkmaterialize"
 	"github.com/spf13/cobra"
 )
@@ -44,16 +50,17 @@ var nextWorkMaterializeCmd = &cobra.Command{
 	Use:   "materialize",
 	Short: "Create durable beads from unmaterialized harvested follow-ups",
 	Long: `Read .agents/rpi/next-work.jsonl and create one durable bead per
-unmaterialized item via 'bd create', closing the lessons -> beads half of the
+unmaterialized item via 'br create', closing the lessons -> beads half of the
 loop so harvested work compounds into the tracker instead of living only in a
 queue.
 
-Each created bead carries provenance (source_epic + proof_ref) on its native
-bd metadata, plus the labels 'next-work,materialized'. The item's bead_id field
-is set as a back-reference, so re-running is idempotent: already-materialized,
-already-consumed, and held-for-review items are skipped.
+Each created bead carries provenance (source_epic + proof_ref) in its description
+footer, plus the labels 'next-work,materialized'. The item's bead_id field is
+set as a back-reference only after 'br show <id>' verifies the created bead, so
+re-running is idempotent: already-materialized, already-consumed, and
+held-for-review items are skipped.
 
-When bd is not on PATH the command degrades gracefully (warns, exits 0) unless
+When br is not on PATH the command degrades gracefully (warns, exits 0) unless
 --dry-run is set.
 
 Examples:
@@ -78,14 +85,35 @@ func init() {
 
 func runNextWorkMaterialize(cmd *cobra.Command, _ []string) error {
 	return nextworkmaterialize.Run(nextworkmaterialize.Options{
-		File:           nextWorkMaterializeFile,
-		DryRun:         nextWorkMaterializeDryRun,
-		JSON:           nextWorkMaterializeJSON,
-		SourceEpic:     nextWorkMaterializeSourceEpic,
-		MaterializedBy: nextWorkMaterializeMaterialBy,
-		Out:            cmd.OutOrStdout(),
-		ErrOut:         cmd.ErrOrStderr(),
-		BDAvailable:    bdAvailable,
-		ExecBD:         execBD,
+		File:             nextWorkMaterializeFile,
+		DryRun:           nextWorkMaterializeDryRun,
+		JSON:             nextWorkMaterializeJSON,
+		SourceEpic:       nextWorkMaterializeSourceEpic,
+		MaterializedBy:   nextWorkMaterializeMaterialBy,
+		Out:              cmd.OutOrStdout(),
+		ErrOut:           cmd.ErrOrStderr(),
+		TrackerAvailable: nextWorkTrackerAvailable,
+		ExecTracker:      execNextWorkTracker,
 	})
+}
+
+var nextWorkTrackerAvailable = func() bool {
+	_, err := exec.LookPath("br")
+	return err == nil
+}
+
+var execNextWorkTracker = func(args ...string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	c := beadsTrackerCommandContext(ctx, args...)
+	out, err := c.CombinedOutput()
+	if err != nil {
+		detail := strings.TrimSpace(string(out))
+		if detail != "" {
+			return out, fmt.Errorf("br %s: %w: %s", strings.Join(args, " "), err, detail)
+		}
+		return out, fmt.Errorf("br %s: %w", strings.Join(args, " "), err)
+	}
+	return out, nil
 }

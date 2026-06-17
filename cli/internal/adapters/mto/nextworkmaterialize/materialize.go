@@ -20,18 +20,18 @@ const (
 )
 
 // Options carries the CLI flags and dependency ports for next-work
-// materialization. ExecBD and BDAvailable are injected so tests do not need the
-// real bd binary.
+// materialization. ExecTracker and TrackerAvailable are injected so tests do
+// not need the real tracker binary.
 type Options struct {
-	File           string
-	DryRun         bool
-	JSON           bool
-	SourceEpic     string
-	MaterializedBy string
-	Out            io.Writer
-	ErrOut         io.Writer
-	BDAvailable    func() bool
-	ExecBD         func(args ...string) ([]byte, error)
+	File             string
+	DryRun           bool
+	JSON             bool
+	SourceEpic       string
+	MaterializedBy   string
+	Out              io.Writer
+	ErrOut           io.Writer
+	TrackerAvailable func() bool
+	ExecTracker      func(args ...string) ([]byte, error)
 }
 
 // materializeCandidate is one queue item eligible to become a bead, tagged with
@@ -54,9 +54,9 @@ type materializeResult struct {
 	itemIndex  int
 }
 
-// materializeProvenance is the JSON payload handed to `bd create --metadata`.
-// It rides bd's native metadata field; the real provenance edge is deferred to
-// `ao provenance add`.
+// materializeProvenance is serialized into the description footer. br does not
+// have bd's legacy --metadata flag, so provenance must ride the durable issue
+// body until the real graph edge is added by `ao provenance add`.
 type materializeProvenance struct {
 	MaterializedFrom string                `json:"materialized_from"`
 	SourceEpic       string                `json:"source_epic,omitempty"`
@@ -91,8 +91,8 @@ func Run(opts Options) error {
 		return nil
 	}
 
-	if !opts.DryRun && opts.BDAvailable != nil && !opts.BDAvailable() {
-		fmt.Fprintln(errOut, "WARN: bd not on PATH — skipping materialize (graceful degradation)")
+	if !opts.DryRun && opts.TrackerAvailable != nil && !opts.TrackerAvailable() {
+		fmt.Fprintln(errOut, "WARN: br not on PATH — skipping materialize (graceful degradation)")
 		return nil
 	}
 
@@ -103,7 +103,7 @@ func Run(opts Options) error {
 
 	results := make([]materializeResult, 0, len(candidates))
 	for _, c := range candidates {
-		results = append(results, materializeOne(c, opts.MaterializedBy, opts.DryRun, opts.ExecBD))
+		results = append(results, materializeOne(c, opts.MaterializedBy, opts.DryRun, opts.ExecTracker))
 	}
 
 	if !opts.DryRun {
@@ -183,14 +183,14 @@ func isMaterializable(item rpi.NextWorkItem) bool {
 }
 
 // materializeOne creates (or, in dry-run, plans) a single bead for a candidate.
-func materializeOne(c materializeCandidate, materializedBy string, dryRun bool, execBD func(args ...string) ([]byte, error)) materializeResult {
+func materializeOne(c materializeCandidate, materializedBy string, dryRun bool, execTracker func(args ...string) ([]byte, error)) materializeResult {
 	res := materializeResult{
 		Title:      c.Item.Title,
 		SourceEpic: c.SourceEpic,
 		entryIndex: c.EntryIndex,
 		itemIndex:  c.ItemIndex,
 	}
-	args, err := buildBDCreateArgs(c, materializedBy)
+	args, err := buildBRCreateArgs(c, materializedBy)
 	if err != nil {
 		res.Status = "error"
 		res.Error = err.Error()
@@ -200,21 +200,26 @@ func materializeOne(c materializeCandidate, materializedBy string, dryRun bool, 
 		res.Status = "would-create"
 		return res
 	}
-	if execBD == nil {
+	if execTracker == nil {
 		res.Status = "error"
-		res.Error = "bd executor is not configured"
+		res.Error = "tracker executor is not configured"
 		return res
 	}
-	stdout, err := execBD(args...)
+	stdout, err := execTracker(args...)
 	if err != nil {
 		res.Status = "error"
-		res.Error = fmt.Sprintf("bd create: %v", err)
+		res.Error = fmt.Sprintf("tracker create: %v", err)
 		return res
 	}
 	beadID := strings.TrimSpace(string(stdout))
 	if beadID == "" {
 		res.Status = "error"
-		res.Error = "bd create returned an empty bead ID"
+		res.Error = "tracker create returned an empty bead ID"
+		return res
+	}
+	if err := verifyCreatedBeadID(execTracker, beadID); err != nil {
+		res.Status = "error"
+		res.Error = err.Error()
 		return res
 	}
 	res.Status = "created"
@@ -222,9 +227,34 @@ func materializeOne(c materializeCandidate, materializedBy string, dryRun bool, 
 	return res
 }
 
-// buildBDCreateArgs assembles the `bd create` argv for a candidate, including
-// the native-metadata provenance payload and the materialized-from footer.
-func buildBDCreateArgs(c materializeCandidate, materializedBy string) ([]string, error) {
+// verifyCreatedBeadID performs a tracker read-after-write check before the
+// queue receives the bead_id back-reference. This prevents phantom IDs from
+// stdout-only create failures or mismatched tracker backends.
+func verifyCreatedBeadID(execTracker func(args ...string) ([]byte, error), beadID string) error {
+	if _, err := execTracker("show", beadID); err != nil {
+		return fmt.Errorf("tracker returned %q from create, but show could not read it: %w", beadID, err)
+	}
+	return nil
+}
+
+// buildBRCreateArgs assembles the `br create` argv for a candidate, including
+// a durable provenance footer in the description.
+func buildBRCreateArgs(c materializeCandidate, materializedBy string) ([]string, error) {
+	desc, err := materializeDescription(c, materializedBy)
+	if err != nil {
+		return nil, err
+	}
+	return []string{
+		"create", c.Item.Title,
+		"--type", MapNextWorkTypeToBeadType(c.Item.Type),
+		"--priority", MapSeverityToPriority(c.Item.Severity),
+		"--description", desc,
+		"--labels", materializeBeadLabels,
+		"--silent",
+	}, nil
+}
+
+func materializeDescription(c materializeCandidate, materializedBy string) (string, error) {
 	prov := materializeProvenance{
 		MaterializedFrom: materializeProvFromFile,
 		SourceEpic:       c.SourceEpic,
@@ -233,25 +263,16 @@ func buildBDCreateArgs(c materializeCandidate, materializedBy string) ([]string,
 		Severity:         c.Item.Severity,
 		ProofRef:         c.Item.ProofRef,
 	}
-	metaJSON, err := json.Marshal(prov)
+	provJSON, err := json.Marshal(prov)
 	if err != nil {
-		return nil, fmt.Errorf("marshal provenance metadata: %w", err)
+		return "", fmt.Errorf("marshal provenance footer: %w", err)
 	}
-	desc := c.Item.Description + materializeProvenanceFooter(c, materializedBy)
-	return []string{
-		"create", c.Item.Title,
-		"--type", MapNextWorkTypeToBeadType(c.Item.Type),
-		"--priority", MapSeverityToPriority(c.Item.Severity),
-		"--description", desc,
-		"--labels", materializeBeadLabels,
-		"--metadata", string(metaJSON),
-		"--silent",
-	}, nil
+	return c.Item.Description + materializeProvenanceFooter(c, materializedBy, string(provJSON)), nil
 }
 
 // materializeProvenanceFooter renders a human-readable provenance footer so the
-// origin is visible in `bd show` even without inspecting metadata.
-func materializeProvenanceFooter(c materializeCandidate, materializedBy string) string {
+// origin is visible in `br show`.
+func materializeProvenanceFooter(c materializeCandidate, materializedBy, provJSON string) string {
 	epic := c.SourceEpic
 	if epic == "" {
 		epic = "(none)"
@@ -261,13 +282,13 @@ func materializeProvenanceFooter(c materializeCandidate, materializedBy string) 
 		src = "(unknown)"
 	}
 	return fmt.Sprintf(
-		"\n\n---\nMaterialized from %s by %s · source_epic: %s · harvest: %s",
-		materializeProvFromFile, materializedBy, epic, src,
+		"\n\n---\nMaterialized from %s by %s · source_epic: %s · harvest: %s\nProvenance: %s",
+		materializeProvFromFile, materializedBy, epic, src, provJSON,
 	)
 }
 
-// MapNextWorkTypeToBeadType maps a next-work item type onto a bd issue type.
-// bd accepts bug|feature|task|epic|chore|decision; next-work's finer-grained
+// MapNextWorkTypeToBeadType maps a next-work item type onto a br issue type.
+// br accepts bug|feature|task|epic|chore|decision; next-work's finer-grained
 // process categories collapse to task.
 func MapNextWorkTypeToBeadType(t string) string {
 	switch t {
@@ -284,7 +305,7 @@ func MapNextWorkTypeToBeadType(t string) string {
 	}
 }
 
-// MapSeverityToPriority maps next-work severity onto a bd priority string.
+// MapSeverityToPriority maps next-work severity onto a br priority string.
 // P0 is reserved for operator-critical work, so high maps to P1.
 func MapSeverityToPriority(severity string) string {
 	switch severity {
