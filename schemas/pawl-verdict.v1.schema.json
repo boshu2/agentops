@@ -29,8 +29,8 @@
         },
         "pr": {
             "type": "integer",
-            "minimum": 1,
-            "description": "The PR number this verdict was produced against. reconcile-pr.sh requires this to equal the PR it is merging — a verdict for a different PR does not transfer."
+            "minimum": 0,
+            "description": "The PR number this verdict was produced against (>=1), or 0 for push-to-main landings without a PR. reconcile-pr.sh requires this to equal the PR it is merging; check-pawl-pre-push.sh requires pr=0 for direct push-to-main."
         },
         "head_sha": {
             "type": "string",

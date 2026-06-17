@@ -17,6 +17,21 @@ set -u
 toplevel=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
 common=$(git rev-parse --git-common-dir 2>/dev/null)
 
+# Capture pre-push stdin (local_ref local_sha remote_ref remote_sha) when git
+# invokes this hook. Empty when run standalone (ao gate check path) — the pawl
+# check skips cleanly in that case (age-58o).
+prepush_stdin=""
+if [ ! -t 0 ]; then
+    prepush_stdin=$(mktemp "${TMPDIR:-/tmp}/agentops-prepush-stdin.XXXXXX" 2>/dev/null) || prepush_stdin=""
+    if [ -n "$prepush_stdin" ]; then
+        cat >"$prepush_stdin" || prepush_stdin=""
+    fi
+fi
+cleanup_prepush_stdin() {
+    [ -n "$prepush_stdin" ] && rm -f "$prepush_stdin" 2>/dev/null || true
+}
+trap cleanup_prepush_stdin EXIT
+
 if [ "${AGENTOPS_GATE_DISABLED:-0}" = "1" ]; then
     ts=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)
     sha=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
@@ -56,6 +71,14 @@ fi
 # Run the gate (no longer exec'd) so the SENSOR feed can fire after a PASS.
 /tmp/ao-gate gate check --fast
 gate_status=$?
+
+# Pawl gate (age-58o): push-to-main requires CONFIRMED pawl verdict bound to
+# the landing commit. Runs only when git supplied pre-push stdin (not during
+# standalone `ao gate check`). Skip: AGENTOPS_PREPUSH_SKIP_PAWL=1.
+if [ "$gate_status" -eq 0 ] && [ -n "$prepush_stdin" ] && [ -s "$prepush_stdin" ] \
+   && [ -x "${toplevel}/scripts/check-pawl-pre-push.sh" ]; then
+    bash "${toplevel}/scripts/check-pawl-pre-push.sh" <"$prepush_stdin" || gate_status=$?
+fi
 
 # SENSOR feed (ag-62jrm): only for commits that cleared the gate, emit
 # bead→commit provenance edges so the position-signal ledger feeds itself with
