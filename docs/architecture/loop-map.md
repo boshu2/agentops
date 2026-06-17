@@ -1,20 +1,21 @@
 # The Loop Map
 
-> One index for the loop. AgentOps describes its operating loop five ways, at different altitudes and for different audiences. They are not five competing models; they are five views of one control system. This doc names each view, says what it is for, and links its canonical source. It does not restate or replace those sources.
+> One index for the loop. AgentOps describes its operating loop six ways, at different altitudes and for different audiences. They are not six competing models; they are six views of one control system. This doc names each view, says what it is for, and links its canonical source. It does not restate or replace those sources.
 
 ## Why this exists
 
-Readers hit "the loop" in five places and reasonably wonder which is the real one. The honest answer: all of them, at different zoom levels. A reader landing on the operating-loop spine without the CDLC frame thinks the loop is about git moves; a reader landing on CDLC without the operating loop thinks it is about context phases. Each is half the picture. This map fixes the altitude so the views stop reading as contradictions.
+Readers hit "the loop" in six places and reasonably wonder which is the real one. The honest answer: all of them, at different zoom levels. A reader landing on the operating-loop spine without the CDLC frame thinks the loop is about git moves; a reader landing on CDLC without the operating loop thinks it is about context phases. Each is half the picture. This map fixes the altitude so the views stop reading as contradictions.
 
 The external world is now naming this too. Satya Nadella calls it "loopcraft"; the broader 2026 discourse calls it "loop engineering." The claim under all of it is the one this map encodes: the model commoditizes, and the loop around it is the part that compounds.
 
-## The five views
+## The six views
 
 | View | Altitude | Answers | Canonical source |
 |---|---|---|---|
 | **CDLC (7 phases)** | What context engineering *is* | Generate, Compile, Test, Distribute, Deliver, Observe, Adapt | [`docs/cdlc.md`](../cdlc.md) |
 | **Operating loop (7 moves)** | How an agent *executes one turn* through those phases | BDD intent → bead → slice → TDD → wave → acceptance → ratchet | [`docs/architecture/operating-loop.md`](./operating-loop.md) |
 | **RPI (4 steps)** | The tactical inner loop *inside a move* | Research → Plan → Implement → Validate | the `/rpi` skill; framed in [`docs/3.0.md`](../3.0.md) |
+| **Control-loop model (2 timescales + governor)** | *Why* the loop converges and self-improves | Why route-back terminates (fast loop) + how the map improves without oscillating (slow loop + SPC governor) | [`docs/architecture/control-loop-model.md`](./control-loop-model.md) |
 | **Operator model (6 primitives)** | The operational *discipline* the loop runs on | Stateful environment, replaceable actors, durable traces, selection gates, promotion loops, governance | 12-factor-agentops: `docs/explanation/operator-model.md` |
 | **Three developer loops** | The *timescale* the loop runs at | Inner (seconds–minutes), Middle (hours–days), Outer (weeks–months) | 12-factor-agentops: `docs/explanation/three-developer-loops.md` |
 

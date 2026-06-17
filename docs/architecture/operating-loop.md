@@ -35,6 +35,10 @@ The doctrine source for this spine is [`.agents/research/2026-05-16-agentops-3-c
    *windshield* — deterministic ground-truth that catches a confident
    hallucination (a road that was never there) which re-routing alone cannot.
    See [3.0 → the navigator model](../3.0.md#why-a-loop-and-not-a-pipeline-the-navigator-model).
+   **Why the re-routing terminates, and how the map itself improves between
+   runs without oscillating, is specified in the [Control-Loop Model](control-loop-model.md)**
+   (two timescales + the governor): the map is fixed *within* a run; the slow
+   loop tunes it *across* runs, governed so it doesn't thrash.
 8. **Single-agent-first; orchestration is opt-in escalation.** The default
    execution shape is one capable agent working in-session with good
    bookkeeping. Multi-agent orchestration — parallel waves, ATM swarms, Agent
@@ -193,6 +197,7 @@ The loop is operational discipline. The architectural seams are structural. They
 - [Ports and Adapters](ports-and-adapters.md) — architectural seams the loop runs through
 - [Fungibility Charter](fungibility-charter.md) — the six doctrinal commitments behind the loop's stateless, role-free, single-model-default agents
 - [Effective Feedback Compute](../doctrine/effective-feedback-compute.md) — *why* moves 6 (prove acceptance) and 7 (ratchet) are load-bearing: harness success scales with useful feedback (I·V·R·M), not raw spend
+- [Control-Loop Model](control-loop-model.md) — *why* the loop converges and self-improves: the two-timescale control system (fast=convergence, slow=governed improvement) + the conformance contract every Workflow/skill must satisfy
 - [Intent-to-Loop Hexagon](intent-to-loop-hexagon.md) — process-level ports/adapters from BDD intent through evidence ratchet
 - [ADR-0001](../adr/ADR-0001-ddd-hexagonal-adoption.md) — DDD + Hexagonal adoption
 - [CDLC](../cdlc.md) — conceptual seven phases this loop runs inside
