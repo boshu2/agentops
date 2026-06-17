@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-17T22:28:27Z",
+  "generated_at": "2026-06-17T22:47:33Z",
   "summary": {
-    "skills": 73,
+    "skills": 74,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 87,
     "workflows": 4,
-    "capabilities": 174
+    "capabilities": 175
   },
   "surfaces": {
     "skills": [
@@ -116,6 +116,14 @@
         "has_skill_md": true,
         "has_references": true,
         "reference_count": 3
+      },
+      {
+        "name": "behavior-first-planning",
+        "tier": "execution",
+        "path": "skills/behavior-first-planning/",
+        "has_skill_md": true,
+        "has_references": true,
+        "reference_count": 0
       },
       {
         "name": "cass",
@@ -1513,8 +1521,8 @@
     ]
   },
   "capability_summary": {
-    "total": 174,
-    "skills": 73,
+    "total": 175,
+    "skills": 74,
     "cli_commands": 87,
     "gates": 14,
     "reference_impls": 0
@@ -1925,6 +1933,37 @@
       "drives_commands": [],
       "path": "skills/beads-workflow/",
       "references": 3
+    },
+    {
+      "sku": "skill:behavior-first-planning",
+      "name": "behavior-first-planning",
+      "type": "skill",
+      "kind": "skill",
+      "bounded_context": "BC3",
+      "hex_role": "domain",
+      "tier": "execution",
+      "capability_class": "planning",
+      "purpose": "Behavior-first planning discipline — intent → Gherkin behaviors → EXECUTED-red acceptance tests → spec → acceptance-gated bead DAG. No runnable acceptance test, no bead. Triggers: \"plan behavior-first\", \"acceptance-first planning\", \"give these beads runnable done-criteria\".",
+      "status": "active",
+      "disposition": "keep",
+      "runtime_targets": [
+        "claude",
+        "codex"
+      ],
+      "runtime_reach": "cross",
+      "parity_policy": "required",
+      "aliases": [],
+      "supersedes": null,
+      "consumes": [
+        "standards"
+      ],
+      "produces": [
+        ".agents/plans/*.md",
+        "br-issue"
+      ],
+      "drives_commands": [],
+      "path": "skills/behavior-first-planning/",
+      "references": 0
     },
     {
       "sku": "skill:bootstrap",

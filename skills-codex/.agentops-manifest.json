@@ -1082,6 +1082,12 @@
       "generated_hash": "85127e19267aa6f5ade2b70b9bfb8d5183b7cc1e779867ca03dfb1693cd03fb4"
     },
     {
+      "name": "behavior-first-planning",
+      "source_skill": "skills/behavior-first-planning",
+      "source_hash": "1a9adc0223161b0f5f6c09c4a459fdc091d3d6472e5932e471f5b45985f50460",
+      "generated_hash": "4ad86c617690bf4f49715db5381d7595be66e3e7b79f6b51b0c3e97c9340e8bc"
+    },
+    {
       "name": "bootstrap",
       "source_skill": "skills/bootstrap",
       "source_hash": "c490abfe896c2f3dc2eb61dbb00214d7b652605a80e31624f0d4d2b19b546f57",

@@ -95,6 +95,12 @@
       "reason": "Codex-owned wrapper for the tool-operator skill wave; source behavior lives in skills/<name>, Codex profile stays parity-only until durable Codex-specific divergence is proven."
     },
     {
+      "name": "behavior-first-planning",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Codex-owned parity wrapper; source behavior (the four-phase behavior-first planning discipline) lives in skills/behavior-first-planning, Codex profile stays parity-only until durable Codex-specific divergence is proven."
+    },
+    {
       "name": "bootstrap",
       "treatment": "parity_only",
       "wave": "catalog-parity",

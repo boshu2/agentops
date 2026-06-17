@@ -9,6 +9,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### domain
 
+- `behavior-first-planning` — Behavior-first planning discipline — intent → Gherkin behaviors → EXECUTED-red acceptance tests → spec → acceptance-gated bead DAG. No runnable acceptance test, no bead. Triggers: "plan behavior-first", "acceptance-first planning", "give these beads runnable done-criteria".
 - `council` — Run multi-judge consensus. Use when: an irreversible or high-stakes decision needs independent judges before committing — architecture forks, one-way doors, scoring options.
 - `crank` — Execute epics through waves.
 - `discovery` — Create dense execution packets. Fold target for brainstorm + design (goal clarification, product-fit pressure testing).
@@ -109,6 +110,7 @@ graph LR
   automation-shape-routing -- "supplier-to" --> operationalize
   automation-shape-routing -- "supplier-to" --> skill-builder
   automation-shape-routing -- "supplier-to" --> workflow-builder
+  behavior-first-planning -- "shared-kernel" --> standards
   codex-approval -- "customer-of" --> agent-mail
   codex-approval -- "customer-of" --> using-atm
   codex-exec -- "supplier-to" --> codex-sandbox-evidence
@@ -179,6 +181,9 @@ graph LR
 | `agy-native` | produces | agy-run-evidence |
 | `autodev` | consumes | evolve |
 | `autodev` | consumes | rpi |
+| `behavior-first-planning` | consumes | standards |
+| `behavior-first-planning` | produces | .agents/plans/*.md |
+| `behavior-first-planning` | produces | br-issue |
 | `bootstrap` | consumes | doc |
 | `bootstrap` | consumes | goals |
 | `bootstrap` | consumes | product |

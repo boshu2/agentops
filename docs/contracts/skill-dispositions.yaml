@@ -331,6 +331,18 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Must compose with PROGRAM.md and RPI as one vertical-slice executor"
+  - skill:            behavior-first-planning
+    domain:           "BC3 Loop"
+    hexagonal_role:   domain
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: planning
+    path:             skills/behavior-first-planning/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Generative discipline behind the bdd-foundry workflow; extracted so behavior-first planning survives independent of the orchestrator (age-3va.2)"
   - skill:            bootstrap
     domain:           "BC4 Factory"
     hexagonal_role:   driving-adapter
