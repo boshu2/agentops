@@ -59,7 +59,7 @@ fi
 LEDGER="docs/provenance/ledger.jsonl"
 before="$(git hash-object "$LEDGER" 2>/dev/null || echo none)"
 
-if ! "$AO" provenance emit-landed --range "$RANGE" >/dev/null 2>&1; then
+if ! "$AO" provenance emit-landed --range "$RANGE" --trunk-ref "${AGENTOPS_PROVENANCE_TRUNK_REF:-origin/main}" >/dev/null 2>&1; then
     warn "emit-landed failed for $RANGE; skipping (non-blocking)"
     exit 0
 fi

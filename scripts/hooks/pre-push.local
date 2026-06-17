@@ -68,6 +68,12 @@ if ! ( cd "${toplevel}/cli" && go build -o /tmp/ao-gate ./cmd/ao ); then
     echo >&2 "✗ could not build ao for the gate"
     exit 1
 fi
+
+# Trunk-bound provenance for commits already on origin/main (age-0tn, one-push lag).
+if [ -x "${toplevel}/scripts/post-land-provenance-emit.sh" ]; then
+    AO_BIN=/tmp/ao-gate bash "${toplevel}/scripts/post-land-provenance-emit.sh" || true
+fi
+
 # Run the gate (no longer exec'd) so the SENSOR feed can fire after a PASS.
 /tmp/ao-gate gate check --fast
 gate_status=$?
@@ -80,10 +86,12 @@ if [ "$gate_status" -eq 0 ] && [ -n "$prepush_stdin" ] && [ -s "$prepush_stdin" 
     bash "${toplevel}/scripts/check-pawl-pre-push.sh" <"$prepush_stdin" || gate_status=$?
 fi
 
-# SENSOR feed (ag-62jrm): only for commits that cleared the gate, emit
-# bead→commit provenance edges so the position-signal ledger feeds itself with
-# no human in the loop. Non-blocking and skippable; uses the ao we just built.
-if [ "$gate_status" -eq 0 ] && [ -x "${toplevel}/scripts/emit-landed-provenance.sh" ]; then
+# Pre-push emit records local OIDs that may never reach origin/main (age-0tn).
+# Trunk-bound emission is the default via post-land-provenance-emit.sh above.
+# Legacy pre-push feed remains opt-in via AGENTOPS_PROVENANCE_EMIT_PRE_PUSH=1.
+if [ "$gate_status" -eq 0 ] \
+   && [ "${AGENTOPS_PROVENANCE_EMIT_PRE_PUSH:-0}" = "1" ] \
+   && [ -x "${toplevel}/scripts/emit-landed-provenance.sh" ]; then
     AO_BIN=/tmp/ao-gate bash "${toplevel}/scripts/emit-landed-provenance.sh" || true
 fi
 exit "$gate_status"
