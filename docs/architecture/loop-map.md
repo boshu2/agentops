@@ -63,6 +63,8 @@ The reason there is a *loop* and not a *pipeline* is the one principle that ties
 
 This is a control system (reconciliation loop + error budgets + ratchet), not a workflow engine. Every view above is a slice of that system at a chosen altitude.
 
+Two docs describe that control system on an axis orthogonal to the six loop views — not a seventh view of the loop, but the loop's **structure and behavior**: [the-agent-factory.md](the-agent-factory.md) names the **citizens** (the control-plane primitives + the adapter taxonomy: which named surface is the controller, the actuator, the instrument, or a guard), and [control-loop-model.md](control-loop-model.md) (also the control-loop view above) names how those citizens **behave** over the two timescales. The six views are *where you are in the loop*; these two are *what the loop is made of and why it converges*.
+
 ## What this doc is not
 
 - Not a rewrite or rename of the five sources. Each remains canonical for its own altitude; this only indexes and relates them.

@@ -171,6 +171,8 @@ For the architectural rationale and the recipe for adding a new adapter, see [Po
 
 ## See Also
 
+- [The Agent Factory](the-agent-factory.md) — the control-plane / roles × primitives / **adapter-taxonomy** view: which named surface (skill / `ao` / MCP / hook / gate / agent / trigger) is which citizen. The unifying entry; this doc gives the concrete *chains*, that doc the *citizens*.
+- [The Control-Loop Model](control-loop-model.md) — how those citizens *behave* over two timescales (convergence + governed improvement).
 - [How It Works](../how-it-works.md)
 - [Knowledge Flywheel](../knowledge-flywheel.md)
 - [Context Lifecycle Contract](../context-lifecycle.md)
