@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/boshu2/agentops/cli/internal/config"
+	"github.com/boshu2/agentops/cli/internal/wiki"
 )
 
 // corpusMarkers are the dir names that mark a corpus root (and the per-root dirs
@@ -46,12 +47,20 @@ func corpusDenyPaths(startDir string) []string {
 	if home, err := os.UserHomeDir(); err == nil && home != "" {
 		cand = append(cand, filepath.Join(home, ".agents"))
 	}
-	// Deny the CONFIG-resolved global corpus roots too — they may be configured
-	// OUTSIDE ~/.agents, and `ao lookup` reads exactly these (refuter r2). Sourcing
+	// Deny the ENV-resolved corpus dir too. AO_AGENTS_DIR / AO_HOME override where
+	// `ao` reads the corpus (wiki.AgentsDirIn — the authoritative resolver); a
+	// NON-DEFAULT override points OUTSIDE <root>/.agents, leaving it readable by the
+	// control arm (age-58r). Resolving the deny path through the same resolver `ao`
+	// uses (not a literal ".agents" join) closes that leak under any env config.
+	cand = append(cand, envCorpusDenyPaths(root)...)
+	// Deny the CONFIG-resolved global AND local corpus roots too — they may be
+	// configured OUTSIDE ~/.agents / <root>/.agents, and `ao lookup` reads exactly
+	// these (refuter r2; age-58r for the local LearningsDir/PatternsDir). Sourcing
 	// the deny set from config (the authoritative resolver) — not a hand-enumerated
 	// list — is what closes the whack-a-mole of "another corpus path".
 	if cfg, err := config.Load(nil); err == nil && cfg != nil {
 		cand = append(cand, configCorpusDenyPaths(cfg.Paths.GlobalLearningsDir, cfg.Paths.GlobalPatternsDir)...)
+		cand = append(cand, localCorpusDenyPaths(root, cfg.Paths.LearningsDir, cfg.Paths.PatternsDir)...)
 	}
 	seen := map[string]bool{}
 	var out []string
@@ -81,6 +90,53 @@ func configCorpusDenyPaths(globalLearningsDir, globalPatternsDir string) []strin
 		out = append(out, d)
 	}
 	return out
+}
+
+// envCorpusDenyPaths returns the corpus dir an AO_AGENTS_DIR / AO_HOME env override
+// redirects `ao` to read from (resolved via wiki.AgentsDirIn — the same resolver the
+// real code uses). It returns the override only when it resolves to something OTHER
+// than the default <root>/.agents (which is already denied): a non-default override is
+// the age-58r leak path. With no env override set the override equals the default and
+// nothing is added.
+func envCorpusDenyPaths(root string) []string {
+	resolved := wiki.AgentsDirIn(root)
+	if resolved == "" || resolved == filepath.Join(root, ".agents") {
+		return nil
+	}
+	return []string{resolved}
+}
+
+// localCorpusDenyPaths returns the config-resolved LOCAL (per-repo) corpus dirs —
+// cfg.Paths.LearningsDir / PatternsDir — that fall OUTSIDE the already-denied
+// <root>/.agents subtree. These default to ".agents/learnings" / ".agents/patterns"
+// (relative, under the denied .agents root), but a config can point them at an
+// ABSOLUTE path elsewhere; that absolute local corpus stayed readable by the control
+// arm (age-58r). A relative dir resolves under root/.agents and is dropped (already
+// covered); an absolute dir not under <root>/.agents is denied. Pure (config values
+// passed in) so it is unit-testable without loading from disk.
+func localCorpusDenyPaths(root, learningsDir, patternsDir string) []string {
+	var out []string
+	for _, d := range []string{learningsDir, patternsDir} {
+		d = strings.TrimSpace(d)
+		if d == "" || !filepath.IsAbs(d) {
+			// Relative dirs resolve under <root>/.agents (already denied).
+			continue
+		}
+		if within(d, filepath.Join(root, ".agents")) {
+			continue
+		}
+		out = append(out, d)
+	}
+	return out
+}
+
+// within reports whether path p is the same as, or nested under, dir.
+func within(p, dir string) bool {
+	rel, err := filepath.Rel(dir, p)
+	if err != nil {
+		return false
+	}
+	return rel == "." || (!strings.HasPrefix(rel, ".."+string(filepath.Separator)) && rel != "..")
 }
 
 func resolveSymlink(p string) string {

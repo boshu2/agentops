@@ -62,6 +62,87 @@ func TestConfigCorpusDenyPaths_CustomGlobalRoots(t *testing.T) {
 	}
 }
 
+// TestEnvCorpusDenyPaths_NonDefaultOverride: a NON-DEFAULT AO_AGENTS_DIR (or AO_HOME)
+// redirects where `ao` reads the corpus OUTSIDE <root>/.agents, so the resolved
+// override must enter the deny set; with no override (or the default), nothing is
+// added (it equals the already-denied <root>/.agents). age-58r.
+func TestEnvCorpusDenyPaths_NonDefaultOverride(t *testing.T) {
+	root := t.TempDir()
+	custom := filepath.Join(t.TempDir(), "elsewhere-corpus")
+
+	// AO_AGENTS_DIR override → denied verbatim (the path `ao` actually reads).
+	t.Setenv("AO_HOME", "")
+	t.Setenv("AO_AGENTS_DIR", custom)
+	got := envCorpusDenyPaths(root)
+	if len(got) != 1 || got[0] != custom {
+		t.Errorf("AO_AGENTS_DIR override must be denied; got %v want [%q]", got, custom)
+	}
+
+	// AO_HOME override (no AO_AGENTS_DIR) → also denied.
+	t.Setenv("AO_AGENTS_DIR", "")
+	t.Setenv("AO_HOME", custom)
+	if got := envCorpusDenyPaths(root); len(got) != 1 || got[0] != custom {
+		t.Errorf("AO_HOME override must be denied; got %v want [%q]", got, custom)
+	}
+
+	// No override → resolves to the default <root>/.agents (already denied) → nothing added.
+	t.Setenv("AO_AGENTS_DIR", "")
+	t.Setenv("AO_HOME", "")
+	if got := envCorpusDenyPaths(root); len(got) != 0 {
+		t.Errorf("no env override must add no deny path; got %v", got)
+	}
+}
+
+// TestEnvCorpusDenyPaths_FlowsIntoCorpusDenyPaths: end-to-end, a non-default
+// AO_AGENTS_DIR appears in the full deny set corpusDenyPaths builds (not just the
+// helper). The control arm cannot read the override corpus. age-58r.
+func TestEnvCorpusDenyPaths_FlowsIntoCorpusDenyPaths(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".agents"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	custom := filepath.Join(t.TempDir(), "elsewhere-corpus")
+	t.Setenv("AO_HOME", "")
+	t.Setenv("AO_AGENTS_DIR", custom)
+	joined := strings.Join(corpusDenyPaths(root), "|")
+	if !strings.Contains(joined, custom) {
+		t.Errorf("full deny set must include the AO_AGENTS_DIR override %q; got %s", custom, joined)
+	}
+}
+
+// TestLocalCorpusDenyPaths_AbsoluteOutsideRoot: a config-local LearningsDir/PatternsDir
+// pointed at an ABSOLUTE path outside <root>/.agents is denied; a relative dir (the
+// default ".agents/learnings", resolving under the already-denied .agents) and an
+// absolute dir nested inside <root>/.agents are NOT re-added. age-58r.
+func TestLocalCorpusDenyPaths_AbsoluteOutsideRoot(t *testing.T) {
+	root := t.TempDir()
+
+	// Absolute, outside <root>/.agents → denied.
+	got := localCorpusDenyPaths(root, "/custom/learnings", "/opt/patterns")
+	joined := strings.Join(got, "|")
+	for _, want := range []string{"/custom/learnings", "/opt/patterns"} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("must deny absolute local corpus root %q; got %v", want, got)
+		}
+	}
+
+	// Relative dirs resolve under <root>/.agents (already denied) → not re-added.
+	if out := localCorpusDenyPaths(root, ".agents/learnings", ".agents/patterns"); len(out) != 0 {
+		t.Errorf("relative local dirs must add no deny path (covered by .agents); got %v", out)
+	}
+
+	// Absolute but nested inside <root>/.agents → already covered, not re-added.
+	inside := filepath.Join(root, ".agents", "learnings")
+	if out := localCorpusDenyPaths(root, inside, ""); len(out) != 0 {
+		t.Errorf("absolute dir inside <root>/.agents must not be re-added; got %v", out)
+	}
+
+	// Empty → nothing.
+	if out := localCorpusDenyPaths(root, "", ""); len(out) != 0 {
+		t.Errorf("empty local dirs must add no deny path; got %v", out)
+	}
+}
+
 // TestSandboxExecDenyProfile_DeniesAllPaths: every deny path appears in a
 // (deny file-read* (subpath ...)) clause, and non-corpus reads remain allowed.
 func TestSandboxExecDenyProfile_DeniesAllPaths(t *testing.T) {
