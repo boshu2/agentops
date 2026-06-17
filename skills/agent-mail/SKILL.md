@@ -159,3 +159,7 @@ am agent start --json               # cockpit; flags a missing :8765 listener un
 curl http://127.0.0.1:8765/health   # ONLY if the HTTP MCP server is up (am serve-http); CLI-only deploys have no :8765 listener
 am                                  # start server if needed
 ```
+
+---
+
+**Fork maintenance.** `am` is Bo's fork (`boshu2/mcp_agent_mail_rust`). To pull upstream fixes, use the fork-sync factory in `~/dev/mcp_agent_mail_rust`: `make fork-status` → `make fork-preview` → `make fork-sync` (its `AGENTS.md` § "Upstream sync"; never rebase main by hand). Divergence facts are owned by **FORKS-MAP F-3**.
