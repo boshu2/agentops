@@ -169,7 +169,7 @@ window `:1` on typical ATM layouts).
 |---|---|
 | **1 Opus** | `atm send "$SESSION" --pane=1 --file packet-opus.md` (same as dual-pane) |
 | **2 Codex** | `atm codex preflight --pane 2` until `recommended_action: proceed`, then `--codex-goal --file` + `wait-goal-engaged` — do not `--codex-goal` while preflight says `wait` |
-| **3 AGY** | `atm send "$SESSION" --pane=3 --file packet-agy.md` — interactive AGY TUI only; **not** `agy -p`, **not** `gemini -p` |
+| **3 AGY** | `atm send "$SESSION" --agy --file packet-agy.md` (or `--pane=3`) — interactive AGY TUI only; **not** `agy -p`, **not** `gemini -p` |
 
 **Verify panes:** prefer spawn `--json` `panes[]` or `tmux list-panes -t "$SESSION:1"`.
 When Agent Mail is unavailable, `atm mapping --session="$SESSION"` may be empty

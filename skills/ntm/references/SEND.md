@@ -34,7 +34,7 @@ the user pane. This is almost always what you want from automation.
 
 ## Agent-type selectors (with `:variant` filter)
 
-Custom flags implemented by `sendTargetValue` (`send.go:297-341`). All three accept
+Custom flags implemented by `sendTargetValue` (`send.go:297-341`). All four accept
 `NoOptDefVal=true`, so bare `--cc` means "any Claude pane," while `--cc=opus` filters
 by `tmux.Pane.Variant` exact equality.
 
@@ -43,28 +43,35 @@ by `tmux.Pane.Variant` exact equality.
 | `--cc[=variant]` | `cc` (Claude) | `--cc=opus` | Variant is an open string, not pre-enumerated |
 | `--cod[=variant]` | `cod` (Codex) | `--cod=gpt-5` | |
 | `--gmi[=variant]` | `gmi` (Gemini) | `--gmi=pro` | |
+| `--agy[=variant]` | `agy` (AGY / Antigravity) | `--agy` | Same selector semantics as tri-vendor spawn |
 
 `--cc=false` is treated as a no-op (`send.go:320-322`). Selectors can be combined:
 `--cc --cod` sends to all Claude + Codex panes. Combining with `--pane=N` ANDs: a
 specific pane that doesn't match the type yields zero targets + error.
 
 
-### AGY (Antigravity) — no `--agy` send selector
+### AGY (Antigravity) — `--agy` send selector
 
-AGY panes spawned with `ntm spawn --agy=…` are **not** targeted by a dedicated
-`--agy` flag on `ntm send` (unlike `--cc` / `--cod` / `--gmi`). Dispatch with
-**tmux pane index + file**:
+AGY panes spawned with `ntm spawn --agy=…` are targeted by **`--agy`** on
+`ntm send` (same family as `--cc` / `--cod` / `--gmi` / `--agy`):
+
+```bash
+ntm send <session> --agy "run the tests"
+ntm send <session> --agy --file packet-agy.md
+```
+
+For a specific pane index (or when mixing file + type filters), use **`--pane=N`**
+(or `--panes=`) with `-f/--file`:
 
 ```bash
 ntm send <session> --pane=3 --file packet-agy.md
 ```
 
-Use **`--pane=N`** (or `--panes=`) with `-f/--file` for the interactive AGY TUI.
 **Do not** use `agy -p` / `gemini -p` for swarm workers (LAW 0).
 
 **`--gmi` vs AGY:** `--gmi` selects **Gemini CLI** (`gmi` agent type) panes.
 **AGY / Antigravity** is a separate agent family (`agy`); tri-vendor smoke uses
-`--agy` at spawn time and `--pane=N` at send time. See
+`--agy` at spawn and send time. See
 [`/dual-pane-atm`](../../dual-pane-atm/SKILL.md) § Tri-vendor.
 
 ## Pane selectors
@@ -90,7 +97,7 @@ Three different selector families coexist and use **different index spaces** —
 | Selector | Index space | Selects | Typical use |
 |----------|-------------|---------|-------------|
 | `--pane=N` / `--panes=N,M` | **tmux pane index** (verify live; base-index may be 1 — OC-028/OC-045) | exactly that pane / that explicit set | targeted dispatch to a known pane |
-| `--cc` / `--cod` / `--gmi` (+ `:variant`) | **agent type**, not index | all panes of that type | broadcast to a model class |
+| `--cc` / `--cod` / `--gmi` / `--agy` (+ `:variant`) | **agent type**, not index | all panes of that type | broadcast to a model class |
 | `--agent <idx>` (batch/broadcast only, default `-1`) | **round-robin selector** over agent panes, NOT a tmux index | one agent per batch item, rotating; `-1` = auto round-robin | distributing a batch across agents |
 
 Rules: `--agent` is a batch-distribution knob (`send.go:772`), **not** a synonym for `--pane`. Don't reach for `--agent 2` to mean "pane 2" — use `--pane=2`. With no target flags at all, `send` hits every agent pane and excludes the user pane (the usual automation default); `--all` re-includes the user pane. Verify the live pane index immediately before any raw `tmux send-keys` (OC-045).
