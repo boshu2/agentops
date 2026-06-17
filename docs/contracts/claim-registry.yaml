@@ -1,0 +1,141 @@
+# Claim Registry — curated policy overlay for AgentOps claim-evidence bindings.
+#
+# What may be cited at which strength. Runtime bindings stay in ClaimEvidencePort
+# / ao claim bind / .agents/findings/; this file is the policy overlay.
+#
+# Additive regen: scripts/regen-claim-registry.sh scans agentops:claim:* markers
+# and adds UNPROVEN stubs for any missing IDs. It NEVER overwrites curated
+# tier / evidence / owner / notes fields.
+#
+# Schema: schemas/claim-registry.v1.schema.json
+# Policy: docs/contracts/claim-eval-promote.md
+
+version: "1"
+
+tiers:
+  UNPROVEN:
+    description: "Claim exists in source but has no supporting evidence."
+    cite_allowed: ["docs/comparisons/**", "docs/wiki-for-agents.md"]
+  PILOT:
+    description: "Claim has at least one evidence artifact tracked on main."
+    cite_allowed: ["docs/**", "GOALS.md"]
+  NULL:
+    description: "Claim was tested and the null hypothesis was not rejected."
+    cite_allowed: ["docs/evals/**"]
+  PROVEN:
+    description: "Claim has a passing eval binding and tracked evidence on main."
+    cite_allowed: ["**"]
+
+claims:
+  AOP-CLAIM-ASSURANCE-PROFILE-AEROSPACE-IC:
+    tier: UNPROVEN
+    surfaces:
+      - docs/assurance-profile.md
+  AOP-CLAIM-ASSURANCE-PROFILE-FACTORY-LAYERS:
+    tier: UNPROVEN
+    surfaces:
+      - docs/assurance-profile.md
+  AOP-CLAIM-ASSURANCE-PROFILE-POSTURE:
+    tier: UNPROVEN
+    surfaces:
+      - docs/assurance-profile.md
+  AOP-CLAIM-BRIEF-FOUR-LAYERS:
+    tier: UNPROVEN
+    surfaces:
+      - docs/agentops-brief.md
+  AOP-CLAIM-BRIEF-VALIDATED-PATTERNS:
+    tier: UNPROVEN
+    surfaces:
+      - docs/agentops-brief.md
+  AOP-CLAIM-COMP-CLAUDE-FLOW:
+    tier: UNPROVEN
+    surfaces:
+      - docs/comparisons/vs-claude-flow.md
+  AOP-CLAIM-COMP-COMPOUND-ENGINEER:
+    tier: UNPROVEN
+    surfaces:
+      - docs/comparisons/vs-compound-engineer.md
+  AOP-CLAIM-COMP-EVERYTHING-CLAUDE-CODE-PER-PHASE-ROUTING:
+    tier: UNPROVEN
+    surfaces:
+      - docs/comparisons/vs-everything-claude-code.md
+  AOP-CLAIM-COMP-RADAR-LANE-DIFFERENTIATION:
+    tier: UNPROVEN
+    surfaces:
+      - docs/comparisons/competitive-radar.md
+  AOP-CLAIM-COMP-RPI-MEMORY:
+    tier: UNPROVEN
+    surfaces:
+      - docs/comparisons/competition-rpi-memory-pipelines.md
+  AOP-CLAIM-COMP-SUPERPOWERS:
+    tier: UNPROVEN
+    surfaces:
+      - docs/comparisons/vs-superpowers.md
+  AOP-CLAIM-COMP-TONS-OF-SKILLS-CORPUS-COMPOUNDING:
+    tier: UNPROVEN
+    surfaces:
+      - docs/comparisons/vs-tons-of-skills.md
+  AOP-CLAIM-DOCS-INDEX-AUTONOMOUS-CYCLES:
+    tier: UNPROVEN
+    surfaces:
+      - docs/index.md
+  AOP-CLAIM-DOCS-INDEX-CORPUS:
+    tier: UNPROVEN
+    surfaces:
+      - docs/index.md
+  AOP-CLAIM-GOALS-DREAM-VALIDATED:
+    tier: UNPROVEN
+    surfaces:
+      - GOALS.md
+  AOP-CLAIM-GOALS-EVAL-WORKBENCH:
+    tier: UNPROVEN
+    surfaces:
+      - GOALS.md
+  AOP-CLAIM-PRODUCT-CONTEXT-ARTIFACT:
+    tier: UNPROVEN
+    surfaces:
+      - PRODUCT.md
+  AOP-CLAIM-PRODUCT-EVOLVE-RECONCILE:
+    tier: UNPROVEN
+    surfaces:
+      - PRODUCT.md
+  AOP-CLAIM-PRODUCT-FACTORY-GRADE-THROUGHPUT:
+    tier: UNPROVEN
+    surfaces:
+      - PRODUCT.md
+  AOP-CLAIM-PRODUCT-MT-OLYMPUS-PROOF:
+    tier: UNPROVEN
+    surfaces:
+      - PRODUCT.md
+  AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL:
+    tier: UNPROVEN
+    surfaces:
+      - README.md
+  AOP-CLAIM-README-COMPETITIVE-MEMORY:
+    tier: UNPROVEN
+    surfaces:
+      - README.md
+  AOP-CLAIM-README-EVOLVE-AUTONOMOUS:
+    tier: UNPROVEN
+    surfaces:
+      - README.md
+  AOP-CLAIM-README-FACTORY-CONTEXT:
+    tier: UNPROVEN
+    surfaces:
+      - README.md
+  AOP-CLAIM-README-FIRST-VALIDATED:
+    tier: UNPROVEN
+    surfaces:
+      - README.md
+  AOP-CLAIM-SOFTWARE-FACTORY-THIN-TOPICS:
+    tier: UNPROVEN
+    surfaces:
+      - docs/software-factory.md
+  AOP-CLAIM-TRUST-FACTORY-FIVE-STEP-PRIMITIVE:
+    tier: UNPROVEN
+    surfaces:
+      - docs/trust-factory.md
+  AOP-CLAIM-WIKI-FOR-AGENTS-CORPUS-COMPILATION:
+    tier: UNPROVEN
+    surfaces:
+      - docs/wiki-for-agents.md
