@@ -25,8 +25,12 @@ export const meta = {
 //      AUTHORITATIVE deterministic gate is `ao gate check` run post-workflow (the
 //      pre-push windshield); the in-run verdict is provisional, best-grounded on
 //      captured evidence.
-//   R4 escapes→slow-loop — PENDING: the closeout ratchets learnings but emits no
-//      escape record; the escape→shift-left sink is age-cwo (slow loop), not yet wired.
+//   R4 escapes→slow-loop ✓  — the Capture phase emits gate-verdicts to the yield
+//      ledger: a CONFIRMED at the upstream slice gate (all slices green), and a
+//      REFUTED at attempt 2 when the DOWNSTREAM acceptance roll-up catches a defect
+//      the slice gate passed. That CONFIRMED-then-REFUTED pair is the escape the
+//      slow loop's `ao membrane derive-checks` / DetectEscapes (age-zqc) consumes.
+//      Workflow-side EMIT only; the derive/govern half is age-cwo (no front-running).
 // ---------------------------------------------------------------------------
 
 // ---- The capability to run through the loop -------------------------------
@@ -372,7 +376,44 @@ const closeout = await agent(
   { label: 'capture:closeout', phase: 'Capture', schema: CLOSEOUT_SCHEMA }
 )
 
+// R4 — escapes route to the slow loop. The yield ledger pairs a CONFIRMED at the
+// UPSTREAM gate (slices green) with a REFUTED at a higher attempt from the DOWNSTREAM
+// gate (acceptance roll-up) → DetectEscapes surfaces it and `ao membrane derive-checks`
+// (age-zqc) compiles the check that would have caught it. We EMIT only; the derive/
+// govern half is age-cwo. The gate-verdict body is COMMIT-BOUND (ao validates
+// pawl_verdict_ref + a head_sha ≥7 chars + mode + author_family), so the emit agent
+// captures the run's current HEAD as the sha — the base commit the bead's work sits on.
+const beadId = (intentIssue && intentIssue.beadId) || ''
+const runId = (args && typeof args === 'object' && args.runId) || (beadId ? `operating-loop-${beadId}` : '')
+const slicesAllGreen = sliceResults.length > 0 && sliceResults.every((s) => s && s.testExitCode === 0 && !s.blocked)
+// Build a VALID gate-verdict emit prompt. The agent substitutes <SHA> with the real
+// `git rev-parse HEAD`; the body shape matches the ao yield gate-verdict contract
+// (deterministic tier: cross_family=false so it never inflates catch_rate_cross_family).
+const emitVerdict = (disposition, attempt, ctx, note, label) => agent(
+  `${DOCTRINE}\n\nR4 gate-verdict (workflow-side EMIT only). ${note}\nDo exactly this, nothing else: (1) capture the current commit with \`SHA=$(git rev-parse HEAD)\`; (2) run\n  ao yield emit gate-verdict --bead ${JSON.stringify(beadId)} --run ${JSON.stringify(runId)} --json '{"difficulty":2,"pawl_verdict_ref":{"bead_id":${JSON.stringify(beadId)},"head_sha":"'"$SHA"'"},"disposition":"${disposition}","head_sha":"'"$SHA"'","attempt":${attempt},"mode":"deterministic","author_context_id":"${ctx}","refuter_families":[],"author_family":"operating-loop-gate","cross_family":false,"author_ne_reviewer":true,"evidence_present":true}'\nReturn the command's exit code (0 = appended). Do NOT run \`ao membrane derive-checks\` or otherwise build/tune the sink — that is the slow loop's job (age-cwo).`,
+  { label, phase: 'Capture' })
+let escapeEmitted = false
+if (beadId && runId && slicesAllGreen) {
+  // Upstream confirm: the per-slice gate passed green for the whole bead.
+  await emitVerdict('CONFIRMED', 1, 'operating-loop-slice-gate', `The per-slice gate passed green for bead ${beadId} — record the upstream CONFIRM.`, 'capture:r4-confirm')
+  if (!closeout.accepted) {
+    // Downstream catch of an upstream-confirmed unit = an ESCAPE. Emit REFUTED at a higher attempt.
+    const failed = (closeout.acceptanceMap || []).filter((m) => m && !m.passed).map((m) => m.example)
+    await emitVerdict('REFUTED', 2, 'operating-loop-acceptance-rollup', `The per-slice gate passed green but the DOWNSTREAM acceptance roll-up caught defect(s): ${JSON.stringify(failed)} (residual gaps: ${JSON.stringify(closeout.residualGaps || [])}). This is an escape — a unit an upstream gate CONFIRMED that a stricter downstream gate REFUTED at a higher attempt; the CONFIRMED→REFUTED pair is what the slow loop consumes.`, 'capture:r4-escape-emit')
+    escapeEmitted = true
+    log(`R4: escape emitted — acceptance roll-up caught ${failed.length} defect(s) the slice gate passed green; REFUTED gate-verdict (attempt 2) paired with the attempt-1 CONFIRMED for ${beadId}@${runId}. Slow loop (ao membrane derive-checks --run ${runId}) derives the catch.`)
+  }
+} else if (beadId && runId && !closeout.accepted) {
+  // Slices were not all green AND acceptance failed — a direct fail, not an escape (no
+  // upstream CONFIRM to pair against). Record the downstream REFUTED at attempt 1 so the
+  // catch_rate gauge still counts the deterministic catch.
+  await emitVerdict('REFUTED', 1, 'operating-loop-acceptance-rollup', `The acceptance roll-up did NOT accept bead ${beadId} (slices were not all green — a direct fail, not an escape).`, 'capture:r4-refute')
+} else if (beadId && runId) {
+  log(`R4: no escape — acceptance accepted (or no bead id); upstream CONFIRM recorded for ${beadId}@${runId}.`)
+}
+
 return {
+  escapeEmitted,
   stoppedAt: null,
   mode,
   intent: intentIssue,
