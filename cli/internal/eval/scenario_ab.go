@@ -203,10 +203,21 @@ func runAndJudgeArm(ctx context.Context, opts ScenarioABOptions, arm ScenarioArm
 		defer cancel()
 	}
 	outcome, err := opts.Runner.RunArm(armCtx, opts.Scenario, withGold)
+	judgeCtx := armCtx
 	if err != nil {
-		return ScenarioArmResult{}, fmt.Errorf("run: %w", err)
+		// A per-arm TIMEOUT is a graded outcome, not a harness failure: the arm did
+		// not produce a successful result within the budget. This is the EXPECTED path
+		// for an isolated control arm that cannot reach the corpus and searches until
+		// the deadline (age-9a9) — grade it as a failed arm (empty output → 0.0), don't
+		// abort the A/B. Judge with the parent ctx since armCtx is now expired.
+		if armCtx.Err() == context.DeadlineExceeded {
+			outcome = ArmOutcome{}
+			judgeCtx = ctx
+		} else {
+			return ScenarioArmResult{}, fmt.Errorf("run: %w", err)
+		}
 	}
-	verdict, err := opts.Judge.Judge(armCtx, opts.Scenario, arm, outcome)
+	verdict, err := opts.Judge.Judge(judgeCtx, opts.Scenario, arm, outcome)
 	if err != nil {
 		return ScenarioArmResult{}, fmt.Errorf("judge: %w", err)
 	}

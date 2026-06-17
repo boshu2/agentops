@@ -239,12 +239,29 @@ func runCodexExec(ctx context.Context, prompt, outputSchemaPath string) (string,
 	_ = msgFile.Close()
 	defer func() { _ = os.Remove(msgPath) }()
 
-	args := []string{"exec", "--sandbox", "read-only", "--skip-git-repo-check", "--output-last-message", msgPath}
+	// Inner codex runs WITHOUT its own sandbox — the OUTER OS sandbox (sandboxedCodexCmd)
+	// is the real confinement: it removes the corpus from the readable filesystem so the
+	// control arm cannot grep the answer off disk. The bypass flag is documented "solely
+	// for environments that are externally sandboxed" (age-9a9).
+	args := []string{"exec", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check", "--output-last-message", msgPath}
 	if outputSchemaPath != "" {
 		args = append(args, "--output-schema", outputSchemaPath)
 	}
 	args = append(args, prompt)
-	cmd := exec.CommandContext(ctx, "codex", args...)
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", 0, fmt.Errorf("resolve cwd for arm isolation: %w", err)
+	}
+	denyPaths := corpusDenyPaths(cwd) // repo corpus (root resolved from any subdir) + global ~/.agents
+	cmd, err := sandboxedCodexCmd(ctx, denyPaths, args)
+	if err != nil {
+		return "", 0, err // fail closed: never run an unisolated arm
+	}
+	// Closed stdin: codex takes the prompt positionally and would otherwise block
+	// reading additional input from stdin in this non-TTY context
+	// (f-2026-06-15-codex-exec-stdin-stall). An empty reader gives immediate EOF.
+	cmd.Stdin = strings.NewReader("")
 	combined, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", 0, fmt.Errorf("codex exec: %w", err)

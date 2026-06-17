@@ -1,0 +1,140 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
+
+	"github.com/boshu2/agentops/cli/internal/config"
+)
+
+// corpusMarkers are the dir names that mark a corpus root (and the per-root dirs
+// an arm must not read).
+var corpusMarkers = []string{".agents", ".ao"}
+
+// corpusRoot walks up from startDir to the nearest ancestor containing a corpus
+// marker (.agents or .ao), so the deny set is correct no matter which subdir the
+// command was invoked from (refuter: os.Getwd() under cli/ left <repo>/.agents
+// readable). Falls back to startDir.
+func corpusRoot(startDir string) string {
+	dir := startDir
+	for {
+		for _, m := range corpusMarkers {
+			if fi, err := os.Stat(filepath.Join(dir, m)); err == nil && fi.IsDir() {
+				return dir
+			}
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return startDir
+		}
+		dir = parent
+	}
+}
+
+// corpusDenyPaths returns the absolute corpus directories a scenario-ab arm must
+// NOT read: the repo corpus (<corpusRoot>/.agents, /.ao — resolved from any subdir)
+// AND the global corpus (~/.agents), each plus its symlink-resolved canonical path
+// (Seatbelt matches the real path). A leak in ANY of these voids the A/B.
+func corpusDenyPaths(startDir string) []string {
+	root := corpusRoot(startDir)
+	cand := []string{filepath.Join(root, ".agents"), filepath.Join(root, ".ao")}
+	if home, err := os.UserHomeDir(); err == nil && home != "" {
+		cand = append(cand, filepath.Join(home, ".agents"))
+	}
+	// Deny the CONFIG-resolved global corpus roots too — they may be configured
+	// OUTSIDE ~/.agents, and `ao lookup` reads exactly these (refuter r2). Sourcing
+	// the deny set from config (the authoritative resolver) — not a hand-enumerated
+	// list — is what closes the whack-a-mole of "another corpus path".
+	if cfg, err := config.Load(nil); err == nil && cfg != nil {
+		cand = append(cand, configCorpusDenyPaths(cfg.Paths.GlobalLearningsDir, cfg.Paths.GlobalPatternsDir)...)
+	}
+	seen := map[string]bool{}
+	var out []string
+	for _, p := range cand {
+		for _, q := range []string{p, resolveSymlink(p)} {
+			if q != "" && !seen[q] {
+				seen[q] = true
+				out = append(out, q)
+			}
+		}
+	}
+	return out
+}
+
+// configCorpusDenyPaths returns the global corpus directories `ao lookup` resolves
+// from config — the global learnings dir, the DERIVED global findings dir
+// (Dir(learnings)/findings, exactly as lookup computes it), and the global patterns
+// dir. Denying precisely these (sourced from config, not hand-enumerated) closes the
+// gap where a global corpus configured outside ~/.agents stayed readable (refuter r2).
+// Pure (config values passed in) so it is unit-testable without loading from disk.
+func configCorpusDenyPaths(globalLearningsDir, globalPatternsDir string) []string {
+	var out []string
+	if d := strings.TrimSpace(globalLearningsDir); d != "" {
+		out = append(out, d, filepath.Join(filepath.Dir(d), SectionFindings))
+	}
+	if d := strings.TrimSpace(globalPatternsDir); d != "" {
+		out = append(out, d)
+	}
+	return out
+}
+
+func resolveSymlink(p string) string {
+	if r, err := filepath.EvalSymlinks(p); err == nil {
+		return r
+	}
+	return ""
+}
+
+// sandboxExecDenyProfile builds a macOS Seatbelt profile that allows everything
+// EXCEPT reads of the given corpus dirs. A denylist (not allowlist) keeps codex
+// functional (auth, binary, system libs, temp writes) while the corpus is
+// unreadable (age-9a9). All paths must be absolute.
+func sandboxExecDenyProfile(denyPaths []string) string {
+	var b strings.Builder
+	b.WriteString("(version 1)(allow default)(deny file-read*")
+	for _, p := range denyPaths {
+		fmt.Fprintf(&b, " (subpath %q)", p)
+	}
+	b.WriteString(")")
+	return b.String()
+}
+
+// sandboxedCodexArgs returns the argv for sandbox-exec wrapping `codex <codexArgs>`
+// with the given profile. Pure (no exec) so the wrapping is unit-testable.
+func sandboxedCodexArgs(profile string, codexArgs []string) []string {
+	return append([]string{"-p", profile, "codex"}, codexArgs...)
+}
+
+// macOSSandboxExec is the Seatbelt binary.
+const macOSSandboxExec = "/usr/bin/sandbox-exec"
+
+// sandboxedCodexCmd builds the *exec.Cmd that runs codex CONFINED so it cannot read
+// any of denyPaths. The inner codex runs --dangerously-bypass-approvals-and-sandbox
+// (documented for externally-sandboxed environments — the OUTER sandbox-exec is the
+// real confinement, and macOS Seatbelt is inherited by child processes).
+//
+// FAIL-CLOSED: returns an error — never a bare, unconfined codex command — when the
+// platform isolation is unavailable or no corpus path was resolved. A control arm
+// that silently reads the corpus is precisely the failure this guards.
+func sandboxedCodexCmd(ctx context.Context, denyPaths []string, codexArgs []string) (*exec.Cmd, error) {
+	if len(denyPaths) == 0 {
+		return nil, fmt.Errorf("arm isolation resolved no corpus paths to deny; refusing to run a potentially-unisolated control arm")
+	}
+	switch runtime.GOOS {
+	case "darwin":
+		if _, err := os.Stat(macOSSandboxExec); err != nil {
+			return nil, fmt.Errorf("arm isolation requires %s (macOS Seatbelt); refusing to run an unisolated control arm: %w", macOSSandboxExec, err)
+		}
+		profile := sandboxExecDenyProfile(denyPaths)
+		return exec.CommandContext(ctx, macOSSandboxExec, sandboxedCodexArgs(profile, codexArgs)...), nil
+	default:
+		// Linux/WSL bwrap path is age-9a9 S2. Until it lands, fail closed rather
+		// than run an unisolated (corpus-readable) control arm.
+		return nil, fmt.Errorf("scenario-ab arm isolation is not yet implemented for GOOS=%q (age-9a9 S2: bubblewrap); refusing to run an unisolated control arm", runtime.GOOS)
+	}
+}

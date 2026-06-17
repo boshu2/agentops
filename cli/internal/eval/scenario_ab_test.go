@@ -73,6 +73,50 @@ func loadFixtureScenario(t *testing.T, threshold float64) (scenario.Scenario, st
 
 func fixedNow() time.Time { return time.Date(2026, 6, 16, 12, 0, 0, 0, time.UTC) }
 
+// timeoutControlRunner times out the control (without-gold) arm and returns fast for
+// the treatment arm — modeling an isolated control that cannot reach the corpus and
+// searches until the per-arm deadline (age-9a9).
+type timeoutControlRunner struct{ with ArmOutcome }
+
+func (r timeoutControlRunner) RunArm(ctx context.Context, _ scenario.Scenario, withGold bool) (ArmOutcome, error) {
+	if !withGold {
+		<-ctx.Done()
+		return ArmOutcome{}, ctx.Err()
+	}
+	return r.with, nil
+}
+
+// TestRunScenarioAB_ArmTimeoutScoresZero: a per-arm timeout is a GRADED outcome
+// (no successful result in budget → 0.0), NOT a harness error that aborts the A/B.
+// This is the expected path for an isolated control arm (age-9a9) — without it, arm
+// isolation can never produce a verdict.
+func TestRunScenarioAB_ArmTimeoutScoresZero(t *testing.T) {
+	sc, path := loadFixtureScenario(t, 0.8)
+	card, err := RunScenarioAB(context.Background(), ScenarioABOptions{
+		Scenario:     sc,
+		ScenarioPath: path,
+		Runner:       timeoutControlRunner{with: ArmOutcome{Output: "the value is present", TokenCost: 10}},
+		Judge:        fakeJudge{without: JudgeVerdict{AggregateScore: 0.0}, with: JudgeVerdict{AggregateScore: 1.0}},
+		Timeout:      time.Millisecond,
+		Now:          fixedNow,
+	})
+	if err != nil {
+		t.Fatalf("a per-arm timeout must NOT abort the A/B; got err: %v", err)
+	}
+	if card.CeilingViolation {
+		t.Error("a timed-out control (score 0.0) is not a ceiling violation")
+	}
+	if card.Without.Score != 0 {
+		t.Errorf("timed-out control must score 0.0; got %v", card.Without.Score)
+	}
+	if card.With.Score != 1.0 {
+		t.Errorf("treatment should score 1.0; got %v", card.With.Score)
+	}
+	if card.AggregateDelta <= 0 || !card.Gate.Pass {
+		t.Errorf("expected a valid positive delta passing the gate; delta=%v pass=%v reasons=%v", card.AggregateDelta, card.Gate.Pass, card.Gate.Reasons)
+	}
+}
+
 // TestRunScenarioAB_CeilingViolation is the age-707 validity certificate
 // (LongMemEval-style): when the WITHOUT-gold control arm already clears the
 // satisfaction threshold, the task has no headroom — the corpus cannot help and
