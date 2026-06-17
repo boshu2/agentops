@@ -85,7 +85,7 @@ Bridge / framing docs:
 - [Critical Skills Policy](contracts/critical-skills.txt) — Human-supervised skill-edit denylist consumed by `ao skills edit seal`
 - [Skill Quality Rubric](reference/skill-quality-rubric.md) — Scoring rubric for repo-runtime, export, and mega-skill readiness
 - [AgentOps Domain Evolution BDD](reference/agentops-domain-evolution-bdd.md) — Gherkin acceptance contract for skill, CLI, and hook evolution
-- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 72 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
+- [AgentOps Skill Domain Map](reference/agentops-skill-domain-map.md) — All 73 checked-in skills mapped to Corpus, Validation, Loop, Factory, and Runtime domains (drift-checked by `scripts/check-registry-drift.sh`)
 - [AgentOps Hexagonal Architecture Map](reference/agentops-hexagonal-architecture-map.md) — Bounded contexts, ports, adapters, and proof gates for the evolution program
 - [AgentOps Domain Evolution Plan](reference/agentops-domain-evolution-plan.md) — Sequenced bootstrap and evolution plan anchored to `soc-y5vh`
 - [Skill Tiers](https://github.com/boshu2/agentops/blob/main/skills/SKILL-TIERS.md) — Taxonomy and dependency graph
@@ -316,6 +316,9 @@ Bridge / framing docs:
 - [BC1 Corpus Ports Contract](contracts/bc1-corpus-ports.md) — Core BC1 corpus ports scaffolded under `cli/internal/ports/`; semantics cheat-sheet, adapter triplet pattern, soc-pm5t wire-up order
 - [BC Ports Inventory](contracts/bc-ports-inventory.md) — Roster of all 20 BC ports with per-port adapter contracts, the universal triplet construction pattern, and per-BC wire-up order.
 - [Orchestration Ports](contracts/orchestration-ports.md) — `OrchestrationPort` dual-runtime selection seam: the 3-category model (Claude Workflow / NTM swarm / plain skill), the NTM → Claude-native → beads-floor degradation ladder, `AGENTOPS_ORCHESTRATION=off` opt-out, capability detection via `ntm --robot-capabilities`, output-contract parity (`orchestration-result.v1`), and the two-ladders distinction. Paired schemas `schemas/orchestration-backend.v1.schema.json` + `schemas/orchestration-result.v1.schema.json`.
+- [Orchestration Profiles (yaml)](contracts/orchestration-profiles.yaml) — SOT for dual-pane/tri-vendor pane maps and structured `spawn_argv`; drift-gated against `skills/dual-pane-atm/references/spawn-checklist.md` via `scripts/check-orchestration-profiles.sh`
+- [Orchestration Tools (yaml)](contracts/orchestration-tools.yaml) — Tool matrix contract for `ao orchestrate tools`; drift-gated via `scripts/check-orchestration-contracts.sh`
+- [Orchestration Instrument Schema](https://github.com/boshu2/agentops/blob/main/schemas/orchestration-instrument.v1.schema.json) — JSON schema for `ao orchestrate` preflight/verify/tools/route/status JSON output (`orchestration-instrument.v1`)
 - [Orchestration Backend Selection Contract](contracts/orchestration-backend.md) — wire shape of one `OrchestrationPort` selection decision (chosen/reason/considered/opt_out/pin); pairs `schemas/orchestration-backend.v1.schema.json` for structural-floor validation.
 - [Orchestration Result Parity Contract](contracts/orchestration-result.md) — the output-contract parity shape every tier (NTM/Claude/beads) must emit; pairs `schemas/orchestration-result.v1.schema.json`; enforced by the degradation-conformance test.
 - [Remote Compute Contract](contracts/remote-compute.md) — Product-neutral RemoteTarget, RemoteSession, command ledger, recovery, and GasCity-first remote execution contract

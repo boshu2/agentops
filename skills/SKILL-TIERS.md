@@ -220,7 +220,7 @@ These are how skills chain in practice:
 
 ## Current Skill Tiers
 
-### User-Facing Skills (67)
+### User-Facing Skills (68)
 
 **Judgment:**
 
@@ -329,6 +329,7 @@ These are how skills chain in practice:
 | **toil-mining** | execution | >- |
 | **converge** | execution | Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — the loop, the context-quorum floor, the LAW-0 cross-family dispatch table, and the canary entry gate all live in Go. |
 | **dual-pane-atm** | execution | 'Repeatable Opus (Claude) + Codex dual-pane ATM collaboration. Triggers: "dual pane", "Opus and Codex together", "CEP duel/build", "two-pane ATM", "collaborative ATM".' |
+| **orchestrate** | execution | 'Out-of-session orchestration instrument lane: route, preflight, verify before human atm/am procedure.' |
 
 ### Internal Skills (5) — `metadata.internal: true`
 

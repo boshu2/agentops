@@ -451,6 +451,18 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "CEP slice 1: repeatable Opus + Codex dual-pane ATM collaboration; consumes using-atm and agent-mail; produces .agents/dual-pane artifacts."
+  - skill:            orchestrate
+    domain:           "BC6 Orchestration"
+    hexagonal_role:   supporting
+    disposition:      keep
+    kind:             skill
+    runtime_targets:  [claude, codex]
+    parity_policy:    required
+    capability_class: orchestration
+    path:             skills/orchestrate/SKILL.md
+    aliases:          []
+    supersedes:       null
+    rationale:        "Out-of-session instrument lane: ao orchestrate route/preflight/verify before human atm procedure; profiles yaml is SOT."
   - skill:            domain
     domain:           "BC4 Factory"
     hexagonal_role:   domain

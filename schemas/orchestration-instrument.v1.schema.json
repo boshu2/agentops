@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/orchestration-instrument.v1.schema.json",
+  "title": "Orchestration Instrument Result",
+  "description": "JSON output for ao orchestrate instrument-lane commands (preflight, verify, tools, route, status)",
+  "type": "object",
+  "required": ["schema_version", "command", "verdict"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "command": {
+      "type": "string",
+      "enum": ["tools", "preflight", "verify", "route", "status", "shape"]
+    },
+    "profile": { "type": "string" },
+    "session": { "type": "string" },
+    "run_id": { "type": "string" },
+    "verdict": {
+      "type": "object",
+      "required": ["status", "confidence"],
+      "properties": {
+        "status": { "type": "string", "enum": ["PASS", "WARN", "FAIL"] },
+        "confidence": { "type": "string", "enum": ["HIGH", "MEDIUM", "LOW"] }
+      },
+      "additionalProperties": false
+    },
+    "coordination_degraded": { "type": "boolean" },
+    "ledger_unwritten": { "type": "boolean" },
+    "ledger_event_type": { "type": "string" },
+    "evidence_tier": { "type": "string", "enum": ["strong", "weak", "none"] },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "status": { "type": "string", "enum": ["PASS", "WARN", "FAIL"] },
+          "detail": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "available"],
+        "properties": {
+          "id": { "type": "string" },
+          "available": { "type": "boolean" },
+          "version": { "type": "string" },
+          "missing_deps": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "route": {
+      "type": "object",
+      "properties": {
+        "shape": { "type": "string" },
+        "profile": { "type": "string" },
+        "rationale": { "type": "string" },
+        "next_command": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "panes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "slot": { "type": "integer" },
+          "runtime": { "type": "string" },
+          "model": { "type": "string" },
+          "role": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -64,6 +64,10 @@ This skill does **not** re-document the full `atm` command surface — run
 `atm help` for that. It covers the **AgentOps substrate contract**: how to
 dispatch and tend AgentOps loops on an ATM swarm.
 
+**Instrument lane (before spawn):** run `ao orchestrate preflight --profile <name> --json`
+and `ao orchestrate verify` after spawn. See [`/orchestrate`](../orchestrate/SKILL.md)
+and `docs/contracts/orchestration-profiles.yaml`.
+
 ## When to use ATM vs AM (the 4-case matrix)
 
 **ATM and AM are separate escalations on different axes — never a package.** ATM

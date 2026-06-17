@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -233,6 +234,59 @@ func proposedFromPacket(path string) string {
 	return strings.TrimSpace(packet.OrchestrationDecision.ChosenShape)
 }
 
+type stampShapeOptions struct {
+	PacketPath string
+	Project    string
+	Proposed   string
+	Unattended bool
+	NoAM       bool
+	Out        io.Writer
+}
+
+func executeStampShape(opts stampShapeOptions) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	packetPath := opts.PacketPath
+	if strings.TrimSpace(packetPath) == "" {
+		packetPath = filepath.Join(cwd, ".agents", "rpi", executionPacketFile)
+	}
+	project := opts.Project
+	if strings.TrimSpace(project) == "" {
+		project = cwd
+	}
+	proposed := opts.Proposed
+	if strings.TrimSpace(proposed) == "" {
+		proposed = proposedFromPacket(packetPath)
+	}
+	var run amRunner
+	if !opts.NoAM {
+		run = defaultAMRunner
+	}
+	inputs := gatherShapeInputs(project, proposed, opts.Unattended, run)
+	verdict := orchestration.ValidateShape(inputs)
+	ts := time.Now().UTC().Format(time.RFC3339)
+	stamped, err := stampShapeEverywhere(packetPath, verdict, ts)
+	if err != nil {
+		return err
+	}
+	fired := "none"
+	if len(verdict.PredicatesFired) > 0 {
+		fired = strings.Join(verdict.PredicatesFired, ",")
+	}
+	archiveNote := ""
+	if len(stamped) > 1 {
+		archiveNote = fmt.Sprintf(" (+%d run-archive snapshot)", len(stamped)-1)
+	}
+	out := opts.Out
+	if out == nil {
+		out = os.Stdout
+	}
+	fmt.Fprintf(out, "orchestration_decision stamped: shape=%s predicates_fired=%s%s\n", verdict.Shape, fired, archiveNote)
+	return nil
+}
+
 func newRPIStampShapeCmd() *cobra.Command {
 	var (
 		packetFlag   string
@@ -255,43 +309,15 @@ Go seed-writer only runs in the retired rpi_* engine). am failures degrade to
 the single-agent floor; the packet always gets a record.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cwd, err := os.Getwd()
-			if err != nil {
-				return err
-			}
-			packetPath := packetFlag
-			if strings.TrimSpace(packetPath) == "" {
-				packetPath = filepath.Join(cwd, ".agents", "rpi", executionPacketFile)
-			}
-			project := projectFlag
-			if strings.TrimSpace(project) == "" {
-				project = cwd
-			}
-			proposed := proposedFlag
-			if strings.TrimSpace(proposed) == "" {
-				proposed = proposedFromPacket(packetPath)
-			}
-			var run amRunner
-			if !noAM {
-				run = defaultAMRunner
-			}
-			inputs := gatherShapeInputs(project, proposed, unattended, run)
-			verdict := orchestration.ValidateShape(inputs)
-			ts := time.Now().UTC().Format(time.RFC3339)
-			stamped, err := stampShapeEverywhere(packetPath, verdict, ts)
-			if err != nil {
-				return err
-			}
-			fired := "none"
-			if len(verdict.PredicatesFired) > 0 {
-				fired = strings.Join(verdict.PredicatesFired, ",")
-			}
-			archiveNote := ""
-			if len(stamped) > 1 {
-				archiveNote = fmt.Sprintf(" (+%d run-archive snapshot)", len(stamped)-1)
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "orchestration_decision stamped: shape=%s predicates_fired=%s%s\n", verdict.Shape, fired, archiveNote)
-			return nil
+			printStampShapeDeprecation()
+			return executeStampShape(stampShapeOptions{
+				PacketPath: packetFlag,
+				Project:    projectFlag,
+				Proposed:   proposedFlag,
+				Unattended: unattended,
+				NoAM:       noAM,
+				Out:        cmd.OutOrStdout(),
+			})
 		},
 	}
 	cmd.Flags().StringVar(&packetFlag, "packet", "", "Path to the execution packet (default .agents/rpi/execution-packet.json)")

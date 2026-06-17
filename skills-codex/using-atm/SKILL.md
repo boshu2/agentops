@@ -34,6 +34,10 @@ This skill does **not** re-document the full `atm` command surface — run
 `atm help`. It covers the **AgentOps substrate contract**: how to dispatch and
 tend AgentOps loops on an ATM swarm.
 
+**Instrument lane (before spawn):** run `ao orchestrate preflight --profile <name> --json`
+and `ao orchestrate verify` after spawn. See [`/orchestrate`](../orchestrate/SKILL.md)
+and `docs/contracts/orchestration-profiles.yaml`.
+
 ## The dispatch contract
 
 1. **One bead = one whole-loop skill invocation.** A pane's agent runs

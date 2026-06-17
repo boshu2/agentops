@@ -2221,13 +2221,47 @@ ao handoff [summary] [flags]
 
 ### `ao orchestrate`
 
-Tooling for the orchestration safe-degradation ladder
+Instrument lane for out-of-session multi-model orchestration: tools,
 
 ```
 ao orchestrate [command]
 ```
 
 **Subcommands:**
+
+#### `ao orchestrate preflight`
+
+Check tools, atm version floor, Agent Mail health, and session collisions
+
+```
+ao orchestrate preflight [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help             help for preflight
+      --json             Emit JSON instrument result
+      --profile string   Profile id (dual-pane, tri-vendor)
+```
+
+#### `ao orchestrate route`
+
+Map posture inputs to a profile and next preflight command.
+
+```
+ao orchestrate route [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help            help for route
+      --json            Emit JSON instrument result
+      --models string   Comma-separated models (opus,codex,agy)
+      --unattended      Durability axis: unattended out-of-session
+      --writers int     Parallel writer count
+```
 
 #### `ao orchestrate select`
 
@@ -2244,6 +2278,72 @@ ao orchestrate select [flags]
       --json         Emit the selection trace as JSON
       --opt-out      Bypass swarm engines and run on the beads floor
       --pin string   Force a backend: ntm|claude|codex|beads (overrides --opt-out and availability)
+```
+
+#### `ao orchestrate shape`
+
+Validate and stamp chosen_shape on .agents/rpi/execution-packet.json.
+
+```
+ao orchestrate shape [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help              help for shape
+      --no-am             Skip Agent Mail gathering
+      --packet string     Execution packet path
+      --project string    Agent Mail project key
+      --proposed string   Proposed shape
+      --unattended        Durability axis
+```
+
+#### `ao orchestrate status`
+
+List active ATM sessions with degraded hints
+
+```
+ao orchestrate status [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for status
+      --json   Emit JSON
+```
+
+#### `ao orchestrate tools`
+
+Probe binaries declared in docs/contracts/orchestration-tools.yaml and emit a verdict.
+
+```
+ao orchestrate tools [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help   help for tools
+      --json   Emit JSON instrument result
+```
+
+#### `ao orchestrate verify`
+
+Verify pane map against an orchestration profile using atm activity, spawn
+
+```
+ao orchestrate verify [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help             help for verify
+      --json             Emit JSON instrument result
+      --profile string   Profile id
+      --session string   ATM session name
 ```
 
 ---

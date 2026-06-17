@@ -1,0 +1,59 @@
+# Orchestration profiles — machine-checkable SOT for out-of-session spawn contracts.
+# Drift gate: scripts/check-orchestration-profiles.sh ↔ skills/dual-pane-atm spawn-checklist.
+
+profiles:
+  dual-pane:
+    profile_id: dual-pane
+    shape: atm-only
+    required_tools: [atm, claude, codex, tmux]
+    panes:
+      - slot: 1
+        runtime: claude
+        model: opus
+        role: lead
+      - slot: 2
+        runtime: codex
+        model: gpt-5.5
+        role: implement
+    spawn_argv:
+      - ["--no-user"]
+      - ["--cc=1:opus"]
+      - ["--cod=1:gpt-5.5"]
+    checklist_markers:
+      preflight_step: "ao orchestrate preflight --profile dual-pane"
+      verify_step: "ao orchestrate verify --session"
+      spawn_argv_tokens:
+        - "--no-user"
+        - "--cc=1:opus"
+        - "--cod=1:gpt-5.5"
+    send_contracts:
+      codex:
+        requires: codex-preflight-proceed
+        before: codex-goal
+
+  tri-vendor:
+    profile_id: tri-vendor
+    extends: dual-pane
+    required_tools: [atm, claude, codex, agy, tmux]
+    panes:
+      - slot: 1
+        runtime: claude
+        model: opus
+        role: lead
+      - slot: 2
+        runtime: codex
+        model: gpt-5.5
+        role: implement
+      - slot: 3
+        runtime: agy
+        role: review
+    spawn_argv_add:
+      - ["--agy=1"]
+    checklist_markers:
+      preflight_step: "ao orchestrate preflight --profile tri-vendor"
+      verify_step: "ao orchestrate verify --session"
+      spawn_argv_tokens:
+        - "--no-user"
+        - "--cc=1:opus"
+        - "--cod=1:gpt-5.5"
+        - "--agy=1"

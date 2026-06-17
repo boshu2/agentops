@@ -301,6 +301,12 @@
       "reason": "seams epic ag-xwjlc parity twin"
     },
     {
+      "name": "orchestrate",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "BC6 out-of-session instrument lane; Codex parity twin for route/preflight/verify procedure"
+    },
+    {
       "name": "perf",
       "treatment": "parity_only",
       "wave": "catalog-parity",
