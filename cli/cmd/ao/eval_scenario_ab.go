@@ -67,7 +67,7 @@ satisfaction threshold, or when the summed arm token cost exceeds the budget.`,
 		card, err := aoeval.RunScenarioAB(cmd.Context(), aoeval.ScenarioABOptions{
 			Scenario:     *sc,
 			ScenarioPath: evalScenarioABScenario,
-			Runner:       scenarioABRunnerFactory(),
+			Runner:       selectScenarioRunner(*sc),
 			Judge:        selectScenarioJudge(*sc),
 			Timeout:      evalScenarioABTimeout,
 			TokenBudget:  evalScenarioABBudget,

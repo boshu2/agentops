@@ -41,6 +41,10 @@ type Scenario struct {
 	ExpectedOutcome       string             `json:"expected_outcome"`
 	AcceptanceVectors     []AcceptanceVector `json:"acceptance_vectors,omitempty"`
 	SatisfactionThreshold float64            `json:"satisfaction_threshold"`
+	// RunnerMode selects how scenario-ab executes the task. one_shot (default) uses
+	// a single codex turn; agentic runs a multi-turn worker in an isolated workspace
+	// (age-5tv) for execution-required applied-OOD scenarios.
+	RunnerMode string `json:"runner_mode,omitempty"`
 	// AnswerKey, when set, switches grading to DETERMINISTIC: an arm passes iff
 	// this string appears (case-insensitive) in its output — no LLM judge. The
 	// rigorous, judge-noise-free grade for fact-recall OOD scenarios (age-k8u).
@@ -66,6 +70,23 @@ func ValidSource(s string) bool {
 		return true
 	default:
 		return false
+	}
+}
+
+const (
+	// RunnerModeOneShot is the default single-turn codex runner.
+	RunnerModeOneShot = "one_shot"
+	// RunnerModeAgentic runs a multi-turn worker in an isolated workspace (age-5tv).
+	RunnerModeAgentic = "agentic"
+)
+
+// EffectiveRunnerMode returns the runner mode for scenario-ab execution.
+func (s Scenario) EffectiveRunnerMode() string {
+	switch strings.TrimSpace(strings.ToLower(s.RunnerMode)) {
+	case RunnerModeAgentic:
+		return RunnerModeAgentic
+	default:
+		return RunnerModeOneShot
 	}
 }
 
