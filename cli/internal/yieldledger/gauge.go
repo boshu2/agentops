@@ -109,6 +109,18 @@ type Gauges struct {
 	CatchRateCrossFamily *float64 `json:"catch_rate_cross_family"`
 	CatchRateNote        string   `json:"catch_rate_note,omitempty"`
 
+	// Escapes = count(membrane MISSES): a CONFIRMED gate-verdict whose bead a
+	// later, higher-attempt verdict REFUTED (DetectEscapes). EscapeRate = escapes
+	// ÷ confirmed — the fraction of the membrane's CONFIRMEDs later proven wrong.
+	// This is the v2 quality gauge (age-6ty) that catch_rate alone can't give: a
+	// lenient/rubber-stamp membrane confirms freely, so its CONFIRMEDs are
+	// untrustworthy — a HIGH escape_rate exposes that regardless of catch_rate.
+	// EscapeRate is nil (not 0) when there are no CONFIRMED verdicts (0/0 reads as
+	// "no signal"), with EscapeRateNote explaining why.
+	Escapes        int      `json:"escapes"`
+	EscapeRate     *float64 `json:"escape_rate"`
+	EscapeRateNote string   `json:"escape_rate_note,omitempty"`
+
 	// L = Σ(loss spend) ÷ R via a read-time join. LDefined guards the R==0 divide.
 	L         float64       `json:"l_loss"`
 	LDefined  bool          `json:"l_defined"`
@@ -435,6 +447,18 @@ func ComputeGauges(l *Ledger, runID string, cDelta float64, cKnown bool) Gauges 
 	if denomXF := refutedXF + confirmedXF; denomXF > 0 {
 		crXF := float64(refutedXF) / float64(denomXF)
 		g.CatchRateCrossFamily = &crXF
+	}
+
+	// EscapeRate = escapes ÷ confirmed (age-6ty). escapes is the count of CONFIRMED
+	// verdicts a later attempt refuted — each escape pins a distinct confirmed
+	// verdict, so escapes <= confirmed and the ratio is in [0,1]. nil when there
+	// are no confirmed verdicts (0/0 = no signal), never a fabricated 0.
+	g.Escapes = len(DetectEscapes(l, runID))
+	if g.Confirmed > 0 {
+		er := float64(g.Escapes) / float64(g.Confirmed)
+		g.EscapeRate = &er
+	} else {
+		g.EscapeRateNote = "no confirmed gate-verdicts to escape"
 	}
 
 	// Q — difficulty-weighted first-pass yield over distinct attempted beads.

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"strings"
 	"testing"
 	"time"
 
@@ -87,5 +89,36 @@ func TestEmitYieldEvent_Rejects(t *testing.T) {
 				t.Error("emitYieldEvent accepted a bad input, want error")
 			}
 		})
+	}
+}
+
+// TestWriteGaugeReport_EscapeRateRow verifies the human gauge report surfaces
+// the escape_rate row (age-6ty) with the escapes/confirmed counts and the
+// rubber-stamp framing — the v2 quality gauge must be visible, not just in JSON.
+func TestWriteGaugeReport_EscapeRateRow(t *testing.T) {
+	er := 0.25
+	g := yieldledger.Gauges{
+		RunID:        "r-test",
+		SpendMeasure: yieldledger.SpendMeasure,
+		Confirmed:    4,
+		Escapes:      1,
+		EscapeRate:   &er,
+	}
+	var buf bytes.Buffer
+	if err := writeGaugeReport(&buf, g, false); err != nil {
+		t.Fatalf("writeGaugeReport: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "escape_rate") {
+		t.Errorf("report missing escape_rate row:\n%s", out)
+	}
+	if !strings.Contains(out, "0.250") {
+		t.Errorf("report missing escape_rate value 0.250:\n%s", out)
+	}
+	if !strings.Contains(out, "1 escapes / 4 confirmed") {
+		t.Errorf("report missing escape/confirmed counts:\n%s", out)
+	}
+	if !strings.Contains(out, "rubber-stamp") {
+		t.Errorf("report missing the rubber-stamp framing:\n%s", out)
 	}
 }
