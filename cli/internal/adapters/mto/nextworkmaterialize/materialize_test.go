@@ -48,33 +48,45 @@ type matOpts struct {
 	dryRun     bool
 }
 
-// runMaterialize installs a fake bd port, invokes Run, and returns combined
-// output plus the captured bd-create argv list.
+// runMaterialize installs a fake tracker port, invokes Run, and returns
+// combined output plus the captured tracker argv list.
 func runMaterialize(t *testing.T, beadIDs []string, o matOpts) (string, [][]string, error) {
 	t.Helper()
 
 	var calls [][]string
 	idx := 0
-	execBD := func(a ...string) ([]byte, error) {
+	createdIDs := make(map[string]bool)
+	execTracker := func(a ...string) ([]byte, error) {
 		calls = append(calls, a)
-		id := fmt.Sprintf("ag-mat%d", idx)
-		if idx < len(beadIDs) {
-			id = beadIDs[idx]
+		switch {
+		case len(a) > 0 && a[0] == "create":
+			id := fmt.Sprintf("ag-mat%d", idx)
+			if idx < len(beadIDs) {
+				id = beadIDs[idx]
+			}
+			idx++
+			createdIDs[id] = true
+			return []byte(id + "\n"), nil
+		case len(a) > 1 && a[0] == "show":
+			if createdIDs[a[1]] {
+				return []byte("id: " + a[1] + "\n"), nil
+			}
+			return nil, fmt.Errorf("Issue not found: %s", a[1])
+		default:
+			return nil, fmt.Errorf("unexpected tracker call: %v", a)
 		}
-		idx++
-		return []byte(id + "\n"), nil
 	}
 
 	var out bytes.Buffer
 	err := Run(Options{
-		File:           o.file,
-		DryRun:         o.dryRun,
-		SourceEpic:     o.sourceEpic,
-		MaterializedBy: DefaultMaterializedBy,
-		Out:            &out,
-		ErrOut:         &out,
-		BDAvailable:    func() bool { return true },
-		ExecBD:         execBD,
+		File:             o.file,
+		DryRun:           o.dryRun,
+		SourceEpic:       o.sourceEpic,
+		MaterializedBy:   DefaultMaterializedBy,
+		Out:              &out,
+		ErrOut:           &out,
+		TrackerAvailable: func() bool { return true },
+		ExecTracker:      execTracker,
 	})
 	return out.String(), calls, err
 }
@@ -104,7 +116,7 @@ func readQueueItems(t *testing.T, path string) []rpi.NextWorkItem {
 //
 //	Given a completed wave with a harvested follow-up
 //	When materialize runs
-//	Then a durable bead exists (via bd create) carrying source_epic + proof_ref,
+//	Then a durable bead exists (via br create) carrying source_epic + proof_ref,
 //	     not only a next-work.jsonl queue line.
 func TestNextWorkMaterialize_CreatesDurableBeadWithProvenance(t *testing.T) {
 	item := rpi.NextWorkItem{
@@ -122,28 +134,34 @@ func TestNextWorkMaterialize_CreatesDurableBeadWithProvenance(t *testing.T) {
 		t.Fatalf("materialize: %v", err)
 	}
 
-	if len(calls) != 1 {
-		t.Fatalf("expected exactly 1 bd create call, got %d: %v", len(calls), calls)
+	createCalls := callsWithVerb(calls, "create")
+	if len(createCalls) != 1 {
+		t.Fatalf("expected exactly 1 br create call, got %d: %v", len(createCalls), calls)
 	}
-	argv := calls[0]
+	if !hasCall(calls, "show") {
+		t.Fatalf("expected br show verification call, got %v", calls)
+	}
+	argv := createCalls[0]
 	if argv[0] != "create" {
 		t.Errorf("expected first arg 'create', got %q", argv[0])
 	}
 	joined := strings.Join(argv, "\x00")
 	// Durable bead carries the harvested title.
 	if !strings.Contains(joined, "Fix the cwd bug in ao goals measure") {
-		t.Errorf("bd create args missing harvested title: %v", argv)
+		t.Errorf("br create args missing harvested title: %v", argv)
 	}
-	// bug severity high -> bd type bug, priority 1.
+	// bug severity high -> br type bug, priority 1.
 	assertFlag(t, argv, "--type", "bug")
 	assertFlag(t, argv, "--priority", "1")
-	// Provenance rides native --metadata: source_epic + proof_ref present.
-	meta := flagValue(t, argv, "--metadata")
-	if !strings.Contains(meta, "ag-9jle") {
-		t.Errorf("metadata missing source_epic ag-9jle: %s", meta)
+	if hasFlag(argv, "--metadata") {
+		t.Fatalf("br create does not support legacy --metadata; argv=%v", argv)
 	}
-	if !strings.Contains(meta, "run-abc123") || !strings.Contains(meta, "proof_ref") {
-		t.Errorf("metadata missing proof_ref: %s", meta)
+	desc := flagValue(t, argv, "--description")
+	if !strings.Contains(desc, "ag-9jle") {
+		t.Errorf("description provenance missing source_epic ag-9jle: %s", desc)
+	}
+	if !strings.Contains(desc, "run-abc123") || !strings.Contains(desc, "proof_ref") {
+		t.Errorf("description provenance missing proof_ref: %s", desc)
 	}
 
 	// The item is stamped with its durable bead_id (back-reference), proving
@@ -158,6 +176,53 @@ func TestNextWorkMaterialize_CreatesDurableBeadWithProvenance(t *testing.T) {
 	}
 }
 
+func TestNextWorkMaterialize_DoesNotStampUnverifiedTrackerID(t *testing.T) {
+	item := rpi.NextWorkItem{
+		Title:       "Materialize only real tracker IDs",
+		Type:        "bug",
+		Severity:    "high",
+		Source:      "post-mortem-finding",
+		Description: "A create command can return stdout without persisting the bead.",
+	}
+	path := writeMaterializeQueue(t, batchLine(t, "age-6sg", item))
+
+	var calls [][]string
+	execTracker := func(a ...string) ([]byte, error) {
+		calls = append(calls, a)
+		switch {
+		case len(a) > 0 && a[0] == "create":
+			return []byte("agentops-ghost\n"), nil
+		case len(a) > 1 && a[0] == "show" && a[1] == "agentops-ghost":
+			return nil, fmt.Errorf("Issue not found: agentops-ghost")
+		default:
+			return nil, fmt.Errorf("unexpected tracker call: %v", a)
+		}
+	}
+
+	var out bytes.Buffer
+	err := Run(Options{
+		File:             path,
+		MaterializedBy:   DefaultMaterializedBy,
+		Out:              &out,
+		ErrOut:           &out,
+		TrackerAvailable: func() bool { return true },
+		ExecTracker:      execTracker,
+	})
+	if err == nil {
+		t.Fatal("expected materialize to fail when tracker cannot verify returned ID")
+	}
+	if !hasCall(calls, "create") || !hasCall(calls, "show") {
+		t.Fatalf("expected create then show verification calls, got %v", calls)
+	}
+	items := readQueueItems(t, path)
+	if len(items) != 1 || items[0].BeadID != "" {
+		t.Fatalf("unverified tracker ID must not be stamped, got %+v", items)
+	}
+	if !strings.Contains(out.String(), "agentops-ghost") {
+		t.Fatalf("summary should name the unverified ID, got: %s", out.String())
+	}
+}
+
 func TestNextWorkMaterialize_Idempotent(t *testing.T) {
 	item := rpi.NextWorkItem{
 		Title: "Tidy the docs links", Type: "docs", Severity: "low",
@@ -165,8 +230,8 @@ func TestNextWorkMaterialize_Idempotent(t *testing.T) {
 	}
 	path := writeMaterializeQueue(t, batchLine(t, "ag-9jle", item))
 
-	if _, calls, err := runMaterialize(t, []string{"ag-real7"}, matOpts{file: path}); err != nil || len(calls) != 1 {
-		t.Fatalf("first run: err=%v calls=%d (want 1)", err, len(calls))
+	if _, calls, err := runMaterialize(t, []string{"ag-real7"}, matOpts{file: path}); err != nil || len(callsWithVerb(calls, "create")) != 1 {
+		t.Fatalf("first run: err=%v calls=%d create_calls=%d (want 1)", err, len(calls), len(callsWithVerb(calls, "create")))
 	}
 	// Second run: the item now has a bead_id, so nothing is created.
 	out, calls, err := runMaterialize(t, nil, matOpts{file: path})
@@ -174,7 +239,7 @@ func TestNextWorkMaterialize_Idempotent(t *testing.T) {
 		t.Fatalf("second run: %v", err)
 	}
 	if len(calls) != 0 {
-		t.Fatalf("idempotency broken: second run made %d bd calls", len(calls))
+		t.Fatalf("idempotency broken: second run made %d tracker calls", len(calls))
 	}
 	if !strings.Contains(out, "no unmaterialized items") {
 		t.Errorf("expected no-op summary, got: %s", out)
@@ -200,11 +265,12 @@ func TestNextWorkMaterialize_SkipsConsumedAndHeld(t *testing.T) {
 	if err != nil {
 		t.Fatalf("materialize: %v", err)
 	}
-	if len(calls) != 1 {
-		t.Fatalf("expected only the fresh item materialized, got %d calls: %v", len(calls), calls)
+	createCalls := callsWithVerb(calls, "create")
+	if len(createCalls) != 1 {
+		t.Fatalf("expected only the fresh item materialized, got %d create calls: %v", len(createCalls), calls)
 	}
-	if !strings.Contains(strings.Join(calls[0], "\x00"), "Fresh actionable item") {
-		t.Errorf("wrong item materialized: %v", calls[0])
+	if !strings.Contains(strings.Join(createCalls[0], "\x00"), "Fresh actionable item") {
+		t.Errorf("wrong item materialized: %v", createCalls[0])
 	}
 }
 
@@ -241,7 +307,7 @@ func TestNextWorkMaterialize_SkipsBatchConsumedEntry(t *testing.T) {
 		t.Fatalf("materialize: %v", err)
 	}
 	if len(calls) != 0 {
-		t.Fatalf("batch-consumed entry must yield zero bd-create calls, got %d: %v", len(calls), calls)
+		t.Fatalf("batch-consumed entry must yield zero tracker calls, got %d: %v", len(calls), calls)
 	}
 	if !strings.Contains(out, "no unmaterialized items") {
 		t.Errorf("expected no-op summary for a fully batch-consumed queue, got: %s", out)
@@ -260,7 +326,7 @@ func TestNextWorkMaterialize_DryRunDoesNotMutate(t *testing.T) {
 		t.Fatalf("dry-run: %v", err)
 	}
 	if len(calls) != 0 {
-		t.Fatalf("dry-run must not call bd create, got %d", len(calls))
+		t.Fatalf("dry-run must not call tracker create, got %d", len(calls))
 	}
 	if !strings.Contains(out, "would create") {
 		t.Errorf("dry-run summary should say 'would create', got: %s", out)
@@ -280,11 +346,12 @@ func TestNextWorkMaterialize_SourceEpicFilter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("materialize: %v", err)
 	}
-	if len(calls) != 1 {
-		t.Fatalf("source-epic filter should yield 1 create, got %d", len(calls))
+	createCalls := callsWithVerb(calls, "create")
+	if len(createCalls) != 1 {
+		t.Fatalf("source-epic filter should yield 1 create, got %d", len(createCalls))
 	}
-	if !strings.Contains(strings.Join(calls[0], "\x00"), "From epic A") {
-		t.Errorf("filter selected wrong epic: %v", calls[0])
+	if !strings.Contains(strings.Join(createCalls[0], "\x00"), "From epic A") {
+		t.Errorf("filter selected wrong epic: %v", createCalls[0])
 	}
 }
 
@@ -310,12 +377,40 @@ func TestMapSeverityToPriority(t *testing.T) {
 	}
 }
 
+func hasCall(calls [][]string, verb string) bool {
+	for _, call := range calls {
+		if len(call) > 0 && call[0] == verb {
+			return true
+		}
+	}
+	return false
+}
+
+func callsWithVerb(calls [][]string, verb string) [][]string {
+	var out [][]string
+	for _, call := range calls {
+		if len(call) > 0 && call[0] == verb {
+			out = append(out, call)
+		}
+	}
+	return out
+}
+
 // assertFlag fails unless argv contains flag immediately followed by want.
 func assertFlag(t *testing.T, argv []string, flag, want string) {
 	t.Helper()
 	if got := flagValue(t, argv, flag); got != want {
 		t.Errorf("flag %s = %q, want %q (argv=%v)", flag, got, want, argv)
 	}
+}
+
+func hasFlag(argv []string, flag string) bool {
+	for _, arg := range argv {
+		if arg == flag {
+			return true
+		}
+	}
+	return false
 }
 
 // flagValue returns the value following flag in argv, failing if absent.
