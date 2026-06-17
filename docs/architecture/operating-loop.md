@@ -13,7 +13,7 @@ BDD-shaped intent issue
   → evidence + learning capture (under the promotion ratchet)
 ```
 
-The doctrine source for this spine is [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-15-cdlc-dojo-doctrine.md). Promote changes there first, then update this doc.
+The doctrine source for this spine is [`.agents/research/2026-05-16-agentops-3-cdlc-context-validation.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-16-agentops-3-cdlc-context-validation.md). Promote changes there first, then update this doc.
 
 ## Governing principles
 
@@ -75,7 +75,7 @@ Template: [`docs/templates/intent-issue.md`](../templates/intent-issue.md). Skil
 
 ### 2. Track as a bead when it leaves the head
 
-A bead is the linked-intent packet for one BDD-shaped behavior change. It carries the acceptance examples, the bounded-context tag, the slice list, the wave plan, accumulating evidence, and residual gaps at close. One-shot work that stays inside a single prompt does not need a bead. Skill: `/beads` (via `br`; while legacy `.beads/` retirement is in progress, invoke as `BEADS_DIR=$PWD/_beads br ...`).
+A bead is the linked-intent packet for one BDD-shaped behavior change. It carries the acceptance examples, the bounded-context tag, the slice list, the wave plan, accumulating evidence, and residual gaps at close. One-shot work that stays inside a single prompt does not need a bead. Skill: `beads-br` (via `br`; while legacy `.beads/` retirement is in progress, invoke as `BEADS_DIR=$PWD/_beads br ...`).
 
 ### 3. Slice vertically through behavior
 
@@ -146,7 +146,7 @@ The ratchet is what keeps `.agents/` from becoming a landfill. Compounding only 
 | Loop move | Primary skills | Produces |
 |-----------|----------------|----------|
 | Shape intent | `discovery`, `product`, `plan` | BDD intent issue with acceptance examples |
-| Track as bead | `beads` | Bead with slice list + acceptance contract |
+| Track as bead | `beads-br` | Bead with slice list + acceptance contract |
 | Slice + wave plan | `plan` | Slice list + wave grouping + ownership map |
 | Pre-flight check | `pre-mortem`, `council` | Verdict on plan + wave validity |
 | TDD per slice | `implement` | First failing test → green → refactor |
@@ -186,7 +186,7 @@ The loop is operational discipline. The architectural seams are structural. They
 
 ## See also
 
-- [`.agents/research/2026-05-15-cdlc-dojo-doctrine.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-15-cdlc-dojo-doctrine.md) — doctrine source (promote changes here first)
+- [`.agents/research/2026-05-16-agentops-3-cdlc-context-validation.md`](https://github.com/boshu2/agentops/blob/main/.agents/research/2026-05-16-agentops-3-cdlc-context-validation.md) — doctrine source (promote changes here first)
 - [Component Map](component-map.md) — product/component routing and trim/defer posture
 - [Ports and Adapters](ports-and-adapters.md) — architectural seams the loop runs through
 - [Fungibility Charter](fungibility-charter.md) — the six doctrinal commitments behind the loop's stateless, role-free, single-model-default agents
