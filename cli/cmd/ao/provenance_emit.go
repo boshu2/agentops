@@ -108,10 +108,11 @@ func buildBeadCommitEdge(beadID, commitSHA string) provenancegraph.Edge {
 }
 
 var (
-	provEmitCommit string
-	provEmitRange  string
-	provEmitJSON   bool
-	provEmitDryRun bool
+	provEmitCommit   string
+	provEmitRange    string
+	provEmitTrunkRef string
+	provEmitJSON     bool
+	provEmitDryRun   bool
 )
 
 var provenanceEmitLandedCmd = &cobra.Command{
@@ -140,6 +141,7 @@ func init() {
 	provenanceCmd.AddCommand(provenanceEmitLandedCmd)
 	provenanceEmitLandedCmd.Flags().StringVar(&provEmitCommit, "commit", "", "Single commit-ish to emit edges for (default HEAD when no --range)")
 	provenanceEmitLandedCmd.Flags().StringVar(&provEmitRange, "range", "", "Git revision range (e.g. origin/main..HEAD); emits for every commit in it")
+	provenanceEmitLandedCmd.Flags().StringVar(&provEmitTrunkRef, "trunk-ref", "", "Require each commit to be an ancestor of this ref (e.g. origin/main) before emitting; merge_sha uses the resolved full OID")
 	provenanceEmitLandedCmd.Flags().BoolVar(&provEmitJSON, "json", false, "Emit appended edges as JSON")
 	provenanceEmitLandedCmd.Flags().BoolVar(&provEmitDryRun, "dry-run", false, "Resolve and print edges without writing the ledger")
 }
@@ -157,6 +159,12 @@ func runProvenanceEmitLanded(cmd *cobra.Command, args []string) error {
 	commits, err := resolveLandedCommits(provEmitRange, provEmitCommit)
 	if err != nil {
 		return err
+	}
+	if strings.TrimSpace(provEmitTrunkRef) != "" {
+		commits, err = filterCommitsOnTrunk(commits, provEmitTrunkRef)
+		if err != nil {
+			return err
+		}
 	}
 
 	store := provenancegraph.NewStore(resolveLedgerPath())
@@ -224,6 +232,27 @@ func resolveLandedCommits(rangeSpec, commit string) ([]landedCommit, error) {
 		return nil, fmt.Errorf("read commit %s: %w", sha, err)
 	}
 	return []landedCommit{{sha: sha, msg: msg}}, nil
+}
+
+// filterCommitsOnTrunk drops commits that are not ancestors of trunkRef so
+// merge_sha/to_id only record OIDs that actually exist on the shared trunk
+// (age-0tn: pre-push local HEAD can diverge from origin/main after rewrites).
+func filterCommitsOnTrunk(commits []landedCommit, trunkRef string) ([]landedCommit, error) {
+	trunkRef = strings.TrimSpace(trunkRef)
+	if trunkRef == "" {
+		return commits, nil
+	}
+	if _, err := gitOutput(".", "rev-parse", "--verify", trunkRef); err != nil {
+		return nil, fmt.Errorf("trunk-ref %q not resolvable: %w", trunkRef, err)
+	}
+	var kept []landedCommit
+	for _, c := range commits {
+		if _, err := gitOutput(".", "merge-base", "--is-ancestor", c.sha, trunkRef); err != nil {
+			continue
+		}
+		kept = append(kept, c)
+	}
+	return kept, nil
 }
 
 // shortHash7 abbreviates a sha/hash to 7 chars for display.
