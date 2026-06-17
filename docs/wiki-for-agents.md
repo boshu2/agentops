@@ -38,7 +38,7 @@ So the wiki bitrots. Pages drift behind the code. The "current architecture" pag
 
 By week four it is a read-only artifact. Search breaks because no one tags. The team falls back to Slack scrollback and the one engineer who remembers everything.
 
-AgentOps inverts this. Sessions write to the wiki by default — runs land citations, councils land verdicts, post-mortems land learnings, the daemon defrags overnight. The agents that consume `.agents/` also produce it. Maintenance is mechanical, not voluntary. The wiki maintains itself because it sits on the path of everything else.
+AgentOps inverts this. Sessions write to the wiki by default — runs land citations, councils land verdicts, post-mortems land learnings, and an out-of-session substrate (NTM + Agent Mail) defrags overnight. The agents that consume `.agents/` also produce it. Maintenance is mechanical, not voluntary. The wiki maintains itself because it sits on the path of everything else.
 
 ## Why not Notion or Confluence?
 
@@ -49,7 +49,7 @@ AgentOps inverts this. Sessions write to the wiki by default — runs land citat
 | Not version-controlled with your code | Diffable, branchable, mergeable |
 | No decay ranking, no retrieval scoring | `ao inject` returns decay-ranked, token-budgeted packets |
 | No validation gates, no automated capture | Sessions write to it automatically; councils validate it |
-| Doesn't compound; you maintain it manually | Daemon defrags, evolves, and compounds it overnight |
+| Doesn't compound; you maintain it manually | An out-of-session substrate (NTM + Agent Mail) defrags, evolves, and compounds it overnight |
 | Read-only artifact | Writes itself: agents that use it also produce it |
 
 **Native agent traversal.** Markdown is the format models read best; a SaaS page has to be exported and re-embedded before an agent can use it.

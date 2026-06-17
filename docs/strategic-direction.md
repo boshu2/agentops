@@ -8,7 +8,7 @@ Three repositories converge into a single product surface:
 
 | Repository | Role | Status |
 |------------|------|--------|
-| **AgentOps** (`ao`) | One binary. Skills, hooks, knowledge flywheel, RPI orchestration, goal-driven evolution. The product. | Active |
+| **AgentOps** (`ao`) | One binary. Skills, knowledge flywheel, the CDLC operating loop, goal-driven evolution. Hookless. The product. | Active |
 | **Gas Town** (`gt`) | Upstream workspace manager. Multi-agent coordination, rig registry, dispatch. Consumes `ao` as a tool. | Active (upstream) |
 
 Olympus (`ol`) was the power-user daemon predecessor, archived. Its patterns (context compilation, constraint injection, run ledger) survive as features inside `ao`. No live integration exists.
@@ -20,7 +20,7 @@ The public product does not require users to know this vocabulary. This is the i
 **Knowledge OS** (the systems-theoretic substrate — Meadows leverage points, the dK/dt equation, stigmergy as the multi-agent coordination primitive)
 → **Olympus** (archived runtime; patterns absorbed as skills)
 → **AgentOps** (this reference implementation: skills + `ao` CLI + the CDLC operating loop; hookless, no daemon — out-of-session work is delegated to an NTM/MCP/managed-agents substrate)
-→ **Mt. Olympus** (forkable Gas City runtime proof — the empirical demonstration the substrate runs autonomously against a real codebase under operator control).
+→ **Mt. Olympus** (forkable runtime proof — the empirical demonstration the substrate runs autonomously against a real codebase under operator control).
 
 Industry parallels (Anthropic Managed Agents, factory-style mission systems, Cursor agents) are convergent on the same planner/implementer/validator shape — not derived-from.
 
@@ -45,7 +45,7 @@ dK/dt = I(t) - d*K + s*r*K - f*K^2
 
 **Escape velocity:** When `s * r > d` (retrieval times usage exceeds decay), knowledge compounds. When it does not, growth stalls regardless of input volume.
 
-Every feature, skill, hook, and CLI command exists to keep the system above that threshold. See [the-science.md](the-science.md) for the full formal model with limits-to-growth analysis.
+Every feature, skill, and CLI command exists to keep the system above that threshold. See [the-science.md](the-science.md) for the full formal model with limits-to-growth analysis.
 
 ---
 
@@ -62,7 +62,7 @@ Donella Meadows ranked intervention points in complex systems from least to most
 | 8 | Balancing feedback loops | Regression gates auto-revert bad cycles, council FAIL blocks merge, push gate blocks unvalidated code | Prevents `K` regression |
 | 7 | Reinforcing feedback loops | Knowledge flywheel (session N learnings feed session N+1), citation-based utility scoring (MemRL) | The `s*r*K` compounding term |
 | 6 | Information flows | `ao lookup` (knowledge into context on demand), `ao forge` (experience out of sessions), context-packet nudges, briefing packets | Increases `s` by getting right knowledge to right window |
-| 5 | Rules | CI gates wired through `.github/workflows/validate.yml`, validation gates, worker-guard (lead-only commit), dangerous-git guard, pre-mortem gate | Structural enforcement. Rules cannot be forgotten or ignored. |
+| 5 | Rules | The Go pre-push gate (`ao gate check`) as routine release authority, `.github/workflows/validate.yml` as a tag/PR/manual backstop, validation gates, the `/evolve` council-gated post-mortem checkpoint | Structural enforcement. Rules cannot be forgotten or ignored. |
 | 4 | Self-organization | `/evolve` fitness loop (measure-fix-validate-learn-repeat), constraint compiler (learnings become structural rules), progressive skill revelation | The system improves its own rules based on experience |
 | 3 | Goals | `GOALS.md` with mechanically verifiable gates, `ao goals measure`, severity-weighted selection, North Stars and Anti Stars | System intent. What the system optimizes toward. |
 | 2 | Mindset/paradigm | The 6 paradigm shifts below | How the builder thinks about agent systems |
@@ -89,12 +89,12 @@ AgentOps: treat context as a security boundary. Each agent gets only the informa
 ### 3. From "validation is post-hoc" to "validation is preventive" (Shift-Left)
 
 Traditional: review code after it is written.
-AgentOps: validate at every stage. `/pre-mortem` catches spec failures before implementation. Hooks enforce gates mechanically (push gate, pre-mortem gate, worker guard). Councils validate before *and* after code ships. The cost of finding a bug increases 10x at each stage it survives.
+AgentOps: validate at every stage. `/pre-mortem` catches spec failures before implementation. The Go pre-push gate (`ao gate check`) enforces release rules mechanically before code lands on `main`. Councils validate before *and* after code ships. The cost of finding a bug increases 10x at each stage it survives.
 
-### 4. From "rules are guidelines" to "rules are structural" (Hooks)
+### 4. From "rules are guidelines" to "rules are structural" (the gate)
 
 Traditional: coding standards in a wiki that agents may or may not read.
-AgentOps: hook lifecycle events fire automatically on session start, tool use, push, compaction, and stop. Rules enforced by hooks cannot be forgotten, skipped, or rationalized away. The agent does not decide whether to follow them -- the system enforces them.
+AgentOps 3.0 is hookless: nothing auto-injects at session start. Enforcement is structural instead — the Go pre-push gate (`ao gate check`) is a hard wall in front of `main` that an agent cannot push past, and orientation is loaded explicitly and deterministically via `ao session bootstrap` + `ao inject`. The release rule does not depend on the agent remembering to follow it; the gate blocks the push. (The 2.x model fired lifecycle hooks automatically on session start, tool use, push, compaction, and stop; that hook layer was torn out in 3.0 — see ADR-0009 and the hookless rearchitecture.)
 
 ### 5. From "agent memory" to "system bookkeeping" (Corpus)
 
@@ -104,7 +104,7 @@ AgentOps: the system keeps the books. Attempts, decisions, citations, evidence p
 ### 6. From "designed systems" to "evolved systems" (The Seed)
 
 Traditional: design the complete system upfront, then build it.
-AgentOps: define minimal starting conditions (GOALS.md + hooks + core skills + flywheel bootstrap), plant them in a repo, and let the system evolve toward whatever that repo's goals are. `/evolve` measures fitness, fixes the worst gap, validates nothing regressed, extracts what it learned, and repeats. The system builds its own safety net first (tests), then uses that safety net to refactor aggressively. Nobody tells it the order -- severity-based goal selection naturally produces the correct sequence.
+AgentOps: define minimal starting conditions (GOALS.md + the pre-push gate + core skills + flywheel bootstrap), plant them in a repo, and let the system evolve toward whatever that repo's goals are. `/evolve` measures fitness, fixes the worst gap, validates nothing regressed, extracts what it learned, and repeats. The system builds its own safety net first (tests), then uses that safety net to refactor aggressively. Nobody tells it the order -- severity-based goal selection naturally produces the correct sequence.
 
 This means goals and product docs can intentionally lead the implementation. They are the desired state and fitness landscape; the repo is actual state; the loops reconcile the delta.
 
@@ -114,7 +114,7 @@ This is the deepest shift. The product is not a pile of skills. The product is t
 
 ## Agent-First Design Principles
 
-These principles govern how skills, hooks, and the CLI present information to agents:
+These principles govern how skills and the CLI present information to agents:
 
 ### Briefing Packets
 

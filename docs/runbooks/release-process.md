@@ -114,7 +114,7 @@ curl -sL https://github.com/boshu2/agentops/releases/download/vX.Y.Z/ao_X.Y.Z_da
 ```
 
 2. Update install docs if paths or platform support changed.
-3. Close the release bead/epic in beads (`bd close <id>`).
+3. Close the release bead/epic in br (`BEADS_DIR=$PWD/_beads br close <id>`).
 
 ## Quick Reference
 

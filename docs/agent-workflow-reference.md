@@ -75,7 +75,7 @@ This updates SKILL-TIERS.md, PRODUCT.md, README.md, docs/SKILLS.md, docs/ARCHITE
 
 **Go complexity budget.** New/modified functions must stay under cyclomatic complexity 25 (warn at 15).
 
-**No TODOs in SKILL.md.** Use `bd` issue tracking instead.
+**No TODOs in SKILL.md.** Use `br` issue tracking (`BEADS_DIR=$PWD/_beads br`) instead.
 
 **No secrets in code.** CI greps for hardcoded passwords, API keys, tokens in non-test files.
 

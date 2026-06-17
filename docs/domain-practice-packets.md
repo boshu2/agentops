@@ -56,7 +56,7 @@ above them.
 | `PRACTICE-REGISTRY.md` | Practice lineage and canonical `practices: [slug]` registry. |
 | `AGENTS.md` or runtime instructions | Local operating rules for agents in this repo. |
 | `docs/standards/` and `skills/standards/` | Coding and review conventions. |
-| `bd` issues | Current work, dependencies, acceptance criteria, and ownership. |
+| `br` beads (`_beads/`) | Current work, dependencies, acceptance criteria, and ownership. |
 | `ao context assemble` | Builds a phase-scoped briefing from goals, history, intel, task, and protocol. |
 | `ao context packet` | Shows ranked findings, planning rules, pre-mortem checks, and next-work context. |
 | `/council` | Turns the packet into a shared evidence frame for independent judges. |
@@ -103,12 +103,12 @@ Before a packet is used in a demo, PMF scenario, or release claim, verify:
 - At least one standards or practice source is linked.
 - Intent lineage links the packet to the handoff, execution packet, verdict, or
   trace artifact that carries the decision forward.
-- Work context includes a bd issue, plan path, PR, or explicit task.
+- Work context includes a br bead, plan path, PR, or explicit task.
 - Evidence rules say where artifacts land.
 - Claims that require exported evidence are marked blocked until that evidence
   exists.
-- The optional schedule or daemon lane is second-stage unless the demo is
-  specifically about automation.
+- The optional out-of-session substrate lane (NTM + MCP Agent Mail) is
+  second-stage unless the demo is specifically about automation.
 
 ## Example
 

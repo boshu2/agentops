@@ -92,7 +92,7 @@ The validate workflow runs many focused jobs across 4 tiers of parallelism. Most
 
 ### The `summary` Aggregator Pattern
 
-The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It fails when any `needs.*.result` is `failure`. Advisory and warn-only jobs avoid blocking through `continue-on-error: true` at the job or step level, so their findings remain visible without producing a failing `needs` result. This single aggregator is the branch protection target -- repository settings only need to require `summary` to pass, not every individual job.
+The final `summary` job lists every other job in its `needs` array and runs with `if: always()`. It fails when any `needs.*.result` is `failure`. Advisory and warn-only jobs avoid blocking through `continue-on-error: true` at the job or step level, so their findings remain visible without producing a failing `needs` result. This single aggregator is the rollup target for any required check on tags/PRs/manual dispatch — only `summary` needs to be required, not every individual job. Note: under the push-to-main model (ag-qidx) branch protection is **off**, so on routine `main` pushes the authoritative release gate is the local pre-push Go gate (`ao gate check`); `validate.yml`/`summary` is a CI backstop on tags, PRs, and manual dispatch, not a required main-push gate.
 
 Current non-blocking validate jobs are `doctor-check`, `factory-claim-ledger-strict`, `practice-citations`, `check-test-staleness`, `swarm-evidence`, and `executable-spec-link-integrity`. `security-toolchain-gate` is blocking. The old `agentops-eval-advisory` job is no longer part of `validate.yml`; `agentops-contract-canaries` remains the blocking deterministic test gate for the stable public canary subset.
 
@@ -165,7 +165,7 @@ The local CI gate mirrors the remote pipeline and runs in 7 phases:
 | 3 | Medium-weight checks: CLI docs parity, ShellCheck, markdownlint, smoke tests, integration tests, coverage floor | Parallel |
 | 3b | Remote-parity checks also covered by `validate.yml` | Parallel |
 | 4 | Heavy checks: Go build + race tests, hook integration tests, SBOM generation, security toolchain gate | Parallel |
-| 5 | CLI smoke tests: hook install smoke, `ao init --hooks` + RPI smoke, release smoke test | Parallel |
+| 5 | CLI smoke tests: `ao` init/bootstrap smoke, release smoke test | Parallel |
 | 6 | Post-hoc `$HOME/.agents` content-hash gate | Sequential |
 | 7 | Release readiness evidence: HIL capture plus 8/10 readiness score | Sequential |
 

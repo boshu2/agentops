@@ -2,7 +2,7 @@
 
 Deep documentation for AgentOps. For quick start, see [README](https://github.com/boshu2/agentops/blob/main/README.md).
 
-> **⚠ 3.0 note (hookless).** AgentOps 3.0 installs **no hooks by default**. Diagrams/text below that show `auto-inject (hook)` / `hook (automatic)` are **historical (2.x)** — in 3.0 context is pulled **on-demand** (`ao lookup` / `ao inject`) and CI is the authoritative gate. See [3.0.md](3.0.md) and [MIGRATION-3.0.md](MIGRATION-3.0.md).
+> **⚠ 3.0 note (hookless).** AgentOps 3.0 installs **no hooks by default**. Diagrams/text below that show `auto-inject (hook)` / `hook (automatic)` are **historical (2.x)** — in 3.0 context is pulled **on-demand** (`ao lookup` / `ao inject`) and the local pre-push Go gate (`ao gate check`) is routine release authority (the model is push-to-main; `validate.yml` is a tag/PR/manual backstop). See [3.0.md](3.0.md) and [MIGRATION-3.0.md](MIGRATION-3.0.md).
 
 ---
 
@@ -45,7 +45,7 @@ The headless team backend preserves a shared worker artifact contract:
 
 | You Want | Use | Why |
 |----------|-----|-----|
-| Parallel tasks (fresh context each) | `/swarm` | Spawns agents, mayor owns the loop |
+| Parallel tasks (fresh context each) | `/swarm` | Spawns fresh-context agents; the orchestrator owns the loop |
 | Execute an entire epic | `/crank` | Orchestrates waves via `/swarm` until done |
 | Single issue, full lifecycle | `/implement` | Claim → execute → validate → close |
 | Gate progress without executing | `/ratchet` | Records/checks gates only |
@@ -74,8 +74,8 @@ Not just "does it compile?" — **does it match the spec?**
 ## Architecture
 
 ```
-MAYOR (orchestrator)                AGENTS (executors)
---------------------                ------------------
+ORCHESTRATOR                        AGENTS (executors)
+------------                        ------------------
 
 /crank epic-123
   |
@@ -315,4 +315,4 @@ ao pool list              # Show knowledge by quality tier
 ## Troubleshooting
 
 - Plugin skills don't show up when you press `/` in Claude Code: type the skill directly (e.g. `/pre-mortem`). (See the [Claude Code issue](https://github.com/anthropics/claude-code/issues/15178).)
-- `ao` not found: ensure it's on your `PATH` (`which ao`). For hook setup help, see `cli/docs/HOOKS.md`.
+- `ao` not found: ensure it's on your `PATH` (`which ao`). For 3.0 orientation, the relevant surface is `ao session bootstrap` / `ao inject` (AgentOps 3.0 is hookless — there is no hook setup step).

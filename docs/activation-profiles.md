@@ -51,7 +51,7 @@ Storyboard: [AgentOps 3.0 Council Demo Storyboard](examples/agentops-3-council-d
 - `PRODUCT.md`
 - `GOALS.md`
 - `PRACTICE-REGISTRY.md`
-- Relevant bd issue or plan path
+- Relevant br bead or plan path
 - `skills/council/SKILL.md`
 - Claim or evidence rules when public copy is involved
 
@@ -91,7 +91,7 @@ Use when moving from a real repo task to a validated implementation path.
 - `GOALS.md`
 - `PRACTICE-REGISTRY.md`
 - `AGENTS.md` or local runtime instructions
-- One bd issue or `.agents/rpi/execution-packet.json`
+- One br bead or `.agents/rpi/execution-packet.json`
 - Repo standards and relevant tests
 
 **Commands**
@@ -116,7 +116,7 @@ ao context assemble --phase planning --task "<task or issue title>"
 **Fallback**
 
 If `/rpi` is too heavy for the first pass, run `/research`, `/plan`, and
-`/pre-mortem` manually, then implement one bd issue.
+`/pre-mortem` manually, then implement one br bead.
 
 ### `pr-review`
 

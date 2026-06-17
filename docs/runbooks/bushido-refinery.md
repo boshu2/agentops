@@ -13,7 +13,7 @@ Every tick it checks `origin/main`. On a **new** commit it runs the full gate
    **flaky** (the repo's 18–30% flake rate means naive escalation would be noise);
 2. for deterministic failures only: writes a **poison beacon** (`.refinery-poison`
    + a `refinery` git note on the bad SHA) and files a **blocking fix-bead**
-   (`bd create --labels refinery,blocking`);
+   (`BEADS_DIR=$PWD/_beads br create --labels refinery,blocking`);
 3. on green: clears the beacon.
 
 It **never reverts.** A poisoned commit stays on `main`; the team fixes forward.

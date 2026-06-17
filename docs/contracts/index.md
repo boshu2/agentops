@@ -36,7 +36,7 @@ skills, the runtime, and external integrations.
     ---
 
     Product-neutral RemoteTarget, RemoteSession, command ledger, recovery, and
-    GasCity-first remote execution contract.
+    Remote execution contract (RETIRED 2026-06-11 — GasCity removed; out-of-session substrate is NTM + MCP Agent Mail).
 
 -   :material-clipboard-pulse: **[Eval Environment](eval-environment.md)**
 

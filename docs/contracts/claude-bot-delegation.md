@@ -2,6 +2,8 @@
 
 > Operational contract for the `@claude` GitHub App in this repo.
 > Source of truth for workflow + permissions: `.github/workflows/claude.yml`.
+>
+> **Merge model (as of ag-qidx, 2026-06-07): PUSH-TO-MAIN.** Branch protection is OFF; the local pre-push Go gate (`ao gate check`) is the routine release wall, and `validate.yml` / `claude-review` run as CI backstops on PRs, tags, and manual dispatch — not as required checks on every `main` push. This bot operates on the PR/issue paths that still exist (review, branch edits), not as a merge gate.
 
 ## What @claude is
 
@@ -11,9 +13,9 @@ It is **not** an autonomous agent that monitors PRs on a schedule. It only acts 
 
 ## What it is not
 
-- Not a substitute for branch protection (CI still gates merges)
+- Not the merge gate — the routine release wall is the local pre-push Go gate (`ao gate check`) under the push-to-main model; CI (`validate.yml`/`claude-review`) is a PR/tag/manual backstop
 - Not a `workflows: write` actor — it cannot edit files under `.github/workflows/` by default (see [Gotcha 2](#gotcha-2-workflow-files-fail-silently))
-- Not a reviewer in the GitHub "Required reviewers" sense — the required check is the `claude-review` *status check*, not a human-style review
+- Not a reviewer in the GitHub "Required reviewers" sense — `claude-review` is a CI status check on PRs, not a human-style review and not a branch-protection requirement (branch protection is off)
 
 ## Install
 
@@ -80,7 +82,7 @@ A `@claude` in a commit message, PR description, code, or markdown file does **n
 | Close issues | yes |
 | Edit `.github/workflows/*.yml` | **no** — see Gotcha 2 |
 | Edit repo settings, branch protection | no |
-| Push directly to `main` | no — branch protection blocks |
+| Push directly to `main` | n/a for the bot — it works on PR/issue branches; humans/agents push to `main` directly (branch protection is OFF under the push-to-main model, gated locally by the pre-push Go gate) |
 | Merge a PR | only via auto-merge (it can enable auto-merge, then CI must go green) |
 
 ## Gotchas
@@ -129,7 +131,7 @@ Validated 2026-05-18 across PRs #321–#326: every PR received `claude-review: S
 
 ## Operating contract
 
-- **Default required check:** `claude-review` (this repo's branch protection requires it on `main`).
+- **CI backstop check:** `claude-review` runs on PRs/tags/manual dispatch as a backstop. Branch protection is OFF (push-to-main since ag-qidx), so it is not a required check on `main` pushes; the routine release wall is the local pre-push Go gate (`ao gate check`).
 - **Workflow file:** `.github/workflows/claude.yml`.
 - **Bot identity:** commits authored by `github-actions[bot]` with co-author `Claude`.
 - **OAuth secret:** `CLAUDE_CODE_OAUTH_TOKEN` (rotate via `/install-github-app` re-run if compromised).
@@ -139,6 +141,6 @@ Validated 2026-05-18 across PRs #321–#326: every PR received `claude-review: S
 - Lesson `claude-app-default-readonly` (local-only: `.agents/learnings/2026-05-17-claude-app-default-readonly.md`) — the install-perm gotcha as a one-rule lesson
 - Lesson `dogfood-install-pr` (local-only: `.agents/learnings/2026-05-17-dogfood-install-pr.md`) — the install PR must itself follow the discipline it installs
 - [Lesson Format](lesson-format.md) — schema for `.agents/learnings/` entries
-- [AGENTS.md `## Workflow`](https://github.com/boshu2/agentops/blob/main/AGENTS.md) — PR-only discipline this bot operates inside
+- [AGENTS.md `## Workflow`](https://github.com/boshu2/agentops/blob/main/AGENTS.md) — push-to-main + pre-push Go gate discipline this bot operates inside
 
 > `.agents/learnings/` is repo-local (gitignored). Search local lessons with `ao inject "<keyword>"`, or inspect files that follow the [Lesson Format](lesson-format.md) contract.
