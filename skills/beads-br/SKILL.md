@@ -138,6 +138,32 @@ git push
 git status  # Verify clean
 ```
 
+## Issue-Lifecycle Discipline
+
+Folded from the retired `beads` umbrella (ag-ez7y6) — operating doctrine, not
+the command surface above. These keep the tracker graph honest across sessions:
+
+- **Live reads are authoritative.** Treat live `br show` / `br ready` / `br list`
+  output as the source of truth for current tracker state. Do NOT treat the
+  exported `issues.jsonl` as the primary decision source when live `br` data is
+  available — the JSONL is a git-friendly export artifact, refreshed on
+  `br sync --flush-only`.
+- **Scoped closure proof on every close.** `br close <id> --reason` must name the
+  touched files (or explicit no-file evidence artifact), the validation
+  command(s) run, and the parent-reconciliation outcome. Never close a child
+  bead with a generic reason like "done" or "implemented".
+- **Reconcile the parent in the same session.** After closing or materially
+  updating a child bead, reconcile the open parent: update stale "remaining gap"
+  notes immediately, and close the parent when the child resolved its last real
+  gap.
+- **Narrow the umbrella issue before implementing.** If `br ready` surfaces a
+  broad umbrella bead, do not implement against vague parent wording — first
+  narrow the remaining gap into an execution-ready child bead, land the child,
+  then reconcile the parent.
+- **Normalize stale queue items instead of skipping them.** Rewrite broad or
+  partially-absorbed beads to the actual remaining gap rather than silently
+  passing over them.
+
 ## Anti-Patterns
 
 - Running `br sync` without `--flush-only` or `--import-only`

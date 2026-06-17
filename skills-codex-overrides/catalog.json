@@ -77,12 +77,6 @@
       "reason": "Front-door routing skill that names the deciding axis (Workflow vs NTM vs plain skill) and hands off; the prose is decision guidance with no Codex-specific runtime divergence."
     },
     {
-      "name": "beads",
-      "treatment": "bespoke",
-      "wave": "backbone",
-      "reason": "Issue routing and dependency edits are a core Codex workflow and need explicit runtime-facing operator guidance."
-    },
-    {
       "name": "beads-br",
       "treatment": "parity_only",
       "wave": "catalog-parity",

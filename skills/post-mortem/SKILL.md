@@ -20,7 +20,7 @@ metadata:
   tier: judgment
   dependencies:
   - council
-  - beads
+  - beads-br
 context:
   window: fork
   intent:

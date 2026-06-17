@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-72 checked-in AgentOps skills before any broad rewrite, using current
+71 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 72 |
+| Skills audited | 71 |
 | Domains classified | 6 of 6 (BC1-BC6) |
-| Dispositions assigned | 72 / 72 |
+| Dispositions assigned | 71 / 71 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -68,7 +68,6 @@ Disposition meanings:
 | `agy-native` | BC5 Runtime | driving-adapter | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `autodev` | BC3 Loop | supporting | refactor | Must compose with PROGRAM.md and RPI as one vertical-slice executor. |
 | `automation-shape-routing` | BC4 Factory | supporting | keep | Front-door router: decides Workflow vs NTM swarm vs plain skill, hands off to the right builder. |
-| `beads` | BC3 Loop | driven-adapter | update | Tracker adapter is core; add BDD/slice acceptance self-test. |
 | `beads-br` | BC3 Loop | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `beads-bv` | BC3 Loop | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `beads-workflow` | BC3 Loop | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |

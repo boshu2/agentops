@@ -19,7 +19,7 @@ metadata:
   tier: execution
   dependencies:
   - research
-  - beads
+  - beads-br
   - pre-mortem
   - crank
   - implement

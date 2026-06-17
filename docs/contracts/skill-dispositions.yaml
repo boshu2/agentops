@@ -36,6 +36,11 @@
 #   date         date the terminal state was reached
 #   rationale    one-line historical justification
 historical:
+  beads:
+    state:        merged-into
+    merged-into:  beads-br
+    date:         2026-06-16
+    rationale:    "Retired via ao skills retire: merged into beads-br (ag-ez7y6 — 4->2 beads-skill consolidation; issue-lifecycle doctrine folded into beads-br)."
   validation:
     state:        merged-into
     merged-into:  validate
@@ -326,18 +331,6 @@ dispositions:
     aliases:          []
     supersedes:       null
     rationale:        "Must compose with PROGRAM.md and RPI as one vertical-slice executor"
-  - skill:            beads
-    domain:           "BC3 Loop"
-    hexagonal_role:   driven-adapter
-    disposition:      update
-    kind:             skill
-    runtime_targets:  [claude, codex]
-    parity_policy:    required
-    capability_class: tracking
-    path:             skills/beads/SKILL.md
-    aliases:          []
-    supersedes:       null
-    rationale:        "Tracker adapter is core; add BDD/slice acceptance self-test"
   - skill:            bootstrap
     domain:           "BC4 Factory"
     hexagonal_role:   driving-adapter

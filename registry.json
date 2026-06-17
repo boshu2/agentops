@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-16T22:06:17Z",
+  "generated_at": "2026-06-17T03:34:51Z",
   "summary": {
-    "skills": 72,
+    "skills": 71,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
     "cli_commands": 86,
     "workflows": 4,
-    "capabilities": 172
+    "capabilities": 171
   },
   "surfaces": {
     "skills": [
@@ -414,14 +414,6 @@
         "reference_count": 19
       },
       {
-        "name": "beads",
-        "tier": "library",
-        "path": "skills/beads/",
-        "has_skill_md": true,
-        "has_references": true,
-        "reference_count": 19
-      },
-      {
         "name": "shared",
         "tier": "library",
         "path": "skills/shared/",
@@ -751,7 +743,7 @@
         "name": "ao beads",
         "path": "cli/cmd/ao/",
         "purpose": "Complementary tooling for the bd (beads) issue tracker",
-        "bounded_context": "BC3",
+        "bounded_context": "",
         "driven_by_skills": []
       },
       {
@@ -1039,7 +1031,6 @@
         "bounded_context": "BC1",
         "driven_by_skills": [
           "agent-native",
-          "beads",
           "domain",
           "inject"
         ]
@@ -1234,7 +1225,6 @@
         "purpose": "Join git, CI, release, beads, and .agents truth into one report",
         "bounded_context": "",
         "driven_by_skills": [
-          "beads",
           "release",
           "status"
         ]
@@ -1500,8 +1490,8 @@
     ]
   },
   "capability_summary": {
-    "total": 172,
-    "skills": 72,
+    "total": 171,
+    "skills": 71,
     "cli_commands": 86,
     "gates": 14,
     "reference_impls": 0
@@ -1833,40 +1823,6 @@
       "drives_commands": [],
       "path": "skills/automation-shape-routing/",
       "references": 0
-    },
-    {
-      "sku": "skill:beads",
-      "name": "beads",
-      "type": "skill",
-      "kind": "skill",
-      "bounded_context": "BC3",
-      "hex_role": "driven-adapter",
-      "tier": "library",
-      "capability_class": "tracking",
-      "purpose": "Track issues with bd/br, triage with bv, and convert plans to beads.",
-      "status": "active",
-      "disposition": "update",
-      "runtime_targets": [
-        "claude",
-        "codex"
-      ],
-      "runtime_reach": "cross",
-      "parity_policy": "required",
-      "aliases": [],
-      "supersedes": null,
-      "consumes": [
-        "bd-issue"
-      ],
-      "produces": [
-        "bd-issue"
-      ],
-      "drives_commands": [
-        "ao corpus inject",
-        "ao inject",
-        "ao reconcile"
-      ],
-      "path": "skills/beads/",
-      "references": 19
     },
     {
       "sku": "skill:beads-br",
@@ -2270,7 +2226,7 @@
       "aliases": [],
       "supersedes": null,
       "consumes": [
-        "beads",
+        "beads-br",
         "implement",
         "post-mortem",
         "swarm",
@@ -4009,7 +3965,7 @@
       "sku": "cmd:ao.beads",
       "name": "ao beads",
       "type": "cli-command",
-      "bounded_context": "BC3",
+      "bounded_context": "",
       "purpose": "Complementary tooling for the bd (beads) issue tracker",
       "status": "active",
       "driven_by_skills": [],
@@ -4730,7 +4686,6 @@
       "status": "active",
       "driven_by_skills": [
         "agent-native",
-        "beads",
         "domain",
         "inject"
       ],
@@ -5178,7 +5133,6 @@
       "purpose": "Join git, CI, release, beads, and .agents truth into one report",
       "status": "active",
       "driven_by_skills": [
-        "beads",
         "release",
         "status"
       ],
