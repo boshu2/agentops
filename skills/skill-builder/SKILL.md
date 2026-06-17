@@ -213,3 +213,4 @@ for the full authoring doctrine and the best-practice-to-enforcement crosswalk.
 - [references/agentops-skill-factory.md](references/agentops-skill-factory.md) — clean-room factory workflow and productization rules
 - [references/skill-authoring-standard.md](references/skill-authoring-standard.md) — clean-room best-practices doctrine + best-practice-to-enforcement crosswalk; backs the `scan_descriptions.py` trigger scanner
 - [references/skill-builder.feature](references/skill-builder.feature) — Executable spec: mode dispatch, materialize from template, Codex parity bundle, self-audit + factory score (soc-qk4b)
+- [references/hyper-extract-design-steals.md](references/hyper-extract-design-steals.md) — authoring rules stolen from Hyper-Extract: the WHAT-vs-HOW (schema vs guideline) contract, canonical `{from}\|{rel}\|{to}` identifier dedup-key form, and folded graph-designer/yaml-validator/template-optimizer patterns (age-bp1)

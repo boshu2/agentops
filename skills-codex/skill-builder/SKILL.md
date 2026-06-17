@@ -160,6 +160,7 @@ $skill-builder absorb-external dcf-helper \
 
 - [references/skill-template.md](references/skill-template.md) — canonical SKILL.md template + auditor checklist + PRODUCT.md alignment
 - [references/agentops-skill-factory.md](references/agentops-skill-factory.md) — clean-room factory workflow and productization rules
+- [references/hyper-extract-design-steals.md](references/hyper-extract-design-steals.md) — authoring rules stolen from Hyper-Extract: the WHAT-vs-HOW (schema vs guideline) contract, canonical `{from}\|{rel}\|{to}` identifier dedup-key form, and folded graph-designer/yaml-validator/template-optimizer patterns (age-bp1)
 
 ### scripts/
 
