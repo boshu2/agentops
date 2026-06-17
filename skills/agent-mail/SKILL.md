@@ -133,7 +133,7 @@ Use bead IDs as your threading anchor. BR remains authoritative; mail carries th
 | Pane looks spawned but coordination is silent | A pane can look spawned yet never have registered. Run `am robot agents --project <abs> --active` — if the lane is absent, its start-session didn't land; re-run it |
 | "FILE_RESERVATION_CONFLICT" | Wait, coordinate, or use `exclusive=false` |
 | "CONTACT_BLOCKED" | Use `request_contact`, wait for approval |
-| Server unreachable | `health_check()` / `curl http://127.0.0.1:8765/health`; start with `am` |
+| Server unreachable | `am robot health` (works CLI-only, direct SQLite) or `health_check()` (MCP). `curl …:8765/health` only resolves if the HTTP MCP server is running; CLI-only deploys have no `:8765` listener. Start the server with `am` |
 | Guard blocks commit | Set `AGENT_NAME` env var; emergency bypass: `AGENT_MAIL_BYPASS=1 git commit` |
 
 Deeper diagnostics (doctor check/repair), the pre-commit guard (`install_precommit_guard`), the human-overseer web UI, and FTS5 search syntax are all self-described by the server/CLI — see [RECOVERY.md](references/RECOVERY.md) and [ADVANCED.md](references/ADVANCED.md).
@@ -154,6 +154,8 @@ Deeper diagnostics (doctor check/repair), the pre-commit guard (`install_precomm
 ## Validation
 
 ```bash
-curl http://127.0.0.1:8765/health   # → {"status": "healthy"}
+am robot health                     # PRIMARY check — CLI/direct SQLite, works without the HTTP server
+am agent start --json               # cockpit; flags a missing :8765 listener under mcp_endpoint=fail
+curl http://127.0.0.1:8765/health   # ONLY if the HTTP MCP server is up (am serve-http); CLI-only deploys have no :8765 listener
 am                                  # start server if needed
 ```

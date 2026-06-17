@@ -127,7 +127,8 @@ uv run python -m mcp_agent_mail.cli doctor repair
 ### Quick Health Check
 
 ```bash
-curl http://127.0.0.1:8765/health
+am robot health                     # primary — CLI/direct, works without the HTTP server
+curl http://127.0.0.1:8765/health   # only if the HTTP MCP server is running (am serve-http)
 # {"status": "healthy"}
 ```
 

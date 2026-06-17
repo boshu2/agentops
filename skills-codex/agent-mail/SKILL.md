@@ -18,4 +18,5 @@ Read it first, then use `prompt.md` for the Codex runtime profile.
 - Prefer robot/JSON/NDJSON command surfaces when the source skill exposes them.
 - Keep durable task state, evidence, and closure in BR/beads; use Agent Mail as the side channel for leases and pings.
 - Verify command syntax from local `--help` or checked-in references before acting.
+- Health-check with `am robot health` (CLI/direct SQLite — works without the HTTP server). The `curl …:8765/health` form only answers when the HTTP MCP server is running; CLI-only deploys have no `:8765` listener.
 - Return concrete evidence: commands run, files touched, exit codes, and any remaining blocker.
