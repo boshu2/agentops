@@ -348,6 +348,35 @@ func skillsRetireTrees(repoRoot, slug string) []string {
 
 var skillsRetireRowRe = regexp.MustCompile(`^\s*-\s*skill:\s+(\S+)\s*$`)
 
+// historicalInsertAt returns the line index where a new historical row block
+// should be spliced: end of the existing historical: mapping, immediately
+// before workflows: (if present) or dispositions:.
+func historicalInsertAt(lines []string, historicalIdx, workflowsIdx, dispositionsIdx int) int {
+	if historicalIdx == -1 {
+		if workflowsIdx != -1 && (dispositionsIdx == -1 || workflowsIdx < dispositionsIdx) {
+			return workflowsIdx
+		}
+		return dispositionsIdx
+	}
+	candidates := []int{}
+	if workflowsIdx != -1 && workflowsIdx > historicalIdx {
+		candidates = append(candidates, workflowsIdx)
+	}
+	if dispositionsIdx != -1 && dispositionsIdx > historicalIdx {
+		candidates = append(candidates, dispositionsIdx)
+	}
+	if len(candidates) == 0 {
+		return len(lines)
+	}
+	insertAt := candidates[0]
+	for _, idx := range candidates[1:] {
+		if idx < insertAt {
+			insertAt = idx
+		}
+	}
+	return insertAt
+}
+
 // flipDispositionsLedger removes the slug's active dispositions row and
 // appends a historical terminal-state row, as a text-targeted edit that
 // preserves every other byte (the file's comments are load-bearing — never a
@@ -385,15 +414,21 @@ func flipDispositionsLedger(path, slug, into, state, date string) (string, bool,
 	lines = kept
 
 	// Append the historical row at the end of the `historical:` mapping,
-	// which sits ABOVE the `dispositions:` key by contract.
+	// immediately before the next top-level section (`workflows:` or
+	// `dispositions:`). age-i52: never insert inside workflows: — schema
+	// validators parse stray keys there as workflow entries.
 	dispositionsIdx := -1
 	historicalIdx := -1
+	workflowsIdx := -1
 	for i, line := range lines {
 		if strings.HasPrefix(line, "dispositions:") && dispositionsIdx == -1 {
 			dispositionsIdx = i
 		}
 		if strings.HasPrefix(line, "historical:") && historicalIdx == -1 {
 			historicalIdx = i
+		}
+		if strings.HasPrefix(line, "workflows:") && workflowsIdx == -1 {
+			workflowsIdx = i
 		}
 	}
 	if dispositionsIdx == -1 {
@@ -411,15 +446,15 @@ func flipDispositionsLedger(path, slug, into, state, date string) (string, bool,
 		"    date:         "+date,
 		"    rationale:    \""+rationale+"\"",
 	)
-	insertAt := dispositionsIdx
-	if historicalIdx == -1 || historicalIdx > dispositionsIdx {
-		// No historical section above dispositions: create one.
-		entry = append([]string{"historical:"}, append(entry, "")...)
-	} else {
-		// Walk back past blank lines separating historical from dispositions.
+	insertAt := historicalInsertAt(lines, historicalIdx, workflowsIdx, dispositionsIdx)
+	if historicalIdx != -1 {
 		for insertAt > historicalIdx+1 && strings.TrimSpace(lines[insertAt-1]) == "" {
 			insertAt--
 		}
+	}
+	if historicalIdx == -1 {
+		// No historical section: create one immediately above workflows/dispositions.
+		entry = append([]string{"historical:"}, append(entry, "")...)
 	}
 	updated := make([]string, 0, len(lines)+len(entry))
 	updated = append(updated, lines[:insertAt]...)
