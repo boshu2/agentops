@@ -157,6 +157,8 @@ func writeGaugeReport(out io.Writer, g yieldledger.Gauges, asJSON bool) error {
 		fmtCatchRate(g.CatchRate, g.CatchRateNote), g.Refuted, g.Refuted+g.Confirmed)
 	fmt.Fprintf(tw, "  cross-family catch_rate\t%s\tdiversity-gated subset\n",
 		fmtCatchRate(g.CatchRateCrossFamily, ""))
+	fmt.Fprintf(tw, "escape_rate (membrane)\t%s\tconfirms later proven wrong (%d escapes / %d confirmed) — rubber-stamp tell\n",
+		fmtCatchRate(g.EscapeRate, g.EscapeRateNote), g.Escapes, g.Confirmed)
 	fmt.Fprintf(tw, "L (loss)\t%s\twaste watch\n", fmtRatio(g.L, g.LDefined))
 	fmt.Fprintf(tw, "  L breakdown (spend)\trejected=%d rework=%d coord=%d productive=%d\t\n",
 		g.LCategory.Rejected, g.LCategory.Rework, g.LCategory.Coordination, g.LCategory.Productive)

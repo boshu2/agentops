@@ -796,3 +796,71 @@ func TestGauge_CatchRate_CrossFamilySplit(t *testing.T) {
 		t.Errorf("overall (%v) and cross-family (%v) catch-rate should differ", *g.CatchRate, *g.CatchRateCrossFamily)
 	}
 }
+
+// TestComputeGauges_EscapeRate exercises the escape_rate gauge (age-6ty): a
+// CONFIRMED bead a later attempt REFUTED is an escape; escape_rate = escapes /
+// confirmed. It also pins the rubber-stamp tell — a membrane can post a high
+// catch_rate yet still leak escapes, so the two gauges are independent.
+func TestComputeGauges_EscapeRate(t *testing.T) {
+	root := t.TempDir()
+	w := Writer{}
+	ts := time.Date(2026, 6, 17, 9, 0, 0, 0, time.UTC)
+	gv := func(bead, disp, sha string, attempt int) {
+		if _, err := w.AppendGateVerdict(root, GateVerdictInput{
+			BeadID: bead, RunID: "r1", TS: ts.Add(time.Duration(attempt) * time.Minute),
+			Difficulty: 1, PawlVerdictRef: PawlVerdictRef{BeadID: bead, HeadSHA: sha},
+			Disposition: disp, HeadSHA: sha, Attempt: attempt,
+			AuthorContextID: "ctx", AuthorFamily: "claude",
+		}); err != nil {
+			t.Fatalf("append %s %s a%d: %v", bead, disp, attempt, err)
+		}
+	}
+	// Escape: confirmed at 1, refuted at 2 (the membrane's confirm was wrong).
+	gv("ag-leak", DispositionConfirmed, "leak0001", 1)
+	gv("ag-leak", DispositionRefuted, "leak0002", 2)
+	// A second, clean confirm that stays (NOT an escape).
+	gv("ag-solid", DispositionConfirmed, "solid001", 1)
+
+	l, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := ComputeGauges(l, "r1", 0, false)
+
+	if g.Confirmed != 2 {
+		t.Fatalf("Confirmed = %d, want 2 (ag-leak@1 + ag-solid@1)", g.Confirmed)
+	}
+	if g.Escapes != 1 {
+		t.Fatalf("Escapes = %d, want 1 (only ag-leak escaped)", g.Escapes)
+	}
+	if g.EscapeRate == nil || !approx(*g.EscapeRate, 0.5) {
+		t.Errorf("EscapeRate = %v, want 0.5 (1 escape / 2 confirmed)", g.EscapeRate)
+	}
+}
+
+// TestComputeGauges_EscapeRateNoConfirmed pins the divide-guard: no confirmed
+// verdicts ⇒ EscapeRate is nil (no signal), not a misleading 0.
+func TestComputeGauges_EscapeRateNoConfirmed(t *testing.T) {
+	root := t.TempDir()
+	w := Writer{}
+	ts := time.Date(2026, 6, 17, 9, 0, 0, 0, time.UTC)
+	if _, err := w.AppendGateVerdict(root, GateVerdictInput{
+		BeadID: "ag-x", RunID: "r1", TS: ts, Difficulty: 1,
+		PawlVerdictRef: PawlVerdictRef{BeadID: "ag-x", HeadSHA: "xxxxxxx1"},
+		Disposition:    DispositionRefuted, HeadSHA: "xxxxxxx1", Attempt: 1,
+		AuthorContextID: "ctx", AuthorFamily: "claude",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	l, err := Load(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := ComputeGauges(l, "r1", 0, false)
+	if g.EscapeRate != nil {
+		t.Errorf("EscapeRate = %v, want nil (no confirmed verdicts)", g.EscapeRate)
+	}
+	if g.EscapeRateNote == "" {
+		t.Error("EscapeRateNote should explain the nil")
+	}
+}
