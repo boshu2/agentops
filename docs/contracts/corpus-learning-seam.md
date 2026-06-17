@@ -2,7 +2,7 @@
 
 > **Status:** contract · **Epic:** ag-k7tq9 (corpus private/public separation) · **Slice:** S3 (ag-2srq1)
 > **Authority:** the unanimous cross-family council verdict
-> [`.agents/council/2026-06-15-corpus-private-public-seam-verdict.md`](../../.agents/council/2026-06-15-corpus-private-public-seam-verdict.md).
+> (private: `.agents/council/2026-06-15-corpus-private-public-seam-verdict.md`, not tracked in this public repo).
 > **Schema:** [`schemas/learning.v1.schema.json`](../../schemas/learning.v1.schema.json).
 > **Migration:** `ao corpus classify` (`cli/internal/corpus/classify.go`).
 
