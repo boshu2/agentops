@@ -22,4 +22,4 @@ cd cli && go test ./cmd/ao/ -run ProvenanceEmit -count=1
 bash scripts/post-land-provenance-emit.sh   # after push
 ```
 
-**Commit:** (filled at land)
+**Commit:** 0e52f8790 (land on main)
