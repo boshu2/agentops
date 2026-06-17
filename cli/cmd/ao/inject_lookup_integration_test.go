@@ -67,9 +67,12 @@ Use specialized, independent judges for validation.
 			t.Error("index output missing learnings table header")
 		}
 
-		// Should contain our test learning (ID defaults to filename)
-		if !strings.Contains(indexOutput, "test-auth-learning.md") {
-			t.Error("index output missing test learning filename ID")
+		// Should contain our test learning. Canonical reconciliation
+		// (age-ktd): the `id:` frontmatter is now authoritative, so the
+		// index surfaces the canonical ID (learn-test-auth), not the
+		// filename fallback.
+		if !strings.Contains(indexOutput, "learn-test-auth") {
+			t.Error("index output missing canonical learning ID (learn-test-auth)")
 		}
 
 		// Should contain lookup instructions

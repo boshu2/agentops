@@ -6,6 +6,7 @@ import "time"
 type Learning struct {
 	ID              string  `json:"id"`
 	Title           string  `json:"title"`
+	Category        string  `json:"category,omitempty"` // canonical learning category (age-ktd): architecture|debugging|process|testing|security|decision|solution|failure|learning
 	Summary         string  `json:"summary"`
 	Source          string  `json:"source,omitempty"`
 	SourceBead      string  `json:"source_bead,omitempty"`  // Bead ID that produced this learning
