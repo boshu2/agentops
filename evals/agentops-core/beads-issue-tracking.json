@@ -132,31 +132,25 @@
       "critical": true
     },
     {
-      "id": "beads-skill-contracts",
-      "title": "shared and Codex beads skill contracts validate",
-      "kind": "command",
-      "objective": "Protect live-bd source-of-truth rules, tracked export refresh guidance, parent-child reconciliation, broad parent handling, conditional Dolt push guidance, and current migration/version probes in both runtime skill copies.",
-      "runtime": "shell",
-      "inputs": {
-        "cwd": "../..",
-        "shell": "bash skills/beads/scripts/validate.sh && bash skills-codex/beads/scripts/validate.sh"
-      },
+      "id": "beads-br-skill-contracts",
+      "title": "beads-br and Codex twin declare br tracker truth",
+      "kind": "artifact_check",
+      "objective": "Protect post-consolidation beads-br skill contracts after retiring the legacy skills/beads umbrella (ag-ez7y6 / age-yt6).",
       "expectations": [
         {
-          "type": "exit_code",
-          "value": 0
+          "type": "artifact_contains",
+          "target": "../../skills/beads-br/SKILL.md",
+          "value": "BEADS_DIR"
         },
         {
-          "type": "stdout_contains",
-          "value": "cli reference avoids stale migrate inspect json command"
+          "type": "artifact_contains",
+          "target": "../../skills-codex/beads-br/SKILL.md",
+          "value": "skills/beads-br/SKILL.md"
         },
         {
-          "type": "stdout_contains",
-          "value": "cli reference documents machine-readable version probe"
-        },
-        {
-          "type": "stdout_contains",
-          "value": "Results: 24 passed, 0 failed"
+          "type": "artifact_contains",
+          "target": "../../skills/beads-br/SKILL.md",
+          "value": "reconcile the open parent"
         }
       ],
       "dimensions": [
@@ -196,14 +190,14 @@
       "critical": true
     },
     {
-      "id": "stale-migration-json-command-absent",
-      "title": "docs do not advertise stale bd migrate inspect JSON command",
+      "id": "beads-br-no-bd-legacy",
+      "title": "beads-br skills do not advertise retired bd/Dolt paths",
       "kind": "command",
-      "objective": "Prevent agents from piping human-readable bd migration inspection output into jq after seeing a stale --json example.",
+      "objective": "After beads->beads-br consolidation, eval fixtures must not reference deleted skills/beads trees or resurrect bd/Dolt as the live tracker.",
       "runtime": "shell",
       "inputs": {
         "cwd": "../..",
-        "shell": "! rg -n 'bd migrate --inspect --json' skills/beads/references/CLI_REFERENCE.md skills-codex/beads/references/CLI_REFERENCE.md docs/troubleshooting.md && rg -q 'bd upgrade status --json' skills/beads/references/CLI_REFERENCE.md skills-codex/beads/references/CLI_REFERENCE.md docs/troubleshooting.md && rg -q 'bd migrate --inspect' skills/beads/references/CLI_REFERENCE.md skills-codex/beads/references/CLI_REFERENCE.md docs/troubleshooting.md"
+        "shell": "! test -d skills/beads && ! test -d skills-codex/beads && ! rg -n 'skills/beads/references/MOLECULES|skills/beads/scripts/validate' skills/plan/references/templates.md skills-codex/plan/references/templates.md && rg -q 'BEADS_DIR' skills/beads-br/SKILL.md"
       },
       "expectations": [
         {
@@ -224,7 +218,7 @@
       "expectations": [
         {
           "type": "artifact_contains",
-          "target": "../../skills/beads/SKILL.md",
+          "target": "../../skills/beads-br/SKILL.md",
           "value": "reconcile the open parent in the same session"
         },
         {
