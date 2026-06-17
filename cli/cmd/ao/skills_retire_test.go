@@ -599,3 +599,76 @@ func TestSkillsRetireHelpDocumentsExitSemantics(t *testing.T) {
 		}
 	}
 }
+
+// age-i52: when workflows: sits between historical: and dispositions:, the
+// retired row must land in historical — not inside workflows (schema parses
+// it as workflow:<slug>).
+func TestFlipDispositionsLedgerInsertsBeforeWorkflowsSection(t *testing.T) {
+	const header = `# ledger
+historical:
+  old-skill:
+    state:        merged-into
+    merged-into:  validate
+    date:         2026-06-07
+    rationale:    "historical"
+
+workflows:
+  ship-beads:
+    kind: workflow
+    path: .claude/workflows/ship-beads.js
+
+dispositions:
+`
+	alphaRow := `  - skill:          alpha
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    merge-review
+    rationale:      "Fold into beta"
+`
+	betaRow := `  - skill:          beta
+    domain:         "BC4 Factory"
+    hexagonal_role: supporting
+    disposition:    keep
+    rationale:      "Target"
+`
+	input := header + alphaRow + betaRow
+	repo := t.TempDir()
+	path := filepath.Join(repo, "skill-dispositions.yaml")
+	if err := os.WriteFile(path, []byte(input), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, removed, err := flipDispositionsLedger(path, "alpha", "beta", "merged-into", "2026-06-17")
+	if err != nil {
+		t.Fatalf("flipDispositionsLedger: %v", err)
+	}
+	if !removed {
+		t.Fatal("expected alpha dispositions row removed")
+	}
+	workflowsIdx := strings.Index(got, "\nworkflows:")
+	alphaHistIdx := strings.Index(got, "\n  alpha:")
+	if alphaHistIdx == -1 || workflowsIdx == -1 || alphaHistIdx > workflowsIdx {
+		t.Fatalf("historical alpha row must precede workflows: section.\n--- got ---\n%s", got)
+	}
+	if strings.Contains(got[workflowsIdx:], "\n  alpha:") {
+		t.Fatalf("alpha row leaked into workflows section:\n%s", got[workflowsIdx:])
+	}
+	if !strings.Contains(got, betaRow) {
+		t.Fatal("beta row missing from dispositions")
+	}
+}
+
+func TestHistoricalInsertAt(t *testing.T) {
+	lines := []string{
+		"historical:",
+		"  old:",
+		"    state: cut",
+		"",
+		"workflows:",
+		"  wf:",
+		"dispositions:",
+	}
+	got := historicalInsertAt(lines, 0, 4, 6)
+	if got != 4 {
+		t.Fatalf("insertAt = %d, want 4 (before workflows:)", got)
+	}
+}
