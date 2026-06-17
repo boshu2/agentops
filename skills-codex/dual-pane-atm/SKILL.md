@@ -24,4 +24,5 @@ Read it first, then use `prompt.md` for the Codex runtime profile.
 - For dual-pane sessions, load `$using-atm` and `$agent-mail`; spawn with ATM
   (`atm spawn ... --cc=1:opus --cod=1:gpt-5.5 --no-user`), coordinate via Agent Mail,
   and `atm kill` on teardown. Never use print-mode CLIs for the other-family pane.
+- Acceptance scenarios live in `references/dual-pane-atm.feature`; mirror spawn checklist and work-split matrix from the source skill.
 - Return concrete evidence: commands run, files touched, exit codes, and any remaining blocker.
