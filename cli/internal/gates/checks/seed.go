@@ -81,6 +81,9 @@ func init() {
 		// glob — a force-added private path might not match any corpus glob, so
 		// changed-file scoping must never be able to skip this (ag-ao0eo).
 		{ID: "corpus.path-guard", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "check-corpus-path-guard.sh"},
+		// local-only br ledger policy: _beads is gitignored/private, so this
+		// must be always-run and gracefully skip when the ledger is absent.
+		{ID: "always.ledger-prefix-policy", Tiers: gates.Fast | gates.Full, Blocking: false, Backing: "check-ledger-prefix-policy.sh"},
 		{ID: "always.embedded-sync", Tiers: gates.Fast | gates.Full, Blocking: true, Backing: "validate-embedded-sync.sh"},
 
 		// routed by change class
