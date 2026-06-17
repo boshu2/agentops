@@ -3481,6 +3481,7 @@ ao forge transcript <path-or-glob> [flags]
       --queue                 Queue session for learning extraction at next session start
       --quiet                 Suppress all output (for hooks)
       --tier int              Tier 1 transcript processing: enqueue to configured Dream worker; local Ollama fallback requires --legacy-local-llm
+      --typed                 OPT-IN (value-gated, default off): route knowledge through the native typed extractor to emit learning.v1 records; falls back to the heuristic path if the LLM backend is unavailable
 ```
 
 ---
