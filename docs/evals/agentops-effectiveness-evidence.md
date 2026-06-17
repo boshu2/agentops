@@ -57,6 +57,7 @@ Olympus-Pi / SDK custom-agent experiment.**
 | Hook/context-injection A/B | AgentOps 3.0 doctrine (`docs/3.0.md`) | **delta = 0** → motivated the hookless, pull-context model | hook-layer | historical |
 | Context packet canary | `evals/agentops-core/context-packet-ab-wave0.json` | `context_off=fail`, `context_on=pass`, **delta = +0.4667** | context present-absent | **deterministic fixture** (`visibility: public_canary`) |
 | First measured corpus A/B (adjacent) | knowledge-field S1 (memory: `knowledge-field-ab-first-delta`) | **−0.37** (gold pull hurt; honest FAIL) | corpus gold on-off | measured, negative |
+| Applied-OOD headroom audit (2026-06-17) | `.agents/evals/scenario-ab-004-enforce-ceiling-2026-06-17.json` + 4 prior | **5/5 ceiling-violated** — codex-cli 0.139.0 scores without-gold 0.8–1.0 unaided | corpus gold on-off (valid harness) | measured; no headroom → moat unmeasurable at this altitude. See **ADR-0004** |
 
 ### 1.2 Built apparatus (NOT evidence by itself — the instruments)
 
