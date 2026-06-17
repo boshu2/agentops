@@ -25,6 +25,13 @@ Primary adapters drive the domain from the outside: a human, an agent, or a work
 - **Autonomous loops** — `/dream`, `/evolve`. These are in-session driving adapters; running them out of session (always-on, scheduled) is delegated to an orchestration substrate (the reference is NTM + MCP + managed-agents), not an AgentOps daemon.
 - **CI gates** — `scripts/*.sh` and `.github/workflows/validate.yml` jobs that drive validation against the same domain types they would in interactive runs.
 
+> **The agent at two altitudes (reconciliation).** Here the agent is on the **driving** side: it calls
+> *into* this domain hexagon through the slash-command / MCP / autonomous-loop driving adapters above. At
+> the *process* control-plane altitude — [the-agent-factory.md](the-agent-factory.md) — the same agent is
+> the **data-plane workload** (the AgentPod / actuator) that the controller schedules and gates. Both are
+> true: the agent *drives* the code-level domain and *is driven by* the process-level controller. See
+> [the-agent-factory.md → the agent at two altitudes](the-agent-factory.md) for the factory-altitude view.
+
 ## Secondary (driven) adapters
 
 Secondary adapters are driven *by* the domain through a port interface — the domain calls them. The first concrete adapter is `cli/internal/adapters/storage_fs/`, which implements `ports.PacketRepository` against the local filesystem and is exercised by `t.TempDir()` L2 integration tests.
