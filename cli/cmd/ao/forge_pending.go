@@ -79,10 +79,20 @@ func writePendingLearnings(session *storage.Session, baseDir string) (int, error
 		// can trace learnings back to .agents/research/ sources (ag-73u.4).
 		researchSources := renderResearchSourcesFrontmatter(gatherResearchSources(it.text))
 
+		// Canonical learning frontmatter (age-ktd): emit the id/title/category
+		// keys that search.ParseLearningFile consumes so a writer→reader
+		// round-trip is lossless. The `date/type/source` keys and the
+		// `# Learning:` body block (with **ID**/**Category**/**Confidence**)
+		// are retained for pool.ParseLearningBlocks compatibility.
+		safeTitle := escapeFrontmatterText(title)
 		content := fmt.Sprintf(`---
 date: %s
 type: %s
 source: %s
+id: %s
+title: %s
+category: %s
+confidence: medium
 %s---
 
 # Learning: %s
@@ -96,7 +106,7 @@ source: %s
 ## Source
 
 - **Session**: %s
-`, dateStr, it.category, safeSessionID, researchSources, title, id, it.category, safeText, safeSessionID)
+`, dateStr, it.category, safeSessionID, id, safeTitle, it.category, researchSources, title, id, it.category, safeText, safeSessionID)
 
 		path := filepath.Join(pendingDir, filename)
 		if err := os.WriteFile(path, []byte(content), 0600); err != nil {

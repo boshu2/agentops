@@ -141,6 +141,11 @@ type FrontMatter struct {
 	Maturity     string
 	Stability    string
 	Reach        string
+	// Canonical learning frontmatter (age-ktd): the id/title/category keys
+	// the forge writer emits so a writer→reader round-trip is lossless.
+	ID       string
+	Title    string
+	Category string
 }
 
 // ParseFrontMatter extracts YAML front matter from markdown content lines.
@@ -184,6 +189,12 @@ func ParseFrontMatterLine(line string, fm *FrontMatter) {
 		fm.Stability = strings.TrimSpace(strings.TrimPrefix(line, "stability:"))
 	case strings.HasPrefix(line, "reach:"):
 		fm.Reach = strings.TrimSpace(strings.TrimPrefix(line, "reach:"))
+	case strings.HasPrefix(line, "id:"):
+		fm.ID = strings.TrimSpace(strings.TrimPrefix(line, "id:"))
+	case strings.HasPrefix(line, "title:"):
+		fm.Title = strings.TrimSpace(strings.TrimPrefix(line, "title:"))
+	case strings.HasPrefix(line, "category:"):
+		fm.Category = strings.TrimSpace(strings.TrimPrefix(line, "category:"))
 	}
 }
 
@@ -284,6 +295,19 @@ func ParseLearningFile(path string) (Learning, error) {
 	l.Maturity = fm.Maturity
 	l.Stability = fm.Stability
 	l.Reach = SanitizeAuthoredReach(fm.Reach)
+	l.Category = fm.Category
+
+	// Canonical frontmatter (age-ktd) is authoritative for id/title when
+	// present: the forge writer emits them so the round-trip is lossless.
+	// ParseLearningBody only matches a bare `ID:` body line and a `# `
+	// heading, neither of which the writer's `**ID**:` / `# Learning:`
+	// block round-trips cleanly — the frontmatter keys close that gap.
+	if fm.ID != "" {
+		l.ID = fm.ID
+	}
+	if fm.Title != "" {
+		l.Title = fm.Title
+	}
 
 	ParseLearningBody(lines, contentStart, &l)
 	l.Summary = ExtractSummary(lines, contentStart)
