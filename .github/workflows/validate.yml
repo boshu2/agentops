@@ -96,6 +96,7 @@ jobs:
               - 'SKILL-TIERS.md'
             eval:
               - 'evals/**'
+              - 'scripts/check-applied-ood-headroom.sh'
               - 'cli/internal/eval/**'
               - 'cli/cmd/ao/eval*'
               - 'schemas/eval-*'
@@ -1512,6 +1513,20 @@ jobs:
         run: |
           mkdir -p cli/bin
           (cd cli && go build -o bin/ao ./cmd/ao)
+
+      - name: Applied-OOD headroom preflight (scenario-ab control-only)
+        if: needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
+        run: |
+          chmod +x scripts/check-applied-ood-headroom.sh
+          AO_BIN="$PWD/cli/bin/ao" scripts/check-applied-ood-headroom.sh --out-dir .agents/evals/applied-ood-headroom/ci
+
+      - name: Upload applied-OOD headroom scorecards
+        if: always() && (needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true')
+        uses: actions/upload-artifact@v4
+        with:
+          name: applied-ood-headroom-scorecards
+          path: .agents/evals/applied-ood-headroom/ci
+          if-no-files-found: warn
 
       - name: Run eval baseline-audit (drift-only)
         if: needs.changes.outputs.eval == 'true' || needs.changes.outputs.go == 'true' || needs.changes.outputs.ci == 'true'
