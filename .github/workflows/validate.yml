@@ -735,7 +735,7 @@ jobs:
           fi
           echo "✅ No dangerous patterns"
 
-      - name: Door 9 guard: no phased RPI Claude print path
+      - name: "Door 9 guard: no phased RPI Claude print path"
         if: needs.changes.outputs.go == 'true' || needs.changes.outputs.shell == 'true' || needs.changes.outputs.ci == 'true'
         run: bash scripts/check-door9-no-claude-p.sh
 
