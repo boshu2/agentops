@@ -78,6 +78,13 @@ func TestPredicateParity_PerChangeClass(t *testing.T) {
 		assertNot(t, ids, "go.build", "skill.schema")
 	})
 
+	t.Run("docs change", func(t *testing.T) {
+		ids := selectedIDs(t, []string{"docs/how-it-works.md"})
+		assertHas(t, ids, "docs.no-retired-tech")
+		assertHas(t, ids, alwaysIDs...)
+		assertNot(t, ids, "go.build", "skill.schema", "contract.registry-drift")
+	})
+
 	t.Run("empty diff runs only always-checks", func(t *testing.T) {
 		ids := selectedIDs(t, nil)
 		assertHas(t, ids, alwaysIDs...)
