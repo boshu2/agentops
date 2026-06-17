@@ -21,6 +21,15 @@ runtime profile.
   those tests pass; (4) an acceptance-gated bead DAG — every bead carries a real
   `scenario_ref` and an invocable `acceptance_test`, gated mechanically
   (runnable=exactly-one-test, valid ref, coverage-complete, cycle-free).
+- In Phase 1, apply the standing adversarial dimension checklist to every input
+  / trust boundary / mutation / failure path / external-state behavior, emitting
+  the missing attack-vector scenario for each: FAIL-CLOSED on every failure path;
+  NO FORGEABLE TRUST MARKER (re-derive provenance, never trust a caller-settable
+  signal); NO RAW UNTRUSTED STRING past a boundary (canonicalize before display/
+  argv/serialization); ENFORCE AT THE SINK not the source; NO OVERCLAIMING TEST
+  (a harness-only proof is not a production proof); INPUT-CHANNEL variants (stdin
+  vs argv, heredoc, symlink/case/unicode aliases, TOCTOU). Also apply any repo
+  gate-findings ledger (the ratchet). The source skill is the SoT for this list.
 - The rule is absolute: **no runnable acceptance test, no bead.** Prose-only or
   unrun acceptance is rejected.
 - One invocation per test — never pass multiple positional test-name filters to a

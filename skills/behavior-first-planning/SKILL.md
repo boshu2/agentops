@@ -54,6 +54,19 @@ Turn the intent into concrete, **testable** Gherkin scenarios — Given/When/The
 - If a fresh-context or cross-family adversary is available, have it list the **missing** scenarios (security/correctness bypasses a green test would miss) and **disposition every gap**: folded / rejected (one-line reason) / deferred (say where it goes).
 - Write the result to `behaviors.md` as the **frozen definition of done**. Freezing means: downstream phases derive from it; they do not silently add or drop scenarios.
 
+#### The standing adversarial dimension checklist
+
+The adversary applies this concrete checklist to **every** behavior that touches an input, a trust boundary, a mutation/write surface, a failure path, or external state — and emits the missing attack-vector scenario for each applicable class. These are the bypass classes a green test most often misses (cheap to add here, expensive at the gate):
+
+- **FAIL-CLOSED on EVERY failure path** — unparseable input, missing/absent dependency, substrate/IO error, partial/malformed/timeout response → ABORT/BLOCK, never silent-pass or silent-skip-and-continue.
+- **NO FORGEABLE TRUST MARKER** — never trust a caller-settable signal (env var, flag, header, marker file) as proof a check ran; re-derive/verify provenance.
+- **NO RAW UNTRUSTED STRING past a boundary** — canonicalize/encode before display, argv, or serialization (values with quote, backslash, newline, shell metachar, unicode/case).
+- **ENFORCE AT THE SINK, not the source** — last-wins / passthrough-after-`--` / override vectors; the component that ACTS must be the one that validates.
+- **NO OVERCLAIMING TEST** — a property proven only under harness conditions (injected PATH/env, scratch stub) is not a live/production proof; the production path needs its own scenario.
+- **INPUT-CHANNEL variants** of every surface — stdin vs argv, heredoc, file vs inline, symlink/case/unicode path aliases, TOCTOU lookup-to-write race, nesting/depth.
+
+Also read any repo-local gate-findings ledger (try `docs/gate/findings-ledger.md`) and apply its Standing Review Dimensions — those are real defects a gate already caught; do not let them recur. **This is the ratchet: every gate finding permanently upgrades this checklist.**
+
 ### Phase 2 — Acceptance tests: Gherkin → EXECUTED red
 
 Turn **each** frozen scenario into a runnable test in the project's framework. The test IS the executable definition of done. The tests must be **currently failing (red)** because the feature is not built yet — and you must **observe the red, not assert it**:
