@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/extract"
+	"github.com/boshu2/agentops/cli/internal/provenancegraph"
 	"github.com/boshu2/agentops/cli/internal/storage"
 )
 
@@ -45,11 +46,10 @@ const forgeTypedEnv = "AGENTOPS_FORGE_TYPED"
 
 // forgeTypedClient is the seam that constructs the typed extraction client.
 // It is a package var so tests can inject a fake-Generator-backed client (no
-// live model). In PRODUCTION it currently returns nil unless a backend is
-// explicitly wired — i.e. the opt-in alone does not conjure a model; without a
-// configured backend the caller falls back to the heuristic path. This keeps
-// the default (and the no-backend opt-in) free of any live model dependency.
-var forgeTypedClient = func() *extract.Client { return nil }
+// live model). In PRODUCTION it returns a real LAW-0 codex-backed client
+// (extract.NewCodexClient(runCodexExec)) — BackendCodex is on the closed
+// allowlist; a Claude print-mode backend is never wired here.
+var forgeTypedClient = func() *extract.Client { return extract.NewCodexClient(runCodexExec) }
 
 // learningIDSlugRe strips a node id down to the [a-z0-9]+ tail the
 // learning.v1 learning_id pattern (^learn-YYYY-MM-DD-[a-z0-9]+$) permits.
@@ -215,6 +215,13 @@ func writeTypedPendingLearnings(session *storage.Session, baseDir string, client
 		return 0, fmt.Errorf("typed extraction: %w", err)
 	}
 
+	// Seal each extracted relation as a PROV-O edge in the provenance ledger.
+	// The graph is no longer faked: relations -> provenancegraph edges via
+	// extract.AppendRelation, reusing the store's idempotency + sealing as-is.
+	// Individual bad edges are skipped+logged; one bad edge never fails the
+	// whole forge run (callers still get the learning records).
+	sealTypedRelations(res, baseDir)
+
 	records := buildTypedLearnings(res, session.ID, session.Date)
 	if len(records) == 0 {
 		return 0, nil
@@ -239,4 +246,34 @@ func writeTypedPendingLearnings(session *storage.Session, baseDir string, client
 		written++
 	}
 	return written, nil
+}
+
+// sealTypedRelations seals each extracted relation as a PROV-O edge in the
+// committed provenance ledger (docs/provenance/ledger.jsonl, resolved under
+// baseDir). It builds a nodeTypes map (entity id -> node_type) from the
+// extraction's entities so the edge adapter can resolve endpoint node types,
+// then appends each relation via extract.AppendRelation with the "mined" trust
+// tier. A nil result, no relations, or a nil store is a no-op. Individual
+// relation errors (e.g. a non-PROV-O verb, missing endpoint id) are skipped and
+// logged — one bad edge never aborts the forge run.
+func sealTypedRelations(res *extract.Result, baseDir string) {
+	if res == nil || len(res.Relations) == 0 {
+		return
+	}
+
+	nodeTypes := make(map[string]string, len(res.Entities))
+	for _, ent := range res.Entities {
+		id := typedRecordString(ent, "id")
+		if id == "" {
+			continue
+		}
+		nodeTypes[id] = typedRecordString(ent, "node_type")
+	}
+
+	store := provenancegraph.NewStore(filepath.Join(baseDir, provenancegraph.LedgerRelativePath))
+	for _, rel := range res.Relations {
+		if _, err := extract.AppendRelation(store, rel, nodeTypes, "mined"); err != nil {
+			fmt.Fprintf(os.Stderr, "ao forge: skip relation edge: %v\n", err)
+		}
+	}
 }
