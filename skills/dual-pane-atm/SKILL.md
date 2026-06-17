@@ -84,6 +84,7 @@ N-way bead queues ([`/using-atm`](../using-atm/SKILL.md)).
 1. ROUTE    → confirm dual-pane fits (table above); pick work-split pattern
 2. BEAD     → optional: BEADS_DIR=$PWD/_beads br create/claim; bead_id = join-key
 3. SPAWN    → atm spawn with --reserve paths (see references/spawn-checklist.md)
+3b. VERIFY   → `atm mapping --session="$SESSION"` — confirm pane numbers before any send
 4. DISPATCH → verify first lane engaged; then second lane (--codex-goal for Codex)
 5. TEND     → meter lies; atm save / codex preflight; gate interrupts first
 6. SYNTH    → merge artifacts → .agents/dual-pane/<session>-report.md
@@ -99,7 +100,9 @@ Minimal collaborative spawn (from CEP duel pattern):
 
 ```bash
 LABEL=<short-name>   # e.g. cep-duel, claim-overlay
+SESSION="agentops--$LABEL"
 BEAD_ID=<optional>   # join-key for coordination ledger + br notes
+# Disjoint lane globs; for smoke-only runs use e.g. /tmp/dual-pane-opus/ /tmp/dual-pane-codex/
 RESERVE_GLOBS="docs/contracts/ cli/internal/"   # space-separated globs, one --reserve value
 
 atm spawn agentops --label "$LABEL" --no-user \
@@ -107,18 +110,23 @@ atm spawn agentops --label "$LABEL" --no-user \
   --reserve "$RESERVE_GLOBS" \
   --no-cass-context --ready-timeout=2m --json
 
-# Opus (pane 1 when --no-user): direct send OK
-atm send agentops--"$LABEL" --pane=1 --file packet-opus.md \
-  --no-cass-check --force-non-interactive --json
+atm mapping --session="$SESSION"   # confirm Opus/Codex pane numbers before sends
+
+# Opus (pane 1 when --no-user): prefer plain send; --json optional
+atm send "$SESSION" --pane=1 --file packet-opus.md \
+  --no-cass-check --force-non-interactive
+# Advisory: if `--json` exits 1 with empty stdout, retry without `--json`
 
 # Codex (pane 2 when --no-user): goal lifecycle — NEVER bare slash send
-atm codex preflight --session agentops--"$LABEL" --pane 2 --json
-atm send agentops--"$LABEL" --pane=2 --codex-goal --file packet-codex.md \
+atm codex preflight --session "$SESSION" --pane 2 --json
+atm send "$SESSION" --pane=2 --codex-goal --file packet-codex.md \
   --no-cass-check --force-non-interactive --json
-atm codex wait-goal-engaged --session agentops--"$LABEL" --pane 2 --json
+atm codex wait-goal-engaged --session "$SESSION" --pane 2 --json
 ```
 
 Full checklist: [references/spawn-checklist.md](references/spawn-checklist.md).
+
+**Pane verify:** after spawn, run `atm mapping --session="$SESSION"` (or the equivalent pane-layout inspect documented in [`/using-atm`](../using-atm/SKILL.md)) and match pane numbers to the table below before `atm send`.
 
 **`--reserve`:** pass **one** quoted flag value listing all lane globs space-separated (e.g. `--reserve "/path/opus/ /path/codex/"`). Do not pass two separate quoted arguments or bare tokens after `--reserve`.
 

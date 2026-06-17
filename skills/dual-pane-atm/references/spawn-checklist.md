@@ -24,8 +24,10 @@ Use the pane numbers from the row that matches your spawn. Examples below assume
 
 ```bash
 LABEL=<short-name>
-RESERVE_OPUS="docs/contracts/ docs/architecture/foo.md"
-RESERVE_CODEX="cli/internal/ cli/cmd/"
+SESSION="agentops--$LABEL"
+# Smoke / real splits: disjoint lane globs (optional: /tmp/dual-pane-opus/ /tmp/dual-pane-codex/ for dry runs)
+RESERVE_OPUS="docs/contracts/"
+RESERVE_CODEX="cli/internal/"
 # One --reserve value: space-separated globs inside a single quoted string (not two flags).
 RESERVE_GLOBS="$RESERVE_OPUS $RESERVE_CODEX"
 
@@ -42,11 +44,24 @@ Example (literal paths): `--reserve "/path/to/opus-globs/ /path/to/codex-globs/"
 - [ ] `--reserve` paths match work-split matrix
 - [ ] Optional: write `.agents/dual-pane/coordination.json` with `bead_id`, `pattern`, panes (use pane numbers from table above)
 
+## Verify panes (before first send)
+
+```bash
+atm mapping --session="$SESSION"
+# Documented equivalents if your ATM build differs: session pane list / attach layout inspect (see using-atm)
+```
+
+- [ ] Mapping shows expected Opus + Codex panes at the numbers from the pane map table
+- [ ] Session name matches `agentops--$LABEL`
+
 ## First lane (Claude / Opus — pane 1 with `--no-user`)
 
 ```bash
-atm send agentops--"$LABEL" --pane=1 --file packet-opus.md \
-  --no-cass-check --force-non-interactive --json
+# Prefer plain send; add --json only when you need structured capture
+atm send "$SESSION" --pane=1 --file packet-opus.md \
+  --no-cass-check --force-non-interactive
+
+# If you used --json and exit 1 with empty stdout, retry without --json (advisory)
 ```
 
 (Tri-pane with user attach: Opus is **pane 2**.)
@@ -57,13 +72,13 @@ atm send agentops--"$LABEL" --pane=1 --file packet-opus.md \
 ## Second lane (Codex — pane 2 with `--no-user`)
 
 ```bash
-atm codex preflight --session agentops--"$LABEL" --pane 2 --json
+atm codex preflight --session "$SESSION" --pane 2 --json
 # proceed only on codex-live or goal-completed
 
-atm send agentops--"$LABEL" --pane=2 --codex-goal --file packet-codex.md \
+atm send "$SESSION" --pane=2 --codex-goal --file packet-codex.md \
   --no-cass-check --force-non-interactive --json
 
-atm codex wait-goal-engaged --session agentops--"$LABEL" --pane 2 --json
+atm codex wait-goal-engaged --session "$SESSION" --pane 2 --json
 ```
 
 (Tri-pane with user attach: Codex is **pane 3**.)
@@ -81,7 +96,7 @@ atm codex wait-goal-engaged --session agentops--"$LABEL" --pane 2 --json
 
 ## Teardown
 
-- [ ] Capture: `atm save agentops--"$LABEL"` (+ codex palette-state if needed)
+- [ ] Capture: `atm save "$SESSION"` (+ codex palette-state if needed)
 - [ ] Synthesis: `.agents/dual-pane/<session>-report.md`
 - [ ] Release reservations; close or update bead with evidence
-- [ ] `atm kill agentops--"$LABEL" --json`
+- [ ] `atm kill "$SESSION" --json`

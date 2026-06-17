@@ -22,10 +22,12 @@ Read it first, then use `prompt.md` for the Codex runtime profile.
   before broad watching, and surface the result where the peer can actually read
   it.
 - For dual-pane sessions, load `$using-atm` and `$agent-mail`; spawn with ATM
-  (`atm spawn ... --cc=1:opus --cod=1:gpt-5.5 --no-user --reserve "glob1 glob2"` as **one**
-  quoted `--reserve` value), coordinate via Agent Mail, and `atm kill` on teardown.
-  With `--no-user`, Opus is pane 1 and Codex is pane 2; with a user pane, Opus/Codex are
-  panes 2/3. `--codex-goal` may need a retry on cold engage — use `wait-goal-engaged`.
-  Never use print-mode CLIs for the other-family pane.
+  (`atm spawn ... --cc=1:opus --cod=1:gpt-5.5 --no-user --reserve "docs/contracts/ cli/internal/"` or
+  smoke dirs like `/tmp/dual-pane-opus/ /tmp/dual-pane-codex/` as **one** quoted `--reserve` value).
+  After spawn, `atm mapping --session="$SESSION"` before any send; coordinate via Agent Mail, and
+  `atm kill` on teardown. With `--no-user`, Opus is pane 1 and Codex is pane 2; with a user pane,
+  Opus/Codex are panes 2/3. Opus: prefer plain `atm send --pane=1 --file …`; if `--json` exits 1
+  with empty stdout, retry without `--json` (advisory). Codex: `--codex-goal` may need a retry on
+  cold engage — use `wait-goal-engaged`. Never use print-mode CLIs for the other-family pane.
 - Acceptance scenarios live in `references/dual-pane-atm.feature`; mirror spawn checklist and work-split matrix from the source skill.
 - Return concrete evidence: commands run, files touched, exit codes, and any remaining blocker.
