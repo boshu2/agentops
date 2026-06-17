@@ -27,6 +27,8 @@ output_contract: schemas/verdict.v1.schema.json
 
 # /validate — Canonical Validator Skill
 
+> **Loop position:** move 6 (prove acceptance) of the [operating loop](../../docs/architecture/operating-loop.md) — the driving adapter for the `validate_acceptance` port: every Given/When/Then must map to a passing test before a bead closes.
+
 > **Role:** validator. Input = artifact (plan, spec, code, PR, fitness gate). Output = `verdict.v1` (PASS / WARN / FAIL with rationale + findings).
 
 > **Status (2026-05-08):** introduced ADDITIVE in Phase 1 (m6v5.D.1 / soc-78s2v). Existing validators (councilvibe/pre-mortem/red-team/review/eval-outcomes plus retired pr-validate and validation lanes) stayed until Phase 2 shim conversion (m6v5.D.2). Fix-C smoke (`soc-wb2aa`) gates Phase 2.

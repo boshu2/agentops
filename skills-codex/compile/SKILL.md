@@ -4,6 +4,8 @@ description: "Run compile."
 ---
 # Compile — Knowledge Compiler
 
+> **Loop position:** move 7 (capture + ratchet) of the [operating loop](../../docs/architecture/operating-loop.md) — compiles promoted `.agents/` learnings into the interlinked wiki (the compound sub-step).
+
 Reads raw `.agents/` artifacts and compiles them into a structured, interlinked
 markdown wiki. Inspired by Karpathy's LLM Knowledge Bases architecture.
 
