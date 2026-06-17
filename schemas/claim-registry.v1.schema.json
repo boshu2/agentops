@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentops.dev/schemas/claim-registry.v1.schema.json",
+  "title": "AgentOps Claim Registry",
+  "description": "Curated policy overlay: which claims exist, their tier, evidence, and allowed citation surfaces.",
+  "type": "object",
+  "required": ["version", "tiers", "claims"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "1"
+    },
+    "tiers": {
+      "description": "Tier definitions (informational — the enum is the authority).",
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(UNPROVEN|PILOT|NULL|PROVEN)$": {
+          "type": "object",
+          "required": ["description", "cite_allowed"],
+          "additionalProperties": false,
+          "properties": {
+            "description": { "type": "string" },
+            "cite_allowed": {
+              "description": "Surface globs where this tier may be cited without triggering citation-ceiling gate.",
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "claims": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^AOP-CLAIM-[A-Z0-9-]+$": {
+          "$ref": "#/$defs/claim"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "required": ["tier", "surfaces"],
+      "additionalProperties": false,
+      "properties": {
+        "tier": {
+          "enum": ["UNPROVEN", "PILOT", "NULL", "PROVEN"]
+        },
+        "surfaces": {
+          "description": "Files where this claim marker appears (populated by regen; curated additions allowed).",
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "owner": {
+          "description": "Agent or human responsible for promoting this claim.",
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Paths to evidence artifacts (docs/evidence/*, eval results, etc.).",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "eval_binding": {
+          "description": "Scenario or eval ID that can mechanically promote this claim.",
+          "type": "string"
+        },
+        "notes": {
+          "description": "Curator notes on the claim's status or next steps.",
+          "type": "string"
+        }
+      }
+    }
+  }
+}
