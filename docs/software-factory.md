@@ -36,7 +36,7 @@ surface; packets, chunks, topics, and builders are substrate.
 AgentOps 3.0 is **hookless**: the factory runs identically on every runtime
 (Claude Code, Codex, Cursor, OpenCode) because it does not depend on any
 harness-specific hook surface. Workflow is guided by skills + the `ao` CLI, and
-CI is the authoritative gate. The operator lane is the same everywhere:
+The local pre-push Go gate (`ao gate check`) is the routine release authority (CI is a backstop). The operator lane is the same everywhere:
 
 ```bash
 /rpi "fix auth startup"            # in-session, any harness

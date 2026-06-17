@@ -172,7 +172,7 @@ ls ~/.claude/skills/agentops/skills/<skill-name>/SKILL.md
 # Frontmatter must parse — a malformed SKILL.md silently fails to load
 head -20 ~/.claude/skills/agentops/skills/<skill-name>/SKILL.md
 
-# 2. If a PR is red, see which gate failed (CI is the authoritative gate)
+# 2. If a push is rejected, see which gate failed (the local pre-push Go gate is the authority; CI is a backstop)
 gh pr checks <pr-number>
 
 # 3. Reproduce the failing gate locally (run the FULL job, not a subset)
@@ -315,7 +315,7 @@ git bisect reset
 ### Was it a skill or CI-gate failure?
 
 ```bash
-# AgentOps 3.0 is hookless — CI is the authoritative gate. Reproduce it locally.
+# AgentOps 3.0 is hookless — the local pre-push Go gate (ao gate check) is the authority; CI is a backstop. Reproduce it locally.
 # Check which gate failed on the PR
 gh pr checks <pr-number>
 

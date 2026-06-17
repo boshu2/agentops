@@ -20,13 +20,13 @@ Crank is the autonomous orchestrator that uses swarm for each wave:
 ```
 Crank (orchestrator)           Swarm (executor)
     |                              |
-    +-> bd ready (wave issues)     |
+    +-> br ready (wave issues)     |
     |                              |
     +-> TaskCreate from beads  --->+-> Spawn agents (fresh context)
     |                              |
     +-> /swarm                 --->+-> Execute in parallel
     |                              |
-    +-> Verify + bd update     <---+-> Results
+    +-> Verify + br update     <---+-> Results
     |                              |
     +-> Loop until epic DONE       |
 ```
@@ -39,7 +39,7 @@ Crank (orchestrator)           Swarm (executor)
 
 The FIRE Loop:
 
-1. **FIND**: `bd ready` - get unblocked beads issues
+1. **FIND**: `BEADS_DIR=$PWD/_beads br ready` - get unblocked beads issues
 2. **IGNITE**: Create TaskList tasks, invoke `/swarm`
 3. **REAP**: Swarm collects results, crank syncs to beads
 4. **ESCALATE**: Fix blockers, retry failures
@@ -53,12 +53,12 @@ The FIRE Loop:
 Epic: "Add user dashboard"
 Total: 8 issues
 
-[Wave 1] bd ready → [ao-1, ao-2, ao-3]
+[Wave 1] br ready → [ao-1, ao-2, ao-3]
          TaskCreate for each
          /swarm → 3 agents spawned
          ao-1 DONE, ao-2 DONE, ao-3 BLOCKED
 
-[Wave 2] bd ready → [ao-4, ao-5, ao-3]
+[Wave 2] br ready → [ao-4, ao-5, ao-3]
          TaskCreate for each
          /swarm → 3 agents spawned
          ...

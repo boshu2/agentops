@@ -105,7 +105,7 @@ once. A non-positive budget = no ceiling (no-op). **Dev-split scores never burn*
   holdout-safety decision on which manifest fields an out-of-process grade may
   carry — the run-manifest's `ground_truth_ref`/`ground_truth_hash` must never
   carry holdout ground truth).
-- **Global-Dolt shared burn ledger** (cross-host quota): **ag-vwiv**.
+- **Shared cross-host burn ledger** (cross-host quota): **ag-vwiv**. Note: Dolt is retired (2026-06-11) as the cross-host backend, so this follow-on needs a Dolt-free mechanism; the local per-suite `--burn-ledger` file remains the only enforced quota today.
 - **`--score/--suite/--bead` flag interface + validation/ratchet skill wiring:**
   remaining slices of **ag-62g68** / **ag-ko5rj**.
 - **Codex/NTM Qwen3.6 grader** producing an identical outcomes-score: **ag-2hi41**.

@@ -4,7 +4,7 @@
 >
 > See [`docs/architecture/operating-loop.md`](../architecture/operating-loop.md) for why this template exists and where it sits in the loop.
 >
-> Fast path: `scripts/render-intent-bead.sh --help` renders a Directive 12 compliant dry-run body and labels for `bd create`.
+> Fast path: `scripts/render-intent-bead.sh --help` renders a Directive 12 compliant dry-run body and labels for `BEADS_DIR=$PWD/_beads br create`.
 
 ---
 
@@ -27,7 +27,7 @@ hexagon:
   bounded_context: <bc-* label>
   driving_adapter: <operator prompt | /discovery | /brainstorm | /design>
   driven_adapters:
-    - <bd/br/filesystem/search/etc.>
+    - <br/filesystem/search/etc.>
   guard_adapters:
     - <pre-mortem/schema/scope/etc.>
   context_packet: <intent issue path or bead id>
@@ -95,7 +95,7 @@ Feature: <feature name from above>
 
 ## Linked artifacts
 
-- Parent bead: `<bd id or "to be created">`
+- Parent bead: `<br id or "to be created">`
 - ADR (if architectural): `<adr id or "n/a">`
 - Prior research: `<.agents/research/*.md or "n/a">`
 - Pre-mortem: `<.agents/council/YYYY-MM-DD-pre-mortem-*.md or "to run">`

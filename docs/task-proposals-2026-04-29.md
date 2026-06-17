@@ -17,19 +17,13 @@ The following tasks are based on direct file inspection in this repository and a
 
 ---
 
-## 2) Bug fix task
-**Title:** Avoid non-digit phase labels in daemon reconcile tests when `phase >= 10`
+## 2) ~~Bug fix task~~ — SUPERSEDED (daemon torn down, ADR-0009)
+**Title:** ~~Avoid non-digit phase labels in daemon reconcile tests when `phase >= 10`~~
 
-**Evidence:** Test IDs are built using ASCII arithmetic (`string(rune('0'+phase))`) in `cli/internal/daemon/reconcile_test.go`.
-For two-digit values this generates punctuation (`:` etc.) instead of numeric strings.
+> **SUPERSEDED (as of 2026-06-11).** The in-repo daemon was deleted under ADR-0009 — `cli/internal/daemon/` no longer exists, so the target file `reconcile_test.go` and the acceptance command `go test ./internal/daemon` are gone. Out-of-session orchestration is now the NTM + Agent Mail substrate. This proposal is not actionable; see AGENTS.md. (Original text struck below for history.)
 
-**Scope:**
-- Replace rune math with integer formatting (`strconv.Itoa(phase)` or `fmt.Sprintf("%d", phase)`).
-- Update all affected test-field builders in that file.
-
-**Acceptance criteria:**
-- IDs/labels in tests render correctly for phase values above 9.
-- `cd cli && go test ./internal/daemon -run Reconcile` passes.
+**Evidence:** Test IDs were built using ASCII arithmetic (`string(rune('0'+phase))`) in `cli/internal/daemon/reconcile_test.go`.
+For two-digit values this generated punctuation (`:` etc.) instead of numeric strings.
 
 ---
 

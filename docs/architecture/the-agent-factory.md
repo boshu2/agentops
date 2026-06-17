@@ -1,5 +1,11 @@
 # The Agent Factory — a Kubernetes-style control plane for stochastic workloads
 
+> **PARTIALLY SUPERSEDED (as of 2026-06-11).** This spine names the state store / etcd-analog as
+> **bd/Dolt** (one-way door #4) — that is **retired**: the tracker is now **br** (git-JSONL, `BEADS_DIR=$PWD/_beads br …`,
+> ledger synced via `git -C _beads push`); `bd ready` → `br ready`. The control-plane *shape* (acceptance
+> store → scheduler → reconcile → membrane), the cost law, and the role/primitive model still stand — only the
+> concrete store binding changed. See AGENTS.md / CLAUDE.md for current tracker truth.
+
 > **Status: cross-model reviewed (final whole-spine pass, 2026-06-05), pending operator ratification.**
 > The architecture spine (`ag-yv25`, subsumes "canonize the membrane"). Reviewed *through the membrane*
 > by a mixed council — Claude Opus 4.8 + Codex gpt-5.5 — across three passes: the architecture, the
@@ -54,15 +60,15 @@ Not *proof* — stochastic output cannot be proven — but bounded, evidence-bac
 Two different units — and we already have the first one.
 
 **The unit of WORK = a bead.** A bead is a declarative workload object: intent (title/description) +
-acceptance contract (`.feature`/scenarios) + dependencies (`bd dep`, the DAG) + status + priority +
-provenance — stored in bd/Dolt (the etcd we just made HA). *We already have the object model.* So:
+acceptance contract (`.feature`/scenarios) + dependencies (`br dep`, the DAG) + status + priority +
+provenance — stored in the beads ledger (git-JSONL; bd/Dolt retired — see banner). *We already have the object model.* So:
 
 | k8s | factory | |
 |---|---|---|
 | Manifest / object | **a bead** | the declarative unit of work + its acceptance contract |
 | Deployment | **an epic** (a bead with children) | desired state for a body of work; decomposes into child beads |
 | the leaf workload | **a quest-sized bead** | the unit one Pod drives to completion |
-| scheduler queue | **`bd ready`** | beads whose dependencies are satisfied = schedulable now |
+| scheduler queue | **`br ready`** | beads whose dependencies are satisfied = schedulable now |
 | Pending→Running→Succeeded | **`open → in_progress → closed`** | the workload lifecycle; `blocked` = unschedulable |
 | reconciliation DAG | **the bead dependency graph** | what unblocks what |
 
@@ -94,7 +100,7 @@ scheduler (step 5, `ag-xanm`).
 mutable worktree is a multi-container Pod — a **CollaborationSession** — explicitly marked *not*
 membrane-independent; external judge AgentPods are required before admission.
 
-**They meet at the scheduler:** it pulls a ready bead off `bd ready`; the SwarmJob schedules AgentPods
+**They meet at the scheduler:** it pulls a ready bead off `br ready`; the SwarmJob schedules AgentPods
 (one per agent) onto Nodes; each drives its share; the membrane admits via independent judge AgentPods;
 the bead closes. So one-way door #2 (the workload-object API) is **mostly already built — it is the bead
 schema.** Net-new on that door: (a) an **AgentPod-spec + SwarmJob-spec on the bead** (model, sidecars,
@@ -167,8 +173,8 @@ We run the canon pattern; the Oracle is the part the canon cannot yet do.
 | Declarative manifest (desired state) | goal + **acceptance contract** | `.feature`/Gherkin + bead acceptance | **built** |
 | Reconcile loop (controller) | reconcile-by-rejection loop | `rpi` (inner) / `evolve` (outer) | **built** |
 | kubelet / pod spawn | dispatch agents in fresh-context worktrees | `crank` / `swarm` (in-session); **NTM** swarm panes (out-of-session) | **built** |
-| etcd (quorum state) | acceptance + provenance store | bd/Dolt | **HA in progress** (`ag-o2tc`) |
-| API server + object model + watch/events | declared workload objects + the change stream controllers act on | — (bd is the store; the object/event surface is implicit) | **to build** |
+| etcd (quorum state) | acceptance + provenance store | beads ledger (git-JSONL; bd/Dolt retired) | **single-host HA superseded by git-JSONL** (`ag-o2tc` context) |
+| API server + object model + watch/events | declared workload objects + the change stream controllers act on | — (the beads ledger is the store; the object/event surface is implicit) | **to build** |
 | Scheduler (resource fit) | place agent-tasks by capability/cost/model-fit | — (cron heartbeat only) | **to build** (`ag-xanm`) |
 | Node pool / fungible nodes | fungible compute, heterogeneous by design | the fleet (Mac, bushido, cloud) | **partial** (`ag-xanm`) |
 | Liveness / readiness probe (runtime health) | is the agent alive / not stuck-looping? | `rpi` stall-detect (partial); no reschedule | **partial** |

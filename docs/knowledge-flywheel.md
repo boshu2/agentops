@@ -15,7 +15,7 @@ The flywheel is the mechanism that closes both gaps. Each stage below maps to on
 
 ## The Solution
 
-AgentOps turns session output into durable environment state. AgentOps 3.0 ships **zero hooks** — the flywheel runs through explicit lifecycle commands, and **CI is the authoritative gate**. The same start/closeout stages work on every runtime without depending on hook side effects; if you want a bounded gate of your own, author it with the `hooks-authoring` skill (AgentOps does not ship one).
+AgentOps turns session output into durable environment state. AgentOps 3.0 ships **zero hooks** — the flywheel runs through explicit lifecycle commands, and the **local pre-push Go gate (`ao gate check`) is the release authority** (CI is a tag/PR/manual backstop). The same start/closeout stages work on every runtime without depending on hook side effects; if you want a bounded gate of your own, author it with the `hooks-authoring` skill (AgentOps does not ship one).
 
 ## Runtime Modes
 

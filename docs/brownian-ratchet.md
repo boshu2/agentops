@@ -24,12 +24,12 @@ The insight: instead of fighting variance, **harness it**. Spawn parallel attemp
 Traditional development minimizes variance: one developer, one approach, sequential execution. This is safe but slow.
 
 AI-native development **maximizes controlled variance**:
-- Spawn multiple polecats working in parallel
+- Spawn multiple workers working in parallel
 - Each takes a slightly different path
 - Some fail, some succeed—that's expected
 - More attempts = more chances to find the optimal solution
 
-**The economics**: 4 polecats × 30% failure rate still yields ~3 successes per wave. Sequential execution with 30% failure rate means constant restarts.
+**The economics**: 4 workers × 30% failure rate still yields ~3 successes per wave. Sequential execution with 30% failure rate means constant restarts.
 
 ```
 Traditional:  ───────────────────────────────────► (slow, fragile)
@@ -49,13 +49,13 @@ Chaos without filtering produces garbage. The filter is what makes the ratchet w
 | Level | Filter | What Gets Blocked |
 |-------|--------|-------------------|
 | Pre-implementation | `/pre-mortem` | Bad specs, missing requirements |
-| During implementation | CI, tests, lint | Broken code, regressions |
+| During implementation | tests, lint, `ao gate check` | Broken code, regressions |
 | Post-implementation | `/vibe` | Quality issues, security flaws |
-| Human gate | PR review | Architectural mistakes |
+| Human gate | cockpit gate review on `main` push | Architectural mistakes |
 
 **The key insight**: filters are cheap, rework is expensive. Front-load validation.
 
-A polecat that fails CI costs ~10K tokens. A bug that ships to production costs days of debugging. Aggressive filtering is economically rational.
+A worker that fails the gate costs ~10K tokens. A bug that ships to production costs days of debugging. Aggressive filtering is economically rational.
 
 ### 3. Ratchet (Lock Progress)
 
@@ -98,52 +98,38 @@ FIRE is the reconciliation engine that implements the Brownian Ratchet:
 Survey the battlefield. What's ready to ignite? What's currently burning? What's been reaped?
 
 ```bash
-bd ready --parent=<epic>      # Ready to ignite
-bd list --status=in_progress  # Currently burning
-bd list --status=closed       # Already reaped
+BEADS_DIR=$PWD/_beads br ready --parent=<epic>      # Ready to ignite
+BEADS_DIR=$PWD/_beads br list --status=in_progress  # Currently burning
+BEADS_DIR=$PWD/_beads br list --status=closed       # Already reaped
 ```
 
 ### IGNITE - Spark Chaos
 
-Dispatch work to parallel polecats. Each polecat is an independent attempt—they don't coordinate, they just execute.
-
-```bash
-gt sling <issue1> <issue2> <issue3> <rig>
-```
+Dispatch work to parallel workers. Each worker is an independent attempt—they don't coordinate, they just execute. The substrate is NTM (tmux agent swarm) + MCP Agent Mail (locks / messaging / inboxes); `/swarm` and `/crank` fan out fresh-context workers across worktrees.
 
 This is the **chaos** phase. Multiple agents, multiple paths, variance embraced.
 
 ### REAP - Harvest + Ratchet
 
-Monitor for completion. When polecats finish, validate their work:
+Monitor for completion. When workers finish, validate their work:
 
-1. **Did they actually complete?** (beads status = closed)
+1. **Did they actually complete?** (bead status = closed)
 2. **Is there a commit?** (git work product exists)
-3. **Did it pass CI?** (filter approved)
+3. **Did it pass the gate?** (local cockpit gate `ao gate check` approved; CI is a backstop)
 
-Valid completions get merged. **Merge is the ratchet**—once in main, it's permanent.
-
-```bash
-# Polecat runs: gt done → push → merge queue
-git merge origin/polecat/...  # Ratchet
-```
-
-> Convoy monitoring (`gt convoy`) is designed but not yet implemented; see [ROADMAP.md](ROADMAP.md).
+Valid completions get pushed to `main` (the pre-push cockpit gate is the wall; rebase-on-reject serializes concurrent pushers). **Landing on `main` is the ratchet**—once in main, it's permanent.
 
 ### ESCALATE - Handle Failures
 
 Not everything succeeds. Failed attempts have two paths:
 
-1. **Retry** - Re-ignite with fresh polecat (back to chaos pool)
-2. **Escalate** - After 3 failures, mark as BLOCKER and mail human
+1. **Retry** - Re-ignite with a fresh worker (back to chaos pool)
+2. **Escalate** - After 3 failures, mark as BLOCKER and mail the human
 
 ```bash
-# Retry
-gt sling <failed-issue> <rig>
-
 # Escalate
-bd update <issue> --labels=BLOCKER
-gt mail send --human -s "BLOCKER: <issue> needs help"
+BEADS_DIR=$PWD/_beads br update <issue> --labels=BLOCKER
+# notify the human via Agent Mail (am) or the swarm inbox
 ```
 
 The loop continues until all work is reaped or escalated.
@@ -193,7 +179,7 @@ Every skill has a role in the pattern:
 
 In traditional development, a failed attempt means wasted time. In ratchet-based development, failed attempts are just filtered chaos—expected and cheap.
 
-A polecat that fails:
+A worker that fails:
 - Costs ~10K tokens
 - Teaches nothing (no human time wasted)
 - Gets retried automatically
@@ -270,9 +256,9 @@ This is why token cost is front-loaded (more attempts early) but total cost is l
 
 ### During Execution
 
-The Mayor runs FIRE:
+The orchestrator runs FIRE:
 1. **FIND** - Check what's ready
-2. **IGNITE** - Sling to polecats
+2. **IGNITE** - Fan out to fresh-context workers (NTM swarm)
 3. **REAP** - Harvest completions
 4. **ESCALATE** - Handle failures
 5. Repeat until epic closed
@@ -303,13 +289,13 @@ These feed the next `/research` cycle. The flywheel turns.
 
 ---
 
-## The Gas Town Connection
+## The Substrate Connection
 
-Gas Town is a forge. FIRE is how the forge operates.
+The orchestration substrate is a forge. FIRE is how the forge operates. Out-of-session runs ride **NTM** (tmux agent swarms) + **MCP Agent Mail** (locks / messaging / inboxes); the in-repo daemon was deleted (ADR-0009).
 
-- **Polecats** are the workers at the anvil—independent, ephemeral, expendable
-- **The Mayor** tends the FIRE loop—dispatching, monitoring, harvesting
-- **Beads** are the work orders—tracked, statused, closed
+- **Workers** are the agents at the anvil—independent, ephemeral, expendable (fresh context per wave)
+- **The orchestrator** tends the FIRE loop—dispatching, monitoring, harvesting
+- **Beads** (`br`) are the work orders—tracked, statused, closed
 - **Main branch** is the finished product—ratcheted, permanent, compounding
 
 The forge runs until the work is done. Chaos in, quality out.
@@ -442,7 +428,7 @@ This is why `/post-mortem` is mandatory. Skipping it breaks the compounding.
 
 ## Validation Status
 
-**Epic:** `ol-rg3p` — Rigorous Flywheel Math Validation (run `bd show ol-rg3p`)
+**Epic:** `ol-rg3p` — Rigorous Flywheel Math Validation (run `BEADS_DIR=$PWD/_beads br show ol-rg3p`)
 
 The core Knowledge Flywheel equation:
 
