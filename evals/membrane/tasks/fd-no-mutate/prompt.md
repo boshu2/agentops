@@ -1,0 +1,1 @@
+Implement the `Dedup(xs []int) []int` function in `dedup/dedup.go`. It must return the unique values of the input in first-seen order. It MUST NOT modify the caller's input slice — the caller must be able to use its original slice unchanged after the call. Make all tests pass. Do not explain — just write the code.

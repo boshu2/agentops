@@ -1,0 +1,1 @@
+Implement `Median(xs []int) float64` in `stats/stats.go`. It must return the median of the input. For empty input, return 0. For odd-length input, return the middle value. For even-length input, return the average of the two middle values (as a float). The input slice must not be modified. Make all tests pass. Do not explain — just write the code.
