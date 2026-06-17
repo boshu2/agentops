@@ -21,7 +21,7 @@ A unit of work with no shared mutable state with concurrent workers. Pure functi
 ## B
 
 ### Beads
-Git-native issue tracking system accessed via the `bd` CLI. Issues live in `.beads/` inside your repo and sync through normal git operations — no external service required. [Full documentation](skills/beads.md)
+Git-native issue tracking system accessed via the `br` CLI (beads_rust). Issues live in `_beads/` inside your repo and sync through normal git operations — no external service required. [Full documentation](skills/beads-br.md)
 
 ### Bookkeeping
 AgentOps' public term for repo-native capture, retrieval, promotion, decay, and resurfacing of what sessions learn. `.agents/`, `/retro`, `/forge`, `/compile`, `ao inject`, and `ao lookup` are all bookkeeping surfaces. [Full documentation](https://github.com/boshu2/agentops/blob/main/README.md#how-bookkeeping-compounds)
@@ -164,7 +164,7 @@ One of the three named stages inside an RPI run: **Discovery**, **Implementation
 The full arc of a coding-agent session: `SessionStart` → many `UserPromptSubmit` / `PreToolUse` / `PostToolUse` cycles → `Stop` → `SessionEnd`. AgentOps 3.0 is hookless — it works the lifecycle through skills + the `ao` CLI rather than attaching runtime hooks. See [`workflows/session-lifecycle.md`](workflows/session-lifecycle.md).
 
 ### Skill
-A self-contained capability defined by a `SKILL.md` file with YAML frontmatter. Skills are the primary unit of functionality in AgentOps — each one has triggers, instructions, and optional reference docs loaded just-in-time. AgentOps currently ships 72 shared skills, with runtime-specific artifacts maintained alongside them. [Full documentation](SKILLS.md)
+A self-contained capability defined by a `SKILL.md` file with YAML frontmatter. Skills are the primary unit of functionality in AgentOps — each one has triggers, instructions, and optional reference docs loaded just-in-time. AgentOps currently ships 71 shared skills, with runtime-specific artifacts maintained alongside them. [Full documentation](SKILLS.md)
 
 ### Swarm
 A skill (`/swarm`) that spawns parallel worker agents with fresh context. Each wave gets a new team; the lead validates and commits. Workers never commit directly. [Full documentation](skills/swarm.md)

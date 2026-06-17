@@ -7,11 +7,11 @@
   "transform": "none",
   "description": "Claude image = the CORE skill set shipped DIRECT. SKILL.md is Claude-native (YAML frontmatter name/description + markdown body); no conversion, no wrapper. Skills are consumed in place from agentops/skills/<slug>/ via the Claude harness skills path / marketplace plugin. First-class Claude primitives (Workflows, Agent subagents, scheduled tasks) wrap USAGE, not the skill files. This bundle is the manifest + README + verify only; it does NOT copy or duplicate the skill files.",
   "counts": {
-    "method_core": 29,
+    "method_core": 28,
     "tool_op_core": 22,
-    "core_total": 51,
+    "core_total": 50,
     "operator": 2,
-    "manifest_total": 53
+    "manifest_total": 52
   },
   "core_skills": [
     {
@@ -119,12 +119,6 @@
     {
       "slug": "autodev",
       "path": "skills/autodev/",
-      "category": "method-core",
-      "ship": "direct"
-    },
-    {
-      "slug": "beads",
-      "path": "skills/beads/",
       "category": "method-core",
       "ship": "direct"
     },

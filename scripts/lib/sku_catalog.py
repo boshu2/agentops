@@ -76,7 +76,7 @@ COMMAND_BC = {
 # primary skill for each. Coverage assertion: every move has >=1 active skill.
 LOOP_MOVES = {
     1: ["brainstorm", "discovery", "design"],
-    2: ["beads"],
+    2: ["beads-br", "beads"],
     3: ["plan"],
     4: ["implement"],
     5: ["crank", "swarm", "autodev"],

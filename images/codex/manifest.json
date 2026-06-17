@@ -40,8 +40,8 @@
       "analysis-authoring": 0
     }
   },
-  "core_count": 40,
-  "method_core_count": 29,
+  "core_count": 39,
+  "method_core_count": 28,
   "tool_op_core_count": 11,
   "core_skills": [
     {
@@ -277,19 +277,6 @@
       },
       "codex_wave": "catalog-parity",
       "codex_treatment": "parity_only"
-    },
-    {
-      "slug": "beads",
-      "kind": "method",
-      "twin_path": "skills-codex/beads/",
-      "source_path": "skills/beads/",
-      "twin_files": {
-        "skill": "skills-codex/beads/SKILL.md",
-        "prompt": "skills-codex/beads/prompt.md",
-        "drift_marker": "skills-codex/beads/.agentops-generated.json"
-      },
-      "codex_wave": "backbone",
-      "codex_treatment": "bespoke"
     },
     {
       "slug": "bootstrap",

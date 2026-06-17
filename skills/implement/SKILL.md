@@ -17,7 +17,7 @@ skill_api_version: 1
 metadata:
   tier: execution
   dependencies:
-  - beads
+  - beads-br
   - standards
 context:
   window: isolated

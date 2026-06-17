@@ -293,7 +293,7 @@ As of 2026-05-10:
 
 - GitHub repo: 341 stars, 33 forks, 2 open issues, last pushed 2026-05-10T03:24:01Z
 - Public surface: GitHub Pages mkdocs site live at boshu2.github.io/agentops/; doctrine site live at 12factoragentops.com
-- Distribution/runtime reach: 72 shared skills, 72 checked-in Codex artifacts, and 20 Codex overrides. `/validate` and `/curate` are additive in this train; legacy validation and mining skills remain until their shim/retirement gates are resolved.
+- Distribution/runtime reach: 71 shared skills, 71 checked-in Codex artifacts, and 19 Codex overrides. `/validate` and `/curate` are additive in this train; legacy validation and mining skills remain until their shim/retirement gates are resolved.
 
 **Measured operational proof:**
 

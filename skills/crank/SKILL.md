@@ -7,7 +7,7 @@ practices:
 - agile-manifesto
 hexagonal_role: domain
 consumes:
-- beads
+- beads-br
 - implement
 - post-mortem
 - swarm
@@ -34,7 +34,7 @@ metadata:
   - swarm
   - validate
   - implement
-  - beads
+  - beads-br
   - post-mortem
 output_contract: code changes across wave execution, .agents/swarm/results/*.json
 ---

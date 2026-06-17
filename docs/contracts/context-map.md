@@ -49,7 +49,6 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 
 ### driven-adapter
 
-- `beads` — Track issues with bd/br, triage with bv, and convert plans to beads.
 - `converter` — Convert AgentOps skill formats.
 - `scope` — Hard-block edits outside declared frozen directories and protect paths during risky changes.
 - `security` — Run repository security scans for vulnerabilities, dependency risk, secrets, and release gates.
@@ -108,8 +107,6 @@ graph LR
   automation-shape-routing -- "supplier-to" --> operationalize
   automation-shape-routing -- "supplier-to" --> skill-builder
   automation-shape-routing -- "supplier-to" --> workflow-builder
-  beads -- "supplier-to" --> crank
-  beads -- "supplier-to" --> ratchet
   codex-approval -- "customer-of" --> agent-mail
   codex-approval -- "customer-of" --> using-atm
   codex-exec -- "supplier-to" --> codex-sandbox-evidence
@@ -176,8 +173,6 @@ graph LR
 | `agy-native` | produces | agy-run-evidence |
 | `autodev` | consumes | evolve |
 | `autodev` | consumes | rpi |
-| `beads` | consumes | bd-issue |
-| `beads` | produces | bd-issue |
 | `bootstrap` | consumes | doc |
 | `bootstrap` | consumes | goals |
 | `bootstrap` | consumes | product |
@@ -197,7 +192,7 @@ graph LR
 | `council` | consumes | standards |
 | `council` | produces | result.json |
 | `council` | produces | verdict.json |
-| `crank` | consumes | beads |
+| `crank` | consumes | beads-br |
 | `crank` | consumes | implement |
 | `crank` | consumes | post-mortem |
 | `crank` | consumes | swarm |

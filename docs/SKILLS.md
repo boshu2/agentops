@@ -187,7 +187,7 @@ Full validation + knowledge lifecycle. Council validates, extracts learnings, ac
 
 ## Utility Skills
 
-### /beads
+### /beads-br
 
 Git-native issue tracking operations.
 
@@ -443,7 +443,7 @@ user-facing entry points:
 | `flywheel` | Knowledge health monitoring |
 | `standards` | Language-specific coding standards (auto-loaded by /validate, /implement) |
 | `shared` | Shared reference documents for multi-agent backends |
-| `beads` | Issue tracking reference |
+| `beads-br` | Issue tracking reference (local-first beads_rust tracker) |
 
 ---
 

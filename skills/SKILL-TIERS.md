@@ -16,7 +16,7 @@ Skills fall into three functional categories, plus infrastructure tiers for inte
 | **utility** | Execution | Standalone tools | converter, scaffold, security, perf |
 | **contribute** | Execution | Upstream PR workflow | pr-prep |
 | **cross-vendor** | Execution | Multi-runtime orchestration | agent-native, converter, using-atm |
-| **library** | Internal | Reference skills loaded JIT by other skills | beads, standards, shared |
+| **library** | Internal | Reference skills loaded JIT by other skills | standards, shared |
 | **background** | Internal | Hook-triggered or automatic skills | inject, forge, flywheel |
 | **meta** | Internal | Skills about skills | heal-skill, skill-auditor, skill-builder |
 
@@ -329,13 +329,12 @@ These are how skills chain in practice:
 | **toil-mining** | execution | >- |
 | **converge** | execution | Drive a fix→re-run-judge-panel loop to terminal agreement or a 3-consecutive-fail BLOCK via the Go `ao converge` command. Thin memo over the CLI — the loop, the context-quorum floor, the LAW-0 cross-family dispatch table, and the canary entry gate all live in Go. |
 
-### Internal Skills (6) — `metadata.internal: true`
+### Internal Skills (5) — `metadata.internal: true`
 
 Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hooks. Loaded JIT by other skills via Read or auto-triggered by hooks.
 
 | Skill | Tier | Category | Purpose |
 |-------|------|----------|---------|
-| beads | library | Execution | Issue tracking reference (loaded by /implement, /plan) |
 | standards | library | Judgment | Coding standards (loaded by /validate, /implement, /doc) |
 | shared | library | Execution | Shared reference documents (multi-agent backends) |
 | inject | background | Knowledge | Load knowledge at session start (hook-triggered) |
@@ -356,18 +355,17 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **council** | - | - (core primitive) |
 | **validate** | - | - (standalone validator role) |
 | **pre-mortem** | council | required |
-| **post-mortem** | council, beads | required, optional |
-| beads | - | - |
+| **post-mortem** | council, beads-br | required, optional |
 | domain | - | - |
 | **agent-native** | - | - (standalone runtime guide) |
-| **crank** | swarm, validate, implement, beads, post-mortem | required, required, required, optional, optional |
+| **crank** | swarm, validate, implement, beads-br, post-mortem | required, required, required, optional, optional |
 | doc | standards | required |
 | flywheel | - | - |
 | forge | - | - |
 | handoff | - | - |
-| **implement** | beads, standards | optional, required |
+| **implement** | beads-br, standards | optional, required |
 | inject | - | - |
-| **plan** | research, beads, pre-mortem, crank, implement | optional, optional, optional, optional, optional |
+| **plan** | research, beads-br, pre-mortem, crank, implement | optional, optional, optional, optional, optional |
 | **push** | - | - (standalone) |
 | **product** | - | - (standalone) |
 | **pr-prep** | validate | optional |
@@ -386,7 +384,7 @@ Not auto-loaded — loaded JIT by other skills via Read or auto-triggered by hoo
 | **swarm** | implement, validate | required, optional |
 | **test** | standards | required |
 | **review** | standards, council | required, optional |
-| **refactor** | standards, beads | required, optional |
+| **refactor** | standards, beads-br | required, optional |
 | **perf** | standards | optional |
 | **scaffold** | standards | required |
 

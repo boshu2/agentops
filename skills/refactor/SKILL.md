@@ -24,7 +24,7 @@ metadata:
   tier: execution
   dependencies:
   - standards
-  - beads
+  - beads-br
 output_contract: code changes with regression verification
 ---
 # Refactor Skill
