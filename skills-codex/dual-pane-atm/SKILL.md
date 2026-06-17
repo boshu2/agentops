@@ -29,7 +29,7 @@ Read it first, then use `prompt.md` for the Codex runtime profile.
   Verify via spawn `--json` panes or `tmux list-panes` when `atm mapping` is empty; `atm activity` may omit AGY.
   After spawn, confirm pane numbers before any send; coordinate via Agent Mail, and `atm kill` on teardown.
   With `--no-user`, Opus is pane 1 and Codex is pane 2 (AGY pane 3 when `--agy=1`); with a user pane,
-  Opus/Codex are panes 2/3. Opus: plain `atm send --pane=1 --file …`; AGY: `--pane=3 --file` (interactive TUI, not `agy -p`/`gemini -p`).
+  Opus/Codex are panes 2/3. Opus: plain `atm send --pane=1 --file …`; AGY: `atm send --agy --file …` (or `--pane=3`; interactive TUI, not `agy -p`/`gemini -p`) (interactive TUI, not `agy -p`/`gemini -p`).
   Codex: poll `atm codex preflight` until `proceed` before `--codex-goal`; cold engage may need retry + `wait-goal-engaged`.
   Never use print-mode CLIs for the other-family pane.
 - Acceptance scenarios for preflight and work-split gates live in
