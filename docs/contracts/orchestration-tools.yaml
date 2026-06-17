@@ -1,0 +1,39 @@
+# Orchestration tool matrix — declarative SOT for ao orchestrate tools/preflight.
+# Gate: scripts/check-orchestration-contracts.sh
+
+version_floors:
+  atm:
+    min_version: "0.1.0"
+    note: "Bo ATM fork (~/dev/ntm); probe records discovered version at runtime"
+
+tools:
+  - id: atm
+    binary: atm
+    probe_args: ["version"]
+    required_for: [atm-only, both, tri-vendor, dual-pane]
+  - id: am
+    binary: am
+    probe_args: ["robot", "health"]
+    required_for: [am-only, both]
+    optional: true
+  - id: ntm
+    binary: ntm
+    probe_args: ["--robot-capabilities"]
+    optional: true
+  - id: claude
+    binary: claude
+    probe_args: ["--version"]
+    required_for: [dual-pane, tri-vendor]
+  - id: codex
+    binary: codex
+    probe_args: ["--version"]
+    required_for: [dual-pane, tri-vendor]
+  - id: agy
+    binary: agy
+    probe_args: ["--version"]
+    required_for: [tri-vendor]
+    optional: true
+  - id: tmux
+    binary: tmux
+    probe_args: ["list-sessions"]
+    required_for: [atm-only, both, tri-vendor, dual-pane]

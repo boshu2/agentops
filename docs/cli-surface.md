@@ -175,7 +175,13 @@
 | `ao notebook update` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao operator list` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao operator record` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao orchestrate preflight` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao orchestrate route` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao orchestrate select` | `public-stateful-fixture-needed` | `allowlisted` | Selects work from repo-local orchestration state and needs a controlled queue fixture. |
+| `ao orchestrate shape` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao orchestrate status` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao orchestrate tools` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
+| `ao orchestrate verify` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao patterns repair-filenames` | `public-tested` | `covered` | Covered by release smoke tests, direct command tests, or command handler tests. |
 | `ao pool auto-promote` | `public-tested` | `allowlisted` | Covered by pool command tests. |
 | `ao pool batch-promote` | `public-tested` | `allowlisted` | Covered by batch promote tests. |

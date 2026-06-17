@@ -13,11 +13,10 @@ import (
 // port in internal/ports) into the live `ao` command surface.
 var orchestrateCmd = &cobra.Command{
 	Use:   "orchestrate",
-	Short: "Resolve and inspect the orchestration backend ladder",
-	Long: `Tooling for the orchestration safe-degradation ladder
-(NTM -> Claude-native -> beads floor). Subcommands resolve which backend
-a unit of work would run on, honoring an explicit pin, the
-AGENTOPS_ORCHESTRATION env override, and an opt-out to the beads floor.`,
+	Short: "Out-of-session orchestration instruments (windshield)",
+	Long: `Instrument lane for out-of-session multi-model orchestration: tools,
+preflight, verify, route, status, shape, and backend select. Human atm/am
+procedure stays in skills; profiles contract is SOT in docs/contracts/.`,
 }
 
 var (
@@ -48,6 +47,7 @@ func init() {
 	orchestrateCmd.GroupID = "workflow"
 	rootCmd.AddCommand(orchestrateCmd)
 	orchestrateCmd.AddCommand(orchestrateSelectCmd)
+	initOrchestrateInstrumentLane()
 	orchestrateSelectCmd.Flags().BoolVar(&orchestrateSelectJSON, "json", false,
 		"Emit the selection trace as JSON")
 	orchestrateSelectCmd.Flags().StringVar(&orchestrateSelectPin, "pin", "",

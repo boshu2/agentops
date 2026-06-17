@@ -4,6 +4,7 @@ Copy and track per session.
 
 ## Pre-spawn
 
+- [ ] **Instrument lane** — `ao orchestrate route --json` then `ao orchestrate preflight --profile tri-vendor --json` (or `dual-pane`)
 - [ ] **Route confirmed** — dual-pane fits; not shape 0 / swarm / full ATM queue
 - [ ] **Work-split chosen** — pattern named in coordination ledger (see work-split-matrix.md)
 - [ ] **Bead join-key** — `br create` or `br update --claim` if work is tracked
@@ -53,6 +54,7 @@ atm mapping --session="$SESSION"
 ```
 
 - [ ] Mapping shows expected Opus + Codex panes at the numbers from the pane map table
+- [ ] **Verify windshield** — `ao orchestrate verify --session "$SESSION" --profile tri-vendor --json` (use `dual-pane` profile for two-lane sessions)
 - [ ] Session name matches `agentops--$LABEL`
 
 ## First lane (Claude / Opus — pane 1 with `--no-user`)

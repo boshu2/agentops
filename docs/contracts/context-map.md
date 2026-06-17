@@ -76,6 +76,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `handoff` — Write compact session handoffs.
 - `heal-skill` — Repair skill hygiene.
 - `ntm` — Orchestrates NTM tmux agent swarms and robot APIs. Use when spawning/sending panes, reading robot state, triaging work, locks/mail, safety, pipelines, serve, or NTM errors.
+- `orchestrate` — Out-of-session orchestration instrument lane: route, preflight, verify before human atm/am procedure.
 - `rch` — Use when offloading slow builds to remote workers or recovering RCH worker, hook, SSH, sync, or disk issues.
 - `red-team` — Probe docs and skills. Use when: adversarially probing a doc, skill, plan, or claim for weaknesses, gaps, or unstated assumptions before it ships.
 - `refactor` — Execute safe refactors.
@@ -135,6 +136,7 @@ graph LR
   operationalize -- "supplier-to" --> skill-builder
   operationalize -- "customer-of" --> validate
   operationalize -- "supplier-to" --> workflow-builder
+  orchestrate -- "customer-of" --> using-atm
   perf -- "shared-kernel" --> standards
   plan -- "shared-kernel" --> standards
   post-mortem -- "shared-kernel" --> standards
@@ -235,6 +237,8 @@ graph LR
 | `operationalize` | consumes | .agents/research/*.md |
 | `operationalize` | produces | .agents/operationalize/*.md |
 | `operationalize` | produces | routed-handoffs |
+| `orchestrate` | consumes | automation-shape-routing |
+| `orchestrate` | produces | result.json |
 | `perf` | consumes | repo-context |
 | `perf` | produces | result.json |
 | `plan` | consumes | standards |

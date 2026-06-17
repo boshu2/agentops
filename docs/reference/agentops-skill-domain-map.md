@@ -1,7 +1,7 @@
 # AgentOps Skill Domain Map
 
 This map is the control surface for the next evolution loop. It classifies all
-72 checked-in AgentOps skills before any broad rewrite, using current
+73 checked-in AgentOps skills before any broad rewrite, using current
 `origin/main` product direction, GOALS Directive 12, the DDD/hexagonal ADR, and
 the `soc-y5vh` Loop epic.
 
@@ -18,9 +18,9 @@ around small provable changes.
 <!-- BEGIN:audit-summary -->
 | Signal | Result |
 |---|---:|
-| Skills audited | 72 |
+| Skills audited | 73 |
 | Domains classified | 6 of 6 (BC1-BC6) |
-| Dispositions assigned | 72 / 72 |
+| Dispositions assigned | 73 / 73 |
 <!-- END:audit-summary -->
 
 Observed gap: the catalog has strong operational kernels but weak productized
@@ -99,6 +99,7 @@ Disposition meanings:
 | `inject` | BC1 Corpus | driving-adapter | refactor | Context injection should be explicit CorpusReader adapter use. |
 | `ntm` | BC6 Orchestration | supporting | keep | New factory-built skill from the four-vendor corpus expansion; keep as clean-room AgentOps-owned capability.. |
 | `operationalize` | BC1 Corpus | domain | keep | Seams epic ag-xwjlc: distill+route bridge from gathered context to automation shapes; fills the curate/forge-to-builders seam.. |
+| `orchestrate` | BC6 Orchestration | supporting | keep | Out-of-session instrument lane: ao orchestrate route/preflight/verify before human atm procedure; profiles yaml is SOT.. |
 | `perf` | BC3 Loop | domain | update | Performance profile-and-optimize loop; re-binned BC2→BC3 (ag-j3ge0 — drives optimization work inside the loop, not a fitness gate). |
 | `plan` | BC3 Loop | domain | update | Must output vertical slices and wave-validity checks. |
 | `post-mortem` | BC3 Loop | domain | update | Loop closeout; connect to next-work and ratchet evidence. |
