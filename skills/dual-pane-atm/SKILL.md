@@ -132,14 +132,54 @@ Full checklist: [references/spawn-checklist.md](references/spawn-checklist.md).
 
 **Pane addressing** (see checklist table):
 
-| Session shape | Opus | Codex |
-|---|---|---|
-| **`--no-user`** | pane 1 | pane 2 |
-| **User pane present** | pane 2 | pane 3 |
+| Session shape | Opus | Codex | AGY |
+|---|---|---|---|
+| **`--no-user`** (dual) | pane 1 | pane 2 | — |
+| **`--no-user`** (tri-vendor) | pane 1 | pane 2 | pane 3 |
+| **User pane present** | pane 2 | pane 3 | — |
 
 With user attach, `--agent=1` == `--pane=2` (Opus). Prefer `--agent` for workers when tri-pane.
 
 **Codex cold engage:** optional `--codex-goal` on first send may timeout before the TUI is warm. Retry the send and/or run `atm codex wait-goal-engaged` again — advisory only; does not block spawn/teardown.
+
+## Tri-vendor extension (Opus + Codex + AGY)
+
+Optional **three worker panes** — Claude Opus, Codex, and **AGY** (Antigravity
+interactive TUI) — with **`--no-user`**. This is **not** the anti-pattern
+“three-pane dual” (user attach + two workers); tri-vendor is **worker-only** and
+smoke-tested as `agentops--dual-pane-agy-smoke`.
+
+```bash
+LABEL=dual-pane-agy-smoke   # or your session label
+SESSION="agentops--$LABEL"
+RESERVE_GLOBS="/tmp/dual-pane-opus/ /tmp/dual-pane-codex/ /tmp/dual-pane-agy/"
+
+atm spawn agentops --label "$LABEL" --no-user \
+  --cc=1:opus --cod=1:gpt-5.5 --agy=1 \
+  --reserve "$RESERVE_GLOBS" \
+  --no-cass-context --ready-timeout=2m --json
+```
+
+**Pane map (`--no-user`, tri-vendor):** 1 = Opus, 2 = Codex, 3 = AGY (tmux
+window `:1` on typical ATM layouts).
+
+**Sends:**
+
+| Pane | Contract |
+|---|---|
+| **1 Opus** | `atm send "$SESSION" --pane=1 --file packet-opus.md` (same as dual-pane) |
+| **2 Codex** | `atm codex preflight --pane 2` until `recommended_action: proceed`, then `--codex-goal --file` + `wait-goal-engaged` — do not `--codex-goal` while preflight says `wait` |
+| **3 AGY** | `atm send "$SESSION" --pane=3 --file packet-agy.md` — interactive AGY TUI only; **not** `agy -p`, **not** `gemini -p` |
+
+**Verify panes:** prefer spawn `--json` `panes[]` or `tmux list-panes -t "$SESSION:1"`.
+When Agent Mail is unavailable, `atm mapping --session="$SESSION"` may be empty
+despite healthy panes — do not treat empty mapping as spawn failure.
+
+**Observability gap:** `atm activity` may list only Claude + Codex lanes and omit
+AGY; use tmux capture on pane 3 for AGY liveness.
+
+Checklist block: [references/spawn-checklist.md](references/spawn-checklist.md) § Tri-vendor (+AGY).
+
 
 ## Work-split patterns
 
@@ -241,7 +281,7 @@ Session is done when **all** hold:
 - ❌ **Decomposing `/rpi` into ATM steps** — dispatch the whole skill once.
 - ❌ **Love-fest without evidence** — require test tails, diffs, or gate output.
 - ❌ **Adversarial scoring when you need a build** — use dueling-idea-wizards instead.
-- ❌ **Three-pane "dual" sessions** — that's `/using-atm` or `/swarm`; re-scope.
+- ❌ **Three-pane "dual" (user + two workers)** — that's `/using-atm` attach + workers; re-scope. **Tri-vendor worker-only** (Opus + Codex + AGY, `--no-user`) is a documented extension above — not the same anti-pattern.
 - ❌ **`claude -p` for Codex parity** — interactive pane or codex exec only.
 
 ## Codex twin
