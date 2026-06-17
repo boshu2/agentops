@@ -46,6 +46,25 @@ func TestEmitYieldEvent_AllKinds(t *testing.T) {
 	}
 }
 
+// TestFmtCatchRate covers the membrane catch-rate rendering: a real value formats
+// to 3 dp; a nil (no adjudicated verdicts) renders n/a with the divide-guard note.
+func TestFmtCatchRate(t *testing.T) {
+	v := 0.6666666666666666
+	if got := fmtCatchRate(&v, ""); got != "0.667" {
+		t.Errorf("fmtCatchRate(0.667) = %q, want %q", got, "0.667")
+	}
+	zero := 0.0
+	if got := fmtCatchRate(&zero, ""); got != "0.000" {
+		t.Errorf("fmtCatchRate(0.0) = %q, want %q", got, "0.000")
+	}
+	if got := fmtCatchRate(nil, "no confirmed+refuted gate-verdicts"); got != "n/a (no confirmed+refuted gate-verdicts)" {
+		t.Errorf("fmtCatchRate(nil, note) = %q", got)
+	}
+	if got := fmtCatchRate(nil, ""); got != "n/a (0 denominator)" {
+		t.Errorf("fmtCatchRate(nil, \"\") = %q, want default note", got)
+	}
+}
+
 // TestEmitYieldEvent_Rejects verifies envelope/body validation surfaces errors
 // (so a malformed emit fails loudly even though callers swallow it with || true).
 func TestEmitYieldEvent_Rejects(t *testing.T) {
