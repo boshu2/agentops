@@ -124,3 +124,7 @@ docs/cdlc.md:../.agents/research/2026-05-15-cdlc-dojo-doctrine.md
 docs/CHANGELOG.md:docs/3.1.md
 docs/CHANGELOG.md:README.md
 docs/CHANGELOG.md:docs/install-day2-ops.md
+docs/CHANGELOG.md:docs/3.0.md
+docs/CHANGELOG.md:docs/architecture/codebase-overview.md
+docs/CHANGELOG.md:docs/audits/2026-06-16-worktree-disposition-audit.md
+docs/CHANGELOG.md:docs/audits/2026-06-16-skill-disposition-triage.md

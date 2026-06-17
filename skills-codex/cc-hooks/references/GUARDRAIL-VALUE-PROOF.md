@@ -7,6 +7,12 @@ hook earn the "lease on life" ADR-0002 demands. It is written and committed
 *before* the measurement is run, so the success criterion and the null-tolerance
 cannot be retrofitted to whatever the data happens to say.
 
+> **Status at landing (no overclaim):** this ENABLES the ADR-0002 proof — it does
+> not yet PROVIDE it. The guard ships INERT (opt-in installer); the telemetry
+> channel collects **zero** data until it is installed AND N≥30 real fires
+> accrue. So ADR-0002 l.58 is *not cleared at landing* — it becomes clearable once
+> the data exists. (Recorded by the 2026-06-17 recent-commits review.)
+
 ## Why this exists (the whole point)
 
 AgentOps went hookless (#511) on the finding that hooks "couldn't be proven to
