@@ -18,6 +18,7 @@ package extract
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/boshu2/agentops/cli/internal/llm"
 )
@@ -77,6 +78,46 @@ type Client struct {
 	// (signature mirrors cli/cmd/ao/eval_scenario_ab.go runCodexExec). It is
 	// optional; the Generator path is the default and what tests exercise.
 	codexExec func(ctx context.Context, prompt, outputSchemaPath string) (string, int, error)
+}
+
+// NewCodexClient constructs a production Client on the BackendCodex backend,
+// wired to a raw schema-constrained codex turn function (the signature mirrors
+// cli/cmd/ao/eval_scenario_ab.go runCodexExec). LAW 0: BackendCodex is on the
+// closed allowlist; a Claude print-mode backend is never selectable here.
+//
+// The raw function expects a FILE PATH to a JSON Schema, but Client.Generate
+// hands its codexExec the schema BYTES (it does not own a temp file). This
+// constructor bridges that mismatch: the stored closure writes the schema bytes
+// to a temp file, passes that temp file's PATH to raw, and removes the temp file
+// afterward. A nil raw function is a programming error and is rejected.
+func NewCodexClient(raw func(ctx context.Context, prompt, schemaPath string) (string, int, error)) *Client {
+	if raw == nil {
+		// A nil raw would make Generate fall through to the no-callable-generator
+		// error; surface the misconfiguration as an inert client whose Generate
+		// reports it, rather than panicking at call time.
+		return &Client{backend: BackendCodex}
+	}
+	return &Client{
+		backend: BackendCodex,
+		codexExec: func(ctx context.Context, prompt, schemaBytes string) (string, int, error) {
+			// Client.Generate passes the schema BYTES here; raw wants a PATH.
+			// Write the bytes to a temp file and hand raw the path.
+			f, err := os.CreateTemp("", "extract-codex-schema-*.json")
+			if err != nil {
+				return "", 0, fmt.Errorf("codex schema temp: %w", err)
+			}
+			tmpPath := f.Name()
+			defer func() { _ = os.Remove(tmpPath) }()
+			if _, err := f.WriteString(schemaBytes); err != nil {
+				_ = f.Close()
+				return "", 0, fmt.Errorf("write codex schema temp: %w", err)
+			}
+			if err := f.Close(); err != nil {
+				return "", 0, fmt.Errorf("close codex schema temp: %w", err)
+			}
+			return raw(ctx, prompt, tmpPath)
+		},
+	}
 }
 
 // NewClientWithGenerator constructs a Client bound to an explicit Generator. It
