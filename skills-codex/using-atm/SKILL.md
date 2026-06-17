@@ -140,6 +140,8 @@ The wedged-vs-working call depends on reading the pane right — the `atm` meter
 - **Raw tmux last resort:** submit with `tmux send-keys ... C-m` and capture
   the pane. Text still sitting in the input box is not delivery.
 
+7. **AGY lanes + Agent Mail observability gaps (tri-vendor).** `atm activity` may list only Claude + Codex and **omit AGY**; `atm mapping --session=…` may be **empty when Agent Mail is down** even when panes are healthy. Do not treat either signal as spawn failure or wedged AGY. Prefer spawn `--json` `panes[]` or `tmux list-panes` for pane numbers; use tmux capture on the AGY pane for liveness. Full tri-vendor dispatch + verify: [`/dual-pane-atm`](../dual-pane-atm/SKILL.md) (§ Tri-vendor).
+
 ## Coordination (the Agent Mail leg)
 
 - **Beads (`bd`)** — shared work queue + state source: `br ready`, `bd update --claim`, `bd close`.
@@ -162,6 +164,7 @@ pane also looks idle.
 
 ## Related skills
 
+- [`/dual-pane-atm`](../dual-pane-atm/SKILL.md) — Opus + Codex + optional **AGY** tri-vendor; AGY observability gaps (`atm activity` / `atm mapping`) — see § Tri-vendor there.
 - $automation-shape-routing — decide Workflow vs ATM swarm vs plain skill before standing up a swarm.
 - $swarm — in-session parallel fan-out across worktrees (the in-session sibling).
 - $agent-native — `ao agent bundle` produces the loop definition a managed-agents substrate runs.

@@ -1030,14 +1030,14 @@
     {
       "name": "agy-headless-evidence",
       "source_skill": "skills/agy-headless-evidence",
-      "source_hash": "ed15fc269dac8548e876a407f3179318e7d9fe204dd18bdc32a7800512b02e20",
-      "generated_hash": "370fa02209ccdef1e3a2383e2671275dcf4c9e5c93ae2b22a958f3e5bc2b4aa4"
+      "source_hash": "397e97a42f044d020f560b1aaa6e0bec39020055aebc57399bab69482a83f8b1",
+      "generated_hash": "6e001dff97c93cfdfd0346b7f8af9beeb1e4149dd42122cc392da127757cd0cc"
     },
     {
       "name": "agy-native",
       "source_skill": "skills/agy-native",
-      "source_hash": "b84c5f7d13b5665ebf8f3b7aa6e3408f20353022e9f05a1f1122316e39a0035a",
-      "generated_hash": "38f0627619fe29459b27ae125364737483302cdf18a77e13d6f4e3aef21ea34d"
+      "source_hash": "beeffcf1c1397094bf974668274112102baa55c4c42dfe3f2df86ee5b5f5cc38",
+      "generated_hash": "8092dc7e99972d678670b13f01cdbb4ed6e6f16bb764ad7db5edf73117f3d3d3"
     },
     {
       "name": "autodev",
@@ -1348,8 +1348,8 @@
     {
       "name": "ntm",
       "source_skill": "skills/ntm",
-      "source_hash": "29b68e0252da20d71cede5829fd75c86538d26551b22fc4580c995e228e7f952",
-      "generated_hash": "892e76dd5a98a33d79929db7af13610d836ba4377b4807b436a9b3171c3f051f"
+      "source_hash": "210e6a48a2ca83da7936d62fe84e488336ec5dd00a8be86f1083f9140fbbfe5e",
+      "generated_hash": "062afd1d1cba11b74e80f2242a04f5de5cc3be8790b9c6fead4a1d680ef52d23"
     },
     {
       "name": "operationalize",
@@ -1678,8 +1678,8 @@
     {
       "name": "using-atm",
       "source_skill": "skills/using-atm",
-      "source_hash": "682f6ad9386392efa6f2b55a879016d9b8f693f1a3e1d81f907b309b275fcb59",
-      "generated_hash": "370526e80efd36b2aae6b6a15f0897f570c90f656069b89f7828c3e367de6d57"
+      "source_hash": "87040c336246f00e49dbed6a8e91ecb6023ea97e0f5843ba94565ff54294a449",
+      "generated_hash": "348a2cce5f6ea82857002f5e18d408ac7aef545d51baab7f02e35e1941197d9b"
     },
     {
       "name": "validate",
@@ -1696,8 +1696,8 @@
     {
       "name": "vibing-with-ntm",
       "source_skill": "skills/vibing-with-ntm",
-      "source_hash": "33b4d4d88af99774ba37d52b934f0c5c1a0bef23e53055628ef1681047de9212",
-      "generated_hash": "75e5fd0a64297dd770bd5870be3bf1adbdb0843382367e910174fe56a1ba0e12"
+      "source_hash": "5b8867f4cdefaf19f30702881681e21c3f03375a178f75f5652df9687e4c8367",
+      "generated_hash": "d70a28b2d35af2af43cea03dedecc2e37acf50f55e8d1f445c2434045b923811"
     },
     {
       "name": "workflow-builder",

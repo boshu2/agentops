@@ -274,6 +274,8 @@ the status signals were misread. Discipline:
    break ties before respawning — prefer the `atm codex` classifier first, CPU% as the
    cheap tie-breaker.
 
+7. **AGY lanes + Agent Mail observability gaps (tri-vendor).** `atm activity` may list only Claude + Codex and **omit AGY**; `atm mapping --session=…` may be **empty when Agent Mail is down** even when panes are healthy. Do not treat either signal as spawn failure or wedged AGY. Prefer spawn `--json` `panes[]` or `tmux list-panes` for pane numbers; use tmux capture on the AGY pane for liveness. Full tri-vendor dispatch + verify: [`/dual-pane-atm`](../dual-pane-atm/SKILL.md) (§ Tri-vendor).
+
 ## Raw tmux Key Injection (Last Resort)
 
 Prefer `atm send`, `atm codex ...`, or NTM robot send surfaces for dispatch. Use
@@ -359,6 +361,7 @@ server; do not declare convergence from a stale checkout.
 
 ## Related skills
 
+- [`/dual-pane-atm`](../dual-pane-atm/SKILL.md) — Opus + Codex + optional **AGY** worker-only tri-vendor (`--no-user`, `--agy=1`); pane-3 AGY is interactive TUI dispatch (`atm send --pane=3 --file`), not headless `agy -p`. Observability gaps (`atm activity` / `atm mapping`) documented there.
 - [`/automation-shape-routing`](../automation-shape-routing/SKILL.md) — decide Workflow vs ATM swarm vs plain skill *before* standing up a swarm.
 - [`/swarm`](../swarm/SKILL.md) — in-session parallel fan-out across worktrees (the in-session sibling of this out-of-session substrate).
 - [`vibing-with-ntm`](../vibing-with-ntm/SKILL.md) — the in-session **tending decision layer** (when to nudge / restart / converge, the OC/AP cards, the liveness truth stack). This skill is the **substrate runner** (spawn, dispatch loops, born-into-coordination); reach for `vibing-with-ntm` once panes are live and you're deciding what to do tick-by-tick.
