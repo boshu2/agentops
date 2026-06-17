@@ -11,3 +11,5 @@ troubleshooting — lives in the sibling base file
 [`../../skills/agy-headless-evidence/SKILL.md`](../../skills/agy-headless-evidence/SKILL.md). Read it first.
 
 Codex execution steps and guardrails for this skill are in [`prompt.md`](./prompt.md) (same dir).
+
+Base skill **See Also** now links [`/dual-pane-atm`](../../skills/dual-pane-atm/SKILL.md) (§ Tri-vendor) for interactive pane-3 AGY — not `agy -p`.

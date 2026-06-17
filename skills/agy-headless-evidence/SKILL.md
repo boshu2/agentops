@@ -204,4 +204,5 @@ compression so the evidence is discoverable downstream.
 - `dcg` — destructive-command guard; the BeforeTool floor this skill keeps on.
 - `agentops:validate` — produces the PASS/WARN/FAIL verdict over this proof surface.
 - Cross-agent rule: consume a worker's published compression (artifact/mail/bead), never its live session.
+- [`/dual-pane-atm`](../dual-pane-atm/SKILL.md) — tri-vendor **interactive pane-3 AGY TUI** (§ Tri-vendor); **not** `agy -p` / headless `--print` — use this skill for evidence-sidecar work instead.
 - Migration contract: `~/dev/control-plane/migrations/gemini-to-agy.md` (AGY ≠ gemini-cli; LAW 0).

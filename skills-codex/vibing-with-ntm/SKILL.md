@@ -25,4 +25,6 @@ Read it first, then use `prompt.md` for the Codex runtime profile.
   (`atm spawn ... --cc=1:opus --cod=1:gpt-5.5 --no-user`), Codex goal-flow
   verification, and `atm kill` cleanup. Never use print-mode CLIs for the
   other-family pane.
+
+> **Tri-vendor (Opus + Codex + AGY):** worker-only three-pane shape and AGY observability caveats live in [`/dual-pane-atm`](../../skills/dual-pane-atm/SKILL.md) (§ Tri-vendor) — load before tending an AGY lane.
 - Return concrete evidence: commands run, files touched, exit codes, and any remaining blocker.

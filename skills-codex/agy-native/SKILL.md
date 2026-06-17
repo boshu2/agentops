@@ -10,3 +10,5 @@ This is the Codex-runtime entry point for the **agy-native** skill. The full met
 - **Canonical skill:** [`../../skills/agy-native/SKILL.md`](../../skills/agy-native/SKILL.md)
 
 Read that file first. Then follow the Codex Execution Profile in [`prompt.md`](./prompt.md) for the runtime-specific tool mapping and guardrails.
+
+Base skill **See Also** now links [`/dual-pane-atm`](../../skills/dual-pane-atm/SKILL.md) for in-ATM AGY vs headless split.

@@ -229,4 +229,6 @@ At closeout, summarize the swarm in concrete deltas:
 | Account rotation and quota | `caam` |
 | Multi-model or review swarms | `multi-model-triangulation`, `code-review-gemini-swarm-with-ntm` |
 
+> **Tri-vendor (Opus + Codex + AGY):** worker-only three-pane shape and AGY observability caveats live in [`/dual-pane-atm`](../dual-pane-atm/SKILL.md) (§ Tri-vendor) — reach there before tending an AGY lane.
+
 This skill stays focused on swarm tending decisions: observe, classify, act once, verify, and stop when the evidence says stop.
