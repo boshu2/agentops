@@ -15,6 +15,7 @@ func TestSeedChecksRegistered(t *testing.T) {
 		"contract.registry-drift",
 		"ci.policy-parity",
 		"eval.corpus-freshness",
+		"docs.no-retired-tech",
 	}
 	for _, id := range want {
 		if _, ok := gates.Default.Get(id); !ok {

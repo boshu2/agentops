@@ -167,6 +167,7 @@ func init() {
 		{ID: "always.regen-all", Tiers: gates.Full, Blocking: true, Backing: "regen-all.sh", Args: []string{"--check"}, RepairHint: "bash scripts/regen-all.sh"},
 		{ID: "always.three-gap-supergate", Tiers: gates.Full, Match: goalsPaths, Blocking: true, Backing: "check-three-gap-supergate.sh"},
 		{ID: "always.sovereignty-proof-citations", Tiers: gates.Full, Match: docsPaths, Blocking: true, Backing: "validate-sovereignty-proof-citations.sh"},
+		{ID: "docs.no-retired-tech", Tiers: gates.Fast | gates.Full, Match: docsPaths, Blocking: true, Backing: "check-docs-no-retired-tech.sh", RepairHint: "convert to current truth, or add a RETIRED/HISTORICAL banner in the first 15 lines; see scripts/check-docs-no-retired-tech.sh"},
 		{ID: "corpus.secret-scan", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "check-corpus-secret-scan.sh"},
 		{ID: "corpus.witness-dolt-jsonl-crosscheck", Tiers: gates.Full, Match: corpusPaths, Blocking: true, Backing: "witness-dolt-jsonl-crosscheck.sh"},
 		{ID: "doctrine.memrl-health", Tiers: gates.Full, Blocking: true, Backing: "check-memrl-health.sh"},
