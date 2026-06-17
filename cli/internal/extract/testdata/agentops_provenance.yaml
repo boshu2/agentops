@@ -1,0 +1,44 @@
+language: en
+name: agentops_provenance
+type: graph
+tags:
+  - provenance
+  - prov-o
+description: >-
+  Extract decisions, findings, learnings, artifacts, and beads from AgentOps
+  session exhaust, plus the PROV-O edges between them, into real traversable
+  graph relations.
+output:
+  entities:
+    - name: node_type
+      type: string
+      description: One of decision, finding, learning, artifact, bead.
+      required: true
+    - name: id
+      type: string
+      description: Stable identifier for the node.
+      required: true
+    - name: summary
+      type: string
+      description: One-line description of the node.
+      required: false
+  relations:
+    - name: from_id
+      type: string
+      description: Source node id.
+      required: true
+    - name: relation
+      type: string
+      description: PROV-O verb, e.g. wasDerivedFrom, wasInvalidatedBy.
+      required: true
+    - name: to_id
+      type: string
+      description: Target node id.
+      required: true
+guideline: >-
+  Read the session exhaust and extract only nodes and edges supported by
+  explicit evidence in the text. Use PROV-O verbs for relations. Prefer
+  wasInvalidatedBy for supersession. Do not invent edges.
+identifiers:
+  entity_id: id
+  relation_id: '{from}|{relation}|{to}'
