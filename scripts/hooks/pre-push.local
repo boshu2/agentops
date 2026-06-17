@@ -94,4 +94,13 @@ if [ "$gate_status" -eq 0 ] \
    && [ -x "${toplevel}/scripts/emit-landed-provenance.sh" ]; then
     AO_BIN=/tmp/ao-gate bash "${toplevel}/scripts/emit-landed-provenance.sh" || true
 fi
+
+# DETERMINISTIC-TIER SENSOR feed (age-srl): symmetric to the PASS-branch
+# provenance feed above. When the gate BLOCKED, the deterministic membrane just
+# caught a false-done — record it as a REFUTED gate-verdict so the in-situ
+# catch-rate (ao yield gauge) stops undercounting the deterministic tier.
+# Non-blocking and skippable; never changes gate_status.
+if [ "$gate_status" -ne 0 ] && [ -x "${toplevel}/scripts/emit-deterministic-catch.sh" ]; then
+    AO_BIN=/tmp/ao-gate bash "${toplevel}/scripts/emit-deterministic-catch.sh" || true
+fi
 exit "$gate_status"

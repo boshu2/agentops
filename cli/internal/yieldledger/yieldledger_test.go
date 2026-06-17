@@ -145,6 +145,16 @@ func TestValidateEvent(t *testing.T) {
 			wantBad: true,
 		},
 		{
+			name:    "valid gate-verdict deterministic tier (age-srl)",
+			event:   newGateVerdictEvent(GateVerdictInput{BeadID: "ag-x", RunID: "r1", TS: time.Now(), Difficulty: 1, PawlVerdictRef: goodRef, Disposition: DispositionRefuted, HeadSHA: "abc1234", Attempt: 1, Mode: ModeDeterministic, AuthorContextID: "pre-push-gate", AuthorFamily: "deterministic-gate"}),
+			wantBad: false,
+		},
+		{
+			name:    "gate-verdict bad mode",
+			event:   newGateVerdictEvent(GateVerdictInput{BeadID: "ag-x", RunID: "r1", TS: time.Now(), Difficulty: 1, PawlVerdictRef: goodRef, Disposition: DispositionRefuted, HeadSHA: "abc1234", Attempt: 1, Mode: "telepathy", AuthorContextID: "ctx-1", AuthorFamily: "claude"}),
+			wantBad: true,
+		},
+		{
 			name:    "gate-verdict bad disposition",
 			event:   newGateVerdictEvent(GateVerdictInput{BeadID: "ag-x", RunID: "r1", TS: time.Now(), Difficulty: 2, PawlVerdictRef: goodRef, Disposition: "MAYBE", HeadSHA: "abc1234", Attempt: 1, AuthorContextID: "ctx-1", AuthorFamily: "claude"}),
 			wantBad: true,
