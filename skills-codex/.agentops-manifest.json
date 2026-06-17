@@ -2,7 +2,7 @@
   "generator": "manual-maintained",
   "source_root": "skills",
   "layout": "modular",
-  "codex_override_catalog_hash": "1cfc8283713dec46a27a9e7293730d4aaf3ef6fda3241133f05a310a08bb9ed0",
+  "codex_override_catalog_hash": "10adee118840bc929b520c2106afbad4454fefbc3c6d206cc24601b2dbd2b508",
   "codex_override_catalog": {
     "version": 1,
     "description": "Machine-readable Codex treatment map for the full skill catalog.",
@@ -987,6 +987,12 @@
         "treatment": "parity_only",
         "wave": "catalog-parity",
         "reason": "Thin memo over the Go ao converge command; loop + canary live in cli, parity twin suffices."
+      },
+      {
+        "name": "dual-pane-atm",
+        "treatment": "parity_only",
+        "wave": "catalog-parity",
+        "reason": "Dual-pane ATM orchestration is documentation-led and portable across runtimes; Codex parity is sufficient until durable Codex-only divergence is proven."
       }
     ]
   },
@@ -1224,6 +1230,12 @@
       "source_skill": "skills/domain",
       "source_hash": "97d4038e22aa268dac8f04fffba38b5b3c3f3e0f1d2c90979ce3c96d81bb769a",
       "generated_hash": "0c54e9c18349b56f507d891d250b1c78d64c644a0b18d26afb5ff1dc3db57273"
+    },
+    {
+      "name": "dual-pane-atm",
+      "source_skill": "skills/dual-pane-atm",
+      "source_hash": "4dd0b6d3e658a7f485375a20852be1f07ec9fe9a7dd8ded49448e6e4a17cd96f",
+      "generated_hash": "293c7232f03696b4f6226b3d1ddd0f32fa57dc36188757017847fe42d212714a"
     },
     {
       "name": "eval-outcomes",

@@ -16,7 +16,7 @@ context_rel:
   with: using-atm
 - kind: customer-of
   with: automation-shape-routing
-- kind: sibling-of
+- kind: partnership
   with: vibing-with-ntm
 skill_api_version: 1
 user-invocable: true
@@ -71,7 +71,7 @@ N-way bead queues ([`/using-atm`](../using-atm/SKILL.md)).
   headless is explicitly requested.
 - **One bead = one whole skill.** Dispatch `/rpi`, `/implement`, `/research`, etc.
   as a single invocable unit per pane — never decompose RPI phases into ATM steps.
-- **Worktree-per-bead** when either lane edits tracked files. No shared-checkout
+- **Worktree-per-bead** when either lane edits tracked files. No shared checkout
   writes from panes.
 - **Partition before lock.** If write-sets can be disjoint, assign ownership —
   use `am reserve` only when partition fails.
@@ -170,7 +170,7 @@ am file_reservations reserve <proj> <agent> "<path/glob>"
 ```
 
 **Worktree-per-bead:** mandatory for implementation splits —
-[`swarm/references/shared-checkout-discipline.md`](../swarm/references/shared-checkout-discipline.md).
+[shared checkout discipline](../swarm/references/shared-checkout-discipline.md).
 
 **Optional ledger** (`.agents/dual-pane/coordination.json`):
 

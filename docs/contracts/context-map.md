@@ -121,7 +121,7 @@ graph LR
   discovery -- "shared-kernel" --> standards
   dual-pane-atm -- "customer-of" --> automation-shape-routing
   dual-pane-atm -- "customer-of" --> using-atm
-  dual-pane-atm -- "sibling-of" --> vibing-with-ntm
+  dual-pane-atm -- "partnership" --> vibing-with-ntm
   evolve -- "customer-of" --> rpi
   flywheel -- "shared-kernel" --> standards
   forge -- "shared-kernel" --> standards
