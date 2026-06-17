@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "scenario_id": "s-fixture-plumbing-001",
+  "scenario_path": "evals/scenarios/fixtures/sentinel-recall-plumbing.json",
+  "generated_at": "2026-06-17T12:00:00Z",
+  "without_gold": {
+    "arm": "without_gold",
+    "score": 0.0,
+    "token_cost": 500
+  },
+  "with_gold": {
+    "arm": "with_gold",
+    "score": 1.0,
+    "token_cost": 600
+  },
+  "aggregate_delta": 1.0,
+  "satisfaction_threshold": 0.8,
+  "token_budget": 200000,
+  "ceiling_violation": false,
+  "verdict_class": "fact-recall",
+  "moat_eligible": false,
+  "gate": {
+    "pass": true,
+    "reasons": []
+  },
+  "_note": "Plumbing fixture for age-sb0: must be rejected by moat claim aggregation."
+}

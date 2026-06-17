@@ -1697,6 +1697,22 @@ ao eval scenario-ab [flags]
       --token-budget int   Fail the gate if summed arm token cost exceeds this (0 = default 200000)
 ```
 
+#### `ao eval scenario-moat`
+
+Render a moat positive/null/inconclusive verdict over one or more
+
+```
+ao eval scenario-moat [flags]
+```
+
+**Flags:**
+
+```
+  -h, --help                    help for scenario-moat
+      --output string           Write the MoatClaimResult JSON to this path
+      --scorecard stringArray   Path to a ScenarioDeltaScorecard JSON (repeatable)
+```
+
 #### `ao eval scorecard`
 
 Build an eval scorecard from run records
