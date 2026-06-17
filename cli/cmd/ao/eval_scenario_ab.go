@@ -80,13 +80,13 @@ satisfaction threshold, or when the summed arm token cost exceeds the budget.`,
 		}
 		if card.CeilingViolation {
 			fmt.Fprintf(cmd.OutOrStdout(),
-				"scenario-ab %s: CEILING VIOLATION (without=%.4f >= threshold=%.4f) — invalid scenario, no delta emitted\n",
-				card.ScenarioID, card.Without.Score, card.SatisfactionThreshold)
+				"scenario-ab %s [%s]: CEILING VIOLATION (without=%.4f >= threshold=%.4f) — invalid scenario, no delta emitted\n",
+				card.ScenarioID, card.VerdictClass, card.Without.Score, card.SatisfactionThreshold)
 		} else {
 			fmt.Fprintf(cmd.OutOrStdout(),
-				"scenario-ab %s: delta=%.4f (with=%.4f without=%.4f) tokens=%d gate=%s\n",
-				card.ScenarioID, card.AggregateDelta, card.With.Score, card.Without.Score,
-				card.With.TokenCost+card.Without.TokenCost, gateLabel(card.Gate.Pass))
+				"scenario-ab %s [%s]: delta=%.4f (with=%.4f without=%.4f) tokens=%d gate=%s %s\n",
+				card.ScenarioID, card.VerdictClass, card.AggregateDelta, card.With.Score, card.Without.Score,
+				card.With.TokenCost+card.Without.TokenCost, gateLabel(card.Gate.Pass), moatLabel(card.MoatEligible))
 		}
 		if !card.Gate.Pass {
 			for _, r := range card.Gate.Reasons {
@@ -103,6 +103,17 @@ func gateLabel(pass bool) string {
 		return "PASS"
 	}
 	return "FAIL"
+}
+
+// moatLabel surfaces whether a PASSING scorecard is admissible MOAT evidence.
+// A fact-recall (sentinel) scorecard can pass its plumbing gate yet is NEVER
+// moat evidence (age-6ys) — this label keeps that distinction loud at the CLI so
+// a plumbing PASS is not misread as "the corpus improves agent work" verdict.
+func moatLabel(eligible bool) string {
+	if eligible {
+		return "moat-eligible"
+	}
+	return "NOT-moat-evidence(plumbing)"
 }
 
 func init() {

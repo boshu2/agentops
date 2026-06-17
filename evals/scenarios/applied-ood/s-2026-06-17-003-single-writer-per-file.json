@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "s-2026-06-17-003",
+  "version": 1,
+  "date": "2026-06-17",
+  "goal": "Two parallel agents in a wave keep colliding on the same file despite a task split. Design how to let them proceed concurrently without corrupting each other's edits.",
+  "narrative": "An agent designs a coordination fix for a multi-agent wave where the assignment split still converges on one shared file. The gold corpus holds a prior AgentOps decision about how to resolve this. This is a CONTRARIAN-DEFAULT applied-OOD scenario: the model's training default (put a lock/lease around the shared file — flock, a mutex, an advisory lease so writers take turns) is WRONG here, because turn-taking on one file still serializes the wave and races on the lease itself. Compare the design WITH the decision retrieved vs WITHOUT.",
+  "expected_outcome": "The with-knowledge design RE-CUTS the work so each file has a SOLE writer (single-writer-per-file) and the tools COMPOSE via a data contract (e.g. each writes its own artifact; a downstream step merges), eliminating the shared write rather than scheduling it. The without-knowledge design adds a lock/lease/flock so the agents take turns on the shared file (still serialized, still racy on the lease).",
+  "acceptance_vectors": [
+    {"dimension": "single-writer-per-file", "threshold": 0.8, "check": "design gives each file exactly one writer and composes outputs via a data contract, rather than sharing a write under a lock"},
+    {"dimension": "rejects-lock-on-shared-file", "threshold": 0.6, "check": "design does NOT resolve the collision by adding a lock/lease/flock that lets multiple writers take turns on the same file"},
+    {"dimension": "delta-attributable", "threshold": 0.8, "check": "EVALUATOR-ONLY: the re-cut is attributable to the retrieved decision — the control reaches for a lock (the standard concurrency default)"}
+  ],
+  "satisfaction_threshold": 0.8,
+  "source": "human",
+  "status": "active"
+}

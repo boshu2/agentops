@@ -194,6 +194,26 @@ func TestEvalScenarioABCmd_AnswerKeyDeterministic(t *testing.T) {
 	if !strings.Contains(stdout, "gate=PASS") {
 		t.Errorf("with-gold (key present) over without-gold (absent) should PASS; got %q", stdout)
 	}
+	// age-6ys: a fact-recall scorecard can PASS its plumbing gate but the CLI must
+	// loudly mark it NOT moat evidence so a plumbing PASS is never the moat verdict.
+	if !strings.Contains(stdout, "[fact-recall]") {
+		t.Errorf("stdout missing [fact-recall] verdict class: %q", stdout)
+	}
+	if !strings.Contains(stdout, "NOT-moat-evidence(plumbing)") {
+		t.Errorf("a passing fact-recall card must print NOT-moat-evidence(plumbing): %q", stdout)
+	}
+}
+
+// TestMoatLabel locks the age-6ys CLI signal: an applied-OOD (moat-eligible) card
+// reads moat-eligible; a fact-recall/plumbing card reads NOT-moat-evidence so it
+// cannot be misread as the moat verdict.
+func TestMoatLabel(t *testing.T) {
+	if got := moatLabel(true); got != "moat-eligible" {
+		t.Errorf("moatLabel(true) = %q, want moat-eligible", got)
+	}
+	if got := moatLabel(false); got != "NOT-moat-evidence(plumbing)" {
+		t.Errorf("moatLabel(false) = %q, want NOT-moat-evidence(plumbing)", got)
+	}
 }
 
 // TestTaskSuccessJudgePrompt_GradesPerArmSuccess locks the age-oe2 fix: the LLM

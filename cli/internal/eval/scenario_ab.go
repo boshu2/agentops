@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/boshu2/agentops/cli/internal/scenario"
@@ -19,6 +20,46 @@ const (
 	// ArmWithGold is the treatment arm: the agent runs with the gold pull on.
 	ArmWithGold ScenarioArm = "with_gold"
 )
+
+// Verdict classes (age-6ys). Every scorecard self-labels whether it can support
+// a MOAT claim ("AgentOps' corpus improves agent work"). The classification is
+// MECHANICAL — derived from how the scenario is graded — so a tautological
+// fact-recall scorecard can never be waved as the moat verdict.
+const (
+	// VerdictClassFactRecall is a scenario graded DETERMINISTICALLY against an
+	// answer_key (a corpus-only secret string). It is a PLUMBING/smoke test: it
+	// proves the corpus delivers + arm isolation holds, but it is NOT moat
+	// evidence. It is tautological-by-construction (an invented string is
+	// corpus-only by definition, so the control MUST fail) AND self-burning (the
+	// secret leaks into the eval paper trail — docs/_beads/learnings — that the
+	// isolation cannot deny, so on re-run the control reads it and ceiling-violates).
+	// See docs/evals/applied-ood-claim-rule.md. age-6ys.
+	VerdictClassFactRecall = "fact-recall"
+	// VerdictClassAppliedOOD is a scenario graded by acceptance vectors over an
+	// LLM judge, testing whether corpus DOCTRINE was APPLIED to a task (no
+	// leakable secret discriminator). This is the only class that can support a
+	// moat claim — and only when the ceiling pre-screen confirms headroom.
+	VerdictClassAppliedOOD = "applied-ood"
+	// VerdictClassUnspecified is a scenario with neither an answer_key nor
+	// acceptance vectors: it defines no measurable success dimension, so it can be
+	// neither a plumbing test nor moat evidence.
+	VerdictClassUnspecified = "unspecified"
+)
+
+// classifyVerdict labels a scenario's verdict class and whether a scorecard for
+// it may support a MOAT claim. The signal is mechanical (age-6ys): an answer_key
+// means fact-recall (plumbing, never moat); acceptance vectors mean applied-OOD
+// (the only moat-eligible class); neither means the scenario is unspecified.
+func classifyVerdict(sc scenario.Scenario) (class string, moatEligible bool) {
+	switch {
+	case strings.TrimSpace(sc.AnswerKey) != "":
+		return VerdictClassFactRecall, false
+	case len(sc.AcceptanceVectors) > 0:
+		return VerdictClassAppliedOOD, true
+	default:
+		return VerdictClassUnspecified, false
+	}
+}
 
 // ArmOutcome is what a ScenarioRunner produces for one arm. Output is the raw
 // agent output the judge grades; TokenCost is the arm's measured token spend.
@@ -87,8 +128,17 @@ type ScenarioDeltaScorecard struct {
 	// CeilingViolation is true when the control (without-gold) arm already cleared
 	// the satisfaction threshold — the task has no headroom, so the A/B is invalid
 	// and no delta is emitted (LongMemEval-style validity certificate; age-707).
-	CeilingViolation bool         `json:"ceiling_violation,omitempty"`
-	Gate             ScenarioGate `json:"gate"`
+	CeilingViolation bool `json:"ceiling_violation,omitempty"`
+	// VerdictClass labels how the scenario is graded (fact-recall | applied-ood |
+	// unspecified) and is the mechanical basis for MoatEligible. age-6ys.
+	VerdictClass string `json:"verdict_class,omitempty"`
+	// MoatEligible reports whether this scorecard MAY support a "corpus improves
+	// agent work" (moat) claim. FALSE for fact-recall/sentinel scenarios — those
+	// are plumbing tests, tautological-by-construction and self-burning, never
+	// moat evidence (the age-6ys ban). Only an applied-OOD scorecard that ALSO
+	// clears the ceiling pre-screen and passes its gate is admissible moat evidence.
+	MoatEligible bool         `json:"moat_eligible"`
+	Gate         ScenarioGate `json:"gate"`
 }
 
 // ScenarioABOptions configures RunScenarioAB. Timeout bounds each arm; the gate
@@ -133,6 +183,7 @@ func RunScenarioAB(ctx context.Context, opts ScenarioABOptions) (ScenarioDeltaSc
 	}
 
 	thr := opts.Scenario.SatisfactionThreshold
+	verdictClass, moatEligible := classifyVerdict(opts.Scenario)
 	// invalidCard builds a no-delta scorecard for a scenario that can't be validly
 	// A/B'd. CeilingViolation is the consumer's signal to IGNORE the delta entirely.
 	invalidCard := func(without ScenarioArmResult, reason string) ScenarioDeltaScorecard {
@@ -145,6 +196,8 @@ func RunScenarioAB(ctx context.Context, opts ScenarioABOptions) (ScenarioDeltaSc
 			SatisfactionThreshold: thr,
 			TokenBudget:           opts.TokenBudget,
 			CeilingViolation:      true,
+			VerdictClass:          verdictClass,
+			MoatEligible:          moatEligible,
 			Gate:                  ScenarioGate{Pass: false, Reasons: []string{reason}},
 		}
 	}
@@ -190,6 +243,8 @@ func RunScenarioAB(ctx context.Context, opts ScenarioABOptions) (ScenarioDeltaSc
 		AggregateDelta:        roundDelta(with.Score - without.Score),
 		SatisfactionThreshold: opts.Scenario.SatisfactionThreshold,
 		TokenBudget:           opts.TokenBudget,
+		VerdictClass:          verdictClass,
+		MoatEligible:          moatEligible,
 	}
 	card.Gate = evaluateScenarioGate(card)
 	return card, nil
