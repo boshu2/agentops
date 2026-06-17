@@ -100,27 +100,38 @@ Minimal collaborative spawn (from CEP duel pattern):
 ```bash
 LABEL=<short-name>   # e.g. cep-duel, claim-overlay
 BEAD_ID=<optional>   # join-key for coordination ledger + br notes
+RESERVE_GLOBS="docs/contracts/ cli/internal/"   # space-separated globs, one --reserve value
 
 atm spawn agentops --label "$LABEL" --no-user \
   --cc=1:opus --cod=1:gpt-5.5 \
-  --reserve "path/glob" "other/glob" \
+  --reserve "$RESERVE_GLOBS" \
   --no-cass-context --ready-timeout=2m --json
 
-# Claude pane (worker 1): direct send OK
-atm send agentops--"$LABEL" --pane=2 --file packet.md \
+# Opus (pane 1 when --no-user): direct send OK
+atm send agentops--"$LABEL" --pane=1 --file packet-opus.md \
   --no-cass-check --force-non-interactive --json
 
-# Codex pane (worker 2): goal lifecycle — NEVER bare slash send
-atm codex preflight --session agentops--"$LABEL" --pane 3 --json
-atm send agentops--"$LABEL" --pane=3 --codex-goal --file packet.md \
+# Codex (pane 2 when --no-user): goal lifecycle — NEVER bare slash send
+atm codex preflight --session agentops--"$LABEL" --pane 2 --json
+atm send agentops--"$LABEL" --pane=2 --codex-goal --file packet-codex.md \
   --no-cass-check --force-non-interactive --json
-atm codex wait-goal-engaged --session agentops--"$LABEL" --pane 3 --json
+atm codex wait-goal-engaged --session agentops--"$LABEL" --pane 2 --json
 ```
 
 Full checklist: [references/spawn-checklist.md](references/spawn-checklist.md).
 
-**Pane addressing:** `--pane=2` is first worker (pane 1 = user when present);
-`--agent=1` == `--pane=2` in default sessions. Prefer `--agent` for workers.
+**`--reserve`:** pass **one** quoted flag value listing all lane globs space-separated (e.g. `--reserve "/path/opus/ /path/codex/"`). Do not pass two separate quoted arguments or bare tokens after `--reserve`.
+
+**Pane addressing** (see checklist table):
+
+| Session shape | Opus | Codex |
+|---|---|---|
+| **`--no-user`** | pane 1 | pane 2 |
+| **User pane present** | pane 2 | pane 3 |
+
+With user attach, `--agent=1` == `--pane=2` (Opus). Prefer `--agent` for workers when tri-pane.
+
+**Codex cold engage:** optional `--codex-goal` on first send may timeout before the TUI is warm. Retry the send and/or run `atm codex wait-goal-engaged` again — advisory only; does not block spawn/teardown.
 
 ## Work-split patterns
 
@@ -180,15 +191,15 @@ am file_reservations reserve <proj> <agent> "<path/glob>"
   "bead_id": "ag-xyz",
   "pattern": "disjoint-ownership",
   "lanes": {
-    "opus": {"pane": 2, "reserve": ["docs/"], "skill": "/implement"},
-    "codex": {"pane": 3, "reserve": ["cli/"], "skill": "/implement"}
+    "opus": {"pane": 1, "reserve": ["docs/"], "skill": "/implement"},
+    "codex": {"pane": 2, "reserve": ["cli/"], "skill": "/implement"}
   },
   "artifacts": [],
   "converged": false
 }
 ```
 
-Orchestrator updates `artifacts` and flips `converged` at synthesis.
+Orchestrator updates `artifacts` and flips `converged` at synthesis. Ledger `pane` values assume `--no-user` (Opus 1, Codex 2); use 2/3 when a user pane is present.
 
 ## Operator tending
 

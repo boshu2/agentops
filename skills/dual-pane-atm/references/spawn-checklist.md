@@ -11,47 +11,65 @@ Copy and track per session.
 - [ ] **Packets written** — `packet-opus.md`, `packet-codex.md` (whole skill + scope)
 - [ ] **Preflight tools** — `atm doctor`, `atm deps`, `which codex`, `which claude`
 
+## Pane map (pick before `atm send`)
+
+| Session shape | Pane 1 | Pane 2 | Pane 3 |
+|---|---|---|---|
+| **`--no-user`** (two workers only) | Opus (Claude) | Codex | — |
+| **User pane present** (tri-pane) | User / orchestrator attach | Opus | Codex |
+
+Use the pane numbers from the row that matches your spawn. Examples below assume **`--no-user`**.
+
 ## Spawn
 
 ```bash
 LABEL=<short-name>
 RESERVE_OPUS="docs/contracts/ docs/architecture/foo.md"
 RESERVE_CODEX="cli/internal/ cli/cmd/"
+# One --reserve value: space-separated globs inside a single quoted string (not two flags).
+RESERVE_GLOBS="$RESERVE_OPUS $RESERVE_CODEX"
 
 atm spawn agentops --label "$LABEL" --no-user \
   --cc=1:opus --cod=1:gpt-5.5 \
-  --reserve $RESERVE_OPUS $RESERVE_CODEX \
+  --reserve "$RESERVE_GLOBS" \
   --no-cass-context --ready-timeout=2m --json
 ```
 
-- [ ] Session name recorded: `agentops--$LABEL`
-- [ ] `--reserve` paths match work-split matrix
-- [ ] Optional: write `.agents/dual-pane/coordination.json` with `bead_id`, `pattern`, panes
+Example (literal paths): `--reserve "/path/to/opus-globs/ /path/to/codex-globs/"` — **not** `--reserve path1 path2` as separate tokens after `--reserve`.
 
-## First lane (Claude / Opus — pane 2)
+- [ ] Session name recorded: `agentops--$LABEL`
+- [ ] `--reserve` is exactly **one** quoted argument whose interior lists all lane globs space-separated
+- [ ] `--reserve` paths match work-split matrix
+- [ ] Optional: write `.agents/dual-pane/coordination.json` with `bead_id`, `pattern`, panes (use pane numbers from table above)
+
+## First lane (Claude / Opus — pane 1 with `--no-user`)
 
 ```bash
-atm send agentops--"$LABEL" --pane=2 --file packet-opus.md \
+atm send agentops--"$LABEL" --pane=1 --file packet-opus.md \
   --no-cass-check --force-non-interactive --json
 ```
+
+(Tri-pane with user attach: Opus is **pane 2**.)
 
 - [ ] Send acknowledged — capture shows input cleared or thinking indicator
 - [ ] Artifact signal within one window: branch, file, or `br` note update
 
-## Second lane (Codex — pane 3)
+## Second lane (Codex — pane 2 with `--no-user`)
 
 ```bash
-atm codex preflight --session agentops--"$LABEL" --pane 3 --json
+atm codex preflight --session agentops--"$LABEL" --pane 2 --json
 # proceed only on codex-live or goal-completed
 
-atm send agentops--"$LABEL" --pane=3 --codex-goal --file packet-codex.md \
+atm send agentops--"$LABEL" --pane=2 --codex-goal --file packet-codex.md \
   --no-cass-check --force-non-interactive --json
 
-atm codex wait-goal-engaged --session agentops--"$LABEL" --pane 3 --json
+atm codex wait-goal-engaged --session agentops--"$LABEL" --pane 2 --json
 ```
 
+(Tri-pane with user attach: Codex is **pane 3**.)
+
 - [ ] Preflight `proceed` — not `wait` / `respawn_required`
-- [ ] `wait-goal-engaged` exit 0
+- [ ] `wait-goal-engaged` exit 0 (retry once on cold engage if `--codex-goal` send times out — advisory, not a spawn blocker)
 - [ ] If unconfirmed: re-dispatch once; do not respawn until dump confirms wedge
 
 ## Post-spawn operator
