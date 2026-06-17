@@ -50,7 +50,7 @@ The center is validation: prove the agent output, keep the proof, and use that r
 | **Context compiler** | validators and implementers start cold | `ao context assemble` builds phase-scoped packets; `ao lookup` retrieves decay-ranked knowledge |
 | **Knowledge ratchet** | lessons vanish between sessions | `/forge` mines learnings, `/evolve` reconciles, and durable lessons become constraints before more autonomy is granted |
 
-The corpus is an LLM wiki of markdown. Agents read it natively and write to it as they work, so it maintains itself instead of becoming another doc you keep up by hand. Why that beats Notion or Confluence: [docs/wiki-for-agents.md](docs/wiki-for-agents.md). The full theory (context as the lifecycle, the CDLC): [docs/cdlc.md](docs/cdlc.md).
+The corpus is an LLM wiki of markdown. Agents read it natively and write to it as they work, so it maintains itself instead of becoming another doc you keep up by hand. Public citations of measurable flywheel or corpus outcomes use promoted artifacts under `docs/evidence/` (e.g. [2026-04-02 flywheel case study](docs/evidence/2026-04-02-flywheel-case-study.md)); `.agents/` remains the local operating substrate. Why that beats Notion or Confluence: [docs/wiki-for-agents.md](docs/wiki-for-agents.md). The full theory (context as the lifecycle, the CDLC): [docs/cdlc.md](docs/cdlc.md).
 
 <!-- agentops:claim:AOP-CLAIM-README-COMPETITIVE-MEMORY -->
 
