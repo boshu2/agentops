@@ -55,7 +55,7 @@ ao context assemble --phase planning --task "Evaluate the AgentOps 3.0 launch de
 ```
 
 ```bash
-bd create "Apply council verdict to launch demo" --description "From .agents/council/<run-id>/verdict.md" --json
+BEADS_DIR=$PWD/_beads br create "Apply council verdict to launch demo" --body "From .agents/council/<run-id>/verdict.md"
 ```
 
 Expected artifacts:
@@ -63,7 +63,7 @@ Expected artifacts:
 - `.agents/packets/agentops-3-launch.md`
 - `.agents/rpi/briefing-current.md`
 - `.agents/council/<run-id>/verdict.md`
-- `.beads/issues.jsonl`
+- `_beads/issues.jsonl`
 
 For the full first-session path with time budget and fallbacks, see
 [AgentOps 3.0 First-Value Path](first-value-path.md).
@@ -107,7 +107,7 @@ The important shape:
 |---|---|
 | Paste context into several chats manually. | Put the domain/practice packet in a reviewable artifact. |
 | Ask each model for an opinion. | Ask judges for a verdict against the same evidence bar. |
-| Copy useful parts back by hand. | Record `.agents/council/<run-id>/verdict.md` and create bd follow-up work. |
+| Copy useful parts back by hand. | Record `.agents/council/<run-id>/verdict.md` and create br follow-up work. |
 | Lose the reasoning after the session. | Keep local packets, briefings, verdicts, issues, and learnings inspectable. |
 | Re-explain intent at every phase. | Hand the packet lineage through briefing, verdict, execution, validation, and handoff artifacts. |
 | Automation starts as a giant promise. | Automation is second-stage, after the packet and verdict earn trust. |

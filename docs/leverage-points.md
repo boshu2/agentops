@@ -111,8 +111,8 @@ The knowledge stock `K` lives in `.agents/`. Its structure:
 | **B1: Freshness decay** | Knowledge decays at ~17%/week without retrieval | Prevents stale knowledge from polluting decisions | `ao maturity --expire`, freshness scoring in `ao lookup` |
 | **B2: Scale friction** | As K grows, retrieval quality degrades and governance cost rises | Prevents corpus bloat from collapsing sigma | Tiering, pruning, MemRL utility scoring (`ao feedback`) |
 | **Regression gates** | `/evolve` snapshots fitness before each cycle; regression = automatic revert | Prevents improvement cycles from making things worse | `ao goals measure`, fitness snapshot comparison |
-| **Council FAIL** | Multi-model council returns FAIL verdict; blocks merge | Prevents bad code from locking into ratchet | `/vibe`, `/council` verdicts in `.agents/council/` |
-| **Push gate** | CI (`.github/workflows/validate.yml`) blocks merge to main unless validation passes; `/vibe` is the explicit pre-push readiness step | Prevents unvalidated code from reaching main | `scripts/pre-push-gate.sh`, `/vibe`, branch protection + CI |
+| **Council FAIL** | Multi-model council returns FAIL verdict; blocks the push | Prevents bad code from locking into ratchet | `/vibe`, `/council` verdicts in `.agents/council/` |
+| **Push gate** | The local pre-push Go gate (`ao gate check`) blocks the push to main unless validation passes; `validate.yml` is a tag/PR/manual backstop (branch protection is off); `/vibe` is the explicit pre-push readiness step | Prevents unvalidated code from reaching main | `ao gate check`, `/vibe`, the pre-push hook |
 | **Pre-mortem gate** | `/pre-mortem` is the explicit pre-implementation step; `/crank` / `/evolve` surface the post-mortem checkpoint | Prevents implementation of unvetted plans | `/pre-mortem`, `/crank`, `scripts/session-pr-scope.sh` |
 
 **dK/dt mapping:**
@@ -204,16 +204,16 @@ When `dominant: "R1"`, the flywheel is spinning faster than decay can drain it. 
 
 **AgentOps implementation:**
 
-AgentOps 3.0 is **hookless**: it ships zero runtime hooks. The core knowledge lifecycle is enforced by CI gates plus explicit skill steps, not by auto-firing hooks. CI (`.github/workflows/validate.yml`) is the authoritative gate — the agent cannot merge to main unless it passes — and the skills provide the in-session steps that keep the lifecycle whole.
+AgentOps 3.0 is **hookless**: it ships zero runtime hooks. The core knowledge lifecycle is enforced by the local pre-push gate plus explicit skill steps, not by auto-firing hooks. The model is push-to-main: the local pre-push Go gate (`ao gate check`) is the authoritative release gate — the agent cannot push to main unless it passes — and `validate.yml` is a backstop on tags/PRs/manual dispatch (branch protection is off). The skills provide the in-session steps that keep the lifecycle whole.
 
 | Rule | Enforcement | What it prevents |
 |------|-------------|------------------|
 | Session orientation | Explicit `ao session bootstrap` + `ao inject` at session start | Cold starts without prior knowledge |
 | Session-end extraction | Explicit `ao forge` step via `/post-mortem` / `/handoff` | Lost session learnings and stale pools |
 | Flywheel close-loop | Explicit `/post-mortem` / citation-tracking step | Unclosed flywheel feedback cycles |
-| Validation gate | CI omnibus validation + `/vibe` pre-push step + `scripts/pre-push-gate.sh` | Mechanically detectable failures escaping validation |
+| Validation gate | Local pre-push Go gate (`ao gate check`) + `/vibe` pre-push step (`validate.yml` is a tag/PR/manual backstop) | Mechanically detectable failures escaping validation |
 
-The guardrail behaviors above (session start, push gate, pre-mortem gate, etc.) are realized as CI gates and explicit skill steps. AgentOps does not ship them as hooks; a consumer who wants always-on, pre-action enforcement can author opt-in hooks via the `hooks-authoring` skill.
+The guardrail behaviors above (session start, push gate, pre-mortem gate, etc.) are realized as the local pre-push gate and explicit skill steps. AgentOps does not ship them as hooks; a consumer who wants always-on, pre-action enforcement can author opt-in hooks via the `hooks-authoring` skill.
 
 **Additional rules:**
 - **Sisyphus rule** — Completion requires an explicit marker. The agent cannot claim "done" without the system agreeing. Prevents premature completion claims.
@@ -223,7 +223,7 @@ The guardrail behaviors above (session start, push gate, pre-mortem gate, etc.) 
 
 **dK/dt mapping:** Rules do not appear directly in the equation, but they prevent catastrophic dK/dt events — regressions that would send K to zero. They also enforce the information flows (#6) that keep sigma high. Without rules, the flywheel depends on agent memory. Agents forget. Rules do not.
 
-**Status:** Implemented. The lifecycle steps are enforced by CI gates and explicit skill steps (AgentOps 3.0 ships zero hooks). All kill switches tested.
+**Status:** Implemented. The lifecycle steps are enforced by the local pre-push gate and explicit skill steps (AgentOps 3.0 ships zero hooks). All kill switches tested.
 
 ---
 
@@ -234,14 +234,14 @@ This is the product insight.
 Simple rules produce complex behavior that evolves. The seed encodes rules (#5). Emergence produces self-organization (#4). This transition — from mechanical enforcement to adaptive behavior — is what separates AgentOps from a checklist.
 
 Consider what happens:
-1. **Rules** (#5): CI gates and explicit skill steps enforce the extract-inject cycle. Every session deposits learnings (`ao forge`). Every session retrieves them (`ao inject` / `ao session bootstrap`). The merge gate makes it non-optional.
+1. **Rules** (#5): The local pre-push gate and explicit skill steps enforce the extract-inject cycle. Every session deposits learnings (`ao forge`). Every session retrieves them (`ao inject` / `ao session bootstrap`). The pre-push gate makes it non-optional.
 2. **Information flows** (#6): The flywheel delivers the right knowledge to the right context. Sigma increases.
 3. **Reinforcing feedback** (#7): Retrieved knowledge that is used gets reinforced. Utility scores rise. Future retrieval improves. The flywheel accelerates.
 4. **Self-organization** (#4): `/evolve` measures fitness, picks the worst gap, fixes it, validates nothing regressed, extracts what it learned. The system's rules change based on its own experience.
 
 The rules do not specify what the system should build. They specify how it should learn. The fitness landscape (GOALS.md) determines what gets built. The rules determine that whatever gets built also produces knowledge that compounds.
 
-This is why the product is the seed, not the tree. The same 6 seed elements — GOALS.md, `.agents/`, CI gates, CLAUDE.md section, core skills, bootstrap learning — planted in different repos produce different systems. The rules are identical. The emergent behavior differs because the goals differ.
+This is why the product is the seed, not the tree. The same 6 seed elements — GOALS.md, `.agents/`, the pre-push gate, CLAUDE.md section, core skills, bootstrap learning — planted in different repos produce different systems. The rules are identical. The emergent behavior differs because the goals differ.
 
 Fractal composition is the structural manifestation of this insight:
 
@@ -321,8 +321,8 @@ The same shape at every scale (function, issue, epic, repository) means rules at
 |---|------|----|-------|
 | 1 | Reduce variance | Harness variance (Brownian Ratchet) | Spawn parallel attempts, filter aggressively, ratchet successes |
 | 2 | Context is infinite | Context is scarce (40% Rule) | Treat context as a security boundary, least-privilege loading |
-| 3 | Validation is post-hoc | Validation is preventive (Shift-Left) | `/pre-mortem` before implementation, CI gates + `/vibe` at every gate |
-| 4 | Rules are guidelines | Rules are structural (CI gates) | CI merge gates that cannot be forgotten, skipped, or rationalized away |
+| 3 | Validation is post-hoc | Validation is preventive (Shift-Left) | `/pre-mortem` before implementation, the local pre-push gate + `/vibe` at every gate |
+| 4 | Rules are guidelines | Rules are structural (the pre-push gate) | the local pre-push Go gate that cannot be forgotten, skipped, or rationalized away |
 | 5 | Knowledge is hoarded | Knowledge is flowing (Flywheel) | Extract, score, tier, decay, re-inject across sessions |
 | 6 | Designed systems | Evolved systems (The Seed) | Define starting conditions, let the system evolve toward goals |
 
@@ -337,7 +337,7 @@ A designed system is specified upfront and built to spec. An evolved system is g
 
 The seed does not design outcomes. It creates conditions for emergence:
 - GOALS.md defines the fitness landscape
-- CI gates enforce the rules of engagement
+- The local pre-push gate enforces the rules of engagement
 - The flywheel provides the memory mechanism
 - `/evolve` provides the selection pressure
 
@@ -400,7 +400,7 @@ Each term maps to specific leverage points:
 | #6 (Info flows) | Least-privilege loading, phase scoping, and context assembly determine what gets retrieved (sigma) |
 | #8 (B2 via MemRL) | Utility scoring (`ao feedback`) adjusts retrieval priority, preventing sigma collapse at scale |
 | #7 (R1 loop) | This IS the R1 loop. Retrieval × usage × existing stock = compound growth |
-| #5 (Rules) | CI gates + explicit skill steps enforce the extract-inject cycle that keeps sigma and rho nonzero |
+| #5 (Rules) | The local pre-push gate + explicit skill steps enforce the extract-inject cycle that keeps sigma and rho nonzero |
 
 ### phi * K^2 — Scale Friction
 

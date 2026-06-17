@@ -7,7 +7,7 @@ A session showing issue-driven implementation.
 ## Before
 
 ```
-$ bd ready
+$ BEADS_DIR=$PWD/_beads br ready
 1. [P1] agentops-a1b: Set up email service (SendGrid)
 2. [P2] agentops-g4h: Add email preference settings
 ```
@@ -23,7 +23,7 @@ You: /implement agentops-a1b
 
 Claude: Working on agentops-a1b: "Set up email service (SendGrid)"
 
-$ bd update agentops-a1b --status in_progress
+$ BEADS_DIR=$PWD/_beads br update agentops-a1b --claim
 ✓ Updated
 
 [Read] package.json - checking for existing email deps
@@ -59,11 +59,11 @@ $ git commit -m "feat: add SendGrid email service
 
 Closes: agentops-a1b"
 
-$ bd close agentops-a1b --reason "Email service implemented with tests"
+$ BEADS_DIR=$PWD/_beads br close agentops-a1b --reason "Email service implemented with tests"
 ✓ Closed agentops-a1b
 
 **Newly unblocked:**
-$ bd ready
+$ BEADS_DIR=$PWD/_beads br ready
 1. [P1] agentops-c2d: Add notification triggers to order processor
 2. [P2] agentops-e3f: Create order email templates
 3. [P2] agentops-g4h: Add email preference settings
@@ -86,7 +86,7 @@ Three issues now ready! (c2d and e3f were blocked by a1b)
 
 Before ending:
 ```
-$ bd vc status   # Optional Dolt status check
+$ git -C _beads push   # Sync the br ledger (private nested repo)
 $ git push
 ```
 

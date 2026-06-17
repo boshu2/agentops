@@ -49,7 +49,7 @@ weak review evidence, and cold starts between sessions.
 | `.agents/rpi/briefing-current.md` | Phase-scoped context assembled from the packet and repo state. |
 | `.agents/council/<run-id>/verdict.md` | Judge output that records whether the shared intent passed, warned, or blocked. |
 | `.agents/rpi/execution-packet.json` | Handoff artifact if the verdict becomes implementation work. |
-| `bd create "Apply council verdict to launch demo" ...` | Tracked follow-up work created from the verdict. |
+| `BEADS_DIR=$PWD/_beads br create "Apply council verdict to launch demo" ...` | Tracked follow-up work created from the verdict. |
 
 ## Evidence Rules
 
@@ -59,9 +59,9 @@ weak review evidence, and cold starts between sessions.
 - The consolidated verdict should land in `.agents/council/` for local work.
 - Any public claim about PMF, productivity, or user outcomes needs exported
   evidence under `docs/releases/` or `evals/workbench/results/`.
-- The out-of-session orchestration lane (the loop dispatched on the Gas City
-  reference City) is proof of deeper automation, not a prerequisite for first
-  value.
+- The out-of-session orchestration lane (the loop dispatched on the NTM +
+  MCP Agent Mail substrate) is proof of deeper automation, not a prerequisite
+  for first value.
 
 ## Runtime Path
 
@@ -86,15 +86,15 @@ Run council:
 /council --mixed validate "Given docs/examples/agentops-3-domain-practice-packet.md, should the 3.0 launch demo lead with council-first engineering judgment?"
 ```
 
-Optional second-stage automation (out of session, on the Gas City reference
-City — AgentOps ships no daemon or scheduler of its own; see
+Optional second-stage automation (out of session, on the NTM + MCP Agent Mail
+substrate — AgentOps ships no daemon or scheduler of its own; see
 [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)):
 
 ```bash
-# A long-lived mayor agent slings the next ready bead to a refinery worker,
-# which runs the loop as one invocable unit:
-ao rpi <bead-id>
-# Scheduled maintenance runs as Gas City cron Orders. See the using-gc skill.
+# An NTM tmux swarm dispatches the next ready bead to a worker pane,
+# coordinated through MCP Agent Mail locks and inboxes. The worker runs the
+# operating loop (docs/architecture/operating-loop.md) as its turn executor.
+# (`ao rpi <bead-id>` is load-bearing LEGACY, not the live loop.)
 ```
 
 ## Expected Outputs
@@ -108,7 +108,7 @@ ao rpi <bead-id>
 
 ## Non-Goals
 
-- Do not lead with out-of-session orchestration setup (Gas City) as the first proof.
+- Do not lead with out-of-session orchestration setup (NTM + Agent Mail) as the first proof.
 - Do not frame the product as generic multi-agent orchestration.
 - Do not use stale reliability-framed agent copy as public launch language.
 - Do not claim PMF or productivity improvements from local `.agents` notes
@@ -121,5 +121,5 @@ The demo path passes when a maintainer can see:
 1. The domain and practice context the agents share.
 2. Claude and Codex judging one decision against that shared context.
 3. A consolidated verdict artifact.
-4. A validation or follow-up path tied to bd issues.
+4. A validation or follow-up path tied to br beads.
 5. An optional schedule path that compounds later, after trust exists.

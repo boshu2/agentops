@@ -6,8 +6,8 @@ Full autonomous operation with `/crank`.
 
 - Using `/crank` for epic-to-completion
 - The ODMCR reconciliation loop
-- Mayor vs Crew execution modes
-- Integration with gastown for parallel workers
+- Swarm vs Crew execution modes
+- Integration with the NTM + MCP Agent Mail substrate for parallel workers
 
 ## Prerequisites
 
@@ -30,7 +30,7 @@ Full autonomous operation with `/crank`.
 
 - **Crank**: Autonomous epic execution - runs until ALL children are CLOSED
 - **ODMCR loop**: Observe → Dispatch → Monitor → Collect → Retry
-- **Mayor mode**: Dispatches to parallel polecats via gastown
+- **Swarm mode**: Dispatches to parallel worker panes via the NTM tmux swarm, coordinated through MCP Agent Mail
 - **Crew mode**: Executes sequentially via `/implement`
 
 ## Crank Flow
@@ -38,9 +38,9 @@ Full autonomous operation with `/crank`.
 ```
 /crank <epic>
     ↓
-Observe (bd show, bd ready)
+Observe (BEADS_DIR=$PWD/_beads br show, br ready)
     ↓
-Dispatch (gt sling or /implement)
+Dispatch (NTM swarm pane or /implement)
     ↓
 Monitor (convoy status)
     ↓
@@ -56,7 +56,7 @@ Loop until epic CLOSED
 | Mode | When | How |
 |------|------|-----|
 | **Crew** | Default, single-agent | Sequential `/implement` calls |
-| **Mayor** | In ~/gt or mayor/ directory | Parallel dispatch via `gt sling` |
+| **Swarm** | Multi-agent contention/durability | Parallel dispatch via NTM tmux swarm + MCP Agent Mail |
 
 ## Mastery
 

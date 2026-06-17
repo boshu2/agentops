@@ -10,8 +10,10 @@ Common issues and quick fixes for AgentOps.
 `hooks.json`, and no `ao hooks` command — nothing auto-injects orientation or
 gates your tool calls at session start. If you came from an older version
 expecting hooks to "run", that behavior is gone by design (the hookless-first
-teardown). The workflow is now guided by **skills + the `ao` CLI**, and **CI is
-the authoritative gate** (see `.github/workflows/validate.yml`).
+teardown). The workflow is now guided by **skills + the `ao` CLI**, and the
+**local cockpit Go gate (`ao gate check`) in the pre-push hook is the routine
+release authority** — `.github/workflows/validate.yml` is a tag/PR/manual
+backstop, not the gate on every push.
 
 **What replaces the old auto-injected context:**
 
@@ -78,50 +80,50 @@ The `ao doctor` "Plugin" check scans the `skills/` directory for subdirectories 
    claude --plugin ./
    ```
 
-5. AgentOps 3.0 ships **zero hooks** — there is nothing to install. The workflow
-   is guided by skills plus the `ao` CLI, and **CI is the authoritative gate**.
-   If you want a bounded gate of your own (block a dangerous op, bootstrap a
-   session, run a parity check), author it with the `hooks-authoring` skill.
+5. AgentOps 3.0 ships **zero hooks by default** — there is nothing to install for
+   skills to work. The workflow is guided by skills plus the `ao` CLI; the
+   **local cockpit Go gate (`ao gate check`) in the pre-push hook is the routine
+   release authority**, with `validate.yml` as a CI backstop. If you want a
+   bounded gate of your own (block a dangerous op, bootstrap a session, run a
+   parity check), author it with the `hooks-authoring` skill.
 
 ---
 
-## `bd` says a column is missing or RPI falls back to tasklist mode
+## `br` errors or RPI falls back to tasklist mode
 
-If `bd ready --json` fails with an error such as:
+> **Note (2026-06-11):** the tracker is **`br` (beads_rust)** at `_beads/`,
+> invoked `BEADS_DIR=$PWD/_beads br <cmd>`. `bd`/Dolt is retired. If you came from
+> an older guide that ran `bd`/`brew upgrade beads`, that procedure is gone.
 
-```text
-column "crystallizes" could not be found in any table in scope
-```
-
-you likely have a beads CLI / beads DB schema mismatch.
+If `BEADS_DIR=$PWD/_beads br ready --json` fails or the legacy `.beads/` config
+shadows the live `_beads/` ledger, you likely have a tracker config mismatch
+(`br init` in `.beads/` would clobber the legacy bd config, so the live ledger
+deliberately lives in `_beads/`).
 
 **Diagnosis:**
 
 ```bash
-bd version
-bd upgrade status --json
-bd status --json
-bd migrate --inspect
+br --version
+BEADS_DIR=$PWD/_beads br ready --json
+BEADS_DIR=$PWD/_beads br list --type epic --status open --json
 ```
 
-If the JSON version/status probes or the human-readable migration inspection
-show the database state is newer than the installed `bd` version, the local CLI
-is too old for the repo's tracker data.
+If commands resolve the wrong directory, confirm `BEADS_DIR=$PWD/_beads` is set —
+without it `br` may pick up the retired `.beads/` config.
 
 **Fixes:**
 
-1. Upgrade beads to the matching or newer version:
+1. Always invoke with the explicit ledger dir until `.beads/` is retired:
    ```bash
-   brew upgrade beads
+   BEADS_DIR=$PWD/_beads br ready --json
    ```
-2. Re-run tracker probes:
+2. Sync the ledger (it is a private nested git repo, not part of this public repo):
    ```bash
-   bd ready --json
-   bd list --type epic --status open --json
+   git -C _beads push      # never `git add _beads` from the parent repo
    ```
-3. If you cannot repair beads immediately, Codex phased RPI now degrades
-   honestly to tasklist mode instead of silently assuming beads is healthy. That
-   fallback is for continuity, not a substitute for repairing the tracker.
+3. If you cannot repair the tracker immediately, Codex phased RPI degrades
+   honestly to tasklist mode instead of silently assuming the tracker is healthy.
+   That fallback is for continuity, not a substitute for repairing the tracker.
 
 For Codex, use `curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-codex.sh | bash`. The installer enables plugins and suppresses the unstable-plugins warning in `~/.codex/config.toml`. On Linux, install system `bubblewrap` as well so Codex does not warn that it is using the vendored fallback. For OpenCode, use `curl -fsSL https://raw.githubusercontent.com/boshu2/agentops/main/scripts/install-opencode.sh | bash`. For other agents, use the platform-specific scripts in `scripts/`.
 
@@ -207,30 +209,29 @@ raw-skill mode for a specific Codex build.
 
 ---
 
-## CI rejects a push that skipped quality validation
+## A push is rejected by the cockpit gate
 
-AgentOps 3.0 has **no push gate hook** — `git push` itself is never blocked
-locally. Quality enforcement happens in **CI** (`.github/workflows/validate.yml`),
-which is the authoritative gate: a push that hasn't been validated will fail
-its checks on the PR, not before it leaves your machine.
+AgentOps 3.0 is **push-to-main** (branch protection is OFF). The **local cockpit
+Go gate (`ao gate check`) runs in the pre-push hook and blocks the push** — it is
+the routine release authority. `.github/workflows/validate.yml` is a CI backstop
+on tags, PRs, and manual dispatch, not the gate on every `main` push.
 
-**Why it works this way:** there is no local hook to bypass, so the gate cannot
-be silently skipped. The contract is "CI must be green to merge", and the cheap
-way to predict that locally is to run `/vibe` before you push.
+**Why it works this way:** the gate runs on your machine before the push leaves,
+so a red `main` is prevented up front instead of being caught after the fact.
+Rebase-on-reject (git serializes concurrent pushers); on a red `main`, fix forward.
 
 **Proper resolution:**
 
-1. Run `/vibe` on your changes before pushing:
-   ```
-   /vibe
-   ```
-
-2. Address any findings until you get a PASS verdict.
-
-3. Push, then let CI confirm:
+1. Run the gate on your changes before pushing:
    ```bash
-   git push
-   gh pr checks   # confirm the validation job is green
+   ao gate check --fast --scope head
+   ```
+
+2. Address any findings until the gate passes.
+
+3. Push (the pre-push hook re-runs the gate):
+   ```bash
+   git push        # rebase-on-reject if a concurrent push landed first
    ```
 
 ---
@@ -264,7 +265,7 @@ If you see an error for a command that is documented as planned, it does not exi
 
 - Do not retry the command. It will not work.
 - Check the skill's `SKILL.md` for current supported commands.
-- Use `bd --help` or `gt --help` to see available subcommands.
+- Use `br --help` to see available tracker subcommands.
 
 ---
 
@@ -284,7 +285,7 @@ If you see an error for a command that is documented as planned, it does not exi
 
 | Check | What it verifies | How to fix |
 |-------|-----------------|------------|
-| **CLI Dependencies** | `gt` and `bd` are on your PATH (nice-to-have for multi-repo ops + beads issue tracking). | Install missing tools (e.g., `brew install gastown`, `brew install beads`). |
+| **CLI Dependencies** | `br` is on your PATH (the beads_rust issue tracker, invoked `BEADS_DIR=$PWD/_beads br`). | Install `br` (beads_rust); see AGENTS.md for the tracker setup. |
 | **Knowledge Freshness** | At least one recent session exists under `.agents/ao/sessions/`. | After a session, run `ao forge transcript <path>` to ingest it. |
 | **Search Index** | A non-empty `.agents/ao/index.jsonl` exists for faster repo-local searches. | Run `ao store rebuild`. |
 | **Flywheel Health** | At least one learning exists under `.agents/ao/learnings/` (or legacy `.agents/learnings/`). | Run `/retro` or `/forge` to extract learnings; empty is normal early on. |
