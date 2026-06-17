@@ -3755,6 +3755,35 @@ ao lookup [id] [flags]
 
 ---
 
+### `ao membrane`
+
+Operate the self-improving membrane (epic age-cwo).
+
+```
+ao membrane [command]
+```
+
+**Subcommands:**
+
+#### `ao membrane derive-checks`
+
+Derive membrane checks from escapes in a run
+
+```
+ao membrane derive-checks --run <id> [flags]
+```
+
+**Flags:**
+
+```
+      --dry-run      Report what would be derived without writing files
+      --force        Overwrite existing derived artifacts
+  -h, --help         help for derive-checks
+      --run string   Run id to scan for escapes (required)
+```
+
+---
+
 ### `ao mind`
 
 Scan, normalize, link, and index .agents/ markdown into an Obsidian knowledge graph.

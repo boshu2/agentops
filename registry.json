@@ -1,15 +1,15 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-17T20:25:59Z",
+  "generated_at": "2026-06-17T22:28:27Z",
   "summary": {
     "skills": 73,
     "hooks": 0,
     "knowledge_stores": 5,
     "job_types": 0,
     "eval_files": 56,
-    "cli_commands": 86,
+    "cli_commands": 87,
     "workflows": 4,
-    "capabilities": 173
+    "capabilities": 174
   },
   "surfaces": {
     "skills": [
@@ -1115,6 +1115,13 @@
         "driven_by_skills": []
       },
       {
+        "name": "ao membrane",
+        "path": "cli/cmd/ao/",
+        "purpose": "Self-improving membrane: turn escapes into membrane checks",
+        "bounded_context": "",
+        "driven_by_skills": []
+      },
+      {
         "name": "ao memory",
         "path": "cli/cmd/ao/",
         "purpose": "Manage repo-root MEMORY.md for cross-runtime access",
@@ -1506,9 +1513,9 @@
     ]
   },
   "capability_summary": {
-    "total": 173,
+    "total": 174,
     "skills": 73,
-    "cli_commands": 86,
+    "cli_commands": 87,
     "gates": 14,
     "reference_impls": 0
   },
@@ -1560,6 +1567,7 @@
     "loop",
     "maturity",
     "mcp",
+    "membrane",
     "memory",
     "metrics",
     "mind",
@@ -4935,6 +4943,23 @@
       "type": "cli-command",
       "bounded_context": "",
       "purpose": "Expose the ao tool surface over MCP for hosted/SDK Claude loops",
+      "status": "active",
+      "driven_by_skills": [],
+      "flags": [
+        "--config",
+        "--dry-run",
+        "--json",
+        "--output",
+        "--verbose"
+      ],
+      "path": "cli/cmd/ao/"
+    },
+    {
+      "sku": "cmd:ao.membrane",
+      "name": "ao membrane",
+      "type": "cli-command",
+      "bounded_context": "",
+      "purpose": "Self-improving membrane: turn escapes into membrane checks",
       "status": "active",
       "driven_by_skills": [],
       "flags": [

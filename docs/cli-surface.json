@@ -1081,6 +1081,13 @@
     },
     {
       "category": "public-tested",
+      "command": "membrane derive-checks",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
+      "category": "public-tested",
       "command": "memory sync",
       "coverage_status": "covered",
       "kind": "leaf",
