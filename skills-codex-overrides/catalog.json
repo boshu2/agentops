@@ -191,6 +191,12 @@
       "reason": "Vocabulary corpus loaded as reference material; entries are vendor-neutral markdown and do not currently need a Codex-specific prompt layer."
     },
     {
+      "name": "dual-pane-atm",
+      "treatment": "parity_only",
+      "wave": "catalog-parity",
+      "reason": "Dual-pane ATM orchestration is documentation-led and portable across runtimes; Codex parity is sufficient until durable Codex-only divergence is proven."
+    },
+    {
       "name": "eval-outcomes",
       "treatment": "parity_only",
       "wave": "catalog-parity",
