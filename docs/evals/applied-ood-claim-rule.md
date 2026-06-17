@@ -118,3 +118,6 @@ partly done:
   as moat evidence; defined the applied-OOD class + validity checklist + locked
   publication rule. Mechanical enforcement landed as `verdict_class` /
   `moat_eligible` on `ScenarioDeltaScorecard`.
+- 2026-06-18 (age-sb0): moat claim aggregation surface (`ao eval scenario-moat`)
+  fail-closes on `moat_eligible=false` inputs; renders moat_positive/honest_null/
+  inconclusive over eligible scorecards only.
