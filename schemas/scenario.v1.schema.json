@@ -94,6 +94,11 @@
             "minLength": 2,
             "description": "When set, the scenario is graded DETERMINISTICALLY: an arm passes iff this string appears as a whole token (case-insensitive, not flanked by alphanumerics) in its output — no LLM judge. The rigorous, judge-noise-free grade for fact-recall out-of-distribution scenarios where the corpus holds a specific value the base model cannot know (age-k8u). Prefer a distinctive multi-character value to avoid ambiguous matches."
         },
+        "runner_mode": {
+            "type": "string",
+            "enum": ["one_shot", "agentic"],
+            "description": "How scenario-ab executes the task. one_shot (default) uses a single codex turn; agentic runs a multi-turn worker in an isolated workspace for execution-required applied-OOD scenarios (age-5tv)."
+        },
         "scope": {
             "type": "object",
             "description": "What parts of the codebase this scenario applies to",

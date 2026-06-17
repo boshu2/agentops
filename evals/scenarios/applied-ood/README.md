@@ -25,8 +25,8 @@ Each scenario is **applied-OOD**, per the pre-registered rule in
 All three are **one-shot-gradable**: the single-turn runner produces a
 design/answer the acceptance-vector judge can grade. **Execution-required**
 applied-OOD scenarios (ship code that trips a gate; dispatch a process that must
-engage) need an agentic runner that does not exist yet — see the claim rule's
-"Open frontier" section.
+engage) set `runner_mode: "agentic"` on the scenario file — the agentic runner
+(age-5tv) performs multi-turn work in an isolated workspace.
 
 ## Running one
 

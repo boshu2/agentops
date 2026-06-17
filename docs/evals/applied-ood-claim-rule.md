@@ -102,11 +102,10 @@ partly done:
   the single-turn runner produces a design/answer the acceptance-vector judge can
   grade.
 - **Execution-required** applied-OOD scenarios (ship code that trips a gate;
-  dispatch a process that must engage — s-2026-06-16-001/002) are **not** validly
-  runnable by the current one-shot `codexScenarioRunner`: it returns a *described*
-  approach, not a real implementation a gate can judge. These need an **agentic
-  runner** (a worker that actually does the task in an isolated workspace) — a
-  follow-up, not part of the harness today.
+  dispatch a process that must engage — s-2026-06-16-001/002) use
+  `runner_mode: "agentic"` on `scenario.v1`. The agentic runner (age-5tv) runs a
+  multi-turn worker in an isolated workspace whose RESULT is graded; the default
+  one-shot runner remains for design/judgment scenarios.
 - A single applied-OOD run is **n=1** over a stochastic LLM judge. A durable moat
   verdict needs multiple scenarios and seeds with the corpus-delta prereg's
   statistic — the moat remains **UNPROVEN** until then. This rule makes the next
@@ -121,3 +120,5 @@ partly done:
 - 2026-06-18 (age-sb0): moat claim aggregation surface (`ao eval scenario-moat`)
   fail-closes on `moat_eligible=false` inputs; renders moat_positive/honest_null/
   inconclusive over eligible scorecards only.
+- 2026-06-18 (age-5tv): agentic runner (`runner_mode: agentic`) for
+  execution-required applied-OOD scenarios in scenario-ab.
