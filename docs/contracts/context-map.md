@@ -71,6 +71,7 @@ and [CDLC](https://github.com/boshu2/agentops/blob/main/docs/cdlc.md) for the ar
 - `curate` — Mine transcripts, .agents, bd, and git for skill diffs, bd updates, or rare wiki entries.
 - `dcg` — Handle blocked destructive commands. Use when dcg blocks rm -rf, git reset --hard, DROP DATABASE, kubectl delete, or when configuring agent safety guardrails.
 - `doc` — Generate and validate repo docs, READMEs, and OSS doc packs.
+- `dual-pane-atm` — Repeatable Opus (Claude) + Codex dual-pane ATM collaboration. Triggers: "dual pane", "Opus and Codex together", "CEP duel/build", "two-pane ATM", "collaborative ATM".
 - `eval-outcomes` — Grade agent or model output against Outcomes for holdout-safe evals and runtime comparisons. Fold target for scenario.
 - `handoff` — Write compact session handoffs.
 - `heal-skill` — Repair skill hygiene.
@@ -118,6 +119,9 @@ graph LR
   council -- "shared-kernel" --> standards
   crank -- "shared-kernel" --> standards
   discovery -- "shared-kernel" --> standards
+  dual-pane-atm -- "customer-of" --> automation-shape-routing
+  dual-pane-atm -- "customer-of" --> using-atm
+  dual-pane-atm -- "sibling-of" --> vibing-with-ntm
   evolve -- "customer-of" --> rpi
   flywheel -- "shared-kernel" --> standards
   forge -- "shared-kernel" --> standards
@@ -210,6 +214,9 @@ graph LR
 | `doc` | consumes | repo-context |
 | `doc` | produces | documentation |
 | `domain` | produces | stdout |
+| `dual-pane-atm` | consumes | agent-mail |
+| `dual-pane-atm` | consumes | using-atm |
+| `dual-pane-atm` | produces | .agents/dual-pane/*.md |
 | `eval-outcomes` | consumes | council |
 | `eval-outcomes` | consumes | validate |
 | `eval-outcomes` | produces | skills/council/schemas/verdict.json |
