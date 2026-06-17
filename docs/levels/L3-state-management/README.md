@@ -13,7 +13,7 @@ Add issue tracking with beads for structured work.
 
 - Completed L2-persistence
 - Comfortable with `.agents/` directory
-- Beads CLI installed (`pip install beads`)
+- br (beads_rust) CLI installed; invoke as `BEADS_DIR=$PWD/_beads br`
 
 ## Available Commands
 
@@ -26,20 +26,22 @@ Add issue tracking with beads for structured work.
 
 ## Beads Commands
 
+All commands take `BEADS_DIR=$PWD/_beads` (the br ledger lives at `_beads/`):
+
 ```bash
-bd ready                    # Show unblocked issues
-bd list --status open       # All open issues
-bd show <id>                # View issue details
-bd update <id> --status in_progress
-bd close <id> --reason "Done"
-bd vc status                # Optional Dolt status check; JSONL auto-sync is automatic
+BEADS_DIR=$PWD/_beads br ready                    # Show unblocked issues
+BEADS_DIR=$PWD/_beads br list --status open       # All open issues
+BEADS_DIR=$PWD/_beads br show <id>                # View issue details
+BEADS_DIR=$PWD/_beads br update <id> --status in_progress
+BEADS_DIR=$PWD/_beads br close <id> --reason "Done"
+BEADS_DIR=$PWD/_beads br sync                      # Sync the git-JSONL ledger (never touches git itself)
 ```
 
 ## Key Concepts
 
 - **Issues**: Atomic units of work
 - **Dependencies**: Issues can block each other
-- **Session close**: push after your issue updates; use `bd vc status` only if you need Dolt state
+- **Session close**: `br sync` after your issue updates, then `git -C _beads push` to share the ledger
 
 ## What's NOT at This Level
 

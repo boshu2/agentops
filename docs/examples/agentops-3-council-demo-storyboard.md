@@ -10,8 +10,8 @@ AgentOps makes agents work like a disciplined engineering team.
 In the demo, the operator gives Claude and Codex the same domain/practice
 packet. They judge the same product/design/engineering decision, produce one
 verdict artifact, and turn that verdict into tracked work. Out-of-session
-automation (the loop dispatched on the Gas City reference City) appears only
-after first trust, as the second-stage compounding lane.
+automation (the operating loop dispatched on the NTM + MCP Agent Mail substrate)
+appears only after first trust, as the second-stage compounding lane.
 
 ## Repo, Task, And Setup
 
@@ -28,8 +28,8 @@ Pre-flight:
 
 ```bash
 ao version
-bd show soc-m6v5.9.7
-bd ready --parent soc-m6v5.9.7
+BEADS_DIR=$PWD/_beads br show soc-m6v5.9.7
+BEADS_DIR=$PWD/_beads br ready
 ```
 
 Screen setup:
@@ -129,7 +129,7 @@ The demo should not require a predetermined PASS. The expected shape is:
 |---|---|
 | Claude product/design judge | Council-first is clearer first value because the user sees taste and judgment immediately. |
 | Claude engineering-practice judge | The packet encodes DDD/TDD/BDD/release discipline into the decision context. |
-| Codex implementation judge | The demo is feasible with existing `ao context`, `/council`, bd, and `.agents` surfaces. |
+| Codex implementation judge | The demo is feasible with existing `ao context`, `/council`, br, and `.agents` surfaces. |
 | Codex release-risk judge | WARN unless public copy avoids PMF/productivity claims without exported evidence. |
 | Consolidated verdict | PASS or WARN: lead with council-first, keep out-of-session automation as second-stage, and gate launch claims on exported evidence. |
 
@@ -150,7 +150,7 @@ engineering judgment, not just producing agreement.
 Show the existing tracked work:
 
 ```bash
-bd show soc-m6v5.9.7.8
+BEADS_DIR=$PWD/_beads br show soc-m6v5.9.7.8
 ```
 
 Then show how the verdict becomes implementation context:
@@ -169,25 +169,23 @@ Narration:
 
 ## Act 5: Show The Deeper Automation Lane
 
-Only after the verdict, show how the same loop runs out of session on the Gas
-City reference City. AgentOps ships no daemon or scheduler of its own (see
-[ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md)); out-of-session
-execution is delegated to a substrate, and the loop is dispatched as one
-invocable unit:
+Only after the verdict, show how the same operating loop runs out of session on
+the NTM + MCP Agent Mail substrate. AgentOps ships no daemon or scheduler of its
+own (see [ADR-0009](../adr/ADR-0009-daemon-deletion-in-session-only.md));
+out-of-session execution is delegated to that substrate — NTM tmux agent panes
+coordinated by Agent Mail (locks, inboxes, handoffs):
 
 ```bash
-# In the reference City, a long-lived mayor agent slings the next ready bead
-# to a refinery worker, which runs the loop:
-ao rpi soc-m6v5.9.7.8
-# Scheduled maintenance (ao compile, ao maturity --scan) runs as Gas City
-# cron Orders. See docs/dependencies.md and the using-gc skill.
+# An NTM swarm runs the operating loop over the ready bead queue; Agent Mail
+# coordinates locks and handoffs between panes. See the ntm and agent-mail skills.
+BEADS_DIR=$PWD/_beads br ready          # the queue the swarm pulls from
 ```
 
 Narration:
 
 > Once you trust the packet, verdict, and evidence trail, the same operating
-> layer can run unattended out of session — dispatched on the Gas City
-> reference City, not an AgentOps daemon. That is the orchestration lane, not
+> layer can run unattended out of session — dispatched on the NTM + MCP Agent
+> Mail substrate, not an AgentOps daemon. That is the orchestration lane, not
 > the first thing you need to understand.
 
 ## Engineering Practice On Screen
@@ -227,8 +225,8 @@ Do not use:
 | 2:15 | Assemble runtime context with `ao context packet` and `ao context assemble`. |
 | 3:15 | Run `/council --mixed`. |
 | 5:00 | Inspect the verdict artifact. |
-| 6:00 | Show the verdict becoming bd work. |
-| 7:00 | Show out-of-session dispatch on Gas City / Dream as second-stage automation. |
+| 6:00 | Show the verdict becoming tracked br work. |
+| 7:00 | Show out-of-session dispatch on the NTM + MCP Agent Mail substrate as second-stage automation. |
 | 8:00 | Close with the install or gist CTA. |
 
 ## PMF Evidence Fields
@@ -251,5 +249,5 @@ This storyboard is ready for the `ao demo` rebuild when:
 - The packet path is stable.
 - `product-council` is the named first-value profile.
 - The expected verdict shape is accepted.
-- The out-of-session (Gas City) lane is second-stage.
+- The out-of-session (NTM + MCP Agent Mail) lane is second-stage.
 - Claim boundaries are copied into README/docs/demo work.

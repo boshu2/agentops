@@ -1,5 +1,7 @@
 # bd Server-Mode Tracker Closeout
 
+> **RETIRED / HISTORICAL (as of 2026-06-11).** bd/Dolt is retired; the live tracker is `br` at `_beads/` (invoke as `BEADS_DIR=$PWD/_beads br <cmd>`; ledger syncs via `git -C _beads push`, never `bd dolt push`). Kept for historical reference only — see AGENTS.md.
+
 This runbook distinguishes Git push, local bd durability, and remote bd sync.
 It prevents agents from treating `bd dolt push` as mandatory when a workspace
 uses a server-mode direct-write tracker with no configured Dolt remote.

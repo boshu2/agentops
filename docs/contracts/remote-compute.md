@@ -1,5 +1,7 @@
 # Remote Compute Contract
 
+> **RETIRED / HISTORICAL.** The Gas City (`gascity-api-sse`) session provider and the in-repo daemon this contract freezes were removed: the CLI gc-bridge/backend was severed and the daemon was deleted (ADR-0009). Out-of-session execution is now the NTM (tmux swarm) + MCP Agent Mail substrate, not GasCity/daemon. Kept for historical reference only — see AGENTS.md and ADR-0009.
+
 Remote compute is the AgentOps product boundary for running agent sessions on a
 configured remote node while keeping product names generic. Bushido is a
 private dogfood target and soak harness, not a public AgentOps namespace.

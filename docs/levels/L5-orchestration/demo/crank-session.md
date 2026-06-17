@@ -9,7 +9,7 @@ A session showing autonomous epic execution via the ODMCR loop.
 Epic created with `/plan`:
 
 ```
-$ bd show agentops-epic-xyz
+$ BEADS_DIR=$PWD/_beads br show agentops-epic-xyz
 Epic: "Add real-time notifications"
 Status: open
 Children: 6 issues
@@ -111,15 +111,16 @@ Summary:
 - Mode: crew (sequential)
 - All tests passing
 
-$ bd vc status   # Optional Dolt status check
+$ BEADS_DIR=$PWD/_beads br sync   # Optional ledger sync check
 $ git push
 ```
 
 ---
 
-## Mayor Mode (Parallel)
+## Parallel Mode (NTM Swarm)
 
-If run from `~/gt` or a mayor directory:
+When disjoint issues can run concurrently, the loop dispatches them to an
+NTM tmux swarm, coordinated through MCP Agent Mail (locks + inboxes):
 
 ```
 You: /crank agentops-epic-xyz
@@ -127,19 +128,19 @@ You: /crank agentops-epic-xyz
 Claude: Loading epic...
 
 **Epic:** Add real-time notifications
-**Mode:** mayor (parallel via gastown)
+**Mode:** parallel (NTM swarm + Agent Mail)
 **Issues:** 6 total
 
 [OBSERVE] 2 issues ready (a1, b2)
 
-[DISPATCH] gt sling agentops-a1 athena
-[DISPATCH] gt sling agentops-b2 athena
+[DISPATCH] NTM pane agentops-a1 → /implement
+[DISPATCH] NTM pane agentops-b2 → /implement
 
-[MONITOR] Convoy status:
-  → agentops-a1: in_progress (polecat-1)
-  → agentops-b2: in_progress (polecat-2)
+[MONITOR] Swarm status (Agent Mail):
+  → agentops-a1: in_progress (pane-1)
+  → agentops-b2: in_progress (pane-2)
 
-[Polecats working in parallel...]
+[Panes working in parallel...]
 
 [COLLECT] Both complete
   ✓ agentops-a1 CLOSED
@@ -147,9 +148,9 @@ Claude: Loading epic...
 
 [OBSERVE] 3 issues ready (c3, d4, e5)
 
-[DISPATCH] gt sling agentops-c3 athena
-[DISPATCH] gt sling agentops-d4 athena
-[DISPATCH] gt sling agentops-e5 athena
+[DISPATCH] NTM pane agentops-c3 → /implement
+[DISPATCH] NTM pane agentops-d4 → /implement
+[DISPATCH] NTM pane agentops-e5 → /implement
 
 ...continues until epic CLOSED
 ```
@@ -159,7 +160,7 @@ Claude: Loading epic...
 ## What You Learned
 
 1. `/crank` runs the ODMCR loop until epic is CLOSED
-2. Auto-detects crew (sequential) vs mayor (parallel) mode
+2. Auto-detects sequential vs parallel mode
 3. NO human prompts - fully autonomous
 4. Handles dependencies automatically via beads
-5. Integrates with gastown for multi-agent parallelization
+5. Dispatches parallel work to an NTM swarm coordinated by MCP Agent Mail
