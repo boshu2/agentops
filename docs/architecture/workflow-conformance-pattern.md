@@ -87,14 +87,43 @@ Every conformant workflow carries this block at the top, with each rule marked �
 //      attempt-cap / wall-clock is a BACKSTOP, not the terminator.
 //   R3 no-self-modification-in-run ✓  — no gate is added/removed/retuned mid-run.
 //   R4 escapes→slow-loop ✓/PENDING  — a downstream-caught defect emits an escape
-//      record to the slow-loop sink (escape→shift-left). PENDING is honest until
-//      the sink (age-cwo) is wired; do not claim ✓ without an emit.
+//      record (a REFUTED gate-verdict at a higher attempt, paired with the upstream
+//      CONFIRMED) to the slow-loop sink. See "The R4 escape-emit step" below; the
+//      sink exists (age-zqc), so ✓ requires the emit — PENDING only until it is wired.
 //   R5 orchestrator-routes-never-reasons ✓  — the script dispatches per-move agents
 //      and routes on verdicts; it never does the work it gates.
 // ─────────────────────────────────────────────────────────────────────────
 ```
 
-§6 is an **iff over all five rules**: a script is loop-model-compliant *only* when R1–R5 are each ✓ (HARDENED counts as ✓ — the rule is met, the comment just records that it was tightened and states the no-shell residual). A rule left **PENDING** means the script is **not yet fully conformant** — it is conformant on the rules it marks ✓ and explicitly *not* on the PENDING one, which is an open-loop edge until closed. Do not read PENDING as "compliant with an asterisk." `operating-loop.js` is the honest case: it is conformant on R1–R3/R5 but **not yet fully §6-compliant**, because R4 is PENDING until the slow-loop escape sink (`age-cwo`) is wired. Mark the gap, don't paper over it — and fix any rule you cannot honestly mark ✓ before relying on the workflow.
+§6 is an **iff over all five rules**: a script is loop-model-compliant *only* when R1–R5 are each ✓ (HARDENED counts as ✓ — the rule is met, the comment just records that it was tightened and states the no-shell residual). A rule left **PENDING** means the script is **not yet fully conformant** — it is conformant on the rules it marks ✓ and explicitly *not* on the PENDING one, which is an open-loop edge until closed. Do not read PENDING as "compliant with an asterisk." Mark the gap, don't paper over it — and fix any rule you cannot honestly mark ✓ before relying on the workflow.
+
+## The R4 escape-emit step — route a downstream catch to the slow loop
+
+R4 is the rule a workflow most often leaves PENDING, because it needs a sink to emit into. That sink now exists (`ao membrane` / `yieldledger.DetectEscapes`, landed `age-zqc`), so a conformant workflow gains one more step: **when a downstream gate catches a defect an upstream gate had already passed, emit an escape record.** An escape is the membrane's own miss — a unit a gate CONFIRMED that a *later, stricter* gate REFUTED. The slow loop turns each escape into the check that would have caught it (`escape → finding → membrane check`); the workflow's only job is to **emit** it, never to derive or govern (that is `age-cwo`).
+
+The mechanism is the yield ledger. `DetectEscapes` is run-scoped and keys on the pattern **CONFIRMED-then-REFUTED-at-a-higher-attempt for the same bead**. So the workflow emits two gate-verdicts across its gates. The `ao yield emit gate-verdict` body is **commit-bound** — `ao` validates a `pawl_verdict_ref` (bead_id + a `head_sha` ≥7 chars), a top-level `head_sha` ≥7 chars, a valid `mode`, and a non-empty `author_family`; a minimal body is rejected (exit 1). So the emit step must build the full body, capturing the run's current HEAD as the sha (the base commit the work sits on):
+
+```js
+// The emit agent captures SHA = `git rev-parse HEAD`, then runs a body of this shape
+// (deterministic tier: cross_family=false so it never inflates catch_rate_cross_family):
+//   ao yield emit gate-verdict --bead <id> --run <runId> --json '{
+//     "difficulty":2,"pawl_verdict_ref":{"bead_id":"<id>","head_sha":"<SHA>"},
+//     "disposition":"CONFIRMED","head_sha":"<SHA>","attempt":1,"mode":"deterministic",
+//     "author_context_id":"<upstream-gate>","refuter_families":[],
+//     "author_family":"<workflow>-gate","cross_family":false,
+//     "author_ne_reviewer":true,"evidence_present":true }'
+const emitVerdict = (disposition, attempt, ctx, note, label) => agent(
+  `R4 gate-verdict (EMIT only). ${note}\nDo exactly this: (1) SHA=$(git rev-parse HEAD); ` +
+  `(2) ao yield emit gate-verdict --bead "<id>" --run "<runId>" --json '{...full body above with "$SHA"...}'. ` +
+  `Return the exit code. Do NOT run ao membrane derive-checks or tune the sink — that is age-cwo.`,
+  { label, phase: 'Capture' })
+
+await emitVerdict('CONFIRMED', 1, 'slice-gate', 'The upstream gate passed green.', 'r4:confirm')
+if (!closeout.accepted)                                  // downstream caught a defect upstream passed
+  await emitVerdict('REFUTED', 2, 'acceptance-rollup', `Caught: ${JSON.stringify(failed)}`, 'r4:escape-emit')
+```
+
+The pairing (`attempt:1` CONFIRMED → `attempt:2` REFUTED, same bead+run) is what `DetectEscapes` surfaces; a clean run emits only the single CONFIRMED. The slow loop then runs `ao membrane derive-checks --run <id>` out-of-band. **Boundary:** the workflow emits; it never derives the check or tunes a gate mid-run (R3) — keep R4 strictly the emit, or it front-runs `age-cwo` and breaks the two-timescale separation.
 
 ## Governance — the workflow must be born registered
 
@@ -119,10 +148,10 @@ Then run `make regen-all` (registry projection) and `node --check .claude/workfl
 
 ## Worked example: operating-loop.js
 
-[`.claude/workflows/operating-loop.js`](../../.claude/workflows/operating-loop.js) is the canonical near-conformant reference:
+[`.claude/workflows/operating-loop.js`](../../.claude/workflows/operating-loop.js) is the canonical fully-conformant reference:
 
 - **(a)** every move (`Shape`, `Plan`, `Pre-flight`, `Implement`, `Capture`) is a dispatched `agent()` returning a schema — the orchestrator never inlines a move.
 - **(b)** the slice acceptance gate reads `last.testExitCode === 0` (a captured exit code), **hardened** from a `testNowPasses` self-grade in commit `2f7de41a3`. Its conformance header states the no-shell residual.
 - **(c)** `MAX_REPLAN` (pre-flight) and `MAX_SLICE_RETRY` (slices) are plain integers used strictly as backstops; both loops `return` on the grounded verdict first, and each retry carries the prior failure forward.
 - **(d)** the script body contains no design or code — only dispatch, verdict-read, and routing.
-- **R4 is its one PENDING rule:** the closeout ratchets learnings but emits no escape record (the slow-loop sink is `age-cwo`). Its header marks R4 PENDING honestly — the model for every author: *do not mark a rule ✓ you cannot back with the script.*
+- **R4** — the Capture phase emits the escape pair: a CONFIRMED at the upstream slice gate (all slices green) and a REFUTED at attempt 2 when the downstream acceptance roll-up catches a defect the slice gate passed. That pair is what the slow loop (`ao membrane derive-checks`, `age-zqc`) consumes. With R4 wired, `operating-loop.js` satisfies all five rules.
