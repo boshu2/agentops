@@ -169,3 +169,4 @@ pane also looks idle.
 - $swarm — in-session parallel fan-out across worktrees (the in-session sibling).
 - $agent-native — `ao agent bundle` produces the loop definition a managed-agents substrate runs.
 - $rpi · $evolve — the loops the substrate dispatches.
+- **Fork maintenance** (not a skill) — `atm` is Bo's fork of upstream `ntm`. Pull upstream fixes via `make fork-status` → `fork-preview` → `fork-sync` in `~/dev/ntm` (its `AGENTS.md` § "Upstream sync"; never rebase main directly). Divergence facts → **FORKS-MAP F-1**.

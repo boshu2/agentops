@@ -368,3 +368,4 @@ server; do not declare convergence from a stale checkout.
 - [`/agent-native`](../agent-native/SKILL.md) — `ao agent bundle` produces the loop definition a managed-agents substrate runs (the managed-agents leg).
 - [`codex-exec`](../codex-exec/SKILL.md) — the **headless** codex lane (`codex exec`, stdin/positional) vs an ATM codex **TUI pane** here (keystroke / `--codex-goal` flow, `atm codex` readiness gates). Different dispatch mechanics, same auth/sub rules.
 - [`rpi`](../rpi/SKILL.md) · [`evolve`](../evolve/SKILL.md) — the loops the substrate dispatches.
+- **Fork maintenance** (not a skill) — `atm` is Bo's fork of upstream `ntm`. Pull upstream fixes via `make fork-status` → `make fork-preview` → `make fork-sync` in `~/dev/ntm` (see its `AGENTS.md` § "Upstream sync"; never rebase main directly). Divergence facts are owned by **FORKS-MAP F-1**.
