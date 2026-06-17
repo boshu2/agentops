@@ -28,6 +28,27 @@ import (
 //go:embed extraction-template.v1.schema.json
 var schemaJSON []byte
 
+// provenanceTemplateYAML is the embedded canonical AgentOps provenance
+// extraction template, kept byte-identical with
+// templates/agentops_provenance.yaml. Embedding lets callers (e.g. the forge
+// typed opt-in path) load the template without depending on a repo checkout
+// being present at the process cwd.
+//
+//go:embed templates/agentops_provenance.yaml
+var provenanceTemplateYAML []byte
+
+// LoadProvenanceTemplate parses and validates the embedded canonical AgentOps
+// provenance extraction template. It is the runtime-safe equivalent of
+// Load("templates/agentops_provenance.yaml") and is used by the forge typed
+// opt-in extraction path.
+func LoadProvenanceTemplate() (*Template, error) {
+	tmpl, err := Parse(provenanceTemplateYAML)
+	if err != nil {
+		return nil, fmt.Errorf("embedded agentops_provenance template: %w", err)
+	}
+	return tmpl, nil
+}
+
 // schemaPath is the logical name used when compiling the embedded schema.
 const schemaPath = "schemas/extraction-template.v1.schema.json"
 
