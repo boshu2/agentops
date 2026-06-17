@@ -28,6 +28,8 @@ output_contract: .agents/compiled/*.md, .agents/compiled/index.md, .agents/compi
 ---
 # Compile — Knowledge Compiler
 
+> **Loop position:** move 7 (capture + ratchet) of the [operating loop](../../docs/architecture/operating-loop.md) — compiles promoted `.agents/` learnings into the interlinked wiki (the compound sub-step).
+
 Reads raw `.agents/` artifacts and compiles them into a structured, interlinked
 markdown wiki. Inspired by [Karpathy's LLM Knowledge Bases](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f).
 

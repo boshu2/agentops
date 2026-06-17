@@ -52,6 +52,8 @@ output_contract: .agents/operationalize/YYYY-MM-DD-<slug>.md rule packet + one h
 
 # /operationalize — Distill + Route Bridge
 
+> **Loop position:** move 7 (capture + ratchet) of the [operating loop](../../docs/architecture/operating-loop.md) — routes promoted learnings to their weakest durable enforcement (skill, gate, or bead).
+
 Rich context dies in the artifact that gathered it. A deep-research report, a
 codebase-recon sweep, or a painful learning is read once, agreed with, and
 never changes behavior again. This skill is the bridge: distill the artifact

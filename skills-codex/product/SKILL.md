@@ -4,6 +4,8 @@ description: "Run product."
 ---
 # $product — Interactive PRODUCT.md Generation
 
+> **Loop position:** move 1 (shape intent) of the [operating loop](../../docs/architecture/operating-loop.md) — defines the PRODUCT.md that anchors what counts as in-scope intent before discovery shapes a capability.
+
 > **Purpose:** Guide the user through creating a `PRODUCT.md` that unlocks product-aware reviews in `$pre-mortem` and `$validate`, including the default quick-mode inline paths.
 
 **YOU MUST EXECUTE THIS WORKFLOW. Do not just describe it.**

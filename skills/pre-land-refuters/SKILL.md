@@ -28,6 +28,8 @@ output_contract: .agents/council/YYYY-MM-DD-pre-land-*.md
 
 # /pre-land-refuters — unbiased dual-model validation before landing
 
+> **Loop position:** move 6 (prove acceptance) of the [operating loop](../../docs/architecture/operating-loop.md) — the shared-trunk pawl: fresh-context refuters attack the completion claim before landing.
+
 > Proven in the ag-s43tg prune landing (2026-06-12): the refuter panel caught 9
 > real misses self-review passed over — a silently-failed edit, a CI-breaking
 > test, stale image manifests, gate-weakening test retirements, and an upstream

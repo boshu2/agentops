@@ -5,6 +5,8 @@ description: "Distill rich gathered context (research output, recon reports, big
 
 # operationalize (Codex)
 
+> **Loop position:** move 7 (capture + ratchet) of the [operating loop](../../docs/architecture/operating-loop.md) — routes promoted learnings to their weakest durable enforcement (skill, gate, or bead).
+
 Codex-native entry point for the `operationalize` operator skill.
 
 The AgentOps source skill `../../skills/operationalize/SKILL.md` is the source

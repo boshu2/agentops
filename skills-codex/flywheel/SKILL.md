@@ -3,6 +3,9 @@ name: flywheel
 description: "Run flywheel."
 ---
 # Flywheel Skill
+
+> **Loop position:** move 7 (capture + ratchet) of the [operating loop](../../docs/architecture/operating-loop.md) — monitors the knowledge-pool health that the promotion ratchet feeds.
+
 Monitor the knowledge flywheel health.
 ## The Flywheel Model
 ```

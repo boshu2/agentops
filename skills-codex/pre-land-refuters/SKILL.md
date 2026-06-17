@@ -5,6 +5,8 @@ description: Dispatch unbiased parallel refuters (Fable + Codex, read-only) befo
 
 # pre-land-refuters (Codex)
 
+> **Loop position:** move 6 (prove acceptance) of the [operating loop](../../docs/architecture/operating-loop.md) — the shared-trunk pawl: fresh-context refuters attack the completion claim before landing.
+
 Codex-native entry point for the `pre-land-refuters` operator skill.
 
 The AgentOps source skill `../../skills/pre-land-refuters/SKILL.md` is the
