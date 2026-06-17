@@ -11,6 +11,24 @@ export const meta = {
   ],
 }
 
+// ---------------------------------------------------------------------------
+// §6 CONFORMANCE (docs/architecture/control-loop-model.md §6 — loop-model-compliant)
+//   R2 terminate-on-verdict ✓  pre-flight breaks on `go`; slices return on green;
+//      MAX_REPLAN/MAX_SLICE_RETRY are BACKSTOPS, not the terminator.
+//   R3 no-self-modification-in-run ✓  no gate is added/removed/retuned mid-run.
+//   R5 orchestrator-routes-never-reasons ✓  this script dispatches per-move agents
+//      and routes on verdicts; it never does the work it gates.
+//   R1 deterministic-gates — HARDENED here: slice acceptance gates on a CAPTURED
+//      test exit code (testExitCode === 0), NOT a free-form `testNowPasses` self-grade
+//      (§6.1's #1 non-convergence cause). RESIDUAL: a Workflow script has no shell,
+//      so it cannot run the test itself — the agent transcribes the exit code. The
+//      AUTHORITATIVE deterministic gate is `ao gate check` run post-workflow (the
+//      pre-push windshield); the in-run verdict is provisional, best-grounded on
+//      captured evidence.
+//   R4 escapes→slow-loop — PENDING: the closeout ratchets learnings but emits no
+//      escape record; the escape→shift-left sink is age-cwo (slow loop), not yet wired.
+// ---------------------------------------------------------------------------
+
 // ---- The capability to run through the loop -------------------------------
 // args may be a string (the intent text) or {intent, beadId}. If absent, the
 // shape agents fall back to `bd ready` and pick the top item.
@@ -130,14 +148,16 @@ const VERDICT_SCHEMA = {
 
 const SLICE_RESULT_SCHEMA = {
   type: 'object',
-  required: ['sliceId', 'testFirstFailed', 'testNowPasses', 'evidence'],
+  required: ['sliceId', 'testFirstFailed', 'testNowPasses', 'testCommand', 'testExitCode', 'evidence'],
   properties: {
     sliceId: { type: 'string' },
     testFirstFailed: { type: 'boolean', description: 'did the first failing test fail for the right reason before implementation' },
-    testNowPasses: { type: 'boolean' },
+    testNowPasses: { type: 'boolean', description: 'agent self-report (human-readable); NOT the gate — the acceptance gate reads testExitCode === 0' },
+    testCommand: { type: 'string', description: 'the exact test command run against the working tree (e.g. `cd cli && go test ./internal/foo/...`)' },
+    testExitCode: { type: 'integer', description: 'captured exit code of testCommand; 0 = green. This is the §6.1 ground-truth the acceptance gate reads — transcribe the real value, do not assert a 0 you cannot show.' },
     refactorCommitSeparate: { type: 'boolean' },
     filesChanged: { type: 'array', items: { type: 'string' } },
-    evidence: { type: 'string', description: 'test names + commands run + result' },
+    evidence: { type: 'string', description: 'test names + commands run + raw result tail' },
     blocked: { type: 'boolean' },
     blockerReason: { type: 'string' },
   },
@@ -306,7 +326,7 @@ for (const wave of plan.waves) {
     agent(`${DOCTRINE}\n\nMove 4 (TDD for one slice). Write to the working tree; DO NOT git commit or git add (the human reviews and commits under a bead+PR).\n\nSlice ${s.id}: ${s.behavior}\nFirst failing test (your contract): ${s.firstFailingTest}\nWrite scope: ${(s.writeScope || []).join(', ')}\nBounded context: ${s.boundedContext}${priorFailure ? `\n\nA PRIOR ATTEMPT FAILED: ${priorFailure}\nDiagnose why and try a DIFFERENT approach.` : ''}\n\nDo it in order: (1) write the first failing test and confirm it fails for the RIGHT reason (missing behavior, not syntax); (2) make the smallest change that flips it to green; (3) refactor under green. Follow .claude/rules/go.md / python.md. Stay STRICTLY inside the write scope — touch no file outside it.`,
       { label: `tdd:${s.id}`, phase: 'Implement' })
       .then((impl) =>
-        agent(`${DOCTRINE}\n\nMove 6 (slice acceptance) for slice ${s.id}: ${s.behavior}\n\nImplementer reported:\n${impl}\n\nRun the slice's tests against the working tree and prove the behavior. Confirm the first failing test now passes, the change is present in the working tree, and (via \`git status --short\`) nothing outside the declared write scope changed. Report evidence (test names + commands + result). Set testNowPasses honestly — false if you could not confirm green.`,
+        agent(`${DOCTRINE}\n\nMove 6 (slice acceptance) for slice ${s.id}: ${s.behavior}\n\nImplementer reported:\n${impl}\n\nRun the slice's tests against the working tree and prove the behavior. Confirm the first failing test now passes, the change is present in the working tree, and (via \`git status --short\`) nothing outside the declared write scope changed. Report the EXACT command you ran in testCommand, its CAPTURED exit code in testExitCode (0 = green), and the raw result tail in evidence. The gate reads testExitCode, not testNowPasses — transcribe the real exit code; do not assert a green you cannot show.`,
           { label: `validate:${s.id}`, phase: 'Implement', schema: SLICE_RESULT_SCHEMA, agentType: 'agentops:code-reviewer' })
           .then((r) => ({ ...r, sliceId: s.id }))
       )
@@ -320,7 +340,8 @@ for (const wave of plan.waves) {
       } catch (err) {
         last = blocked(s, err)
       }
-      if (last && last.testNowPasses && !last.blocked) return { ...last, attempts: k + 1 }
+      // §6.1: green is the CAPTURED exit code, not the agent's testNowPasses self-grade.
+      if (last && last.testExitCode === 0 && !last.blocked) return { ...last, attempts: k + 1 }
       if (k < MAX_SLICE_RETRY) log(`Slice ${s.id} not green (attempt ${k + 1}/${MAX_SLICE_RETRY + 1}) — self-repair retry.`)
     }
     return { ...last, attempts: MAX_SLICE_RETRY + 1, selfRepairExhausted: true }
@@ -337,7 +358,7 @@ for (const wave of plan.waves) {
     }
   }
   sliceResults.push(...waveResults)
-  const greens = waveResults.filter((r) => r.testNowPasses).length
+  const greens = waveResults.filter((r) => r.testExitCode === 0 && !r.blocked).length
   const blocks = waveResults.filter((r) => r.blocked).length
   log(`Wave [${wave.sliceIds.join(',')}] done · ${greens}/${slices.length} green${blocks ? ` · ${blocks} BLOCKED` : ''}`)
 }
