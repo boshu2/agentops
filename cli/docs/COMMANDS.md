@@ -4269,11 +4269,12 @@ ao provenance emit-landed [flags]
 **Flags:**
 
 ```
-      --commit string   Single commit-ish to emit edges for (default HEAD when no --range)
-      --dry-run         Resolve and print edges without writing the ledger
-  -h, --help            help for emit-landed
-      --json            Emit appended edges as JSON
-      --range string    Git revision range (e.g. origin/main..HEAD); emits for every commit in it
+      --commit string      Single commit-ish to emit edges for (default HEAD when no --range)
+      --dry-run            Resolve and print edges without writing the ledger
+  -h, --help               help for emit-landed
+      --json               Emit appended edges as JSON
+      --range string       Git revision range (e.g. origin/main..HEAD); emits for every commit in it
+      --trunk-ref string   Require each commit to be an ancestor of this ref (e.g. origin/main) before emitting; merge_sha uses the resolved full OID
 ```
 
 #### `ao provenance emit-verdict`
