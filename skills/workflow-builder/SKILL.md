@@ -78,6 +78,19 @@ return { verified }
 | `phase(title)` | progress grouping; match `meta.phases` titles |
 | `loop-until-budget` / `loop-until-dry` | unknown-size discovery; guard on `budget.total` |
 
+## Conformance — author it as a control system, not a DAG
+
+A workflow is an **orchestrator** (it gates and routes), so it must be a
+traversable control system, not an open-loop DAG. Before scaffolding, read
+**[the Workflow Conformance Pattern](../../docs/architecture/workflow-conformance-pattern.md)**
+— the copy-paste idiom for the four moves (dispatch skills as black-box
+schema-returning agents · gate on a delegated deterministic verdict, never a
+self-grade · the bounded-loop guard idiom · orchestrator-routes-never-reasons)
+plus the §6 five-rule self-check header to paste into your script and the
+`workflows:` ledger row `scripts/check-workflow-governance.sh` requires. That doc
+operationalizes [control-loop-model.md §6](../../docs/architecture/control-loop-model.md);
+this skill scaffolds the script that satisfies it.
+
 ## Authoring checklist
 
 1. **Shape confirmed Workflow** (via `automation-shape-routing`).
@@ -88,7 +101,11 @@ return { verified }
 4. **Conflict-free fan-out** — if branches write files, give each a disjoint
    write-scope (the wave-validity invariant) or run in worktree isolation.
 5. **Budget** — for loops, gate on `budget.total && budget.remaining() > N`.
-6. **Dry-run to validate** — invoke the workflow on a tiny input; confirm the
+6. **Conformance self-check** — paste the §6 five-rule header from the
+   [conformance pattern](../../docs/architecture/workflow-conformance-pattern.md)
+   and mark each rule ✓/HARDENED/PENDING honestly; add the `workflows:` ledger
+   row and run `scripts/check-workflow-governance.sh`.
+7. **Dry-run to validate** — invoke the workflow on a tiny input; confirm the
    `meta` block parses and each phase returns its schema. This is the workflow
    analog of `skill-auditor`.
 

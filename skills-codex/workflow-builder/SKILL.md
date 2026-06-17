@@ -47,6 +47,20 @@ streaming choice, the budget guard, and the merge.
 | phase markers | progress grouping; one per orchestration stage |
 | bounded loop (loop-until-budget / loop-until-dry) | unknown-size discovery; guard on remaining budget |
 
+## Conformance — author it as a control system, not a DAG
+
+An orchestration gates and routes, so it must be a traversable control system,
+not an open-loop DAG. The four conformance moves (from `control-loop-model.md`
+§6) are runtime-agnostic: (a) dispatch each move's discipline as a black-box
+sub-agent returning a structured schema, never inline the generative work;
+(b) gate on a DELEGATED deterministic verdict (a captured test exit code,
+`$validate`, a fixed-rubric quorum) — never a free-form self-grade, the #1 cause
+of non-convergence; (c) terminate on that grounded verdict, with an attempt-cap
+as a backstop only, carrying the prior failure forward each retry; (d) the
+orchestrator routes and gates — it never reasons about the work it gates. The
+conformance contract is `docs/architecture/control-loop-model.md` §6; a worked
+copy-paste idiom lives in `docs/architecture/workflow-conformance-pattern.md`.
+
 ## Authoring checklist
 
 1. **Shape confirmed Orchestration** (via `$automation-shape-routing`).
@@ -57,7 +71,9 @@ streaming choice, the budget guard, and the merge.
 4. **Conflict-free fan-out** — if branches write files, give each a disjoint
    write-scope (the wave-validity invariant) or run in worktree isolation.
 5. **Budget** — for loops, gate on a remaining-budget check before each round.
-6. **Dry-run to validate** — invoke the orchestration on a tiny input; confirm
+6. **Conformance self-check** — confirm the four §6 moves above hold; gate on a
+   delegated deterministic verdict, never a self-grade.
+7. **Dry-run to validate** — invoke the orchestration on a tiny input; confirm
    each phase launches its sub-agents and returns its `output_schema`. This is the
    orchestration analog of `$skill-auditor`.
 
