@@ -1234,8 +1234,8 @@
     {
       "name": "dual-pane-atm",
       "source_skill": "skills/dual-pane-atm",
-      "source_hash": "4836b12ff748dab64decf43fd5867fc004bc5ac3b2ffbb0617797547f1c0685b",
-      "generated_hash": "e0abdd43deed3e04cae96e9fc31a36e67905e756c4bfac02dc17ecd05b70119e"
+      "source_hash": "47936efc36a66052da8e9f9232ce7a3bc3259c68425054e863c479b1822810f3",
+      "generated_hash": "2ac7e5ef4bc9c0bbcd0cf40eb7d8c1682468324ee9407989cfaf4b34e9fd19ac"
     },
     {
       "name": "eval-outcomes",

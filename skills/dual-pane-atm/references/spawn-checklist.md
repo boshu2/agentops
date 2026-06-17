@@ -16,6 +16,7 @@ Copy and track per session.
 | Session shape | Pane 1 | Pane 2 | Pane 3 |
 |---|---|---|---|
 | **`--no-user`** (two workers only) | Opus (Claude) | Codex | — |
+| **`--no-user`** (tri-vendor: Opus + Codex + AGY) | Opus (Claude) | Codex | AGY (Antigravity) |
 | **User pane present** (tri-pane) | User / orchestrator attach | Opus | Codex |
 
 Use the pane numbers from the row that matches your spawn. Examples below assume **`--no-user`**.
@@ -93,6 +94,43 @@ atm codex wait-goal-engaged --session "$SESSION" --pane 2 --json
 - [ ] Per-lane `am file_reservations reserve` matches spawn globs
 - [ ] Worktrees created if either lane edits tracked files
 - [ ] Orchestrator notes actual resolved models if alias drift (e.g. opus → installed build)
+
+## Tri-vendor (+AGY) — optional
+
+Smoke-tested tri-pane **worker-only** (`--no-user`). Include `/tmp/dual-pane-agy/` (or real lane glob) in `--reserve`.
+
+```bash
+LABEL=dual-pane-agy-smoke
+SESSION="agentops--$LABEL"
+RESERVE_GLOBS="/tmp/dual-pane-opus/ /tmp/dual-pane-codex/ /tmp/dual-pane-agy/"
+
+atm spawn agentops --label "$LABEL" --no-user \
+  --cc=1:opus --cod=1:gpt-5.5 --agy=1 \
+  --reserve "$RESERVE_GLOBS" \
+  --no-cass-context --ready-timeout=2m --json
+```
+
+**Verify:** spawn `--json` panes or `tmux list-panes -t "$SESSION:1"` when `atm mapping` is empty (Agent Mail unavailable).
+
+```bash
+# Opus — pane 1
+atm send "$SESSION" --pane=1 --file packet-opus.md \
+  --no-cass-check --force-non-interactive
+
+# Codex — pane 2 (wait for preflight proceed before goal)
+atm codex preflight --session "$SESSION" --pane 2 --json
+atm send "$SESSION" --pane=2 --codex-goal --file packet-codex.md \
+  --no-cass-check --force-non-interactive --json
+atm codex wait-goal-engaged --session "$SESSION" --pane 2 --json
+
+# AGY — pane 3 (interactive TUI; not agy -p / gemini -p)
+atm send "$SESSION" --pane=3 --file packet-agy.md \
+  --no-cass-check --force-non-interactive
+```
+
+- [ ] **Cycle 2 lesson:** poll `atm codex preflight` until `recommended_action` is `proceed` before `--codex-goal` — blind dismiss sends (e.g. `"3"`) while Codex is busy can wedge the goal lifecycle
+- [ ] AGY pane 3 shows packet input / `AGY_SMOKE_OK` (or lane artifact) in tmux capture — `atm activity` may omit AGY
+
 
 ## Teardown
 

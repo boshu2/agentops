@@ -24,10 +24,13 @@ Read it first, then use `prompt.md` for the Codex runtime profile.
 - For dual-pane sessions, load `$using-atm` and `$agent-mail`; spawn with ATM
   (`atm spawn ... --cc=1:opus --cod=1:gpt-5.5 --no-user --reserve "docs/contracts/ cli/internal/"` or
   smoke dirs like `/tmp/dual-pane-opus/ /tmp/dual-pane-codex/` as **one** quoted `--reserve` value).
-  After spawn, `atm mapping --session="$SESSION"` before any send; coordinate via Agent Mail, and
-  `atm kill` on teardown. With `--no-user`, Opus is pane 1 and Codex is pane 2; with a user pane,
-  Opus/Codex are panes 2/3. Opus: prefer plain `atm send --pane=1 --file …`; if `--json` exits 1
-  with empty stdout, retry without `--json` (advisory). Codex: `--codex-goal` may need a retry on
-  cold engage — use `wait-goal-engaged`. Never use print-mode CLIs for the other-family pane.
+  **Tri-vendor (+AGY):** add `--agy=1` and include `/tmp/dual-pane-agy/` in the same quoted
+  `--reserve` value; panes 1/2/3 = Opus/Codex/AGY with `--no-user` (worker-only — not user+two-workers).
+  Verify via spawn `--json` panes or `tmux list-panes` when `atm mapping` is empty; `atm activity` may omit AGY.
+  After spawn, confirm pane numbers before any send; coordinate via Agent Mail, and `atm kill` on teardown.
+  With `--no-user`, Opus is pane 1 and Codex is pane 2 (AGY pane 3 when `--agy=1`); with a user pane,
+  Opus/Codex are panes 2/3. Opus: plain `atm send --pane=1 --file …`; AGY: `--pane=3 --file` (interactive TUI, not `agy -p`/`gemini -p`).
+  Codex: poll `atm codex preflight` until `proceed` before `--codex-goal`; cold engage may need retry + `wait-goal-engaged`.
+  Never use print-mode CLIs for the other-family pane.
 - Acceptance scenarios live in `references/dual-pane-atm.feature`; mirror spawn checklist and work-split matrix from the source skill.
 - Return concrete evidence: commands run, files touched, exit codes, and any remaining blocker.

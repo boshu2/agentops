@@ -8,6 +8,7 @@
 | Reduce author blind spots before writing | **Explore + write** | Opus maps; Codex implements with fresh context |
 | Land risky change with skeptic | **Author + refuter** | Lighter than full duel; refuter read-only |
 | Compare two design drafts | **Dual draft → synthesize** | Orchestrator merges; no shared write path |
+| Add Gemini-sub / adversarial third lane | **Tri-vendor (+AGY)** | Opus + Codex stay primary builders; AGY pane for adversarial review, red-team read, or AGY-native `/research` when matrix needs a third vendor | AGY reserves disjoint read or `.agents/dual-pane/` artifact paths; orchestrator still synthesizes |
 | Score ideas adversarially | **Not this skill** → `dueling-idea-wizards` | Scoring/reveal phases, not build |
 
 ## Pattern detail
