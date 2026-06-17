@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -196,5 +197,47 @@ func TestSandboxedCodexCmd_FailClosed(t *testing.T) {
 		if err == nil || cmd != nil {
 			t.Errorf("non-darwin must fail closed (no unisolated arm); got cmd=%v err=%v", cmd, err)
 		}
+	}
+}
+
+// TestSandboxExec_Integration_DeniesCorpusRead (age-wp1): on darwin, sandbox-exec
+// with the scenario-ab deny profile must block reads under .agents while allowing
+// reads outside the denied corpus paths. String-only profile tests are insufficient.
+func TestSandboxExec_Integration_DeniesCorpusRead(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("darwin-only: macOS Seatbelt sandbox-exec integration")
+	}
+	if _, err := os.Stat(macOSSandboxExec); err != nil {
+		t.Skipf("sandbox-exec unavailable: %v", err)
+	}
+
+	root := t.TempDir()
+	agents := filepath.Join(root, ".agents")
+	if err := os.MkdirAll(agents, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	secret := filepath.Join(agents, "sentinel.txt")
+	if err := os.WriteFile(secret, []byte("CORPUS-SECRET-MUST-NOT-READ"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	allowed := filepath.Join(root, "allowed.txt")
+	if err := os.WriteFile(allowed, []byte("allowed-ok"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	profile := sandboxExecDenyProfile(corpusDenyPaths(root))
+
+	denyCmd := exec.Command(macOSSandboxExec, "-p", profile, "/bin/cat", secret)
+	if err := denyCmd.Run(); err == nil {
+		t.Fatal("expected sandbox-exec to deny read of corpus file under .agents")
+	}
+
+	allowCmd := exec.Command(macOSSandboxExec, "-p", profile, "/bin/cat", allowed)
+	out, err := allowCmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("expected read outside deny set to succeed: %v output=%q", err, out)
+	}
+	if !strings.Contains(string(out), "allowed-ok") {
+		t.Errorf("allowed read output = %q, want allowed-ok", out)
 	}
 }
