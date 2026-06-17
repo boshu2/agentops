@@ -1,0 +1,1037 @@
+[
+  {
+    "file": "docs/examples/agentops-3-domain-practice-packet.md",
+    "line": 52,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "`bd create \"Apply council verdict to launch demo\" ...` | Tracked follow-up work created from the verdict.",
+    "evidence": "bd/Dolt tracker is RETIRED (2026-06-11). The current tracker is br at _beads/, invoked `BEADS_DIR=$PWD/_beads br create`. Presented here as the current way to create tracked follow-up work.",
+    "fix": "Replace `bd create ...` with `BEADS_DIR=$PWD/_beads br create \"Apply council verdict to launch demo\" ...`."
+  },
+  {
+    "file": "docs/examples/agentops-3-domain-practice-packet.md",
+    "line": 89,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "Optional second-stage automation (out of session, on the Gas City reference City ...) ... # Scheduled maintenance runs as Gas City cron Orders. See the using-gc skill.",
+    "evidence": "Gas City / gc is REMOVED from the CLI (no gc bridge, runtime=gc invalid); the using-gc skill is stale. Live out-of-session substrate is NTM + MCP Agent Mail. Presented here as the current out-of-session orchestration lane.",
+    "fix": "Replace the Gas City out-of-session lane with NTM + MCP Agent Mail substrate; drop the `using-gc` skill reference and `ao rpi <bead-id>` as the live loop."
+  },
+  {
+    "file": "docs/examples/agentops-3-domain-practice-packet.md",
+    "line": 97,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "ao rpi <bead-id>",
+    "evidence": "`ao rpi` is load-bearing LEGACY, not the live navigation/loop (operating-loop.md is primary). Shown here as the current way a worker runs the loop as one invocable unit.",
+    "fix": "Replace with the operating-loop dispatch (NTM + Agent Mail); note `ao rpi` is legacy if mentioned at all."
+  },
+  {
+    "file": "docs/examples/agentops-3-domain-practice-packet.md",
+    "line": 63,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "The out-of-session orchestration lane (the loop dispatched on the Gas City reference City) is proof of deeper automation",
+    "evidence": "Gas City is removed from the CLI; the out-of-session lane is NTM + MCP Agent Mail. Frames Gas City as the current orchestration lane.",
+    "fix": "Change 'the Gas City reference City' to 'the NTM + MCP Agent Mail substrate'."
+  },
+  {
+    "file": "docs/levels/L5-orchestration/crank.md",
+    "line": 24,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "+-> bd ready (wave issues)",
+    "evidence": "bd is RETIRED; the tracker is br (`BEADS_DIR=$PWD/_beads br ready`). The /crank doc presents bd as the current beads-aware orchestration surface (also lines 29 `bd update`, 44 `bd ready`, 56/61 `bd ready`).",
+    "fix": "Replace all `bd ready` / `bd update` with the br equivalents (`BEADS_DIR=$PWD/_beads br ready` / `br update`)."
+  },
+  {
+    "file": "docs/templates/intent-issue.md",
+    "line": 8,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "renders a Directive 12 compliant dry-run body and labels for `bd create`.",
+    "evidence": "This is a live template for shaping new work; `bd create` is the retired tracker command. Current is `BEADS_DIR=$PWD/_beads br create`.",
+    "fix": "Change `bd create` to `br create` (with the BEADS_DIR prefix)."
+  },
+  {
+    "file": "docs/templates/intent-issue.md",
+    "line": 98,
+    "severity": "P3",
+    "category": "stale-as-current",
+    "claim": "Parent bead: `<bd id or \"to be created\">`",
+    "evidence": "`bd id` references the retired bd tracker; beads are now created/tracked with br.",
+    "fix": "Change `<bd id ...>` to `<br id ...>`."
+  },
+  {
+    "file": "docs/reference.md",
+    "line": 318,
+    "severity": "P3",
+    "category": "dead-link",
+    "claim": "For hook setup help, see `cli/docs/HOOKS.md`.",
+    "evidence": "Target `cli/docs/HOOKS.md` does not exist in the repo. Also contradicts 3.0 hookless (the doc's own line 5 disclaimer): pointing at hook setup as a current troubleshooting step is misleading.",
+    "fix": "Remove the dead `cli/docs/HOOKS.md` reference; for 3.0 the relevant surface is `ao session bootstrap` / `ao inject`, not hook setup."
+  },
+  {
+    "file": "docs/first-value-path.md",
+    "line": 34,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "`bd show <issue-id>` cites the verdict path.",
+    "evidence": "bd/Dolt tracker is RETIRED (2026-06-11). The current tracker is br (beads_rust) invoked `BEADS_DIR=$PWD/_beads br`. This is a first-value onboarding path, so a new user would run a retired command.",
+    "fix": "Replace with `BEADS_DIR=$PWD/_beads br show <issue-id>`."
+  },
+  {
+    "file": "docs/first-value-path.md",
+    "line": 143,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "bd create \"Apply council verdict to launch demo\" --description ... --json",
+    "evidence": "bd is retired; tracker is br. The expected JSON output even shows a `soc-` id from the old prefix. Onboarding viewers would run a retired tracker command.",
+    "fix": "Replace the `bd create` block with `BEADS_DIR=$PWD/_beads br create \"...\" --body \"...\"` and update the expected id/output."
+  },
+  {
+    "file": "docs/first-value-path.md",
+    "line": 174,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "an NTM swarm (or a lead agent) runs `bd ready` and dispatches the next bead to a worker that runs `ao rpi <bead>`",
+    "evidence": "`bd ready` is retired (use `BEADS_DIR=$PWD/_beads br ready`); the canonical-loop-model.md describes the same substrate dispatch using `BEADS_DIR=$PWD/_beads br ready`. This doc still says `bd ready`.",
+    "fix": "Replace `bd ready` with `BEADS_DIR=$PWD/_beads br ready` to match canonical-loop-model.md."
+  },
+  {
+    "file": "docs/first-value-path.md",
+    "line": 188,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "`.beads/issues.jsonl` | The tracked work created from the verdict.",
+    "evidence": "The live ledger is the br ledger at `_beads/issues.jsonl` (a private nested repo); `.beads/` is preserved legacy bd/Dolt config, not where new tracked work lands.",
+    "fix": "Point the artifact at `_beads/issues.jsonl` (the br ledger)."
+  },
+  {
+    "file": "docs/levels/L5-orchestration/demo/crank-session.md",
+    "line": 114,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "$ bd vc status   # Optional Dolt status check",
+    "evidence": "Dolt and `bd` are retired (2026-06-11). `bd vc` (Dolt version-control) is gone; this presents a Dolt status check as a current step in the /crank demo.",
+    "fix": "Remove the `bd vc status` Dolt line; if a sync check is needed use `BEADS_DIR=$PWD/_beads br sync`."
+  },
+  {
+    "file": "docs/levels/L5-orchestration/demo/crank-session.md",
+    "line": 12,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "$ bd show agentops-epic-xyz",
+    "evidence": "bd is the retired tracker; the demo presents `bd show` as the current way to inspect an epic. Current is `BEADS_DIR=$PWD/_beads br show`.",
+    "fix": "Replace `bd show` with `BEADS_DIR=$PWD/_beads br show` (and `[DISPATCH] /implement` references stay as skill calls)."
+  },
+  {
+    "file": "docs/levels/L5-orchestration/demo/crank-session.md",
+    "line": 135,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "[DISPATCH] gt sling agentops-a1 athena ... Mode: mayor (parallel via gastown)",
+    "evidence": "Gas City / gastown (`gt`) is REMOVED from the CLI (no gc bridge, no gc backend); `runtime=gc` is no longer valid. The demo presents `gt sling` gastown parallelization as a current /crank mode. The live parallel substrate is NTM + MCP Agent Mail.",
+    "fix": "Remove the gastown/`gt sling` 'Mayor Mode' section, or rewrite it against the NTM swarm substrate."
+  },
+  {
+    "file": "docs/levels/L5-orchestration/demo/crank-session.md",
+    "line": 165,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "5. Integrates with gastown for multi-agent parallelization",
+    "evidence": "Gas City/gastown integration was removed from the CLI; parallel orchestration runs on NTM + MCP Agent Mail.",
+    "fix": "Drop the gastown integration claim or replace with the NTM/Agent Mail substrate."
+  },
+  {
+    "file": "docs/agent-workflow-reference.md",
+    "line": 78,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "**No TODOs in SKILL.md.** Use `bd` issue tracking instead.",
+    "evidence": "bd is the retired tracker (2026-06-11). This 'rules that break CI' note recommends bd as the current tracker; the current tracker is br (`BEADS_DIR=$PWD/_beads br`).",
+    "fix": "Change to 'Use `br` issue tracking (`BEADS_DIR=$PWD/_beads br`) instead.'"
+  },
+  {
+    "file": "docs/agentops-3-explainer-kit.md",
+    "line": 58,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "bd create \"Apply council verdict to launch demo\" --description \"From .agents/council/<run-id>/verdict.md\" --json",
+    "evidence": "bd/Dolt is retired; the tracker is br at _beads/, invoked BEADS_DIR=$PWD/_beads br. This is presented as a live 5-command onboarding path, so it actively misleads a new user into running a retired binary.",
+    "fix": "Replace with BEADS_DIR=$PWD/_beads br create \"Apply council verdict to launch demo\" --body \"From .agents/council/<run-id>/verdict.md\""
+  },
+  {
+    "file": "docs/agentops-3-explainer-kit.md",
+    "line": 66,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "- `.beads/issues.jsonl`",
+    "evidence": "Expected-artifacts list still names the legacy bd/Dolt path; the br ledger is _beads/issues.jsonl, and .beads/ is preserved-but-not-authoritative legacy.",
+    "fix": "Change the expected artifact to `_beads/issues.jsonl`"
+  },
+  {
+    "file": "docs/contracts/orchestration-ports.md",
+    "line": 84,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "degrades straight to the beads floor (single-agent inline / `--quick`; workers' work is still tracked through `bd`)",
+    "evidence": "bd is retired; tracking now goes through br. The surrounding contract is current, but this parenthetical names the retired tracker as the live one.",
+    "fix": "Replace `bd` with `br` (BEADS_DIR=$PWD/_beads br)"
+  },
+  {
+    "file": "docs/GLOSSARY.md",
+    "line": 88,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Gate: A checkpoint enforced by a hook that blocks progress until a condition is met. For example, the push gate blocks `git push` until `/vibe` has passed",
+    "evidence": "3.0 is hookless; the push/release gate is the local cockpit Go gate run in the pre-push hook (ao gate check), not a /vibe hook. Defines a core term against retired hook-enforcement behavior.",
+    "fix": "Redefine Gate as a checkpoint enforced by the local cockpit gate (ao gate check) / CI, not a hook"
+  },
+  {
+    "file": "docs/GLOSSARY.md",
+    "line": 102,
+    "severity": "P2",
+    "category": "contradiction",
+    "claim": "AgentOps 3.0 ships zero hooks ... workflow is guided by skills + the `ao` CLI, and CI is the authoritative gate.",
+    "evidence": "Current model is PUSH-TO-MAIN: the local pre-push Go gate is the routine release authority; validate.yml is a tag/PR/manual backstop only. 'CI is the authoritative gate' contradicts docs/3.0.md and codebase-overview.md.",
+    "fix": "Change to '...the local cockpit gate (ao gate check) is the routine release authority; CI is a backstop'"
+  },
+  {
+    "file": "docs/GLOSSARY.md",
+    "line": 125,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Operational Invariant: A cross-cutting rule enforced by hooks ... Invariants are not guidelines \u2014 they are mechanically enforced.",
+    "evidence": "3.0 ships zero hooks; invariants are enforced by the Go gate registry, not hooks. Presents retired hook enforcement as current mechanism.",
+    "fix": "Reword to 'enforced by the gate registry / explicit ao CLI checks' instead of 'enforced by hooks'"
+  },
+  {
+    "file": "docs/GLOSSARY.md",
+    "line": 147,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Ratchet: ... Once a gate is passed (e.g., vibe validation), the ratchet records that state and hooks enforce it going forward.",
+    "evidence": "Hookless 3.0; the promotion/merge ratchet is the pawl-gate + Go gate, not hooks (per docs/3.0.md the rules are 'enforced ... not by hooks').",
+    "fix": "Replace 'hooks enforce it going forward' with 'the gate / pawl enforces it going forward'"
+  },
+  {
+    "file": "docs/GLOSSARY.md",
+    "line": 180,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Validation Gates: ... Encompasses `/council`, `/vibe`, `/pre-mortem`, `/post-mortem`, and runtime hook gates.",
+    "evidence": "3.0 ships zero runtime hook gates; gating is the local Go cockpit gate. 'runtime hook gates' names a removed surface as current.",
+    "fix": "Drop 'and runtime hook gates'; reference the ao gate check cockpit gate instead"
+  },
+  {
+    "file": "docs/levels/L5-orchestration/README.md",
+    "line": 10,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "Integration with gastown for parallel workers",
+    "evidence": "Gas City / gc is removed from the CLI (bridge deleted, runtime=gc rejected); out-of-session orchestration is NTM + MCP Agent Mail. This learning-level doc teaches a removed substrate as the L5 path.",
+    "fix": "Replace gastown integration with the NTM + Agent Mail substrate"
+  },
+  {
+    "file": "docs/levels/L5-orchestration/README.md",
+    "line": 33,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "Mayor mode: Dispatches to parallel polecats via gastown",
+    "evidence": "Gas City removed from CLI; 'gastown'/'polecats'/'gt sling' dispatch no longer exists. Taught as a current execution mode.",
+    "fix": "Remove the gastown Mayor mode or re-document dispatch via NTM swarm"
+  },
+  {
+    "file": "docs/levels/L5-orchestration/README.md",
+    "line": 41,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "Observe (bd show, bd ready)",
+    "evidence": "bd is retired; tracker is br (BEADS_DIR=$PWD/_beads br ready). The /crank flow diagram instructs the reader to run retired bd commands.",
+    "fix": "Replace bd show / bd ready with br show / br ready"
+  },
+  {
+    "file": "docs/levels/L5-orchestration/README.md",
+    "line": 59,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "Mayor | In ~/gt or mayor/ directory | Parallel dispatch via `gt sling`",
+    "evidence": "gt / gastown dispatch (`gt sling`) is removed from the CLI; current substrate is NTM + Agent Mail.",
+    "fix": "Remove the gt sling Mayor row or replace with NTM swarm dispatch"
+  },
+  {
+    "file": "docs/runbooks/autonomy-runtime-cycle-1.md",
+    "line": 60,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "create follow-up bead(s) with references (`bd create --title ... --notes ...`)",
+    "evidence": "Doc carries a 3.0 reconciliation note up top but the body still issues retired bd commands; tracker is br. (Also bd update --claim line 89, bd show line 69, bd sync line 20.)",
+    "fix": "Replace bd create/update/show/sync with BEADS_DIR=$PWD/_beads br equivalents"
+  },
+  {
+    "file": "docs/runbooks/autonomy-runtime-cycle-1.md",
+    "line": 89,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Work claim | `bd update <id> --claim`",
+    "evidence": "The AgentOps Runtime Surface table names bd as the live claim command; current is br update <id> --claim under BEADS_DIR=$PWD/_beads.",
+    "fix": "Replace with `BEADS_DIR=$PWD/_beads br update <id> --claim`"
+  },
+  {
+    "file": "docs/runbooks/release-process.md",
+    "line": 117,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Close the release bead/epic in beads (`bd close <id>`).",
+    "evidence": "bd is retired; close beads with br (BEADS_DIR=$PWD/_beads br close <id>). Whole runbook is otherwise current, so this single retired command misleads.",
+    "fix": "Replace with `BEADS_DIR=$PWD/_beads br close <id>`"
+  },
+  {
+    "file": "docs/troubleshooting.md",
+    "line": 212,
+    "severity": "P1",
+    "category": "contradiction",
+    "claim": "AgentOps 3.0 has no push gate hook \u2014 `git push` itself is never blocked locally. Quality enforcement happens in CI ... which is the authoritative gate",
+    "evidence": "Directly contradicts the current push-to-main model: the cockpit Go gate runs in the pre-push hook and IS the routine release authority blocking the push locally; validate.yml is a tag/PR/manual backstop. This actively misleads an agent into believing local pushes are unguarded.",
+    "fix": "Rewrite: the local cockpit pre-push gate (ao gate check) blocks the push and is the routine release authority; CI is a backstop"
+  },
+  {
+    "file": "docs/troubleshooting.md",
+    "line": 88,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "`bd` says a column is missing or RPI falls back to tasklist mode ... bd ready --json ... bd version ... brew upgrade beads ... bd ready --json / bd list --type epic",
+    "evidence": "Entire troubleshooting section presents bd/Dolt schema repair as a live procedure; bd is retired, tracker is br at _beads/. An agent hitting tracker trouble is steered to a retired CLI and `brew upgrade beads`.",
+    "fix": "Replace the bd section with br equivalents (BEADS_DIR=$PWD/_beads br ...) or mark it historical"
+  },
+  {
+    "file": "docs/troubleshooting.md",
+    "line": 13,
+    "severity": "P2",
+    "category": "contradiction",
+    "claim": "The workflow is now guided by skills + the `ao` CLI, and CI is the authoritative gate (see `.github/workflows/validate.yml`).",
+    "evidence": "Current authority is the local cockpit Go gate (ao gate check) in the pre-push hook; CI is a backstop. Same contradiction as line 212.",
+    "fix": "Change 'CI is the authoritative gate' to 'the local cockpit gate (ao gate check) is the routine release authority; CI is a backstop'"
+  },
+  {
+    "file": "docs/troubleshooting.md",
+    "line": 287,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "CLI Dependencies | `gt` and `bd` are on your PATH (nice-to-have for multi-repo ops + beads issue tracking) ... brew install gastown, brew install beads",
+    "evidence": "bd (beads/Dolt) and gt (gastown) are retired/removed; the live tracker is br. ao doctor's optional-dependency guidance points at retired binaries.",
+    "fix": "Replace gt/bd with br; drop the gastown/beads brew install hints"
+  },
+  {
+    "file": "docs/troubleshooting.md",
+    "line": 267,
+    "severity": "P3",
+    "category": "stale-as-current",
+    "claim": "Use `bd --help` or `gt --help` to see available subcommands.",
+    "evidence": "bd and gt are retired/removed; current tracker CLI is br.",
+    "fix": "Replace with `br --help`"
+  },
+  {
+    "file": "docs/CI-CD.md",
+    "line": 168,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "CLI smoke tests: hook install smoke, `ao init --hooks` + RPI smoke, release smoke test",
+    "evidence": "3.0 ships zero hooks; there is no hook install and `ao init --hooks` is not a current surface. Describes a CI phase as running a removed hook-install smoke.",
+    "fix": "Remove the hook install smoke / `ao init --hooks` references from the Phase 5 description"
+  },
+  {
+    "file": "docs/CI-CD.md",
+    "line": 95,
+    "severity": "P3",
+    "category": "stale-as-current",
+    "claim": "This single aggregator is the branch protection target -- repository settings only need to require `summary` to pass",
+    "evidence": "Branch protection is OFF in the push-to-main model (ag-qidx); the summary job is a CI backstop, not a required branch-protection check on main pushes.",
+    "fix": "Note branch protection is off; summary is a backstop on tags/PRs/manual, not a required main-push gate"
+  },
+  {
+    "file": "docs/GLOSSARY.md",
+    "line": 24,
+    "severity": "P3",
+    "category": "dead-link",
+    "claim": "[Full documentation](skills/beads-br.md)",
+    "evidence": "Resolves to docs/skills/beads-br.md but docs/skills/ does not exist; skills live at repo-root skills/<name>/SKILL.md. All ~19 skills/*.md links in GLOSSARY.md (lines 24,35,50,53,69,83,96,107,115,133,136,139,147,150,153,170,183,188,191) are dead.",
+    "fix": "Point links at ../skills/<name>/SKILL.md (repo-root skills dir) or docs/SKILLS.md anchors"
+  },
+  {
+    "file": "docs/how-it-works.md",
+    "line": 145,
+    "severity": "P2",
+    "category": "contradiction",
+    "claim": "the operating loop works identically on every harness (Claude Code, Codex, Cursor, OpenCode) and CI is the single authoritative gate.",
+    "evidence": "Current model is PUSH-TO-MAIN with the local pre-push Go gate (ao gate check) as release authority; validate.yml runs only on tags/PRs/dispatch/merge_group (confirmed in .github/workflows/validate.yml: 'Local validation is the release authority'), NOT on every main push. Calling CI 'the single authoritative gate' contradicts that.",
+    "fix": "Replace with 'the local pre-push Go gate (ao gate check) is the release authority; CI (validate.yml) is a tag/PR/manual backstop'."
+  },
+  {
+    "file": "docs/how-it-works.md",
+    "line": 153,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Validation gates / quality / completion | CI (`.github/workflows/validate.yml`) + skill-level checks + `cd cli && make test`",
+    "evidence": "Presents CI as the live validation-gate surface; current release authority is the local pre-push Go gate, CI is only a backstop on tags/PRs/manual dispatch.",
+    "fix": "List the local Go gate (ao gate check --fast via pre-push hook) as the primary validation surface, CI as backstop."
+  },
+  {
+    "file": "docs/leverage-points.md",
+    "line": 115,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "Push gate | CI (`.github/workflows/validate.yml`) blocks merge to main unless validation passes ... `scripts/pre-push-gate.sh`, `/vibe`, branch protection + CI",
+    "evidence": "Branch protection is OFF and the model is push-to-main (ag-qidx); the local pre-push Go gate is the wall. validate.yml does not run on main pushes. 'branch protection + CI blocks merge to main' misleads an agent into expecting CI to gate the merge.",
+    "fix": "Change to 'the local pre-push Go gate (ao gate check) blocks the push to main; validate.yml is a tag/PR/manual backstop (branch protection is off)'."
+  },
+  {
+    "file": "docs/leverage-points.md",
+    "line": 207,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "CI (`.github/workflows/validate.yml`) is the authoritative gate \u2014 the agent cannot merge to main unless it passes",
+    "evidence": "Push-to-main model: there is no merge-gating CI on main pushes; the local pre-push Go gate is the release authority (per docs/runbooks/bash-gate-sunset.md and validate.yml's own header). This actively tells an agent CI gates the merge, which it does not.",
+    "fix": "Replace with 'the local pre-push Go gate (ao gate check) is the authoritative release gate; the agent cannot push to main unless it passes. CI is a backstop on tags/PRs/manual dispatch.'"
+  },
+  {
+    "file": "docs/leverage-points.md",
+    "line": 325,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Rules are guidelines | Rules are structural (CI gates) | CI merge gates that cannot be forgotten, skipped, or rationalized away",
+    "evidence": "Frames 'CI merge gates' as the structural enforcement; the structural release gate is now the local pre-push Go gate (push-to-main, no CI merge gate).",
+    "fix": "Change 'CI merge gates' to 'the local pre-push Go gate'."
+  },
+  {
+    "file": "docs/agentops-3-pmf-evidence-loop.md",
+    "line": 36,
+    "severity": "P3",
+    "category": "stale-as-current",
+    "claim": "Viewers asking how council, packets, or daemon scheduling work",
+    "evidence": "The daemon/scheduler was deleted in 3.0 (ADR-0009); out-of-session is the NTM+MCP+managed-agents substrate. 'daemon scheduling' as a current product feature to recruit interest in is stale.",
+    "fix": "Replace 'daemon scheduling' with 'out-of-session substrate orchestration' or drop it."
+  },
+  {
+    "file": "docs/agentops-3-pmf-evidence-loop.md",
+    "line": 77,
+    "severity": "P3",
+    "category": "stale-as-current",
+    "claim": "When, if ever, would you trust the daemon or a schedule?",
+    "evidence": "agentopsd / in-repo daemon + scheduler removed in 3.0 (ADR-0009); the 'Daemon Adoption Metric' and these interview/metric references treat a removed product surface as current.",
+    "fix": "Reframe around the out-of-session substrate (NTM/MCP/managed-agents) adoption, not 'the daemon'."
+  },
+  {
+    "file": "docs/runbooks/bd-server-mode-closeout.md",
+    "line": 14,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "The active AgentOps development workspaces are wired to the shared `bushido` server-mode database.",
+    "evidence": "bd/Dolt is RETIRED LEGACY (2026-06-11). The tracker is br at _beads/ invoked `BEADS_DIR=$PWD/_beads br`. This runbook presents bd + shared Dolt server as the current closeout path for AgentOps workspaces and instructs agents to run `bd vc status` / `bd dolt push` after every tracker write.",
+    "fix": "Mark the whole runbook as retired-legacy (bd/Dolt sunset 2026-06-11) and point closeout at `BEADS_DIR=$PWD/_beads br` + `git -C _beads push`."
+  },
+  {
+    "file": "docs/runbooks/bd-server-mode-closeout.md",
+    "line": 52,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "Run this after any `bd update`, `bd close`, dependency edit, or issue creation: ... bd_timeout 8 bd vc status / bd dolt commit / bd dolt remote list / bd dolt push",
+    "evidence": "These are the retired bd/Dolt tracker commands. Current tracker is br; bd is not run in this repo at all.",
+    "fix": "Replace the bd/Dolt closeout block with the br closeout (`BEADS_DIR=$PWD/_beads br sync` + `git -C _beads push`), or label the doc historical."
+  },
+  {
+    "file": "docs/levels/L3-state-management/demo/implement-session.md",
+    "line": 9,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "$ bd ready ... $ bd update agentops-a1b --status in_progress ... $ bd close agentops-a1b",
+    "evidence": "The demo session teaches the bd tracker as the current workflow (bd ready/update/close). bd is RETIRED; tracker is br (`BEADS_DIR=$PWD/_beads br ready/update/close`).",
+    "fix": "Rewrite the demo using br (`br ready`, `br update <id> --claim`, close-on-land), or label the demo as legacy bd era."
+  },
+  {
+    "file": "docs/levels/L3-state-management/demo/implement-session.md",
+    "line": 89,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "$ bd vc status   # Optional Dolt status check",
+    "evidence": "Dolt is retired with bd (2026-06-11). No Dolt status check exists in the current tracker.",
+    "fix": "Remove the bd/Dolt status line; use `git -C _beads push` for ledger sync under br."
+  },
+  {
+    "file": "docs/contracts/remote-compute.md",
+    "line": 8,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "This contract freezes the nouns used by `ao compute`, daemon jobs, GasCity worker sessions, and recovery projections before implementation starts.",
+    "evidence": "Gas City is REMOVED from the CLI (no gc bridge/backend) and the in-repo daemon was DELETED (ADR-0009). The contract presents GasCity-API/SSE as the 'Primary session provider' and a daemon ledger as authoritative live state.",
+    "fix": "Mark the contract superseded by ADR-0009 (daemon deleted) and the gc-bridge removal; out-of-session execution is NTM + MCP Agent Mail, not GasCity/daemon."
+  },
+  {
+    "file": "docs/contracts/remote-compute.md",
+    "line": 138,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "## GasCity First \u2014 The product remote execution path is GasCity API/SSE",
+    "evidence": "Gas City / runtime=gc was removed from the CLI; AgentOps ships no gc backend. The current out-of-session substrate is NTM + MCP Agent Mail.",
+    "fix": "Retire the 'GasCity First' section; the remote/out-of-session path is the NTM + Agent Mail substrate, not GasCity."
+  },
+  {
+    "file": "docs/contracts/remote-compute.md",
+    "line": 123,
+    "severity": "P2",
+    "category": "contradiction",
+    "claim": "The daemon ledger remains authoritative for daemon-owned remote sessions.",
+    "evidence": "ADR-0009 deleted the in-repo daemon; there is no daemon-owned session or daemon ledger in current AgentOps.",
+    "fix": "Remove daemon-ledger ownership; reflect the in-session + NTM/Agent-Mail substrate model."
+  },
+  {
+    "file": "docs/comparisons/competition-rpi-memory-pipelines.md",
+    "line": 64,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "It runs in session; to run it out of session, unattended, dispatch it on the Gas City reference City (AgentOps ships no daemon or scheduler of its own \u2014 see ADR-0009).",
+    "evidence": "Gas City was removed from the CLI as the out-of-session substrate. Current substrate is NTM + MCP Agent Mail. The ADR-0009 citation correctly says 'no daemon', but the 'Gas City reference City' dispatch is the retired path.",
+    "fix": "Replace 'Gas City reference City' with the NTM + MCP Agent Mail substrate (multiple occurrences: lines 26, 35, 64, 405)."
+  },
+  {
+    "file": "docs/comparisons/competition-rpi-memory-pipelines.md",
+    "line": 405,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Dreaming | `/dream` skill (in session) + Gas City out-of-session dispatch + nightly CI dream-cycle proof job | Shipped",
+    "evidence": "'Gas City out-of-session dispatch' is the retired substrate; gc is no longer in the CLI. Out-of-session is NTM + Agent Mail.",
+    "fix": "Change 'Gas City out-of-session dispatch' to 'NTM + Agent Mail out-of-session dispatch'."
+  },
+  {
+    "file": "docs/wiki-for-agents.md",
+    "line": 41,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "councils land verdicts, post-mortems land learnings, the daemon defrags overnight.",
+    "evidence": "The in-repo daemon was deleted (ADR-0009). Out-of-session compounding runs on the NTM + MCP Agent Mail substrate, not a daemon.",
+    "fix": "Replace 'the daemon defrags overnight' with 'an out-of-session substrate (NTM + Agent Mail) defrags overnight'."
+  },
+  {
+    "file": "docs/wiki-for-agents.md",
+    "line": 52,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Doesn't compound; you maintain it manually | Daemon defrags, evolves, and compounds it overnight",
+    "evidence": "No AgentOps daemon exists (ADR-0009 deleted it). The doc's own line 65 correctly attributes always-on compounding to NTM + MCP + managed-agents, contradicting this table cell.",
+    "fix": "Change 'Daemon defrags, evolves, and compounds it overnight' to reference the out-of-session substrate (NTM + Agent Mail)."
+  },
+  {
+    "file": "docs/agentops-3-youtube-starter-series.md",
+    "line": 31,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Episode 4 plus 2 short clips | Show daemon/Dream as second-stage automation.",
+    "evidence": "The daemon was deleted (ADR-0009); second-stage automation is the NTM + MCP Agent Mail substrate. The episode-4 body (lines 143-178) already correctly says 'orchestration substrate', so this header and the 'Daemon adoption' measurement field are stale.",
+    "fix": "Replace 'daemon/Dream' with 'out-of-session substrate (NTM + Agent Mail)'; rename the 'Daemon adoption' measurement fields (lines 212, 265) to 'Substrate adoption'."
+  },
+  {
+    "file": "docs/seed-definition.md",
+    "line": 169,
+    "severity": "P2",
+    "category": "contradiction",
+    "claim": "| Hooks | No automatic enforcement | Fragile (depends on agent memory) |",
+    "evidence": "The doc's own Core Seed (line 16) and section 3 (lines 75-91) state AgentOps 3.0 ships ZERO hooks and uses explicit `ao` commands + CI. This 'Why Exactly 6 Elements' table still lists Hooks as one of the six seed elements, contradicting the hookless body.",
+    "fix": "Replace the 'Hooks' row with 'Lifecycle stages (hookless `ao` commands + CI gate)' to match the Core Seed list."
+  },
+  {
+    "file": "docs/seed-definition.md",
+    "line": 190,
+    "severity": "P3",
+    "category": "stale-as-current",
+    "claim": "[how-it-works.md](how-it-works.md) -- operational mechanics (hooks, ratchet, flywheel)",
+    "evidence": "AgentOps 3.0 is hookless; describing operational mechanics as 'hooks, ratchet, flywheel' is stale framing for the current model.",
+    "fix": "Drop 'hooks' from the parenthetical (e.g. 'ratchet, flywheel') to match the hookless seed."
+  },
+  {
+    "file": "docs/activation-profiles.md",
+    "line": 54,
+    "severity": "P3",
+    "category": "stale-as-current",
+    "claim": "Relevant bd issue or plan path",
+    "evidence": "bd is the retired tracker; current tracker is br. Same stale 'bd issue' reference at lines 94 ('One bd issue'), 119 ('implement one bd issue').",
+    "fix": "Replace 'bd issue' references with 'br bead'."
+  },
+  {
+    "file": "docs/runbooks/beads-failure-recovery.md",
+    "line": 10,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "agentops tracks issues in **bd** (Dolt server mode \u2014 `.beads/metadata.json` points at the shared `bushido` Dolt DB on the tailnet). The cockpit pre-push gate is bd-coupled",
+    "evidence": "bd/Dolt is RETIRED LEGACY (2026-06-11). Tracker is br (beads_rust) at _beads/, invoked BEADS_DIR=$PWD/_beads br. The whole runbook instructs agents to run bd/Dolt triage (bd ping, bd context, bd doctor, ssh bushido dolt-bd-server) against a retired single-host SPOF, not framed as historical.",
+    "fix": "Reframe as historical (point to bd-server-mode-closeout.md) or rewrite for br + _beads ledger recovery; the current tracker is `BEADS_DIR=$PWD/_beads br`."
+  },
+  {
+    "file": "docs/runbooks/beads-failure-recovery.md",
+    "line": 38,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "bd ping            # connectivity to the Dolt server (fast)\nbd context         # which backend/server/database actually resolved\nbd doctor          # installation + config health",
+    "evidence": "bd/Dolt retired; these commands point at the retired remote Dolt server. An agent following this runbook runs the wrong tracker entirely.",
+    "fix": "Replace bd triage with br equivalents (`BEADS_DIR=$PWD/_beads br ...`); the ledger is now local git-JSONL, not a remote Dolt server."
+  },
+  {
+    "file": "docs/contracts/repo-execution-profile.md",
+    "line": 145,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "\"ready\": \"bd ready --json\", \"show\": \"bd show <id> --json\", \"update\": \"bd update <id> --status in_progress --json\", \"close\": \"bd close <id> --reason ...\"",
+    "evidence": "The example tracker_commands block teaches bd as the current tracker. bd is retired; current is br (BEADS_DIR=$PWD/_beads br ...).",
+    "fix": "Update the example tracker_commands to br: `BEADS_DIR=$PWD/_beads br ready/show/update/close`."
+  },
+  {
+    "file": "docs/contracts/repo-execution-profile.md",
+    "line": 63,
+    "severity": "P3",
+    "category": "stale-as-current",
+    "claim": "shell/runtime requirements such as `zsh -lc 'cd <repo> && bd ...'`",
+    "evidence": "Field-semantics prose names bd as the tracker; bd is retired in favor of br.",
+    "fix": "Change the inline example to `br ...` (with BEADS_DIR)."
+  },
+  {
+    "file": "docs/contracts/claude-bot-delegation.md",
+    "line": 83,
+    "severity": "P2",
+    "category": "contradiction",
+    "claim": "| Push directly to `main` | no \u2014 branch protection blocks |",
+    "evidence": "As of ag-qidx the model is PUSH-TO-MAIN: branch protection is OFF and the pre-push Go gate is the wall. This row asserts branch protection blocks main pushes, contradicting current behavior.",
+    "fix": "Note that branch protection is OFF (push-to-main model); the @claude bot path is a CI backstop, not the merge gate."
+  },
+  {
+    "file": "docs/contracts/claude-bot-delegation.md",
+    "line": 132,
+    "severity": "P2",
+    "category": "contradiction",
+    "claim": "**Default required check:** `claude-review` (this repo's branch protection requires it on `main`).",
+    "evidence": "Branch protection is OFF (push-to-main since ag-qidx); validate.yml/claude-review are tag/PR/manual backstops, not a required check enforced by branch protection on main.",
+    "fix": "State that branch protection is off and claude-review runs as a CI backstop on PRs/tags, not a main-push requirement."
+  },
+  {
+    "file": "docs/architecture/fungibility-charter.md",
+    "line": 33,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "`bd ready` surfaces unblocked work to every agent equally, and `bd update <id> --claim` is an atomic first-come claim",
+    "evidence": "bd is retired (2026-06-11); the role-free claim model is now br (`BEADS_DIR=$PWD/_beads br ready` / `br update <id> --claim`). The charter cites bd as the live claim mechanism.",
+    "fix": "Replace bd references with br throughout commitments 2 and 5 (br ready / br update --claim)."
+  },
+  {
+    "file": "docs/architecture/fungibility-charter.md",
+    "line": 35,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "*Implemented by `bd`'s role-free claim model (`bd ready` / `bd update --claim`)*",
+    "evidence": "bd retired; the implementing tracker is br.",
+    "fix": "Cite br's role-free claim model (`br ready` / `br update --claim`)."
+  },
+  {
+    "file": "docs/levels/L3-state-management/demo/plan-session.md",
+    "line": 39,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "$ bd create --title \"Set up email service (SendGrid)\" --type task --priority 1 ... $ bd ready",
+    "evidence": "This tutorial demo teaches bd init / bd create / bd dep add / bd ready / .beads/beads.db as the current state-management workflow. bd/Dolt is retired; the tracker is br at _beads/.",
+    "fix": "Rewrite the demo using `br` (create/dep add/ready) and the _beads ledger; remove `.beads/beads.db` as the storage location."
+  },
+  {
+    "file": "docs/comparisons/competitive-radar.md",
+    "line": 129,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "To run it unattended, dispatch it on the Gas City reference City (a long-lived mayor agent slings beads to refinery workers that run `ao rpi`)",
+    "evidence": "Gas City is removed from the CLI and is no longer the out-of-session substrate; the live substrate is NTM + MCP Agent Mail (ADR-0009 / MIGRATION-3.0). Presenting the Gas City mayor/refinery City as the current unattended-run path is stale.",
+    "fix": "Describe the out-of-session substrate as NTM + MCP Agent Mail (the adopted substrate), not the Gas City reference City."
+  },
+  {
+    "file": "docs/levels/L3-state-management/implement.md",
+    "line": 43,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "$ bd close agentops-abc --reason \"Theme context implemented\"",
+    "evidence": "bd/Dolt is RETIRED (2026-06-11). Tracker is br at _beads/, invoked `BEADS_DIR=$PWD/_beads br`. This doc walks a newcomer through `bd update --status in_progress`, `bd close`, and `bd ready` as the current implement loop.",
+    "fix": "Replace all `bd <cmd>` with `BEADS_DIR=$PWD/_beads br <cmd>` (e.g. `br update <id> --claim`, `br close <id>`, `br ready`)."
+  },
+  {
+    "file": "docs/levels/L3-state-management/implement.md",
+    "line": 74,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "bd vc status   # Optional Dolt status check",
+    "evidence": "Dolt is retired (2026-06-11); `bd vc`/Dolt are no longer the tracker. Presenting a Dolt status check as the session-close protocol misleads an agent into running a retired tool.",
+    "fix": "Remove the `bd vc status` Dolt line; close protocol is `git -C _beads push` (br ledger) + `git push`."
+  },
+  {
+    "file": "docs/contracts/rpi-run-registry.md",
+    "line": 145,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "## GasCity Session Correlation \u2014 Daemon-backed RPI runs that use GasCity must persist the provider correlation fields",
+    "evidence": "Gas City / gc was REMOVED from the CLI (no gc bridge, runtime=gc invalid) and the in-repo daemon was DELETED (ADR-0009). This contract section mandates GasCity request_id/city_name/session_id fields and 'daemon mode' projections as current required behavior.",
+    "fix": "Strike the GasCity Session Correlation and Lost Session (GasCity) sections, or move them under an explicit 'retired \u2014 historical' banner; current backends are auto/direct/stream/tmux only."
+  },
+  {
+    "file": "docs/contracts/rpi-run-registry.md",
+    "line": 162,
+    "severity": "P2",
+    "category": "contradiction",
+    "claim": "Missing GasCity session state is never success by itself. ... RPI must use these terminal or degraded statuses: lost / provider_unreachable / event_stream_unavailable / terminal_without_transcript",
+    "evidence": "These statuses are entirely GasCity-provider semantics; GasCity/gc backend no longer exists in the CLI, so 'RPI must use' presents removed behavior as a current contract requirement.",
+    "fix": "Remove the GasCity-specific status/precedence rules or relabel as legacy gc-backend history."
+  },
+  {
+    "file": "docs/comparisons/vs-claude-flow.md",
+    "line": 238,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "SessionStart:\\n    \u2514\u2500\u2500 AgentOps loads context on-demand",
+    "evidence": "AgentOps 3.0 is HOOKLESS; nothing auto-injects at session boundaries. SessionStart context injection is the retired hook model \u2014 explicit replacement is `ao session bootstrap` + `ao inject`.",
+    "fix": "Replace the SessionStart/SessionEnd hook framing with the explicit `ao session bootstrap` \u2192 `ao inject` path; AgentOps context loading is operator-invoked, not a session hook."
+  },
+  {
+    "file": "docs/comparisons/vs-claude-flow.md",
+    "line": 181,
+    "severity": "P3",
+    "category": "stale-as-current",
+    "claim": "\u2502  \u2502   /crank    \u2502\u2500\u2500\u2500\u2500\u25b6\u2502  /vibe   \u2502 ... (implement) (validate)",
+    "evidence": "The AgentOps architecture diagram presents `/crank` and `/vibe` as the current implement/validate waist; `/vibe` is retired (absorbed into `/validate`) and the operating loop (not /crank) is primary navigation. Cosmetic/illustrative but outdated example.",
+    "fix": "Update the diagram to `/implement` \u2192 `/validate` (or reference the operating loop) instead of `/crank` + `/vibe`."
+  },
+  {
+    "file": "docs/domain-practice-packets.md",
+    "line": 111,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "The optional schedule or daemon lane is second-stage unless the demo is specifically about automation.",
+    "evidence": "The in-repo daemon/scheduler was DELETED (ADR-0009); out-of-session automation is NTM + MCP Agent Mail. Presenting a 'daemon lane' as an available (if optional) AgentOps surface is stale.",
+    "fix": "Replace 'schedule or daemon lane' with the NTM + Agent Mail out-of-session substrate."
+  },
+  {
+    "file": "docs/domain-practice-packets.md",
+    "line": 59,
+    "severity": "P3",
+    "category": "stale-as-current",
+    "claim": "| `bd` issues | Current work, dependencies, acceptance criteria, and ownership. |",
+    "evidence": "bd is retired (2026-06-11); the tracker is br at _beads/. The surfaces table lists `bd issues` as the current work-tracking surface.",
+    "fix": "Change `bd issues` to `br issues (_beads/)`; also line 106 'Work context includes a bd issue' \u2192 'a br issue'."
+  },
+  {
+    "file": "docs/runbooks/bushido-refinery.md",
+    "line": 16,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "files a **blocking fix-bead** (`bd create --labels refinery,blocking`)",
+    "evidence": "The refinery is live/current, but it documents `bd create` as the fix-bead mechanism; bd is retired and the tracker is br (`BEADS_DIR=$PWD/_beads br create`).",
+    "fix": "Update to `BEADS_DIR=$PWD/_beads br create --labels refinery,blocking` (or confirm the refinery emits br beads)."
+  },
+  {
+    "file": "docs/workflows/README.md",
+    "line": 15,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "| Existing tracked backlog | `ao reconcile --json`, then `bd ready` | `/implement <issue-id>` ...",
+    "evidence": "bd is retired (2026-06-11); ready-work is found with `BEADS_DIR=$PWD/_beads br ready`. The Golden Paths table routes a user to `bd ready` as the current backlog command.",
+    "fix": "Replace `bd ready` with `BEADS_DIR=$PWD/_beads br ready`."
+  },
+  {
+    "file": "docs/architecture/hexagon-port-realness-audit.md",
+    "line": 160,
+    "severity": "P3",
+    "category": "contradiction",
+    "claim": "Confirm which lane is current (gc bridge vs legacy tmux) before building ... (gc bridge is the live path per CLAUDE.md).",
+    "evidence": "This is a dated 2026-05-23 audit, but it asserts 'gc bridge is the live path per CLAUDE.md' as current guidance; the gc bridge was since REMOVED (soc-2rtm0; runtime=gc invalid). A reader using this audit as a build map would target a deleted lane.",
+    "fix": "Add a freshness banner noting the gc bridge was removed (soc-2rtm0); the live RPI backends are auto/direct/stream/tmux."
+  },
+  {
+    "file": "docs/standards/olympus-engineering-standards.md",
+    "line": 13,
+    "severity": "P3",
+    "category": "stale-as-current",
+    "claim": "Treat them as advisory addenda for agentopsd-class daemon work. ... Useful for `agentopsd` extraction.",
+    "evidence": "agentopsd / the in-repo daemon was DELETED (ADR-0009). The doc is labeled status:reference but frames 'agentopsd extraction' (lines 13, 20, 46) as a live forward target rather than retired.",
+    "fix": "Note that agentopsd was retired (ADR-0009); these daemon-hygiene addenda apply only to any external daemon, not an in-repo agentopsd extraction."
+  },
+  {
+    "file": "docs/levels/L3-state-management/plan.md",
+    "line": 18,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "Issues stored in `.beads/` database ... Progress visible with `bd ready`, `bd list`",
+    "evidence": "bd/Dolt are RETIRED (2026-06-11). The tracker is br (beads_rust) at _beads/, invoked `BEADS_DIR=$PWD/_beads br`. This tutorial presents `bd` as the current planning workflow with no historical label.",
+    "fix": "Replace bd commands with `BEADS_DIR=$PWD/_beads br create / br dep add / br ready` and `_beads/` storage, or mark the page as legacy 2.x."
+  },
+  {
+    "file": "docs/levels/L3-state-management/plan.md",
+    "line": 53,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "$ bd create --title \"Add theme context provider\" --priority 1 ... $ bd dep add agentops-abc agentops-xyz",
+    "evidence": "Worked example instructs the agent to run `bd create` / `bd dep add` / `bd ready` as the current path; bd is retired in favor of br.",
+    "fix": "Rewrite the example to use `BEADS_DIR=$PWD/_beads br create`, `br dep add`, `br ready`."
+  },
+  {
+    "file": "docs/comparisons/vs-everything-claude-code.md",
+    "line": 143,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "dispatch it on the Gas City reference City (a mayor agent slings beads to refinery workers that run `ao rpi`); AgentOps ships no daemon or scheduler of its own",
+    "evidence": "Gas City / gc is REMOVED from the CLI (no gc bridge, no gc backend; runtime=gc invalid). The out-of-session substrate is NTM + MCP Agent Mail, not a Gas City 'reference City'. Presented as the current out-of-session dispatch path.",
+    "fix": "Replace 'Gas City reference City' with the NTM + MCP Agent Mail substrate (ao agent / ao mcp serve), per ADR-0009."
+  },
+  {
+    "file": "docs/comparisons/vs-everything-claude-code.md",
+    "line": 33,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "out-of-session dispatch via the Gas City reference City",
+    "evidence": "Comparison table row presents Gas City as AgentOps's current out-of-session dispatch surface; gc is removed and the substrate is NTM + Agent Mail.",
+    "fix": "Change the off-API row to 'out-of-session dispatch via the NTM + MCP Agent Mail substrate'."
+  },
+  {
+    "file": "docs/ENV-VARS.md",
+    "line": 50,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "AGENTOPS_RPI_BD_COMMAND | bd | `bd` command used for epic and child issue queries in RPI control plane.",
+    "evidence": "Documents `bd` as the default tracker command for the live RPI control plane in the (non-legacy) 'CLI / RPI Toolchain' section. bd is retired; the tracker is br.",
+    "fix": "Default to `br` (or note bd is retired-legacy): document the var as the beads command and set the example/default to br with BEADS_DIR."
+  },
+  {
+    "file": "docs/workflows/session-lifecycle.md",
+    "line": 23,
+    "severity": "P3",
+    "category": "contradiction",
+    "claim": "### Option 2: Software Factory Lane (Recommended in Codex) ... /rpi \"fix auth startup\" # or: ao rpi phased \"fix auth startup\"",
+    "evidence": "Current doctrine: /rpi and ao rpi are load-bearing LEGACY; the operating loop (docs/architecture/operating-loop.md) is primary navigation. Presenting the RPI lane as the 'Recommended' delivery path contradicts that.",
+    "fix": "Reframe RPI as the legacy executor and point the recommended lane at the operating loop / ao session bootstrap path."
+  },
+  {
+    "file": "docs/contracts/dream-report.md",
+    "line": 189,
+    "severity": "P3",
+    "category": "stale-as-current",
+    "claim": "`bead_id` | string | `\"na-1234\"` | Linked bead when bd sync succeeds",
+    "evidence": "Schema field doc references 'bd sync' as the mechanism that populates bead_id; bd is retired in favor of br.",
+    "fix": "Change 'when bd sync succeeds' to 'when br/bead sync succeeds'."
+  },
+  {
+    "file": "docs/comparisons/vs-tons-of-skills.md",
+    "line": 64,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "To run it unattended, dispatch it on the Gas City reference City (a mayor agent slings beads to refinery workers that run `ao rpi`)",
+    "evidence": "Gas City / gc is REMOVED from the CLI (no gc bridge, no gc backend); the out-of-session substrate is NTM + MCP Agent Mail (ADR-0009). `ao rpi` is load-bearing legacy, not the live navigation path.",
+    "fix": "Replace with: dispatch the operating loop on the NTM + MCP Agent Mail substrate (no Gas City; no `ao rpi`)."
+  },
+  {
+    "file": "docs/examples/agentops-3-council-demo-storyboard.md",
+    "line": 14,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "Out-of-session automation (the loop dispatched on the Gas City reference City) appears only after first trust",
+    "evidence": "Gas City is removed from the CLI; the substrate is NTM + MCP Agent Mail. Presenting Gas City as the current automation lane misleads.",
+    "fix": "Replace 'Gas City reference City' with the NTM + MCP Agent Mail substrate."
+  },
+  {
+    "file": "docs/examples/agentops-3-council-demo-storyboard.md",
+    "line": 31,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "bd show soc-m6v5.9.7\\nbd ready --parent soc-m6v5.9.7",
+    "evidence": "bd/Dolt is RETIRED. The tracker is br (beads_rust) at _beads/, invoked `BEADS_DIR=$PWD/_beads br`. A demo pre-flight that runs `bd` instructs the wrong tool.",
+    "fix": "Use `BEADS_DIR=$PWD/_beads br show <id>` and `br ready` instead of `bd`."
+  },
+  {
+    "file": "docs/examples/agentops-3-council-demo-storyboard.md",
+    "line": 153,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "Show the existing tracked work:\\nbd show soc-m6v5.9.7.8",
+    "evidence": "bd is retired; tracker is br. Demo Act 4 instructs running `bd show`.",
+    "fix": "`BEADS_DIR=$PWD/_beads br show <id>`."
+  },
+  {
+    "file": "docs/examples/agentops-3-council-demo-storyboard.md",
+    "line": 181,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "the same loop runs out of session on the Gas City reference City ... ao rpi soc-m6v5.9.7.8 ... runs as Gas City cron Orders. See ... the using-gc skill.",
+    "evidence": "Gas City/gc removed from the CLI; `ao rpi` is legacy not the primary loop; no Gas City cron Orders exist. The using-gc skill is stale on this.",
+    "fix": "Replace the Gas City lane with NTM + MCP Agent Mail dispatch of the operating loop; drop `ao rpi`/using-gc as the recommended path."
+  },
+  {
+    "file": "docs/examples/agentops-3-council-demo-storyboard.md",
+    "line": 231,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Show out-of-session dispatch on Gas City / Dream as second-stage automation.",
+    "evidence": "Gas City is the removed substrate; recording outline still names it as the current dispatch surface.",
+    "fix": "Show out-of-session dispatch on NTM + MCP Agent Mail."
+  },
+  {
+    "file": "docs/examples/agentops-3-council-demo-storyboard.md",
+    "line": 254,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "The out-of-session (Gas City) lane is second-stage.",
+    "evidence": "Gas City removed; done-criteria still references it as the current lane.",
+    "fix": "Reword to the NTM + MCP Agent Mail substrate lane."
+  },
+  {
+    "file": "docs/levels/L3-state-management/README.md",
+    "line": 16,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "Beads CLI installed (`pip install beads`)",
+    "evidence": "The tracker is br (beads_rust), not the Python `beads` package; bd/Dolt is retired. `pip install beads` installs the wrong/legacy tool.",
+    "fix": "Replace with installing br (beads_rust); invoke as `BEADS_DIR=$PWD/_beads br`."
+  },
+  {
+    "file": "docs/levels/L3-state-management/README.md",
+    "line": 29,
+    "severity": "P1",
+    "category": "stale-as-current",
+    "claim": "bd ready / bd list / bd show / bd update / bd close (Beads Commands block)",
+    "evidence": "bd is retired; the current tracker is br invoked as `BEADS_DIR=$PWD/_beads br <cmd>`. This level teaches the retired commands as current.",
+    "fix": "Rewrite the command block to `br ready`, `br list`, `br show`, `br update`, `br close` (with BEADS_DIR)."
+  },
+  {
+    "file": "docs/levels/L3-state-management/README.md",
+    "line": 35,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "bd vc status                # Optional Dolt status check; JSONL auto-sync is automatic",
+    "evidence": "Dolt is retired; br is git-JSONL-backed (`br sync` never touches Dolt). There is no Dolt status to check.",
+    "fix": "Remove the Dolt status line; describe `br sync` / git-JSONL sync instead."
+  },
+  {
+    "file": "docs/levels/L3-state-management/README.md",
+    "line": 42,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "use `bd vc status` only if you need Dolt state",
+    "evidence": "Dolt is retired as the tracker backend; there is no Dolt state in the current br model.",
+    "fix": "Drop the Dolt-state reference; reference git-JSONL sync via br."
+  },
+  {
+    "file": "docs/strategic-direction.md",
+    "line": 11,
+    "severity": "P2",
+    "category": "contradiction",
+    "claim": "One binary. Skills, hooks, knowledge flywheel, RPI orchestration, goal-driven evolution. The product.",
+    "evidence": "AgentOps 3.0 is HOOKLESS (nothing auto-injects); this same doc line 22 says 'hookless, no daemon'. Listing hooks as a current product pillar contradicts 3.0.",
+    "fix": "Drop 'hooks' from the product-pillar list (or mark as retired) to match the hookless 3.0 model."
+  },
+  {
+    "file": "docs/strategic-direction.md",
+    "line": 94,
+    "severity": "P2",
+    "category": "contradiction",
+    "claim": "Shift #4: From 'rules are guidelines' to 'rules are structural' (Hooks) ... hook lifecycle events fire automatically on session start, tool use, push, compaction, and stop. Rules enforced by hooks cannot be forgotten",
+    "evidence": "3.0 is hookless: nothing auto-injects at SessionStart and AgentOps ships no hooks. This presents auto-firing hooks as the current enforcement paradigm, contradicting the hookless model.",
+    "fix": "Reframe as historical/2.x, or rewrite around the Go pre-push gate + `ao session bootstrap`/`ao inject` explicit context as the current enforcement."
+  },
+  {
+    "file": "docs/strategic-direction.md",
+    "line": 92,
+    "severity": "P2",
+    "category": "contradiction",
+    "claim": "Hooks enforce gates mechanically (push gate, pre-mortem gate, worker guard).",
+    "evidence": "Hooks were torn out in the 3.0 hookless rearchitecture; the release gate is the Go pre-push gate, not auto-firing hooks.",
+    "fix": "Replace 'Hooks enforce gates mechanically' with the Go pre-push gate as the current mechanical enforcement."
+  },
+  {
+    "file": "docs/architecture/agentpod-swarmjob-schema.proposal.md",
+    "line": 122,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "a reconcile controller (`ag-v1xk`) that wants to react to *bead* state has nothing to subscribe to and must poll `bd ready`",
+    "evidence": "bd/Dolt is retired; the tracker is br. The doc presents `bd ready` and 'the `bd` write path' as the current emitter/poll surface.",
+    "fix": "Reference `br ready` / the br write path (or generalize to the tracker write path) instead of `bd`."
+  },
+  {
+    "file": "docs/architecture/the-agent-factory.md",
+    "line": 58,
+    "severity": "P2",
+    "category": "contradiction",
+    "claim": "stored in bd/Dolt (the etcd we just made HA) ... | scheduler queue | **`bd ready`** | ... State store = bd/Dolt as the etcd-analog ... **decided**",
+    "evidence": "Repo doctrine (CLAUDE.md, 2026-06-11) retires bd/Dolt; the tracker is br at _beads/. This architecture spine presents bd/Dolt as the decided/current state store and `bd ready` as the live scheduler queue.",
+    "fix": "Update the state-store/etcd-analog and scheduler-queue references from bd/Dolt + `bd ready` to br (git-JSONL) + `br ready`, or annotate the bd/Dolt assumption as superseded."
+  },
+  {
+    "file": "docs/architecture/ao-command-customization-matrix.md",
+    "line": 17,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "`runtime`, `bd`, `ao` ... Runtime + control-plane commands routed through shared RPI toolchain resolver.",
+    "evidence": "The matrix presents `bd` as a current Tier-A configurable control-plane dependency across the table (lines 17,18,26,27,28) and in Policy Defaults (line 35: 'configurable: runtime, ao, bd, tmux'). bd/Dolt is retired (2026-06-11); the tracker is `br` invoked via BEADS_DIR=$PWD/_beads br.",
+    "fix": "Replace every `bd` entry/mention with `br` (and note the BEADS_DIR invocation) or mark the bd rows as retired-legacy."
+  },
+  {
+    "file": "docs/brownian-ratchet.md",
+    "line": 100,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "bd ready --parent=<epic>      # Ready to ignite\nbd list --status=in_progress  # Currently burning\nbd list --status=closed       # Already reaped",
+    "evidence": "FIND/REAP/ESCALATE are documented with concrete current `bd ready`/`bd list`/`bd update`/`bd close` commands (also lines 144-146, 264-283). bd is retired legacy; tracker is `br` (BEADS_DIR=$PWD/_beads br).",
+    "fix": "Rewrite the bd command examples to `BEADS_DIR=$PWD/_beads br ready/list/update/close` (and update the gt-sling/polecat Gas Town framing which is also legacy)."
+  },
+  {
+    "file": "docs/context-packet.md",
+    "line": 426,
+    "severity": "P2",
+    "category": "contradiction",
+    "claim": "The deprecated `ao inject` output a flat knowledge dump",
+    "evidence": "Per CLAUDE.md, `ao inject` is the current, explicit replacement for the retired SessionStart context injection ('ao session bootstrap + ao inject ... explicit replacement for the SessionStart context'). Calling `ao inject` deprecated contradicts current behavior.",
+    "fix": "Drop 'deprecated' \u2014 describe the legacy flat-dump behavior as the prior `ao inject` mode, not a deprecated command, since `ao inject` is current."
+  },
+  {
+    "file": "docs/examples/agentops-3-council-verdict-example.md",
+    "line": 21,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Keep the daemon and software-factory automation as the second-stage lane after the viewer has seen one visible domain/practice packet and one verdict artifact.",
+    "evidence": "Presents 'the daemon' as a current/second-stage product lane. The in-repo daemon/scheduler was deleted (ADR-0009); out-of-session is NTM + MCP Agent Mail. Also line 49 recommends `bd create` (retired tracker) for tracked follow-up.",
+    "fix": "Replace 'the daemon' with 'the out-of-session NTM + Agent Mail substrate'; change `bd create` on line 49 to `BEADS_DIR=$PWD/_beads br create`."
+  },
+  {
+    "file": "docs/examples/agentops-3-council-verdict-example.md",
+    "line": 49,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Use `bd create ... --description \"From .agents/council/<run-id>/verdict.md\"` for tracked follow-up work.",
+    "evidence": "Recommends `bd create` as the current action for filing follow-up. bd/Dolt is retired (2026-06-11); tracker is `br`.",
+    "fix": "Replace with `BEADS_DIR=$PWD/_beads br create ... --body \"From .agents/council/<run-id>/verdict.md\"`."
+  },
+  {
+    "file": "docs/levels/L4-parallelization/implement-wave.md",
+    "line": 28,
+    "severity": "P2",
+    "category": "stale-as-current",
+    "claim": "Claude runs `bd ready` to find unblocked issues",
+    "evidence": "The whole flow uses `bd ready`/`bd close` as the current tracker commands (also lines 55,57,67,79,92). bd is retired legacy; tracker is `br` (BEADS_DIR=$PWD/_beads br). Output examples show `$ bd ready` / `$ bd close` as live commands.",
+    "fix": "Replace `bd ready`/`bd close` examples with `BEADS_DIR=$PWD/_beads br ready` / `br close`."
+  },
+  {
+    "file": "docs/runbooks/outcomes-grading.md",
+    "line": 108,
+    "severity": "P3",
+    "category": "stale-as-current",
+    "claim": "**Global-Dolt shared burn ledger** (cross-host quota): **ag-vwiv**.",
+    "evidence": "Lists a 'Global-Dolt shared burn ledger' as the intended cross-host follow-on mechanism. Dolt is retired (2026-06-11) as the cross-host backend; presenting it as the planned mechanism is stale.",
+    "fix": "Reword the follow-on to a Dolt-free cross-host quota mechanism (or note Dolt is retired and the cross-host lane needs a new backend)."
+  },
+  {
+    "file": "docs/task-proposals-2026-04-29.md",
+    "line": 23,
+    "severity": "P3",
+    "category": "stale-as-current",
+    "claim": "Avoid non-digit phase labels in daemon reconcile tests when `phase >= 10` ... `cli/internal/daemon/reconcile_test.go`",
+    "evidence": "Proposal #2 targets `cli/internal/daemon/reconcile_test.go`; the in-repo daemon was deleted (ADR-0009) and `cli/internal/daemon/` no longer exists (verified GONE). Acceptance command `go test ./internal/daemon` would fail. The doc presents this as actionable scoped work.",
+    "fix": "Remove/strike proposal #2 (target subsystem deleted) or mark the proposal list as superseded by the daemon teardown (ADR-0009)."
+  }
+]
