@@ -244,6 +244,9 @@ func writeClaimCheckHuman(w io.Writer, report claimproof.Report) {
 		fmt.Fprintf(w, "\n%s\n", card.ClaimID)
 		fmt.Fprintf(w, "  surface: %s\n", card.Surface)
 		fmt.Fprintf(w, "  tier: %s\n", card.Tier)
+		if len(card.CiteAllowed) > 0 {
+			fmt.Fprintf(w, "  citation_ok: %t (allowed: %s)\n", card.CitationOK, strings.Join(card.CiteAllowed, ", "))
+		}
 		fmt.Fprintf(w, "  verdict: %s\n", card.Verdict)
 		if card.EvalBinding != "" {
 			fmt.Fprintf(w, "  eval_binding: %s\n", card.EvalBinding)

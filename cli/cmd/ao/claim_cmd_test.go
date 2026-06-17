@@ -246,3 +246,42 @@ func TestClaimCheckHumanNoop(t *testing.T) {
 		t.Fatalf("missing no-op output: %q", buf.String())
 	}
 }
+
+func TestClaimCheckHumanShowsCitationPolicy(t *testing.T) {
+	stub := func(_ context.Context, _ claimproof.Options) (claimproof.Report, error) {
+		return claimproof.Report{
+			Summary: claimproof.Summary{
+				Mode:            "changed",
+				Base:            "origin/main",
+				ChangedSurfaces: 1,
+				Claims:          1,
+				Verdicts:        map[string]int{"citation_ceiling": 1},
+			},
+			Cards: []claimproof.Card{{
+				ClaimID:       "AOP-CLAIM-X",
+				Surface:       "PRODUCT.md",
+				Tier:          "UNPROVEN",
+				CitationOK:    false,
+				CiteAllowed:   []string{"docs/comparisons/**", "docs/wiki-for-agents.md"},
+				RegistryFound: true,
+				Verdict:       "citation_ceiling",
+				NextAction:    "promote the claim tier",
+			}},
+		}, nil
+	}
+
+	var buf bytes.Buffer
+	err := claimCheckRun(context.Background(), claimCheckOptions{
+		base:        "origin/main",
+		changedOnly: true,
+		writer:      &buf,
+		checkFn:     stub,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "citation_ok: false") || !strings.Contains(out, "docs/comparisons/**") {
+		t.Fatalf("missing citation policy in human output: %q", out)
+	}
+}

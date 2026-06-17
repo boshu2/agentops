@@ -16,6 +16,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/boshu2/agentops/cli/internal/claimpolicy"
 )
 
 const defaultBase = "origin/main"
@@ -53,6 +55,8 @@ type Card struct {
 	ClaimID       string     `json:"claim_id" yaml:"claim_id"`
 	Surface       string     `json:"surface" yaml:"surface"`
 	Tier          string     `json:"tier" yaml:"tier"`
+	CitationOK    bool       `json:"citation_ok" yaml:"citation_ok"`
+	CiteAllowed   []string   `json:"cite_allowed,omitempty" yaml:"cite_allowed,omitempty"`
 	RegistryFound bool       `json:"registry_found" yaml:"registry_found"`
 	Evidence      []Evidence `json:"evidence" yaml:"evidence"`
 	EvalBinding   string     `json:"eval_binding,omitempty" yaml:"eval_binding,omitempty"`
@@ -68,8 +72,13 @@ type Evidence struct {
 }
 
 type registryFile struct {
-	Version string                 `yaml:"version"`
-	Claims  map[string]registryRow `yaml:"claims"`
+	Version string                  `yaml:"version"`
+	Tiers   map[string]registryTier `yaml:"tiers"`
+	Claims  map[string]registryRow  `yaml:"claims"`
+}
+
+type registryTier struct {
+	CiteAllowed []string `yaml:"cite_allowed"`
 }
 
 type registryRow struct {
@@ -129,7 +138,7 @@ func Check(ctx context.Context, opts Options) (Report, error) {
 	for _, hit := range hits {
 		surfaces[hit.Surface] = true
 		row, found := reg.Claims[hit.ClaimID]
-		card := buildCard(ctx, opts, hit, row, found)
+		card := buildCard(ctx, opts, hit, row, found, reg.Tiers)
 		report.Cards = append(report.Cards, card)
 		report.Summary.Verdicts[card.Verdict]++
 	}
@@ -249,7 +258,7 @@ func extractClaimIDs(path string) ([]string, error) {
 	return ids, scanner.Err()
 }
 
-func buildCard(ctx context.Context, opts Options, hit markerHit, row registryRow, found bool) Card {
+func buildCard(ctx context.Context, opts Options, hit markerHit, row registryRow, found bool, tiers map[string]registryTier) Card {
 	card := Card{
 		ClaimID:       hit.ClaimID,
 		Surface:       hit.Surface,
@@ -262,9 +271,10 @@ func buildCard(ctx context.Context, opts Options, hit markerHit, row registryRow
 		return card
 	}
 
-	card.Tier = strings.TrimSpace(row.Tier)
-	if card.Tier == "" {
-		card.Tier = "UNPROVEN"
+	card.Tier = claimpolicy.NormalizeTier(row.Tier)
+	if tier, ok := tiers[card.Tier]; ok {
+		card.CiteAllowed = append([]string(nil), tier.CiteAllowed...)
+		card.CitationOK = claimpolicy.SurfaceAllowed(card.CiteAllowed, hit.Surface)
 	}
 	card.EvalBinding = strings.TrimSpace(row.EvalBinding)
 	for _, path := range row.Evidence {
@@ -317,6 +327,9 @@ func isTracked(ctx context.Context, opts Options, path string) bool {
 func verdict(card Card) (string, string) {
 	if !card.RegistryFound {
 		return "missing_registry", "run scripts/regen-claim-registry.sh, then curate tier and evidence"
+	}
+	if !card.CitationOK {
+		return "citation_ceiling", "promote the claim tier with tracked evidence or move this marker to an allowed surface before citing it here"
 	}
 	if len(card.Evidence) == 0 {
 		return "unproven", "add tracked evidence or bind an exported artifact before strengthening this claim"

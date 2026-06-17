@@ -64,8 +64,10 @@ evidence. Fix: promote via `scripts/export-evidence.sh`, then cite the tracked
 3. **Tier promotion:** when evidence is tracked on main and (optionally) an eval
    passes, update the tier in `claim-registry.yaml` from UNPROVEN → PILOT →
    PROVEN. Only curators (or `ao claim promote` when wired) change tiers.
-4. **Citation ceiling:** the tier-citation ceiling gate (future slice) will block
-   when a public surface cites a claim above its allowed tier.
+4. **Citation ceiling:** `claim.tier-citation` blocks changed public surfaces
+   when they cite a claim above its allowed tier. It is intentionally
+   changed-scope Fast coverage first, so historical UNPROVEN public claims can
+   be retired or promoted without blocking unrelated local work.
 
 ## Composition
 
@@ -86,4 +88,5 @@ ao gate check ◀────────────── drift + PMF evidence
 | Gate ID | Type | Tier | Blocking | Artifact |
 |---------|------|------|----------|----------|
 | `claim.registry-drift` | Native Go | Fast + Full | Yes | `cli/internal/gates/checks/claim_registry.go` |
+| `claim.tier-citation` | Native Go | Fast changed-scope | Yes | `cli/internal/gates/checks/claim_registry.go` |
 | `claim.pmf-evidence` | Shell | Fast + Full | **No** (WARN) | `scripts/check-pmf-evidence.sh` |

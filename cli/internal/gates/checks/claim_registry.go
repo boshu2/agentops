@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/boshu2/agentops/cli/internal/claimpolicy"
 	"github.com/boshu2/agentops/cli/internal/gates"
 	"github.com/boshu2/agentops/cli/internal/ports"
 
@@ -24,6 +25,14 @@ func init() {
 		Match:    claimRegistryPaths,
 		Blocking: true,
 		Run:      runClaimRegistryDrift,
+	})
+	gates.Register(gates.Check{
+		ID:         "claim.tier-citation",
+		Tiers:      gates.Fast,
+		Match:      claimRegistryPaths,
+		Blocking:   true,
+		Run:        runClaimTierCitation,
+		RepairHint: "ao claim check --changed --json",
 	})
 	gates.Register(gates.Check{
 		ID:         "claim.pmf-evidence",
@@ -50,8 +59,13 @@ var claimPMFPaths = []string{
 var claimMarkerRe = regexp.MustCompile(`agentops:claim:(AOP-CLAIM-[A-Z0-9-]+)`)
 
 type claimRegistryFile struct {
-	Version string                      `yaml:"version"`
-	Claims  map[string]claimRegistryRow `yaml:"claims"`
+	Version string                       `yaml:"version"`
+	Tiers   map[string]claimRegistryTier `yaml:"tiers"`
+	Claims  map[string]claimRegistryRow  `yaml:"claims"`
+}
+
+type claimRegistryTier struct {
+	CiteAllowed []string `yaml:"cite_allowed"`
 }
 
 type claimRegistryRow struct {
@@ -60,21 +74,9 @@ type claimRegistryRow struct {
 }
 
 func runClaimRegistryDrift(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
-	registryPath := filepath.Join(rc.RepoRoot, "docs", "contracts", "claim-registry.yaml")
-	data, err := os.ReadFile(registryPath)
-	if err != nil {
-		return ports.GateVerdict{
-			Status: ports.GateStatusFail,
-			Reason: "claim-registry.yaml not found: " + err.Error(),
-		}, nil
-	}
-
-	var reg claimRegistryFile
-	if err := yaml.Unmarshal(data, &reg); err != nil {
-		return ports.GateVerdict{
-			Status: ports.GateStatusFail,
-			Reason: "claim-registry.yaml parse error: " + err.Error(),
-		}, nil
+	reg, verdict, ok := readClaimRegistry(rc.RepoRoot)
+	if !ok {
+		return verdict, nil
 	}
 
 	markers, err := scanClaimMarkers(ctx, rc.RepoRoot)
@@ -103,8 +105,8 @@ func runClaimRegistryDrift(ctx context.Context, rc gates.RunContext) (ports.Gate
 
 	if len(problems) > 0 {
 		return ports.GateVerdict{
-			Status: ports.GateStatusFail,
-			Reason: fmt.Sprintf("claim registry drift: %d parity issue(s)", len(problems)),
+			Status:  ports.GateStatusFail,
+			Reason:  fmt.Sprintf("claim registry drift: %d parity issue(s)", len(problems)),
 			LogTail: tail(strings.Join(problems, "\n"), 4096),
 		}, nil
 	}
@@ -112,6 +114,87 @@ func runClaimRegistryDrift(ctx context.Context, rc gates.RunContext) (ports.Gate
 	return ports.GateVerdict{
 		Status: ports.GateStatusPass,
 		Reason: fmt.Sprintf("claim registry in sync: %d claim(s)", len(reg.Claims)),
+	}, nil
+}
+
+func readClaimRegistry(repoRoot string) (claimRegistryFile, ports.GateVerdict, bool) {
+	registryPath := filepath.Join(repoRoot, "docs", "contracts", "claim-registry.yaml")
+	data, err := os.ReadFile(registryPath)
+	if err != nil {
+		return claimRegistryFile{}, ports.GateVerdict{
+			Status: ports.GateStatusFail,
+			Reason: "claim-registry.yaml not found: " + err.Error(),
+		}, false
+	}
+
+	var reg claimRegistryFile
+	if err := yaml.Unmarshal(data, &reg); err != nil {
+		return claimRegistryFile{}, ports.GateVerdict{
+			Status: ports.GateStatusFail,
+			Reason: "claim-registry.yaml parse error: " + err.Error(),
+		}, false
+	}
+	if reg.Claims == nil {
+		reg.Claims = map[string]claimRegistryRow{}
+	}
+	if reg.Tiers == nil {
+		reg.Tiers = map[string]claimRegistryTier{}
+	}
+	return reg, ports.GateVerdict{}, true
+}
+
+func runClaimTierCitation(ctx context.Context, rc gates.RunContext) (ports.GateVerdict, error) {
+	reg, verdict, ok := readClaimRegistry(rc.RepoRoot)
+	if !ok {
+		return verdict, nil
+	}
+
+	markers, err := scanClaimMarkersForCitation(ctx, rc)
+	if err != nil {
+		return ports.GateVerdict{
+			Status: ports.GateStatusFail,
+			Reason: "marker scan error: " + err.Error(),
+		}, nil
+	}
+	if len(markers) == 0 {
+		return ports.GateVerdict{
+			Status: ports.GateStatusPass,
+			Reason: "claim tier citations clean: no changed claim markers",
+		}, nil
+	}
+
+	var problems []string
+	for id, surfaces := range markers {
+		row, ok := reg.Claims[id]
+		if !ok {
+			continue
+		}
+		tierName := claimpolicy.NormalizeTier(row.Tier)
+		tier, ok := reg.Tiers[tierName]
+		if !ok || len(tier.CiteAllowed) == 0 {
+			problems = append(problems, fmt.Sprintf("%s tier %s has no cite_allowed policy", id, tierName))
+			continue
+		}
+		for _, surface := range surfaces {
+			if claimpolicy.SurfaceAllowed(tier.CiteAllowed, surface) {
+				continue
+			}
+			problems = append(problems, fmt.Sprintf("%s tier %s cannot be cited from %s (allowed: %s)",
+				id, tierName, surface, strings.Join(tier.CiteAllowed, ", ")))
+		}
+	}
+	sort.Strings(problems)
+	if len(problems) > 0 {
+		return ports.GateVerdict{
+			Status:  ports.GateStatusFail,
+			Reason:  fmt.Sprintf("claim tier citation ceiling: %d violation(s)", len(problems)),
+			LogTail: tail(strings.Join(problems, "\n"), 4096),
+		}, nil
+	}
+
+	return ports.GateVerdict{
+		Status: ports.GateStatusPass,
+		Reason: fmt.Sprintf("claim tier citations clean: %d changed claim(s)", len(markers)),
 	}, nil
 }
 
@@ -150,6 +233,63 @@ func scanClaimMarkers(ctx context.Context, repoRoot string) (map[string][]string
 		}
 	}
 	return result, nil
+}
+
+func scanClaimMarkersForCitation(ctx context.Context, rc gates.RunContext) (map[string][]string, error) {
+	if changedIncludesClaimPolicy(rc.ChangedFiles) {
+		return scanClaimMarkers(ctx, rc.RepoRoot)
+	}
+	return scanClaimMarkersInPaths(rc.RepoRoot, rc.ChangedFiles)
+}
+
+func changedIncludesClaimPolicy(paths []string) bool {
+	for _, relPath := range paths {
+		relPath = filepath.ToSlash(strings.TrimSpace(relPath))
+		if relPath == "docs/contracts/claim-registry.yaml" || relPath == "schemas/claim-registry.v1.schema.json" {
+			return true
+		}
+	}
+	return false
+}
+
+func scanClaimMarkersInPaths(repoRoot string, paths []string) (map[string][]string, error) {
+	result := make(map[string][]string)
+	for _, relPath := range paths {
+		relPath = filepath.ToSlash(strings.TrimSpace(relPath))
+		if relPath == "" || shouldSkipClaimPath(relPath) || !looksLikeClaimHost(relPath) {
+			continue
+		}
+		ids, err := extractClaimIDs(filepath.Join(repoRoot, filepath.FromSlash(relPath)))
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, err
+		}
+		for _, id := range ids {
+			result[id] = appendUnique(result[id], relPath)
+		}
+	}
+	return result, nil
+}
+
+func shouldSkipClaimPath(relPath string) bool {
+	if strings.HasPrefix(relPath, ".agents/") || strings.HasPrefix(relPath, "_beads/") {
+		return true
+	}
+	if strings.HasSuffix(relPath, "_test.go") || strings.Contains(relPath, "/testdata/") {
+		return true
+	}
+	return relPath == "docs/contracts/claim-registry.yaml" || relPath == "docs/contracts/claim-eval-promote.md"
+}
+
+func appendUnique(values []string, value string) []string {
+	for _, existing := range values {
+		if existing == value {
+			return values
+		}
+	}
+	return append(values, value)
 }
 
 func looksLikeClaimHost(path string) bool {

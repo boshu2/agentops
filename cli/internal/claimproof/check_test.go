@@ -14,10 +14,12 @@ func TestCheckChangedClaimRendersProofCard(t *testing.T) {
 	writeFile(t, root, "PRODUCT.md", "# Product\n\n<!-- agentops:claim:AOP-CLAIM-PRODUCT-VALUE -->\n\nA changed claim.\n")
 	writeFile(t, root, "docs/evidence/value.md", "# Evidence\n")
 	writeFile(t, root, "docs/contracts/claim-registry.yaml", `version: "1"
-tiers: {}
+tiers:
+  PROVEN:
+    cite_allowed: ["**"]
 claims:
   AOP-CLAIM-PRODUCT-VALUE:
-    tier: PILOT
+    tier: PROVEN
     surfaces:
       - PRODUCT.md
     evidence:
@@ -45,8 +47,11 @@ claims:
 	if card.ClaimID != "AOP-CLAIM-PRODUCT-VALUE" || card.Surface != "PRODUCT.md" {
 		t.Fatalf("wrong card identity: %+v", card)
 	}
-	if card.Tier != "PILOT" || card.Verdict != "supported" {
+	if card.Tier != "PROVEN" || card.Verdict != "supported" {
 		t.Fatalf("wrong proof status: %+v", card)
+	}
+	if !card.CitationOK {
+		t.Fatalf("citation should be allowed: %+v", card)
 	}
 	if len(card.Evidence) != 1 || card.Evidence[0].Status != "tracked" {
 		t.Fatalf("evidence not classified as tracked: %+v", card.Evidence)
@@ -61,7 +66,9 @@ func TestCheckAgentsOnlyEvidenceIsNotCitable(t *testing.T) {
 	writeFile(t, root, "README.md", "# Readme\n\n<!-- agentops:claim:AOP-CLAIM-README-FAST -->\n\nClaim.\n")
 	writeFile(t, root, ".agents/findings/fast.md", "# Local finding\n")
 	writeFile(t, root, "docs/contracts/claim-registry.yaml", `version: "1"
-tiers: {}
+tiers:
+  PILOT:
+    cite_allowed: ["**"]
 claims:
   AOP-CLAIM-README-FAST:
     tier: PILOT
@@ -95,6 +102,45 @@ claims:
 	}
 	if !strings.Contains(card.NextAction, "export .agents evidence") {
 		t.Fatalf("next action does not explain export: %q", card.NextAction)
+	}
+}
+
+func TestCheckFlagsCitationCeilingBeforeEvidenceStatus(t *testing.T) {
+	root := t.TempDir()
+	writeFile(t, root, "PRODUCT.md", "# Product\n\n<!-- agentops:claim:AOP-CLAIM-PRODUCT-VALUE -->\n\nA changed claim.\n")
+	writeFile(t, root, "docs/evidence/value.md", "# Evidence\n")
+	writeFile(t, root, "docs/contracts/claim-registry.yaml", `version: "1"
+tiers:
+  UNPROVEN:
+    cite_allowed: ["docs/comparisons/**", "docs/wiki-for-agents.md"]
+claims:
+  AOP-CLAIM-PRODUCT-VALUE:
+    tier: UNPROVEN
+    surfaces:
+      - PRODUCT.md
+    evidence:
+      - docs/evidence/value.md
+`)
+
+	report, err := Check(context.Background(), Options{
+		RepoRoot:    root,
+		Base:        "origin/main",
+		ChangedOnly: true,
+		RunGit: fakeGit(map[string]fakeGitResult{
+			"diff --name-only origin/main...HEAD":                {out: "PRODUCT.md\n"},
+			"diff --name-only HEAD":                              {},
+			"ls-files --others --exclude-standard":               {},
+			"ls-files --error-unmatch -- docs/evidence/value.md": {out: "docs/evidence/value.md\n"},
+		}),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := report.Cards[0].Verdict; got != "citation_ceiling" {
+		t.Fatalf("verdict = %q, want citation_ceiling: %+v", got, report.Cards[0])
+	}
+	if report.Cards[0].CitationOK {
+		t.Fatalf("citation should not be allowed: %+v", report.Cards[0])
 	}
 }
 
