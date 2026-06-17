@@ -293,7 +293,7 @@ As of 2026-05-10:
 
 - GitHub repo: 341 stars, 33 forks, 2 open issues, last pushed 2026-05-10T03:24:01Z
 - Public surface: GitHub Pages mkdocs site live at boshu2.github.io/agentops/; doctrine site live at 12factoragentops.com
-- Distribution/runtime reach: 72 shared skills, 72 checked-in Codex artifacts, and 19 Codex overrides. `/validate` and `/curate` are additive in this train; legacy validation and mining skills remain until their shim/retirement gates are resolved.
+- Distribution/runtime reach: 73 shared skills, 73 checked-in Codex artifacts, and 19 Codex overrides. `/validate` and `/curate` are additive in this train; legacy validation and mining skills remain until their shim/retirement gates are resolved.
 
 **Measured operational proof:**
 
@@ -303,7 +303,7 @@ As of 2026-05-10:
 - Empirical workbench A/B (2026-05-06, 12 cases): Δ=+0.0000 — both `skill-on` and `skill-off` legs scored 12/12. Honest read: at workbench v1 difficulty (off-by-one bugs, simple validators, basic SQLi) AgentOps's context layer is non-differentiating because the tasks don't require it. Substrate v2 (realistic agent task difficulty) is roadmap. Source: `evals/workbench/results/2026-05-06-yjzp9-counterstat.json`
 - 3.0 PMF scenario evidence is planned but not yet claimed. `soc-m6v5.8` owns the scenario spec, control path, exported evidence, and claim-ledger posture before launch copy uses PMF/productivity claims.
 
-**Maintainer corpus stats** (this repo's `.agents/`, derived by `scripts/corpus-stats.sh` — re-runnable, no fabricated numbers):
+**Maintainer corpus stats** (this repo's `.agents/`, derived by `scripts/corpus-stats.sh` — re-runnable, no fabricated numbers; exported snapshots such as `docs/evidence/2026-04-02-flywheel-case-study.md` when promoted for public citation):
 
 - ~1,842 learnings · ~186 patterns · ~80 planning rules
 - ~68 finding markdown files · ~24 registry entries

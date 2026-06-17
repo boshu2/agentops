@@ -53,7 +53,7 @@ Four product layers (public framing):
 | Dimension | Size |
 |-----------|------|
 | Go source files | ~1,300+ |
-| Active skills | 72 (`skills/`, excl. fixtures) |
+| Active skills | 73 (`skills/`, excl. fixtures) |
 | CLI top-level commands | ~88 |
 | Gate checks (Go registry) | ~77 |
 | Shell validation scripts | ~280 |
@@ -91,7 +91,7 @@ BC6 Orchestration ──▶ dispatches whole skills (never decomposes RPI intern
 | Path | Owns |
 |------|------|
 | `skills/` | **Skill SSOT** — `SKILL.md`, references, Gherkin `.feature` acceptance |
-| `skills-codex/` | Checked-in Codex runtime twins (72); maintained with refresh scripts |
+| `skills-codex/` | Checked-in Codex runtime twins (73); maintained with refresh scripts |
 | `skills-codex-overrides/` | Durable Codex tailoring when runtime must diverge |
 | `cli/` | Go control plane — `cmd/ao/`, `internal/`, gates, corpus, RPI legacy |
 | `scripts/` | Validation, regen, release (~280 shell tools) |
