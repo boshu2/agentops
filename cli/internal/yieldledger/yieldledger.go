@@ -60,6 +60,11 @@ const (
 const (
 	ModeFreshContext = "fresh-context"
 	ModeMultiModel   = "multi-model"
+	// ModeDeterministic marks a verdict from the deterministic membrane tier — a
+	// ground-truth gate (build/test/check-*.sh) rejecting claimed-done work,
+	// not an LLM panel (age-srl). cross_family is always false for this tier, so
+	// it raises catch_rate without touching catch_rate_cross_family.
+	ModeDeterministic = "deterministic"
 )
 
 // Usage phases — which phase of the bead lifecycle a spend occurred in.
@@ -202,7 +207,7 @@ func validDisposition(d string) bool {
 // string is allowed (the projected pawl mode is optional; absent => default).
 func validMode(m string) bool {
 	switch m {
-	case "", ModeFreshContext, ModeMultiModel:
+	case "", ModeFreshContext, ModeMultiModel, ModeDeterministic:
 		return true
 	default:
 		return false
