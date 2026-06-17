@@ -28,25 +28,39 @@ tiers:
 
 claims:
   AOP-CLAIM-ASSURANCE-PROFILE-AEROSPACE-IC:
-    tier: UNPROVEN
+    tier: PILOT
     surfaces:
       - docs/assurance-profile.md
+    evidence:
+      - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
   AOP-CLAIM-ASSURANCE-PROFILE-FACTORY-LAYERS:
-    tier: UNPROVEN
+    tier: PILOT
     surfaces:
       - docs/assurance-profile.md
+    evidence:
+      - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
+      - docs/contracts/factory-admission.md
   AOP-CLAIM-ASSURANCE-PROFILE-POSTURE:
-    tier: UNPROVEN
+    tier: PILOT
     surfaces:
       - docs/assurance-profile.md
+    evidence:
+      - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
+      - GOALS.md
   AOP-CLAIM-BRIEF-FOUR-LAYERS:
-    tier: UNPROVEN
+    tier: PILOT
     surfaces:
+      - docs/agentops-brief.md
+    evidence:
+      - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
       - docs/agentops-brief.md
   AOP-CLAIM-BRIEF-VALIDATED-PATTERNS:
-    tier: UNPROVEN
+    tier: PILOT
     surfaces:
       - docs/agentops-brief.md
+    evidence:
+      - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
+      - skills/standards/references/
   AOP-CLAIM-COMP-CLAUDE-FLOW:
     tier: UNPROVEN
     surfaces:
@@ -76,65 +90,108 @@ claims:
     surfaces:
       - docs/comparisons/vs-tons-of-skills.md
   AOP-CLAIM-DOCS-INDEX-AUTONOMOUS-CYCLES:
-    tier: UNPROVEN
+    tier: PILOT
     surfaces:
       - docs/index.md
+    evidence:
+      - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
   AOP-CLAIM-DOCS-INDEX-CORPUS:
-    tier: UNPROVEN
+    tier: PILOT
     surfaces:
       - docs/index.md
+    evidence:
+      - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
   AOP-CLAIM-GOALS-DREAM-VALIDATED:
-    tier: UNPROVEN
+    tier: PILOT
     surfaces:
       - GOALS.md
+    evidence:
+      - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
+      - scripts/nightly-dream-cycle.sh
   AOP-CLAIM-GOALS-EVAL-WORKBENCH:
-    tier: UNPROVEN
+    tier: PILOT
     surfaces:
       - GOALS.md
+    evidence:
+      - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
+      - evals/workbench/
   AOP-CLAIM-PRODUCT-CONTEXT-ARTIFACT:
-    tier: UNPROVEN
+    tier: PROVEN
     surfaces:
       - PRODUCT.md
+    evidence:
+      - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
+      - docs/contracts/agents-write-surfaces.md
+    eval_binding: eval.corpus-freshness
   AOP-CLAIM-PRODUCT-EVOLVE-RECONCILE:
-    tier: UNPROVEN
+    tier: PROVEN
     surfaces:
       - PRODUCT.md
+    evidence:
+      - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
+      - skills/evolve/SKILL.md
+    eval_binding: always.flywheel-compounding-snapshot
   AOP-CLAIM-PRODUCT-FACTORY-GRADE-THROUGHPUT:
-    tier: UNPROVEN
+    tier: PROVEN
     surfaces:
       - PRODUCT.md
+    evidence:
+      - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
+      - docs/contracts/factory-claim-ledger.md
+    eval_binding: always.flywheel-compounding-snapshot
   AOP-CLAIM-PRODUCT-MT-OLYMPUS-PROOF:
-    tier: UNPROVEN
+    tier: PROVEN
     surfaces:
       - PRODUCT.md
+    evidence:
+      - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
+    notes: Cross-repo acceptance-as-pointer; verify in mt-olympus separately.
   AOP-CLAIM-README-AUTONOMOUS-FLYWHEEL:
-    tier: UNPROVEN
+    tier: PROVEN
     surfaces:
       - README.md
+    evidence:
+      - docs/releases/v2.39.0-claims/autonomous-flywheel.md
+    eval_binding: always.flywheel-compounding-snapshot
   AOP-CLAIM-README-COMPETITIVE-MEMORY:
-    tier: UNPROVEN
+    tier: PROVEN
     surfaces:
       - README.md
+    evidence:
+      - docs/releases/v2.39.0-claims/competitive-memory.md
+    eval_binding: check-competitive-freshness.sh
   AOP-CLAIM-README-EVOLVE-AUTONOMOUS:
-    tier: UNPROVEN
+    tier: PROVEN
     surfaces:
       - README.md
+    evidence:
+      - docs/releases/v2.39.0-claims/evolve-autonomous.md
   AOP-CLAIM-README-FACTORY-CONTEXT:
-    tier: UNPROVEN
+    tier: PROVEN
     surfaces:
       - README.md
+    evidence:
+      - docs/releases/v2.39.0-claims/factory-context.md
+    eval_binding: always.flywheel-compounding-snapshot
   AOP-CLAIM-README-FIRST-VALIDATED:
-    tier: UNPROVEN
+    tier: PROVEN
     surfaces:
       - README.md
+    evidence:
+      - docs/releases/v2.39.0-claims/first-validated.md
+    eval_binding: tests/install/test-five-minute-journey.sh
   AOP-CLAIM-SOFTWARE-FACTORY-THIN-TOPICS:
-    tier: UNPROVEN
+    tier: PILOT
     surfaces:
       - docs/software-factory.md
+    evidence:
+      - docs/releases/v2.39.0-claims/all-claims-evidence-map.md
   AOP-CLAIM-TRUST-FACTORY-FIVE-STEP-PRIMITIVE:
-    tier: UNPROVEN
+    tier: PILOT
     surfaces:
       - docs/trust-factory.md
+    evidence:
+      - docs/releases/v2.39.0-claims/trust-factory-five-step-primitive.md
   AOP-CLAIM-WIKI-FOR-AGENTS-CORPUS-COMPILATION:
     tier: UNPROVEN
     surfaces:
