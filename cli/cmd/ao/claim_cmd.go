@@ -13,6 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/boshu2/agentops/cli/internal/claimproof"
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
@@ -54,6 +55,22 @@ var claimListCmd = &cobra.Command{
 	RunE:  runClaimList,
 }
 
+var claimCheckCmd = &cobra.Command{
+	Use:   "check --changed [--base <ref>]",
+	Short: "Report proof cards for changed public claims",
+	Long: `Report read-only proof cards for changed public claim markers.
+
+The checker compares the current branch/worktree to a base ref, finds changed
+files containing agentops:claim markers, then reports each claim's registry tier,
+evidence citation status, verdict, and next action. It does not bind evidence,
+promote tiers, mutate beads, or edit the claim registry.
+
+Examples:
+  ao claim check --changed
+  ao claim check --changed --base origin/main --json`,
+	RunE: runClaimCheck,
+}
+
 type claimOptions struct {
 	claim    string
 	path     string
@@ -64,6 +81,15 @@ type claimOptions struct {
 	writer   io.Writer
 	bindFn   func(ctx context.Context, opts claimOptions) error
 	listFn   func(ctx context.Context, opts claimOptions) ([]ports.EvidenceBinding, error)
+}
+
+type claimCheckOptions struct {
+	repoRoot    string
+	base        string
+	changedOnly bool
+	jsonOutput  bool
+	writer      io.Writer
+	checkFn     func(context.Context, claimproof.Options) (claimproof.Report, error)
 }
 
 func init() {
@@ -81,6 +107,10 @@ func init() {
 	claimCmd.AddCommand(claimBindCmd)
 
 	claimCmd.AddCommand(claimListCmd)
+
+	claimCheckCmd.Flags().Bool("changed", false, "check claim markers in files changed against --base plus worktree changes")
+	claimCheckCmd.Flags().String("base", "origin/main", "base ref for --changed comparison")
+	claimCmd.AddCommand(claimCheckCmd)
 }
 
 func runClaim(cmd *cobra.Command, args []string) error {
@@ -111,6 +141,22 @@ func runClaimBind(cmd *cobra.Command, _ []string) error {
 func runClaimList(cmd *cobra.Command, _ []string) error {
 	return claimListRun(cmd.Context(), claimOptions{
 		writer: cmd.OutOrStdout(),
+	})
+}
+
+func runClaimCheck(cmd *cobra.Command, _ []string) error {
+	changedOnly, _ := cmd.Flags().GetBool("changed")
+	base, _ := cmd.Flags().GetString("base")
+	repoRoot, err := resolveProjectDir()
+	if err != nil {
+		return err
+	}
+	return claimCheckRun(cmd.Context(), claimCheckOptions{
+		repoRoot:    repoRoot,
+		base:        base,
+		changedOnly: changedOnly,
+		jsonOutput:  GetOutput() == "json",
+		writer:      cmd.OutOrStdout(),
 	})
 }
 
@@ -157,6 +203,65 @@ func claimListRun(ctx context.Context, opts claimOptions) error {
 		}
 	}
 	return nil
+}
+
+func claimCheckRun(ctx context.Context, opts claimCheckOptions) error {
+	if !opts.changedOnly {
+		return errors.New("claim check: --changed is required for this read-only MVP")
+	}
+	if opts.writer == nil {
+		opts.writer = os.Stdout
+	}
+	fn := opts.checkFn
+	if fn == nil {
+		fn = claimproof.Check
+	}
+	report, err := fn(ctx, claimproof.Options{
+		RepoRoot:    opts.repoRoot,
+		Base:        opts.base,
+		ChangedOnly: opts.changedOnly,
+	})
+	if err != nil {
+		return fmt.Errorf("claim check: %w", err)
+	}
+	if opts.jsonOutput {
+		enc := json.NewEncoder(opts.writer)
+		enc.SetIndent("", "  ")
+		return enc.Encode(report)
+	}
+	writeClaimCheckHuman(opts.writer, report)
+	return nil
+}
+
+func writeClaimCheckHuman(w io.Writer, report claimproof.Report) {
+	fmt.Fprintf(w, "claim check: %d changed claim(s) across %d surface(s) (base=%s)\n",
+		report.Summary.Claims, report.Summary.ChangedSurfaces, report.Summary.Base)
+	if len(report.Cards) == 0 {
+		fmt.Fprintln(w, "No changed claim markers found.")
+		return
+	}
+	for _, card := range report.Cards {
+		fmt.Fprintf(w, "\n%s\n", card.ClaimID)
+		fmt.Fprintf(w, "  surface: %s\n", card.Surface)
+		fmt.Fprintf(w, "  tier: %s\n", card.Tier)
+		fmt.Fprintf(w, "  verdict: %s\n", card.Verdict)
+		if card.EvalBinding != "" {
+			fmt.Fprintf(w, "  eval_binding: %s\n", card.EvalBinding)
+		}
+		if len(card.Evidence) == 0 {
+			fmt.Fprintln(w, "  evidence: none")
+		} else {
+			fmt.Fprintln(w, "  evidence:")
+			for _, evidence := range card.Evidence {
+				if evidence.Reason == "" {
+					fmt.Fprintf(w, "    - %s [%s]\n", evidence.Path, evidence.Status)
+				} else {
+					fmt.Fprintf(w, "    - %s [%s] %s\n", evidence.Path, evidence.Status, evidence.Reason)
+				}
+			}
+		}
+		fmt.Fprintf(w, "  next: %s\n", card.NextAction)
+	}
 }
 
 // validateEvidenceLevelString accepts PG1, PG2, PG3, PG4 (or empty

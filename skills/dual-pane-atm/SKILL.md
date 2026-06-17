@@ -294,7 +294,7 @@ manually mirror to `skills-codex/dual-pane-atm/{SKILL.md,prompt.md}` and run
 
 - [references/spawn-checklist.md](references/spawn-checklist.md) — preflight + first-dispatch gates
 - [references/work-split-matrix.md](references/work-split-matrix.md) — pattern selection + reserve examples
-- [`.agents/duel/DUELING_WIZARDS_CEP_REPORT.md`](../../.agents/duel/DUELING_WIZARDS_CEP_REPORT.md) — recent dual-pane exemplar (architecture duel)
+- [references/dual-pane-atm.feature](references/dual-pane-atm.feature) — acceptance scenarios for preflight and work-split gates
 - [`/using-atm`](../using-atm/SKILL.md) — substrate spawn, codex preflight, meter lies
 - [`/vibing-with-ntm`](../vibing-with-ntm/SKILL.md) — tending tick loop once panes are live
 - [`/automation-shape-routing`](../automation-shape-routing/SKILL.md) — shape 0 vs ATM vs swarm front door

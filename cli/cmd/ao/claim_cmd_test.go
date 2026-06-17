@@ -4,10 +4,12 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
 
+	"github.com/boshu2/agentops/cli/internal/claimproof"
 	"github.com/boshu2/agentops/cli/internal/ports"
 )
 
@@ -142,5 +144,105 @@ func TestClaimList_EmptyBindings(t *testing.T) {
 	}
 	if buf.Len() != 0 {
 		t.Fatalf("empty should be 0 bytes, got %q", buf.String())
+	}
+}
+
+func TestClaimCheckRequiresChanged(t *testing.T) {
+	err := claimCheckRun(context.Background(), claimCheckOptions{})
+	if err == nil {
+		t.Fatal("expected --changed requirement")
+	}
+	if !strings.Contains(err.Error(), "--changed") {
+		t.Fatalf("error not helpful: %v", err)
+	}
+}
+
+func TestClaimCheckCommandRegistered(t *testing.T) {
+	out, err := executeCommand("claim", "check", "--help")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "Report read-only proof cards for changed public claim markers.") {
+		t.Fatalf("help missing claim check summary:\n%s", out)
+	}
+	if !strings.Contains(out, "--changed") || !strings.Contains(out, "--base") {
+		t.Fatalf("help missing expected flags:\n%s", out)
+	}
+}
+
+func TestClaimCheckJSONOutput(t *testing.T) {
+	var got claimproof.Options
+	stub := func(_ context.Context, opts claimproof.Options) (claimproof.Report, error) {
+		got = opts
+		return claimproof.Report{
+			Summary: claimproof.Summary{
+				Mode:            "changed",
+				Base:            "origin/main",
+				ChangedSurfaces: 1,
+				Claims:          1,
+				Verdicts:        map[string]int{"supported": 1},
+			},
+			Cards: []claimproof.Card{{
+				ClaimID:       "AOP-CLAIM-X",
+				Surface:       "PRODUCT.md",
+				Tier:          "PILOT",
+				RegistryFound: true,
+				Evidence: []claimproof.Evidence{{
+					Path:   "docs/evidence/x.md",
+					Status: "tracked",
+				}},
+				Verdict:    "supported",
+				NextAction: "run validation",
+			}},
+		}, nil
+	}
+
+	var buf bytes.Buffer
+	err := claimCheckRun(context.Background(), claimCheckOptions{
+		repoRoot:    "/repo",
+		base:        "origin/main",
+		changedOnly: true,
+		jsonOutput:  true,
+		writer:      &buf,
+		checkFn:     stub,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.RepoRoot != "/repo" || got.Base != "origin/main" || !got.ChangedOnly {
+		t.Fatalf("opts not forwarded: %+v", got)
+	}
+	var report claimproof.Report
+	if err := json.Unmarshal(buf.Bytes(), &report); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, buf.String())
+	}
+	if len(report.Cards) != 1 || report.Cards[0].ClaimID != "AOP-CLAIM-X" {
+		t.Fatalf("wrong report: %+v", report)
+	}
+}
+
+func TestClaimCheckHumanNoop(t *testing.T) {
+	stub := func(_ context.Context, _ claimproof.Options) (claimproof.Report, error) {
+		return claimproof.Report{
+			Summary: claimproof.Summary{
+				Mode:     "changed",
+				Base:     "origin/main",
+				Verdicts: map[string]int{},
+			},
+		}, nil
+	}
+
+	var buf bytes.Buffer
+	err := claimCheckRun(context.Background(), claimCheckOptions{
+		base:        "origin/main",
+		changedOnly: true,
+		writer:      &buf,
+		checkFn:     stub,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(buf.String(), "No changed claim markers found.") {
+		t.Fatalf("missing no-op output: %q", buf.String())
 	}
 }

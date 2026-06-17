@@ -205,6 +205,13 @@
       "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
     },
     {
+      "category": "public-tested",
+      "command": "claim check",
+      "coverage_status": "covered",
+      "kind": "leaf",
+      "reason": "Covered by release smoke tests, direct command tests, or command handler tests."
+    },
+    {
       "category": "public-stateful-fixture-needed",
       "command": "claim list",
       "coverage_status": "allowlisted",
