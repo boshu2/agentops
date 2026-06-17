@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-06-17T12:42:44Z",
+  "generated_at": "2026-06-17T12:58:03Z",
   "summary": {
     "skills": 71,
     "hooks": 0,
@@ -483,7 +483,7 @@
         "path": "skills/skill-builder/",
         "has_skill_md": true,
         "has_references": true,
-        "reference_count": 3
+        "reference_count": 4
       },
       {
         "name": "workflow-builder",
@@ -3573,7 +3573,7 @@
         "ao flywheel close-loop"
       ],
       "path": "skills/skill-builder/",
-      "references": 3
+      "references": 4
     },
     {
       "sku": "skill:standards",
