@@ -82,8 +82,9 @@ func TestSchema_AdditionalPropertiesFalse(t *testing.T) {
 	}
 	walkAdditionalProps(t, doc, "$")
 
-	// Spot-check structural shape: top-level object requires entities+relations,
-	// item objects only require the Required fields (not over-required).
+	// Structural shape, codex strict-mode contract: EVERY object's required ==
+	// every key in properties (this is what codex --output-schema enforces; the
+	// old "only required:true fields" shape 400'd live — age-nzx).
 	m := doc.(map[string]any)
 	req, _ := m["required"].([]any)
 	if len(req) != 2 {
@@ -92,13 +93,108 @@ func TestSchema_AdditionalPropertiesFalse(t *testing.T) {
 	props := m["properties"].(map[string]any)
 	entItems := props["entities"].(map[string]any)["items"].(map[string]any)
 	entReq, _ := entItems["required"].([]any)
-	if len(entReq) != 2 { // id + label are required; tags + weight are not
-		t.Errorf("entity item required: want 2 (id,label), got %v", entReq)
+	if len(entReq) != 4 { // id,label,tags,weight — ALL four, not just required:true
+		t.Errorf("entity item required: want 4 (all props), got %v", entReq)
 	}
 	relItems := props["relations"].(map[string]any)["items"].(map[string]any)
 	relReq, _ := relItems["required"].([]any)
-	if len(relReq) != 3 { // from, relation, to; note is optional
-		t.Errorf("relation item required: want 3 (from,relation,to), got %v", relReq)
+	if len(relReq) != 4 { // from,relation,to,note — ALL four
+		t.Errorf("relation item required: want 4 (all props), got %v", relReq)
+	}
+}
+
+// TestSchema_StrictValidatorPasses runs the single-source-of-truth validator
+// recursively over the compiled REAL agentops_provenance template. This is the
+// regression that the additionalProperties-only walk missed: it asserts every
+// object's required lists every property, which is exactly the live 400 cause.
+func TestSchema_StrictValidatorPasses(t *testing.T) {
+	tmpl, err := LoadProvenanceTemplate()
+	if err != nil {
+		t.Fatalf("LoadProvenanceTemplate: %v", err)
+	}
+	raw, err := CompileSchema(tmpl)
+	if err != nil {
+		t.Fatalf("CompileSchema: %v", err)
+	}
+	if err := ValidateCodexStrictSchema(raw); err != nil {
+		t.Fatalf("compiled agentops_provenance schema is not codex-strict-valid: %v\nschema=%s", err, raw)
+	}
+	// And the synthetic mixed-required sample must also pass.
+	rawSample, err := CompileSchema(sampleTemplate())
+	if err != nil {
+		t.Fatalf("CompileSchema(sample): %v", err)
+	}
+	if err := ValidateCodexStrictSchema(rawSample); err != nil {
+		t.Fatalf("compiled sample schema is not codex-strict-valid: %v", err)
+	}
+}
+
+// TestSchema_ValidatorRejectsMissingRequired seeds the negative test from the
+// EXACT live failure: an object whose required omits a property key must be
+// REJECTED. This is the literal shape the old CompileSchema emitted.
+func TestSchema_ValidatorRejectsMissingRequired(t *testing.T) {
+	// "weight" is in properties but missing from required — the age-nzx 400.
+	bad := []byte(`{
+		"type":"object","additionalProperties":false,
+		"properties":{"id":{"type":"string"},"weight":{"type":"number"}},
+		"required":["id"]
+	}`)
+	if err := ValidateCodexStrictSchema(bad); err == nil {
+		t.Fatal("ValidateCodexStrictSchema accepted a schema missing a property from required (the age-nzx 400 shape)")
+	}
+
+	// Missing additionalProperties is also rejected.
+	noAddl := []byte(`{"type":"object","properties":{"id":{"type":"string"}},"required":["id"]}`)
+	if err := ValidateCodexStrictSchema(noAddl); err == nil {
+		t.Fatal("ValidateCodexStrictSchema accepted a schema missing additionalProperties")
+	}
+}
+
+// TestSchema_OptionalNullable asserts an optional template field compiles to a
+// property that IS in required AND whose type permits null.
+func TestSchema_OptionalNullable(t *testing.T) {
+	raw, err := CompileSchema(sampleTemplate())
+	if err != nil {
+		t.Fatalf("CompileSchema: %v", err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	props := doc["properties"].(map[string]any)
+	entItems := props["entities"].(map[string]any)["items"].(map[string]any)
+	entProps := entItems["properties"].(map[string]any)
+	entReq, _ := entItems["required"].([]any)
+
+	// "weight" is required:false in the sample -> must be in required AND nullable.
+	inRequired := false
+	for _, r := range entReq {
+		if r == "weight" {
+			inRequired = true
+		}
+	}
+	if !inRequired {
+		t.Errorf("optional field 'weight' missing from required, got %v", entReq)
+	}
+	weightType := entProps["weight"].(map[string]any)["type"]
+	typeArr, ok := weightType.([]any)
+	if !ok {
+		t.Fatalf("optional field 'weight' type should be a union array, got %T %v", weightType, weightType)
+	}
+	hasNull := false
+	for _, x := range typeArr {
+		if x == "null" {
+			hasNull = true
+		}
+	}
+	if !hasNull {
+		t.Errorf("optional field 'weight' type does not permit null: %v", typeArr)
+	}
+
+	// A required field ("id") keeps a single-string type.
+	idType := entProps["id"].(map[string]any)["type"]
+	if _, isStr := idType.(string); !isStr {
+		t.Errorf("required field 'id' type should be a single string, got %T %v", idType, idType)
 	}
 }
 
