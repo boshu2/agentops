@@ -14,6 +14,20 @@ Mechanically enforced on Bo's machine by the local opt-in guard `~/.claude/hooks
 
 AgentOps compiles and compounds the context that feeds your software factory. It automates agent bookkeeping — attempts, decisions, citations, verdicts, handoffs, learnings — then encodes the DevSecOps CDLC and multi-agent operating practices into a portable corpus that compounds across sessions and runtimes, with humans in or on the loop at whatever rigor level fits.
 
+## How we work — every change goes through these seven moves
+
+**This is the doctrine. All work runs through one repeatable loop — not a phased waterfall of documents.** Every process skill is one move within it; no artifact exists unless it advances the loop. The *map* (these moves, their legal transitions, their gates) is fixed; the *route* a goal takes through it is re-planned on failure. When in doubt, you are somewhere in these seven moves — find where, and take the next one.
+
+1. **Shape intent as BDD** — capability name + Given/When/Then (one happy path, ≥1 edge) + non-goals + rollback + evidence-for-done. Not ready until the acceptance examples are testable. → `/discovery`, `/product`, `/plan`
+2. **Track as a bead** when it leaves your head — the linked-intent packet carrying acceptance, BC tag, slice list, wave plan, accruing evidence. One-shot in-prompt work needs no bead. → `BEADS_DIR=$PWD/_beads br …`
+3. **Slice vertically** through behavior — each slice cuts through whatever layers demonstrate one Given/When/Then, never a horizontal layer.
+4. **TDD per slice** — first the failing test (the slice's contract), then implementation. Code without a failing test has no acceptance surface. → `/implement`
+5. **Group into a wave only when write scopes do not collide** — parallelism is explicit ownership; default to sequential. ≥2 writers on a shared path ⇒ Agent Mail reserve first. → `/swarm`, `/crank`
+6. **Close the bead by proving its acceptance** — the gate here is the *windshield*: deterministic ground-truth that catches a confident hallucination re-planning alone can't. → `ao gate check --fast --scope head`, `/validate`
+7. **Capture evidence + learning, then ratchet** — promote what changes future behavior; kill artifacts that don't. → `/post-mortem`, `/forge`
+
+Full spine: [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md). Which skill runs which move → [`docs/SKILL-ROUTER.md`](docs/SKILL-ROUTER.md). `/rpi` is one turn's executor over this loop, **not** the primary navigation.
+
 ## Zero-Context Startup (Read First)
 
 AgentOps 3.0 is hookless: nothing auto-injects orientation at session start. Run `ao session bootstrap` (the universal init prompt) to get the standard orientation report, then `ao inject` / `ao corpus inject --query "<topic>"` to pull decay-ranked prior context — this is the explicit replacement for the SessionStart context the runtime used to inject. Then, on your first message in a fresh session, read in this order:
@@ -139,6 +153,7 @@ Source of truth: append-only JSONL at `docs/provenance/ledger.jsonl` (schema `ag
 - **Repo map:** [`docs/architecture/codebase-overview.md`](docs/architecture/codebase-overview.md) — consolidated territory map for humans and agents.
 - **Spine:** [`docs/architecture/operating-loop.md`](docs/architecture/operating-loop.md) — 7-move agent doctrine. **Primary navigation.**
 - **One turn's executor:** `/rpi` skill. NOT primary.
+- **Which skill runs which move:** [`docs/SKILL-ROUTER.md`](docs/SKILL-ROUTER.md) — the "what am I trying to do → which skill" router (same tree embedded in `docs/SKILLS.md`).
 - **Architecture:** 6 Bounded Contexts (BC1 Corpus → BC6 Orchestration). Product/component routing lives in [`docs/architecture/component-map.md`](docs/architecture/component-map.md); generated skill-role routing lives in [`docs/contracts/context-map.md`](docs/contracts/context-map.md).
 - **Consumer metaphor:** "CDLC" — the compounding Knowledge Flywheel framing (`Research → Plan → Implement → Validate → Knowledge Flywheel feedback`).
 - **Fitness honesty:** [`docs/evals/agentops-effectiveness-evidence.md`](docs/evals/agentops-effectiveness-evidence.md) — measured uplift unproven; do not market ahead of the ruler.
