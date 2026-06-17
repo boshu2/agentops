@@ -166,6 +166,7 @@ func init() {
 	forgeTranscriptCmd.Flags().StringVar(&forgeLLMEndpoint, "llm-endpoint", "", "Legacy Ollama HTTP endpoint for --tier=1 (fallback: $AGENTOPS_LLM_ENDPOINT or http://localhost:11434)")
 	forgeTranscriptCmd.Flags().IntVar(&forgeTier1MaxChars, "max-chars", 0, "Per-chunk character budget for --tier=1 legacy local LLM mode (default: conservative built-in budget)")
 	forgeTranscriptCmd.Flags().BoolVar(&forgeTier1LegacyLocalLLM, "legacy-local-llm", false, "Allow legacy local Ollama/Gemma fallback for --tier=1 when no AgentWorker queue is configured")
+	forgeTranscriptCmd.Flags().BoolVar(&forgeTyped, "typed", false, "OPT-IN (value-gated, default off): route knowledge through the native typed extractor to emit learning.v1 records; falls back to the heuristic path if the LLM backend is unavailable")
 
 	// Markdown flags
 	forgeMarkdownCmd.Flags().BoolVar(&forgeMdQuiet, "quiet", false, "Suppress all output (for hooks)")
@@ -522,12 +523,40 @@ func forgeTranscriptFile(fs *storage.FileStorage, session *storage.Session, file
 		}
 	}
 
-	// Auto-write pending learnings for close-loop ingestion (bridges forge→pool)
-	if n, err := writePendingLearnings(session, cwd); err != nil {
+	// Auto-write pending learnings for close-loop ingestion (bridges forge→pool).
+	// emitPendingLearnings routes to the typed opt-in path only when explicitly
+	// enabled (default: the existing heuristic writer, byte-for-byte unchanged).
+	if n, err := emitPendingLearnings(session, cwd); err != nil {
 		forgeWarnf(forgeQuiet, "Warning: failed to write pending learnings: %v\n", err)
 	} else if n > 0 && !forgeQuiet {
 		VerbosePrintf("  → %d pending learning(s) written\n", n)
 	}
+}
+
+// emitPendingLearnings chooses the pending-learning writer based on the typed
+// opt-in gate. DEFAULT (gate off): the existing heuristic writePendingLearnings
+// runs verbatim — output is byte-for-byte unchanged (the value gate working as
+// designed). When the typed opt-in is on AND a typed extraction client is
+// available, the typed learning.v1 path runs instead; if the typed path fails
+// (no client / backend unavailable / transport error) it FALLS BACK to the
+// heuristic writer so forge never silently drops knowledge.
+func emitPendingLearnings(session *storage.Session, cwd string) (int, error) {
+	if !typedExtractionEnabled() {
+		return writePendingLearnings(session, cwd)
+	}
+	client := forgeTypedClient()
+	if client == nil {
+		// Typed requested but no backend available — retain heuristic fallback.
+		forgeWarnf(forgeQuiet, "Note: --typed requested but no extraction backend available; using heuristic path\n")
+		return writePendingLearnings(session, cwd)
+	}
+	n, err := writeTypedPendingLearnings(session, cwd, client)
+	if err != nil {
+		// Hard typed failure — retain heuristic fallback rather than lose data.
+		forgeWarnf(forgeQuiet, "Note: typed extraction failed (%v); falling back to heuristic path\n", err)
+		return writePendingLearnings(session, cwd)
+	}
+	return n, nil
 }
 
 // processTranscript parses a transcript and extracts session data.
