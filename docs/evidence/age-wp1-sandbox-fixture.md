@@ -21,4 +21,4 @@ Seatbelt isolation tests asserted profile strings only — zero live `sandbox-ex
 go test ./cli/cmd/ao/ -run 'ScenarioABValidRedacted|SandboxExec_Integration' -count=1
 ```
 
-**Commit:** (filled at land)
+**Commit:** 0bf8b8a2b (fix) + e445d6ac8 (regen, land on origin/main)
