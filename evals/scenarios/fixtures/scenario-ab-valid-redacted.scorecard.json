@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "scenario_id": "s-fixture-redacted-001",
+  "scenario_path": "evals/scenarios/applied-ood/s-2026-06-17-001-reinforcement-gate.json",
+  "generated_at": "2026-06-17T12:00:00Z",
+  "without_gold": {
+    "score": 0.35,
+    "token_cost": 1200,
+    "response_redacted": "[REDACTED: control arm design — popularity amplifier pattern]"
+  },
+  "with_gold": {
+    "score": 0.92,
+    "token_cost": 1400,
+    "response_redacted": "[REDACTED: treatment arm design — verification-gated reinforcement]"
+  },
+  "aggregate_delta": 0.57,
+  "satisfaction_threshold": 0.8,
+  "token_budget": 200000,
+  "ceiling_violation": false,
+  "verdict_class": "applied-ood",
+  "moat_eligible": true,
+  "gate": {
+    "pass": true,
+    "reasons": ["aggregate_delta >= satisfaction_threshold", "ceiling pre-screen clear"]
+  },
+  "_redaction_note": "Public fixture for age-wp1: structure-only replay of a VALID applied-OOD scorecard. No holdout answers, no live model outputs, no operator paths."
+}
